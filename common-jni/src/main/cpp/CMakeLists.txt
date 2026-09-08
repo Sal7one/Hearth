@@ -173,12 +173,11 @@ set(VOSK_LIB_FILE "${CMAKE_CURRENT_SOURCE_DIR}/../jniLibs/${ANDROID_ABI}/libvosk
 if(WITH_VOSK AND EXISTS "${VOSK_LIB_FILE}")
     message(STATUS "✓ Vosk found at ${VOSK_LIB_FILE}")
     
-    add_library(vosk_prebuilt SHARED IMPORTED)
-    set_target_properties(vosk_prebuilt PROPERTIES IMPORTED_LOCATION "${VOSK_LIB_FILE}")
+    # Vosk embeds/exports its own libc++; load its C API locally on demand.
 
     add_library(vosk_engine STATIC vosk/vosk_engine.cpp)
     target_include_directories(vosk_engine PRIVATE vosk)
-    target_link_libraries(vosk_engine stt_common vosk_prebuilt)
+    target_link_libraries(vosk_engine stt_common ${CMAKE_DL_LIBS})
     target_compile_definitions(vosk_engine PRIVATE VOSK_AVAILABLE=1)
 
     set(HAS_VOSK TRUE)

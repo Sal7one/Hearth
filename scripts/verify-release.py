@@ -35,6 +35,10 @@ for flavor in ['play','foss']:
             dynamic = subprocess.check_output([readelf, '-d', file], text=True)
             needed = set(re.findall(r'\(NEEDED\).*?\[(.*?)\]', dynamic))
             assert not needed - expected_libs - platform, (name, needed)
+            if file.name == 'libcommon_jni.so':
+                assert 'libvosk.so' not in needed, 'Vosk must remain behind its local C API loader: its exported static libc++ conflicts with speech plugins'
+                assert 'libc++_shared.so' in needed
+
         assert 'assets/licenses/speech/runtime-build.json' in archive.namelist()
         assert 'assets/licenses/vosk/COPYING' in archive.namelist()
     permissions = subprocess.check_output([aapt, 'dump', 'permissions', apk], text=True)

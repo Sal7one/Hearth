@@ -29,6 +29,7 @@ included. No Hearth checkout or local Maven repository is needed.
 ```sh
 ./gradlew test :app:compilePlayQaKotlin :app:compileFossQaKotlin
 bash common-jni/src/main/cpp/speech/tests/run_speech_tests.sh
+bash common-jni/src/main/cpp/vosk/tests/run_vosk_api_tests.sh
 python3 scripts/speech/test_package.py
 ./gradlew :common-jni:externalNativeBuildDebug :app:assemblePlayQa :app:assembleFossQa
 python3 scripts/verify-release.py

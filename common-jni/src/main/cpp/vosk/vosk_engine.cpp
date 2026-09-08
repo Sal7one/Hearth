@@ -14,24 +14,7 @@
 #include <chrono>
 
 #if VOSK_AVAILABLE
-// Vosk API declarations
-extern "C" {
-    typedef struct VoskModel VoskModel;
-    typedef struct VoskRecognizer VoskRecognizer;
-    
-    VoskModel* vosk_model_new(const char* model_path);
-    void vosk_model_free(VoskModel* model);
-    VoskRecognizer* vosk_recognizer_new(VoskModel* model, float sample_rate);
-    void vosk_recognizer_free(VoskRecognizer* recognizer);
-    int vosk_recognizer_accept_waveform(VoskRecognizer* recognizer, const char* data, int length);
-    int vosk_recognizer_accept_waveform_s(VoskRecognizer* recognizer, const short* data, int length);
-    int vosk_recognizer_accept_waveform_f(VoskRecognizer* recognizer, const float* data, int length);
-    const char* vosk_recognizer_result(VoskRecognizer* recognizer);
-    const char* vosk_recognizer_partial_result(VoskRecognizer* recognizer);
-    const char* vosk_recognizer_final_result(VoskRecognizer* recognizer);
-    void vosk_recognizer_reset(VoskRecognizer* recognizer);
-    void vosk_set_log_level(int log_level);
-}
+#include "vosk_api.h"
 #endif
 
 namespace stt {
@@ -122,8 +105,8 @@ struct VoskEngine::Impl {
     }
 
     void clearResources() {
-        if (recognizer) { vosk_recognizer_free(recognizer); recognizer = nullptr; }
-        if (model) { vosk_model_free(model); model = nullptr; }
+        if (recognizer) { voskApi().vosk_recognizer_free(recognizer); recognizer = nullptr; }
+        if (model) { voskApi().vosk_model_free(model); model = nullptr; }
         initialized.store(false, std::memory_order_release);
         totalSamples = 0;
         segments.clear();
@@ -157,7 +140,7 @@ struct VoskEngine::Impl {
     }
 
     void resetState() {
-        if (recognizer) vosk_recognizer_reset(recognizer);
+        if (recognizer) voskApi().vosk_recognizer_reset(recognizer);
         totalSamples = 0;
         segments.clear();
         lastSegmentEndMs = 0;
@@ -209,8 +192,8 @@ struct VoskEngine::Impl {
         const int chunk = std::max(1, config.sampleRate / 2);  // ~0.5s
         for (int offset = 0; offset < count; offset += chunk) {
             const int n = std::min(chunk, count - offset);
-            if (vosk_recognizer_accept_waveform_s(recognizer, samples + offset, n) == 1) {
-                parseAndAccumulateResult(vosk_recognizer_result(recognizer));
+            if (voskApi().vosk_recognizer_accept_waveform_s(recognizer, samples + offset, n) == 1) {
+                parseAndAccumulateResult(voskApi().vosk_recognizer_result(recognizer));
             }
             if (checkCancelled()) return false;
         }
@@ -221,8 +204,8 @@ struct VoskEngine::Impl {
         const int chunk = std::max(1, config.sampleRate / 2);  // ~0.5s
         for (int offset = 0; offset < count; offset += chunk) {
             const int n = std::min(chunk, count - offset);
-            if (vosk_recognizer_accept_waveform_f(recognizer, samples + offset, n) == 1) {
-                parseAndAccumulateResult(vosk_recognizer_result(recognizer));
+            if (voskApi().vosk_recognizer_accept_waveform_f(recognizer, samples + offset, n) == 1) {
+                parseAndAccumulateResult(voskApi().vosk_recognizer_result(recognizer));
             }
             if (checkCancelled()) return false;
         }
@@ -232,7 +215,6 @@ struct VoskEngine::Impl {
 
 VoskEngine::VoskEngine() : impl_(std::make_unique<Impl>()) {
     impl_->parentEngine = this;
-    vosk_set_log_level(-1); // Disable Vosk logs
 }
 
 VoskEngine::~VoskEngine() { impl_->doFinalRelease(); }
@@ -250,6 +232,9 @@ bool VoskEngine::initialize(const EngineConfig& config) {
         (void)impl_->reopenAfterCleanup();
         return false;
     };
+
+    try { (void)voskApi(); }
+    catch (const std::exception& error) { return failInitialization(error.what()); }
 
     impl_->config = config;
     
@@ -275,18 +260,18 @@ bool VoskEngine::initialize(const EngineConfig& config) {
     LOG_I(TAG_VOSK, "Loading: %s", config.modelPath.c_str());
     auto start = std::chrono::steady_clock::now();
     
-    VoskModel* newModel = vosk_model_new(config.modelPath.c_str());
+    VoskModel* newModel = voskApi().vosk_model_new(config.modelPath.c_str());
     if (!newModel) return failInitialization("Failed to load Vosk model");
 
     VoskRecognizer* newRecognizer =
-        vosk_recognizer_new(newModel, static_cast<float>(config.sampleRate));
+        voskApi().vosk_recognizer_new(newModel, static_cast<float>(config.sampleRate));
     if (!newRecognizer) {
-        vosk_model_free(newModel);
+        voskApi().vosk_model_free(newModel);
         return failInitialization("Failed to create recognizer");
     }
     if (isShuttingDown()) {
-        vosk_recognizer_free(newRecognizer);
-        vosk_model_free(newModel);
+        voskApi().vosk_recognizer_free(newRecognizer);
+        voskApi().vosk_model_free(newModel);
         return failInitialization("Engine shutdown requested while loading model");
     }
     impl_->model = newModel;
@@ -328,22 +313,22 @@ int VoskEngine::pushAudio(const int16_t* samples, int count, int sampleRate) {
         AudioUtils::int16ToFloat(samples, f.data(), count);
         auto resampled = AudioUtils::resample(f.data(), count, sampleRate, impl_->config.sampleRate);
         
-        int result = vosk_recognizer_accept_waveform_f(impl_->recognizer, 
+        int result = voskApi().vosk_recognizer_accept_waveform_f(impl_->recognizer,
                                                        resampled.data(), 
                                                        static_cast<int>(resampled.size()));
         impl_->totalSamples += resampled.size();
         
         // If Vosk indicates a complete utterance, accumulate it
         if (result == 1) {
-            const char* json = vosk_recognizer_result(impl_->recognizer);
+            const char* json = voskApi().vosk_recognizer_result(impl_->recognizer);
             impl_->parseAndAccumulateResult(json);
         }
     } else {
-        int result = vosk_recognizer_accept_waveform_s(impl_->recognizer, samples, count);
+        int result = voskApi().vosk_recognizer_accept_waveform_s(impl_->recognizer, samples, count);
         impl_->totalSamples += count;
         
         if (result == 1) {
-            const char* json = vosk_recognizer_result(impl_->recognizer);
+            const char* json = voskApi().vosk_recognizer_result(impl_->recognizer);
             impl_->parseAndAccumulateResult(json);
         }
     }
@@ -371,21 +356,21 @@ int VoskEngine::pushAudioFloat(const float* samples, int count, int sampleRate) 
     // If sample rate differs, need resampling
     if (sampleRate != impl_->config.sampleRate) {
         auto resampled = AudioUtils::resample(samples, count, sampleRate, impl_->config.sampleRate);
-        int result = vosk_recognizer_accept_waveform_f(impl_->recognizer, 
+        int result = voskApi().vosk_recognizer_accept_waveform_f(impl_->recognizer,
                                                        resampled.data(), 
                                                        static_cast<int>(resampled.size()));
         impl_->totalSamples += resampled.size();
         
         if (result == 1) {
-            const char* json = vosk_recognizer_result(impl_->recognizer);
+            const char* json = voskApi().vosk_recognizer_result(impl_->recognizer);
             impl_->parseAndAccumulateResult(json);
         }
     } else {
-        int result = vosk_recognizer_accept_waveform_f(impl_->recognizer, samples, count);
+        int result = voskApi().vosk_recognizer_accept_waveform_f(impl_->recognizer, samples, count);
         impl_->totalSamples += count;
         
         if (result == 1) {
-            const char* json = vosk_recognizer_result(impl_->recognizer);
+            const char* json = voskApi().vosk_recognizer_result(impl_->recognizer);
             impl_->parseAndAccumulateResult(json);
         }
     }
@@ -403,7 +388,7 @@ std::string VoskEngine::getPartial() {
         return R"({"partial":"","cancelled":true})";
     }
     
-    const char* result = vosk_recognizer_partial_result(impl_->recognizer);
+    const char* result = voskApi().vosk_recognizer_partial_result(impl_->recognizer);
     if (!result) return "";
     
     // Extract just the partial text for display
@@ -440,7 +425,7 @@ std::string VoskEngine::finalize() {
     auto start = std::chrono::steady_clock::now();
     
     // Get final result from current utterance
-    const char* result = vosk_recognizer_final_result(impl_->recognizer);
+    const char* result = voskApi().vosk_recognizer_final_result(impl_->recognizer);
     impl_->parseAndAccumulateResult(result);
     
     auto end = std::chrono::steady_clock::now();
@@ -484,7 +469,7 @@ std::string VoskEngine::transcribeBatch(const int16_t* samples, int count, int s
     
     // Reset internal state (direct call since we hold the guard)
     if (impl_->recognizer) {
-        vosk_recognizer_reset(impl_->recognizer);
+        voskApi().vosk_recognizer_reset(impl_->recognizer);
     }
     impl_->totalSamples = 0;
     impl_->segments.clear();
@@ -508,7 +493,7 @@ std::string VoskEngine::transcribeBatch(const int16_t* samples, int count, int s
 
     // Get final result (inline since we hold the guard)
     auto start = std::chrono::steady_clock::now();
-    const char* result = vosk_recognizer_final_result(impl_->recognizer);
+    const char* result = voskApi().vosk_recognizer_final_result(impl_->recognizer);
     impl_->parseAndAccumulateResult(result);
     auto end = std::chrono::steady_clock::now();
     auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
@@ -540,7 +525,7 @@ std::string VoskEngine::transcribeBatchFloat(const float* samples, int count, in
     
     // Reset internal state (direct call since we hold the guard)
     if (impl_->recognizer) {
-        vosk_recognizer_reset(impl_->recognizer);
+        voskApi().vosk_recognizer_reset(impl_->recognizer);
     }
     impl_->totalSamples = 0;
     impl_->segments.clear();
@@ -561,7 +546,7 @@ std::string VoskEngine::transcribeBatchFloat(const float* samples, int count, in
 
     // Get final result (inline since we hold the guard)
     auto start = std::chrono::steady_clock::now();
-    const char* result = vosk_recognizer_final_result(impl_->recognizer);
+    const char* result = voskApi().vosk_recognizer_final_result(impl_->recognizer);
     impl_->parseAndAccumulateResult(result);
     auto end = std::chrono::steady_clock::now();
     auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
