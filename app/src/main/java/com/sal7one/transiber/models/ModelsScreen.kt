@@ -13,6 +13,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.sal7one.transiber.caption.*
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.first
 
 @Composable
 fun ModelsScreen() {
@@ -24,7 +25,7 @@ fun ModelsScreen() {
  var importRevision by remember { mutableIntStateOf(0) }
  var busy by remember { mutableStateOf(false) }
  var message by remember { mutableStateOf<String?>(null) }
- LaunchedEffect(Unit) { try { registry.refreshModels() } catch(e: Exception) { message = e.message ?: e.toString() } }
+ LaunchedEffect(Unit) { try { config = CaptionConfigStore.config(context).first().let { if (it.engine == CaptionEngineChoice.QWEN || it.engine == CaptionEngineChoice.NEMOTRON) it else it.copy(engine = CaptionEngineChoice.QWEN) }; registry.refreshModels() } catch(e: Exception) { message = e.message ?: e.toString() } }
  fun import(uri: android.net.Uri, directory: Boolean) {
   scope.launch {
    busy = true; message = "Copying and verifying model… Keep this screen open."
@@ -38,7 +39,7 @@ fun ModelsScreen() {
       } ?: error("Cannot open selected model ZIP")
      }
      config = config.copy(engine = imported.profile.captionEngine, modelId = imported.id, mode = CaptionMode.CAPTIONS, streamLanguage = "auto")
-     CaptionConfigStore.update(context) { it.copy(engine = config.engine, modelId = config.modelId, mode = config.mode, streamLanguage = config.streamLanguage) }
+     CaptionConfigStore.update(context) { it.copy(engine = config.engine, modelId = config.modelId, mode = config.mode, streamLanguage = config.streamLanguage, localTranslationEnabled = config.localTranslationEnabled, localTranslationModelId = config.localTranslationModelId, target = config.target) }
      importRevision++
      message = "Imported ${imported.profile.label}. Selected for original-language captions."
      return@launch
@@ -62,7 +63,7 @@ fun ModelsScreen() {
   }
   key(importRevision) { LocalSpeechSetup(config, update = { transform ->
    config = transform(config)
-   scope.launch { CaptionConfigStore.update(context) { current -> current.copy(engine = config.engine, modelId = config.modelId, mode = config.mode, streamLanguage = config.streamLanguage) } }
+   scope.launch { CaptionConfigStore.update(context) { current -> current.copy(engine = config.engine, modelId = config.modelId, mode = config.mode, streamLanguage = config.streamLanguage, localTranslationEnabled = config.localTranslationEnabled, localTranslationModelId = config.localTranslationModelId, target = config.target) } }
   }, onModelsChanged = {}) }
   Text("Qwen / Nemotron packages must contain hearth-speech.json and the verified model files. The repository includes a package builder and source links. Raw model downloads need packaging first.")
   HorizontalDivider()
@@ -77,6 +78,6 @@ fun ModelsScreen() {
     Text("${model.engineType.displayName} · ${model.sizeBytes / 1_048_576} MiB · ${if(model.isValid) "Verified" else "Needs attention"}")
    } }
   }
-  Text("Local Qwen and Nemotron provide original-language CC. Arabic/English translation uses the cloud translation mode; Whisper can translate speech to English, and Marian supports installed language pairs.")
+  Text("Local Qwen and Nemotron provide original-language CC. The optional local translation bridge adds text translation; Whisper can translate speech to English, and Marian supports installed language pairs.")
  }
 }

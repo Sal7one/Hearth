@@ -334,6 +334,9 @@ private fun CaptionBody(
         state.translationNotice?.let {
             Text(it, color = palette.accent, fontSize = 12.sp)
         }
+        state.localTranslationMetrics?.let {
+            Text(it, color = palette.onSurfaceMuted, fontSize = 11.sp)
+        }
         state.localSpeechMetrics?.let {
             Text(it, color = palette.onSurfaceMuted, fontSize = 11.sp)
         }
@@ -422,6 +425,14 @@ private fun SettingsPanel(
                     label = { Text(mode.label, fontSize = 11.sp, maxLines = 1) },
                 )
             }
+        }
+
+        if (cfg.effectiveEngine.speechBackend != null) {
+            SettingsLabel("Local translation bridge", palette)
+            Switch(checked = cfg.localTranslationEnabled, onCheckedChange = { enabled ->
+                onConfigChange { it.copy(localTranslationEnabled = enabled,
+                    mode = if (enabled) CaptionMode.TRANSLATE else CaptionMode.CAPTIONS) }
+            })
         }
 
         if (cfg.mode == CaptionMode.TRANSLATE) {

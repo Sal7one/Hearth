@@ -1,0 +1,19 @@
+{
+  "llama_revision": "64e9bceb2c3a856efed96feda784a50947049feb",
+  "ndk": "27.0.12077973",
+  "abi": "arm64-v8a",
+  "inference": "CPU, two threads, isolated GGML symbols",
+  "binary": {
+    "name": "libtransiber_translation.so",
+    "sha256": "ed7720862e85f653b55927505f6ee7de5e30882fa3fa52fed33193e69681443d"
+  },
+  "sources": {
+    "common-jni/src/main/cpp/common/lease_registry.h": "555d0d227579c671a92f594de45ff7b7ee35eb646d4d68a4266758e00eec94bd",
+    "common-jni/src/main/cpp/translation/exports.map": "01a3130f08b26ac1f00ff059093f9df6c761a73e48cc56a8b4572954f61f1f45",
+    "common-jni/src/main/cpp/translation/text_model.h": "41ffcc58cdf47039e1dead29dd7fe33e4c1d397f34d85bd4693f032bdcd0b277",
+    "common-jni/src/main/cpp/translation/translation_jni.cpp": "c6a7f20a72df16a971f1349321bef04c88b9a50d705b0bdb6d64ebb8de5b1ff3",
+    "common-jni/src/main/cpp/translation/translation_smoke.cpp": "96a708e32e931c5b88592b716c624dbd5b8764e1166c568a5b88b7c482886fdf",
+    "scripts/translation/CMakeLists.txt": "44b3380050fca4f7c6048be35241e15aef422279b34790c32fc22565dfb3035f",
+    "scripts/translation/build-runtime.sh": "a0d5a56cf06f2a1ae13a2c73f718bdc0e3ebe352cc3ea787974966b7daab4f2c"
+  }
+}

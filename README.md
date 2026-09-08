@@ -11,6 +11,10 @@ caption system into a separate, focused project.
 - Capture another app's playback audio or the microphone. Android asks for consent
   each session. Apps can block playback capture; protected streams may be silent.
 - Local Whisper, Vosk, Qwen3-ASR and Nemotron runtimes, with verified model imports.
+- Optional fully local translation after Qwen/Nemotron, using HY-MT1.5 or Hy-MT2
+  in three quantizations each. Explicit CC languages and translation directions;
+  bounded background translation, live toggle, and per-line timing.
+  See [local translation setup](docs/local-translation.md).
 - Cloud STT and real-time Arabic/English translation with your own provider keys.
   Speech-only model filtering, provider configuration, and encrypted key storage.
 - Direct HTTPS file downloads through Android DownloadManager, progress, cancellation,
@@ -51,7 +55,8 @@ Never commit keys or credentials. CI builds and uploads both QA APKs.
    audio or microphone. Use the notification to pause, show, recenter or stop.
 4. Open history in the bubble to read previous lines; captions continue while you read.
 
-Local Qwen and Nemotron recognize speech; they do **not** translate it. Whisper can
+Local Qwen and Nemotron recognize speech. The optional local text-model bridge
+translates their output with a separately imported HY-MT model. Whisper can
 translate to English. Local Marian translation requires a compatible installed
 language-pair bundle. Recognition accuracy, language coverage, capture eligibility
 and latency depend on the model, device and source. This app does not recognize

@@ -53,7 +53,10 @@ import com.sal7one.transiber.ui.components.CapabilityStatus
 import com.sal7one.transiber.ui.components.CapabilityTag
 import com.sal7one.transiber.ui.components.HearthCard
 import com.sal7one.transiber.ui.theme.AppDesign
+import androidx.compose.runtime.LaunchedEffect
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 /**
  * Pre-flight page for the live caption overlay: configure the session, see
@@ -124,9 +127,17 @@ fun CaptionScreen(
     val translationModelImported = registered.any {
         it.engineType == ModelEngineType.TRANSLATE && it.isValid
     }
+    var localTranslationInstalled by remember { mutableStateOf(false) }
+    LaunchedEffect(config.localTranslationModelId) {
+        localTranslationInstalled = withContext(Dispatchers.IO) {
+            com.sal7one.transiber.translation.LocalTranslationModels(java.io.File(context.filesDir, "translation-models"))
+                .installed().any { it.id == config.localTranslationModelId }
+        }
+    }
     val route = captionTranslationRoute(config, CloudConfigStore.sttMode(context))
     val liveCloudTranslation = route == CaptionTranslationRoute.LIVE_TARGET
     val translationReady = when (route) {
+        CaptionTranslationRoute.LOCAL_TEXT -> localTranslationInstalled
         CaptionTranslationRoute.UNSUPPORTED -> false
         CaptionTranslationRoute.ENGLISH_PIVOT, CaptionTranslationRoute.ENGLISH_TEXT -> translationModelImported && MarianTranslatorEngine.isRuntimeAvailable
         else -> true
@@ -259,7 +270,9 @@ fun CaptionScreen(
                     }
                 }
                 Text(
-                    text = if (config.streamLanguage == "auto") {
+                    text = if (config.effectiveEngine == CaptionEngineChoice.QWEN && config.streamLanguage != "auto") {
+                        "Qwen detects speech automatically; this selection supplies the source language for translation routing."
+                    } else if (config.streamLanguage == "auto") {
                         "Auto-detect (faster to set up, less reliable on short clips)."
                     } else {
                         "Pinned: the engine skips detection — more accurate and faster."
@@ -284,7 +297,7 @@ fun CaptionScreen(
                         } else if (translationReady) {
                             "Translation route available; model/API errors will appear in the bubble."
                         } else {
-                            "This route needs a compatible translation model or provider. Choose Live Arabic / Live English for OpenAI translation without a local model."
+                            "For Qwen/Nemotron, enable the local translation bridge below and import a model. CC continues when translation is unavailable."
                         },
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -464,8 +477,7 @@ fun CaptionScreen(
         }
 
         // ------------------------------------------------------------- go
-        val ready = overlayAllowed && chosenEngineReady &&
-            (config.effectiveEngine.speechBackend == null || config.mode == CaptionMode.CAPTIONS)
+        val ready = overlayAllowed && chosenEngineReady
         Button(
             onClick = { CaptionStartActivity.start(context) },
             enabled = ready,

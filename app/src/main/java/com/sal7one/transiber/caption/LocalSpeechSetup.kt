@@ -70,7 +70,7 @@ internal fun LocalSpeechSetup(
             "Raw Hugging Face checkpoints, arbitrary ONNX files and bare GGUF files are not complete packages.",
             style = MaterialTheme.typography.bodySmall)
         Text("Qwen: roughly 1 GB for the 0.6B package; 1.7B needs more memory. Nemotron: roughly 742 MB. " +
-            "Keep at least twice the package size free for the download and installation. Phone speed is unverified.",
+            "Keep at least twice the package size free for the download and installation. ASR speed depends on your phone.",
             style = MaterialTheme.typography.bodySmall)
         OutlinedButton(enabled = !busy, onClick = { importer.launch(arrayOf("application/zip", "application/x-zip-compressed", "application/octet-stream")) }) {
             Text(if (busy) "Importing…" else "Import model ZIP")
@@ -82,11 +82,24 @@ internal fun LocalSpeechSetup(
                 onClick = { update { it.copy(modelId = model.id) } },
                 label = { Text(model.profile.label + " · " + model.id.takeLast(6)) })
         }
+        var expandedLanguages by remember { mutableStateOf(false) }
+        val profile = if (backend == com.sal7one.common_jni.speech.SpeechBackend.QWEN3_ASR)
+            com.sal7one.common_jni.speech.SpeechProfile.QWEN3_ASR_0_6B else com.sal7one.common_jni.speech.SpeechProfile.NEMOTRON_3_5_ASR_0_6B
+        val ccLanguages = profile.capabilities.sourceLanguages
+        TextButton(onClick = { expandedLanguages = !expandedLanguages }) { Text("CC language support · ${ccLanguages.size} languages") }
+        if (expandedLanguages) {
+            Text(ccLanguages.sortedBy(com.sal7one.common_jni.translation.TranslationLanguages::label).joinToString(", ") {
+                com.sal7one.common_jni.translation.TranslationLanguages.label(it)
+            })
+            Text(if (backend == com.sal7one.common_jni.speech.SpeechBackend.QWEN3_ASR)
+                "Publisher coverage: 30 languages plus Chinese dialects; automatic language detection. Recognition, not translation."
+            else "Publisher coverage: 28 languages / 32 locales usable without fine-tuning. Mandarin and 12 other languages are broad-coverage tier; quality varies. Eight adaptation-only locales are excluded.")
+        }
         if (config.effectiveEngine == CaptionEngineChoice.NEMOTRON) {
             Text("Source language hint", style = MaterialTheme.typography.labelMedium)
             Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 val supported = com.sal7one.common_jni.speech.SpeechProfile.NEMOTRON_3_5_ASR_0_6B.capabilities.sourceLanguageHints
-                STREAM_LANGUAGES.filter { it.second == "auto" || it.second in supported }.forEach { (label, code) ->
+                (listOf("Auto" to "auto") + supported.sortedBy(com.sal7one.common_jni.translation.TranslationLanguages::label).map { com.sal7one.common_jni.translation.TranslationLanguages.label(it) to it }).forEach { (label, code) ->
                     FilterChip(selected = config.streamLanguage == code,
                         onClick = { update { it.copy(streamLanguage = code) } }, label = { Text(label) })
                 }
@@ -97,11 +110,7 @@ internal fun LocalSpeechSetup(
         Text("During capture, compute/audio below 1× means inference is faster than the audio duration. " +
             "The audio queue is capped at 3 seconds; overload reports an error instead of accumulating delay.",
             style = MaterialTheme.typography.bodySmall)
-        if (config.mode != CaptionMode.CAPTIONS) {
-            Text("Qwen and Nemotron recognize speech; they do not translate it. Use original-language captions here, " +
-                "or select Cloud / Whisper for translation.", style = MaterialTheme.typography.bodySmall)
-            OutlinedButton(onClick = { update { it.copy(mode = CaptionMode.CAPTIONS) } }) { Text("Use original-language captions") }
-        }
+        com.sal7one.transiber.translation.LocalTranslationSetup(config, update)
         notice?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
         error?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
     }

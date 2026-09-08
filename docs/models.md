@@ -43,8 +43,8 @@ zip -0 -r ../nemotron.zip .
 ```
 
 Import in Models → Nemotron. It supports streaming partial and final recognition.
-Both recognizers produce **original-language CC**. They do not provide Arabic/English
-translation; use cloud translation or an explicitly supported local translation pair.
+Both recognizers produce **original-language CC**. The optional local translation bridge sends their final text to an imported
+HY-MT1.5 or Hy-MT2 translation model. See [local translation](local-translation.md).
 
 ## Other models and downloads
 

@@ -48,17 +48,17 @@ enum class CaptionEngineChoice(val label: String, val explanation: String) {
     WHISPER(
         "Whisper (accurate)",
         "Multilingual with live language detection; slower partials. " +
-            "Required for translation mode.",
+            "Includes built-in English translation.",
     ),
     QWEN(
         "Qwen3-ASR (local)",
         "Offline multilingual captions from a Qwen model package. Final text arrives in utterance windows; " +
-            "automatic language detection. Recognition only, no translation.",
+            "automatic language detection. Original-language CC; optional local translation bridge.",
     ),
     NEMOTRON(
         "Nemotron 3.5 (local)",
         "Offline multilingual captions with streaming partials from a Nemotron GGUF package. " +
-            "Recognition only, no translation. Phone speed depends on the device.",
+            "Original-language CC; optional local translation bridge. Phone speed depends on the device.",
     ),
     /**
      * NETWORK CODE (BYOK) — play distribution only; hidden in the FOSS
@@ -144,6 +144,9 @@ data class CaptionOverlayConfig(
     val source: CaptionSource = CaptionSource.PLAYBACK_CAPTURE,
     val engine: CaptionEngineChoice = CaptionEngineChoice.WHISPER,
     val modelId: String = "",
+    // Optional local text stage, independently switchable from speech recognition.
+    val localTranslationEnabled: Boolean = false,
+    val localTranslationModelId: String = "",
     // Translation
     val target: TranslationTarget = TranslationTarget.ENGLISH,
     // Pinned stream language for Whisper (auto is unreliable on short streaming
@@ -266,6 +269,8 @@ object CaptionConfigStore {
             engine = prefs[Engine]?.let { enumOrDefault(it, CaptionEngineChoice.WHISPER) }
                 ?: CaptionEngineChoice.WHISPER,
             modelId = prefs[ModelId] ?: "",
+            localTranslationEnabled = prefs[LocalTranslationEnabled] ?: false,
+            localTranslationModelId = prefs[LocalTranslationModelId] ?: "",
             target = prefs[Target]?.let { enumOrDefault(it, TranslationTarget.ENGLISH) }
                 ?: TranslationTarget.ENGLISH,
             streamLanguage = prefs[StreamLanguage] ?: "auto",
@@ -296,6 +301,8 @@ object CaptionConfigStore {
         prefs[Source] = config.source.name
         prefs[Engine] = config.engine.name
         prefs[ModelId] = config.modelId
+        prefs[LocalTranslationEnabled] = config.localTranslationEnabled
+        prefs[LocalTranslationModelId] = config.localTranslationModelId
         prefs[Target] = config.target.name
         prefs[StreamLanguage] = config.streamLanguage
         prefs[Display] = config.display.name
@@ -317,6 +324,8 @@ object CaptionConfigStore {
     private inline fun <reified T : Enum<T>> enumOrDefault(name: String, fallback: T): T =
         runCatching { enumValueOf<T>(name) }.getOrDefault(fallback)
 
+    private val LocalTranslationEnabled = booleanPreferencesKey("local_translation_enabled")
+    private val LocalTranslationModelId = stringPreferencesKey("local_translation_model_id")
     private val Mode = stringPreferencesKey("mode")
     private val Source = stringPreferencesKey("source")
     private val Engine = stringPreferencesKey("engine")

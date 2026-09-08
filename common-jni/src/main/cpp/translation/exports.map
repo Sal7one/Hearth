@@ -1,0 +1,1 @@
+{ global: Java_com_sal7one_common_1jni_translation_LocalTranslationNative_*; local: *; };
