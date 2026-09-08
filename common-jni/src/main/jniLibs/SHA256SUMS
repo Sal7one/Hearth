@@ -1,0 +1,4 @@
+9e1f1f93ddd5528bd37ccb4b1042816985fca72e69eb2267ae53ac0b60bb296a  arm64-v8a/libhearth_nemotron.so
+647d0cdd7e9ac23e0b2dd16dd11b7e6ab49d63b3e3a90cf74695ece7e716f683  arm64-v8a/libhearth_qwen.so
+52329b7c8e5fcd5c1aa88b01093215faaef362e3f3d0e374cb8b10d1e4704677  arm64-v8a/libonnxruntime.so
+06965ebb4e5eb3a9e4a815755e178d9553392e3fe8d3d368ac46952ad3694173  arm64-v8a/libvosk.so

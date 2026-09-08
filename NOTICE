@@ -1,0 +1,6 @@
+Real time transiber
+Copyright 2026 Saleh Alanazi and contributors.
+
+Speech/caption utilities and native adapters extracted and modified from Hearth
+commit 978382d. First-party code is licensed under Apache-2.0. Third-party code,
+libraries and model weights retain their own licenses. See THIRD_PARTY_NOTICES.md.

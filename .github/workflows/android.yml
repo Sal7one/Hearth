@@ -1,0 +1,24 @@
+name: Android
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - run: sdkmanager "platforms;android-36" "build-tools;36.0.0" "ndk;27.0.12077973" "cmake;3.22.1"
+      - uses: gradle/actions/setup-gradle@v4
+      - run: ./gradlew test :app:compilePlayQaKotlin :app:compileFossQaKotlin :common-jni:externalNativeBuildDebug :app:assemblePlayQa :app:assembleFossQa
+      - run: bash common-jni/src/main/cpp/speech/tests/run_speech_tests.sh
+      - run: python3 scripts/speech/test_package.py
+      - run: python3 scripts/verify-release.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: transiber-qa-apks
+          path: app/build/outputs/apk/*/qa/*.apk

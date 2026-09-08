@@ -1,0 +1,6 @@
+# name	sha256	immutable_url	archive_member_or_output
+vosk-aar	ab2f8b91ac8051561aa325546b35fed9a68b36b8121bac5c6fb927525c4adfad	https://repo.maven.apache.org/maven2/com/alphacephei/vosk-android/0.3.70/vosk-android-0.3.70.aar	jni/arm64-v8a/libvosk.so
+vosk-arm64-so	06965ebb4e5eb3a9e4a815755e178d9553392e3fe8d3d368ac46952ad3694173	local:vosk-aar	libvosk.so
+onnx-aar	07a8f71ef890afed8c6087a56220e6d558a492804276ee2dd7cb7f6262242027	https://repo.maven.apache.org/maven2/com/microsoft/onnxruntime/onnxruntime-android/1.20.0/onnxruntime-android-1.20.0.aar	jni/arm64-v8a/libonnxruntime.so
+onnx-arm64-so	52329b7c8e5fcd5c1aa88b01093215faaef362e3f3d0e374cb8b10d1e4704677	local:onnx-aar	libonnxruntime.so
+onnx-c-header	573a117ae6b83ead7f53da6cedaa0d7b7d9cdb45c0ba4726bac9081e67696a82	https://raw.githubusercontent.com/microsoft/onnxruntime/c4fb724e810bb496165b9015c77f402727392933/include/onnxruntime/core/session/onnxruntime_c_api.h	onnxruntime_c_api.h

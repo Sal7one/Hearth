@@ -1,0 +1,2 @@
+-keep class com.sal7one.common_jni.** { *; }
+-keepclasseswithmembernames,includedescriptorclasses class * { native <methods>; }
