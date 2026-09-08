@@ -41,11 +41,12 @@ class SpeechRuntime internal constructor(private val driver: () -> SpeechDriver)
         SpeechAvailability(backend, false, null, e.message ?: e.toString())
     }
 
-    suspend fun open(packageDirectory: File, options: SpeechOptions = SpeechOptions()): SpeechSession {
+    suspend fun open(packageDirectory: File, options: SpeechOptions = SpeechOptions(), onStage: (String) -> Unit = {}): SpeechSession {
         var handle = 0L
         var native: SpeechDriver? = null
         try {
             return withContext(Dispatchers.IO) {
+                onStage("verifying package files")
                 val model = SpeechModelPackage.verify(packageDirectory)
                 currentCoroutineContext().ensureActive()
                 options.validate(model.profile)
@@ -56,8 +57,10 @@ class SpeechRuntime internal constructor(private val driver: () -> SpeechDriver)
                     .put("numThreads", options.numThreads ?: 4).put("rightContext", options.rightContext)
                     .put("maxUtteranceMs", options.maxUtteranceMs).put("silenceMs", options.silenceMs)
                     .put("silenceThresholdDb", options.silenceThresholdDb)
+                onStage("creating native recognizer")
                 handle = native!!.create(c.toString())
                 check(handle != 0L) { "Speech backend returned an invalid handle" }
+                onStage("native recognizer created")
                 SpeechSession(native!!, handle, model.profile)
             }
         } catch (e: Throwable) {

@@ -30,3 +30,9 @@ recording or persistent transcript database is created. Copying text uses Androi
 clipboard. The capture notification stays visible and offers Stop. Playback capture
 uses MediaProjection consent and microphone permission; microphone capture uses
 microphone permission. No camera, contact or broad media-library permissions are requested.
+
+Local troubleshooting stores the most recent speech startup stage, timestamp and
+available RAM. The Copy report action includes device/build and Android process-exit
+metadata. Optional trace export saves an Android-provided crash/ANR trace, which may
+contain process and file-path details, to the destination you choose. No report or
+trace is uploaded automatically.

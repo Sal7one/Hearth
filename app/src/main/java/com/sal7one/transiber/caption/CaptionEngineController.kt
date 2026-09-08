@@ -378,6 +378,12 @@ class CaptionEngineController(
                     startPolling()
                     onComplete(true)
                 } catch (e: CancellationException) { throw e }
+                catch (e: LinkageError) {
+                    if (generation == sessionGeneration) {
+                        reportError(e.toString())
+                        onComplete(false)
+                    }
+                }
                 catch (e: Exception) {
                     if (generation == sessionGeneration) {
                         reportError(e.message ?: e.javaClass.simpleName)
@@ -445,6 +451,7 @@ class CaptionEngineController(
             val modelOptions = models.list().filter { it.profile.backend == model.profile.backend }
                 .map { ModelOption(it.id, it.profile.label) }
             val runtime = com.sal7one.common_jni.speech.SpeechRuntime()
+            CaptionDiagnostics.record(context, "${model.profile.label}: probing runtime")
             val availability = runtime.availability(model.profile.backend)
             check(availability.available) { availability.error ?: "${model.profile.label} runtime unavailable" }
             val session = runtime.open(
@@ -452,6 +459,7 @@ class CaptionEngineController(
                 com.sal7one.common_jni.speech.SpeechOptions(
                     sourceLanguage = if (config.effectiveEngine == CaptionEngineChoice.QWEN) "auto" else config.streamLanguage,
                 ),
+                onStage = { stage -> CaptionDiagnostics.record(context, "${model.profile.label}: $stage") },
             )
             val processor = try {
                 check(session.profile == model.profile) { "Speech package profile changed during load" }

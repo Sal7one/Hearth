@@ -100,6 +100,35 @@ class SpeechFoundationTest {
         assertEquals("ar-AR", SpeechLanguage.nemoLocale("ar"))
     }
 
+    @Test fun startupStagesPreserveOwnershipWhenObserverFailsAfterAllocation() = withPackage { root ->
+        val driver = FakeDriver()
+        val stages = mutableListOf<String>()
+        runBlocking {
+            try {
+                SpeechRuntime { driver }.open(root, onStage = { stage ->
+                    stages += stage
+                    if (stage == "native recognizer created") error("diagnostic storage failed")
+                })
+                fail("Expected observer failure")
+            } catch (e: IllegalStateException) { assertEquals("diagnostic storage failed", e.message) }
+        }
+        assertEquals(listOf("verifying package files", "creating native recognizer", "native recognizer created"), stages)
+        assertEquals(1, driver.destroyed.get())
+    }
+
+    @Test fun invalidPackageReportsVerificationBeforeAnyNativeAllocation() = withPackage { root ->
+        File(root, "model.gguf").writeText("bad")
+        val driver = FakeDriver()
+        val stages = mutableListOf<String>()
+        runBlocking {
+            try { SpeechRuntime { driver }.open(root, onStage = { stages += it }); fail("Expected verification error") }
+            catch (e: IllegalArgumentException) { assertTrue(e.message.orEmpty().contains("wrong size")) }
+        }
+        assertEquals(listOf("verifying package files"), stages)
+        assertNull(driver.config)
+        assertEquals(0, driver.destroyed.get())
+    }
+
     private class FakeDriver : SpeechDriver {
         val destroyed = AtomicInteger()
         var onCreate: (() -> Unit)? = null

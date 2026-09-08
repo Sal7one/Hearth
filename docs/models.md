@@ -48,7 +48,7 @@ translation; use cloud translation or an explicitly supported local translation 
 
 ## Other models and downloads
 
-- Whisper: import a whisper.cpp GGML `.bin` model using **Import Whisper file**.
+- Whisper: import a whisper.cpp GGML `.bin` model using **Import model file or speech ZIP**.
   Sources and sizes: https://huggingface.co/ggerganov/whisper.cpp
 - Vosk: extract a model ZIP on your computer/device, then **Import Vosk / translation
   folder**. Publisher catalogue: https://alphacephei.com/vosk/models

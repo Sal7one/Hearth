@@ -21,6 +21,7 @@ fun ModelsScreen() {
  val registry = remember { ModelRegistry.getInstance(context) }
  val models by registry.registeredModels.collectAsStateWithLifecycle()
  var config by remember { mutableStateOf(CaptionOverlayConfig(engine = CaptionEngineChoice.QWEN)) }
+ var importRevision by remember { mutableIntStateOf(0) }
  var busy by remember { mutableStateOf(false) }
  var message by remember { mutableStateOf<String?>(null) }
  LaunchedEffect(Unit) { try { registry.refreshModels() } catch(e: Exception) { message = e.message ?: e.toString() } }
@@ -28,6 +29,20 @@ fun ModelsScreen() {
   scope.launch {
    busy = true; message = "Copying and verifying model… Keep this screen open."
    try {
+    val name = if (directory) "" else androidx.documentfile.provider.DocumentFile.fromSingleUri(context, uri)?.name.orEmpty()
+    if (!directory && name.endsWith(".zip", ignoreCase = true)) {
+     val imported = withContext(Dispatchers.IO) {
+      val job = currentCoroutineContext()
+      context.contentResolver.openInputStream(uri)?.use { input ->
+       LocalSpeechModels(java.io.File(context.filesDir, "speech-models")).importZip(input) { job.ensureActive() }
+      } ?: error("Cannot open selected model ZIP")
+     }
+     config = config.copy(engine = imported.profile.captionEngine, modelId = imported.id, mode = CaptionMode.CAPTIONS, streamLanguage = "auto")
+     CaptionConfigStore.update(context) { it.copy(engine = config.engine, modelId = config.modelId, mode = config.mode, streamLanguage = config.streamLanguage) }
+     importRevision++
+     message = "Imported ${imported.profile.label}. Selected for original-language captions."
+     return@launch
+    }
     val model = if (directory) registry.importModelDirectory(uri) else registry.importModel(uri)
     message = model?.let { "Imported ${it.name}. Select it in Captions." } ?: "Unsupported model structure. Use a Whisper .bin file, Vosk folder, or Marian translation folder."
    } catch(e: CancellationException) { throw e }
@@ -45,14 +60,14 @@ fun ModelsScreen() {
     FilterChip(selected = config.engine == engine, onClick = { config = config.copy(engine = engine, modelId = "") }, label = { Text(engine.label) })
    }
   }
-  LocalSpeechSetup(config, update = { transform ->
+  key(importRevision) { LocalSpeechSetup(config, update = { transform ->
    config = transform(config)
    scope.launch { CaptionConfigStore.update(context) { current -> current.copy(engine = config.engine, modelId = config.modelId, mode = config.mode, streamLanguage = config.streamLanguage) } }
-  }, onModelsChanged = {})
+  }, onModelsChanged = {}) }
   Text("Qwen / Nemotron packages must contain hearth-speech.json and the verified model files. The repository includes a package builder and source links. Raw model downloads need packaging first.")
   HorizontalDivider()
   Text("Whisper, Vosk and translation", style = MaterialTheme.typography.titleLarge)
-  Button(onClick = { file.launch(arrayOf("*/*")) }, enabled = !busy) { Text("Import Whisper file") }
+  Button(onClick = { file.launch(arrayOf("*/*")) }, enabled = !busy) { Text("Import model file or speech ZIP") }
   OutlinedButton(onClick = { folder.launch(null) }, enabled = !busy) { Text("Import Vosk / translation folder") }
   if (busy) LinearProgressIndicator(Modifier.fillMaxWidth())
   message?.let { Text(it) }

@@ -33,6 +33,7 @@ class MainActivity : ComponentActivity() {
     }) { padding ->
      Column(Modifier.fillMaxSize().padding(padding)) {
       Text("Real time transiber", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(16.dp))
+      com.sal7one.transiber.caption.CaptionDiagnosticActions()
       nativeFailure?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(16.dp)) }
       Box(Modifier.weight(1f)) {
        when(page) { 0 -> CaptionScreen(onBrowseModels = { page = 1 }); 1 -> ModelsScreen(); else -> DownloadsScreen() }

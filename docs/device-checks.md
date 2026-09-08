@@ -21,3 +21,18 @@ Test this standalone app separately from Hearth; both can be installed together.
 
 Record raw errors, model/profile, source language, device/Android version and steps.
 No device checks were performed by the extraction agent.
+
+## Local startup investigation (0.1.1)
+
+Import Qwen and Nemotron ZIPs using Models → Import model file or speech ZIP, as
+well as the per-engine import button. Both should select the imported local engine.
+If the process closes on Start, reopen the app and tap **Copy startup / crash report**
+before starting another engine. Paste that report with the APK name and whether the
+last visible step was permission consent, loading, or first captions. The report
+contains device/build, the last local initialization stage, RAM and Android's recent
+exit reasons. It contains no captured speech or provider credentials. Android 11+
+provides exit records; Android 9/10 still show the persisted startup stage.
+
+If Android retained a native/ANR trace, **Export Android crash trace** saves its
+original bytes through the file picker. This may be a binary tombstone rather than
+readable text; attach the exported file for analysis. Nothing is uploaded automatically.
