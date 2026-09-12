@@ -4,6 +4,11 @@ An Android app for live captions over other apps, local speech recognition, and
 bring-your-own-key cloud transcription and translation. Extracted from Hearth's
 caption system into a separate, focused project.
 
+## Development backlog
+
+See the [prioritized backlog](docs/BACKLOG.md) for the mobile translation work,
+bubble/settings redesign, download improvements, subtasks and acceptance checks.
+
 ## Features
 
 - Movable, resizable caption bubble with retained text, prior lines, selectable
