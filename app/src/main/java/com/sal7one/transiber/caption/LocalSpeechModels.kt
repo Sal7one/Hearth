@@ -10,15 +10,19 @@ import java.util.UUID
 import java.util.zip.ZipInputStream
 
 internal val CaptionEngineChoice.speechBackend: SpeechBackend? get() = when (this) {
+    CaptionEngineChoice.MOONSHINE -> SpeechBackend.MOONSHINE
     CaptionEngineChoice.QWEN -> SpeechBackend.QWEN3_ASR
     CaptionEngineChoice.NEMOTRON -> SpeechBackend.NEMOTRON_3_5
     else -> null
 }
 internal val SpeechProfile.captionEngine: CaptionEngineChoice get() = when (backend) {
+    SpeechBackend.MOONSHINE -> CaptionEngineChoice.MOONSHINE
     SpeechBackend.QWEN3_ASR -> CaptionEngineChoice.QWEN
     SpeechBackend.NEMOTRON_3_5 -> CaptionEngineChoice.NEMOTRON
 }
 internal val SpeechProfile.label: String get() = when (this) {
+    SpeechProfile.MOONSHINE_TINY_EN -> "Moonshine v2 Tiny · English"
+    SpeechProfile.MOONSHINE_BASE_EN -> "Moonshine v2 Base · English"
     SpeechProfile.QWEN3_ASR_0_6B -> "Qwen3-ASR 0.6B"
     SpeechProfile.QWEN3_ASR_1_7B -> "Qwen3-ASR 1.7B (larger; phone performance unverified)"
     SpeechProfile.NEMOTRON_3_5_ASR_0_6B -> "Nemotron 3.5 ASR 0.6B"

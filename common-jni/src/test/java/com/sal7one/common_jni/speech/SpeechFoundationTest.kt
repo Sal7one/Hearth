@@ -69,6 +69,16 @@ class SpeechFoundationTest {
         Files.createSymbolicLink(File(root, "alias").toPath(), File(root, "model.gguf").toPath())
         rejects("Symbolic") { SpeechModelPackage.verify(root) }
     }
+    @Test fun moonshineRequiresItsThreeDeclaredRolesAndRejectsOtherLanguages() = withPackage { root ->
+        val j = manifest(root).put("profile", "moonshine-tiny-en-v2")
+        File(root, SpeechModelPackage.MANIFEST).writeText(j.toString())
+        rejects("roles") { SpeechModelPackage.verify(root) }
+        j.put("roles", JSONObject().put("model", "model.gguf").put("encoder", "model.gguf").put("decoder", "model.gguf"))
+        File(root, SpeechModelPackage.MANIFEST).writeText(j.toString())
+        assertEquals(SpeechProfile.MOONSHINE_TINY_EN, SpeechModelPackage.verify(root).profile)
+        SpeechOptions(sourceLanguage = "en").validate(SpeechProfile.MOONSHINE_TINY_EN)
+        rejects("source-language") { SpeechOptions(sourceLanguage = "ru").validate(SpeechProfile.MOONSHINE_TINY_EN) }
+    }
     @Test fun qwenRequiresEveryTokenizerAsset() = withPackage { root ->
         val j = manifest(root).put("profile", "qwen3-asr-0.6b")
             .put("roles", JSONObject().put("frontend", "model.gguf").put("encoder", "model.gguf").put("decoder", "model.gguf").put("tokenizer", "tokenizer"))

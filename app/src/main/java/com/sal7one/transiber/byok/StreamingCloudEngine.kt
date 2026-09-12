@@ -42,10 +42,13 @@ class StreamingCloudEngine(
     private val audioChannel = Channel<ShortArray>(capacity = 4)
     private val finals = ConcurrentLinkedQueue<String>()
     private val transcriptLock = Any()
-    data class Snapshot(val partial: String, val finals: List<String>, val error: String?)
+    private val captionUpdates = linkedMapOf<Long, CloudCaptionUpdate>()
+    private var translatedInterim = ""
+    data class Snapshot(val partial: String, val finals: List<String>, val error: String?,
+        val captions: List<CloudCaptionUpdate> = emptyList(), val translation: String = "")
     fun takeSnapshot(): Snapshot = synchronized(transcriptLock) {
         val finished = buildList { while (true) add(finals.poll() ?: break) }
-        Snapshot(publishedInterim, finished, lastError).also { lastError = null }
+        Snapshot(publishedInterim, finished, lastError, captionUpdates.values.toList(), translatedInterim).also { lastError = null; captionUpdates.clear() }
     }
 
     @Volatile private var publishedInterim: String = ""
@@ -137,6 +140,7 @@ class StreamingCloudEngine(
 
     override suspend fun reset(): Result<Unit> {
         publishedInterim = ""
+        synchronized(transcriptLock) { captionUpdates.clear(); translatedInterim = "" }
         finals.clear()
         lastError = null
         return Result.success(Unit)
@@ -157,6 +161,15 @@ class StreamingCloudEngine(
     ): Result<TranscriptResult> = Result.failure(UnsupportedOperationException("streaming engine"))
 
     private fun wireCallbacks() {
+        (client as? StructuredCaptionClient)?.let { structured ->
+            structured.onCaption = { update -> synchronized(transcriptLock) {
+                if (initialized) {
+                    if (captionUpdates.size >= 128 && update.id !in captionUpdates) lastError = "Cloud caption queue is full"
+                    else if (update.revision > (captionUpdates[update.id]?.revision ?: -1L)) captionUpdates[update.id] = update
+                }
+            } }
+            structured.onTranslatedInterim = { value -> synchronized(transcriptLock) { if (initialized) translatedInterim = value } }
+        }
         client.onInterim = { text -> synchronized(transcriptLock) {
             if (initialized) publishedInterim = text
         } }

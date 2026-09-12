@@ -61,4 +61,17 @@ class CaptionTranslationBridgeTest {
         bridge.offer(1, "test", "ru"); withTimeout(3000) { started.await() }; bridge.close(); load.complete(Unit)
         bridge.awaitClosed(); assertTrue(fake.closed); assertEquals(0, fake.calls)
     }
+    @Test fun startupDoesNotExpireTheFirstCaptionAndModelOpensOnlyOnce() = runBlocking {
+        val loading = CompletableDeferred<Unit>(); val finishLoad = CompletableDeferred<Unit>()
+        val fake = Fake(); fake.release.complete(Unit)
+        var now = 0L; var opens = 0
+        val output = CompletableDeferred<Long>()
+        val bridge = CaptionTranslationBridge(this, "ar", {
+            opens++; loading.complete(Unit); finishLoad.await(); fake
+        }, { id, _, _ -> output.complete(id) }, {}, clock = { now }, maxAgeMs = 100)
+        loading.await(); bridge.offer(9, "Русский текст", "ru-RU")
+        now = 1000; finishLoad.complete(Unit)
+        assertEquals(9L, withTimeout(3000) { output.await() })
+        bridge.close(); bridge.awaitClosed(); assertEquals(1, opens)
+    }
 }

@@ -23,6 +23,7 @@ class TextModel {
     std::unique_ptr<llama_model, decltype(&llama_model_free)> model{nullptr, llama_model_free};
     std::unique_ptr<llama_context, decltype(&llama_free)> context{nullptr, llama_free};
     std::chrono::steady_clock::time_point deadline;
+    bool gemma = false;
     static bool abortDecode(void* p) {
         auto& self = *static_cast<TextModel*>(p);
         return self.cancelled.load() || std::chrono::steady_clock::now() >= self.deadline;
@@ -40,7 +41,8 @@ public:
         if (!model) throw failure("llama_model_load_from_file failed: " + path);
         char architecture[128]{};
         llama_model_meta_val_str(model.get(), "general.architecture", architecture, sizeof(architecture));
-        if (std::string(architecture) != "hunyuan-dense") throw std::runtime_error("Unsupported translation architecture: " + std::string(architecture));
+        gemma = std::string(architecture) == "gemma3";
+        if (!gemma && std::string(architecture) != "hunyuan-dense") throw std::runtime_error("Unsupported translation architecture: " + std::string(architecture));
         auto cp = llama_context_default_params();
         cp.n_ctx = 2048; cp.n_batch = 128; cp.n_ubatch = 128;
         cp.n_threads = 2; cp.n_threads_batch = 2;
@@ -65,9 +67,9 @@ public:
             if (n < 0) throw std::runtime_error("llama_tokenize failed");
             tokens.resize(n); return tokens;
         };
-        auto tokens = tokenize("<｜hy_begin▁of▁sentence｜><｜hy_User｜>", true, false);
+        auto tokens = tokenize(gemma ? "<bos><start_of_turn>user\n" : "<｜hy_begin▁of▁sentence｜><｜hy_User｜>", true, false);
         auto content = tokenize(prompt, false, false); tokens.insert(tokens.end(), content.begin(), content.end());
-        auto suffix = tokenize("<｜hy_Assistant｜>", true, false); tokens.insert(tokens.end(), suffix.begin(), suffix.end());
+        auto suffix = tokenize(gemma ? "<end_of_turn>\n<start_of_turn>model\n" : "<｜hy_Assistant｜>", true, false); tokens.insert(tokens.end(), suffix.begin(), suffix.end());
         constexpr int maxOutput = 384;
         if (tokens.size() + maxOutput > 2048) throw std::runtime_error("Caption exceeds the local translation context (2048 tokens)");
         llama_memory_clear(llama_get_memory(context.get()), true);

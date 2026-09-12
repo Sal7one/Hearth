@@ -63,3 +63,28 @@ A manifest generated from your own download is an integrity record, not proof th
 the publisher is trustworthy. Obtain models from their publishers. Runtime backlog
 and compute/audio metrics appear in the overlay; a ratio below 1× is throughput,
 not an end-to-end latency measurement.
+
+## Moonshine v2 Tiny / Base English
+
+The bundled sherpa adapter supports **utterance windows**, not continuous partial
+Moonshine decoding. English is fixed in the picker. Tiny was imported and exercised
+on the Android test phone; Base shares the adapter/profile but was not device-tested.
+
+Publisher Tiny package:
+https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-moonshine-tiny-en-quantized-2026-02-27.tar.bz2
+
+Extract, retain the package license, and create a verified ZIP:
+
+```sh
+python3 scripts/speech/make-package.py /path/to/moonshine --profile moonshine-tiny-en-v2 \
+  --role model=tokens.txt --role encoder=encoder_model.ort \
+  --role decoder=decoder_model_merged.ort
+cd /path/to/moonshine
+zip -0 -r ../moonshine-tiny-en-v2.zip .
+```
+
+Import under Models → Moonshine → Import model ZIP. The prepared Tiny ZIP including
+the publisher sample/license is 44,442,781 bytes. Base uses `moonshine-base-en-v2`
+and its own corresponding encoder/merged decoder; do not mix package versions.
+There is no automatic tar.bz2 import or universal ONNX loader. See the
+[contribution guide](model-contributing.md) for actual extension points.

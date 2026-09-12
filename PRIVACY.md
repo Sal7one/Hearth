@@ -1,6 +1,6 @@
 # Privacy
 
-The app includes no analytics or advertising SDK. Local speech recognition and local
+The app includes no advertising or first-party analytics. Local speech recognition and local
 translation process audio on the device. Local models are imported into app storage.
 The offline (`foss`) build has no Internet or network-state permission and cannot
 start system downloads. Models can still be imported through Android's file picker.
@@ -38,3 +38,12 @@ available RAM. The Copy report action includes device/build and Android process-
 metadata. Optional trace export saves an Android-provided crash/ANR trace, which may
 contain process and file-path details, to the destination you choose. No report or
 trace is uploaded automatically.
+
+The play build includes the optional Google ML Kit translation SDK. Caption text
+is translated on-device. Explicit language-pack downloads contact Google on Wi-Fi;
+ML Kit manages its own app-private model files and can collect SDK/device usage
+and diagnostic data under Google’s terms. This is distinct from the app’s direct
+DownloadManager downloads. The foss build excludes ML Kit and its native library.
+See [ML Kit data disclosure](https://developers.google.com/ml-kit/terms).
+Soniox and ElevenLabs are optional cloud providers subject to their own policies;
+Soniox integrated translation sends audio through the selected cloud connection.

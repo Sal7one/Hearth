@@ -52,6 +52,8 @@ fun ByokKeySection(onStoredChange: (Boolean) -> Unit = {}) {
     var ttsModelDraft by remember { mutableStateOf(CloudConfigStore.ttsModel(context)) }
     var currentSttMode by remember { mutableStateOf(CloudConfigStore.sttMode(context)) }
     var deepgramStored by remember { mutableStateOf(ApiKeyStore.getDeepgramKey(context).isNotBlank()) }
+    var sonioxStored by remember { mutableStateOf(ApiKeyStore.getSonioxKey(context).isNotBlank()) }
+    var elevenStored by remember { mutableStateOf(ApiKeyStore.getElevenLabsKey(context).isNotBlank()) }
     var assemblyStored by remember { mutableStateOf(ApiKeyStore.getAssemblyAiKey(context).isNotBlank()) }
     val refresh: () -> Unit = {
         keyRevision++
@@ -135,6 +137,8 @@ fun ByokKeySection(onStoredChange: (Boolean) -> Unit = {}) {
     Spacer(Modifier.height(4.dp))
     Text(
         when (currentSttMode) {
+            CloudConfigStore.SttMode.STREAMING_SONIOX -> "Soniox stt-rt-v5: streaming CC and optional integrated translation. Source and translated text are retained separately."
+            CloudConfigStore.SttMode.STREAMING_ELEVENLABS -> "ElevenLabs Scribe v2 Realtime: streaming CC with optional spoken-language hint. Enable a local translator for translation. Auto source cannot yet route local translation on this adapter."
             CloudConfigStore.SttMode.BATCH ->
                 "Batch uploads chunks of audio and returns one result per " +
                     "round-trip — slowest, but works with any OpenAI-compatible " +
@@ -152,6 +156,16 @@ fun ByokKeySection(onStoredChange: (Boolean) -> Unit = {}) {
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
+    if (currentSttMode == CloudConfigStore.SttMode.STREAMING_SONIOX) {
+        StreamingKeyField("Soniox API key", "https://console.soniox.com", sonioxStored,
+            { ApiKeyStore.setSonioxKey(context, it); sonioxStored = ApiKeyStore.getSonioxKey(context).isNotBlank() },
+            { ApiKeyStore.setSonioxKey(context, ""); sonioxStored = false })
+    }
+    if (currentSttMode == CloudConfigStore.SttMode.STREAMING_ELEVENLABS) {
+        StreamingKeyField("ElevenLabs API key", "https://elevenlabs.io/app/settings/api-keys", elevenStored,
+            { ApiKeyStore.setElevenLabsKey(context, it); elevenStored = ApiKeyStore.getElevenLabsKey(context).isNotBlank() },
+            { ApiKeyStore.setElevenLabsKey(context, ""); elevenStored = false })
+    }
     if (currentSttMode == CloudConfigStore.SttMode.STREAMING_DEEPGRAM) {
         Spacer(Modifier.height(8.dp))
         StreamingKeyField(

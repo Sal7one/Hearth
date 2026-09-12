@@ -413,7 +413,7 @@ private fun LinePair(
     palette: OverlayPalette,
     faded: Boolean,
 ) {
-    val showOriginal = cfg.display != CaptionDisplay.TRANSLATED || translation == null
+    val showOriginal = original.isNotBlank() && (cfg.display != CaptionDisplay.TRANSLATED || translation == null)
     val showTranslation = cfg.display != CaptionDisplay.ORIGINAL && translation != null
 
     if (showOriginal) {
@@ -599,7 +599,7 @@ private fun SettingsPanel(
             Text(cfg.effectiveEngine.label, color = palette.onSurface)
             if (cfg.localTranslationEnabled && cfg.effectiveEngine.speechBackend != null) {
                 val model = com.sal7one.common_jni.translation.TranslationCatalog.models.firstOrNull { it.id == cfg.localTranslationModelId }
-                Text(model?.label ?: "No translation model selected", color = palette.onSurface)
+                Text(com.sal7one.transiber.translation.TranslationOptions.label(cfg.localTranslationModelId), color = palette.onSurface)
             }
             TextButton(onClick = { openSetup(1) }) { Text("Choose or download models") }
             TextButton(onClick = { openSetup(3) }) { Text("Full setup & cloud settings") }

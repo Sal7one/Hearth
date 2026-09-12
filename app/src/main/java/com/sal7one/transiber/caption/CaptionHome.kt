@@ -59,6 +59,8 @@ fun CaptionHome(onModels: () -> Unit, onCloud: () -> Unit) {
     }
     val isCloud = cfg.effectiveEngine == CaptionEngineChoice.CLOUD
     val keyReady = if (!ByokPolicy.FEATURE_BYOK) false else when (CloudConfigStore.sttMode(context)) {
+        CloudConfigStore.SttMode.STREAMING_SONIOX -> ApiKeyStore.getSonioxKey(context).isNotBlank()
+        CloudConfigStore.SttMode.STREAMING_ELEVENLABS -> ApiKeyStore.getElevenLabsKey(context).isNotBlank()
         CloudConfigStore.SttMode.STREAMING_DEEPGRAM -> ApiKeyStore.getDeepgramKey(context).isNotBlank()
         CloudConfigStore.SttMode.STREAMING_ASSEMBLYAI -> ApiKeyStore.getAssemblyAiKey(context).isNotBlank()
         else -> ApiKeyStore.hasOpenAiKey(context)
@@ -72,7 +74,8 @@ fun CaptionHome(onModels: () -> Unit, onCloud: () -> Unit) {
             it.engineType == if (cfg.effectiveEngine == CaptionEngineChoice.VOSK) ModelEngineType.VOSK else ModelEngineType.WHISPER }
     }
     val needsTranslator = when (captionTranslationRoute(cfg, CloudConfigStore.sttMode(context))) {
-        CaptionTranslationRoute.LOCAL_TEXT -> cfg.localTranslationModelId !in translations
+        CaptionTranslationRoute.LOCAL_TEXT -> if (cfg.localTranslationModelId == com.sal7one.transiber.translation.TranslationOptions.ML_KIT)
+            !com.sal7one.transiber.translation.PlatformTranslation.available else cfg.localTranslationModelId !in translations
         CaptionTranslationRoute.UNSUPPORTED -> true
         CaptionTranslationRoute.ENGLISH_PIVOT, CaptionTranslationRoute.ENGLISH_TEXT ->
             !registered.any { it.isValid && it.engineType == ModelEngineType.TRANSLATE }

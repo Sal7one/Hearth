@@ -9,8 +9,8 @@
   "artifacts": [
     {
       "file": "libhearth_qwen.so",
-      "bytes": 20557488,
-      "sha256": "a02ad071e814facd9fc72ffdb757574299cc57af8d4a5696bf1b88fbe0218e12",
+      "bytes": 20558608,
+      "sha256": "9b5259cb4d92833c3dcd67ecc8dc8756f3ace608a330bb54194da1267621acfb",
       "minPageAlignment": 16384,
       "dependencies": [
         "liblog.so",
@@ -23,8 +23,8 @@
     },
     {
       "file": "libhearth_nemotron.so",
-      "bytes": 2265536,
-      "sha256": "9e1f1f93ddd5528bd37ccb4b1042816985fca72e69eb2267ae53ac0b60bb296a",
+      "bytes": 2266400,
+      "sha256": "714d5e61a39e4deaacfb852d1c6b8e77c379061ba1116fb3b51262d3af970a2c",
       "minPageAlignment": 16384,
       "dependencies": [
         "liblog.so",
@@ -39,13 +39,15 @@
     "common-jni/src/main/cpp/speech/backend_abi.h": "e77aa016d8f9c660bd8f918db9c0c9a1f687c99711ce893f9e4c4eea3fa39810",
     "common-jni/src/main/cpp/speech/backends/backend_guard.h": "271f1d9d135b73835664614a67b3e0c676aa7aec992311986cb173a266172cbe",
     "common-jni/src/main/cpp/speech/backends/exports.map": "546cdb327cca1d7b93e99fbb82304445637236c2a70ccf1e714b5e094289c4b5",
-    "common-jni/src/main/cpp/speech/backends/nemotron_backend.cpp": "fde0b4de10fbf2d338961df0df2267cf20230cb1cdba8d644a5b4a26c1802032",
-    "common-jni/src/main/cpp/speech/backends/qwen_backend.cpp": "7d117c5f45a1c03e7ebdd469de061ab7c2c10440013b52da051f914adc58b354",
+    "common-jni/src/main/cpp/speech/backends/nemotron_backend.cpp": "45c63610e99e24ea5ae82fa1b78d4e93de315ef0643478eececc1f0cb47c3cd6",
+    "common-jni/src/main/cpp/speech/backends/qwen_backend.cpp": "54a9f82b179a7a05b50d6a890594f3b7569549f44afe705c48634968a5905e61",
+    "common-jni/src/main/cpp/speech/backends/qwen_exports.map": "e5f314523dcfff93ab45e4aa1d7eadab768c029525d5959cbaefe01d12e0af62",
+    "common-jni/src/main/cpp/speech/endpoint_budget.h": "08a23fa6da64c5d3aebf8afc92c9104a4ff53c67bd64b0a3f7e3cad6393f8201",
     "common-jni/src/main/cpp/speech/qwen_language.h": "1edb8df4c41adf9015227aa38c74652f9357dc6794c8ab58e37ae332dfd616b7",
     "common-jni/src/main/cpp/speech/utterance_segmenter.h": "12932ab567a45e46be5e0e6780f6b96342648421287447cd7a4db4df6fa8061a",
     "scripts/speech/build-runtimes.sh": "618e6c046342ad856c0fa136a11308754c66155f914787ee43bc94209cd1fa97",
     "scripts/speech/nemo-inject.cmake": "9b02fa9deb1ff24a7b32ef262ae9e198770b9a807123616d43069b021002c5bd",
-    "scripts/speech/qwen.cmake": "61c2cd4bf58b03c60a3c8322420e430b39534a7142f8eca131848fac1be1fd9f"
+    "scripts/speech/qwen.cmake": "512f17e547b002138f239ae5e6757f9a7dbdd33dfb78e71cc2590b31a391039a"
   },
   "ndk": "Pkg.Desc = Android NDK\nPkg.Revision = 27.0.12077973\nPkg.BaseRevision = 27.0.12077973\nPkg.ReleaseName = r27\n"
 }

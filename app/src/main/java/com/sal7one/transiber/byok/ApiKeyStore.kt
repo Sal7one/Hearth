@@ -107,6 +107,11 @@ object ApiKeyStore {
     fun setAssemblyAiKey(context: Context, key: String): Boolean =
         setProviderKey(context, FIELD_ASSEMBLYAI, key)
 
+    fun getSonioxKey(context: Context): String = getProviderKey(context, "soniox_key_v1")
+    fun setSonioxKey(context: Context, key: String): Boolean = setProviderKey(context, "soniox_key_v1", key)
+    fun getElevenLabsKey(context: Context): String = getProviderKey(context, "elevenlabs_key_v1")
+    fun setElevenLabsKey(context: Context, key: String): Boolean = setProviderKey(context, "elevenlabs_key_v1", key)
+
     private fun getProviderKey(context: Context, field: String): String {
         val blob = prefs(context).getString(field, null) ?: return ""
         return runCatching { decrypt(context, blob) }.getOrDefault("")

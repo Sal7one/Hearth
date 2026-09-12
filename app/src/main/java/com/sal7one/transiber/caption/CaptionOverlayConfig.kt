@@ -50,6 +50,7 @@ enum class CaptionEngineChoice(val label: String, val explanation: String) {
         "Multilingual with live language detection; slower partials. " +
             "Includes built-in English translation.",
     ),
+    MOONSHINE("Moonshine · English", "Small English-only recognition in short utterance windows. Optional local translation."),
     QWEN(
         "Qwen3-ASR (local)",
         "Offline multilingual captions from a Qwen model package. Final text arrives in utterance windows; " +

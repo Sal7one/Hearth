@@ -30,6 +30,8 @@ internal fun LocalTranslationSetup(config: CaptionOverlayConfig, update: ((Capti
     var selected by remember { mutableStateOf(config.localTranslationModelId.takeIf { id -> TranslationCatalog.models.any { it.id == id } } ?: "hy-mt15-q4") }
     var message by remember { mutableStateOf<String?>(null) }
     var busy by remember { mutableStateOf(false) }
+    var showGguf by remember { mutableStateOf(config.localTranslationModelId != TranslationOptions.ML_KIT) }
+    LaunchedEffect(config.localTranslationModelId) { if (config.localTranslationModelId == TranslationOptions.ML_KIT) showGguf = false }
     var advanced by remember { mutableStateOf(false) }
     var modelMenu by remember { mutableStateOf(false) }
     var showCoverage by remember { mutableStateOf(false) }
@@ -70,6 +72,11 @@ internal fun LocalTranslationSetup(config: CaptionOverlayConfig, update: ((Capti
             })
             Text(if (config.localTranslationEnabled) "Enabled" else "Disabled · CC only")
         }
+        if (PlatformTranslation.available) {
+            MlKitSetup(config, update)
+        }
+        TextButton(onClick = { showGguf = !showGguf }) { Text(if (showGguf) "Hide GGUF translators" else "Other translators · GGUF") }
+        if (showGguf) {
         Text("Choose a translation model", style = MaterialTheme.typography.labelLarge)
         val choices = if (advanced) TranslationCatalog.models else TranslationCatalog.models.filter { it.quantization == "Q4_K_M" || it.id == selected }
         Box {
@@ -85,7 +92,7 @@ internal fun LocalTranslationSetup(config: CaptionOverlayConfig, update: ((Capti
         }
         }
         TextButton(onClick = { advanced = !advanced }) { Text(if (advanced) "Hide larger variants" else "More model variants") }
-        Text("Active bridge model: ${installed.firstOrNull { it.id == config.localTranslationModelId }?.label ?: "None — import and select one"}")
+        Text("Active bridge model: ${if (config.localTranslationModelId == TranslationOptions.ML_KIT) TranslationOptions.label(config.localTranslationModelId) else installed.firstOrNull { it.id == config.localTranslationModelId }?.label ?: "None — import and select one"}")
         if (advanced) Text("Q6/Q8 use more storage and memory. Only the selected model loads.")
         OutlinedButton(enabled = !busy, onClick = { importer.launch(arrayOf("*/*")) }) { Text("Import ${spec.label} GGUF") }
         if (ByokPolicy.FEATURE_BYOK) {
@@ -116,14 +123,17 @@ internal fun LocalTranslationSetup(config: CaptionOverlayConfig, update: ((Capti
             Text("Saved in ${downloads.locationLabel}/models. No export needed for installation.")
             TextButton(onClick = { uriHandler.openUri(spec.modelCard) }) { Text("Publisher model card and license") }
         }
-        if (advanced) Text("Tencent Hunyuan community license. Imported files must match the selected publisher model.")
+        Text("${spec.license}. Imported files must match the selected artifact.")
+        if (spec.family == "translategemma") Text("Larger quality alternative · 2.49 GB download. Community GGUF conversion of Google TranslateGemma. Phone speed depends on your device.")
         TextButton(onClick = { showCoverage = !showCoverage }) { Text(if (showCoverage) "Hide language coverage" else "Show supported source → target languages") }
         if (showCoverage) Text("Any of these source languages → any other listed target:\n" + spec.sourceLanguages.sortedBy(TranslationLanguages::label).joinToString(", ") { TranslationLanguages.label(it) })
         com.sal7one.transiber.caption.CaptionLanguageFields(config, update, showSource = false,
-            targetChoices = com.sal7one.transiber.caption.CaptionLanguageChoices(spec.targetLanguages, "Output languages supported by ${spec.label}."))
+            targetChoices = com.sal7one.transiber.caption.CaptionLanguageChoices(TranslationOptions.languages(config.localTranslationModelId).ifEmpty { spec.targetLanguages }, "Output languages supported by the active translator."))
+        }
         val active = installed.firstOrNull { it.id == config.localTranslationModelId }
         Text(when {
             !config.localTranslationEnabled -> "Original-language CC; translation model stays unloaded."
+            config.localTranslationModelId == TranslationOptions.ML_KIT -> "ML Kit selected · download spoken and target packs above. Translation works offline after download."
             active == null -> "Import a translation model to use the bridge. CC can run now."
             config.streamLanguage == "auto" -> "Automatic routing uses the language reported by ASR. Unknown or mixed language stays CC-only with a notice."
             active.supports(config.streamLanguage, config.target.languageTag) -> "Supported: ${TranslationLanguages.label(config.streamLanguage)} → ${config.target.label}"

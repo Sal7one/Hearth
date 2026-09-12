@@ -65,7 +65,7 @@ class SpeechModelPackage private constructor(
             require(actual == declared + MANIFEST) { "Speech package contains undeclared files: ${actual - declared - MANIFEST}" }
             val roleJson = json.getJSONObject("roles")
             val roles = roleJson.keys().asSequence().associateWith { safeRelative(roleJson.getString(it)) }
-            val expected = if (profile.backend == SpeechBackend.QWEN3_ASR) setOf("frontend", "encoder", "decoder", "tokenizer") else setOf("model")
+            val expected = if (profile.backend == SpeechBackend.MOONSHINE) setOf("model", "encoder", "decoder") else if (profile.backend == SpeechBackend.QWEN3_ASR) setOf("frontend", "encoder", "decoder", "tokenizer") else setOf("model")
             require(roles.keys == expected) { "${profile.id} requires roles: $expected" }
             roles.forEach { (role, path) ->
                 if (role == "tokenizer") {

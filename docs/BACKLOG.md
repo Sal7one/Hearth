@@ -149,15 +149,23 @@ These are sequential feature slices; they do not block publishing working captio
 No new benchmark system, telemetry, provider redesign or broad JNI rewrite is part
 of this plan. Existing model downloads, key storage and speech bindings are reused.
 
-## Proposed OSS model expansion — RT-20 through RT-24
+## OSS model expansion — 0.5.0
 
-See [model expansion plan](oss-extension-plan.md) for the report assessment,
-current implementation gaps and per-task acceptance checklists. Proposed order:
-lightweight optional translation, Soniox paired captions, and contributor docs
-developed with those working adapters. TranslateGemma and additional runtimes
-remain optional. These tasks are not implemented and do not revive the deferred
-benchmark, telemetry or broad JNI rewrite work. The owner's request to expand
-provider support supersedes RT-11's earlier blanket deferral for these named tasks.
+See [model expansion plan](oss-extension-plan.md) and [validation-v11.md](validation-v11.md).
+
+- [x] Fix continuous Nemotron speech starving final-only translation.
+- [x] Prepare translators early; do not expire the first caption while weights load.
+- [x] RT-20: optional play-only ML Kit, explicit pack download/remove and local bridge.
+- [x] RT-21: Soniox v5 source/translation streams, encrypted BYOK and parser fixtures.
+- [x] RT-22: family-specific coverage and a concrete model contribution guide.
+- [x] RT-23: pinned TranslateGemma native family/template, download/import choice and host inference.
+- [x] RT-25: Moonshine English local profiles, Tiny phone check; Scribe v2 cloud adapter.
+- [ ] Soniox/Scribe account checks; broader pair/device coverage and TranslateGemma joint phone check.
+- [ ] RT-24: LiteRT-LM Gemma 4 and alternative Nemotron ONNX/QNN remain optional.
+
+The separate HY-MT1.5 2-bit SEQ artifact fails in the pinned native runtime; the
+publisher's required kernel is not available there. Keep it out of the catalog.
+Existing HY-MT1.5 and Hy-MT2 Q4/Q6/Q8 remain available. No benchmark/telemetry system.
 
 ## Existing work to preserve
 

@@ -1,7 +1,7 @@
 # Model expansion before and after OSS
 
 Assessment: 2026-09-12, against the current standalone source (0.4.2).
-Status: proposed implementation tasks, not newly shipped model support.
+Status: implementation update in 0.5.0; see validation-v11.md for evidence and limits.
 
 The supplied report is a useful shortlist, but did not inspect this application.
 Keep the working capture, overlay, key storage, import validation and native
@@ -27,37 +27,26 @@ Nemotron's current 28 normalized base-language choices cover 32 locales; the
 report's locale count does not mean four missing base languages. Keep recognition,
 language hints, translation directions and adaptation-only languages distinct.
 
-## Concrete gaps that affect extensibility
+## Implemented extension points in 0.5.0
 
-1. TranslationModelSpec gives every model HY language sets. Its prompt method
-   chooses between HY generations. Native TextModel rejects architectures other
-   than `hunyuan-dense` and inserts HY control tokens. A different GGUF cannot be
-   supported by adding a URL. Each family needs validated architecture, tokenizer,
-   template, output parsing, limits and language directions.
-2. StreamingSttClient emits bare String callbacks. It cannot describe an original
-   and translation independently, their revisions/finality, or unavailable source
-   text. Preserve these facts before supporting a dual-transcript provider.
-3. Source control currently distinguishes forceable versus not forceable. New
-   providers may offer a soft language hint rather than a hard restriction. Add
-   that distinction when needed; show the actual behavior in both pickers.
-4. Contribution instructions are spread across model, language and runtime docs.
-   Consolidate entry points around working adapters. Keep download size separate
-   from memory needs, code licensing separate from weights, and publisher claims
-   separate from behavior supported by the pinned adapter.
+Family-specific translation coverage/templates, separate cloud source/translation
+updates, provider-specific source-language notes and a working contribution guide
+now address the original gaps. See [model-contributing.md](model-contributing.md).
+The remaining checklists distinguish code delivery from broader device/account checks.
 
-## Proposed order and acceptance tasks
+## Implementation and remaining acceptance tasks
 
 ### RT-20 — A lightweight translation choice
 
 User benefit: local captions with translation without loading another billion-
 parameter model. This complements the smaller open-weight task RT-02/RT-03.
 
-- [ ] Add ML Kit translation as an optional play-only implementation of the
+- [x] Add ML Kit translation as an optional play-only implementation of the
   existing translator contract; keep its dependency and model download delegation
   out of foss. Translation runs locally after language packs are available.
-- [ ] Give translator descriptors explicit source/target coverage and runtime
+- [x] Give translator descriptors explicit source/target coverage and runtime
   identity; preserve existing HY IDs, preferences and verified downloads.
-- [ ] Show required language packs, download/remove actions, availability and
+- [x] Show required language packs, download/remove actions, availability and
   attribution in the existing model UI. Do not promise SDK-managed packs can be
   imported/exported like our GGUF packages or live in our public models folder.
 - [ ] Explain the English intermediate step for non-English pairs. Exercise
@@ -73,15 +62,15 @@ for non-English pairs and quality intended for casual translation.
 User benefit: one optional cloud connection can retain what was said alongside
 the translation, useful in both captions and the planned conversation screen.
 
-- [ ] Extend the caption event boundary while retaining current client adapters:
+- [x] Extend the caption event boundary while retaining current client adapters:
   session generation, stable segment identity, revision, source/translation kind,
   language and independent finality. Represent absent original text honestly.
-- [ ] Add Soniox `stt-rt-v5`, encrypted BYOK configuration, one-way translation
+- [x] Add Soniox `stt-rt-v5`, encrypted BYOK configuration, one-way translation
   and CC-only mode. Read actual language/hint semantics from its protocol.
-- [ ] Handle replaceable interim tokens and committed tokens separately. Original
+- [x] Handle replaceable interim tokens and committed tokens separately. Original
   and translation tokens are not one-to-one; use documented grouping/endpoints
   instead of inventing word alignment or translating already translated text.
-- [ ] Preserve Clear/Stop/reconnect behavior, reject old-session results, and keep
+- [x] Preserve Clear/Stop/reconnect behavior, reject old-session results, and keep
   both text streams readable with Arabic/RTL and TalkBack labels.
 - [ ] Add focused parser/lifecycle tests and a brief authorized account check;
   document any missing live verification. No automatic second paid request.
@@ -96,20 +85,20 @@ follow with Conversation; it does not require a new main-screen control now.
 User benefit: more useful community integrations and truthful model selection.
 Implement alongside RT-20/RT-21 using their real consumers, not ahead of them.
 
-- [ ] Document three contribution routes: another artifact for a supported
+- [x] Document three contribution routes: another artifact for a supported
   family; a new local runtime/family adapter; a new cloud protocol adapter.
-- [ ] Extend existing descriptors only as needed: model/runtime revisions, file
+- [x] Extend existing descriptors only as needed: model/runtime revisions, file
   roles and hashes, architecture/template, quantization, license/model-card links,
   spoken languages, language-control mode, translation directions and streaming
   kind. Unknown capabilities stay unknown; no universal multilingual boolean.
-- [ ] Derive app/overlay choices and preflight checks from the same descriptors.
+- [x] Derive app/overlay choices and preflight checks from the same descriptors.
   Explain unavailable runtime/language choices before starting capture.
-- [ ] Keep bounded, versioned import manifests backward compatible. User-provided
+- [x] Keep bounded, versioned import manifests backward compatible. User-provided
   weights must match a supported adapter; ONNX/GGUF are containers, not a universal
   inference contract. Package metadata must not load arbitrary native plugins.
-- [ ] Link one working ASR adapter, translator and cloud parser as examples, with
+- [x] Link one working ASR adapter, translator and cloud parser as examples, with
   exact files to change, rebuild commands and focused tests. Reuse current tools.
-- [ ] Correct stale local-translation documentation about Qwen's source-language
+- [x] Correct stale local-translation documentation about Qwen's source-language
   control and record licenses per exact artifact rather than all HY generations
   sharing a family-wide license statement.
 
@@ -119,9 +108,9 @@ audio capture or encrypted key storage.
 
 ### RT-23 — Optional TranslateGemma quality alternative
 
-- [ ] Prove a pinned 4B conversion works with the selected llama.cpp build before
+- [x] Prove a pinned 4B conversion works with the selected llama.cpp build before
   adding a public download choice. Keep architecture validation explicit.
-- [ ] Implement its own template/tokenizer adapter, matching the publisher's
+- [x] Implement its own template/tokenizer adapter, matching the publisher's
   structured source/target-language input. Preserve caption text as data and test
   control-token-like input, output stopping and cancellation.
 - [ ] Add exact artifact hashes, license, coverage and actual file size. Exercise
@@ -132,6 +121,21 @@ audio capture or encrypted key storage.
 The [official model card](https://huggingface.co/google/translategemma-4b-it)
 documents 55 languages and a specialized template. Parameter count alone does
 not establish phone memory consumption or latency.
+
+RT-23 evidence: the pinned conversion produced Russian → Arabic text in the native
+host smoke test. Android runtime builds and APK verification pass. Sustained joint
+phone inference remains unverified; it is a larger optional choice.
+
+### RT-25 — Additional STT choices
+
+- [x] Add Moonshine Tiny/Base English profiles through the existing sherpa runtime,
+  package validation and picker. Label fixed English and utterance-windowed decoding.
+- [x] Verify Tiny ZIP import and actual playback transcription on the phone.
+- [x] Add ElevenLabs Scribe v2 Realtime with encrypted BYOK, explicit source hints,
+  replaceable partials, final captions and the optional local translation bridge.
+- [x] Test parser deduplication/errors and routing with focused host fixtures.
+- [ ] Verify Scribe and Soniox with their own authorized live accounts.
+- [ ] Exercise Moonshine Base on a phone before making device-performance claims.
 
 ### RT-24 — Optional new runtimes after the initial expansion
 
@@ -152,15 +156,13 @@ records Nemotron ONNX re-export and QNN export, not a demonstrated win over our 
 
 ## Publication boundary
 
-Recommend completing RT-20/21/22 as small working increments; keep RT-23/24
-optional. Do not delay OSS for every provider in the report. Gemini/ElevenLabs,
-Moonshine, conditional Android speech APIs and self-hosted Voxtral/Cohere remain
-contribution candidates; this assessment has not validated all their exact current
-endpoints, artifacts or redistribution requirements.
+RT-20/21/22 implementations and RT-23/25 additions are in 0.5.0. RT-24 remains
+optional. Gemini, conditional Android speech APIs and self-hosted Voxtral/Cohere
+remain contribution candidates. Do not describe them as available in this APK.
 
 Keep the current model choices and cloud configuration simple. New providers live
 under setup; no new permanent tabs. Keep source text available when translation
 fails. Existing queue limits, stale-result suppression and Clear behavior must
 survive each integration. No promised sub-second target or large benchmark suite.
 
-This document changes no runtime, APK, supported-model list or release version.
+Current validation is recorded in [validation-v11.md](validation-v11.md).

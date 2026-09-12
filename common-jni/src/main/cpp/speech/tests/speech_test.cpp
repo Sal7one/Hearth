@@ -1,5 +1,6 @@
 #include "../speech_session.h"
 #include "../qwen_language.h"
+#include "../endpoint_budget.h"
 #include "../utterance_segmenter.h"
 #include <cassert>
 #include <iostream>
@@ -35,6 +36,15 @@ std::vector<Segment> segmented(const std::vector<float>& audio, size_t chunk) {
 }
 }
 int main() {
+    EndpointBudget endpoint(4000);
+    check(!endpoint.observe(false, false, 160000)); // silence never finalizes
+    check(!endpoint.observe(true, false, 160000));
+    check(!endpoint.observe(true, false, 223999));
+    check(endpoint.observe(true, false, 224000)); // continuous Russian needs no pause
+    check(!endpoint.observe(true, true, 224000));
+    check(!endpoint.observe(true, false, 500000)); // real final begins a new budget
+    endpoint.reset();
+    check(!endpoint.observe(true, false, 0));
     check(qwenLanguageName("auto").empty());
     check(qwenLanguageName("ru") == "Russian");
     check(qwenLanguageName("zh") == "Chinese");

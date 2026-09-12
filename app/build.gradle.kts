@@ -11,8 +11,8 @@ android {
   applicationId = "com.sal7one.transiber"
   minSdk = 28
   targetSdk = 36
-  versionCode = 10
-  versionName = "0.4.2"
+  versionCode = 11
+  versionName = "0.5.0"
   ndk { abiFilters += "arm64-v8a" }
  }
  flavorDimensions += "distribution"
@@ -32,6 +32,7 @@ android {
 kotlin { jvmToolchain(17) }
 dependencies {
  implementation(project(":common-jni"))
+ "playImplementation"("com.google.mlkit:translate:17.0.3")
  implementation(libs.androidx.core.ktx)
  implementation(libs.androidx.lifecycle.runtime.ktx)
  implementation(libs.androidx.activity.compose)

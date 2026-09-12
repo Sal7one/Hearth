@@ -6,7 +6,7 @@ caption system into a separate, focused project.
 
 ## Development backlog
 
-See the [release checklist](docs/BACKLOG.md) for six focused improvements to
+See the [model contribution guide](docs/model-contributing.md) and [release checklist](docs/BACKLOG.md) for six focused improvements to
 bubble controls, setup, downloads and smaller local translation.
 
 ## Features
@@ -15,18 +15,19 @@ bubble controls, setup, downloads and smaller local translation.
   history, pause/resume, hide/show, recenter and stop notification controls.
 - Capture another app's playback audio or the microphone. Android asks for consent
   each session. Apps can block playback capture; protected streams may be silent.
-- Local Whisper, Vosk, Qwen3-ASR and Nemotron runtimes, with verified model imports.
-- Optional fully local translation after Qwen/Nemotron, using HY-MT1.5 or Hy-MT2
-  in three quantizations each. Explicit CC languages and translation directions;
+- Local Whisper, Vosk, Qwen3-ASR, Nemotron and English Moonshine runtimes, with verified model imports.
+- Optional local translation using ML Kit language packs (play only), TranslateGemma
+  4B, or the existing HY-MT1.5/Hy-MT2 quantizations. Explicit CC languages and translation directions;
   bounded background translation, live toggle, and per-line timing.
   See [local translation setup](docs/local-translation.md).
 - Cloud STT and real-time Arabic/English translation with your own provider keys.
+  Soniox v5 adds original and translated text; Scribe v2 adds another STT choice.
   Speech-only model filtering, provider configuration, and encrypted key storage.
 - Direct HTTPS file downloads through Android DownloadManager, progress, cancellation,
   and in-app installation of translation models. New downloads use
   `Downloads/Real time transiber/models` or `files` on Android 10+. This does not include a video-site extractor.
 - A local-only `foss` variant with **no network permission**, and a network-enabled
-  `play` variant. The flavor name does not require Google Play or Play Services.
+  `play` variant. ML Kit is an optional Google SDK in the play flavor; foss excludes it.
 
 ## Build
 
@@ -66,7 +67,7 @@ or change your existing cloud provider/key under Cloud connection. Advanced setu
 retains the detailed engine controls and live cloud presets.
 
 Local Qwen and Nemotron recognize speech. The optional local text-model bridge
-translates their output with a separately imported HY-MT model. Whisper can
+translates their output with a separately selected translator. Whisper can
 translate to English. Local Marian translation requires a compatible installed
 language-pair bundle. Recognition accuracy, language coverage, capture eligibility
 and latency depend on the model, device and source. This app does not recognize

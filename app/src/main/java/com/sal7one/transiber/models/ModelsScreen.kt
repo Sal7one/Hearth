@@ -26,7 +26,7 @@ fun ModelsScreen() {
  var section by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("speech") }
  var busy by remember { mutableStateOf(false) }
  var message by remember { mutableStateOf<String?>(null) }
- LaunchedEffect(Unit) { try { config = CaptionConfigStore.config(context).first().let { if (it.engine == CaptionEngineChoice.QWEN || it.engine == CaptionEngineChoice.NEMOTRON) it else it.copy(engine = CaptionEngineChoice.QWEN) }; registry.refreshModels() } catch(e: Exception) { message = e.message ?: e.toString() } }
+ LaunchedEffect(Unit) { try { config = CaptionConfigStore.config(context).first().let { if (it.engine.speechBackend != null) it else it.copy(engine = CaptionEngineChoice.QWEN) }; registry.refreshModels() } catch(e: Exception) { message = e.message ?: e.toString() } }
  fun import(uri: android.net.Uri, directory: Boolean) {
   scope.launch {
    busy = true; message = "Copying and verifying model… Keep this screen open."
@@ -58,8 +58,8 @@ fun ModelsScreen() {
   TextButton(onClick = { section = if (section == "speech") "" else "speech" }) { Text("Speech recognition" + if (section == "speech") " −" else " +", style = MaterialTheme.typography.titleMedium) }
   if (section == "speech") {
   Text("Turns audio into original captions.", style = MaterialTheme.typography.bodySmall)
-  Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-   listOf(CaptionEngineChoice.QWEN, CaptionEngineChoice.NEMOTRON).forEach { engine ->
+  FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+   listOf(CaptionEngineChoice.QWEN, CaptionEngineChoice.NEMOTRON, CaptionEngineChoice.MOONSHINE).forEach { engine ->
     FilterChip(selected = config.engine == engine, onClick = { config = config.copy(engine = engine, modelId = "") }, label = { Text(engine.label) })
    }
   }

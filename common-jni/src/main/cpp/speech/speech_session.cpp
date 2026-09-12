@@ -36,7 +36,10 @@ SpeechConfig::SpeechConfig(const std::string& json) {
     double db = 0; const auto* threshold = j.find("silenceThresholdDb");
     if (!threshold || !threshold->asDouble(db) || !std::isfinite(db) || db < -100 || db > -10) throw std::invalid_argument("Invalid speech silenceThresholdDb");
     value.silence_threshold_db = static_cast<float>(db);
-    if (backend == "qwen3_asr") {
+    if (backend == "moonshine") {
+        if (paths[0].empty() || paths[2].empty() || paths[3].empty() || (paths[5] != "auto" && paths[5] != "en"))
+            throw std::invalid_argument("Moonshine requires tokens, encoder, merged decoder and English source");
+    } else if (backend == "qwen3_asr") {
         for (int i = 1; i <= 4; ++i) if (paths[i].empty()) throw std::invalid_argument("Qwen requires frontend, encoder, decoder and tokenizer paths");
         qwenLanguageName(paths[5]); // Validate before loading the backend.
     } else if (backend == "nemotron_3_5") {
@@ -48,7 +51,7 @@ SpeechConfig::SpeechConfig(const std::string& json) {
 
 const HearthSpeechBackend& loadBackend(const std::string& id) {
     std::string name, revision;
-    if (id == "qwen3_asr") { name = "libhearth_qwen"; revision = HEARTH_QWEN_REVISION; }
+    if (id == "qwen3_asr" || id == "moonshine") { name = "libhearth_qwen"; revision = HEARTH_QWEN_REVISION; }
     else if (id == "nemotron_3_5") { name = "libhearth_nemotron"; revision = HEARTH_NEMO_REVISION; }
     else throw std::invalid_argument("Unknown speech backend: " + id);
 #ifdef __APPLE__
@@ -64,7 +67,7 @@ const HearthSpeechBackend& loadBackend(const std::string& id) {
     if (auto it = loaded.find(id); it != loaded.end()) return *it->second;
     void* library = dlopen(name.c_str(), RTLD_NOW | RTLD_LOCAL);
     if (!library) { const char* e = dlerror(); throw std::runtime_error(e ? e : "dlopen failed without an error string"); }
-    auto entry = reinterpret_cast<HearthSpeechEntry>(dlsym(library, "hearth_speech_backend_v1"));
+    auto entry = reinterpret_cast<HearthSpeechEntry>(dlsym(library, id == "moonshine" ? "hearth_moonshine_backend_v1" : "hearth_speech_backend_v1"));
     const auto* api = entry ? entry() : nullptr;
     if (!api || api->abi_version != HEARTH_SPEECH_ABI_VERSION || api->size != sizeof(HearthSpeechBackend) ||
         !api->id || id != api->id || !api->revision || revision != api->revision || !api->create || !api->destroy ||

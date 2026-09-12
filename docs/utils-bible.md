@@ -40,3 +40,15 @@ LiveSpeechProcessor.reset is consumed by Clear captions: a serialized reset comm
 suppresses old in-flight/queued results and keeps weights loaded. Host tests cover
 reset during inference, discarded queued PCM, zero-based new audio, repeated reset
 and Stop during reset with exactly-once release.
+
+Version 0.5.0: EndpointBudget is consumed by the native Nemotron session to request
+an endpoint during uninterrupted speech. Native host checks cover silence, natural
+final/reset and decoded-sample limits. CaptionTranslationBridge prepares once and
+excludes startup loading from queue expiry; its tests exercise captions arriving
+while load takes longer than the age cap. SonioxTranscript feeds StructuredCaptionClient
+with independently revised source/translation runs; tests cover interim replacement,
+final grouping and endpoint flush. ScribeEvent feeds ElevenLabsStreamingClient;
+fixtures cover revised partials, timestamp-event deduplication and verbatim errors.
+CaptionLanguages/CaptionTranslationRoute regression tests cover forced Russian,
+fixed English and cloud direct-translation precedence. Moonshine uses the existing
+verified manifest/import utilities with Kotlin and Python missing-role/file checks.

@@ -25,11 +25,12 @@ for name, digest in record['sources'].items():
 expected_libs = {'libtransiber_translation.so','libcommon_jni.so','libc++_shared.so','libvosk.so','libonnxruntime.so','libhearth_qwen.so','libhearth_nemotron.so','libandroidx.graphics.path.so','libdatastore_shared_counter.so'}
 platform = {'liblog.so','libandroid.so','libjnigraphics.so','libm.so','libdl.so','libc.so','libz.so'}
 for flavor in ['play','foss']:
+    flavor_libs = expected_libs | ({"libtranslate_jni.so"} if flavor == "play" else set())
     apk = root/f'app/build/outputs/apk/{flavor}/qa/app-{flavor}-qa.apk'
     assert apk.is_file(), f'Build {flavor} QA first'
     with zipfile.ZipFile(apk) as archive, tempfile.TemporaryDirectory() as tmp:
         native = [n for n in archive.namelist() if n.startswith('lib/') and n.endswith('.so')]
-        assert {Path(n).name for n in native} == expected_libs, native
+        assert {Path(n).name for n in native} == flavor_libs, native
         assert all(n.startswith('lib/arm64-v8a/') for n in native)
         for name in native:
             file = Path(tmp)/Path(name).name
@@ -39,7 +40,7 @@ for flavor in ['play','foss']:
             assert aligns and min(aligns) >= 16384, f'{name}: page alignment {aligns}'
             dynamic = subprocess.check_output([readelf, '-d', file], text=True)
             needed = set(re.findall(r'\(NEEDED\).*?\[(.*?)\]', dynamic))
-            assert not needed - expected_libs - platform, (name, needed)
+            assert not needed - flavor_libs - platform, (name, needed)
             if file.name == 'libtransiber_translation.so':
                 symbols = subprocess.check_output([readelf, '--dyn-syms', '-W', file], text=True)
                 exports = [line.split()[-1] for line in symbols.splitlines() if re.search(r'\b(?:GLOBAL|WEAK)\s+DEFAULT\s+\d+\s+', line)]

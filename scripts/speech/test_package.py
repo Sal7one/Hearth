@@ -32,6 +32,17 @@ class PackageTest(unittest.TestCase):
             (root / "alias").symlink_to(root / "model.gguf")
             with self.assertRaisesRegex(ValueError, "Symbolic"):
                 packager.create_manifest(root, "nemotron-3.5-asr-0.6b", {"model": "model.gguf"})
+    def test_moonshine_requires_encoder_decoder_and_tokens(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            for name in ("tokens.txt", "encoder.ort", "decoder.ort"):
+                (root / name).write_bytes(b"fixture")
+            roles = {"model": "tokens.txt", "encoder": "encoder.ort", "decoder": "decoder.ort"}
+            result = packager.create_manifest(root, "moonshine-tiny-en-v2", roles)
+            self.assertEqual(len(result["files"]), 3)
+            (root / "decoder.ort").unlink()
+            with self.assertRaisesRegex(ValueError, "Missing assets"):
+                packager.create_manifest(root, "moonshine-tiny-en-v2", roles)
     def test_unknown_model_is_rejected(self):
         with tempfile.TemporaryDirectory() as d:
             with self.assertRaisesRegex(ValueError, "Unsupported"):

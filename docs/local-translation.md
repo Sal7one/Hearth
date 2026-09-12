@@ -1,14 +1,15 @@
 # Optional local translation bridge
 
-Qwen3-ASR and Nemotron produce original-language speech transcripts. Translation
+Qwen3-ASR, Nemotron and Moonshine produce original-language speech transcripts. Translation
 is a separate text model; it never changes the ASR model's language capabilities.
 
 ## Use
 
 1. Import/select Qwen or Nemotron in Models. Expand **CC language support** to
    see the speech model's supported languages.
-2. Under **Local translation bridge**, choose a model/quantization. Q4_K_M is
-   the smallest offered option (1080 MiB). Q6_K is 1406 MiB; Q8_0 is 1820 MiB.
+2. Under **Local translation bridge**, choose ML Kit language packs (play only),
+   an existing HY model, or TranslateGemma. HY Q4_K_M is 1080 MiB; Q6_K is
+   1406 MiB; Q8_0 is 1820 MiB. TranslateGemma Q4_K_M is 2.49 GB.
    Weights are separate from the APK. Total RAM also includes both inference
    contexts and speech weights.
 3. Download using the model button (network-enabled build), then tap **Install
@@ -18,7 +19,7 @@ is a separate text model; it never changes the ASR model's language capabilities
    Alternatively import a publisher GGUF with the matching model selected. Exact
    pinned SHA-256 and size are required. The offline build only imports local files.
    Android 9 retains app storage without requesting broad storage permission.
-4. Choose Arabic, English or Chinese as the target, then enable the bridge.
+4. Choose a target supported by the selected translator, then enable the bridge.
    CC appears immediately; translation attaches to its original line later.
    The bubble settings can disable/re-enable translation while ASR keeps running.
 5. To compare another model, import/select it. The old translator is cancelled
@@ -27,8 +28,11 @@ is a separate text model; it never changes the ASR model's language capabilities
 
 Automatic routing uses the language reported by ASR. Unknown/mixed language shows
 an actionable notice and retains CC. A user-selected spoken language overrides
-that metadata for routing; it must be the language heard, not the target. Qwen
-continues its automatic speech detection even when this routing hint is selected.
+that metadata for routing; it must be the language heard, not the target. Qwen and Nemotron also forward the selected supported language to their native
+recognizers, bypassing automatic language selection. Moonshine fixes English.
+Scribe and Deepgram can use the same bridge; choose the spoken language explicitly
+when the cloud callback has no detected-language metadata. OpenAI and Soniox
+integrated translation take priority over a remembered local bridge preference.
 
 ## Models and coverage
 
@@ -51,8 +55,9 @@ NVIDIA's eight adaptation-only locales are excluded; those need fine-tuning.
 A translation model supporting Thai does not make the shipped Nemotron model
 Thai-capable. The source/target pair is validated again for each finalized line.
 
-Hunyuan model weights use the publisher's community license, separate from this
-app and the MIT-licensed llama.cpp runtime. Read the model card before use or
+HY-MT1.5 weights use Tencent Hunyuan community terms; Hy-MT2 uses Apache-2.0.
+TranslateGemma uses Gemma terms. These are separate from this app and the
+MIT-licensed llama.cpp runtime. Read the model card before use or
 redistribution. The APK contains no model weights.
 
 ## Architecture and limits
@@ -69,11 +74,12 @@ redistribution. The APK contains no model weights.
 - Native runtime: pinned llama.cpp, CPU/two threads, 2048-token context,
   384-token output cap, 20-second decode deadline. Context is cleared per line;
   user caption content cannot inject native special tokens into the chat envelope.
-- Queue age cap: 20 seconds; caption cap: 2000 characters. Overflow, stale work,
+- Queue age cap: 20 seconds after preparation; caption cap: 2000 characters. Overflow, stale work,
   unsupported languages, load failures, empty or incomplete output are visible
   notices. Original CC continues; source text is never presented as translation.
-- Model loading is lazy on the first line that needs translation. Old model cleanup
-  finishes before the new one loads. Disabling the bridge unloads it without
+- Model preparation starts with the bridge, before the first final caption. Startup
+  loading time does not consume the first queued caption’s age budget. Old cleanup
+  finishes before the new model loads. Disabling the bridge unloads it without
   restarting Qwen/Nemotron. Switching ASR still uses the existing lifecycle.
 - `libtransiber_translation.so` keeps llama/GGML symbols private and exposes only
   its JNI entrypoints. It does not link Vosk or the ASR plugins. No HTTP server,
@@ -98,3 +104,36 @@ llama.cpp revision and adapter hashes are recorded in
 `common-jni/src/main/assets/licenses/translation/runtime-build.json`. Source
 checkouts and weights stay in ignored build directories. Normal APK builds use
 the bundled runtime and do not download llama.cpp or weights.
+
+## ML Kit language packs (play only)
+
+Expand **ML Kit**, select it, and download the spoken and target packs on Wi-Fi.
+English needs no separate pack. Download/remove actions are explicit; inference
+never starts a download. Missing packs report which languages are required while
+original captions continue. Packs stay in ML Kit-managed app storage, not the
+public GGUF download folder. The foss build excludes this SDK and option.
+
+Translation uses Google Translate on-device models. Non-English pairs pivot through
+English; this is the lightweight option, not a promise of specialist-model quality.
+See [Google’s translation guide](https://developers.google.com/ml-kit/language/translation/android)
+and [privacy disclosure](../PRIVACY.md).
+
+## TranslateGemma and smaller HY artifacts
+
+The catalog pins `mradermacher/translategemma-4b-it-GGUF` at
+`35a7486e128b19642cdc72d7b91b21ba388aaf42`, Q4_K_M. The adapter accepts `gemma3`
+explicitly and uses the conversion’s embedded TranslateGemma language instructions
+inside Gemma turn tokens. The initial adapter exposes 35 normalized language codes;
+this is not a tested quality matrix for every pair. This is a larger optional model.
+
+Existing HY-MT1.5 and Hy-MT2 Q4/Q6/Q8 artifacts remain supported. The separately
+published HY-MT1.5 2-bit SEQ artifact was tested and rejected by our pinned runtime
+(tensor offsets are incompatible). Its publisher says the required llama.cpp
+kernel is forthcoming. It is deliberately absent from the download choices;
+that failure says nothing about the existing working HY quantizations.
+
+Nemotron now requests an endpoint after four seconds of decoded speech with a
+nonempty transcript, in addition to natural endpoints. This gives the final-only
+translator bounded phrases during continuous audio. It does not guarantee four
+seconds of wall-clock latency under load. Original captions remain visible when
+translation is unsupported, slow or fails.

@@ -21,6 +21,8 @@ object CloudConfigStore {
      * Custom batch provider instead. */
     enum class SttMode(val label: String) {
         BATCH("Batch"),
+        STREAMING_SONIOX("Streaming · Soniox v5"),
+        STREAMING_ELEVENLABS("Streaming · Scribe v2"),
         STREAMING_DEEPGRAM("Streaming · Deepgram"),
         STREAMING_OPENAI("Streaming · OpenAI"),
         STREAMING_ASSEMBLYAI("Streaming · AssemblyAI"),

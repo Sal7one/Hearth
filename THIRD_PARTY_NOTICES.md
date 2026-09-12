@@ -10,7 +10,7 @@ APK assets under `licenses/`.
 | whisper.cpp + ggml | Vendored source subset of ggml-org/whisper.cpp, 19ceec8eac980403b714d603e5ca31653cd42a3f | MIT; upstream LICENSE and `licenses/whisper-LICENSE` |
 | Vosk Android | Maven com.alphacephei:vosk-android:0.3.70, arm64 shared library | Apache-2.0; `licenses/vosk/`, Kaldi and OpenFst notices (OpenFst in `licenses/speech/openfst/`) |
 | ONNX Runtime | Maven com.microsoft.onnxruntime:onnxruntime-android:1.20.0 | MIT and upstream third-party notices in `licenses/onnxruntime-1.20.0/` |
-| Qwen speech adapter | sherpa-onnx 210f340bcfdfd5b9ad6b24245e77a934d6c28f1b; CPU ONNX Runtime 1.27.1 | Apache-2.0 and dependency notices in `licenses/speech/` |
+| Qwen / Moonshine speech adapter | sherpa-onnx 210f340bcfdfd5b9ad6b24245e77a934d6c28f1b; CPU ONNX Runtime 1.27.1 | Apache-2.0 and dependency notices in `licenses/speech/` |
 | Nemotron speech adapter | nemo-speech ffa38cb2408f1e832a36d46fef5e3e1e80d07e6c | MIT; GGML, SentencePiece and other notices in `licenses/speech/` |
 | C++ shared runtime | Android NDK 27.0.12077973 | NDK NOTICE / NOTICE.toolchain in assets |
 | AndroidX / Compose / Material | Version catalog and app Gradle dependencies | Apache-2.0; `licenses/android/Apache-2.0.txt` |
@@ -31,3 +31,11 @@ publisher's terms. Model source links are in docs/models.md.
 Upstream sources: https://github.com/ggml-org/whisper.cpp,
 https://github.com/alphacep/vosk-api, https://github.com/microsoft/onnxruntime,
 https://github.com/k2-fsa/sherpa-onnx. Further pinned sources are in the runtime build script.
+
+Optional play-only translation: `com.google.mlkit:translate:17.0.3`, including
+`libtranslate_jni.so`, under [Google ML Kit terms](https://developers.google.com/ml-kit/terms).
+Downloaded packs are not redistributed in this repository or APK. Moonshine v2
+English weights use their package’s MIT license; other Moonshine artifacts may
+differ. TranslateGemma weights use Gemma terms, HY-MT1.5 uses Tencent Hunyuan
+community terms, and Hy-MT2 uses Apache-2.0. The translation runtime is llama.cpp
+(MIT); exact revision and adapter hashes are in `licenses/translation/runtime-build.json`.

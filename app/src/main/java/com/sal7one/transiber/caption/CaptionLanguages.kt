@@ -26,6 +26,7 @@ object CaptionLanguages {
 
     fun source(config: CaptionOverlayConfig, cloudMode: SttMode,
         model: CaptionLanguageModel = CaptionLanguageModel(config.modelId)): CaptionLanguageChoices = when (config.engine) {
+        CaptionEngineChoice.MOONSHINE -> CaptionLanguageChoices(setOf("en"), "Moonshine · This model recognizes English only. No automatic language detection or override is needed.")
         CaptionEngineChoice.NEMOTRON, CaptionEngineChoice.QWEN -> {
             val profile = if (config.engine == CaptionEngineChoice.NEMOTRON) SpeechProfile.NEMOTRON_3_5_ASR_0_6B
                 else if (model.id == SpeechProfile.QWEN3_ASR_1_7B.id) SpeechProfile.QWEN3_ASR_1_7B else SpeechProfile.QWEN3_ASR_0_6B
@@ -43,6 +44,8 @@ object CaptionLanguages {
             else -> automatic(model.label.ifBlank { "Whisper" }, "Language capabilities are unavailable until a supported model is imported. No language override will be sent.")
         }
         CaptionEngineChoice.CLOUD -> when {
+            cloudMode == SttMode.STREAMING_SONIOX -> hinted("Soniox v5", sonioxCodes, "Select a language hint, or Auto. A hint guides recognition; it does not prohibit other languages.")
+            cloudMode == SttMode.STREAMING_ELEVENLABS -> hinted("Scribe v2 Realtime", scribeCodes, "Select a spoken-language hint, or Auto. Select a source explicitly when using the local translation bridge.")
             cloudMode == SttMode.STREAMING_ASSEMBLYAI -> automatic("AssemblyAI streaming", "Automatic source language only in this connection. There is no manual language control.")
             cloudMode == SttMode.STREAMING_OPENAI && config.mode == CaptionMode.TRANSLATE -> automatic("OpenAI live translation", "Detects the spoken language automatically. This translation connection does not accept a source-language override.")
             cloudMode == SttMode.BATCH && config.mode == CaptionMode.TRANSLATE -> automatic(model.label.ifBlank { "Cloud audio translation" }, "The audio-translation endpoint detects the source automatically; it accepts no language override.")
@@ -64,15 +67,23 @@ object CaptionLanguages {
     // Nova-3 base codes, publisher documentation checked 2026-09-12. Locale variants remain provider-specific.
     val deepgramCodes = "af ar hy as be bn bs bg ca zh hr cs da nl en et fi fr ka de el gu he hi hu id it ja kn kk ko lv lt mk ms mr mn ne no ps fa pl pt pa ro ru sr sk sl es sv tl ta te th tr uk ur vi".split(' ').toSet()
 
+    val sonioxCodes = "af sq ar az eu be bn bs bg ca zh hr cs da nl en et fi fr gl de el gu he hi hu id it ja kn kk ko lv lt mk ms ml mr no fa pl pt pa ro ru sr sk sl es sw sv tl ta te th tr uk ur vi cy".split(' ').toSet()
+    // Initial adapter language choices verified in Scribe's supported language list.
+    val scribeCodes = setOf("en", "ar", "ru", "zh", "ja", "ko", "fr", "de", "es", "pt", "it", "hi", "tr", "uk", "nl", "pl", "sv", "fi", "da", "vi", "id", "ms", "th")
+
     fun target(config: CaptionOverlayConfig, cloudMode: SttMode): CaptionLanguageChoices = when {
-        config.engine.speechBackend != null -> {
+        config.engine == CaptionEngineChoice.CLOUD && cloudMode == SttMode.STREAMING_SONIOX ->
+            CaptionLanguageChoices(sonioxCodes, "Soniox v5 integrated translation; original and translated text are retained separately.")
+        config.engine == CaptionEngineChoice.CLOUD && cloudMode == SttMode.STREAMING_OPENAI ->
+            CaptionLanguageChoices(setOf("en", "ar", "zh"), "Available output languages in this app’s live cloud translation setup.")
+        captionTranslationRoute(config.copy(mode = CaptionMode.TRANSLATE), cloudMode) == CaptionTranslationRoute.LOCAL_TEXT && config.localTranslationModelId == com.sal7one.transiber.translation.TranslationOptions.ML_KIT ->
+            CaptionLanguageChoices(com.sal7one.transiber.translation.TranslationOptions.mlKitCodes, "ML Kit · download spoken and target language packs in Models. Non-English pairs translate through English.")
+        config.engine.speechBackend != null || captionTranslationRoute(config.copy(mode = CaptionMode.TRANSLATE), cloudMode) == CaptionTranslationRoute.LOCAL_TEXT -> {
             val spec = TranslationCatalog.models.firstOrNull { it.id == config.localTranslationModelId }
             CaptionLanguageChoices(spec?.targetLanguages ?: TranslationLanguages.hyLanguages,
                 if (spec == null) "Choose a local translation model in Setup to translate into these languages."
                 else "${spec.label}: ${spec.targetLanguages.size} output languages. The spoken language must also be supported by this translation model.")
         }
-        config.engine == CaptionEngineChoice.CLOUD && cloudMode == SttMode.STREAMING_OPENAI ->
-            CaptionLanguageChoices(setOf("en", "ar", "zh"), "Available output languages in this app’s live cloud translation setup.")
         config.engine == CaptionEngineChoice.WHISPER || (config.engine == CaptionEngineChoice.CLOUD && cloudMode == SttMode.BATCH) ->
             CaptionLanguageChoices(setOf("en", "ar"), "English uses audio translation. Arabic needs the separate English → Arabic translation model.")
         else -> CaptionLanguageChoices(setOf("ar"), "This path needs English speech and the English → Arabic translation model. Other speech stays CC-only.")

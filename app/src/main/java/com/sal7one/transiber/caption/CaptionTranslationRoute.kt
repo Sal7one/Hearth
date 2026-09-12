@@ -14,8 +14,10 @@ internal enum class CaptionTranslationRoute(val sttToEnglish: Boolean = false, v
 
 internal fun captionTranslationRoute(config: CaptionOverlayConfig, cloudMode: SttMode): CaptionTranslationRoute {
     if (config.mode == CaptionMode.CAPTIONS) return CaptionTranslationRoute.ORIGINAL
+    if (config.engine == CaptionEngineChoice.CLOUD && cloudMode in setOf(SttMode.STREAMING_OPENAI, SttMode.STREAMING_SONIOX)) return CaptionTranslationRoute.LIVE_TARGET
+    if (config.localTranslationEnabled && config.localTranslationModelId.isNotBlank() &&
+        (config.engine.speechBackend != null || (config.engine == CaptionEngineChoice.CLOUD && cloudMode != SttMode.BATCH))) return CaptionTranslationRoute.LOCAL_TEXT
     if (config.engine.speechBackend != null) return if (config.localTranslationEnabled) CaptionTranslationRoute.LOCAL_TEXT else CaptionTranslationRoute.UNSUPPORTED
-    if (config.engine == CaptionEngineChoice.CLOUD && cloudMode == SttMode.STREAMING_OPENAI) return CaptionTranslationRoute.LIVE_TARGET
     val whisperTask = config.engine == CaptionEngineChoice.WHISPER ||
         (config.engine == CaptionEngineChoice.CLOUD && cloudMode == SttMode.BATCH)
     return when {

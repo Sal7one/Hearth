@@ -73,7 +73,7 @@ internal fun LocalSpeechSetup(
             "hearth-speech.json at its root. Import copies and verifies the files, then selects original-language CC. " +
             "Raw Hugging Face checkpoints, arbitrary ONNX files and bare GGUF files are not complete packages.",
             style = MaterialTheme.typography.bodySmall)
-        Text("Qwen: roughly 1 GB for the 0.6B package; 1.7B needs more memory. Nemotron: roughly 742 MB. " +
+        Text("Moonshine Tiny English: roughly 45 MB installed. Qwen: roughly 1 GB for 0.6B. Nemotron: roughly 742 MB. " +
             "Keep at least twice the package size free for the download and installation. ASR speed depends on your phone.",
             style = MaterialTheme.typography.bodySmall)
         }
@@ -88,7 +88,7 @@ internal fun LocalSpeechSetup(
                 label = { Text(model.profile.label + " · " + model.id.takeLast(6)) })
         }
         var expandedLanguages by remember { mutableStateOf(false) }
-        val profile = if (backend == com.sal7one.common_jni.speech.SpeechBackend.QWEN3_ASR)
+        val profile = if (backend == com.sal7one.common_jni.speech.SpeechBackend.MOONSHINE) com.sal7one.common_jni.speech.SpeechProfile.MOONSHINE_TINY_EN else if (backend == com.sal7one.common_jni.speech.SpeechBackend.QWEN3_ASR)
             com.sal7one.common_jni.speech.SpeechProfile.QWEN3_ASR_0_6B else com.sal7one.common_jni.speech.SpeechProfile.NEMOTRON_3_5_ASR_0_6B
         val ccLanguages = profile.capabilities.sourceLanguages
         TextButton(onClick = { expandedLanguages = !expandedLanguages }) { Text("CC language support · ${ccLanguages.size} languages") }
@@ -96,7 +96,7 @@ internal fun LocalSpeechSetup(
             Text(ccLanguages.sortedBy(com.sal7one.common_jni.translation.TranslationLanguages::label).joinToString(", ") {
                 com.sal7one.common_jni.translation.TranslationLanguages.label(it)
             })
-            Text(if (backend == com.sal7one.common_jni.speech.SpeechBackend.QWEN3_ASR)
+            Text(if (backend == com.sal7one.common_jni.speech.SpeechBackend.MOONSHINE) "English only; short utterance decoding. Translation requires a separate translator." else if (backend == com.sal7one.common_jni.speech.SpeechBackend.QWEN3_ASR)
                 "Publisher coverage: 30 languages plus Chinese dialects; Auto or an explicit spoken language. Recognition, not translation."
             else "Publisher coverage: 28 languages / 32 locales usable without fine-tuning. Mandarin and 12 other languages are broad-coverage tier; quality varies. Eight adaptation-only locales are excluded.")
         }

@@ -2,15 +2,18 @@ package com.sal7one.common_jni.speech
 
 /** Runtime identity is separate from model format: arbitrary ONNX/GGUF files are not ASR models. */
 enum class SpeechBackend(val id: String) {
-    QWEN3_ASR("qwen3_asr"), NEMOTRON_3_5("nemotron_3_5")
+    MOONSHINE("moonshine"), QWEN3_ASR("qwen3_asr"), NEMOTRON_3_5("nemotron_3_5")
 }
 enum class SpeechStreamingKind { UTTERANCE_WINDOWED, CACHE_AWARE }
 enum class SpeechProfile(val id: String, val backend: SpeechBackend) {
+    MOONSHINE_TINY_EN("moonshine-tiny-en-v2", SpeechBackend.MOONSHINE),
+    MOONSHINE_BASE_EN("moonshine-base-en-v2", SpeechBackend.MOONSHINE),
     QWEN3_ASR_0_6B("qwen3-asr-0.6b", SpeechBackend.QWEN3_ASR),
     QWEN3_ASR_1_7B("qwen3-asr-1.7b", SpeechBackend.QWEN3_ASR),
     NEMOTRON_3_5_ASR_0_6B("nemotron-3.5-asr-0.6b", SpeechBackend.NEMOTRON_3_5);
 
     val capabilities: SpeechCapabilities get() = when (backend) {
+        SpeechBackend.MOONSHINE -> SpeechCapabilities(SpeechStreamingKind.UTTERANCE_WINDOWED, false, setOf("en"), setOf("en"), true)
         SpeechBackend.QWEN3_ASR -> SpeechCapabilities(
             streaming = SpeechStreamingKind.UTTERANCE_WINDOWED,
             partialResults = false, sourceLanguages = QWEN_LANGUAGES, sourceLanguageHints = QWEN_LANGUAGES,
@@ -55,7 +58,7 @@ data class SpeechOptions(
     val numThreads: Int? = null,
     /** Nemotron lookahead: 0/1/3/6/13 frames, each 80ms. Not total caption latency. */
     val rightContext: Int = 3,
-    /** Qwen's bounded utterance length. Cache-aware Nemotron retains its own streaming state. */
+    /** Maximum utterance window; Nemotron forces a decoder endpoint while retaining loaded weights. */
     val maxUtteranceMs: Int = 4000,
     val silenceMs: Int = 600,
     val silenceThresholdDb: Float = -45f,

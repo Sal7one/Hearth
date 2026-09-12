@@ -1,5 +1,6 @@
 #include "backend_guard.h"
 #include "../backend_versions.h"
+#include "../endpoint_budget.h"
 #include "nemo_speech/asr.h"
 #include <memory>
 
@@ -18,7 +19,8 @@ struct Nemo {
     nemo_speech_asr_result* result = nullptr;
     std::string language;
     int silenceMs;
-    explicit Nemo(const HearthSpeechConfig& c) : language(c.language), silenceMs(c.silence_ms) {
+    EndpointBudget endpointBudget;
+    explicit Nemo(const HearthSpeechConfig& c) : language(c.language), silenceMs(c.silence_ms), endpointBudget(c.max_utterance_ms) {
         nemo_speech_asr_backend_config backend{}; backend.size = sizeof(backend); backend.gpu = -1;
         nemo_speech_asr_model_config model{}; model.size = sizeof(model); model.path = c.model;
         nemo_speech_asr_streaming_config streaming{}; streaming.size = sizeof(streaming);
@@ -39,6 +41,7 @@ struct Nemo {
         result = nullptr; stream = nullptr; recognizer = nullptr;
     }
     void start() {
+        endpointBudget.reset();
         auto opts = nemo_speech_asr_recognition_options_default();
         opts.language_code = language.c_str(); opts.interim_results = true;
         opts.enable_word_time_offsets = false; opts.stop_history_eou_ms = silenceMs;
@@ -68,6 +71,8 @@ int next(void* p, HearthSpeechResult* out, int* available) { return guarded([&] 
     *out = {sizeof(*out), hasText ? nemo_speech_asr_result_transcript(n.result, 0) : "", lang,
         nemo_speech_asr_result_is_final(n.result) ? 1 : 0,
         static_cast<int64_t>(nemo_speech_asr_result_audio_processed(n.result) * 16000.0)};
+    if (n.endpointBudget.observe(out->text && *out->text, out->is_final != 0, out->audio_end_samples))
+        check(nemo_speech_asr_stream_force_endpoint(n.stream));
 }); }
 int finish(void* p) { return guarded([&] { check(nemo_speech_asr_stream_finish(static_cast<Nemo*>(p)->stream)); }); }
 int reset(void* p) { return guarded([&] {

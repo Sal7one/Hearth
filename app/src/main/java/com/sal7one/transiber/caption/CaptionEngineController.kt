@@ -249,6 +249,7 @@ class CaptionEngineController(
     private val translationDispatcher: CoroutineDispatcher =
         Dispatchers.Default.limitedParallelism(1)
 
+    private val cloudCaptionIds = linkedMapOf<Long, Pair<Long, Long>>()
     private var localTranslationBridge: com.sal7one.common_jni.translation.CaptionTranslationBridge? = null
     private var translationCleanup: Job? = null
     private var translationGeneration = 0L
@@ -364,6 +365,7 @@ class CaptionEngineController(
             translationScope = CoroutineScope(SupervisorJob() + translationDispatcher)
             audioChannel.close()
             audioChannel = Channel(capacity = 4, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+            cloudCaptionIds.clear()
             _state.value = State(status = Status.LOADING_MODEL)
             if (config.paused) return@launch
             loadMutex.withLock {
@@ -470,6 +472,9 @@ class CaptionEngineController(
             scope = scope, target = config.target.languageTag,
             open = {
                 pendingCleanup?.join()
+                if (config.localTranslationModelId == com.sal7one.transiber.translation.TranslationOptions.ML_KIT) {
+                    com.sal7one.transiber.translation.PlatformTranslation.open()
+                } else {
                 val spec = com.sal7one.common_jni.translation.TranslationCatalog.find(config.localTranslationModelId)
                 val models = com.sal7one.transiber.translation.LocalTranslationModels(java.io.File(context.filesDir, "translation-models"))
                 scope.launch { if (generation == translationGeneration) _state.update {
@@ -477,6 +482,7 @@ class CaptionEngineController(
                 } }
                 CaptionDiagnostics.record(context, "${spec.label}: loading local translation model")
                 com.sal7one.common_jni.translation.LocalTranslationSession.open(models.file(spec), spec)
+                }
             },
             result = { id, text, latency ->
                 scope.launch {
@@ -486,6 +492,9 @@ class CaptionEngineController(
                     }
                 }
             },
+            progress = { message -> scope.launch {
+                if (generation == translationGeneration) _state.update { it.copy(localTranslationMetrics = message) }
+            } },
             notice = { message -> scope.launch {
                 if (generation == translationGeneration) _state.update { it.copy(translationNotice = message) }
             } },
@@ -495,7 +504,8 @@ class CaptionEngineController(
     private fun enqueueLocalTranslation(lineId: Long, text: String, sourceLanguage: String?) {
         if (activeRoute != CaptionTranslationRoute.LOCAL_TEXT) return
         // Explicit user source overrides uncertain/mixed recognition metadata; never use target as source.
-        val source = CaptionLanguages.effectiveSource(currentConfig, com.sal7one.transiber.byok.CloudConfigStore.SttMode.BATCH)
+        val source = CaptionLanguages.effectiveSource(currentConfig, if (currentConfig.engine == CaptionEngineChoice.CLOUD)
+            com.sal7one.transiber.byok.CloudConfigStore.sttMode(context) else com.sal7one.transiber.byok.CloudConfigStore.SttMode.BATCH)
             .takeUnless { it == "auto" } ?: sourceLanguage
         localTranslationBridge?.offer(lineId, text, source)
     }
@@ -560,6 +570,13 @@ class CaptionEngineController(
             if (sttMode != com.sal7one.transiber.byok.CloudConfigStore.SttMode.BATCH) {
                 // TRUE STREAMING: WebSocket interim results per provider.
                 val client: com.sal7one.transiber.byok.StreamingSttClient = when (sttMode) {
+                    com.sal7one.transiber.byok.CloudConfigStore.SttMode.STREAMING_SONIOX ->
+                        com.sal7one.transiber.byok.SonioxStreamingClient(
+                            ApiKeyStore.getSonioxKey(context).ifBlank { error("Soniox API key missing — add it in cloud settings") },
+                            spokenLanguage, config.target.languageTag.takeIf { config.mode == CaptionMode.TRANSLATE })
+                    com.sal7one.transiber.byok.CloudConfigStore.SttMode.STREAMING_ELEVENLABS ->
+                        com.sal7one.transiber.byok.ElevenLabsStreamingClient(
+                            ApiKeyStore.getElevenLabsKey(context).ifBlank { error("ElevenLabs API key missing — add it in cloud settings") }, spokenLanguage)
                     com.sal7one.transiber.byok.CloudConfigStore.SttMode.STREAMING_DEEPGRAM ->
                         com.sal7one.transiber.byok.DeepgramStreamingClient(
                             language = if (spokenLanguage == "auto") "multi" else spokenLanguage,
@@ -768,7 +785,7 @@ class CaptionEngineController(
                 delay(
                     when (config.effectiveEngine) {
                         CaptionEngineChoice.VOSK -> 500L
-                        CaptionEngineChoice.CLOUD, CaptionEngineChoice.QWEN, CaptionEngineChoice.NEMOTRON -> 100L
+                        CaptionEngineChoice.CLOUD, CaptionEngineChoice.MOONSHINE, CaptionEngineChoice.QWEN, CaptionEngineChoice.NEMOTRON -> 100L
                         CaptionEngineChoice.WHISPER -> 700L
                     },
                 )
@@ -816,6 +833,7 @@ class CaptionEngineController(
                     reportError(cloudError)
                 }
                 if (_state.value.status == Status.ERROR) break
+                snapshot?.captions?.forEach { updateCloudCaption(it) }
                 snapshot?.finals?.forEach { final -> promoteFinal(final) }
                 (current as? RemoteWhisperEngine)?.takeFinals()?.forEach { final -> promoteFinal(final) }
 
@@ -835,7 +853,7 @@ class CaptionEngineController(
                     _state.update { current ->
                         current.copy(
                             partial = if (config.showPartial && !config.paused) partial else "",
-                            partialTranslation = null,
+                            partialTranslation = snapshot?.translation?.takeIf { it.isNotBlank() && config.showPartial },
                         )
                     }
                     continue
@@ -967,6 +985,26 @@ class CaptionEngineController(
      * the utterance boundaries). Echo guard + speak + Marian kick-off
      * mirror promotePartial.
      */
+    private fun updateCloudCaption(update: com.sal7one.transiber.byok.CloudCaptionUpdate) {
+        val known = cloudCaptionIds[update.id]
+        if (known != null && update.revision <= known.second) return
+        val lineId = known?.first ?: nextLineId.getAndIncrement()
+        cloudCaptionIds[update.id] = lineId to update.revision
+        while (cloudCaptionIds.size > MAX_HISTORY) cloudCaptionIds.remove(cloudCaptionIds.keys.first())
+        _state.update { state ->
+            val old = state.history.firstOrNull { it.id == lineId }
+            val line = if (update.translated) CaptionLine(original = "", translation = update.text, id = lineId)
+                else CaptionLine(original = update.text, translation = old?.translation, id = lineId)
+            state.copy(history = if (old == null) (state.history + line).takeLast(MAX_HISTORY)
+                else state.history.map { if (it.id == lineId) line else it })
+        }
+        lastActivityMs = System.currentTimeMillis()
+        if (update.complete) {
+            if (!update.translated) enqueueLocalTranslation(lineId, update.text, update.language)
+            if (update.translated || activeRoute == CaptionTranslationRoute.ORIGINAL) speakLine(currentConfig, update.text)
+        }
+    }
+
     private fun promoteFinal(finalText: String, sourceLanguage: String? = null) {
         val text = finalText.trim()
         if (text.isEmpty()) return

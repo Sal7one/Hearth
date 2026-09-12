@@ -112,7 +112,7 @@ fun CaptionScreen(
     val chosenEngineReady = when (config.effectiveEngine) {
         CaptionEngineChoice.WHISPER -> whisperModels > 0
         CaptionEngineChoice.VOSK -> voskModels > 0
-        CaptionEngineChoice.QWEN, CaptionEngineChoice.NEMOTRON -> localSpeechModels.any {
+        CaptionEngineChoice.MOONSHINE, CaptionEngineChoice.QWEN, CaptionEngineChoice.NEMOTRON -> localSpeechModels.any {
             it.profile.backend == config.effectiveEngine.speechBackend && (config.modelId.isBlank() || it.id == config.modelId)
         }
         // NETWORK PATH (BYOK, play distribution only — see byok/ByokPolicy):
@@ -137,7 +137,7 @@ fun CaptionScreen(
     val route = captionTranslationRoute(config, CloudConfigStore.sttMode(context))
     val liveCloudTranslation = route == CaptionTranslationRoute.LIVE_TARGET
     val translationReady = when (route) {
-        CaptionTranslationRoute.LOCAL_TEXT -> localTranslationInstalled
+        CaptionTranslationRoute.LOCAL_TEXT -> localTranslationInstalled || (config.localTranslationModelId == com.sal7one.transiber.translation.TranslationOptions.ML_KIT && com.sal7one.transiber.translation.PlatformTranslation.available)
         CaptionTranslationRoute.UNSUPPORTED -> false
         CaptionTranslationRoute.ENGLISH_PIVOT, CaptionTranslationRoute.ENGLISH_TEXT -> translationModelImported && MarianTranslatorEngine.isRuntimeAvailable
         else -> true
@@ -313,7 +313,7 @@ fun CaptionScreen(
                     model.isValid && model.engineType == when (config.effectiveEngine) {
                         CaptionEngineChoice.WHISPER -> ModelEngineType.WHISPER
                         CaptionEngineChoice.VOSK -> ModelEngineType.VOSK
-                        CaptionEngineChoice.CLOUD, CaptionEngineChoice.QWEN, CaptionEngineChoice.NEMOTRON -> ModelEngineType.WHISPER // unreachable
+                        CaptionEngineChoice.CLOUD, CaptionEngineChoice.MOONSHINE, CaptionEngineChoice.QWEN, CaptionEngineChoice.NEMOTRON -> ModelEngineType.WHISPER // unreachable
                     }
                 }
             }
@@ -417,12 +417,12 @@ fun CaptionScreen(
                     when (config.effectiveEngine) {
                         CaptionEngineChoice.WHISPER -> "$whisperModels Whisper model(s) imported"
                         CaptionEngineChoice.VOSK -> "$voskModels Vosk model(s) imported"
-                        CaptionEngineChoice.QWEN, CaptionEngineChoice.NEMOTRON -> "Verified local speech package imported"
+                        CaptionEngineChoice.MOONSHINE, CaptionEngineChoice.QWEN, CaptionEngineChoice.NEMOTRON -> "Verified local speech package imported"
                         CaptionEngineChoice.CLOUD -> "Cloud captions ready — API key stored"
                     }
                 } else {
                     when (config.effectiveEngine) {
-                        CaptionEngineChoice.QWEN, CaptionEngineChoice.NEMOTRON -> "Use Import model ZIP in the model setup above."
+                        CaptionEngineChoice.MOONSHINE, CaptionEngineChoice.QWEN, CaptionEngineChoice.NEMOTRON -> "Use Import model ZIP in the model setup above."
                         CaptionEngineChoice.CLOUD ->
                             "Paste your API key in the 'Cloud engine · your API key' box above."
                         else ->

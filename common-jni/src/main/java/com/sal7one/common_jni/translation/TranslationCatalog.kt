@@ -15,6 +15,8 @@ object TranslationLanguages {
         "zh" -> "Chinese"; "yue" -> "Cantonese"; "fil" -> "Filipino"
         else -> Locale.forLanguageTag(code).getDisplayLanguage(Locale.ENGLISH).ifBlank { code }
     }
+    // Initial supported adapter coverage; not a claim of an exhaustive model quality matrix.
+    val gemmaLanguages = "ar zh en fr de es pt ru ja ko hi it nl pl tr uk vi id th sv da fi cs ro el hu he fa bg hr sk sl et lv lt".split(' ').toSet()
     val hyLanguages: Set<String> = "zh en fr pt es ja tr ru ar ko th it de vi ms id fil hi pl cs nl km my fa gu ur te mr he bn ta uk bo kk mn ug yue".split(' ').toSet()
 }
 
@@ -22,8 +24,9 @@ data class TranslationModelSpec(
     val id: String, val label: String, val family: String, val quantization: String,
     val bytes: Long, val sha256: String, val repo: String, val revision: String, val fileName: String,
 ) {
-    val sourceLanguages get() = TranslationLanguages.hyLanguages
-    val targetLanguages get() = TranslationLanguages.hyLanguages
+    val sourceLanguages get() = if (family == "translategemma") TranslationLanguages.gemmaLanguages else TranslationLanguages.hyLanguages
+    val targetLanguages get() = sourceLanguages
+    val license get() = when (family) { "translategemma" -> "Gemma terms"; "hy-mt2" -> "Apache-2.0"; else -> "Tencent Hunyuan community license" }
     val directions: Set<TranslationDirection> get() = sourceLanguages.flatMap { a -> targetLanguages.filter { it != a }.map { TranslationDirection(a, it) } }.toSet()
     val url get() = "https://huggingface.co/$repo/resolve/$revision/$fileName"
     val modelCard get() = "https://huggingface.co/$repo"
@@ -32,6 +35,14 @@ data class TranslationModelSpec(
         require(text.isNotBlank() && text.length <= 2000) { "Local translation accepts 1–2000 caption characters per line" }
         require(supports(source, target)) { "$label does not support $source → $target" }
         val to = TranslationLanguages.label(TranslationLanguages.normalize(target))
+        if (family == "translategemma") {
+            val from = TranslationLanguages.label(TranslationLanguages.normalize(source))
+            val sourceCode = TranslationLanguages.normalize(source)
+            val targetCode = TranslationLanguages.normalize(target)
+            return "You are a professional $from ($sourceCode) to $to ($targetCode) translator. Your goal is to accurately convey the meaning and " +
+                "nuances of the original $from text while adhering to $to grammar, vocabulary, and cultural sensitivities.\n" +
+                "Produce only the $to translation, without any additional explanations or commentary. Please translate the following $from text into $to:\n\n\n${text.trim()}"
+        }
         // Publisher's plain translation instruction; chat envelope belongs to the runtime.
         return if (family == "hy-mt2") "Translate the following text into $to. Note that you should only output the translated result without any additional explanation:\n\n$text"
         else if (TranslationLanguages.normalize(source) == "zh" || TranslationLanguages.normalize(target) == "zh")
@@ -41,6 +52,8 @@ data class TranslationModelSpec(
 }
 object TranslationCatalog {
     val models = listOf(
+        TranslationModelSpec("translategemma-4b-q4", "TranslateGemma 4B · Q4_K_M", "translategemma", "Q4_K_M", 2489909760,
+            "81200d03e843d2ec1ece6eeafe7d13cb6e5211e1fcd336ade55790b683a08330", "mradermacher/translategemma-4b-it-GGUF", "35a7486e128b19642cdc72d7b91b21ba388aaf42", "translategemma-4b-it.Q4_K_M.gguf"),
         TranslationModelSpec("hy-mt15-q4", "HY-MT1.5 1.8B · Q4_K_M", "hy-mt1.5", "Q4_K_M", 1133080512,
             "4383ac0c3c8e476de98ff979c2a3f069f8c4fb385e7860cf2d28da896cc477c7", "tencent/HY-MT1.5-1.8B-GGUF", "265b2e615a7dc9b06c435dc878829ad99a512ba2", "HY-MT1.5-1.8B-Q4_K_M.gguf"),
         TranslationModelSpec("hy-mt15-q6", "HY-MT1.5 1.8B · Q6_K", "hy-mt1.5", "Q6_K", 1474785216,
