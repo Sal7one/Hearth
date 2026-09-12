@@ -70,7 +70,7 @@ translates their output with a separately imported HY-MT model. Whisper can
 translate to English. Local Marian translation requires a compatible installed
 language-pair bundle. Recognition accuracy, language coverage, capture eligibility
 and latency depend on the model, device and source. This app does not recognize
-sign language. See [model setup](docs/models.md) and [device checks](docs/device-checks.md).
+sign language. See [model setup](docs/models.md), [language pickers and extension guide](docs/language-pickers.md), and [device checks](docs/device-checks.md).
 
 ## Privacy and project scope
 

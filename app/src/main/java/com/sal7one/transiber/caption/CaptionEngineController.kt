@@ -491,7 +491,8 @@ class CaptionEngineController(
     private fun enqueueLocalTranslation(lineId: Long, text: String, sourceLanguage: String?) {
         if (activeRoute != CaptionTranslationRoute.LOCAL_TEXT) return
         // Explicit user source overrides uncertain/mixed recognition metadata; never use target as source.
-        val source = currentConfig.streamLanguage.takeUnless { it == "auto" } ?: sourceLanguage
+        val source = CaptionLanguages.effectiveSource(currentConfig, com.sal7one.transiber.byok.CloudConfigStore.SttMode.BATCH)
+            .takeUnless { it == "auto" } ?: sourceLanguage
         localTranslationBridge?.offer(lineId, text, source)
     }
 
@@ -508,6 +509,7 @@ class CaptionEngineController(
         activeRoute = captionTranslationRoute(config,
             if (config.engine == CaptionEngineChoice.CLOUD) com.sal7one.transiber.byok.CloudConfigStore.sttMode(context)
             else com.sal7one.transiber.byok.CloudConfigStore.SttMode.BATCH)
+        val spokenLanguage = CaptionLanguages.effectiveSource(config, com.sal7one.transiber.byok.CloudConfigStore.sttMode(context))
         if (config.effectiveEngine.speechBackend != null) {
             val models = LocalSpeechModels(java.io.File(context.filesDir, "speech-models"))
             val model = models.select(config.effectiveEngine, config.modelId)
@@ -520,7 +522,7 @@ class CaptionEngineController(
             val session = runtime.open(
                 model.root,
                 com.sal7one.common_jni.speech.SpeechOptions(
-                    sourceLanguage = if (config.effectiveEngine == CaptionEngineChoice.QWEN) "auto" else config.streamLanguage,
+                    sourceLanguage = spokenLanguage,
                 ),
                 onStage = { stage -> CaptionDiagnostics.record(context, "${model.profile.label}: $stage") },
             )
@@ -556,6 +558,7 @@ class CaptionEngineController(
                 val client: com.sal7one.transiber.byok.StreamingSttClient = when (sttMode) {
                     com.sal7one.transiber.byok.CloudConfigStore.SttMode.STREAMING_DEEPGRAM ->
                         com.sal7one.transiber.byok.DeepgramStreamingClient(
+                            language = if (spokenLanguage == "auto") "multi" else spokenLanguage,
                             apiKey = ApiKeyStore.getDeepgramKey(context).ifBlank {
                                 throw IllegalStateException(
                                     "Deepgram API key missing — add it in the cloud settings",
@@ -581,7 +584,7 @@ class CaptionEngineController(
                             )
                         } else {
                             com.sal7one.transiber.byok.OpenAiRealtimeClient(
-                                sourceLanguage = config.streamLanguage,
+                                sourceLanguage = spokenLanguage,
                                 apiKey = ApiKeyStore.getOpenAiKey(context).ifBlank {
                                     throw IllegalStateException(
                                         "OpenAI API key missing — add it in the cloud settings",
@@ -627,10 +630,10 @@ class CaptionEngineController(
             remote.initialize(
                 "",
                 SttConfig.forStreaming().copy(
-                    language = if (config.streamLanguage.isNotBlank() &&
-                        config.streamLanguage != "auto"
+                    language = if (spokenLanguage.isNotBlank() &&
+                        spokenLanguage != "auto"
                     ) {
-                        LanguageConfig.Specific(config.streamLanguage)
+                        LanguageConfig.Specific(spokenLanguage)
                     } else {
                         LanguageConfig.Auto
                     },
@@ -679,10 +682,10 @@ class CaptionEngineController(
             streamingChunkDurationMs = if (isWhisper) 200 else 50,
             // Pinned stream language skips detection (faster + more accurate;
             // auto detection is unreliable on short windows, whisper.cpp #445).
-            language = if (config.streamLanguage.isNotBlank() &&
-                config.streamLanguage != "auto"
+            language = if (spokenLanguage.isNotBlank() &&
+                spokenLanguage != "auto"
             ) {
-                LanguageConfig.Specific(config.streamLanguage)
+                LanguageConfig.Specific(spokenLanguage)
             } else {
                 LanguageConfig.Auto
             },

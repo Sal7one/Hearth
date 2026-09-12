@@ -6,27 +6,27 @@ import java.io.File
 
 private const val TAG = "TranslationLayer"
 
-/**
- * A caption translation target language.
- *
- * ENGLISH is served by Whisper's built-in translation task: any supported
- * input language is transcribed directly as English text by the same model
- * that captions it — one pass, zero extra downloads, works today.
- *
- * ARABIC requires a second-stage on-device translation model (quantized
- * OPUS-MT / Marian via the already-bundled ONNX Runtime). The target stays
- * selectable; the pipeline reports an honest, actionable state until a
- * translation model is imported and the MT backend is compiled in.
- */
-enum class TranslationTarget(
-    val languageTag: String,
-    val label: String,
-    /** Right-to-left script rendering for the overlay. */
-    val rtl: Boolean,
-) {
-    ENGLISH("en", "English", false),
-    ARABIC("ar", "العربية (Arabic)", true),
-    CHINESE("zh", "中文 (Chinese)", false),
+/** A language code rather than a closed enum: new model directions need no UI changes. */
+@ConsistentCopyVisibility
+data class TranslationTarget private constructor(val languageTag: String) {
+    val label get() = com.sal7one.common_jni.language.LanguageCatalog.option(languageTag).label
+    val rtl get() = com.sal7one.common_jni.language.LanguageCatalog.option(languageTag).rtl
+    // Preserve the original three preference values for existing installs.
+    val name get() = when (languageTag) { "en" -> "ENGLISH"; "ar" -> "ARABIC"; "zh" -> "CHINESE"; else -> languageTag }
+    companion object {
+        val ENGLISH = TranslationTarget("en")
+        val ARABIC = TranslationTarget("ar")
+        val CHINESE = TranslationTarget("zh")
+        val entries get() = com.sal7one.common_jni.translation.TranslationLanguages.hyLanguages.map(::of)
+        fun of(code: String): TranslationTarget {
+            require(code.matches(Regex("[a-z]{2,3}")) && code !in setOf("auto", "und", "mul")) { "Invalid translation language: $code" }
+            return TranslationTarget(code)
+        }
+        fun fromStored(value: String): TranslationTarget = when(value) {
+            "ENGLISH" -> ENGLISH; "ARABIC" -> ARABIC; "CHINESE" -> CHINESE
+            else -> runCatching { of(value) }.getOrDefault(ENGLISH)
+        }
+    }
 }
 
 /** What the overlay shows per utterance. */

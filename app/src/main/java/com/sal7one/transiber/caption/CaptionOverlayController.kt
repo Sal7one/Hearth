@@ -114,7 +114,7 @@ class CaptionOverlayController(
     fun centerOverlay() {
         hidden = false
         view?.visibility = android.view.View.VISIBLE
-        updateConfig { it.copy(anchor = CaptionAnchor.CENTER, xOffsetPx = 0, yOffsetPx = 0, tapThrough = false, showSettings = false) }
+        updateConfig { it.copy(anchor = CaptionAnchor.CENTER, xOffsetPx = 0, yOffsetPx = 0, tapThrough = false, showSettings = false, languagePicker = null) }
     }
 
     fun toggleVisibility() {

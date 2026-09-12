@@ -16,3 +16,10 @@ VoskApi is the VoskEngine consumer's process-lifetime, RTLD_LOCAL C-function loa
 TranslationCatalog declares pinned model identities/directions and prompts; LocalTranslationSetup and LocalTranslationSession consume it. Catalog tests cover supported pairs, unknown codes, aliases and input limits. LocalTranslationModels reuses ModelIntegrity for verified atomic GGUF import, with corrupt/partial import coverage. CaptionTranslationBridge is the final-only bounded queue used by CaptionEngineController; host tests cover stable IDs, overload, unknown/unsupported languages, stale output, cancellation during load and cancellation during inference. LocalTranslationSession implements the existing SpeechTextTranslator contract; its JNI runtime uses LeaseRegistry for cancel-before-retire ownership. See local-translation.md.
 
 OverlayGeometry.overlayHeightPx is consumed by CaptionOverlayController. Host tests cover legacy-size migration, explicit sizing independent of the old percentage, tiny/rotated viewport bounds and persisted height without changing transcription mode.
+
+LanguageCatalog provides display/search/RTL metadata to the shared app and overlay
+language pickers; host tests cover native names, accent-insensitive search, locale
+independence and model coverage. CaptionLanguages consumes existing speech and
+translation capabilities in the picker and CaptionEngineController; host tests cover
+supported native hints, Auto-only/fixed adapters, cloud mode differences, target
+persistence/migration and temporary overlay sizing. See language-pickers.md to extend.

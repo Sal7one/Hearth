@@ -134,11 +134,7 @@ data class EngineCapabilities(
                 EngineFeature.TRANSLATION,
                 EngineFeature.SEGMENT_CONFIDENCE
             ),
-            supportedLanguages = listOf(
-                "auto", "en", "zh", "de", "es", "ru", "ko", "fr", "ja", "pt",
-                "tr", "pl", "ca", "nl", "ar", "sv", "it", "id", "hi", "fi",
-                "vi", "he", "uk", "el", "ms", "cs", "ro", "da", "hu", "ta"
-            )
+            supportedLanguages = listOf("auto") + com.sal7one.common_jni.language.LanguageCatalog.whisperCodes
         )
         
         /** Vosk capabilities */

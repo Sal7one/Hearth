@@ -13,7 +13,6 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.sal7one.transiber.byok.*
 import com.sal7one.transiber.models.*
-import com.sal7one.common_jni.translation.TranslationLanguages
 import kotlinx.coroutines.*
 import java.io.File
 
@@ -92,16 +91,7 @@ fun CaptionHome(onModels: () -> Unit, onCloud: () -> Unit) {
                 listOf("Original captions" to CaptionMode.CAPTIONS, "Translation" to CaptionMode.TRANSLATE), enabled = !running) { mode ->
                 update { it.copy(mode = mode, localTranslationEnabled = mode == CaptionMode.TRANSLATE && it.effectiveEngine.speechBackend != null) }
             }
-            if (cfg.mode == CaptionMode.TRANSLATE) {
-                HomeChoice("Translate to", cfg.target.label, TranslationTarget.entries.map { it.label to it }, enabled = !running) { target ->
-                    update { it.copy(target = target) }
-                }
-            }
-            val sourceLanguages = listOf("Auto-detect" to "auto") + listOf("ru", "zh", "ar", "en")
-                .map { TranslationLanguages.label(it) to it }
-            HomeChoice("Spoken language", if (cfg.streamLanguage == "auto") "Auto-detect" else TranslationLanguages.label(cfg.streamLanguage), sourceLanguages, enabled = !running) { language ->
-                update { it.copy(streamLanguage = language) }
-            }
+            CaptionLanguageFields(cfg, ::update, enabled = !running)
             HorizontalDivider()
             val engines = CaptionEngineChoice.entries.filter { it != CaptionEngineChoice.CLOUD || ByokPolicy.FEATURE_BYOK }
             HomeChoice("Processing", cfg.effectiveEngine.label, engines.map { it.label to it }, enabled = !running) { engine ->

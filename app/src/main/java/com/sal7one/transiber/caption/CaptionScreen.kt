@@ -236,50 +236,8 @@ fun CaptionScreen(
                     )
                 }
             }
+            CaptionLanguageFields(config, update)
             if (config.mode == CaptionMode.TRANSLATE) {
-                Spacer(Modifier.height(AppDesign.Dimens.SpacingSm))
-                Text(
-                    "Translate into",
-                    style = MaterialTheme.typography.labelLarge,
-                )
-                ChipFlow {
-                    TranslationTarget.entries.forEach { target ->
-                        FilterChip(
-                            selected = config.target == target,
-                            onClick = { update { it.copy(target = target) } },
-                            label = { Text(target.label) },
-                        )
-                    }
-                }
-
-                // Pin the stream language: Whisper auto-detection is unreliable
-                // on short streaming windows (whisper.cpp #445), which made
-                // translation look broken for non-English streams.
-                Text(
-                    "Stream language",
-                    style = MaterialTheme.typography.labelLarge,
-                    modifier = Modifier.padding(top = 4.dp),
-                )
-                ChipFlow {
-                    STREAM_LANGUAGES.forEach { (label, code) ->
-                        FilterChip(
-                            selected = config.streamLanguage == code,
-                            onClick = { update { it.copy(streamLanguage = code) } },
-                            label = { Text(label) },
-                        )
-                    }
-                }
-                Text(
-                    text = if (config.effectiveEngine == CaptionEngineChoice.QWEN && config.streamLanguage != "auto") {
-                        "Qwen detects speech automatically; this selection supplies the source language for translation routing."
-                    } else if (config.streamLanguage == "auto") {
-                        "Auto-detect (faster to set up, less reliable on short clips)."
-                    } else {
-                        "Pinned: the engine skips detection — more accurate and faster."
-                    },
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(7.dp),

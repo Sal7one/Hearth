@@ -9,6 +9,8 @@ import android.os.Build
 import android.view.WindowManager
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.border
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.ui.semantics.*
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.lazy.LazyRow
@@ -21,6 +23,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -172,7 +175,28 @@ fun CaptionOverlayWindow(
     ) {
         ControlStrip(cfg, state, palette, true, onDrag, onDragFinished, onClose, onConfigChange)
         Box(Modifier.weight(1f).fillMaxWidth()) {
-            if (cfg.showSettings) {
+            if (cfg.showSettings && cfg.languagePicker != null) {
+                val which = cfg.languagePicker
+                val cloudMode = com.sal7one.transiber.byok.CloudConfigStore.sttMode(LocalContext.current)
+                MaterialTheme(colorScheme = if (cfg.theme == CaptionTheme.LIGHT) androidx.compose.material3.lightColorScheme()
+                    else androidx.compose.material3.darkColorScheme()) {
+                    Surface(Modifier.fillMaxSize()) {
+                        LanguagePickerContent(
+                            title = if (which == CaptionLanguagePicker.SOURCE) "Spoken language (CC)" else "Translate to",
+                            choices = if (which == CaptionLanguagePicker.SOURCE) CaptionLanguages.source(cfg, cloudMode) else CaptionLanguages.target(cfg, cloudMode),
+                            selected = if (which == CaptionLanguagePicker.SOURCE) {
+                                if (cfg.engine == CaptionEngineChoice.VOSK) "model" else CaptionLanguages.effectiveSource(cfg, cloudMode)
+                            } else cfg.target.languageTag,
+                            onSelect = { code -> onConfigChange {
+                                if (which == CaptionLanguagePicker.SOURCE) it.copy(streamLanguage = if (code == "model") "auto" else code, languagePicker = null)
+                                else it.copy(target = TranslationTarget.of(code), languagePicker = null)
+                            } },
+                            onDismiss = { onConfigChange { it.copy(languagePicker = null) } },
+                            searchable = false,
+                        )
+                    }
+                }
+            } else if (cfg.showSettings) {
                 SettingsPanel(
                     cfg = cfg, palette = palette, currentHeightDp = height,
                     appearance = appearanceSettings,
@@ -231,6 +255,13 @@ private fun ControlStrip(
     onClose: () -> Unit,
     onConfigChange: ((CaptionOverlayConfig) -> CaptionOverlayConfig) -> Unit,
 ) {
+    val moveStep = with(LocalDensity.current) { 32.dp.roundToPx() }
+    val moveActions = listOf(
+        CustomAccessibilityAction("Move captions up") { onDrag(0, -moveStep); onDragFinished(); true },
+        CustomAccessibilityAction("Move captions down") { onDrag(0, moveStep); onDragFinished(); true },
+        CustomAccessibilityAction("Move captions left") { onDrag(-moveStep, 0); onDragFinished(); true },
+        CustomAccessibilityAction("Move captions right") { onDrag(moveStep, 0); onDragFinished(); true },
+    )
     val stripDrag = if (dragEnabled) {
         Modifier.pointerInput(Unit) {
             detectDragGestures(
@@ -256,7 +287,7 @@ private fun ControlStrip(
             Icons.Default.DragIndicator,
             contentDescription = "Drag to move captions",
             tint = palette.onSurfaceFaded,
-            modifier = Modifier.size(40.dp).then(stripDrag),
+            modifier = Modifier.size(48.dp).then(stripDrag).semantics { customActions = moveActions },
         )
 
         StatusBadge(state = state, cfg = cfg, palette = palette, modifier = Modifier.weight(1f))
@@ -268,7 +299,7 @@ private fun ControlStrip(
                 tint = palette.onSurfaceFaded,
             )
         }
-        IconButton(onClick = { onConfigChange { it.copy(showSettings = !it.showSettings) } }, modifier = Modifier.size(controlSize)) {
+        IconButton(onClick = { onConfigChange { it.copy(showSettings = !it.showSettings, languagePicker = null) } }, modifier = Modifier.size(controlSize)) {
             Icon(Icons.Default.Settings, "Caption settings", tint = palette.onSurfaceFaded)
         }
         IconButton(onClick = onClose, modifier = Modifier.size(controlSize)) {
@@ -528,47 +559,16 @@ private fun SettingsPanel(
         }
 
         if (cfg.effectiveEngine.speechBackend != null) {
-            SettingsLabel("Local translation bridge", palette)
-            Switch(checked = cfg.localTranslationEnabled, onCheckedChange = { enabled ->
+            ToggleRow("Local translation bridge", cfg.localTranslationEnabled, palette) { enabled ->
                 onConfigChange { it.copy(localTranslationEnabled = enabled,
                     mode = if (enabled) CaptionMode.TRANSLATE else CaptionMode.CAPTIONS) }
-            })
+            }
         }
 
+        CaptionLanguageFields(cfg, onConfigChange, onOpenOverlay = { which ->
+            onConfigChange { it.copy(languagePicker = which) }
+        })
         if (cfg.mode == CaptionMode.TRANSLATE) {
-            SettingsLabel("Translate into", palette)
-            ChipRow {
-                TranslationTarget.entries.forEach { target ->
-                    FilterChip(
-                        selected = cfg.target == target,
-                        onClick = { onConfigChange { it.copy(target = target) } },
-                        label = { Text(target.label, fontSize = 11.sp, maxLines = 1) },
-                    )
-                }
-            }
-
-            // Pin the stream language: auto-detection is unreliable on short
-            // streaming windows (whisper.cpp #445) and made translation look
-            // broken for non-English streams.
-            SettingsLabel("Stream language", palette)
-            ChipRow {
-                STREAM_LANGUAGES.forEach { (label, code) ->
-                    FilterChip(
-                        selected = cfg.streamLanguage == code,
-                        onClick = { onConfigChange { it.copy(streamLanguage = code) } },
-                        label = { Text(label, fontSize = 11.sp, maxLines = 1) },
-                    )
-                }
-            }
-            SettingsCaption(
-                if (cfg.streamLanguage == "auto") {
-                    "Auto-detect: convenient, less reliable on short clips."
-                } else {
-                    "Use the language being spoken, not the translation target."
-                },
-                palette,
-            )
-
             SettingsLabel("Show", palette)
             ChipRow {
                 CaptionDisplay.entries.forEach { display ->
@@ -749,7 +749,7 @@ private fun SliderRow(
             ),
             modifier = Modifier
                 .fillMaxWidth()
-                .height(48.dp),
+                .height(48.dp).semantics { contentDescription = label },
         )
     }
 }
@@ -764,7 +764,8 @@ private fun ToggleRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onChange(!checked) },
+            .heightIn(min = 48.dp)
+            .toggleable(value = checked, role = Role.Switch, onValueChange = onChange),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
@@ -773,6 +774,6 @@ private fun ToggleRow(
             fontSize = 11.sp,
             modifier = Modifier.weight(1f),
         )
-        Switch(checked = checked, onCheckedChange = onChange)
+        Switch(checked = checked, onCheckedChange = null)
     }
 }

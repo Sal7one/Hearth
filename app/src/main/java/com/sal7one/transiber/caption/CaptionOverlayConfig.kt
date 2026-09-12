@@ -100,26 +100,7 @@ enum class CaptionAnchor(val label: String) {
     BOTTOM("Bottom"),
 }
 
-/** Stream-language choices for the caption engine (Whisper codes). */
-val STREAM_LANGUAGES: List<Pair<String, String>> = listOf(
-    "Auto" to "auto",
-    "English" to "en",
-    "العربية" to "ar",
-    "中文" to "zh",
-    "Русский" to "ru",
-    "ไทย" to "th",
-    "Español" to "es",
-    "Français" to "fr",
-    "Deutsch" to "de",
-    "हिन्दी" to "hi",
-    "Türkçe" to "tr",
-    "Bahasa" to "id",
-    "اردو" to "ur",
-    "Português" to "pt",
-    "Italiano" to "it",
-    "日本語" to "ja",
-    "한국어" to "ko",
-)
+enum class CaptionLanguagePicker { SOURCE, TARGET }
 
 enum class CaptionFontScale(val label: String, val multiplier: Float) {
     SMALL("Small", 0.8f),
@@ -149,8 +130,7 @@ data class CaptionOverlayConfig(
     val localTranslationModelId: String = "",
     // Translation
     val target: TranslationTarget = TranslationTarget.ENGLISH,
-    // Pinned stream language for Whisper (auto is unreliable on short streaming
-    // windows — whisper.cpp issue #445). auto lets the engine detect.
+    // Spoken-language preference; runtime capabilities decide whether it can be sent as a hint.
     val streamLanguage: String = "auto",
     val display: CaptionDisplay = CaptionDisplay.BOTH,
     // Layout
@@ -183,6 +163,7 @@ data class CaptionOverlayConfig(
     // fresh overlay session always starts running; pausing is a live gesture.
     // Transient UI state (never persisted; survives via the in-memory flow)
     val showSettings: Boolean = false,
+    val languagePicker: CaptionLanguagePicker? = null,
 ) {
     val effectiveEngine: CaptionEngineChoice
         get() = engine
@@ -273,7 +254,7 @@ object CaptionConfigStore {
             modelId = prefs[ModelId] ?: "",
             localTranslationEnabled = prefs[LocalTranslationEnabled] ?: false,
             localTranslationModelId = prefs[LocalTranslationModelId] ?: "",
-            target = prefs[Target]?.let { enumOrDefault(it, TranslationTarget.ENGLISH) }
+            target = prefs[Target]?.let(TranslationTarget::fromStored)
                 ?: TranslationTarget.ENGLISH,
             streamLanguage = prefs[StreamLanguage] ?: "auto",
             display = prefs[Display]?.let { enumOrDefault(it, CaptionDisplay.BOTH) } ?: CaptionDisplay.BOTH,

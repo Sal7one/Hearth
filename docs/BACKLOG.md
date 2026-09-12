@@ -74,6 +74,15 @@ form, and can tell which model is active and how to change it.
 
 ### 5. Reading comfort — RT-09
 
+Language-picker polish shipped in 0.4.0 (validation-v8.md):
+
+- [x] Shared native-name/flag pickers for spoken CC and translation languages in app and overlay.
+- [x] Search in the app, scrollable overlay picker with temporary sizing and restored settings position.
+- [x] Use existing model capability sets; connect supported hints and label Auto-only/fixed adapters.
+- [x] Expose all local translation targets and preserve old preferences.
+- [x] Add picker selection semantics, named sliders, unified switches and accessible bubble movement actions.
+- [ ] Complete an auditory TalkBack pass on a device with the service installed; current phone has none.
+
 - [ ] Keep previous text readable and make Previous lines easy to find.
 - [ ] Keep history steady while reading, with a clear Back to live action.
 - [ ] Make paused/loading/error states visible without sound; keep TTS optional.

@@ -119,11 +119,8 @@ internal fun LocalTranslationSetup(config: CaptionOverlayConfig, update: ((Capti
         if (advanced) Text("Tencent Hunyuan community license. Imported files must match the selected publisher model.")
         TextButton(onClick = { showCoverage = !showCoverage }) { Text(if (showCoverage) "Hide language coverage" else "Show supported source → target languages") }
         if (showCoverage) Text("Any of these source languages → any other listed target:\n" + spec.sourceLanguages.sortedBy(TranslationLanguages::label).joinToString(", ") { TranslationLanguages.label(it) })
-        Text("Translate into")
-        Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            TranslationTarget.entries.forEach { target -> FilterChip(selected = config.target == target,
-                onClick = { update { it.copy(target = target) } }, label = { Text(target.label) }) }
-        }
+        com.sal7one.transiber.caption.CaptionLanguageFields(config, update, showSource = false,
+            targetChoices = com.sal7one.transiber.caption.CaptionLanguageChoices(spec.targetLanguages, "Output languages supported by ${spec.label}."))
         val active = installed.firstOrNull { it.id == config.localTranslationModelId }
         Text(when {
             !config.localTranslationEnabled -> "Original-language CC; translation model stays unloaded."
