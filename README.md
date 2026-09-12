@@ -6,8 +6,8 @@ caption system into a separate, focused project.
 
 ## Development backlog
 
-See the [prioritized backlog](docs/BACKLOG.md) for the mobile translation work,
-bubble/settings redesign, download improvements, subtasks and acceptance checks.
+See the [release checklist](docs/BACKLOG.md) for six focused improvements to
+bubble controls, setup, downloads and smaller local translation.
 
 ## Features
 
