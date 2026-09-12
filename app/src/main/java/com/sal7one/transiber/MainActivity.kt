@@ -14,10 +14,14 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.luminance
+import androidx.core.view.WindowCompat
 import androidx.compose.ui.unit.dp
 import com.sal7one.transiber.caption.*
 import com.sal7one.transiber.byok.*
-import com.sal7one.transiber.ui.theme.FFmpegStudioTheme
+import com.sal7one.transiber.ui.theme.*
+import com.sal7one.transiber.benchmark.LocalBenchmarkScreen
+import com.sal7one.transiber.conversation.ConversationScreen
 import com.sal7one.transiber.models.ModelsScreen
 import com.sal7one.transiber.downloads.DownloadsScreen
 
@@ -29,13 +33,20 @@ class MainActivity : ComponentActivity() {
    catch(e: Exception) { e.message ?: e.toString() }
   enableEdgeToEdge()
   setContent {
-   FFmpegStudioTheme {
+   HearthTheme {
+    val lightBars = MaterialTheme.colorScheme.background.luminance() > 0.5f
+    SideEffect {
+     WindowCompat.getInsetsController(window, window.decorView).apply {
+      isAppearanceLightStatusBars = lightBars
+      isAppearanceLightNavigationBars = lightBars
+     }
+    }
     // Keep the existing bubble's page=1/2 links working after removing tabs.
-    var page by rememberSaveable { mutableIntStateOf(intent.getIntExtra("page", 0).coerceIn(0, 6)) }
-    fun back() { page = if (page == 3) 0 else 3 }
+    var page by rememberSaveable { mutableIntStateOf(intent.getIntExtra("page", 0).coerceIn(0, 8)) }
+    fun back() { page = if (page in setOf(3, 7, 8)) 0 else 3 }
     BackHandler(enabled = page != 0) { back() }
     Scaffold(topBar = {
-     TopAppBar(title = { Text(when(page) { 0 -> "Real time transiber"; 1 -> "Models"; 2 -> "Downloads"; 3 -> "Setup"; 4 -> "Cloud connection"; 5 -> "Advanced setup"; else -> "Help" }, style = MaterialTheme.typography.titleMedium) },
+     TopAppBar(title = { Text(when(page) { 0 -> "Hearth"; 1 -> "Models"; 2 -> "Downloads"; 3 -> "Setup"; 4 -> "Cloud connection"; 5 -> "Advanced setup"; 7 -> "Conversation"; 8 -> "Local benchmark"; else -> "Help" }, style = MaterialTheme.typography.titleMedium) },
       navigationIcon = { if (page != 0) IconButton(onClick = { back() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } },
       actions = { if (page == 0) TextButton(onClick = { page = 3 }) { Text("Setup") }
         else TextButton(onClick = { page = 0 }) { Text("Done") } })
@@ -44,7 +55,7 @@ class MainActivity : ComponentActivity() {
       nativeFailure?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(16.dp)) }
       Box(Modifier.weight(1f)) {
        when(page) {
-        0 -> CaptionHome(onModels = { page = 1 }, onCloud = { page = 4 })
+        0 -> CaptionHome(onModels = { page = 1 }, onCloud = { page = 4 }, onConversation = { page = 7 }, onBenchmark = { page = 8 })
         1 -> ModelsScreen(onCloud = { page = 4 }, onDownloads = { page = 2 })
         2 -> DownloadsScreen(onBrowseModels = { page = 1 })
         3 -> Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -52,6 +63,8 @@ class MainActivity : ComponentActivity() {
           SetupLink("Models", "Choose speech and translation models") { page = 1 }
           SetupLink("Downloads", "Install downloaded models or download a file") { page = 2 }
           if (ByokPolicy.FEATURE_BYOK) SetupLink("Cloud connection", "Your provider, saved key and cloud options") { page = 4 }
+          AppearanceSettings()
+          SetupLink("Local benchmark", "Compare installed models using the same audio and text") { page = 8 }
           TextButton(onClick = { page = 5 }) { Text("Advanced setup") }
           TextButton(onClick = { page = 6 }) { Text("Help & diagnostics") }
         }
@@ -60,6 +73,8 @@ class MainActivity : ComponentActivity() {
           else Text("Cloud connections are unavailable in the offline build.")
         }
         5 -> CaptionScreen(onBrowseModels = { page = 1 })
+        7 -> ConversationScreen(onModels = { page = 1 }, onCloud = { page = 4 })
+        8 -> LocalBenchmarkScreen(onModels = { page = 1 })
         else -> Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
           Text("Choose audio and captions or translation, then Start. Android may ask for audio access or screen-sharing consent.")
           Text("Use the bubble settings for appearance and language controls. The notification can pause, recover or stop captions.")

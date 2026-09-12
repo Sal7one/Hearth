@@ -66,3 +66,11 @@ before publication. Host fixtures cover those rejection paths, cancellation,
 missing assets and raw GGUF. SpeechDownloads supplies exact catalog artifacts.
 Downloads write directly through MediaStore or the user's persisted SAF tree;
 no temporary private copy/export is used for original downloads.
+
+## Hearth 0.7.0 additions
+
+- `BenchmarkAudio` / `BenchmarkMetrics`: production benchmark runner and UI; host tests cover bounded WAV parsing, downmix/resampling and comparable timing arithmetic.
+- `LocalWorkGate`: caption service, conversation and benchmark prevent overlapping native workloads; host test verifies rejection and stale lease safety.
+- `CaptionDrainPolicy`: controller Stop preserves buffered finals and pending translations; host tests cover prior silence, late translation and hard timeout.
+- `CaptionTranslationBridge.reset`: Clear keeps loaded weights while invalidating old work; host tests cover queued/in-flight resets, load races and stale failures.
+- `ConversationData` stable-ID updates, restart interruption and export are consumed by conversation controller/store/screen, with host coverage.

@@ -18,17 +18,21 @@ Android backup and device transfer. Clearing app data removes saved credentials.
 No credentials are included in this repository. Download requests do not receive
 speech provider API keys.
 
-Downloads are handled by Android DownloadManager. The system stores the requested
-URL (including query parameters in signed links), progress and file metadata.
-Requests may use mobile data; roaming is disabled. On Android 10+, new downloads
-are saved under Downloads/Real time transiber (models or files) and remain after
-uninstalling. Android 9 and older downloads from previous app versions use
-app-specific storage, which is removed on uninstall. Installed models are verified
-copies in app-private storage. Export creates a separate copy in your chosen document provider. Any sharing/export destination follows its
-own privacy policy. HTTPS is required for direct download URLs.
+New downloads use an app foreground download service. The app stores the requested
+URL (including query parameters in signed links), progress and file metadata locally.
+Requests may use mobile data. On Android 10+, new originals are saved under
+`Downloads/Hearth/models` or `files`; a folder picker can select another location.
+Android 9 requires a chosen folder. Public files remain after uninstalling; installed
+models are verified copies in app-private storage. Earlier downloads retain their
+original locations and may use Android DownloadManager. Any sharing/export destination
+follows its own privacy policy. HTTPS is required for direct download URLs.
 
-Captions and their bounded history are held in memory during the session; no audio
-recording or persistent transcript database is created. Copying text uses Android's
+Overlay captions and their bounded history are held in memory during the session.
+Conversation mode saves original and translated text in a local database excluded from backup;
+saving can be disabled, and saved conversations can be deleted or explicitly shared.
+No conversation audio is saved. Its optional read-aloud selects installed offline system voices.
+Local benchmarks save results and transcripts locally, with explicit JSON export and Clear history.
+Imported benchmark audio is held only in memory and is not copied into the app. Copying text uses Android's
 clipboard. The capture notification stays visible and offers Stop. Playback capture
 uses MediaProjection consent and microphone permission; microphone capture uses
 microphone permission. No camera, contact or broad media-library permissions are requested.
@@ -43,7 +47,7 @@ The play build includes the optional Google ML Kit translation SDK. Caption text
 is translated on-device. Explicit language-pack downloads contact Google on Wi-Fi;
 ML Kit manages its own app-private model files and can collect SDK/device usage
 and diagnostic data under Google’s terms. This is distinct from the app’s direct
-DownloadManager downloads. The foss build excludes ML Kit and its native library.
+file downloads. The foss build excludes ML Kit and its native library.
 See [ML Kit data disclosure](https://developers.google.com/ml-kit/terms).
 Soniox and ElevenLabs are optional cloud providers subject to their own policies;
 Soniox integrated translation sends audio through the selected cloud connection.

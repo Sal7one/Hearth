@@ -1,6 +1,51 @@
 # Conversation mode — UI and delivery plan
 
-Status: planned, not implemented. Requested by the owner on 2026-09-12.
+Status: first implementation added for 0.7.0; central build and device checks pending.
+Requested by the owner on 2026-09-12.
+
+## Implemented first release
+
+`conversation/ConversationScreen.kt` is a separate Home destination. Two explicit
+speaker buttons use the existing model capability resolver; language selections
+are kept separately from overlay preferences. The foreground screen owns mono
+16 kHz microphone capture. It requests only `RECORD_AUDIO`, stops when the app
+is backgrounded or the screen leaves composition, and caps each deliberate turn
+at 60 seconds. Leaving during work preserves finalized original text and marks
+the turn interrupted. There is no automatic recording restart.
+
+Speech runs through `CaptionEngineController` in original-language CC mode, then
+the selected ML Kit or GGUF translator runs on that turn. This is also the cloud
+route: the selected provider supplies STT, and the selected local model translates.
+The page explicitly labels this behavior. It never treats OpenAI's translation-only
+stream as an original transcript or silently opens two paid streams. Automatic-only
+adapters without declared recognition-language coverage cannot enable the microphone
+buttons; typed translation still works. A supported one-way direction remains usable.
+
+The same `LocalWorkGate` as captions and benchmarks prevents concurrent model
+workloads. Cancellation retains the lease until the controller has released native
+handles and the translator is closed. Models currently reopen per turn; warming
+across turns is deferred until ownership and both-direction runtime support justify it.
+
+`ConversationStore` saves stable turns transactionally in SQLite under
+`Context.noBackupFilesDir`: no automatic cloud backup, raw audio or credentials.
+Original text is saved as finals arrive; translation updates the same turn identity.
+Interrupted pending rows remain interrupted on reopen, never automatically retried.
+History supports continue, delete, rename and explicit text sharing. Turning saving
+off starts a temporary session without deleting existing history. New conversation,
+Type instead, large-text presentation/flip, per-message playback, text size and
+automatic speech options are available. Message text does not expire.
+
+System playback accepts only installed offline voices in the actual target language.
+There is no default-language fallback. Playback occurs only outside microphone work,
+offers Stop, reports voice initialization/selection/utterance errors, and requires
+another explicit Speak tap before recording resumes. Auto playback starts off.
+
+`ConversationDataTest` covers wrong-session/deleted-turn late results, interrupted
+restoration, preservation of completed pairs, and immutable historic directions
+after swapping languages. Device acceptance still needs a real two-person exchange,
+rotation/background interruption, process restart, RTL/large-font/TalkBack and
+offline voice availability checks. The fuller design below records intended behavior;
+it is not a claim that every future optimization or provider route has been shipped.
 
 Let two people take turns speaking different languages on one phone. Show what
 each person said and its translation, keep the conversation available later, and

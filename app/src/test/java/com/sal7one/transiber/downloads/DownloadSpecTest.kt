@@ -4,8 +4,8 @@ import org.junit.Test
 class DownloadSpecTest {
  @Test fun destinationsAreVisibleUniqueAndContained() {
   val spec = DownloadSpec.parse("https://example.org/model", "model.gguf")
-  assertEquals("Real time transiber/models/job-1-model.gguf", spec.destination(true, "job-1"))
-  assertEquals("Real time transiber/files/job-2-model.gguf", spec.destination(false, "job-2"))
+  assertEquals("Hearth/models/job-1-model.gguf", spec.destination(true, "job-1"))
+  assertEquals("Hearth/files/job-2-model.gguf", spec.destination(false, "job-2"))
   assertNotEquals(spec.destination(true, "a"), spec.destination(true, "b"))
   assertThrows(IllegalArgumentException::class.java) { spec.destination(true, "../escape") }
   assertThrows(IllegalArgumentException::class.java) { DownloadSpec(spec.url, "../escape").destination(true, "a") }

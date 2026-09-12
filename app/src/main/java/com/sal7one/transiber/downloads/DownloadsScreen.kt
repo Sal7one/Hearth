@@ -5,6 +5,8 @@ import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
@@ -62,8 +64,8 @@ fun DownloadsScreen(onBrowseModels: () -> Unit = {}) {
   } }
   TextButton(onClick = { directDownload = !directDownload }) { Text(if (directDownload) "Hide direct download" else "Download a direct file URL") }
   if (directDownload) {
-   OutlinedTextField(url, { url = it }, label = { Text("HTTPS file URL") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
-   OutlinedTextField(filename, { filename = it }, label = { Text("Filename, including extension") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+   OutlinedTextField(url, { url = it }, label = { Text("HTTPS file URL") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, autoCorrectEnabled = false), modifier = Modifier.fillMaxWidth(), singleLine = true)
+   OutlinedTextField(filename, { filename = it }, label = { Text("Filename, including extension") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Ascii, autoCorrectEnabled = false), modifier = Modifier.fillMaxWidth(), singleLine = true)
    Button(enabled = !busy, onClick = { scope.launch {
     busy = true; error = null
     try { val spec = DownloadSpec.parse(url, filename); withContext(Dispatchers.IO) { downloads.enqueue(spec) }; url = ""; filename = "" }

@@ -1,0 +1,60 @@
+name: Bug report
+description: Report a problem with Hearth captions, translation, models or controls.
+title: "[Bug] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Tell us what happened so we can reproduce it. Do not include API keys,
+        private audio, personal transcripts or download URLs containing credentials.
+  - type: input
+    id: version
+    attributes:
+      label: App version and flavor
+      placeholder: "Version shown in Hearth; cloud/play or offline/foss"
+    validations:
+      required: true
+  - type: input
+    id: device
+    attributes:
+      label: Phone and Android version
+      placeholder: "Manufacturer, model, Android version"
+    validations:
+      required: true
+  - type: textarea
+    id: setup
+    attributes:
+      label: Model, provider and language setup
+      description: Include speech model, translator or cloud provider; exact model name/quantization if known; spoken and target languages; auto or explicit spoken language.
+      placeholder: "Nemotron; ML Kit; Russian → Arabic; spoken language set to Russian"
+    validations:
+      required: true
+  - type: dropdown
+    id: audio
+    attributes:
+      label: Audio source
+      options:
+        - Device audio
+        - Microphone
+        - Imported benchmark audio
+        - Not related to audio
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps and what happened
+      description: Include what you expected, what happened instead and whether it happens every time.
+    validations:
+      required: true
+  - type: textarea
+    id: error
+    attributes:
+      label: Error or diagnostics
+      description: Paste the original error text, if shown. Remove API keys, credentials, private file paths and personal content. Do not upload audio by default.
+      render: text
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Optional screenshot with personal content hidden, previous working version, or benchmark result. A recording is not required.

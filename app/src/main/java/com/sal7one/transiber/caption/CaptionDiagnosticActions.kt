@@ -35,7 +35,7 @@ internal fun CaptionDiagnosticActions() {
    context.getSystemService(ClipboardManager::class.java).setPrimaryClip(ClipData.newPlainText("Caption startup report", report))
    Toast.makeText(context, "Startup report copied", Toast.LENGTH_SHORT).show()
   }) { Text("Copy startup / crash report") }
-  if (Build.VERSION.SDK_INT >= 30) TextButton(enabled = !exporting, onClick = { exporter.launch("transiber-android-exit-trace.bin") }) {
+  if (Build.VERSION.SDK_INT >= 30) TextButton(enabled = !exporting, onClick = { exporter.launch("hearth-android-exit-trace.bin") }) {
    Text(if (exporting) "Exporting…" else "Export Android crash trace")
   }
  }

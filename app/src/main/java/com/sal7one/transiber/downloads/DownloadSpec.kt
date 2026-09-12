@@ -8,7 +8,7 @@ data class DownloadSpec(val url: String, val fileName: String) {
   require(token.matches(Regex("[a-zA-Z0-9-]{1,64}"))) { "Invalid download identity" }
   val checked = parse(url, fileName)
   val folder = if (modelPackage) "models" else "files"
-  return "Real time transiber/$folder/$token-${checked.fileName}"
+  return "Hearth/$folder/$token-${checked.fileName}"
  }
  companion object {
   fun parse(url: String, fileName: String): DownloadSpec {

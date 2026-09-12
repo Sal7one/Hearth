@@ -28,7 +28,7 @@ internal object CaptionDiagnostics {
   error("Android has no retained crash trace for this app. Copy the startup report instead.")
  }
  fun report(context: Context): String = buildString {
-  appendLine("Real time transiber ${com.sal7one.transiber.BuildConfig.VERSION_NAME}")
+  appendLine("Hearth ${com.sal7one.transiber.BuildConfig.VERSION_NAME}")
   appendLine("Device: ${Build.MANUFACTURER} ${Build.MODEL}; Android ${Build.VERSION.RELEASE} / API ${Build.VERSION.SDK_INT}")
   val stored = prefs(context)
   appendLine("Last speech stage: ${stored.getString("stage", "No local speech start recorded")}")

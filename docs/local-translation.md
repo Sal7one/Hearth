@@ -14,7 +14,7 @@ is a separate text model; it never changes the ASR model's language capabilities
    contexts and speech weights.
 3. Download using the model button (network-enabled build), then tap **Install
    downloaded model** here or **Install translation model** in Downloads. New
-   downloads go to `Downloads/Real time transiber/models` on Android 10 and later.
+   downloads go to `Downloads/Hearth/models` on Android 10 and later.
    Existing app-stored downloads also install directly; no export is needed.
    Alternatively import a publisher GGUF with the matching model selected. Exact
    pinned SHA-256 and size are required. The offline build only imports local files.

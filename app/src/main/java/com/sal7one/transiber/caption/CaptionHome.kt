@@ -5,6 +5,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Stop
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.ui.semantics.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -17,8 +19,14 @@ import kotlinx.coroutines.*
 import java.io.File
 
 /** Everyday controls only. Installation and provider configuration belong to Setup. */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun CaptionHome(onModels: () -> Unit, onCloud: () -> Unit) {
+fun CaptionHome(
+    onModels: () -> Unit,
+    onCloud: () -> Unit,
+    onConversation: (() -> Unit)? = null,
+    onBenchmark: (() -> Unit)? = null,
+) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val registry = remember { ModelRegistry.getInstance(context) }
@@ -84,13 +92,16 @@ fun CaptionHome(onModels: () -> Unit, onCloud: () -> Unit) {
     Column(Modifier.fillMaxSize()) {
         Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            Text("Read what you hear", style = MaterialTheme.typography.headlineSmall)
-            if (running) Text("Captions are running. Use the bubble for live controls, or Stop to change setup.", style = MaterialTheme.typography.bodySmall)
-            HomeChoice("Audio", if (cfg.source == CaptionSource.MIC) "Microphone" else "Device audio",
+            Text("Live captions", style = MaterialTheme.typography.headlineSmall, modifier = Modifier.semantics { heading() })
+            Text(if (running) "Captions are running. Open the bubble for live controls, or stop to change setup."
+                else "Read speech from videos or the people around you.",
+                style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite })
+            HomeChips("Audio", if (cfg.source == CaptionSource.MIC) "Microphone" else "Device audio",
                 listOf("Device audio" to CaptionSource.PLAYBACK_CAPTURE, "Microphone" to CaptionSource.MIC), enabled = !running) {
                 update { c -> c.copy(source = it) }
             }
-            HomeChoice("Show", if (cfg.mode == CaptionMode.CAPTIONS) "Original captions" else "Translation",
+            HomeChips("Show", if (cfg.mode == CaptionMode.CAPTIONS) "Original captions" else "Translation",
                 listOf("Original captions" to CaptionMode.CAPTIONS, "Translation" to CaptionMode.TRANSLATE), enabled = !running) { mode ->
                 update { it.copy(mode = mode, localTranslationEnabled = mode == CaptionMode.TRANSLATE && it.effectiveEngine.speechBackend != null) }
             }
@@ -100,15 +111,23 @@ fun CaptionHome(onModels: () -> Unit, onCloud: () -> Unit) {
             HomeChoice("Processing", cfg.effectiveEngine.label, engines.map { it.label to it }, enabled = !running) { engine ->
                 if (engine != cfg.effectiveEngine) update { it.copy(engine = engine, modelId = "", localTranslationEnabled = it.mode == CaptionMode.TRANSLATE && engine.speechBackend != null) }
             }
-            Text(if (isCloud) "Audio goes to your configured cloud provider." else "Audio and translation stay on this phone.",
+            Text(if (isCloud) "Audio goes to your configured cloud provider." else "Speech is processed on this phone.",
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             if (!engineReady) Text(if (isCloud) "Connect your cloud provider to start." else "Choose an installed speech model to start.")
             if (needsTranslator) TextButton(onClick = onModels) { Text("Choose a translation model · CC can start now") }
             if (cfg.source == CaptionSource.PLAYBACK_CAPTURE) Text("Some apps block audio capture. Use Microphone if captions stay silent.", style = MaterialTheme.typography.bodySmall)
-            error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+            error?.let { Text(it, color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.semantics { liveRegion = LiveRegionMode.Assertive }) }
+            if (onConversation != null || onBenchmark != null) {
+                HorizontalDivider()
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    onConversation?.let { open -> OutlinedButton(onClick = open) { Text("Two-way conversation") } }
+                    onBenchmark?.let { open -> OutlinedButton(onClick = open) { Text("Compare local models") } }
+                }
+            }
         }
         Surface(shadowElevation = 8.dp) {
-            Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
                 Button(modifier = Modifier.weight(1f).heightIn(min = 52.dp), onClick = {
                     when {
                         running -> CaptionCaptureService.show(context)
@@ -135,10 +154,28 @@ private fun <T> HomeChoice(label: String, value: String, choices: List<Pair<Stri
         Box {
             OutlinedButton(onClick = { expanded = true }, enabled = enabled, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
                 Text(value, modifier = Modifier.weight(1f))
-                Text("⌄")
+                Icon(Icons.Default.KeyboardArrowDown, contentDescription = null)
             }
             DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-                choices.forEach { (title, choice) -> DropdownMenuItem(text = { Text(title) }, onClick = { expanded = false; onSelect(choice) }) }
+                choices.forEach { (title, choice) -> DropdownMenuItem(
+                    text = { Text(title) },
+                    modifier = Modifier.semantics { selected = title == value },
+                    onClick = { expanded = false; onSelect(choice) }) }
+            }
+        }
+    }
+}
+
+/** Short choices stay visible, with standard selected-state and touch-target semantics. */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun <T> HomeChips(label: String, value: String, choices: List<Pair<String, T>>, enabled: Boolean, onSelect: (T) -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            choices.forEach { (title, choice) ->
+                FilterChip(selected = title == value, onClick = { onSelect(choice) },
+                    enabled = enabled, label = { Text(title) })
             }
         }
     }

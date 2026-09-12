@@ -21,5 +21,5 @@ jobs:
       - run: python3 scripts/verify-release.py
       - uses: actions/upload-artifact@v4
         with:
-          name: transiber-qa-apks
+          name: hearth-qa-apks
           path: app/build/outputs/apk/*/qa/*.apk

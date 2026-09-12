@@ -1,0 +1,147 @@
+[
+  {
+    "runId": "a6a761aa-77bf-4168-ae35-09b7b2861499",
+    "timestamp": 1789250788512,
+    "model": "ML Kit · installed packs",
+    "identity": "ml-kit",
+    "route": "Translation / ML Kit",
+    "inputHash": "2756a5ebc0a031c4f9d991a8e7417a8f12f4350afb55a9a163b198ac210dcf49",
+    "source": "en",
+    "target": "ar",
+    "audioMs": 0,
+    "loadMs": 55.823385,
+    "computeMs": [
+      356.677916,
+      44.804479,
+      28.053854
+    ],
+    "texts": [
+      "هنا محطة القطار؟ أحتاج إلى تذكرتين من فضلك.",
+      "هنا محطة القطار؟ أحتاج إلى تذكرتين من فضلك.",
+      "هنا محطة القطار؟ أحتاج إلى تذكرتين من فضلك."
+    ],
+    "runtime": "ML Kit SDK; first call includes deferred client/model initialization",
+    "firstTextMs": [
+      356.677916,
+      44.804479,
+      28.053854
+    ],
+    "device": "samsung SM-S908E; Android 16; API 36; app 0.7.0 (17)"
+  },
+  {
+    "runId": "a6a761aa-77bf-4168-ae35-09b7b2861499",
+    "timestamp": 1789250788023,
+    "model": "HY-MT1.5 1.8B · Q4_K_M",
+    "identity": "hy-mt15-q4",
+    "route": "Translation / GGUF",
+    "inputHash": "2756a5ebc0a031c4f9d991a8e7417a8f12f4350afb55a9a163b198ac210dcf49",
+    "source": "en",
+    "target": "ar",
+    "audioMs": 0,
+    "loadMs": 2127.062603,
+    "computeMs": [
+      4657.304634,
+      4939.152498,
+      5046.795936
+    ],
+    "texts": [
+      "أين محطة القطار؟ أحتاج إلى تذكرةين، من فضلكم.",
+      "أين محطة القطار؟ أحتاج إلى تذكرةين، من فضلكم.",
+      "أين محطة القطار؟ أحتاج إلى تذكرةين، من فضلكم."
+    ],
+    "runtime": "Pinned GGUF 265b2e615a7dc9b06c435dc878829ad99a512ba2; SHA-256 4383ac0c3c8e476de98ff979c2a3f069f8c4fb385e7860cf2d28da896cc477c7",
+    "firstTextMs": [
+      4657.304634,
+      4939.152498,
+      5046.795936
+    ],
+    "device": "samsung SM-S908E; Android 16; API 36; app 0.7.0 (17)"
+  },
+  {
+    "runId": "c238dd55-14db-4b29-8b0a-625e030c1132",
+    "timestamp": 1789250654845,
+    "model": "Nemotron 3.5 ASR 0.6B · 755bd3",
+    "identity": "speech-535d6ea6-b17a-4063-b0a6-294169755bd3",
+    "route": "Speech / CACHE_AWARE",
+    "inputHash": "707d456560389e7a8e99372b117093b2c64eec0a06f15e11b0a980e47e79ae1c",
+    "source": "en",
+    "target": "",
+    "audioMs": 3845,
+    "loadMs": 1101.392135,
+    "computeMs": [
+      2501.915624,
+      1644.529844,
+      1622.653646
+    ],
+    "texts": [
+      "ask not what your country can do for you ask what you can do for your country",
+      "ask not what your country can do for you ask what you can do for your country",
+      "ask not what your country can do for you ask what you can do for your country"
+    ],
+    "runtime": "ffa38cb2408f1e832a36d46fef5e3e1e80d07e6c; nemotron-3.5-asr-0.6b; package manifest SHA-256 4233b2433d2f1f6e6d7620feee6fd65dd2572645f53e8ddc678b1a3b2d4484d1; defaults: threads 4 where supported, right context 3, utterance 4000 ms",
+    "firstTextMs": [
+      892.433698,
+      256.915261,
+      230.358386
+    ],
+    "device": "samsung SM-S908E; Android 16; API 36; app 0.7.0 (17)"
+  },
+  {
+    "runId": "c238dd55-14db-4b29-8b0a-625e030c1132",
+    "timestamp": 1789250647916,
+    "model": "Qwen3-ASR 0.6B · a18c7b",
+    "identity": "speech-4c308ff0-d853-4572-8cd3-f2e9f8a18c7b",
+    "route": "Speech / UTTERANCE_WINDOWED",
+    "inputHash": "707d456560389e7a8e99372b117093b2c64eec0a06f15e11b0a980e47e79ae1c",
+    "source": "en",
+    "target": "",
+    "audioMs": 3845,
+    "loadMs": 5539.195987,
+    "computeMs": [
+      1305.698073,
+      1250.18427,
+      1410.164323
+    ],
+    "texts": [
+      "Ask not what your country can do for you, ask what you can do for your country.",
+      "Ask not what your country can do for you, ask what you can do for your country.",
+      "Ask not what your country can do for you, ask what you can do for your country."
+    ],
+    "runtime": "210f340bcfdfd5b9ad6b24245e77a934d6c28f1b; qwen3-asr-0.6b; package manifest SHA-256 db558d152cb0a5e3e2166ae6e8dd7cc8677d4196487090f93932abe9f6ebbe9e; defaults: threads 4 where supported, right context 3, utterance 4000 ms",
+    "firstTextMs": [
+      1305.612031,
+      1250.134582,
+      1410.106094
+    ],
+    "device": "samsung SM-S908E; Android 16; API 36; app 0.7.0 (17)"
+  },
+  {
+    "runId": "c238dd55-14db-4b29-8b0a-625e030c1132",
+    "timestamp": 1789250638223,
+    "model": "Moonshine Tiny · English · 3aa88e",
+    "identity": "speech-302b34d4-900c-391c-b44c-e4399c3aa88e",
+    "route": "Speech / UTTERANCE_WINDOWED",
+    "inputHash": "707d456560389e7a8e99372b117093b2c64eec0a06f15e11b0a980e47e79ae1c",
+    "source": "en",
+    "target": "",
+    "audioMs": 3845,
+    "loadMs": 557.879948,
+    "computeMs": [
+      192.294115,
+      159.167135,
+      146.890364
+    ],
+    "texts": [
+      "Ask not what your country can do for you. Ask what you can do for your country.",
+      "Ask not what your country can do for you. Ask what you can do for your country.",
+      "Ask not what your country can do for you. Ask what you can do for your country."
+    ],
+    "runtime": "210f340bcfdfd5b9ad6b24245e77a934d6c28f1b; moonshine-tiny-en-v2; package manifest SHA-256 7b525c5ad2f8bfde1e5e4418c55ca3e7a3210fe0000349a75d92662683cbf86a; defaults: threads 4 where supported, right context 3, utterance 4000 ms",
+    "firstTextMs": [
+      192.177292,
+      159.098958,
+      146.798281
+    ],
+    "device": "samsung SM-S908E; Android 16; API 36; app 0.7.0 (17)"
+  }
+]

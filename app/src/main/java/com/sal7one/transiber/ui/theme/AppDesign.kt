@@ -9,6 +9,7 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -134,7 +135,7 @@ data class AccentPalette(
 
 fun accentPalette(preset: AccentPreset): AccentPalette = when (preset) {
     AccentPreset.OCEAN -> AccentPalette(
-        primary = Color(0xFFC67139), onPrimary = Color(0xFF201E1D),
+        primary = Color(0xFF934719), onPrimary = Color(0xFFFFFFFF),
         primaryContainer = Color(0xFFFFE1D0), onPrimaryContainer = Color(0xFF71370F),
         secondary = Color(0xFF68784D), onSecondary = Color(0xFFFFFFFF),
         secondaryContainer = Color(0xFFE1EECC), onSecondaryContainer = Color(0xFF33421F),
@@ -251,6 +252,14 @@ private fun lightScheme(palette: AccentPalette) = lightColorScheme(
     tertiary = palette.tertiary, onTertiary = palette.onTertiary,
     background = palette.lightBackground, onBackground = palette.lightOnGround,
     surface = palette.lightSurface, onSurface = palette.lightOnGround,
+    surfaceTint = palette.primary,
+    surfaceContainerLowest = palette.lightSurface,
+    surfaceContainerLow = palette.lightSurface,
+    surfaceContainer = palette.lightSurfaceVariant.copy(alpha = 0.35f).compositeOver(palette.lightSurface),
+    surfaceContainerHigh = palette.lightSurfaceVariant.copy(alpha = 0.65f).compositeOver(palette.lightSurface),
+    surfaceContainerHighest = palette.lightSurfaceVariant,
+    inverseSurface = palette.darkSurface, inverseOnSurface = palette.darkOnGround,
+    inversePrimary = palette.primaryContainer,
     surfaceVariant = palette.lightSurfaceVariant, onSurfaceVariant = palette.lightOnSurfaceVariant,
     error = palette.error, onError = Color.White,
     errorContainer = palette.errorContainer, onErrorContainer = palette.onErrorContainer,
@@ -260,15 +269,23 @@ private fun lightScheme(palette: AccentPalette) = lightColorScheme(
 
 private fun darkScheme(palette: AccentPalette) = darkColorScheme(
     primary = palette.primaryContainer, onPrimary = palette.onPrimaryContainer,
-    primaryContainer = palette.primary.copy(alpha = 0.52f), onPrimaryContainer = palette.darkOnGround,
+    primaryContainer = palette.primary.copy(alpha = 0.52f).compositeOver(palette.darkSurface), onPrimaryContainer = palette.darkOnGround,
     secondary = palette.secondaryContainer, onSecondary = palette.onSecondaryContainer,
-    secondaryContainer = palette.secondary.copy(alpha = 0.5f), onSecondaryContainer = palette.darkOnGround,
+    secondaryContainer = palette.secondary.copy(alpha = 0.5f).compositeOver(palette.darkSurface), onSecondaryContainer = palette.darkOnGround,
     tertiary = palette.tertiary, onTertiary = palette.onTertiary,
     background = palette.darkBackground, onBackground = palette.darkOnGround,
     surface = palette.darkSurface, onSurface = palette.darkOnGround,
+    surfaceTint = palette.primaryContainer,
+    surfaceContainerLowest = palette.darkBackground,
+    surfaceContainerLow = palette.darkSurface,
+    surfaceContainer = palette.darkSurfaceVariant.copy(alpha = 0.35f).compositeOver(palette.darkSurface),
+    surfaceContainerHigh = palette.darkSurfaceVariant.copy(alpha = 0.65f).compositeOver(palette.darkSurface),
+    surfaceContainerHighest = palette.darkSurfaceVariant,
+    inverseSurface = palette.lightSurface, inverseOnSurface = palette.lightOnGround,
+    inversePrimary = palette.primary,
     surfaceVariant = palette.darkSurfaceVariant, onSurfaceVariant = palette.darkOnSurfaceVariant,
     error = palette.errorContainer, onError = palette.onErrorContainer,
-    errorContainer = palette.error.copy(alpha = 0.55f), onErrorContainer = palette.darkOnGround,
+    errorContainer = palette.error.copy(alpha = 0.55f).compositeOver(palette.darkSurface), onErrorContainer = palette.darkOnGround,
     outline = palette.darkOutline, outlineVariant = palette.darkOutline.copy(alpha = 0.45f),
     scrim = Color.Black,
 )
@@ -306,8 +323,8 @@ val AppLightColorScheme = lightScheme(accentPalette(AccentPreset.OCEAN))
 val AppDarkColorScheme = darkScheme(accentPalette(AccentPreset.OCEAN))
 
 @Composable
-fun FFmpegStudioTheme(
-    themeMode: ThemeMode = ThemeMode.SYSTEM,
+fun HearthTheme(
+    themeMode: ThemeMode = rememberThemeMode(),
     accentPreset: AccentPreset = AccentPreset.OCEAN,
     content: @Composable () -> Unit,
 ) {
@@ -327,3 +344,11 @@ fun FFmpegStudioTheme(
         )
     }
 }
+
+/** Compatibility for existing integrations; new screens should use HearthTheme. */
+@Composable
+fun FFmpegStudioTheme(
+    themeMode: ThemeMode = rememberThemeMode(),
+    accentPreset: AccentPreset = AccentPreset.OCEAN,
+    content: @Composable () -> Unit,
+) = HearthTheme(themeMode, accentPreset, content)

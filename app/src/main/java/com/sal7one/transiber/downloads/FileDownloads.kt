@@ -30,8 +30,15 @@ data class FileDownload(val id: Long, val title: String, val status: Int, val re
 class FileDownloads(private val context: Context) {
  private val manager = context.getSystemService(DownloadManager::class.java)
  private val prefs = context.getSharedPreferences("file_downloads", Context.MODE_PRIVATE)
+ // Only the former app-default selection is migrated; deliberate custom folders remain selected.
+ init {
+  if (Build.VERSION.SDK_INT >= 29 && prefs.getString("folder_uri", null) ==
+   "content://com.android.externalstorage.documents/tree/primary%3ADownload%2FReal%20time%20transiber") {
+   synchronized(lock) { check(prefs.edit().remove("folder_uri").remove("folder_label").commit()) }
+  }
+ }
  val folderUri: Uri? get() = prefs.getString("folder_uri", null)?.let(Uri::parse)
- val locationLabel: String get() = prefs.getString("folder_label", null) ?: "Downloads/Real time transiber"
+ val locationLabel: String get() = prefs.getString("folder_label", null) ?: "Downloads/Hearth"
  fun chooseFolder(uri: Uri) {
   check(ByokPolicy.FEATURE_BYOK)
   val flags = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
@@ -42,7 +49,7 @@ class FileDownloads(private val context: Context) {
    .putString("folder_label", android.provider.DocumentsContract.getTreeDocumentId(uri).replace("primary:", "Device/")).commit()) }
  }
  fun useDefaultFolder() { synchronized(lock) { check(prefs.edit().remove("folder_uri").remove("folder_label").commit()) } }
- fun openFolderIntent() = Intent(Intent.ACTION_VIEW).setDataAndType(folderUri?.let { android.provider.DocumentsContract.buildDocumentUriUsingTree(it, android.provider.DocumentsContract.getTreeDocumentId(it)) } ?: Uri.parse("content://com.android.externalstorage.documents/document/primary%3ADownload%2FReal%20time%20transiber"), "vnd.android.document/directory")
+ fun openFolderIntent() = Intent(Intent.ACTION_VIEW).setDataAndType(folderUri?.let { android.provider.DocumentsContract.buildDocumentUriUsingTree(it, android.provider.DocumentsContract.getTreeDocumentId(it)) } ?: Uri.parse("content://com.android.externalstorage.documents/document/primary%3ADownload%2FHearth"), "vnd.android.document/directory")
   .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
 
  fun enqueue(spec: DownloadSpec, modelPackage: Boolean = false, installModelId: String = ""): Long {

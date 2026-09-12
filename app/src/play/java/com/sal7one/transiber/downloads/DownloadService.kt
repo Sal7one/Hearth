@@ -129,14 +129,14 @@ class DownloadService : Service() {
         return contentResolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, ContentValues().apply {
             put(MediaStore.Downloads.DISPLAY_NAME, title)
             put(MediaStore.Downloads.MIME_TYPE, "application/octet-stream")
-            put(MediaStore.Downloads.RELATIVE_PATH, "${Environment.DIRECTORY_DOWNLOADS}/Real time transiber/$subfolder")
+            put(MediaStore.Downloads.RELATIVE_PATH, "${Environment.DIRECTORY_DOWNLOADS}/Hearth/$subfolder")
             put(MediaStore.Downloads.IS_PENDING, 1)
-        }) ?: error("Cannot create file in Downloads/Real time transiber")
+        }) ?: error("Cannot create file in Downloads/Hearth")
     }
     private fun notification(text: String): Notification {
         val open = PendingIntent.getActivity(this, 0, Intent(this, MainActivity::class.java).putExtra("page", 2), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         return NotificationCompat.Builder(this, CHANNEL).setSmallIcon(android.R.drawable.stat_sys_download)
-            .setContentTitle("Real time transiber").setContentText(text).setContentIntent(open).setOngoing(true).setOnlyAlertOnce(true).build()
+            .setContentTitle("Hearth").setContentText(text).setContentIntent(open).setOngoing(true).setOnlyAlertOnce(true).build()
     }
     private fun publish(text: String) { getSystemService(NotificationManager::class.java).notify(NOTIFICATION, notification(text)) }
     override fun onTimeout(startId: Int, fgsType: Int) { scope.cancel(); stopForeground(STOP_FOREGROUND_REMOVE); stopSelf() }

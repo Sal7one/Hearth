@@ -1,4 +1,4 @@
-# Real time transiber
+# Hearth
 
 This is a standalone speech/caption app extracted from Hearth. Keep scope to local
 speech models, cloud speech/translation, overlay, model import and direct downloads.

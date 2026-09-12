@@ -1,4 +1,4 @@
-# Real time transiber
+# Hearth
 
 An Android app for live captions over other apps, local speech recognition, and
 bring-your-own-key cloud transcription and translation. Extracted from Hearth's
@@ -6,8 +6,7 @@ caption system into a separate, focused project.
 
 ## Development backlog
 
-See the [model contribution guide](docs/model-contributing.md) and [release checklist](docs/BACKLOG.md) for six focused improvements to
-bubble controls, setup, downloads and smaller local translation.
+See the [model contribution guide](docs/model-contributing.md) and [release checklist](docs/BACKLOG.md) for current release tasks, native integration conventions and model contributions.
 
 ## Features
 
@@ -23,11 +22,15 @@ bubble controls, setup, downloads and smaller local translation.
 - Cloud STT and real-time Arabic/English translation with your own provider keys.
   Soniox v5 adds original and translated text; Scribe v2 adds another STT choice.
   Speech-only model filtering, provider configuration, and encrypted key storage.
-- Direct HTTPS file downloads through Android DownloadManager, progress, cancellation,
-  and in-app installation of translation models. New downloads use
-  `Downloads/Real time transiber/models` or `files` on Android 10+. This does not include a video-site extractor.
+- Direct HTTPS file downloads with foreground progress, cancellation, selectable public folder,
+  and automatic installation of catalogued speech/translation models. New downloads use
+  `Downloads/Hearth/models` or `files` on Android 10+. This does not include a video-site extractor.
 - A local-only `foss` variant with **no network permission**, and a network-enabled
   `play` variant. ML Kit is an optional Google SDK in the play flavor; foss excludes it.
+
+- Two-way **Conversation** page with microphone or typed turns, original and translated text, local history, large text and optional installed offline TTS voices. Speech uses your selected local/cloud recognizer; translation currently uses the selected local translator. See [conversation scope](docs/conversation-mode-plan.md).
+- **Local benchmark** compares installed models on the same WAV or corrected text, separates loading from inference and saves/export reports on-device. See [method and limitations](docs/local-benchmark.md) and [measured phone results](docs/validation-v17.md).
+- Persistent System, Light and Dark appearance in Setup.
 
 ## Build
 
@@ -77,9 +80,7 @@ sign language. See [model setup](docs/models.md), [language pickers and extensio
 
 ## Privacy and project scope
 
-See [PRIVACY.md](PRIVACY.md). This app has a separate Android identity: Hearth's
-keys, model files and settings are not transferred automatically. Re-enter keys and
-import the same model packages. Uninstalling deletes app-private data and installed
+See [PRIVACY.md](PRIVACY.md). This standalone app has a separate Android identity from the original media-suite Hearth. Existing standalone Transiber installations upgrade in place to the Hearth name, retaining saved keys, models and settings. Data from the media-suite app is not transferred automatically. Uninstalling deletes app-private data and installed
 models. New public Downloads files remain; export older app-stored downloads or
 Android 9 downloads first if you need to keep them.
 
@@ -93,14 +94,14 @@ First-party code: Apache-2.0. Bundled third-party code and runtime libraries ret
 their own terms; see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 Model weights are separately licensed downloads, not bundled app assets.
 
-### Model downloads (0.6.0)
+### Model downloads
 
 In Models, **Download & install** downloads catalogued Moonshine Tiny/Base,
 Qwen3-ASR 0.6B, Nemotron and translation GGUFs, then verifies and installs them
 on the phone. No computer, export or re-import is required. Use the installed
 model when ready; a background completion does not replace a running session's engine.
 
-Original downloads live in **Downloads/Real time transiber/models** (direct URLs
+Original downloads live in **Downloads/Hearth/models** (direct URLs
 in `files`). **Downloads → Choose folder** selects another writable folder for
 future downloads, including on Android 9. Installed engines keep a separate,
 verified app-owned copy. Downloads can be deleted without uninstalling models.

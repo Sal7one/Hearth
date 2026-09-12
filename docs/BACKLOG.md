@@ -1,12 +1,19 @@
-# Real time transiber — finish for publication
+# Hearth — finish for publication
 
-Updated 2026-09-12 after the owner's scope correction.
+Updated 2026-09-13: owner approved an on-device benchmark and traveler release wave.
 
-Ship visible improvements to the working app. Cloud BYOK already works well;
-preserve it. No benchmark framework, new telemetry, broad JNI rewrite, architecture
-project or research program. Reuse the existing translation interface, importer,
-downloader and settings store. Do the normal build checks and a short functional
-check of changed behavior; do not create extra tooling to justify a small change.
+Ship visible improvements to the working app and preserve cloud BYOK. The owner now explicitly requests a local benchmark; this supersedes the earlier no-benchmark constraint. Keep it inside the app, reuse production adapters, and separate initialization from inference. Avoid speculative native rewrites.
+
+## Current release wave — 0.7.0
+
+- [x] Rename visible app branding to Hearth; new default downloads use `Downloads/Hearth/models` and `files`. Keep custom folders and earlier downloads accessible.
+- [x] Add persistent System/Light/Dark appearance and clear home entries for Conversation and Local benchmark.
+- [x] Add one-model-at-a-time WAV/text comparison, exact model identities, load/inference timing, transcripts, local saved reports and export.
+- [x] Add turn-taking microphone/typed conversation with originals, translations, local history, large text and optional system TTS.
+- [x] Keep caption, conversation and benchmark native workloads mutually exclusive through cleanup.
+- [x] Audit JNI/pipeline and fix clear-caption translation reloads and premature Stop draining.
+- [x] Run final unit/build gates, verify both APKs and exercise new features on the phone; see validation-v17.md.
+- [x] Record measured comparisons and limitations in validation-v17.md; add contributor and bug-report templates. GitHub publication remains a separate step.
 
 ## Release list, in order
 
@@ -14,7 +21,7 @@ check of changed behavior; do not create extra tooling to justify a small change
 
 Status: implemented in 0.2.1; see validation-v5.md for checks and limitations.
 
-- [x] Finish saving new model downloads under `Downloads/Real time transiber/models` on Android 10+; direct files use the adjacent `files` folder.
+- [x] Finish saving new model downloads under `Downloads/Hearth/models` on Android 10+; direct files use the adjacent `files` folder.
 - [x] Let existing downloaded translation models install directly inside the app. No export or file-picker round trip.
 - [x] Show Downloading / Verifying / Installed and one clear next action; keep manual import for externally obtained files.
 - [x] Keep hash checking and show actual failures; never mark a partial file Installed.
@@ -45,7 +52,7 @@ Status: candidate identified; not integrated.
 - [ ] Try the official HY-MT1.5 2-bit mobile variant first if it works with the existing runtime. Its publisher advertises about 574 MB versus our current roughly 1.1 GB Q4 download.
 - [ ] Keep the current working model available. Add the smaller choice through the existing translator interface, without an engine redesign.
 - [ ] Verify the exact file/hash and do a few real Russian/Chinese → Arabic/English translations; check that switching/off still works.
-- [ ] Use a brief side-by-side phone check to see whether it feels faster and remains useful. No benchmark harness, performance dashboard or numerical improvement gate.
+- [ ] Use a brief side-by-side phone check to see whether it feels faster and remains useful. Use the newly approved local comparison screen; do not promise a universal speed winner.
 - [ ] Consider the advertised 440 MB 1.25-bit variant only if its extra STQ kernel support is a small, safe integration. Otherwise leave it for later.
 - [ ] Label download size and supported languages plainly. Do not call an untested option faster, or a new compressed variant a newer base model.
 
@@ -221,7 +228,7 @@ manifest/hash/path checks are retained; a user-created ZIP is no longer needed.
 
 ## RT-30 — Public downloads and on-phone model installation (0.6.0)
 
-- [x] Download originals directly to Downloads/Real time transiber, with a persistent custom-folder picker.
+- [x] Download originals directly to Downloads/Hearth, with a persistent custom-folder picker.
 - [x] Keep download / installation progress in a foreground notification across page navigation.
 - [x] Automatically verify and unpack catalogued Moonshine/Qwen archives and install Nemotron GGUF; generate internal metadata on the phone.
 - [x] Automatically install catalogued translation GGUF downloads; retain an explicit Use model action so background completion cannot change an active session.
