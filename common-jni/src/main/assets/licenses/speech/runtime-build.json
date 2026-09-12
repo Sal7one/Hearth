@@ -9,8 +9,8 @@
   "artifacts": [
     {
       "file": "libhearth_qwen.so",
-      "bytes": 20549952,
-      "sha256": "647d0cdd7e9ac23e0b2dd16dd11b7e6ab49d63b3e3a90cf74695ece7e716f683",
+      "bytes": 20557488,
+      "sha256": "a02ad071e814facd9fc72ffdb757574299cc57af8d4a5696bf1b88fbe0218e12",
       "minPageAlignment": 16384,
       "dependencies": [
         "liblog.so",
@@ -40,7 +40,8 @@
     "common-jni/src/main/cpp/speech/backends/backend_guard.h": "271f1d9d135b73835664614a67b3e0c676aa7aec992311986cb173a266172cbe",
     "common-jni/src/main/cpp/speech/backends/exports.map": "546cdb327cca1d7b93e99fbb82304445637236c2a70ccf1e714b5e094289c4b5",
     "common-jni/src/main/cpp/speech/backends/nemotron_backend.cpp": "fde0b4de10fbf2d338961df0df2267cf20230cb1cdba8d644a5b4a26c1802032",
-    "common-jni/src/main/cpp/speech/backends/qwen_backend.cpp": "23c49bb17e8549be25be21810380300d8cc6b637607d253ce2ad024ac4d180be",
+    "common-jni/src/main/cpp/speech/backends/qwen_backend.cpp": "7d117c5f45a1c03e7ebdd469de061ab7c2c10440013b52da051f914adc58b354",
+    "common-jni/src/main/cpp/speech/qwen_language.h": "1edb8df4c41adf9015227aa38c74652f9357dc6794c8ab58e37ae332dfd616b7",
     "common-jni/src/main/cpp/speech/utterance_segmenter.h": "12932ab567a45e46be5e0e6780f6b96342648421287447cd7a4db4df6fa8061a",
     "scripts/speech/build-runtimes.sh": "618e6c046342ad856c0fa136a11308754c66155f914787ee43bc94209cd1fa97",
     "scripts/speech/nemo-inject.cmake": "9b02fa9deb1ff24a7b32ef262ae9e198770b9a807123616d43069b021002c5bd",

@@ -1,4 +1,5 @@
 #include "../speech_session.h"
+#include "../qwen_language.h"
 #include "../utterance_segmenter.h"
 #include <cassert>
 #include <iostream>
@@ -34,6 +35,14 @@ std::vector<Segment> segmented(const std::vector<float>& audio, size_t chunk) {
 }
 }
 int main() {
+    check(qwenLanguageName("auto").empty());
+    check(qwenLanguageName("ru") == "Russian");
+    check(qwenLanguageName("zh") == "Chinese");
+    check(qwenLanguageName("ar") == "Arabic");
+    check(qwenLanguageName("yue") == "Cantonese");
+    check(qwenLanguageName("fil") == "Filipino");
+    fails([] { qwenLanguageName("ur"); }, "Unsupported Qwen source language");
+
     std::vector<float> audio(48000, 0.1f);
     std::fill(audio.begin(), audio.begin() + 4000, 0);
     std::fill(audio.begin() + 22000, audio.begin() + 26000, 0);

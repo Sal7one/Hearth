@@ -23,7 +23,7 @@ zip -0 -r ../qwen3-asr.zip .
 ```
 
 Import the ZIP in Models → Qwen → Import model ZIP. The `hearth-speech.json` file
-must be at the ZIP root. Qwen uses automatic language detection and emits captions
+must be at the ZIP root. Qwen offers Auto or an explicit spoken language and emits captions
 in utterance windows. A compatible Qwen 1.7B package is accepted by the schema, but
 no 1.7B phone performance claim is made.
 

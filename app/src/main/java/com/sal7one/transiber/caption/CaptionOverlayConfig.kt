@@ -270,7 +270,7 @@ object CaptionConfigStore {
             showPartial = prefs[ShowPartial] ?: true,
             theme = prefs[Theme]?.let { enumOrDefault(it, CaptionTheme.DARK) } ?: CaptionTheme.DARK,
             backgroundOpacity = prefs[BackgroundOpacity] ?: 70,
-            tapThrough = prefs[TapThrough] ?: false,
+            tapThrough = false, // Session-only opt-in, including upgrades with a saved true value.
             speakCaptions = prefs[SpeakCaptions] ?: false,
             speakerChoice = prefs[SpeakerChoice]
                 ?.let { enumOrDefault(it, CaptionSpeakerChoice.SYSTEM) }
@@ -301,7 +301,7 @@ object CaptionConfigStore {
         prefs[ShowPartial] = config.showPartial
         prefs[Theme] = config.theme.name
         prefs[BackgroundOpacity] = config.backgroundOpacity
-        prefs[TapThrough] = config.tapThrough
+        prefs.remove(TapThrough)
         prefs[SpeakCaptions] = config.speakCaptions
         prefs[SpeakerChoice] = config.speakerChoice.name
     }

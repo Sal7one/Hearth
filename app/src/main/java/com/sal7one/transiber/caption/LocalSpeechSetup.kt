@@ -97,20 +97,11 @@ internal fun LocalSpeechSetup(
                 com.sal7one.common_jni.translation.TranslationLanguages.label(it)
             })
             Text(if (backend == com.sal7one.common_jni.speech.SpeechBackend.QWEN3_ASR)
-                "Publisher coverage: 30 languages plus Chinese dialects; automatic language detection. Recognition, not translation."
+                "Publisher coverage: 30 languages plus Chinese dialects; Auto or an explicit spoken language. Recognition, not translation."
             else "Publisher coverage: 28 languages / 32 locales usable without fine-tuning. Mandarin and 12 other languages are broad-coverage tier; quality varies. Eight adaptation-only locales are excluded.")
         }
         if (details) {
-        if (config.effectiveEngine == CaptionEngineChoice.NEMOTRON) {
-            Text("Source language hint", style = MaterialTheme.typography.labelMedium)
-            Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                val supported = com.sal7one.common_jni.speech.SpeechProfile.NEMOTRON_3_5_ASR_0_6B.capabilities.sourceLanguageHints
-                (listOf("Auto" to "auto") + supported.sortedBy(com.sal7one.common_jni.translation.TranslationLanguages::label).map { com.sal7one.common_jni.translation.TranslationLanguages.label(it) to it }).forEach { (label, code) ->
-                    FilterChip(selected = config.streamLanguage == code,
-                        onClick = { update { it.copy(streamLanguage = code) } }, label = { Text(label) })
-                }
-            }
-        } else Text("Qwen detects the source language automatically.", style = MaterialTheme.typography.bodySmall)
+        CaptionLanguageFields(config, update, enabled = !busy, showTarget = false)
         Text("Model sources: Qwen / sherpa-onnx (Apache 2.0); NVIDIA Nemotron (OpenMDW 1.1). " +
             "The provided ZIPs include model cards, source details and license notices.", style = MaterialTheme.typography.bodySmall)
         Text("During capture, compute/audio below 1× means inference is faster than the audio duration. " +

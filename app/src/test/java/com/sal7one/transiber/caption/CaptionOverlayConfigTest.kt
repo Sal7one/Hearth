@@ -8,6 +8,16 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class CaptionOverlayConfigTest {
+    @Test fun tapThroughIsOptInForEveryNewSessionIncludingSavedUpgrades() {
+        assertFalse(CaptionOverlayConfig().tapThrough)
+        val key = androidx.datastore.preferences.core.booleanPreferencesKey("tap_through")
+        val prefs = mutablePreferencesOf(key to true)
+        assertFalse(CaptionConfigStore.readFrom(prefs).tapThrough)
+        CaptionConfigStore.writeInto(prefs, CaptionOverlayConfig(tapThrough = true))
+        assertNull(prefs[key])
+        assertFalse(CaptionConfigStore.readFrom(prefs).tapThrough)
+    }
+
 
     @Test
     fun englishTargetKeepsVoskAsTheFastPath() {

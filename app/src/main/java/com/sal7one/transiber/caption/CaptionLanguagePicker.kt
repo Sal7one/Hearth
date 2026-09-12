@@ -31,22 +31,25 @@ fun CaptionLanguageFields(
     showSource: Boolean = true,
     targetChoices: CaptionLanguageChoices? = null,
     onOpenOverlay: ((CaptionLanguagePicker) -> Unit)? = null,
+    showTarget: Boolean = true,
 ) {
     val context = LocalContext.current
     val cloudMode = CloudConfigStore.sttMode(context)
     var picker by remember { mutableStateOf<CaptionLanguagePicker?>(null) }
-    val source = CaptionLanguages.source(config, cloudMode)
+    val model = rememberCaptionLanguageModel(config)
+    val source = CaptionLanguages.source(config, cloudMode, model)
     val target = targetChoices ?: CaptionLanguages.target(config, cloudMode)
     fun open(which: CaptionLanguagePicker) { if (onOpenOverlay != null) onOpenOverlay(which) else picker = which }
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         if (showSource) {
-            val sourceCode = if (config.engine == CaptionEngineChoice.VOSK) "model" else CaptionLanguages.effectiveSource(config, cloudMode)
-            LanguageField("Spoken language (CC)", sourceCode, enabled) { open(CaptionLanguagePicker.SOURCE) }
+            val sourceCode = if (config.engine == CaptionEngineChoice.VOSK) "model" else CaptionLanguages.effectiveSource(config, cloudMode, model)
+            LanguageField("Spoken language (CC)", sourceCode, enabled && source.allowsSelection) { open(CaptionLanguagePicker.SOURCE) }
+            Text(source.note, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             if (config.streamLanguage != sourceCode && config.streamLanguage != "auto") Text(
                 "Saved hint ${LanguageCatalog.option(config.streamLanguage).englishName} is not used by this mode.",
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
-        if (config.mode == CaptionMode.TRANSLATE || targetChoices != null) {
+        if (showTarget && (config.mode == CaptionMode.TRANSLATE || targetChoices != null)) {
             LanguageField("Translate to", config.target.languageTag, enabled) { open(CaptionLanguagePicker.TARGET) }
             if (config.target.languageTag !in target.codes) Text("Choose an output language supported by this setup.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
@@ -58,7 +61,7 @@ fun CaptionLanguageFields(
                     title = if (which == CaptionLanguagePicker.SOURCE) "Spoken language (CC)" else "Translate to",
                     choices = if (which == CaptionLanguagePicker.SOURCE) source else target,
                     selected = if (which == CaptionLanguagePicker.SOURCE) {
-                        if (config.engine == CaptionEngineChoice.VOSK) "model" else CaptionLanguages.effectiveSource(config, cloudMode)
+                        if (config.engine == CaptionEngineChoice.VOSK) "model" else CaptionLanguages.effectiveSource(config, cloudMode, model)
                     } else config.target.languageTag,
                     onSelect = { code ->
                         onChange { if (which == CaptionLanguagePicker.SOURCE) it.copy(streamLanguage = if (code == "model") "auto" else code)
@@ -76,13 +79,17 @@ private fun LanguageField(title: String, code: String, enabled: Boolean, onClick
     val language = LanguageCatalog.option(code)
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Text(title, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        OutlinedButton(onClick = onClick, enabled = enabled,
+        if (!enabled) {
+            Text(language.label, Modifier.fillMaxWidth().padding(vertical = 8.dp).semantics {
+                contentDescription = "$title, ${language.englishName}"
+            }, style = MaterialTheme.typography.bodyLarge)
+        } else OutlinedButton(onClick = onClick, enabled = true,
             modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp).semantics {
                 contentDescription = "$title, ${language.englishName}"
             }, contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp)) {
             Text(language.flag, Modifier.padding(end = 12.dp).clearAndSetSemantics { })
             Text(language.label, Modifier.weight(1f), textAlign = TextAlign.Start)
-            Icon(Icons.Default.ExpandMore, null, Modifier.padding(start = 8.dp))
+            if (enabled) Icon(Icons.Default.ExpandMore, null, Modifier.padding(start = 8.dp))
         }
     }
 }
@@ -113,7 +120,7 @@ fun LanguagePickerContent(
         LazyColumn(Modifier.weight(1f).fillMaxWidth().selectableGroup(), contentPadding = PaddingValues(bottom = 16.dp)) {
             item(key = "note") { Text(choices.note, Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
-            if (rows.isEmpty() && choices.automaticLanguages.isEmpty()) item(key = "empty") { Text("No matching languages", Modifier.padding(16.dp).semantics { liveRegion = LiveRegionMode.Polite }) }
+            if (rows.isEmpty()) item(key = "empty") { Text("No matching languages", Modifier.padding(16.dp).semantics { liveRegion = LiveRegionMode.Polite }) }
             items(rows, key = { it.code }) { language ->
                 Row(Modifier.fillMaxWidth().heightIn(min = 64.dp)
                     .selectable(selected = language.code == selected, role = Role.RadioButton, onClick = { onSelect(language.code) })
@@ -127,15 +134,7 @@ fun LanguagePickerContent(
                     RadioButton(selected = language.code == selected, onClick = null, modifier = Modifier.padding(start = 8.dp))
                 }
             }
-            if (choices.automaticLanguages.isNotEmpty()) {
-                item(key = "coverage") { Text("Recognized automatically", Modifier.padding(16.dp).semantics { heading() }, style = MaterialTheme.typography.titleSmall) }
-                items(LanguageCatalog.choices(choices.automaticLanguages, query), key = { "coverage-${it.code}" }) { language ->
-                    Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp).semantics(mergeDescendants = true) { }) {
-                        Text(language.flag, Modifier.padding(end = 16.dp).clearAndSetSemantics { })
-                        Text(language.label, style = MaterialTheme.typography.bodyMedium)
-                    }
-                }
-            }
+
         }
     }
 }

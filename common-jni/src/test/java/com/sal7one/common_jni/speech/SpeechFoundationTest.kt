@@ -90,7 +90,11 @@ class SpeechFoundationTest {
     }
     @Test fun validatesBackendSpecificOptions() {
         SpeechOptions().validate(SpeechProfile.QWEN3_ASR_0_6B)
-        rejects("source-language") { SpeechOptions(sourceLanguage = "ru").validate(SpeechProfile.QWEN3_ASR_0_6B) }
+        SpeechProfile.QWEN3_ASR_0_6B.capabilities.languages.forEach {
+            assertTrue(it.canForce)
+            SpeechOptions(sourceLanguage = it.code).validate(SpeechProfile.QWEN3_ASR_0_6B)
+        }
+        rejects("source-language") { SpeechOptions(sourceLanguage = "ur").validate(SpeechProfile.QWEN3_ASR_0_6B) }
         rejects("thread") { SpeechOptions(numThreads = 8).validate(SpeechProfile.NEMOTRON_3_5_ASR_0_6B) }
         rejects("rightContext") { SpeechOptions(rightContext = 2).validate(SpeechProfile.NEMOTRON_3_5_ASR_0_6B) }
         rejects("20ms") { SpeechOptions(maxUtteranceMs = 1001).validate(SpeechProfile.QWEN3_ASR_0_6B) }
@@ -215,6 +219,44 @@ class SpeechFoundationTest {
         } finally { release.countDown(); p.close() }
         assertEquals(1, d.destroyed.get())
     }
+    @Test fun clearDiscardsInFlightAndQueuedAudioWithoutReloadingRecognizer() = runBlocking {
+        val d = FakeDriver(); val started = CountDownLatch(1); val release = CountDownLatch(1)
+        d.onPush = { started.countDown(); check(release.await(5, TimeUnit.SECONDS)) }
+        val p = LiveSpeechProcessor(SpeechSession(d, 1, SpeechProfile.NEMOTRON_3_5_ASR_0_6B))
+        try {
+            assertTrue(p.tryAccept(shortArrayOf(1)))
+            assertTrue(started.await(5, TimeUnit.SECONDS))
+            assertTrue(p.tryAccept(shortArrayOf(2)))
+            val resetting = async(start = CoroutineStart.UNDISPATCHED) { p.reset() }
+            assertFalse(p.tryAccept(shortArrayOf(3)))
+            release.countDown(); withTimeout(5000) { resetting.await() }
+            assertEquals(0, d.destroyed.get())
+            assertTrue(p.snapshot().finals.isEmpty())
+            assertEquals(listOf<Short>(1), d.audio)
+            assertTrue(p.tryAccept(shortArrayOf(4)))
+            withTimeout(5000) { while (p.snapshot().processedSamples != 1L) delay(10) }
+            assertEquals(listOf<Short>(1, 4), d.audio)
+            assertEquals(SpeechProcessorState.Running, p.state.value)
+            p.reset(); assertEquals(0L, p.snapshot().submittedSamples)
+        } finally { release.countDown(); p.close() }
+        assertEquals(1, d.destroyed.get())
+    }
+
+    @Test fun stopDuringResetCannotLeakOrHangTheResetCaller() = runBlocking {
+        val d = FakeDriver(); val started = CountDownLatch(1); val release = CountDownLatch(1)
+        d.onPush = { started.countDown(); check(release.await(5, TimeUnit.SECONDS)) }
+        val p = LiveSpeechProcessor(SpeechSession(d, 1, SpeechProfile.QWEN3_ASR_0_6B))
+        try {
+            assertTrue(p.tryAccept(shortArrayOf(1)))
+            assertTrue(started.await(5, TimeUnit.SECONDS))
+            val resetting = async(start = CoroutineStart.UNDISPATCHED) { runCatching { p.reset() } }
+            val closing = launch(start = CoroutineStart.UNDISPATCHED) { p.close() }
+            release.countDown()
+            withTimeout(5000) { closing.join(); assertTrue(resetting.await().isFailure) }
+            assertEquals(1, d.destroyed.get())
+        } finally { release.countDown(); p.close() }
+    }
+
     @Test fun immediateStopAlwaysReleasesLoadedModel() = runBlocking {
         repeat(30) {
             val d = FakeDriver()

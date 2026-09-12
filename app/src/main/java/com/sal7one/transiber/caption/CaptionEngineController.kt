@@ -306,6 +306,8 @@ class CaptionEngineController(
      * interim shown) — the source-stop drain waits for this to go quiet. */
     @Volatile private var lastActivityMs = 0L
     @Volatile private var stopping = false
+    @Volatile private var clearingTranscript = false
+    private var clearJob: Job? = null
     @Volatile private var sessionGeneration = 0L
     private val loadMutex = Mutex()
     private val cleanupScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -352,6 +354,8 @@ class CaptionEngineController(
 
     fun start(config: CaptionOverlayConfig, onComplete: (Boolean) -> Unit) {
         scope.launch {
+            clearJob?.cancel()
+            clearingTranscript = false
             currentConfig = config
             stopping = false
             val generation = ++sessionGeneration
@@ -476,7 +480,7 @@ class CaptionEngineController(
             },
             result = { id, text, latency ->
                 scope.launch {
-                    if (generation == translationGeneration && activeRoute == CaptionTranslationRoute.LOCAL_TEXT) {
+                    if (generation == translationGeneration && activeRoute == CaptionTranslationRoute.LOCAL_TEXT && _state.value.history.any { it.id == id }) {
                         _state.update { it.copy(history = attachTranslationById(it.history, id, text), localTranslationMetrics = "Local translation ${latency} ms · ${config.localTranslationModelId}") }
                         speakLine(currentConfig, text)
                     }
@@ -509,7 +513,7 @@ class CaptionEngineController(
         activeRoute = captionTranslationRoute(config,
             if (config.engine == CaptionEngineChoice.CLOUD) com.sal7one.transiber.byok.CloudConfigStore.sttMode(context)
             else com.sal7one.transiber.byok.CloudConfigStore.SttMode.BATCH)
-        val spokenLanguage = CaptionLanguages.effectiveSource(config, com.sal7one.transiber.byok.CloudConfigStore.sttMode(context))
+        val spokenLanguage = CaptionLanguages.effectiveSource(config, com.sal7one.transiber.byok.CloudConfigStore.sttMode(context), captionLanguageModel(context, config))
         if (config.effectiveEngine.speechBackend != null) {
             val models = LocalSpeechModels(java.io.File(context.filesDir, "speech-models"))
             val model = models.select(config.effectiveEngine, config.modelId)
@@ -1075,6 +1079,7 @@ class CaptionEngineController(
     }
 
     private fun attachTranslation(lineId: Long, translated: String, promotedAtMs: Long) {
+        if (_state.value.history.none { it.id == lineId }) return
         val elapsedMs = System.currentTimeMillis() - promotedAtMs
         Log.i(TAG, "Translation attached in ${elapsedMs} ms for line #$lineId")
         _state.update { current ->
@@ -1167,8 +1172,11 @@ class CaptionEngineController(
         opportunisticText = text
         opportunisticTranslation = null
         val target = config.target
+        val generation = sessionGeneration
         translationScope.launch {
-            when (val result = translationLayer.translate(text, target)) {
+            val result = translationLayer.translate(text, target)
+            if (generation != sessionGeneration) return@launch
+            when (result) {
                 is TranslationResult.Translated -> {
                     opportunisticTranslation = result.text
                     _state.update { current ->
@@ -1195,7 +1203,7 @@ class CaptionEngineController(
      * lag behind the video).
      */
     fun pushAudio(pcm: ShortArray, sampleCount: Int) {
-        if (sampleCount <= 0 || sampleCount > pcm.size || stopping || currentConfig.paused) return
+        if (sampleCount <= 0 || sampleCount > pcm.size || stopping || clearingTranscript || currentConfig.paused) return
         val speech = localSpeech
         if (speech != null) {
             // Bypass the legacy DROP_OLDEST channel: preserve every accepted sample.
@@ -1219,13 +1227,57 @@ class CaptionEngineController(
     fun onCaptureResumed() { markCaptureSilent(false) }
 
     fun clearTranscript() {
+        if (clearingTranscript) return
         displayedPartial = ""
         lastPartial = ""
         emptySinceMs = null
         partialSinceMs = null
         resetOpportunistic()
-        _state.value = _state.value.copy(history = emptyList(), partial = "", partialTranslation = null)
+        releaseSpeaker()
+        _state.update { it.copy(history = emptyList(), partial = "", partialTranslation = null) }
+        // Cloud reset() only clears its UI queue: old server audio can still return.
+        // A new connection/request worker is the reliable boundary between videos.
+        if (!currentConfig.paused && !stopping && _state.value.status != Status.ERROR &&
+            (_state.value.status == Status.LOADING_MODEL || engine is com.sal7one.transiber.byok.StreamingCloudEngine || engine is RemoteWhisperEngine)) {
+            start(currentConfig) { }
+            return
+        }
+        if (stopping) {
+            pollJob?.cancel()
+            translationScope.cancel()
+            ++translationGeneration
+            localTranslationBridge?.close()
+            return // Preserve the generation awaited by the service's Stop drain.
+        }
+        val generation = ++sessionGeneration
+        translationScope.cancel()
+        translationScope = CoroutineScope(SupervisorJob() + translationDispatcher)
         if (activeRoute == CaptionTranslationRoute.LOCAL_TEXT) configureLocalTranslation(currentConfig)
+        if (currentConfig.paused || stopping || _state.value.status == Status.ERROR) return
+        val speech = localSpeech
+        val legacy = engine
+        if (speech == null && legacy == null) return
+        clearingTranscript = true
+        val oldPoll = pollJob.also { it?.cancel() }
+        val oldAudio = audioJob.also { it?.cancel() }
+        audioChannel.close()
+        _state.update { it.copy(status = Status.LOADING_MODEL) }
+        clearJob = scope.launch {
+            try {
+                oldPoll?.join(); oldAudio?.join()
+                if (speech != null) speech.reset() else legacy?.reset()?.getOrThrow()
+                if (generation != sessionGeneration) return@launch
+                audioChannel = Channel(capacity = 4, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+                _state.update { it.copy(status = Status.RUNNING) }
+                startAudioConsumer()
+                startPolling()
+            } catch (e: CancellationException) { throw e }
+            catch (e: Exception) {
+                if (generation == sessionGeneration) reportError("Clear captions: ${e.message ?: e.javaClass.simpleName}")
+            } finally {
+                if (generation == sessionGeneration) clearingTranscript = false
+            }
+        }
     }
 
     fun stop(onDrained: (() -> Unit)? = null) {
@@ -1256,6 +1308,8 @@ class CaptionEngineController(
     }
 
     private fun stopInternal(promotePending: Boolean) {
+        clearJob?.cancel()
+        clearingTranscript = false
         ++translationGeneration
         val oldBridge = localTranslationBridge
         localTranslationBridge = null

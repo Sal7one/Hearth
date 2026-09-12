@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -176,7 +177,7 @@ fun CaptionOverlayWindow(
     ) {
         if (cfg.tapThrough) Text("Tap lock to restore controls · drag lock to move",
             Modifier.padding(horizontal = 12.dp, vertical = 8.dp), color = palette.onSurface, fontSize = 12.sp)
-        else ControlStrip(cfg, state, palette, true, onDrag, onDragFinished, onClose, onConfigChange)
+        else ControlStrip(cfg, state, palette, true, onDrag, onDragFinished, onClose, { held = null; onClear() }, onConfigChange)
         Box(Modifier.weight(1f).fillMaxWidth()) {
             if (cfg.showSettings && cfg.languagePicker != null) {
                 val which = cfg.languagePicker
@@ -186,9 +187,9 @@ fun CaptionOverlayWindow(
                     Surface(Modifier.fillMaxSize()) {
                         LanguagePickerContent(
                             title = if (which == CaptionLanguagePicker.SOURCE) "Spoken language (CC)" else "Translate to",
-                            choices = if (which == CaptionLanguagePicker.SOURCE) CaptionLanguages.source(cfg, cloudMode) else CaptionLanguages.target(cfg, cloudMode),
+                            choices = if (which == CaptionLanguagePicker.SOURCE) CaptionLanguages.source(cfg, cloudMode, rememberCaptionLanguageModel(cfg)) else CaptionLanguages.target(cfg, cloudMode),
                             selected = if (which == CaptionLanguagePicker.SOURCE) {
-                                if (cfg.engine == CaptionEngineChoice.VOSK) "model" else CaptionLanguages.effectiveSource(cfg, cloudMode)
+                                if (cfg.engine == CaptionEngineChoice.VOSK) "model" else CaptionLanguages.effectiveSource(cfg, cloudMode, rememberCaptionLanguageModel(cfg))
                             } else cfg.target.languageTag,
                             onSelect = { code -> onConfigChange {
                                 if (which == CaptionLanguagePicker.SOURCE) it.copy(streamLanguage = if (code == "model") "auto" else code, languagePicker = null)
@@ -256,6 +257,7 @@ private fun ControlStrip(
     onDrag: (Int, Int) -> Unit,
     onDragFinished: () -> Unit,
     onClose: () -> Unit,
+    onClear: () -> Unit,
     onConfigChange: ((CaptionOverlayConfig) -> CaptionOverlayConfig) -> Unit,
 ) {
     val moveStep = with(LocalDensity.current) { 32.dp.roundToPx() }
@@ -278,12 +280,15 @@ private fun ControlStrip(
         Modifier
     }
     BoxWithConstraints(Modifier.fillMaxWidth()) {
-    val controlSize = if (maxWidth < 240.dp) 36.dp else 48.dp
-    Row(
+    val controlSize = 48.dp
+    val narrow = maxWidth < 320.dp
+    Column {
+    if (narrow) StatusBadge(state, cfg, palette, Modifier.fillMaxWidth().padding(horizontal = 12.dp))
+    FlowRow(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 4.dp, vertical = 2.dp),
-        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
     ) {
         // Only this handle drags the window; scrolling and buttons own their gestures.
         Icon(
@@ -293,7 +298,7 @@ private fun ControlStrip(
             modifier = Modifier.size(48.dp).then(stripDrag).semantics { customActions = moveActions },
         )
 
-        StatusBadge(state = state, cfg = cfg, palette = palette, modifier = Modifier.weight(1f))
+        if (!narrow) StatusBadge(state = state, cfg = cfg, palette = palette, modifier = Modifier.weight(1f).align(Alignment.CenterVertically))
 
         IconButton(onClick = { onConfigChange { it.copy(paused = !it.paused) } }, enabled = state.status != Status.ERROR, modifier = Modifier.size(controlSize)) {
             Icon(
@@ -302,12 +307,16 @@ private fun ControlStrip(
                 tint = palette.onSurfaceFaded,
             )
         }
+        IconButton(onClick = onClear, modifier = Modifier.size(controlSize)) {
+            Icon(Icons.Default.Delete, "Clear previous text and pending translations", tint = palette.onSurfaceFaded)
+        }
         IconButton(onClick = { onConfigChange { it.copy(showSettings = !it.showSettings, languagePicker = null) } }, modifier = Modifier.size(controlSize)) {
             Icon(Icons.Default.Settings, "Caption settings", tint = palette.onSurfaceFaded)
         }
         IconButton(onClick = onClose, modifier = Modifier.size(controlSize)) {
             Icon(Icons.Default.Close, "Stop captions", tint = palette.onSurfaceFaded)
         }
+    }
     }
     }
 }
@@ -368,6 +377,13 @@ private fun CaptionBody(
                 else -> "Listening…"
             }, color = palette.onSurface, fontSize = 14.sp)
         }
+        // Keep diagnostic counters above the text: live scrolling must land on captions.
+        state.localTranslationMetrics?.let {
+            Text(it, color = palette.onSurfaceMuted, fontSize = 11.sp)
+        }
+        state.localSpeechMetrics?.let {
+            Text(it, color = palette.onSurfaceMuted, fontSize = 11.sp)
+        }
         lines.forEachIndexed { index, line ->
             LinePair(line.original, line.translation, cfg, palette,
                 faded = content.partial.isNotBlank() || index < lines.lastIndex)
@@ -380,12 +396,6 @@ private fun CaptionBody(
         }
         state.translationNotice?.let {
             Text(it, color = palette.accent, fontSize = 12.sp)
-        }
-        state.localTranslationMetrics?.let {
-            Text(it, color = palette.onSurfaceMuted, fontSize = 11.sp)
-        }
-        state.localSpeechMetrics?.let {
-            Text(it, color = palette.onSurfaceMuted, fontSize = 11.sp)
         }
     }
 }

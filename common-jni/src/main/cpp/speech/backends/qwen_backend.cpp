@@ -1,6 +1,7 @@
 #include "backend_guard.h"
 #include "../backend_versions.h"
 #include "../utterance_segmenter.h"
+#include "../qwen_language.h"
 #include "sherpa-onnx/c-api/c-api.h"
 #include <deque>
 #include <memory>
@@ -13,9 +14,10 @@ struct Qwen {
     struct Text { std::string text, language; int64_t end; };
     std::deque<Text> ready;
     Text current;
+    std::string sourceCode, languageName;
     explicit Qwen(const HearthSpeechConfig& c)
-        : segmenter(c.max_utterance_ms, c.silence_ms, c.silence_threshold_db) {
-        if (std::string(c.language) != "auto") throw std::invalid_argument("Qwen sherpa adapter currently supports automatic source language only");
+        : segmenter(c.max_utterance_ms, c.silence_ms, c.silence_threshold_db),
+          sourceCode(c.language), languageName(qwenLanguageName(sourceCode)) {
         SherpaOnnxOfflineRecognizerConfig cfg{};
         cfg.feat_config.sample_rate = 16000;
         cfg.feat_config.feature_dim = 128;
@@ -36,12 +38,13 @@ struct Qwen {
         auto stream = std::unique_ptr<const SherpaOnnxOfflineStream, decltype(&SherpaOnnxDestroyOfflineStream)>(
             SherpaOnnxCreateOfflineStream(recognizer), SherpaOnnxDestroyOfflineStream);
         if (!stream) throw std::runtime_error("SherpaOnnxCreateOfflineStream returned null");
+        if (!languageName.empty()) SherpaOnnxOfflineStreamSetOption(stream.get(), "language", languageName.c_str());
         SherpaOnnxAcceptWaveformOffline(stream.get(), 16000, audio.data(), static_cast<int32_t>(audio.size()));
         SherpaOnnxDecodeOfflineStream(recognizer, stream.get());
         auto result = std::unique_ptr<const SherpaOnnxOfflineRecognizerResult, decltype(&SherpaOnnxDestroyOfflineRecognizerResult)>(
             SherpaOnnxGetOfflineStreamResult(stream.get()), SherpaOnnxDestroyOfflineRecognizerResult);
         if (!result) throw std::runtime_error("SherpaOnnxGetOfflineStreamResult returned null");
-        ready.push_back({result->text ? result->text : "", result->lang ? result->lang : "", end});
+        ready.push_back({result->text ? result->text : "", !languageName.empty() ? sourceCode : (result->lang ? result->lang : ""), end});
     }
     auto consumer() { return [this](const std::vector<float>& audio, int64_t end) { decode(audio, end); }; }
 };

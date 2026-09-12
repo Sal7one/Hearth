@@ -101,6 +101,16 @@ the bubble does not grow over the video as text arrives.
 Done when: the owner can install the update and immediately try the improvements.
 Do not hold the release for every possible model, language or device combination.
 
+## Immediate overlay corrections — 0.4.2
+
+- [x] Make tap-through a session-only opt-in, ignoring older saved true values on a new session.
+- [x] Model-based spoken-language data, explanations next to the field and selectable rows only; no coverage list masquerading as a picker.
+- [x] Wire Qwen's already-supported language option through Kotlin/JNI/sherpa, keeping Auto available.
+- [x] Read actual local Whisper weight capabilities; never offer multilingual choices for English-only weights or blanket hints for unknown cloud models.
+- [x] Restore Clear previous text beside pause/stop; clear the held history view, pending recognition/translation and spoken output.
+- [x] Keep local ASR weights loaded on Clear and reconnect cloud recognition to discard the previous video's server-side audio.
+- [x] Finish APK/device verification and deliver; see validation-v10.md for the final record.
+
 ## Conversation mode — owner-requested plan, not implemented
 
 See [Conversation UI and delivery plan](conversation-mode-plan.md) for the screen

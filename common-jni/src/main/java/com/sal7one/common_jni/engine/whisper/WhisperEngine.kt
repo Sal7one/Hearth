@@ -262,18 +262,15 @@ class WhisperEngine : SttEngine {
             }
         }
 
-    override suspend fun reset(): Result<Unit> =
-        withContext(inferenceDispatcher) {
-            if (nativeHandle != 0L) {
-                try {
-                    nativeResetWhisper(nativeHandle)
-                } catch (e: Exception) {
-                    // Non-fatal
-                }
-            }
+    override suspend fun reset(): Result<Unit> = withContext(inferenceDispatcher) {
+        if (nativeHandle == 0L) return@withContext Result.failure(SttError.NotInitialized())
+        try {
+            nativeResetWhisper(nativeHandle)
             accumulatedAudioMs = 0L
             Result.success(Unit)
-        }
+        } catch (e: kotlinx.coroutines.CancellationException) { throw e }
+        catch (e: Exception) { Result.failure(e) }
+    }
 
     override suspend fun release() = withContext(inferenceDispatcher) {
         releaseInternal()

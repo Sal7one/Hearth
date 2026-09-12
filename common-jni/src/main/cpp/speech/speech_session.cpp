@@ -1,5 +1,6 @@
 #include "speech_session.h"
 #include "backend_versions.h"
+#include "qwen_language.h"
 #include <cmath>
 #include <cstring>
 #include <dlfcn.h>
@@ -37,7 +38,7 @@ SpeechConfig::SpeechConfig(const std::string& json) {
     value.silence_threshold_db = static_cast<float>(db);
     if (backend == "qwen3_asr") {
         for (int i = 1; i <= 4; ++i) if (paths[i].empty()) throw std::invalid_argument("Qwen requires frontend, encoder, decoder and tokenizer paths");
-        if (paths[5] != "auto") throw std::invalid_argument("Qwen adapter requires automatic source language");
+        qwenLanguageName(paths[5]); // Validate before loading the backend.
     } else if (backend == "nemotron_3_5") {
         if (paths[0].empty() || paths[5].empty()) throw std::invalid_argument("Nemotron requires a model path and source language");
         const int r = value.right_context;

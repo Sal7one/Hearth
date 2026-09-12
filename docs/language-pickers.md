@@ -16,7 +16,7 @@ the saved reading height and settings scroll position.
   restriction; TalkBack ignores it and reads the language text.
 - `common-jni/.../speech/SpeechModels.kt`: existing profile capabilities distinguish
   recognized languages from accepted source-language hints. Qwen recognizes 30
-  languages but its bundled sherpa C adapter accepts Auto only. Nemotron advertises
+  languages and now forwards explicit selections through sherpa stream options. Nemotron advertises
   28 languages and passes supported hints through `SpeechOptions` to its native
   locale mapping. New profiles should advertise only what their adapter implements.
 - `common-jni/.../translation/TranslationCatalog.kt`: each model declares source
@@ -24,22 +24,41 @@ the saved reading height and settings scroll position.
   HY models); the existing translation bridge still checks each source/target pair.
 - `app/.../caption/CaptionLanguages.kt`: maps the active app engine/provider mode to
   those capabilities. The UI and engine initialization use the same effective
-  source policy. Unsupported saved hints remain saved, are identified in the UI,
-  and are not sent to an incompatible adapter. Qwen translation uses the detected
-  source rather than a stale manual hint.
+  source policy, resolved against the actual selected model before start. Unsupported saved hints remain saved, are identified in the UI,
+  and are not sent to an incompatible adapter. Qwen translation uses the selected
+  supported source, or detected metadata in Auto mode.
 - `TranslationTarget` is now a language-code value, not a three-entry enum. New
   translation models can add target codes without editing each UI or JNI binding.
   Old ENGLISH/ARABIC/CHINESE preferences remain readable; new targets persist by code.
 
-Whisper uses the bundled whisper.cpp language table; English-only weights remain
-English-only (the picker explains this). Vosk selects language through the installed
-model. OpenAI-compatible transcription hints are suggestions whose coverage depends
-on the configured provider/model. The current OpenAI live translation and AssemblyAI
-adapters have no input-language hint parameter. Live OpenAI output choices retain
-this app's existing English/Arabic/Chinese coverage; this change does not claim new
-cloud output coverage. Deepgram now receives the selected Nova-3 language, with
-Auto retaining `multi`. No provider keys, network behavior in foss, or native binaries
-were changed.
+`SpeechSourceLanguage(code, canForce)` separates recognition coverage from manual
+control per language. Pickers include only actionable choices. Automatic-only and
+fixed-language paths show a plain value and model-specific explanation beside the
+field, with no dropdown of unclickable languages. Unknown cloud models do not
+inherit Whisper's languages. Known cloud model paths use a conservative common
+language set; this is not an exhaustive claim about every provider's coverage.
+
+Local Whisper reads the actual GGML header off Main before exposing choices:
+51864 vocabulary is English-only, 51865 has the earlier multilingual vocabulary,
+and 51866 includes Cantonese. Renaming an English model cannot enable other
+languages. Vosk's language is fixed by its installed model. OpenAI live translation,
+cloud audio translation and the current AssemblyAI adapter accept no source
+language override; their source picker stays closed. Deepgram Nova-3 sends the
+chosen source code and retains `multi` for Auto.
+
+Qwen had an app-imposed Auto restriction even though our pinned sherpa source
+already reads per-stream `language`. Version 0.4.2 removes that restriction through
+all layers: profile validation → normalized ISO code in SpeechRuntime → native
+validation → `qwenLanguageName` → `SherpaOnnxOfflineStreamSetOption` before decode.
+The prompt receives the required English language name, while translation receives
+the original ISO code. Both 0.6B and 1.7B profiles expose the same 30-language
+coverage; this is not a new performance claim for the larger model.
+
+Sources:
+- [Pinned Qwen decoder, BuildSourceIds and stream language](https://github.com/k2-fsa/sherpa-onnx/blob/210f340bcfdfd5b9ad6b24245e77a934d6c28f1b/sherpa-onnx/csrc/offline-recognizer-qwen3-asr-impl.cc)
+- [Pinned C stream-option API](https://github.com/k2-fsa/sherpa-onnx/blob/210f340bcfdfd5b9ad6b24245e77a934d6c28f1b/sherpa-onnx/c-api/c-api.h)
+- [OpenAI live source-language hints](https://developers.openai.com/api/docs/guides/realtime-transcription#add-transcription-context)
+- [OpenAI file transcription language configuration](https://developers.openai.com/api/docs/guides/speech-to-text#supported-languages)
 
 Before enabling hints for a new backend, implement and validate the adapter option,
 update its capability set, and add a host check covering rejection of unsupported

@@ -13,7 +13,7 @@ enum class SpeechProfile(val id: String, val backend: SpeechBackend) {
     val capabilities: SpeechCapabilities get() = when (backend) {
         SpeechBackend.QWEN3_ASR -> SpeechCapabilities(
             streaming = SpeechStreamingKind.UTTERANCE_WINDOWED,
-            partialResults = false, sourceLanguages = QWEN_LANGUAGES, sourceLanguageHints = emptySet(),
+            partialResults = false, sourceLanguages = QWEN_LANGUAGES, sourceLanguageHints = QWEN_LANGUAGES,
             configurableThreads = true,
         )
         SpeechBackend.NEMOTRON_3_5 -> SpeechCapabilities(
@@ -31,6 +31,9 @@ enum class SpeechProfile(val id: String, val backend: SpeechBackend) {
         private val NEMO_LANGUAGES = "en es fr it pt nl de tr ru ar hi ja ko vi uk pl sv cs nb da bg fi hr sk zh hu ro et".split(' ').toSet()
     }
 }
+/** Recognition coverage and explicit language control are separate facts per runtime. */
+data class SpeechSourceLanguage(val code: String, val canForce: Boolean)
+
 data class SpeechCapabilities(
     val streaming: SpeechStreamingKind,
     val partialResults: Boolean,
@@ -38,6 +41,7 @@ data class SpeechCapabilities(
     val sourceLanguageHints: Set<String>,
     val configurableThreads: Boolean,
 ) {
+    val languages: List<SpeechSourceLanguage> get() = sourceLanguages.map { SpeechSourceLanguage(it, it in sourceLanguageHints) }
     val sampleRate: Int get() = 16000
     val channels: Int get() = 1
     val translationTargets: Set<String> get() = emptySet()

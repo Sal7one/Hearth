@@ -281,14 +281,15 @@ class VoskEngine : SttEngine {
         accumulatedAudioMs = accumulatedAudioMs
     )
 
-    override suspend fun reset(): Result<Unit> =
-        withContext(inferenceDispatcher) {
-            if (nativeHandle != 0L) {
-                try { nativeResetVosk(nativeHandle) } catch (e: Exception) { }
-            }
+    override suspend fun reset(): Result<Unit> = withContext(inferenceDispatcher) {
+        if (nativeHandle == 0L) return@withContext Result.failure(SttError.NotInitialized())
+        try {
+            nativeResetVosk(nativeHandle)
             accumulatedAudioMs = 0L
             Result.success(Unit)
-        }
+        } catch (e: kotlinx.coroutines.CancellationException) { throw e }
+        catch (e: Exception) { Result.failure(e) }
+    }
 
     override suspend fun release() = withContext(inferenceDispatcher) {
         releaseInternal()

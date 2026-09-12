@@ -29,3 +29,14 @@ window. Host checks cover placement outside caption text and reachability at scr
 edges, full-screen and tiny/rotated viewports. The same controller owns both windows
 and removes the handle on restore/hide/stop; the existing service provides notification
 recovery. See validation-v9.md for the verified tap/drag/notification/restart sequence.
+
+Version 0.4.2: SpeechCapabilities exposes SpeechSourceLanguage records consumed by
+CaptionLanguages and both UI surfaces. whisperVocabulary reads eight header bytes
+for the selected local weights; tests cover English-only/multilingual/Cantonese,
+renamed weights, invalid magic and truncation. Qwen's native qwenLanguageName maps
+validated ISO codes to the prompt's language names; SpeechConfig and Qwen's decoder
+consume it, with native host checks. SpeechRuntime forwards the selected code.
+LiveSpeechProcessor.reset is consumed by Clear captions: a serialized reset command
+suppresses old in-flight/queued results and keeps weights loaded. Host tests cover
+reset during inference, discarded queued PCM, zero-based new audio, repeated reset
+and Stop during reset with exactly-once release.

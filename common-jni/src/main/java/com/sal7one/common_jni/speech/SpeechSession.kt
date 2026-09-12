@@ -53,7 +53,7 @@ class SpeechRuntime internal constructor(private val driver: () -> SpeechDriver)
                 native = driver()
                 val c = JSONObject().put("backend", model.profile.backend.id)
                 listOf("model", "frontend", "encoder", "decoder", "tokenizer").forEach { c.put(it, model.path(it)) }
-                c.put("language", if (model.profile.backend == SpeechBackend.NEMOTRON_3_5) SpeechLanguage.nemoLocale(options.sourceLanguage) else "auto")
+                c.put("language", if (model.profile.backend == SpeechBackend.NEMOTRON_3_5) SpeechLanguage.nemoLocale(options.sourceLanguage) else SpeechLanguage.normalize(options.sourceLanguage))
                     .put("numThreads", options.numThreads ?: 4).put("rightContext", options.rightContext)
                     .put("maxUtteranceMs", options.maxUtteranceMs).put("silenceMs", options.silenceMs)
                     .put("silenceThresholdDb", options.silenceThresholdDb)

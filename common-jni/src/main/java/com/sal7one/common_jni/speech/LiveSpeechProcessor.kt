@@ -23,7 +23,7 @@ class LiveSpeechProcessor(
     private val maxQueuedSamples: Int = 16000,
 ) {
     init { require(maxQueuedSamples in 320..48000) }
-    private data class Frame(val samples: ShortArray, val offset: Long)
+    private data class Frame(val samples: ShortArray, val offset: Long, val generation: Long, val reset: CompletableDeferred<Unit>? = null)
     private val lock = Any()
     private val queue = Channel<Frame>(Channel.UNLIMITED) // samples bounded under lock, including in-flight work
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -32,6 +32,8 @@ class LiveSpeechProcessor(
     private var queued = 0
     private var submitted = 0L
     private var finishing = false
+    private var generation = 0L
+    private var resetting = false
     private var partial: SpeechTranscript? = null
     private val finals = ArrayDeque<SpeechTranscript>()
     private var inferenceNanos = 0L
@@ -41,8 +43,19 @@ class LiveSpeechProcessor(
     private val worker = scope.launch(start = CoroutineStart.UNDISPATCHED) {
         try {
             for (frame in queue) {
+                if (frame.reset != null) {
+                    try {
+                        session.reset()
+                        synchronized(lock) { resetting = false }
+                        frame.reset.complete(Unit)
+                    } catch (e: Throwable) { frame.reset.completeExceptionally(e); throw e }
+                    continue
+                }
+                if (synchronized(lock) { frame.generation != generation }) continue
                 val update = session.accept(frame.samples, frame.offset)
-                synchronized(lock) { queued -= frame.samples.size; publish(update) }
+                synchronized(lock) {
+                    if (frame.generation == generation) { queued -= frame.samples.size; publish(update) }
+                }
             }
             synchronized(lock) { check(finishing) { "Speech queue closed without finish" } }
             val final = session.finish()
@@ -58,7 +71,7 @@ class LiveSpeechProcessor(
     }
 
     fun tryAccept(samples: ShortArray): Boolean = synchronized(lock) {
-        if (mutableState.value != SpeechProcessorState.Running || finishing) return false
+        if (mutableState.value != SpeechProcessorState.Running || finishing || resetting) return false
         if (samples.isEmpty() || samples.size > 16000) {
             fail(IllegalArgumentException("Speech capture frame must contain 1..16000 samples")); return false
         }
@@ -69,8 +82,26 @@ class LiveSpeechProcessor(
         val copy = samples.copyOf()
         queued += copy.size
         val offset = submitted; submitted += copy.size
-        check(queue.trySend(Frame(copy, offset)).isSuccess)
+        check(queue.trySend(Frame(copy, offset, generation)).isSuccess)
         true
+    }
+
+    /** Discard the old timeline without unloading weights; reset is ordered after in-flight inference. */
+    suspend fun reset() {
+        val done = CompletableDeferred<Unit>()
+        synchronized(lock) {
+            check(mutableState.value == SpeechProcessorState.Running && !finishing && !resetting) { "Speech session cannot reset in its current state" }
+            resetting = true
+            ++generation
+            while (queue.tryReceive().isSuccess) { }
+            queued = 0; submitted = 0; processedSamples = 0; inferenceNanos = 0
+            partial = null; finals.clear()
+            check(queue.trySend(Frame(shortArrayOf(), 0, generation, done)).isSuccess)
+        }
+        val completion = worker.invokeOnCompletion { cause ->
+            done.completeExceptionally(cause ?: IllegalStateException("Speech worker ended during reset"))
+        }
+        try { done.await() } finally { completion.dispose() }
     }
 
     /** Finish queued audio and flush the tail. Does not accept more input. */
