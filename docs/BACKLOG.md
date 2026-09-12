@@ -198,8 +198,8 @@ short functional checks do not mean hiding failures or skipping required gates.
 - [x] Reuse source/install panels in advanced setup and expose local translation for compatible cloud STT.
 - [x] Keep the model groups reachable while scrolling; preserve each group’s scroll position.
 
-Automatic conversion of publisher tar.bz2 archives into prepared speech ZIPs remains
-a separate installation improvement. Existing manifest/hash/path checks are unchanged.
+RT-30 now installs catalogued publisher archives directly on the phone. Existing
+manifest/hash/path checks are retained; a user-created ZIP is no longer needed.
 
 ## RT-27 — Language picker opening position (0.5.2)
 
@@ -218,3 +218,13 @@ a separate installation improvement. Existing manifest/hash/path checks are unch
 - [x] Show translator families as quick chips in shared translation setup, with only the browsed family's controls visible.
 - [x] Put Marian's legacy import behind its own chip; keep active model labels distinct from browsing.
 - [x] Retain the active translation quantization when returning to its family; wrap chips with accessible selected states.
+
+## RT-30 — Public downloads and on-phone model installation (0.6.0)
+
+- [x] Download originals directly to Downloads/Real time transiber, with a persistent custom-folder picker.
+- [x] Keep download / installation progress in a foreground notification across page navigation.
+- [x] Automatically verify and unpack catalogued Moonshine/Qwen archives and install Nemotron GGUF; generate internal metadata on the phone.
+- [x] Automatically install catalogued translation GGUF downloads; retain an explicit Use model action so background completion cannot change an active session.
+- [x] Remove export/re-import instructions and computer packaging steps from supported model cards.
+- [x] Identify Moonshine's exact February 2026 runtime package; do not confuse the release-collection page's date with its asset date or advertise the latest streaming architecture.
+- [ ] Additional one-button catalogs for legacy Whisper/Vosk and custom Qwen 1.7B exports remain separate; their existing imports still work.

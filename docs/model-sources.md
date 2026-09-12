@@ -1,6 +1,6 @@
 # Sources and installation by model group
 
-Updated 2026-09-12 for 0.5.1. These are supported adapters, not a claim that every
+Updated 2026-09-13 for 0.6.0. These are supported adapters, not a claim that every
 artifact/language pair was tested on a phone. Models → Speech / Translation / Cloud
 contains the same source links and installation distinctions. Network actions are
 available only in play. All imported files still pass their existing validation.
@@ -9,18 +9,17 @@ available only in play. All imported files still pass their existing validation.
 
 | Choice | Publisher / files | Installation |
 | --- | --- | --- |
-| Nemotron 3.5 0.6B | [NVIDIA card](https://huggingface.co/nvidia/nemotron-3.5-asr-streaming-0.6b), [pinned Q8 GGUF](https://huggingface.co/nvidia/nemotron-3.5-asr-streaming-0.6b/resolve/1c8deaecc64b91f034d73e08dd8b64625eb3395d/nemotron-3.5-asr-streaming-0.6b.q8_0.gguf) | Prepare/import speech ZIP; bare GGUF is not a speech ZIP. |
-| Qwen3-ASR 0.6B | [Qwen card](https://huggingface.co/Qwen/Qwen3-ASR-0.6B), [sherpa INT8 files](https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-qwen3-asr-0.6B-int8-2026-03-25.tar.bz2) | Extract publisher archive, prepare/import speech ZIP. |
+| Nemotron 3.5 0.6B | [NVIDIA card](https://huggingface.co/nvidia/nemotron-3.5-asr-streaming-0.6b), [pinned Q8 GGUF](https://huggingface.co/nvidia/nemotron-3.5-asr-streaming-0.6b/resolve/1c8deaecc64b91f034d73e08dd8b64625eb3395d/nemotron-3.5-asr-streaming-0.6b.q8_0.gguf) | Download & install in the app; the pinned GGUF is verified and installed automatically. |
+| Qwen3-ASR 0.6B | [Qwen card](https://huggingface.co/Qwen/Qwen3-ASR-0.6B), [sherpa INT8 files](https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-qwen3-asr-0.6B-int8-2026-03-25.tar.bz2) | Download & install automatically; archive extraction happens on the phone. |
 | Qwen3-ASR 1.7B | [Qwen card/files](https://huggingface.co/Qwen/Qwen3-ASR-1.7B) | Compatible custom package only; no verified ready-made download in this app. |
-| Moonshine Tiny English | [Moonshine](https://github.com/moonshine-ai/moonshine), [sherpa Tiny files](https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-moonshine-tiny-en-quantized-2026-02-27.tar.bz2) | 28.5 MiB publisher archive; prepare/import speech ZIP. |
-| Moonshine Base English | [sherpa Base files](https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-moonshine-base-en-quantized-2026-02-27.tar.bz2) | 106.1 MiB publisher archive; compatible profile, not phone-tested here. |
+| Moonshine Tiny English | [Moonshine](https://github.com/moonshine-ai/moonshine), [sherpa Tiny files](https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-moonshine-tiny-en-quantized-2026-02-27.tar.bz2) | 28.5 MiB publisher archive; automatic on-phone installation. |
+| Moonshine Base English | [sherpa Base files](https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-moonshine-base-en-quantized-2026-02-27.tar.bz2) | 106.1 MiB publisher archive; automatic on-phone installation; inference not phone-tested here. |
 | Whisper | [whisper.cpp files](https://huggingface.co/ggerganov/whisper.cpp/tree/main) | Import GGML .bin; .en variants fix English. |
 | Vosk | [publisher language catalog](https://alphacephei.com/vosk/models) | Download/extract model ZIP, import the extracted model folder. |
 
-Prepared speech ZIPs need the manifest at their root. Exact commands and required
-file roles: [model setup](models.md). The app can download the publisher archives,
-but does **not** convert tar.bz2 or bare speech GGUF files into prepared ZIPs.
-The source cards say this before download and include preparation instructions.
+Catalogued downloads install automatically, including tar.bz2 extraction and raw
+Nemotron GGUF packaging. Existing prepared ZIPs remain importable. Developer
+packaging instructions are in [model setup](models.md), for custom packages only.
 Archive sizes are download sizes, not peak RAM or installed-model sizes.
 
 ## Translation on this phone
@@ -53,3 +52,13 @@ Cloud models need a provider account/key, not a local weight download.
 The cloud screen shows the selected provider’s key and documentation. Optional
 batch/voice endpoint settings are collapsed for streaming connections. Soniox and
 Scribe live-account verification remains pending, as recorded in validation-v11.md.
+
+
+Catalogued native downloads now use `SpeechDownloads` for exact lengths, SHA-256
+pins and roles. `PublisherSpeechPackage` creates the existing verified internal
+manifest after bounded extraction. No user needs to create it or run a script.
+
+The Moonshine assets used here were uploaded on 27 February 2026, as shown by the
+GitHub release assets API. The `asr-models` release is a long-lived collection;
+its creation date is not the model date. These are short-segment sherpa adapters,
+not an assertion of support for the latest persistent Moonshine streaming decoder.

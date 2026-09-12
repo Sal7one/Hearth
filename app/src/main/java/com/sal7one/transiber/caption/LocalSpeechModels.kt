@@ -21,8 +21,8 @@ internal val SpeechProfile.captionEngine: CaptionEngineChoice get() = when (back
     SpeechBackend.NEMOTRON_3_5 -> CaptionEngineChoice.NEMOTRON
 }
 internal val SpeechProfile.label: String get() = when (this) {
-    SpeechProfile.MOONSHINE_TINY_EN -> "Moonshine v2 Tiny · English"
-    SpeechProfile.MOONSHINE_BASE_EN -> "Moonshine v2 Base · English"
+    SpeechProfile.MOONSHINE_TINY_EN -> "Moonshine Tiny · English"
+    SpeechProfile.MOONSHINE_BASE_EN -> "Moonshine Base · English"
     SpeechProfile.QWEN3_ASR_0_6B -> "Qwen3-ASR 0.6B"
     SpeechProfile.QWEN3_ASR_1_7B -> "Qwen3-ASR 1.7B (larger; phone performance unverified)"
     SpeechProfile.NEMOTRON_3_5_ASR_0_6B -> "Nemotron 3.5 ASR 0.6B"
@@ -43,7 +43,7 @@ internal class LocalSpeechModels(private val root: File) {
     fun select(engine: CaptionEngineChoice, id: String): LocalSpeechModel {
         val candidates = list().filter { it.profile.backend == engine.speechBackend }
         return if (id.isBlank()) candidates.firstOrNull()
-            ?: error("No ${engine.label} package imported. Use Import model ZIP on the Live captions screen.")
+            ?: error("No ${engine.label} model installed. Open Models to download or import it.")
         else candidates.firstOrNull { it.id == id }
             ?: error("Selected ${engine.label} package is missing: $id. Select an imported model again.")
     }
@@ -78,6 +78,28 @@ internal class LocalSpeechModels(private val root: File) {
             Files.move(staged.file.toPath(), destination.toPath())
             return LocalSpeechModel(id, verified.profile, destination)
         } finally { workRoot.deleteRecursively() }
+    }
+
+    fun installPublisher(input: InputStream, source: com.sal7one.transiber.models.SpeechDownload, downloadId: Long,
+        checkActive: () -> Unit = {}): LocalSpeechModel {
+        val id = "speech-${UUID.nameUUIDFromBytes("download-$downloadId".toByteArray())}"
+        val destination = File(root, id)
+        if (destination.isDirectory) {
+            val verified = SpeechModelPackage.verify(destination)
+            require(verified.profile == source.profile) { "Installed download profile differs" }
+            return LocalSpeechModel(id, verified.profile, destination)
+        }
+        // Reuse the job's staging path so a killed process cannot leave a second
+        // partially extracted model behind when that download is retried.
+        val work = File(root, ".staging/publisher-$downloadId")
+        check(!work.exists() || work.deleteRecursively()) { "Cannot clear interrupted model installation" }
+        check(work.mkdirs()) { "Cannot create model installation staging directory" }
+        try {
+            val staged = com.sal7one.transiber.models.PublisherSpeechPackage.stage(input, source, work, checkActive)
+            checkActive()
+            Files.move(staged.toPath(), destination.toPath())
+            return LocalSpeechModel(id, source.profile, destination)
+        } finally { work.deleteRecursively() }
     }
 
     private fun validId(id: String) = id.matches(Regex("speech-[0-9a-f-]{36}"))

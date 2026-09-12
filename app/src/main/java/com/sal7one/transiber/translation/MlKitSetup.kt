@@ -24,7 +24,7 @@ internal fun MlKitSetup(config: CaptionOverlayConfig, update: ((CaptionOverlayCo
         catch (e: CancellationException) { throw e }
         catch (e: Exception) { message = e.message ?: e.toString() }
     }
-    Text("Google Translate · on-device. Download the spoken and target language packs on Wi-Fi. English is included.", style = MaterialTheme.typography.bodySmall)
+    Text("Google Translate · on-device. Download the spoken and target language packs on Wi-Fi. English is included. ML Kit manages its own packs in app storage; the download-folder setting applies to model files.", style = MaterialTheme.typography.bodySmall)
     if (config.localTranslationModelId != TranslationOptions.ML_KIT) Button(onClick = { update { it.copy(localTranslationModelId = TranslationOptions.ML_KIT, localTranslationEnabled = true, mode = CaptionMode.TRANSLATE) } }) {
         Text("Use ML Kit")
     }
@@ -34,7 +34,7 @@ internal fun MlKitSetup(config: CaptionOverlayConfig, update: ((CaptionOverlayCo
     }
     if (menu) androidx.compose.ui.window.Dialog(onDismissRequest = { menu = false }, properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)) {
         Surface(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding().imePadding()) {
-            LanguagePickerContent("Download a language pack", CaptionLanguageChoices(TranslationOptions.mlKitCodes - "en", "Choose a language to download or remove its pack. English is included."), selected,
+            LanguagePickerContent("Download a language pack", CaptionLanguageChoices(TranslationOptions.mlKitCodes - "en", "Choose a language to download or remove its pack. English is included. ML Kit manages its own packs in app storage; the download-folder setting applies to model files."), selected,
                 onSelect = { selected = it; menu = false }, onDismiss = { menu = false })
         }
     }

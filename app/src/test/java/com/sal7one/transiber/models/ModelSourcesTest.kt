@@ -17,8 +17,12 @@ class ModelSourcesTest {
             assertEquals("https", URI(source.files).scheme)
             source.download?.let { url ->
                 DownloadSpec.parse(url, url.substringAfterLast('/'))
-                assertTrue(source.installation.contains("prepared speech ZIP"))
-                assertTrue(source.installation.contains("hearth-speech.json"))
+                assertTrue(source.installation.contains("automatically"))
+                assertFalse(source.installation.contains("hearth-speech.json"))
+                val artifact = SpeechDownloads.find(source.id)!!
+                assertEquals(url, artifact.url)
+                assertTrue(artifact.bytes > 0)
+                assertTrue(artifact.sha256.matches(Regex("[0-9a-f]{64}")))
             }
         }
     }

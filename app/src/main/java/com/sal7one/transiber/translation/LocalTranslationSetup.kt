@@ -40,7 +40,10 @@ internal fun LocalTranslationSetup(
     LaunchedEffect(Unit) { installed = withContext(Dispatchers.IO) { store.installed() } }
     LaunchedEffect(Unit) {
         if (ByokPolicy.FEATURE_BYOK) while (isActive) {
-            try { records = withContext(Dispatchers.IO) { downloads.list() } }
+            try {
+                records = withContext(Dispatchers.IO) { downloads.list() }
+                installed = withContext(Dispatchers.IO) { store.installed() }
+            }
             catch (e: CancellationException) { throw e }
             catch (e: Exception) { message = e.message ?: e.toString() }
             delay(1500)
@@ -111,31 +114,25 @@ internal fun LocalTranslationSetup(
         Text("Q4 uses less storage and memory; Q6/Q8 are larger. Only the active translator loads.", style = MaterialTheme.typography.bodySmall)
         OutlinedButton(enabled = !busy, onClick = { importer.launch(arrayOf("*/*")) }) { Text("Import ${spec.label} GGUF") }
         if (ByokPolicy.FEATURE_BYOK) {
-            val completed = records.firstOrNull { it.complete && it.title == spec.fileName }
-            val pending = records.firstOrNull { !it.complete && !it.failed && it.title == spec.fileName }
-            if (completed != null) Button(enabled = !busy, onClick = { scope.launch {
-                val importing = spec
-                busy = true; message = "Verifying and installing ${importing.label}…"
-                try {
-                    downloads.installTranslation(completed.id, importing)
-                    installed = withContext(Dispatchers.IO) { store.installed() }
-                    update { it.copy(localTranslationModelId = importing.id) }
-                    message = "${importing.label} installed and selected. Enable the bridge when ready."
-                } catch (e: CancellationException) { throw e }
-                catch (e: Exception) { message = e.message ?: e.toString() }
-                finally { busy = false }
-            } }) { Text("Install downloaded model") }
-            OutlinedButton(enabled = !busy && pending == null, onClick = { scope.launch {
+            val record = records.firstOrNull { it.title == spec.fileName }
+            OutlinedButton(enabled = !busy && record?.active != true, onClick = { scope.launch {
                 busy = true
                 try {
-                    withContext(Dispatchers.IO) { downloads.enqueue(DownloadSpec.parse(spec.url, spec.fileName), modelPackage = true) }
+                    if (record?.failed == true && record.id < 0) downloads.retry(record.id)
+                    else withContext(Dispatchers.IO) { downloads.enqueue(DownloadSpec.parse(spec.url, spec.fileName), modelPackage = true, installModelId = spec.id) }
                     records = withContext(Dispatchers.IO) { downloads.list() }
-                    message = "Downloading to ${downloads.locationLabel}/models. When complete, tap Install downloaded model here or in Downloads."
+                    message = null
                 } catch (e: CancellationException) { throw e }
                 catch (e: Exception) { message = e.message ?: e.toString() }
                 finally { busy = false }
-            } }) { Text(if (pending != null) "Downloading · ${pending.bytes / 1_048_576} MiB" else "Download ${spec.bytes / 1_048_576} MiB") }
-            Text("Saved in ${downloads.locationLabel}/models. No export needed for installation.")
+            } }) { Text(when {
+                record?.installing == true -> "Installing…"
+                record?.active == true -> "Downloading · ${record.bytes / 1_048_576} MiB"
+                record?.failed == true -> "Retry download & install"
+                else -> "Download & install · ${spec.bytes / 1_048_576} MiB"
+            }) }
+            if (record?.failed == true) Text(record.error.ifBlank { "Download failed · reason ${record.reason}" }, color = MaterialTheme.colorScheme.error)
+            Text("Download folder: ${downloads.locationLabel}/models. The original file stays here after installation.", style = MaterialTheme.typography.bodySmall)
             TextButton(onClick = { uriHandler.openUri(spec.modelCard) }) { Text("Source, files & license") }
             if (spec.family == "translategemma") TextButton(onClick = { uriHandler.openUri("https://huggingface.co/google/translategemma-4b-it") }) { Text("Original Google model card") }
         }

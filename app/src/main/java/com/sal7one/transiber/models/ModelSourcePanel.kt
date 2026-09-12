@@ -20,43 +20,63 @@ internal fun ModelSourcePanel(sources: List<ModelSource>) {
     val uri = LocalUriHandler.current
     val scope = rememberCoroutineScope()
     var selected by rememberSaveable(sources) { mutableIntStateOf(0) }
-    var menu by remember { mutableStateOf(false) }
-    var details by rememberSaveable(sources) { mutableStateOf(false) }
     var message by remember(sources) { mutableStateOf<String?>(null) }
     var busy by remember { mutableStateOf(false) }
+    var records by remember { mutableStateOf<List<FileDownload>>(emptyList()) }
+    val downloads = remember { FileDownloads(context.applicationContext) }
+    LaunchedEffect(Unit) {
+        if (ByokPolicy.FEATURE_BYOK) while (isActive) {
+            try { records = withContext(Dispatchers.IO) { downloads.list() } }
+            catch (e: CancellationException) { throw e }
+            catch (e: Exception) { message = e.message ?: e.toString() }
+            delay(1500)
+        }
+    }
     val source = sources[selected]
+    val artifact = SpeechDownloads.find(source.id)
+    val record = records.firstOrNull { it.title == artifact?.fileName }
+
     OutlinedCard(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text("Get model files", style = MaterialTheme.typography.titleSmall)
-            if (sources.size > 1) Box {
-                OutlinedButton(onClick = { menu = true }) { Text(source.label) }
-                DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
-                    sources.forEachIndexed { index, item -> DropdownMenuItem(text = { Text(item.label) }, onClick = { selected = index; menu = false; message = null }) }
+            Text("Get model", style = MaterialTheme.typography.titleSmall)
+            if (sources.size > 1) FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                sources.forEachIndexed { index, item ->
+                    FilterChip(selected = selected == index, onClick = { selected = index; message = null }, label = { Text(item.label) })
                 }
+
+
             } else Text(source.label, style = MaterialTheme.typography.bodyMedium)
-            Text(if (source.download != null) "Publisher files · prepare a speech ZIP before importing" else source.installation, style = MaterialTheme.typography.bodySmall)
+            Text(source.installation, style = MaterialTheme.typography.bodySmall)
             if (ByokPolicy.FEATURE_BYOK) {
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    TextButton(onClick = { try { uri.openUri(source.publisher) } catch (e: Exception) { message = e.message ?: e.toString() } }) { Text("Source & license") }
-                    TextButton(onClick = { try { uri.openUri(source.files) } catch (e: Exception) { message = e.message ?: e.toString() } }) { Text("Browse publisher files") }
-                }
-                source.download?.let { url ->
-                    OutlinedButton(enabled = !busy, onClick = { scope.launch {
+                artifact?.let { model ->
+                    OutlinedButton(enabled = !busy && record?.active != true, onClick = { scope.launch {
                         busy = true
                         try {
-                            val downloads = FileDownloads(context.applicationContext)
-                            withContext(Dispatchers.IO) { downloads.enqueue(DownloadSpec.parse(url, url.substringAfterLast('/')), modelPackage = true) }
-                            message = "Download started. Find it in Downloads or ${downloads.locationLabel}/models. Prepare the speech ZIP before import."
+                            if (record?.failed == true && record.id < 0) downloads.retry(record.id)
+                            else if (record?.installed == true) downloads.selectInstalled(record)
+                            else withContext(Dispatchers.IO) { downloads.enqueue(DownloadSpec.parse(model.url, model.fileName), modelPackage = true, installModelId = model.profile.id) }
+                            records = withContext(Dispatchers.IO) { downloads.list() }
+                            message = if (record?.installed == true) "Selected ${source.label}" else null
                         } catch (e: CancellationException) { throw e }
                         catch (e: Exception) { message = e.message ?: e.toString() }
                         finally { busy = false }
-                    } }) { Text("Download publisher files" + (source.downloadBytes?.let { " · ${it / 1_048_576} MiB" } ?: "")) }
+                    } }) { Text(when {
+                        record?.installed == true -> "Use ${source.label}"
+                        record?.failed == true -> "Retry download & install"
+                        record?.installing == true -> "Installing…"
+                        record?.active == true -> "Downloading · ${record.bytes / 1_048_576} MiB"
+                        else -> "Download & install · ${model.bytes / 1_048_576} MiB"
+                    }) }
+                    if (record?.failed == true) Text(record.error.ifBlank { "Download failed · reason ${record.reason}" }, color = MaterialTheme.colorScheme.error)
+                    if (record?.active == true) LinearProgressIndicator(Modifier.fillMaxWidth())
+                    Text("Download folder: ${downloads.locationLabel}/models", style = MaterialTheme.typography.bodySmall)
+                }
+
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    TextButton(onClick = { try { uri.openUri(source.publisher) } catch (e: Exception) { message = e.message ?: e.toString() } }) { Text("Source & license") }
+                    if (artifact == null) TextButton(onClick = { try { uri.openUri(source.files) } catch (e: Exception) { message = e.message ?: e.toString() } }) { Text("Browse publisher files") }
                 }
             } else Text("Offline build: obtain files on another device, then import locally. Source: ${source.publisher}", style = MaterialTheme.typography.bodySmall)
-            if (source.download != null) {
-                TextButton(onClick = { details = !details }) { Text(if (details) "Hide installation steps" else "How to prepare & import") }
-                if (details) Text(source.installation, style = MaterialTheme.typography.bodySmall)
-            }
             if (busy) LinearProgressIndicator(Modifier.fillMaxWidth())
             message?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
         }

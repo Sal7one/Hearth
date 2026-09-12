@@ -57,3 +57,12 @@ Version 0.5.1: ModelSources is consumed by ModelSourcePanel in the simple model
 library and advanced setup. Catalog tests require source/install information for
 every native profile, validate direct-download inputs with DownloadSpec, and prevent
 the custom Qwen 1.7B / cloud paths from claiming ready-made downloads.
+
+Version 0.6.0: PublisherSpeechPackage is consumed by LocalSpeechModels and the
+foreground downloader. It streams pinned publisher archives into the existing
+ModelIntegrity staging sink, validates raw size/digest, rejects links, traversal,
+duplicate/foreign paths and injected metadata, and runs SpeechModelPackage.verify
+before publication. Host fixtures cover those rejection paths, cancellation,
+missing assets and raw GGUF. SpeechDownloads supplies exact catalog artifacts.
+Downloads write directly through MediaStore or the user's persisted SAF tree;
+no temporary private copy/export is used for original downloads.

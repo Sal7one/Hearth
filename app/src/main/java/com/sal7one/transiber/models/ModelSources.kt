@@ -9,19 +9,19 @@ internal data class ModelSource(
 )
 internal object ModelSources {
     private const val sherpa = "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/"
-    private const val packaging = "These publisher files need a prepared speech ZIP. On a computer, extract them and run scripts/speech/make-package.py from this repository. Include hearth-speech.json at the ZIP root, then use Import model ZIP. Existing prepared ZIPs can be imported directly."
+    private const val packaging = "Downloads and installs automatically on this phone. The original file stays in your download folder."
     fun speech(engine: CaptionEngineChoice): List<ModelSource> = when (engine) {
         CaptionEngineChoice.NEMOTRON -> listOf(ModelSource("nemotron-3.5-asr-0.6b", "Nemotron 3.5 · 0.6B Q8", "https://huggingface.co/nvidia/nemotron-3.5-asr-streaming-0.6b",
-            "https://huggingface.co/nvidia/nemotron-3.5-asr-streaming-0.6b/tree/1c8deaecc64b91f034d73e08dd8b64625eb3395d", packaging + " Profile: nemotron-3.5-asr-0.6b; role: model=<GGUF filename>.",
+            "https://huggingface.co/nvidia/nemotron-3.5-asr-streaming-0.6b/tree/1c8deaecc64b91f034d73e08dd8b64625eb3395d", packaging + " Multilingual streaming captions; translation uses a separate model.",
             "https://huggingface.co/nvidia/nemotron-3.5-asr-streaming-0.6b/resolve/1c8deaecc64b91f034d73e08dd8b64625eb3395d/nemotron-3.5-asr-streaming-0.6b.q8_0.gguf"))
         CaptionEngineChoice.QWEN -> listOf(
             ModelSource("qwen3-asr-0.6b", "Qwen3-ASR · 0.6B INT8", "https://huggingface.co/Qwen/Qwen3-ASR-0.6B", "https://github.com/k2-fsa/sherpa-onnx/releases/tag/asr-models",
-                packaging + " Profile: qwen3-asr-0.6b; roles: frontend=conv_frontend.onnx, encoder=encoder.int8.onnx, decoder=decoder.int8.onnx, tokenizer=tokenizer.", sherpa + "sherpa-onnx-qwen3-asr-0.6B-int8-2026-03-25.tar.bz2", 878702423),
+                packaging + " Multilingual captions in short audio segments. Runtime package: March 2026.", sherpa + "sherpa-onnx-qwen3-asr-0.6B-int8-2026-03-25.tar.bz2", 878702423),
             ModelSource("qwen3-asr-1.7b", "Qwen3-ASR · 1.7B · custom package", "https://huggingface.co/Qwen/Qwen3-ASR-1.7B", "https://huggingface.co/Qwen/Qwen3-ASR-1.7B/tree/main",
                 "Compatible prepared packages are accepted, but this app has no verified ready-made 1.7B download. Raw checkpoints cannot be imported. Use the 0.6B package unless you are preparing a compatible sherpa export."))
         CaptionEngineChoice.MOONSHINE -> listOf("tiny" to 29858559L, "base" to 111266225L).map { (size, bytes) ->
-            ModelSource("moonshine-$size-en-v2", "Moonshine v2 · ${size.replaceFirstChar { it.uppercase() }} · English", "https://github.com/moonshine-ai/moonshine", "https://github.com/k2-fsa/sherpa-onnx/releases/tag/asr-models",
-                packaging + " Profile: moonshine-$size-en-v2; roles: model=tokens.txt, encoder=encoder_model.ort, decoder=decoder_model_merged.ort. English only; utterance windows. ${if (size == "base") "Base has not been phone-tested here." else "Tiny has been phone-tested."}",
+            ModelSource("moonshine-$size-en-v2", "Moonshine · ${size.replaceFirstChar { it.uppercase() }} · English", "https://github.com/moonshine-ai/moonshine", "https://github.com/k2-fsa/sherpa-onnx/releases/tag/asr-models",
+                packaging + " English only, short audio segments. Runtime package: 27 February 2026. This adapter is not Moonshine’s newer streaming runtime.",
                 sherpa + "sherpa-onnx-moonshine-$size-en-quantized-2026-02-27.tar.bz2", bytes)
         }
         CaptionEngineChoice.WHISPER -> listOf(ModelSource("whisper", "Whisper · whisper.cpp models", "https://huggingface.co/ggerganov/whisper.cpp", "https://huggingface.co/ggerganov/whisper.cpp/tree/main",

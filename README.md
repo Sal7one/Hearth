@@ -92,3 +92,19 @@ JNI APIs retain their original packages where required for native binding compat
 First-party code: Apache-2.0. Bundled third-party code and runtime libraries retain
 their own terms; see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 Model weights are separately licensed downloads, not bundled app assets.
+
+### Model downloads (0.6.0)
+
+In Models, **Download & install** downloads catalogued Moonshine Tiny/Base,
+Qwen3-ASR 0.6B, Nemotron and translation GGUFs, then verifies and installs them
+on the phone. No computer, export or re-import is required. Use the installed
+model when ready; a background completion does not replace a running session's engine.
+
+Original downloads live in **Downloads/Real time transiber/models** (direct URLs
+in `files`). **Downloads → Choose folder** selects another writable folder for
+future downloads, including on Android 9. Installed engines keep a separate,
+verified app-owned copy. Downloads can be deleted without uninstalling models.
+ML Kit packs remain managed by Google's SDK. The offline APK has no downloader.
+
+Custom model packaging is an extension/developer path documented in
+[model contributing](docs/model-contributing.md), not a prerequisite for catalog downloads.

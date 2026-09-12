@@ -39,6 +39,11 @@ internal fun LocalSpeechSetup(
             onModelsChanged(models)
             runtimeAvailable = result.second.available
             error = result.second.error.takeIf { !result.second.available }
+            while (isActive) {
+                delay(1500)
+                models = withContext(Dispatchers.IO) { store.list() }
+                onModelsChanged(models)
+            }
         } catch (e: CancellationException) { throw e }
         catch (e: Exception) { error = e.message ?: e.toString() }
     }
@@ -49,7 +54,19 @@ internal fun LocalSpeechSetup(
                 val imported = withContext(Dispatchers.IO) {
                     val job = currentCoroutineContext()
                     context.contentResolver.openInputStream(uri)?.use { input ->
-                        store.importZip(input) { job.ensureActive() }
+                        val name = context.contentResolver.query(uri, arrayOf(android.provider.OpenableColumns.DISPLAY_NAME), null, null, null)?.use { cursor ->
+                            if (cursor.moveToFirst()) cursor.getString(0) else ""
+                        }.orEmpty()
+                        val stream = java.io.BufferedInputStream(input)
+                        stream.mark(4)
+                        val magic = ByteArray(4); stream.read(magic); stream.reset()
+                        if (magic[0] == 'P'.code.toByte() && magic[1] == 'K'.code.toByte()) store.importZip(stream) { job.ensureActive() }
+                        else {
+                            val artifact = com.sal7one.transiber.models.SpeechDownloads.all.firstOrNull { it.fileName == name }
+                                ?: com.sal7one.transiber.models.SpeechDownloads.all.filter { it.profile.backend == backend }.singleOrNull()
+                                ?: error("Choose the original downloaded model file, with its original filename.")
+                            store.installPublisher(stream, artifact, -System.nanoTime()) { job.ensureActive() }
+                        }
                     } ?: error("Cannot open selected model ZIP")
                 }
                 models = withContext(Dispatchers.IO) { store.list() }
@@ -66,20 +83,14 @@ internal fun LocalSpeechSetup(
     }
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text("Installed models", style = MaterialTheme.typography.titleSmall)
-        if (models.none { it.profile.backend == backend }) Text("None installed yet. Import a prepared speech ZIP, or get the publisher files below.", style = MaterialTheme.typography.bodySmall)
+        if (models.none { it.profile.backend == backend }) Text("None installed yet. Download and install below, or import an existing model.", style = MaterialTheme.typography.bodySmall)
         TextButton(onClick = { details = !details }) { Text(if (details) "Hide model details" else "Model details & language options") }
         if (details) {
         if (runtimeAvailable) Text("Native runtime available", style = MaterialTheme.typography.labelMedium)
-        Text("The runtime is bundled; model weights are a separate download. Import a Hearth speech ZIP with " +
-            "hearth-speech.json at its root. Import copies and verifies the files, then selects original-language CC. " +
-            "Raw Hugging Face checkpoints, arbitrary ONNX files and bare GGUF files are not complete packages.",
-            style = MaterialTheme.typography.bodySmall)
-        Text("Moonshine Tiny English: roughly 45 MB installed. Qwen: roughly 1 GB for 0.6B. Nemotron: roughly 742 MB. " +
-            "Keep at least twice the package size free for the download and installation. ASR speed depends on your phone.",
-            style = MaterialTheme.typography.bodySmall)
+        Text("Downloads install automatically. Keep enough free space for both the original download and its installed model. Speed and memory use depend on the model and your phone.", style = MaterialTheme.typography.bodySmall)
         }
-        OutlinedButton(enabled = !busy, onClick = { importer.launch(arrayOf("application/zip", "application/x-zip-compressed", "application/octet-stream")) }) {
-            Text(if (busy) "Importing…" else "Import model ZIP")
+        OutlinedButton(enabled = !busy, onClick = { importer.launch(arrayOf("*/*")) }) {
+            Text(if (busy) "Importing…" else "Import existing model")
         }
         if (busy) LinearProgressIndicator(Modifier.fillMaxWidth())
         models.filter { it.profile.backend == backend }.forEach { model ->
