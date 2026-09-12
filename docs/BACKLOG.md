@@ -206,3 +206,8 @@ a separate installation improvement. Existing manifest/hash/path checks are unch
 - [x] Open app, overlay and language-pack lists at their current selection.
 - [x] Start filtered results at the top; return to the selection when search is cleared.
 - [x] Preserve manual scrolling while the picker remains open.
+
+## RT-28 — Cloud connection spacing (0.5.3)
+
+- [x] Minimum 2.dp top padding and consistent 8.dp vertical gaps for shared cloud settings.
+- [x] Wrap provider/action rows; space documentation buttons and model details.

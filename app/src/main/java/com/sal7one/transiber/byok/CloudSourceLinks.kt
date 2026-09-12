@@ -22,7 +22,7 @@ internal fun CloudSourceLinks(mode: CloudConfigStore.SttMode? = null) {
     )
     sources.filter { mode == null || it.first == mode }.forEach { (_, label, url) ->
         OutlinedCard(Modifier.fillMaxWidth()) {
-            Column(Modifier.padding(12.dp)) {
+            Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(label, style = MaterialTheme.typography.titleSmall)
                 TextButton(onClick = { try { uri.openUri(url) } catch (e: Exception) { error = e.message ?: e.toString() } }) { Text("${label.substringBefore(" ·")} documentation") }
             }

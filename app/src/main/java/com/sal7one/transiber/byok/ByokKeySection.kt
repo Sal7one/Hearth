@@ -4,7 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -71,6 +71,7 @@ fun ByokKeySection(onStoredChange: (Boolean) -> Unit = {}, onModeChange: (CloudC
         keyStored = ApiKeyStore.hasOpenAiKey(context)
     }
 
+    Column(Modifier.fillMaxWidth().padding(top = 2.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
     // ── STT mode: batch vs TRUE streaming (WebSocket interim results) ────
     // Streaming is the investor-facing path: interim text lands while the
     // speaker is still talking and utterances finalize in real time, instead
@@ -82,6 +83,7 @@ fun ByokKeySection(onStoredChange: (Boolean) -> Unit = {}, onModeChange: (CloudC
     // FlowRow: four mode chips would squash the last one flat in a Row.
     androidx.compose.foundation.layout.FlowRow(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         CloudConfigStore.SttMode.entries.forEach { mode ->
             androidx.compose.material3.FilterChip(
@@ -133,7 +135,7 @@ fun ByokKeySection(onStoredChange: (Boolean) -> Unit = {}, onModeChange: (CloudC
         },
         modifier = Modifier.fillMaxWidth(),
     )
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Button(
             onClick = {
                 val stored = ApiKeyStore.setOpenAiKey(context, keyDraft)
@@ -225,7 +227,7 @@ fun ByokKeySection(onStoredChange: (Boolean) -> Unit = {}, onModeChange: (CloudC
     // ids are editable — the cloud engine reads them at session start.
     Spacer(Modifier.height(10.dp))
     Text("Provider", style = MaterialTheme.typography.labelMedium)
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
         CloudConfigStore.Provider.entries.forEach { provider ->
             androidx.compose.material3.FilterChip(
                 selected = currentProvider == provider,
@@ -321,7 +323,7 @@ fun ByokKeySection(onStoredChange: (Boolean) -> Unit = {}, onModeChange: (CloudC
                 androidx.compose.material3.DropdownMenuItem(
                     enabled = model.role.batchSelectable,
                     text = {
-                        Column {
+                        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                             Text(model.name)
                             Text(model.id, style = MaterialTheme.typography.labelSmall)
                             Text("${model.role.label} · Created ${model.created}",
@@ -367,6 +369,7 @@ fun ByokKeySection(onStoredChange: (Boolean) -> Unit = {}, onModeChange: (CloudC
         },
     )
     }
+    }
 }
 
 /** Key field + save/remove row for one streaming provider. */
@@ -388,7 +391,7 @@ private fun StreamingKeyField(
         placeholder = { Text(if (stored) "Key stored — type to replace" else placeholder) },
         modifier = Modifier.fillMaxWidth(),
     )
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Button(
             onClick = {
                 onSave(draft)
