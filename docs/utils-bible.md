@@ -52,3 +52,8 @@ fixtures cover revised partials, timestamp-event deduplication and verbatim erro
 CaptionLanguages/CaptionTranslationRoute regression tests cover forced Russian,
 fixed English and cloud direct-translation precedence. Moonshine uses the existing
 verified manifest/import utilities with Kotlin and Python missing-role/file checks.
+
+Version 0.5.1: ModelSources is consumed by ModelSourcePanel in the simple model
+library and advanced setup. Catalog tests require source/install information for
+every native profile, validate direct-download inputs with DownloadSpec, and prevent
+the custom Qwen 1.7B / cloud paths from claiming ready-made downloads.

@@ -45,7 +45,7 @@ class MainActivity : ComponentActivity() {
       Box(Modifier.weight(1f)) {
        when(page) {
         0 -> CaptionHome(onModels = { page = 1 }, onCloud = { page = 4 })
-        1 -> ModelsScreen()
+        1 -> ModelsScreen(onCloud = { page = 4 }, onDownloads = { page = 2 })
         2 -> DownloadsScreen(onBrowseModels = { page = 1 })
         3 -> Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
           Text("Set up once. Start from the home screen.", style = MaterialTheme.typography.bodyMedium)

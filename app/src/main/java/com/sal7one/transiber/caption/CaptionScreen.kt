@@ -106,6 +106,7 @@ fun CaptionScreen(
     // Key state lives here (not inside the section) so engine readiness
     // never re-decrypts the key on recomposition — it refreshes only on
     // save/remove. Play build only; FOSS has no key storage UI at all.
+    var cloudMode by remember { mutableStateOf(CloudConfigStore.sttMode(context)) }
     var cloudKeyStored by remember {
         mutableStateOf(ByokPolicy.cloudEngineAvailable() && ApiKeyStore.hasOpenAiKey(context))
     }
@@ -134,7 +135,7 @@ fun CaptionScreen(
                 .installed().any { it.id == config.localTranslationModelId }
         }
     }
-    val route = captionTranslationRoute(config, CloudConfigStore.sttMode(context))
+    val route = captionTranslationRoute(config, cloudMode)
     val liveCloudTranslation = route == CaptionTranslationRoute.LIVE_TARGET
     val translationReady = when (route) {
         CaptionTranslationRoute.LOCAL_TEXT -> localTranslationInstalled || (config.localTranslationModelId == com.sal7one.transiber.translation.TranslationOptions.ML_KIT && com.sal7one.transiber.translation.PlatformTranslation.available)
@@ -208,6 +209,7 @@ fun CaptionScreen(
                     listOf("Live Arabic" to TranslationTarget.ARABIC, "Live English" to TranslationTarget.ENGLISH).forEach { (label, target) ->
                         OutlinedButton(onClick = {
                             CloudConfigStore.setSttMode(context, CloudConfigStore.SttMode.STREAMING_OPENAI)
+                            cloudMode = CloudConfigStore.SttMode.STREAMING_OPENAI
                             update { it.copy(engine = CaptionEngineChoice.CLOUD, mode = CaptionMode.TRANSLATE,
                                 target = target, source = CaptionSource.PLAYBACK_CAPTURE, streamLanguage = "auto",
                                 tapThrough = false, xOffsetPx = 0, yOffsetPx = 0, historyLines = maxOf(it.historyLines, CaptionReading.DEFAULT_PREVIOUS_LINES)) }
@@ -215,6 +217,7 @@ fun CaptionScreen(
                     }
                     OutlinedButton(onClick = {
                         CloudConfigStore.setSttMode(context, CloudConfigStore.SttMode.STREAMING_OPENAI)
+                            cloudMode = CloudConfigStore.SttMode.STREAMING_OPENAI
                         update { it.copy(engine = CaptionEngineChoice.CLOUD, mode = CaptionMode.CAPTIONS,
                             source = CaptionSource.PLAYBACK_CAPTURE, tapThrough = false, historyLines = maxOf(it.historyLines, CaptionReading.DEFAULT_PREVIOUS_LINES)) }
                     }) { Text("Live CC") }
@@ -251,11 +254,11 @@ fun CaptionScreen(
                     )
                     Text(
                         text = if (liveCloudTranslation) {
-                            "OpenAI live translation → ${config.target.label}; no on-device translation model needed."
+                            "${if (cloudMode == CloudConfigStore.SttMode.STREAMING_SONIOX) "Soniox" else "OpenAI"} live translation → ${config.target.label}; no on-device translation model needed."
                         } else if (translationReady) {
                             "Translation route available; model/API errors will appear in the bubble."
                         } else {
-                            "For Qwen/Nemotron, enable the local translation bridge below and import a model. CC continues when translation is unavailable."
+                            "Choose a translator in the Local translation section below. Original captions continue if translation is unavailable."
                         },
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -301,7 +304,7 @@ fun CaptionScreen(
             // Whisper models are multilingual; Vosk models are single-language,
             // so pick the Vosk matching the stream's language.
             if (config.effectiveEngine.speechBackend != null) {
-                LocalSpeechSetup(config, update) { localSpeechModels = it }
+                LocalSpeechSetup(config, update, includeTranslation = false) { localSpeechModels = it }
             }
             val engineModels = if (config.effectiveEngine == CaptionEngineChoice.CLOUD || config.effectiveEngine.speechBackend != null) {
                 // Cloud engine: no local speech models involved — never show
@@ -325,9 +328,9 @@ fun CaptionScreen(
                 // Settings can change it mid-session too.)
                 // NETWORK CODE — play distribution only.
                 Spacer(Modifier.height(AppDesign.Dimens.SpacingSm))
-                ByokKeySection(onStoredChange = { stored -> cloudKeyStored = stored })
+                ByokKeySection(onStoredChange = { stored -> cloudKeyStored = stored }, onModeChange = { cloudMode = it })
             }
-            if (engineModels.size > 1) {
+            if (engineModels.isNotEmpty()) {
                 Spacer(Modifier.height(AppDesign.Dimens.SpacingSm))
                 Text("Speech model", style = MaterialTheme.typography.labelLarge)
                 ChipFlow {
@@ -350,6 +353,20 @@ fun CaptionScreen(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+            }
+        }
+
+        if (config.effectiveEngine.speechBackend != null ||
+            (config.effectiveEngine == CaptionEngineChoice.CLOUD && cloudMode in setOf(CloudConfigStore.SttMode.STREAMING_ELEVENLABS, CloudConfigStore.SttMode.STREAMING_DEEPGRAM, CloudConfigStore.SttMode.STREAMING_ASSEMBLYAI))) {
+            HearthCard(modifier = Modifier.fillMaxWidth()) {
+                SectionTitle("Local translation")
+                com.sal7one.transiber.translation.LocalTranslationSetup(config, update)
+            }
+        } else if (config.effectiveEngine == CaptionEngineChoice.WHISPER || config.effectiveEngine == CaptionEngineChoice.VOSK) {
+            HearthCard(modifier = Modifier.fillMaxWidth()) {
+                SectionTitle("Model files & imports")
+                com.sal7one.transiber.models.ModelSourcePanel(com.sal7one.transiber.models.ModelSources.speech(config.effectiveEngine))
+                TextButton(onClick = onBrowseModels) { Text("Manage installed speech & translation models") }
             }
         }
 
@@ -426,7 +443,7 @@ fun CaptionScreen(
                         CaptionEngineChoice.CLOUD ->
                             "Paste your API key in the 'Cloud engine · your API key' box above."
                         else ->
-                            "Import a speech model from the catalogue — the Live captions section lists tested options."
+                            "Open Models → Speech to get files or import an installed model."
                     }
                 },
                 actionLabel = if (chosenEngineReady || config.effectiveEngine.speechBackend != null) null else "Browse models",

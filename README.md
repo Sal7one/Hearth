@@ -61,8 +61,9 @@ Never commit keys or credentials. CI builds and uploads both QA APKs.
 3. While running, **Show captions** recovers the bubble and **Stop** ends capture.
    Bubble settings separate Appearance from CC & translation.
 
-**Setup** contains Models, Downloads and Cloud connection. Models separates speech
-recognition from translation, with details and larger variants collapsed. Connect
+**Setup** contains Models, Downloads and Cloud connection. Models groups Speech,
+Translation and Cloud, with source links, installed models and matching import actions.
+Translation sizes are grouped by family. See [all sources and installation paths](docs/model-sources.md). Connect
 or change your existing cloud provider/key under Cloud connection. Advanced setup
 retains the detailed engine controls and live cloud presets.
 

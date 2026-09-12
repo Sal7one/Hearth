@@ -13,7 +13,7 @@ import kotlinx.coroutines.*
 internal fun MlKitSetup(config: CaptionOverlayConfig, update: ((CaptionOverlayConfig) -> CaptionOverlayConfig) -> Unit) {
     val scope = rememberCoroutineScope()
     val uriHandler = androidx.compose.ui.platform.LocalUriHandler.current
-    var expanded by remember { mutableStateOf(config.localTranslationModelId == TranslationOptions.ML_KIT) }
+    var details by remember { mutableStateOf(false) }
     var packs by remember { mutableStateOf<Set<String>>(emptySet()) }
     var selected by remember { mutableStateOf(config.streamLanguage.takeIf { it in TranslationOptions.mlKitCodes } ?: "ru") }
     var menu by remember { mutableStateOf(false) }
@@ -24,19 +24,18 @@ internal fun MlKitSetup(config: CaptionOverlayConfig, update: ((CaptionOverlayCo
         catch (e: CancellationException) { throw e }
         catch (e: Exception) { message = e.message ?: e.toString() }
     }
-    OutlinedButton(onClick = { expanded = !expanded }, modifier = Modifier.fillMaxWidth()) { Text("ML Kit · lightweight language packs") }
-    if (!expanded) return
-    Text("On-device translation by Google Translate. Non-English pairs use English in between. Packs are managed inside the app by ML Kit, separately from GGUF files.")
-    Button(onClick = { update { it.copy(localTranslationModelId = TranslationOptions.ML_KIT, localTranslationEnabled = true, mode = CaptionMode.TRANSLATE) } }) {
-        Text(if (config.localTranslationModelId == TranslationOptions.ML_KIT) "ML Kit selected" else "Use ML Kit")
+    Text("Google Translate · on-device. Download the spoken and target language packs on Wi-Fi. English is included.", style = MaterialTheme.typography.bodySmall)
+    if (config.localTranslationModelId != TranslationOptions.ML_KIT) Button(onClick = { update { it.copy(localTranslationModelId = TranslationOptions.ML_KIT, localTranslationEnabled = true, mode = CaptionMode.TRANSLATE) } }) {
+        Text("Use ML Kit")
     }
-    Text("Download the spoken and target language packs on Wi-Fi before starting. English needs no separate pack.")
-    Box {
-        OutlinedButton(onClick = { menu = true }, enabled = !busy) { Text("Language pack: $selected") }
-        DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
-            TranslationOptions.mlKitCodes.sorted().forEach { code ->
-                DropdownMenuItem(text = { Text("${java.util.Locale.forLanguageTag(code).getDisplayLanguage(java.util.Locale.getDefault())} · $code${if (code in packs) " · Installed" else ""}") }, onClick = { selected = code; menu = false })
-            }
+    OutlinedButton(onClick = { menu = true }, enabled = !busy, modifier = Modifier.fillMaxWidth()) {
+        val language = LanguageCatalog.option(selected)
+        Text("Language pack: ${language.label}")
+    }
+    if (menu) androidx.compose.ui.window.Dialog(onDismissRequest = { menu = false }, properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)) {
+        Surface(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding().imePadding()) {
+            LanguagePickerContent("Download a language pack", CaptionLanguageChoices(TranslationOptions.mlKitCodes - "en", "Choose a language to download or remove its pack. English is included."), selected,
+                onSelect = { selected = it; menu = false }, onDismiss = { menu = false })
         }
     }
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -55,7 +54,9 @@ internal fun MlKitSetup(config: CaptionOverlayConfig, update: ((CaptionOverlayCo
             finally { busy = false }
         } }) { Text("Remove") }
     }
-    Text("Available packs: ${packs.sorted().joinToString()}")
+    Text("Installed: ${packs.sorted().joinToString { LanguageCatalog.option(it).englishName }}", style = MaterialTheme.typography.bodySmall)
+    TextButton(onClick = { details = !details }) { Text(if (details) "Hide language-pack details" else "About language packs") }
+    if (details) Text("Non-English pairs translate through English. Packs live in ML Kit-managed app storage, separate from downloaded GGUF files.", style = MaterialTheme.typography.bodySmall)
     Text("Caption text stays on-device. Google collects SDK performance and usage metrics.", style = MaterialTheme.typography.bodySmall)
     TextButton(onClick = { uriHandler.openUri("https://developers.google.com/ml-kit/terms") }) { Text("Google ML Kit privacy & terms") }
     if (busy) LinearProgressIndicator(Modifier.fillMaxWidth())

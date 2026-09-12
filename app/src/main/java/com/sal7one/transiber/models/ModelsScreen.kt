@@ -1,93 +1,92 @@
 package com.sal7one.transiber.models
 
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.sal7one.transiber.byok.ByokPolicy
 import com.sal7one.transiber.caption.*
 import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.first
 
 @Composable
-fun ModelsScreen() {
- val context = LocalContext.current
- val scope = rememberCoroutineScope()
- val registry = remember { ModelRegistry.getInstance(context) }
- val models by registry.registeredModels.collectAsStateWithLifecycle()
- var config by remember { mutableStateOf(CaptionOverlayConfig(engine = CaptionEngineChoice.QWEN)) }
- var importRevision by remember { mutableIntStateOf(0) }
- var section by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("speech") }
- var busy by remember { mutableStateOf(false) }
- var message by remember { mutableStateOf<String?>(null) }
- LaunchedEffect(Unit) { try { config = CaptionConfigStore.config(context).first().let { if (it.engine.speechBackend != null) it else it.copy(engine = CaptionEngineChoice.QWEN) }; registry.refreshModels() } catch(e: Exception) { message = e.message ?: e.toString() } }
- fun import(uri: android.net.Uri, directory: Boolean) {
-  scope.launch {
-   busy = true; message = "Copying and verifying model… Keep this screen open."
-   try {
-    val name = if (directory) "" else androidx.documentfile.provider.DocumentFile.fromSingleUri(context, uri)?.name.orEmpty()
-    if (!directory && name.endsWith(".zip", ignoreCase = true)) {
-     val imported = withContext(Dispatchers.IO) {
-      val job = currentCoroutineContext()
-      context.contentResolver.openInputStream(uri)?.use { input ->
-       LocalSpeechModels(java.io.File(context.filesDir, "speech-models")).importZip(input) { job.ensureActive() }
-      } ?: error("Cannot open selected model ZIP")
-     }
-     config = config.copy(engine = imported.profile.captionEngine, modelId = imported.id, mode = CaptionMode.CAPTIONS, streamLanguage = "auto")
-     CaptionConfigStore.update(context) { it.copy(engine = config.engine, modelId = config.modelId, mode = config.mode, streamLanguage = config.streamLanguage, localTranslationEnabled = config.localTranslationEnabled, localTranslationModelId = config.localTranslationModelId, target = config.target) }
-     importRevision++
-     message = "Imported ${imported.profile.label}. Selected for original-language captions."
-     return@launch
+fun ModelsScreen(onCloud: () -> Unit = {}, onDownloads: () -> Unit = {}) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var config by remember { mutableStateOf(CaptionOverlayConfig()) }
+    var error by remember { mutableStateOf<String?>(null) }
+    var loaded by remember { mutableStateOf(false) }
+    var section by rememberSaveable { mutableStateOf("Speech") }
+    var browsing by rememberSaveable { mutableStateOf(CaptionEngineChoice.NEMOTRON) }
+    var menu by remember { mutableStateOf(false) }
+    var legacyTranslation by rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        try { CaptionConfigStore.config(context).collect {
+            config = it
+            if (!loaded) { if (it.engine != CaptionEngineChoice.CLOUD) browsing = it.engine; loaded = true }
+        } } catch (e: CancellationException) { throw e }
+        catch (e: Exception) { error = e.message ?: e.toString() }
     }
-    val model = if (directory) registry.importModelDirectory(uri) else registry.importModel(uri)
-    message = model?.let { "Imported ${it.name}. Select it in Captions." } ?: "Unsupported model structure. Use a Whisper .bin file, Vosk folder, or Marian translation folder."
-   } catch(e: CancellationException) { throw e }
-   catch(e: Exception) { message = generateSequence<Throwable>(e) { it.cause }.joinToString("\n") { it.message ?: it.toString() } }
-   finally { busy = false }
-  }
- }
- val file = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { it?.let { import(it, false) } }
- val folder = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { it?.let { import(it, true) } }
- Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-  TextButton(onClick = { section = if (section == "speech") "" else "speech" }) { Text("Speech recognition" + if (section == "speech") " −" else " +", style = MaterialTheme.typography.titleMedium) }
-  if (section == "speech") {
-  Text("Turns audio into original captions.", style = MaterialTheme.typography.bodySmall)
-  FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-   listOf(CaptionEngineChoice.QWEN, CaptionEngineChoice.NEMOTRON, CaptionEngineChoice.MOONSHINE).forEach { engine ->
-    FilterChip(selected = config.engine == engine, onClick = { config = config.copy(engine = engine, modelId = "") }, label = { Text(engine.label) })
-   }
-  }
-  key(importRevision) { LocalSpeechSetup(config, includeTranslation = false, update = { transform ->
-   config = transform(config)
-   scope.launch { CaptionConfigStore.update(context) { current -> current.copy(engine = config.engine, modelId = config.modelId, mode = config.mode, streamLanguage = config.streamLanguage, localTranslationEnabled = config.localTranslationEnabled, localTranslationModelId = config.localTranslationModelId, target = config.target) } }
-  }, onModelsChanged = {}) }
-  }
-  HorizontalDivider()
-  TextButton(onClick = { section = if (section == "translation") "" else "translation" }) { Text("Translation" + if (section == "translation") " −" else " +", style = MaterialTheme.typography.titleMedium) }
-  if (section == "translation") com.sal7one.transiber.translation.LocalTranslationSetup(config) { transform ->
-   config = transform(config)
-   val next = config
-   scope.launch { CaptionConfigStore.update(context) { it.copy(localTranslationEnabled = next.localTranslationEnabled, localTranslationModelId = next.localTranslationModelId, mode = next.mode, target = next.target) } }
-  }
-  HorizontalDivider()
-  TextButton(onClick = { section = if (section == "other") "" else "other" }) { Text("Other models" + if (section == "other") " −" else " +") }
-  if (section == "other") {
-  Button(onClick = { file.launch(arrayOf("*/*")) }, enabled = !busy) { Text("Import model file or speech ZIP") }
-  OutlinedButton(onClick = { folder.launch(null) }, enabled = !busy) { Text("Import Vosk / translation folder") }
-  if (busy) LinearProgressIndicator(Modifier.fillMaxWidth())
-  message?.let { Text(it) }
-  models.forEach { model ->
-   Card(Modifier.fillMaxWidth()) { Column(Modifier.padding(12.dp)) {
-    Text(model.name, style = MaterialTheme.typography.titleMedium)
-    Text("${model.engineType.displayName} · ${model.sizeBytes / 1_048_576} MiB · ${if(model.isValid) "Verified" else "Needs attention"}")
-   } }
-  }
-  }
- }
+    val update: ((CaptionOverlayConfig) -> CaptionOverlayConfig) -> Unit = { transform ->
+        scope.launch { try { CaptionConfigStore.update(context, transform); error = null }
+            catch (e: CancellationException) { throw e }
+            catch (e: Exception) { error = e.message ?: e.toString() } }
+    }
+    val pages = rememberSaveableStateHolder()
+    Column(Modifier.fillMaxSize()) {
+        FlowRow(Modifier.padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            (listOf("Speech", "Translation") + if (ByokPolicy.FEATURE_BYOK) listOf("Cloud") else emptyList()).forEach { group ->
+                FilterChip(selected = section == group, onClick = { section = group }, label = { Text(group) })
+            }
+        }
+        pages.SaveableStateProvider(section) {
+            Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+                if (!loaded) { if (error == null) LinearProgressIndicator(Modifier.fillMaxWidth()); return@Column }
+                when (section) {
+                    "Speech" -> {
+                        Text("Local speech recognition", style = MaterialTheme.typography.titleLarge)
+                        Text("Choose a speech engine, then select an installed model or get its files. Translation is a separate choice.", style = MaterialTheme.typography.bodyMedium)
+                        Box {
+                            OutlinedButton(onClick = { menu = true }, modifier = Modifier.fillMaxWidth()) { Text(browsing.label) }
+                            DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
+                                listOf(CaptionEngineChoice.NEMOTRON, CaptionEngineChoice.QWEN, CaptionEngineChoice.MOONSHINE, CaptionEngineChoice.WHISPER, CaptionEngineChoice.VOSK).forEach { engine ->
+                                    DropdownMenuItem(text = { Text(engine.label) }, onClick = { browsing = engine; menu = false })
+                                }
+                            }
+                        }
+                        val shown = config.copy(engine = browsing, modelId = config.modelId.takeIf { config.engine == browsing }.orEmpty())
+                        key(browsing) {
+                            val select: ((CaptionOverlayConfig) -> CaptionOverlayConfig) -> Unit = { transform ->
+                                val next = transform(shown)
+                                browsing = next.engine
+                                update { it.copy(engine = next.engine, modelId = next.modelId, mode = next.mode, streamLanguage = next.streamLanguage) }
+                            }
+                            if (browsing.speechBackend != null) LocalSpeechSetup(shown, select, includeTranslation = false, onModelsChanged = {})
+                            else LegacyModelSetup(if (browsing == CaptionEngineChoice.WHISPER) ModelEngineType.WHISPER else ModelEngineType.VOSK, shown, select)
+                        }
+                    }
+                    "Translation" -> {
+                        Text("Local translation", style = MaterialTheme.typography.titleLarge)
+                        Text("Language packs or text models for on-device translation.", style = MaterialTheme.typography.bodySmall)
+                        com.sal7one.transiber.translation.LocalTranslationSetup(config, update)
+                        HorizontalDivider()
+                        TextButton(onClick = { legacyTranslation = !legacyTranslation }) { Text(if (legacyTranslation) "Hide legacy English → Arabic" else "Legacy English → Arabic · Marian") }
+                        if (legacyTranslation) LegacyModelSetup(ModelEngineType.TRANSLATE, config, update)
+                    }
+                    "Cloud" -> {
+                        Text("Cloud speech & translation", style = MaterialTheme.typography.titleLarge)
+                        Text("Cloud models run at your provider. They need an API key, not a model download.")
+                        Button(onClick = onCloud, modifier = Modifier.fillMaxWidth()) { Text("Choose provider & manage keys") }
+                        com.sal7one.transiber.byok.CloudSourceLinks()
+                    }
+                }
+                if (ByokPolicy.FEATURE_BYOK && section != "Cloud") TextButton(onClick = onDownloads) { Text("View downloads & installation progress") }
+            }
+        }
+    }
 }

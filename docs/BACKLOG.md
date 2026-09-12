@@ -188,3 +188,15 @@ No extra tool or feature gets added just because it might be useful. Each code
 change should fix a concrete user-visible issue or serve a named task above.
 Retain existing integrity, cancellation and offline rules;
 short functional checks do not mean hiding failures or skipping required gates.
+
+## RT-26 — Model library and source navigation (0.5.1)
+
+- [x] Group simple setup as Speech, Translation and Cloud; keep Whisper/Vosk in Speech and Marian in Translation.
+- [x] Put publisher, file links and installation steps beside the matching model. Label publisher archives requiring packaging.
+- [x] Group translation quantizations by family; distinguish browsing from the active translator.
+- [x] Show the selected cloud provider’s key and docs; collapse unrelated batch/voice controls.
+- [x] Reuse source/install panels in advanced setup and expose local translation for compatible cloud STT.
+- [x] Keep the model groups reachable while scrolling; preserve each group’s scroll position.
+
+Automatic conversion of publisher tar.bz2 archives into prepared speech ZIPs remains
+a separate installation improvement. Existing manifest/hash/path checks are unchanged.

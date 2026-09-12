@@ -65,7 +65,8 @@ internal fun LocalSpeechSetup(
         }
     }
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text("${config.effectiveEngine.label} model setup", style = MaterialTheme.typography.titleSmall)
+        Text("Installed models", style = MaterialTheme.typography.titleSmall)
+        if (models.none { it.profile.backend == backend }) Text("None installed yet. Import a prepared speech ZIP, or get the publisher files below.", style = MaterialTheme.typography.bodySmall)
         TextButton(onClick = { details = !details }) { Text(if (details) "Hide model details" else "Model details & language options") }
         if (details) {
         if (runtimeAvailable) Text("Native runtime available", style = MaterialTheme.typography.labelMedium)
@@ -87,6 +88,7 @@ internal fun LocalSpeechSetup(
                 onClick = { update { it.copy(modelId = model.id) } },
                 label = { Text(model.profile.label + " · " + model.id.takeLast(6)) })
         }
+        com.sal7one.transiber.models.ModelSourcePanel(com.sal7one.transiber.models.ModelSources.speech(config.effectiveEngine))
         var expandedLanguages by remember { mutableStateOf(false) }
         val profile = if (backend == com.sal7one.common_jni.speech.SpeechBackend.MOONSHINE) com.sal7one.common_jni.speech.SpeechProfile.MOONSHINE_TINY_EN else if (backend == com.sal7one.common_jni.speech.SpeechBackend.QWEN3_ASR)
             com.sal7one.common_jni.speech.SpeechProfile.QWEN3_ASR_0_6B else com.sal7one.common_jni.speech.SpeechProfile.NEMOTRON_3_5_ASR_0_6B
@@ -102,8 +104,7 @@ internal fun LocalSpeechSetup(
         }
         if (details) {
         CaptionLanguageFields(config, update, enabled = !busy, showTarget = false)
-        Text("Model sources: Qwen / sherpa-onnx (Apache 2.0); NVIDIA Nemotron (OpenMDW 1.1). " +
-            "The provided ZIPs include model cards, source details and license notices.", style = MaterialTheme.typography.bodySmall)
+        Text("Model licenses and publisher files are linked above. Keep their notices when preparing a package.", style = MaterialTheme.typography.bodySmall)
         Text("During capture, compute/audio below 1× means inference is faster than the audio duration. " +
             "The audio queue is capped at 3 seconds; overload reports an error instead of accumulating delay.",
             style = MaterialTheme.typography.bodySmall)

@@ -7,6 +7,7 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
@@ -27,13 +28,11 @@ internal fun LocalTranslationSetup(config: CaptionOverlayConfig, update: ((Capti
     var records by remember { mutableStateOf<List<FileDownload>>(emptyList()) }
     val store = remember { LocalTranslationModels(File(context.filesDir, "translation-models")) }
     var installed by remember { mutableStateOf<List<TranslationModelSpec>>(emptyList()) }
-    var selected by remember { mutableStateOf(config.localTranslationModelId.takeIf { id -> TranslationCatalog.models.any { it.id == id } } ?: "hy-mt15-q4") }
+    var selected by rememberSaveable { mutableStateOf(config.localTranslationModelId.takeIf { id -> TranslationCatalog.models.any { it.id == id } } ?: "hy-mt15-q4") }
     var message by remember { mutableStateOf<String?>(null) }
     var busy by remember { mutableStateOf(false) }
-    var showGguf by remember { mutableStateOf(config.localTranslationModelId != TranslationOptions.ML_KIT) }
-    LaunchedEffect(config.localTranslationModelId) { if (config.localTranslationModelId == TranslationOptions.ML_KIT) showGguf = false }
-    var advanced by remember { mutableStateOf(false) }
-    var modelMenu by remember { mutableStateOf(false) }
+    var showGguf by rememberSaveable { mutableStateOf(config.localTranslationModelId != TranslationOptions.ML_KIT) }
+    var familyMenu by remember { mutableStateOf(false) }
     var showCoverage by remember { mutableStateOf(false) }
     val spec = TranslationCatalog.find(selected)
     LaunchedEffect(Unit) { installed = withContext(Dispatchers.IO) { store.installed() } }
@@ -64,36 +63,45 @@ internal fun LocalTranslationSetup(config: CaptionOverlayConfig, update: ((Capti
         }
     }
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text("Local translation bridge", style = MaterialTheme.typography.titleMedium)
-        Text("Translates captions on your phone.")
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             Switch(checked = config.localTranslationEnabled, onCheckedChange = { enabled ->
                 update { it.copy(localTranslationEnabled = enabled, mode = if (enabled) CaptionMode.TRANSLATE else CaptionMode.CAPTIONS) }
             })
-            Text(if (config.localTranslationEnabled) "Enabled" else "Disabled · CC only")
+            Text(if (config.localTranslationEnabled) "Translation enabled" else "Disabled · CC only")
         }
-        if (PlatformTranslation.available) {
-            MlKitSetup(config, update)
-        }
-        TextButton(onClick = { showGguf = !showGguf }) { Text(if (showGguf) "Hide GGUF translators" else "Other translators · GGUF") }
-        if (showGguf) {
-        Text("Choose a translation model", style = MaterialTheme.typography.labelLarge)
-        val choices = if (advanced) TranslationCatalog.models else TranslationCatalog.models.filter { it.quantization == "Q4_K_M" || it.id == selected }
+        Text("Active translator: ${TranslationOptions.label(config.localTranslationModelId)}", style = MaterialTheme.typography.labelLarge)
+        Text("Browse translators", style = MaterialTheme.typography.titleSmall)
         Box {
-        OutlinedButton(onClick = { modelMenu = true }, enabled = !busy, modifier = Modifier.fillMaxWidth()) { Text(spec.label) }
-        DropdownMenu(expanded = modelMenu, onDismissRequest = { modelMenu = false }) {
-        choices.forEach { model ->
-            val isInstalled = installed.any { it.id == model.id }
-            DropdownMenuItem(enabled = !busy, onClick = {
-                selected = model.id; modelMenu = false
-                if (isInstalled) update { it.copy(localTranslationModelId = model.id) }
-            }, text = { Text("${model.label}${if (isInstalled) " · Installed" else ""}") })
+            val familyLabel = if (!showGguf) "ML Kit · lightweight language packs" else when (spec.family) {
+                "translategemma" -> "TranslateGemma · larger text model"
+                "hy-mt2" -> "Hy-MT2 · text model"
+                else -> "HY-MT1.5 · text model"
+            }
+            OutlinedButton(onClick = { familyMenu = true }, enabled = !busy, modifier = Modifier.fillMaxWidth()) { Text(familyLabel) }
+            DropdownMenu(expanded = familyMenu, onDismissRequest = { familyMenu = false }) {
+                if (PlatformTranslation.available) DropdownMenuItem(text = { Text("ML Kit · lightweight language packs") }, onClick = { showGguf = false; familyMenu = false })
+                listOf("hy-mt1.5" to "HY-MT1.5", "hy-mt2" to "Hy-MT2", "translategemma" to "TranslateGemma 4B").forEach { (family, label) ->
+                    DropdownMenuItem(text = { Text(label) }, onClick = {
+                        selected = TranslationCatalog.models.first { it.family == family && it.quantization == "Q4_K_M" }.id
+                        showGguf = true; familyMenu = false
+                    })
+                }
+            }
         }
+        if (!showGguf && PlatformTranslation.available) MlKitSetup(config, update = update)
+        if (showGguf) {
+        Text("Size / precision", style = MaterialTheme.typography.labelLarge)
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            TranslationCatalog.models.filter { it.family == spec.family }.forEach { model ->
+                FilterChip(selected = selected == model.id, enabled = !busy,
+                    onClick = { selected = model.id }, label = { Text("${model.quantization} · ${model.bytes / 1_048_576} MiB") })
+            }
         }
+        Text("${spec.label} · ${if (installed.any { it.id == spec.id }) "Installed" else "Not installed"}")
+        if (installed.any { it.id == spec.id }) Button(enabled = !busy, onClick = { update { it.copy(localTranslationModelId = spec.id, localTranslationEnabled = true, mode = CaptionMode.TRANSLATE) } }) {
+            Text(if (config.localTranslationModelId == spec.id) "Selected translator" else "Use ${spec.label}")
         }
-        TextButton(onClick = { advanced = !advanced }) { Text(if (advanced) "Hide larger variants" else "More model variants") }
-        Text("Active bridge model: ${if (config.localTranslationModelId == TranslationOptions.ML_KIT) TranslationOptions.label(config.localTranslationModelId) else installed.firstOrNull { it.id == config.localTranslationModelId }?.label ?: "None — import and select one"}")
-        if (advanced) Text("Q6/Q8 use more storage and memory. Only the selected model loads.")
+        Text("Q4 uses less storage and memory; Q6/Q8 are larger. Only the active translator loads.", style = MaterialTheme.typography.bodySmall)
         OutlinedButton(enabled = !busy, onClick = { importer.launch(arrayOf("*/*")) }) { Text("Import ${spec.label} GGUF") }
         if (ByokPolicy.FEATURE_BYOK) {
             val completed = records.firstOrNull { it.complete && it.title == spec.fileName }
@@ -121,15 +129,16 @@ internal fun LocalTranslationSetup(config: CaptionOverlayConfig, update: ((Capti
                 finally { busy = false }
             } }) { Text(if (pending != null) "Downloading · ${pending.bytes / 1_048_576} MiB" else "Download ${spec.bytes / 1_048_576} MiB") }
             Text("Saved in ${downloads.locationLabel}/models. No export needed for installation.")
-            TextButton(onClick = { uriHandler.openUri(spec.modelCard) }) { Text("Publisher model card and license") }
+            TextButton(onClick = { uriHandler.openUri(spec.modelCard) }) { Text("Source, files & license") }
+            if (spec.family == "translategemma") TextButton(onClick = { uriHandler.openUri("https://huggingface.co/google/translategemma-4b-it") }) { Text("Original Google model card") }
         }
         Text("${spec.license}. Imported files must match the selected artifact.")
         if (spec.family == "translategemma") Text("Larger quality alternative · 2.49 GB download. Community GGUF conversion of Google TranslateGemma. Phone speed depends on your device.")
         TextButton(onClick = { showCoverage = !showCoverage }) { Text(if (showCoverage) "Hide language coverage" else "Show supported source → target languages") }
         if (showCoverage) Text("Any of these source languages → any other listed target:\n" + spec.sourceLanguages.sortedBy(TranslationLanguages::label).joinToString(", ") { TranslationLanguages.label(it) })
+        }
         com.sal7one.transiber.caption.CaptionLanguageFields(config, update, showSource = false,
             targetChoices = com.sal7one.transiber.caption.CaptionLanguageChoices(TranslationOptions.languages(config.localTranslationModelId).ifEmpty { spec.targetLanguages }, "Output languages supported by the active translator."))
-        }
         val active = installed.firstOrNull { it.id == config.localTranslationModelId }
         Text(when {
             !config.localTranslationEnabled -> "Original-language CC; translation model stays unloaded."

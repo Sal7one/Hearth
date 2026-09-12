@@ -14,6 +14,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -39,7 +41,7 @@ import kotlinx.coroutines.launch
  */
 @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
-fun ByokKeySection(onStoredChange: (Boolean) -> Unit = {}) {
+fun ByokKeySection(onStoredChange: (Boolean) -> Unit = {}, onModeChange: (CloudConfigStore.SttMode) -> Unit = {}) {
     if (!ByokPolicy.FEATURE_BYOK) return
     val context = LocalContext.current
     var keyDraft by remember { mutableStateOf("") }
@@ -55,12 +57,67 @@ fun ByokKeySection(onStoredChange: (Boolean) -> Unit = {}) {
     var sonioxStored by remember { mutableStateOf(ApiKeyStore.getSonioxKey(context).isNotBlank()) }
     var elevenStored by remember { mutableStateOf(ApiKeyStore.getElevenLabsKey(context).isNotBlank()) }
     var assemblyStored by remember { mutableStateOf(ApiKeyStore.getAssemblyAiKey(context).isNotBlank()) }
+    LaunchedEffect(currentSttMode, keyStored, sonioxStored, elevenStored, deepgramStored, assemblyStored) {
+        onStoredChange(when (currentSttMode) {
+            CloudConfigStore.SttMode.STREAMING_SONIOX -> sonioxStored
+            CloudConfigStore.SttMode.STREAMING_ELEVENLABS -> elevenStored
+            CloudConfigStore.SttMode.STREAMING_DEEPGRAM -> deepgramStored
+            CloudConfigStore.SttMode.STREAMING_ASSEMBLYAI -> assemblyStored
+            else -> keyStored
+        })
+    }
     val refresh: () -> Unit = {
         keyRevision++
         keyStored = ApiKeyStore.hasOpenAiKey(context)
-        onStoredChange(keyStored)
     }
 
+    // ── STT mode: batch vs TRUE streaming (WebSocket interim results) ────
+    // Streaming is the investor-facing path: interim text lands while the
+    // speaker is still talking and utterances finalize in real time, instead
+    // of one round-trip per audio chunk. Groq is deliberately not a
+    // streaming option — verified 2026-08 their STT is REST-only; their
+    // OpenAI-compatible endpoint works as a Batch provider via Custom URL.
+    Spacer(Modifier.height(10.dp))
+    Text("Cloud provider / connection", style = MaterialTheme.typography.labelMedium)
+    // FlowRow: four mode chips would squash the last one flat in a Row.
+    androidx.compose.foundation.layout.FlowRow(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        CloudConfigStore.SttMode.entries.forEach { mode ->
+            androidx.compose.material3.FilterChip(
+                selected = currentSttMode == mode,
+                onClick = {
+                    CloudConfigStore.setSttMode(context, mode)
+                    currentSttMode = mode
+                    onModeChange(mode)
+                },
+                label = { Text(mode.label) },
+            )
+        }
+    }
+    Spacer(Modifier.height(4.dp))
+    Text(
+        when (currentSttMode) {
+            CloudConfigStore.SttMode.STREAMING_SONIOX -> "Soniox stt-rt-v5: streaming CC and optional integrated translation. Source and translated text are retained separately."
+            CloudConfigStore.SttMode.STREAMING_ELEVENLABS -> "ElevenLabs Scribe v2 Realtime: streaming CC with optional spoken-language hint. Enable a local translator for translation. Auto source cannot yet route local translation on this adapter."
+            CloudConfigStore.SttMode.BATCH ->
+                "Batch uploads chunks of audio and returns one result per " +
+                    "round-trip — slowest, but works with any OpenAI-compatible " +
+                    "endpoint (OpenAI, OpenRouter, or Groq via a custom URL)."
+            CloudConfigStore.SttMode.STREAMING_DEEPGRAM ->
+                "Deepgram streams audio over a WebSocket and emits interim text " +
+                    "live; Nova-3 is among the lowest-latency ASR on the market."
+            CloudConfigStore.SttMode.STREAMING_OPENAI ->
+                "OpenAI Realtime transcription (gpt-live-transcribe) streams " +
+                    "deltas over a WebSocket — uses the OpenAI key above."
+            CloudConfigStore.SttMode.STREAMING_ASSEMBLYAI ->
+                "AssemblyAI's realtime v3 WebSocket streams interim + final " +
+                    "turns; Universal models are multilingual by default."
+        },
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+    if (currentSttMode == CloudConfigStore.SttMode.BATCH || currentSttMode == CloudConfigStore.SttMode.STREAMING_OPENAI) {
     Text(
         "Cloud engine · your API key",
         style = MaterialTheme.typography.labelLarge,
@@ -68,6 +125,7 @@ fun ByokKeySection(onStoredChange: (Boolean) -> Unit = {}) {
     Spacer(Modifier.height(8.dp))
     OutlinedTextField(
         value = keyDraft,
+        visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
         onValueChange = { keyDraft = it },
         singleLine = true,
         placeholder = {
@@ -111,51 +169,8 @@ fun ByokKeySection(onStoredChange: (Boolean) -> Unit = {}) {
             }
         }
     }
-    // ── STT mode: batch vs TRUE streaming (WebSocket interim results) ────
-    // Streaming is the investor-facing path: interim text lands while the
-    // speaker is still talking and utterances finalize in real time, instead
-    // of one round-trip per audio chunk. Groq is deliberately not a
-    // streaming option — verified 2026-08 their STT is REST-only; their
-    // OpenAI-compatible endpoint works as a Batch provider via Custom URL.
-    Spacer(Modifier.height(10.dp))
-    Text("STT mode", style = MaterialTheme.typography.labelMedium)
-    // FlowRow: four mode chips would squash the last one flat in a Row.
-    androidx.compose.foundation.layout.FlowRow(
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        CloudConfigStore.SttMode.entries.forEach { mode ->
-            androidx.compose.material3.FilterChip(
-                selected = currentSttMode == mode,
-                onClick = {
-                    CloudConfigStore.setSttMode(context, mode)
-                    currentSttMode = mode
-                },
-                label = { Text(mode.label) },
-            )
-        }
     }
-    Spacer(Modifier.height(4.dp))
-    Text(
-        when (currentSttMode) {
-            CloudConfigStore.SttMode.STREAMING_SONIOX -> "Soniox stt-rt-v5: streaming CC and optional integrated translation. Source and translated text are retained separately."
-            CloudConfigStore.SttMode.STREAMING_ELEVENLABS -> "ElevenLabs Scribe v2 Realtime: streaming CC with optional spoken-language hint. Enable a local translator for translation. Auto source cannot yet route local translation on this adapter."
-            CloudConfigStore.SttMode.BATCH ->
-                "Batch uploads chunks of audio and returns one result per " +
-                    "round-trip — slowest, but works with any OpenAI-compatible " +
-                    "endpoint (OpenAI, OpenRouter, or Groq via a custom URL)."
-            CloudConfigStore.SttMode.STREAMING_DEEPGRAM ->
-                "Deepgram streams audio over a WebSocket and emits interim text " +
-                    "live; Nova-3 is among the lowest-latency ASR on the market."
-            CloudConfigStore.SttMode.STREAMING_OPENAI ->
-                "OpenAI Realtime transcription (gpt-live-transcribe) streams " +
-                    "deltas over a WebSocket — uses the OpenAI key above."
-            CloudConfigStore.SttMode.STREAMING_ASSEMBLYAI ->
-                "AssemblyAI's realtime v3 WebSocket streams interim + final " +
-                    "turns; Universal models are multilingual by default."
-        },
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-    )
+    CloudSourceLinks(currentSttMode)
     if (currentSttMode == CloudConfigStore.SttMode.STREAMING_SONIOX) {
         StreamingKeyField("Soniox API key", "https://console.soniox.com", sonioxStored,
             { ApiKeyStore.setSonioxKey(context, it); sonioxStored = ApiKeyStore.getSonioxKey(context).isNotBlank() },
@@ -198,6 +213,12 @@ fun ByokKeySection(onStoredChange: (Boolean) -> Unit = {}) {
             },
         )
     }
+    var extraOptions by remember { mutableStateOf(false) }
+    if (currentSttMode != CloudConfigStore.SttMode.BATCH) {
+        TextButton(onClick = { extraOptions = !extraOptions }) { Text(if (extraOptions) "Hide batch & voice options" else "Optional batch & cloud voice settings") }
+    }
+    if (currentSttMode == CloudConfigStore.SttMode.BATCH || extraOptions) {
+        Text("These endpoint and model settings affect batch uploads and optional cloud voice. Streaming uses the provider selected above.", style = MaterialTheme.typography.bodySmall)
     // ── Provider & model ─────────────────────────────────────────────
     // Endpoint-agnostic: OpenAI keys go to OpenAI, OpenRouter keys to
     // OpenRouter, anything OpenAI-compatible to a custom URL. The model
@@ -345,6 +366,7 @@ fun ByokKeySection(onStoredChange: (Boolean) -> Unit = {}) {
             MaterialTheme.colorScheme.onSurfaceVariant
         },
     )
+    }
 }
 
 /** Key field + save/remove row for one streaming provider. */
@@ -359,6 +381,7 @@ private fun StreamingKeyField(
     var draft by remember { mutableStateOf("") }
     OutlinedTextField(
         value = draft,
+        visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
         onValueChange = { draft = it },
         singleLine = true,
         label = { Text(label) },

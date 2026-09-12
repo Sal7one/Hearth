@@ -1,5 +1,8 @@
 # Local model setup
 
+See [all model sources and download links](model-sources.md). The app groups these
+under Models → Speech, Translation and Cloud.
+
 The app includes native runtimes, not multi-gigabyte model weights. Import the same
 verified Hearth speech ZIPs you already have, or prepare a ZIP from the publisher's
 files with the included `scripts/speech/make-package.py`. Qwen and Nemotron choices
@@ -48,14 +51,13 @@ HY-MT1.5 or Hy-MT2 translation model. See [local translation](local-translation.
 
 ## Other models and downloads
 
-- Whisper: import a whisper.cpp GGML `.bin` model using **Import model file or speech ZIP**.
+- Whisper: import a whisper.cpp GGML `.bin` model under **Models → Speech → Whisper**.
   Sources and sizes: https://huggingface.co/ggerganov/whisper.cpp
-- Vosk: extract a model ZIP on your computer/device, then **Import Vosk / translation
-  folder**. Publisher catalogue: https://alphacephei.com/vosk/models
+- Vosk: extract a model ZIP on your computer/device, then **Models → Speech → Vosk → Import Vosk folder**. Publisher catalogue: https://alphacephei.com/vosk/models
 - Marian: import a compatible OPUS-MT folder with `source.spm`, `tokenizer.json`,
   encoder ONNX and merged-decoder ONNX. The translation route must match its language pair.
 - Download a prepared speech ZIP or another direct HTTPS file through **Downloads**.
-  Export the completed download, then import it in Models. Raw `.tar.bz2` or GGUF
+  Open the completed download in the file picker when importing in Models. Raw `.tar.bz2` or GGUF
   downloads are not ready-to-import speech ZIPs; package them as shown above.
 
 Package manifests enforce file sizes, SHA-256, role requirements and path containment.
