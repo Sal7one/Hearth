@@ -149,6 +149,16 @@ These are sequential feature slices; they do not block publishing working captio
 No new benchmark system, telemetry, provider redesign or broad JNI rewrite is part
 of this plan. Existing model downloads, key storage and speech bindings are reused.
 
+## Proposed OSS model expansion — RT-20 through RT-24
+
+See [model expansion plan](oss-extension-plan.md) for the report assessment,
+current implementation gaps and per-task acceptance checklists. Proposed order:
+lightweight optional translation, Soniox paired captions, and contributor docs
+developed with those working adapters. TranslateGemma and additional runtimes
+remain optional. These tasks are not implemented and do not revive the deferred
+benchmark, telemetry or broad JNI rewrite work. The owner's request to expand
+provider support supersedes RT-11's earlier blanket deferral for these named tasks.
+
 ## Existing work to preserve
 
 Qwen/Nemotron startup fix; optional bounded local translation; foreground-service
@@ -167,6 +177,6 @@ versionName alone do not mean an APK was delivered.
 - RT-15: sign-language recognition research/prototype. Earlier request retained; separate from this speech-app release.
 
 No extra tool or feature gets added just because it might be useful. Each code
-change should fix a concrete user-visible issue or be necessary for one of the
-six deliverables above. Retain existing integrity, cancellation and offline rules;
+change should fix a concrete user-visible issue or serve a named task above.
+Retain existing integrity, cancellation and offline rules;
 short functional checks do not mean hiding failures or skipping required gates.
