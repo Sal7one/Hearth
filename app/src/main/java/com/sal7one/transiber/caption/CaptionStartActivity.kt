@@ -72,22 +72,22 @@ class CaptionStartActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            CaptionStartRoot(onDone = { finish() })
+            CaptionStartRoot(requestedSource = intent.getStringExtra("chosen_source")?.let { runCatching { CaptionSource.valueOf(it) }.getOrNull() }, onDone = { finish() })
         }
     }
 
     companion object {
-        fun start(context: Context) {
+        fun start(context: Context, source: CaptionSource? = null) {
             context.startActivity(
                 Intent(context, CaptionStartActivity::class.java)
-                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK).putExtra("chosen_source", source?.name),
             )
         }
     }
 }
 
 @Composable
-private fun CaptionStartRoot(onDone: () -> Unit) {
+private fun CaptionStartRoot(requestedSource: CaptionSource?, onDone: () -> Unit) {
     val context = LocalContext.current
     val themeMode = ThemeMode.SYSTEM
     val accentPreset = AccentPreset.OCEAN
@@ -102,7 +102,7 @@ private fun CaptionStartRoot(onDone: () -> Unit) {
             color = MaterialTheme.colorScheme.background,
             contentColor = MaterialTheme.colorScheme.onBackground,
         ) {
-            CaptionStartScreen(onDone = onDone)
+            CaptionStartScreen(requestedSource, onDone = onDone)
         }
     }
 }
@@ -127,12 +127,12 @@ private fun CaptionStartSystemBars(themeMode: ThemeMode) {
 }
 
 @Composable
-private fun CaptionStartScreen(onDone: () -> Unit) {
+private fun CaptionStartScreen(requestedSource: CaptionSource?, onDone: () -> Unit) {
     val context = LocalContext.current
     var overlayGranted by remember {
         mutableStateOf(Settings.canDrawOverlays(context))
     }
-    var source by remember { mutableStateOf(CaptionSource.PLAYBACK_CAPTURE) }
+    var source by remember { mutableStateOf(requestedSource ?: CaptionSource.PLAYBACK_CAPTURE) }
     var micPermissionDenied by remember { mutableStateOf(false) }
     var notificationsDenied by remember { mutableStateOf(false) }
     val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
@@ -181,6 +181,14 @@ private fun CaptionStartScreen(onDone: () -> Unit) {
         } else requestNotifications()
     }
 
+    var attempted by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
+    androidx.compose.runtime.LaunchedEffect(overlayGranted) {
+        if (requestedSource != null && overlayGranted && !attempted) {
+            attempted = true
+            requestCapture()
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -193,10 +201,7 @@ private fun CaptionStartScreen(onDone: () -> Unit) {
             Column(modifier = Modifier.weight(1f)) {
                 Text("Live captions", style = MaterialTheme.typography.headlineMedium)
                 Text(
-                    "On-device captions and translation over any app's audio. " +
-                        "Nothing leaves this phone — unless you enable the " +
-                        "Cloud (BYOK) engine, which uploads utterances to " +
-                        "your own provider with your key.",
+                    if (requestedSource == null) "Choose an audio source to start." else "${source.label} · complete Android permissions to start.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -217,7 +222,7 @@ private fun CaptionStartScreen(onDone: () -> Unit) {
                 context.startActivity(intent)
             })
         } else {
-            SourceCard(
+            if (requestedSource == null) SourceCard(
                 selected = source,
                 onSelect = { source = it },
             )
@@ -273,15 +278,8 @@ private fun CaptionStartScreen(onDone: () -> Unit) {
                 Text("Cancel")
             }
 
-            Text(
-                "How device-audio capture works: Android only delivers audio from apps " +
-                    "that allow it. DRM video (the YouTube app, Netflix) and apps that opt " +
-                    "out are silent — switch to the microphone source for those. " +
-                    "Translation to English uses Whisper's built-in translation and works " +
-                    "from any supported language.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            if (requestedSource == null) Text("Some apps block device audio. Choose Microphone if capture is silent.", style = MaterialTheme.typography.bodySmall)
+
         }
     }
 }

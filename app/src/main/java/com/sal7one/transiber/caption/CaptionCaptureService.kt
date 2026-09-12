@@ -26,6 +26,7 @@ class CaptionCaptureService : Service() {
     private var startup: Job? = null
     @Volatile private var capturing = false
     private var active = false
+        set(value) { field = value; runningState.value = value }
     private var source = CaptionSource.PLAYBACK_CAPTURE
     private var overlayVisible = true
     private var failure: String? = null
@@ -250,6 +251,11 @@ class CaptionCaptureService : Service() {
     }
 
     companion object {
+        private val runningState = kotlinx.coroutines.flow.MutableStateFlow(false)
+        val running: kotlinx.coroutines.flow.StateFlow<Boolean> = runningState
+        fun show(context: Context) {
+            context.startService(Intent(context, CaptionCaptureService::class.java).setAction(ACTION_CENTER))
+        }
         private const val SAMPLE_RATE = 16_000
         private const val READ_SAMPLES = 800 // 50 ms capture cadence
         private const val CHANNEL_ID = "caption_capture"

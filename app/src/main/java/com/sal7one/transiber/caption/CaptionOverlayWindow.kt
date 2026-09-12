@@ -572,7 +572,7 @@ private fun SettingsPanel(
                 Text(model?.label ?: "No translation model selected", color = palette.onSurface)
             }
             TextButton(onClick = { openSetup(1) }) { Text("Choose or download models") }
-            TextButton(onClick = { openSetup(0) }) { Text("Full setup & cloud settings") }
+            TextButton(onClick = { openSetup(3) }) { Text("Full setup & cloud settings") }
             TextButton(onClick = onClear) { Text("Clear transcript") }
             TextButton(onClick = { showReadAloud = !showReadAloud }) { Text(if (showReadAloud) "Hide read-aloud options" else "Read-aloud options") }
             if (showReadAloud) {

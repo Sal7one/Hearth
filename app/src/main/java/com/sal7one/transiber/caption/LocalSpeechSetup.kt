@@ -19,12 +19,14 @@ import java.io.File
 internal fun LocalSpeechSetup(
     config: CaptionOverlayConfig,
     update: ((CaptionOverlayConfig) -> CaptionOverlayConfig) -> Unit,
+    includeTranslation: Boolean = true,
     onModelsChanged: (List<LocalSpeechModel>) -> Unit,
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val store = remember { LocalSpeechModels(File(context.filesDir, "speech-models")) }
     var models by remember { mutableStateOf<List<LocalSpeechModel>>(emptyList()) }
+    var details by remember { mutableStateOf(false) }
     var busy by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
     var runtimeAvailable by remember(config.effectiveEngine) { mutableStateOf(false) }
@@ -64,6 +66,8 @@ internal fun LocalSpeechSetup(
     }
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text("${config.effectiveEngine.label} model setup", style = MaterialTheme.typography.titleSmall)
+        TextButton(onClick = { details = !details }) { Text(if (details) "Hide model details" else "Model details & language options") }
+        if (details) {
         if (runtimeAvailable) Text("Native runtime available", style = MaterialTheme.typography.labelMedium)
         Text("The runtime is bundled; model weights are a separate download. Import a Hearth speech ZIP with " +
             "hearth-speech.json at its root. Import copies and verifies the files, then selects original-language CC. " +
@@ -72,6 +76,7 @@ internal fun LocalSpeechSetup(
         Text("Qwen: roughly 1 GB for the 0.6B package; 1.7B needs more memory. Nemotron: roughly 742 MB. " +
             "Keep at least twice the package size free for the download and installation. ASR speed depends on your phone.",
             style = MaterialTheme.typography.bodySmall)
+        }
         OutlinedButton(enabled = !busy, onClick = { importer.launch(arrayOf("application/zip", "application/x-zip-compressed", "application/octet-stream")) }) {
             Text(if (busy) "Importing…" else "Import model ZIP")
         }
@@ -95,6 +100,7 @@ internal fun LocalSpeechSetup(
                 "Publisher coverage: 30 languages plus Chinese dialects; automatic language detection. Recognition, not translation."
             else "Publisher coverage: 28 languages / 32 locales usable without fine-tuning. Mandarin and 12 other languages are broad-coverage tier; quality varies. Eight adaptation-only locales are excluded.")
         }
+        if (details) {
         if (config.effectiveEngine == CaptionEngineChoice.NEMOTRON) {
             Text("Source language hint", style = MaterialTheme.typography.labelMedium)
             Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -110,7 +116,8 @@ internal fun LocalSpeechSetup(
         Text("During capture, compute/audio below 1× means inference is faster than the audio duration. " +
             "The audio queue is capped at 3 seconds; overload reports an error instead of accumulating delay.",
             style = MaterialTheme.typography.bodySmall)
-        com.sal7one.transiber.translation.LocalTranslationSetup(config, update)
+        }
+        if (includeTranslation) com.sal7one.transiber.translation.LocalTranslationSetup(config, update)
         notice?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
         error?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
     }

@@ -23,6 +23,7 @@ fun ModelsScreen() {
  val models by registry.registeredModels.collectAsStateWithLifecycle()
  var config by remember { mutableStateOf(CaptionOverlayConfig(engine = CaptionEngineChoice.QWEN)) }
  var importRevision by remember { mutableIntStateOf(0) }
+ var section by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("speech") }
  var busy by remember { mutableStateOf(false) }
  var message by remember { mutableStateOf<String?>(null) }
  LaunchedEffect(Unit) { try { config = CaptionConfigStore.config(context).first().let { if (it.engine == CaptionEngineChoice.QWEN || it.engine == CaptionEngineChoice.NEMOTRON) it else it.copy(engine = CaptionEngineChoice.QWEN) }; registry.refreshModels() } catch(e: Exception) { message = e.message ?: e.toString() } }
@@ -54,20 +55,29 @@ fun ModelsScreen() {
  val file = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { it?.let { import(it, false) } }
  val folder = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { it?.let { import(it, true) } }
  Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-  Text("Local speech models", style = MaterialTheme.typography.headlineSmall)
-  Text("Model weights are separate downloads. The runtimes are included. Imported files stay on this device.")
+  TextButton(onClick = { section = if (section == "speech") "" else "speech" }) { Text("Speech recognition" + if (section == "speech") " −" else " +", style = MaterialTheme.typography.titleMedium) }
+  if (section == "speech") {
+  Text("Turns audio into original captions.", style = MaterialTheme.typography.bodySmall)
   Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
    listOf(CaptionEngineChoice.QWEN, CaptionEngineChoice.NEMOTRON).forEach { engine ->
     FilterChip(selected = config.engine == engine, onClick = { config = config.copy(engine = engine, modelId = "") }, label = { Text(engine.label) })
    }
   }
-  key(importRevision) { LocalSpeechSetup(config, update = { transform ->
+  key(importRevision) { LocalSpeechSetup(config, includeTranslation = false, update = { transform ->
    config = transform(config)
    scope.launch { CaptionConfigStore.update(context) { current -> current.copy(engine = config.engine, modelId = config.modelId, mode = config.mode, streamLanguage = config.streamLanguage, localTranslationEnabled = config.localTranslationEnabled, localTranslationModelId = config.localTranslationModelId, target = config.target) } }
   }, onModelsChanged = {}) }
-  Text("Qwen / Nemotron packages must contain hearth-speech.json and the verified model files. The repository includes a package builder and source links. Raw model downloads need packaging first.")
+  }
   HorizontalDivider()
-  Text("Whisper, Vosk and translation", style = MaterialTheme.typography.titleLarge)
+  TextButton(onClick = { section = if (section == "translation") "" else "translation" }) { Text("Translation" + if (section == "translation") " −" else " +", style = MaterialTheme.typography.titleMedium) }
+  if (section == "translation") com.sal7one.transiber.translation.LocalTranslationSetup(config) { transform ->
+   config = transform(config)
+   val next = config
+   scope.launch { CaptionConfigStore.update(context) { it.copy(localTranslationEnabled = next.localTranslationEnabled, localTranslationModelId = next.localTranslationModelId, mode = next.mode, target = next.target) } }
+  }
+  HorizontalDivider()
+  TextButton(onClick = { section = if (section == "other") "" else "other" }) { Text("Other models" + if (section == "other") " −" else " +") }
+  if (section == "other") {
   Button(onClick = { file.launch(arrayOf("*/*")) }, enabled = !busy) { Text("Import model file or speech ZIP") }
   OutlinedButton(onClick = { folder.launch(null) }, enabled = !busy) { Text("Import Vosk / translation folder") }
   if (busy) LinearProgressIndicator(Modifier.fillMaxWidth())
@@ -78,6 +88,6 @@ fun ModelsScreen() {
     Text("${model.engineType.displayName} · ${model.sizeBytes / 1_048_576} MiB · ${if(model.isValid) "Verified" else "Needs attention"}")
    } }
   }
-  Text("Local Qwen and Nemotron provide original-language CC. The optional local translation bridge adds text translation; Whisper can translate speech to English, and Marian supports installed language pairs.")
+  }
  }
 }

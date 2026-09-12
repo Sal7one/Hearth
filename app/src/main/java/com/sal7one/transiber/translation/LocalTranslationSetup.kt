@@ -30,6 +30,8 @@ internal fun LocalTranslationSetup(config: CaptionOverlayConfig, update: ((Capti
     var selected by remember { mutableStateOf(config.localTranslationModelId.takeIf { id -> TranslationCatalog.models.any { it.id == id } } ?: "hy-mt15-q4") }
     var message by remember { mutableStateOf<String?>(null) }
     var busy by remember { mutableStateOf(false) }
+    var advanced by remember { mutableStateOf(false) }
+    var modelMenu by remember { mutableStateOf(false) }
     var showCoverage by remember { mutableStateOf(false) }
     val spec = TranslationCatalog.find(selected)
     LaunchedEffect(Unit) { installed = withContext(Dispatchers.IO) { store.installed() } }
@@ -61,7 +63,7 @@ internal fun LocalTranslationSetup(config: CaptionOverlayConfig, update: ((Capti
     }
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text("Local translation bridge", style = MaterialTheme.typography.titleMedium)
-        Text("Speech model → original CC → translation model. Both stages stay on your phone. Captions keep updating while translation catches up.")
+        Text("Translates captions on your phone.")
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             Switch(checked = config.localTranslationEnabled, onCheckedChange = { enabled ->
                 update { it.copy(localTranslationEnabled = enabled, mode = if (enabled) CaptionMode.TRANSLATE else CaptionMode.CAPTIONS) }
@@ -69,16 +71,22 @@ internal fun LocalTranslationSetup(config: CaptionOverlayConfig, update: ((Capti
             Text(if (config.localTranslationEnabled) "Enabled" else "Disabled · CC only")
         }
         Text("Choose a translation model", style = MaterialTheme.typography.labelLarge)
-        TranslationCatalog.models.forEach { model ->
+        val choices = if (advanced) TranslationCatalog.models else TranslationCatalog.models.filter { it.quantization == "Q4_K_M" || it.id == selected }
+        Box {
+        OutlinedButton(onClick = { modelMenu = true }, enabled = !busy, modifier = Modifier.fillMaxWidth()) { Text(spec.label) }
+        DropdownMenu(expanded = modelMenu, onDismissRequest = { modelMenu = false }) {
+        choices.forEach { model ->
             val isInstalled = installed.any { it.id == model.id }
-            FilterChip(selected = selected == model.id, enabled = !busy,
-                onClick = {
-                    selected = model.id
-                    if (isInstalled) update { it.copy(localTranslationModelId = model.id) }
-                }, label = { Text("${model.label} · ${model.bytes / 1_048_576} MiB${if (isInstalled) " · Installed" else ""}") })
+            DropdownMenuItem(enabled = !busy, onClick = {
+                selected = model.id; modelMenu = false
+                if (isInstalled) update { it.copy(localTranslationModelId = model.id) }
+            }, text = { Text("${model.label}${if (isInstalled) " · Installed" else ""}") })
         }
+        }
+        }
+        TextButton(onClick = { advanced = !advanced }) { Text(if (advanced) "Hide larger variants" else "More model variants") }
         Text("Active bridge model: ${installed.firstOrNull { it.id == config.localTranslationModelId }?.label ?: "None — import and select one"}")
-        Text("Q4 uses the least memory here. Q6/Q8 are larger alternatives; speed and translation quality vary. Download size is not total RAM use. Only the selected model loads.")
+        if (advanced) Text("Q6/Q8 use more storage and memory. Only the selected model loads.")
         OutlinedButton(enabled = !busy, onClick = { importer.launch(arrayOf("*/*")) }) { Text("Import ${spec.label} GGUF") }
         if (ByokPolicy.FEATURE_BYOK) {
             val completed = records.firstOrNull { it.complete && it.title == spec.fileName }
@@ -108,7 +116,7 @@ internal fun LocalTranslationSetup(config: CaptionOverlayConfig, update: ((Capti
             Text("Saved in ${downloads.locationLabel}/models. No export needed for installation.")
             TextButton(onClick = { uriHandler.openUri(spec.modelCard) }) { Text("Publisher model card and license") }
         }
-        Text("Tencent Hunyuan community license; weights are downloaded separately. Imports must match the selected publisher GGUF exactly.")
+        if (advanced) Text("Tencent Hunyuan community license. Imported files must match the selected publisher model.")
         TextButton(onClick = { showCoverage = !showCoverage }) { Text(if (showCoverage) "Hide language coverage" else "Show supported source → target languages") }
         if (showCoverage) Text("Any of these source languages → any other listed target:\n" + spec.sourceLanguages.sortedBy(TranslationLanguages::label).joinToString(", ") { TranslationLanguages.label(it) })
         Text("Translate into")

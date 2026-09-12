@@ -53,16 +53,17 @@ Never commit keys or credentials. CI builds and uploads both QA APKs.
 
 ## Start captions
 
-1. Open **Models** and import local weights, or choose **Cloud** in Captions and
-   save your provider key in the cloud settings section.
-2. For translated streams, choose the live Arabic/English cloud translation preset.
-   For same-language CC, select a local recognizer or a cloud transcription mode.
-3. Grant overlay, microphone and notification permissions. Start and choose device
-   audio or microphone. Use the notification to pause, show, recenter or stop.
-4. Open history in the bubble to read previous lines; captions continue while you read.
-5. Bubble settings separate Appearance (height, size and position) from CC &
-   translation. Compact / Comfortable / Large resize the reading area without
-   restarting capture. Full model and cloud setup opens in the app.
+1. On the home screen, choose Device audio or Microphone, original captions or
+   translation, and your language. Your last setup is remembered.
+2. Tap **Start captions**. Android asks for any required permissions or device-audio
+   consent; the app does not ask you to choose the audio source again.
+3. While running, **Show captions** recovers the bubble and **Stop** ends capture.
+   Bubble settings separate Appearance from CC & translation.
+
+**Setup** contains Models, Downloads and Cloud connection. Models separates speech
+recognition from translation, with details and larger variants collapsed. Connect
+or change your existing cloud provider/key under Cloud connection. Advanced setup
+retains the detailed engine controls and live cloud presets.
 
 Local Qwen and Nemotron recognize speech. The optional local text-model bridge
 translates their output with a separately imported HY-MT model. Whisper can

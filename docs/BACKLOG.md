@@ -60,12 +60,14 @@ claim has been validated by this project.
 
 ### 4. Unclutter setup and models — RT-06 / RT-07 / RT-13
 
-- [ ] Keep Start visible and show only audio source, CC/Translate, language pair and the chosen Local/Cloud setup in the primary flow.
-- [ ] Collapse advanced engine options; remove repeated setup sections and permanent diagnostic clutter.
-- [ ] Show one model card per family; move Q4/Q6/Q8 variants into Advanced rather than six competing choices.
-- [ ] Show Installed / Download / Use clearly, plus language coverage when requested.
-- [ ] Keep the successful cloud presets and key configuration behavior intact. Only simplify placement when necessary.
-- [ ] Fix clipped controls, excessive spacing and unreadable Arabic/large-text layouts encountered in these screens; avoid a wholesale design-system rewrite.
+Status: implemented in 0.3.0; see validation-v6.md.
+
+- [x] Keep Start visible and show only audio source, CC/Translate, language pair and the chosen Local/Cloud setup in the primary flow.
+- [x] Collapse advanced engine options; remove repeated setup sections and permanent diagnostic clutter.
+- [x] Show one translation model selector; move larger Q6/Q8 variants into Advanced rather than six competing choices.
+- [x] Show Installed / Download / Use clearly, plus language coverage when requested.
+- [x] Keep the successful cloud presets and key configuration behavior intact. Only simplify placement when necessary.
+- [x] Fix clipped controls, excessive spacing and unreadable Arabic/large-text layouts encountered in these screens; avoid a wholesale design-system rewrite.
 
 Done when: a configured user can start without scrolling through a long technical
 form, and can tell which model is active and how to change it.
