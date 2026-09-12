@@ -12,28 +12,28 @@ check of changed behavior; do not create extra tooling to justify a small change
 
 ### 1. Easy downloads and installation — RT-01 / RT-07
 
-Status: implementation started in the workspace; not yet delivered.
+Status: implemented in 0.2.1; see validation-v5.md for checks and limitations.
 
-- [ ] Finish saving new model downloads under `Downloads/Real time transiber/models` on Android 10+; direct files use the adjacent `files` folder.
-- [ ] Let existing downloaded translation models install directly inside the app. No export or file-picker round trip.
-- [ ] Show Downloading / Verifying / Installed and one clear next action; keep manual import for externally obtained files.
-- [ ] Keep hash checking and show actual failures; never mark a partial file Installed.
-- [ ] Put raw URL/filename entry behind a separate Direct file download action.
-- [ ] Keep older downloads usable and correct the storage/help text.
+- [x] Finish saving new model downloads under `Downloads/Real time transiber/models` on Android 10+; direct files use the adjacent `files` folder.
+- [x] Let existing downloaded translation models install directly inside the app. No export or file-picker round trip.
+- [x] Show Downloading / Verifying / Installed and one clear next action; keep manual import for externally obtained files.
+- [x] Keep hash checking and show actual failures; never mark a partial file Installed.
+- [x] Put raw URL/filename entry behind a separate Direct file download action.
+- [x] Keep older downloads usable and correct the storage/help text.
 
 Done when: the owner can download, install and select a model without hunting for
 files, and an old completed download works without downloading it again.
 
 ### 2. Simple bubble controls — RT-04 / RT-05
 
-Status: next visible UI change.
+Status: implemented in 0.2.1; owner confirmation of reading comfort remains.
 
-- [ ] Split the panel into **Appearance** and **CC & translation**.
-- [ ] Appearance opens with Height, Width, Text size, Background and Position; keep Reset position obvious.
-- [ ] Make Height visibly resize the reading area, separate from moving the bubble higher/lower. Keep the current comfortable size available.
-- [ ] Remove competing sizing behavior that makes the slider confusing; retain usable drag/close controls and screen-edge clamping.
-- [ ] Keep mode, languages, translation on/off and selected model in CC & translation. Move keys/downloads/full model setup out of the bubble.
-- [ ] Save the user's size/position and apply appearance changes without restarting captions.
+- [x] Split the panel into **Appearance** and **CC & translation**.
+- [x] Appearance opens with Height, Width, Text size, Background and Position; keep Reset position obvious.
+- [x] Make Height visibly resize the reading area, separate from moving the bubble higher/lower. Keep the current comfortable size available.
+- [x] Remove competing sizing behavior that makes the slider confusing; retain usable drag/close controls and screen-edge clamping.
+- [x] Keep mode, languages, translation on/off and selected model in CC & translation. Move keys/downloads/full model setup out of the bubble.
+- [x] Save the user's size/position and apply appearance changes without restarting captions.
 
 Done when: the owner can make the bubble shorter or move it lower immediately,
 without scrolling through engine settings or losing the current transcript.
@@ -95,8 +95,8 @@ Do not hold the release for every possible model, language or device combination
 Qwen/Nemotron startup fix; optional bounded local translation; foreground-service
 controls; retained caption history; encrypted keys; speech-only cloud model
 filtering; source/target language metadata; no-network foss flavor. These are
-working features, not a fresh list of things to rebuild. Existing download edits
-are unfinished; versionCode/versionName alone do not mean an APK was delivered.
+working features, not a fresh list of things to rebuild. The download and bubble changes are recorded in validation-v5.md; versionCode/
+versionName alone do not mean an APK was delivered.
 
 ## Deferred, not release requirements
 

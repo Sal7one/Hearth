@@ -20,9 +20,11 @@ speech provider API keys.
 
 Downloads are handled by Android DownloadManager. The system stores the requested
 URL (including query parameters in signed links), progress and file metadata.
-Requests may use mobile data; roaming is disabled. Files remain in app-specific
-external storage until deleted or the app is uninstalled. Export creates a separate
-copy in your chosen document provider. Any sharing/export destination follows its
+Requests may use mobile data; roaming is disabled. On Android 10+, new downloads
+are saved under Downloads/Real time transiber (models or files) and remain after
+uninstalling. Android 9 and older downloads from previous app versions use
+app-specific storage, which is removed on uninstall. Installed models are verified
+copies in app-private storage. Export creates a separate copy in your chosen document provider. Any sharing/export destination follows its
 own privacy policy. HTTPS is required for direct download URLs.
 
 Captions and their bounded history are held in memory during the session; no audio

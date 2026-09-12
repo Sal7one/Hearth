@@ -23,6 +23,8 @@ internal fun LocalTranslationSetup(config: CaptionOverlayConfig, update: ((Capti
     val context = LocalContext.current
     val uriHandler = LocalUriHandler.current
     val scope = rememberCoroutineScope()
+    val downloads = remember { FileDownloads(context.applicationContext) }
+    var records by remember { mutableStateOf<List<FileDownload>>(emptyList()) }
     val store = remember { LocalTranslationModels(File(context.filesDir, "translation-models")) }
     var installed by remember { mutableStateOf<List<TranslationModelSpec>>(emptyList()) }
     var selected by remember { mutableStateOf(config.localTranslationModelId.takeIf { id -> TranslationCatalog.models.any { it.id == id } } ?: "hy-mt15-q4") }
@@ -31,6 +33,14 @@ internal fun LocalTranslationSetup(config: CaptionOverlayConfig, update: ((Capti
     var showCoverage by remember { mutableStateOf(false) }
     val spec = TranslationCatalog.find(selected)
     LaunchedEffect(Unit) { installed = withContext(Dispatchers.IO) { store.installed() } }
+    LaunchedEffect(Unit) {
+        if (ByokPolicy.FEATURE_BYOK) while (isActive) {
+            try { records = withContext(Dispatchers.IO) { downloads.list() } }
+            catch (e: CancellationException) { throw e }
+            catch (e: Exception) { message = e.message ?: e.toString() }
+            delay(1500)
+        }
+    }
     val importer = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) scope.launch {
             val importing = spec
@@ -71,10 +81,31 @@ internal fun LocalTranslationSetup(config: CaptionOverlayConfig, update: ((Capti
         Text("Q4 uses the least memory here. Q6/Q8 are larger alternatives; speed and translation quality vary. Download size is not total RAM use. Only the selected model loads.")
         OutlinedButton(enabled = !busy, onClick = { importer.launch(arrayOf("*/*")) }) { Text("Import ${spec.label} GGUF") }
         if (ByokPolicy.FEATURE_BYOK) {
-            OutlinedButton(enabled = !busy, onClick = {
-                try { FileDownloads(context).enqueue(DownloadSpec.parse(spec.url, spec.fileName)); message = "Download started. When complete, import it here (Downloads → export if needed)." }
+            val completed = records.firstOrNull { it.complete && it.title == spec.fileName }
+            val pending = records.firstOrNull { !it.complete && !it.failed && it.title == spec.fileName }
+            if (completed != null) Button(enabled = !busy, onClick = { scope.launch {
+                val importing = spec
+                busy = true; message = "Verifying and installing ${importing.label}…"
+                try {
+                    downloads.installTranslation(completed.id, importing)
+                    installed = withContext(Dispatchers.IO) { store.installed() }
+                    update { it.copy(localTranslationModelId = importing.id) }
+                    message = "${importing.label} installed and selected. Enable the bridge when ready."
+                } catch (e: CancellationException) { throw e }
                 catch (e: Exception) { message = e.message ?: e.toString() }
-            }) { Text("Download ${spec.bytes / 1_048_576} MiB") }
+                finally { busy = false }
+            } }) { Text("Install downloaded model") }
+            OutlinedButton(enabled = !busy && pending == null, onClick = { scope.launch {
+                busy = true
+                try {
+                    withContext(Dispatchers.IO) { downloads.enqueue(DownloadSpec.parse(spec.url, spec.fileName), modelPackage = true) }
+                    records = withContext(Dispatchers.IO) { downloads.list() }
+                    message = "Downloading to ${downloads.locationLabel}/models. When complete, tap Install downloaded model here or in Downloads."
+                } catch (e: CancellationException) { throw e }
+                catch (e: Exception) { message = e.message ?: e.toString() }
+                finally { busy = false }
+            } }) { Text(if (pending != null) "Downloading · ${pending.bytes / 1_048_576} MiB" else "Download ${spec.bytes / 1_048_576} MiB") }
+            Text("Saved in ${downloads.locationLabel}/models. No export needed for installation.")
             TextButton(onClick = { uriHandler.openUri(spec.modelCard) }) { Text("Publisher model card and license") }
         }
         Text("Tencent Hunyuan community license; weights are downloaded separately. Imports must match the selected publisher GGUF exactly.")

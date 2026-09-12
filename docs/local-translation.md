@@ -11,9 +11,13 @@ is a separate text model; it never changes the ASR model's language capabilities
    the smallest offered option (1080 MiB). Q6_K is 1406 MiB; Q8_0 is 1820 MiB.
    Weights are separate from the APK. Total RAM also includes both inference
    contexts and speech weights.
-3. Download using the model button (network-enabled build) or copy the publisher
-   GGUF onto the phone. Import it with that model selected. Exact pinned SHA-256
-   and size are required. The offline build only imports local files.
+3. Download using the model button (network-enabled build), then tap **Install
+   downloaded model** here or **Install translation model** in Downloads. New
+   downloads go to `Downloads/Real time transiber/models` on Android 10 and later.
+   Existing app-stored downloads also install directly; no export is needed.
+   Alternatively import a publisher GGUF with the matching model selected. Exact
+   pinned SHA-256 and size are required. The offline build only imports local files.
+   Android 9 retains app storage without requesting broad storage permission.
 4. Choose Arabic, English or Chinese as the target, then enable the bridge.
    CC appears immediately; translation attaches to its original line later.
    The bubble settings can disable/re-enable translation while ASR keeps running.

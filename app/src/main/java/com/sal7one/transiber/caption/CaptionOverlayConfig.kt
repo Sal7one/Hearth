@@ -156,6 +156,7 @@ data class CaptionOverlayConfig(
     // Layout
     val anchor: CaptionAnchor = CaptionAnchor.BOTTOM,
     val widthPercent: Int = 90,          // 50..100 of screen width
+    val bubbleHeightDp: Int? = null,     // null preserves the pre-upgrade reading height
     val maxHeightPercent: Int = 55,      // 20..60 of screen height; scroll beyond
     val xOffsetPx: Int = 0,              // manual drag offset from anchor
     val yOffsetPx: Int = 0,
@@ -205,6 +206,7 @@ data class CaptionOverlayConfig(
     fun withUiClamp() = copy(
         widthPercent = widthPercent.coerceIn(50, 100),
         maxHeightPercent = maxHeightPercent.coerceIn(20, 60),
+        bubbleHeightDp = bubbleHeightDp?.coerceIn(144, 600),
         historyLines = historyLines.coerceIn(0, 8),
         backgroundOpacity = backgroundOpacity.coerceIn(0, 100),
     )
@@ -278,6 +280,7 @@ object CaptionConfigStore {
             anchor = prefs[Anchor]?.let { enumOrDefault(it, CaptionAnchor.BOTTOM) } ?: CaptionAnchor.BOTTOM,
             widthPercent = prefs[WidthPercent] ?: 90,
             maxHeightPercent = prefs[MaxHeightPercent] ?: 55,
+            bubbleHeightDp = prefs[BubbleHeightDp],
             xOffsetPx = prefs[XOffset] ?: 0,
             yOffsetPx = prefs[YOffset] ?: 0,
             fontScale = prefs[FontScale]?.let { enumOrDefault(it, CaptionFontScale.NORMAL) }
@@ -309,6 +312,7 @@ object CaptionConfigStore {
         prefs[Anchor] = config.anchor.name
         prefs[WidthPercent] = config.widthPercent
         prefs[MaxHeightPercent] = config.maxHeightPercent
+        config.bubbleHeightDp?.let { prefs[BubbleHeightDp] = it } ?: prefs.remove(BubbleHeightDp)
         prefs[XOffset] = config.xOffsetPx
         prefs[YOffset] = config.yOffsetPx
         prefs[FontScale] = config.fontScale.name
@@ -340,6 +344,7 @@ object CaptionConfigStore {
     // with the old stored values pick up the new defaults instead of
     // silently keeping the stale ones. max_height v3: the bubble grew
     // again after device feedback (top lines were scrolling out).
+    private val BubbleHeightDp = intPreferencesKey("bubble_height_dp")
     private val MaxHeightPercent = intPreferencesKey("max_height_percent_v3")
     private val XOffset = intPreferencesKey("x_offset_px")
     private val YOffset = intPreferencesKey("y_offset_px")

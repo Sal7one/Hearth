@@ -23,7 +23,7 @@ class MainActivity : ComponentActivity() {
   enableEdgeToEdge()
   setContent {
    FFmpegStudioTheme {
-    var page by rememberSaveable { mutableIntStateOf(0) }
+    var page by rememberSaveable { mutableIntStateOf(intent.getIntExtra("page", 0).coerceIn(0, 2)) }
     Scaffold(bottomBar = {
      NavigationBar {
       listOf("Captions", "Models", "Downloads").forEachIndexed { index, label ->
@@ -33,10 +33,12 @@ class MainActivity : ComponentActivity() {
     }) { padding ->
      Column(Modifier.fillMaxSize().padding(padding)) {
       Text("Real time transiber", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(16.dp))
-      com.sal7one.transiber.caption.CaptionDiagnosticActions()
+      var diagnostics by remember { mutableStateOf(false) }
+      TextButton(onClick = { diagnostics = !diagnostics }) { Text(if (diagnostics) "Hide diagnostics" else "Help & diagnostics") }
+      if (diagnostics) com.sal7one.transiber.caption.CaptionDiagnosticActions()
       nativeFailure?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(16.dp)) }
       Box(Modifier.weight(1f)) {
-       when(page) { 0 -> CaptionScreen(onBrowseModels = { page = 1 }); 1 -> ModelsScreen(); else -> DownloadsScreen() }
+       when(page) { 0 -> CaptionScreen(onBrowseModels = { page = 1 }); 1 -> ModelsScreen(); else -> DownloadsScreen(onBrowseModels = { page = 1 }) }
       }
      }
     }

@@ -142,10 +142,10 @@ class CaptionOverlayController(
         val c = _config.value
         val vp = viewport()
         val density = context.resources.displayMetrics.density
-        val maxHeight = (vp.height * c.maxHeightPercent / 100).coerceAtLeast((96 * density).toInt()).coerceAtMost(vp.height)
+        val maxHeight = overlayHeightPx(vp.height, density, c)
         heightDp.value = maxHeight / density
         val p = placeOverlay(vp, vp.width * c.widthPercent / 100,
-            view?.height?.takeIf { it > 0 }?.coerceAtMost(maxHeight) ?: maxHeight,
+            maxHeight,
             c.anchor, c.xOffsetPx, c.yOffsetPx)
         if (normalize) {
             val origin = placeOverlay(vp, p.width, p.height, c.anchor, 0, 0)

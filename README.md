@@ -23,7 +23,8 @@ bubble controls, setup, downloads and smaller local translation.
 - Cloud STT and real-time Arabic/English translation with your own provider keys.
   Speech-only model filtering, provider configuration, and encrypted key storage.
 - Direct HTTPS file downloads through Android DownloadManager, progress, cancellation,
-  open and export. This does not include a video-site extractor.
+  and in-app installation of translation models. New downloads use
+  `Downloads/Real time transiber/models` or `files` on Android 10+. This does not include a video-site extractor.
 - A local-only `foss` variant with **no network permission**, and a network-enabled
   `play` variant. The flavor name does not require Google Play or Play Services.
 
@@ -59,6 +60,9 @@ Never commit keys or credentials. CI builds and uploads both QA APKs.
 3. Grant overlay, microphone and notification permissions. Start and choose device
    audio or microphone. Use the notification to pause, show, recenter or stop.
 4. Open history in the bubble to read previous lines; captions continue while you read.
+5. Bubble settings separate Appearance (height, size and position) from CC &
+   translation. Compact / Comfortable / Large resize the reading area without
+   restarting capture. Full model and cloud setup opens in the app.
 
 Local Qwen and Nemotron recognize speech. The optional local text-model bridge
 translates their output with a separately imported HY-MT model. Whisper can
@@ -71,8 +75,9 @@ sign language. See [model setup](docs/models.md) and [device checks](docs/device
 
 See [PRIVACY.md](PRIVACY.md). This app has a separate Android identity: Hearth's
 keys, model files and settings are not transferred automatically. Re-enter keys and
-import the same model packages. Uninstalling deletes app-private data and downloads;
-export downloads first if you need to keep them.
+import the same model packages. Uninstalling deletes app-private data and installed
+models. New public Downloads files remain; export older app-stored downloads or
+Android 9 downloads first if you need to keep them.
 
 The repo has fresh history and excludes Hearth's editor, FFmpeg, books, camera,
 image processing, yt-dlp, chat and unrelated screens. Shared utilities and speech

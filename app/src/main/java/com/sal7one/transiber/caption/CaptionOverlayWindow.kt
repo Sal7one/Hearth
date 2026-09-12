@@ -136,8 +136,7 @@ private fun paletteFor(theme: CaptionTheme): OverlayPalette = when (theme) {
 
 /**
  * The caption overlay: a draggable caption bubble with a compact control
- * strip, expanding into a full settings panel with every configuration
- * option. Rendered inside a WindowManager overlay window.
+ * strip and separate appearance / CC settings. Rendered inside a WindowManager overlay window.
  */
 @Composable
 fun CaptionOverlayWindow(
@@ -159,17 +158,17 @@ fun CaptionOverlayWindow(
     val content = held ?: CaptionReading.snapshot(state, cfg.showPartial)
     val bodyScroll = if (held == null) scrollState else rememberScrollState(initial = Int.MAX_VALUE)
 
-    val height = minOf(availableHeightDp, if (cfg.showSettings || held != null) availableHeightDp else 320f).coerceAtLeast(1f)
+    val height = availableHeightDp.coerceAtLeast(1f)
     Column(
         modifier = Modifier.fillMaxWidth().height(height.dp)
             .clip(RoundedCornerShape(16.dp))
-            .background(palette.surface.copy(alpha = effectiveSurfaceAlpha(palette.surface.alpha, cfg.backgroundOpacity)))
+            .background(palette.surface.copy(alpha = if (cfg.showSettings) 0.97f else effectiveSurfaceAlpha(palette.surface.alpha, cfg.backgroundOpacity)))
             .border(0.5.dp, palette.onSurfaceFaded, RoundedCornerShape(16.dp)),
     ) {
         ControlStrip(cfg, state, palette, true, onDrag, onDragFinished, onClose, onConfigChange)
         Box(Modifier.weight(1f).fillMaxWidth()) {
             if (cfg.showSettings) {
-                SettingsPanel(cfg, state, palette, onConfigChange) { held = null; onClear() }
+                SettingsPanel(cfg, palette, height, onConfigChange) { held = null; onClear() }
             } else {
                 Column {
                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -384,255 +383,44 @@ private fun LinePair(
 @Composable
 private fun SettingsPanel(
     cfg: CaptionOverlayConfig,
-    state: State,
     palette: OverlayPalette,
+    currentHeightDp: Float,
     onConfigChange: ((CaptionOverlayConfig) -> CaptionOverlayConfig) -> Unit,
     onClear: () -> Unit,
 ) {
-    // Scope Material3 controls (FilterChip / Slider / Switch) to the overlay
-    // palette so the panel matches all four themes instead of the default
-    // light MaterialTheme.
-    MaterialTheme(
-        colorScheme = MaterialTheme.colorScheme.copy(
-            primary = palette.accent,
-            onPrimary = palette.surface,
-            secondaryContainer = palette.chip,
-            onSecondaryContainer = palette.accent,
-            surface = palette.surface,
-            onSurface = palette.onSurface,
-            surfaceVariant = palette.chip,
-            onSurfaceVariant = palette.onSurfaceMuted,
-            outline = palette.onSurfaceFaded.copy(alpha = 0.4f),
-        ),
-    ) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 14.dp, vertical = 4.dp),
-        verticalArrangement = Arrangement.spacedBy(6.dp),
-    ) {
-        androidx.compose.material3.TextButton(onClick = onClear) { Text("Clear transcript", color = palette.accent) }
-        SettingsLabel("Presets", palette)
-        PresetRow(cfg = cfg, palette = palette, onConfigChange = onConfigChange)
-
-        SettingsLabel("Mode", palette)
+    var appearance by remember { mutableStateOf(true) }
+    var showReadAloud by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+    fun openSetup(page: Int) {
+        context.startActivity(android.content.Intent(context, com.sal7one.transiber.MainActivity::class.java)
+            .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK or android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            .putExtra("page", page))
+        onConfigChange { it.copy(showSettings = false) }
+    }
+    MaterialTheme(colorScheme = MaterialTheme.colorScheme.copy(
+        primary = palette.accent, onPrimary = palette.surface,
+        secondaryContainer = palette.chip, onSecondaryContainer = palette.accent,
+        surface = palette.surface, onSurface = palette.onSurface,
+        surfaceVariant = palette.chip, onSurfaceVariant = palette.onSurfaceMuted,
+        outline = palette.onSurfaceFaded.copy(alpha = 0.4f),
+    )) {
+      Column(Modifier.fillMaxWidth()) {
         ChipRow {
-            CaptionMode.entries.forEach { mode ->
-                FilterChip(
-                    selected = cfg.mode == mode,
-                    onClick = { onConfigChange { it.copy(mode = mode) } },
-                    label = { Text(mode.label, fontSize = 11.sp, maxLines = 1) },
-                )
-            }
+            FilterChip(selected = appearance, onClick = { appearance = true }, label = { Text("Appearance") })
+            FilterChip(selected = !appearance, onClick = { appearance = false }, label = { Text("CC & translation") })
         }
-
-        if (cfg.effectiveEngine.speechBackend != null) {
-            SettingsLabel("Local translation bridge", palette)
-            Switch(checked = cfg.localTranslationEnabled, onCheckedChange = { enabled ->
-                onConfigChange { it.copy(localTranslationEnabled = enabled,
-                    mode = if (enabled) CaptionMode.TRANSLATE else CaptionMode.CAPTIONS) }
-            })
-        }
-
-        if (cfg.mode == CaptionMode.TRANSLATE) {
-            SettingsLabel("Translate into", palette)
+        androidx.compose.runtime.key(appearance) {
+        Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState())
+            .padding(horizontal = 14.dp, vertical = 4.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        if (appearance) {
+            SliderRow("Height", (cfg.bubbleHeightDp?.toFloat() ?: currentHeightDp).coerceIn(144f, 600f),
+                144f..600f, palette) { value -> onConfigChange { it.copy(bubbleHeightDp = value.toInt()) } }
             ChipRow {
-                TranslationTarget.entries.forEach { target ->
-                    FilterChip(
-                        selected = cfg.target == target,
-                        onClick = { onConfigChange { it.copy(target = target) } },
-                        label = { Text(target.label, fontSize = 11.sp, maxLines = 1) },
-                    )
+                listOf("Compact" to 160, "Comfortable" to 240, "Large" to 320).forEach { (label, size) ->
+                    FilterChip(selected = cfg.bubbleHeightDp == size,
+                        onClick = { onConfigChange { it.copy(bubbleHeightDp = size) } }, label = { Text(label) })
                 }
             }
-
-            // Pin the stream language: auto-detection is unreliable on short
-            // streaming windows (whisper.cpp #445) and made translation look
-            // broken for non-English streams.
-            SettingsLabel("Stream language", palette)
-            ChipRow {
-                STREAM_LANGUAGES.forEach { (label, code) ->
-                    FilterChip(
-                        selected = cfg.streamLanguage == code,
-                        onClick = { onConfigChange { it.copy(streamLanguage = code) } },
-                        label = { Text(label, fontSize = 11.sp, maxLines = 1) },
-                    )
-                }
-            }
-            SettingsCaption(
-                if (cfg.streamLanguage == "auto") {
-                    "Auto-detect: convenient, less reliable on short clips."
-                } else {
-                    "Pinned language: more accurate and faster."
-                },
-                palette,
-            )
-
-            SettingsLabel("Show", palette)
-            ChipRow {
-                CaptionDisplay.entries.forEach { display ->
-                    FilterChip(
-                        selected = cfg.display == display,
-                        onClick = { onConfigChange { it.copy(display = display) } },
-                        label = { Text(display.label, fontSize = 11.sp, maxLines = 1) },
-                    )
-                }
-            }
-
-            if (TranslationLayer.whisperHandlesTarget(cfg.target)) {
-                SettingsCaption(
-                    "Whisper translates any supported language directly into English on-device.",
-                    palette,
-                )
-            } else {
-                SettingsCaption(
-                    "Original-language captions are live. Translation into ${cfg.target.label} " +
-                        "uses an on-device translation model — see the notice below the captions " +
-                        "for its current status.",
-                    palette,
-                )
-            }
-        }
-
-        SettingsLabel("Engine", palette)
-        // Mirrors CaptionScreen: chips reflect the engine that actually runs
-        // (effectiveEngine). No engine is locked — Whisper/Cloud translate
-        // into English in one pass and an English Vosk model IS the English
-        // output (identity fast path).
-        ChipRow {
-            CaptionEngineChoice.entries
-                // Cloud exists only in the play (BYOK) distribution — the
-                // FOSS build never offers it (offline-first; byok/ByokPolicy).
-                .filter { it != CaptionEngineChoice.CLOUD || ByokPolicy.cloudEngineAvailable() }
-                .forEach { engine ->
-                    FilterChip(
-                        selected = cfg.effectiveEngine == engine,
-                        onClick = { onConfigChange { it.copy(engine = engine, modelId = "", streamLanguage = if (engine.speechBackend != null) "auto" else it.streamLanguage) } },
-                        label = { Text(engine.label, fontSize = 11.sp, maxLines = 1) },
-                    )
-                }
-        }
-        if (cfg.effectiveEngine.speechBackend != null) {
-            SettingsCaption("Local Qwen/Nemotron models provide original-language CC only. Import a model ZIP on the Live captions screen before starting.", palette)
-        }
-        if (cfg.mode == CaptionMode.TRANSLATE) {
-            SettingsCaption(
-                if (TranslationLayer.whisperHandlesTarget(cfg.target)) {
-                    "Whisper/Cloud translate into ${cfg.target.label} in one pass; " +
-                        "an English Vosk model gives instant English captions."
-                } else {
-                    "The chosen engine captions the original language; the " +
-                        "on-device translation model translates finalized lines."
-                },
-                palette,
-            )
-        }
-
-        // ── Bring your own key (play distribution only) ─────────────────
-        // NETWORK CODE — see byok/ByokPolicy.kt. The FOSS build renders
-        // none of this and has no INTERNET permission at all.
-        if (ByokPolicy.cloudEngineAvailable()) {
-            val context = LocalContext.current
-            var keyDraft by remember { mutableStateOf("") }
-            // Stateful, refreshed on save/remove: a remember{} computed once
-            // left the Remove chip disabled after saving a key until the
-            // panel was reopened.
-            var hasKey by remember { mutableStateOf(ApiKeyStore.hasOpenAiKey(context)) }
-            var keySaveFailed by remember { mutableStateOf(false) }
-            var keySaveErrorDetail by remember { mutableStateOf<String?>(null) }
-            var keySaveBasic by remember { mutableStateOf(false) }
-            SettingsLabel("Cloud engine · your API key", palette)
-            OutlinedTextField(
-                value = keyDraft,
-                onValueChange = { keyDraft = it },
-                singleLine = true,
-                textStyle = LocalTextStyle.current.copy(
-                    color = palette.onSurface,
-                    fontSize = 12.sp,
-                ),
-                placeholder = {
-                    Text(
-                        if (hasKey) "Key stored — type to replace" else "sk-…",
-                        color = palette.onSurfaceFaded,
-                        fontSize = 12.sp,
-                    )
-                },
-                modifier = Modifier.fillMaxWidth(),
-            )
-            ChipRow {
-                FilterChip(
-                    selected = false,
-                    onClick = {
-                        // setOpenAiKey returns false on storage failure —
-                        // surface the real reason (device Keystore issues
-                        // fall back to basic protection automatically).
-                        val stored = ApiKeyStore.setOpenAiKey(context, keyDraft)
-                        keyDraft = ""
-                        hasKey = ApiKeyStore.hasOpenAiKey(context)
-                        keySaveFailed = !stored
-                        keySaveErrorDetail = ApiKeyStore.lastFailure
-                        keySaveBasic = stored &&
-                            ApiKeyStore.storageMode(context) == ApiKeyStore.StorageMode.BASIC
-                    },
-                    enabled = keyDraft.isNotBlank(),
-                    label = { Text("Save key", fontSize = 11.sp) },
-                )
-                FilterChip(
-                    selected = false,
-                    onClick = {
-                        ApiKeyStore.setOpenAiKey(context, "")
-                        hasKey = false
-                        keySaveFailed = false
-                    },
-                    enabled = hasKey,
-                    label = { Text("Remove", fontSize = 11.sp) },
-                )
-            }
-            SettingsCaption(
-                when {
-                    keySaveFailed ->
-                        "Could not store the key on this device — " +
-                            (keySaveErrorDetail ?: "storage failed") + ". Nothing was saved."
-                    keySaveBasic ->
-                        "Stored with basic protection — this device's Keystore " +
-                            "was unavailable (" + (keySaveErrorDetail ?: "unknown") + ")."
-                    else ->
-                        "Stored encrypted on this device (Android Keystore). Used only " +
-                            "for the Cloud engine, only while a session runs. Also " +
-                            "manageable in Settings and on the Live captions screen. The " +
-                            "FOSS build of this app has no network permission at all."
-                },
-                palette,
-            )
-        }
-
-        // Speech-model picker when several models of the running engine type
-        // are imported (Arabic Vosk vs English Vosk, tiny vs base Whisper...).
-        if (state.availableModels.size > 1) {
-            SettingsLabel("Speech model", palette)
-            ChipRow {
-                state.availableModels.forEach { option ->
-                    FilterChip(
-                        selected = cfg.modelId == option.id ||
-                            (cfg.modelId.isBlank() && option == state.availableModels.first()),
-                        onClick = { onConfigChange { it.copy(modelId = option.id) } },
-                        label = { Text(option.name, fontSize = 11.sp, maxLines = 1) },
-                    )
-                }
-            }
-            SettingsCaption(
-                if (cfg.effectiveEngine == CaptionEngineChoice.VOSK) {
-                    "Vosk models transcribe one language each — pick the one " +
-                        "matching the stream."
-                } else {
-                    "Whisper models are multilingual; this is a speed/accuracy " +
-                        "choice."
-                },
-                palette,
-            )
-        }
-
         SettingsLabel("Text size", palette)
         ChipRow {
             CaptionFontScale.entries.forEach { scale ->
@@ -681,12 +469,113 @@ private fun SettingsPanel(
         ) { value -> onConfigChange { it.copy(widthPercent = value.toInt()) } }
 
         SliderRow(
-            label = "Height limit ${cfg.maxHeightPercent}%",
-            value = cfg.maxHeightPercent.toFloat(),
-            range = 20f..60f,
+            label = "Background ${cfg.backgroundOpacity}%",
+            value = cfg.backgroundOpacity.toFloat(),
+            range = 0f..100f,
             palette = palette,
-        ) { value -> onConfigChange { it.copy(maxHeightPercent = value.toInt()) } }
+        ) { value -> onConfigChange { it.copy(backgroundOpacity = value.toInt()) } }
 
+        SettingsLabel("Previous segments: ${cfg.historyLines}", palette)
+        ChipRow {
+            listOf(0, 1, 2, 4, 8).forEach { lines ->
+                FilterChip(
+                    selected = cfg.historyLines == lines,
+                    onClick = { onConfigChange { it.copy(historyLines = lines) } },
+                    label = { Text("$lines", fontSize = 11.sp) },
+                )
+            }
+        }
+
+        ToggleRow(
+            label = "Show live partial text",
+            checked = cfg.showPartial,
+            palette = palette,
+        ) { checked -> onConfigChange { it.copy(showPartial = checked) } }
+
+        ToggleRow(
+            label = "Tap-through (overlay ignores touches)",
+            checked = cfg.tapThrough,
+            palette = palette,
+        ) { checked -> onConfigChange { it.copy(tapThrough = checked) } }
+
+        } else {
+        SettingsLabel("Mode", palette)
+        ChipRow {
+            CaptionMode.entries.forEach { mode ->
+                FilterChip(
+                    selected = cfg.mode == mode,
+                    onClick = { onConfigChange { it.copy(mode = mode) } },
+                    label = { Text(mode.label, fontSize = 11.sp, maxLines = 1) },
+                )
+            }
+        }
+
+        if (cfg.effectiveEngine.speechBackend != null) {
+            SettingsLabel("Local translation bridge", palette)
+            Switch(checked = cfg.localTranslationEnabled, onCheckedChange = { enabled ->
+                onConfigChange { it.copy(localTranslationEnabled = enabled,
+                    mode = if (enabled) CaptionMode.TRANSLATE else CaptionMode.CAPTIONS) }
+            })
+        }
+
+        if (cfg.mode == CaptionMode.TRANSLATE) {
+            SettingsLabel("Translate into", palette)
+            ChipRow {
+                TranslationTarget.entries.forEach { target ->
+                    FilterChip(
+                        selected = cfg.target == target,
+                        onClick = { onConfigChange { it.copy(target = target) } },
+                        label = { Text(target.label, fontSize = 11.sp, maxLines = 1) },
+                    )
+                }
+            }
+
+            // Pin the stream language: auto-detection is unreliable on short
+            // streaming windows (whisper.cpp #445) and made translation look
+            // broken for non-English streams.
+            SettingsLabel("Stream language", palette)
+            ChipRow {
+                STREAM_LANGUAGES.forEach { (label, code) ->
+                    FilterChip(
+                        selected = cfg.streamLanguage == code,
+                        onClick = { onConfigChange { it.copy(streamLanguage = code) } },
+                        label = { Text(label, fontSize = 11.sp, maxLines = 1) },
+                    )
+                }
+            }
+            SettingsCaption(
+                if (cfg.streamLanguage == "auto") {
+                    "Auto-detect: convenient, less reliable on short clips."
+                } else {
+                    "Use the language being spoken, not the translation target."
+                },
+                palette,
+            )
+
+            SettingsLabel("Show", palette)
+            ChipRow {
+                CaptionDisplay.entries.forEach { display ->
+                    FilterChip(
+                        selected = cfg.display == display,
+                        onClick = { onConfigChange { it.copy(display = display) } },
+                        label = { Text(display.label, fontSize = 11.sp, maxLines = 1) },
+                    )
+                }
+            }
+
+        }
+
+            SettingsLabel("Current speech model", palette)
+            Text(cfg.effectiveEngine.label, color = palette.onSurface)
+            if (cfg.localTranslationEnabled && cfg.effectiveEngine.speechBackend != null) {
+                val model = com.sal7one.common_jni.translation.TranslationCatalog.models.firstOrNull { it.id == cfg.localTranslationModelId }
+                Text(model?.label ?: "No translation model selected", color = palette.onSurface)
+            }
+            TextButton(onClick = { openSetup(1) }) { Text("Choose or download models") }
+            TextButton(onClick = { openSetup(0) }) { Text("Full setup & cloud settings") }
+            TextButton(onClick = onClear) { Text("Clear transcript") }
+            TextButton(onClick = { showReadAloud = !showReadAloud }) { Text(if (showReadAloud) "Hide read-aloud options" else "Read-aloud options") }
+            if (showReadAloud) {
         // ── Voice output (TTS) ────────────────────────────────────────────
         // Device voice works everywhere (offline with installed voices);
         // Neural needs an imported ONNX voice model; Cloud is NETWORK
@@ -727,43 +616,12 @@ private fun SettingsPanel(
             )
         }
 
-        SliderRow(
-            label = "Background ${cfg.backgroundOpacity}%",
-            value = cfg.backgroundOpacity.toFloat(),
-            range = 0f..100f,
-            palette = palette,
-        ) { value -> onConfigChange { it.copy(backgroundOpacity = value.toInt()) } }
-
-        SettingsLabel("Previous segments: ${cfg.historyLines}", palette)
-        ChipRow {
-            listOf(0, 1, 2, 4, 8).forEach { lines ->
-                FilterChip(
-                    selected = cfg.historyLines == lines,
-                    onClick = { onConfigChange { it.copy(historyLines = lines) } },
-                    label = { Text("$lines", fontSize = 11.sp) },
-                )
             }
         }
-
-        ToggleRow(
-            label = "Show live partial text",
-            checked = cfg.showPartial,
-            palette = palette,
-        ) { checked -> onConfigChange { it.copy(showPartial = checked) } }
-
-        ToggleRow(
-            label = "Tap-through (overlay ignores touches)",
-            checked = cfg.tapThrough,
-            palette = palette,
-        ) { checked -> onConfigChange { it.copy(tapThrough = checked) } }
-
-        SettingsCaption(
-            "Audio source (device audio vs microphone) is chosen when starting a session. " +
-                "Engine and mode changes restart the engine.",
-            palette,
-        )
         Spacer(Modifier.height(8.dp))
-    }
+        }
+        }
+      }
     }
 }
 
@@ -874,7 +732,7 @@ private fun SliderRow(
             ),
             modifier = Modifier
                 .fillMaxWidth()
-                .height(28.dp),
+                .height(48.dp),
         )
     }
 }
