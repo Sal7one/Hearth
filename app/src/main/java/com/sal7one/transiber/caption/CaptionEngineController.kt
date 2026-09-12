@@ -353,7 +353,10 @@ class CaptionEngineController(
     @Volatile
     private var opportunisticTranslation: String? = null
 
+    @Volatile private var shutDown = false
+
     fun start(config: CaptionOverlayConfig, onComplete: (Boolean) -> Unit) {
+        if (shutDown) { onComplete(false); return }
         scope.launch {
             clearJob?.cancel()
             clearingTranscript = false
@@ -487,6 +490,7 @@ class CaptionEngineController(
             result = { id, text, latency ->
                 scope.launch {
                     if (generation == translationGeneration && activeRoute == CaptionTranslationRoute.LOCAL_TEXT && _state.value.history.any { it.id == id }) {
+                        lastActivityMs = System.currentTimeMillis()
                         _state.update { it.copy(history = attachTranslationById(it.history, id, text), localTranslationMetrics = "Local translation ${latency} ms · ${config.localTranslationModelId}") }
                         speakLine(currentConfig, text)
                     }
@@ -1272,7 +1276,7 @@ class CaptionEngineController(
         partialSinceMs = null
         resetOpportunistic()
         releaseSpeaker()
-        _state.update { it.copy(history = emptyList(), partial = "", partialTranslation = null) }
+        _state.update { it.copy(history = emptyList(), partial = "", partialTranslation = null, translationNotice = null, localTranslationMetrics = null) }
         // Cloud reset() only clears its UI queue: old server audio can still return.
         // A new connection/request worker is the reliable boundary between videos.
         if (!currentConfig.paused && !stopping && _state.value.status != Status.ERROR &&
@@ -1290,7 +1294,7 @@ class CaptionEngineController(
         val generation = ++sessionGeneration
         translationScope.cancel()
         translationScope = CoroutineScope(SupervisorJob() + translationDispatcher)
-        if (activeRoute == CaptionTranslationRoute.LOCAL_TEXT) configureLocalTranslation(currentConfig)
+        if (activeRoute == CaptionTranslationRoute.LOCAL_TEXT) localTranslationBridge?.reset()
         if (currentConfig.paused || stopping || _state.value.status == Status.ERROR) return
         val speech = localSpeech
         val legacy = engine
@@ -1328,13 +1332,17 @@ class CaptionEngineController(
         // tear down once arrivals go quiet (or the hard cap hits).
         val gen = sessionGeneration
         val engineAtStop = engine
-        localSpeech?.finish()
-        (engineAtStop as? com.sal7one.transiber.byok.StreamingCloudEngine)
-            ?.onCaptureEnded()
+        audioChannel.close()
         scope.launch {
-            val deadline = System.currentTimeMillis() + DRAIN_MAX_MS
-            while (System.currentTimeMillis() - lastActivityMs < DRAIN_QUIET_MS &&
-                System.currentTimeMillis() < deadline
+            // Deliver the already captured tail before closing the recognizer input.
+            audioJob?.join()
+            if (gen != sessionGeneration) return@launch
+            localSpeech?.finish()
+            (engineAtStop as? com.sal7one.transiber.byok.StreamingCloudEngine)?.onCaptureEnded()
+            val started = System.currentTimeMillis()
+            while (CaptionDrainPolicy.shouldWait(System.currentTimeMillis(), started, lastActivityMs,
+                localSpeech?.state?.value == com.sal7one.common_jni.speech.SpeechProcessorState.Running,
+                localTranslationBridge?.hasPendingWork == true, DRAIN_QUIET_MS, DRAIN_MAX_MS)
             ) {
                 delay(400)
             }
@@ -1376,11 +1384,20 @@ class CaptionEngineController(
     }
 
     fun shutdown() {
+        shutDown = true
         ++sessionGeneration
         stopInternal(promotePending = false)
         audioChannel.close()
         cleanupScope.launch { onnxTranslator.release() }
         if (externalScope == null) scope.cancel()
+    }
+
+    /** Wait after shutdown before another page loads a large model. Includes canceled initialization. */
+    suspend fun awaitReleased() = withContext(NonCancellable) {
+        loadMutex.withLock { }
+        engineCleanup?.join()
+        translationCleanup?.join()
+        cleanupScope.coroutineContext[Job]?.children?.toList()?.forEach { it.join() }
     }
 
     companion object {

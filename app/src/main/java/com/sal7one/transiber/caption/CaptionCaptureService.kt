@@ -24,6 +24,7 @@ class CaptionCaptureService : Service() {
     private var recorder: AudioRecord? = null
     private var reader: Job? = null
     private var startup: Job? = null
+    private var runtimeLease: com.sal7one.transiber.runtime.LocalWorkGate.Lease? = null
     @Volatile private var capturing = false
     private var active = false
         set(value) { field = value; runningState.value = value }
@@ -65,6 +66,12 @@ class CaptionCaptureService : Service() {
             } else stopSelf(startId)
             ACTION_START -> {
                 if (active) { overlay.centerOverlay(); return START_NOT_STICKY }
+                try { runtimeLease = com.sal7one.transiber.runtime.LocalWorkGate.acquire("Captions") }
+                catch (e: Exception) {
+                    android.widget.Toast.makeText(this, e.message ?: e.toString(), android.widget.Toast.LENGTH_LONG).show()
+                    stopSelf(startId)
+                    return START_NOT_STICKY
+                }
                 source = intent.getSerializableExtra(EXTRA_SOURCE) as? CaptionSource ?: CaptionSource.PLAYBACK_CAPTURE
                 active = true
                 if (!startForegroundCapture()) return START_NOT_STICKY
@@ -223,6 +230,8 @@ class CaptionCaptureService : Service() {
         releaseCapture()
         overlay.destroy()
         engine.shutdown()
+        val lease = runtimeLease.also { runtimeLease = null }
+        CoroutineScope(Dispatchers.IO).launch { try { engine.awaitReleased() } finally { lease?.close() } }
         scope.cancel()
         super.onDestroy()
     }

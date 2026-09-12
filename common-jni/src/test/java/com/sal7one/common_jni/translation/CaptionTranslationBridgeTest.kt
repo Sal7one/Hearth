@@ -74,4 +74,84 @@ class CaptionTranslationBridgeTest {
         assertEquals(9L, withTimeout(3000) { output.await() })
         bridge.close(); bridge.awaitClosed(); assertEquals(1, opens)
     }
+    @Test fun resetDiscardsInFlightAndQueuedCaptionsWithoutReloadingModel() = runBlocking {
+        val fake = Fake(); val outputs = CopyOnWriteArrayList<Long>()
+        val done = CompletableDeferred<Unit>(); var opens = 0
+        val bridge = CaptionTranslationBridge(this, "ar", { opens++; fake }, { id, _, _ ->
+            outputs.add(id); done.complete(Unit)
+        }, {}, capacity = 1)
+        try {
+            bridge.offer(1, "old in flight", "ru")
+            withTimeout(3000) { fake.entered.await() }
+            assertTrue(bridge.hasPendingWork)
+            assertTrue(bridge.offer(2, "old queued", "ru"))
+            bridge.reset()
+            assertFalse(bridge.hasPendingWork)
+            assertFalse(fake.cancelled); assertFalse(fake.closed)
+            assertTrue(bridge.offer(3, "new video", "ru"))
+            assertTrue(bridge.hasPendingWork)
+            fake.release.complete(Unit)
+            withTimeout(3000) { done.await(); while (bridge.hasPendingWork) yield() }
+            assertEquals(listOf(3L), outputs.toList())
+            assertEquals(2, fake.calls); assertEquals(1, opens)
+        } finally { bridge.close(); fake.release.complete(Unit); bridge.awaitClosed() }
+    }
+
+    @Test fun resetWhileLoadingKeepsOneLoadAndOnlyNewTimeline() = runBlocking {
+        val started = CompletableDeferred<Unit>(); val finishLoad = CompletableDeferred<Unit>()
+        val fake = Fake().also { it.release.complete(Unit) }
+        val outputs = CopyOnWriteArrayList<Long>(); val done = CompletableDeferred<Unit>()
+        var opens = 0
+        val bridge = CaptionTranslationBridge(this, "ar", {
+            opens++; started.complete(Unit); finishLoad.await(); fake
+        }, { id, _, _ -> outputs.add(id); done.complete(Unit) }, {})
+        try {
+            withTimeout(3000) { started.await() }
+            bridge.offer(1, "old", "ru"); assertTrue(bridge.hasPendingWork)
+            bridge.reset(); bridge.reset(); assertFalse(bridge.hasPendingWork)
+            bridge.offer(2, "current", "ru"); finishLoad.complete(Unit)
+            withTimeout(3000) { done.await(); while (bridge.hasPendingWork) yield() }
+            assertEquals(listOf(2L), outputs.toList())
+            assertEquals(1, opens); assertEquals(1, fake.calls)
+        } finally { bridge.close(); finishLoad.complete(Unit); bridge.awaitClosed() }
+    }
+
+    @Test fun resetSuppressesOldInferenceErrorAndAllowsNewRequest() = runBlocking {
+        val fake = Fake(); val errors = CopyOnWriteArrayList<String>()
+        val done = CompletableDeferred<Unit>()
+        val translator = object : CancellableTextTranslator by fake {
+            override suspend fun translate(text: String, direction: TranslationDirection): String {
+                if (text == "old") {
+                    fake.entered.complete(Unit)
+                    withContext(NonCancellable) { fake.release.await() }
+                    error("old native failure")
+                }
+                return "new translation"
+            }
+        }
+        val bridge = CaptionTranslationBridge(this, "ar", { translator }, { id, _, _ ->
+            assertEquals(2L, id); done.complete(Unit)
+        }, { it?.let(errors::add) })
+        try {
+            bridge.offer(1, "old", "ru"); withTimeout(3000) { fake.entered.await() }
+            bridge.reset(); bridge.offer(2, "new", "ru"); fake.release.complete(Unit)
+            withTimeout(3000) { done.await(); while (bridge.hasPendingWork) yield() }
+            assertTrue(errors.isEmpty())
+        } finally { bridge.close(); fake.release.complete(Unit); bridge.awaitClosed() }
+    }
+
+    @Test fun pendingWorkClearsAfterRejectedDirectionAndClose() = runBlocking {
+        val fake = Fake(); val rejected = CompletableDeferred<Unit>()
+        val bridge = CaptionTranslationBridge(this, "ar", { fake }, { _, _, _ -> fail("Unexpected translation") }, {
+            if (it != null) rejected.complete(Unit)
+        })
+        bridge.offer(1, "unknown source", "mul")
+        withTimeout(3000) { rejected.await(); while (bridge.hasPendingWork) yield() }
+        bridge.offer(2, "accepted", "ru"); withTimeout(3000) { fake.entered.await() }
+        assertTrue(bridge.hasPendingWork)
+        bridge.close(); assertFalse(bridge.hasPendingWork)
+        bridge.reset(); assertFalse(bridge.offer(3, "closed", "ru"))
+        fake.release.complete(Unit); bridge.awaitClosed()
+    }
+
 }
