@@ -200,3 +200,9 @@ short functional checks do not mean hiding failures or skipping required gates.
 
 Automatic conversion of publisher tar.bz2 archives into prepared speech ZIPs remains
 a separate installation improvement. Existing manifest/hash/path checks are unchanged.
+
+## RT-27 — Language picker opening position (0.5.2)
+
+- [x] Open app, overlay and language-pack lists at their current selection.
+- [x] Start filtered results at the top; return to the selection when search is cleared.
+- [x] Preserve manual scrolling while the picker remains open.

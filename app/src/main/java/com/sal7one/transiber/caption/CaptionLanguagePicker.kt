@@ -2,6 +2,7 @@ package com.sal7one.transiber.caption
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
@@ -107,6 +108,13 @@ fun LanguagePickerContent(
 ) {
     var query by rememberSaveable { mutableStateOf("") }
     val rows = remember(choices.codes, query) { LanguageCatalog.choices(choices.codes, query) }
+    // The note is lazy item 0; language rows start at 1. Open on the current
+    // selection, reset search results to the top, and return to the selection
+    // when search is cleared. Manual scrolling does not restart this effect.
+    val selectedIndex = rows.indexOfFirst { it.code == selected }
+    val openingIndex = if (query.isBlank() && selectedIndex >= 0) selectedIndex + 1 else 0
+    val listState = rememberLazyListState(initialFirstVisibleItemIndex = openingIndex)
+    LaunchedEffect(query, choices.codes, selected) { listState.scrollToItem(openingIndex) }
     Column(modifier.fillMaxSize().semantics { paneTitle = title }) {
         Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp), verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = onDismiss, modifier = Modifier.size(48.dp)) {
@@ -117,7 +125,7 @@ fun LanguagePickerContent(
         if (searchable) OutlinedTextField(value = query, onValueChange = { query = it },
             label = { Text("Search languages") }, placeholder = { Text("Native name, English name or code") },
             singleLine = true, modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp))
-        LazyColumn(Modifier.weight(1f).fillMaxWidth().selectableGroup(), contentPadding = PaddingValues(bottom = 16.dp)) {
+        LazyColumn(Modifier.weight(1f).fillMaxWidth().selectableGroup(), state = listState, contentPadding = PaddingValues(bottom = 16.dp)) {
             item(key = "note") { Text(choices.note, Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
             if (rows.isEmpty()) item(key = "empty") { Text("No matching languages", Modifier.padding(16.dp).semantics { liveRegion = LiveRegionMode.Polite }) }
