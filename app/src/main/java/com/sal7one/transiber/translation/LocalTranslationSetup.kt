@@ -3,8 +3,6 @@ package com.sal7one.transiber.translation
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -20,7 +18,11 @@ import kotlinx.coroutines.*
 import java.io.File
 
 @Composable
-internal fun LocalTranslationSetup(config: CaptionOverlayConfig, update: ((CaptionOverlayConfig) -> CaptionOverlayConfig) -> Unit) {
+internal fun LocalTranslationSetup(
+    config: CaptionOverlayConfig,
+    update: ((CaptionOverlayConfig) -> CaptionOverlayConfig) -> Unit,
+    includeLegacy: Boolean = false,
+) {
     val context = LocalContext.current
     val uriHandler = LocalUriHandler.current
     val scope = rememberCoroutineScope()
@@ -32,7 +34,7 @@ internal fun LocalTranslationSetup(config: CaptionOverlayConfig, update: ((Capti
     var message by remember { mutableStateOf<String?>(null) }
     var busy by remember { mutableStateOf(false) }
     var showGguf by rememberSaveable { mutableStateOf(config.localTranslationModelId != TranslationOptions.ML_KIT) }
-    var familyMenu by remember { mutableStateOf(false) }
+    var showLegacy by rememberSaveable { mutableStateOf(false) }
     var showCoverage by remember { mutableStateOf(false) }
     val spec = TranslationCatalog.find(selected)
     LaunchedEffect(Unit) { installed = withContext(Dispatchers.IO) { store.installed() } }
@@ -71,22 +73,27 @@ internal fun LocalTranslationSetup(config: CaptionOverlayConfig, update: ((Capti
         }
         Text("Active translator: ${TranslationOptions.label(config.localTranslationModelId)}", style = MaterialTheme.typography.labelLarge)
         Text("Browse translators", style = MaterialTheme.typography.titleSmall)
-        Box {
-            val familyLabel = if (!showGguf) "ML Kit · lightweight language packs" else when (spec.family) {
-                "translategemma" -> "TranslateGemma · larger text model"
-                "hy-mt2" -> "Hy-MT2 · text model"
-                else -> "HY-MT1.5 · text model"
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            if (PlatformTranslation.available) FilterChip(
+                selected = !showLegacy && !showGguf, enabled = !busy,
+                onClick = { showLegacy = false; showGguf = false }, label = { Text("ML Kit") })
+            listOf("hy-mt1.5" to "HY-MT1.5", "hy-mt2" to "Hy-MT2", "translategemma" to "TranslateGemma").forEach { (family, label) ->
+                FilterChip(selected = !showLegacy && showGguf && spec.family == family, enabled = !busy,
+                    onClick = {
+                        if (spec.family != family) {
+                            selected = TranslationCatalog.models.firstOrNull { it.family == family && it.id == config.localTranslationModelId }?.id
+                                ?: TranslationCatalog.models.first { it.family == family && it.quantization == "Q4_K_M" }.id
+                        }
+                        showLegacy = false; showGguf = true
+                    }, label = { Text(label) })
             }
-            OutlinedButton(onClick = { familyMenu = true }, enabled = !busy, modifier = Modifier.fillMaxWidth()) { Text(familyLabel) }
-            DropdownMenu(expanded = familyMenu, onDismissRequest = { familyMenu = false }) {
-                if (PlatformTranslation.available) DropdownMenuItem(text = { Text("ML Kit · lightweight language packs") }, onClick = { showGguf = false; familyMenu = false })
-                listOf("hy-mt1.5" to "HY-MT1.5", "hy-mt2" to "Hy-MT2", "translategemma" to "TranslateGemma 4B").forEach { (family, label) ->
-                    DropdownMenuItem(text = { Text(label) }, onClick = {
-                        selected = TranslationCatalog.models.first { it.family == family && it.quantization == "Q4_K_M" }.id
-                        showGguf = true; familyMenu = false
-                    })
-                }
-            }
+            if (includeLegacy) FilterChip(selected = showLegacy, enabled = !busy,
+                onClick = { showLegacy = true }, label = { Text("Marian · legacy") })
+        }
+        if (showLegacy && includeLegacy) {
+            Text("Legacy English → Arabic model files", style = MaterialTheme.typography.titleSmall)
+            com.sal7one.transiber.models.LegacyModelSetup(com.sal7one.transiber.models.ModelEngineType.TRANSLATE, config, update)
+            return@Column
         }
         if (!showGguf && PlatformTranslation.available) MlKitSetup(config, update = update)
         if (showGguf) {

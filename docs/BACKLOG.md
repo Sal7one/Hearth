@@ -211,3 +211,10 @@ a separate installation improvement. Existing manifest/hash/path checks are unch
 
 - [x] Minimum 2.dp top padding and consistent 8.dp vertical gaps for shared cloud settings.
 - [x] Wrap provider/action rows; space documentation buttons and model details.
+
+## RT-29 — Direct model-family chips (0.5.4)
+
+- [x] Show all supported speech families as quick chips within Models → Speech; open on the active engine.
+- [x] Show translator families as quick chips in shared translation setup, with only the browsed family's controls visible.
+- [x] Put Marian's legacy import behind its own chip; keep active model labels distinct from browsing.
+- [x] Retain the active translation quantization when returning to its family; wrap chips with accessible selected states.

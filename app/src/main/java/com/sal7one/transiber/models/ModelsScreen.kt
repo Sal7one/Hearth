@@ -22,8 +22,6 @@ fun ModelsScreen(onCloud: () -> Unit = {}, onDownloads: () -> Unit = {}) {
     var loaded by remember { mutableStateOf(false) }
     var section by rememberSaveable { mutableStateOf("Speech") }
     var browsing by rememberSaveable { mutableStateOf(CaptionEngineChoice.NEMOTRON) }
-    var menu by remember { mutableStateOf(false) }
-    var legacyTranslation by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(Unit) {
         try { CaptionConfigStore.config(context).collect {
             config = it
@@ -51,12 +49,17 @@ fun ModelsScreen(onCloud: () -> Unit = {}, onDownloads: () -> Unit = {}) {
                     "Speech" -> {
                         Text("Local speech recognition", style = MaterialTheme.typography.titleLarge)
                         Text("Choose a speech engine, then select an installed model or get its files. Translation is a separate choice.", style = MaterialTheme.typography.bodyMedium)
-                        Box {
-                            OutlinedButton(onClick = { menu = true }, modifier = Modifier.fillMaxWidth()) { Text(browsing.label) }
-                            DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
-                                listOf(CaptionEngineChoice.NEMOTRON, CaptionEngineChoice.QWEN, CaptionEngineChoice.MOONSHINE, CaptionEngineChoice.WHISPER, CaptionEngineChoice.VOSK).forEach { engine ->
-                                    DropdownMenuItem(text = { Text(engine.label) }, onClick = { browsing = engine; menu = false })
-                                }
+                        Text("Active speech: ${config.engine.label}", style = MaterialTheme.typography.labelLarge)
+                        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            listOf(
+                                CaptionEngineChoice.NEMOTRON to "Nemotron",
+                                CaptionEngineChoice.QWEN to "Qwen3-ASR",
+                                CaptionEngineChoice.MOONSHINE to "Moonshine",
+                                CaptionEngineChoice.WHISPER to "Whisper",
+                                CaptionEngineChoice.VOSK to "Vosk",
+                            ).forEach { (engine, label) ->
+                                FilterChip(selected = browsing == engine, onClick = { browsing = engine },
+                                    label = { Text(label) })
                             }
                         }
                         val shown = config.copy(engine = browsing, modelId = config.modelId.takeIf { config.engine == browsing }.orEmpty())
@@ -73,10 +76,7 @@ fun ModelsScreen(onCloud: () -> Unit = {}, onDownloads: () -> Unit = {}) {
                     "Translation" -> {
                         Text("Local translation", style = MaterialTheme.typography.titleLarge)
                         Text("Language packs or text models for on-device translation.", style = MaterialTheme.typography.bodySmall)
-                        com.sal7one.transiber.translation.LocalTranslationSetup(config, update)
-                        HorizontalDivider()
-                        TextButton(onClick = { legacyTranslation = !legacyTranslation }) { Text(if (legacyTranslation) "Hide legacy English → Arabic" else "Legacy English → Arabic · Marian") }
-                        if (legacyTranslation) LegacyModelSetup(ModelEngineType.TRANSLATE, config, update)
+                        com.sal7one.transiber.translation.LocalTranslationSetup(config, update, includeLegacy = true)
                     }
                     "Cloud" -> {
                         Text("Cloud speech & translation", style = MaterialTheme.typography.titleLarge)

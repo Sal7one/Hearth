@@ -63,7 +63,8 @@ Never commit keys or credentials. CI builds and uploads both QA APKs.
 
 **Setup** contains Models, Downloads and Cloud connection. Models groups Speech,
 Translation and Cloud, with source links, installed models and matching import actions.
-Translation sizes are grouped by family. See [all sources and installation paths](docs/model-sources.md). Connect
+Speech and translation family chips open the matching setup directly; the active
+model is labeled separately. Translation sizes are grouped by family. See [all sources and installation paths](docs/model-sources.md). Connect
 or change your existing cloud provider/key under Cloud connection. Advanced setup
 retains the detailed engine controls and live cloud presets.
 
