@@ -101,6 +101,44 @@ the bubble does not grow over the video as text arrives.
 Done when: the owner can install the update and immediately try the improvements.
 Do not hold the release for every possible model, language or device combination.
 
+## Conversation mode — owner-requested plan, not implemented
+
+See [Conversation UI and delivery plan](conversation-mode-plan.md) for the screen
+wireframe, permissions, existing-code gaps, failure behavior and acceptance checks.
+These are sequential feature slices; they do not block publishing working captions.
+
+### RT-16 — Talk and type in two languages
+
+- [ ] Add one Conversation entry on Home and a dedicated screen with two language chips and Speak/Finish buttons; reuse the current language pickers.
+- [ ] Separate in-app capture from mandatory overlay permission/display; explain why Android still requires RECORD_AUDIO for device playback.
+- [ ] Validate recognition and translation in each direction using existing capabilities, including Auto-only adapters.
+- [ ] Preserve original and translated text under stable turn IDs; resolve the cloud output-only transcript gap before advertising paired history for that route.
+- [ ] Add Type instead and visible preparing/listening/translating/error states; serialize speaker changes without loading duplicate large models.
+
+### RT-17 — Keep the exchange readable and saved
+
+- [ ] Save finalized originals immediately and attach translations transactionally to the same turn; record interrupted work truthfully after restart.
+- [ ] Add History with continue, rename, delete and explicit text export/share; show the save-history preference and honor it.
+- [ ] Keep scroll steady with New messages; preserve position after Options and add a large Show-to-other view.
+- [ ] Keep text app-private, exclude it from automatic cloud backup when labeled device-only, and prevent late results from recreating deleted history.
+
+### RT-18 — Speak translated replies
+
+- [ ] Extend existing TTS with readiness/completion/error/cancellation and actual voice-language checks; never substitute an unrelated language.
+- [ ] Add per-message Play/Stop and optional final-only automatic speech, initially off.
+- [ ] Stop/suspend microphone input during playback and discard buffered playback audio; return to explicit tap-to-speak afterward.
+- [ ] Enforce offline voice selection for local mode and explicit BYOK cloud selection; preserve readable text when voices are missing.
+
+### RT-19 — Accessible conversation and delivery
+
+- [ ] Verify TalkBack language/action labels, stable focus, optional final announcements and tap controls without required hold/drag gestures.
+- [ ] Check large fonts, independent RTL text blocks, landscape, one-way-only language support and lifecycle interruption.
+- [ ] Exercise paired history after restart, translation retry, save-history-off and TTS feedback prevention with focused checks.
+- [ ] Run existing gates, both APK flavors and release verification; confirm overlay controls and saved captions configuration still work.
+
+No new benchmark system, telemetry, provider redesign or broad JNI rewrite is part
+of this plan. Existing model downloads, key storage and speech bindings are reused.
+
 ## Existing work to preserve
 
 Qwen/Nemotron startup fix; optional bounded local translation; foreground-service
