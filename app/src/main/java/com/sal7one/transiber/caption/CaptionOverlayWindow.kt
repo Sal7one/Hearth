@@ -153,6 +153,11 @@ fun CaptionOverlayWindow(
     val state by engineState.collectAsStateWithLifecycle()
     val palette = paletteFor(cfg.theme)
     val scrollState = rememberScrollState()
+    // Keep settings navigation alive while the panel is replaced by live captions.
+    val appearanceScrollState = rememberScrollState()
+    val translationScrollState = rememberScrollState()
+    var appearanceSettings by remember { mutableStateOf(true) }
+    var showReadAloud by remember { mutableStateOf(false) }
     var held by remember { mutableStateOf<CaptionReadingSnapshot?>(null) }
     val clipboard = LocalClipboardManager.current
     val content = held ?: CaptionReading.snapshot(state, cfg.showPartial)
@@ -168,7 +173,16 @@ fun CaptionOverlayWindow(
         ControlStrip(cfg, state, palette, true, onDrag, onDragFinished, onClose, onConfigChange)
         Box(Modifier.weight(1f).fillMaxWidth()) {
             if (cfg.showSettings) {
-                SettingsPanel(cfg, palette, height, onConfigChange) { held = null; onClear() }
+                SettingsPanel(
+                    cfg = cfg, palette = palette, currentHeightDp = height,
+                    appearance = appearanceSettings,
+                    onAppearanceChange = { appearanceSettings = it },
+                    scrollState = if (appearanceSettings) appearanceScrollState else translationScrollState,
+                    showReadAloud = showReadAloud,
+                    onShowReadAloudChange = { showReadAloud = it },
+                    onConfigChange = onConfigChange,
+                    onClear = { held = null; onClear() },
+                )
             } else {
                 Column {
                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -385,11 +399,14 @@ private fun SettingsPanel(
     cfg: CaptionOverlayConfig,
     palette: OverlayPalette,
     currentHeightDp: Float,
+    appearance: Boolean,
+    onAppearanceChange: (Boolean) -> Unit,
+    scrollState: ScrollState,
+    showReadAloud: Boolean,
+    onShowReadAloudChange: (Boolean) -> Unit,
     onConfigChange: ((CaptionOverlayConfig) -> CaptionOverlayConfig) -> Unit,
     onClear: () -> Unit,
 ) {
-    var appearance by remember { mutableStateOf(true) }
-    var showReadAloud by remember { mutableStateOf(false) }
     val context = LocalContext.current
     fun openSetup(page: Int) {
         context.startActivity(android.content.Intent(context, com.sal7one.transiber.MainActivity::class.java)
@@ -405,12 +422,12 @@ private fun SettingsPanel(
         outline = palette.onSurfaceFaded.copy(alpha = 0.4f),
     )) {
       Column(Modifier.fillMaxWidth()) {
-        ChipRow {
-            FilterChip(selected = appearance, onClick = { appearance = true }, label = { Text("Appearance") })
-            FilterChip(selected = !appearance, onClick = { appearance = false }, label = { Text("CC & translation") })
+        ChipRow(Modifier.padding(horizontal = 14.dp)) {
+            FilterChip(selected = appearance, onClick = { onAppearanceChange(true) }, label = { Text("Appearance") })
+            FilterChip(selected = !appearance, onClick = { onAppearanceChange(false) }, label = { Text("CC & translation") })
         }
         androidx.compose.runtime.key(appearance) {
-        Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState())
+        Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(scrollState)
             .padding(horizontal = 14.dp, vertical = 4.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         if (appearance) {
             SliderRow("Height", (cfg.bubbleHeightDp?.toFloat() ?: currentHeightDp).coerceIn(144f, 600f),
@@ -574,7 +591,7 @@ private fun SettingsPanel(
             TextButton(onClick = { openSetup(1) }) { Text("Choose or download models") }
             TextButton(onClick = { openSetup(3) }) { Text("Full setup & cloud settings") }
             TextButton(onClick = onClear) { Text("Clear transcript") }
-            TextButton(onClick = { showReadAloud = !showReadAloud }) { Text(if (showReadAloud) "Hide read-aloud options" else "Read-aloud options") }
+            TextButton(onClick = { onShowReadAloudChange(!showReadAloud) }) { Text(if (showReadAloud) "Hide read-aloud options" else "Read-aloud options") }
             if (showReadAloud) {
         // ── Voice output (TTS) ────────────────────────────────────────────
         // Device voice works everywhere (offline with installed voices);
@@ -696,10 +713,10 @@ private fun SettingsCaption(text: String, palette: OverlayPalette) {
 }
 
 @Composable
-private fun ChipRow(content: @Composable () -> Unit) {
+private fun ChipRow(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
     Row(
         horizontalArrangement = Arrangement.spacedBy(6.dp),
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
     ) {
         content()
     }
