@@ -1,5 +1,7 @@
 # Compare local models on your phone
 
+Measured examples: [eight local translation options across four directions on Samsung SM-S908E](local-translation-benchmark-2026-09-13.md), with exact inputs, translated outputs and exported timings. These short text runs do not establish sustained ASR-plus-translation performance.
+
 Open **Compare local models** and select Speech or Translation. This runs real inference through the installed production engines. No provider requests, automatic model downloads, analytics, or uploaded recordings are involved. ML Kit uses only explicitly installed packs and is absent from the offline build.
 
 For Speech, choose a 0.5–30 second PCM16 WAV (mono/stereo, 8–48 kHz), choose its spoken language, and select compatible installed models. The app downmixes/resamples once and feeds identical 16 kHz mono samples to every candidate. Use the same file when comparing different settings or versions. The parser rejects malformed/truncated data, duplicate audio/format chunks, unsupported float/compressed formats, oversized files and overlong recordings. It limits input to 6 MiB before allocating an unbounded file.

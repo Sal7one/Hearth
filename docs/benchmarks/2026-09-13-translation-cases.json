@@ -1,0 +1,26 @@
+[
+  {
+    "id": "ru-ar",
+    "source": "ru",
+    "target": "ar",
+    "text": "Поезд отправляется через десять минут. Мне нужны два билета до аэропорта."
+  },
+  {
+    "id": "zh-en",
+    "source": "zh",
+    "target": "en",
+    "text": "火车十分钟后出发。我需要两张去机场的车票。"
+  },
+  {
+    "id": "en-ar",
+    "source": "en",
+    "target": "ar",
+    "text": "The train leaves in ten minutes. I need two tickets to the airport."
+  },
+  {
+    "id": "ar-en",
+    "source": "ar",
+    "target": "en",
+    "text": "يغادر القطار بعد عشر دقائق. أحتاج إلى تذكرتين إلى المطار."
+  }
+]

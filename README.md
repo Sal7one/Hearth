@@ -29,7 +29,7 @@ See the [model contribution guide](docs/model-contributing.md) and [release chec
   `play` variant. ML Kit is an optional Google SDK in the play flavor; foss excludes it.
 
 - Two-way **Conversation** page with microphone or typed turns, original and translated text, local history, large text and optional installed offline TTS voices. Speech uses your selected local/cloud recognizer; translation currently uses the selected local translator. See [conversation scope](docs/conversation-mode-plan.md).
-- **Local benchmark** compares installed models on the same WAV or corrected text, separates loading from inference and saves/export reports on-device. See [method and limitations](docs/local-benchmark.md) and [measured phone results](docs/validation-v17.md).
+- **Local benchmark** compares installed models on the same WAV or corrected text, separates loading from inference and saves/export reports on-device. See [method and limitations](docs/local-benchmark.md), [speech phone results](docs/validation-v17.md), and the [eight-option local translation comparison](docs/local-translation-benchmark-2026-09-13.md).
 - Persistent System, Light and Dark appearance in Setup.
 
 ## Build

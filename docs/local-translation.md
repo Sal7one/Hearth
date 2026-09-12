@@ -132,6 +132,15 @@ published HY-MT1.5 2-bit SEQ artifact was tested and rejected by our pinned runt
 kernel is forthcoming. It is deliberately absent from the download choices;
 that failure says nothing about the existing working HY quantizations.
 
+Hy-MT2's separate [1.25-bit artifact](https://huggingface.co/tencent/Hy-MT2-1.8B-1.25Bit-GGUF)
+is a different format from that older HY-MT1.5 SEQ package. Its publisher requires
+the STQ kernel in [llama.cpp PR #22836](https://github.com/ggml-org/llama.cpp/pull/22836),
+which remained open and unmerged when checked on 2026-09-13. Hearth's pinned
+runtime does not include that kernel. The advertised 440 MB footprint is a
+publisher claim for this special artifact, not the size of our Q4 model or a
+measured Android performance result. It is an integration candidate, not an
+available download option in Hearth.
+
 Nemotron now requests an endpoint after four seconds of decoded speech with a
 nonempty transcript, in addition to natural endpoints. This gives the final-only
 translator bounded phrases during continuous audio. It does not guarantee four

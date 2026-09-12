@@ -1,0 +1,897 @@
+[
+  {
+    "runId": "de188985-df20-4272-a140-59c59c81c774",
+    "timestamp": 1789255214803,
+    "model": "ML Kit · installed packs",
+    "identity": "ml-kit",
+    "route": "Translation / ML Kit",
+    "inputHash": "146038c7b0cbce19d9dca3d53096ec5b50be7d5334ff3cbcf8594c2a8ce99fe7",
+    "source": "ru",
+    "target": "ar",
+    "audioMs": 0,
+    "loadMs": 71.03823,
+    "computeMs": [
+      906.987604,
+      77.540468,
+      66.025781
+    ],
+    "texts": [
+      "يغادر القطار إلى عشر دقائق. أحتاج إلى تذكرتين للمطار.",
+      "يغادر القطار إلى عشر دقائق. أحتاج إلى تذكرتين للمطار.",
+      "يغادر القطار إلى عشر دقائق. أحتاج إلى تذكرتين للمطار."
+    ],
+    "runtime": "ML Kit SDK; first call includes deferred client/model initialization",
+    "firstTextMs": [
+      906.987604,
+      77.540468,
+      66.025781
+    ],
+    "device": "samsung SM-S908E; Android 16; API 36; app 0.7.0 (17)"
+  },
+  {
+    "runId": "de188985-df20-4272-a140-59c59c81c774",
+    "timestamp": 1789255213676,
+    "model": "Hy-MT2 1.8B · Q8_0",
+    "identity": "hy-mt2-q8",
+    "route": "Translation / GGUF",
+    "inputHash": "146038c7b0cbce19d9dca3d53096ec5b50be7d5334ff3cbcf8594c2a8ce99fe7",
+    "source": "ru",
+    "target": "ar",
+    "audioMs": 0,
+    "loadMs": 3638.299217,
+    "computeMs": [
+      8389.803278,
+      8168.063434,
+      8121.274789
+    ],
+    "texts": [
+      "القطار سيغادر خلال عشر دقائق. أحتاج إلى تذكرتين للوصول إلى المطار.",
+      "القطار سيغادر خلال عشر دقائق. أحتاج إلى تذكرتين للوصول إلى المطار.",
+      "القطار سيغادر خلال عشر دقائق. أحتاج إلى تذكرتين للوصول إلى المطار."
+    ],
+    "runtime": "Pinned GGUF a0c709d9fac510f2c807aa3af52872340dc37a4a; SHA-256 5c3fe0b1408a5ceb0143184ef247b11b579c525f4b02b060e6c851bb76fef1a4",
+    "firstTextMs": [
+      8389.803278,
+      8168.063434,
+      8121.274789
+    ],
+    "device": "samsung SM-S908E; Android 16; API 36; app 0.7.0 (17)"
+  },
+  {
+    "runId": "de188985-df20-4272-a140-59c59c81c774",
+    "timestamp": 1789255185203,
+    "model": "Hy-MT2 1.8B · Q6_K",
+    "identity": "hy-mt2-q6",
+    "route": "Translation / GGUF",
+    "inputHash": "146038c7b0cbce19d9dca3d53096ec5b50be7d5334ff3cbcf8594c2a8ce99fe7",
+    "source": "ru",
+    "target": "ar",
+    "audioMs": 0,
+    "loadMs": 2595.720989,
+    "computeMs": [
+      10808.121402,
+      10861.69484,
+      10923.123382
+    ],
+    "texts": [
+      "القطار سيغادر خلال عشر دقائق. أحتاج إلى تذكرتين للوصول إلى المطار.",
+      "القطار سيغادر خلال عشر دقائق. أحتاج إلى تذكرتين للوصول إلى المطار.",
+      "القطار سيغادر خلال عشر دقائق. أحتاج إلى تذكرتين للوصول إلى المطار."
+    ],
+    "runtime": "Pinned GGUF a0c709d9fac510f2c807aa3af52872340dc37a4a; SHA-256 d98fe604dec1f28f58f80d7d560f7177e584d3b8e5835862687660e5ff97cb40",
+    "firstTextMs": [
+      10808.121402,
+      10861.69484,
+      10923.123382
+    ],
+    "device": "samsung SM-S908E; Android 16; API 36; app 0.7.0 (17)"
+  },
+  {
+    "runId": "de188985-df20-4272-a140-59c59c81c774",
+    "timestamp": 1789255149907,
+    "model": "Hy-MT2 1.8B · Q4_K_M",
+    "identity": "hy-mt2-q4",
+    "route": "Translation / GGUF",
+    "inputHash": "146038c7b0cbce19d9dca3d53096ec5b50be7d5334ff3cbcf8594c2a8ce99fe7",
+    "source": "ru",
+    "target": "ar",
+    "audioMs": 0,
+    "loadMs": 1967.777499,
+    "computeMs": [
+      8682.516976,
+      8681.163643,
+      8782.704424
+    ],
+    "texts": [
+      "القطار يغادر بعد عشر دقائق. أحتاج إلى تذكرتين للسفر إلى المطار.",
+      "القطار يغادر بعد عشر دقائق. أحتاج إلى تذكرتين للسفر إلى المطار.",
+      "القطار يغادر بعد عشر دقائق. أحتاج إلى تذكرتين للسفر إلى المطار."
+    ],
+    "runtime": "Pinned GGUF a0c709d9fac510f2c807aa3af52872340dc37a4a; SHA-256 dc5f44fcf1fa496ee7ad725982c0c8c553a4de00259b53af84c4b89fb0c06699",
+    "firstTextMs": [
+      8682.516976,
+      8681.163643,
+      8782.704424
+    ],
+    "device": "samsung SM-S908E; Android 16; API 36; app 0.7.0 (17)"
+  },
+  {
+    "runId": "de188985-df20-4272-a140-59c59c81c774",
+    "timestamp": 1789255121679,
+    "model": "HY-MT1.5 1.8B · Q8_0",
+    "identity": "hy-mt15-q8",
+    "route": "Translation / GGUF",
+    "inputHash": "146038c7b0cbce19d9dca3d53096ec5b50be7d5334ff3cbcf8594c2a8ce99fe7",
+    "source": "ru",
+    "target": "ar",
+    "audioMs": 0,
+    "loadMs": 3370.65953,
+    "computeMs": [
+      7057.491872,
+      7051.207497,
+      7147.221195
+    ],
+    "texts": [
+      "القطار سيغادر خلال عشر دقائق. أحتاج إلى تذكرةين للسفر إلى المطار.",
+      "القطار سيغادر خلال عشر دقائق. أحتاج إلى تذكرةين للسفر إلى المطار.",
+      "القطار سيغادر خلال عشر دقائق. أحتاج إلى تذكرةين للسفر إلى المطار."
+    ],
+    "runtime": "Pinned GGUF 265b2e615a7dc9b06c435dc878829ad99a512ba2; SHA-256 6789b06d0902f2f5312c0e1703d56ccbddfcfb6c653d22519b7c720f7db9a98e",
+    "firstTextMs": [
+      7057.491872,
+      7051.207497,
+      7147.221195
+    ],
+    "device": "samsung SM-S908E; Android 16; API 36; app 0.7.0 (17)"
+  },
+  {
+    "runId": "de188985-df20-4272-a140-59c59c81c774",
+    "timestamp": 1789255096903,
+    "model": "HY-MT1.5 1.8B · Q6_K",
+    "identity": "hy-mt15-q6",
+    "route": "Translation / GGUF",
+    "inputHash": "146038c7b0cbce19d9dca3d53096ec5b50be7d5334ff3cbcf8594c2a8ce99fe7",
+    "source": "ru",
+    "target": "ar",
+    "audioMs": 0,
+    "loadMs": 9479.124945,
+    "computeMs": [
+      9108.438695,
+      9603.145204,
+      9534.395777
+    ],
+    "texts": [
+      "القطار سيغادر خلال عشر دقائق. أحتاج إلى تذكرةين للوصول إلى المطار.",
+      "القطار سيغادر خلال عشر دقائق. أحتاج إلى تذكرةين للوصول إلى المطار.",
+      "القطار سيغادر خلال عشر دقائق. أحتاج إلى تذكرةين للوصول إلى المطار."
+    ],
+    "runtime": "Pinned GGUF 265b2e615a7dc9b06c435dc878829ad99a512ba2; SHA-256 c3819200ab9a79cb29b9a05ce8920e2eb01ae7ce520094fc5b57356494f3c641",
+    "firstTextMs": [
+      9108.438695,
+      9603.145204,
+      9534.395777
+    ],
+    "device": "samsung SM-S908E; Android 16; API 36; app 0.7.0 (17)"
+  },
+  {
+    "runId": "de188985-df20-4272-a140-59c59c81c774",
+    "timestamp": 1789255059070,
+    "model": "HY-MT1.5 1.8B · Q4_K_M",
+    "identity": "hy-mt15-q4",
+    "route": "Translation / GGUF",
+    "inputHash": "146038c7b0cbce19d9dca3d53096ec5b50be7d5334ff3cbcf8594c2a8ce99fe7",
+    "source": "ru",
+    "target": "ar",
+    "audioMs": 0,
+    "loadMs": 2547.444113,
+    "computeMs": [
+      7206.284164,
+      7405.623018,
+      7446.077445
+    ],
+    "texts": [
+      "القطار سيغادر خلال عشر دقائق. أحتاج إلى تذكرةين للسفر إلى المطار.",
+      "القطار سيغادر خلال عشر دقائق. أحتاج إلى تذكرةين للسفر إلى المطار.",
+      "القطار سيغادر خلال عشر دقائق. أحتاج إلى تذكرةين للسفر إلى المطار."
+    ],
+    "runtime": "Pinned GGUF 265b2e615a7dc9b06c435dc878829ad99a512ba2; SHA-256 4383ac0c3c8e476de98ff979c2a3f069f8c4fb385e7860cf2d28da896cc477c7",
+    "firstTextMs": [
+      7206.284164,
+      7405.623018,
+      7446.077445
+    ],
+    "device": "samsung SM-S908E; Android 16; API 36; app 0.7.0 (17)"
+  },
+  {
+    "runId": "de188985-df20-4272-a140-59c59c81c774",
+    "timestamp": 1789255034359,
+    "model": "TranslateGemma 4B · Q4_K_M",
+    "identity": "translategemma-4b-q4",
+    "route": "Translation / GGUF",
+    "inputHash": "146038c7b0cbce19d9dca3d53096ec5b50be7d5334ff3cbcf8594c2a8ce99fe7",
+    "source": "ru",
+    "target": "ar",
+    "audioMs": 0,
+    "loadMs": 4246.062186,
+    "computeMs": [],
+    "texts": [],
+    "runtime": "Pinned GGUF 35a7486e128b19642cdc72d7b91b21ba388aaf42; SHA-256 81200d03e843d2ec1ece6eeafe7d13cb6e5211e1fcd336ade55790b683a08330",
+    "firstTextMs": [],
+    "device": "samsung SM-S908E; Android 16; API 36; app 0.7.0 (17)",
+    "error": "Local translation exceeded 20 seconds\ngraph_compute: ggml_backend_sched_graph_compute_async failed with error 1\nprocess_ubatch: failed to compute graph, compute status: 1\nllama_decode: failed to decode, ret = 2\n"
+  },
+  {
+    "runId": "1831e7a7-0e77-4fad-a29b-8442f4e16ec2",
+    "timestamp": 1789255545084,
+    "model": "ML Kit · installed packs",
+    "identity": "ml-kit",
+    "route": "Translation / ML Kit",
+    "inputHash": "82eab6212ae4dcae0dc101bc6b2821d885050a076b8aa9162b44bc367541027d",
+    "source": "zh",
+    "target": "en",
+    "audioMs": 0,
+    "loadMs": 84.907447,
+    "computeMs": [
+      255.860364,
+      62.569427,
+      68.88224
+    ],
+    "texts": [
+      "The train started for ten minutes. I need two tickets to the airport.",
+      "The train started for ten minutes. I need two tickets to the airport.",
+      "The train started for ten minutes. I need two tickets to the airport."
+    ],
+    "runtime": "ML Kit SDK; first call includes deferred client/model initialization",
+    "firstTextMs": [
+      255.860364,
+      62.569427,
+      68.88224
+    ],
+    "device": "samsung SM-S908E; Android 16; API 36; app 0.7.0 (17)"
+  },
+  {
+    "runId": "1831e7a7-0e77-4fad-a29b-8442f4e16ec2",
+    "timestamp": 1789255544605,
+    "model": "Hy-MT2 1.8B · Q8_0",
+    "identity": "hy-mt2-q8",
+    "route": "Translation / GGUF",
+    "inputHash": "82eab6212ae4dcae0dc101bc6b2821d885050a076b8aa9162b44bc367541027d",
+    "source": "zh",
+    "target": "en",
+    "audioMs": 0,
+    "loadMs": 4671.364998,
+    "computeMs": [
+      5573.102029,
+      5548.981769,
+      5542.652549
+    ],
+    "texts": [
+      "The train will leave in ten minutes. I need two tickets to get to the airport.",
+      "The train will leave in ten minutes. I need two tickets to get to the airport.",
+      "The train will leave in ten minutes. I need two tickets to get to the airport."
+    ],
+    "runtime": "Pinned GGUF a0c709d9fac510f2c807aa3af52872340dc37a4a; SHA-256 5c3fe0b1408a5ceb0143184ef247b11b579c525f4b02b060e6c851bb76fef1a4",
+    "firstTextMs": [
+      5573.102029,
+      5548.981769,
+      5542.652549
+    ],
+    "device": "samsung SM-S908E; Android 16; API 36; app 0.7.0 (17)"
+  },
+  {
+    "runId": "1831e7a7-0e77-4fad-a29b-8442f4e16ec2",
+    "timestamp": 1789255523103,
+    "model": "Hy-MT2 1.8B · Q6_K",
+    "identity": "hy-mt2-q6",
+    "route": "Translation / GGUF",
+    "inputHash": "82eab6212ae4dcae0dc101bc6b2821d885050a076b8aa9162b44bc367541027d",
+    "source": "zh",
+    "target": "en",
+    "audioMs": 0,
+    "loadMs": 3243.016145,
+    "computeMs": [
+      8371.852966,
+      8375.104059,
+      8361.878903
+    ],
+    "texts": [
+      "The train will leave in ten minutes. I need two tickets to get to the airport.",
+      "The train will leave in ten minutes. I need two tickets to get to the airport.",
+      "The train will leave in ten minutes. I need two tickets to get to the airport."
+    ],
+    "runtime": "Pinned GGUF a0c709d9fac510f2c807aa3af52872340dc37a4a; SHA-256 d98fe604dec1f28f58f80d7d560f7177e584d3b8e5835862687660e5ff97cb40",
+    "firstTextMs": [
+      8371.852966,
+      8375.104059,
+      8361.878903
+    ],
+    "device": "samsung SM-S908E; Android 16; API 36; app 0.7.0 (17)"
+  },
+  {
+    "runId": "1831e7a7-0e77-4fad-a29b-8442f4e16ec2",
+    "timestamp": 1789255494609,
+    "model": "Hy-MT2 1.8B · Q4_K_M",
+    "identity": "hy-mt2-q4",
+    "route": "Translation / GGUF",
+    "inputHash": "82eab6212ae4dcae0dc101bc6b2821d885050a076b8aa9162b44bc367541027d",
+    "source": "zh",
+    "target": "en",
+    "audioMs": 0,
+    "loadMs": 2441.042916,
+    "computeMs": [
+      5319.274946,
+      5439.439321,
+      5798.019425
+    ],
+    "texts": [
+      "The train leaves in ten minutes. I need two tickets to the airport.",
+      "The train leaves in ten minutes. I need two tickets to the airport.",
+      "The train leaves in ten minutes. I need two tickets to the airport."
+    ],
+    "runtime": "Pinned GGUF a0c709d9fac510f2c807aa3af52872340dc37a4a; SHA-256 dc5f44fcf1fa496ee7ad725982c0c8c553a4de00259b53af84c4b89fb0c06699",
+    "firstTextMs": [
+      5319.274946,
+      5439.439321,
+      5798.019425
+    ],
+    "device": "samsung SM-S908E; Android 16; API 36; app 0.7.0 (17)"
+  },
+  {
+    "runId": "1831e7a7-0e77-4fad-a29b-8442f4e16ec2",
+    "timestamp": 1789255475488,
+    "model": "HY-MT1.5 1.8B · Q8_0",
+    "identity": "hy-mt15-q8",
+    "route": "Translation / GGUF",
+    "inputHash": "82eab6212ae4dcae0dc101bc6b2821d885050a076b8aa9162b44bc367541027d",
+    "source": "zh",
+    "target": "en",
+    "audioMs": 0,
+    "loadMs": 3777.037863,
+    "computeMs": [
+      4749.093384,
+      4817.738228,
+      4764.267654
+    ],
+    "texts": [
+      "The train will leave in ten minutes. I need two tickets to get to the airport.",
+      "The train will leave in ten minutes. I need two tickets to get to the airport.",
+      "The train will leave in ten minutes. I need two tickets to get to the airport."
+    ],
+    "runtime": "Pinned GGUF 265b2e615a7dc9b06c435dc878829ad99a512ba2; SHA-256 6789b06d0902f2f5312c0e1703d56ccbddfcfb6c653d22519b7c720f7db9a98e",
+    "firstTextMs": [
+      4749.093384,
+      4817.738228,
+      4764.267654
+    ],
+    "device": "samsung SM-S908E; Android 16; API 36; app 0.7.0 (17)"
+  },
+  {
+    "runId": "1831e7a7-0e77-4fad-a29b-8442f4e16ec2",
+    "timestamp": 1789255457238,
+    "model": "HY-MT1.5 1.8B · Q6_K",
+    "identity": "hy-mt15-q6",
+    "route": "Translation / GGUF",
+    "inputHash": "82eab6212ae4dcae0dc101bc6b2821d885050a076b8aa9162b44bc367541027d",
+    "source": "zh",
+    "target": "en",
+    "audioMs": 0,
+    "loadMs": 2666.317708,
+    "computeMs": [
+      6371.838487,
+      6428.028227,
+      6443.372029
+    ],
+    "texts": [
+      "The train will leave in ten minutes. I need two tickets to get to the airport.",
+      "The train will leave in ten minutes. I need two tickets to get to the airport.",
+      "The train will leave in ten minutes. I need two tickets to get to the airport."
+    ],
+    "runtime": "Pinned GGUF 265b2e615a7dc9b06c435dc878829ad99a512ba2; SHA-256 c3819200ab9a79cb29b9a05ce8920e2eb01ae7ce520094fc5b57356494f3c641",
+    "firstTextMs": [
+      6371.838487,
+      6428.028227,
+      6443.372029
+    ],
+    "device": "samsung SM-S908E; Android 16; API 36; app 0.7.0 (17)"
+  },
+  {
+    "runId": "1831e7a7-0e77-4fad-a29b-8442f4e16ec2",
+    "timestamp": 1789255435208,
+    "model": "HY-MT1.5 1.8B · Q4_K_M",
+    "identity": "hy-mt15-q4",
+    "route": "Translation / GGUF",
+    "inputHash": "82eab6212ae4dcae0dc101bc6b2821d885050a076b8aa9162b44bc367541027d",
+    "source": "zh",
+    "target": "en",
+    "audioMs": 0,
+    "loadMs": 2238.382864,
+    "computeMs": [
+      5146.142967,
+      5109.30255,
+      5124.169529
+    ],
+    "texts": [
+      "The train will depart in ten minutes. I need two tickets to get to the airport.",
+      "The train will depart in ten minutes. I need two tickets to get to the airport.",
+      "The train will depart in ten minutes. I need two tickets to get to the airport."
+    ],
+    "runtime": "Pinned GGUF 265b2e615a7dc9b06c435dc878829ad99a512ba2; SHA-256 4383ac0c3c8e476de98ff979c2a3f069f8c4fb385e7860cf2d28da896cc477c7",
+    "firstTextMs": [
+      5146.142967,
+      5109.30255,
+      5124.169529
+    ],
+    "device": "samsung SM-S908E; Android 16; API 36; app 0.7.0 (17)"
+  },
+  {
+    "runId": "1831e7a7-0e77-4fad-a29b-8442f4e16ec2",
+    "timestamp": 1789255417471,
+    "model": "TranslateGemma 4B · Q4_K_M",
+    "identity": "translategemma-4b-q4",
+    "route": "Translation / GGUF",
+    "inputHash": "82eab6212ae4dcae0dc101bc6b2821d885050a076b8aa9162b44bc367541027d",
+    "source": "zh",
+    "target": "en",
+    "audioMs": 0,
+    "loadMs": 4052.824634,
+    "computeMs": [
+      18766.512962,
+      19412.311555,
+      19680.303534
+    ],
+    "texts": [
+      "The train departs in ten minutes. I need two tickets to the airport.",
+      "The train departs in ten minutes. I need two tickets to the airport.",
+      "The train departs in ten minutes. I need two tickets to the airport."
+    ],
+    "runtime": "Pinned GGUF 35a7486e128b19642cdc72d7b91b21ba388aaf42; SHA-256 81200d03e843d2ec1ece6eeafe7d13cb6e5211e1fcd336ade55790b683a08330",
+    "firstTextMs": [
+      18766.512962,
+      19412.311555,
+      19680.303534
+    ],
+    "device": "samsung SM-S908E; Android 16; API 36; app 0.7.0 (17)"
+  },
+  {
+    "runId": "142b4936-395a-49ba-924c-70bbe426fbe1",
+    "timestamp": 1789256028540,
+    "model": "ML Kit · installed packs",
+    "identity": "ml-kit",
+    "route": "Translation / ML Kit",
+    "inputHash": "2cd468e356816d35411d175cc83121268563c68cf6d58cee965ad9bbfbbd1202",
+    "source": "en",
+    "target": "ar",
+    "audioMs": 0,
+    "loadMs": 68.525469,
+    "computeMs": [
+      431.732188,
+      34.47823,
+      37.225834
+    ],
+    "texts": [
+      "يترك القطار في عشر دقائق. أحتاج إلى تذكرتين للمطار.",
+      "يترك القطار في عشر دقائق. أحتاج إلى تذكرتين للمطار.",
+      "يترك القطار في عشر دقائق. أحتاج إلى تذكرتين للمطار."
+    ],
+    "runtime": "ML Kit SDK; first call includes deferred client/model initialization",
+    "firstTextMs": [
+      431.732188,
+      34.47823,
+      37.225834
+    ],
+    "device": "samsung SM-S908E; Android 16; API 36; app 0.7.0 (17)"
+  },
+  {
+    "runId": "142b4936-395a-49ba-924c-70bbe426fbe1",
+    "timestamp": 1789256027962,
+    "model": "Hy-MT2 1.8B · Q8_0",
+    "identity": "hy-mt2-q8",
+    "route": "Translation / GGUF",
+    "inputHash": "2cd468e356816d35411d175cc83121268563c68cf6d58cee965ad9bbfbbd1202",
+    "source": "en",
+    "target": "ar",
+    "audioMs": 0,
+    "loadMs": 4338.196873,
+    "computeMs": [
+      7493.312392,
+      7502.219893,
+      7510.49781
+    ],
+    "texts": [
+      "القطار سيغادر خلال عشر دقائق. أحتاج إلى تذكرتين للوصول إلى المطار.",
+      "القطار سيغادر خلال عشر دقائق. أحتاج إلى تذكرتين للوصول إلى المطار.",
+      "القطار سيغادر خلال عشر دقائق. أحتاج إلى تذكرتين للوصول إلى المطار."
+    ],
+    "runtime": "Pinned GGUF a0c709d9fac510f2c807aa3af52872340dc37a4a; SHA-256 5c3fe0b1408a5ceb0143184ef247b11b579c525f4b02b060e6c851bb76fef1a4",
+    "firstTextMs": [
+      7493.312392,
+      7502.219893,
+      7510.49781
+    ],
+    "device": "samsung SM-S908E; Android 16; API 36; app 0.7.0 (17)"
+  },
+  {
+    "runId": "142b4936-395a-49ba-924c-70bbe426fbe1",
+    "timestamp": 1789256000955,
+    "model": "Hy-MT2 1.8B · Q6_K",
+    "identity": "hy-mt2-q6",
+    "route": "Translation / GGUF",
+    "inputHash": "2cd468e356816d35411d175cc83121268563c68cf6d58cee965ad9bbfbbd1202",
+    "source": "en",
+    "target": "ar",
+    "audioMs": 0,
+    "loadMs": 3422.691093,
+    "computeMs": [
+      11129.657704,
+      11131.309423,
+      11125.703329
+    ],
+    "texts": [
+      "القطار سيغادر بعد عشر دقائق. أحتاج إلى تذكرتين للوصول إلى المطار.",
+      "القطار سيغادر بعد عشر دقائق. أحتاج إلى تذكرتين للوصول إلى المطار.",
+      "القطار سيغادر بعد عشر دقائق. أحتاج إلى تذكرتين للوصول إلى المطار."
+    ],
+    "runtime": "Pinned GGUF a0c709d9fac510f2c807aa3af52872340dc37a4a; SHA-256 d98fe604dec1f28f58f80d7d560f7177e584d3b8e5835862687660e5ff97cb40",
+    "firstTextMs": [
+      11129.657704,
+      11131.309423,
+      11125.703329
+    ],
+    "device": "samsung SM-S908E; Android 16; API 36; app 0.7.0 (17)"
+  },
+  {
+    "runId": "142b4936-395a-49ba-924c-70bbe426fbe1",
+    "timestamp": 1789255964000,
+    "model": "Hy-MT2 1.8B · Q4_K_M",
+    "identity": "hy-mt2-q4",
+    "route": "Translation / GGUF",
+    "inputHash": "2cd468e356816d35411d175cc83121268563c68cf6d58cee965ad9bbfbbd1202",
+    "source": "en",
+    "target": "ar",
+    "audioMs": 0,
+    "loadMs": 2366.811145,
+    "computeMs": [
+      7393.368018,
+      7614.237706,
+      8158.625986
+    ],
+    "texts": [
+      "القطار سيغادر في عشر دقائق. أحتاج إلى تذكرتين للسفر إلى المطار.",
+      "القطار سيغادر في عشر دقائق. أحتاج إلى تذكرتين للسفر إلى المطار.",
+      "القطار سيغادر في عشر دقائق. أحتاج إلى تذكرتين للسفر إلى المطار."
+    ],
+    "runtime": "Pinned GGUF a0c709d9fac510f2c807aa3af52872340dc37a4a; SHA-256 dc5f44fcf1fa496ee7ad725982c0c8c553a4de00259b53af84c4b89fb0c06699",
+    "firstTextMs": [
+      7393.368018,
+      7614.237706,
+      8158.625986
+    ],
+    "device": "samsung SM-S908E; Android 16; API 36; app 0.7.0 (17)"
+  },
+  {
+    "runId": "142b4936-395a-49ba-924c-70bbe426fbe1",
+    "timestamp": 1789255938357,
+    "model": "HY-MT1.5 1.8B · Q8_0",
+    "identity": "hy-mt15-q8",
+    "route": "Translation / GGUF",
+    "inputHash": "2cd468e356816d35411d175cc83121268563c68cf6d58cee965ad9bbfbbd1202",
+    "source": "en",
+    "target": "ar",
+    "audioMs": 0,
+    "loadMs": 3582.230103,
+    "computeMs": [
+      5735.943435,
+      6036.020415,
+      6033.37354
+    ],
+    "texts": [
+      "القطار سيغادر بعد عشر دقائق. أحتاج إلى تذكرةين للوصول إلى المطار.",
+      "القطار سيغادر بعد عشر دقائق. أحتاج إلى تذكرةين للوصول إلى المطار.",
+      "القطار سيغادر بعد عشر دقائق. أحتاج إلى تذكرةين للوصول إلى المطار."
+    ],
+    "runtime": "Pinned GGUF 265b2e615a7dc9b06c435dc878829ad99a512ba2; SHA-256 6789b06d0902f2f5312c0e1703d56ccbddfcfb6c653d22519b7c720f7db9a98e",
+    "firstTextMs": [
+      5735.943435,
+      6036.020415,
+      6033.37354
+    ],
+    "device": "samsung SM-S908E; Android 16; API 36; app 0.7.0 (17)"
+  },
+  {
+    "runId": "142b4936-395a-49ba-924c-70bbe426fbe1",
+    "timestamp": 1789255916841,
+    "model": "HY-MT1.5 1.8B · Q6_K",
+    "identity": "hy-mt15-q6",
+    "route": "Translation / GGUF",
+    "inputHash": "2cd468e356816d35411d175cc83121268563c68cf6d58cee965ad9bbfbbd1202",
+    "source": "en",
+    "target": "ar",
+    "audioMs": 0,
+    "loadMs": 2488.295155,
+    "computeMs": [
+      8053.598903,
+      8060.937236,
+      8041.756768
+    ],
+    "texts": [
+      "القطار سيغادر بعد عشر دقائق. أحتاج إلى تذكرةين للوصول إلى المطار.",
+      "القطار سيغادر بعد عشر دقائق. أحتاج إلى تذكرةين للوصول إلى المطار.",
+      "القطار سيغادر بعد عشر دقائق. أحتاج إلى تذكرةين للوصول إلى المطار."
+    ],
+    "runtime": "Pinned GGUF 265b2e615a7dc9b06c435dc878829ad99a512ba2; SHA-256 c3819200ab9a79cb29b9a05ce8920e2eb01ae7ce520094fc5b57356494f3c641",
+    "firstTextMs": [
+      8053.598903,
+      8060.937236,
+      8041.756768
+    ],
+    "device": "samsung SM-S908E; Android 16; API 36; app 0.7.0 (17)"
+  },
+  {
+    "runId": "142b4936-395a-49ba-924c-70bbe426fbe1",
+    "timestamp": 1789255890093,
+    "model": "HY-MT1.5 1.8B · Q4_K_M",
+    "identity": "hy-mt15-q4",
+    "route": "Translation / GGUF",
+    "inputHash": "2cd468e356816d35411d175cc83121268563c68cf6d58cee965ad9bbfbbd1202",
+    "source": "en",
+    "target": "ar",
+    "audioMs": 0,
+    "loadMs": 2074.334009,
+    "computeMs": [
+      6173.759217,
+      6261.578748,
+      6304.792393
+    ],
+    "texts": [
+      "القطار سيغادر خلال عشر دقائق. أحتاج إلى تذكرةين للوصول إلى المطار.",
+      "القطار سيغادر خلال عشر دقائق. أحتاج إلى تذكرةين للوصول إلى المطار.",
+      "القطار سيغادر خلال عشر دقائق. أحتاج إلى تذكرةين للوصول إلى المطار."
+    ],
+    "runtime": "Pinned GGUF 265b2e615a7dc9b06c435dc878829ad99a512ba2; SHA-256 4383ac0c3c8e476de98ff979c2a3f069f8c4fb385e7860cf2d28da896cc477c7",
+    "firstTextMs": [
+      6173.759217,
+      6261.578748,
+      6304.792393
+    ],
+    "device": "samsung SM-S908E; Android 16; API 36; app 0.7.0 (17)"
+  },
+  {
+    "runId": "142b4936-395a-49ba-924c-70bbe426fbe1",
+    "timestamp": 1789255869172,
+    "model": "TranslateGemma 4B · Q4_K_M",
+    "identity": "translategemma-4b-q4",
+    "route": "Translation / GGUF",
+    "inputHash": "2cd468e356816d35411d175cc83121268563c68cf6d58cee965ad9bbfbbd1202",
+    "source": "en",
+    "target": "ar",
+    "audioMs": 0,
+    "loadMs": 4072.520415,
+    "computeMs": [],
+    "texts": [],
+    "runtime": "Pinned GGUF 35a7486e128b19642cdc72d7b91b21ba388aaf42; SHA-256 81200d03e843d2ec1ece6eeafe7d13cb6e5211e1fcd336ade55790b683a08330",
+    "firstTextMs": [],
+    "device": "samsung SM-S908E; Android 16; API 36; app 0.7.0 (17)",
+    "error": "Local translation exceeded 20 seconds\ngraph_compute: ggml_backend_sched_graph_compute_async failed with error 1\nprocess_ubatch: failed to compute graph, compute status: 1\nllama_decode: failed to decode, ret = 2\n"
+  },
+  {
+    "runId": "3e86b583-ada9-4c34-b30a-150d8b9d4e75",
+    "timestamp": 1789256293969,
+    "model": "ML Kit · installed packs",
+    "identity": "ml-kit",
+    "route": "Translation / ML Kit",
+    "inputHash": "e9af3609b40fc78afaed56f0b5a3d0dc635ec85ee2c900520f1940e3f2612d5b",
+    "source": "ar",
+    "target": "en",
+    "audioMs": 0,
+    "loadMs": 76.251875,
+    "computeMs": [
+      403.719427,
+      59.254063,
+      59.440052
+    ],
+    "texts": [
+      "The train leaves ten minutes. I need two tickets to the airport.",
+      "The train leaves ten minutes. I need two tickets to the airport.",
+      "The train leaves ten minutes. I need two tickets to the airport."
+    ],
+    "runtime": "ML Kit SDK; first call includes deferred client/model initialization",
+    "firstTextMs": [
+      403.719427,
+      59.254063,
+      59.440052
+    ],
+    "device": "samsung SM-S908E; Android 16; API 36; app 0.7.0 (17)"
+  },
+  {
+    "runId": "3e86b583-ada9-4c34-b30a-150d8b9d4e75",
+    "timestamp": 1789256293363,
+    "model": "Hy-MT2 1.8B · Q8_0",
+    "identity": "hy-mt2-q8",
+    "route": "Translation / GGUF",
+    "inputHash": "e9af3609b40fc78afaed56f0b5a3d0dc635ec85ee2c900520f1940e3f2612d5b",
+    "source": "ar",
+    "target": "en",
+    "audioMs": 0,
+    "loadMs": 4465.31854,
+    "computeMs": [
+      6929.481873,
+      6951.561143,
+      6964.687653
+    ],
+    "texts": [
+      "The train leaves in ten minutes. I need two tickets to get to the airport.",
+      "The train leaves in ten minutes. I need two tickets to get to the airport.",
+      "The train leaves in ten minutes. I need two tickets to get to the airport."
+    ],
+    "runtime": "Pinned GGUF a0c709d9fac510f2c807aa3af52872340dc37a4a; SHA-256 5c3fe0b1408a5ceb0143184ef247b11b579c525f4b02b060e6c851bb76fef1a4",
+    "firstTextMs": [
+      6929.481873,
+      6951.561143,
+      6964.687653
+    ],
+    "device": "samsung SM-S908E; Android 16; API 36; app 0.7.0 (17)"
+  },
+  {
+    "runId": "3e86b583-ada9-4c34-b30a-150d8b9d4e75",
+    "timestamp": 1789256267885,
+    "model": "Hy-MT2 1.8B · Q6_K",
+    "identity": "hy-mt2-q6",
+    "route": "Translation / GGUF",
+    "inputHash": "e9af3609b40fc78afaed56f0b5a3d0dc635ec85ee2c900520f1940e3f2612d5b",
+    "source": "ar",
+    "target": "en",
+    "audioMs": 0,
+    "loadMs": 3309.868541,
+    "computeMs": [
+      10456.974371,
+      10539.89958,
+      10461.223433
+    ],
+    "texts": [
+      "The train leaves in ten minutes. I need two tickets to get to the airport.",
+      "The train leaves in ten minutes. I need two tickets to get to the airport.",
+      "The train leaves in ten minutes. I need two tickets to get to the airport."
+    ],
+    "runtime": "Pinned GGUF a0c709d9fac510f2c807aa3af52872340dc37a4a; SHA-256 d98fe604dec1f28f58f80d7d560f7177e584d3b8e5835862687660e5ff97cb40",
+    "firstTextMs": [
+      10456.974371,
+      10539.89958,
+      10461.223433
+    ],
+    "device": "samsung SM-S908E; Android 16; API 36; app 0.7.0 (17)"
+  },
+  {
+    "runId": "3e86b583-ada9-4c34-b30a-150d8b9d4e75",
+    "timestamp": 1789256232981,
+    "model": "Hy-MT2 1.8B · Q4_K_M",
+    "identity": "hy-mt2-q4",
+    "route": "Translation / GGUF",
+    "inputHash": "e9af3609b40fc78afaed56f0b5a3d0dc635ec85ee2c900520f1940e3f2612d5b",
+    "source": "ar",
+    "target": "en",
+    "audioMs": 0,
+    "loadMs": 2830.048436,
+    "computeMs": [
+      8223.490309,
+      8208.926194,
+      8209.097289
+    ],
+    "texts": [
+      "The train leaves after ten minutes. I need two tickets to get to the airport.",
+      "The train leaves after ten minutes. I need two tickets to get to the airport.",
+      "The train leaves after ten minutes. I need two tickets to get to the airport."
+    ],
+    "runtime": "Pinned GGUF a0c709d9fac510f2c807aa3af52872340dc37a4a; SHA-256 dc5f44fcf1fa496ee7ad725982c0c8c553a4de00259b53af84c4b89fb0c06699",
+    "firstTextMs": [
+      8223.490309,
+      8208.926194,
+      8209.097289
+    ],
+    "device": "samsung SM-S908E; Android 16; API 36; app 0.7.0 (17)"
+  },
+  {
+    "runId": "3e86b583-ada9-4c34-b30a-150d8b9d4e75",
+    "timestamp": 1789256205368,
+    "model": "HY-MT1.5 1.8B · Q8_0",
+    "identity": "hy-mt15-q8",
+    "route": "Translation / GGUF",
+    "inputHash": "e9af3609b40fc78afaed56f0b5a3d0dc635ec85ee2c900520f1940e3f2612d5b",
+    "source": "ar",
+    "target": "en",
+    "audioMs": 0,
+    "loadMs": 4864.615103,
+    "computeMs": [
+      6080.438748,
+      6069.048591,
+      6061.875779
+    ],
+    "texts": [
+      "The train leaves in ten minutes. I need two tickets to get to the airport.",
+      "The train leaves in ten minutes. I need two tickets to get to the airport.",
+      "The train leaves in ten minutes. I need two tickets to get to the airport."
+    ],
+    "runtime": "Pinned GGUF 265b2e615a7dc9b06c435dc878829ad99a512ba2; SHA-256 6789b06d0902f2f5312c0e1703d56ccbddfcfb6c653d22519b7c720f7db9a98e",
+    "firstTextMs": [
+      6080.438748,
+      6069.048591,
+      6061.875779
+    ],
+    "device": "samsung SM-S908E; Android 16; API 36; app 0.7.0 (17)"
+  },
+  {
+    "runId": "3e86b583-ada9-4c34-b30a-150d8b9d4e75",
+    "timestamp": 1789256182130,
+    "model": "HY-MT1.5 1.8B · Q6_K",
+    "identity": "hy-mt15-q6",
+    "route": "Translation / GGUF",
+    "inputHash": "e9af3609b40fc78afaed56f0b5a3d0dc635ec85ee2c900520f1940e3f2612d5b",
+    "source": "ar",
+    "target": "en",
+    "audioMs": 0,
+    "loadMs": 2904.680728,
+    "computeMs": [
+      7784.827184,
+      8272.12807,
+      8788.148225
+    ],
+    "texts": [
+      "The train leaves after ten minutes. I need two tickets to get to the airport.",
+      "The train leaves after ten minutes. I need two tickets to get to the airport.",
+      "The train leaves after ten minutes. I need two tickets to get to the airport."
+    ],
+    "runtime": "Pinned GGUF 265b2e615a7dc9b06c435dc878829ad99a512ba2; SHA-256 c3819200ab9a79cb29b9a05ce8920e2eb01ae7ce520094fc5b57356494f3c641",
+    "firstTextMs": [
+      7784.827184,
+      8272.12807,
+      8788.148225
+    ],
+    "device": "samsung SM-S908E; Android 16; API 36; app 0.7.0 (17)"
+  },
+  {
+    "runId": "3e86b583-ada9-4c34-b30a-150d8b9d4e75",
+    "timestamp": 1789256154247,
+    "model": "HY-MT1.5 1.8B · Q4_K_M",
+    "identity": "hy-mt15-q4",
+    "route": "Translation / GGUF",
+    "inputHash": "e9af3609b40fc78afaed56f0b5a3d0dc635ec85ee2c900520f1940e3f2612d5b",
+    "source": "ar",
+    "target": "en",
+    "audioMs": 0,
+    "loadMs": 2320.253958,
+    "computeMs": [
+      5687.11281,
+      5863.296144,
+      5895.164998
+    ],
+    "texts": [
+      "The train leaves after ten minutes. I need two tickets to get to the airport.",
+      "The train leaves after ten minutes. I need two tickets to get to the airport.",
+      "The train leaves after ten minutes. I need two tickets to get to the airport."
+    ],
+    "runtime": "Pinned GGUF 265b2e615a7dc9b06c435dc878829ad99a512ba2; SHA-256 4383ac0c3c8e476de98ff979c2a3f069f8c4fb385e7860cf2d28da896cc477c7",
+    "firstTextMs": [
+      5687.11281,
+      5863.296144,
+      5895.164998
+    ],
+    "device": "samsung SM-S908E; Android 16; API 36; app 0.7.0 (17)"
+  },
+  {
+    "runId": "3e86b583-ada9-4c34-b30a-150d8b9d4e75",
+    "timestamp": 1789256134367,
+    "model": "TranslateGemma 4B · Q4_K_M",
+    "identity": "translategemma-4b-q4",
+    "route": "Translation / GGUF",
+    "inputHash": "e9af3609b40fc78afaed56f0b5a3d0dc635ec85ee2c900520f1940e3f2612d5b",
+    "source": "ar",
+    "target": "en",
+    "audioMs": 0,
+    "loadMs": 5577.926977,
+    "computeMs": [],
+    "texts": [],
+    "runtime": "Pinned GGUF 35a7486e128b19642cdc72d7b91b21ba388aaf42; SHA-256 81200d03e843d2ec1ece6eeafe7d13cb6e5211e1fcd336ade55790b683a08330",
+    "firstTextMs": [],
+    "device": "samsung SM-S908E; Android 16; API 36; app 0.7.0 (17)",
+    "error": "Local translation exceeded 20 seconds\ngraph_compute: ggml_backend_sched_graph_compute_async failed with error 1\nprocess_ubatch: failed to compute graph, compute status: 1\nllama_decode: failed to decode, ret = 2\n"
+  }
+]
