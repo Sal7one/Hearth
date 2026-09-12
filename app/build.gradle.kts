@@ -11,8 +11,8 @@ android {
   applicationId = "com.sal7one.transiber"
   minSdk = 28
   targetSdk = 36
-  versionCode = 8
-  versionName = "0.4.0"
+  versionCode = 9
+  versionName = "0.4.1"
   ndk { abiFilters += "arm64-v8a" }
  }
  flavorDimensions += "distribution"

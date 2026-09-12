@@ -40,3 +40,18 @@ internal fun overlayHeightPx(viewportHeight: Int, density: Float, config: Captio
     val requested = if (config.showSettings && config.languagePicker != null) maxOf(reading, 440f * density) else reading
     return requested.coerceAtLeast(144f * density).toInt().coerceIn(1, viewportHeight.coerceAtLeast(1))
 }
+
+/** Prefer outside the captions; even a full-screen or dragged bubble must retain a reachable handle. */
+internal fun placeTapThroughHandle(viewport: OverlayViewport, bubble: OverlayPlacement, size: Int, gap: Int): OverlayPlacement {
+    val w = size.coerceIn(1, viewport.width)
+    val h = size.coerceIn(1, viewport.height)
+    val y = when {
+        bubble.y - gap - h >= viewport.top -> bubble.y - gap - h
+        bubble.y + bubble.height + gap + h <= viewport.bottom -> bubble.y + bubble.height + gap
+        else -> bubble.y
+    }
+    return OverlayPlacement(
+        (bubble.x + bubble.width - w).coerceIn(viewport.left, viewport.right - w),
+        y.coerceIn(viewport.top, viewport.bottom - h), w, h,
+    )
+}

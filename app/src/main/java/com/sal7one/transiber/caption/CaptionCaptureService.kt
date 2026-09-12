@@ -235,17 +235,21 @@ class CaptionCaptureService : Service() {
         val manager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
         manager.createNotificationChannel(NotificationChannel(CHANNEL_ID, "Live captions", NotificationManager.IMPORTANCE_LOW))
         val paused = engine.currentConfig.paused
+        val tapThrough = overlay.config.value.tapThrough
         fun command(id: Int, action: String) = PendingIntent.getService(this, id,
             Intent(this, CaptionCaptureService::class.java).setAction(action),
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_btn_speak_now)
             .setContentTitle(if (failure != null) "Live captions · error" else if (paused) "Live captions · paused" else "Live captions")
-            .setContentText(failure ?: if (paused) "Audio is not sent to the speech engine" else "${source.label} · ${engine.currentConfig.mode.label}")
+            .setContentText(failure ?: if (tapThrough) "Tap-through is on · tap the lock handle to restore controls" else if (paused) "Audio is not sent to the speech engine" else "${source.label} · ${engine.currentConfig.mode.label}")
             .setStyle(NotificationCompat.BigTextStyle().bigText(failure ?: "${source.label}. Tap this notification to recover the bubble and disable tap-through."))
             .setContentIntent(command(2, ACTION_CENTER)).setOngoing(true).setOnlyAlertOnce(true)
             .apply { if (failure == null) addAction(0, if (paused) "Resume" else "Pause", command(1, ACTION_PAUSE)) }
-            .addAction(0, if (overlayVisible) "Hide bubble" else "Show bubble", command(4, ACTION_VISIBILITY))
+            .apply {
+                if (tapThrough) addAction(0, "Restore controls", command(2, ACTION_CENTER))
+                else addAction(0, if (overlayVisible) "Hide bubble" else "Show bubble", command(4, ACTION_VISIBILITY))
+            }
             .addAction(0, "Stop", command(3, ACTION_STOP))
             .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE).build()
     }

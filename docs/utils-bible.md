@@ -23,3 +23,9 @@ independence and model coverage. CaptionLanguages consumes existing speech and
 translation capabilities in the picker and CaptionEngineController; host tests cover
 supported native hints, Auto-only/fixed adapters, cloud mode differences, target
 persistence/migration and temporary overlay sizing. See language-pickers.md to extend.
+
+placeTapThroughHandle is consumed by CaptionOverlayController's independent recovery
+window. Host checks cover placement outside caption text and reachability at screen
+edges, full-screen and tiny/rotated viewports. The same controller owns both windows
+and removes the handle on restore/hide/stop; the existing service provides notification
+recovery. See validation-v9.md for the verified tap/drag/notification/restart sequence.

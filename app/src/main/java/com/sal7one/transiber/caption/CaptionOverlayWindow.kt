@@ -166,6 +166,7 @@ fun CaptionOverlayWindow(
     val content = held ?: CaptionReading.snapshot(state, cfg.showPartial)
     val bodyScroll = if (held == null) scrollState else rememberScrollState(initial = Int.MAX_VALUE)
 
+    LaunchedEffect(cfg.tapThrough) { if (cfg.tapThrough) held = null }
     val height = availableHeightDp.coerceAtLeast(1f)
     Column(
         modifier = Modifier.fillMaxWidth().height(height.dp)
@@ -173,7 +174,9 @@ fun CaptionOverlayWindow(
             .background(palette.surface.copy(alpha = if (cfg.showSettings) 0.97f else effectiveSurfaceAlpha(palette.surface.alpha, cfg.backgroundOpacity)))
             .border(0.5.dp, palette.onSurfaceFaded, RoundedCornerShape(16.dp)),
     ) {
-        ControlStrip(cfg, state, palette, true, onDrag, onDragFinished, onClose, onConfigChange)
+        if (cfg.tapThrough) Text("Tap lock to restore controls · drag lock to move",
+            Modifier.padding(horizontal = 12.dp, vertical = 8.dp), color = palette.onSurface, fontSize = 12.sp)
+        else ControlStrip(cfg, state, palette, true, onDrag, onDragFinished, onClose, onConfigChange)
         Box(Modifier.weight(1f).fillMaxWidth()) {
             if (cfg.showSettings && cfg.languagePicker != null) {
                 val which = cfg.languagePicker
@@ -209,7 +212,7 @@ fun CaptionOverlayWindow(
                 )
             } else {
                 Column {
-                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    if (!cfg.tapThrough) Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                         TextButton(onClick = {
                             held = if (held == null) CaptionReading.snapshot(state, cfg.showPartial) else null
                         }) {
@@ -541,7 +544,7 @@ private fun SettingsPanel(
         ) { checked -> onConfigChange { it.copy(showPartial = checked) } }
 
         ToggleRow(
-            label = "Tap-through (overlay ignores touches)",
+            label = "Tap-through (keep unlock handle)",
             checked = cfg.tapThrough,
             palette = palette,
         ) { checked -> onConfigChange { it.copy(tapThrough = checked) } }

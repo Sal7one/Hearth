@@ -33,6 +33,7 @@ class CaptionOverlayController(
     private val heightDp = MutableStateFlow(200f)
     private var view: ComposeView? = null
     private var host: OverlayHost? = null
+    private var recoveryHandle: ComposeView? = null
     private var hidden = false
     private var destroyed = false
     private var sessionSource: CaptionSource? = null
@@ -65,6 +66,7 @@ class CaptionOverlayController(
             view = created
             try {
                 wm.addView(created, layoutParams())
+                applyWindowChanges()
                 created.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ -> applyWindowChanges() }
 
             } catch (e: Exception) {
@@ -76,6 +78,7 @@ class CaptionOverlayController(
 
     fun hide() {
         scope.launch {
+            removeRecoveryHandle()
             view?.let { runCatching { wm.removeViewImmediate(it) }; it.disposeComposition() }
             view = null
             host?.stop()
@@ -93,7 +96,8 @@ class CaptionOverlayController(
 
     fun updateConfig(transform: (CaptionOverlayConfig) -> CaptionOverlayConfig) {
         scope.launch {
-            _config.value = transform(_config.value).withUiClamp()
+            val next = transform(_config.value).withUiClamp()
+            _config.value = if (next.tapThrough) next.copy(showSettings = false, languagePicker = null) else next
             applyWindowChanges()
             engineController.updateRuntimeConfig(_config.value)
             CaptionConfigStore.update(context) { _config.value }
@@ -120,6 +124,7 @@ class CaptionOverlayController(
     fun toggleVisibility() {
         hidden = !hidden
         view?.visibility = if (hidden) android.view.View.INVISIBLE else android.view.View.VISIBLE
+        applyWindowChanges()
     }
 
     fun refreshBounds() { scope.launch { applyWindowChanges(normalize = true) } }
@@ -173,13 +178,65 @@ class CaptionOverlayController(
         val v = view ?: return
         try {
             val next = layoutParams(normalize)
+            // Create the escape hatch before making the caption window untouchable.
+            syncRecoveryHandle(next)
             val old = v.layoutParams as? WindowManager.LayoutParams
             if (old == null || old.x != next.x || old.y != next.y || old.width != next.width || old.flags != next.flags || old.alpha != next.alpha) {
                 wm.updateViewLayout(v, next)
             }
         } catch (e: Exception) {
+            // A failed second-window creation must never strand the user in tap-through.
+            _config.value = _config.value.copy(tapThrough = false)
+            removeRecoveryHandle()
+            runCatching { wm.updateViewLayout(v, layoutParams()) }
+            persistCurrent()
             engineController.reportError("Overlay layout: "+(e.message ?: e.javaClass.simpleName))
         }
+    }
+
+    private fun removeRecoveryHandle() {
+        recoveryHandle?.let { handle ->
+            runCatching { wm.removeViewImmediate(handle) }
+            handle.disposeComposition()
+        }
+        recoveryHandle = null
+    }
+
+    private fun syncRecoveryHandle(main: WindowManager.LayoutParams) {
+        if (!_config.value.tapThrough || hidden) { removeRecoveryHandle(); return }
+        val density = context.resources.displayMetrics.density
+        val placement = placeTapThroughHandle(viewport(),
+            OverlayPlacement(main.x, main.y, main.width, (heightDp.value * density).toInt()),
+            (56 * density).toInt(), (4 * density).toInt())
+        val params = WindowManager.LayoutParams(placement.width, placement.height,
+            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
+                WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN, PixelFormat.TRANSLUCENT).apply {
+            gravity = Gravity.TOP or Gravity.LEFT
+            x = placement.x; y = placement.y
+            title = "Caption controls · tap to unlock"
+            if (Build.VERSION.SDK_INT >= 30) setFitInsetsTypes(0)
+        }
+        val existing = recoveryHandle
+        if (existing != null) {
+            val old = existing.layoutParams as WindowManager.LayoutParams
+            if (old.x != params.x || old.y != params.y || old.width != params.width || old.height != params.height) wm.updateViewLayout(existing, params)
+            return
+        }
+        val owner = checkNotNull(host) { "Caption overlay lifecycle unavailable" }
+        val handle = ComposeView(context).apply {
+            setViewTreeLifecycleOwner(owner)
+            setViewTreeSavedStateRegistryOwner(owner)
+            setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
+            setContent {
+                TapThroughRecoveryHandle(
+                    onRestore = { updateConfig { it.copy(tapThrough = false) } },
+                    onDrag = ::move, onDragFinished = ::persistCurrent,
+                )
+            }
+        }
+        try { wm.addView(handle, params); recoveryHandle = handle }
+        catch (e: Exception) { handle.disposeComposition(); throw e }
     }
 
     private class OverlayHost : LifecycleOwner, SavedStateRegistryOwner {
