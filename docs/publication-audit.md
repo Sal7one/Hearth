@@ -27,7 +27,7 @@ This audit does not publish the repository or certify every provider/model/devic
 
 ## Verification record
 
-- Gitleaks 8.30.1: zero findings in all 26 commits and in the final source-only
+- Release-audit snapshot: Gitleaks 8.30.1 found zero findings in its 26 commits and final source-only
   archive. The initial 25-commit history and staged snapshot also scanned clean.
   No tracked signing keys, local SDK configuration, model weights or APKs; no
   tracked ignored files. Largest historical blob: 20,558,608 bytes (native runtime),
@@ -67,7 +67,12 @@ These are test APKs; release variants remain unsigned.
 
 ## Remaining release decisions and limits
 
-- No Git remote is configured and nothing has been pushed or published.
+- `origin` is `https://github.com/Sal7one/Hearth.git`. The branding branch records
+  the initial private source push on 2026-09-13. The 0.11.0 integration is local;
+  this task did not push, publish a release or change repository visibility.
+- The branding audit records an interrupted first hosted Actions run after both QA
+  builds. Current local QA/release verification is recorded below; it does not claim
+  completion of hosted CI for this unpushed revision.
 - QA APKs are debug-signed. Both production flavors build unsigned and require a
   maintainer-controlled signing key; see [release instructions](releasing.md).
 - Google/Azure/DeepL/LibreTranslate successful paid-account requests are not claimed
@@ -85,3 +90,21 @@ strict advertised capabilities, bounded/cancellable HTTP and PCM parsing, pinned
 Supertonic imports, model/code licenses and CI tests for the server protocol/native
 bounds. Research/model files are ignored. Both flavors and unsigned releases pass
 artifact verification; see [v22 validation and its limits](validation-v22.md).
+
+
+## 0.11.0 publication follow-up
+
+The generated mascot and captioned demo from `origin/main` are reconciled with the
+newer camera/TTS work and five-tab navigation. Existing privacy/flavor/key safeguards
+are retained; the merge changes no runtime implementation. The demo explicitly
+identifies its older 0.8.2 UI and typed input; current navigation is in the README.
+
+- Both QA and unsigned release flavors pass artifact verification; tests and phone
+  layout checks are in [v24 validation](validation-v24.md).
+- All-history and source-only Gitleaks scans: no findings. No tracked ignored files,
+  weights, APKs, signing stores, local SDK paths or Python caches. Research checkouts
+  and private model/build files remain ignored; source archives use `git archive`.
+- Documentation links and whitespace checked. Launcher artwork pixels in every QA
+  and release APK match the generated source (Android optimizes PNG encoding).
+- Production signing, broader accessibility/handset testing and public publication
+  remain maintainer steps. Nothing in this follow-up changes repository visibility.

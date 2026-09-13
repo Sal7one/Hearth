@@ -1,0 +1,19 @@
+1
+00:00:00,000 --> 00:00:02,000
+Hearth: a conversation, in both languages.
+Typed English to Arabic. On-device translation.
+
+2
+00:00:02,000 --> 00:00:11,700
+“Could you show me the way to the station?”
+هل يمكن أن تريني الطريق إلى المحطة؟
+
+3
+00:00:11,700 --> 00:00:18,700
+One phone. Two perspectives.
+The other person's half faces them.
+
+4
+00:00:18,700 --> 00:00:23,700
+Hearth. Speech, in sight.
+Android preview. Deaf and hard-of-hearing feedback welcome.
