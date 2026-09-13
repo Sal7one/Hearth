@@ -4,7 +4,13 @@ Updated 2026-09-13: owner approved an on-device benchmark and traveler release w
 
 Ship visible improvements to the working app and preserve cloud BYOK. The owner now explicitly requests a local benchmark; this supersedes the earlier no-benchmark constraint. Keep it inside the app, reuse production adapters, and separate initialization from inference. Avoid speculative native rewrites.
 
-## Current release wave — 0.8.0
+## Navigation follow-up — 0.8.1
+
+- [x] Put Conversation and Face to face at the top of Home, above caption setup.
+- [x] Add a direct Face to face button to the conversation screen.
+- [x] Home buttons explicitly open the requested layout; preserve in-screen switching and shared session.
+
+## Release wave — 0.8.0
 
 - [x] Add a direct swap arrow between conversation language selectors.
 - [x] Add Face to face from Options, preserving the original conversation view and shared session.

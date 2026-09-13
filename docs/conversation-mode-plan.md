@@ -5,7 +5,9 @@ Requested by the owner on 2026-09-12.
 
 ## Face to face (0.8.0)
 
-Options → Open face-to-face view switches presentation without recreating the
+Home → Face to face opens the split view directly (0.8.1). The conversation screen
+also has a visible Face to face button. Options → Open face-to-face view still
+switches presentation without recreating the
 controller or clearing the current session. My language is at the bottom; their
 half is rotated 180 degrees. Each half has one language selector, a large text area
 and Speak/Finish button. Tap the colored reading area for this conversation's

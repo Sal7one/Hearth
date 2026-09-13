@@ -26,6 +26,7 @@ fun CaptionHome(
     onCloud: () -> Unit,
     onConversation: (() -> Unit)? = null,
     onBenchmark: (() -> Unit)? = null,
+    onFaceToFace: (() -> Unit)? = null,
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -92,6 +93,12 @@ fun CaptionHome(
     Column(Modifier.fillMaxSize()) {
         Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            if (onConversation != null || onFaceToFace != null) {
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    onConversation?.let { open -> OutlinedButton(onClick = open, modifier = Modifier.heightIn(min = 48.dp)) { Text("Conversation") } }
+                    onFaceToFace?.let { open -> FilledTonalButton(onClick = open, modifier = Modifier.heightIn(min = 48.dp)) { Text("Face to face") } }
+                }
+            }
             Text("Live captions", style = MaterialTheme.typography.headlineSmall, modifier = Modifier.semantics { heading() })
             Text(if (running) "Captions are running. Open the bubble for live controls, or stop to change setup."
                 else "Read speech from videos or the people around you.",
@@ -118,10 +125,9 @@ fun CaptionHome(
             if (cfg.source == CaptionSource.PLAYBACK_CAPTURE) Text("Some apps block audio capture. Use Microphone if captions stay silent.", style = MaterialTheme.typography.bodySmall)
             error?.let { Text(it, color = MaterialTheme.colorScheme.error,
                 modifier = Modifier.semantics { liveRegion = LiveRegionMode.Assertive }) }
-            if (onConversation != null || onBenchmark != null) {
+            if (onBenchmark != null) {
                 HorizontalDivider()
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    onConversation?.let { open -> OutlinedButton(onClick = open) { Text("Two-way conversation") } }
                     onBenchmark?.let { open -> OutlinedButton(onClick = open) { Text("Compare local models") } }
                 }
             }

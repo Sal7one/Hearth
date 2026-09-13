@@ -44,7 +44,7 @@ import kotlinx.coroutines.flow.collect
 
 @OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 @Composable
-fun ConversationScreen(onModels: () -> Unit = {}, onCloud: () -> Unit = {}, onLayoutChanged: (Boolean) -> Unit = {}) {
+fun ConversationScreen(onModels: () -> Unit = {}, onCloud: () -> Unit = {}, onLayoutChanged: (Boolean) -> Unit = {}, initialFaceToFace: Boolean = false) {
     val context = LocalContext.current
     val owner = LocalLifecycleOwner.current
     val controller = remember { ConversationController(context.applicationContext) }
@@ -64,7 +64,7 @@ fun ConversationScreen(onModels: () -> Unit = {}, onCloud: () -> Unit = {}, onLa
     val optionsScroll = rememberScrollState()
     val translationScroll = rememberScrollState()
     var history by rememberSaveable { mutableStateOf(false) }
-    var faceToFace by rememberSaveable { mutableStateOf(false) }
+    var faceToFace by rememberSaveable { mutableStateOf(initialFaceToFace) }
     var faceHistory by rememberSaveable { mutableStateOf<Int?>(null) }
     var translationSettings by rememberSaveable { mutableStateOf(false) }
     var typing by rememberSaveable { mutableStateOf(false) }
@@ -150,6 +150,7 @@ fun ConversationScreen(onModels: () -> Unit = {}, onCloud: () -> Unit = {}, onLa
             onCancel = controller::cancel, onSwap = { controller.languages(state.session.second, state.session.first) })
     } else Column(Modifier.fillMaxSize().imePadding().padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            FilledTonalButton(onClick = { faceToFace = true }, enabled = !state.busy, modifier = Modifier.heightIn(min = 48.dp)) { Text("Face to face") }
             TextButton(onClick = { history = true }, enabled = !state.busy) { Text("History") }
             TextButton(onClick = { options = true }, enabled = !state.busy) { Text("Options") }
             TextButton(onClick = { controller.newSession() }, enabled = !state.busy) { Text("New conversation") }

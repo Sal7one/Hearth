@@ -57,7 +57,7 @@ class MainActivity : ComponentActivity() {
       nativeFailure?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(16.dp)) }
       Box(Modifier.weight(1f)) {
        when(page) {
-        0 -> CaptionHome(onModels = { page = 1 }, onCloud = { page = 4 }, onConversation = { page = 7 }, onBenchmark = { page = 8 })
+        0 -> CaptionHome(onModels = { page = 1 }, onCloud = { page = 4 }, onConversation = { faceLayout = false; page = 7 }, onBenchmark = { page = 8 }, onFaceToFace = { faceLayout = true; page = 7 })
         1 -> ModelsScreen(onCloud = { page = 4 }, onDownloads = { page = 2 })
         2 -> DownloadsScreen(onBrowseModels = { page = 1 })
         3 -> Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -79,7 +79,7 @@ class MainActivity : ComponentActivity() {
           else Text("Cloud connections are unavailable in the offline build.")
         }
         5 -> CaptionScreen(onBrowseModels = { page = 1 })
-        7 -> ConversationScreen(onModels = { page = 1 }, onCloud = { page = 4 }, onLayoutChanged = { faceLayout = it })
+        7 -> ConversationScreen(onModels = { page = 1 }, onCloud = { page = 4 }, onLayoutChanged = { faceLayout = it }, initialFaceToFace = faceLayout)
         8 -> LocalBenchmarkScreen(onModels = { page = 1 })
         9 -> Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp)) {
           ConversationTranslationSetup(onModels = { page = 1 })
