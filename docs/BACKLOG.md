@@ -307,3 +307,14 @@ manifest/hash/path checks are retained; a user-created ZIP is no longer needed.
 - [x] Remove export/re-import instructions and computer packaging steps from supported model cards.
 - [x] Identify Moonshine's exact February 2026 runtime package; do not confuse the release-collection page's date with its asset date or advertise the latest streaming architecture.
 - [ ] Additional one-button catalogs for legacy Whisper/Vosk and custom Qwen 1.7B exports remain separate; their existing imports still work.
+
+
+## RT-38 — Five primary screens and launcher artwork (0.11.0)
+
+- [x] Replace Home shortcuts with Captions, Talk, Translate, Camera and Settings tabs.
+- [x] Keep Conversation and Face to face within Talk, sharing languages/history/voices.
+- [x] Preserve per-tab navigation, saved drafts and scrolling; keep existing overlay deep links.
+- [x] Keep inactive camera/voice/translation screens disposed; explicit captions service controls remain unchanged.
+- [x] Integrate the generated A/ع launcher artwork from the branding branch for both flavors.
+- [x] Add direct cloud speech and text translation entries to Settings and update setup documentation.
+- [x] Phone layout, release/flavor checks and publication cleanup; see [validation](validation-v24.md).

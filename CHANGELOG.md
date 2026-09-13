@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.11.0 — 2026-09-13
+
+- Replace the crowded Home launcher with five bottom tabs: Captions, Talk, Translate, Camera and Settings.
+- Keep Conversation and Face to face together, with independent tab return paths and saved drafts/scroll positions.
+- Integrate the generated Arabic/English mascot as the adaptive and round launcher icon in both flavors.
+- Put cloud speech and text translation connections directly in Settings; update public setup instructions.
+
 ## 0.10.1 — 2026-09-13
 
 - Show TTS model cards with runtime, language/voice coverage, license and publisher/setup links.

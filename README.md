@@ -1,8 +1,24 @@
 # Hearth
 
+<img src="app/src/main/res/drawable-nodpi/hearth_mascot.png" alt="Hearth: English and Arabic speech bubbles" width="96" />
+
 An Android app for live captions over other apps, local speech recognition, and
 bring-your-own-key cloud transcription and translation, plus on-device camera OCR, typed translation and shared read-aloud. Extracted from Hearth's
 caption system into a separate, focused project.
+
+## Five screens, always within reach
+
+| Tab | What you can do |
+| --- | --- |
+| **Captions** | Start and manage live captions over other apps. |
+| **Talk** | Have a conversation or switch to the split **Face to face** view. |
+| **Translate** | Type text, read its translation and play either language. |
+| **Camera** | Translate live camera text or import a photo for OCR. |
+| **Settings** | Choose models, downloads, connections, voices and appearance. |
+
+Each tab remembers its place. Back returns from model/voice setup to the screen
+that opened it; tapping the selected tab again returns to its main screen.
+The launcher uses the [Arabic/English speech-bubble mascot](docs/brand/README.md).
 
 ## Development backlog
 
@@ -28,9 +44,9 @@ See the [model contribution guide](docs/model-contributing.md) and [release chec
 - A local-only `foss` variant with **no network permission**, and a network-enabled
   `play` variant. ML Kit is an optional Google SDK in the play flavor; foss excludes it.
 
-- Two-way **Conversation** with a quick language swap, microphone or typed turns, originals and translations, local history and optional offline TTS. **Face to face**, directly at the top of Home and on the conversation screen, gives each person a half-screen and large Speak button, with the upper half rotated. Translation can use an installed model or Google Cloud, Microsoft Azure, DeepL or LibreTranslate. See [conversation scope](docs/conversation-mode-plan.md) and [translation connections](docs/conversation-cloud-translation.md).
+- Two-way **Conversation** with a quick language swap, microphone or typed turns, originals and translations, local history and optional offline TTS. **Face to face**, in the **Talk** tab alongside Conversation, gives each person a half-screen and large Speak button, with the upper half rotated. Translation can use an installed model or Google Cloud, Microsoft Azure, DeepL or LibreTranslate. See [conversation scope](docs/conversation-mode-plan.md) and [translation connections](docs/conversation-cloud-translation.md).
 - **Local benchmark** compares installed models on the same WAV or corrected text, separates loading from inference and saves/export reports on-device. See [method and limitations](docs/local-benchmark.md), [speech phone results](docs/validation-v17.md), and the [eight-option local translation comparison](docs/local-translation-benchmark-2026-09-13.md).
-- Persistent System, Light and Dark appearance in Setup.
+- Persistent System, Light and Dark appearance in Settings.
 
 - **Camera translate**: live camera and photo text recognition with PaddleOCR v5 mobile, selectable local/cloud text translation, and automatic model installation. See [camera setup, sources and limits](docs/camera-ocr.md).
 
@@ -69,18 +85,18 @@ See [changes](CHANGELOG.md), [security reporting](SECURITY.md), and the
 
 ## Start captions
 
-1. On the home screen, choose Device audio or Microphone, original captions or
+1. In **Captions**, choose Device audio or Microphone, original captions or
    translation, and your language. Your last setup is remembered.
 2. Tap **Start captions**. Android asks for any required permissions or device-audio
    consent; the app does not ask you to choose the audio source again.
 3. While running, **Show captions** recovers the bubble and **Stop** ends capture.
    Bubble settings separate Appearance from CC & translation.
 
-**Setup** contains Models, Downloads and Cloud connection. Models groups Speech,
+**Settings** contains Models, Downloads, Cloud speech, Cloud translation and Voices & read aloud. Models groups Speech,
 Translation, Camera, Voices and Cloud, with source links, installed models and matching import actions.
 Speech and translation family chips open the matching setup directly; the active
 model is labeled separately. Translation sizes are grouped by family. See [all sources and installation paths](docs/model-sources.md). Connect
-or change your existing cloud provider/key under Cloud connection. Advanced setup
+or change your existing cloud provider/key under Settings → Cloud speech. Advanced setup
 retains the detailed engine controls and live cloud presets.
 
 Local Qwen and Nemotron recognize speech. The optional local text-model bridge

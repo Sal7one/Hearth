@@ -10,6 +10,17 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.ClosedCaption
+import androidx.compose.material.icons.filled.Forum
+import androidx.compose.material.icons.filled.Translate
+import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.runtime.saveable.listSaver
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import com.sal7one.transiber.ui.AppNavigation
+import com.sal7one.transiber.ui.MainTab
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -47,35 +58,65 @@ class MainActivity : ComponentActivity() {
       isAppearanceLightNavigationBars = lightBars
      }
     }
-    // Keep the existing bubble's page=1/2 links working after removing tabs.
-    var page by rememberSaveable { mutableIntStateOf(intent.getIntExtra("page", 0).coerceIn(0, 12)) }
-    var backStack by rememberSaveable {mutableStateOf(listOf<Int>())}
-    val screenState=androidx.compose.runtime.saveable.rememberSaveableStateHolder()
-    fun go(next: Int){if(next!=page){backStack=if(next==0)emptyList() else (backStack+page).takeLast(12);page=next}}
+    var route by rememberSaveable(stateSaver = listSaver(
+     save = { state: AppNavigation -> state.save() }, restore = { AppNavigation.restore(it) }
+    )) { mutableStateOf(AppNavigation.initial(intent.getIntExtra("page", 0))) }
+    val page = route.page
+    val focus = LocalFocusManager.current
+    val screenState = androidx.compose.runtime.saveable.rememberSaveableStateHolder()
+    fun go(next: Int) { focus.clearFocus(); route = route.open(next) }
     val requestedPage by navigation.collectAsState()
-    LaunchedEffect(requestedPage){requestedPage?.let {backStack=emptyList();page=it;navigation.value=null}}
+    LaunchedEffect(requestedPage) {
+     requestedPage?.let { focus.clearFocus(); route = AppNavigation.initial(it); navigation.value = null }
+    }
     var faceLayout by rememberSaveable { mutableStateOf(false) }
-    fun back() {if(backStack.isNotEmpty()){page=backStack.last();backStack=backStack.dropLast(1)}else page=if(page in setOf(3,7,8,10,11))0 else 3}
-    BackHandler(enabled = page != 0) { back() }
+    fun back() { focus.clearFocus(); route = route.back() }
+    BackHandler(enabled = route.canGoBack) { back() }
     Scaffold(topBar = {
-     TopAppBar(title = { Text(when(page) { 0 -> "Hearth"; 1 -> "Models"; 2 -> "Downloads"; 3 -> "Setup"; 4 -> "Cloud connection"; 5 -> "Advanced setup"; 7 -> if (faceLayout) "Face to face" else "Conversation"; 8 -> "Local benchmark"; 9 -> "Translation connections"; 10 -> "Camera translate"; 11 -> "Type to translate"; 12 -> "Voices & read aloud"; else -> "Help" }, style = MaterialTheme.typography.titleMedium) },
-      navigationIcon = { if (page != 0) IconButton(onClick = { back() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } },
-      actions = { if (page == 0) TextButton(onClick = { go(3) }) { Text("Setup") }
-        else TextButton(onClick = { go(0) }) { Text("Done") } })
+     TopAppBar(title = { Text(when(page) {
+      0 -> "Live captions"; 1 -> "Models"; 2 -> "Downloads"; 3 -> "Settings"
+      4 -> "Cloud speech"; 5 -> "Advanced captions"
+      7 -> if (faceLayout) "Face to face" else "Conversation"
+      8 -> "Local benchmark"; 9 -> "Translation connections"; 10 -> "Camera & OCR"
+      11 -> "Type to translate"; 12 -> "Voices & read aloud"; else -> "Help"
+     }, style = MaterialTheme.typography.titleMedium) },
+      navigationIcon = { if (!route.isRoot) IconButton(onClick = { back() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } },
+      actions = { if (!route.isRoot) TextButton(onClick = { focus.clearFocus(); route = route.toRoot() }) { Text("Done") } })
+    }, bottomBar = {
+     NavigationBar {
+      MainTab.entries.forEach { tab ->
+       NavigationBarItem(
+        selected = route.tab == tab,
+        onClick = { focus.clearFocus(); route = route.select(tab) },
+        icon = { Icon(when(tab) {
+         MainTab.CAPTIONS -> Icons.Default.ClosedCaption
+         MainTab.TALK -> Icons.Default.Forum
+         MainTab.TRANSLATE -> Icons.Default.Translate
+         MainTab.CAMERA -> Icons.Default.CameraAlt
+         MainTab.SETTINGS -> Icons.Default.Settings
+        }, contentDescription = null) },
+        label = { Text(tab.label, style = MaterialTheme.typography.labelSmall) },
+        modifier = Modifier.semantics { contentDescription = tab.title },
+       )
+      }
+     }
     }) { padding ->
      Column(Modifier.fillMaxSize().padding(padding)) {
       nativeFailure?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(16.dp)) }
       Box(Modifier.weight(1f)) {
        screenState.SaveableStateProvider(page) {
        when(page) {
-        0 -> CaptionHome(onModels = { go(1) }, onCloud = { go(4) }, onConversation = { faceLayout = false; go(7) }, onBenchmark = { go(8) }, onFaceToFace = { faceLayout = true; go(7) }, onCamera = { go(10) }, onTextTranslate = {go(11)})
+        0 -> CaptionHome(onModels = { go(1) }, onCloud = { go(4) })
         1 -> ModelsScreen(onCloud = { go(4) }, onDownloads = { go(2) },onVoices={go(12)})
         2 -> DownloadsScreen(onBrowseModels = { go(1) })
         3 -> Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-          Text("Set up once. Start from the home screen.", style = MaterialTheme.typography.bodyMedium)
+          Text("Models, connections and your preferences.", style = MaterialTheme.typography.bodyMedium)
           SetupLink("Models", "Choose speech, translation and camera models") { go(1) }
           SetupLink("Downloads", "Install downloaded models or download a file") { go(2) }
-          if (ByokPolicy.FEATURE_BYOK) SetupLink("Cloud connection", "Your provider, saved key and cloud options") { go(4) }
+          if (ByokPolicy.FEATURE_BYOK) {
+            SetupLink("Cloud speech", "Speech provider, saved key and streaming options") { go(4) }
+            SetupLink("Cloud translation", "Google, Microsoft, DeepL or LibreTranslate") { go(9) }
+          }
           SetupLink("Voices & read aloud", "Android, Supertonic and self-hosted speech") {go(12)}
           AppearanceSettings()
           SetupLink("Local benchmark", "Compare installed models using the same audio and text") { go(8) }

@@ -4,7 +4,7 @@ See [all model sources and download links](model-sources.md). The app groups the
 under Models → Speech, Translation and Cloud.
 
 The app includes native runtimes, not model weights. For catalogued Qwen,
-Nemotron and Moonshine models, open **Setup → Models → Speech**, choose the family,
+Nemotron and Moonshine models, open **Settings → Models → Speech**, choose the family,
 and tap **Download & install**. The app downloads, verifies and prepares the files
 on the phone. Translation models are grouped under **Models → Translation**.
 The foss build imports files but does not download them.

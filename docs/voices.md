@@ -1,6 +1,6 @@
 # Shared voices and typed translation — Hearth 0.10.1
 
-Home → **Type to translate** gives an input field above its translation, explicit
+The **Translate** tab gives an input field above its translation, explicit
 source/target languages, swap, copy, clear, Play original and Play translation.
 It uses the translation connection selected for Conversation: an installed local
 model, ML Kit packs in play, or Google Cloud/Azure/DeepL/LibreTranslate. Automatic
@@ -9,7 +9,7 @@ rejects stale results, and reuses its translator until settings change or the pa
 leaves the foreground. No typed history is written to the conversation database.
 The draft survives visiting a settings page within the current activity.
 
-**Setup → Voices & read aloud** is shared by Type to translate, Conversation,
+**Settings → Voices & read aloud** is shared by Type to translate, Conversation,
 Face to face and Camera. Manual playback offers separate **Android** and **Custom** buttons for originals
 and translations. Android always uses the installed offline phone voice; Custom
 uses the last selected Supertonic or self-hosted default, even after visiting the

@@ -120,3 +120,7 @@ and caption Custom default. Host tests cover independent Android/custom/default
 routing, existing selection migration, model changes and rejection of unconfigured
 or offline-inaccessible custom engines. `ReadAloudButtons` reuses this selection
 across typed text, camera, conversation/history/presentation and voice preview.
+
+Version 0.11.0: `AppNavigation` is consumed by MainActivity's five bottom tabs.
+Host tests cover independent nested paths, reselect/back, all existing deep links,
+loop-free model/download navigation and saved-state restoration/validation.

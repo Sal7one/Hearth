@@ -24,11 +24,6 @@ import java.io.File
 fun CaptionHome(
     onModels: () -> Unit,
     onCloud: () -> Unit,
-    onConversation: (() -> Unit)? = null,
-    onBenchmark: (() -> Unit)? = null,
-    onFaceToFace: (() -> Unit)? = null,
-    onCamera: (() -> Unit)? = null,
-    onTextTranslate: (() -> Unit)? = null,
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -95,15 +90,6 @@ fun CaptionHome(
     Column(Modifier.fillMaxSize()) {
         Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            onTextTranslate?.let {open -> FilledTonalButton(onClick=open,modifier=Modifier.fillMaxWidth().heightIn(min=48.dp)){Text("Type to translate")}}
-            onCamera?.let { open -> FilledTonalButton(onClick = open, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) { Text("Camera translate") } }
-            if (onConversation != null || onFaceToFace != null) {
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    onConversation?.let { open -> OutlinedButton(onClick = open, modifier = Modifier.heightIn(min = 48.dp)) { Text("Conversation") } }
-                    onFaceToFace?.let { open -> FilledTonalButton(onClick = open, modifier = Modifier.heightIn(min = 48.dp)) { Text("Face to face") } }
-                }
-            }
-            Text("Live captions", style = MaterialTheme.typography.headlineSmall, modifier = Modifier.semantics { heading() })
             Text(if (running) "Captions are running. Open the bubble for live controls, or stop to change setup."
                 else "Read speech from videos or the people around you.",
                 style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -129,12 +115,7 @@ fun CaptionHome(
             if (cfg.source == CaptionSource.PLAYBACK_CAPTURE) Text("Some apps block audio capture. Use Microphone if captions stay silent.", style = MaterialTheme.typography.bodySmall)
             error?.let { Text(it, color = MaterialTheme.colorScheme.error,
                 modifier = Modifier.semantics { liveRegion = LiveRegionMode.Assertive }) }
-            if (onBenchmark != null) {
-                HorizontalDivider()
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    onBenchmark?.let { open -> OutlinedButton(onClick = open) { Text("Compare local models") } }
-                }
-            }
+
         }
         Surface(shadowElevation = 8.dp) {
             Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {

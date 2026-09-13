@@ -1,13 +1,13 @@
 # Camera and photo translation
 
-Hearth 0.9.0 adds **Camera translate** at the top of Home. OCR runs on the phone
+The **Camera** tab contains live camera and photo translation (introduced in 0.9.0). OCR runs on the phone
 using PaddleOCR v5 mobile ONNX exports. Text translation reuses the installed local
 translator or an explicitly selected Google Cloud, Azure, DeepL or LibreTranslate
 connection. Images are never sent to those providers.
 
 ## Use
 
-1. Open Camera translate → Get OCR models. Choose a language group and tap
+1. Open Camera → Get OCR models. Choose a language group and tap
    **Download & install**. The shared detector and matching reader install together;
    progress, cancellation and retries are in Downloads. Originals remain in
    `Downloads/Hearth/models` or your selected folder. No computer or package manifest

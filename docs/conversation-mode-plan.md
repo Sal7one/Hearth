@@ -5,7 +5,7 @@ Requested by the owner on 2026-09-12.
 
 ## Face to face (0.8.0)
 
-Home → Face to face opens the split view directly (0.8.1). The conversation screen
+The **Talk** tab groups Conversation and Face to face (0.11.0). Tap **Face to face** to open the split view. The conversation screen
 also has a visible Face to face button. Options → Open face-to-face view still
 switches presentation without recreating the
 controller or clearing the current session. My language is at the bottom; their
@@ -21,7 +21,7 @@ Keep screen awake is configurable. Dark/light/system styling follows the app the
 
 ## Implemented first release
 
-`conversation/ConversationScreen.kt` is a separate Home destination. Two explicit
+`conversation/ConversationScreen.kt` is the Talk destination. Two explicit
 speaker buttons use the existing model capability resolver; language selections
 are kept separately from overlay preferences. The foreground screen owns mono
 16 kHz microphone capture. It requests only `RECORD_AUDIO`, stops when the app
