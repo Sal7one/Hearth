@@ -2,9 +2,35 @@
 
 <img src="app/src/main/res/drawable-nodpi/hearth_mascot.png" alt="Hearth: English and Arabic speech bubbles" width="96" />
 
-An Android app for live captions over other apps, local speech recognition, and
-bring-your-own-key cloud transcription and translation, plus on-device camera OCR, typed translation and shared read-aloud. Extracted from Hearth's
-caption system into a separate, focused project.
+**Offline-first live captions, translation and conversations on Android.**
+
+Hearth helps you read speech, talk across languages, translate text around you and
+hear translations aloud. Use compatible models on your phone or connect your own
+cloud providers—all through five main screens.
+
+> [!IMPORTANT]
+> **Experimental proof of concept (PoC) — currently a test project.**
+> Hearth is under active development and is not a production-ready release.
+> Expect bugs, rough edges and incomplete integrations. Language coverage, accuracy,
+> speed and memory use depend on the model, provider and phone. Testing, feedback
+> and contributions are welcome; the screenshots show working examples, not a
+> guarantee that every model or language pair will work equally well.
+
+## What you can try
+
+- **Read live captions over other apps.** A movable caption bubble transcribes
+  device audio or the microphone, with optional translation and retained text.
+- **Have a two-way conversation.** Speak or type in either language, keep originals
+  and translations, or use Face to face with a rotated half-screen for each person.
+- **Translate what you type or see.** Live typed translation, camera OCR and photo
+  import share local or cloud translation options.
+- **Listen with your preferred voice.** Play original or translated text using
+  Android voices, local Supertonic or supported self-hosted TTS connections.
+- **Choose local models or bring your own cloud keys.** Mix speech and translation
+  engines, select supported languages, or use the offline flavor with no network permission.
+- **Download, import and extend.** Install catalogued models on the phone, choose a
+  public download folder, compare installed models and add adapters through Kotlin/JNI.
+  See the [model contribution guide](docs/model-contributing.md).
 
 ## Screenshots
 
