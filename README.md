@@ -6,6 +6,34 @@ An Android app for live captions over other apps, local speech recognition, and
 bring-your-own-key cloud transcription and translation, plus on-device camera OCR, typed translation and shared read-aloud. Extracted from Hearth's
 caption system into a separate, focused project.
 
+## Screenshots
+
+Hearth 0.11.0 on Android 16, using demo text. Tap an image to view it at full size.
+[How these screenshots were captured](docs/screenshots/README.md).
+
+<table>
+  <tr>
+    <th>Live caption setup</th>
+    <th>Face to face</th>
+    <th>Type to translate</th>
+  </tr>
+  <tr>
+    <td><a href="docs/screenshots/live-captions.png"><img src="docs/screenshots/live-captions.png" width="240" alt="Live caption setup with device audio, Russian speech and Arabic translation selected" /></a></td>
+    <td><a href="docs/screenshots/face-to-face.png"><img src="docs/screenshots/face-to-face.png" width="240" alt="Split face-to-face screen with an upside-down English section, Arabic translation and two Speak buttons" /></a></td>
+    <td><a href="docs/screenshots/type-to-translate.png"><img src="docs/screenshots/type-to-translate.png" width="240" alt="Typed English station-directions question translated into Arabic, with Android and custom read-aloud controls" /></a></td>
+  </tr>
+  <tr>
+    <th>Conversation</th>
+    <th>Camera &amp; OCR</th>
+    <th>Settings</th>
+  </tr>
+  <tr>
+    <td><a href="docs/screenshots/conversation.png"><img src="docs/screenshots/conversation.png" width="240" alt="Conversation screen preserving an English question and its Arabic translation, with language swap and speech controls" /></a></td>
+    <td><a href="docs/screenshots/camera-ocr.png"><img src="docs/screenshots/camera-ocr.png" width="240" alt="Imported Russian sample image with OCR text boxes, recognized text and its English translation" /></a></td>
+    <td><a href="docs/screenshots/settings.png"><img src="docs/screenshots/settings.png" width="240" alt="Settings for models, downloads, cloud speech, cloud translation, voices and appearance" /></a></td>
+  </tr>
+</table>
+
 ## Five screens, always within reach
 
 | Tab | What you can do |
