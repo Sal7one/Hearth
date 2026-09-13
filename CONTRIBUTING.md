@@ -30,6 +30,7 @@ signing keys, `local.properties`, model weights or generated builds.
 For native or model-packaging changes, also run the relevant host checks:
 
 ```sh
+bash common-jni/src/main/cpp/common/tests/run_common_utils_tests.sh
 bash common-jni/src/main/cpp/speech/tests/run_speech_tests.sh
 bash common-jni/src/main/cpp/vosk/tests/run_vosk_api_tests.sh
 python3 scripts/speech/test_package.py

@@ -3,10 +3,15 @@
 See [all model sources and download links](model-sources.md). The app groups these
 under Models → Speech, Translation and Cloud.
 
-The app includes native runtimes, not multi-gigabyte model weights. Import the same
-verified Hearth speech ZIPs you already have, or prepare a ZIP from the publisher's
-files with the included `scripts/speech/make-package.py`. Qwen and Nemotron choices
-are under **Models** and **Captions → Caption engine**, not the cloud model list.
+The app includes native runtimes, not model weights. For catalogued Qwen,
+Nemotron and Moonshine models, open **Setup → Models → Speech**, choose the family,
+and tap **Download & install**. The app downloads, verifies and prepares the files
+on the phone. Translation models are grouped under **Models → Translation**.
+The foss build imports files but does not download them.
+
+The commands below are for contributors preparing **custom packages**. Existing
+verified speech ZIPs remain importable. Normal catalog downloads need no computer,
+export/re-import step or hand-written manifest.
 
 ## Qwen3-ASR 0.6B
 
@@ -47,7 +52,7 @@ zip -0 -r ../nemotron.zip .
 
 Import in Models → Nemotron. It supports streaming partial and final recognition.
 Both recognizers produce **original-language CC**. The optional local translation bridge sends their final text to an imported
-HY-MT1.5 or Hy-MT2 translation model. See [local translation](local-translation.md).
+HY-MT1.5, Hy-MT2 or TranslateGemma translation model, or uses ML Kit packs in play. See [local translation](local-translation.md).
 
 ## Other models and downloads
 
@@ -57,8 +62,8 @@ HY-MT1.5 or Hy-MT2 translation model. See [local translation](local-translation.
 - Marian: import a compatible OPUS-MT folder with `source.spm`, `tokenizer.json`,
   encoder ONNX and merged-decoder ONNX. The translation route must match its language pair.
 - Download a prepared speech ZIP or another direct HTTPS file through **Downloads**.
-  Open the completed download in the file picker when importing in Models. Raw `.tar.bz2` or GGUF
-  downloads are not ready-to-import speech ZIPs; package them as shown above.
+  Catalogued downloads install automatically. For arbitrary custom speech archives,
+  use the developer packaging flow above; a filename alone does not establish compatibility.
 
 Package manifests enforce file sizes, SHA-256, role requirements and path containment.
 A manifest generated from your own download is an integrity record, not proof that
@@ -88,5 +93,5 @@ zip -0 -r ../moonshine-tiny-en-v2.zip .
 Import under Models → Moonshine → Import model ZIP. The prepared Tiny ZIP including
 the publisher sample/license is 44,442,781 bytes. Base uses `moonshine-base-en-v2`
 and its own corresponding encoder/merged decoder; do not mix package versions.
-There is no automatic tar.bz2 import or universal ONNX loader. See the
+Catalogued tar.bz2 downloads install automatically; arbitrary ONNX files still need a supported adapter/profile. See the
 [contribution guide](model-contributing.md) for actual extension points.

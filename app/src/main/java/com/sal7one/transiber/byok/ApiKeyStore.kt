@@ -3,88 +3,29 @@ package com.sal7one.transiber.byok
 import android.content.Context
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
-import android.util.Base64
-import android.util.Log
 import java.io.File
+import java.security.KeyStore
 import java.security.SecureRandom
-import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
-import javax.crypto.spec.GCMParameterSpec
 import javax.crypto.spec.SecretKeySpec
 
-/**
- * Encrypted storage for user-supplied API keys (BYOK).
- *
- * Two layers, in order of preference:
- *  1. Android Keystore AES-256-GCM — hardware-backed where available.
- *  2. Basic protection — a random 256-bit key kept in a mode-0600 file in
- *     the app's private dir, used with the same AES-GCM scheme. Engaged
- *     only when the device Keystore is genuinely unavailable or its entry
- *     is broken (Samsung/older ROM quirks); the UI reports which layer is
- *     active, honestly.
- *
- * NETWORK CODE (play distribution only — see [ByokPolicy]).
- */
+/** Encrypted BYOK store. Each record owns its storage-mode tag; shared key material is never deleted by a provider action. */
 object ApiKeyStore {
-
     private const val PREFS = "byok_keys"
     private const val KEY_ALIAS = "sal7one_byok_master"
     private const val FIELD_OPENAI = "openai_api_key_v1"
     private const val FIELD_GROQ = "groq_api_key_v1"
     private const val FIELD_DEEPGRAM = "deepgram_api_key_v1"
     private const val FIELD_ASSEMBLYAI = "assemblyai_api_key_v1"
-    private const val FIELD_MODE = "openai_storage_mode_v1"
+    private const val FIELD_MODE = "openai_storage_mode_v1" // Legacy decryption hint only; never overwritten.
     private const val BASIC_KEY_FILE = "byok_basic.key"
-
-    private const val KEY_SIZE_BITS = 256
-    private const val GCM_TAG_BITS = 128
-    private const val IV_BYTES = 12
-
     enum class StorageMode { KEYSTORE, BASIC }
-
     var lastFailure: String? = null
         private set
 
-    fun getOpenAiKey(context: Context): String {
-        val blob = prefs(context).getString(FIELD_OPENAI, null) ?: return ""
-        return runCatching { decrypt(context, blob) }.getOrDefault("")
-    }
-
-    /**
-     * Store (or clear, when [key] is blank) the provider API key.
-     * Returns true when stored. Failures expose their reason via
-     * [lastFailure]; the storage layer falls back before failing.
-     */
-    fun setOpenAiKey(context: Context, key: String): Boolean {
-        lastFailure = null
-        val editor = prefs(context).edit()
-        if (key.isBlank()) {
-            editor.remove(FIELD_OPENAI).remove(FIELD_MODE).apply()
-            deleteBasicKey(context)
-            return true
-        }
-        val trimmed = key.trim()
-
-        // Layer 1: Android Keystore (with one regenerate-retry for broken
-        // entries left behind by OS updates / key invalidation).
-        var stored = tryStoreKeystore(context, trimmed)
-        if (!stored) {
-            val reason = lastFailure
-            runCatching { deleteKeystoreEntry(context) }
-            stored = tryStoreKeystore(context, trimmed)
-            if (!stored && reason != null) {
-                // Layer 2: basic file-backed key, honestly reported.
-                lastFailure = null
-                stored = tryStoreBasic(context, trimmed)
-                if (!stored) {
-                    lastFailure = "Keystore unavailable ($reason) and basic fallback failed: $lastFailure"
-                }
-            }
-        }
-        return stored
-    }
-
+    fun getOpenAiKey(context: Context): String = getProviderKey(context, FIELD_OPENAI)
+    fun setOpenAiKey(context: Context, key: String): Boolean = setProviderKey(context, FIELD_OPENAI, key)
     fun hasOpenAiKey(context: Context): Boolean = getOpenAiKey(context).isNotBlank()
 
     // ── per-provider streaming keys (same encrypted storage) ──────────────
@@ -112,138 +53,79 @@ object ApiKeyStore {
     fun getElevenLabsKey(context: Context): String = getProviderKey(context, "elevenlabs_key_v1")
     fun setElevenLabsKey(context: Context, key: String): Boolean = setProviderKey(context, "elevenlabs_key_v1", key)
 
+    @Synchronized
     private fun getProviderKey(context: Context, field: String): String {
-        val blob = prefs(context).getString(field, null) ?: return ""
-        return runCatching { decrypt(context, blob) }.getOrDefault("")
+        lastFailure = null
+        val stored = prefs(context)
+        val blob = stored.getString(field, null) ?: return ""
+        return try {
+            val hint = runCatching { ApiKeyCipher.Mode.valueOf(stored.getString(FIELD_MODE, "KEYSTORE")!!) }.getOrNull()
+            val read = ApiKeyCipher.decrypt(blob, hint) { mode -> when (mode) {
+                ApiKeyCipher.Mode.KEYSTORE -> existingMasterKey()
+                ApiKeyCipher.Mode.BASIC -> basicKey(context, create = false)
+            } }
+            // Rewrap the same ciphertext after a verified read; this also repairs a stale global mode.
+            read.migratedEnvelope?.let { stored.edit().putString(field, it).apply() }
+            read.value
+        } catch (e: Exception) {
+            lastFailure = "Saved API key could not be decrypted: ${e.javaClass.simpleName}: ${e.message}"
+            "" // Keep the unreadable record for recovery; never replace it with a new encryption key.
+        }
     }
 
+    @Synchronized
     private fun setProviderKey(context: Context, field: String, key: String): Boolean {
         lastFailure = null
-        val editor = prefs(context).edit()
         if (key.isBlank()) {
-            editor.remove(field).apply()
-            return true
+            val saved = prefs(context).edit().remove(field).commit()
+            if (!saved) lastFailure = "Could not remove saved API key"
+            return saved // Other providers may still require either master key and the legacy hint.
         }
-        val stored = tryStoreKeystore(context, key.trim(), field)
-        if (stored) return true
-        val reason = lastFailure
-        runCatching { deleteKeystoreEntry(context) }
-        val retry = tryStoreKeystore(context, key.trim(), field)
-        if (retry) return true
-        val basic = tryStoreBasic(context, key.trim(), field)
-        if (basic) return true
-        lastFailure = "Keystore unavailable ($reason) and basic fallback failed: $lastFailure"
-        return false
+        val encrypted = try {
+            ApiKeyCipher.encrypt(key.trim(), ApiKeyCipher.Mode.KEYSTORE, masterKey())
+        } catch (e: Exception) {
+            try {
+                ApiKeyCipher.encrypt(key.trim(), ApiKeyCipher.Mode.BASIC, checkNotNull(basicKey(context, create = true)))
+                    .also { lastFailure = "${e.javaClass.simpleName}: ${e.message}" }
+            } catch (fallback: Exception) {
+                lastFailure = "Keystore unavailable (${e.javaClass.simpleName}: ${e.message}); basic protection failed: ${fallback.javaClass.simpleName}: ${fallback.message}"
+                return false
+            }
+        }
+        val saved = prefs(context).edit().putString(field, encrypted).commit()
+        if (!saved) lastFailure = "Could not save encrypted API key"
+        return saved
     }
 
     fun storageMode(context: Context): StorageMode? {
-        return runCatching {
-            StorageMode.valueOf(prefs(context).getString(FIELD_MODE, "") ?: "")
-        }.getOrNull()
+        getProviderKey(context, FIELD_OPENAI) // A successful legacy read adds the mode to that record.
+        val blob = prefs(context).getString(FIELD_OPENAI, null) ?: return null
+        return runCatching { ApiKeyCipher.mode(blob)?.let { StorageMode.valueOf(it.name) } }.getOrNull()
     }
-
-    // ── keystore layer ──────────────────────────────────────────────────────
-
-    private fun tryStoreKeystore(context: Context, key: String, field: String = FIELD_OPENAI): Boolean = try {
-        val cipher = Cipher.getInstance("AES/GCM/NoPadding")
-        cipher.init(Cipher.ENCRYPT_MODE, masterKey(context), GCMParameterSpec(GCM_TAG_BITS, newIv()))
-        val ct = cipher.doFinal(key.toByteArray(Charsets.UTF_8))
-        prefs(context).edit()
-            .putString(field, pack(cipher.iv, ct))
-            .putString(FIELD_MODE, StorageMode.KEYSTORE.name)
-            .apply()
-        true
-    } catch (e: Exception) {
-        lastFailure = "${e.javaClass.simpleName}: ${e.message}"
-        Log.e("ApiKeyStore", "Keystore store failed", e)
-        false
+    private fun existingMasterKey(): SecretKey? = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }.getKey(KEY_ALIAS, null) as? SecretKey
+    private fun masterKey(): SecretKey {
+        existingMasterKey()?.let { return it }
+        return KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, "AndroidKeyStore").apply {
+            init(KeyGenParameterSpec.Builder(KEY_ALIAS, KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT)
+                .setBlockModes(KeyProperties.BLOCK_MODE_GCM).setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
+                .setKeySize(256).build())
+        }.generateKey()
     }
-
-    private fun masterKey(context: Context): SecretKey {
-        val ks = java.security.KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
-        (ks.getKey(KEY_ALIAS, null) as? SecretKey)?.let { return it }
-        val generator = KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, "AndroidKeyStore")
-        generator.init(
-            KeyGenParameterSpec.Builder(
-                KEY_ALIAS,
-                KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT,
-            )
-                .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
-                .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
-                .setKeySize(KEY_SIZE_BITS)
-                .build(),
-        )
-        return generator.generateKey()
-    }
-
-    private fun deleteKeystoreEntry(context: Context) {
-        val ks = java.security.KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
-        if (ks.containsAlias(KEY_ALIAS)) {
-            ks.deleteEntry(KEY_ALIAS)
-            Log.w("ApiKeyStore", "Deleted broken keystore entry; will regenerate")
-        }
-    }
-
-    // ── basic (fallback) layer ──────────────────────────────────────────────
-
-    private fun tryStoreBasic(context: Context, key: String, field: String = FIELD_OPENAI): Boolean = try {
-        val cipher = Cipher.getInstance("AES/GCM/NoPadding")
-        cipher.init(Cipher.ENCRYPT_MODE, basicKey(context), GCMParameterSpec(GCM_TAG_BITS, newIv()))
-        val ct = cipher.doFinal(key.toByteArray(Charsets.UTF_8))
-        prefs(context).edit()
-            .putString(field, pack(cipher.iv, ct))
-            .putString(FIELD_MODE, StorageMode.BASIC.name)
-            .apply()
-        true
-    } catch (e: Exception) {
-        lastFailure = "${e.javaClass.simpleName}: ${e.message}"
-        Log.e("ApiKeyStore", "Basic store failed", e)
-        false
-    }
-
-    private fun basicKey(context: Context): SecretKey {
+    private fun basicKey(context: Context, create: Boolean): SecretKey? {
         val file = File(context.filesDir, BASIC_KEY_FILE)
-        val bytes = if (file.exists() && file.length() == 32L) {
-            file.readBytes()
-        } else {
-            ByteArray(32).also { SecureRandom().nextBytes(it) }.also { material ->
-                file.writeBytes(material)
-                // Owner-only access; other app UIDs cannot read it.
-                runCatching {
-                    java.nio.file.Files.setPosixFilePermissions(
-                        file.toPath(),
-                        java.nio.file.attribute.PosixFilePermissions.fromString("rw-------"),
-                    )
-                }
-            }
+        if (!file.exists()) {
+            if (!create) return null
+            val material = ByteArray(32).also { SecureRandom().nextBytes(it) }
+            // Create a private temporary file, then atomically publish. Never overwrite an existing key.
+            val temp = File.createTempFile("byok-key-", ".tmp", context.filesDir)
+            try {
+                java.nio.file.Files.setPosixFilePermissions(temp.toPath(), java.nio.file.attribute.PosixFilePermissions.fromString("rw-------"))
+                temp.writeBytes(material)
+                java.nio.file.Files.move(temp.toPath(), file.toPath(), java.nio.file.StandardCopyOption.ATOMIC_MOVE)
+            } finally { temp.delete() }
         }
-        return SecretKeySpec(bytes, "AES")
+        check(file.length() == 32L) { "Existing basic encryption key is invalid; it was preserved" }
+        return SecretKeySpec(file.readBytes(), "AES")
     }
-
-    private fun deleteBasicKey(context: Context) {
-        File(context.filesDir, BASIC_KEY_FILE).delete()
-    }
-
-    // ── shared codec ────────────────────────────────────────────────────────
-
-    private fun newIv(): ByteArray = ByteArray(IV_BYTES).also { SecureRandom().nextBytes(it) }
-
-    private fun pack(iv: ByteArray, ct: ByteArray): String =
-        Base64.encodeToString(iv, Base64.NO_WRAP) + ":" + Base64.encodeToString(ct, Base64.NO_WRAP)
-
-    private fun decrypt(context: Context, blob: String): String {
-        val (ivB64, ctB64) = blob.split(':', limit = 2)
-        val iv = Base64.decode(ivB64, Base64.NO_WRAP)
-        val ct = Base64.decode(ctB64, Base64.NO_WRAP)
-        val mode = runCatching {
-            StorageMode.valueOf(prefs(context).getString(FIELD_MODE, StorageMode.KEYSTORE.name)!!)
-        }.getOrDefault(StorageMode.KEYSTORE)
-        val secret = if (mode == StorageMode.BASIC) basicKey(context) else masterKey(context)
-        val cipher = Cipher.getInstance("AES/GCM/NoPadding")
-        cipher.init(Cipher.DECRYPT_MODE, secret, GCMParameterSpec(GCM_TAG_BITS, iv))
-        return String(cipher.doFinal(ct), Charsets.UTF_8)
-    }
-
-    private fun prefs(context: Context) =
-        context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+    private fun prefs(context: Context) = context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 }

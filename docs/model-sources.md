@@ -1,6 +1,6 @@
 # Sources and installation by model group
 
-Updated 2026-09-13 for 0.6.0. These are supported adapters, not a claim that every
+Updated 2026-09-13 for 0.8.2. These are supported adapters, not a claim that every
 artifact/language pair was tested on a phone. Models → Speech / Translation / Cloud
 contains the same source links and installation distinctions. Network actions are
 available only in play. All imported files still pass their existing validation.
@@ -62,3 +62,9 @@ The Moonshine assets used here were uploaded on 27 February 2026, as shown by th
 GitHub release assets API. The `asr-models` release is a long-lived collection;
 its creation date is not the model date. These are short-segment sherpa adapters,
 not an assertion of support for the latest persistent Moonshine streaming decoder.
+
+## Cloud text translation
+
+Conversation and Face to face additionally support Google Cloud, Microsoft Azure,
+DeepL and LibreTranslate. See [connections, official sources and setup](conversation-cloud-translation.md).
+These services translate text; they are separate from the speech model catalog.

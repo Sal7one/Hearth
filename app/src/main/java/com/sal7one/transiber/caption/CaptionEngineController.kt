@@ -822,18 +822,18 @@ class CaptionEngineController(
                 // Cloud/BYOK transient failures surface in the overlay so the
                 // user knows why lines stopped (quota, network, bad key).
                 (current as? RemoteWhisperEngine)?.takeLastErrorForUi()?.let { cloudError ->
-                    Log.w(TAG, "Cloud STT: $cloudError")
+                    Log.w(TAG, "Cloud STT failed; details available in UI")
                     _state.update { it.copy(translationNotice = cloudError) }
                 }
                 (current as? RemoteWhisperEngine)?.takeLastNoticeForUi()?.let { cloudNotice ->
-                    Log.i(TAG, "Cloud STT notice: $cloudNotice")
+                    Log.i(TAG, "Cloud STT notice available in UI")
                     _state.update { it.copy(translationNotice = cloudNotice) }
                 }
                 // Streaming engines deliver SETTLED utterances here — promote
                 // each final straight into history (real-time utterance
                 // boundaries, no batch round-trip).
                 snapshot?.error?.let { cloudError ->
-                    Log.w(TAG, "Streaming STT: $cloudError")
+                    Log.w(TAG, "Streaming STT failed; details available in UI")
                     reportError(cloudError)
                 }
                 if (_state.value.status == Status.ERROR) break
@@ -866,7 +866,7 @@ class CaptionEngineController(
                 if (partial.isNotEmpty() && partial != lastPartial) {
                     Log.i(
                         TAG,
-                        "Partial (${partial.length} chars, +${now - lastPartialAtMs}ms): $partial",
+                        "Partial (${partial.length} chars, +${now - lastPartialAtMs}ms)",
                     )
                 }
 
@@ -942,7 +942,7 @@ class CaptionEngineController(
             Log.i(TAG, "Promotion skipped: echo of the last history line")
             return
         }
-        Log.i(TAG, "Promoted: $confirmed")
+        Log.i(TAG, "Caption committed (${confirmed.length} chars)")
         val config = currentConfig
 
         val lineId = nextLineId.getAndIncrement()
@@ -1012,7 +1012,7 @@ class CaptionEngineController(
     private fun promoteFinal(finalText: String, sourceLanguage: String? = null) {
         val text = finalText.trim()
         if (text.isEmpty()) return
-        Log.i(TAG, "Promoted (stream): $text")
+        Log.i(TAG, "Streaming caption committed (${text.length} chars)")
         lastActivityMs = System.currentTimeMillis()
         val config = currentConfig
         val lineId = nextLineId.getAndIncrement()
@@ -1057,7 +1057,7 @@ class CaptionEngineController(
             )).takeLast(MAX_HISTORY)
         }
         val promoted = confirmed != lastLine
-        Log.i(TAG, if (promoted) "Promoted+tracked: $confirmed" else "Tracked (echo guarded): $newPartial")
+        Log.i(TAG, if (promoted) "Caption committed and tracked" else "Caption tracked (echo guarded)")
         val promotedAtMs = System.currentTimeMillis()
         // With history HIDDEN the promoted portion is invisible, so stripping
         // it from the live line would leave only a lone-word tail on screen.
@@ -1114,7 +1114,7 @@ class CaptionEngineController(
             is TranslationResult.Translated -> attachTranslation(lineId, result.text, promotedAtMs)
 
             is TranslationResult.Unavailable -> {
-                Log.w(TAG, "Translation unavailable: ${result.reason}")
+                Log.w(TAG, "Translation unavailable; details available in UI")
                 _state.update { it.copy(translationNotice = result.reason) }
             }
         }
@@ -1163,7 +1163,7 @@ class CaptionEngineController(
             } else {
                 config.streamLanguage.takeIf { it != "auto" } ?: "en"
             }
-            Log.i(TAG, "Speaking line via ${choice.label} ($languageTag): ${text.take(60)}")
+            Log.i(TAG, "Speaking line via ${choice.label} ($languageTag)")
             current.speak(text, languageTag)
         }
     }
@@ -1227,7 +1227,7 @@ class CaptionEngineController(
                 }
 
                 is TranslationResult.Unavailable -> {
-                    Log.w(TAG, "Partial translation unavailable: ${result.reason}")
+                    Log.w(TAG, "Partial translation unavailable; details available in UI")
                 }
             }
         }

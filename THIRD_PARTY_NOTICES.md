@@ -7,7 +7,7 @@ APK assets under `licenses/`.
 
 | Component | Version / provenance | License and notices |
 | --- | --- | --- |
-| whisper.cpp + ggml | Vendored source subset of ggml-org/whisper.cpp, 19ceec8eac980403b714d603e5ca31653cd42a3f | MIT; upstream LICENSE and `licenses/whisper-LICENSE` |
+| whisper.cpp + ggml | Vendored source subset of ggml-org/whisper.cpp, 19ceec8eac980403b714d603e5ca31653cd42a3f | MIT; upstream LICENSE, `licenses/whisper-LICENSE` and `licenses/ggml-cpu-NOTICES.txt` |
 | Vosk Android | Maven com.alphacephei:vosk-android:0.3.70, arm64 shared library | Apache-2.0; `licenses/vosk/`, Kaldi and OpenFst notices (OpenFst in `licenses/speech/openfst/`) |
 | ONNX Runtime | Maven com.microsoft.onnxruntime:onnxruntime-android:1.20.0 | MIT and upstream third-party notices in `licenses/onnxruntime-1.20.0/` |
 | Qwen / Moonshine speech adapter | sherpa-onnx 210f340bcfdfd5b9ad6b24245e77a934d6c28f1b; CPU ONNX Runtime 1.27.1 | Apache-2.0 and dependency notices in `licenses/speech/` |
@@ -40,3 +40,9 @@ English weights use their package’s MIT license; other Moonshine artifacts may
 differ. TranslateGemma weights use Gemma terms, HY-MT1.5 uses Tencent Hunyuan
 community terms, and Hy-MT2 uses Apache-2.0. The translation runtime is llama.cpp
 (MIT); exact revision and adapter hashes are in `licenses/translation/runtime-build.json`.
+
+The vendored ggml CPU sources include Mozilla Foundation llamafile SGEMM and
+Jeffrey Quesnelle / Bowen Peng YaRN contributions; their MIT notices are packaged
+in `licenses/ggml-cpu-NOTICES.txt`. The source tree also retains Android-disabled
+SYCL files with Apache-2.0 WITH LLVM-exception headers. Those files are not built
+into these Android APKs; preserve their individual headers when redistributing.

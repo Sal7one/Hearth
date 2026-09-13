@@ -4,6 +4,18 @@ Updated 2026-09-13: owner approved an on-device benchmark and traveler release w
 
 Ship visible improvements to the working app and preserve cloud BYOK. The owner now explicitly requests a local benchmark; this supersedes the earlier no-benchmark constraint. Keep it inside the app, reuse production adapters, and separate initialization from inference. Avoid speculative native rewrites.
 
+## Publication hardening — 0.8.2
+
+- [x] Fix per-provider encrypted key storage and safe legacy migration.
+- [x] Remove sensitive caption logs; restrict system speech to offline matching voices.
+- [x] Enforce cloud client flavor gates and refuse credential-bearing redirects.
+- [x] Verify packaged native hashes, speech provenance and both flavor permissions.
+- [x] Remove generated cache from tracking; pin wrapper checksum and add CI secret scan.
+- [x] Update setup, extension, privacy, notices and signing documentation.
+- [ ] GitHub publication and stable production signing remain owner release actions.
+
+See [publication audit](publication-audit.md) for final verification evidence.
+
 ## Navigation follow-up — 0.8.1
 
 - [x] Put Conversation and Face to face at the top of Home, above caption setup.
@@ -64,7 +76,9 @@ without scrolling through engine settings or losing the current transcript.
 
 ### 3. Smaller local translator, easy to swap — RT-02 / RT-03
 
-Status: candidate identified; not integrated.
+Status: superseded by the shipped HY/TranslateGemma/ML Kit catalog and the
+[eight-option phone comparison](local-translation-benchmark-2026-09-13.md).
+The unchecked items below are the original experiment proposal, not release blockers.
 
 - [ ] Try the official HY-MT1.5 2-bit mobile variant first if it works with the existing runtime. Its publisher advertises about 574 MB versus our current roughly 1.1 GB Q4 download.
 - [ ] Keep the current working model available. Add the smaller choice through the existing translator interface, without an engine redesign.
@@ -135,7 +149,12 @@ Do not hold the release for every possible model, language or device combination
 - [x] Keep local ASR weights loaded on Clear and reconnect cloud recognition to discard the previous video's server-side audio.
 - [x] Finish APK/device verification and deliver; see validation-v10.md for the final record.
 
-## Conversation mode — owner-requested plan, not implemented
+## Conversation mode — original plan (implemented in 0.7–0.8)
+
+The unchecked RT-16–19 items below preserve the original design checklist; they
+are not a current completion ledger. The release-wave checklists above and
+validation-v17/v18/v19 record delivered behavior. Outstanding work: paid-provider
+account verification, auditory TalkBack, and broader lifecycle/device coverage.
 
 See [Conversation UI and delivery plan](conversation-mode-plan.md) for the screen
 wireframe, permissions, existing-code gaps, failure behavior and acceptance checks.
@@ -170,8 +189,8 @@ These are sequential feature slices; they do not block publishing working captio
 - [ ] Exercise paired history after restart, translation retry, save-history-off and TTS feedback prevention with focused checks.
 - [ ] Run existing gates, both APK flavors and release verification; confirm overlay controls and saved captions configuration still work.
 
-No new benchmark system, telemetry, provider redesign or broad JNI rewrite is part
-of this plan. Existing model downloads, key storage and speech bindings are reused.
+The original scope excluded a benchmark; the owner later approved the benchmark
+shipped in 0.7.0. No telemetry or broad JNI rewrite was introduced. Existing model downloads, key storage and speech bindings are reused.
 
 ## OSS model expansion — 0.5.0
 

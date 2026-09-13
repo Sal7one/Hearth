@@ -49,11 +49,13 @@ class OpenAiAudioClient(
     }
 
     private fun call(path: String, wav: ByteArray, language: String?, prompt: String? = null): String {
+        check(ByokPolicy.FEATURE_BYOK) { "Cloud services are unavailable in the offline build" }
         val boundary = "sal7one-byok-" + System.nanoTime()
         val body = buildMultipart(boundary, wav, language, prompt)
         val endpoint = endpointFor(path)
 
         val connection = (URL(endpoint).openConnection() as HttpURLConnection).apply {
+            instanceFollowRedirects = false
             requestMethod = "POST"
             connectTimeout = connectTimeoutMs
             readTimeout = readTimeoutMs

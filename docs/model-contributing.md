@@ -60,3 +60,34 @@ Tests: Soniox interim replacement and final grouping, Scribe metadata deduplicat
 and raw error preservation, route precedence and language choices. A parser test is
 not a paid-account check: record live-account verification separately in validation
 notes. New providers stay under existing Setup, without another permanent tab.
+
+## 4. A cloud text translator
+
+Use `CloudTranslationProtocol` for request/response and language discovery behavior,
+then wire the provider in the existing cloud translation configuration, credential
+store and connection screen. Reuse the cancellation-aware HTTP adapter and its
+bounded response handling; reject redirects so credentials cannot move hosts.
+Advertise supported source/target directions, preserve the original text on failure,
+and check `ByokPolicy.FEATURE_BYOK` inside the client. Add protocol/HTTP tests for
+translation, malformed responses, auth, cancellation and offline rejection.
+See [connection setup](conversation-cloud-translation.md). Live paid-account checks
+remain separate from mock-server tests.
+
+## Optional native-runtime rebuild prerequisites
+
+Normal app builds use the included runtimes and SDK CMake 3.22.1. Rebuilding the
+Qwen/Moonshine runtime additionally requires CMake **3.26 or later** on PATH and
+Ninja. Set the NDK explicitly on Linux or nonstandard SDK installations:
+
+```sh
+export ANDROID_NDK_HOME="$ANDROID_HOME/ndk/27.0.12077973"
+export NINJA="$(command -v ninja)"
+bash scripts/speech/build-runtimes.sh all android
+bash scripts/translation/build-runtime.sh android
+```
+
+Use the staging scripts only after a successful build. They record source hashes,
+licenses and binary provenance; never update hashes to bless a stale binary.
+Host smoke tests that decode real media additionally require `ffmpeg` on PATH;
+FFmpeg is not included in the app. Keep downloaded build sources under ignored
+`build/`, never in the public source archive.
