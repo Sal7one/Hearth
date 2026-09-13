@@ -4,7 +4,18 @@ Updated 2026-09-13: owner approved an on-device benchmark and traveler release w
 
 Ship visible improvements to the working app and preserve cloud BYOK. The owner now explicitly requests a local benchmark; this supersedes the earlier no-benchmark constraint. Keep it inside the app, reuse production adapters, and separate initialization from inference. Avoid speculative native rewrites.
 
-## Current release wave — 0.7.0
+## Current release wave — 0.8.0
+
+- [x] Add a direct swap arrow between conversation language selectors.
+- [x] Add Face to face from Options, preserving the original conversation view and shared session.
+- [x] Rotate the other person's half; provide large Speak/Finish controls and tap-to-open oriented history.
+- [x] Add settings for text, originals, keep-awake, history and voice, with saved sheet scroll position.
+- [x] Add Google Cloud, Microsoft Azure, DeepL and LibreTranslate text translation with explicit selection, encrypted keys and discovered language directions.
+- [x] Test provider parsing/auth, network gating, errors, cancellation and redirects; preserve original text on failure.
+- [x] Verify both builds and phone layout/local translation/cloud discovery; see validation-v18.md.
+- [ ] Verify successful translations with the owner's Google/Azure/DeepL/Libre account credentials.
+
+## Previous release wave — 0.7.0
 
 - [x] Rename visible app branding to Hearth; new default downloads use `Downloads/Hearth/models` and `files`. Keep custom folders and earlier downloads accessible.
 - [x] Add persistent System/Light/Dark appearance and clear home entries for Conversation and Local benchmark.

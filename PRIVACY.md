@@ -31,6 +31,13 @@ Overlay captions and their bounded history are held in memory during the session
 Conversation mode saves original and translated text in a local database excluded from backup;
 saving can be disabled, and saved conversations can be deleted or explicitly shared.
 No conversation audio is saved. Its optional read-aloud selects installed offline system voices.
+Conversation and Face to face can separately send finalized text to Google Cloud
+Translation, Microsoft Azure Translator, DeepL, or a chosen LibreTranslate server.
+Choosing local speech does not make a selected cloud text translator local. Setup
+labels this explicitly; language discovery contacts the selected server on request.
+These new translation keys use a separate Android Keystore AES-GCM key with no
+plaintext/file-key fallback. Provider text handling, account limits and charges
+apply. No cloud text translator is available in the foss build.
 Local benchmarks save results and transcripts locally, with explicit JSON export and Clear history.
 Imported benchmark audio is held only in memory and is not copied into the app. Copying text uses Android's
 clipboard. The capture notification stays visible and offers Stop. Playback capture

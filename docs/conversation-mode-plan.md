@@ -1,7 +1,21 @@
 # Conversation mode — UI and delivery plan
 
-Status: first implementation added for 0.7.0; central build and device checks pending.
+Status: original view added in 0.7.0; 0.8.0 adds Face to face, direct swap and cloud text translation.
 Requested by the owner on 2026-09-12.
+
+## Face to face (0.8.0)
+
+Options → Open face-to-face view switches presentation without recreating the
+controller or clearing the current session. My language is at the bottom; their
+half is rotated 180 degrees. Each half has one language selector, a large text area
+and Speak/Finish button. Tap the colored reading area for this conversation's
+history in that language and orientation. Error and pending states are preserved.
+Both layouts expose a quick swap arrow. Historical message directions never change.
+
+The settings sheet returns to the original conversation view and holds translation
+selection, speech model/connection links, typing, saved conversations, new/rename/
+share, text size, original-text visibility, save-history and offline read-aloud.
+Keep screen awake is configurable. Dark/light/system styling follows the app theme.
 
 ## Implemented first release
 
@@ -14,9 +28,10 @@ at 60 seconds. Leaving during work preserves finalized original text and marks
 the turn interrupted. There is no automatic recording restart.
 
 Speech runs through `CaptionEngineController` in original-language CC mode, then
-the selected ML Kit or GGUF translator runs on that turn. This is also the cloud
-route: the selected provider supplies STT, and the selected local model translates.
-The page explicitly labels this behavior. It never treats OpenAI's translation-only
+the selected conversation translator runs on that turn: an installed ML Kit/GGUF
+model, or an explicitly configured Google Cloud, Microsoft Azure, DeepL or
+LibreTranslate text connection. Speech and translation providers are independent.
+See [connection setup](conversation-cloud-translation.md). The page labels the route. It never treats OpenAI's translation-only
 stream as an original transcript or silently opens two paid streams. Automatic-only
 adapters without declared recognition-language coverage cannot enable the microphone
 buttons; typed translation still works. A supported one-way direction remains usable.

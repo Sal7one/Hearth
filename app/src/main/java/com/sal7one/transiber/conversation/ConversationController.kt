@@ -109,8 +109,13 @@ internal class ConversationController(private val context: Context) : AutoClosea
         val source = retry?.source ?: if (speaker == 0) session.first else session.second
         val target = retry?.target ?: if (speaker == 0) session.second else session.first
         if (source == target) { reportError("Choose two different languages."); return }
-        val route = "${config.engine.label} / ${config.modelId} → ${config.localTranslationModelId}"
-        val turn = retry?.copy(status = TurnStatus.TRANSLATING, error = null) ?: ConversationTurn(speaker = speaker, source = source, target = target, route = route,
+        val translationRoute = try { ConversationTranslationSettings.snapshot(context, config.localTranslationModelId) }
+            catch (e: Exception) { reportError(e.message ?: e.toString()); return }
+        if (!ConversationTranslationSettings.supports(context, config.localTranslationModelId, source, target)) {
+            reportError("${translationRoute.label} does not support $source → $target. Check Translation settings."); return
+        }
+        val route = "${config.engine.label} / ${config.modelId} → ${translationRoute.label}"
+        val turn = retry?.copy(status = TurnStatus.TRANSLATING, error = null, route = route) ?: ConversationTurn(speaker = speaker, source = source, target = target, route = route,
             original = typed.orEmpty(), status = if (typed == null) TurnStatus.LISTENING else TurnStatus.TRANSLATING)
         _state.update { it.copy(session = if (retry == null) it.session.copy(turns = it.session.turns + turn) else it.session.updateTurn(session.id, turn),
             busy = true, activeSpeaker = speaker, status = "Preparing", error = null, partial = "") }
@@ -161,8 +166,7 @@ internal class ConversationController(private val context: Context) : AutoClosea
                 currentTurn = currentTurn.copy(status = TurnStatus.TRANSLATING)
                 _state.update { it.copy(session = it.session.updateTurn(session.id, currentTurn), status = "Translating", partial = "") }; persist()
                 val translated = withContext(Dispatchers.IO) {
-                    val opened = if (config.localTranslationModelId == TranslationOptions.ML_KIT) PlatformTranslation.open()
-                        else TranslationCatalog.find(config.localTranslationModelId).let { spec -> LocalTranslationSession.open(LocalTranslationModels(File(context.filesDir, "translation-models")).file(spec), spec) }
+                    val opened = translationRoute.open(context)
                     translator = opened
                     try { ensureActive(); opened.translate(currentTurn.original, TranslationDirection(source, target)) }
                     finally { opened.close(); translator = null }

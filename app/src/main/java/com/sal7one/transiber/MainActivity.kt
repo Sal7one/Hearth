@@ -22,6 +22,7 @@ import com.sal7one.transiber.byok.*
 import com.sal7one.transiber.ui.theme.*
 import com.sal7one.transiber.benchmark.LocalBenchmarkScreen
 import com.sal7one.transiber.conversation.ConversationScreen
+import com.sal7one.transiber.translation.ConversationTranslationSetup
 import com.sal7one.transiber.models.ModelsScreen
 import com.sal7one.transiber.downloads.DownloadsScreen
 
@@ -42,11 +43,12 @@ class MainActivity : ComponentActivity() {
      }
     }
     // Keep the existing bubble's page=1/2 links working after removing tabs.
-    var page by rememberSaveable { mutableIntStateOf(intent.getIntExtra("page", 0).coerceIn(0, 8)) }
+    var page by rememberSaveable { mutableIntStateOf(intent.getIntExtra("page", 0).coerceIn(0, 9)) }
+    var faceLayout by rememberSaveable { mutableStateOf(false) }
     fun back() { page = if (page in setOf(3, 7, 8)) 0 else 3 }
     BackHandler(enabled = page != 0) { back() }
     Scaffold(topBar = {
-     TopAppBar(title = { Text(when(page) { 0 -> "Hearth"; 1 -> "Models"; 2 -> "Downloads"; 3 -> "Setup"; 4 -> "Cloud connection"; 5 -> "Advanced setup"; 7 -> "Conversation"; 8 -> "Local benchmark"; else -> "Help" }, style = MaterialTheme.typography.titleMedium) },
+     TopAppBar(title = { Text(when(page) { 0 -> "Hearth"; 1 -> "Models"; 2 -> "Downloads"; 3 -> "Setup"; 4 -> "Cloud connection"; 5 -> "Advanced setup"; 7 -> if (faceLayout) "Face to face" else "Conversation"; 8 -> "Local benchmark"; 9 -> "Translation connections"; else -> "Help" }, style = MaterialTheme.typography.titleMedium) },
       navigationIcon = { if (page != 0) IconButton(onClick = { back() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } },
       actions = { if (page == 0) TextButton(onClick = { page = 3 }) { Text("Setup") }
         else TextButton(onClick = { page = 0 }) { Text("Done") } })
@@ -69,12 +71,19 @@ class MainActivity : ComponentActivity() {
           TextButton(onClick = { page = 6 }) { Text("Help & diagnostics") }
         }
         4 -> Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp)) {
-          if (ByokPolicy.FEATURE_BYOK) ByokKeySection()
+          if (ByokPolicy.FEATURE_BYOK) {
+            SetupLink("Translation connections", "Google, Microsoft, DeepL or LibreTranslate for conversations") { page = 9 }
+            Spacer(Modifier.height(16.dp))
+            ByokKeySection()
+          }
           else Text("Cloud connections are unavailable in the offline build.")
         }
         5 -> CaptionScreen(onBrowseModels = { page = 1 })
-        7 -> ConversationScreen(onModels = { page = 1 }, onCloud = { page = 4 })
+        7 -> ConversationScreen(onModels = { page = 1 }, onCloud = { page = 4 }, onLayoutChanged = { faceLayout = it })
         8 -> LocalBenchmarkScreen(onModels = { page = 1 })
+        9 -> Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp)) {
+          ConversationTranslationSetup(onModels = { page = 1 })
+        }
         else -> Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
           Text("Choose audio and captions or translation, then Start. Android may ask for audio access or screen-sharing consent.")
           Text("Use the bubble settings for appearance and language controls. The notification can pause, recover or stop captions.")

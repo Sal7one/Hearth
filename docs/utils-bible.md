@@ -74,3 +74,14 @@ no temporary private copy/export is used for original downloads.
 - `CaptionDrainPolicy`: controller Stop preserves buffered finals and pending translations; host tests cover prior silence, late translation and hard timeout.
 - `CaptionTranslationBridge.reset`: Clear keeps loaded weights while invalidating old work; host tests cover queued/in-flight resets, load races and stale failures.
 - `ConversationData` stable-ID updates, restart interruption and export are consumed by conversation controller/store/screen, with host coverage.
+
+## Hearth 0.8.0 additions
+
+- `CloudTranslationProtocol` / `CloudTranslationLanguages`: production cloud conversation
+  adapter and capability-driven pickers; host tests verify provider request contracts,
+  authentication, language aliases/directions, unsafe URL rejection and actual errors.
+- `TranslationHttpTransport`: discovery and conversation translation consumer; host tests
+  verify the offline gate, status/body preservation, credential redaction, blocked
+  redirects, coroutine cancellation/closed ownership and bounded response size.
+- `FaceToFacePanel` is a presentation-only consumer of the existing conversation state,
+  with no new microphone, persistence or native ownership path.

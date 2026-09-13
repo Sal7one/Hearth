@@ -1,5 +1,11 @@
 package com.sal7one.transiber.conversation
 
+import androidx.activity.compose.BackHandler
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.SwapHoriz
+import androidx.compose.ui.platform.LocalView
+import com.sal7one.transiber.translation.ConversationTranslationSettings
+import com.sal7one.transiber.translation.ConversationTranslationSetup
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -38,7 +44,7 @@ import kotlinx.coroutines.flow.collect
 
 @OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 @Composable
-fun ConversationScreen(onModels: () -> Unit = {}, onCloud: () -> Unit = {}) {
+fun ConversationScreen(onModels: () -> Unit = {}, onCloud: () -> Unit = {}, onLayoutChanged: (Boolean) -> Unit = {}) {
     val context = LocalContext.current
     val owner = LocalLifecycleOwner.current
     val controller = remember { ConversationController(context.applicationContext) }
@@ -47,19 +53,35 @@ fun ConversationScreen(onModels: () -> Unit = {}, onCloud: () -> Unit = {}) {
     val model = rememberCaptionLanguageModel(config)
     val sourceChoices = CaptionLanguages.source(config.copy(mode = CaptionMode.CAPTIONS), CloudConfigStore.sttMode(context), model)
     val recognitionCodes = sourceChoices.codes - setOf("auto", "model")
-    val translationCodes = TranslationOptions.languages(config.localTranslationModelId)
+    val translationRevision by ConversationTranslationSettings.revision.collectAsState()
+    val translationCodes = remember(translationRevision, config.localTranslationModelId) { ConversationTranslationSettings.languages(context, config.localTranslationModelId) }
+    val translatorLabel = remember(translationRevision, config.localTranslationModelId) { ConversationTranslationSettings.label(context, config.localTranslationModelId) }
     val codes = (translationCodes + recognitionCodes).ifEmpty { setOf("ar", "en") }
     val languageChoices = CaptionLanguageChoices(codes,
         "Choose the languages you and the other person use. Speak is available only when the selected speech model supports that language and the translator supports the direction. ${sourceChoices.note}")
     var picker by rememberSaveable { mutableStateOf<Int?>(null) }
     var options by rememberSaveable { mutableStateOf(false) }
+    val optionsScroll = rememberScrollState()
+    val translationScroll = rememberScrollState()
     var history by rememberSaveable { mutableStateOf(false) }
+    var faceToFace by rememberSaveable { mutableStateOf(false) }
+    var faceHistory by rememberSaveable { mutableStateOf<Int?>(null) }
+    var translationSettings by rememberSaveable { mutableStateOf(false) }
     var typing by rememberSaveable { mutableStateOf(false) }
     var typed by rememberSaveable { mutableStateOf("") }
     var typedSpeaker by rememberSaveable { mutableIntStateOf(0) }
     var presentation by remember { mutableStateOf<ConversationTurn?>(null) }
     var flipped by rememberSaveable { mutableStateOf(false) }
     val prefs = remember { context.getSharedPreferences("conversation-options", 0) }
+    var showOriginal by rememberSaveable { mutableStateOf(prefs.getBoolean("face_original", false)) }
+    var keepAwake by rememberSaveable { mutableStateOf(prefs.getBoolean("keep_awake", true)) }
+    val view = LocalView.current
+    DisposableEffect(view, keepAwake) {
+        val old = view.keepScreenOn; view.keepScreenOn = keepAwake
+        onDispose { view.keepScreenOn = old }
+    }
+    LaunchedEffect(faceToFace) { onLayoutChanged(faceToFace) }
+    BackHandler(faceToFace && !options && faceHistory == null && !translationSettings && picker == null) { faceToFace = false }
     var automaticSpeech by rememberSaveable { mutableStateOf(prefs.getBoolean("auto_speech", false)) }
     var textSize by rememberSaveable { mutableFloatStateOf(prefs.getFloat("text_size", 20f)) }
     var speaking by remember { mutableStateOf(false) }
@@ -75,8 +97,12 @@ fun ConversationScreen(onModels: () -> Unit = {}, onCloud: () -> Unit = {}) {
     var rename by rememberSaveable { mutableStateOf(false) }
     var title by rememberSaveable { mutableStateOf("") }
 
-    fun directionAllowed(a: String, b: String): Boolean = a != b && if (config.localTranslationModelId == TranslationOptions.ML_KIT)
-        a in translationCodes && b in translationCodes else TranslationCatalog.models.firstOrNull { it.id == config.localTranslationModelId }?.supports(a, b) == true
+    fun directionAllowed(a: String, b: String): Boolean = ConversationTranslationSettings.supports(context, config.localTranslationModelId, a, b)
+    fun canSpeak(side: Int): Boolean {
+        val from = if (side == 0) state.session.first else state.session.second
+        val to = if (side == 0) state.session.second else state.session.first
+        return from in recognitionCodes && directionAllowed(from, to)
+    }
     fun share(session: ConversationSession) {
         context.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, session.exportText()), "Share conversation"))
     }
@@ -116,7 +142,13 @@ fun ConversationScreen(onModels: () -> Unit = {}, onCloud: () -> Unit = {}) {
         }
     }
 
-    Column(Modifier.fillMaxSize().imePadding().padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    if (faceToFace) Column(Modifier.fillMaxSize()) {
+        FaceToFacePanel(state = state.copy(error = voiceError ?: state.error, status = if (speaking) "Speaking" else state.status),
+            textSize = textSize, showOriginal = showOriginal, canSpeak = ::canSpeak,
+            onSpeak = ::speak, onFinish = controller::finish, onLanguage = { picker = it },
+            onHistory = { faceHistory = it }, onOptions = { options = true },
+            onCancel = controller::cancel, onSwap = { controller.languages(state.session.second, state.session.first) })
+    } else Column(Modifier.fillMaxSize().imePadding().padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             TextButton(onClick = { history = true }, enabled = !state.busy) { Text("History") }
             TextButton(onClick = { options = true }, enabled = !state.busy) { Text("Options") }
@@ -126,13 +158,17 @@ fun ConversationScreen(onModels: () -> Unit = {}, onCloud: () -> Unit = {}) {
             OutlinedButton(onClick = { picker = 0 }, enabled = !state.busy, modifier = Modifier.weight(1f).heightIn(min = 56.dp)) {
                 Text("Me · ${LanguageCatalog.option(state.session.first).nativeName}")
             }
+            IconButton(onClick = { controller.languages(state.session.second, state.session.first) }, enabled = !state.busy,
+                modifier = Modifier.size(48.dp).align(androidx.compose.ui.Alignment.CenterVertically)) {
+                Icon(Icons.Default.SwapHoriz, "Swap my language and their language")
+            }
             OutlinedButton(onClick = { picker = 1 }, enabled = !state.busy, modifier = Modifier.weight(1f).heightIn(min = 56.dp)) {
                 Text("Them · ${LanguageCatalog.option(state.session.second).nativeName}")
             }
         }
-        Text("${model.label} → ${TranslationOptions.label(config.localTranslationModelId)}", style = MaterialTheme.typography.bodySmall)
-        if (config.engine == CaptionEngineChoice.CLOUD) Text("Cloud speech uses your selected connection; translation uses the selected on-device translator. Both original and translated text are kept.", style = MaterialTheme.typography.bodySmall)
-        if (translationCodes.isEmpty()) TextButton(onClick = onModels) { Text("Choose a translation model to begin") }
+        Text("${model.label} → $translatorLabel", style = MaterialTheme.typography.bodySmall)
+        if (config.engine == CaptionEngineChoice.CLOUD) Text("Cloud speech uses your selected speech connection. The conversation translator is selected separately in Options. Both original and translated text are kept.", style = MaterialTheme.typography.bodySmall)
+        if (translationCodes.isEmpty()) TextButton(onClick = { translationSettings = true }) { Text("Set up translation to begin") }
         if (state.session.turns.isEmpty()) {
             Column(Modifier.weight(1f).fillMaxWidth(), verticalArrangement = Arrangement.Center) {
                 Text("A conversation, in both languages", style = MaterialTheme.typography.headlineSmall)
@@ -199,9 +235,21 @@ fun ConversationScreen(onModels: () -> Unit = {}, onCloud: () -> Unit = {}) {
             OutlinedTextField(typed, { typed = it }, label = { Text("What would you like to say?") }, modifier = Modifier.fillMaxWidth(), minLines = 3)
         }
     }, confirmButton = { TextButton(onClick = { controller.type(typedSpeaker, typed, config); typed = ""; typing = false }, enabled = typed.isNotBlank() && directionAllowed(if (typedSpeaker == 0) state.session.first else state.session.second, if (typedSpeaker == 0) state.session.second else state.session.first)) { Text("Translate") } }, dismissButton = { TextButton(onClick = { typing = false }) { Text("Cancel") } })
-    if (options) ModalBottomSheet(onDismissRequest = { options = false }) {
-        Column(Modifier.verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text("Conversation options", style = MaterialTheme.typography.titleLarge)
+    if (options) ModalBottomSheet(onDismissRequest = { options = false }, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
+        Column(Modifier.verticalScroll(optionsScroll).padding(20.dp).navigationBarsPadding(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(if (faceToFace) "Face-to-face settings" else "Conversation options", style = MaterialTheme.typography.titleLarge)
+            OutlinedButton(onClick = { faceToFace = !faceToFace; options = false }, modifier = Modifier.fillMaxWidth()) {
+                Text(if (faceToFace) "Open conversation view" else "Open face-to-face view")
+            }
+            TextButton(onClick = { options = false; translationSettings = true }) { Text("Translation · $translatorLabel") }
+            if (faceToFace) {
+                TextButton(onClick = { voice.stop(); options = false; typing = true }) { Text("Type instead") }
+                TextButton(onClick = { options = false; history = true }) { Text("Saved conversations") }
+                TextButton(onClick = { controller.newSession(); options = false }) { Text("New conversation") }
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) { Text("Show original below translation", Modifier.weight(1f)); Switch(showOriginal, { showOriginal = it; prefs.edit().putBoolean("face_original", it).apply() }, modifier = Modifier.semantics { contentDescription = "Show original below translation" }) }
+            }
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) { Text("Keep screen awake", Modifier.weight(1f)); Switch(keepAwake, { keepAwake = it; prefs.edit().putBoolean("keep_awake", it).apply() }, modifier = Modifier.semantics { contentDescription = "Keep conversation screen awake" }) }
+            if (speaking) TextButton(onClick = { voice.stop() }) { Text("Stop speech") }
             Text(sourceChoices.note, style = MaterialTheme.typography.bodySmall)
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 TextButton(onClick = { options = false; onModels() }) { Text("Models") }
@@ -213,11 +261,46 @@ fun ConversationScreen(onModels: () -> Unit = {}, onCloud: () -> Unit = {}) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) { Text("Save history on this device", Modifier.weight(1f)); Switch(state.saveHistory, controller::saveHistory, modifier = Modifier.semantics { contentDescription = "Save history on this device" }) }
             Text("Turning history off starts a temporary conversation; earlier saved conversations remain in History.", style = MaterialTheme.typography.bodySmall)
             Text("Translation text size: ${textSize.toInt()}")
-            Slider(textSize, { textSize = it }, modifier = Modifier.semantics { contentDescription = "Translation text size"; stateDescription = "${textSize.toInt()}" }, valueRange = 18f..32f, onValueChangeFinished = { prefs.edit().putFloat("text_size", textSize).apply() })
+            Slider(textSize, { textSize = it }, modifier = Modifier.semantics { contentDescription = "Translation text size"; stateDescription = "${textSize.toInt()}" }, valueRange = 18f..40f, onValueChangeFinished = { prefs.edit().putFloat("text_size", textSize).apply() })
             TextButton(onClick = { title = state.session.title; rename = true; options = false }) { Text("Rename conversation") }
             TextButton(onClick = { share(state.session) }, enabled = state.session.turns.isNotEmpty()) { Text("Share conversation text") }
         }
     }
+    if (translationSettings) ModalBottomSheet(onDismissRequest = { translationSettings = false }, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
+        Column(Modifier.verticalScroll(translationScroll).padding(20.dp).navigationBarsPadding()) {
+            ConversationTranslationSetup(onModels = { translationSettings = false; onModels() })
+        }
+    }
+    faceHistory?.let { side -> Dialog(onDismissRequest = { faceHistory = null }, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+        val language = if (side == 0) state.session.first else state.session.second
+        val turns = state.session.turns.filter { it.source == language || it.target == language }
+        Surface(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding()) {
+            Column(Modifier.fillMaxSize().padding(16.dp).rotate(if (side == 1) 180f else 0f)) {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Text(LanguageCatalog.option(language).nativeName, style = MaterialTheme.typography.headlineSmall, modifier = Modifier.weight(1f))
+                    TextButton(onClick = { faceHistory = null }) { Text("Close") }
+                }
+                Text("This conversation", style = MaterialTheme.typography.labelLarge)
+                if (turns.isEmpty()) Text("No messages in this language yet.", Modifier.padding(top = 20.dp))
+                LazyColumn(Modifier.weight(1f), state = rememberLazyListState(initialFirstVisibleItemIndex = (turns.size - 1).coerceAtLeast(0)),
+                    verticalArrangement = Arrangement.spacedBy(12.dp), contentPadding = PaddingValues(vertical = 16.dp)) {
+                    items(turns, key = { it.id }) { turn -> OutlinedCard {
+                        Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text(if (turn.speaker == side) "You said" else "They said", style = MaterialTheme.typography.labelSmall)
+                            val text = if (turn.source == language) turn.original else turn.translation
+                            if (text.isNotBlank()) LanguageText(text, language, textSize)
+                            else Text(if (turn.status == TurnStatus.TRANSLATING) "Translating…" else "Translation unavailable")
+                            if (showOriginal && turn.source != language && turn.original.isNotBlank()) LanguageText(turn.original, turn.source, textSize - 2)
+                            turn.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+                            if (turn.target == language && turn.translation.isNotBlank()) TextButton(enabled = !state.busy, onClick = { voice.speak(turn) }) { Text("Play") }
+                            if (turn.translation.isBlank() && turn.original.isNotBlank()) TextButton(enabled = !state.busy && directionAllowed(turn.source, turn.target), onClick = { voice.stop(); controller.retry(turn, config) }) { Text("Retry translation") }
+                        }
+                    } }
+                }
+                if (speaking) TextButton(onClick = { voice.stop() }) { Text("Stop speech") }
+            }
+        }
+    } }
     if (history) Dialog(onDismissRequest = { history = false }, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         Surface(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding()) {
             Column(Modifier.padding(16.dp)) {
