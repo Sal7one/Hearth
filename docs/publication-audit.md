@@ -27,8 +27,8 @@ This audit does not publish the repository or certify every provider/model/devic
 
 ## Verification record
 
-- Gitleaks 8.30.1: zero findings in the original 25-commit history and in the
-  staged, source-only snapshot. A final post-commit scan is also part of delivery.
+- Release-audit snapshot: Gitleaks 8.30.1 found zero findings in its 26 commits and final source-only
+  archive. The initial 25-commit history and staged snapshot also scanned clean.
   No tracked signing keys, local SDK configuration, model weights or APKs; no
   tracked ignored files. Largest historical blob: 20,558,608 bytes (native runtime),
   below GitHub's 100 MiB single-file limit. Git author metadata is retained.
@@ -67,7 +67,12 @@ These are test APKs; release variants remain unsigned.
 
 ## Remaining release decisions and limits
 
-- No Git remote is configured and nothing has been pushed or published.
+- `origin` is `https://github.com/Sal7one/Hearth.git`. The first source push was
+  completed on 2026-09-13 and the GitHub API confirmed the repository is private.
+  This does not make the app or demo publicly available.
+- The first hosted Actions run passed secret scanning and assembled both QA
+  variants, then received a runner shutdown signal during release builds. It did
+  not complete all hosted gates; local checks above remain the verified results.
 - QA APKs are debug-signed. Both production flavors build unsigned and require a
   maintainer-controlled signing key; see [release instructions](releasing.md).
 - Google/Azure/DeepL/LibreTranslate successful paid-account requests are not claimed
