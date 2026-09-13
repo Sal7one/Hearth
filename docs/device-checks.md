@@ -36,3 +36,17 @@ provides exit records; Android 9/10 still show the persisted startup stage.
 If Android retained a native/ANR trace, **Export Android crash trace** saves its
 original bytes through the file picker. This may be a binary tombstone rather than
 readable text; attach the exported file for analysis. Nothing is uploaded automatically.
+
+## Camera translate (0.9.0)
+
+- Download and install one OCR group; check originals in Downloads/Hearth/models.
+- Import a photo without granting camera permission; verify Original and Translation.
+- Grant camera permission, Start live, hold a printed sign steady, Capture & translate,
+  Retake, Stop and leave/reopen the page. Confirm Stop releases the native workload.
+- Check Arabic reading order and numbers, Chinese/Japanese and Russian with their
+  matching readers. The first release handles level horizontal text, not perspective
+  or vertical layout. Test actual signs and menus; synthetic fixtures are insufficient
+  to establish broad OCR accuracy.
+- Check local behavior in airplane mode after model/language-pack installation.
+- For cloud text translation, verify selected direction, source preservation on error,
+  and that only recognized text is sent. Test large fonts, TalkBack and rotation.

@@ -4,6 +4,19 @@ Updated 2026-09-13: owner approved an on-device benchmark and traveler release w
 
 Ship visible improvements to the working app and preserve cloud BYOK. The owner now explicitly requests a local benchmark; this supersedes the earlier no-benchmark constraint. Keep it inside the app, reuse production adapters, and separate initialization from inference. Avoid speculative native rewrites.
 
+## Camera OCR — 0.9.0
+
+- [x] Audit original camera/ONNX code; retain useful CameraX patterns and safe runtime ownership.
+- [x] Add PaddleOCR detector/readers with exact model identities, language groups and matching dictionaries.
+- [x] Add live camera, capture, photo import, local/cloud text translation, copy controls and lifecycle cleanup.
+- [x] Add grouped camera models, public-folder downloads, automatic installation and verified file imports.
+- [x] Gate cloud/download actions in foss; request camera permission only on camera use.
+- [x] Run native/model fixtures and Android checks; update privacy, attribution and contributor docs.
+- [ ] Improve perspective/tilted-text rectification and real-world Arabic number accuracy using representative images.
+- [ ] Validate paid cloud camera translation and prolonged live-camera thermals on owner workloads.
+
+See [camera implementation](camera-ocr.md) and [v21 validation](validation-v21.md).
+
 ## Publication hardening — 0.8.2
 
 - [x] Fix per-provider encrypted key storage and safe legacy migration.

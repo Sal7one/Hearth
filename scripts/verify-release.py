@@ -38,7 +38,13 @@ for artifact in speech['artifacts']:
     assert binary.stat().st_size == artifact['bytes'], name
     assert hashlib.sha256(binary.read_bytes()).hexdigest() == artifact['sha256'], name
 
-expected_libs = {'libtransiber_translation.so','libcommon_jni.so','libc++_shared.so','libvosk.so','libonnxruntime.so','libhearth_qwen.so','libhearth_nemotron.so','libandroidx.graphics.path.so','libdatastore_shared_counter.so'}
+ocr_assets = root/'common-jni/src/main/assets/ocr'
+for entry in json.loads((ocr_assets/'provenance.json').read_text()):
+    data = (ocr_assets/f"{entry['id']}.json").read_bytes()
+    assert hashlib.sha256(data).hexdigest() == entry['dictionary_sha256'], entry['id']
+    assert len(json.loads(data)) == entry['classes'], entry['id']
+
+expected_libs = {'libtransiber_translation.so','libcommon_jni.so','libc++_shared.so','libvosk.so','libonnxruntime.so','libhearth_qwen.so','libhearth_nemotron.so','libandroidx.graphics.path.so','libdatastore_shared_counter.so','libimage_processing_util_jni.so'}
 platform = {'liblog.so','libandroid.so','libjnigraphics.so','libm.so','libdl.so','libc.so','libz.so'}
 for flavor in ['play','foss']:
     flavor_libs = expected_libs | ({"libtranslate_jni.so"} if flavor == "play" else set())
@@ -73,17 +79,20 @@ for flavor in ['play','foss']:
         for family in ['speech', 'translation']:
             name = f'assets/licenses/{family}/runtime-build.json'
             assert archive.read(name) == (root/'common-jni/src/main'/name).read_bytes(), name
+        for item in ocr_assets.glob('*.json'):
+            assert archive.read('assets/ocr/' + item.name) == item.read_bytes(), item.name
         assert 'assets/licenses/ggml-cpu-NOTICES.txt' in archive.namelist()
+        assert 'assets/licenses/ocr/NOTICE.txt' in archive.namelist()
         assert 'assets/licenses/speech/runtime-build.json' in archive.namelist()
         assert 'assets/licenses/translation/runtime-build.json' in archive.namelist()
         assert 'assets/licenses/vosk/COPYING' in archive.namelist()
     permissions = subprocess.check_output([aapt, 'dump', 'permissions', apk], text=True)
     assert ('android.permission.INTERNET' in permissions) == (flavor == 'play')
     assert ('android.permission.ACCESS_NETWORK_STATE' in permissions) == (flavor == 'play')
-    assert 'android.permission.CAMERA' not in permissions
+    assert 'android.permission.CAMERA' in permissions
     assert 'android.permission.READ_MEDIA_VIDEO' not in permissions
     badging = subprocess.check_output([aapt, 'dump', 'badging', apk], text=True)
     package = "com.sal7one.transiber.qa" if build_type == "qa" else "com.sal7one.transiber"
     assert f"name='{package}'" in badging
-    print(f'{flavor} {build_type}: {apk.stat().st_size} bytes; speech and translation libraries plus two AndroidX libraries; 16KB aligned; permissions PASS')
+    print(f'{flavor} {build_type}: {apk.stat().st_size} bytes; speech, translation and OCR libraries with AndroidX camera utilities; 16KB aligned; permissions PASS')
 print('Standalone artifact verification PASS')

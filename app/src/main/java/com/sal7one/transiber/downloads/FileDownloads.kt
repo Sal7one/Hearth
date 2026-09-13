@@ -1,5 +1,8 @@
 package com.sal7one.transiber.downloads
 
+import com.sal7one.transiber.ocr.OcrCatalog
+import com.sal7one.transiber.ocr.OcrModels
+
 import android.app.DownloadManager
 import android.content.Context
 import android.content.Intent
@@ -57,7 +60,7 @@ class FileDownloads(private val context: Context) {
   val checked = DownloadSpec.parse(spec.url, spec.fileName)
   check(Build.VERSION.SDK_INT >= 29 || folderUri != null) { "Choose a download folder first on Android 9" }
   if (installModelId.isNotEmpty()) {
-   val expected = SpeechDownloads.find(installModelId)?.url ?: TranslationCatalog.models.firstOrNull { it.id == installModelId }?.url
+   val expected = OcrCatalog.find(installModelId)?.url ?: SpeechDownloads.find(installModelId)?.url ?: TranslationCatalog.models.firstOrNull { it.id == installModelId }?.url
    require(expected == checked.url) { "Download does not match the selected model" }
   }
   val id = synchronized(lock) {
@@ -130,6 +133,13 @@ class FileDownloads(private val context: Context) {
   } ?: error("Cannot open downloaded translation model")
  }
  internal suspend fun installModel(id: Long, modelId: String): String = withContext(Dispatchers.IO) {
+  OcrCatalog.find(modelId)?.let { asset ->
+   val job = currentCoroutineContext()
+   val installed = context.contentResolver.openInputStream(uri(id))?.use { input ->
+    OcrModels(File(context.filesDir, "ocr-models")).import(input, asset) { job.ensureActive() }
+   } ?: error("Cannot open downloaded OCR model")
+   return@withContext installed.id
+  }
   val speech = SpeechDownloads.find(modelId)
   if (speech != null) {
    val job = currentCoroutineContext()
@@ -146,6 +156,15 @@ class FileDownloads(private val context: Context) {
  /** Installing is deliberately separate from activating: a late background completion must not change a running session. */
  suspend fun selectInstalled(item: FileDownload) {
   val modelId = record(item.id)?.optString("model").orEmpty()
+  OcrCatalog.find(modelId)?.let { asset ->
+   require(item.installed) { "OCR model is not installed" }
+   OcrCatalog.profiles.firstOrNull { it.asset.id == asset.id }?.let { profile ->
+    val settings = context.getSharedPreferences("camera-translate", 0)
+    val source = settings.getString("source", "en")
+    settings.edit().putString("profile", profile.id).putString("source", source?.takeIf { it in profile.languages } ?: profile.languages.first()).apply()
+   }
+   return
+  }
   val speech = SpeechDownloads.find(modelId)
   require(item.installed && item.installedId.isNotBlank()) { "Model is not installed" }
   CaptionConfigStore.update(context) {

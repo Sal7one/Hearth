@@ -27,6 +27,7 @@ fun CaptionHome(
     onConversation: (() -> Unit)? = null,
     onBenchmark: (() -> Unit)? = null,
     onFaceToFace: (() -> Unit)? = null,
+    onCamera: (() -> Unit)? = null,
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -93,6 +94,7 @@ fun CaptionHome(
     Column(Modifier.fillMaxSize()) {
         Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            onCamera?.let { open -> FilledTonalButton(onClick = open, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) { Text("Camera translate") } }
             if (onConversation != null || onFaceToFace != null) {
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     onConversation?.let { open -> OutlinedButton(onClick = open, modifier = Modifier.heightIn(min = 48.dp)) { Text("Conversation") } }

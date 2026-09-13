@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.9.0 — camera and photo translation
+
+- Add Camera translate on Home: live recognition, capture, photo import, original
+  text, local/cloud translation and separate copy actions.
+- Add verified PaddleOCR v5 mobile detector/readers for Latin, Arabic, Chinese/
+  Japanese and Russian/Ukrainian/Belarusian groups. Downloads install automatically
+  and keep originals in Downloads/Hearth/models; foss supports verified file import.
+- Add a dedicated C++ ONNX image adapter with bounded frames, lifetime-safe native
+  cancellation and stale-result guards. Preserve actual recognition/provider errors.
+- Make camera permissions optional and update privacy, sources and extension docs.
+- Show OCR download progress in model setup and cancel blocked download calls when
+  the user cancels a transfer. Enforce known OCR download sizes before installation.
+
 ## 0.8.2 — publication hardening
 
 - Correct Android Keystore encryption and migrate old speech keys to per-provider

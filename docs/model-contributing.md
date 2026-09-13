@@ -91,3 +91,9 @@ licenses and binary provenance; never update hashes to bless a stale binary.
 Host smoke tests that decode real media additionally require `ffmpeg` on PATH;
 FFmpeg is not included in the app. Keep downloaded build sources under ignored
 `build/`, never in the public source archive.
+
+## Camera OCR
+
+PaddleOCR uses a separate image adapter with pinned detector/reader files, bundled
+dictionaries, and model-aware language selection. See [camera models, downloads
+and extension contracts](camera-ocr.md). Speech packages do not change.

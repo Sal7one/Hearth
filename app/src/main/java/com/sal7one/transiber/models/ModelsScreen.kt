@@ -37,7 +37,7 @@ fun ModelsScreen(onCloud: () -> Unit = {}, onDownloads: () -> Unit = {}) {
     val pages = rememberSaveableStateHolder()
     Column(Modifier.fillMaxSize()) {
         FlowRow(Modifier.padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            (listOf("Speech", "Translation") + if (ByokPolicy.FEATURE_BYOK) listOf("Cloud") else emptyList()).forEach { group ->
+            (listOf("Speech", "Translation", "Camera") + if (ByokPolicy.FEATURE_BYOK) listOf("Cloud") else emptyList()).forEach { group ->
                 FilterChip(selected = section == group, onClick = { section = group }, label = { Text(group) })
             }
         }
@@ -78,6 +78,7 @@ fun ModelsScreen(onCloud: () -> Unit = {}, onDownloads: () -> Unit = {}) {
                         Text("Language packs or text models for on-device translation.", style = MaterialTheme.typography.bodySmall)
                         com.sal7one.transiber.translation.LocalTranslationSetup(config, update, includeLegacy = true)
                     }
+                    "Camera" -> com.sal7one.transiber.ocr.OcrModelSetup(onDownloads)
                     "Cloud" -> {
                         Text("Cloud speech & translation", style = MaterialTheme.typography.titleLarge)
                         Text("Cloud models run at your provider. They need an API key, not a model download.")

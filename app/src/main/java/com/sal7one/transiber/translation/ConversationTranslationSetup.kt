@@ -35,9 +35,9 @@ internal fun ConversationTranslationSetup(onModels: () -> Unit) {
     var transport by remember { mutableStateOf<TranslationHttpTransport?>(null) }
     DisposableEffect(Unit) { onDispose { transport?.close() } }
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text("Conversation translation", style = MaterialTheme.typography.titleLarge)
-        Text("Used in Conversation and Face to face. Speech recognition and overlay settings stay separate.", style = MaterialTheme.typography.bodySmall)
-        Text("Using: ${ConversationTranslationSettings.label(context, config.localTranslationModelId)}", style = MaterialTheme.typography.titleSmall)
+        Text("Translation connections", style = MaterialTheme.typography.titleLarge)
+        Text("Connections are shared by Conversation, Face to face and Camera translate. Camera selects its translator separately.", style = MaterialTheme.typography.bodySmall)
+        Text("Conversation uses: ${ConversationTranslationSettings.label(context, config.localTranslationModelId)}", style = MaterialTheme.typography.titleSmall)
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             FilterChip(selected = editing == null, enabled = !working, onClick = { editing = null; status = null }, label = { Text("On device") })
             if (ByokPolicy.FEATURE_BYOK) TextTranslationProvider.entries.forEach { provider ->

@@ -44,7 +44,7 @@ Local benchmarks save results and transcripts locally, with explicit JSON export
 Imported benchmark audio is held only in memory and is not copied into the app. Copying text uses Android's
 clipboard. The capture notification stays visible and offers Stop. Playback capture
 uses MediaProjection consent and microphone permission; microphone capture uses
-microphone permission. No camera, contact or broad media-library permissions are requested.
+microphone permission. Camera permission is requested only when you open the camera. No contact or broad media-library permissions are requested.
 
 Caption text and provider response bodies are not written to routine caption logs.
 Local troubleshooting stores the most recent speech startup stage, timestamp and
@@ -61,3 +61,14 @@ file downloads. The foss build excludes ML Kit and its native library.
 See [ML Kit data disclosure](https://developers.google.com/ml-kit/terms).
 Soniox and ElevenLabs are optional cloud providers subject to their own policies;
 Soniox integrated translation sends audio through the selected cloud connection.
+
+Camera translate processes preview frames and imported photos on-device with PaddleOCR.
+Camera images and recognized text are held in memory, without an app-created photo
+archive or automatic upload. Original imported files remain in the chosen provider.
+Leaving the page/app stops analysis and releases models; the camera follows the
+page lifecycle. The file picker can import a photo without camera permission.
+Optional cloud camera translation sends only recognized text and language settings
+to the selected text provider using the same protected connections as Conversation.
+Camera defaults to local translation and keeps its provider selection separate.
+Copy actions use Android's clipboard. OCR model downloads contact Hugging Face;
+those requests contain no saved speech or translation API key.

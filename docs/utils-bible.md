@@ -85,3 +85,14 @@ no temporary private copy/export is used for original downloads.
   redirects, coroutine cancellation/closed ownership and bounded response size.
 - `FaceToFacePanel` is a presentation-only consumer of the existing conversation state,
   with no new microphone, persistence or native ownership path.
+
+## Hearth 0.9.0 additions
+
+- `OcrCatalog` / `OcrModels`: camera setup and foreground download installation;
+  tests cover pinned identities, actual language groups, invalid import preserving
+  the installed file, and cancelled staging cleanup. Runtime open rechecks hashes.
+- `OcrStability` / `OcrText`: camera pipeline consumers; tests cover live settling,
+  blank/reset transitions, immediate capture and Arabic ordering/number preservation.
+- `ocr_geometry.h`: production native detector/CTC consumer; ASan/UBSan host checks
+  cover expansion, clipping, noise rejection and CTC repeat/blank semantics.
+  `PaddleOcr` additionally consumes the shared, host-tested lease registry.

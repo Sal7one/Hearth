@@ -68,3 +68,9 @@ not an assertion of support for the latest persistent Moonshine streaming decode
 Conversation and Face to face additionally support Google Cloud, Microsoft Azure,
 DeepL and LibreTranslate. See [connections, official sources and setup](conversation-cloud-translation.md).
 These services translate text; they are separate from the speech model catalog.
+
+## Camera OCR
+
+PaddleOCR uses a separate image adapter with pinned detector/reader files, bundled
+dictionaries, and model-aware language selection. See [camera models, downloads
+and extension contracts](camera-ocr.md). Speech packages do not change.

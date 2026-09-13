@@ -1,0 +1,34 @@
+[
+  {
+    "id": "cjk",
+    "source": "PaddlePaddle/PP-OCRv5_mobile_rec_onnx",
+    "revision": "ed152b8b495f84de93cda5709d768548a9127622",
+    "publisher_config_sha256": "5dfeb2777f6d0db8177d8128a8acfcf6e6276dc4ac73ea3bf0dc06d6a5e85d8e",
+    "dictionary_sha256": "14ccb8e120e701464bd3084acf3b398ffee767e515477ad27d3c80fd5996c180",
+    "classes": 18385
+  },
+  {
+    "id": "arabic",
+    "source": "PaddlePaddle/arabic_PP-OCRv5_mobile_rec_onnx",
+    "revision": "14aaedcd75825982689ecf5cd64ab33ee083215a",
+    "publisher_config_sha256": "21368419e6c016c31db55d316d59e11c128e1913e6e6fe10287084710043d3a6",
+    "dictionary_sha256": "0ef31502f8842d33ae58f5d24247191231c82315f741802362a46736114a0196",
+    "classes": 749
+  },
+  {
+    "id": "latin",
+    "source": "PaddlePaddle/latin_PP-OCRv5_mobile_rec_onnx",
+    "revision": "89d3a50e2c27e2e7cceeab0e944c25c807d5db4f",
+    "publisher_config_sha256": "0bbe984570f597af3638e50bdf2e8276f3ab26a61966096538b3b0d1849f5c84",
+    "dictionary_sha256": "4ceed77d5579a6a49592eb049e07af703309823a2119220492a4f5145f7e90df",
+    "classes": 838
+  },
+  {
+    "id": "cyrillic",
+    "source": "PaddlePaddle/eslav_PP-OCRv5_mobile_rec_onnx",
+    "revision": "9a32171fc5718746875e1a261818884517975013",
+    "publisher_config_sha256": "025039bac23eb4a308efcefa4d58eab3af440767815c6ba6938468bf6353ee5a",
+    "dictionary_sha256": "f215ba1dd8e0af5699746689d3a49d3786ce82c3170b8830006b7344add34620",
+    "classes": 519
+  }
+]

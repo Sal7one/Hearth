@@ -95,3 +95,9 @@ the publisher sample/license is 44,442,781 bytes. Base uses `moonshine-base-en-v
 and its own corresponding encoder/merged decoder; do not mix package versions.
 Catalogued tar.bz2 downloads install automatically; arbitrary ONNX files still need a supported adapter/profile. See the
 [contribution guide](model-contributing.md) for actual extension points.
+
+## Camera OCR
+
+PaddleOCR uses a separate image adapter with pinned detector/reader files, bundled
+dictionaries, and model-aware language selection. See [camera models, downloads
+and extension contracts](camera-ocr.md). Speech packages do not change.

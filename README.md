@@ -1,7 +1,7 @@
 # Hearth
 
 An Android app for live captions over other apps, local speech recognition, and
-bring-your-own-key cloud transcription and translation. Extracted from Hearth's
+bring-your-own-key cloud transcription and translation, plus on-device camera OCR. Extracted from Hearth's
 caption system into a separate, focused project.
 
 ## Development backlog
@@ -32,6 +32,8 @@ See the [model contribution guide](docs/model-contributing.md) and [release chec
 - **Local benchmark** compares installed models on the same WAV or corrected text, separates loading from inference and saves/export reports on-device. See [method and limitations](docs/local-benchmark.md), [speech phone results](docs/validation-v17.md), and the [eight-option local translation comparison](docs/local-translation-benchmark-2026-09-13.md).
 - Persistent System, Light and Dark appearance in Setup.
 
+- **Camera translate**: live camera and photo text recognition with PaddleOCR v5 mobile, selectable local/cloud text translation, and automatic model installation. See [camera setup, sources and limits](docs/camera-ocr.md).
+
 ## Build
 
 Android 9+ (API 28); **arm64 only**. Playback capture requires Android 10+.
@@ -45,6 +47,7 @@ included. No Hearth checkout or local Maven repository is needed.
 bash common-jni/src/main/cpp/common/tests/run_common_utils_tests.sh
 bash common-jni/src/main/cpp/speech/tests/run_speech_tests.sh
 bash common-jni/src/main/cpp/vosk/tests/run_vosk_api_tests.sh
+bash common-jni/src/main/cpp/ocr/tests/run_ocr_tests.sh
 python3 scripts/speech/test_package.py
 ./gradlew :common-jni:externalNativeBuildDebug :app:assemblePlayQa :app:assembleFossQa
 python3 scripts/verify-release.py
@@ -69,7 +72,7 @@ See [changes](CHANGELOG.md), [security reporting](SECURITY.md), and the
    Bubble settings separate Appearance from CC & translation.
 
 **Setup** contains Models, Downloads and Cloud connection. Models groups Speech,
-Translation and Cloud, with source links, installed models and matching import actions.
+Translation, Camera and Cloud, with source links, installed models and matching import actions.
 Speech and translation family chips open the matching setup directly; the active
 model is labeled separately. Translation sizes are grouped by family. See [all sources and installation paths](docs/model-sources.md). Connect
 or change your existing cloud provider/key under Cloud connection. Advanced setup
@@ -88,8 +91,8 @@ See [PRIVACY.md](PRIVACY.md). This standalone app has a separate Android identit
 models. New public Downloads files remain; export older app-stored downloads or
 Android 9 downloads first if you need to keep them.
 
-The repo has fresh history and excludes Hearth's editor, FFmpeg, books, camera,
-image processing, yt-dlp, chat and unrelated screens. Shared utilities and speech
+The repo has fresh history and excludes Hearth's editor, FFmpeg, books, sign
+recognition, yt-dlp, chat and unrelated screens. Camera/image OCR translation is included. Shared utilities and speech
 JNI APIs retain their original packages where required for native binding compatibility.
 
 ## License
@@ -101,7 +104,7 @@ Model weights are separately licensed downloads, not bundled app assets.
 ### Model downloads
 
 In Models, **Download & install** downloads catalogued Moonshine Tiny/Base,
-Qwen3-ASR 0.6B, Nemotron and translation GGUFs, then verifies and installs them
+Qwen3-ASR 0.6B, Nemotron, translation GGUFs and PaddleOCR ONNX files, then verifies and installs them
 on the phone. No computer, export or re-import is required. Use the installed
 model when ready; a background completion does not replace a running session's engine.
 

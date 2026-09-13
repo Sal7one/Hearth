@@ -1,7 +1,7 @@
 # Third-party notices
 
 First-party application and speech adapter code: Apache-2.0, see LICENSE and NOTICE.
-This project extracts a speech-only subset of Hearth at 978382d; modified application
+This project started with a speech subset of Hearth at 978382d; modified application
 packages use `com.sal7one.transiber`. Third-party license texts are also included in
 APK assets under `licenses/`.
 
@@ -23,7 +23,7 @@ Exact prebuilt library hashes and original Maven artifact URLs are in
 The Qwen/Nemotron build provenance and adapter hashes are in
 `common-jni/src/main/assets/licenses/speech/runtime-build.json`.
 
-FFmpeg, x264/x265, OpenCV, LiteRT, media editing, camera/ASL models and sample media
+FFmpeg, x264/x265, OpenCV, LiteRT, media editing, ASL models and sample media
 are not part of this extraction. Model weights are not in this repository or APK.
 Qwen weights use their publisher's Apache-2.0 terms; Nemotron weights have their own
 OpenMDW-1.1 terms. Imported Whisper/Vosk/Marian/voice models likewise retain their
@@ -46,3 +46,10 @@ Jeffrey Quesnelle / Bowen Peng YaRN contributions; their MIT notices are package
 in `licenses/ggml-cpu-NOTICES.txt`. The source tree also retains Android-disabled
 SYCL files with Apache-2.0 WITH LLVM-exception headers. Those files are not built
 into these Android APKs; preserve their individual headers when redistributing.
+
+Camera translation uses AndroidX CameraX 1.4.0, including its image-processing JNI
+utility, under Apache-2.0. PaddleOCR/PaddleX recognition dictionaries are derived
+from pinned PaddlePaddle PP-OCRv5 ONNX export configurations (Apache-2.0), with
+blank/space entries for CTC decoding. Exact origins, revisions and hashes are in
+`assets/ocr/provenance.json`. Recognition and detector weights are separate
+verified downloads, not APK assets. See [OCR sources](docs/camera-ocr.md).

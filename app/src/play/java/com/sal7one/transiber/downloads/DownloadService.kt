@@ -10,6 +10,7 @@ import androidx.core.app.NotificationCompat
 import androidx.documentfile.provider.DocumentFile
 import com.sal7one.transiber.MainActivity
 import com.sal7one.transiber.models.SpeechDownloads
+import com.sal7one.transiber.ocr.OcrCatalog
 import com.sal7one.common_jni.translation.TranslationCatalog
 import kotlinx.coroutines.*
 import okhttp3.OkHttpClient
@@ -68,12 +69,13 @@ class DownloadService : Service() {
             publish("Downloading $title")
             val checked = DownloadSpec.parse(record.getString("url"), title)
             val call = client.newCall(Request.Builder().url(checked.url).build())
-            val job = currentCoroutineContext().job
-            val cancel = job.invokeOnCompletion { if (it != null) call.cancel() }
+            val cancel = CoroutineScope(currentCoroutineContext()).launch(start = CoroutineStart.UNDISPATCHED) {
+                try { awaitCancellation() } finally { call.cancel() }
+            }
             try {
                 call.execute().use { response ->
                     check(response.isSuccessful) { "HTTP ${response.code} ${response.message}" }
-                    val expected = SpeechDownloads.find(modelId)?.bytes ?: TranslationCatalog.models.firstOrNull { it.id == modelId }?.bytes
+                    val expected = OcrCatalog.find(modelId)?.bytes ?: SpeechDownloads.find(modelId)?.bytes ?: TranslationCatalog.models.firstOrNull { it.id == modelId }?.bytes
                     val length = response.body?.contentLength() ?: -1
                     if (expected != null && length >= 0) require(length == expected) { "Download size differs from the selected model: $length, expected $expected" }
                     val total = expected ?: length
@@ -104,7 +106,7 @@ class DownloadService : Service() {
                 }
                 downloads.update(id) { it.put("downloadComplete", true) }
                 complete = true
-            } finally { cancel.dispose() }
+            } finally { cancel.cancel() }
         }
         if (complete && modelId.isNotBlank()) {
             downloads.update(id) { it.put("phase", "Installing") }

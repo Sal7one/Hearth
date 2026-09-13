@@ -11,8 +11,8 @@ android {
   applicationId = "com.sal7one.transiber"
   minSdk = 28
   targetSdk = 36
-  versionCode = 20
-  versionName = "0.8.2"
+  versionCode = 21
+  versionName = "0.9.0"
   ndk { abiFilters += "arm64-v8a" }
  }
  flavorDimensions += "distribution"
@@ -32,6 +32,7 @@ android {
 kotlin { jvmToolchain(17) }
 dependencies {
  implementation(project(":common-jni"))
+ for (module in listOf("camera-core", "camera-camera2", "camera-lifecycle", "camera-view")) implementation("androidx.camera:$module:1.4.0")
  "playImplementation"("com.google.mlkit:translate:17.0.3")
  implementation(libs.androidx.core.ktx)
  implementation(libs.androidx.lifecycle.runtime.ktx)
