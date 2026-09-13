@@ -12,8 +12,9 @@ Use local mode if you do not want audio sent to a service. Error messages may co
 provider response details; redact these before posting public bug reports.
 
 API keys are encrypted using Android Keystore when available. If Keystore fails,
-the inherited key store can use a weaker app-private file-backed encryption key;
-the settings UI reports the storage mode. Keys and model files are excluded from
+speech keys can use a weaker app-private file-backed encryption key;
+the OpenAI settings UI reports its storage mode. Each key records its own mode.
+Removing one provider key preserves the encryption material required by other keys. Keys and model files are excluded from
 Android backup and device transfer. Clearing app data removes saved credentials.
 No credentials are included in this repository. Download requests do not receive
 speech provider API keys.
@@ -30,7 +31,8 @@ follows its own privacy policy. HTTPS is required for direct download URLs.
 Overlay captions and their bounded history are held in memory during the session.
 Conversation mode saves original and translated text in a local database excluded from backup;
 saving can be disabled, and saved conversations can be deleted or explicitly shared.
-No conversation audio is saved. Its optional read-aloud selects installed offline system voices.
+No conversation audio is saved. System read-aloud in both captions and conversation
+selects installed offline voices only; it does not silently select a different language.
 Conversation and Face to face can separately send finalized text to Google Cloud
 Translation, Microsoft Azure Translator, DeepL, or a chosen LibreTranslate server.
 Choosing local speech does not make a selected cloud text translator local. Setup
@@ -44,6 +46,7 @@ clipboard. The capture notification stays visible and offers Stop. Playback capt
 uses MediaProjection consent and microphone permission; microphone capture uses
 microphone permission. No camera, contact or broad media-library permissions are requested.
 
+Caption text and provider response bodies are not written to routine caption logs.
 Local troubleshooting stores the most recent speech startup stage, timestamp and
 available RAM. The Copy report action includes device/build and Android process-exit
 metadata. Optional trace export saves an Android-provided crash/ANR trace, which may

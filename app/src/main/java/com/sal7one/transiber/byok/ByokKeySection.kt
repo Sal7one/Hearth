@@ -46,7 +46,7 @@ fun ByokKeySection(onStoredChange: (Boolean) -> Unit = {}, onModeChange: (CloudC
     val context = LocalContext.current
     var keyDraft by remember { mutableStateOf("") }
     var keyStored by remember { mutableStateOf(ApiKeyStore.hasOpenAiKey(context)) }
-    var keyStoreError by remember { mutableStateOf<String?>(null) }
+    var keyStoreError by remember { mutableStateOf(ApiKeyStore.lastFailure) }
     var keyRevision by remember { mutableStateOf(0) }
     var currentProvider by remember { mutableStateOf(CloudConfigStore.provider(context)) }
     var baseUrlDraft by remember { mutableStateOf(CloudConfigStore.baseUrl(context)) }
@@ -139,17 +139,18 @@ fun ByokKeySection(onStoredChange: (Boolean) -> Unit = {}, onModeChange: (CloudC
         Button(
             onClick = {
                 val stored = ApiKeyStore.setOpenAiKey(context, keyDraft)
+                val storageFailure = ApiKeyStore.lastFailure
                 keyDraft = ""
                 if (!stored) {
                     keyStoreError = "Could not store the key on this device — " +
-                        (ApiKeyStore.lastFailure ?: "storage failed") +
+                        (storageFailure ?: "storage failed") +
                         ". Nothing was saved."
                 } else {
                     keyStoreError = if (
                         ApiKeyStore.storageMode(context) == ApiKeyStore.StorageMode.BASIC
                     ) {
                         "Stored with basic protection — this device's Keystore " +
-                            "was unavailable (" + (ApiKeyStore.lastFailure ?: "unknown") + ")."
+                            "was unavailable (" + (storageFailure ?: "unknown") + ")."
                     } else {
                         null
                     }
@@ -163,7 +164,8 @@ fun ByokKeySection(onStoredChange: (Boolean) -> Unit = {}, onModeChange: (CloudC
         if (keyStored) {
             OutlinedButton(
                 onClick = {
-                    ApiKeyStore.setOpenAiKey(context, "")
+                    val removed = ApiKeyStore.setOpenAiKey(context, "")
+                    keyStoreError = if (removed) null else ApiKeyStore.lastFailure
                     refresh()
                 },
             ) {

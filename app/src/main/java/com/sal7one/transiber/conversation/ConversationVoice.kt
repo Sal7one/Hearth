@@ -1,5 +1,6 @@
 package com.sal7one.transiber.conversation
 
+import com.sal7one.transiber.voice.OfflineVoicePolicy
 import android.content.Context
 import android.os.Handler
 import android.os.Looper
@@ -30,8 +31,11 @@ internal class ConversationVoice(context: Context, private val changed: (Boolean
         stop()
         if (!ready) { changed(false, "System speech is not ready. Try Play again."); return }
         val locale = Locale.forLanguageTag(turn.target)
-        val voice = tts.voices?.filter { !it.isNetworkConnectionRequired && it.locale.language == locale.language }
-            ?.sortedByDescending { it.quality }?.firstOrNull()
+        val voices = tts.voices.orEmpty()
+        val selected = OfflineVoicePolicy.select(voices.map {
+            OfflineVoicePolicy.Candidate(it.name, it.locale, it.isNetworkConnectionRequired, it.quality)
+        }, locale)
+        val voice = voices.firstOrNull { it.name == selected }
         if (voice == null) { changed(false, "No installed offline ${locale.getDisplayLanguage(Locale.ENGLISH)} voice. Install one in Android text-to-speech settings."); return }
         if (tts.setVoice(voice) != TextToSpeech.SUCCESS) { changed(false, "System text-to-speech could not select ${voice.name}"); return }
         val id = UUID.randomUUID().toString(); active = id

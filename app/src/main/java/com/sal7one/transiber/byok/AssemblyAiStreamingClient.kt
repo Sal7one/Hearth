@@ -42,11 +42,14 @@ class AssemblyAiStreamingClient(
     private var keepalive: ScheduledExecutorService? = null
 
     private val client = OkHttpClient.Builder()
+        .followRedirects(false)
+        .followSslRedirects(false)
         .connectTimeout(15, TimeUnit.SECONDS)
         .pingInterval(10, TimeUnit.SECONDS)
         .build()
 
     override fun connect() {
+        check(ByokPolicy.FEATURE_BYOK) { "Cloud services are unavailable in the offline build" }
         val url = "wss://streaming.assemblyai.com/v3/ws" +
             "?sample_rate=$sampleRate&speech_model=$speechModel"
         val request = Request.Builder()

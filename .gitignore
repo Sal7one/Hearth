@@ -15,3 +15,13 @@ local.properties
 *.onnx
 *.bin
 !gradle/wrapper/gradle-wrapper.jar
+
+# Generated Python caches and local signing/profiling material
+__pycache__/
+*.py[cod]
+*.p12
+*.pfx
+*.pem
+*.hprof
+keystore.properties
+signing.properties

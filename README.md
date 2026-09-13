@@ -42,6 +42,7 @@ included. No Hearth checkout or local Maven repository is needed.
 
 ```sh
 ./gradlew test :app:compilePlayQaKotlin :app:compileFossQaKotlin
+bash common-jni/src/main/cpp/common/tests/run_common_utils_tests.sh
 bash common-jni/src/main/cpp/speech/tests/run_speech_tests.sh
 bash common-jni/src/main/cpp/vosk/tests/run_vosk_api_tests.sh
 python3 scripts/speech/test_package.py
@@ -52,8 +53,11 @@ python3 scripts/verify-release.py
 APKs: `app/build/outputs/apk/{play,foss}/qa/`. QA builds use the standard Android
 **debug signing key** and application ID `com.sal7one.transiber.qa`. They are test
 artifacts, not a stable signing identity for store releases. For a production
-release, configure your own signing key outside Git and build `assemblePlayRelease`.
+release, build the unsigned release variant and sign it with your own key outside
+Git; see the [release and signing guide](docs/releasing.md).
 Never commit keys or credentials. CI builds and uploads both QA APKs.
+See [changes](CHANGELOG.md), [security reporting](SECURITY.md), and the
+[publication audit](docs/publication-audit.md).
 
 ## Start captions
 

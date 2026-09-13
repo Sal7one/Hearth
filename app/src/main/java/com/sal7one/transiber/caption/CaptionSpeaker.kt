@@ -1,5 +1,6 @@
 package com.sal7one.transiber.caption
 
+import com.sal7one.transiber.voice.OfflineVoicePolicy
 import android.content.Context
 import android.media.AudioAttributes
 import android.media.AudioFormat
@@ -99,27 +100,14 @@ class SystemTtsSpeaker(context: Context) : CaptionSpeaker {
 
     override fun speak(text: String, languageTag: String): Boolean {
         if (!ready || text.isBlank()) return false
-        val locale = runCatching { Locale.forLanguageTag(languageTag) }
-            .getOrDefault(Locale.getDefault())
-        val support = tts.setLanguage(locale)
-        if (support == TextToSpeech.LANG_MISSING_DATA ||
-            support == TextToSpeech.LANG_NOT_SUPPORTED
-        ) {
-            // Speak anyway in the default voice rather than dropping the line.
-            tts.setLanguage(Locale.getDefault())
-        }
-        // Arabic accent preference: device TTS engines default to an
-        // Egyptian voice on many devices — prefer a Saudi (ar-SA) voice
-        // when one is installed, keep the engine default otherwise.
-        if (locale.language == "ar") {
-            tts.voices.firstOrNull { voice ->
-                voice.locale.language == "ar" && voice.locale.country == "SA"
-            }?.let { saudi ->
-                tts.voice = saudi
-            }
-        }
-        tts.speak(text, TextToSpeech.QUEUE_ADD, null, "caption-${System.nanoTime()}")
-        return true
+        val locale = Locale.forLanguageTag(languageTag)
+        val voices = tts.voices.orEmpty()
+        val selected = OfflineVoicePolicy.select(voices.map {
+            OfflineVoicePolicy.Candidate(it.name, it.locale, it.isNetworkConnectionRequired, it.quality)
+        }, locale) ?: return false
+        val voice = voices.first { it.name == selected }
+        if (tts.setVoice(voice) != TextToSpeech.SUCCESS) return false
+        return tts.speak(text, TextToSpeech.QUEUE_ADD, null, "caption-${System.nanoTime()}") == TextToSpeech.SUCCESS
     }
 
     override fun stop() {

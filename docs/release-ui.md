@@ -14,8 +14,8 @@ existing capture/readiness rules. Browsing conversation or model comparisons doe
 not silently start or stop audio.
 
 The palette now supplies Material 3 container and inverse roles explicitly, so menus,
-cards and snackbars match Hearth in both modes. Dark semantic containers use opaque
-blended colors rather than alpha surfaces whose contrast depends on their parent.
+cards and snackbars match Hearth in both modes. Verify contrast against the actual parent surface; some semantic containers use
+alpha and need checking in both themes.
 
 ## Integration
 
@@ -30,4 +30,5 @@ blended colors rather than alpha surfaces whose contrast depends on their parent
 
 Visual verification should cover dark/light/system switching, relaunch persistence,
 large font wrapping, TalkBack selected states and opening each new destination.
-The central integration pass owns compilation and device checks.
+The integrated navigation and themes were exercised in releases 0.7–0.8.1; see
+[device checks](device-checks.md). An auditory TalkBack pass remains outstanding.

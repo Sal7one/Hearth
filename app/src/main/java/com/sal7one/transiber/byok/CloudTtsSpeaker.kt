@@ -20,6 +20,7 @@ class OpenAiSpeechClient(
 ) {
     /** Returns raw MP3 bytes for the spoken [text]. */
     fun speak(text: String): ByteArray {
+        check(ByokPolicy.FEATURE_BYOK) { "Cloud services are unavailable in the offline build" }
         val payload = JSONObject()
             .put("model", model)
             .put("input", text)
@@ -31,6 +32,7 @@ class OpenAiSpeechClient(
             if (it.endsWith("/audio/speech")) it else it + "/audio/speech"
         }
         val connection = (URL(endpoint).openConnection() as HttpURLConnection).apply {
+            instanceFollowRedirects = false
             requestMethod = "POST"
             connectTimeout = 15_000
             readTimeout = 60_000

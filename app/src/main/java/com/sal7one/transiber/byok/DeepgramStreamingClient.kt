@@ -48,11 +48,14 @@ class DeepgramStreamingClient(
     private var keepalive: ScheduledExecutorService? = null
 
     private val client = OkHttpClient.Builder()
+        .followRedirects(false)
+        .followSslRedirects(false)
         .connectTimeout(15, TimeUnit.SECONDS)
         .pingInterval(10, TimeUnit.SECONDS)
         .build()
 
     override fun connect() {
+        check(ByokPolicy.FEATURE_BYOK) { "Cloud services are unavailable in the offline build" }
         val url = buildString {
             append("wss://api.deepgram.com/v1/listen?model=").append(model)
             if (!language.isNullOrBlank()) append("&language=").append(language)
