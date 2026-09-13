@@ -4,6 +4,15 @@ Updated 2026-09-13: owner approved an on-device benchmark and traveler release w
 
 Ship visible improvements to the working app and preserve cloud BYOK. The owner now explicitly requests a local benchmark; this supersedes the earlier no-benchmark constraint. Keep it inside the app, reuse production adapters, and separate initialization from inference. Avoid speculative native rewrites.
 
+## Voice discoverability — 0.10.1
+
+- [x] Present new TTS models as cards with runtime/language/license facts and publisher/setup links.
+- [x] Add explicit Android and Custom playback at all existing manual read-aloud controls.
+- [x] Preserve the custom default when configuring or playing Android voices.
+- [x] Add caption Custom default and reject unavailable custom routes without a system fallback.
+
+See [v23 checks](validation-v23.md).
+
 ## Shared voices and typing — 0.10.0
 
 - [x] Inspect requested tts-bench/Qwen/Chatterbox/Fish sources in ignored research checkouts.

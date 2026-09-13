@@ -1,4 +1,4 @@
-# Shared voices and typed translation — Hearth 0.10.0
+# Shared voices and typed translation — Hearth 0.10.1
 
 Home → **Type to translate** gives an input field above its translation, explicit
 source/target languages, swap, copy, clear, Play original and Play translation.
@@ -10,8 +10,13 @@ leaves the foreground. No typed history is written to the conversation database.
 The draft survives visiting a settings page within the current activity.
 
 **Setup → Voices & read aloud** is shared by Type to translate, Conversation,
-Face to face and Camera. Their Play actions use the selected engine. Captions have
-an explicit **Shared voice settings** read-aloud choice, alongside Android,
+Face to face and Camera. Manual playback offers separate **Android** and **Custom** buttons for originals
+and translations. Android always uses the installed offline phone voice; Custom
+uses the last selected Supertonic or self-hosted default, even after visiting the
+Android voice settings. Neither manual button changes the other default. When no
+custom engine is configured, the custom action opens setup. This includes traveler
+turns, face-to-face history, large-text presentation, camera and voice preview. Captions have
+an explicit **Custom default** choice and a **Shared voice settings** read-aloud choice, alongside Android,
 Supertonic and the existing separately configured OpenAI-compatible cloud voice.
 Automatic traveler speech remains optional. Starting microphone capture stops
 traveler playback. Camera speech is manual, for either original or translated text.
@@ -37,7 +42,12 @@ fail before synthesis; no voice silently changes the requested language.
 Select Supertonic 3 and a voice, then **Download engine & voice**. Hearth saves the
 originals directly to `Downloads/Hearth/models`, or your chosen download folder,
 and installs verified copies automatically. Progress/cancellation use Downloads.
-No export/reimport step is needed. Selecting a different voice downloads only its
+No export/reimport step is needed. The native model card shows runtime, language/voice coverage, size and license,
+with a publisher/model-files link in play. Self-hosted setup has separate visible
+Chatterbox, Qwen and Fish cards with their source/model/setup links and runtime
+limitations. Foss does not open web links or offer self-hosted connections.
+
+Selecting a different voice downloads only its
 missing style; installed engine files are reused.
 
 Offline/import users can select the four ONNX files, `tts.json`,

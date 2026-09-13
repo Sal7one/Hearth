@@ -114,3 +114,9 @@ no temporary private copy/export is used for original downloads.
 - `voice_bounds.h`: native Supertonic consumer; sanitizer host checks cover invalid
   tokens/styles/speed/steps/duration and latent/audio length geometry. The JNI adapter
   also consumes the existing tested lease registry.
+
+Version 0.10.1: `VoiceSelection` is consumed by settings, shared manual playback
+and caption Custom default. Host tests cover independent Android/custom/default
+routing, existing selection migration, model changes and rejection of unconfigured
+or offline-inaccessible custom engines. `ReadAloudButtons` reuses this selection
+across typed text, camera, conversation/history/presentation and voice preview.

@@ -63,7 +63,7 @@ internal fun TypedTranslateScreen(onModels: ()->Unit,onConnections: ()->Unit,onV
         OutlinedTextField(text,{text=it.take(3000)},label={Text("Type to translate")},minLines=4,maxLines=10,modifier=Modifier.fillMaxWidth().padding(top=2.dp),supportingText={Text("${text.length}/3000")})
         FlowRow(horizontalArrangement=Arrangement.spacedBy(8.dp)) {
             Button(onClick={update(true)},enabled=text.isNotBlank()){Text("Translate")}
-            TextButton(onClick={voiceError=null;voice.speak(text,source)},enabled=text.isNotBlank()){Text("Play original")}
+            ReadAloudButtons("original",text.isNotBlank(),{system->voiceError=null;voice.speak(text,source,if(system)com.sal7one.transiber.voice.VoicePlaybackMode.SYSTEM else com.sal7one.transiber.voice.VoicePlaybackMode.CUSTOM)},onVoices)
             TextButton(onClick={text="";controller.clear();voice.stop()}){Text("Clear")}
         }
         Card(Modifier.fillMaxWidth()) {Column(Modifier.padding(16.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
@@ -71,7 +71,7 @@ internal fun TypedTranslateScreen(onModels: ()->Unit,onConnections: ()->Unit,onV
             if(state.busy)LinearProgressIndicator(Modifier.fillMaxWidth())
             SelectionContainer {Text(state.output.ifBlank {if(state.busy)"Translating…" else "Your translation appears here"},style=MaterialTheme.typography.headlineSmall)}
             if(state.output.isNotBlank())FlowRow(horizontalArrangement=Arrangement.spacedBy(8.dp)) {
-                Button(onClick={voiceError=null;voice.speak(state.output,target)}){Text("Play translation")}
+                ReadAloudButtons("translation",onPlay={system->voiceError=null;voice.speak(state.output,target,if(system)com.sal7one.transiber.voice.VoicePlaybackMode.SYSTEM else com.sal7one.transiber.voice.VoicePlaybackMode.CUSTOM)},onSetup=onVoices)
                 TextButton(onClick={context.getSystemService(ClipboardManager::class.java).setPrimaryClip(ClipData.newPlainText("Translation",state.output))}){Text("Copy")}
             }
         }}

@@ -190,7 +190,7 @@ fun ConversationScreen(onModels: () -> Unit = {}, onCloud: () -> Unit = {}, onLa
                             turn.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
                             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 if (turn.translation.isNotBlank()) {
-                                    TextButton(onClick = { voiceError = null; voice.speak(turn) }, enabled = !state.busy) { Text("Play") }
+                                    com.sal7one.transiber.voice.ReadAloudButtons("translation", !state.busy, { system -> voiceError=null; voice.speak(turn,system) }, onVoices)
                                     TextButton(onClick = { flipped = false; presentation = turn }) { Text("Show large") }
                                 } else if (turn.original.isNotBlank() && !state.busy) TextButton(onClick = { voice.stop(); controller.retry(turn, config) }, enabled = directionAllowed(turn.source, turn.target)) { Text("Retry translation") }
                             }
@@ -295,7 +295,7 @@ fun ConversationScreen(onModels: () -> Unit = {}, onCloud: () -> Unit = {}, onLa
                             else Text(if (turn.status == TurnStatus.TRANSLATING) "Translating…" else "Translation unavailable")
                             if (showOriginal && turn.source != language && turn.original.isNotBlank()) LanguageText(turn.original, turn.source, textSize - 2)
                             turn.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-                            if (turn.target == language && turn.translation.isNotBlank()) TextButton(enabled = !state.busy, onClick = { voice.speak(turn) }) { Text("Play") }
+                            if (turn.target == language && turn.translation.isNotBlank()) com.sal7one.transiber.voice.ReadAloudButtons("translation", !state.busy, { system -> voiceError=null; voice.speak(turn,system) }, {faceHistory=null;onVoices()})
                             if (turn.translation.isBlank() && turn.original.isNotBlank()) TextButton(enabled = !state.busy && directionAllowed(turn.source, turn.target), onClick = { voice.stop(); controller.retry(turn, config) }) { Text("Retry translation") }
                         }
                     } }
@@ -334,7 +334,8 @@ fun ConversationScreen(onModels: () -> Unit = {}, onCloud: () -> Unit = {}, onLa
             Column(Modifier.fillMaxSize().padding(24.dp).rotate(if (flipped) 180f else 0f)) {
                 LazyColumn(Modifier.weight(1f)) { item { LanguageText(turn.translation, turn.target, 36f) } }
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    TextButton(onClick = { if (speaking) voice.stop() else voice.speak(turn) }, enabled = !state.busy) { Text(if (speaking) "Stop speech" else "Play") }
+                    com.sal7one.transiber.voice.ReadAloudButtons("translation", !state.busy, { system -> voiceError=null; voice.speak(turn,system) }, {presentation=null;onVoices()})
+                    if(speaking)TextButton(onClick=voice::stop){Text("Stop speech")}
                     TextButton(onClick = { flipped = !flipped }) { Text("Flip") }
                     TextButton(onClick = { presentation = null }) { Text("Close") }
                 }

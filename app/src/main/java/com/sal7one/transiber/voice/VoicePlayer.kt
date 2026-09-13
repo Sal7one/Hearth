@@ -21,7 +21,7 @@ import java.util.UUID
 internal class VoicePlayer(context: Context,private val backendOverride: String?=null, private val changed: (Boolean,String?) -> Unit) : AutoCloseable {
     private val context=context.applicationContext
     private val scope=CoroutineScope(SupervisorJob()+Dispatchers.Main.immediate)
-    private data class Request(val text: String,val language: String,val generation: Long)
+    private data class Request(val text: String,val language: String,val generation: Long,val requestedBackend: String?=null)
     private val queue=Channel<Request>(3)
     private var generation=0L
     private var operation: Job?=null
@@ -45,7 +45,8 @@ internal class VoicePlayer(context: Context,private val backendOverride: String?
                         check(audioManager.requestAudioFocus(focus)==AudioManager.AUDIOFOCUS_REQUEST_GRANTED){"Android could not grant audio focus for read aloud"}
                         changed(true,null)
                         val saved=VoiceSettings.choice(context)
-                        val choice=if(backendOverride==null)saved else saved.copy(backend=backendOverride)
+                        val selectedBackend=request.requestedBackend ?: backendOverride
+                        val choice=if(selectedBackend==null)saved else saved.copy(backend=selectedBackend)
                         when(choice.backend) {
                             "system" -> systemSpeak(request.text,request.language,choice.rate)
                             "supertonic" -> local(request,choice)
@@ -61,14 +62,25 @@ internal class VoicePlayer(context: Context,private val backendOverride: String?
             }
         }
     }
-    fun speak(text: String,language: String) {scope.launch {stopNow();enqueueNow(text,language)}}
-    fun enqueue(text: String,language: String) {scope.launch {enqueueNow(text,language)}}
-    private fun enqueueNow(text: String,language: String) {
+    fun speak(text: String,language: String,mode: VoicePlaybackMode=VoicePlaybackMode.DEFAULT) {
+        scope.launch {stopNow();queueSpeech(text,language,mode)}
+    }
+    fun enqueue(text: String,language: String,mode: VoicePlaybackMode=VoicePlaybackMode.DEFAULT) {
+        scope.launch {queueSpeech(text,language,mode)}
+    }
+    private fun queueSpeech(text: String,language: String,mode: VoicePlaybackMode) {
+        try {
+            val override=if(mode==VoicePlaybackMode.DEFAULT)null else VoiceSelection.backend(mode,
+                VoiceSettings.choice(context).backend,VoiceSettings.customBackend(context),com.sal7one.transiber.byok.ByokPolicy.FEATURE_BYOK)
+            enqueueNow(text,language,override)
+        } catch(e: Exception) {changed(false,e.message ?: e.toString())}
+    }
+    private fun enqueueNow(text: String,language: String,requestedBackend: String?=null) {
         if(text.isBlank())return
         if(text.length>5000){changed(false,"Read aloud accepts at most 5000 characters");return}
         val owner=audibleOwner
         if(owner!==this){owner?.stop();audibleOwner=this}
-        if(!queue.trySend(Request(text,Locale.forLanguageTag(language).toLanguageTag(),generation)).isSuccess)
+        if(!queue.trySend(Request(text,Locale.forLanguageTag(language).toLanguageTag(),generation,requestedBackend)).isSuccess)
             changed(true,"Speech queue is full. Skipped a new line to avoid falling behind.")
     }
     private fun initSystem() {

@@ -153,8 +153,8 @@ internal fun CameraTranslateScreen(onModels: () -> Unit,onConnections: () -> Uni
             SelectionContainer{Text(state.text)}
             if(state.translation.isNotBlank()){Text("Translation",style=MaterialTheme.typography.titleSmall);SelectionContainer{Text(state.translation,style=MaterialTheme.typography.titleLarge)}}
             FlowRow(horizontalArrangement=Arrangement.spacedBy(8.dp)) {
-                TextButton(onClick={voiceError=null;voice.speak(state.text,source)}){Text("Play original")}
-                if(state.translation.isNotBlank())TextButton(onClick={voiceError=null;voice.speak(state.translation,target)}){Text("Play translation")}
+                com.sal7one.transiber.voice.ReadAloudButtons("original",onPlay={system->voiceError=null;voice.speak(state.text,source,if(system)com.sal7one.transiber.voice.VoicePlaybackMode.SYSTEM else com.sal7one.transiber.voice.VoicePlaybackMode.CUSTOM)},onSetup=onVoices)
+                if(state.translation.isNotBlank())com.sal7one.transiber.voice.ReadAloudButtons("translation",onPlay={system->voiceError=null;voice.speak(state.translation,target,if(system)com.sal7one.transiber.voice.VoicePlaybackMode.SYSTEM else com.sal7one.transiber.voice.VoicePlaybackMode.CUSTOM)},onSetup=onVoices)
                 TextButton(onClick={(context.getSystemService(ClipboardManager::class.java)).setPrimaryClip(ClipData.newPlainText("Original text",state.text))}){Text("Copy original")}
                 if(state.translation.isNotBlank())TextButton(onClick={context.getSystemService(ClipboardManager::class.java).setPrimaryClip(ClipData.newPlainText("Translation",state.translation))}){Text("Copy translation")}
             }

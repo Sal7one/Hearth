@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.10.1 — 2026-09-13
+
+- Show TTS model cards with runtime, language/voice coverage, license and publisher/setup links.
+- Add separate Android and Custom playback throughout text, camera, traveler/history/presentation and preview controls.
+- Preserve the preferred custom engine independently of Android playback/settings, and add caption Custom default.
+
 ## 0.10.0 — 2026-09-13
 
 - Add Type to translate with explicit languages, live debounced results, swap/copy/clear and source/result playback.

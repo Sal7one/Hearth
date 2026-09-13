@@ -91,6 +91,7 @@ enum class CaptionTheme(val label: String) {
  */
 enum class CaptionSpeakerChoice(val label: String, val explanation: String) {
     SYSTEM("Device voice", "Instant, offline, any language the device has a voice for."),
+    CUSTOM("Custom default", "Use your saved Supertonic or self-hosted voice. Set it in Voices & read aloud."),
     NATIVE("Supertonic 3", "On-device speech in 31 languages; install its model and a voice in Voice settings."),
     SHARED("Shared voice settings", "Use the Android, on-device or self-hosted voice selected in Hearth Voice settings."),
     CLOUD("Cloud · BYOK", "Provider TTS with your API key (play distribution only)."),

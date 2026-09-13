@@ -60,6 +60,12 @@ internal fun VoiceSetup(onDownloads: () -> Unit) {
             listOf("system" to "Android voices","supertonic" to "Supertonic 3").forEach {(id,label)->FilterChip(choice.backend==id,{save(choice.copy(backend=id))},label={Text(label)})}
             if(ByokPolicy.FEATURE_BYOK)FilterChip(choice.backend=="remote",{save(choice.copy(backend="remote"))},label={Text("Self-hosted")})
         }
+        Text(when(VoiceSettings.customBackend(context)) {
+            "supertonic" -> "Custom default: Supertonic 3 · ${choice.voice}"
+            "remote" -> "Custom default: your configured voice server"
+            else -> "Choose Supertonic or Self-hosted to set your custom default."
+        },style=MaterialTheme.typography.bodySmall)
+        Text("Android playback is always separate and does not change your custom default.",style=MaterialTheme.typography.bodySmall)
         Text("Speed · ${"%.2f".format(choice.rate)}×")
         Slider(choice.rate,{save(choice.copy(rate=it))},valueRange=.5f..2f,modifier=Modifier.semantics {contentDescription="Speech speed"})
         when(choice.backend) {
@@ -77,7 +83,7 @@ internal fun VoiceSetup(onDownloads: () -> Unit) {
             "supertonic" -> {
                 val ready=remember(revision,choice.voice){models.ready(choice.voice)}
                 LaunchedEffect(Unit){if(language !in VoiceCatalog.languages)language="en"}
-                Text("On-device · 31 languages including Arabic · 10 voices · about 383 MiB for all files. Model weights use OpenRAIL-M terms.")
+                VoiceModelCard("Supertonic 3", "On-device · ONNX Runtime CPU", "31 languages including Arabic · 10 voices · about 383 MiB for all files. Chinese is not supported.", "Model: OpenRAIL-M · runtime code: MIT", "https://huggingface.co/Supertone/supertonic-3", "Model card, files & license"){error=it}
                 VoiceMenu("Voice",choice.voice,VoiceCatalog.voices.map {it to it}){save(choice.copy(voice=it))}
                 Text("Quality steps · ${choice.steps}")
                 Slider(choice.steps.toFloat(),{save(choice.copy(steps=it.toInt()))},valueRange=2f..12f,steps=9,modifier=Modifier.semantics {contentDescription="Supertonic quality steps"})
@@ -87,7 +93,6 @@ internal fun VoiceSetup(onDownloads: () -> Unit) {
                     val active=remember(revision){FileDownloads(context).list().filter {it.active && VoiceCatalog.assets.any {a->a.filename==it.title}}}
                     if(active.isNotEmpty())OutlinedButton(onClick=onDownloads){Text("Download progress · ${active.size} files")}
                     else if(!ready)Button(onClick={try {val dl=FileDownloads(context);(VoiceCatalog.core+VoiceCatalog.file("${choice.voice}.json")).filterNot(models::installed).forEach {dl.enqueue(DownloadSpec(it.url,it.filename),true,it.id)};revision++}catch(e: Exception){error=e.message}}){Text("Download engine & voice")}
-                    TextButton(onClick={context.startActivity(Intent(Intent.ACTION_VIEW,android.net.Uri.parse("https://huggingface.co/Supertone/supertonic-3")))}){Text("Publisher, files & license")}
                 }
                 OutlinedButton(onClick={importer.launch(arrayOf("*/*"))},enabled=!busy){Text(if(busy)"Verifying…" else "Import voice files or ZIP")}
                 Text("Select the ONNX engine files, its JSON files and one or more voice styles, or a ZIP containing them. Original downloads remain in Downloads/Hearth/models.",style=MaterialTheme.typography.bodySmall)
@@ -97,7 +102,8 @@ internal fun VoiceSetup(onDownloads: () -> Unit) {
         }
         var preview by rememberSaveable {mutableStateOf("Hello. Where is the nearest train station?")}
         OutlinedTextField(preview,{preview=it.take(5000)},label={Text("Text to preview")},modifier=Modifier.fillMaxWidth().padding(top=2.dp))
-        Row(horizontalArrangement=Arrangement.spacedBy(8.dp)){Button(onClick={error=null;player.speak(preview,language)}){Text("Play preview")};OutlinedButton(onClick=player::stop){Text("Stop")}}
+        ReadAloudButtons("preview",preview.isNotBlank(),{system->error=null;player.speak(preview,language,if(system)com.sal7one.transiber.voice.VoicePlaybackMode.SYSTEM else com.sal7one.transiber.voice.VoicePlaybackMode.CUSTOM)},{save(choice.copy(backend="supertonic"))})
+        OutlinedButton(onClick=player::stop){Text("Stop")}
         if(speaking)Text("Preparing or playing voice…")
         if(busy)LinearProgressIndicator(Modifier.fillMaxWidth())
         error?.let {Text(it,color=MaterialTheme.colorScheme.error)}
@@ -136,18 +142,31 @@ private fun RemoteVoiceSetup(language: String,onLanguage: (String)->Unit,onError
         Text(caps.languages.sorted().joinToString {LanguageCatalog.option(it).nativeName},style=MaterialTheme.typography.bodySmall)
         VoiceMenu("Server voice",selected,caps.voices.map {it to it}){selected=it;prefs.edit().putString("remote-voice",it).apply()}
     }
-    var sources by remember {mutableStateOf(false)}
-    TextButton(onClick={sources=!sources}){Text(if(sources)"Hide model sources" else "Model sources & server setup")}
-    if(sources) {
-        Text("Run scripts/voice/hearth_voice_server.py from the Hearth repository on your own computer, behind HTTPS. Server setup and separate Python environments are documented in docs/voices.md.",style=MaterialTheme.typography.bodySmall)
-        listOf(
-            Triple("Chatterbox Multilingual V3 · 23 languages including Arabic · MIT","https://github.com/resemble-ai/chatterbox","Chatterbox source & setup"),
-            Triple("Qwen3-TTS 0.6B Base · 10 languages, no Arabic · Apache-2.0 · needs your reference WAV and transcript","https://huggingface.co/Qwen/Qwen3-TTS-12Hz-0.6B-Base","Qwen model & files"),
-            Triple("Fish Speech · languages depend on your server · Research License; check commercial terms","https://github.com/fishaudio/fish-speech","Fish Speech source & setup")
-        ).forEach {(description,url,label)->
-            Text(description,style=MaterialTheme.typography.bodySmall)
-            TextButton(onClick={try{context.startActivity(Intent(Intent.ACTION_VIEW,android.net.Uri.parse(url)))}catch(e: Exception){onError(e.message)}}){Text(label)}
+    Text("Supported server models",style=MaterialTheme.typography.titleMedium)
+    Text("These run on your server. Set up the included Hearth voice bridge first; connecting its HTTPS address makes that engine your custom voice option.",style=MaterialTheme.typography.bodySmall)
+    VoiceModelCard("Chatterbox Multilingual V3","Self-hosted · Python","23 languages including Arabic. Default or reference voice; Turbo/Nano are separate English models.","MIT","https://github.com/resemble-ai/chatterbox","Source, models & setup",onError)
+    VoiceModelCard("Qwen3-TTS 0.6B Base","Self-hosted · Python","10 languages; no Arabic. Requires your reference WAV and matching transcript.","Apache-2.0","https://huggingface.co/Qwen/Qwen3-TTS-12Hz-0.6B-Base","Model card, files & setup",onError)
+    VoiceModelCard("Fish Speech","Self-hosted · official Fish server","Languages and voice IDs depend on the deployed checkpoint and server configuration.","Fish Audio Research License; separate commercial terms","https://github.com/fishaudio/fish-speech","Source, models & setup",onError)
+    TextButton(onClick={VoiceSettings.forget(context);capabilities=null;onError(null);onForgot()}){Text("Forget voice connection")}
+}
+
+@Composable
+private fun VoiceModelCard(title: String, runtime: String, coverage: String, license: String, url: String, linkLabel: String, onError: (String?)->Unit) {
+    val context=LocalContext.current
+    OutlinedCard(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp),verticalArrangement=Arrangement.spacedBy(8.dp)) {
+            Text(title,style=MaterialTheme.typography.titleMedium)
+            Text(runtime,style=MaterialTheme.typography.labelLarge)
+            Text(coverage,style=MaterialTheme.typography.bodyMedium)
+            Text(license,style=MaterialTheme.typography.bodySmall)
+            if(ByokPolicy.FEATURE_BYOK)TextButton(onClick={
+                try {context.startActivity(Intent(Intent.ACTION_VIEW,android.net.Uri.parse(url)))}
+                catch(e: Exception){onError(e.message ?: e.toString())}
+            }){Text(linkLabel)}
+            else {
+                Text("Publisher address · select to copy. Import its files using the button below.",style=MaterialTheme.typography.bodySmall)
+                androidx.compose.foundation.text.selection.SelectionContainer {Text(url,style=MaterialTheme.typography.bodySmall)}
+            }
         }
     }
-    TextButton(onClick={VoiceSettings.forget(context);capabilities=null;onError(null);onForgot()}){Text("Forget voice connection")}
 }

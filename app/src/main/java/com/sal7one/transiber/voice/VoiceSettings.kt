@@ -17,7 +17,17 @@ internal object VoiceSettings {
     fun choice(context: Context): VoiceChoice = prefs(context).let {p ->VoiceChoice(
         p.getString("backend","system").orEmpty().let {if(it=="remote" && !ByokPolicy.FEATURE_BYOK)"system" else it},
         p.getString("voice","F1").orEmpty(),p.getFloat("rate",1f).coerceIn(.5f,2f),p.getInt("steps",5).coerceIn(2,12))}
-    fun save(context: Context,value: VoiceChoice){require(value.backend in setOf("system","supertonic","remote"));check(value.backend!="remote" || ByokPolicy.FEATURE_BYOK);prefs(context).edit().putString("backend",value.backend).putString("voice",value.voice).putFloat("rate",value.rate).putInt("steps",value.steps).apply()}
+    fun customBackend(context: Context): String? = prefs(context).let { p ->
+        VoiceSelection.customBackend(p.getString("backend","system").orEmpty(), p.getString("custom-backend",null), ByokPolicy.FEATURE_BYOK)
+    }
+    fun save(context: Context,value: VoiceChoice) {
+        require(value.backend in setOf("system","supertonic","remote"))
+        check(value.backend!="remote" || ByokPolicy.FEATURE_BYOK)
+        val p=prefs(context)
+        val custom=VoiceSelection.customBackend(value.backend, customBackend(context), ByokPolicy.FEATURE_BYOK)
+        p.edit().putString("backend",value.backend).putString("custom-backend",custom)
+            .putString("voice",value.voice).putFloat("rate",value.rate).putInt("steps",value.steps).apply()
+    }
     fun remote(context: Context): RemoteVoiceConnection {
         check(ByokPolicy.FEATURE_BYOK){"Network voices are unavailable in the offline build"}
         val p=prefs(context)
@@ -37,7 +47,7 @@ internal object VoiceSettings {
         val cipher=Cipher.getInstance("AES/GCM/NoPadding");cipher.init(Cipher.DECRYPT_MODE,master(),GCMParameterSpec(128,Base64.decode(pair[0],Base64.NO_WRAP)))
         return cipher.doFinal(Base64.decode(pair[1],Base64.NO_WRAP)).toString(Charsets.UTF_8)
     }
-    fun forget(context: Context){prefs(context).edit().remove("secret").remove("capabilities").remove("endpoint").remove("remote-voice").putString("backend","system").apply()}
+    fun forget(context: Context){prefs(context).edit().remove("secret").remove("capabilities").remove("endpoint").remove("remote-voice").remove("custom-backend").putString("backend","system").apply()}
     private fun master(): SecretKey {
         val alias="hearth_voice_v1";val store=KeyStore.getInstance("AndroidKeyStore").apply {load(null)}
         (store.getKey(alias,null) as? SecretKey)?.let {return it}
