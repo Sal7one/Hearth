@@ -74,3 +74,9 @@ These services translate text; they are separate from the speech model catalog.
 PaddleOCR uses a separate image adapter with pinned detector/reader files, bundled
 dictionaries, and model-aware language selection. See [camera models, downloads
 and extension contracts](camera-ocr.md). Speech packages do not change.
+
+## Read aloud
+
+Models → Voices or Setup → Voices & read aloud provides Android's installed voice
+inventory, native Supertonic 3 downloads/import and self-hosted model source links.
+See [all voice artifacts, languages, licenses and server setup](voices.md).

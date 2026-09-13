@@ -44,7 +44,7 @@ import kotlinx.coroutines.flow.collect
 
 @OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 @Composable
-fun ConversationScreen(onModels: () -> Unit = {}, onCloud: () -> Unit = {}, onLayoutChanged: (Boolean) -> Unit = {}, initialFaceToFace: Boolean = false) {
+fun ConversationScreen(onModels: () -> Unit = {}, onCloud: () -> Unit = {}, onLayoutChanged: (Boolean) -> Unit = {}, initialFaceToFace: Boolean = false, onVoices: () -> Unit = {}) {
     val context = LocalContext.current
     val owner = LocalLifecycleOwner.current
     val controller = remember { ConversationController(context.applicationContext) }
@@ -80,6 +80,7 @@ fun ConversationScreen(onModels: () -> Unit = {}, onCloud: () -> Unit = {}, onLa
         val old = view.keepScreenOn; view.keepScreenOn = keepAwake
         onDispose { view.keepScreenOn = old }
     }
+    LaunchedEffect(Unit) {faceToFace=initialFaceToFace}
     LaunchedEffect(faceToFace) { onLayoutChanged(faceToFace) }
     BackHandler(faceToFace && !options && faceHistory == null && !translationSettings && picker == null) { faceToFace = false }
     var automaticSpeech by rememberSaveable { mutableStateOf(prefs.getBoolean("auto_speech", false)) }
@@ -258,7 +259,8 @@ fun ConversationScreen(onModels: () -> Unit = {}, onCloud: () -> Unit = {}, onLa
                 TextButton(onClick = { controller.languages(state.session.second, state.session.first) }) { Text("Swap languages") }
             }
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) { Text("Read translations aloud", Modifier.weight(1f)); Switch(automaticSpeech, { automaticSpeech = it; prefs.edit().putBoolean("auto_speech", it).apply() }, modifier = Modifier.semantics { contentDescription = "Read translations aloud" }) }
-            Text("Uses an installed offline Android voice. Listening always stops before speech playback.", style = MaterialTheme.typography.bodySmall)
+            Text("Uses your shared Android, Supertonic or self-hosted voice. Listening stops before speech playback.", style = MaterialTheme.typography.bodySmall)
+            OutlinedButton(onClick={voice.stop();options=false;onVoices()}){Text("Voices & read aloud")}
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) { Text("Save history on this device", Modifier.weight(1f)); Switch(state.saveHistory, controller::saveHistory, modifier = Modifier.semantics { contentDescription = "Save history on this device" }) }
             Text("Turning history off starts a temporary conversation; earlier saved conversations remain in History.", style = MaterialTheme.typography.bodySmall)
             Text("Translation text size: ${textSize.toInt()}")

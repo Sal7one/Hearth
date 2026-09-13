@@ -75,7 +75,7 @@ class DownloadService : Service() {
             try {
                 call.execute().use { response ->
                     check(response.isSuccessful) { "HTTP ${response.code} ${response.message}" }
-                    val expected = OcrCatalog.find(modelId)?.bytes ?: SpeechDownloads.find(modelId)?.bytes ?: TranslationCatalog.models.firstOrNull { it.id == modelId }?.bytes
+                    val expected = com.sal7one.transiber.voice.VoiceCatalog.find(modelId)?.bytes ?: OcrCatalog.find(modelId)?.bytes ?: SpeechDownloads.find(modelId)?.bytes ?: TranslationCatalog.models.firstOrNull { it.id == modelId }?.bytes
                     val length = response.body?.contentLength() ?: -1
                     if (expected != null && length >= 0) require(length == expected) { "Download size differs from the selected model: $length, expected $expected" }
                     val total = expected ?: length

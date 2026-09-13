@@ -14,7 +14,7 @@ import com.sal7one.transiber.caption.*
 import kotlinx.coroutines.*
 
 @Composable
-fun ModelsScreen(onCloud: () -> Unit = {}, onDownloads: () -> Unit = {}) {
+fun ModelsScreen(onCloud: () -> Unit = {}, onDownloads: () -> Unit = {}, onVoices: () -> Unit = {}) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var config by remember { mutableStateOf(CaptionOverlayConfig()) }
@@ -37,7 +37,7 @@ fun ModelsScreen(onCloud: () -> Unit = {}, onDownloads: () -> Unit = {}) {
     val pages = rememberSaveableStateHolder()
     Column(Modifier.fillMaxSize()) {
         FlowRow(Modifier.padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            (listOf("Speech", "Translation", "Camera") + if (ByokPolicy.FEATURE_BYOK) listOf("Cloud") else emptyList()).forEach { group ->
+            (listOf("Speech", "Translation", "Camera", "Voices") + if (ByokPolicy.FEATURE_BYOK) listOf("Cloud") else emptyList()).forEach { group ->
                 FilterChip(selected = section == group, onClick = { section = group }, label = { Text(group) })
             }
         }
@@ -46,6 +46,7 @@ fun ModelsScreen(onCloud: () -> Unit = {}, onDownloads: () -> Unit = {}) {
                 error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
                 if (!loaded) { if (error == null) LinearProgressIndicator(Modifier.fillMaxWidth()); return@Column }
                 when (section) {
+                    "Voices" -> { Text("Android voices and local Supertonic 3, with verified downloads and optional self-hosted voices.");Button(onClick=onVoices){Text("Voices & read aloud")} }
                     "Speech" -> {
                         Text("Local speech recognition", style = MaterialTheme.typography.titleLarge)
                         Text("Choose a speech engine, then select an installed model or get its files. Translation is a separate choice.", style = MaterialTheme.typography.bodyMedium)

@@ -1,0 +1,18 @@
+{
+  "upstreamCode": {
+    "url": "https://github.com/supertone-inc/supertonic",
+    "revision": "1e9799e964ea4c0dad7cde993b65c3c813a7b373",
+    "license": "MIT"
+  },
+  "model": {
+    "url": "https://huggingface.co/Supertone/supertonic-3",
+    "revision": "3cadd1ee6394adea1bd021217a0e650ede09a323",
+    "license": "OpenRAIL-M"
+  },
+  "researchOnly": {
+    "supertonic": "1e9799e964ea4c0dad7cde993b65c3c813a7b373",
+    "tts-bench": "9dfe4bec808f5af5ea9cf374fc1fa04546e63dbe",
+    "chatterbox": "5de7a54aa4e5e2baadb0182dde554908b48b85c2",
+    "fish-speech": "befe4001745417f8c42131739d862b8a6fdbd15a"
+  }
+}

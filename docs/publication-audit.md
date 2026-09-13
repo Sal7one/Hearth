@@ -77,3 +77,11 @@ These are test APKs; release variants remain unsigned.
 - Secret scanning finds recognized patterns; it cannot prove that every possible
   private value is absent. Native build pins/integrity are not a complete upstream
   vulnerability or legal review. Model weights retain separate publisher terms.
+
+## 0.10.0 follow-up
+
+Shared TTS/typed translation adds a separate Keystore-protected voice connection,
+strict advertised capabilities, bounded/cancellable HTTP and PCM parsing, pinned
+Supertonic imports, model/code licenses and CI tests for the server protocol/native
+bounds. Research/model files are ignored. Both flavors and unsigned releases pass
+artifact verification; see [v22 validation and its limits](validation-v22.md).

@@ -30,6 +30,8 @@ jobs:
       - run: bash common-jni/src/main/cpp/common/tests/run_common_utils_tests.sh
       - run: bash common-jni/src/main/cpp/speech/tests/run_speech_tests.sh
       - run: bash common-jni/src/main/cpp/vosk/tests/run_vosk_api_tests.sh
+      - run: bash common-jni/src/main/cpp/voice/tests/run_voice_tests.sh
+      - run: python3 -m unittest discover -s scripts/voice -p 'test_*.py'
       - run: python3 scripts/speech/test_package.py
       - run: python3 scripts/verify-release.py
       - run: python3 scripts/verify-release.py --build-type release

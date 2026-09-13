@@ -25,3 +25,6 @@ __pycache__/
 *.hprof
 keystore.properties
 signing.properties
+
+# Local upstream research checkouts (never shipped)
+/research/

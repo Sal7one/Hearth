@@ -1,0 +1,6 @@
+Supertonic inference and text preparation adapt the MIT implementation by Supertone Inc.
+Source: https://github.com/supertone-inc/supertonic
+Revision: 1e9799e964ea4c0dad7cde993b65c3c813a7b373
+See Supertonic-MIT.txt for the full code license.
+Supertonic 3 weights are downloaded separately; see Supertonic-model-OpenRAIL-M.txt.
+No Qwen3-TTS, Chatterbox, Fish Speech weights/code or tts-bench reference recordings are bundled.

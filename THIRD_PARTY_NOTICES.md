@@ -53,3 +53,12 @@ from pinned PaddlePaddle PP-OCRv5 ONNX export configurations (Apache-2.0), with
 blank/space entries for CTC decoding. Exact origins, revisions and hashes are in
 `assets/ocr/provenance.json`. Recognition and detector weights are separate
 verified downloads, not APK assets. See [OCR sources](docs/camera-ocr.md).
+
+Supertonic 3 inference/text preparation adapts the MIT implementation from
+[Supertone](https://github.com/supertone-inc/supertonic), revision
+1e9799e964ea4c0dad7cde993b65c3c813a7b373. Its copyright/license and provenance are in
+`assets/licenses/voice/`. Downloaded Supertonic 3 weights use OpenRAIL-M terms, also
+included there, and are not bundled in the APK. The first-party server bridge calls
+separately installed Chatterbox (MIT), Qwen3-TTS (Apache-2.0), or Fish Speech
+(Fish Audio Research License) packages. No code, weights or reference recordings
+from those packages or tts-bench are redistributed in Hearth. See [voice sources](docs/voices.md).

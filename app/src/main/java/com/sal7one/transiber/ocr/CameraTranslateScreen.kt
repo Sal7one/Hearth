@@ -44,7 +44,7 @@ import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class,ExperimentalLayoutApi::class)
 @Composable
-internal fun CameraTranslateScreen(onModels: () -> Unit,onConnections: () -> Unit,onDownloads: () -> Unit) {
+internal fun CameraTranslateScreen(onModels: () -> Unit,onConnections: () -> Unit,onDownloads: () -> Unit, onVoices: () -> Unit = {}) {
     val context=LocalContext.current;val scope=rememberCoroutineScope();val lifecycle=LocalLifecycleOwner.current
     val prefs=remember {context.getSharedPreferences("camera-translate",0)}
     var profileId by rememberSaveable {mutableStateOf(prefs.getString("profile","latin")!!)}
@@ -54,6 +54,9 @@ internal fun CameraTranslateScreen(onModels: () -> Unit,onConnections: () -> Uni
     var translate by rememberSaveable {mutableStateOf(prefs.getBoolean("translate",true))}
     val profile=OcrCatalog.profiles.firstOrNull {it.id==profileId} ?: OcrCatalog.profiles.first()
     val config by remember { CaptionConfigStore.config(context) }.collectAsState(initial=CaptionOverlayConfig())
+    var speaking by remember {mutableStateOf(false)}
+    var voiceError by remember {mutableStateOf<String?>(null)}
+    val voice=remember {com.sal7one.transiber.voice.VoicePlayer(context){active,error->speaking=active;if(error!=null)voiceError=error}}
     val controller=remember {CameraOcrController(context)};val state by controller.state.collectAsState()
     val models=remember {OcrModels(File(context.filesDir,"ocr-models"))}
     var ready by remember {mutableStateOf(models.ready(profile))}
@@ -105,9 +108,9 @@ internal fun CameraTranslateScreen(onModels: () -> Unit,onConnections: () -> Uni
     LaunchedEffect(profileId,source,target,providerId,translate) {prefs.edit().putString("profile",profileId).putString("source",source).putString("target",target).putString("provider",providerId).putBoolean("translate",translate).apply()}
     LaunchedEffect(profileId) {while(true){ready=models.ready(profile);delay(1200)}}
     DisposableEffect(lifecycle) {
-        val observer=LifecycleEventObserver {_,event -> if(event==Lifecycle.Event.ON_STOP)controller.stop()}
+        val observer=LifecycleEventObserver {_,event -> if(event==Lifecycle.Event.ON_STOP){controller.stop();voice.stop()}}
         lifecycle.lifecycle.addObserver(observer)
-        onDispose {lifecycle.lifecycle.removeObserver(observer);controller.close()}
+        onDispose {lifecycle.lifecycle.removeObserver(observer);controller.close();voice.close()}
     }
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
         FlowRow(horizontalArrangement=Arrangement.spacedBy(8.dp),verticalArrangement=Arrangement.spacedBy(4.dp)) {
@@ -142,13 +145,16 @@ internal fun CameraTranslateScreen(onModels: () -> Unit,onConnections: () -> Uni
         }
         if(state.loading || state.translating || state.closing)LinearProgressIndicator(Modifier.fillMaxWidth())
         Text(when{state.closing->"Releasing models…";state.loading->"Loading PaddleOCR…";state.translating->"Translating settled text…";state.live->"Live · OCR ${state.ocrMs} ms · hold steady";state.running->"Captured · OCR ${state.ocrMs} ms";else->"Ready · camera opens only on this page"},style=MaterialTheme.typography.bodySmall)
-        state.error?.let {Text(it,color=MaterialTheme.colorScheme.error,modifier=Modifier.semantics {liveRegion=LiveRegionMode.Polite})}
+        (voiceError ?: state.error)?.let {Text(it,color=MaterialTheme.colorScheme.error,modifier=Modifier.semantics {liveRegion=LiveRegionMode.Polite})}
         if(state.running && !state.loading && state.text.isBlank())Text("No readable text yet. Hold the phone level, move closer, or capture for a larger reading image.")
+        if(speaking)OutlinedButton(onClick=voice::stop){Text("Stop speech")}
         if(state.text.isNotBlank()) {
             Text("Original",style=MaterialTheme.typography.titleSmall)
             SelectionContainer{Text(state.text)}
             if(state.translation.isNotBlank()){Text("Translation",style=MaterialTheme.typography.titleSmall);SelectionContainer{Text(state.translation,style=MaterialTheme.typography.titleLarge)}}
             FlowRow(horizontalArrangement=Arrangement.spacedBy(8.dp)) {
+                TextButton(onClick={voiceError=null;voice.speak(state.text,source)}){Text("Play original")}
+                if(state.translation.isNotBlank())TextButton(onClick={voiceError=null;voice.speak(state.translation,target)}){Text("Play translation")}
                 TextButton(onClick={(context.getSystemService(ClipboardManager::class.java)).setPrimaryClip(ClipData.newPlainText("Original text",state.text))}){Text("Copy original")}
                 if(state.translation.isNotBlank())TextButton(onClick={context.getSystemService(ClipboardManager::class.java).setPrimaryClip(ClipData.newPlainText("Translation",state.translation))}){Text("Copy translation")}
             }
@@ -164,6 +170,7 @@ internal fun CameraTranslateScreen(onModels: () -> Unit,onConnections: () -> Uni
     if(settings)ModalBottomSheet(onDismissRequest={settings=false},sheetState=rememberModalBottomSheetState(skipPartiallyExpanded=true)) {
         Column(Modifier.verticalScroll(settingsScroll).padding(20.dp).navigationBarsPadding(),verticalArrangement=Arrangement.spacedBy(12.dp)) {
             Text("Camera settings",style=MaterialTheme.typography.titleLarge)
+            OutlinedButton(onClick={voice.stop();settings=false;onVoices()}){Text("Voices & read aloud")}
             Row(verticalAlignment=Alignment.CenterVertically){Switch(checked=translate,onCheckedChange={translate=it},modifier=Modifier.semantics {contentDescription="Translate recognized text"});Text("Translate recognized text",Modifier.padding(start=8.dp))}
             Text("Translation",style=MaterialTheme.typography.titleMedium)
             FlowRow(horizontalArrangement=Arrangement.spacedBy(8.dp)) {

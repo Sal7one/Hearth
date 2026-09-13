@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.10.0 — 2026-09-13
+
+- Add Type to translate with explicit languages, live debounced results, swap/copy/clear and source/result playback.
+- Share installed Android, native Supertonic 3 and optional self-hosted voices across traveler, camera and captions.
+- Add verified public-folder Supertonic downloads/import, ten voice styles and model-based language choices.
+- Add explicit Chatterbox/Qwen/Fish server adapters and setup/source/license documentation.
+- Preserve draft/settings navigation state and remove the unknown-language English read-aloud fallback.
+- Add native bounds, WAV/import/HTTP, typing scheduler and server contract tests.
+
+
 ## 0.9.0 — camera and photo translation
 
 - Add Camera translate on Home: live recognition, capture, photo import, original

@@ -83,6 +83,8 @@ for flavor in ['play','foss']:
             assert archive.read('assets/ocr/' + item.name) == item.read_bytes(), item.name
         assert 'assets/licenses/ggml-cpu-NOTICES.txt' in archive.namelist()
         assert 'assets/licenses/ocr/NOTICE.txt' in archive.namelist()
+        for item in (root/'common-jni/src/main/assets/licenses/voice').iterdir():
+            assert archive.read('assets/licenses/voice/' + item.name) == item.read_bytes(), item.name
         assert 'assets/licenses/speech/runtime-build.json' in archive.namelist()
         assert 'assets/licenses/translation/runtime-build.json' in archive.namelist()
         assert 'assets/licenses/vosk/COPYING' in archive.namelist()

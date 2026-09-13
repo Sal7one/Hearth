@@ -615,11 +615,10 @@ private fun SettingsPanel(
             checked = cfg.speakCaptions,
             palette = palette,
         ) { checked -> onConfigChange { it.copy(speakCaptions = checked) } }
+        TextButton(onClick = { openSetup(12) }) { Text("Read aloud · voices & downloads") }
         if (cfg.speakCaptions) {
             val speakerContext = LocalContext.current
-            val vitsBundlePresent = remember(speakerContext) {
-                CaptionSpeakerFactory.vitsBundlePath(speakerContext) != null
-            }
+            val voiceReady = com.sal7one.transiber.voice.VoiceModels(java.io.File(speakerContext.filesDir, "voice-models")).ready(com.sal7one.transiber.voice.VoiceSettings.choice(speakerContext).voice)
             ChipRow {
                 CaptionSpeakerChoice.entries
                     .filter { it != CaptionSpeakerChoice.CLOUD || ByokPolicy.FEATURE_BYOK }
@@ -627,18 +626,15 @@ private fun SettingsPanel(
                         FilterChip(
                             selected = cfg.speakerChoice == choice,
                             onClick = { onConfigChange { it.copy(speakerChoice = choice) } },
-                            // NATIVE needs a VITS voice bundle (model.onnx +
-                            // tokens.txt) — selecting it without one would
-                            // silently drop every spoken line.
-                            enabled = choice != CaptionSpeakerChoice.NATIVE || vitsBundlePresent,
+                            // Native speech requires the verified engine and selected voice.
+                            enabled = choice != CaptionSpeakerChoice.NATIVE || voiceReady,
                             label = { Text(choice.label, fontSize = 11.sp) },
                         )
                     }
             }
             SettingsCaption(
-                if (cfg.speakerChoice == CaptionSpeakerChoice.NATIVE && !vitsBundlePresent) {
-                    "Needs a VITS voice bundle (model.onnx + tokens.txt) — " +
-                        "import one to use the Neural voice."
+                if (cfg.speakerChoice == CaptionSpeakerChoice.NATIVE && !voiceReady) {
+                    "Install Supertonic 3 and a voice in Read aloud settings."
                 } else {
                     cfg.speakerChoice.explanation
                 },

@@ -1,7 +1,7 @@
 # Hearth
 
 An Android app for live captions over other apps, local speech recognition, and
-bring-your-own-key cloud transcription and translation, plus on-device camera OCR. Extracted from Hearth's
+bring-your-own-key cloud transcription and translation, plus on-device camera OCR, typed translation and shared read-aloud. Extracted from Hearth's
 caption system into a separate, focused project.
 
 ## Development backlog
@@ -34,6 +34,9 @@ See the [model contribution guide](docs/model-contributing.md) and [release chec
 
 - **Camera translate**: live camera and photo text recognition with PaddleOCR v5 mobile, selectable local/cloud text translation, and automatic model installation. See [camera setup, sources and limits](docs/camera-ocr.md).
 
+- **Type to translate**: type above a live translation, swap languages, copy and play either text.
+- **Shared read-aloud**: installed Android voices or local Supertonic 3 (31 languages including Arabic, ten voices). Optional self-hosted Chatterbox, Qwen3-TTS and Fish Speech adapters in play. Used by traveler modes, typed translation, camera and captions. See [voice downloads, server setup and capability limits](docs/voices.md).
+
 ## Build
 
 Android 9+ (API 28); **arm64 only**. Playback capture requires Android 10+.
@@ -48,6 +51,8 @@ bash common-jni/src/main/cpp/common/tests/run_common_utils_tests.sh
 bash common-jni/src/main/cpp/speech/tests/run_speech_tests.sh
 bash common-jni/src/main/cpp/vosk/tests/run_vosk_api_tests.sh
 bash common-jni/src/main/cpp/ocr/tests/run_ocr_tests.sh
+bash common-jni/src/main/cpp/voice/tests/run_voice_tests.sh
+python3 -m unittest discover -s scripts/voice -p 'test_*.py'
 python3 scripts/speech/test_package.py
 ./gradlew :common-jni:externalNativeBuildDebug :app:assemblePlayQa :app:assembleFossQa
 python3 scripts/verify-release.py
@@ -72,7 +77,7 @@ See [changes](CHANGELOG.md), [security reporting](SECURITY.md), and the
    Bubble settings separate Appearance from CC & translation.
 
 **Setup** contains Models, Downloads and Cloud connection. Models groups Speech,
-Translation, Camera and Cloud, with source links, installed models and matching import actions.
+Translation, Camera, Voices and Cloud, with source links, installed models and matching import actions.
 Speech and translation family chips open the matching setup directly; the active
 model is labeled separately. Translation sizes are grouped by family. See [all sources and installation paths](docs/model-sources.md). Connect
 or change your existing cloud provider/key under Cloud connection. Advanced setup

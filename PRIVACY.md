@@ -72,3 +72,16 @@ to the selected text provider using the same protected connections as Conversati
 Camera defaults to local translation and keeps its provider selection separate.
 Copy actions use Android's clipboard. OCR model downloads contact Hugging Face;
 those requests contain no saved speech or translation API key.
+
+Typed translation holds its draft in saved activity state and translated output in
+memory. Automatic mode sends text after a short typing pause only when a cloud text
+translator is selected; the page labels this. Clear removes the draft/result.
+Shared Android voices are restricted to installed offline voices. Supertonic
+synthesizes locally; its explicit model downloads contact Hugging Face without API
+keys. Read-aloud PCM is held in memory and not automatically saved.
+Self-hosted voices send selected text, language and voice ID to your configured
+HTTPS endpoint. Server operators control retention and model execution. The voice
+key uses separate Android Keystore AES-GCM storage, without a weaker fallback;
+backup and transfer remain excluded. Reference cloning audio/transcripts are set
+on your server, not uploaded by this Android feature. The foss build has no
+self-hosted voice connection or download/network delegation.

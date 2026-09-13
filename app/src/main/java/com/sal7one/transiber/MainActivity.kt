@@ -27,6 +27,11 @@ import com.sal7one.transiber.models.ModelsScreen
 import com.sal7one.transiber.downloads.DownloadsScreen
 
 class MainActivity : ComponentActivity() {
+ private val navigation=kotlinx.coroutines.flow.MutableStateFlow<Int?>(null)
+ override fun onNewIntent(intent: android.content.Intent) {
+  super.onNewIntent(intent);setIntent(intent)
+  if(intent.hasExtra("page"))navigation.value=intent.getIntExtra("page",0).coerceIn(0,12)
+ }
  @OptIn(ExperimentalMaterial3Api::class)
  override fun onCreate(savedInstanceState: Bundle?) {
   super.onCreate(savedInstanceState)
@@ -43,47 +48,56 @@ class MainActivity : ComponentActivity() {
      }
     }
     // Keep the existing bubble's page=1/2 links working after removing tabs.
-    var page by rememberSaveable { mutableIntStateOf(intent.getIntExtra("page", 0).coerceIn(0, 10)) }
+    var page by rememberSaveable { mutableIntStateOf(intent.getIntExtra("page", 0).coerceIn(0, 12)) }
+    var backStack by rememberSaveable {mutableStateOf(listOf<Int>())}
+    val screenState=androidx.compose.runtime.saveable.rememberSaveableStateHolder()
+    fun go(next: Int){if(next!=page){backStack=if(next==0)emptyList() else (backStack+page).takeLast(12);page=next}}
+    val requestedPage by navigation.collectAsState()
+    LaunchedEffect(requestedPage){requestedPage?.let {backStack=emptyList();page=it;navigation.value=null}}
     var faceLayout by rememberSaveable { mutableStateOf(false) }
-    fun back() { page = if (page in setOf(3, 7, 8, 10)) 0 else 3 }
+    fun back() {if(backStack.isNotEmpty()){page=backStack.last();backStack=backStack.dropLast(1)}else page=if(page in setOf(3,7,8,10,11))0 else 3}
     BackHandler(enabled = page != 0) { back() }
     Scaffold(topBar = {
-     TopAppBar(title = { Text(when(page) { 0 -> "Hearth"; 1 -> "Models"; 2 -> "Downloads"; 3 -> "Setup"; 4 -> "Cloud connection"; 5 -> "Advanced setup"; 7 -> if (faceLayout) "Face to face" else "Conversation"; 8 -> "Local benchmark"; 9 -> "Translation connections"; 10 -> "Camera translate"; else -> "Help" }, style = MaterialTheme.typography.titleMedium) },
+     TopAppBar(title = { Text(when(page) { 0 -> "Hearth"; 1 -> "Models"; 2 -> "Downloads"; 3 -> "Setup"; 4 -> "Cloud connection"; 5 -> "Advanced setup"; 7 -> if (faceLayout) "Face to face" else "Conversation"; 8 -> "Local benchmark"; 9 -> "Translation connections"; 10 -> "Camera translate"; 11 -> "Type to translate"; 12 -> "Voices & read aloud"; else -> "Help" }, style = MaterialTheme.typography.titleMedium) },
       navigationIcon = { if (page != 0) IconButton(onClick = { back() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } },
-      actions = { if (page == 0) TextButton(onClick = { page = 3 }) { Text("Setup") }
-        else TextButton(onClick = { page = 0 }) { Text("Done") } })
+      actions = { if (page == 0) TextButton(onClick = { go(3) }) { Text("Setup") }
+        else TextButton(onClick = { go(0) }) { Text("Done") } })
     }) { padding ->
      Column(Modifier.fillMaxSize().padding(padding)) {
       nativeFailure?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(16.dp)) }
       Box(Modifier.weight(1f)) {
+       screenState.SaveableStateProvider(page) {
        when(page) {
-        0 -> CaptionHome(onModels = { page = 1 }, onCloud = { page = 4 }, onConversation = { faceLayout = false; page = 7 }, onBenchmark = { page = 8 }, onFaceToFace = { faceLayout = true; page = 7 }, onCamera = { page = 10 })
-        1 -> ModelsScreen(onCloud = { page = 4 }, onDownloads = { page = 2 })
-        2 -> DownloadsScreen(onBrowseModels = { page = 1 })
+        0 -> CaptionHome(onModels = { go(1) }, onCloud = { go(4) }, onConversation = { faceLayout = false; go(7) }, onBenchmark = { go(8) }, onFaceToFace = { faceLayout = true; go(7) }, onCamera = { go(10) }, onTextTranslate = {go(11)})
+        1 -> ModelsScreen(onCloud = { go(4) }, onDownloads = { go(2) },onVoices={go(12)})
+        2 -> DownloadsScreen(onBrowseModels = { go(1) })
         3 -> Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
           Text("Set up once. Start from the home screen.", style = MaterialTheme.typography.bodyMedium)
-          SetupLink("Models", "Choose speech, translation and camera models") { page = 1 }
-          SetupLink("Downloads", "Install downloaded models or download a file") { page = 2 }
-          if (ByokPolicy.FEATURE_BYOK) SetupLink("Cloud connection", "Your provider, saved key and cloud options") { page = 4 }
+          SetupLink("Models", "Choose speech, translation and camera models") { go(1) }
+          SetupLink("Downloads", "Install downloaded models or download a file") { go(2) }
+          if (ByokPolicy.FEATURE_BYOK) SetupLink("Cloud connection", "Your provider, saved key and cloud options") { go(4) }
+          SetupLink("Voices & read aloud", "Android, Supertonic and self-hosted speech") {go(12)}
           AppearanceSettings()
-          SetupLink("Local benchmark", "Compare installed models using the same audio and text") { page = 8 }
-          TextButton(onClick = { page = 5 }) { Text("Advanced setup") }
-          TextButton(onClick = { page = 6 }) { Text("Help & diagnostics") }
+          SetupLink("Local benchmark", "Compare installed models using the same audio and text") { go(8) }
+          TextButton(onClick = { go(5) }) { Text("Advanced setup") }
+          TextButton(onClick = { go(6) }) { Text("Help & diagnostics") }
         }
         4 -> Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp)) {
           if (ByokPolicy.FEATURE_BYOK) {
-            SetupLink("Translation connections", "Google, Microsoft, DeepL or LibreTranslate for text translation") { page = 9 }
+            SetupLink("Translation connections", "Google, Microsoft, DeepL or LibreTranslate for text translation") { go(9) }
             Spacer(Modifier.height(16.dp))
             ByokKeySection()
           }
           else Text("Cloud connections are unavailable in the offline build.")
         }
-        5 -> CaptionScreen(onBrowseModels = { page = 1 })
-        7 -> ConversationScreen(onModels = { page = 1 }, onCloud = { page = 4 }, onLayoutChanged = { faceLayout = it }, initialFaceToFace = faceLayout)
-        10 -> com.sal7one.transiber.ocr.CameraTranslateScreen(onModels = { page = 1 }, onConnections = { page = 9 }, onDownloads = { page = 2 })
-        8 -> LocalBenchmarkScreen(onModels = { page = 1 })
+        5 -> CaptionScreen(onBrowseModels = { go(1) })
+        7 -> ConversationScreen(onModels = { go(1) }, onCloud = { go(4) }, onLayoutChanged = { faceLayout = it }, initialFaceToFace = faceLayout, onVoices={go(12)})
+        10 -> com.sal7one.transiber.ocr.CameraTranslateScreen(onModels = { go(1) }, onConnections = { go(9) }, onDownloads = { go(2) },onVoices={go(12)})
+        11 -> com.sal7one.transiber.translation.TypedTranslateScreen(onModels={go(1)},onConnections={go(9)},onVoices={go(12)})
+        12 -> com.sal7one.transiber.voice.VoiceSetup(onDownloads={go(2)})
+        8 -> LocalBenchmarkScreen(onModels = { go(1) })
         9 -> Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp)) {
-          ConversationTranslationSetup(onModels = { page = 1 })
+          ConversationTranslationSetup(onModels = { go(1) })
         }
         else -> Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
           Text("Choose audio and captions or translation, then Start. Android may ask for audio access or screen-sharing consent.")
@@ -91,6 +105,7 @@ class MainActivity : ComponentActivity() {
           Text("Some apps block device-audio capture. Microphone listens to nearby sound instead.")
           CaptionDiagnosticActions()
         }
+       }
        }
       }
      }

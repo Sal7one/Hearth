@@ -4,6 +4,20 @@ Updated 2026-09-13: owner approved an on-device benchmark and traveler release w
 
 Ship visible improvements to the working app and preserve cloud BYOK. The owner now explicitly requests a local benchmark; this supersedes the earlier no-benchmark constraint. Keep it inside the app, reuse production adapters, and separate initialization from inference. Avoid speculative native rewrites.
 
+## Shared voices and typing — 0.10.0
+
+- [x] Inspect requested tts-bench/Qwen/Chatterbox/Fish sources in ignored research checkouts.
+- [x] Add native Supertonic 3, verified model/voice downloads and publisher-layout ZIP imports.
+- [x] Share Android/native/self-hosted speech across traveler, camera, typed text and caption choices.
+- [x] Add source/result typing page with debounce, stale-result rejection, language swap, clear/copy/play.
+- [x] Preserve typing draft and settings scroll across navigation; return to the originating page.
+- [x] Add explicit-language self-hosted adapters, credential/response bounds and server setup/source links.
+- [x] Test scheduler, model/import, native bounds, HTTP/audio and bridge contracts; validate on phone.
+- [ ] Validate actual Chatterbox/Qwen/Fish synthesis on separately provisioned hosts; contract tests alone are not synthesis/quality measurements.
+- [ ] Compare sustained multilingual TTS quality and ASR-plus-MT-plus-voice thermals on target devices.
+
+See [voice setup and extension](voices.md) and [v22 validation](validation-v22.md).
+
 ## Camera OCR — 0.9.0
 
 - [x] Audit original camera/ONNX code; retain useful CameraX patterns and safe runtime ownership.

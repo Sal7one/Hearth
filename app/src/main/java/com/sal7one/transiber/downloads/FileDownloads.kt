@@ -1,5 +1,7 @@
 package com.sal7one.transiber.downloads
 
+import com.sal7one.transiber.voice.VoiceCatalog
+import com.sal7one.transiber.voice.VoiceModels
 import com.sal7one.transiber.ocr.OcrCatalog
 import com.sal7one.transiber.ocr.OcrModels
 
@@ -60,7 +62,7 @@ class FileDownloads(private val context: Context) {
   val checked = DownloadSpec.parse(spec.url, spec.fileName)
   check(Build.VERSION.SDK_INT >= 29 || folderUri != null) { "Choose a download folder first on Android 9" }
   if (installModelId.isNotEmpty()) {
-   val expected = OcrCatalog.find(installModelId)?.url ?: SpeechDownloads.find(installModelId)?.url ?: TranslationCatalog.models.firstOrNull { it.id == installModelId }?.url
+   val expected = VoiceCatalog.find(installModelId)?.url ?: OcrCatalog.find(installModelId)?.url ?: SpeechDownloads.find(installModelId)?.url ?: TranslationCatalog.models.firstOrNull { it.id == installModelId }?.url
    require(expected == checked.url) { "Download does not match the selected model" }
   }
   val id = synchronized(lock) {
@@ -133,6 +135,13 @@ class FileDownloads(private val context: Context) {
   } ?: error("Cannot open downloaded translation model")
  }
  internal suspend fun installModel(id: Long, modelId: String): String = withContext(Dispatchers.IO) {
+  VoiceCatalog.find(modelId)?.let { asset ->
+   val job = currentCoroutineContext()
+   val installed = context.contentResolver.openInputStream(uri(id))?.use { input ->
+    VoiceModels(File(context.filesDir,"voice-models")).import(input,asset) {job.ensureActive()}
+   } ?: error("Cannot open downloaded voice model")
+   return@withContext installed.id
+  }
   OcrCatalog.find(modelId)?.let { asset ->
    val job = currentCoroutineContext()
    val installed = context.contentResolver.openInputStream(uri(id))?.use { input ->
@@ -156,6 +165,13 @@ class FileDownloads(private val context: Context) {
  /** Installing is deliberately separate from activating: a late background completion must not change a running session. */
  suspend fun selectInstalled(item: FileDownload) {
   val modelId = record(item.id)?.optString("model").orEmpty()
+  VoiceCatalog.find(modelId)?.let { asset ->
+   require(item.installed) { "Voice model is not installed" }
+   val voice=asset.filename.removeSuffix(".json").takeIf {it in VoiceCatalog.voices} ?: "F1"
+   require(VoiceModels(File(context.filesDir,"voice-models")).ready(voice)) { "Finish downloading the voice engine before selecting it" }
+   context.getSharedPreferences("voice-output",0).edit().putString("backend","supertonic").putString("voice",voice).apply()
+   return
+  }
   OcrCatalog.find(modelId)?.let { asset ->
    require(item.installed) { "OCR model is not installed" }
    OcrCatalog.profiles.firstOrNull { it.asset.id == asset.id }?.let { profile ->

@@ -96,3 +96,21 @@ no temporary private copy/export is used for original downloads.
 - `ocr_geometry.h`: production native detector/CTC consumer; ASan/UBSan host checks
   cover expansion, clipping, noise rejection and CTC repeat/blank semantics.
   `PaddleOcr` additionally consumes the shared, host-tested lease registry.
+
+## Hearth 0.10.0 additions
+
+- `VoiceText`: production Supertonic tokenizer input and read-aloud chunking; host
+  tests cover Arabic/NFKD, unsupported text/languages and surrogate-safe boundaries.
+- `PcmWave`: remote TTS and benchmark audio consumers; tests cover sample rates,
+  signed stereo downmix, malformed headers, bounds and existing benchmark behavior.
+- `VoiceModels`/`VoiceCatalog`: actual download/import and native load consumers;
+  pinned SHA/size, invalid/cancelled/unsafe ZIP imports and no partial-ready state.
+- `RemoteVoiceProtocol`/`RemoteVoiceClient`: setup discovery and shared player;
+  tests cover capability checks, credentials, offline gate, redirects, actual
+  errors/redaction, size bounds and cancellation/closed ownership.
+- `TypedTranslationController`: typing page consumer; tests drive the production
+  scheduler through debounce, conflation, in-flight stale output, background/resume,
+  model closure, local workload lease and original error propagation.
+- `voice_bounds.h`: native Supertonic consumer; sanitizer host checks cover invalid
+  tokens/styles/speed/steps/duration and latent/audio length geometry. The JNI adapter
+  also consumes the existing tested lease registry.

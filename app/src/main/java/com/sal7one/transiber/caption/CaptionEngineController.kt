@@ -1005,7 +1005,7 @@ class CaptionEngineController(
         lastActivityMs = System.currentTimeMillis()
         if (update.complete) {
             if (!update.translated) enqueueLocalTranslation(lineId, update.text, update.language)
-            if (update.translated || activeRoute == CaptionTranslationRoute.ORIGINAL) speakLine(currentConfig, update.text)
+            if (update.translated || activeRoute == CaptionTranslationRoute.ORIGINAL) speakLine(currentConfig, update.text, update.language)
         }
     }
 
@@ -1025,7 +1025,7 @@ class CaptionEngineController(
         }
         enqueueLocalTranslation(lineId, text, sourceLanguage)
         val marianPending = needsSecondStage(config) || activeRoute == CaptionTranslationRoute.LOCAL_TEXT
-        if (!marianPending) speakLine(config, text)
+        if (!marianPending) speakLine(config, text, sourceLanguage)
         if (needsSecondStage(config)) {
             val target = config.target
             translationScope.launch {
@@ -1143,9 +1143,9 @@ class CaptionEngineController(
     private var speaker: CaptionSpeaker? = null
     private var speakerChoice: CaptionSpeakerChoice? = null
 
-    private fun speakLine(config: CaptionOverlayConfig, text: String) {
+    private fun speakLine(config: CaptionOverlayConfig, text: String, detectedLanguage: String? = null) {
         if (!config.speakCaptions || text.isBlank()) return
-        scope.launch(Dispatchers.Default) {
+        scope.launch(Dispatchers.Main.immediate) {
             val choice = config.speakerChoice
             if (!CaptionSpeakerFactory.isAvailable(context, choice)) {
                 _state.update {
@@ -1154,14 +1154,17 @@ class CaptionEngineController(
                 return@launch
             }
             val current = speaker?.takeIf { speakerChoice == choice }
-                ?: CaptionSpeakerFactory.create(context, choice).also {
+                ?: CaptionSpeakerFactory.create(context, choice) {message -> _state.update {it.copy(translationNotice=message)}}.also {
+                    speaker?.release()
                     speaker = it
                     speakerChoice = choice
                 }
-            val languageTag = if (config.mode == CaptionMode.TRANSLATE) {
+            val languageTag = if (config.mode == CaptionMode.TRANSLATE && activeRoute !in setOf(CaptionTranslationRoute.ORIGINAL, CaptionTranslationRoute.UNSUPPORTED)) {
                 config.target.languageTag
             } else {
-                config.streamLanguage.takeIf { it != "auto" } ?: "en"
+                detectedLanguage?.takeUnless {it == "auto" || it.isBlank()}
+                    ?: CaptionLanguages.effectiveSource(config, com.sal7one.transiber.byok.CloudConfigStore.sttMode(context), captionLanguageModel(context,config)).takeUnless {it == "auto"}
+                    ?: run {_state.update {it.copy(translationNotice="Read aloud needs a recognized language. Choose a spoken language supported by this model.")};return@launch}
             }
             Log.i(TAG, "Speaking line via ${choice.label} ($languageTag)")
             current.speak(text, languageTag)

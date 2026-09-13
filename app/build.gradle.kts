@@ -11,8 +11,8 @@ android {
   applicationId = "com.sal7one.transiber"
   minSdk = 28
   targetSdk = 36
-  versionCode = 21
-  versionName = "0.9.0"
+  versionCode = 22
+  versionName = "0.10.0"
   ndk { abiFilters += "arm64-v8a" }
  }
  flavorDimensions += "distribution"
@@ -51,6 +51,7 @@ dependencies {
  implementation("com.squareup.okhttp3:okhttp:4.12.0")
  implementation("org.apache.commons:commons-compress:1.28.0")
  testImplementation("junit:junit:4.13.2")
+ testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.1")
  testImplementation("org.json:json:20231013")
  testImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
  debugImplementation(libs.androidx.ui.tooling)
