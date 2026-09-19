@@ -366,3 +366,13 @@ See [screen reading](screen-reading.md) and [validation](validation-v26.md).
 
 The 0.13.0 scroll/Volume Up completion entries above are historical and superseded
 by this permission reduction. See `docs/validation-v27.md` for current evidence.
+
+## Positioned reading page — 0.14.0
+
+- [x] Keep OCR boxes through translation; translate each box with existing providers.
+- [x] Render replacements over their source boxes, including drawn-area offsets.
+- [x] Live transparent layer, independent lock handle, touch pass-through, text/TTS controls.
+- [x] Adjustable visual movement sampling and settling; clear stale placements without an Accessibility service.
+- [x] Bound work, retain provider errors, reject stale results, test geometry/alignment.
+- [ ] Group nearby lines into semantic bubbles/paragraphs for translation context.
+- [ ] Artwork-aware background reconstruction and dense-page ordering.

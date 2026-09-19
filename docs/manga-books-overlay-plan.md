@@ -1,6 +1,6 @@
 # Manga and books: screen translation plan
 
-Updated 19 September 2026. Owner-directed refinement of [screen overlay research](screen-overlay-research-2026-09-19.md). Status: OCR adapters/model downloads and still-image drawing shipped in 0.12.0. The 0.13.0 implementation adds cross-app screen capture, a reading panel, region drawing, automatic triggers and optional scroll/volume shortcuts. **0.13.1 retires those Accessibility-based shortcuts after a Play Protect installation block; manual and page-change modes remain.** See [current behavior and limits](screen-reading.md). See [adapter details](manga-ocr-adapters.md).
+Updated 19 September 2026. Owner-directed refinement of [screen overlay research](screen-overlay-research-2026-09-19.md). Status: OCR adapters/model downloads and still-image drawing shipped in 0.12.0. The 0.13.0 implementation adds cross-app screen capture, a reading panel, region drawing, automatic triggers and optional scroll/volume shortcuts. **0.13.1 retires those Accessibility-based shortcuts after a Play Protect installation block; manual and page-change modes remain.** **0.14.0 adds positioned translations in a live transparent overlay with touch pass-through, visual movement detection, a separate lock handle and full-text/read-aloud controls.** See [current behavior and limits](screen-reading.md). See [adapter details](manga-ocr-adapters.md).
 
 ## Scope and reading experience
 

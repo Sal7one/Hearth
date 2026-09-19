@@ -28,8 +28,7 @@ import androidx.compose.ui.unit.dp
 @Composable
 internal fun TapThroughRecoveryHandle(onRestore: () -> Unit, onDrag: (Int, Int) -> Unit, onDragFinished: () -> Unit) {
     val step = with(LocalDensity.current) { 32.dp.roundToPx() }
-    Box(Modifier.fillMaxSize().clip(CircleShape)
-        .background(Color(0xFFE2DFFF)).border(2.dp, Color(0xFF423478), CircleShape)
+    Box(Modifier.fillMaxSize()
         .clickable(role = Role.Button, onClickLabel = "Restore caption controls", onClick = onRestore)
         .pointerInput(Unit) {
             detectDragGestures(onDragEnd = onDragFinished, onDragCancel = onDragFinished) { change, delta ->
@@ -45,6 +44,9 @@ internal fun TapThroughRecoveryHandle(onRestore: () -> Unit, onDrag: (Int, Int) 
                 CustomAccessibilityAction("Move captions right") { onDrag(step, 0); onDragFinished(); true },
             )
         }, contentAlignment = Alignment.Center) {
-        Icon(Icons.Default.LockOpen, "Restore caption controls. Drag to move captions.", Modifier.size(28.dp), tint = Color(0xFF241A44))
+        Box(Modifier.size(32.dp).clip(CircleShape).background(Color(0xFFE2DFFF))
+            .border(1.dp,Color(0xFF423478),CircleShape),contentAlignment=Alignment.Center) {
+            Icon(Icons.Default.LockOpen, "Restore caption controls. Drag to move captions.", Modifier.size(20.dp), tint = Color(0xFF241A44))
+        }
     }
 }

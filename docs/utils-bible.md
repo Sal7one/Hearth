@@ -139,4 +139,11 @@ loop-free model/download navigation and saved-state restoration/validation.
 
 ## Screen reading
 
-`ReadingTrigger` and `PageDifference` are consumed by `ReadingOverlayService`. `ReadingTriggerTest` covers settling, rate limits, retired scroll-mode migration, unknown-mode safety, reset and image-change thresholds. The existing `ReadingSelection` mapping is reused by both still-photo and cross-app drawing. Hardware OCR adapter coverage is in `JapaneseOcrDeviceTest`; no weights enter the repository.
+`ReadingTrigger` and `ReadingMotion` are consumed by `ReadingOverlayService`. `ReadingTriggerTest` covers settling, rate limits, retired scroll-mode migration, unknown-mode safety, reset; `ReadingMotionTest` covers movement in uncovered reader content, handle/system exclusions, dragged-handle masks, noise and avoiding publication feedback loops. The existing `ReadingSelection` mapping is reused by both still-photo and cross-app drawing. Hardware OCR adapter coverage is in `JapaneseOcrDeviceTest`; no weights enter the repository.
+
+`OcrPageTranslation` is used by `CameraOcrController` in reading-page mode to keep
+provider output attached to each source box. `OcrPageLayout` is used by
+`ReadingTranslationView` to map crop coordinates into the live screen. Ten host
+tests cover duplicate/multiline responses, immutable progressive results, stale
+inference, exact provider failures, empty outputs, work limits, crop/letterbox
+mapping, vertical boxes and invalid/overflowing native coordinates, and clipped glyph-cover margins.

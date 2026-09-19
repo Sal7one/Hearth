@@ -14,6 +14,7 @@ import android.os.*
 import android.view.*
 import android.widget.*
 import androidx.core.app.NotificationCompat
+import com.sal7one.transiber.R
 import com.sal7one.transiber.MainActivity
 import com.sal7one.transiber.byok.ByokPolicy
 import com.sal7one.transiber.caption.CaptionConfigStore
@@ -49,6 +50,17 @@ class ReadingOverlayService : Service() {
     private var handle: LinearLayout?=null
     private var panel: LinearLayout?=null
     private var selector: LinearLayout?=null
+    private var pageView: ReadingTranslationView?=null
+    private var pageWidth=0
+    private var pageHeight=0
+    private var layerParams=WindowManager.LayoutParams()
+    private var locked=true
+    private var lockButton: ImageButton?=null
+    private var handleGrip: View?=null
+    private var handleControls: View?=null
+    private val motion=ReadingMotion()
+    private var scanMs=250L
+    private var pageCrop: PixelCrop?=null
     private var selectedBitmap: Bitmap?=null
     private var status: TextView?=null
     private var original: TextView?=null
@@ -61,13 +73,13 @@ class ReadingOverlayService : Service() {
     private var generation=0L
     private var working=false
     private var stopping=false
-    private var fingerprint: IntArray?=null
     private var region: RectF?=null
     private val trigger=ReadingTrigger()
     private val history=ArrayDeque<Pair<String,String>>()
     private var latest=CameraOcrState()
     private var lastHistory=""
     private var historyIndex=-1
+    private var viewingBox=false
     var paused=false; private set
     private val dark get()=resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
     private val ink get()=if(dark)Color.WHITE else Color.rgb(25,30,35)
@@ -87,7 +99,7 @@ class ReadingOverlayService : Service() {
             "stop" -> {stopSelf();return START_NOT_STICKY}
             "pause" -> {togglePause();return START_NOT_STICKY}
             "translate" -> {requestCapture(false);return START_NOT_STICKY}
-            "recover" -> {handleParams.x=dp(8);handleParams.y=dp(100);handle?.let {wm.updateViewLayout(it,handleParams)};return START_NOT_STICKY}
+            "recover" -> {handleParams.x=dp(8);handleParams.y=dp(100);handle?.let {wm.updateViewLayout(it,handleParams)};showPanel();return START_NOT_STICKY}
         }
         if(projection!=null)return START_NOT_STICKY
         try {
@@ -105,7 +117,7 @@ class ReadingOverlayService : Service() {
             display=projection!!.createVirtualDisplay("Hearth reading",reader!!.width,reader!!.height,resources.configuration.densityDpi,DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR,null,null,handler)
             profile=OcrCatalog.profile(camera.getString("profile","latin")!!)
             source=camera.getString("source","en")!!;target=camera.getString("target","ar")!!
-            trigger.mode=ReadingTrigger.supportedMode(prefs.getString("mode","manual"));trigger.settleMs=prefs.getLong("settle",700)
+            trigger.mode=ReadingTrigger.supportedMode(prefs.getString("mode","page"));trigger.settleMs=prefs.getLong("settle",500);scanMs=prefs.getLong("scan",250).coerceIn(200,1000);if(trigger.mode=="page")trigger.movement(now())
             createWindows()
             scope.launch {
                 try {
@@ -117,8 +129,9 @@ class ReadingOverlayService : Service() {
                     setupReady=true
                     controller.state.collect {value->
                         latest=value
-                        if(value.text.isNotBlank()) {original?.text=value.text;if(working)showPanel()}
-                        if(value.translation.isNotBlank())translated?.text=value.translation
+                        if(!viewingBox && value.text.isNotBlank()) original?.text=value.text
+                        if(working && value.boxTranslations.isNotEmpty() && value.error==null)showTranslations(value.boxTranslations,automatic=true)
+                        if(!viewingBox && value.translation.isNotBlank())translated?.text=value.translation
                         if(value.error!=null)showError(value.error)
                         else status?.text=when {value.loading->"Loading ${profile.label}…";value.processing->"Reading text…";value.translating->"Translating…";value.text.isNotBlank()->"${profile.label} · ${value.ocrMs} ms OCR";else->"Open a reader, then tap Translate or Draw area."}
                         if(working && !value.loading && !value.processing && !value.translating) {
@@ -127,17 +140,18 @@ class ReadingOverlayService : Service() {
                             if(value.text.isNotBlank()) {
                                 val key=value.text+"\u0000"+value.translation
                                 if(key!=lastHistory){historyIndex=-1;lastHistory=key;history.addFirst(value.text to value.translation);while(history.size>20)history.removeLast()}
-                                showPanel()
-                            } else if(value.error==null) {status?.text="No text found in this area. Draw a smaller region or choose another OCR model.";showPanel()}
+                                if(value.boxTranslations.isNotEmpty())showTranslations(value.boxTranslations,automatic=true) else showPanel()
+                            } else if(value.error==null) {status?.text="No text found in this area. Draw a smaller region or choose another OCR model.";handleLabel?.text="No text"}
                         }
                     }
                 }catch(e: CancellationException){throw e}catch(e: Exception){setupError=e.message ?: e.toString();showError(setupError!!)}
             }
             scope.launch {
                 while(isActive) {
-                    delay(maxOf(900,trigger.settleMs))
-                    if(paused || selector!=null || panel?.visibility==View.VISIBLE || captureJob?.isActive==true || trigger.mode=="manual")continue
+                    delay(scanMs)
+                    if(paused || selector!=null || panel?.visibility==View.VISIBLE || captureJob?.isActive==true)continue
                     if(profile.engine=="manga" && region==null)continue
+                    if(trigger.mode=="manual" && pageCrop==null && !working)continue
                     captureJob=scope.launch { samplePage() }
                 }
             }
@@ -152,7 +166,7 @@ class ReadingOverlayService : Service() {
             .addAction(0,"Translate",action(41,"translate")).addAction(0,if(paused)"Resume" else "Pause",action(42,"pause")).addAction(0,"Stop",action(43,"stop")).build()
     }
     private fun togglePause() {
-        paused=!paused;trigger.reset();generation++;working=false;controller.invalidate();voice.stop()
+        paused=!paused;clearPage();trigger.reset();generation++;working=false;controller.invalidate();voice.stop()
         panel?.visibility=View.GONE;handle?.visibility=View.VISIBLE
         handleLabel?.text=if(paused)"Paused · read" else "Translate"
         pauseButton?.text=if(paused)"Resume auto" else "Pause auto"
@@ -169,13 +183,13 @@ class ReadingOverlayService : Service() {
         frameWaiter?.let {if(it.isActive)it.resumeWithException(IllegalStateException("Screen size changed. Please capture the page again."))};frameWaiter=null
         display?.surface=null;reader?.close();reader=ImageReader.newInstance(w,h,PixelFormat.RGBA_8888,2)
         display?.resize(w,h,resources.configuration.densityDpi)
-        region=null;fingerprint=null;generation++;trigger.reset()
+        clearPage();region=null;motion.reset();generation++;trigger.reset()
         if(::controller.isInitialized)controller.invalidate()
     }
-    private suspend fun screenshot(): Bitmap {
-        handle?.visibility=View.INVISIBLE;panel?.visibility=View.GONE
+    private suspend fun screenshot(clean: Boolean=true): Bitmap {
+        if(clean){handle?.visibility=View.INVISIBLE;panel?.visibility=View.GONE;pageView?.visibility=View.INVISIBLE}
         try {
-            delay(180) // Let SurfaceFlinger remove our controls before attaching the fresh capture surface.
+            if(clean)delay(100) // Only OCR needs a clean frame; motion sampling leaves translations visible.
             val input=checkNotNull(reader){"Screen capture has stopped"}
             while(true){val old=input.acquireLatestImage() ?: break;old.close()}
             return withTimeout(5000) {suspendCancellableCoroutine {continuation->
@@ -197,7 +211,7 @@ class ReadingOverlayService : Service() {
             }}
         } finally {
             frameWaiter=null;reader?.setOnImageAvailableListener(null,null);display?.surface=null
-            if(!stopping)handle?.visibility=View.VISIBLE
+            if(clean && !stopping)handle?.visibility=View.VISIBLE
         }
     }
     private fun signature(bitmap: Bitmap): IntArray {
@@ -206,46 +220,113 @@ class ReadingOverlayService : Service() {
     }
     private suspend fun samplePage() {
         try {
-            val bitmap=screenshot()
+            val bitmap=screenshot(clean=false)
             try {
-                val next=signature(bitmap)
-                if(PageDifference.changed(fingerprint,next)) {
-                    fingerprint=next;trigger.movement(now());generation++;working=false;controller.invalidate();original?.text="";translated?.text=""
+                val masks=mutableListOf(PixelCrop(0,0,bitmap.width,(bitmap.height*.055f).toInt()),
+                    PixelCrop(0,(bitmap.height*.94f).toInt(),bitmap.width,bitmap.height))
+                handle?.let {view->
+                    val position=IntArray(2);view.getLocationOnScreen(position);val screen=screenSize()
+                    masks+=PixelCrop(position[0]*bitmap.width/screen.first,position[1]*bitmap.height/screen.second,
+                        (position[0]+view.width)*bitmap.width/screen.first,(position[1]+view.height)*bitmap.height/screen.second)
                 }
-                if(trigger.ready(now()) && !working) {trigger.accepted(now());submit(bitmap.copy(Bitmap.Config.ARGB_8888,false))}
+                pageCrop?.let {crop->
+                    // Ignore our replacement pixels, including the previous frame's masks,
+                    // so asynchronous layout/font changes cannot imitate reader movement.
+                    if(pageView?.visibility==View.VISIBLE)latest.boxTranslations.forEach {box->
+                        OcrPageLayout.box(box.line,crop,pageWidth,pageHeight,bitmap.width,bitmap.height,coverEdges=true)?.let {masks+=it}
+                    }
+                }
+                val grid=Bitmap.createScaledBitmap(bitmap,ReadingMotion.WIDTH,ReadingMotion.HEIGHT,false)
+                val pixels=IntArray(ReadingMotion.WIDTH*ReadingMotion.HEIGHT)
+                grid.getPixels(pixels,0,ReadingMotion.WIDTH,0,0,ReadingMotion.WIDTH,ReadingMotion.HEIGHT)
+                if(grid!==bitmap)grid.recycle()
+                if(motion.observe(pixels,bitmap.width,bitmap.height,masks)) {
+                    clearPage();motion.reset();trigger.movement(now());generation++;working=false;controller.invalidate();original?.text="";translated?.text=""
+                }
             }finally{bitmap.recycle()}
+            if(trigger.ready(now()) && !working) {
+                val clean=screenshot();trigger.accepted(now());submit(clean)
+            }
         }catch(e: CancellationException){throw e}catch(e: Exception){paused=true;showError(e.message ?: e.toString())}
     }
     fun requestCapture(draw: Boolean) {
         if(stopping || projection==null || captureJob?.isActive==true || selector!=null)return
-        voice.stop();generation++;controller.invalidate();working=false
+        clearPage();voice.stop();generation++;controller.invalidate();working=false
         captureJob=scope.launch {
             try {
-                val bitmap=screenshot();fingerprint=signature(bitmap);trigger.accepted(now())
+                val bitmap=screenshot();motion.reset();trigger.accepted(now())
                 if(draw || (profile.engine=="manga"&&region==null))selectRegion(bitmap) else submit(bitmap)
             }catch(e: CancellationException){throw e}catch(e: Exception){showError(e.message ?: e.toString())}
         }
     }
     private suspend fun submit(bitmap: Bitmap) {
-        var input=bitmap
+        var input: Bitmap?=null
         try {
             check(setupReady){setupError ?: "Reading settings are still loading. Tap Retry in a moment."}
             check(source in profile.languages){"Choose a text language supported by ${profile.label} in Camera settings"}
-            region?.let {r->
-                val crop=ReadingSelection.crop(bitmap.width,bitmap.height,bitmap.width.toFloat(),bitmap.height.toFloat(),r.left*bitmap.width,r.top*bitmap.height,r.right*bitmap.width,r.bottom*bitmap.height) ?: error("Selected area is too small. Draw it again.")
-                input=Bitmap.createBitmap(bitmap,crop.left,crop.top,crop.width,crop.height)
-                if(input!==bitmap)bitmap.recycle()
+            val crop=region?.let {r->
+                ReadingSelection.crop(bitmap.width,bitmap.height,bitmap.width.toFloat(),bitmap.height.toFloat(),r.left*bitmap.width,r.top*bitmap.height,r.right*bitmap.width,r.bottom*bitmap.height) ?: error("Selected area is too small. Draw it again.")
+            } ?: run {
+                // System status/navigation glyphs are not reader text.
+                val screen=screenSize()
+                val insets=if(Build.VERSION.SDK_INT>=30)wm.maximumWindowMetrics.windowInsets.getInsetsIgnoringVisibility(WindowInsets.Type.systemBars()) else null
+                @Suppress("DEPRECATION") val top=insets?.top ?: handle?.rootWindowInsets?.stableInsetTop ?: 0
+                @Suppress("DEPRECATION") val bottom=insets?.bottom ?: handle?.rootWindowInsets?.stableInsetBottom ?: 0
+                PixelCrop(0,(top.toLong()*bitmap.height/screen.second).toInt(),bitmap.width,
+                    bitmap.height-(bottom.toLong()*bitmap.height/screen.second).toInt())
             }
+            val cropped=Bitmap.createBitmap(bitmap,crop.left,crop.top,crop.width,crop.height)
+            input=if(cropped===bitmap)bitmap.copy(Bitmap.Config.ARGB_8888,false) else cropped
             val pixels=signature(input)
             check(pixels.any {it>8}){"The captured area is black. Check that the reader is visible; protected pages may block screenshots."}
             original?.text="";translated?.text="";status?.text="Reading ${profile.label}…";handleLabel?.text="Reading…"
             val epoch=generation
             if(latest.closing)controller.awaitStopped()
-            if(epoch!=generation){input.recycle();return}
-            if(!latest.running)controller.start(profile,source,target,snapshot,false,input)
+            if(epoch!=generation){input.recycle();bitmap.recycle();return}
+            clearPage();pageWidth=bitmap.width;pageHeight=bitmap.height;pageCrop=crop;bitmap.recycle()
+            viewingBox=false;working=true
+            if(!latest.running)controller.start(profile,source,target,snapshot,false,input,positioned=true)
             else controller.offer(input,true)
-            working=true
-        }catch(e: Exception){if(!input.isRecycled)input.recycle();throw e}
+        }catch(e: Exception){
+            input?.takeUnless {it.isRecycled}?.recycle()
+            clearPage();if(!bitmap.isRecycled)bitmap.recycle()
+            throw e
+        }
+    }
+    private fun clearPage() {
+        pageView?.update(emptyList());pageView?.visibility=View.INVISIBLE;pageCrop=null
+    }
+    private fun resumeReader() {
+        panel?.visibility=View.GONE;handle?.visibility=View.VISIBLE
+        locked=true;applyLayerTouch()
+        // The reader may have moved while controls were open: capture again instead of
+        // restoring coordinates from history or a previously visible page.
+        requestCapture(false)
+    }
+    private fun applyLayerTouch() {
+        layerParams.flags=layerParams.flags.let {if(locked)it or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE else it and WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE.inv()}
+        layerParams.alpha=if(locked && Build.VERSION.SDK_INT>=31)minOf(.8f,getSystemService(android.hardware.input.InputManager::class.java).maximumObscuringOpacityForTouch) else if(locked).8f else 1f
+        pageView?.let {wm.updateViewLayout(it,layerParams)}
+        lockButton?.setImageResource(if(locked)R.drawable.ic_reading_locked else R.drawable.ic_reading_unlocked)
+        handleGrip?.visibility=if(locked)View.GONE else View.VISIBLE
+        handleControls?.visibility=if(locked)View.GONE else View.VISIBLE
+        handle?.let {root->
+            root.setPadding(if(locked)0 else dp(10),if(locked)0 else dp(6),if(locked)0 else dp(10),if(locked)0 else dp(6))
+            root.background=if(locked)null else android.graphics.drawable.GradientDrawable().apply {setColor(paper);cornerRadius=dp(16).toFloat()}
+            handleParams.width=dp(if(locked)48 else 156);handleParams.height=if(locked)dp(48) else -2
+            val bounds=screenSize();handleParams.x=handleParams.x.coerceIn(0,maxOf(0,bounds.first-handleParams.width))
+            handleParams.y=handleParams.y.coerceIn(dp(24),maxOf(dp(24),bounds.second-dp(if(locked)72 else 184)))
+            wm.updateViewLayout(root,handleParams)
+        }
+        lockButton?.contentDescription=if(locked)"Scroll through translations. Tap to unlock text boxes." else "Text boxes are interactive. Tap to let touches pass through."
+    }
+    private fun showTranslations(boxes: List<TranslatedOcrBox> = latest.boxTranslations, automatic: Boolean=false) {
+        val crop=pageCrop ?: return
+        if(boxes.isEmpty())return
+        pageView?.update(boxes,pageWidth,pageHeight,crop)
+        pageView?.visibility=if(automatic && panel?.visibility==View.VISIBLE)View.INVISIBLE else View.VISIBLE
+        if(!automatic)panel?.visibility=View.GONE
+        handle?.visibility=View.VISIBLE
     }
     private fun params(width: Int,height: Int)=WindowManager.LayoutParams(width,height,WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
         WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,PixelFormat.TRANSLUCENT).apply {gravity=Gravity.TOP or Gravity.LEFT}
@@ -257,27 +338,46 @@ class ReadingOverlayService : Service() {
     }
     private fun createWindows() {
         val size=screenSize()
+        layerParams=params(size.first,size.second).apply {
+            flags=flags or WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
+            if(Build.VERSION.SDK_INT>=30) {setFitInsetsTypes(0);layoutInDisplayCutoutMode=WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS}
+        }
+        pageView=ReadingTranslationView(this) {box->
+            viewingBox=true;original?.text=box.line.text;translated?.text=box.translation
+            status?.text="Selected text box";showPanel()
+        }.also {wm.addView(it,layerParams);it.visibility=View.INVISIBLE}
         handleParams=params(dp(156),-2).apply {x=prefs.getInt("x",dp(8)).coerceIn(0,maxOf(0,size.first-dp(156)));y=prefs.getInt("y",dp(100)).coerceIn(dp(24),maxOf(dp(24),size.second-dp(160)))}
         handle=column().also {root->
             val grip=text("Hearth · drag",12f);grip.contentDescription="Move reading handle. Drag to reposition. Double tap to reset position."
             var sx=0f;var sy=0f;var x=0;var y=0
             grip.setOnClickListener {handleParams.x=dp(8);handleParams.y=dp(100);wm.updateViewLayout(root,handleParams)}
-            grip.setOnTouchListener {view,event->when(event.actionMasked) {
+            val drag=View.OnTouchListener {view,event->when(event.actionMasked) {
                 MotionEvent.ACTION_DOWN->{sx=event.rawX;sy=event.rawY;x=handleParams.x;y=handleParams.y;true}
                 MotionEvent.ACTION_MOVE->{val bounds=screenSize();handleParams.x=(x+event.rawX-sx).toInt().coerceIn(0,maxOf(0,bounds.first-root.width));handleParams.y=(y+event.rawY-sy).toInt().coerceIn(dp(24),maxOf(dp(24),bounds.second-root.height-dp(24)));wm.updateViewLayout(root,handleParams);true}
                 MotionEvent.ACTION_UP->{prefs.edit().putInt("x",handleParams.x).putInt("y",handleParams.y).apply();if(abs(event.rawX-sx)+abs(event.rawY-sy)<8)view.performClick();true}
                 else->false
             }}
-            root.addView(grip)
+            grip.setOnTouchListener(drag);handleGrip=grip;root.addView(grip)
             val controls=LinearLayout(this)
             handleLabel=button("Translate"){requestCapture(false)}.apply {textSize=13f}
             controls.addView(handleLabel,LinearLayout.LayoutParams(0,-2,2f))
             controls.addView(button("⋯"){showPanel()}.apply {contentDescription="Reading controls"},LinearLayout.LayoutParams(0,-2,1f))
-            root.addView(controls);wm.addView(root,handleParams)
+            handleControls=controls;root.addView(controls)
+            lockButton=ImageButton(this).apply {
+                setOnClickListener {locked=!locked;applyLayerTouch()}
+                minimumWidth=0;minimumHeight=0
+                scaleType=ImageView.ScaleType.FIT_CENTER
+                background=android.graphics.drawable.InsetDrawable(android.graphics.drawable.GradientDrawable().apply {shape=android.graphics.drawable.GradientDrawable.OVAL;setColor(paper)},dp(8))
+                // Assign after the background: InsetDrawable otherwise replaces view padding.
+                setPadding(dp(14),dp(14),dp(14),dp(14))
+                setOnTouchListener(drag)
+            }
+            root.addView(lockButton,LinearLayout.LayoutParams(dp(48),dp(48)).apply {gravity=Gravity.CENTER_HORIZONTAL})
+            wm.addView(root,handleParams)
         }
         panelParams=params(minOf(size.first-dp(16),dp(440)),minOf((size.second*.60).toInt(),dp(560))).apply {x=dp(8);y=dp(60)}
         panel=column().also {root->
-            row(root,"Read page" to {root.visibility=View.GONE;handle?.visibility=View.VISIBLE},"Stop" to {stopSelf()})
+            row(root,"Read page" to {resumeReader()},"Stop" to {stopSelf()})
             status=text("Open a reader, then tap Translate or Draw area.",13f);status!!.accessibilityLiveRegion=View.ACCESSIBILITY_LIVE_REGION_POLITE;root.addView(status)
             val scroll=ScrollView(this);val content=column();scroll.addView(content);root.addView(scroll,LinearLayout.LayoutParams(-1,0,1f))
             content.addView(text("Translation",14f));translated=text("",prefs.getFloat("textSize",20f));translated!!.setTextIsSelectable(true);content.addView(translated)
@@ -285,14 +385,16 @@ class ReadingOverlayService : Service() {
             content.addView(text("Original",14f));original=text("");original!!.setTextIsSelectable(true);content.addView(original)
             row(content,"Read original" to {speak(true,VoicePlaybackMode.DEFAULT)},"Stop voice" to {voice.stop()})
             row(content,"Copy" to {getSystemService(ClipboardManager::class.java).setPrimaryClip(ClipData.newPlainText("Hearth reading",translated?.text?.takeIf {it.isNotBlank()} ?: original?.text))},"History" to {showHistory()})
+            content.addView(button("Show translations"){resumeReader()})
             row(content,"Translate" to {requestCapture(false)},"Draw area" to {requestCapture(true)})
             row(content,"Whole page" to {region=null;requestCapture(false)},"Clear" to {clear()})
             pauseButton=button("Pause auto"){togglePause()};content.addView(pauseButton)
             row(content,"Smaller text" to {changeText(-2)},"Larger text" to {changeText(2)})
-            content.addView(text("Automatic reading waits while this panel is open. Tap Read page to return to your reader. History lasts for this session (20 pages).",12f))
+            content.addView(text("Scroll through the live translations with the lock closed. Open the lock to tap text boxes. Movement clears old placements; automatic mode translates after the page settles. Tap Read page to close these controls. History lasts for this session (20 pages).",12f))
             row(content,"Setup" to {startActivity(Intent(this,ReadingStartActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));stopSelf()},"Hearth" to {startActivity(Intent(this,MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))})
             wm.addView(root,panelParams);root.visibility=View.GONE
         }
+        applyLayerTouch()
     }
     private fun changeText(delta: Int) {val value=(prefs.getFloat("textSize",20f)+delta).coerceIn(14f,34f);prefs.edit().putFloat("textSize",value).apply();translated?.textSize=value}
     private fun speak(originalText: Boolean,mode: VoicePlaybackMode) {
@@ -308,8 +410,8 @@ class ReadingOverlayService : Service() {
         status?.text="History ${historyIndex+1}/${history.size} · tap History for the next page"
         showPanel()
     }
-    private fun clear() {generation++;controller.invalidate();voice.stop();history.clear();historyIndex=-1;lastHistory="";original?.text="";translated?.text="";working=false;handleLabel?.text="Translate";status?.text="Cleared. Tap Translate for the current page."}
-    private fun showPanel() {if(selector==null){panel?.visibility=View.VISIBLE;handle?.visibility=View.GONE}}
+    private fun clear() {viewingBox=false;clearPage();generation++;controller.invalidate();voice.stop();history.clear();historyIndex=-1;lastHistory="";original?.text="";translated?.text="";working=false;handleLabel?.text="Translate";status?.text="Cleared. Tap Translate for the current page."}
+    private fun showPanel() {if(selector==null){pageView?.visibility=View.INVISIBLE;panel?.visibility=View.VISIBLE;handle?.visibility=View.GONE}}
     private fun showError(message: String) {status?.text=message;working=false;handleLabel?.text="Retry";showPanel()}
     private fun selectRegion(bitmap: Bitmap) {
         selectedBitmap=bitmap;handle?.visibility=View.GONE;panel?.visibility=View.GONE
@@ -354,16 +456,17 @@ class ReadingOverlayService : Service() {
     }
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
-        val bounds=screenSize();region=null;fingerprint=null;generation++;controller.invalidate()
+        clearPage();val bounds=screenSize();region=null;motion.reset();generation++;controller.invalidate()
+        layerParams.width=bounds.first;layerParams.height=bounds.second;pageView?.let {wm.updateViewLayout(it,layerParams)}
         if(Build.VERSION.SDK_INT<34)resize(bounds.first,bounds.second)
         closeSelection();handleParams.x=dp(8);handleParams.y=dp(70);handle?.let {wm.updateViewLayout(it,handleParams)}
         panelParams.width=minOf(bounds.first-dp(16),dp(440));panelParams.height=minOf((bounds.second*.6).toInt(),dp(560));panel?.let {wm.updateViewLayout(it,panelParams);it.visibility=View.GONE}
     }
     override fun onDestroy() {
-        stopping=true
+        stopping=true;clearPage()
         frameWaiter?.cancel();frameWaiter=null;scope.cancel();controller.close();voice.close()
         display?.release();display=null;reader?.close();reader=null;projection?.stop();projection=null
-        listOfNotNull(selector,panel,handle).forEach {wm.removeView(it)};selectedBitmap?.recycle();selectedBitmap=null
+        listOfNotNull(selector,panel,handle,pageView).forEach {wm.removeView(it)};selectedBitmap?.recycle();selectedBitmap=null
         stopForeground(STOP_FOREGROUND_REMOVE);super.onDestroy()
     }
     companion object {

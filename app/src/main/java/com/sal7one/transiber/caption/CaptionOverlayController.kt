@@ -207,7 +207,7 @@ class CaptionOverlayController(
         val density = context.resources.displayMetrics.density
         val placement = placeTapThroughHandle(viewport(),
             OverlayPlacement(main.x, main.y, main.width, (heightDp.value * density).toInt()),
-            (56 * density).toInt(), (4 * density).toInt())
+            (48 * density).toInt(), (4 * density).toInt())
         val params = WindowManager.LayoutParams(placement.width, placement.height,
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or

@@ -19,6 +19,7 @@ internal data class CameraOcrState(
     val running: Boolean = false, val loading: Boolean = false, val live: Boolean = false,
     val processing: Boolean = false, val closing: Boolean = false, val text: String = "", val translation: String = "",
     val lines: List<OcrLine> = emptyList(), val width: Int = 1, val height: Int = 1,
+    val boxTranslations: List<TranslatedOcrBox> = emptyList(),
     val ocrMs: Long = 0, val translating: Boolean = false, val error: String? = null,
 )
 /** Bounded OCR + translation workers; stale translations cannot replace a newer camera view. */
@@ -28,7 +29,7 @@ internal class CameraOcrController(context: Context) : AutoCloseable {
     private val mutable = MutableStateFlow(CameraOcrState())
     val state = mutable.asStateFlow()
     private data class Frame(val bitmap: Bitmap, val captured: Boolean, val epoch: Long)
-    private data class TextRequest(val text: String, val revision: Long)
+    private data class TextRequest(val text: String, val revision: Long, val lines: List<OcrLine>)
     @Volatile private var frames: Channel<Frame>? = null
     @Volatile private var model: OcrEngine? = null
     @Volatile private var translator: CancellableTextTranslator? = null
@@ -36,7 +37,7 @@ internal class CameraOcrController(context: Context) : AutoCloseable {
     private var revision = 0L
     private val frameEpoch = java.util.concurrent.atomic.AtomicLong(0)
     fun error(error: Throwable) { mutable.update { it.copy(error = error.message ?: error.toString()) } }
-    fun start(profile: OcrProfile, source: String, target: String, snapshot: ConversationTranslatorSnapshot?, live: Boolean, initial: Bitmap? = null) {
+    fun start(profile: OcrProfile, source: String, target: String, snapshot: ConversationTranslatorSnapshot?, live: Boolean, initial: Bitmap? = null, positioned: Boolean = false) {
         if (job != null) { initial?.recycle(); error(IllegalStateException("Stop the current camera session before changing its models or settings")); return }
         val input = Channel<Frame>(1, onBufferOverflow = kotlinx.coroutines.channels.BufferOverflow.DROP_OLDEST, onUndeliveredElement = { it.bitmap.recycle() })
         frameEpoch.incrementAndGet(); frames = input; mutable.value = CameraOcrState(running=true,loading=true,processing=initial!=null,live=live); revision++
@@ -55,13 +56,20 @@ internal class CameraOcrController(context: Context) : AutoCloseable {
                             try {
                                 check(request.text.length <= 3000) { "Recognized text exceeds the 3,000-character translation limit. Capture a smaller area; original text is preserved." }
                                 mutable.update { it.copy(translating=true) }
-                                val output = cache[request.text] ?: withContext(Dispatchers.IO) {
+                                suspend fun translate(text: String): String = cache[text] ?: withContext(Dispatchers.IO) {
                                     if(translator == null) withContext(NonCancellable) { translator = snapshot.open(context) }
                                     ensureActive(); val active = checkNotNull(translator); val direction=TranslationDirection(source,target)
                                     check(direction in active.directions) { "${snapshot.label} does not support $source → $target" }
-                                    active.translate(request.text,direction)
-                                }.also { cache[request.text]=it; if(cache.size>32)cache.remove(cache.keys.first()) }
-                                if(request.revision == revision) mutable.update { it.copy(translation=output,error=null) }
+                                    active.translate(text,direction)
+                                }.also { if(it.isNotBlank()) {cache[text]=it; if(cache.size>32)cache.remove(cache.keys.first())} }
+                                if(positioned) {
+                                    OcrPageTranslation.run(request.lines, {request.revision == revision}, ::translate) { boxes ->
+                                        mutable.update { it.copy(boxTranslations=boxes,translation=boxes.joinToString("\n") {box->box.translation},error=null) }
+                                    }
+                                } else {
+                                    val output=translate(request.text)
+                                    if(request.revision == revision) mutable.update { it.copy(translation=output,error=null) }
+                                }
                             } catch(e: CancellationException) { throw e }
                             catch(e: Exception) { if(request.revision == revision) error(e) }
                             catch(e: LinkageError) { if(request.revision == revision) error(e) }
@@ -84,9 +92,9 @@ internal class CameraOcrController(context: Context) : AutoCloseable {
                         val text=lines.joinToString("\n") { it.text }
                         val settled = stability.observe(text,frame.captured)
                         if(text.isBlank() && !frame.captured && !settled) continue
-                        if(text != mutable.value.text) { revision++;mutable.update { it.copy(text=text,translation="") } }
+                        if(positioned || text != mutable.value.text) { revision++;mutable.update { it.copy(text=text,translation="",boxTranslations=emptyList()) } }
                         mutable.update { it.copy(processing=false,translating=settled && text.isNotBlank() && snapshot!=null && source!=target,lines=lines,width=bitmap.width,height=bitmap.height,ocrMs=(System.nanoTime()-begun)/1_000_000) }
-                        if(settled && text.isNotBlank() && snapshot != null && source != target) textQueue.trySend(TextRequest(text,revision))
+                        if(settled && text.isNotBlank() && snapshot != null && source != target) textQueue.trySend(TextRequest(text,revision,lines))
                     } finally { frame.bitmap.recycle() }
                 }
             } catch(e: CancellationException) { throw e }
@@ -120,14 +128,14 @@ internal class CameraOcrController(context: Context) : AutoCloseable {
         if(queue == null || (!captured && !mutable.value.live)) { bitmap.recycle();return }
         if(captured) {
             frameEpoch.incrementAndGet(); revision++
-            mutable.update { it.copy(live=false,processing=true,text="",translation="",lines=emptyList(),error=null) }
+            mutable.update { it.copy(live=false,processing=true,text="",translation="",boxTranslations=emptyList(),lines=emptyList(),error=null) }
         }
         if(!queue.trySend(Frame(bitmap,captured,frameEpoch.get())).isSuccess)bitmap.recycle()
     }
     /** Invalidate work immediately when the reader moves, without destroying the loaded model. */
     fun invalidate() {
         frameEpoch.incrementAndGet();revision++
-        mutable.update { it.copy(text="",translation="",lines=emptyList(),error=null,translating=false) }
+        mutable.update { it.copy(text="",translation="",boxTranslations=emptyList(),lines=emptyList(),error=null,translating=false) }
     }
     suspend fun awaitStopped() { job?.join() }
     fun freeze() { mutable.update { it.copy(live=false) } }

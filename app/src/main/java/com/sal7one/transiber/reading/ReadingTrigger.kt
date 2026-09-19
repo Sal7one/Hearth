@@ -1,7 +1,5 @@
 package com.sal7one.transiber.reading
 
-import kotlin.math.abs
-
 /** Clock supplied by the capture service: testable, bounded, no Android dependencies. */
 internal class ReadingTrigger {
     var mode = "manual"
@@ -22,13 +20,5 @@ internal class ReadingTrigger {
             "page", "distance", "scrolls" -> "page"
             else -> "manual"
         }
-    }
-}
-
-internal object PageDifference {
-    fun changed(previous: IntArray?, current: IntArray): Boolean {
-        if(previous==null || previous.size!=current.size)return true
-        // A coarse luminance grid ignores tiny antialiasing fluctuations, not full page changes.
-        return current.indices.count { abs(current[it]-previous[it])>22 } > current.size/25
     }
 }

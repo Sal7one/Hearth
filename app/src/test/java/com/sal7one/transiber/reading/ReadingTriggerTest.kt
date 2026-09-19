@@ -33,11 +33,4 @@ class ReadingTriggerTest {
     @Test fun acceptedPageDoesNotRepeat() {
         val p=ReadingTrigger().apply{mode="page"};p.movement(1000);assertTrue(p.ready(9000));p.accepted(9000);assertFalse(p.ready(15000))
     }
-    @Test fun imageChangeIgnoresTinyNoiseButFindsNewText() {
-        val page=IntArray(1000){255}
-        assertFalse(PageDifference.changed(page,IntArray(1000){250}))
-        assertFalse(PageDifference.changed(page,page.copyOf().apply{this[2]=0}))
-        assertTrue(PageDifference.changed(page,page.copyOf().apply{for(i in 100..250)this[i]=30}))
-        assertTrue(PageDifference.changed(null,page))
-    }
 }

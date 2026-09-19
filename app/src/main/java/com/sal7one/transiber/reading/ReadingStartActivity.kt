@@ -38,9 +38,10 @@ class ReadingStartActivity : ComponentActivity() {
         val prefs=remember {getSharedPreferences("reading-overlay",0)}
         val camera=remember {getSharedPreferences("camera-translate",0)}
         val profile=OcrCatalog.profile(camera.getString("profile","latin")!!)
-        val savedMode=remember {prefs.getString("mode","manual")}
+        val savedMode=remember {prefs.getString("mode","page")}
         var mode by remember {mutableStateOf(ReadingTrigger.supportedMode(savedMode))}
-        var settle by remember {mutableFloatStateOf(prefs.getLong("settle",700).toFloat())}
+        var settle by remember {mutableFloatStateOf(prefs.getLong("settle",500).toFloat())}
+        var scan by remember {mutableFloatStateOf(prefs.getLong("scan",250).toFloat())}
         var error by remember {mutableStateOf<String?>(null)}
         val projection=rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {result->
             if(result.resultCode==Activity.RESULT_OK && result.data!=null) {
@@ -50,7 +51,7 @@ class ReadingStartActivity : ComponentActivity() {
             } else error="Screen sharing was cancelled. Tap Start reading when ready."
         }
         fun launch() {
-            prefs.edit().putString("mode",mode).putLong("settle",settle.toLong()).remove("distance").remove("bursts").remove("volume").apply()
+            prefs.edit().putString("mode",mode).putLong("settle",settle.toLong()).putLong("scan",scan.toLong()).remove("distance").remove("bursts").remove("volume").apply()
             if(!Settings.canDrawOverlays(this)) {
                 startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,Uri.parse("package:$packageName")))
                 error="Allow Hearth to display over other apps, return here, then tap Start reading."
@@ -68,6 +69,7 @@ class ReadingStartActivity : ComponentActivity() {
                 Text("${profile.label} · ${camera.getString("source","en")} → ${camera.getString("target","ar")}")
                 Text("Uses the OCR model, languages and translator selected on Camera. Starting this screen-reading session stops live audio captions.",style=MaterialTheme.typography.bodySmall)
                 if(profile.engine=="manga")Text("Manga OCR reads one selected bubble. Draw an area first; the same area is reused until you change it.")
+                Text("Translations appear over text in your reader. Scroll through them with the lock closed. Tap the lock to interact with text boxes; the handle and notification always keep controls available.",style=MaterialTheme.typography.bodySmall)
                 Text("Translate when",style=MaterialTheme.typography.titleMedium)
                 FlowRow(horizontalArrangement=Arrangement.spacedBy(8.dp)) {
                     listOf("manual" to "I tap", "page" to "Page changes").forEach {(id,label)->
@@ -77,8 +79,11 @@ class ReadingStartActivity : ComponentActivity() {
                 if(mode!="manual") {
                     Text("Wait after movement: ${settle.toInt()} ms")
                     Slider(value=settle,onValueChange={settle=it},modifier=Modifier.semantics {contentDescription="Wait after movement, milliseconds"},valueRange=300f..2000f,steps=16)
-                    Text("Automatic checks run about once per second; only the latest settled view is translated.",style=MaterialTheme.typography.bodySmall)
+                    Text("Visual movement clears old text positions. Only the latest settled view is translated; exact scroll events are not required.",style=MaterialTheme.typography.bodySmall)
                 }
+                Text("Check screen every ${scan.toInt()} ms")
+                Slider(value=scan,onValueChange={scan=it},modifier=Modifier.semantics {contentDescription="Screen movement check interval, milliseconds"},valueRange=200f..1000f,steps=15)
+                Text("Faster checks respond sooner and use more battery. No screen images are stored.",style=MaterialTheme.typography.bodySmall)
                 Text("Uses screen sharing only. No Accessibility service or volume-key access is needed.",style=MaterialTheme.typography.bodySmall)
                 if(savedMode=="distance" || savedMode=="scrolls") {
                     Text("Your previous scroll shortcut has been replaced by Page changes. It detects visual changes after scrolling; it does not measure scroll distance. You can choose I tap instead.",style=MaterialTheme.typography.bodySmall)
