@@ -1,6 +1,6 @@
 # Manga and books: screen translation plan
 
-Updated 19 September 2026. Owner-directed refinement of [screen overlay research](screen-overlay-research-2026-09-19.md). Status: OCR adapters/model downloads and still-image drawing shipped in 0.12.0. The 0.13.0 implementation adds cross-app screen capture, a reading panel, region drawing, automatic triggers and optional scroll/volume shortcuts. See [current behavior and limits](screen-reading.md). See [adapter details](manga-ocr-adapters.md).
+Updated 19 September 2026. Owner-directed refinement of [screen overlay research](screen-overlay-research-2026-09-19.md). Status: OCR adapters/model downloads and still-image drawing shipped in 0.12.0. The 0.13.0 implementation adds cross-app screen capture, a reading panel, region drawing, automatic triggers and optional scroll/volume shortcuts. **0.13.1 retires those Accessibility-based shortcuts after a Play Protect installation block; manual and page-change modes remain.** See [current behavior and limits](screen-reading.md). See [adapter details](manga-ocr-adapters.md).
 
 ## Scope and reading experience
 
@@ -15,10 +15,10 @@ Translations appear near recognized text, with a readable panel for overflow, or
 | Mode | Behavior | Controls |
 | --- | --- | --- |
 | Button | Floating Translate button captures the current settled view. A manual request overrides the automatic distance threshold. | Whole page / selected area; Translate, Retry, Clear, Pause and Stop |
-| After scrolling | Accumulate movement in the active reader and translate after the configured amount, once scrolling stops. | Distance in visible-screen heights; settle delay; minimum interval between requests |
-| After N scrolls | Count distinct movement bursts, not individual Android scroll events. Translate the current view after the Nth burst settles. | 1–5 bursts; settle delay; only available when observation is reliable |
+| After scrolling (deferred) | Accumulate movement in the active reader and translate after the configured amount, once scrolling stops. | Distance in visible-screen heights; settle delay; minimum interval between requests |
+| After N scrolls (deferred) | Count distinct movement bursts, not individual Android scroll events. Translate the current view after the Nth burst settles. | 1–5 bursts; settle delay; only available when observation is reliable |
 | After page turn | Observe a changed page following the user's normal swipe/tap, wait for its transition to finish, then translate. | Horizontal/vertical navigation; reading direction; settle delay |
-| Volume shortcut | Optional Volume Up press triggers translation while the selected reader session is active. | Off by default; named key choice; explain any conflict with reader page-turn keys |
+| Volume shortcut (deferred) | Optional Volume Up press triggers translation while the selected reader session is active. | Off by default; named key choice; explain any conflict with reader page-turn keys |
 | Share | Android Share → Hearth accepts a screenshot or selected text. Text bypasses OCR. | Reuses the same translator and result controls |
 
 Proposed starting preset: after **0.75 screen heights**, wait **500 ms** without movement, with at least **1 second** between automatic requests. These are adjustable UX starting values, not measured performance guarantees. Manual mode remains available regardless of automatic-trigger support.
@@ -27,7 +27,7 @@ Use a stable scroll container/window identity, discard invalid deltas, and reset
 
 Android accessibility provides scroll events and optional scroll deltas, but a reader may omit usable values or render pages in a canvas. Never label an image-change estimate as exact scroll distance. Without suitable events, offer **When the page changes** using sampled image changes and settling, or manual mode. Observing a page change does not require intercepting the user's swipe or injecting a replacement gesture. [Scroll records](https://developer.android.com/reference/android/view/accessibility/AccessibilityRecord#getScrollDeltaY()), [scroll events](https://developer.android.com/reference/android/view/accessibility/AccessibilityEvent#TYPE_VIEW_SCROLLED).
 
-A normal background overlay cannot universally receive another app's volume keys. The optional shortcut uses an explicitly enabled accessibility key-filter capability. Consume a complete down/up sequence only when that shortcut owns it; ignore key-repeat spam and leave keys alone outside the active reader. Keep a button alternative if another accessibility service or reader uses those keys. [Key handling](https://developer.android.com/reference/android/accessibilityservice/AccessibilityService#onKeyEvent(android.view.KeyEvent)), [key-filter capability](https://developer.android.com/reference/android/accessibilityservice/AccessibilityServiceInfo#FLAG_REQUEST_FILTER_KEY_EVENTS).
+A normal background overlay cannot universally receive another app's volume keys. The deferred shortcut would need an explicitly enabled accessibility key-filter capability. Consume a complete down/up sequence only when that shortcut owns it; ignore key-repeat spam and leave keys alone outside the active reader. Keep a button alternative if another accessibility service or reader uses those keys. [Key handling](https://developer.android.com/reference/android/accessibilityservice/AccessibilityService#onKeyEvent(android.view.KeyEvent)), [key-filter capability](https://developer.android.com/reference/android/accessibilityservice/AccessibilityServiceInfo#FLAG_REQUEST_FILTER_KEY_EVENTS).
 
 ## OCR choices and evidence
 
@@ -75,8 +75,9 @@ Done when: a user opens an existing reader, translates a region without leaving 
 ### MB-02 — Reading triggers
 
 - [ ] Implement settled-page observation, bounded latest-view work and duplicate-result reuse.
-- [x] Add adjustable distance plus settle delay; add optional scroll-event burst count.
-- [x] Add page-change mode, opt-in Volume Up and screenshot/text Share entry.
+- [ ] Deferred: exact scroll distance/burst counts. The 0.13.0 Accessibility implementation was removed in 0.13.1; adjustable settling remains.
+- [x] Add page-change mode and screenshot/text Share entry.
+- [ ] Deferred: global Volume Up shortcut; removed with Accessibility access in 0.13.1.
 - [ ] Persist per-reader presets; clearly identify unsupported exact-distance modes.
 
 Done when: repeated scroll events produce one translation of the settled view; rapid page turning never paints an old translation on a new page; manual mode and normal reader navigation still work.

@@ -97,6 +97,15 @@ for flavor in ['play','foss']:
     assert ('android.permission.ACCESS_NETWORK_STATE' in permissions) == (flavor == 'play')
     assert 'android.permission.CAMERA' in permissions
     assert 'android.permission.READ_MEDIA_VIDEO' not in permissions
+    # Service binding permissions are NOT uses-permission entries: inspect the packaged
+    # binary manifest as well, including declarations contributed by dependencies.
+    manifest = subprocess.check_output([aapt, 'dump', 'xmltree', apk, '--file', 'AndroidManifest.xml'], text=True)
+    for sensitive in ('android.permission.BIND_ACCESSIBILITY_SERVICE',
+                      'android.accessibilityservice.AccessibilityService',
+                      'android.permission.BIND_NOTIFICATION_LISTENER_SERVICE',
+                      'android.permission.READ_SMS', 'android.permission.RECEIVE_SMS',
+                      'android.permission.REQUEST_INSTALL_PACKAGES'):
+        assert sensitive not in manifest, f'{flavor}: unexpected sensitive access: {sensitive}'
     badging = subprocess.check_output([aapt, 'dump', 'badging', apk], text=True)
     package = "com.sal7one.transiber.qa" if build_type == "qa" else "com.sal7one.transiber"
     assert f"name='{package}'" in badging

@@ -4,6 +4,10 @@ Date: 19 September 2026. Device: Samsung **SM-S908E (S22 Ultra), Android 16**,
 ARM64. This is the actually connected test phone, not the owner's previously
 reported SM-S938B. QA artifacts are debug-signed, optimized builds.
 
+> Follow-up: these installations used ADB and did not validate browser/My Files
+> installation. The owner subsequently reported a Play Protect block. Version
+> 0.13.1 removes the optional Accessibility service; see [v27](validation-v27.md).
+
 ## Gates
 
 - `./gradlew test :app:compilePlayQaKotlin :app:compileFossQaKotlin :app:assemblePlayQa :app:assembleFossQa`: PASS, final run 2m19s.

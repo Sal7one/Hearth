@@ -355,3 +355,14 @@ manifest/hash/path checks are retained; a user-created ZIP is no longer needed.
 - [ ] Broad manga corpus, mixed panel order and full TalkBack/RTL usability checks.
 
 See [screen reading](screen-reading.md) and [validation](validation-v26.md).
+
+## Installation permissions — 0.13.1
+
+- [x] Remove the optional reading Accessibility service and its volume/scroll controls.
+- [x] Keep manual/draw capture and adjustable settled page-change detection.
+- [x] Migrate retired reading modes to page changes; explain the change in setup.
+- [x] Verify packaged manifests, including service binding permissions, for both flavors.
+- [ ] Confirm acceptance on the reporting phone via browser/My Files with Play Protect enabled.
+
+The 0.13.0 scroll/Volume Up completion entries above are historical and superseded
+by this permission reduction. See `docs/validation-v27.md` for current evidence.

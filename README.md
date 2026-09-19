@@ -103,7 +103,7 @@ See the [model contribution guide](docs/model-contributing.md) and [release chec
 - Persistent System, Light and Dark appearance in Settings.
 
 - **Camera translate**: live camera and photo text recognition with PaddleOCR v5 mobile, selectable local/cloud text translation, and automatic model installation. See [camera setup, sources and limits](docs/camera-ocr.md).
-- **Manga reading (experimental)**: native Manga OCR and Meiki options, verified model downloads, and drawing around text on captured/imported pages. Reuses translation and read-aloud providers. Cross-app screen capture and scroll shortcuts are still planned. See [setup and current limits](docs/manga-ocr-adapters.md).
+- **Manga reading (experimental)**: native Manga OCR and Meiki options, verified model downloads, and drawing around text on captured/imported pages. Reuses translation and read-aloud providers. Cross-app capture supports manual and settled page-change translation. See [setup and current limits](docs/screen-reading.md).
 
 - **Type to translate**: type above a live translation, swap languages, copy and play either text.
 - **Shared read-aloud**: installed Android voices or local Supertonic 3 (31 languages including Arabic, ten voices). Optional self-hosted Chatterbox, Qwen3-TTS and Fish Speech adapters in play. Used by traveler modes, typed translation, camera and captions. See [voice downloads, server setup and capability limits](docs/voices.md).
@@ -193,6 +193,11 @@ ML Kit packs remain managed by Google's SDK. The offline APK has no downloader.
 Custom model packaging is an extension/developer path documented in
 [model contributing](docs/model-contributing.md), not a prerequisite for catalog downloads.
 
-### Screen reading (0.13.0 development build)
+### Screen reading (0.13.1 development build)
 
-Camera → **Open reading overlay** translates manga and books in another app. Draw around a bubble, translate manually, or refresh after a settled page change. Optional scrolling/Volume Up shortcuts, original text, session history and read aloud reuse Hearth’s existing local/cloud engines. Paddle, Manga OCR and Meiki have been run on an Android phone. This remains experimental; results appear in a reading panel, not repainted manga bubbles. [Setup, limitations and tests](docs/screen-reading.md).
+Camera → **Open reading overlay** translates manga and books in another app. Draw around a bubble, translate manually, or refresh after a settled page change. Original text, session history and read aloud reuse Hearth’s existing local/cloud engines. Paddle, Manga OCR and Meiki have been run on an Android phone. This remains experimental; results appear in a reading panel, not repainted manga bubbles. [Setup, limitations and tests](docs/screen-reading.md).
+
+The 0.13.1 build removes the optional Accessibility service after a Play Protect
+installation block was reported. Reading uses explicit screen-sharing consent;
+scroll-count/distance and Volume Up shortcuts are no longer offered.
+[Installation validation and limitations](docs/validation-v27.md).

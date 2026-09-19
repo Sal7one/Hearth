@@ -64,13 +64,11 @@ class ReadingOverlayService : Service() {
     private var fingerprint: IntArray?=null
     private var region: RectF?=null
     private val trigger=ReadingTrigger()
-    private var readerPackage=""
     private val history=ArrayDeque<Pair<String,String>>()
     private var latest=CameraOcrState()
     private var lastHistory=""
     private var historyIndex=-1
     var paused=false; private set
-    val volumeShortcut get()=prefs.getBoolean("volume",false) && readerPackage.isNotBlank() && readerPackage!=packageName && !readerPackage.startsWith("com.android.systemui")
     private val dark get()=resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
     private val ink get()=if(dark)Color.WHITE else Color.rgb(25,30,35)
     private val paper get()=if(dark)Color.rgb(28,32,38) else Color.rgb(250,250,250)
@@ -107,8 +105,8 @@ class ReadingOverlayService : Service() {
             display=projection!!.createVirtualDisplay("Hearth reading",reader!!.width,reader!!.height,resources.configuration.densityDpi,DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR,null,null,handler)
             profile=OcrCatalog.profile(camera.getString("profile","latin")!!)
             source=camera.getString("source","en")!!;target=camera.getString("target","ar")!!
-            trigger.mode=prefs.getString("mode","manual")!!;trigger.settleMs=prefs.getLong("settle",700);trigger.screenDistance=prefs.getFloat("distance",.75f);trigger.scrollBursts=prefs.getInt("bursts",2)
-            createWindows();active=this
+            trigger.mode=ReadingTrigger.supportedMode(prefs.getString("mode","manual"));trigger.settleMs=prefs.getLong("settle",700)
+            createWindows()
             scope.launch {
                 try {
                     val config=CaptionConfigStore.config(this@ReadingOverlayService).first()
@@ -217,15 +215,6 @@ class ReadingOverlayService : Service() {
                 if(trigger.ready(now()) && !working) {trigger.accepted(now());submit(bitmap.copy(Bitmap.Config.ARGB_8888,false))}
             }finally{bitmap.recycle()}
         }catch(e: CancellationException){throw e}catch(e: Exception){paused=true;showError(e.message ?: e.toString())}
-    }
-    fun readerChanged(name: String) {
-        if(name==readerPackage)return
-        readerPackage=name;fingerprint=null;trigger.reset();generation++;working=false;controller.invalidate();panel?.visibility=View.GONE;handle?.visibility=View.VISIBLE
-    }
-    fun scroll(delta: Int,name: String) {
-        if(paused)return
-        if(readerPackage!=name)readerChanged(name)
-        trigger.scroll(delta,screenSize().second,now());generation++;working=false;controller.invalidate();panel?.visibility=View.GONE;handle?.visibility=View.VISIBLE
     }
     fun requestCapture(draw: Boolean) {
         if(stopping || projection==null || captureJob?.isActive==true || selector!=null)return
@@ -371,7 +360,7 @@ class ReadingOverlayService : Service() {
         panelParams.width=minOf(bounds.first-dp(16),dp(440));panelParams.height=minOf((bounds.second*.6).toInt(),dp(560));panel?.let {wm.updateViewLayout(it,panelParams);it.visibility=View.GONE}
     }
     override fun onDestroy() {
-        stopping=true;if(active===this)active=null
+        stopping=true
         frameWaiter?.cancel();frameWaiter=null;scope.cancel();controller.close();voice.close()
         display?.release();display=null;reader?.close();reader=null;projection?.stop();projection=null
         listOfNotNull(selector,panel,handle).forEach {wm.removeView(it)};selectedBitmap?.recycle();selectedBitmap=null
@@ -380,6 +369,5 @@ class ReadingOverlayService : Service() {
     companion object {
         private const val CHANNEL="reading-overlay"
         private const val NOTIFICATION=912
-        internal var active: ReadingOverlayService?=null;private set
     }
 }

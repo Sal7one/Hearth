@@ -1,6 +1,6 @@
 # Manga and book screen reading
 
-Added in Hearth 0.13.0. Open **Camera → Open reading overlay**. This is a distinct
+Added in Hearth 0.13.0; permission reduction in 0.13.1. Open **Camera → Open reading overlay**. This is a distinct
 cross-app overlay, separate from live audio captions. Starting either capture
 feature stops the other; Android's projection session is never reused after stop.
 
@@ -8,8 +8,7 @@ feature stops the other; Android's projection session is never reused after stop
 
 1. In Camera settings choose Paddle, Manga or Meiki, install its model files, and
    choose the text language, target language and existing local/cloud translator.
-2. Open the reading overlay. Choose manual, page changes, scroll distance or a
-   number of scroll bursts. Grant display-over-apps and screen-sharing access.
+2. Open the reading overlay. Choose **I tap** or **Page changes**. Grant display-over-apps and screen-sharing access.
    Reading does not request the camera or microphone.
 3. Open your reader. **Translate** reads the page; **Draw area** captures a still
    page and lets you circle/drag a bounding rectangle. Manga requires a selected
@@ -28,7 +27,7 @@ Shared text starts in manual mode, so the user chooses when to translate it.
 Model import accepts multiple ONNX files in one picker selection. Downloads retain
 original files in Downloads/Hearth/models or the folder selected in Downloads.
 
-## Automatic reading and optional shortcuts
+## Automatic reading
 
 Page-change mode samples a small luminance grid roughly once per second and waits
 for movement to settle. The delay is adjustable. This is **image-change detection**,
@@ -36,13 +35,12 @@ not an estimate marketed as exact scroll distance. There is one latest-view OCR
 slot and a conflated translation queue. A newer view invalidates older work before
 it can publish. A manual request can retry identical text.
 
-Scroll-distance and scroll-count modes use optional **Hearth reading shortcuts**
-in Android Accessibility settings. They observe scroll/window events, never read
-accessibility nodes or inject gestures. Readers that do not report usable deltas
-cannot provide exact-distance mode; use page changes or manual. Distance resets
-on direction reversal and reader changes. Scroll counts count separated bursts,
-not every event in a gesture. Volume Up is opt-in and consumes its matching
-press/release only during an active, unpaused external-reader session.
+Hearth 0.13.1 removes the optional Accessibility service and its scroll-distance,
+scroll-count and Volume Up controls. Existing distance/count settings migrate to
+Page changes with an explanation in setup. The adjustable settling delay remains.
+This reduces sensitive access in downloaded APKs; manual/draw capture and visual
+page-change detection need only overlay and user-approved screen sharing.
+See [the installation fix and verification limits](validation-v27.md).
 
 Screenshots live in memory and are not saved or sent to an OCR server. Models run
 locally; cloud translation sends recognized text through the existing BYOK
@@ -62,8 +60,8 @@ releases capture resources. A session cannot restart without fresh consent.
   There is no persistent book library or glossary.
 - The model cards remain experimental. Small generated fixtures and browser pages
   establish runtime integration, not broad manga-quality or thermal benchmarks.
-- No guarantee that every reader reports accessibility scrolling. Normal swipes and
-  page-turn keys are not intercepted (except explicitly enabled Volume Up).
+- Exact scroll-distance/count triggers and global Volume Up shortcuts are unavailable.
+  Normal reader swipes and page-turn keys are not intercepted.
 
 ## Extending
 
@@ -71,7 +69,7 @@ releases capture resources. A session cannot restart without fresh consent.
 and opens `OcrEngine`. `CameraOcrController` owns bounded OCR/MT workers and stale
 revision rejection, shared by camera and reading. `ReadingOverlayService` owns the
 projection and windows. `ReadingTrigger` and `PageDifference` are Android-free and
-have host tests. `ReadingAccessibilityService` supplies optional events/keys.
+have host tests. No Accessibility service is declared.
 Reuse `ConversationTranslatorSnapshot` and `VoicePlayer`; do not add independent
 credentials, downloads, translation engines or TTS implementations to the overlay.
 

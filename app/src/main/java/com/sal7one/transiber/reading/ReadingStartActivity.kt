@@ -38,11 +38,9 @@ class ReadingStartActivity : ComponentActivity() {
         val prefs=remember {getSharedPreferences("reading-overlay",0)}
         val camera=remember {getSharedPreferences("camera-translate",0)}
         val profile=OcrCatalog.profile(camera.getString("profile","latin")!!)
-        var mode by remember {mutableStateOf(prefs.getString("mode","manual")!!)}
+        val savedMode=remember {prefs.getString("mode","manual")}
+        var mode by remember {mutableStateOf(ReadingTrigger.supportedMode(savedMode))}
         var settle by remember {mutableFloatStateOf(prefs.getLong("settle",700).toFloat())}
-        var distance by remember {mutableFloatStateOf(prefs.getFloat("distance",.75f))}
-        var bursts by remember {mutableFloatStateOf(prefs.getInt("bursts",2).toFloat())}
-        var volume by remember {mutableStateOf(prefs.getBoolean("volume",false))}
         var error by remember {mutableStateOf<String?>(null)}
         val projection=rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {result->
             if(result.resultCode==Activity.RESULT_OK && result.data!=null) {
@@ -52,7 +50,7 @@ class ReadingStartActivity : ComponentActivity() {
             } else error="Screen sharing was cancelled. Tap Start reading when ready."
         }
         fun launch() {
-            prefs.edit().putString("mode",mode).putLong("settle",settle.toLong()).putFloat("distance",distance).putInt("bursts",bursts.toInt()).putBoolean("volume",volume).apply()
+            prefs.edit().putString("mode",mode).putLong("settle",settle.toLong()).remove("distance").remove("bursts").remove("volume").apply()
             if(!Settings.canDrawOverlays(this)) {
                 startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,Uri.parse("package:$packageName")))
                 error="Allow Hearth to display over other apps, return here, then tap Start reading."
@@ -72,7 +70,7 @@ class ReadingStartActivity : ComponentActivity() {
                 if(profile.engine=="manga")Text("Manga OCR reads one selected bubble. Draw an area first; the same area is reused until you change it.")
                 Text("Translate when",style=MaterialTheme.typography.titleMedium)
                 FlowRow(horizontalArrangement=Arrangement.spacedBy(8.dp)) {
-                    listOf("manual" to "I tap", "page" to "Page changes", "distance" to "Scroll distance", "scrolls" to "After scrolls").forEach {(id,label)->
+                    listOf("manual" to "I tap", "page" to "Page changes").forEach {(id,label)->
                         FilterChip(selected=mode==id,onClick={mode=id},label={Text(label)})
                     }
                 }
@@ -81,12 +79,9 @@ class ReadingStartActivity : ComponentActivity() {
                     Slider(value=settle,onValueChange={settle=it},modifier=Modifier.semantics {contentDescription="Wait after movement, milliseconds"},valueRange=300f..2000f,steps=16)
                     Text("Automatic checks run about once per second; only the latest settled view is translated.",style=MaterialTheme.typography.bodySmall)
                 }
-                if(mode=="distance") {Text("Scroll ${"%.2f".format(distance)} screen heights");Slider(distance,{distance=it},modifier=Modifier.semantics {contentDescription="Scroll distance in screen heights"},valueRange=.25f..3f,steps=10)}
-                if(mode=="scrolls") {Text("After ${bursts.toInt()} scroll bursts");Slider(bursts,{bursts=it},modifier=Modifier.semantics {contentDescription="Number of scroll bursts"},valueRange=1f..5f,steps=3)}
-                Row {Switch(volume,{volume=it},modifier=Modifier.semantics {contentDescription="Volume Up translates"});Text("Volume Up translates",Modifier.padding(12.dp))}
-                if(mode=="distance" || mode=="scrolls" || volume) {
-                    Text("Optional reading shortcuts observe scrolling and Volume Up while the overlay is active. They do not read accessibility text or control the reader. Some readers do not report scroll distance; use Page changes or I tap in those apps.")
-                    OutlinedButton(onClick={startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))}){Text("Enable Hearth reading shortcuts")}
+                Text("Uses screen sharing only. No Accessibility service or volume-key access is needed.",style=MaterialTheme.typography.bodySmall)
+                if(savedMode=="distance" || savedMode=="scrolls") {
+                    Text("Your previous scroll shortcut has been replaced by Page changes. It detects visual changes after scrolling; it does not measure scroll distance. You can choose I tap instead.",style=MaterialTheme.typography.bodySmall)
                 }
                 error?.let {Text(it,color=MaterialTheme.colorScheme.error)}
                 Button(onClick={
