@@ -1,6 +1,6 @@
 # Manga and books: screen translation plan
 
-Updated 19 September 2026. Owner-directed refinement of [screen overlay research](screen-overlay-research-2026-09-19.md). Status: first OCR adapters/model downloads and drawing on captured/imported pages implemented in 0.12.0; cross-app capture and automatic reading triggers remain planned. See [adapter details](manga-ocr-adapters.md).
+Updated 19 September 2026. Owner-directed refinement of [screen overlay research](screen-overlay-research-2026-09-19.md). Status: OCR adapters/model downloads and still-image drawing shipped in 0.12.0. The 0.13.0 implementation adds cross-app screen capture, a reading panel, region drawing, automatic triggers and optional scroll/volume shortcuts. See [current behavior and limits](screen-reading.md). See [adapter details](manga-ocr-adapters.md).
 
 ## Scope and reading experience
 
@@ -41,7 +41,7 @@ A normal background overlay cannot universally receive another app's volume keys
 
 [Manga OCR](https://github.com/kha-white/manga-ocr) targets Japanese manga and multi-line bubble crops. Its own documentation warns that it can generate text even on images without text. Require a valid detected/selected text region, bound decoding, and preserve the original crop for inspection. Do not describe it as a general full-page detector or a multilingual recognizer.
 
-The [ONNX community export](https://huggingface.co/onnx-community/manga-ocr-base-ONNX/tree/f9023406bb2f6b17df67bc4a327c56ecd20611f0) has separate encoder and decoder models plus configuration files. At this revision, the INT8 pair totals **116,595,703 bytes (about 111 MiB)**, excluding other assets and a detector. Smaller quantizations also exist; file size is not phone latency or RAM evidence. Validate operator support, tokenizer IDs, preprocessing, generation limits and Japanese output on our pinned ONNX Runtime before calling this supported. Code/export metadata lists Apache-2.0.
+The [ONNX community export](https://huggingface.co/onnx-community/manga-ocr-base-ONNX/tree/f9023406bb2f6b17df67bc4a327c56ecd20611f0) has separate encoder and decoder models plus configuration files. The supported UINT8 encoder + INT8 decoder pair totals **116,595,741 bytes (about 111 MiB)**, excluding other assets and a detector. Smaller quantizations also exist; file size is not phone latency or RAM evidence. Validate operator support, tokenizer IDs, preprocessing, generation limits and Japanese output on our pinned ONNX Runtime before calling this supported. Code/export metadata lists Apache-2.0.
 
 [MeikiOCR](https://github.com/rtr46/meikiocr) is trained for Japanese game text. Its code is Apache-2.0, while the linked [detector](https://huggingface.co/rtr46/meiki.text.detect.v0) and [recognizer](https://huggingface.co/rtr46/meiki.txt.recognition.v0) cards declare LGPL-3.0. Treat these separately. The publisher documents limits of 64 detected boxes and 48 characters per recognized line; this needs deliberate handling for dense book pages. It is a candidate, not a proven manga winner.
 
@@ -65,18 +65,18 @@ Keep OCR imagery local in this design. Cloud selection sends recognized text thr
 
 ### MB-01 — Manual manga/book screen overlay
 
-- [ ] Add capture/session handoff, region selection and fresh-frame capture with Hearth windows hidden.
+- [x] Add capture/session handoff, region selection and fresh-frame capture with Hearth windows hidden.
 - [ ] Add image scaling/coordinate transforms, block IDs, original/translation display and Retry.
-- [ ] Reuse translator/model selection and TTS; keep source and translated playback separate.
-- [ ] Add touchable recovery handle, notification Stop, remembered geometry and TalkBack controls.
+- [x] Reuse translator/model selection and TTS; keep source and translated playback separate.
+- [x] Add touchable recovery handle, notification Stop, remembered geometry and labeled native controls. Full TalkBack usability remains an owner check.
 
 Done when: a user opens an existing reader, translates a region without leaving it, reads/copies/hears the result and can always dismiss or stop the overlay.
 
 ### MB-02 — Reading triggers
 
 - [ ] Implement settled-page observation, bounded latest-view work and duplicate-result reuse.
-- [ ] Add adjustable distance plus settle delay; add burst count only with reliable events.
-- [ ] Add page-change mode, opt-in Volume Up and screenshot/text Share entry.
+- [x] Add adjustable distance plus settle delay; add optional scroll-event burst count.
+- [x] Add page-change mode, opt-in Volume Up and screenshot/text Share entry.
 - [ ] Persist per-reader presets; clearly identify unsupported exact-distance modes.
 
 Done when: repeated scroll events produce one translation of the settled view; rapid page turning never paints an old translation on a new page; manual mode and normal reader navigation still work.

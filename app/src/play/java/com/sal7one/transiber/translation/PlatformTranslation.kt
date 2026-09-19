@@ -37,7 +37,7 @@ object PlatformTranslation {
             check(!cancelled.get()) { "ML Kit translation cancelled" }
             require(direction in directions) { "ML Kit does not support ${direction.source} → ${direction.target}" }
             val missing = setOf(direction.source, direction.target) - installed()
-            check(missing.isEmpty()) { "Download ML Kit language packs in Models: ${missing.joinToString()}. CC continues." }
+            check(missing.isEmpty()) { "Download ML Kit language packs in Models: ${missing.joinToString()}. Original text is preserved." }
             check(!cancelled.get()) { "ML Kit translation cancelled" }
             if (pair != direction) {
                 client?.close()

@@ -136,3 +136,7 @@ across typed text, camera, conversation/history/presentation and voice preview.
 Version 0.11.0: `AppNavigation` is consumed by MainActivity's five bottom tabs.
 Host tests cover independent nested paths, reselect/back, all existing deep links,
 loop-free model/download navigation and saved-state restoration/validation.
+
+## Screen reading
+
+`ReadingTrigger` and `PageDifference` are consumed by `ReadingOverlayService`. `ReadingTriggerTest` covers settling, rate limits, scroll bursts, reversal, invalid deltas, new-reader reset and image-change thresholds. The existing `ReadingSelection` mapping is reused by both still-photo and cross-app drawing. Hardware OCR adapter coverage is in `JapaneseOcrDeviceTest`; no weights enter the repository.

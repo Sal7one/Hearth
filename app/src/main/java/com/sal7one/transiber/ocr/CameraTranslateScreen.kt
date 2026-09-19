@@ -44,7 +44,7 @@ import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class,ExperimentalLayoutApi::class)
 @Composable
-internal fun CameraTranslateScreen(onModels: () -> Unit,onConnections: () -> Unit,onDownloads: () -> Unit, onVoices: () -> Unit = {}) {
+internal fun CameraTranslateScreen(onModels: () -> Unit,onConnections: () -> Unit,onDownloads: () -> Unit, onVoices: () -> Unit = {}, sharedImage: android.net.Uri? = null, onShareConsumed: () -> Unit = {}) {
     val context=LocalContext.current;val scope=rememberCoroutineScope();val lifecycle=LocalLifecycleOwner.current
     val prefs=remember {context.getSharedPreferences("camera-translate",0)}
     var profileId by rememberSaveable {mutableStateOf(prefs.getString("profile","latin")!!)}
@@ -100,7 +100,7 @@ internal fun CameraTranslateScreen(onModels: () -> Unit,onConnections: () -> Uni
         if(profile.engine == "manga") {controller.stop();frozen=bitmap;selectionImage=bitmap}
         else recognizePhoto(bitmap)
     }
-    val imagePicker=rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()){uri -> if(uri!=null)scope.launch {
+    fun importPhoto(uri: android.net.Uri) { scope.launch {
         importing=true
         try {
             val bitmap=withContext(Dispatchers.IO){ImageDecoder.decodeBitmap(ImageDecoder.createSource(context.contentResolver,uri)){decoder,info,_ ->
@@ -110,6 +110,8 @@ internal fun CameraTranslateScreen(onModels: () -> Unit,onConnections: () -> Uni
             photo(bitmap)
         }catch(e: CancellationException){throw e}catch(e: Exception){controller.error(e)}finally{importing=false}
     }}
+    val imagePicker=rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()){uri -> if(uri!=null)importPhoto(uri)}
+    LaunchedEffect(sharedImage) {sharedImage?.let {importPhoto(it);onShareConsumed()}}
     LaunchedEffect(profileId,source,target,providerId,translate) {prefs.edit().putString("profile",profileId).putString("source",source).putString("target",target).putString("provider",providerId).putBoolean("translate",translate).apply()}
     LaunchedEffect(profileId) {while(true){ready=models.ready(profile);delay(1200)}}
     DisposableEffect(lifecycle) {
@@ -118,6 +120,20 @@ internal fun CameraTranslateScreen(onModels: () -> Unit,onConnections: () -> Uni
         onDispose {lifecycle.lifecycle.removeObserver(observer);controller.close();voice.close()}
     }
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
+        ElevatedCard(Modifier.fillMaxWidth()) {
+            Column(Modifier.padding(16.dp),verticalArrangement=Arrangement.spacedBy(8.dp)) {
+                Text("Manga & books on screen",style=MaterialTheme.typography.titleMedium)
+                Text("Translate pages in your reader, or draw around one speech bubble.")
+                Button(onClick={
+                    controller.stop()
+                    scope.launch {
+                        controller.awaitStopped()
+                        prefs.edit().putString("profile",profileId).putString("source",source).putString("target",target).putString("provider",providerId).putBoolean("translate",translate).apply()
+                        context.startActivity(android.content.Intent(context,com.sal7one.transiber.reading.ReadingStartActivity::class.java))
+                    }
+                }){Text("Open reading overlay")}
+            }
+        }
         FlowRow(horizontalArrangement=Arrangement.spacedBy(8.dp),verticalArrangement=Arrangement.spacedBy(4.dp)) {
             InputChip(selected=false,onClick={picker="source"},enabled=!state.running,label={Text(LanguageCatalog.option(source).nativeName)},modifier=Modifier.semantics {contentDescription="Text language, ${LanguageCatalog.option(source).englishName}"})
             Text("→",Modifier.align(Alignment.CenterVertically))
@@ -127,9 +143,9 @@ internal fun CameraTranslateScreen(onModels: () -> Unit,onConnections: () -> Uni
         Text(if(translate)"${profile.label} → $providerLabel" else "${profile.label} · original text only",style=MaterialTheme.typography.bodySmall)
         if(translate && provider != null)Text("Only recognized text is sent to ${provider.label}. Camera images stay on your phone.",style=MaterialTheme.typography.bodySmall)
         Box(Modifier.fillMaxWidth().height(280.dp).background(Color.Black),contentAlignment=Alignment.Center) {
-            if(permission)CameraPreview(Modifier.fillMaxSize(),state.live && !state.loading,
+            if(permission && frozen==null && !importing && sharedImage==null)CameraPreview(Modifier.fillMaxSize(),state.live && !state.loading,
                 onFrame={controller.offer(it)},onCaptureReady={capture=it},onPhoto={photo(it)},onError=controller::error)
-            else Button(onClick={permissionRequest.launch(Manifest.permission.CAMERA)}){Text("Open camera")}
+            else if(!permission && frozen==null)Button(onClick={permissionRequest.launch(Manifest.permission.CAMERA)}){Text("Open camera")}
             frozen?.let {Image(it.asImageBitmap(),"Captured image",Modifier.fillMaxSize().background(Color.Black),contentScale=ContentScale.Fit)}
             if(state.lines.isNotEmpty() && (frozen!=null || state.live))Canvas(Modifier.fillMaxSize().clearAndSetSemantics {}) {
                 val scale=minOf(size.width/state.width,size.height/state.height)
@@ -143,7 +159,7 @@ internal fun CameraTranslateScreen(onModels: () -> Unit,onConnections: () -> Uni
         }
         FlowRow(horizontalArrangement=Arrangement.spacedBy(8.dp),verticalArrangement=Arrangement.spacedBy(4.dp)) {
             Button(onClick={frozen=null;begin(true)},enabled=profile.live&&ready&&permission&&!state.running&&!importing&&capture!=null){Text("Start live")}
-            Button(onClick={capture?.invoke()},enabled=ready&&permission&&capture!=null&&!state.loading&&!state.closing&&!importing){Text(if(translate) "Capture & translate" else "Capture & read")}
+            Button(onClick={capture?.invoke()},enabled=frozen==null&&ready&&permission&&capture!=null&&!state.loading&&!state.closing&&!importing){Text(if(translate) "Capture & translate" else "Capture & read")}
             OutlinedButton(onClick={imagePicker.launch(arrayOf("image/*"))},enabled=ready&&!state.loading&&!state.closing&&!importing){Text(if(importing)"Opening…" else "Import photo")}
             if(state.running)OutlinedButton(onClick={controller.stop()},enabled=!state.closing){Text(if(state.closing)"Stopping…" else "Stop")}
             if(frozen!=null)OutlinedButton(onClick={controller.stop();selectionImage=frozen},enabled=!state.loading&&!state.closing){Text("Draw text area")}

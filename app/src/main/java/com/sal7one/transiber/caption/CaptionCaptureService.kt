@@ -281,6 +281,7 @@ class CaptionCaptureService : Service() {
         private const val EXTRA_SOURCE = "source"
         private const val EXTRA_PROJECTION_RESULT = "projection_result"
         fun start(context: Context, source: CaptionSource, projectionResult: Intent?) {
+            context.stopService(Intent(context, com.sal7one.transiber.reading.ReadingOverlayService::class.java))
             androidx.core.content.ContextCompat.startForegroundService(context,
                 Intent(context, CaptionCaptureService::class.java).setAction(ACTION_START)
                     .putExtra(EXTRA_SOURCE, source).putExtra(EXTRA_PROJECTION_RESULT, projectionResult))

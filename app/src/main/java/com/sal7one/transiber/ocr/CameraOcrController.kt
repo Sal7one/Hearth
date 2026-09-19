@@ -17,7 +17,7 @@ import java.io.File
 
 internal data class CameraOcrState(
     val running: Boolean = false, val loading: Boolean = false, val live: Boolean = false,
-    val closing: Boolean = false, val text: String = "", val translation: String = "",
+    val processing: Boolean = false, val closing: Boolean = false, val text: String = "", val translation: String = "",
     val lines: List<OcrLine> = emptyList(), val width: Int = 1, val height: Int = 1,
     val ocrMs: Long = 0, val translating: Boolean = false, val error: String? = null,
 )
@@ -39,7 +39,7 @@ internal class CameraOcrController(context: Context) : AutoCloseable {
     fun start(profile: OcrProfile, source: String, target: String, snapshot: ConversationTranslatorSnapshot?, live: Boolean, initial: Bitmap? = null) {
         if (job != null) { initial?.recycle(); error(IllegalStateException("Stop the current camera session before changing its models or settings")); return }
         val input = Channel<Frame>(1, onBufferOverflow = kotlinx.coroutines.channels.BufferOverflow.DROP_OLDEST, onUndeliveredElement = { it.bitmap.recycle() })
-        frameEpoch.incrementAndGet(); frames = input; mutable.value = CameraOcrState(running=true,loading=true,live=live); revision++
+        frameEpoch.incrementAndGet(); frames = input; mutable.value = CameraOcrState(running=true,loading=true,processing=initial!=null,live=live); revision++
         job = scope.launch(start = CoroutineStart.LAZY) {
             var lease: LocalWorkGate.Lease? = null
             val textQueue = Channel<TextRequest>(Channel.CONFLATED)
@@ -51,6 +51,7 @@ internal class CameraOcrController(context: Context) : AutoCloseable {
                     val cache = linkedMapOf<String,String>()
                     try {
                         for(request in textQueue) {
+                            if(request.revision != revision) continue
                             try {
                                 check(request.text.length <= 3000) { "Recognized text exceeds the 3,000-character translation limit. Capture a smaller area; original text is preserved." }
                                 mutable.update { it.copy(translating=true) }
@@ -64,7 +65,7 @@ internal class CameraOcrController(context: Context) : AutoCloseable {
                             } catch(e: CancellationException) { throw e }
                             catch(e: Exception) { if(request.revision == revision) error(e) }
                             catch(e: LinkageError) { if(request.revision == revision) error(e) }
-                            finally { mutable.update { it.copy(translating=false) } }
+                            finally { if(request.revision == revision) mutable.update { it.copy(translating=false) } }
                         }
                     } finally { textQueue.cancel() }
                 }
@@ -79,12 +80,12 @@ internal class CameraOcrController(context: Context) : AutoCloseable {
                                 .map { it.copy(text=OcrText.logical(it.text,profile.id == "arabic")) }
                         }
                         ensureActive()
-                        if(frame.epoch != frameEpoch.get()) continue
+                        if(frame.epoch != frameEpoch.get()) { mutable.update { it.copy(processing=false) };continue }
                         val text=lines.joinToString("\n") { it.text }
                         val settled = stability.observe(text,frame.captured)
                         if(text.isBlank() && !frame.captured && !settled) continue
                         if(text != mutable.value.text) { revision++;mutable.update { it.copy(text=text,translation="") } }
-                        mutable.update { it.copy(lines=lines,width=bitmap.width,height=bitmap.height,ocrMs=(System.nanoTime()-begun)/1_000_000) }
+                        mutable.update { it.copy(processing=false,translating=settled && text.isNotBlank() && snapshot!=null && source!=target,lines=lines,width=bitmap.width,height=bitmap.height,ocrMs=(System.nanoTime()-begun)/1_000_000) }
                         if(settled && text.isNotBlank() && snapshot != null && source != target) textQueue.trySend(TextRequest(text,revision))
                     } finally { frame.bitmap.recycle() }
                 }
@@ -107,7 +108,7 @@ internal class CameraOcrController(context: Context) : AutoCloseable {
                         }
                     }
                 }
-                mutable.update { it.copy(running=false,loading=false,closing=false,live=false,translating=false) }; job=null
+                mutable.update { it.copy(running=false,loading=false,processing=false,closing=false,live=false,translating=false) }; job=null
             }
         }
         initial?.let { input.trySend(Frame(it,true,frameEpoch.get())) }
@@ -119,9 +120,14 @@ internal class CameraOcrController(context: Context) : AutoCloseable {
         if(queue == null || (!captured && !mutable.value.live)) { bitmap.recycle();return }
         if(captured) {
             frameEpoch.incrementAndGet(); revision++
-            mutable.update { it.copy(live=false,text="",translation="",lines=emptyList(),error=null) }
+            mutable.update { it.copy(live=false,processing=true,text="",translation="",lines=emptyList(),error=null) }
         }
         if(!queue.trySend(Frame(bitmap,captured,frameEpoch.get())).isSuccess)bitmap.recycle()
+    }
+    /** Invalidate work immediately when the reader moves, without destroying the loaded model. */
+    fun invalidate() {
+        frameEpoch.incrementAndGet();revision++
+        mutable.update { it.copy(text="",translation="",lines=emptyList(),error=null,translating=false) }
     }
     suspend fun awaitStopped() { job?.join() }
     fun freeze() { mutable.update { it.copy(live=false) } }

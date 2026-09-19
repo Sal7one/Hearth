@@ -21,9 +21,9 @@ internal fun OcrModelSetup(onDownloads: () -> Unit = {}, selected: String? = nul
     val context=LocalContext.current;val scope=rememberCoroutineScope();val models=remember { OcrModels(File(context.filesDir,"ocr-models")) }
     var revision by remember { mutableIntStateOf(0) };var importing by remember { mutableStateOf(false) };var error by remember { mutableStateOf<String?>(null) }
     var family by rememberSaveable { mutableStateOf(OcrCatalog.profiles.firstOrNull {it.id==selected}?.engine ?: "paddle") }
-    val importer=rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri -> if(uri != null) scope.launch {
+    val importer=rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris -> if(uris.isNotEmpty()) scope.launch {
         importing=true
-        try { withContext(Dispatchers.IO) { val job=currentCoroutineContext();context.contentResolver.openInputStream(uri)?.use { models.import(it) { job.ensureActive() } } ?: error("Cannot open OCR model") };revision++;error=null }
+        try { withContext(Dispatchers.IO) { val job=currentCoroutineContext();uris.forEach { uri -> context.contentResolver.openInputStream(uri)?.use { models.import(it) { job.ensureActive() } } ?: error("Cannot open OCR model") } };revision++;error=null }
         catch(e: CancellationException){throw e} catch(e: Exception){error=e.message ?: e.toString()} finally{importing=false}
     } }
     LaunchedEffect(Unit) { while(true){ delay(1500);revision++ } }
@@ -72,8 +72,8 @@ internal fun OcrModelSetup(onDownloads: () -> Unit = {}, selected: String? = nul
                 }
             } }
         }
-        OutlinedButton(onClick={importer.launch(arrayOf("*/*"))},enabled=!importing) { Text(if(importing) "Verifying model…" else "Import downloaded ONNX file") }
-        Text("Import each ONNX file listed for the selected engine. File names do not matter: Hearth identifies and verifies the exact model bytes. Matching dictionaries are included. Manga and Meiki currently use captured/imported pages; live mode remains available with Paddle.",style=MaterialTheme.typography.bodySmall)
+        OutlinedButton(onClick={importer.launch(arrayOf("*/*"))},enabled=!importing) { Text(if(importing) "Verifying model…" else "Import downloaded ONNX files") }
+        Text("Select all ONNX files for the selected engine together. File names do not matter: Hearth identifies and verifies the exact model bytes. Matching dictionaries are included. Manga and Meiki currently use captured/imported pages; live mode remains available with Paddle.",style=MaterialTheme.typography.bodySmall)
         if(ByokPolicy.FEATURE_BYOK) TextButton(onClick=onDownloads) { Text("Downloads & folder settings") }
         error?.let { Text(it,color=MaterialTheme.colorScheme.error) }
     }

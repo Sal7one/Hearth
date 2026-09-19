@@ -342,3 +342,16 @@ manifest/hash/path checks are retained; a user-created ZIP is no longer needed.
 - [x] Integrate the generated A/ع launcher artwork from the branding branch for both flavors.
 - [x] Add direct cloud speech and text translation entries to Settings and update setup documentation.
 - [x] Phone layout, release/flavor checks and publication cleanup; see [validation](validation-v24.md).
+
+## Screen reading — 0.13.0
+
+- [x] Cross-app foreground capture + movable recovery handle + notification controls.
+- [x] Draw one region, reuse OCR/translation/voice engines, bounded session history.
+- [x] Settled page changes, optional accessibility distance/burst/Volume Up controls.
+- [x] Share image/text entry and multi-file ONNX import.
+- [x] Real Android Paddle/Manga/Meiki native inference checks.
+- [ ] Bubble-by-bubble translation placement and better dense-page grouping.
+- [ ] Per-reader presets, glossary and persistent reading history.
+- [ ] Broad manga corpus, mixed panel order and full TalkBack/RTL usability checks.
+
+See [screen reading](screen-reading.md) and [validation](validation-v26.md).

@@ -192,3 +192,7 @@ ML Kit packs remain managed by Google's SDK. The offline APK has no downloader.
 
 Custom model packaging is an extension/developer path documented in
 [model contributing](docs/model-contributing.md), not a prerequisite for catalog downloads.
+
+### Screen reading (0.13.0 development build)
+
+Camera → **Open reading overlay** translates manga and books in another app. Draw around a bubble, translate manually, or refresh after a settled page change. Optional scrolling/Volume Up shortcuts, original text, session history and read aloud reuse Hearth’s existing local/cloud engines. Paddle, Manga OCR and Meiki have been run on an Android phone. This remains experimental; results appear in a reading panel, not repainted manga bubbles. [Setup, limitations and tests](docs/screen-reading.md).

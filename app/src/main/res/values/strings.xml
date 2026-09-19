@@ -1,1 +1,2 @@
-<resources><string name="app_name">Hearth</string></resources>
+<resources><string name="app_name">Hearth</string><string name="reading_accessibility_description">Optional manga and book shortcuts: observe scrolling to translate after you stop, and optionally use Volume Up to translate. Hearth does not read accessibility text or control other apps. Only active during a reading overlay session. Screen images stay on your device; cloud translation sends recognized text to your chosen provider.</string>
+</resources>

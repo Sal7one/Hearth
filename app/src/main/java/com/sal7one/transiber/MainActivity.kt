@@ -38,14 +38,27 @@ import com.sal7one.transiber.models.ModelsScreen
 import com.sal7one.transiber.downloads.DownloadsScreen
 
 class MainActivity : ComponentActivity() {
+ private var sharedImage by mutableStateOf<android.net.Uri?>(null)
+ private var sharedText by mutableStateOf<String?>(null)
+ private fun receiveShare(intent: android.content.Intent) {
+  if(intent.action!=android.content.Intent.ACTION_SEND)return
+  if(intent.type?.startsWith("image/")==true) {
+   @Suppress("DEPRECATION") val uri=intent.getParcelableExtra<android.net.Uri>(android.content.Intent.EXTRA_STREAM)
+   if(uri?.scheme=="content") {sharedImage=uri;intent.putExtra("page",10)}
+  } else if(intent.type=="text/plain") {
+   sharedText=intent.getCharSequenceExtra(android.content.Intent.EXTRA_TEXT)?.toString()
+   intent.putExtra("page",11)
+  }
+ }
  private val navigation=kotlinx.coroutines.flow.MutableStateFlow<Int?>(null)
  override fun onNewIntent(intent: android.content.Intent) {
-  super.onNewIntent(intent);setIntent(intent)
+  super.onNewIntent(intent);setIntent(intent);receiveShare(intent)
   if(intent.hasExtra("page"))navigation.value=intent.getIntExtra("page",0).coerceIn(0,12)
  }
  @OptIn(ExperimentalMaterial3Api::class)
  override fun onCreate(savedInstanceState: Bundle?) {
   super.onCreate(savedInstanceState)
+  if(savedInstanceState==null)receiveShare(intent)
   val nativeFailure = try { com.sal7one.common_jni.CommonJni.init(applicationContext); null }
    catch(e: Exception) { e.message ?: e.toString() }
   enableEdgeToEdge()
@@ -133,8 +146,8 @@ class MainActivity : ComponentActivity() {
         }
         5 -> CaptionScreen(onBrowseModels = { go(1) })
         7 -> ConversationScreen(onModels = { go(1) }, onCloud = { go(4) }, onLayoutChanged = { faceLayout = it }, initialFaceToFace = faceLayout, onVoices={go(12)})
-        10 -> com.sal7one.transiber.ocr.CameraTranslateScreen(onModels = { go(1) }, onConnections = { go(9) }, onDownloads = { go(2) },onVoices={go(12)})
-        11 -> com.sal7one.transiber.translation.TypedTranslateScreen(onModels={go(1)},onConnections={go(9)},onVoices={go(12)})
+        10 -> com.sal7one.transiber.ocr.CameraTranslateScreen(onModels = { go(1) }, onConnections = { go(9) }, onDownloads = { go(2) },onVoices={go(12)},sharedImage=sharedImage,onShareConsumed={sharedImage=null})
+        11 -> com.sal7one.transiber.translation.TypedTranslateScreen(onModels={go(1)},onConnections={go(9)},onVoices={go(12)},sharedText=sharedText,onShareConsumed={sharedText=null})
         12 -> com.sal7one.transiber.voice.VoiceSetup(onDownloads={go(2)})
         8 -> LocalBenchmarkScreen(onModels = { go(1) })
         9 -> Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp)) {

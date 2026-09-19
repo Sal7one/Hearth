@@ -26,12 +26,13 @@ import com.sal7one.transiber.voice.*
 
 @OptIn(ExperimentalMaterial3Api::class,ExperimentalLayoutApi::class)
 @Composable
-internal fun TypedTranslateScreen(onModels: ()->Unit,onConnections: ()->Unit,onVoices: ()->Unit) {
+internal fun TypedTranslateScreen(onModels: ()->Unit,onConnections: ()->Unit,onVoices: ()->Unit,sharedText: String?=null,onShareConsumed: ()->Unit={}) {
     val context=LocalContext.current;val lifecycle=LocalLifecycleOwner.current
     val prefs=remember {context.getSharedPreferences("typed-translation",0)}
     var source by rememberSaveable {mutableStateOf(prefs.getString("source","en")!!)}
     var target by rememberSaveable {mutableStateOf(prefs.getString("target","ar")!!)}
     var text by rememberSaveable {mutableStateOf("")};var automatic by rememberSaveable {mutableStateOf(true)}
+    LaunchedEffect(sharedText) {sharedText?.let {text=it;automatic=false;onShareConsumed()}}
     var picker by remember {mutableStateOf<String?>(null)};var options by remember {mutableStateOf(false)}
     var voiceError by remember {mutableStateOf<String?>(null)};var speaking by remember {mutableStateOf(false)}
     val config by remember {CaptionConfigStore.config(context)}.collectAsState(initial=CaptionOverlayConfig())
