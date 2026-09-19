@@ -174,7 +174,9 @@ class FileDownloads(private val context: Context) {
   }
   OcrCatalog.find(modelId)?.let { asset ->
    require(item.installed) { "OCR model is not installed" }
-   OcrCatalog.profiles.firstOrNull { it.asset.id == asset.id }?.let { profile ->
+   if(asset.id == OcrCatalog.detector.id)return
+   OcrCatalog.profiles.firstOrNull { profile -> profile.assets.any { it.id == asset.id } }?.let { profile ->
+    require(OcrModels(File(context.filesDir, "ocr-models")).ready(profile)) { "Finish installing all files for ${profile.label} first" }
     val settings = context.getSharedPreferences("camera-translate", 0)
     val source = settings.getString("source", "en")
     settings.edit().putString("profile", profile.id).putString("source", source?.takeIf { it in profile.languages } ?: profile.languages.first()).apply()

@@ -374,7 +374,7 @@ endif()
 
 # Add Marian translation JNI if ONNX Runtime is present.
 if(HAS_ONNX)
-    list(APPEND COMMON_JNI_SOURCES marian/marian_jni.cpp ocr/ocr_jni.cpp ocr/paddle_ocr.cpp voice/voice_jni.cpp voice/supertonic.cpp)
+    list(APPEND COMMON_JNI_SOURCES marian/marian_jni.cpp ocr/ocr_jni.cpp ocr/paddle_ocr.cpp ocr/japanese_jni.cpp ocr/japanese_ocr.cpp voice/voice_jni.cpp voice/supertonic.cpp)
 endif()
 
 

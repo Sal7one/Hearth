@@ -1,5 +1,11 @@
 # Camera and photo translation
 
+Version 0.12.0 adds Manga OCR and Meiki native adapters, grouped model downloads,
+and **Draw text area** on captured/imported images. See [Japanese reading OCR](manga-ocr-adapters.md)
+for exact packages, selection workflow and experimental limits. The Paddle details
+below describe the existing general-purpose path; specialist models have different
+input/output contracts and do not run in live camera mode yet.
+
 The **Camera** tab contains live camera and photo translation (introduced in 0.9.0). OCR runs on the phone
 using PaddleOCR v5 mobile ONNX exports. Text translation reuses the installed local
 translator or an explicitly selected Google Cloud, Azure, DeepL or LibreTranslate

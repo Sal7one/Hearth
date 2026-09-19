@@ -44,6 +44,10 @@ for entry in json.loads((ocr_assets/'provenance.json').read_text()):
     assert hashlib.sha256(data).hexdigest() == entry['dictionary_sha256'], entry['id']
     assert len(json.loads(data)) == entry['classes'], entry['id']
 
+manga = json.loads((ocr_assets/'manga-provenance.json').read_text())
+assert hashlib.sha256((ocr_assets/'manga.json').read_bytes()).hexdigest() == manga['dictionary_sha256']
+assert len(json.loads((ocr_assets/'manga.json').read_text())) == manga['classes'] == 6144
+
 expected_libs = {'libtransiber_translation.so','libcommon_jni.so','libc++_shared.so','libvosk.so','libonnxruntime.so','libhearth_qwen.so','libhearth_nemotron.so','libandroidx.graphics.path.so','libdatastore_shared_counter.so','libimage_processing_util_jni.so'}
 platform = {'liblog.so','libandroid.so','libjnigraphics.so','libm.so','libdl.so','libc.so','libz.so'}
 for flavor in ['play','foss']:

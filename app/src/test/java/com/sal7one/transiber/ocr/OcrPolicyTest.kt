@@ -16,6 +16,8 @@ class OcrPolicyTest {
         assertFalse(policy.observe("first",false));assertTrue(policy.observe("first",false));assertFalse(policy.observe("first",false))
         assertFalse(policy.observe("noise",false));assertFalse(policy.observe("first",false));assertTrue(policy.observe("first",false))
         assertTrue(policy.observe("captured",true))
+        assertTrue(policy.observe("captured",true))
+        assertFalse(policy.observe("captured",false))
     }
     @Test fun blankFramesSettleAndNewViewCanReturnToPriorText() {
         val policy=OcrStability()
@@ -27,7 +29,7 @@ class OcrPolicyTest {
         assertTrue("ru" in OcrCatalog.profile("cyrillic").languages)
         assertFalse("ar" in OcrCatalog.profile("cjk").languages)
         assertEquals(OcrCatalog.assets.size,OcrCatalog.assets.map{it.id}.distinct().size)
-        OcrCatalog.assets.forEach {assertTrue(it.revision.matches(Regex("[a-f0-9]{40}")));assertTrue(it.sha256.matches(Regex("[a-f0-9]{64}")));assertTrue(it.url.contains(it.revision));assertTrue(it.bytes in 1..32L*1024*1024)}
+        OcrCatalog.assets.forEach {assertTrue(it.revision.matches(Regex("[a-f0-9]{40}")));assertTrue(it.sha256.matches(Regex("[a-f0-9]{64}")));assertTrue(it.url.contains(it.revision));assertTrue(it.bytes in 1..128L*1024*1024)}
     }
     @Test fun invalidImportCannotPublishOrOverwriteExistingModel() {
         val root=Files.createTempDirectory("ocr-import-test").toFile()

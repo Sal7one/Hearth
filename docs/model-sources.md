@@ -71,6 +71,14 @@ These services translate text; they are separate from the speech model catalog.
 
 ## Camera OCR
 
+Version 0.12.0 adds experimental Japanese reading adapters:
+[Manga OCR ONNX](https://huggingface.co/onnx-community/manga-ocr-base-ONNX),
+[Meiki detector](https://huggingface.co/rtr46/meiki.text.detect.v0) and
+[Meiki readers](https://huggingface.co/rtr46/meiki.txt.recognition.v0).
+Use the exact pinned variants listed in [adapter setup](manga-ocr-adapters.md);
+other quantizations are not interchangeable. Model cards in the app include
+complete-package installation and copyable revision-specific file links.
+
 PaddleOCR uses a separate image adapter with pinned detector/reader files, bundled
 dictionaries, and model-aware language selection. See [camera models, downloads
 and extension contracts](camera-ocr.md). Speech packages do not change.

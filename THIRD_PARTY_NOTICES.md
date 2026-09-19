@@ -62,3 +62,13 @@ included there, and are not bundled in the APK. The first-party server bridge ca
 separately installed Chatterbox (MIT), Qwen3-TTS (Apache-2.0), or Fish Speech
 (Fish Audio Research License) packages. No code, weights or reference recordings
 from those packages or tts-bench are redistributed in Hearth. See [voice sources](docs/voices.md).
+
+## Japanese reading OCR
+
+Manga OCR's vocabulary is bundled under Apache-2.0 with exact provenance in
+`assets/ocr/manga-provenance.json`. The ONNX Community encoder/decoder exports
+are separate verified downloads. Meiki's model-contract reference code is
+Apache-2.0, but its detector/reader weights declare LGPL-3.0. These are separate
+licenses and the weights are not bundled. Publisher links, pinned artifacts and
+limitations are recorded in [Japanese OCR adapters](docs/manga-ocr-adapters.md)
+and packaged in `assets/licenses/ocr/NOTICE.txt`.

@@ -1,5 +1,17 @@
 # Utilities and consumers
 
+## Hearth 0.12.0 reading additions
+
+- `OcrEngine` is consumed by CameraOcrController with Paddle and Japanese native implementations.
+- `ReadingSelection` maps the DrawOcrRegion UI through fitted-image letterboxing;
+  host tests cover clipping, reversed bounds, tiny/non-finite selections and model completeness.
+- `OcrTokens` is the JapaneseOcr native-output consumer; tests reject invalid vocabulary
+  IDs and Unicode values and preserve supplementary characters.
+- `japanese_geometry.h` character suppression is consumed by native Meiki recognition;
+  ASan/UBSan checks cover duplicate predictions and invalid intervals/code points.
+- Explicit captured-text observations retry even if previous identical OCR was committed;
+  the CameraOcrController consumer and OcrPolicyTest cover the manual/live distinction.
+
 Extracted from Hearth at 978382d. Keep utility logic independent of Android when practical, with a real consumer and host tests. Preserve error messages and validate at trust boundaries. Never report unsuccessful inference or downloads as success.
 
 - SpeechModelPackage + ModelIntegrity: bounded import, path containment, SHA-256 checks; consumers LocalSpeechModels / ModelRegistry; copied host tests.

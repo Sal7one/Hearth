@@ -103,6 +103,7 @@ See the [model contribution guide](docs/model-contributing.md) and [release chec
 - Persistent System, Light and Dark appearance in Settings.
 
 - **Camera translate**: live camera and photo text recognition with PaddleOCR v5 mobile, selectable local/cloud text translation, and automatic model installation. See [camera setup, sources and limits](docs/camera-ocr.md).
+- **Manga reading (experimental)**: native Manga OCR and Meiki options, verified model downloads, and drawing around text on captured/imported pages. Reuses translation and read-aloud providers. Cross-app screen capture and scroll shortcuts are still planned. See [setup and current limits](docs/manga-ocr-adapters.md).
 
 - **Type to translate**: type above a live translation, swap languages, copy and play either text.
 - **Shared read-aloud**: installed Android voices or local Supertonic 3 (31 languages including Arabic, ten voices). Optional self-hosted Chatterbox, Qwen3-TTS and Fish Speech adapters in play. Used by traveler modes, typed translation, camera and captions. See [voice downloads, server setup and capability limits](docs/voices.md).

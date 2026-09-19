@@ -6,3 +6,17 @@ Dictionaries adapted from inference.yml character_dict; CTC blank/space added.
 Model weights are separately downloaded, not included.
 Apache License text: assets/licenses/android/Apache-2.0.txt
 AndroidX CameraX 1.4.0: Copyright The Android Open Source Project; Apache License 2.0.
+
+Manga OCR vocabulary: kha-white / Maciej Budys, Apache-2.0.
+Source: https://huggingface.co/kha-white/manga-ocr-base
+Exact revision and original/packaged hashes: assets/ocr/manga-provenance.json.
+Manga OCR ONNX exports: https://huggingface.co/onnx-community/manga-ocr-base-ONNX
+Model-card license: Apache-2.0; weights downloaded separately.
+Manga OCR acknowledges training data from Manga109-s (http://www.manga109.org).
+
+Meiki preprocessing and character suppression follow the published model contract
+and rtr46/meikiocr (Apache-2.0): https://github.com/rtr46/meikiocr
+Meiki detector and recognition model cards declare LGPL-3.0 separately:
+https://huggingface.co/rtr46/meiki.text.detect.v0
+https://huggingface.co/rtr46/meiki.txt.recognition.v0
+Weights are downloaded unchanged from their publishers, never bundled in this APK.

@@ -1,0 +1,10 @@
+{
+  "repo": "kha-white/manga-ocr-base",
+  "revision": "aa6573bd10b0d446cbf622e29c3e084914df9741",
+  "rfilename": "vocab.txt",
+  "blobId": "c2bd4e463e91d61f0c6e9a0cdaa221a50384c4dc",
+  "size": 24072,
+  "source_sha256": "344fbb6b8bf18c57839e924e2c9365434697e0227fac00b88bb4899b78aa594d",
+  "dictionary_sha256": "edee83dd448425ef4de06704e0bc4e18ee8970a502a4b3a0913bd6e7085dc951",
+  "classes": 6144
+}

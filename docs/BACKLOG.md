@@ -1,5 +1,29 @@
 # Hearth — finish for publication
 
+## Manga and books screen overlay — owner direction, 2026-09-19
+
+Research and planned work: [manga/books overlay plan](manga-books-overlay-plan.md),
+building on [screen overlay source review](screen-overlay-research-2026-09-19.md).
+First OCR/draw-on-page slice is implemented in 0.12.0; cross-app capture and
+automatic triggers are not implemented yet. Reuse current local/cloud translation,
+models/downloads and shared TTS; focus on translating existing reading apps.
+
+- [ ] **MB-01:** Manual screen/region translation, readable results, Retry and recoverable controls.
+- [ ] **MB-02:** Adjustable scroll distance/count plus settle delay, page-change refresh,
+  optional Volume Up trigger and Share entry; capabilities depend on the reader.
+- [ ] **MB-03:** Better Paddle vertical/layout handling, Manga OCR adapter, Korean reader,
+  and verified additional OCR options with accurate cards/downloads.
+- [ ] **MB-04:** Reading comfort, history, glossary, accessibility and both-flavor/native/device checks.
+
+Each task's sub-TODOs and visible acceptance criteria are in the linked plan.
+
+- [x] Shared OCR engine interface and native Manga/Meiki adapters alongside Paddle.
+- [x] Pinned complete model packages, grouped cards, publisher/license links and downloads/imports.
+- [x] Draw around text on captured/imported pages with existing translation/TTS.
+- [ ] Owner phone validation of specialist OCR quality and draw workflow.
+
+See [0.12.0 adapter notes](manga-ocr-adapters.md).
+
 Updated 2026-09-13: owner approved an on-device benchmark and traveler release wave.
 
 Ship visible improvements to the working app and preserve cloud BYOK. The owner now explicitly requests a local benchmark; this supersedes the earlier no-benchmark constraint. Keep it inside the app, reuse production adapters, and separate initialization from inference. Avoid speculative native rewrites.

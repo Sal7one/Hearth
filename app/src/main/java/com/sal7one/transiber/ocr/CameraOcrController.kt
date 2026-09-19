@@ -3,7 +3,7 @@ package com.sal7one.transiber.ocr
 import android.content.Context
 import android.graphics.Bitmap
 import com.sal7one.common_jni.ocr.OcrLine
-import com.sal7one.common_jni.ocr.PaddleOcr
+import com.sal7one.common_jni.ocr.OcrEngine
 import com.sal7one.common_jni.speech.TranslationDirection
 import com.sal7one.common_jni.translation.CancellableTextTranslator
 import com.sal7one.transiber.runtime.LocalWorkGate
@@ -30,7 +30,7 @@ internal class CameraOcrController(context: Context) : AutoCloseable {
     private data class Frame(val bitmap: Bitmap, val captured: Boolean, val epoch: Long)
     private data class TextRequest(val text: String, val revision: Long)
     @Volatile private var frames: Channel<Frame>? = null
-    @Volatile private var model: PaddleOcr? = null
+    @Volatile private var model: OcrEngine? = null
     @Volatile private var translator: CancellableTextTranslator? = null
     private var job: Job? = null
     private var revision = 0L
