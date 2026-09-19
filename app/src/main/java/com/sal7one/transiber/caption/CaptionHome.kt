@@ -80,7 +80,7 @@ fun CaptionHome(
             it.engineType == if (cfg.effectiveEngine == CaptionEngineChoice.VOSK) ModelEngineType.VOSK else ModelEngineType.WHISPER }
     }
     val needsTranslator = when (captionTranslationRoute(cfg, CloudConfigStore.sttMode(context))) {
-        CaptionTranslationRoute.LOCAL_TEXT -> if (cfg.localTranslationModelId == com.sal7one.transiber.translation.TranslationOptions.ML_KIT)
+        CaptionTranslationRoute.TEXT_TRANSLATOR -> if (cfg.textTranslationProviderId !in setOf("", "local")) !com.sal7one.transiber.translation.captionCloudTranslatorReady(cfg) else if (cfg.localTranslationModelId == com.sal7one.transiber.translation.TranslationOptions.ML_KIT)
             !com.sal7one.transiber.translation.PlatformTranslation.available else cfg.localTranslationModelId !in translations
         CaptionTranslationRoute.UNSUPPORTED -> true
         CaptionTranslationRoute.ENGLISH_PIVOT, CaptionTranslationRoute.ENGLISH_TEXT ->
@@ -100,18 +100,19 @@ fun CaptionHome(
             }
             HomeChips("Show", if (cfg.mode == CaptionMode.CAPTIONS) "Original captions" else "Translation",
                 listOf("Original captions" to CaptionMode.CAPTIONS, "Translation" to CaptionMode.TRANSLATE), enabled = !running) { mode ->
-                update { it.copy(mode = mode, localTranslationEnabled = mode == CaptionMode.TRANSLATE && it.effectiveEngine.speechBackend != null) }
+                update { it.copy(mode = mode, localTranslationEnabled = mode == CaptionMode.TRANSLATE && (it.effectiveEngine.speechBackend != null || it.textTranslationProviderId.isNotBlank())) }
             }
+            if (cfg.mode == CaptionMode.TRANSLATE) com.sal7one.transiber.translation.CaptionTranslatorChooser(cfg, ::update, onModels, enabled = !running)
             CaptionLanguageFields(cfg, ::update, enabled = !running)
             HorizontalDivider()
             val engines = CaptionEngineChoice.entries.filter { it != CaptionEngineChoice.CLOUD || ByokPolicy.FEATURE_BYOK }
             HomeChoice("Processing", cfg.effectiveEngine.label, engines.map { it.label to it }, enabled = !running) { engine ->
-                if (engine != cfg.effectiveEngine) update { it.copy(engine = engine, modelId = "", localTranslationEnabled = it.mode == CaptionMode.TRANSLATE && engine.speechBackend != null) }
+                if (engine != cfg.effectiveEngine) update { it.copy(engine = engine, modelId = "", localTranslationEnabled = it.mode == CaptionMode.TRANSLATE && (engine.speechBackend != null || it.textTranslationProviderId.isNotBlank())) }
             }
             Text(if (isCloud) "Audio goes to your configured cloud provider." else "Speech is processed on this phone.",
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             if (!engineReady) Text(if (isCloud) "Connect your cloud provider to start." else "Choose an installed speech model to start.")
-            if (needsTranslator) TextButton(onClick = onModels) { Text("Choose a translation model · CC can start now") }
+            if (needsTranslator) Text("Open Translator above to choose or set up translation. Original CC can start now.", style=MaterialTheme.typography.bodySmall)
             if (cfg.source == CaptionSource.PLAYBACK_CAPTURE) Text("Some apps block audio capture. Use Microphone if captions stay silent.", style = MaterialTheme.typography.bodySmall)
             error?.let { Text(it, color = MaterialTheme.colorScheme.error,
                 modifier = Modifier.semantics { liveRegion = LiveRegionMode.Assertive }) }

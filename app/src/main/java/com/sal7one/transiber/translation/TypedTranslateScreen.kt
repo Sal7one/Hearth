@@ -23,10 +23,12 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.sal7one.common_jni.language.LanguageCatalog
 import com.sal7one.transiber.caption.*
 import com.sal7one.transiber.voice.*
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class,ExperimentalLayoutApi::class)
 @Composable
 internal fun TypedTranslateScreen(onModels: ()->Unit,onConnections: ()->Unit,onVoices: ()->Unit,sharedText: String?=null,onShareConsumed: ()->Unit={}) {
+    val scope=rememberCoroutineScope()
     val context=LocalContext.current;val lifecycle=LocalLifecycleOwner.current
     val prefs=remember {context.getSharedPreferences("typed-translation",0)}
     var source by rememberSaveable {mutableStateOf(prefs.getString("source","en")!!)}
@@ -58,7 +60,13 @@ internal fun TypedTranslateScreen(onModels: ()->Unit,onConnections: ()->Unit,onV
             InputChip(false,{picker="target"},label={Text(LanguageCatalog.option(target).nativeName)},modifier=Modifier.semantics {contentDescription="Translation language, ${LanguageCatalog.option(target).englishName}"})
             TextButton(onClick={options=true}){Text("Options")}
         }
-        Text(label,style=MaterialTheme.typography.bodySmall)
+        TranslatorChooser(ConversationTranslationSettings.selected(context),config.localTranslationModelId,
+            "Used by typed text, Conversation and Face to face.",source,target,onModels=onModels,
+            onSelect={provider,model->scope.launch {
+                try { CaptionConfigStore.update(context){it.copy(localTranslationModelId=model)};ConversationTranslationSettings.select(context,provider) }
+                catch(e: kotlinx.coroutines.CancellationException){throw e}
+                catch(e: Exception){controller.error(e)}
+            }})
         if(ConversationTranslationSettings.provider(ConversationTranslationSettings.selected(context))!=null)
             Text(if(automatic)"Text is sent to $label after you pause typing." else "Text is sent to $label when you tap Translate.",style=MaterialTheme.typography.bodySmall)
         OutlinedTextField(text,{text=it.take(3000)},label={Text("Type to translate")},minLines=4,maxLines=10,modifier=Modifier.fillMaxWidth().padding(top=2.dp),supportingText={Text("${text.length}/3000")})
@@ -89,7 +97,7 @@ internal fun TypedTranslateScreen(onModels: ()->Unit,onConnections: ()->Unit,onV
         Column(Modifier.padding(20.dp).navigationBarsPadding(),verticalArrangement=Arrangement.spacedBy(12.dp)) {
             Text("Translation & speech",style=MaterialTheme.typography.titleLarge)
             Row {Switch(automatic,{automatic=it},modifier=Modifier.semantics {contentDescription="Translate as I type"});Text("Translate as I type",Modifier.padding(12.dp))}
-            Text("Uses the translation connection selected for Conversation. Voice settings are shared across Hearth.",style=MaterialTheme.typography.bodySmall)
+            Text("Choose a translator directly above the text. This choice is shared with Conversation and Face to face. Voice settings are shared across Hearth.",style=MaterialTheme.typography.bodySmall)
             OutlinedButton(onClick={options=false;onModels()}){Text("Local translation models")}
             if(com.sal7one.transiber.byok.ByokPolicy.FEATURE_BYOK)OutlinedButton(onClick={options=false;onConnections()}){Text("Translation connections")}
             OutlinedButton(onClick={options=false;onVoices()}){Text("Voices & read aloud")}

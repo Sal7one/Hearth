@@ -39,14 +39,14 @@ class CaptionTranslationRouteTest {
             streamLanguage = "ru", target = TranslationTarget.ARABIC,
             localTranslationEnabled = true, localTranslationModelId = "ml-kit")
         assertEquals("ru", CaptionLanguages.effectiveSource(c, SttMode.BATCH))
-        assertEquals(CaptionTranslationRoute.LOCAL_TEXT, captionTranslationRoute(c, SttMode.BATCH))
+        assertEquals(CaptionTranslationRoute.TEXT_TRANSLATOR, captionTranslationRoute(c, SttMode.BATCH))
         for (provider in listOf(SttMode.STREAMING_OPENAI, SttMode.STREAMING_SONIOX)) {
             val cloud = c.copy(engine = CaptionEngineChoice.CLOUD)
             assertEquals(CaptionTranslationRoute.LIVE_TARGET, captionTranslationRoute(cloud, provider))
             assertFalse(CaptionLanguages.target(cloud, provider).note.contains("ML Kit"))
         }
         val scribe = c.copy(engine = CaptionEngineChoice.CLOUD)
-        assertEquals(CaptionTranslationRoute.LOCAL_TEXT, captionTranslationRoute(scribe, SttMode.STREAMING_ELEVENLABS))
+        assertEquals(CaptionTranslationRoute.TEXT_TRANSLATOR, captionTranslationRoute(scribe, SttMode.STREAMING_ELEVENLABS))
         assertEquals("ru", CaptionLanguages.effectiveSource(scribe, SttMode.STREAMING_ELEVENLABS))
         val legacy = c.copy(engine = CaptionEngineChoice.WHISPER)
         assertEquals(setOf("en", "ar"), CaptionLanguages.target(legacy, SttMode.BATCH).codes)

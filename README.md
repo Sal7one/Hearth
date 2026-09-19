@@ -201,3 +201,7 @@ The 0.13.1 build removes the optional Accessibility service after a Play Protect
 installation block was reported. Reading uses explicit screen-sharing consent;
 scroll-count/distance and Volume Up shortcuts are no longer offered.
 [Installation validation and limitations](docs/validation-v27.md).
+
+### Shared translation choices (0.15.0 development build)
+
+The same **Translator** chooser now appears across captions, typed text, conversation, camera and screen reading. Browse installed/downloadable local models or Google, Microsoft, DeepL and LibreTranslate connections; **Use across Hearth** applies one choice everywhere. Captions can reuse these text translators after recognition. [Choices, privacy and routing](docs/translation-choices.md).

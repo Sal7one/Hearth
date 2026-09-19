@@ -39,7 +39,7 @@ fun CaptionLanguageFields(
     var picker by remember { mutableStateOf<CaptionLanguagePicker?>(null) }
     val model = rememberCaptionLanguageModel(config)
     val source = CaptionLanguages.source(config, cloudMode, model)
-    val target = targetChoices ?: CaptionLanguages.target(config, cloudMode)
+    val target = targetChoices ?: com.sal7one.transiber.translation.captionTranslationChoices(config, cloudMode)
     fun open(which: CaptionLanguagePicker) { if (onOpenOverlay != null) onOpenOverlay(which) else picker = which }
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         if (showSource) {

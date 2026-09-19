@@ -131,6 +131,8 @@ data class CaptionOverlayConfig(
     // Optional local text stage, independently switchable from speech recognition.
     val localTranslationEnabled: Boolean = false,
     val localTranslationModelId: String = "",
+    // Empty keeps the existing speech-provider/legacy route; otherwise an explicit text translator.
+    val textTranslationProviderId: String = "",
     // Translation
     val target: TranslationTarget = TranslationTarget.ENGLISH,
     // Spoken-language preference; runtime capabilities decide whether it can be sent as a hint.
@@ -255,6 +257,7 @@ object CaptionConfigStore {
             engine = prefs[Engine]?.let { enumOrDefault(it, CaptionEngineChoice.WHISPER) }
                 ?: CaptionEngineChoice.WHISPER,
             modelId = prefs[ModelId] ?: "",
+            textTranslationProviderId = prefs[TextTranslationProviderId] ?: "",
             localTranslationEnabled = prefs[LocalTranslationEnabled] ?: false,
             localTranslationModelId = prefs[LocalTranslationModelId] ?: "",
             target = prefs[Target]?.let(TranslationTarget::fromStored)
@@ -288,6 +291,7 @@ object CaptionConfigStore {
         prefs[Source] = config.source.name
         prefs[Engine] = config.engine.name
         prefs[ModelId] = config.modelId
+        prefs[TextTranslationProviderId] = config.textTranslationProviderId
         prefs[LocalTranslationEnabled] = config.localTranslationEnabled
         prefs[LocalTranslationModelId] = config.localTranslationModelId
         prefs[Target] = config.target.name
@@ -312,6 +316,7 @@ object CaptionConfigStore {
     private inline fun <reified T : Enum<T>> enumOrDefault(name: String, fallback: T): T =
         runCatching { enumValueOf<T>(name) }.getOrDefault(fallback)
 
+    private val TextTranslationProviderId = stringPreferencesKey("text_translation_provider_id")
     private val LocalTranslationEnabled = booleanPreferencesKey("local_translation_enabled")
     private val LocalTranslationModelId = stringPreferencesKey("local_translation_model_id")
     private val Mode = stringPreferencesKey("mode")

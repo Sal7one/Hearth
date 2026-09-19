@@ -147,3 +147,18 @@ provider output attached to each source box. `OcrPageLayout` is used by
 tests cover duplicate/multiline responses, immutable progressive results, stale
 inference, exact provider failures, empty outputs, work limits, crop/letterbox
 mapping, vertical boxes and invalid/overflowing native coordinates, and clipped glyph-cover margins.
+
+## Hearth 0.15.0
+
+`TranslationOptions.supports` is used by caption target choices; host cases verify
+unknown model, unsupported source and same-language rejection. `CaptionLanguages`
+uses discovered cloud direction data instead of local-model defaults.
+`CaptionTextTranslatorTest` covers explicit routing, preserved defaults and config
+round-trips. `CloudCaptionBridgeTest` exercises the existing production queue with
+the real cloud adapter and an intercepted response, preserving source segment ID.
+The shared `TranslatorChooser` is used by every translation feature; no new native
+interface or model manifest was needed.
+
+`captionTranslationSource` consumes the source validated with actual model metadata
+at engine load. Host checks prevent forced Whisper language from being erased by
+a model-less lookup and prevent guessing a language when neither source is known.

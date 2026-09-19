@@ -319,6 +319,7 @@ class CaptionEngineController(
      * already-translated output a second time. */
     @Volatile private var engineTranslatesToTarget = false
 
+    @Volatile private var resolvedSpokenLanguage = "auto"
     @Volatile private var activeRoute = CaptionTranslationRoute.ORIGINAL
 
     private fun needsSecondStage(config: CaptionOverlayConfig): Boolean =
@@ -433,7 +434,7 @@ class CaptionEngineController(
             previous.streamLanguage == config.streamLanguage && previous.paused == config.paused
         if (localOnlyChange && !config.paused && localSpeech != null) {
             if (previous.mode != config.mode || previous.target != config.target ||
-                previous.localTranslationEnabled != config.localTranslationEnabled || previous.localTranslationModelId != config.localTranslationModelId) {
+                previous.localTranslationEnabled != config.localTranslationEnabled || previous.textTranslationProviderId != config.textTranslationProviderId || previous.localTranslationModelId != config.localTranslationModelId) {
                 activeRoute = captionTranslationRoute(config, com.sal7one.transiber.byok.CloudConfigStore.SttMode.BATCH)
                 configureLocalTranslation(config)
             }
@@ -445,7 +446,7 @@ class CaptionEngineController(
                 previous.effectiveEngine != config.effectiveEngine ||
                 previous.modelId != config.modelId ||
                 previous.localTranslationEnabled != config.localTranslationEnabled ||
-                previous.localTranslationModelId != config.localTranslationModelId ||
+                previous.textTranslationProviderId != config.textTranslationProviderId || previous.localTranslationModelId != config.localTranslationModelId ||
                 // A newly pinned stream language only takes effect at engine
                 // initialize — without this the overlay's language chips are
                 // inert mid-session.
@@ -465,33 +466,31 @@ class CaptionEngineController(
         translationCleanup = cleanupScope.launch { cleanup?.join(); previous?.awaitClosed() }
         val generation = ++translationGeneration
         _state.update { it.copy(translationNotice = null, localTranslationMetrics = null) }
-        if (activeRoute != CaptionTranslationRoute.LOCAL_TEXT) return
-        if (config.localTranslationModelId.isBlank()) {
+        if (activeRoute != CaptionTranslationRoute.TEXT_TRANSLATOR) return
+        if (config.localTranslationModelId.isBlank() && config.textTranslationProviderId in setOf("", "local")) {
             _state.update { it.copy(translationNotice = "Import and select a local translation model in Models. Original CC continues.") }
             return
         }
         val pendingCleanup = translationCleanup
+        // Freeze provider, credentials and language capabilities for this bridge generation.
+        val snapshot = try {
+            com.sal7one.transiber.translation.ConversationTranslationSettings.snapshot(context,
+                config.localTranslationModelId, config.textTranslationProviderId.ifBlank { "local" })
+        } catch (e: Exception) {
+            _state.update { it.copy(translationNotice = e.message ?: e.toString()) }; return
+        }
         localTranslationBridge = com.sal7one.common_jni.translation.CaptionTranslationBridge(
             scope = scope, target = config.target.languageTag,
             open = {
                 pendingCleanup?.join()
-                if (config.localTranslationModelId == com.sal7one.transiber.translation.TranslationOptions.ML_KIT) {
-                    com.sal7one.transiber.translation.PlatformTranslation.open()
-                } else {
-                val spec = com.sal7one.common_jni.translation.TranslationCatalog.find(config.localTranslationModelId)
-                val models = com.sal7one.transiber.translation.LocalTranslationModels(java.io.File(context.filesDir, "translation-models"))
-                scope.launch { if (generation == translationGeneration) _state.update {
-                    it.copy(localTranslationMetrics = "Loading ${spec.label} · CC continues")
-                } }
-                CaptionDiagnostics.record(context, "${spec.label}: loading local translation model")
-                com.sal7one.common_jni.translation.LocalTranslationSession.open(models.file(spec), spec)
-                }
+                CaptionDiagnostics.record(context, "${snapshot.label}: preparing text translation")
+                snapshot.open(context)
             },
             result = { id, text, latency ->
                 scope.launch {
-                    if (generation == translationGeneration && activeRoute == CaptionTranslationRoute.LOCAL_TEXT && _state.value.history.any { it.id == id }) {
+                    if (generation == translationGeneration && activeRoute == CaptionTranslationRoute.TEXT_TRANSLATOR && _state.value.history.any { it.id == id }) {
                         lastActivityMs = System.currentTimeMillis()
-                        _state.update { it.copy(history = attachTranslationById(it.history, id, text), localTranslationMetrics = "Local translation ${latency} ms · ${config.localTranslationModelId}") }
+                        _state.update { it.copy(history = attachTranslationById(it.history, id, text), localTranslationMetrics = "${snapshot.label} · ${latency} ms") }
                         speakLine(currentConfig, text)
                     }
                 }
@@ -506,11 +505,9 @@ class CaptionEngineController(
     }
 
     private fun enqueueLocalTranslation(lineId: Long, text: String, sourceLanguage: String?) {
-        if (activeRoute != CaptionTranslationRoute.LOCAL_TEXT) return
+        if (activeRoute != CaptionTranslationRoute.TEXT_TRANSLATOR) return
         // Explicit user source overrides uncertain/mixed recognition metadata; never use target as source.
-        val source = CaptionLanguages.effectiveSource(currentConfig, if (currentConfig.engine == CaptionEngineChoice.CLOUD)
-            com.sal7one.transiber.byok.CloudConfigStore.sttMode(context) else com.sal7one.transiber.byok.CloudConfigStore.SttMode.BATCH)
-            .takeUnless { it == "auto" } ?: sourceLanguage
+        val source = captionTranslationSource(resolvedSpokenLanguage, sourceLanguage)
         localTranslationBridge?.offer(lineId, text, source)
     }
 
@@ -528,6 +525,7 @@ class CaptionEngineController(
             if (config.engine == CaptionEngineChoice.CLOUD) com.sal7one.transiber.byok.CloudConfigStore.sttMode(context)
             else com.sal7one.transiber.byok.CloudConfigStore.SttMode.BATCH)
         val spokenLanguage = CaptionLanguages.effectiveSource(config, com.sal7one.transiber.byok.CloudConfigStore.sttMode(context), captionLanguageModel(context, config))
+        resolvedSpokenLanguage = spokenLanguage
         if (config.effectiveEngine.speechBackend != null) {
             val models = LocalSpeechModels(java.io.File(context.filesDir, "speech-models"))
             val model = models.select(config.effectiveEngine, config.modelId)
@@ -577,7 +575,7 @@ class CaptionEngineController(
                     com.sal7one.transiber.byok.CloudConfigStore.SttMode.STREAMING_SONIOX ->
                         com.sal7one.transiber.byok.SonioxStreamingClient(
                             ApiKeyStore.getSonioxKey(context).ifBlank { error("Soniox API key missing — add it in cloud settings") },
-                            spokenLanguage, config.target.languageTag.takeIf { config.mode == CaptionMode.TRANSLATE })
+                            spokenLanguage, config.target.languageTag.takeIf { activeRoute == CaptionTranslationRoute.LIVE_TARGET })
                     com.sal7one.transiber.byok.CloudConfigStore.SttMode.STREAMING_ELEVENLABS ->
                         com.sal7one.transiber.byok.ElevenLabsStreamingClient(
                             ApiKeyStore.getElevenLabsKey(context).ifBlank { error("ElevenLabs API key missing — add it in cloud settings") }, spokenLanguage)
@@ -591,7 +589,7 @@ class CaptionEngineController(
                             },
                         )
                     com.sal7one.transiber.byok.CloudConfigStore.SttMode.STREAMING_OPENAI ->
-                        if (config.mode == CaptionMode.TRANSLATE) {
+                        if (activeRoute == CaptionTranslationRoute.LIVE_TARGET) {
                             // Native live translation: ANY source language →
                             // target, from OpenAI's realtime translation
                             // session (live-verified 2026-08-24 — English
@@ -960,7 +958,8 @@ class CaptionEngineController(
         // Speak the finalized line: in translate mode with a Marian-stage
         // target the TRANSLATION is the speakable output (it lands via
         // attachTranslation below); everything else speaks now.
-        val marianPending = needsSecondStage(config)
+        enqueueLocalTranslation(lineId, confirmed, null)
+        val marianPending = needsSecondStage(config) || activeRoute == CaptionTranslationRoute.TEXT_TRANSLATOR
         if (!marianPending) {
             speakLine(config, confirmed)
         }
@@ -1024,7 +1023,7 @@ class CaptionEngineController(
             )
         }
         enqueueLocalTranslation(lineId, text, sourceLanguage)
-        val marianPending = needsSecondStage(config) || activeRoute == CaptionTranslationRoute.LOCAL_TEXT
+        val marianPending = needsSecondStage(config) || activeRoute == CaptionTranslationRoute.TEXT_TRANSLATOR
         if (!marianPending) speakLine(config, text, sourceLanguage)
         if (needsSecondStage(config)) {
             val target = config.target
@@ -1082,7 +1081,8 @@ class CaptionEngineController(
         }
 
         if (promoted) {
-            val marianPending = needsSecondStage(config)
+            enqueueLocalTranslation(effectiveHistory.last().id, confirmed, null)
+            val marianPending = needsSecondStage(config) || activeRoute == CaptionTranslationRoute.TEXT_TRANSLATOR
             if (!marianPending) speakLine(config, confirmed)
             if (needsSecondStage(config)) {
                 val lineId = (effectiveHistory.lastOrNull() ?: return).id
@@ -1297,7 +1297,7 @@ class CaptionEngineController(
         val generation = ++sessionGeneration
         translationScope.cancel()
         translationScope = CoroutineScope(SupervisorJob() + translationDispatcher)
-        if (activeRoute == CaptionTranslationRoute.LOCAL_TEXT) localTranslationBridge?.reset()
+        if (activeRoute == CaptionTranslationRoute.TEXT_TRANSLATOR) localTranslationBridge?.reset()
         if (currentConfig.paused || stopping || _state.value.status == Status.ERROR) return
         val speech = localSpeech
         val legacy = engine

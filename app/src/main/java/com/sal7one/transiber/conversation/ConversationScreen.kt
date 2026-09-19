@@ -6,6 +6,7 @@ import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.ui.platform.LocalView
 import com.sal7one.transiber.translation.ConversationTranslationSettings
 import com.sal7one.transiber.translation.ConversationTranslationSetup
+import com.sal7one.transiber.translation.TranslatorChooser
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -168,7 +169,8 @@ fun ConversationScreen(onModels: () -> Unit = {}, onCloud: () -> Unit = {}, onLa
                 Text("Them · ${LanguageCatalog.option(state.session.second).nativeName}")
             }
         }
-        Text("${model.label} → $translatorLabel", style = MaterialTheme.typography.bodySmall)
+        Text(model.label, style = MaterialTheme.typography.bodySmall)
+        TextButton(onClick={translationSettings=true}) { Text("Translator · $translatorLabel") }
         if (config.engine == CaptionEngineChoice.CLOUD) Text("Cloud speech uses your selected speech connection. The conversation translator is selected separately in Options. Both original and translated text are kept.", style = MaterialTheme.typography.bodySmall)
         if (translationCodes.isEmpty()) TextButton(onClick = { translationSettings = true }) { Text("Set up translation to begin") }
         if (state.session.turns.isEmpty()) {
@@ -271,7 +273,13 @@ fun ConversationScreen(onModels: () -> Unit = {}, onCloud: () -> Unit = {}, onLa
     }
     if (translationSettings) ModalBottomSheet(onDismissRequest = { translationSettings = false }, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
         Column(Modifier.verticalScroll(translationScroll).padding(20.dp).navigationBarsPadding()) {
-            ConversationTranslationSetup(onModels = { translationSettings = false; onModels() })
+            TranslatorChooser(ConversationTranslationSettings.selected(context),config.localTranslationModelId,
+                "Used by Conversation, Face to face and typed text.",state.session.first,state.session.second,
+                onModels={translationSettings=false;onModels()},onSelect={provider,model->scope.launch {
+                    try { CaptionConfigStore.update(context){it.copy(localTranslationModelId=model)};ConversationTranslationSettings.select(context,provider) }
+                    catch(e: kotlinx.coroutines.CancellationException){throw e}
+                    catch(e: Exception){voiceError=e.message ?: e.toString()}
+                }})
         }
     }
     faceHistory?.let { side -> Dialog(onDismissRequest = { faceHistory = null }, properties = DialogProperties(usePlatformDefaultWidth = false)) {

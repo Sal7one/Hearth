@@ -52,6 +52,8 @@ internal fun CameraTranslateScreen(onModels: () -> Unit,onConnections: () -> Uni
     var target by rememberSaveable {mutableStateOf(prefs.getString("target","ar")!!)}
     var providerId by rememberSaveable {mutableStateOf(if(ByokPolicy.FEATURE_BYOK)prefs.getString("provider","local")!! else "local")}
     var translate by rememberSaveable {mutableStateOf(prefs.getBoolean("translate",true))}
+    val translationRevision by ConversationTranslationSettings.revision.collectAsState()
+    LaunchedEffect(translationRevision) { providerId=if(ByokPolicy.FEATURE_BYOK)prefs.getString("provider","local")!! else "local" }
     val profile=OcrCatalog.profiles.firstOrNull {it.id==profileId} ?: OcrCatalog.profiles.first()
     val config by remember { CaptionConfigStore.config(context) }.collectAsState(initial=CaptionOverlayConfig())
     var speaking by remember {mutableStateOf(false)}
@@ -140,7 +142,7 @@ internal fun CameraTranslateScreen(onModels: () -> Unit,onConnections: () -> Uni
             InputChip(selected=false,onClick={picker="target"},enabled=!state.running && translate,label={Text(LanguageCatalog.option(target).nativeName)},modifier=Modifier.semantics {contentDescription="Translate to, ${LanguageCatalog.option(target).englishName}"})
             TextButton(onClick={settings=true},enabled=!state.running){Text("Settings")}
         }
-        Text(if(translate)"${profile.label} → $providerLabel" else "${profile.label} · original text only",style=MaterialTheme.typography.bodySmall)
+        TextButton(onClick={settings=true}) { Text(if(translate)"Translator · $providerLabel" else "Original text only · settings") }
         if(translate && provider != null)Text("Only recognized text is sent to ${provider.label}. Camera images stay on your phone.",style=MaterialTheme.typography.bodySmall)
         Box(Modifier.fillMaxWidth().height(280.dp).background(Color.Black),contentAlignment=Alignment.Center) {
             if(permission && frozen==null && !importing && sharedImage==null)CameraPreview(Modifier.fillMaxSize(),state.live && !state.loading,
@@ -199,15 +201,13 @@ internal fun CameraTranslateScreen(onModels: () -> Unit,onConnections: () -> Uni
             Text("Camera & reading settings",style=MaterialTheme.typography.titleLarge)
             OutlinedButton(onClick={voice.stop();settings=false;onVoices()}){Text("Voices & read aloud")}
             Row(verticalAlignment=Alignment.CenterVertically){Switch(checked=translate,onCheckedChange={translate=it},modifier=Modifier.semantics {contentDescription="Translate recognized text"});Text("Translate recognized text",Modifier.padding(start=8.dp))}
-            Text("Translation",style=MaterialTheme.typography.titleMedium)
-            FlowRow(horizontalArrangement=Arrangement.spacedBy(8.dp)) {
-                FilterChip(selected=providerId=="local",onClick={providerId="local"},label={Text("On device")})
-                if(ByokPolicy.FEATURE_BYOK)TextTranslationProvider.entries.forEach {p ->FilterChip(selected=providerId==p.id,onClick={providerId=p.id},label={Text(p.label)})}
-            }
-            Text("Local model: ${TranslationOptions.label(config.localTranslationModelId)}",style=MaterialTheme.typography.bodySmall)
-            if(!ByokPolicy.FEATURE_BYOK && config.localTranslationModelId==TranslationOptions.ML_KIT)Text("ML Kit is not included in the offline build. Choose an installed local translator, or turn off translation to read original text.",style=MaterialTheme.typography.bodySmall)
-            OutlinedButton(onClick={settings=false;onModels()}){Text("Choose local translator")}
-            if(ByokPolicy.FEATURE_BYOK)OutlinedButton(onClick={settings=false;onConnections()}){Text("Manage translation connections")}
+            TranslatorChooser(providerId,config.localTranslationModelId,"Used by Camera and the screen-reading overlay.",source,target,
+                enabled=!state.running && !state.closing, onModels={settings=false;onModels()}, onSelect={provider,model->scope.launch {
+                    try { CaptionConfigStore.update(context){it.copy(localTranslationModelId=model)};providerId=provider }
+                    catch(e: kotlinx.coroutines.CancellationException){throw e}
+                catch(e: Exception){controller.error(e)}
+                }})
+            if(state.running || state.closing)Text("Stop recognition to change its translator.",style=MaterialTheme.typography.bodySmall)
             HorizontalDivider()
             OcrModelSetup(onDownloads={settings=false;onDownloads()},selected=profileId,onSelect={profileId=it;val p=OcrCatalog.profile(it);if(source !in p.languages)source=p.languages.first()})
         }

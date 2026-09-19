@@ -57,7 +57,7 @@ class CaptionLanguagesTest {
             val config = CaptionOverlayConfig(engine = CaptionEngineChoice.NEMOTRON, localTranslationEnabled = true,
                 localTranslationModelId = spec.id, mode = CaptionMode.TRANSLATE, target = TranslationTarget.of("ja"))
             assertEquals(spec.targetLanguages, CaptionLanguages.target(config, SttMode.BATCH).codes)
-            assertEquals(CaptionTranslationRoute.LOCAL_TEXT, captionTranslationRoute(config, SttMode.BATCH))
+            assertEquals(CaptionTranslationRoute.TEXT_TRANSLATOR, captionTranslationRoute(config, SttMode.BATCH))
             val prefs = mutablePreferencesOf()
             CaptionConfigStore.writeInto(prefs, config)
             assertEquals(config.target, CaptionConfigStore.readFrom(prefs).target)

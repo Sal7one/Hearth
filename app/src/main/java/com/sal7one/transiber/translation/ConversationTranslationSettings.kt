@@ -19,7 +19,7 @@ import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
 
-/** Conversation-only choice: does not change an active overlay or its local model selection. */
+/** Shared encrypted connection library. The default choice belongs to conversation and typed text. */
 internal object ConversationTranslationSettings {
     const val LOCAL = "local"
     private val changes = MutableStateFlow(0L)
@@ -30,6 +30,14 @@ internal object ConversationTranslationSettings {
     fun select(context: Context, id: String) {
         require(id == LOCAL || (ByokPolicy.FEATURE_BYOK && provider(id) != null)) { "Cloud translation is unavailable in the offline build." }
         prefs(context).edit().putString("selected", id).apply(); changed()
+    }
+    /** Explicit user action; does not happen merely by opening a feature or saving a key. */
+    suspend fun useEverywhere(context: Context, providerId: String, localId: String) {
+        require(providerId == LOCAL || (ByokPolicy.FEATURE_BYOK && provider(providerId) != null)) { "Cloud translation is unavailable in the offline build." }
+        com.sal7one.transiber.caption.CaptionConfigStore.update(context) { it.copy(
+            localTranslationModelId=localId, textTranslationProviderId=providerId, localTranslationEnabled=true) }
+        check(context.getSharedPreferences("camera-translate",0).edit().putString("provider",providerId).commit()) { "Could not save camera translator" }
+        select(context,providerId)
     }
     fun endpoint(context: Context, provider: TextTranslationProvider): String = prefs(context).getString("${provider.id}.endpoint", provider.defaultEndpoint) ?: provider.defaultEndpoint
     fun region(context: Context, provider: TextTranslationProvider): String = prefs(context).getString("${provider.id}.region", "") ?: ""
@@ -87,8 +95,10 @@ internal object ConversationTranslationSettings {
             else TranslationCatalog.models.firstOrNull { it.id == localId }?.supports(source, target) == true
     }
     /** Snapshot credentials/capabilities once, before a turn. Later settings cannot reroute in-flight text. */
-    fun snapshot(context: Context, localId: String): ConversationTranslatorSnapshot {
-        val provider = provider(selected(context)) ?: return ConversationTranslatorSnapshot(localId)
+    fun snapshot(context: Context, localId: String, providerId: String = selected(context)): ConversationTranslatorSnapshot {
+        check(ByokPolicy.FEATURE_BYOK || providerId == LOCAL || providerId.isBlank()) { "Cloud translation is unavailable in the offline build." }
+        check(providerId == LOCAL || providerId.isBlank() || provider(providerId) != null) { "Unknown translation provider: $providerId" }
+        val provider = provider(providerId) ?: return ConversationTranslatorSnapshot(localId)
         return ConversationTranslatorSnapshot(localId, connection(context, provider), checkNotNull(capabilities(context, provider)) { "Check ${provider.label} languages in Translation settings first." })
     }
     private fun readKey(context: Context, provider: TextTranslationProvider): String {

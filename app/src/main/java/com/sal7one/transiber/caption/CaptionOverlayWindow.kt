@@ -187,7 +187,7 @@ fun CaptionOverlayWindow(
                     Surface(Modifier.fillMaxSize()) {
                         LanguagePickerContent(
                             title = if (which == CaptionLanguagePicker.SOURCE) "Spoken language (CC)" else "Translate to",
-                            choices = if (which == CaptionLanguagePicker.SOURCE) CaptionLanguages.source(cfg, cloudMode, rememberCaptionLanguageModel(cfg)) else CaptionLanguages.target(cfg, cloudMode),
+                            choices = if (which == CaptionLanguagePicker.SOURCE) CaptionLanguages.source(cfg, cloudMode, rememberCaptionLanguageModel(cfg)) else com.sal7one.transiber.translation.captionTranslationChoices(cfg, cloudMode),
                             selected = if (which == CaptionLanguagePicker.SOURCE) {
                                 if (cfg.engine == CaptionEngineChoice.VOSK) "model" else CaptionLanguages.effectiveSource(cfg, cloudMode, rememberCaptionLanguageModel(cfg))
                             } else cfg.target.languageTag,
@@ -572,12 +572,13 @@ private fun SettingsPanel(
         }
 
         if (cfg.effectiveEngine.speechBackend != null) {
-            ToggleRow("Local translation bridge", cfg.localTranslationEnabled, palette) { enabled ->
+            ToggleRow("Text translation", cfg.localTranslationEnabled, palette) { enabled ->
                 onConfigChange { it.copy(localTranslationEnabled = enabled,
                     mode = if (enabled) CaptionMode.TRANSLATE else CaptionMode.CAPTIONS) }
             }
         }
 
+        com.sal7one.transiber.translation.CaptionTranslatorChooser(cfg, onConfigChange, { openSetup(1) })
         CaptionLanguageFields(cfg, onConfigChange, onOpenOverlay = { which ->
             onConfigChange { it.copy(languagePicker = which) }
         })
@@ -597,10 +598,6 @@ private fun SettingsPanel(
 
             SettingsLabel("Current speech model", palette)
             Text(cfg.effectiveEngine.label, color = palette.onSurface)
-            if (cfg.localTranslationEnabled && cfg.effectiveEngine.speechBackend != null) {
-                val model = com.sal7one.common_jni.translation.TranslationCatalog.models.firstOrNull { it.id == cfg.localTranslationModelId }
-                Text(com.sal7one.transiber.translation.TranslationOptions.label(cfg.localTranslationModelId), color = palette.onSurface)
-            }
             TextButton(onClick = { openSetup(1) }) { Text("Choose or download models") }
             TextButton(onClick = { openSetup(3) }) { Text("Full setup & cloud settings") }
             TextButton(onClick = onClear) { Text("Clear transcript") }

@@ -138,7 +138,7 @@ fun CaptionScreen(
     val route = captionTranslationRoute(config, cloudMode)
     val liveCloudTranslation = route == CaptionTranslationRoute.LIVE_TARGET
     val translationReady = when (route) {
-        CaptionTranslationRoute.LOCAL_TEXT -> localTranslationInstalled || (config.localTranslationModelId == com.sal7one.transiber.translation.TranslationOptions.ML_KIT && com.sal7one.transiber.translation.PlatformTranslation.available)
+        CaptionTranslationRoute.TEXT_TRANSLATOR -> if (config.textTranslationProviderId !in setOf("", "local")) com.sal7one.transiber.translation.captionCloudTranslatorReady(config) else localTranslationInstalled || (config.localTranslationModelId == com.sal7one.transiber.translation.TranslationOptions.ML_KIT && com.sal7one.transiber.translation.PlatformTranslation.available)
         CaptionTranslationRoute.UNSUPPORTED -> false
         CaptionTranslationRoute.ENGLISH_PIVOT, CaptionTranslationRoute.ENGLISH_TEXT -> translationModelImported && MarianTranslatorEngine.isRuntimeAvailable
         else -> true
@@ -211,7 +211,7 @@ fun CaptionScreen(
                             CloudConfigStore.setSttMode(context, CloudConfigStore.SttMode.STREAMING_OPENAI)
                             cloudMode = CloudConfigStore.SttMode.STREAMING_OPENAI
                             update { it.copy(engine = CaptionEngineChoice.CLOUD, mode = CaptionMode.TRANSLATE,
-                                target = target, source = CaptionSource.PLAYBACK_CAPTURE, streamLanguage = "auto",
+                                target = target, source = CaptionSource.PLAYBACK_CAPTURE, streamLanguage = "auto", textTranslationProviderId = "",
                                 tapThrough = false, xOffsetPx = 0, yOffsetPx = 0, historyLines = maxOf(it.historyLines, CaptionReading.DEFAULT_PREVIOUS_LINES)) }
                         }) { Text(label) }
                     }
@@ -356,13 +356,8 @@ fun CaptionScreen(
             }
         }
 
-        if (config.effectiveEngine.speechBackend != null ||
-            (config.effectiveEngine == CaptionEngineChoice.CLOUD && cloudMode in setOf(CloudConfigStore.SttMode.STREAMING_ELEVENLABS, CloudConfigStore.SttMode.STREAMING_DEEPGRAM, CloudConfigStore.SttMode.STREAMING_ASSEMBLYAI))) {
-            HearthCard(modifier = Modifier.fillMaxWidth()) {
-                SectionTitle("Local translation")
-                com.sal7one.transiber.translation.LocalTranslationSetup(config, update)
-            }
-        } else if (config.effectiveEngine == CaptionEngineChoice.WHISPER || config.effectiveEngine == CaptionEngineChoice.VOSK) {
+        com.sal7one.transiber.translation.CaptionTranslatorChooser(config, update, onBrowseModels)
+        if (config.effectiveEngine == CaptionEngineChoice.WHISPER || config.effectiveEngine == CaptionEngineChoice.VOSK) {
             HearthCard(modifier = Modifier.fillMaxWidth()) {
                 SectionTitle("Model files & imports")
                 com.sal7one.transiber.models.ModelSourcePanel(com.sal7one.transiber.models.ModelSources.speech(config.effectiveEngine))

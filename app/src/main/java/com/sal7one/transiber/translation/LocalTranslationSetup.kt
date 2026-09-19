@@ -36,6 +36,13 @@ internal fun LocalTranslationSetup(
     var showGguf by rememberSaveable { mutableStateOf(config.localTranslationModelId != TranslationOptions.ML_KIT) }
     var showLegacy by rememberSaveable { mutableStateOf(false) }
     var showCoverage by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        val browse = context.getSharedPreferences("translation-browser",0)
+        browse.getString("model",null)?.let { id ->
+            if (TranslationCatalog.models.any { it.id == id }) { selected = id; showGguf = true; showLegacy = false }
+            browse.edit().remove("model").apply()
+        }
+    }
     val spec = TranslationCatalog.find(selected)
     LaunchedEffect(Unit) { installed = withContext(Dispatchers.IO) { store.installed() } }
     LaunchedEffect(Unit) {

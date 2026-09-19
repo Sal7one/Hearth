@@ -376,3 +376,13 @@ by this permission reduction. See `docs/validation-v27.md` for current evidence.
 - [x] Bound work, retain provider errors, reject stale results, test geometry/alignment.
 - [ ] Group nearby lines into semantic bubbles/paragraphs for translation context.
 - [ ] Artwork-aware background reconstruction and dense-page ordering.
+
+## Shared translation choices — 0.15.0
+
+- [x] Reuse one chooser across text, conversation, captions, camera and reading setup.
+- [x] Show all local artifacts and cloud connections with readiness and pair coverage.
+- [x] Route missing model setup directly to the requested translation artifact.
+- [x] Add an explicit use-across-Hearth action; preserve existing choices on upgrade.
+- [x] Reuse the bounded caption bridge for cloud text translation and legacy finals.
+- [x] Keep integrated cloud translation selectable and prevent double translation.
+- [x] Cover route precedence, cloud direction filtering and persistence with host tests.

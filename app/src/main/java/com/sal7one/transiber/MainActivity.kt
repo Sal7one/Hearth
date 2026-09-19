@@ -90,7 +90,7 @@ class MainActivity : ComponentActivity() {
       0 -> "Live captions"; 1 -> "Models"; 2 -> "Downloads"; 3 -> "Settings"
       4 -> "Cloud speech"; 5 -> "Advanced captions"
       7 -> if (faceLayout) "Face to face" else "Conversation"
-      8 -> "Local benchmark"; 9 -> "Translation connections"; 10 -> "Camera & OCR"
+      8 -> "Local benchmark"; 9 -> "Translation"; 10 -> "Camera & OCR"
       11 -> "Type to translate"; 12 -> "Voices & read aloud"; else -> "Help"
      }, style = MaterialTheme.typography.titleMedium) },
       navigationIcon = { if (!route.isRoot) IconButton(onClick = { back() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } },
@@ -128,8 +128,9 @@ class MainActivity : ComponentActivity() {
           SetupLink("Downloads", "Install downloaded models or download a file") { go(2) }
           if (ByokPolicy.FEATURE_BYOK) {
             SetupLink("Cloud speech", "Speech provider, saved key and streaming options") { go(4) }
-            SetupLink("Cloud translation", "Google, Microsoft, DeepL or LibreTranslate") { go(9) }
+
           }
+          SetupLink("Translation", "Local models, cloud services and one choice across Hearth") { go(9) }
           SetupLink("Voices & read aloud", "Android, Supertonic and self-hosted speech") {go(12)}
           AppearanceSettings()
           SetupLink("Local benchmark", "Compare installed models using the same audio and text") { go(8) }
@@ -151,7 +152,7 @@ class MainActivity : ComponentActivity() {
         12 -> com.sal7one.transiber.voice.VoiceSetup(onDownloads={go(2)})
         8 -> LocalBenchmarkScreen(onModels = { go(1) })
         9 -> Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp)) {
-          ConversationTranslationSetup(onModels = { go(1) })
+          com.sal7one.transiber.translation.TranslationHub(onModels = { go(1) })
         }
         else -> Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
           Text("Choose audio and captions or translation, then Start. Android may ask for audio access or screen-sharing consent.")

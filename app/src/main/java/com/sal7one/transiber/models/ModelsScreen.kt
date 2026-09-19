@@ -34,6 +34,10 @@ fun ModelsScreen(onCloud: () -> Unit = {}, onDownloads: () -> Unit = {}, onVoice
             catch (e: CancellationException) { throw e }
             catch (e: Exception) { error = e.message ?: e.toString() } }
     }
+    LaunchedEffect(Unit) {
+        val browse = context.getSharedPreferences("translation-browser",0)
+        if (browse.getBoolean("open",false)) { section = "Translation"; browse.edit().remove("open").apply() }
+    }
     val pages = rememberSaveableStateHolder()
     Column(Modifier.fillMaxSize()) {
         FlowRow(Modifier.padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {

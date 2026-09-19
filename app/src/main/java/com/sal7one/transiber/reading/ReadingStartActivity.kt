@@ -27,6 +27,10 @@ import com.sal7one.transiber.ocr.OcrModels
 import com.sal7one.transiber.ui.theme.FFmpegStudioTheme
 import com.sal7one.transiber.ui.theme.rememberThemeMode
 import java.io.File
+import kotlinx.coroutines.launch
+import com.sal7one.transiber.caption.*
+import com.sal7one.transiber.translation.*
+import com.sal7one.transiber.byok.ByokPolicy
 
 class ReadingStartActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -37,6 +41,11 @@ class ReadingStartActivity : ComponentActivity() {
     @Composable private fun Screen() {
         val prefs=remember {getSharedPreferences("reading-overlay",0)}
         val camera=remember {getSharedPreferences("camera-translate",0)}
+        val scope=rememberCoroutineScope()
+        val config by remember {CaptionConfigStore.config(this)}.collectAsState(initial=CaptionOverlayConfig())
+        val revision by ConversationTranslationSettings.revision.collectAsState()
+        var provider by remember {mutableStateOf(if(ByokPolicy.FEATURE_BYOK)camera.getString("provider","local")!! else "local")}
+        LaunchedEffect(revision) {provider=if(ByokPolicy.FEATURE_BYOK)camera.getString("provider","local")!! else "local"}
         val profile=OcrCatalog.profile(camera.getString("profile","latin")!!)
         val savedMode=remember {prefs.getString("mode","page")}
         var mode by remember {mutableStateOf(ReadingTrigger.supportedMode(savedMode))}
@@ -68,6 +77,13 @@ class ReadingStartActivity : ComponentActivity() {
                 Text("Open your reader after starting. Tap Translate for a page, or Draw area for one bubble. Your images stay on this phone. Cloud translation sends only recognized text to your chosen provider.")
                 Text("${profile.label} · ${camera.getString("source","en")} → ${camera.getString("target","ar")}")
                 Text("Uses the OCR model, languages and translator selected on Camera. Starting this screen-reading session stops live audio captions.",style=MaterialTheme.typography.bodySmall)
+                TranslatorChooser(provider,config.localTranslationModelId,"Used by Camera and the reading overlay.",camera.getString("source","en"),camera.getString("target","ar"),
+                    onModels={startActivity(Intent(this@ReadingStartActivity,com.sal7one.transiber.MainActivity::class.java).putExtra("page",1))},
+                    onSelect={id,model->scope.launch {try {
+                        CaptionConfigStore.update(this@ReadingStartActivity){it.copy(localTranslationModelId=model)}
+                        camera.edit().putString("provider",id).apply();provider=id
+                    } catch(e: kotlinx.coroutines.CancellationException){throw e}
+                    catch(e: Exception){error=e.message ?: e.toString()} }})
                 if(profile.engine=="manga")Text("Manga OCR reads one selected bubble. Draw an area first; the same area is reused until you change it.")
                 Text("Translations appear over text in your reader. Scroll through them with the lock closed. Tap the lock to interact with text boxes; the handle and notification always keep controls available.",style=MaterialTheme.typography.bodySmall)
                 Text("Translate when",style=MaterialTheme.typography.titleMedium)

@@ -22,13 +22,13 @@ import kotlinx.coroutines.withContext
 /** Shared by the conversation sheet and cloud setup. Keys never enter saved Compose state. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-internal fun ConversationTranslationSetup(onModels: () -> Unit) {
+internal fun ConversationTranslationSetup(onModels: () -> Unit, initialProvider: String? = null, allowSelection: Boolean = true) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val revision by ConversationTranslationSettings.revision.collectAsState()
     val config by remember { CaptionConfigStore.config(context) }.collectAsState(initial = CaptionOverlayConfig())
     val selected = remember(revision) { ConversationTranslationSettings.selected(context) }
-    var editing by remember { mutableStateOf(ConversationTranslationSettings.provider(selected)) }
+    var editing by remember { mutableStateOf(ConversationTranslationSettings.provider(initialProvider ?: selected)) }
     var working by remember { mutableStateOf(false) }
     var status by remember { mutableStateOf<String?>(null) }
     var failure by remember { mutableStateOf(false) }
@@ -36,8 +36,8 @@ internal fun ConversationTranslationSetup(onModels: () -> Unit) {
     DisposableEffect(Unit) { onDispose { transport?.close() } }
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text("Translation connections", style = MaterialTheme.typography.titleLarge)
-        Text("Connections are shared by Conversation, Face to face and Camera translate. Camera selects its translator separately.", style = MaterialTheme.typography.bodySmall)
-        Text("Conversation uses: ${ConversationTranslationSettings.label(context, config.localTranslationModelId)}", style = MaterialTheme.typography.titleSmall)
+        Text("One connection library for captions, typed text, conversations, camera and screen reading. Select a translator from the feature where you want to use it.", style = MaterialTheme.typography.bodySmall)
+        if (allowSelection) Text("Conversation & typed text use: ${ConversationTranslationSettings.label(context, config.localTranslationModelId)}", style = MaterialTheme.typography.titleSmall)
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             FilterChip(selected = editing == null, enabled = !working, onClick = { editing = null; status = null }, label = { Text("On device") })
             if (ByokPolicy.FEATURE_BYOK) TextTranslationProvider.entries.forEach { provider ->
@@ -48,8 +48,8 @@ internal fun ConversationTranslationSetup(onModels: () -> Unit) {
         if (provider == null) {
             Text(TranslationOptions.label(config.localTranslationModelId))
             Text("Text stays on this phone. Install or choose a model in Models.", style = MaterialTheme.typography.bodySmall)
-            Button(onClick = { ConversationTranslationSettings.select(context, ConversationTranslationSettings.LOCAL) }, enabled = selected != ConversationTranslationSettings.LOCAL) { Text(if (selected == ConversationTranslationSettings.LOCAL) "Using on-device translation" else "Use on-device translation") }
-            OutlinedButton(onClick = onModels) { Text("Choose local model") }
+            if (allowSelection) Button(onClick = { ConversationTranslationSettings.select(context, ConversationTranslationSettings.LOCAL) }, enabled = selected != ConversationTranslationSettings.LOCAL) { Text(if (selected == ConversationTranslationSettings.LOCAL) "Using on-device translation" else "Use on-device translation") }
+            OutlinedButton(onClick = { context.getSharedPreferences("translation-browser",0).edit().putBoolean("open",true).apply();onModels() }) { Text("Choose local model") }
         } else key(provider) {
             var endpoint by remember { mutableStateOf(ConversationTranslationSettings.endpoint(context, provider)) }
             var region by remember { mutableStateOf(ConversationTranslationSettings.region(context, provider)) }
@@ -97,7 +97,7 @@ internal fun ConversationTranslationSetup(onModels: () -> Unit) {
             }
             if (capabilities != null && !dirty) {
                 Text("${capabilities.sourceLanguages.size} source · ${capabilities.targetLanguages.size} target languages. The picker uses this server's supported directions. Language discovery does not verify translation quota or billing.", style = MaterialTheme.typography.bodySmall)
-                Button(enabled = !working && selected != provider.id, onClick = { ConversationTranslationSettings.select(context, provider.id) }) { Text(if (selected == provider.id) "Using ${provider.label}" else "Use ${provider.label}") }
+                if (allowSelection) Button(enabled = !working && selected != provider.id, onClick = { ConversationTranslationSettings.select(context, provider.id) }) { Text(if (selected == provider.id) "Using ${provider.label}" else "Use ${provider.label}") }
             } else Text("Check this connection to load its supported languages before using it.", style = MaterialTheme.typography.bodySmall)
             if (savedKey) TextButton(enabled = !working, onClick = {
                 scope.launch {
