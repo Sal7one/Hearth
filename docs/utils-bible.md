@@ -162,3 +162,15 @@ interface or model manifest was needed.
 `captionTranslationSource` consumes the source validated with actual model metadata
 at engine load. Host checks prevent forced Whisper language from being erased by
 a model-less lookup and prevent guessing a language when neither source is known.
+
+## Hearth 0.16.0
+
+`SettingsDestination` supplies the Local/Cloud destination list to `SettingsScreen`
+and `SettingsTabs`; host cases cover the FOSS cloud exclusion and local-only OCR.
+Focused settings composables reuse existing tested stores, imports and transports.
+No native API, model integrity rules or inference scheduling changed.
+
+`SettingsTabState` is consumed by the shared tab container. Regression cases keep
+explicit directory entries distinct from Back/return restoration, and clamp
+restored Cloud state in FOSS. Per-feature entry revisions do not touch engine
+configuration; per-tab Compose state holders retain scroll positions.

@@ -1,4 +1,6 @@
-package com.sal7one.transiber.translation
+package com.sal7one.transiber.settings
+
+import com.sal7one.transiber.translation.*
 
 import android.content.Intent
 import android.net.Uri
@@ -22,13 +24,14 @@ import kotlinx.coroutines.withContext
 /** Shared by the conversation sheet and cloud setup. Keys never enter saved Compose state. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-internal fun ConversationTranslationSetup(onModels: () -> Unit, initialProvider: String? = null, allowSelection: Boolean = true) {
+internal fun SettingsTranslateCloudUi(initialProvider: String? = null, allowSelection: Boolean = true) {
+    if (!ByokPolicy.FEATURE_BYOK) return
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val revision by ConversationTranslationSettings.revision.collectAsState()
     val config by remember { CaptionConfigStore.config(context) }.collectAsState(initial = CaptionOverlayConfig())
     val selected = remember(revision) { ConversationTranslationSettings.selected(context) }
-    var editing by remember { mutableStateOf(ConversationTranslationSettings.provider(initialProvider ?: selected)) }
+    var editing by remember { mutableStateOf(ConversationTranslationSettings.provider(initialProvider ?: selected) ?: TextTranslationProvider.entries.first()) }
     var working by remember { mutableStateOf(false) }
     var status by remember { mutableStateOf<String?>(null) }
     var failure by remember { mutableStateOf(false) }
@@ -39,18 +42,12 @@ internal fun ConversationTranslationSetup(onModels: () -> Unit, initialProvider:
         Text("One connection library for captions, typed text, conversations, camera and screen reading. Select a translator from the feature where you want to use it.", style = MaterialTheme.typography.bodySmall)
         if (allowSelection) Text("Conversation & typed text use: ${ConversationTranslationSettings.label(context, config.localTranslationModelId)}", style = MaterialTheme.typography.titleSmall)
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            FilterChip(selected = editing == null, enabled = !working, onClick = { editing = null; status = null }, label = { Text("On device") })
             if (ByokPolicy.FEATURE_BYOK) TextTranslationProvider.entries.forEach { provider ->
                 FilterChip(selected = editing == provider, enabled = !working, onClick = { editing = provider; status = null }, label = { Text(provider.label) })
             }
         }
         val provider = editing
-        if (provider == null) {
-            Text(TranslationOptions.label(config.localTranslationModelId))
-            Text("Text stays on this phone. Install or choose a model in Models.", style = MaterialTheme.typography.bodySmall)
-            if (allowSelection) Button(onClick = { ConversationTranslationSettings.select(context, ConversationTranslationSettings.LOCAL) }, enabled = selected != ConversationTranslationSettings.LOCAL) { Text(if (selected == ConversationTranslationSettings.LOCAL) "Using on-device translation" else "Use on-device translation") }
-            OutlinedButton(onClick = { context.getSharedPreferences("translation-browser",0).edit().putBoolean("open",true).apply();onModels() }) { Text("Choose local model") }
-        } else key(provider) {
+        key(provider) {
             var endpoint by remember { mutableStateOf(ConversationTranslationSettings.endpoint(context, provider)) }
             var region by remember { mutableStateOf(ConversationTranslationSettings.region(context, provider)) }
             var secret by remember { mutableStateOf("") }

@@ -26,7 +26,8 @@ cloud providers—all through five main screens.
   import share local or cloud translation options.
 - **Listen with your preferred voice.** Play original or translated text using
   Android voices, local Supertonic or supported self-hosted TTS connections.
-- **Choose local models or bring your own cloud keys.** Mix speech and translation
+- **Choose local models or bring your own cloud keys.** Separate Local and Cloud
+  settings keep model installation apart from provider connections. Mix speech and translation
   engines, select supported languages, or use the offline flavor with no network permission.
 - **Download, import and extend.** Install catalogued models on the phone, choose a
   public download folder, compare installed models and add adapters through Kotlin/JNI.

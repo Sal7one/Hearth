@@ -1,4 +1,6 @@
-package com.sal7one.transiber.translation
+package com.sal7one.transiber.settings
+
+import com.sal7one.transiber.translation.*
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -18,10 +20,11 @@ import kotlinx.coroutines.*
 import java.io.File
 
 @Composable
-internal fun LocalTranslationSetup(
+internal fun SettingsTranslateLocalUi(
     config: CaptionOverlayConfig,
     update: ((CaptionOverlayConfig) -> CaptionOverlayConfig) -> Unit,
     includeLegacy: Boolean = false,
+    showCaptionControls: Boolean = true,
 ) {
     val context = LocalContext.current
     val uriHandler = LocalUriHandler.current
@@ -68,14 +71,14 @@ internal fun LocalTranslationSetup(
                 }
                 installed = withContext(Dispatchers.IO) { store.installed() }
                 update { it.copy(localTranslationModelId = importing.id) }
-                message = "${importing.label} imported and selected. Enable the bridge when ready."
+                message = "${importing.label} imported and selected as the local model."
             } catch (e: CancellationException) { throw e }
             catch (e: Exception) { message = generateSequence<Throwable>(e) { it.cause }.joinToString("\n") { it.message ?: it.toString() } }
             finally { busy = false }
         }
     }
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        if (showCaptionControls) Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             Switch(checked = config.localTranslationEnabled, onCheckedChange = { enabled ->
                 update { it.copy(localTranslationEnabled = enabled, mode = if (enabled) CaptionMode.TRANSLATE else CaptionMode.CAPTIONS) }
             })
@@ -115,7 +118,7 @@ internal fun LocalTranslationSetup(
             }
         }
         Text("${spec.label} · ${if (installed.any { it.id == spec.id }) "Installed" else "Not installed"}")
-        if (installed.any { it.id == spec.id }) Button(enabled = !busy, onClick = { update { it.copy(localTranslationModelId = spec.id, localTranslationEnabled = true, mode = CaptionMode.TRANSLATE) } }) {
+        if (installed.any { it.id == spec.id }) Button(enabled = !busy, onClick = { update { if (showCaptionControls) it.copy(localTranslationModelId = spec.id, localTranslationEnabled = true, mode = CaptionMode.TRANSLATE) else it.copy(localTranslationModelId = spec.id) } }) {
             Text(if (config.localTranslationModelId == spec.id) "Selected translator" else "Use ${spec.label}")
         }
         Text("Q4 uses less storage and memory; Q6/Q8 are larger. Only the active translator loads.", style = MaterialTheme.typography.bodySmall)
@@ -148,6 +151,7 @@ internal fun LocalTranslationSetup(
         TextButton(onClick = { showCoverage = !showCoverage }) { Text(if (showCoverage) "Hide language coverage" else "Show supported source → target languages") }
         if (showCoverage) Text("Any of these source languages → any other listed target:\n" + spec.sourceLanguages.sortedBy(TranslationLanguages::label).joinToString(", ") { TranslationLanguages.label(it) })
         }
+        if (showCaptionControls) {
         com.sal7one.transiber.caption.CaptionLanguageFields(config, update, showSource = false,
             targetChoices = com.sal7one.transiber.caption.CaptionLanguageChoices(TranslationOptions.languages(config.localTranslationModelId).ifEmpty { spec.targetLanguages }, "Output languages supported by the active translator."))
         val active = installed.firstOrNull { it.id == config.localTranslationModelId }
@@ -159,6 +163,7 @@ internal fun LocalTranslationSetup(
             active.supports(config.streamLanguage, config.target.languageTag) -> "Supported: ${TranslationLanguages.label(config.streamLanguage)} → ${config.target.label}"
             else -> "Unsupported pair: ${config.streamLanguage} → ${config.target.languageTag}. CC continues."
         })
+        }
         if (busy) LinearProgressIndicator(Modifier.fillMaxWidth())
         message?.let { Text(it) }
     }

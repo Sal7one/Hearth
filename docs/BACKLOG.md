@@ -1,5 +1,17 @@
 # Hearth — finish for publication
 
+## Settings separation — 0.16.0
+
+- [x] Separate Local and Cloud settings, with local-only destinations in FOSS.
+- [x] Split speech, translation, OCR and voice editors into focused Compose files.
+- [x] Preserve independent tab scroll and existing saved provider choices.
+- [x] Keep appearance/help shared and remove cloud providers from the local model library.
+- [x] Separate model installation from caption CC/translation controls.
+- [ ] Simple home/onboarding: feature previews, no bottom navigation in Simple mode,
+  optional Full app mode (owner proposal; separate from the settings refactor).
+
+See [settings structure](settings-ui.md) and [validation](validation-v30.md).
+
 ## Manga and books screen overlay — owner direction, 2026-09-19
 
 Research and planned work: [manga/books overlay plan](manga-books-overlay-plan.md),

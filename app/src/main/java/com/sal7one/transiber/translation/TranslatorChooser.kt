@@ -1,5 +1,6 @@
 package com.sal7one.transiber.translation
 
+import com.sal7one.transiber.settings.SettingsTranslateCloudUi
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
@@ -11,6 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
+import com.sal7one.transiber.settings.SettingsLocation
 import com.sal7one.common_jni.translation.TranslationCatalog
 import com.sal7one.transiber.byok.ByokPolicy
 import kotlinx.coroutines.CancellationException
@@ -31,19 +33,21 @@ internal fun TranslatorChooser(
     onSelect: (provider: String, localModel: String) -> Unit,
     onModels: () -> Unit,
     automaticLabel: String? = null,
+    location: SettingsLocation? = null,
 ) {
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     val revision by ConversationTranslationSettings.revision.collectAsState()
-    var expanded by rememberSaveable { mutableStateOf(false) }
-    var showCloud by rememberSaveable { mutableStateOf(providerId !in setOf("", "local")) }
+    var expanded by rememberSaveable { mutableStateOf(location != null) }
+    var cloudTab by rememberSaveable { mutableStateOf(providerId !in setOf("", "local")) }
+    val showCloud = location?.let { it == SettingsLocation.CLOUD } ?: cloudTab
     var editing by remember { mutableStateOf<TextTranslationProvider?>(null) }
     var installed by remember { mutableStateOf<Set<String>>(emptySet()) }
     var applying by remember { mutableStateOf(false) }
     var applied by remember { mutableStateOf(false) }
     var failure by remember { mutableStateOf<String?>(null) }
     LaunchedEffect(providerId,localId) { applied=false }
-    LaunchedEffect(expanded) { if(expanded)showCloud=providerId !in setOf("", "local") }
+    LaunchedEffect(expanded) { if(expanded && location == null)cloudTab=providerId !in setOf("", "local") }
     LaunchedEffect(expanded, localId) {
         try { installed = withContext(Dispatchers.IO) { LocalTranslationModels(File(context.filesDir, "translation-models")).installed().map { it.id }.toSet() } }
         catch (e: CancellationException) { throw e }
@@ -59,7 +63,7 @@ internal fun TranslatorChooser(
         else -> " · $source → $target unavailable; change languages"
     }
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        OutlinedButton(onClick = { expanded = !expanded }, enabled = enabled,
+        if (location == null) OutlinedButton(onClick = { expanded = !expanded }, enabled = enabled,
             modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp), contentPadding = PaddingValues(12.dp)) {
             Text("Translator · $label", Modifier.weight(1f))
             Text(if (expanded) "−" else "+")
@@ -67,7 +71,7 @@ internal fun TranslatorChooser(
         if (expanded) {
             Text(scopeLabel, style = MaterialTheme.typography.bodySmall)
             Text("Local model and saved connections are shared.", style = MaterialTheme.typography.bodySmall)
-            if (providerId.isNotBlank()) {
+            if (providerId.isNotBlank() && (location == null || (providerId == "local") == (location == SettingsLocation.LOCAL))) {
                 OutlinedButton(enabled=enabled && !applying, onClick={
                     applying=true;failure=null
                     scope.launch { try {
@@ -80,11 +84,11 @@ internal fun TranslatorChooser(
                 if(applied)Text("Translator saved for all features.",style=MaterialTheme.typography.bodySmall)
             }
             if (automaticLabel != null) TranslatorRow(automaticLabel, "Keep the speech engine’s integrated or legacy translation route.", providerId.isBlank(), enabled) {
-                onSelect("", localId); expanded = false
+                onSelect("", localId); expanded = location != null
             }
-            if(ByokPolicy.FEATURE_BYOK) Row(horizontalArrangement=Arrangement.spacedBy(8.dp)) {
-                FilterChip(selected=!showCloud,onClick={showCloud=false;editing=null},label={Text("On device")})
-                FilterChip(selected=showCloud,onClick={showCloud=true;editing=null},label={Text("Cloud / server")})
+            if(ByokPolicy.FEATURE_BYOK && location == null) Row(horizontalArrangement=Arrangement.spacedBy(8.dp)) {
+                FilterChip(selected=!showCloud,onClick={cloudTab=false;editing=null},label={Text("On device")})
+                FilterChip(selected=showCloud,onClick={cloudTab=true;editing=null},label={Text("Cloud / server")})
             }
             if(!showCloud || !ByokPolicy.FEATURE_BYOK) {
             Text("On device", style = MaterialTheme.typography.titleMedium)
@@ -93,7 +97,7 @@ internal fun TranslatorChooser(
                 if (PlatformTranslation.available) TranslatorRow(TranslationOptions.label(TranslationOptions.ML_KIT),
                     "Language packs required · manage/download in Models" + pair { a,b -> a in TranslationOptions.mlKitCodes && b in TranslationOptions.mlKitCodes },
                     providerId == "local" && localId == TranslationOptions.ML_KIT, enabled) {
-                    onSelect("local", TranslationOptions.ML_KIT); expanded = false
+                    onSelect("local", TranslationOptions.ML_KIT); expanded = location != null
                 }
                 TranslationCatalog.models.sortedWith(compareByDescending<com.sal7one.common_jni.translation.TranslationModelSpec> { providerId=="local" && it.id==localId }.thenByDescending { it.id in installed }).forEach { model ->
                     val ready = model.id in installed
@@ -101,7 +105,7 @@ internal fun TranslatorChooser(
                         "${if (ready) "Installed" else "Download or import"} · ${model.bytes / 1_048_576} MiB · ${model.sourceLanguages.size} languages" + pair(model::supports),
                         providerId == "local" && localId == model.id, enabled,
                         actionLabel = if (ready) null else "Set up") {
-                        if (ready) { onSelect("local", model.id); expanded = false } else {
+                        if (ready) { onSelect("local", model.id); expanded = location != null } else {
                             context.getSharedPreferences("translation-browser",0).edit().putString("model",model.id).putBoolean("open",true).apply(); onModels()
                         }
                     }
@@ -120,7 +124,7 @@ internal fun TranslatorChooser(
                             if (ready) "Connection saved · ${capabilities!!.sourceLanguages.size} source / ${capabilities.targetLanguages.size} target languages" + pair(capabilities::supports)
                             else if (provider == TextTranslationProvider.LIBRETRANSLATE) "Connect your server · key depends on server" else "Set up API key & check languages",
                             providerId == provider.id, enabled, actionLabel = if (ready) null else "Set up") {
-                            if (ready) { onSelect(provider.id, localId); expanded = false } else editing = provider
+                            if (ready) { onSelect(provider.id, localId); expanded = location != null } else editing = provider
                         }
                         if (ready) TextButton(onClick = { editing = provider }, enabled = enabled) { Text("Manage ${provider.label}") }
                     }
@@ -130,7 +134,7 @@ internal fun TranslatorChooser(
             editing?.let { provider ->
                 HorizontalDivider()
                 TextButton(onClick = { editing = null }) { Text("Close connection setup") }
-                key(provider) { ConversationTranslationSetup(onModels, initialProvider = provider.id, allowSelection = false) }
+                key(provider) { SettingsTranslateCloudUi(initialProvider = provider.id, allowSelection = false) }
             }
         }
     }

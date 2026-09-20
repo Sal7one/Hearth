@@ -1,4 +1,6 @@
-package com.sal7one.transiber.byok
+package com.sal7one.transiber.settings
+
+import com.sal7one.transiber.byok.*
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -41,7 +43,7 @@ import kotlinx.coroutines.launch
  */
 @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
-fun ByokKeySection(onStoredChange: (Boolean) -> Unit = {}, onModeChange: (CloudConfigStore.SttMode) -> Unit = {}) {
+fun SettingsSpeechCloudUi(onStoredChange: (Boolean) -> Unit = {}, onModeChange: (CloudConfigStore.SttMode) -> Unit = {}) {
     if (!ByokPolicy.FEATURE_BYOK) return
     val context = LocalContext.current
     var keyDraft by remember { mutableStateOf("") }

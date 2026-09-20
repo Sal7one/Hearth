@@ -120,7 +120,7 @@ internal fun LocalSpeechSetup(
             "The audio queue is capped at 3 seconds; overload reports an error instead of accumulating delay.",
             style = MaterialTheme.typography.bodySmall)
         }
-        if (includeTranslation) com.sal7one.transiber.translation.LocalTranslationSetup(config, update)
+        if (includeTranslation) com.sal7one.transiber.settings.SettingsTranslateLocalUi(config, update)
         notice?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
         error?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
     }

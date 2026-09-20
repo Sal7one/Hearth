@@ -45,7 +45,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.sal7one.common_jni.marian.MarianTranslatorEngine
 import com.sal7one.transiber.byok.CloudConfigStore
 import com.sal7one.transiber.byok.ApiKeyStore
-import com.sal7one.transiber.byok.ByokKeySection
+import com.sal7one.transiber.settings.SettingsSpeechCloudUi
 import com.sal7one.transiber.byok.ByokPolicy
 import com.sal7one.transiber.models.ModelEngineType
 import com.sal7one.transiber.models.ModelRegistry
@@ -328,7 +328,7 @@ fun CaptionScreen(
                 // Settings can change it mid-session too.)
                 // NETWORK CODE — play distribution only.
                 Spacer(Modifier.height(AppDesign.Dimens.SpacingSm))
-                ByokKeySection(onStoredChange = { stored -> cloudKeyStored = stored }, onModeChange = { cloudMode = it })
+                SettingsSpeechCloudUi(onStoredChange = { stored -> cloudKeyStored = stored }, onModeChange = { cloudMode = it })
             }
             if (engineModels.isNotEmpty()) {
                 Spacer(Modifier.height(AppDesign.Dimens.SpacingSm))

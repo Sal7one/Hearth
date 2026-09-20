@@ -1,5 +1,6 @@
 package com.sal7one.transiber.ocr
 
+import com.sal7one.transiber.settings.SettingsOcrLocalUi
 import android.Manifest
 import android.content.ClipData
 import android.content.ClipboardManager
@@ -209,7 +210,7 @@ internal fun CameraTranslateScreen(onModels: () -> Unit,onConnections: () -> Uni
                 }})
             if(state.running || state.closing)Text("Stop recognition to change its translator.",style=MaterialTheme.typography.bodySmall)
             HorizontalDivider()
-            OcrModelSetup(onDownloads={settings=false;onDownloads()},selected=profileId,onSelect={profileId=it;val p=OcrCatalog.profile(it);if(source !in p.languages)source=p.languages.first()})
+            SettingsOcrLocalUi(onDownloads={settings=false;onDownloads()},selected=profileId,onSelect={profileId=it;val p=OcrCatalog.profile(it);if(source !in p.languages)source=p.languages.first()})
         }
     }
 }

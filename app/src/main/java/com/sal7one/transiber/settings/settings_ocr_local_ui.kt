@@ -1,4 +1,6 @@
-package com.sal7one.transiber.ocr
+package com.sal7one.transiber.settings
+
+import com.sal7one.transiber.ocr.*
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -17,7 +19,7 @@ import java.io.File
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-internal fun OcrModelSetup(onDownloads: () -> Unit = {}, selected: String? = null, onSelect: ((String) -> Unit)? = null) {
+internal fun SettingsOcrLocalUi(onDownloads: () -> Unit = {}, selected: String? = null, onSelect: ((String) -> Unit)? = null) {
     val context=LocalContext.current;val scope=rememberCoroutineScope();val models=remember { OcrModels(File(context.filesDir,"ocr-models")) }
     var revision by remember { mutableIntStateOf(0) };var importing by remember { mutableStateOf(false) };var error by remember { mutableStateOf<String?>(null) }
     var family by rememberSaveable { mutableStateOf(OcrCatalog.profiles.firstOrNull {it.id==selected}?.engine ?: "paddle") }

@@ -33,7 +33,7 @@ import com.sal7one.transiber.byok.*
 import com.sal7one.transiber.ui.theme.*
 import com.sal7one.transiber.benchmark.LocalBenchmarkScreen
 import com.sal7one.transiber.conversation.ConversationScreen
-import com.sal7one.transiber.translation.ConversationTranslationSetup
+import com.sal7one.transiber.settings.*
 import com.sal7one.transiber.models.ModelsScreen
 import com.sal7one.transiber.downloads.DownloadsScreen
 
@@ -78,17 +78,31 @@ class MainActivity : ComponentActivity() {
     val focus = LocalFocusManager.current
     val screenState = androidx.compose.runtime.saveable.rememberSaveableStateHolder()
     fun go(next: Int) { focus.clearFocus(); route = route.open(next) }
+    var speechLocation by rememberSaveable { mutableStateOf(if (intent.getIntExtra("page", 0) == 4) SettingsLocation.CLOUD else SettingsLocation.LOCAL) }
+    var translationLocation by rememberSaveable { mutableStateOf(SettingsLocation.LOCAL) }
+    var voiceLocation by rememberSaveable { mutableStateOf(SettingsLocation.LOCAL) }
+    var speechEntry by rememberSaveable { mutableIntStateOf(0) }
+    var translationEntry by rememberSaveable { mutableIntStateOf(0) }
+    var voiceEntry by rememberSaveable { mutableIntStateOf(0) }
     val requestedPage by navigation.collectAsState()
     LaunchedEffect(requestedPage) {
-     requestedPage?.let { focus.clearFocus(); route = AppNavigation.initial(it); navigation.value = null }
+     requestedPage?.let { if (it == 4) { speechLocation = SettingsLocation.CLOUD; speechEntry++ }; focus.clearFocus(); route = AppNavigation.initial(it); navigation.value = null }
     }
     var faceLayout by rememberSaveable { mutableStateOf(false) }
+    var modelsSection by rememberSaveable { mutableStateOf("Speech") }
+    fun localModels(section: String) { modelsSection = section; go(1) }
+    fun speechSettings(location: SettingsLocation) { speechLocation = location; speechEntry++; go(4) }
+    fun translationSettings(location: SettingsLocation) { translationLocation = location; translationEntry++; go(9) }
+    fun voiceSettings(location: SettingsLocation? = null) {
+     voiceLocation = location ?: if (com.sal7one.transiber.voice.VoiceSettings.choice(this@MainActivity).backend == "remote") SettingsLocation.CLOUD else SettingsLocation.LOCAL
+     voiceEntry++; go(12)
+    }
     fun back() { focus.clearFocus(); route = route.back() }
     BackHandler(enabled = route.canGoBack) { back() }
     Scaffold(topBar = {
      TopAppBar(title = { Text(when(page) {
       0 -> "Live captions"; 1 -> "Models"; 2 -> "Downloads"; 3 -> "Settings"
-      4 -> "Cloud speech"; 5 -> "Advanced captions"
+      4 -> "Speech settings"; 5 -> "Advanced captions"
       7 -> if (faceLayout) "Face to face" else "Conversation"
       8 -> "Local benchmark"; 9 -> "Translation"; 10 -> "Camera & OCR"
       11 -> "Type to translate"; 12 -> "Voices & read aloud"; else -> "Help"
@@ -119,41 +133,28 @@ class MainActivity : ComponentActivity() {
       Box(Modifier.weight(1f)) {
        screenState.SaveableStateProvider(page) {
        when(page) {
-        0 -> CaptionHome(onModels = { go(1) }, onCloud = { go(4) })
-        1 -> ModelsScreen(onCloud = { go(4) }, onDownloads = { go(2) },onVoices={go(12)})
+        0 -> CaptionHome(onModels = { go(1) }, onCloud = { speechSettings(SettingsLocation.CLOUD) })
+        1 -> ModelsScreen(onDownloads = { go(2) }, onVoices = { voiceSettings(SettingsLocation.LOCAL) }, initialSection = modelsSection)
         2 -> DownloadsScreen(onBrowseModels = { go(1) })
-        3 -> Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-          Text("Models, connections and your preferences.", style = MaterialTheme.typography.bodyMedium)
-          SetupLink("Models", "Choose speech, translation and camera models") { go(1) }
-          SetupLink("Downloads", "Install downloaded models or download a file") { go(2) }
-          if (ByokPolicy.FEATURE_BYOK) {
-            SetupLink("Cloud speech", "Speech provider, saved key and streaming options") { go(4) }
-
-          }
-          SetupLink("Translation", "Local models, cloud services and one choice across Hearth") { go(9) }
-          SetupLink("Voices & read aloud", "Android, Supertonic and self-hosted speech") {go(12)}
-          AppearanceSettings()
-          SetupLink("Local benchmark", "Compare installed models using the same audio and text") { go(8) }
-          TextButton(onClick = { go(5) }) { Text("Advanced setup") }
-          TextButton(onClick = { go(6) }) { Text("Help & diagnostics") }
-        }
-        4 -> Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp)) {
-          if (ByokPolicy.FEATURE_BYOK) {
-            SetupLink("Translation connections", "Google, Microsoft, DeepL or LibreTranslate for text translation") { go(9) }
-            Spacer(Modifier.height(16.dp))
-            ByokKeySection()
-          }
-          else Text("Cloud connections are unavailable in the offline build.")
-        }
+        3 -> SettingsScreen(
+            onFeature = { location, feature ->
+                when (feature) {
+                    SettingsFeature.SPEECH -> speechSettings(location)
+                    SettingsFeature.TRANSLATION -> translationSettings(location)
+                    SettingsFeature.VOICES -> voiceSettings(location)
+                    SettingsFeature.CAMERA -> localModels("Camera")
+                }
+            },
+            onDownloads = { go(2) }, onBenchmark = { go(8) }, onAdvanced = { go(5) }, onHelp = { go(6) },
+        )
+        4 -> SettingsSpeechScreen(speechLocation, speechEntry)
         5 -> CaptionScreen(onBrowseModels = { go(1) })
-        7 -> ConversationScreen(onModels = { go(1) }, onCloud = { go(4) }, onLayoutChanged = { faceLayout = it }, initialFaceToFace = faceLayout, onVoices={go(12)})
-        10 -> com.sal7one.transiber.ocr.CameraTranslateScreen(onModels = { go(1) }, onConnections = { go(9) }, onDownloads = { go(2) },onVoices={go(12)},sharedImage=sharedImage,onShareConsumed={sharedImage=null})
-        11 -> com.sal7one.transiber.translation.TypedTranslateScreen(onModels={go(1)},onConnections={go(9)},onVoices={go(12)},sharedText=sharedText,onShareConsumed={sharedText=null})
-        12 -> com.sal7one.transiber.voice.VoiceSetup(onDownloads={go(2)})
+        7 -> ConversationScreen(onModels = { go(1) }, onCloud = { speechSettings(SettingsLocation.CLOUD) }, onLayoutChanged = { faceLayout = it }, initialFaceToFace = faceLayout, onVoices={voiceSettings()})
+        10 -> com.sal7one.transiber.ocr.CameraTranslateScreen(onModels = { go(1) }, onConnections = { translationSettings(SettingsLocation.CLOUD) }, onDownloads = { go(2) },onVoices={voiceSettings()},sharedImage=sharedImage,onShareConsumed={sharedImage=null})
+        11 -> com.sal7one.transiber.translation.TypedTranslateScreen(onModels={go(1)},onConnections={translationSettings(SettingsLocation.CLOUD)},onVoices={voiceSettings()},sharedText=sharedText,onShareConsumed={sharedText=null})
+        12 -> com.sal7one.transiber.voice.VoiceSetup(onDownloads={go(2)}, initialLocation=voiceLocation, entryRevision=voiceEntry)
         8 -> LocalBenchmarkScreen(onModels = { go(1) })
-        9 -> Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp)) {
-          com.sal7one.transiber.translation.TranslationHub(onModels = { go(1) })
-        }
+        9 -> com.sal7one.transiber.translation.TranslationHub(onModels = { localModels("Translation") }, initialLocation = translationLocation, entryRevision = translationEntry)
         else -> Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
           Text("Choose audio and captions or translation, then Start. Android may ask for audio access or screen-sharing consent.")
           Text("Use the bubble settings for appearance and language controls. The notification can pause, recover or stop captions.")
@@ -166,16 +167,6 @@ class MainActivity : ComponentActivity() {
      }
     }
    }
-  }
- }
-}
-
-@Composable
-private fun SetupLink(title: String, subtitle: String, onClick: () -> Unit) {
- OutlinedCard(onClick = onClick, modifier = Modifier.fillMaxWidth()) {
-  Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-   Text(title, style = MaterialTheme.typography.titleMedium)
-   Text(subtitle, style = MaterialTheme.typography.bodySmall)
   }
  }
 }

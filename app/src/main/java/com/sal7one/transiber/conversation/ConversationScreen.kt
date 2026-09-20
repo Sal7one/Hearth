@@ -5,7 +5,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.ui.platform.LocalView
 import com.sal7one.transiber.translation.ConversationTranslationSettings
-import com.sal7one.transiber.translation.ConversationTranslationSetup
 import com.sal7one.transiber.translation.TranslatorChooser
 import android.Manifest
 import android.content.Intent
