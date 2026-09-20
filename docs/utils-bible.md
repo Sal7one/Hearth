@@ -217,3 +217,13 @@ so one screen cannot overwrite another's choice just by returning to the foregro
 Camera releases active inference before changed settings are used and preserves the
 captured bitmap for an explicit retry. Capture/retry callbacks snapshot the current
 selection at invocation rather than retaining an earlier composition’s profile. No native API or language claims changed.
+
+## Hearth 0.21.0 Easy setup
+
+`EasySetupPreset` is consumed by `EasySetupActions` and the setup UI. Host cases
+cover Nemotron/text-translation routing, OpenAI live versus batch caption routing,
+preserved user appearance/audio choices, credential scope and invalid endpoints.
+`cloudSpeechKeyRequired` is consumed by setup, caption readiness, preflight and the
+engine loader. All public/streaming routes require keys; Custom Batch can omit one.
+The real HTTP client has a MockWebServer test for omitted/authenticated headers and
+the FOSS no-request gate. No native inference implementation was changed.

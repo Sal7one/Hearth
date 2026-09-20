@@ -1,3 +1,13 @@
+## 0.21.0 — Easy setup
+
+- [x] Two large Local/Cloud choices with a direct Home and Settings entry.
+- [x] Nemotron + Hy-MT2 local preset, existing-model reuse and one missing-model download action.
+- [x] Only OpenAI, OpenRouter and Local server in the simplified cloud form.
+- [x] Separate minimal Compose pages, provider/model hyperlinks and full Settings escape.
+- [x] Key isolation and optional authenticated/unauthenticated compatible HTTPS speech servers.
+- [x] FOSS import path and explicit network restrictions.
+- [x] Phone layout journeys, both flavor gates and artifact checks — see [validation](validation-v37.md).
+
 ## 0.20.1 — readable OCR language controls and reading return path
 
 - [x] Put labelled source/destination selectors directly in Camera and Screen & manga.

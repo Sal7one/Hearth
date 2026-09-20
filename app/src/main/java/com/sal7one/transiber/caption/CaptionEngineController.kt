@@ -644,7 +644,7 @@ class CaptionEngineController(
                 return@withContext LoadedCaptionEngine(legacy = streaming)
             }
 
-            check(ApiKeyStore.hasOpenAiKey(context)) { "Cloud STT: API key missing" }
+            check(!com.sal7one.transiber.byok.cloudSpeechKeyRequired(sttMode,cloudStore.provider(context)) || ApiKeyStore.hasOpenAiKey(context)) { "Cloud STT: API key missing" }
             val remote = RemoteWhisperEngine(
                 apiKey = ApiKeyStore.getOpenAiKey(context),
                 baseUrl = cloudStore.baseUrl(context),

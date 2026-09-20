@@ -23,6 +23,7 @@ internal fun SettingsQuickSheet(
 ) {
     var location by rememberSaveable { mutableStateOf(SettingsLocation.LOCAL) }
     FeatureOptionsSheet("Settings", onDismiss) {
+        Button(onClick={onPage(15)},modifier=Modifier.fillMaxWidth().heightIn(min=52.dp)) {Text("Easy setup · Local or Cloud")}
         val locations = settingsLocations(ByokPolicy.FEATURE_BYOK)
         if (locations.size > 1) TabRow(selectedTabIndex = locations.indexOf(location)) {
             locations.forEach { option -> Tab(selected = option == location, onClick = { location = option }, text = { Text(option.label) }) }

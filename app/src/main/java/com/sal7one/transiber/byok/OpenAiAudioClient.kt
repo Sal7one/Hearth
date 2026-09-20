@@ -60,7 +60,7 @@ class OpenAiAudioClient(
             connectTimeout = connectTimeoutMs
             readTimeout = readTimeoutMs
             doOutput = true
-            setRequestProperty("Authorization", "Bearer $apiKey")
+            if(apiKey.isNotBlank())setRequestProperty("Authorization", "Bearer $apiKey")
             setRequestProperty("Content-Type", "multipart/form-data; boundary=$boundary")
         }
         activeConnection = connection

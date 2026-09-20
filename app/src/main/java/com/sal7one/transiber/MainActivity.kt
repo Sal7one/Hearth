@@ -55,7 +55,7 @@ class MainActivity : ComponentActivity() {
  private val navigation=kotlinx.coroutines.flow.MutableStateFlow<Int?>(null)
  override fun onNewIntent(intent: android.content.Intent) {
   super.onNewIntent(intent);setIntent(intent);receiveShare(intent)
-  if(intent.hasExtra("page"))navigation.value=intent.getIntExtra("page",0).coerceIn(0,14)
+  if(intent.hasExtra("page"))navigation.value=intent.getIntExtra("page",0).coerceIn(0,15)
  }
  @OptIn(ExperimentalMaterial3Api::class)
  override fun onCreate(savedInstanceState: Bundle?) {
@@ -151,7 +151,7 @@ class MainActivity : ComponentActivity() {
       4 -> "Speech settings"; 5 -> "Advanced captions"
       7 -> if (faceLayout) "Face to face" else "Conversation"
       8 -> "Local benchmark"; 9 -> "Translation"; 10 -> "Camera & OCR"
-      11 -> "Type to translate"; 12 -> "Voices & read aloud"; 13 -> "Appearance & navigation"; 14 -> "Phone shortcuts"; else -> "Help"
+      11 -> "Type to translate"; 12 -> "Voices & read aloud"; 13 -> "Appearance & navigation"; 14 -> "Phone shortcuts"; 15 -> "Easy setup"; else -> "Help"
      }, style = MaterialTheme.typography.titleMedium) },
       navigationIcon = { if (!atHome && (simple || !route.isRoot)) IconButton(onClick = { back() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } },
       actions = {
@@ -183,6 +183,7 @@ class MainActivity : ComponentActivity() {
        screenState.SaveableStateProvider(if (atHome) "simple-home" else page) {
        if (atHome) HomeScreen(
         entryRevision = homeEntry,
+        onSetup = { go(15) },
         onCaptions = { go(0) },
         onTalk = { face -> faceLayout = face; go(7) },
         onTranslate = { go(11) },
@@ -193,10 +194,12 @@ class MainActivity : ComponentActivity() {
         1 -> ModelsScreen(onDownloads = { go(2) }, onVoices = { voiceSettings(SettingsLocation.LOCAL) }, initialSection = modelsSection)
         2 -> DownloadsScreen(onBrowseModels = { go(1) })
         3 -> SettingsScreen(
+            onEasySetup = { go(15) },
             onAppearance = { go(13) }, onShortcuts = { go(14) },
             onFeature = ::settingsFeature,
             onDownloads = { go(2) }, onBenchmark = { go(8) }, onAdvanced = { go(5) }, onHelp = { go(6) },
         )
+        15 -> com.sal7one.transiber.setup.EasySetupScreen(onCaptions={go(0)},onHome={home()},onSettings={go(3)},onDownloads={go(2)})
         13 -> Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) { AppearanceSettings() }
         14 -> Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp)) { SettingsShortcutsUi() }
         4 -> SettingsSpeechScreen(speechLocation, speechEntry)

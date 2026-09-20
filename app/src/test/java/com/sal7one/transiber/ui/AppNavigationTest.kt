@@ -24,7 +24,7 @@ class AppNavigationTest {
     }
 
     @Test fun oldOverlayAndExternalLinksOpenCorrectPageWithSettingsReturn() {
-        for (page in 0..14) {
+        for (page in 0..15) {
             val nav = AppNavigation.initial(page)
             assertEquals(page, nav.page)
             if (MainTab.entries.none { it.page == page }) {
@@ -51,9 +51,9 @@ class AppNavigationTest {
     }
 
     @Test fun appearanceAndShortcutsReturnToTheFeatureThatOpenedThem() {
-        val nav = AppNavigation.initial(11).open(13).open(14)
-        assertEquals(13, nav.back().page)
-        assertEquals(11, nav.back().back().page)
+        val nav = AppNavigation.initial(11).open(13).open(14).open(15)
+        assertEquals(14, nav.back().page)
+        assertEquals(11, nav.back().back().back().page)
         assertEquals(nav.save(), AppNavigation.restore(nav.save()).save())
     }
 

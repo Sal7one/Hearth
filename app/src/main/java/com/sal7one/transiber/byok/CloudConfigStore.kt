@@ -102,6 +102,13 @@ object CloudConfigStore {
         prefs(context).edit().putString("tts_voice", voice.trim()).apply()
     }
 
+    /** Save one explicit speech preset without touching voice choices. */
+    fun configureSpeech(context: Context, provider: Provider, endpoint: String, model: String, mode: SttMode) {
+        check(ByokPolicy.FEATURE_BYOK) { "Cloud services are unavailable in the offline build" }
+        check(prefs(context).edit().putString("provider",provider.name).putString("base_url",endpoint)
+            .putString("stt_model",model.trim()).putString("stt_mode",mode.name).commit()) { "Could not save cloud speech setup" }
+    }
+
     private fun prefs(context: Context) =
         context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 }

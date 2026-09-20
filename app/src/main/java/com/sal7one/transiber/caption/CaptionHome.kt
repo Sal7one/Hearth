@@ -76,7 +76,7 @@ fun CaptionHome(
         CloudConfigStore.SttMode.STREAMING_ELEVENLABS -> ApiKeyStore.getElevenLabsKey(context).isNotBlank()
         CloudConfigStore.SttMode.STREAMING_DEEPGRAM -> ApiKeyStore.getDeepgramKey(context).isNotBlank()
         CloudConfigStore.SttMode.STREAMING_ASSEMBLYAI -> ApiKeyStore.getAssemblyAiKey(context).isNotBlank()
-        else -> ApiKeyStore.hasOpenAiKey(context)
+        else -> !com.sal7one.transiber.byok.cloudSpeechKeyRequired(CloudConfigStore.sttMode(context),CloudConfigStore.provider(context)) || ApiKeyStore.hasOpenAiKey(context)
     }
     val engineReady = when {
         isCloud -> keyReady

@@ -21,7 +21,7 @@ import kotlin.math.abs
 
 @Composable
 internal fun HomeScreen(onCaptions: () -> Unit, onTalk: (Boolean) -> Unit,
-    onTranslate: () -> Unit, onCamera: () -> Unit, onReading: () -> Unit, entryRevision: Int = 0) {
+    onTranslate: () -> Unit, onCamera: () -> Unit, onReading: () -> Unit, entryRevision: Int = 0, onSetup: () -> Unit) {
     val context = LocalContext.current
     val initial = remember(entryRevision) { HomeServiceStore.selected(context) }
     val pager = rememberPagerState(initialPage = initial.ordinal, pageCount = { HomeService.entries.size })
@@ -45,6 +45,7 @@ internal fun HomeScreen(onCaptions: () -> Unit, onTalk: (Boolean) -> Unit,
         }
     }
     Column(Modifier.fillMaxSize()) {
+        OutlinedButton(onClick=onSetup,modifier=Modifier.fillMaxWidth().padding(horizontal=30.dp,vertical=8.dp).heightIn(min=48.dp)) {Text("Easy setup · Local or Cloud")}
         HorizontalPager(state = pager, contentPadding = PaddingValues(horizontal = 30.dp), pageSpacing = 14.dp,
             key = { HomeService.entries[it].id }, verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.weight(1f).fillMaxWidth(), beyondViewportPageCount = 1) { index ->

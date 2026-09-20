@@ -152,6 +152,16 @@ Never commit keys or credentials. CI builds and uploads both QA APKs.
 See [changes](CHANGELOG.md), [security reporting](SECURITY.md), and the
 [publication audit](docs/publication-audit.md).
 
+## Easy setup
+
+Open **Easy setup** from Home or Settings. Choose **On this phone** to install
+and select Nemotron + Hy-MT2 translation, or **Cloud** for OpenAI, OpenRouter or
+a compatible HTTPS local server. Already-installed models are reused.
+
+OpenAI starts with live translation; OpenRouter and local servers start with
+speech captions. Full provider, language and model controls remain in Settings.
+The offline build uses model imports. See [Easy setup](docs/easy-setup.md).
+
 ## Start captions
 
 1. In **Captions**, choose Device audio or Microphone, original captions or

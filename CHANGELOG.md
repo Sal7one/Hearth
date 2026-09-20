@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.21.0 — 2026-09-20
+
+- Add Easy setup on Home and in Settings, with two large Local/Cloud choices.
+- Automatically select Nemotron and Hy-MT2 translation; reuse installed files or download the missing pair.
+- Offer simple OpenAI, OpenRouter and compatible HTTPS server forms, plus links to keys/models and full Settings.
+- Allow keyless Custom Batch speech servers without forwarding an old provider key.
+- Preserve the FOSS offline/import-only setup path.
+
 ## 0.20.1 — 2026-09-20
 
 - Make Screen & manga and Camera languages directly editable with separate source/destination cards.

@@ -119,7 +119,7 @@ fun CaptionScreen(
         // NETWORK PATH (BYOK, play distribution only — see byok/ByokPolicy):
         // no local model needed, just the distribution + the user's key.
         CaptionEngineChoice.CLOUD ->
-            ByokPolicy.cloudEngineAvailable() && cloudKeyStored
+            ByokPolicy.cloudEngineAvailable() && (cloudKeyStored || !com.sal7one.transiber.byok.cloudSpeechKeyRequired(cloudMode,com.sal7one.transiber.byok.CloudConfigStore.provider(context)))
     }
     // Cheap, honest pre-flight check: the translation runtime is compiled in
     // AND a TRANSLATE model folder is registered. The authoritative check

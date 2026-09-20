@@ -9,6 +9,7 @@ import com.sal7one.transiber.byok.ByokPolicy
 
 @Composable
 internal fun SettingsScreen(
+    onEasySetup: () -> Unit,
     onAppearance: () -> Unit,
     onShortcuts: () -> Unit,
     onFeature: (SettingsLocation, SettingsFeature) -> Unit,
@@ -19,6 +20,7 @@ internal fun SettingsScreen(
 ) {
     SettingsTabs { location ->
         val local = location == SettingsLocation.LOCAL
+        SettingsLink("Easy setup", "Local or Cloud in two steps", onEasySetup)
         SettingsHeading(if (local) "On your device" else "Connected services",
             if (local) "Download or import models for offline use."
             else "Providers and saved keys. Audio or text goes to your chosen service.")
