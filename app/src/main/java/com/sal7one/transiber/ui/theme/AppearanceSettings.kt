@@ -24,23 +24,42 @@ import androidx.compose.ui.unit.dp
 
 private const val APPEARANCE_PREFS = "hearth-appearance"
 private const val THEME_KEY = "theme-mode"
+private const val ACCENT_KEY = "accent-preset"
+private const val LAYOUT_KEY = "navigation-layout"
 
-/** Shared listener keeps separate Compose windows in sync with the app setting. */
-@Composable
-fun rememberThemeMode(): ThemeMode {
-    val context = LocalContext.current.applicationContext
-    val preferences = remember(context) { context.getSharedPreferences(APPEARANCE_PREFS, Context.MODE_PRIVATE) }
-    var mode by remember(preferences) { mutableStateOf(ThemeMode.fromStored(preferences.getString(THEME_KEY, null))) }
-    DisposableEffect(preferences) {
-        val listener = SharedPreferences.OnSharedPreferenceChangeListener { prefs, key ->
-            if (key == THEME_KEY || key == null) mode = ThemeMode.fromStored(prefs.getString(THEME_KEY, null))
-        }
-        preferences.registerOnSharedPreferenceChangeListener(listener)
-        mode = ThemeMode.fromStored(preferences.getString(THEME_KEY, null))
-        onDispose { preferences.unregisterOnSharedPreferenceChangeListener(listener) }
+enum class NavigationLayout(val label: String) {
+    SIMPLE("Simple home"), TABS("Classic tabs");
+    companion object {
+        fun fromStored(value: String?): NavigationLayout = entries.firstOrNull { it.name == value } ?: SIMPLE
     }
-    return mode
 }
+
+@Composable
+private fun rememberAppearanceValue(key: String): String? {
+    val context = LocalContext.current.applicationContext
+    val prefs = remember(context) { context.getSharedPreferences(APPEARANCE_PREFS, Context.MODE_PRIVATE) }
+    var value by remember(prefs, key) { mutableStateOf(prefs.getString(key, null)) }
+    DisposableEffect(prefs, key) {
+        val listener = SharedPreferences.OnSharedPreferenceChangeListener { p, changed ->
+            if (changed == key || changed == null) value = p.getString(key, null)
+        }
+        prefs.registerOnSharedPreferenceChangeListener(listener)
+        value = prefs.getString(key, null)
+        onDispose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
+    }
+    return value
+}
+
+@Composable
+fun rememberAccentPreset(): AccentPreset = AccentPreset.fromStored(rememberAppearanceValue(ACCENT_KEY))
+
+@Composable
+fun rememberNavigationLayout(): NavigationLayout = NavigationLayout.fromStored(rememberAppearanceValue(LAYOUT_KEY))
+
+
+/** All Compose windows observe the same persisted appearance values. */
+@Composable
+fun rememberThemeMode(): ThemeMode = ThemeMode.fromStored(rememberAppearanceValue(THEME_KEY))
 
 /** Compact setup control. System is the default, including unknown older values. */
 @OptIn(ExperimentalLayoutApi::class)
@@ -48,8 +67,11 @@ fun rememberThemeMode(): ThemeMode {
 fun AppearanceSettings(modifier: Modifier = Modifier) {
     val context = LocalContext.current.applicationContext
     val mode = rememberThemeMode()
-    Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text("Appearance", style = MaterialTheme.typography.titleMedium, modifier = Modifier.semantics { heading() })
+    val accent = rememberAccentPreset()
+    val layout = rememberNavigationLayout()
+    val prefs = remember(context) { context.getSharedPreferences(APPEARANCE_PREFS, Context.MODE_PRIVATE) }
+    Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Text("Light & dark", style = MaterialTheme.typography.titleMedium, modifier = Modifier.semantics { heading() })
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             ThemeMode.entries.forEach { option ->
                 FilterChip(
@@ -62,6 +84,24 @@ fun AppearanceSettings(modifier: Modifier = Modifier) {
                 )
             }
         }
+        Text("Theme", style = MaterialTheme.typography.titleMedium, modifier = Modifier.semantics { heading() })
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            AccentPreset.entries.forEach { option ->
+                FilterChip(selected = accent == option,
+                    onClick = { prefs.edit().putString(ACCENT_KEY, option.name).apply() },
+                    label = { Text(option.label) })
+            }
+        }
+        Text(accent.description, style = MaterialTheme.typography.bodySmall)
+        Text("Navigation", style = MaterialTheme.typography.titleMedium, modifier = Modifier.semantics { heading() })
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            NavigationLayout.entries.forEach { option ->
+                FilterChip(selected = layout == option,
+                    onClick = { prefs.edit().putString(LAYOUT_KEY, option.name).apply() },
+                    label = { Text(option.label) })
+            }
+        }
+        Text("Simple home puts every feature in one place. Classic tabs keeps the previous layout.", style = MaterialTheme.typography.bodySmall)
         Text("System follows your phone. Bubble appearance has its own controls.",
             style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }

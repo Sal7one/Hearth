@@ -102,3 +102,15 @@ val Typography = Typography(
         letterSpacing = 0.15.sp,
     ),
 )
+
+/** Minimal palettes use quiet sans-serif headings; classic palettes keep their type. */
+val MinimalTypography = Typography.copy(
+    displayLarge = Typography.displayLarge.copy(fontFamily = FontFamily.SansSerif, fontWeight = FontWeight.SemiBold),
+    displayMedium = Typography.displayMedium.copy(fontFamily = FontFamily.SansSerif, fontWeight = FontWeight.SemiBold),
+    displaySmall = Typography.displaySmall.copy(fontFamily = FontFamily.SansSerif, fontWeight = FontWeight.SemiBold),
+    headlineLarge = Typography.headlineLarge.copy(fontFamily = FontFamily.SansSerif, fontWeight = FontWeight.SemiBold),
+    headlineMedium = Typography.headlineMedium.copy(fontFamily = FontFamily.SansSerif, fontWeight = FontWeight.SemiBold),
+    headlineSmall = Typography.headlineSmall.copy(fontFamily = FontFamily.SansSerif, fontWeight = FontWeight.SemiBold),
+    titleLarge = Typography.titleLarge.copy(fontFamily = FontFamily.SansSerif, fontWeight = FontWeight.SemiBold),
+    titleMedium = Typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+)

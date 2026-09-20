@@ -1,5 +1,17 @@
 # Hearth — finish for publication
 
+## Simple home and theme choices — 0.18.0
+
+- [x] Direct feature entries, including Face to face and screen/manga reading.
+- [x] Home/Back controls and settings access without bottom navigation in Simple mode.
+- [x] Shared settings sheet with direct Local/Cloud feature editors.
+- [x] Persist Clean, Ink, Sky and the original palettes across app windows.
+- [x] Preserve Classic tabs and Organic as user-selectable alternatives.
+- [x] Keep settings scroll/state and existing external page IDs.
+
+See [navigation and themes](simple-home.md). Native rendering, animated onboarding
+and Vita-style graphics are outside this revision's scope.
+
 ## Quick Settings shortcuts — 0.17.0
 
 - [x] Live captions and screen/manga translation tiles, with add-tile controls.
@@ -17,8 +29,8 @@ See [phone shortcuts](quick-settings.md) and [validation](validation-v31.md).
 - [x] Preserve independent tab scroll and existing saved provider choices.
 - [x] Keep appearance/help shared and remove cloud providers from the local model library.
 - [x] Separate model installation from caption CC/translation controls.
-- [ ] Simple home/onboarding: feature previews, no bottom navigation in Simple mode,
-  optional Full app mode (owner proposal; separate from the settings refactor).
+- [x] Simple home without bottom navigation, with optional Classic tabs (0.18.0).
+  The owner simplified the proposal; no mandatory onboarding or preview step.
 
 See [settings structure](settings-ui.md) and [validation](validation-v30.md).
 

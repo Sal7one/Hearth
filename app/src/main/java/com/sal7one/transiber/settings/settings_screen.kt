@@ -9,6 +9,8 @@ import com.sal7one.transiber.byok.ByokPolicy
 
 @Composable
 internal fun SettingsScreen(
+    onAppearance: () -> Unit,
+    onShortcuts: () -> Unit,
     onFeature: (SettingsLocation, SettingsFeature) -> Unit,
     onDownloads: () -> Unit,
     onBenchmark: () -> Unit,
@@ -34,8 +36,6 @@ internal fun SettingsScreen(
             SettingsLink("Local benchmark", "Compare installed speech and translation models", onBenchmark)
         }
         HorizontalDivider()
-        SettingsShortcutsUi()
-        HorizontalDivider()
-        SettingsAppPreferences(onAdvanced, onHelp)
+        SettingsAppPreferences(onAppearance, onShortcuts, onAdvanced, onHelp)
     }
 }

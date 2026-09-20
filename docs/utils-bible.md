@@ -187,3 +187,12 @@ missing/truncated assets, traversal and links. It does not replace runtime hashe
 controller and reading service. Its ownership test covers overlapping activities,
 repeated close and stale release; temporary UI suppression never changes saved
 caption settings or stops the existing session.
+
+
+## Hearth 0.18.0 appearance/navigation
+
+`minimalPalette` is consumed by the shared `HearthTheme` palette selection.
+`MinimalPaletteTest` checks foreground contrast for light/dark surfaces and primary
+controls, the Ink dark background, saved classic identifiers and defaults.
+`AppNavigationTest` also covers the new appearance/shortcut destinations returning
+to their originating feature and surviving save/restore. No native utilities changed.

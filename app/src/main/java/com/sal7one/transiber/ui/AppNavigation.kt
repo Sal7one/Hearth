@@ -22,7 +22,7 @@ internal class AppNavigation private constructor(
         if (next == tab) replace(listOf(next.page)) else AppNavigation(next, stacks)
 
     fun open(next: Int): AppNavigation {
-        require(next in 0..12) { "Unknown page: $next" }
+        require(next in 0..14) { "Unknown page: $next" }
         MainTab.entries.firstOrNull { it.page == next }?.let { return select(it) }
         val stack = stacks[tab.ordinal]
         val existing = stack.indexOf(next)
@@ -44,7 +44,7 @@ internal class AppNavigation private constructor(
 
     companion object {
         fun initial(page: Int = 0): AppNavigation {
-            val destination = page.coerceIn(0, 12)
+            val destination = page.coerceIn(0, 14)
             val root = MainTab.entries.firstOrNull { it.page == destination } ?: MainTab.SETTINGS
             val state = AppNavigation(root, MainTab.entries.map { listOf(it.page) })
             return if (destination == root.page) state else state.open(destination)
@@ -55,11 +55,11 @@ internal class AppNavigation private constructor(
             val tab = MainTab.entries.getOrNull(saved.firstOrNull() ?: -1) ?: return initial()
             val stacks = MainTab.entries.map { root ->
                 val size = saved.getOrNull(offset++) ?: return initial()
-                if (size !in 1..9 || offset + size > saved.size) return initial()
+                if (size !in 1..11 || offset + size > saved.size) return initial()
                 val stack = saved.subList(offset, offset + size).toList()
                 offset += size
                 if (stack.first() != root.page || stack.distinct().size != stack.size ||
-                    stack.any { it !in 0..12 } || stack.drop(1).any { id -> MainTab.entries.any { it.page == id } }) return initial()
+                    stack.any { it !in 0..14 } || stack.drop(1).any { id -> MainTab.entries.any { it.page == id } }) return initial()
                 stack
             }
             return if (offset == saved.size) AppNavigation(tab, stacks) else initial()

@@ -8,7 +8,8 @@ an engine, upload content, or start a download.
   and the installed-model benchmark.
 - **Cloud:** speech providers, text translation connections, and self-hosted voices.
 - **App preferences:** appearance, advanced caption controls, and help are shared.
-  They are collapsed under the same entry in either tab.
+  Since 0.18.0 they are direct directory links, also reachable from the toolbar
+  settings sheet; appearance and phone shortcuts have their own pages.
 
 Speech, translation and voice setup use the same Local/Cloud tab layout. Settings links
 open the matching tab. Model management contains only local categories. A model
@@ -55,5 +56,5 @@ browsing Cloud alone cannot change playback or send preview text.
 
 Keep runtime/provider/network code in feature packages. Add a focused UI file under
 settings and register the destination rather than duplicating stores or pipelines.
-The Simple/Vita-inspired home and onboarding proposal is a separate future change;
-this release retains the existing main navigation.
+The simplified home shipped in 0.18.0; Classic tabs retains the earlier navigation.
+See [navigation and themes](simple-home.md).

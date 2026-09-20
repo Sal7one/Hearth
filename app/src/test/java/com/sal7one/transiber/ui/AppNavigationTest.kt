@@ -24,7 +24,7 @@ class AppNavigationTest {
     }
 
     @Test fun oldOverlayAndExternalLinksOpenCorrectPageWithSettingsReturn() {
-        for (page in 0..12) {
+        for (page in 0..14) {
             val nav = AppNavigation.initial(page)
             assertEquals(page, nav.page)
             if (MainTab.entries.none { it.page == page }) {
@@ -48,6 +48,13 @@ class AppNavigationTest {
         assertEquals(nav.save(), restored.save())
         assertEquals(12, restored.select(MainTab.TRANSLATE).page)
         assertEquals(5, restored.select(MainTab.CAPTIONS).back().page)
+    }
+
+    @Test fun appearanceAndShortcutsReturnToTheFeatureThatOpenedThem() {
+        val nav = AppNavigation.initial(11).open(13).open(14)
+        assertEquals(13, nav.back().page)
+        assertEquals(11, nav.back().back().page)
+        assertEquals(nav.save(), AppNavigation.restore(nav.save()).save())
     }
 
     @Test fun malformedSavedStateCannotOpenAnInvalidPage() {

@@ -90,7 +90,7 @@ class CaptionStartActivity : ComponentActivity() {
 private fun CaptionStartRoot(requestedSource: CaptionSource?, onDone: () -> Unit) {
     val context = LocalContext.current
     val themeMode = com.sal7one.transiber.ui.theme.rememberThemeMode()
-    val accentPreset = AccentPreset.OCEAN
+    val accentPreset = com.sal7one.transiber.ui.theme.rememberAccentPreset()
 
     FFmpegStudioTheme(
         themeMode = themeMode,

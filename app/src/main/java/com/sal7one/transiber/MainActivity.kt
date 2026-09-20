@@ -15,6 +15,8 @@ import androidx.compose.material.icons.filled.Forum
 import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Home
+import com.sal7one.transiber.home.HomeScreen
 import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.semantics.contentDescription
@@ -53,7 +55,7 @@ class MainActivity : ComponentActivity() {
  private val navigation=kotlinx.coroutines.flow.MutableStateFlow<Int?>(null)
  override fun onNewIntent(intent: android.content.Intent) {
   super.onNewIntent(intent);setIntent(intent);receiveShare(intent)
-  if(intent.hasExtra("page"))navigation.value=intent.getIntExtra("page",0).coerceIn(0,12)
+  if(intent.hasExtra("page"))navigation.value=intent.getIntExtra("page",0).coerceIn(0,14)
  }
  @OptIn(ExperimentalMaterial3Api::class)
  override fun onCreate(savedInstanceState: Bundle?) {
@@ -74,10 +76,23 @@ class MainActivity : ComponentActivity() {
     var route by rememberSaveable(stateSaver = listSaver(
      save = { state: AppNavigation -> state.save() }, restore = { AppNavigation.restore(it) }
     )) { mutableStateOf(AppNavigation.initial(intent.getIntExtra("page", 0))) }
+    val layout = rememberNavigationLayout()
+    val simple = layout == NavigationLayout.SIMPLE
+    var showHome by rememberSaveable { mutableStateOf(!intent.hasExtra("page")) }
+    var homeDestination by rememberSaveable { mutableStateOf<Int?>(null) }
+    var quickSettings by rememberSaveable { mutableStateOf(false) }
+    val atHome = simple && showHome
     val page = route.page
     val focus = LocalFocusManager.current
     val screenState = androidx.compose.runtime.saveable.rememberSaveableStateHolder()
-    fun go(next: Int) { focus.clearFocus(); route = route.open(next) }
+    fun go(next: Int) {
+     focus.clearFocus()
+     if (atHome) {
+      route = AppNavigation.initial(next)
+      homeDestination = next
+     } else route = route.open(next)
+     showHome = false
+    }
     var speechLocation by rememberSaveable { mutableStateOf(if (intent.getIntExtra("page", 0) == 4) SettingsLocation.CLOUD else SettingsLocation.LOCAL) }
     var translationLocation by rememberSaveable { mutableStateOf(SettingsLocation.LOCAL) }
     var voiceLocation by rememberSaveable { mutableStateOf(SettingsLocation.LOCAL) }
@@ -86,7 +101,7 @@ class MainActivity : ComponentActivity() {
     var voiceEntry by rememberSaveable { mutableIntStateOf(0) }
     val requestedPage by navigation.collectAsState()
     LaunchedEffect(requestedPage) {
-     requestedPage?.let { if (it == 4) { speechLocation = SettingsLocation.CLOUD; speechEntry++ }; focus.clearFocus(); route = AppNavigation.initial(it); navigation.value = null }
+     requestedPage?.let { if (it == 4) { speechLocation = SettingsLocation.CLOUD; speechEntry++ }; focus.clearFocus(); route = AppNavigation.initial(it); homeDestination = null; showHome = false; navigation.value = null }
     }
     var faceLayout by rememberSaveable { mutableStateOf(false) }
     var modelsSection by rememberSaveable { mutableStateOf("Speech") }
@@ -97,20 +112,42 @@ class MainActivity : ComponentActivity() {
      voiceLocation = location ?: if (com.sal7one.transiber.voice.VoiceSettings.choice(this@MainActivity).backend == "remote") SettingsLocation.CLOUD else SettingsLocation.LOCAL
      voiceEntry++; go(12)
     }
-    fun back() { focus.clearFocus(); route = route.back() }
-    BackHandler(enabled = route.canGoBack) { back() }
+    fun home() { focus.clearFocus(); homeDestination = null; showHome = true }
+    fun back() {
+     focus.clearFocus()
+     if (simple && (route.isRoot || page == homeDestination)) home() else route = route.back()
+    }
+    fun settingsFeature(location: SettingsLocation, feature: SettingsFeature) {
+     when (feature) {
+      SettingsFeature.SPEECH -> speechSettings(location)
+      SettingsFeature.TRANSLATION -> translationSettings(location)
+      SettingsFeature.VOICES -> voiceSettings(location)
+      SettingsFeature.CAMERA -> localModels("Camera")
+     }
+    }
+    fun reading() { startActivity(android.content.Intent(this@MainActivity, com.sal7one.transiber.reading.ReadingStartActivity::class.java)) }
+    BackHandler(enabled = !atHome && (simple || route.canGoBack)) { back() }
+    if (quickSettings) SettingsQuickSheet(
+     onDismiss = { quickSettings = false },
+     onFeature = { location, feature -> quickSettings = false; settingsFeature(location, feature) },
+     onPage = { quickSettings = false; go(it) },
+     onReading = { quickSettings = false; reading() },
+    )
     Scaffold(topBar = {
-     TopAppBar(title = { Text(when(page) {
+     TopAppBar(title = { Text(if (atHome) "Hearth" else when(page) {
       0 -> "Live captions"; 1 -> "Models"; 2 -> "Downloads"; 3 -> "Settings"
       4 -> "Speech settings"; 5 -> "Advanced captions"
       7 -> if (faceLayout) "Face to face" else "Conversation"
       8 -> "Local benchmark"; 9 -> "Translation"; 10 -> "Camera & OCR"
-      11 -> "Type to translate"; 12 -> "Voices & read aloud"; else -> "Help"
+      11 -> "Type to translate"; 12 -> "Voices & read aloud"; 13 -> "Appearance & navigation"; 14 -> "Phone shortcuts"; else -> "Help"
      }, style = MaterialTheme.typography.titleMedium) },
-      navigationIcon = { if (!route.isRoot) IconButton(onClick = { back() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } },
-      actions = { if (!route.isRoot) TextButton(onClick = { focus.clearFocus(); route = route.toRoot() }) { Text("Done") } })
+      navigationIcon = { if (!atHome && (simple || !route.isRoot)) IconButton(onClick = { back() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } },
+      actions = {
+       if (simple && !atHome) IconButton(onClick = { home() }) { Icon(Icons.Default.Home, "Home") }
+       IconButton(onClick = { quickSettings = true }) { Icon(Icons.Default.Settings, "Quick settings") }
+      })
     }, bottomBar = {
-     NavigationBar {
+     if (!simple) NavigationBar {
       MainTab.entries.forEach { tab ->
        NavigationBarItem(
         selected = route.tab == tab,
@@ -131,22 +168,25 @@ class MainActivity : ComponentActivity() {
      Column(Modifier.fillMaxSize().padding(padding)) {
       nativeFailure?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(16.dp)) }
       Box(Modifier.weight(1f)) {
-       screenState.SaveableStateProvider(page) {
-       when(page) {
+       screenState.SaveableStateProvider(if (atHome) "simple-home" else page) {
+       if (atHome) HomeScreen(
+        onCaptions = { go(0) },
+        onTalk = { face -> faceLayout = face; go(7) },
+        onTranslate = { go(11) },
+        onCamera = { go(10) },
+        onReading = { reading() },
+        onSettings = { quickSettings = true },
+       ) else when(page) {
         0 -> CaptionHome(onModels = { go(1) }, onCloud = { speechSettings(SettingsLocation.CLOUD) })
         1 -> ModelsScreen(onDownloads = { go(2) }, onVoices = { voiceSettings(SettingsLocation.LOCAL) }, initialSection = modelsSection)
         2 -> DownloadsScreen(onBrowseModels = { go(1) })
         3 -> SettingsScreen(
-            onFeature = { location, feature ->
-                when (feature) {
-                    SettingsFeature.SPEECH -> speechSettings(location)
-                    SettingsFeature.TRANSLATION -> translationSettings(location)
-                    SettingsFeature.VOICES -> voiceSettings(location)
-                    SettingsFeature.CAMERA -> localModels("Camera")
-                }
-            },
+            onAppearance = { go(13) }, onShortcuts = { go(14) },
+            onFeature = ::settingsFeature,
             onDownloads = { go(2) }, onBenchmark = { go(8) }, onAdvanced = { go(5) }, onHelp = { go(6) },
         )
+        13 -> Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) { AppearanceSettings() }
+        14 -> Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp)) { SettingsShortcutsUi() }
         4 -> SettingsSpeechScreen(speechLocation, speechEntry)
         5 -> CaptionScreen(onBrowseModels = { go(1) })
         7 -> ConversationScreen(onModels = { go(1) }, onCloud = { speechSettings(SettingsLocation.CLOUD) }, onLayoutChanged = { faceLayout = it }, initialFaceToFace = faceLayout, onVoices={voiceSettings()})

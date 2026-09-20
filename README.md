@@ -6,7 +6,8 @@
 
 Hearth helps you read speech, talk across languages, translate text around you and
 hear translations aloud. Use compatible models on your phone or connect your own
-cloud providers—all through five main screens.
+cloud providers. A simple home opens each feature directly; the previous five-tab
+layout remains available in Appearance & navigation.
 
 > [!IMPORTANT]
 > **Experimental proof of concept (PoC) — currently a test project.**
@@ -17,6 +18,11 @@ cloud providers—all through five main screens.
 > guarantee that every model or language pair will work equally well.
 
 ## What you can try
+
+- **Keep navigation simple.** Open captions, conversation, Face to face, typed
+  translation, camera/photos or screen/manga reading from Home. Quick settings
+  offers direct Local/Cloud setup links. Choose Clean, Ink, Sky or the original
+  Organic theme, with System/Light/Dark modes. See [navigation and themes](docs/simple-home.md).
 
 - **Start from the notification shade.** Add Live captions and Screen translation
   Quick Settings tiles. Hearth checks setup before requesting capture; missing

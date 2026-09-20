@@ -76,14 +76,17 @@ enum class ThemeMode(val label: String) {
 }
 
 enum class AccentPreset(val label: String, val description: String) {
+    CLEAN("Clean", "Neutral surfaces with a quiet blue accent"),
+    INK("Ink", "Monochrome, with a black background in dark mode"),
+    SKY("Sky", "Cool blue and soft slate"),
     // The enum name is retained for compatibility with preferences saved by older builds.
-    OCEAN("Organic", "Warm parchment, terracotta and sage"),
+    OCEAN("Organic · classic", "The original parchment, terracotta and sage theme"),
     EMBER("Ember", "Clay, peach and olive"),
     FOREST("Forest", "Moss, bark and lichen"),
     AMETHYST("Amethyst", "Plum, rose and mineral grey");
 
     companion object {
-        fun fromStored(value: String?): AccentPreset = entries.firstOrNull { it.name == value } ?: OCEAN
+        fun fromStored(value: String?): AccentPreset = entries.firstOrNull { it.name == value } ?: CLEAN
     }
 }
 
@@ -134,6 +137,8 @@ data class AccentPalette(
 }
 
 fun accentPalette(preset: AccentPreset): AccentPalette = when (preset) {
+    AccentPreset.CLEAN, AccentPreset.INK, AccentPreset.SKY -> minimalPalette(preset)
+
     AccentPreset.OCEAN -> AccentPalette(
         primary = Color(0xFF934719), onPrimary = Color(0xFFFFFFFF),
         primaryContainer = Color(0xFFFFE1D0), onPrimaryContainer = Color(0xFF71370F),
@@ -319,13 +324,13 @@ private fun semanticColors(palette: AccentPalette, dark: Boolean) = HearthSemant
     ),
 )
 
-val AppLightColorScheme = lightScheme(accentPalette(AccentPreset.OCEAN))
-val AppDarkColorScheme = darkScheme(accentPalette(AccentPreset.OCEAN))
+val AppLightColorScheme = lightScheme(accentPalette(AccentPreset.CLEAN))
+val AppDarkColorScheme = darkScheme(accentPalette(AccentPreset.CLEAN))
 
 @Composable
 fun HearthTheme(
     themeMode: ThemeMode = rememberThemeMode(),
-    accentPreset: AccentPreset = AccentPreset.OCEAN,
+    accentPreset: AccentPreset = rememberAccentPreset(),
     content: @Composable () -> Unit,
 ) {
     val dark = when (themeMode) {
@@ -339,7 +344,7 @@ fun HearthTheme(
     ) {
         MaterialTheme(
             colorScheme = if (dark) darkScheme(palette) else lightScheme(palette),
-            typography = Typography,
+            typography = if (accentPreset in setOf(AccentPreset.CLEAN, AccentPreset.INK, AccentPreset.SKY)) MinimalTypography else Typography,
             content = content,
         )
     }
@@ -349,6 +354,6 @@ fun HearthTheme(
 @Composable
 fun FFmpegStudioTheme(
     themeMode: ThemeMode = rememberThemeMode(),
-    accentPreset: AccentPreset = AccentPreset.OCEAN,
+    accentPreset: AccentPreset = rememberAccentPreset(),
     content: @Composable () -> Unit,
 ) = HearthTheme(themeMode, accentPreset, content)
