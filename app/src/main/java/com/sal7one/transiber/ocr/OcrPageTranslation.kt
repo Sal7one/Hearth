@@ -9,18 +9,24 @@ internal object OcrPageTranslation {
     suspend fun run(
         lines: List<OcrLine>, current: () -> Boolean,
         translate: suspend (String) -> String, publish: (List<TranslatedOcrBox>) -> Unit,
+        cached: (String) -> String? = { null },
     ) {
         check(lines.size <= 64 && lines.sumOf { it.text.length.toLong() } <= 3000) {
             "Page exceeds 64 text boxes or 3,000 characters. Draw a smaller area; original text is preserved."
         }
-        val results = mutableListOf<TranslatedOcrBox>()
-        for (line in lines) {
+        if (!current()) return
+        // Publish every known box before starting any slow new inference. Geometry is
+        // always from this capture, even when its words came from an earlier page.
+        val results = lines.map { line -> cached(line.text)?.takeIf { it.isNotBlank() }?.let { TranslatedOcrBox(line, it) } }.toMutableList()
+        if (results.any { it != null } && current()) publish(results.filterNotNull())
+        for ((index, line) in lines.withIndex()) {
             if (!current()) return
-            val translated = translate(line.text)
+            if (results[index] != null) continue
+            val translated = cached(line.text)?.takeIf { it.isNotBlank() } ?: translate(line.text)
             if (!current()) return
             check(translated.isNotBlank()) { "Translation returned empty text for: ${line.text}" }
-            results += TranslatedOcrBox(line, translated)
-            publish(results.toList())
+            results[index] = TranslatedOcrBox(line, translated)
+            publish(results.filterNotNull())
         }
     }
 }

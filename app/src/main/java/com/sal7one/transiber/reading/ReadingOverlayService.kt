@@ -248,7 +248,9 @@ class ReadingOverlayService : Service() {
                 grid.getPixels(pixels,0,ReadingMotion.WIDTH,0,0,ReadingMotion.WIDTH,ReadingMotion.HEIGHT)
                 if(grid!==bitmap)grid.recycle()
                 if(motion.observe(pixels,bitmap.width,bitmap.height,masks)) {
-                    clearPage();motion.reset();trigger.movement(now());generation++;working=false;controller.invalidate();original?.text="";translated?.text=""
+                    // observe() already advanced the baseline. Keeping it measures every
+                    // moving frame; resetting here used to skip alternate scroll samples.
+                    clearPage();trigger.movement(now());generation++;working=false;controller.invalidate();original?.text="";translated?.text=""
                 }
             }finally{bitmap.recycle()}
             if(trigger.ready(now()) && !working) {

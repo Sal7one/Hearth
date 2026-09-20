@@ -49,7 +49,7 @@ internal class CameraOcrController(context: Context) : AutoCloseable {
                 withContext(Dispatchers.IO + NonCancellable) { model = OcrModels(File(context.filesDir,"ocr-models")).open(context,profile) }
                 ensureActive(); mutable.update { it.copy(loading=false) }
                 if(snapshot != null && source != target) launch {
-                    val cache = linkedMapOf<String,String>()
+                    val cache = OcrTranslationCache()
                     try {
                         for(request in textQueue) {
                             if(request.revision != revision) continue
@@ -61,11 +61,11 @@ internal class CameraOcrController(context: Context) : AutoCloseable {
                                     ensureActive(); val active = checkNotNull(translator); val direction=TranslationDirection(source,target)
                                     check(direction in active.directions) { "${snapshot.label} does not support $source → $target" }
                                     active.translate(text,direction)
-                                }.also { if(it.isNotBlank()) {cache[text]=it; if(cache.size>32)cache.remove(cache.keys.first())} }
+                                }.also { cache.put(text,it) }
                                 if(positioned) {
-                                    OcrPageTranslation.run(request.lines, {request.revision == revision}, ::translate) { boxes ->
+                                    OcrPageTranslation.run(request.lines, {request.revision == revision}, ::translate, { boxes ->
                                         mutable.update { it.copy(boxTranslations=boxes,translation=boxes.joinToString("\n") {box->box.translation},error=null) }
-                                    }
+                                    }, cached = { cache[it] })
                                 } else {
                                     val output=translate(request.text)
                                     if(request.revision == revision) mutable.update { it.copy(translation=output,error=null) }
@@ -80,6 +80,7 @@ internal class CameraOcrController(context: Context) : AutoCloseable {
                 val stability=OcrStability()
                 for(frame in input) {
                     try {
+                        if(frame.epoch != frameEpoch.get()) continue
                         val bitmap=frame.bitmap
                         val begun=System.nanoTime()
                         val lines=withContext(Dispatchers.Default) {
@@ -88,7 +89,7 @@ internal class CameraOcrController(context: Context) : AutoCloseable {
                                 .map { it.copy(text=OcrText.logical(it.text,profile.id == "arabic")) }
                         }
                         ensureActive()
-                        if(frame.epoch != frameEpoch.get()) { mutable.update { it.copy(processing=false) };continue }
+                        if(frame.epoch != frameEpoch.get()) continue // A stale frame must not mark the newer request finished.
                         val text=lines.joinToString("\n") { it.text }
                         val settled = stability.observe(text,frame.captured)
                         if(text.isBlank() && !frame.captured && !settled) continue

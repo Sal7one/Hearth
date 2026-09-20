@@ -42,4 +42,20 @@ class ReadingMotionTest {
         assertTrue(m.observe(page().apply {for(i in 5000..5100)this[i]=grey(0)},64,128,cover))
     }
 
+    @Test fun successiveScrollFramesKeepPostponingRecognitionUntilMovementStops() {
+        val motion=ReadingMotion();val trigger=ReadingTrigger().apply {mode="page";settleMs=500}
+        val base=page().apply {for(y in 30..50)for(x in 10..50)this[y*64+x]=grey(40)}
+        motion.observe(base,64,128,emptyList())
+        var last=base
+        for(step in 1..6) {
+            last=page().apply {for(y in 30-step..50-step)for(x in 10..50)this[y*64+x]=grey(40)}
+            val time=step*250L
+            assertTrue(motion.observe(last,64,128,emptyList()))
+            trigger.movement(time)
+            assertFalse(trigger.ready(time+249))
+        }
+        assertFalse(motion.observe(last,64,128,emptyList()))
+        assertFalse(trigger.ready(1999));assertTrue(trigger.ready(2000))
+    }
+
 }

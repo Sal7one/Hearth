@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.21.2 — 2026-09-20
+
+- Reuse reading/camera translations across scrolling with a bounded 256-box session cache.
+- Ignore harmless OCR spacing differences when looking up an existing translation.
+- Restore known boxes immediately at their new positions before translating new text.
+- Keep observing every scroll sample until settled, and prevent obsolete OCR frames from completing a newer capture.
+
 ## 0.21.1 — 2026-09-20
 
 - Fix selected local translators being rejected after switching from CC back to Translate.

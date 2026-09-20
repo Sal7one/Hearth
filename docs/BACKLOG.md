@@ -1,3 +1,11 @@
+## 0.21.2 — stable manga translations after scrolling
+
+- [x] Replace the too-small text cache with bounded session LRU reuse.
+- [x] Reuse translations across harmless whitespace changes; keep real text changes distinct.
+- [x] Publish known boxes at fresh positions before waiting on new text.
+- [x] Preserve continuous motion sampling and discard stale OCR frames safely.
+- [x] Complete phone reading checks, flavor gates and APK checks — [validation](validation-v39.md).
+
 ## 0.21.1 — caption translation setup regression
 
 - [x] Reproduce installed Nemotron + translator rejected after CC → advanced Translate.

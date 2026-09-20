@@ -236,3 +236,15 @@ resolution and Home/advanced/overlay mode controls. CC remains original-only;
 integrated cloud translation retains priority without an explicit text provider.
 `CaptionTranslationSelectionTest` covers old saved false flags, CC/Translate
 round-trips, language/route agreement and integrated-provider preservation.
+
+### Stable page translation (0.21.2)
+
+`OcrTranslationCache` is scoped to one CameraOcrController session (fixed OCR
+language, translation provider/model and destination). It replaces the 32-entry
+map with bounded LRU storage (256 entries, 96,000 source+result characters),
+canonical Unicode/whitespace keys and no fuzzy word/number matching.
+`OcrPageTranslation` consumes its lookup to publish all cached boxes before new
+inference, always using fresh OCR geometry. Cache fixtures exercise a 64-box
+page after scroll, duplicate text, incremental publication, changed wording,
+eviction, blank/oversized responses and session isolation. `ReadingMotionTest`
+also drives the real settle trigger over consecutive scroll frames.
