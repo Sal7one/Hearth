@@ -1,5 +1,13 @@
 package com.sal7one.transiber.reading
 
+import com.sal7one.transiber.ui.theme.FeatureBackdrop
+import com.sal7one.transiber.R
+import androidx.compose.ui.graphics.Color
+import androidx.compose.foundation.Image
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.shape.RoundedCornerShape
 import android.app.Activity
 import android.content.Intent
 import android.media.projection.MediaProjectionConfig
@@ -32,25 +40,37 @@ import com.sal7one.transiber.caption.*
 import com.sal7one.transiber.translation.*
 import com.sal7one.transiber.byok.ByokPolicy
 
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material.icons.filled.AutoStories
+import com.sal7one.transiber.ui.components.FeatureAction
+import com.sal7one.transiber.ui.components.FeatureOptionsSheet
+
 class ReadingStartActivity : ComponentActivity() {
+    private var setupRevision by mutableIntStateOf(0)
+    override fun onResume() { super.onResume(); setupRevision++ }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent { FFmpegStudioTheme(themeMode=rememberThemeMode()) { Screen() } }
     }
     @OptIn(ExperimentalLayoutApi::class)
     @Composable private fun Screen() {
+        val currentSetup = setupRevision
         val prefs=remember {getSharedPreferences("reading-overlay",0)}
         val camera=remember {getSharedPreferences("camera-translate",0)}
         val scope=rememberCoroutineScope()
+        var options by rememberSaveable {mutableStateOf(false)}
+        val optionsScroll=rememberScrollState()
         val config by remember {CaptionConfigStore.config(this)}.collectAsState(initial=CaptionOverlayConfig())
         val revision by ConversationTranslationSettings.revision.collectAsState()
         var provider by remember {mutableStateOf(if(ByokPolicy.FEATURE_BYOK)camera.getString("provider","local")!! else "local")}
-        LaunchedEffect(revision) {provider=if(ByokPolicy.FEATURE_BYOK)camera.getString("provider","local")!! else "local"}
-        val profile=OcrCatalog.profile(camera.getString("profile","latin")!!)
+        LaunchedEffect(revision,currentSetup) {provider=if(ByokPolicy.FEATURE_BYOK)camera.getString("provider","local")!! else "local"}
+        val profile=remember(currentSetup) {OcrCatalog.profile(camera.getString("profile","latin")!!)}
         val savedMode=remember {prefs.getString("mode","page")}
-        var mode by remember {mutableStateOf(ReadingTrigger.supportedMode(savedMode))}
-        var settle by remember {mutableFloatStateOf(prefs.getLong("settle",500).toFloat())}
-        var scan by remember {mutableFloatStateOf(prefs.getLong("scan",250).toFloat())}
+        var mode by rememberSaveable {mutableStateOf(ReadingTrigger.supportedMode(savedMode))}
+        var settle by rememberSaveable {mutableFloatStateOf(prefs.getLong("settle",500).toFloat())}
+        var scan by rememberSaveable {mutableFloatStateOf(prefs.getLong("scan",250).toFloat())}
         var error by remember {mutableStateOf<String?>(null)}
         val projection=rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {result->
             if(result.resultCode==Activity.RESULT_OK && result.data!=null) {
@@ -70,49 +90,60 @@ class ReadingStartActivity : ComponentActivity() {
             projection.launch(if(Build.VERSION.SDK_INT>=34)manager.createScreenCaptureIntent(MediaProjectionConfig.createConfigForDefaultDisplay()) else manager.createScreenCaptureIntent())
         }
         val notifications=rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {launch()}
-        Surface(Modifier.fillMaxSize()) {
-            Column(Modifier.fillMaxSize().systemBarsPadding().verticalScroll(rememberScrollState()).padding(20.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
-                Text("Read other apps",style=MaterialTheme.typography.headlineMedium)
-                Text("Manga, comics & books",style=MaterialTheme.typography.titleMedium)
-                Text("Open your reader after starting. Tap Translate for a page, or Draw area for one bubble. Your images stay on this phone. Cloud translation sends only recognized text to your chosen provider.")
-                Text("${profile.label} · ${camera.getString("source","en")} → ${camera.getString("target","ar")}")
-                Text("Uses the OCR model, languages and translator selected on Camera. Starting this screen-reading session stops live audio captions.",style=MaterialTheme.typography.bodySmall)
-                TranslatorChooser(provider,config.localTranslationModelId,"Used by Camera and the reading overlay.",camera.getString("source","en"),camera.getString("target","ar"),
-                    onModels={startActivity(Intent(this@ReadingStartActivity,com.sal7one.transiber.MainActivity::class.java).putExtra("page",1))},
-                    onSelect={id,model->scope.launch {try {
-                        CaptionConfigStore.update(this@ReadingStartActivity){it.copy(localTranslationModelId=model)}
-                        camera.edit().putString("provider",id).apply();provider=id
-                    } catch(e: kotlinx.coroutines.CancellationException){throw e}
-                    catch(e: Exception){error=e.message ?: e.toString()} }})
-                if(profile.engine=="manga")Text("Manga OCR reads one selected bubble. Draw an area first; the same area is reused until you change it.")
-                Text("Translations appear over text in your reader. Scroll through them with the lock closed. Tap the lock to interact with text boxes; the handle and notification always keep controls available.",style=MaterialTheme.typography.bodySmall)
-                Text("Translate when",style=MaterialTheme.typography.titleMedium)
-                FlowRow(horizontalArrangement=Arrangement.spacedBy(8.dp)) {
-                    listOf("manual" to "I tap", "page" to "Page changes").forEach {(id,label)->
-                        FilterChip(selected=mode==id,onClick={mode=id},label={Text(label)})
+        FeatureBackdrop(R.drawable.home_screen) {
+        Surface(Modifier.fillMaxSize(),color=Color.Transparent) {
+            Column(Modifier.fillMaxSize().systemBarsPadding()) {
+                Row(Modifier.fillMaxWidth().padding(horizontal=12.dp),verticalAlignment=androidx.compose.ui.Alignment.CenterVertically) {
+                    TextButton(onClick={finish()}){Text("Back")}
+                    Text("Screen & manga",Modifier.weight(1f),style=MaterialTheme.typography.titleLarge)
+                }
+                Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(20.dp),verticalArrangement=Arrangement.spacedBy(20.dp)) {
+                    Image(painterResource(R.drawable.home_screen),null,Modifier.fillMaxWidth().height(140.dp).clip(RoundedCornerShape(28.dp)),contentScale=ContentScale.Crop)
+                    Text("Translate as you read",style=MaterialTheme.typography.headlineMedium)
+                    Text("Open your reader after starting. Translate the page or draw around one bubble.")
+                    Text("Translate when",style=MaterialTheme.typography.titleSmall)
+                    FlowRow(horizontalArrangement=Arrangement.spacedBy(8.dp)) {
+                        listOf("manual" to "I tap", "page" to "Page changes").forEach {(id,label)->
+                            FilterChip(selected=mode==id,onClick={mode=id},label={Text(label)})
+                        }
                     }
+                    FeatureAction("Reading settings", Icons.Default.Tune, {options=true},
+                        detail="${profile.label} · ${camera.getString("source","en")} → ${camera.getString("target","ar")}")
+                    if(profile.engine=="manga")Text("Manga OCR needs a drawn area around one speech bubble.",style=MaterialTheme.typography.bodySmall)
+                    Text("Images stay on this phone. Cloud translation sends recognized text to your selected provider.",style=MaterialTheme.typography.bodySmall)
+                    Text("Starting screen translation stops live audio captions.",style=MaterialTheme.typography.bodySmall)
+                    error?.let {Text(it,color=MaterialTheme.colorScheme.error)}
                 }
-                if(mode!="manual") {
-                    Text("Wait after movement: ${settle.toInt()} ms")
-                    Slider(value=settle,onValueChange={settle=it},modifier=Modifier.semantics {contentDescription="Wait after movement, milliseconds"},valueRange=300f..2000f,steps=16)
-                    Text("Visual movement clears old text positions. Only the latest settled view is translated; exact scroll events are not required.",style=MaterialTheme.typography.bodySmall)
+                Surface(shadowElevation=8.dp) {
+                    Button(onClick={
+                        if(!OcrModels(File(filesDir,"ocr-models")).ready(profile)) {error="Install ${profile.label} in Camera settings first.";options=true}
+                        else if(Build.VERSION.SDK_INT>=33 && checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS)!=android.content.pm.PackageManager.PERMISSION_GRANTED)notifications.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+                        else launch()
+                    },modifier=Modifier.fillMaxWidth().padding(20.dp).heightIn(min=56.dp)){Text("Start reading overlay")}
                 }
-                Text("Check screen every ${scan.toInt()} ms")
-                Slider(value=scan,onValueChange={scan=it},modifier=Modifier.semantics {contentDescription="Screen movement check interval, milliseconds"},valueRange=200f..1000f,steps=15)
-                Text("Faster checks respond sooner and use more battery. No screen images are stored.",style=MaterialTheme.typography.bodySmall)
-                Text("Uses screen sharing only. No Accessibility service or volume-key access is needed.",style=MaterialTheme.typography.bodySmall)
-                if(savedMode=="distance" || savedMode=="scrolls") {
-                    Text("Your previous scroll shortcut has been replaced by Page changes. It detects visual changes after scrolling; it does not measure scroll distance. You can choose I tap instead.",style=MaterialTheme.typography.bodySmall)
-                }
-                error?.let {Text(it,color=MaterialTheme.colorScheme.error)}
-                Button(onClick={
-                    if(!OcrModels(File(filesDir,"ocr-models")).ready(profile))error="Install ${profile.label} in Camera settings first."
-                    else if(Build.VERSION.SDK_INT>=33 && checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS)!=android.content.pm.PackageManager.PERMISSION_GRANTED)notifications.launch(android.Manifest.permission.POST_NOTIFICATIONS)
-                    else launch()
-                },modifier=Modifier.fillMaxWidth()){Text("Start reading overlay")}
-                Text("A small movable handle always stays touchable. The notification also offers Translate, Pause and Stop. No camera or microphone permission is needed.",style=MaterialTheme.typography.bodySmall)
-                TextButton(onClick={finish()}){Text("Back to Camera")}
             }
+        }
+        }
+        if(options)FeatureOptionsSheet("Reading settings", {options=false}, optionsScroll) {
+            OutlinedButton(onClick={options=false;startActivity(Intent(this@ReadingStartActivity,com.sal7one.transiber.MainActivity::class.java).putExtra("page",10))},modifier=Modifier.fillMaxWidth()){Text("OCR model & languages")}
+            TranslatorChooser(provider,config.localTranslationModelId,"Used by Camera and the reading overlay.",camera.getString("source","en"),camera.getString("target","ar"),
+                onModels={startActivity(Intent(this@ReadingStartActivity,com.sal7one.transiber.MainActivity::class.java).putExtra("page",1))},
+                onSelect={id,model->scope.launch {try {
+                    CaptionConfigStore.update(this@ReadingStartActivity){it.copy(localTranslationModelId=model)}
+                    camera.edit().putString("provider",id).apply();provider=id
+                } catch(e: kotlinx.coroutines.CancellationException){throw e}
+                catch(e: Exception){error=e.message ?: e.toString()} }})
+            if(mode!="manual") {
+                Text("Wait after movement: ${settle.toInt()} ms")
+                Slider(value=settle,onValueChange={settle=it},modifier=Modifier.semantics {contentDescription="Wait after movement, milliseconds"},valueRange=300f..2000f,steps=16)
+            }
+            Text("Check screen every ${scan.toInt()} ms")
+            Slider(value=scan,onValueChange={scan=it},modifier=Modifier.semantics {contentDescription="Screen movement check interval, milliseconds"},valueRange=200f..1000f,steps=15)
+            Text("Faster checks use more battery. Screen images are not stored.",style=MaterialTheme.typography.bodySmall)
+            Text("Scroll with the lock closed. Tap it to interact with translated text. The handle and notification offer Translate, Pause and Stop.",style=MaterialTheme.typography.bodySmall)
+            Text("Uses screen sharing. No Accessibility service, camera or microphone permission is needed.",style=MaterialTheme.typography.bodySmall)
+            if(savedMode=="distance" || savedMode=="scrolls")Text("Page changes replaces the old scroll shortcut and detects visual movement, not exact scroll distance.",style=MaterialTheme.typography.bodySmall)
+            error?.let {Text(it,color=MaterialTheme.colorScheme.error)}
         }
     }
 }

@@ -341,6 +341,7 @@ fun HearthTheme(
     val palette = accentPalette(accentPreset)
     androidx.compose.runtime.CompositionLocalProvider(
         LocalHearthColors provides semanticColors(palette, dark),
+        LocalColorfulUi provides rememberColorfulUi(),
     ) {
         MaterialTheme(
             colorScheme = if (dark) darkScheme(palette) else lightScheme(palette),

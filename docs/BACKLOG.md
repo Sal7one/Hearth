@@ -1,3 +1,15 @@
+## 0.20.0 — colorful cards and simpler feature controls
+
+- [x] Add colored translucent panels, blurred local artwork and a persisted Minimal backup.
+- [x] Keep daily caption controls visible and pin Start; move engine setup into a sheet.
+- [x] Prioritize typed input/output; centralize translation and voice options.
+- [x] Reduce conversation toolbar clutter while retaining History and Face to face.
+- [x] Put camera capture/photo actions before the alternate screen-reading feature.
+- [x] Pin screen-reading Start; move timing and detailed help into Reading settings.
+- [x] Present Local/Cloud setup as large icon tiles and simplify download entry actions.
+- [x] Make shared Listen use the saved voice; retain explicit Android/custom routes.
+- [ ] Complete TalkBack, large-font, RTL and small-window checks across every provider form.
+
 # Hearth — finish for publication
 
 ## Floating service carousel — 0.19.0

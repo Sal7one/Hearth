@@ -1,5 +1,13 @@
 package com.sal7one.transiber.downloads
 
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.FolderOpen
+import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.ViewModule
+import com.sal7one.transiber.ui.components.FeatureAction
+import com.sal7one.transiber.ui.components.FeatureOptionsSheet
+import com.sal7one.transiber.ui.theme.glassPanel
+import androidx.compose.ui.graphics.Color
 import android.app.DownloadManager
 import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -24,6 +32,9 @@ fun DownloadsScreen(onBrowseModels: () -> Unit = {}) {
  val context = LocalContext.current
  val scope = rememberCoroutineScope()
  val downloads = remember { FileDownloads(context.applicationContext) }
+ var folderSettings by rememberSaveable { mutableStateOf(false) }
+ val folderScroll = rememberScrollState()
+ val directScroll = rememberScrollState()
  var url by rememberSaveable { mutableStateOf("") }
  var directDownload by rememberSaveable { mutableStateOf(false) }
  var filename by rememberSaveable { mutableStateOf("") }
@@ -46,39 +57,23 @@ fun DownloadsScreen(onBrowseModels: () -> Unit = {}) {
   }
  }
  Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-  Text("Downloads", style = MaterialTheme.typography.headlineSmall)
   if (!ByokPolicy.FEATURE_BYOK) {
-   Text("This offline build cannot download files. Import models from your device in Models.")
+   Text("Import models already on your device.")
+   FeatureAction("Import models", Icons.Default.ViewModule, onBrowseModels)
    return@Column
   }
-  OutlinedCard(Modifier.fillMaxWidth()) { Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-   Text("Download folder", style = MaterialTheme.typography.titleSmall)
-   Text(folderLabel)
-   Text("Models go in models/; other files go in files/. Model downloads install automatically. No export or re-import.", style = MaterialTheme.typography.bodySmall)
-   FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-    TextButton(onClick = { folderPicker.launch(downloads.folderUri) }) { Text("Choose folder") }
-    TextButton(onClick = { try { context.startActivity(downloads.openFolderIntent()) } catch (e: Exception) { error = e.message ?: e.toString() } }) { Text("Open folder") }
-    if (downloads.folderUri != null) TextButton(onClick = { downloads.useDefaultFolder(); folderLabel = downloads.locationLabel }) { Text("Use Downloads folder") }
-   }
-   Text("New downloads use this folder. Files already downloaded stay in their original folder.", style = MaterialTheme.typography.bodySmall)
-  } }
-  TextButton(onClick = { directDownload = !directDownload }) { Text(if (directDownload) "Hide direct download" else "Download a direct file URL") }
-  if (directDownload) {
-   OutlinedTextField(url, { url = it }, label = { Text("HTTPS file URL") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, autoCorrectEnabled = false), modifier = Modifier.fillMaxWidth(), singleLine = true)
-   OutlinedTextField(filename, { filename = it }, label = { Text("Filename, including extension") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Ascii, autoCorrectEnabled = false), modifier = Modifier.fillMaxWidth(), singleLine = true)
-   Button(enabled = !busy, onClick = { scope.launch {
-    busy = true; error = null
-    try { val spec = DownloadSpec.parse(url, filename); withContext(Dispatchers.IO) { downloads.enqueue(spec) }; url = ""; filename = "" }
-    catch (e: CancellationException) { throw e }
-    catch(e: Exception) { error = e.message ?: e.toString() } finally { busy = false }
-   } }) { Text("Download file") }
+  FeatureAction("Get models", Icons.Default.ViewModule, onBrowseModels, detail="Browse speech, translation, camera and voices")
+  Row(horizontalArrangement=Arrangement.spacedBy(8.dp)) {
+   FilledTonalButton(onClick={folderSettings=true},modifier=Modifier.weight(1f).heightIn(min=52.dp)) { Icon(Icons.Default.FolderOpen,null); Spacer(Modifier.width(8.dp)); Text("Folder") }
+   OutlinedButton(onClick={directDownload=true},modifier=Modifier.weight(1f).heightIn(min=52.dp)) { Icon(Icons.Default.Download,null); Spacer(Modifier.width(8.dp)); Text("From link") }
   }
+  Text(folderLabel,style=MaterialTheme.typography.bodySmall,color=MaterialTheme.colorScheme.onSurfaceVariant)
   if (busy) LinearProgressIndicator(Modifier.fillMaxWidth())
   error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
   message?.let { Text(it) }
-  if (records.isEmpty()) { Text("No downloads yet."); Button(onClick = onBrowseModels) { Text("Browse models") } }
+  if (records.isEmpty()) Text("Your downloads will appear here.", Modifier.padding(vertical=24.dp))
   records.forEach { item ->
-   Card(Modifier.fillMaxWidth()) { Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+   Card(Modifier.fillMaxWidth().glassPanel(),colors=CardDefaults.cardColors(containerColor=Color.Transparent,contentColor=MaterialTheme.colorScheme.onSurface)) { Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
     Text(item.title, style = MaterialTheme.typography.titleMedium)
     Text(item.phase.ifBlank { when(item.status) {
      DownloadManager.STATUS_SUCCESSFUL -> "Downloaded"
@@ -119,6 +114,33 @@ fun DownloadsScreen(onBrowseModels: () -> Unit = {}) {
    } }
   }
   Text("Downloads may use mobile data. Installed models keep a verified app-owned copy; deleting a download does not uninstall its model.", style = MaterialTheme.typography.bodySmall)
+ }
+ if(folderSettings && ByokPolicy.FEATURE_BYOK) FeatureOptionsSheet("Download folder",{folderSettings=false},folderScroll) {
+  OutlinedCard(Modifier.fillMaxWidth()) { Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+   Text("Download folder", style = MaterialTheme.typography.titleSmall)
+   Text(folderLabel)
+   Text("Models go in models/; other files go in files/. Model downloads install automatically. No export or re-import.", style = MaterialTheme.typography.bodySmall)
+   FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+    TextButton(onClick = { folderPicker.launch(downloads.folderUri) }) { Text("Choose folder") }
+    TextButton(onClick = { try { context.startActivity(downloads.openFolderIntent()) } catch (e: Exception) { error = e.message ?: e.toString() } }) { Text("Open folder") }
+    if (downloads.folderUri != null) TextButton(onClick = { downloads.useDefaultFolder(); folderLabel = downloads.locationLabel }) { Text("Use Downloads folder") }
+   }
+   Text("New downloads use this folder. Files already downloaded stay in their original folder.", style = MaterialTheme.typography.bodySmall)
+   error?.let {Text(it,color=MaterialTheme.colorScheme.error)}
+  } }
+ }
+ if(directDownload && ByokPolicy.FEATURE_BYOK) FeatureOptionsSheet("Download from link",{directDownload=false},directScroll) {
+
+   OutlinedTextField(url, { url = it }, label = { Text("HTTPS file URL") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, autoCorrectEnabled = false), modifier = Modifier.fillMaxWidth().padding(top=2.dp), singleLine = true)
+   OutlinedTextField(filename, { filename = it }, label = { Text("Filename, including extension") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Ascii, autoCorrectEnabled = false), modifier = Modifier.fillMaxWidth().padding(top=2.dp), singleLine = true)
+   Button(enabled = !busy, onClick = { scope.launch {
+    busy = true; error = null
+    try { val spec = DownloadSpec.parse(url, filename); withContext(Dispatchers.IO) { downloads.enqueue(spec) }; url = ""; filename = ""; directDownload = false }
+    catch (e: CancellationException) { throw e }
+    catch(e: Exception) { error = e.message ?: e.toString() } finally { busy = false }
+   } }) { Text("Download file") }
+
+  error?.let {Text(it,color=MaterialTheme.colorScheme.error)}
  }
  removing?.let { item -> AlertDialog(onDismissRequest = { removing = null }, title = { Text("Remove ${item.title}?") }, text = { Text("This cancels the transfer and deletes the downloaded file. Installed models remain available.") }, confirmButton = { TextButton(onClick = { scope.launch {
   try { withContext(Dispatchers.IO) { downloads.remove(item.id) }; records = withContext(Dispatchers.IO) { downloads.list() } }

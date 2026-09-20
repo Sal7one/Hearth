@@ -22,7 +22,10 @@ layout remains available in Appearance & navigation.
 - **Browse visual feature cards.** Swipe floating image cards for captions,
   conversation, text, camera and screen translation. Hearth remembers the last
   selected service and each card opens its feature directly. Quick settings
-  offers direct Local/Cloud setup links. Choose Clean, Ink, Sky or the original
+  offers large Local/Cloud setup tiles. Colorful translucent cards and softly blurred
+  artwork carry into the feature screens, with Minimal kept as a backup style.
+  Feature screens put their main action first,
+  with model, voice and timing choices in closeable settings sheets. Choose Clean, Ink, Sky or the original
   Organic theme, with System/Light/Dark modes. See [navigation and themes](docs/simple-home.md).
 
 - **Start from the notification shade.** Add Live captions and Screen translation

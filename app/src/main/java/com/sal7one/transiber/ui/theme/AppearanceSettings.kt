@@ -54,6 +54,9 @@ private fun rememberAppearanceValue(key: String): String? {
 fun rememberAccentPreset(): AccentPreset = AccentPreset.fromStored(rememberAppearanceValue(ACCENT_KEY))
 
 @Composable
+fun rememberColorfulUi(): Boolean = rememberAppearanceValue("surface-style") != "minimal"
+
+@Composable
 fun rememberNavigationLayout(): NavigationLayout = NavigationLayout.fromStored(rememberAppearanceValue(LAYOUT_KEY))
 
 
@@ -69,8 +72,15 @@ fun AppearanceSettings(modifier: Modifier = Modifier) {
     val mode = rememberThemeMode()
     val accent = rememberAccentPreset()
     val layout = rememberNavigationLayout()
+    val colorful = rememberColorfulUi()
     val prefs = remember(context) { context.getSharedPreferences(APPEARANCE_PREFS, Context.MODE_PRIVATE) }
     Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Text("Cards & background", style = MaterialTheme.typography.titleMedium, modifier = Modifier.semantics { heading() })
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            FilterChip(selected=colorful,onClick={prefs.edit().putString("surface-style","colorful").apply()},label={Text("Color & blur")})
+            FilterChip(selected=!colorful,onClick={prefs.edit().putString("surface-style","minimal").apply()},label={Text("Minimal · backup")})
+        }
+        Text("Colorful cards with softly blurred artwork. Minimal removes decorative effects.",style=MaterialTheme.typography.bodySmall)
         Text("Light & dark", style = MaterialTheme.typography.titleMedium, modifier = Modifier.semantics { heading() })
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             ThemeMode.entries.forEach { option ->

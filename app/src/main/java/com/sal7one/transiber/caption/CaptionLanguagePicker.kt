@@ -33,6 +33,7 @@ fun CaptionLanguageFields(
     targetChoices: CaptionLanguageChoices? = null,
     onOpenOverlay: ((CaptionLanguagePicker) -> Unit)? = null,
     showTarget: Boolean = true,
+    compact: Boolean = false,
 ) {
     val context = LocalContext.current
     val cloudMode = CloudConfigStore.sttMode(context)
@@ -45,7 +46,7 @@ fun CaptionLanguageFields(
         if (showSource) {
             val sourceCode = if (config.engine == CaptionEngineChoice.VOSK) "model" else CaptionLanguages.effectiveSource(config, cloudMode, model)
             LanguageField("Spoken language (CC)", sourceCode, enabled && source.allowsSelection) { open(CaptionLanguagePicker.SOURCE) }
-            Text(source.note, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(if (compact) model.label else source.note, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             if (config.streamLanguage != sourceCode && config.streamLanguage != "auto") Text(
                 "Saved hint ${LanguageCatalog.option(config.streamLanguage).englishName} is not used by this mode.",
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)

@@ -1,8 +1,20 @@
 package com.sal7one.transiber.conversation
 
+import androidx.compose.foundation.Image
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.shape.RoundedCornerShape
+import com.sal7one.transiber.R
+import com.sal7one.transiber.ui.theme.glassPanel
+import androidx.compose.ui.graphics.Color
 import androidx.activity.compose.BackHandler
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.SwapHoriz
+import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material.icons.filled.Forum
+import com.sal7one.transiber.ui.components.FeatureOptionsSheet
 import androidx.compose.ui.platform.LocalView
 import com.sal7one.transiber.translation.ConversationTranslationSettings
 import com.sal7one.transiber.translation.TranslatorChooser
@@ -150,11 +162,12 @@ fun ConversationScreen(onModels: () -> Unit = {}, onCloud: () -> Unit = {}, onLa
             onHistory = { faceHistory = it }, onOptions = { options = true },
             onCancel = controller::cancel, onSwap = { controller.languages(state.session.second, state.session.first) })
     } else Column(Modifier.fillMaxSize().imePadding().padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            FilledTonalButton(onClick = { faceToFace = true }, enabled = !state.busy, modifier = Modifier.heightIn(min = 48.dp)) { Text("Face to face") }
-            TextButton(onClick = { history = true }, enabled = !state.busy) { Text("History") }
-            TextButton(onClick = { options = true }, enabled = !state.busy) { Text("Options") }
-            TextButton(onClick = { controller.newSession() }, enabled = !state.busy) { Text("New conversation") }
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+            TextButton(onClick = { faceToFace = true }, enabled = !state.busy) { Text("Face to face") }
+            Row {
+                IconButton(onClick = { history = true }, enabled = !state.busy) { Icon(Icons.Default.History, "Conversation history") }
+                IconButton(onClick = { options = true }, enabled = !state.busy) { Icon(Icons.Default.Tune, "Conversation settings") }
+            }
         }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             OutlinedButton(onClick = { picker = 0 }, enabled = !state.busy, modifier = Modifier.weight(1f).heightIn(min = 56.dp)) {
@@ -168,20 +181,20 @@ fun ConversationScreen(onModels: () -> Unit = {}, onCloud: () -> Unit = {}, onLa
                 Text("Them · ${LanguageCatalog.option(state.session.second).nativeName}")
             }
         }
-        Text(model.label, style = MaterialTheme.typography.bodySmall)
         TextButton(onClick={translationSettings=true}) { Text("Translator · $translatorLabel") }
-        if (config.engine == CaptionEngineChoice.CLOUD) Text("Cloud speech uses your selected speech connection. The conversation translator is selected separately in Options. Both original and translated text are kept.", style = MaterialTheme.typography.bodySmall)
+        if (config.engine == CaptionEngineChoice.CLOUD) Text("Audio is sent to your speech provider.", style = MaterialTheme.typography.bodySmall)
         if (translationCodes.isEmpty()) TextButton(onClick = { translationSettings = true }) { Text("Set up translation to begin") }
         if (state.session.turns.isEmpty()) {
             Column(Modifier.weight(1f).fillMaxWidth(), verticalArrangement = Arrangement.Center) {
-                Text("A conversation, in both languages", style = MaterialTheme.typography.headlineSmall)
-                Text("Tap your language, speak, then tap Finish. Pass the phone for the reply. Each turn ends after one minute. Microphone only; no screen recording.", Modifier.padding(top = 12.dp))
-                Text(if (state.saveHistory) "Text is saved on this device. Audio is never saved." else "History is off. New turns last only for this session.", Modifier.padding(top = 12.dp), style = MaterialTheme.typography.bodySmall)
+                Image(painterResource(R.drawable.home_conversation),null,Modifier.fillMaxWidth().heightIn(max=160.dp).aspectRatio(2.5f).clip(RoundedCornerShape(28.dp)),contentScale=ContentScale.Crop)
+                Text("Your turn to talk", Modifier.padding(top = 16.dp), style = MaterialTheme.typography.headlineSmall)
+                Text("Tap Speak below, then Finish for the translation.", Modifier.padding(top = 8.dp))
+                Text(if (state.saveHistory) "Text history on · audio is not saved" else "History off · this session only", Modifier.padding(top = 12.dp), style = MaterialTheme.typography.bodySmall)
             }
         } else {
             LazyColumn(Modifier.weight(1f).fillMaxWidth(), state = list, verticalArrangement = Arrangement.spacedBy(12.dp), contentPadding = PaddingValues(vertical = 8.dp)) {
                 items(state.session.turns, key = { it.id }) { turn ->
-                    ElevatedCard(Modifier.fillMaxWidth()) {
+                    ElevatedCard(Modifier.fillMaxWidth().glassPanel(),colors=CardDefaults.elevatedCardColors(containerColor=Color.Transparent,contentColor=MaterialTheme.colorScheme.onSurface)) {
                         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             Text("${if (turn.speaker == 0) "Me" else "Them"} · ${LanguageCatalog.option(turn.source).englishName} → ${LanguageCatalog.option(turn.target).englishName}", style = MaterialTheme.typography.labelMedium)
                             if (turn.original.isNotBlank()) LanguageText(turn.original, turn.source, textSize - 2)
@@ -238,9 +251,9 @@ fun ConversationScreen(onModels: () -> Unit = {}, onCloud: () -> Unit = {}, onLa
             OutlinedTextField(typed, { typed = it }, label = { Text("What would you like to say?") }, modifier = Modifier.fillMaxWidth(), minLines = 3)
         }
     }, confirmButton = { TextButton(onClick = { controller.type(typedSpeaker, typed, config); typed = ""; typing = false }, enabled = typed.isNotBlank() && directionAllowed(if (typedSpeaker == 0) state.session.first else state.session.second, if (typedSpeaker == 0) state.session.second else state.session.first)) { Text("Translate") } }, dismissButton = { TextButton(onClick = { typing = false }) { Text("Cancel") } })
-    if (options) ModalBottomSheet(onDismissRequest = { options = false }, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
-        Column(Modifier.verticalScroll(optionsScroll).padding(20.dp).navigationBarsPadding(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(if (faceToFace) "Face-to-face settings" else "Conversation options", style = MaterialTheme.typography.titleLarge)
+    if (options) FeatureOptionsSheet(if (faceToFace) "Face-to-face settings" else "Conversation settings", { options = false }, optionsScroll) {
+            TextButton(onClick = { controller.newSession(); options = false }, enabled = !state.busy) { Text("New conversation") }
+            Text("Speech · ${model.label}", style = MaterialTheme.typography.bodySmall)
             OutlinedButton(onClick = { faceToFace = !faceToFace; options = false }, modifier = Modifier.fillMaxWidth()) {
                 Text(if (faceToFace) "Open conversation view" else "Open face-to-face view")
             }
@@ -248,7 +261,6 @@ fun ConversationScreen(onModels: () -> Unit = {}, onCloud: () -> Unit = {}, onLa
             if (faceToFace) {
                 TextButton(onClick = { voice.stop(); options = false; typing = true }) { Text("Type instead") }
                 TextButton(onClick = { options = false; history = true }) { Text("Saved conversations") }
-                TextButton(onClick = { controller.newSession(); options = false }) { Text("New conversation") }
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) { Text("Show original below translation", Modifier.weight(1f)); Switch(showOriginal, { showOriginal = it; prefs.edit().putBoolean("face_original", it).apply() }, modifier = Modifier.semantics { contentDescription = "Show original below translation" }) }
             }
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) { Text("Keep screen awake", Modifier.weight(1f)); Switch(keepAwake, { keepAwake = it; prefs.edit().putBoolean("keep_awake", it).apply() }, modifier = Modifier.semantics { contentDescription = "Keep conversation screen awake" }) }
@@ -256,7 +268,7 @@ fun ConversationScreen(onModels: () -> Unit = {}, onCloud: () -> Unit = {}, onLa
             Text(sourceChoices.note, style = MaterialTheme.typography.bodySmall)
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 TextButton(onClick = { options = false; onModels() }) { Text("Models") }
-                TextButton(onClick = { options = false; onCloud() }) { Text("Cloud connection") }
+                if (com.sal7one.transiber.byok.ByokPolicy.FEATURE_BYOK) TextButton(onClick = { options = false; onCloud() }) { Text("Cloud connection") }
                 TextButton(onClick = { controller.languages(state.session.second, state.session.first) }) { Text("Swap languages") }
             }
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) { Text("Read translations aloud", Modifier.weight(1f)); Switch(automaticSpeech, { automaticSpeech = it; prefs.edit().putBoolean("auto_speech", it).apply() }, modifier = Modifier.semantics { contentDescription = "Read translations aloud" }) }
@@ -268,10 +280,8 @@ fun ConversationScreen(onModels: () -> Unit = {}, onCloud: () -> Unit = {}, onLa
             Slider(textSize, { textSize = it }, modifier = Modifier.semantics { contentDescription = "Translation text size"; stateDescription = "${textSize.toInt()}" }, valueRange = 18f..40f, onValueChangeFinished = { prefs.edit().putFloat("text_size", textSize).apply() })
             TextButton(onClick = { title = state.session.title; rename = true; options = false }) { Text("Rename conversation") }
             TextButton(onClick = { share(state.session) }, enabled = state.session.turns.isNotEmpty()) { Text("Share conversation text") }
-        }
     }
-    if (translationSettings) ModalBottomSheet(onDismissRequest = { translationSettings = false }, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
-        Column(Modifier.verticalScroll(translationScroll).padding(20.dp).navigationBarsPadding()) {
+    if (translationSettings) FeatureOptionsSheet("Translator", { translationSettings = false }, translationScroll) {
             TranslatorChooser(ConversationTranslationSettings.selected(context),config.localTranslationModelId,
                 "Used by Conversation, Face to face and typed text.",state.session.first,state.session.second,
                 onModels={translationSettings=false;onModels()},onSelect={provider,model->scope.launch {
@@ -279,7 +289,6 @@ fun ConversationScreen(onModels: () -> Unit = {}, onCloud: () -> Unit = {}, onLa
                     catch(e: kotlinx.coroutines.CancellationException){throw e}
                     catch(e: Exception){voiceError=e.message ?: e.toString()}
                 }})
-        }
     }
     faceHistory?.let { side -> Dialog(onDismissRequest = { faceHistory = null }, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         val language = if (side == 0) state.session.first else state.session.second

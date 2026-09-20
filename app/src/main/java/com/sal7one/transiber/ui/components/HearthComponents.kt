@@ -1,5 +1,6 @@
 package com.sal7one.transiber.ui.components
 
+import com.sal7one.transiber.ui.theme.glassPanel
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -107,9 +108,9 @@ fun HearthCard(
     content: @Composable ColumnScope.() -> Unit,
 ) {
     Card(
-        modifier = modifier,
+        modifier = modifier.glassPanel(),
         shape = RoundedCornerShape(AppDesign.Dimens.RadiusLg),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        colors = CardDefaults.cardColors(containerColor = Color.Transparent, contentColor = MaterialTheme.colorScheme.onSurface),
         elevation = CardDefaults.cardElevation(defaultElevation = AppDesign.Dimens.ElevationSm),
     ) {
         Column(

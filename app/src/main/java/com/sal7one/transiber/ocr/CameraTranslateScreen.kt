@@ -1,6 +1,11 @@
 package com.sal7one.transiber.ocr
 
 import com.sal7one.transiber.settings.SettingsOcrLocalUi
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material.icons.filled.AutoStories
+import com.sal7one.transiber.ui.components.FeatureAction
+import com.sal7one.transiber.ui.components.FeatureOptionsSheet
 import android.Manifest
 import android.content.ClipData
 import android.content.ClipboardManager
@@ -123,27 +128,11 @@ internal fun CameraTranslateScreen(onModels: () -> Unit,onConnections: () -> Uni
         onDispose {lifecycle.lifecycle.removeObserver(observer);controller.close();voice.close()}
     }
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
-        ElevatedCard(Modifier.fillMaxWidth()) {
-            Column(Modifier.padding(16.dp),verticalArrangement=Arrangement.spacedBy(8.dp)) {
-                Text("Manga & books on screen",style=MaterialTheme.typography.titleMedium)
-                Text("Translate pages in your reader, or draw around one speech bubble.")
-                Button(onClick={
-                    controller.stop()
-                    scope.launch {
-                        controller.awaitStopped()
-                        prefs.edit().putString("profile",profileId).putString("source",source).putString("target",target).putString("provider",providerId).putBoolean("translate",translate).apply()
-                        context.startActivity(android.content.Intent(context,com.sal7one.transiber.reading.ReadingStartActivity::class.java))
-                    }
-                }){Text("Open reading overlay")}
-            }
-        }
         FlowRow(horizontalArrangement=Arrangement.spacedBy(8.dp),verticalArrangement=Arrangement.spacedBy(4.dp)) {
             InputChip(selected=false,onClick={picker="source"},enabled=!state.running,label={Text(LanguageCatalog.option(source).nativeName)},modifier=Modifier.semantics {contentDescription="Text language, ${LanguageCatalog.option(source).englishName}"})
             Text("→",Modifier.align(Alignment.CenterVertically))
             InputChip(selected=false,onClick={picker="target"},enabled=!state.running && translate,label={Text(LanguageCatalog.option(target).nativeName)},modifier=Modifier.semantics {contentDescription="Translate to, ${LanguageCatalog.option(target).englishName}"})
-            TextButton(onClick={settings=true},enabled=!state.running){Text("Settings")}
         }
-        TextButton(onClick={settings=true}) { Text(if(translate)"Translator · $providerLabel" else "Original text only · settings") }
         if(translate && provider != null)Text("Only recognized text is sent to ${provider.label}. Camera images stay on your phone.",style=MaterialTheme.typography.bodySmall)
         Box(Modifier.fillMaxWidth().height(280.dp).background(Color.Black),contentAlignment=Alignment.Center) {
             if(permission && frozen==null && !importing && sharedImage==null)CameraPreview(Modifier.fillMaxSize(),state.live && !state.loading,
@@ -161,14 +150,16 @@ internal fun CameraTranslateScreen(onModels: () -> Unit,onConnections: () -> Uni
             OutlinedButton(onClick={settings=true}){Text("Get OCR models")}
         }
         FlowRow(horizontalArrangement=Arrangement.spacedBy(8.dp),verticalArrangement=Arrangement.spacedBy(4.dp)) {
-            Button(onClick={frozen=null;begin(true)},enabled=profile.live&&ready&&permission&&!state.running&&!importing&&capture!=null){Text("Start live")}
-            Button(onClick={capture?.invoke()},enabled=frozen==null&&ready&&permission&&capture!=null&&!state.loading&&!state.closing&&!importing){Text(if(translate) "Capture & translate" else "Capture & read")}
-            OutlinedButton(onClick={imagePicker.launch(arrayOf("image/*"))},enabled=ready&&!state.loading&&!state.closing&&!importing){Text(if(importing)"Opening…" else "Import photo")}
+            if(frozen==null)Button(onClick={capture?.invoke()},modifier=Modifier.heightIn(min=56.dp),enabled=ready&&permission&&capture!=null&&!state.loading&&!state.closing&&!importing){Text(if(translate) "Capture & translate" else "Capture & read")}
+            if(frozen==null)OutlinedButton(onClick={imagePicker.launch(arrayOf("image/*"))},modifier=Modifier.heightIn(min=56.dp),enabled=ready&&!state.loading&&!state.closing&&!importing){Text(if(importing)"Opening…" else "Choose photo")}
+            if(frozen==null && profile.live)TextButton(onClick={begin(true)},enabled=ready&&permission&&!state.running&&!importing&&capture!=null){Text("Start live")}
+
             if(state.running)OutlinedButton(onClick={controller.stop()},enabled=!state.closing){Text(if(state.closing)"Stopping…" else "Stop")}
             if(frozen!=null)OutlinedButton(onClick={controller.stop();selectionImage=frozen},enabled=!state.loading&&!state.closing){Text("Draw text area")}
             if(frozen!=null && state.error!=null)OutlinedButton(onClick={frozen?.let(::recognizePhoto)},enabled=!state.loading&&!state.closing){Text("Retry")}
             if(frozen!=null)TextButton(onClick={controller.stop();frozen=null}){Text("Retake")}
         }
+        FeatureAction("Camera settings", Icons.Default.Tune, {settings=true}, detail=if(translate)providerLabel else "Original text only")
         if(state.loading || state.translating || state.closing)LinearProgressIndicator(Modifier.fillMaxWidth())
         Text(when{state.closing->"Releasing models…";state.loading->"Loading ${profile.label}…";state.translating->"Translating settled text…";state.live->"Live · OCR ${state.ocrMs} ms · hold steady";state.running->"Captured · OCR ${state.ocrMs} ms";else->"Ready · camera opens only on this page"},style=MaterialTheme.typography.bodySmall)
         (voiceError ?: state.error)?.let {Text(it,color=MaterialTheme.colorScheme.error,modifier=Modifier.semantics {liveRegion=LiveRegionMode.Polite})}
@@ -185,6 +176,16 @@ internal fun CameraTranslateScreen(onModels: () -> Unit,onConnections: () -> Uni
                 if(state.translation.isNotBlank())TextButton(onClick={context.getSystemService(ClipboardManager::class.java).setPrimaryClip(ClipData.newPlainText("Translation",state.translation))}){Text("Copy translation")}
             }
         }
+        FeatureAction("Screen & manga", Icons.Default.AutoStories, {
+
+                    controller.stop()
+                    scope.launch {
+                        controller.awaitStopped()
+                        prefs.edit().putString("profile",profileId).putString("source",source).putString("target",target).putString("provider",providerId).putBoolean("translate",translate).apply()
+                        context.startActivity(android.content.Intent(context,com.sal7one.transiber.reading.ReadingStartActivity::class.java))
+                    }
+
+        }, detail="Translate in another app")
     }
     selectionImage?.let { image -> DrawOcrRegion(image,onDismiss={selectionImage=null},onConfirm={crop->
         selectionImage=null
@@ -197,9 +198,7 @@ internal fun CameraTranslateScreen(onModels: () -> Unit,onConnections: () -> Uni
                 if(which=="source")"${profile.label} reads these scripts. This choice tells the translator the source language; it does not force the OCR decoder." else "$providerLabel · targets supported from ${LanguageCatalog.option(source).englishName}"),
             selected=if(which=="source")source else target,onSelect={if(which=="source")source=it else target=it;picker=null},onDismiss={picker=null})}
     }}
-    if(settings)ModalBottomSheet(onDismissRequest={settings=false},sheetState=rememberModalBottomSheetState(skipPartiallyExpanded=true)) {
-        Column(Modifier.verticalScroll(settingsScroll).padding(20.dp).navigationBarsPadding(),verticalArrangement=Arrangement.spacedBy(12.dp)) {
-            Text("Camera & reading settings",style=MaterialTheme.typography.titleLarge)
+    if(settings)FeatureOptionsSheet("Camera & reading settings", {settings=false}, settingsScroll) {
             OutlinedButton(onClick={voice.stop();settings=false;onVoices()}){Text("Voices & read aloud")}
             Row(verticalAlignment=Alignment.CenterVertically){Switch(checked=translate,onCheckedChange={translate=it},modifier=Modifier.semantics {contentDescription="Translate recognized text"});Text("Translate recognized text",Modifier.padding(start=8.dp))}
             TranslatorChooser(providerId,config.localTranslationModelId,"Used by Camera and the screen-reading overlay.",source,target,
@@ -211,6 +210,5 @@ internal fun CameraTranslateScreen(onModels: () -> Unit,onConnections: () -> Uni
             if(state.running || state.closing)Text("Stop recognition to change its translator.",style=MaterialTheme.typography.bodySmall)
             HorizontalDivider()
             SettingsOcrLocalUi(onDownloads={settings=false;onDownloads()},selected=profileId,onSelect={profileId=it;val p=OcrCatalog.profile(it);if(source !in p.languages)source=p.languages.first()})
-        }
     }
 }

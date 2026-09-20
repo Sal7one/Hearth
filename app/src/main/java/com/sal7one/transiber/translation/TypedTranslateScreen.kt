@@ -1,11 +1,18 @@
 package com.sal7one.transiber.translation
 
+import com.sal7one.transiber.ui.theme.glassPanel
+import androidx.compose.ui.graphics.Color
+import androidx.compose.foundation.shape.RoundedCornerShape
 import android.content.ClipData
 import android.content.ClipboardManager
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material.icons.filled.Clear
+import com.sal7one.transiber.ui.components.FeatureAction
+import com.sal7one.transiber.ui.components.FeatureOptionsSheet
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.CompareArrows
 import androidx.compose.material3.*
@@ -35,7 +42,8 @@ internal fun TypedTranslateScreen(onModels: ()->Unit,onConnections: ()->Unit,onV
     var target by rememberSaveable {mutableStateOf(prefs.getString("target","ar")!!)}
     var text by rememberSaveable {mutableStateOf("")};var automatic by rememberSaveable {mutableStateOf(true)}
     LaunchedEffect(sharedText) {sharedText?.let {text=it;automatic=false;onShareConsumed()}}
-    var picker by remember {mutableStateOf<String?>(null)};var options by remember {mutableStateOf(false)}
+    var picker by remember {mutableStateOf<String?>(null)};var options by rememberSaveable {mutableStateOf(false)}
+    val optionsScroll=rememberScrollState()
     var voiceError by remember {mutableStateOf<String?>(null)};var speaking by remember {mutableStateOf(false)}
     val config by remember {CaptionConfigStore.config(context)}.collectAsState(initial=CaptionOverlayConfig())
     val connectionRevision by ConversationTranslationSettings.revision.collectAsState()
@@ -58,24 +66,19 @@ internal fun TypedTranslateScreen(onModels: ()->Unit,onConnections: ()->Unit,onV
             InputChip(false,{picker="source"},label={Text(LanguageCatalog.option(source).nativeName)},modifier=Modifier.semantics {contentDescription="Source language, ${LanguageCatalog.option(source).englishName}"})
             IconButton(onClick={val old=source;source=target;target=old;text=state.output.takeIf(String::isNotBlank) ?: text}) {Icon(Icons.AutoMirrored.Filled.CompareArrows,"Swap languages")}
             InputChip(false,{picker="target"},label={Text(LanguageCatalog.option(target).nativeName)},modifier=Modifier.semantics {contentDescription="Translation language, ${LanguageCatalog.option(target).englishName}"})
-            TextButton(onClick={options=true}){Text("Options")}
         }
-        TranslatorChooser(ConversationTranslationSettings.selected(context),config.localTranslationModelId,
-            "Used by typed text, Conversation and Face to face.",source,target,onModels=onModels,
-            onSelect={provider,model->scope.launch {
-                try { CaptionConfigStore.update(context){it.copy(localTranslationModelId=model)};ConversationTranslationSettings.select(context,provider) }
-                catch(e: kotlinx.coroutines.CancellationException){throw e}
-                catch(e: Exception){controller.error(e)}
-            }})
         if(ConversationTranslationSettings.provider(ConversationTranslationSettings.selected(context))!=null)
             Text(if(automatic)"Text is sent to $label after you pause typing." else "Text is sent to $label when you tap Translate.",style=MaterialTheme.typography.bodySmall)
-        OutlinedTextField(text,{text=it.take(3000)},label={Text("Type to translate")},minLines=4,maxLines=10,modifier=Modifier.fillMaxWidth().padding(top=2.dp),supportingText={Text("${text.length}/3000")})
+        TextField(text,{text=it.take(3000)},label={Text("Enter text")},minLines=4,maxLines=10,shape=RoundedCornerShape(24.dp),modifier=Modifier.fillMaxWidth().padding(top=2.dp).glassPanel(),
+            colors=TextFieldDefaults.colors(focusedContainerColor=Color.Transparent,unfocusedContainerColor=Color.Transparent,
+                focusedIndicatorColor=Color.Transparent,unfocusedIndicatorColor=Color.Transparent),
+            trailingIcon={if(text.isNotBlank())IconButton(onClick={text="";controller.clear();voice.stop()}){Icon(Icons.Default.Clear,"Clear text")}},
+            supportingText={if(text.length>2700)Text("${text.length}/3000")})
         FlowRow(horizontalArrangement=Arrangement.spacedBy(8.dp)) {
-            Button(onClick={update(true)},enabled=text.isNotBlank()){Text("Translate")}
+            Button(onClick={update(true)},enabled=text.isNotBlank(),modifier=Modifier.heightIn(min=52.dp)){Text("Translate")}
             ReadAloudButtons("original",text.isNotBlank(),{system->voiceError=null;voice.speak(text,source,if(system)com.sal7one.transiber.voice.VoicePlaybackMode.SYSTEM else com.sal7one.transiber.voice.VoicePlaybackMode.CUSTOM)},onVoices)
-            TextButton(onClick={text="";controller.clear();voice.stop()}){Text("Clear")}
         }
-        Card(Modifier.fillMaxWidth()) {Column(Modifier.padding(16.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
+        Card(Modifier.fillMaxWidth().glassPanel(), colors=CardDefaults.cardColors(containerColor=Color.Transparent,contentColor=MaterialTheme.colorScheme.onSurface)) {Column(Modifier.padding(16.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
             Text("Translation",style=MaterialTheme.typography.titleMedium)
             if(state.busy)LinearProgressIndicator(Modifier.fillMaxWidth())
             SelectionContainer {Text(state.output.ifBlank {if(state.busy)"Translating…" else "Your translation appears here"},style=MaterialTheme.typography.headlineSmall)}
@@ -84,6 +87,7 @@ internal fun TypedTranslateScreen(onModels: ()->Unit,onConnections: ()->Unit,onV
                 TextButton(onClick={context.getSystemService(ClipboardManager::class.java).setPrimaryClip(ClipData.newPlainText("Translation",state.output))}){Text("Copy")}
             }
         }}
+        FeatureAction("Translation settings", Icons.Default.Tune, { options=true }, detail=label)
         if(speaking)OutlinedButton(onClick=voice::stop){Text("Stop speech")}
         (voiceError ?: state.error)?.let {Text(it,color=MaterialTheme.colorScheme.error,modifier=Modifier.semantics {liveRegion=LiveRegionMode.Polite})}
     }
@@ -93,14 +97,19 @@ internal fun TypedTranslateScreen(onModels: ()->Unit,onConnections: ()->Unit,onV
             choices=CaptionLanguageChoices(if(which=="source")languages.filter {a->languages.any {b->ConversationTranslationSettings.supports(context,config.localTranslationModelId,a,b)}}.toSet() else languages.filter {ConversationTranslationSettings.supports(context,config.localTranslationModelId,source,it)}.toSet(),"$label · choose an explicit supported language"),
             onSelect={if(which=="source")source=it else target=it;picker=null},onDismiss={picker=null})}
     }}
-    if(options)ModalBottomSheet(onDismissRequest={options=false}) {
-        Column(Modifier.padding(20.dp).navigationBarsPadding(),verticalArrangement=Arrangement.spacedBy(12.dp)) {
-            Text("Translation & speech",style=MaterialTheme.typography.titleLarge)
-            Row {Switch(automatic,{automatic=it},modifier=Modifier.semantics {contentDescription="Translate as I type"});Text("Translate as I type",Modifier.padding(12.dp))}
-            Text("Choose a translator directly above the text. This choice is shared with Conversation and Face to face. Voice settings are shared across Hearth.",style=MaterialTheme.typography.bodySmall)
-            OutlinedButton(onClick={options=false;onModels()}){Text("Local translation models")}
-            if(com.sal7one.transiber.byok.ByokPolicy.FEATURE_BYOK)OutlinedButton(onClick={options=false;onConnections()}){Text("Translation connections")}
-            OutlinedButton(onClick={options=false;onVoices()}){Text("Voices & read aloud")}
+    if(options)FeatureOptionsSheet("Translation settings", {options=false}, optionsScroll) {
+        TranslatorChooser(ConversationTranslationSettings.selected(context),config.localTranslationModelId,
+            "Used by typed text, Conversation and Face to face.",source,target,onModels={options=false;onModels()},
+            onSelect={provider,model->scope.launch {
+                try { CaptionConfigStore.update(context){it.copy(localTranslationModelId=model)};ConversationTranslationSettings.select(context,provider) }
+                catch(e: kotlinx.coroutines.CancellationException){throw e}
+                catch(e: Exception){controller.error(e)}
+            }})
+        Row(verticalAlignment=androidx.compose.ui.Alignment.CenterVertically) {
+            Text("Translate as I type",Modifier.weight(1f))
+            Switch(automatic,{automatic=it},modifier=Modifier.semantics {contentDescription="Translate as I type"})
         }
+        OutlinedButton(onClick={options=false;onVoices()},modifier=Modifier.fillMaxWidth()){Text("Voices & read aloud")}
+        if(com.sal7one.transiber.byok.ByokPolicy.FEATURE_BYOK)TextButton(onClick={options=false;onConnections()}){Text("Manage cloud connections")}
     }
 }

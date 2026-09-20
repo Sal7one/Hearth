@@ -29,4 +29,3 @@ Use case: stylized-concept. Asset: original Android feature card cover art, squa
 ### screen
 
 Use case: stylized-concept. Asset: original Android feature card cover art, square 1024x1024. Create a polished contemporary editorial 3D still life, tactile ceramic and frosted glass materials, soft studio lighting, beautifully controlled shadows and depth, sophisticated minimal composition. An open illustrated book with original abstract monochrome comic panels, a modern slim smartphone hovering beside it and a small glossy sky-blue speech bubble over the page. Soft sky blue and midnight blue environment. One coherent full-bleed scene, main subjects centered with generous breathing space, recognizable at mobile card size. No lettering, numbers, logos, watermarks, UI buttons, or border. No vector-icon look, no flat clip art, no neon cyberpunk. This is an illustration for a functional translation app, not an app screenshot.
-
