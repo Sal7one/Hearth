@@ -20,13 +20,16 @@ class MinimalPaletteTest {
         assertEquals(Color.Black, accentPalette(AccentPreset.INK).darkBackground)
     }
 
-    @Test fun savedClassicThemesRemainAvailableAndDefaultsAreSimple() {
+    @Test fun savedThemesRemainAvailableAndDefaultsAreInkDark() {
         assertEquals(AccentPreset.OCEAN, AccentPreset.fromStored("OCEAN"))
-        assertEquals(AccentPreset.CLEAN, AccentPreset.fromStored(null))
-        assertEquals(AccentPreset.CLEAN, AccentPreset.fromStored("unknown"))
+        assertEquals(AccentPreset.INK, AccentPreset.fromStored(null))
+        assertEquals(AccentPreset.INK, AccentPreset.fromStored("unknown"))
         assertEquals(NavigationLayout.SIMPLE, NavigationLayout.fromStored(null))
         assertEquals(NavigationLayout.TABS, NavigationLayout.fromStored("TABS"))
-        assertEquals(ThemeMode.SYSTEM, ThemeMode.fromStored(null))
+        assertEquals(ThemeMode.DARK, ThemeMode.fromStored(null))
+        assertEquals(ThemeMode.DARK, ThemeMode.fromStored("unknown"))
+        for (preset in AccentPreset.entries) assertEquals(preset, AccentPreset.fromStored(preset.name))
+        for (mode in ThemeMode.entries) assertEquals(mode, ThemeMode.fromStored(mode.name))
     }
 
     private fun contrast(a: Color, b: Color): Float {

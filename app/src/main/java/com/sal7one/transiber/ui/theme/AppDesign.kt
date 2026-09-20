@@ -71,7 +71,7 @@ enum class ThemeMode(val label: String) {
     DARK("Dark");
 
     companion object {
-        fun fromStored(value: String?): ThemeMode = entries.firstOrNull { it.name == value } ?: SYSTEM
+        fun fromStored(value: String?): ThemeMode = entries.firstOrNull { it.name == value } ?: DARK
     }
 }
 
@@ -86,7 +86,7 @@ enum class AccentPreset(val label: String, val description: String) {
     AMETHYST("Amethyst", "Plum, rose and mineral grey");
 
     companion object {
-        fun fromStored(value: String?): AccentPreset = entries.firstOrNull { it.name == value } ?: CLEAN
+        fun fromStored(value: String?): AccentPreset = entries.firstOrNull { it.name == value } ?: INK
     }
 }
 
@@ -324,8 +324,8 @@ private fun semanticColors(palette: AccentPalette, dark: Boolean) = HearthSemant
     ),
 )
 
-val AppLightColorScheme = lightScheme(accentPalette(AccentPreset.CLEAN))
-val AppDarkColorScheme = darkScheme(accentPalette(AccentPreset.CLEAN))
+val AppLightColorScheme = lightScheme(accentPalette(AccentPreset.INK))
+val AppDarkColorScheme = darkScheme(accentPalette(AccentPreset.INK))
 
 @Composable
 fun HearthTheme(

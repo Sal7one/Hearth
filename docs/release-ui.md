@@ -1,6 +1,6 @@
 # Hearth release UI
 
-Appearance offers System, Light and Dark in Settings. System is the first-install default.
+Appearance offers System, Light and Dark in Settings. Ink with Dark is the first-install default. Existing explicit appearance choices are preserved.
 The setting is saved in the app's private preferences and updates open app windows
 through preference listeners. It does not change the bubble's independent opacity,
 background or text controls.

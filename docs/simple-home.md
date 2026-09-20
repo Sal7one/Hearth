@@ -40,6 +40,10 @@ and Android permissions are separate from those navigation tap counts.
 
 ## Appearance
 
+New installations default to **Ink + Dark**, with Color & blur enabled. Existing
+explicit theme/brightness selections are preserved; missing or unknown preferences
+fall back to Ink and Dark. System and Light remain selectable.
+
 Clean, Ink and Sky are minimal palettes with sans-serif headings. Organic · classic,
 Ember, Forest and Amethyst preserve the previous palettes and typography. Every
 palette supports System/Light/Dark. Themes, brightness and navigation choice persist

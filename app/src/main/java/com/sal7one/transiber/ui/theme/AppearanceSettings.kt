@@ -64,7 +64,7 @@ fun rememberNavigationLayout(): NavigationLayout = NavigationLayout.fromStored(r
 @Composable
 fun rememberThemeMode(): ThemeMode = ThemeMode.fromStored(rememberAppearanceValue(THEME_KEY))
 
-/** Compact setup control. System is the default, including unknown older values. */
+/** Compact setup control. Ink and Dark are the defaults; explicit saved choices remain unchanged. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun AppearanceSettings(modifier: Modifier = Modifier) {

@@ -26,7 +26,7 @@ layout remains available in Appearance & navigation.
   artwork carry into the feature screens, with Minimal kept as a backup style.
   Feature screens put their main action first,
   with model, voice and timing choices in closeable settings sheets. Choose Clean, Ink, Sky or the original
-  Organic theme, with System/Light/Dark modes. See [navigation and themes](docs/simple-home.md).
+  Organic theme, with System/Light/Dark modes. New installs default to Ink + Dark. See [navigation and themes](docs/simple-home.md).
 
 - **Start from the notification shade.** Add Live captions and Screen translation
   Quick Settings tiles. Hearth checks setup before requesting capture; missing
