@@ -60,4 +60,6 @@
     <string name="phase_finishing" formatted="false">"جارٍ الإنهاء"</string>
     <string name="phase_translating" formatted="false">"جارٍ الترجمة"</string>
     <string name="phase_speaking" formatted="false">"جارٍ الكلام"</string>
+    <string name="integrated_translation_provider">"%1$s · ترجمة سحابية"</string>
+    <string name="integrated_translation_detail">"يمكن لـ %1$s الترجمة مباشرة عبر اتصال الكلام هذا دون نموذج ترجمة محلي. اختر مترجمًا منفصلًا أدناه فقط إذا أردت استخدامه بدلًا منه."</string>
 </resources>

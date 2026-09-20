@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.22.1 — 2026-09-20
+
+- Selecting OpenAI or Soniox streaming now selects its integrated cloud translation route instead of retaining an old local/text translator override.
+- Show the integrated provider by name in caption translation settings, with an explanation that no local translator is required.
+- Preserve installed model choices and allow an explicitly selected separate translator afterward; ASR-only cloud connections keep their separate translation stage.
+
 ## 0.22.0 — 2026-09-20
 
 - Add English, Arabic and Simplified Chinese interface resources across Home, setup, settings, captions, conversation, text/camera/reading translation, models, downloads and voice controls.

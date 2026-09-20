@@ -1,3 +1,12 @@
+## 0.22.1 — cloud selection and translator identity
+
+- [x] Trace local-model labels to a retained text-translation override after Cloud engine selection.
+- [x] Share explicit engine-selection behavior across advanced captions and Cloud speech settings.
+- [x] Default integrated OpenAI/Soniox connections to their own translator, including CC → Translate.
+- [x] Label the integrated provider in all three app locales; retain optional deliberate translator overrides.
+- [x] Regression coverage for persistence, language picker identity, CC transitions and ASR-only connections.
+- Validation and delivery: [v43](validation-v43.md).
+
 ## 0.22.0 — app interface languages
 
 - [x] Extract shared UI copy into Android resources with English, Arabic and Simplified Chinese translations.

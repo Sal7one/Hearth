@@ -223,7 +223,7 @@ fun CaptionScreen(
                     OutlinedButton(onClick = {
                         CloudConfigStore.setSttMode(context, CloudConfigStore.SttMode.STREAMING_OPENAI)
                             cloudMode = CloudConfigStore.SttMode.STREAMING_OPENAI
-                        update { it.copy(engine = CaptionEngineChoice.CLOUD, mode = CaptionMode.CAPTIONS,
+                        update { it.selectCaptionEngine(CaptionEngineChoice.CLOUD, CloudConfigStore.SttMode.STREAMING_OPENAI).copy(mode = CaptionMode.CAPTIONS,
                             source = CaptionSource.PLAYBACK_CAPTURE, tapThrough = false, historyLines = maxOf(it.historyLines, CaptionReading.DEFAULT_PREVIOUS_LINES)) }
                     }) { Text(uiText(UiR.string.ui_live_cc_a34a0)) }
                 }
@@ -287,7 +287,7 @@ fun CaptionScreen(
                     .forEach { engine ->
                         FilterChip(
                             selected = config.effectiveEngine == engine,
-                            onClick = { update { it.copy(engine = engine, modelId = "", streamLanguage = if (engine.speechBackend != null) "auto" else it.streamLanguage) } },
+                            onClick = { update { it.selectCaptionEngine(engine, cloudMode) } },
                             label = { Text(uiText.label(engine)) },
                         )
                     }

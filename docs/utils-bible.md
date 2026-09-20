@@ -289,3 +289,14 @@ English diagnostic representation for existing host consumers. `CaptionLanguages
 its production consumer. `LocalizationResourcesTest` checks all locale keys, blanks,
 format arguments and the nested, context-free diagnostic representation. Phone journeys
 exercise `AppLanguageSettings`, persistence and RTL. See [localization](localization.md).
+
+
+## 0.22.1 — explicit cloud selection
+
+`selectCaptionEngine` is consumed by advanced caption engine chips and the shared
+Cloud speech connection picker. It clears a previous text translator override only
+when the user explicitly selects an integrated OpenAI/Soniox connection. It keeps
+remembered local weights and permits a later explicit override. `integratedCaptionProvider`
+is also the caption translator chooser's provider label source. `CaptionCloudSelectionTest`
+covers stored round trips, actual route/picker agreement, CC → Translate, deliberate
+separate translators and ASR-only connections. Opening a screen does not apply a preset.

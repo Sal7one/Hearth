@@ -60,4 +60,6 @@
     <string name="phase_finishing" formatted="false">"Finishing"</string>
     <string name="phase_translating" formatted="false">"Translating"</string>
     <string name="phase_speaking" formatted="false">"Speaking"</string>
+    <string name="integrated_translation_provider">"%1$s · cloud translation"</string>
+    <string name="integrated_translation_detail">"%1$s can translate directly using this speech connection. No local translation model is needed. Select a separate translator below only if you want to override it."</string>
 </resources>

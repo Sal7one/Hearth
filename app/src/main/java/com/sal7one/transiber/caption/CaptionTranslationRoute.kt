@@ -33,3 +33,23 @@ internal fun captionTranslationRoute(saved: CaptionOverlayConfig, cloudMode: Stt
 /** Use the source validated while loading the actual model, not a model-less re-evaluation. */
 internal fun captionTranslationSource(resolved: String, detected: String?): String? =
     resolved.takeUnless { it in setOf("auto", "model", "und", "mul", "") } ?: detected
+
+/** The integrated provider offered by this speech connection, regardless of an override. */
+internal fun integratedCaptionProvider(engine: CaptionEngineChoice, mode: SttMode): String? =
+    if (engine != CaptionEngineChoice.CLOUD) null else when (mode) {
+        SttMode.STREAMING_OPENAI -> "OpenAI"
+        SttMode.STREAMING_SONIOX -> "Soniox"
+        else -> null
+    }
+
+/** Explicit engine selection chooses its default route; merely opening settings never does.
+ * Saved weights remain installed/remembered. A translator chosen afterwards still overrides.
+ */
+internal fun CaptionOverlayConfig.selectCaptionEngine(next: CaptionEngineChoice, mode: SttMode): CaptionOverlayConfig {
+    val integrated = integratedCaptionProvider(next, mode) != null
+    return copy(engine = next, modelId = if (engine == next) modelId else "",
+        streamLanguage = if (integrated || next.speechBackend != null) "auto" else streamLanguage,
+        textTranslationProviderId = if (integrated) "" else textTranslationProviderId,
+        localTranslationEnabled = if (integrated) false else localTranslationEnabled)
+        .withCaptionMode(this.mode)
+}

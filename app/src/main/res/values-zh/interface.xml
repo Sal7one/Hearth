@@ -60,4 +60,6 @@
     <string name="phase_finishing" formatted="false">"正在结束"</string>
     <string name="phase_translating" formatted="false">"正在翻译"</string>
     <string name="phase_speaking" formatted="false">"正在说话"</string>
+    <string name="integrated_translation_provider">"%1$s · 云端翻译"</string>
+    <string name="integrated_translation_detail">"%1$s 可通过此语音连接直接翻译，无需本地翻译模型。仅在需要替换此功能时，选择下方的独立翻译引擎。"</string>
 </resources>

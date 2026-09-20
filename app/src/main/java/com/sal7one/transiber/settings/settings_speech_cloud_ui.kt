@@ -4,6 +4,7 @@ import com.sal7one.transiber.R as UiR
 import com.sal7one.transiber.i18n.*
 
 import com.sal7one.transiber.byok.*
+import com.sal7one.transiber.caption.*
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -51,6 +52,8 @@ fun SettingsSpeechCloudUi(onStoredChange: (Boolean) -> Unit = {}, onModeChange: 
 
     if (!ByokPolicy.FEATURE_BYOK) return
     val context = LocalContext.current
+    val selectionScope = androidx.compose.runtime.rememberCoroutineScope()
+    var selectingMode by remember { mutableStateOf(false) }
     var keyDraft by remember { mutableStateOf("") }
     var keyStored by remember { mutableStateOf(ApiKeyStore.hasOpenAiKey(context)) }
     var keyStoreError by remember { mutableStateOf(ApiKeyStore.lastFailure) }
@@ -95,10 +98,20 @@ fun SettingsSpeechCloudUi(onStoredChange: (Boolean) -> Unit = {}, onModeChange: 
         CloudConfigStore.SttMode.entries.forEach { mode ->
             androidx.compose.material3.FilterChip(
                 selected = currentSttMode == mode,
+                enabled = !selectingMode,
                 onClick = {
-                    CloudConfigStore.setSttMode(context, mode)
-                    currentSttMode = mode
-                    onModeChange(mode)
+                    selectingMode = true
+                    selectionScope.launch {
+                        try {
+                            CaptionConfigStore.update(context) { it.selectCaptionEngine(CaptionEngineChoice.CLOUD, mode) }
+                            CloudConfigStore.setSttMode(context, mode)
+                            currentSttMode = mode
+                            onModeChange(mode)
+                            keyStoreError = null
+                        } catch (e: kotlinx.coroutines.CancellationException) { throw e }
+                        catch (e: Exception) { keyStoreError = e.message ?: e.toString() }
+                        finally { selectingMode = false }
+                    }
                 },
                 label = { Text(uiText.label(mode)) },
             )
