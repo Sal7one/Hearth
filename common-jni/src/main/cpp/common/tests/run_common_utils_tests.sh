@@ -27,7 +27,7 @@ command -v "${CXX_BIN}" >/dev/null 2>&1 || die "C++ compiler not found (set CXX=
 BUILD_DIR="${BUILD_DIR:-$(mktemp -d)}"
 trap 'if [ "${KEEP:-0}" = "1" ]; then echo "build dir: ${BUILD_DIR}"; else rm -rf "${BUILD_DIR}"; fi' EXIT
 
-TESTS=(cancel_token pipe_progress job_future json_options pcm_buffer_range)
+TESTS=(cancel_token pipe_progress job_future json_options pcm_buffer_range lease_registry)
 
 OVERALL=0
 for name in "${TESTS[@]}"; do
@@ -35,7 +35,7 @@ for name in "${TESTS[@]}"; do
     BIN="${BUILD_DIR}/${name}_test"
     [ -f "${SRC}" ] || die "test source not found: ${SRC}"
     log "compiling ${name}"
-    "${CXX_BIN}" -std=c++17 -O1 -Wall -Wextra \
+    "${CXX_BIN}" -std=c++17 -O1 -Wall -Wextra -fsanitize=address,undefined \
         -I"${COMMON_DIR}" \
         "${SRC}" "${COMMON_DIR}/json_utils.cpp" "${COMMON_DIR}/engine_interface.cpp" \
         -pthread -o "${BIN}"

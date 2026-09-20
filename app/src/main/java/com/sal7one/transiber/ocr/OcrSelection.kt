@@ -7,7 +7,9 @@ import com.sal7one.transiber.translation.TranslationOptions
 internal data class OcrSelection(
     val profileId: String = "latin", val source: String = "en", val target: String = "ar",
     val providerId: String = "local", val translate: Boolean = true,
+    val localModelId: String? = null,
 ) {
+    fun translationModel(fallback: String): String = localModelId ?: fallback
     val profile get() = OcrCatalog.profile(profileId)
     fun withProfile(id: String): OcrSelection {
         val next = OcrCatalog.profile(id)

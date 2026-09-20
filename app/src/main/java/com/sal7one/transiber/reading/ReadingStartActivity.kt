@@ -70,10 +70,11 @@ class ReadingStartActivity : AppCompatActivity() {
         val optionsScroll=rememberScrollState()
         val config by remember {CaptionConfigStore.config(this)}.collectAsState(initial=CaptionOverlayConfig())
         val revision by ConversationTranslationSettings.revision.collectAsState()
+        val localModelId=selection.translationModel(config.localTranslationModelId)
         val provider=selection.providerId
         val cloud=remember(provider,revision,currentSetup) {ConversationTranslationSettings.provider(provider)?.let {ConversationTranslationSettings.capabilities(this,it)}}
-        val targets=ocrTranslationTargets(selection,config.localTranslationModelId,cloud,ByokPolicy.FEATURE_BYOK)
-        val translator=ConversationTranslationSettings.provider(provider)?.label ?: TranslationOptions.label(config.localTranslationModelId)
+        val targets=ocrTranslationTargets(selection,localModelId,cloud,ByokPolicy.FEATURE_BYOK)
+        val translator=ConversationTranslationSettings.provider(provider)?.label ?: TranslationOptions.label(localModelId)
         val profile=selection.profile
         var models by rememberSaveable {mutableStateOf(false)}
         val modelsScroll=rememberScrollState()
@@ -82,11 +83,25 @@ class ReadingStartActivity : AppCompatActivity() {
         var settle by rememberSaveable {mutableFloatStateOf(prefs.getLong("settle",500).toFloat())}
         var scan by rememberSaveable {mutableFloatStateOf(prefs.getLong("scan",250).toFloat())}
         var error by remember {mutableStateOf<String?>(null)}
+        var starting by remember {mutableStateOf(false)}
         val projection=rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {result->
             if(result.resultCode==Activity.RESULT_OK && result.data!=null) {
-                CaptionCaptureService.stop(this)
-                androidx.core.content.ContextCompat.startForegroundService(this,Intent(this,ReadingOverlayService::class.java).putExtra("projection",result.data))
-                finish()
+                if(starting)return@rememberLauncherForActivityResult
+                starting=true;error=null
+                scope.launch {
+                    try {
+                        CaptionCaptureService.stop(this@ReadingStartActivity)
+                        // Stop unpublishes the overlay before its native model cleanup finishes.
+                        com.sal7one.transiber.runtime.LocalWorkGate.awaitIdle()
+                        androidx.core.content.ContextCompat.startForegroundService(this@ReadingStartActivity,
+                            Intent(this@ReadingStartActivity,ReadingOverlayService::class.java).putExtra("projection",result.data))
+                        finish()
+                    } catch(e: kotlinx.coroutines.TimeoutCancellationException) {
+                        error=uiText(UiR.string.pipeline_cleanup_timeout)
+                    } catch(e: kotlinx.coroutines.CancellationException) { throw e }
+                    catch(e: Exception) { error=e.message ?: e.toString() }
+                    finally { starting=false }
+                }
             } else error=uiText(UiR.string.ui_screen_sharing_was_cancelled_tap_start_reading_when_ready_b7b72)
         }
         fun launch() {
@@ -123,10 +138,14 @@ class ReadingStartActivity : AppCompatActivity() {
                     if(profile.engine=="manga")Text(uiText(UiR.string.ui_manga_ocr_needs_a_drawn_area_around_one_speech_bubble_214c9),style=MaterialTheme.typography.bodySmall)
                     Text(uiText(UiR.string.ui_images_stay_on_this_phone_cloud_translation_sends_recognized_text_1cbaa),style=MaterialTheme.typography.bodySmall)
                     Text(uiText(UiR.string.ui_starting_screen_translation_stops_live_audio_captions_17e29),style=MaterialTheme.typography.bodySmall)
+                    if(starting) {
+                        LinearProgressIndicator(Modifier.fillMaxWidth())
+                        Text(uiText(UiR.string.pipeline_waiting_cleanup))
+                    }
                     error?.let {Text(it,color=MaterialTheme.colorScheme.error)}
                 }
                 Surface(shadowElevation=8.dp) {
-                    Button(onClick={
+                    Button(enabled=!starting,onClick={
                         if(!OcrModels(File(filesDir,"ocr-models")).ready(profile)) {error=uiText(UiR.string.ui_install_1_s_to_read_this_language_70476, uiText.label(profile));models=true}
                         else if(selection.translate && selection.target !in targets) {error=uiText(UiR.string.ui_choose_a_supported_translation_destination_or_translator_24a0b);options=true}
                         else if(Build.VERSION.SDK_INT>=33 && checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS)!=android.content.pm.PackageManager.PERMISSION_GRANTED)notifications.launch(android.Manifest.permission.POST_NOTIFICATIONS)
@@ -142,11 +161,10 @@ class ReadingStartActivity : AppCompatActivity() {
                 onDownloads={startActivity(Intent(this@ReadingStartActivity,com.sal7one.transiber.MainActivity::class.java).putExtra("page",2).putExtra("returnToReading",true))})
         }
         if(options)FeatureOptionsSheet(uiText(UiR.string.ui_reading_settings_8195d), {options=false}, optionsScroll) {
-            TranslatorChooser(provider,config.localTranslationModelId,"Used by Camera and the reading overlay.",selection.source,selection.target,
+            TranslatorChooser(provider,localModelId,"Used by Camera and the reading overlay.",selection.source,selection.target,
                 onModels={getSharedPreferences("translation-browser",0).edit().putBoolean("open",true).apply();startActivity(Intent(this@ReadingStartActivity,com.sal7one.transiber.MainActivity::class.java).putExtra("page",1).putExtra("returnToReading",true))},
                 onSelect={id,model->scope.launch {try {
-                    CaptionConfigStore.update(this@ReadingStartActivity){it.copy(localTranslationModelId=model)}
-                    selectionStore.update {it.copy(providerId=id)};error=null
+                    selectionStore.update {it.copy(providerId=id,localModelId=model)};error=null
                 } catch(e: kotlinx.coroutines.CancellationException){throw e}
                 catch(e: Exception){error=e.message ?: e.toString()} }})
             if(mode!="manual") {

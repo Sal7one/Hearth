@@ -2,4 +2,6 @@
     <string name="app_name">Hearth</string>
     <string name="tile_captions">Live captions</string>
     <string name="tile_reading">Screen translation</string>
+    <string name="pipeline_waiting_cleanup">Finishing the previous session…</string>
+    <string name="pipeline_cleanup_timeout">Previous models are still releasing. Wait for cleanup, then try again.</string>
 </resources>

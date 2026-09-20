@@ -111,9 +111,10 @@ internal class ConversationController(private val context: Context) : AutoClosea
         val source = retry?.source ?: if (speaker == 0) session.first else session.second
         val target = retry?.target ?: if (speaker == 0) session.second else session.first
         if (source == target) { reportError("Choose two different languages."); return }
-        val translationRoute = try { ConversationTranslationSettings.snapshot(context, config.localTranslationModelId) }
+        val localModelId = ConversationTranslationSettings.localModel(context, config.localTranslationModelId)
+        val translationRoute = try { ConversationTranslationSettings.snapshot(context, localModelId) }
             catch (e: Exception) { reportError(e.message ?: e.toString()); return }
-        if (!ConversationTranslationSettings.supports(context, config.localTranslationModelId, source, target)) {
+        if (!ConversationTranslationSettings.supports(context, localModelId, source, target)) {
             reportError("${translationRoute.label} does not support $source → $target. Check Translation settings."); return
         }
         val route = "${config.engine.label} / ${config.modelId} → ${translationRoute.label}"

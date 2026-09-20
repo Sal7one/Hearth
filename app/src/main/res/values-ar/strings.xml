@@ -2,4 +2,6 @@
 <string name="app_name">Hearth</string>
 <string name="tile_captions">النص المباشر</string>
 <string name="tile_reading">ترجمة الشاشة</string>
+    <string name="pipeline_waiting_cleanup">جارٍ إنهاء الجلسة السابقة…</string>
+    <string name="pipeline_cleanup_timeout">لا يزال تحرير النماذج السابقة جاريًا. انتظر حتى يكتمل، ثم حاول مجددًا.</string>
 </resources>

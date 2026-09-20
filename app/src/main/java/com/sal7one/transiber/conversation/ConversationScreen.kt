@@ -71,8 +71,9 @@ fun ConversationScreen(onModels: () -> Unit = {}, onCloud: () -> Unit = {}, onLa
     val sourceChoices = CaptionLanguages.source(config.copy(mode = CaptionMode.CAPTIONS), CloudConfigStore.sttMode(context), model)
     val recognitionCodes = sourceChoices.codes - setOf("auto", "model")
     val translationRevision by ConversationTranslationSettings.revision.collectAsState()
-    val translationCodes = remember(translationRevision, config.localTranslationModelId) { ConversationTranslationSettings.languages(context, config.localTranslationModelId) }
-    val translatorLabel = remember(translationRevision, config.localTranslationModelId) { ConversationTranslationSettings.label(context, config.localTranslationModelId) }
+    val localModelId = remember(translationRevision, config.localTranslationModelId) { ConversationTranslationSettings.localModel(context, config.localTranslationModelId) }
+    val translationCodes = remember(translationRevision, localModelId) { ConversationTranslationSettings.languages(context, localModelId) }
+    val translatorLabel = remember(translationRevision, localModelId) { ConversationTranslationSettings.label(context, localModelId) }
     val codes = (translationCodes + recognitionCodes)
     val languageChoices = CaptionLanguageChoices(codes,
         uiText(UiR.string.ui_choose_the_languages_you_and_the_other_person_use_speak_is_availa_164dc, uiText.note(sourceChoices)))
@@ -115,7 +116,7 @@ fun ConversationScreen(onModels: () -> Unit = {}, onCloud: () -> Unit = {}, onLa
     var rename by rememberSaveable { mutableStateOf(false) }
     var title by rememberSaveable { mutableStateOf("") }
 
-    fun directionAllowed(a: String, b: String): Boolean = ConversationTranslationSettings.supports(context, config.localTranslationModelId, a, b)
+    fun directionAllowed(a: String, b: String): Boolean = ConversationTranslationSettings.supports(context, localModelId, a, b)
     fun canSpeak(side: Int): Boolean {
         val from = if (side == 0) state.session.first else state.session.second
         val to = if (side == 0) state.session.second else state.session.first
@@ -287,10 +288,10 @@ fun ConversationScreen(onModels: () -> Unit = {}, onCloud: () -> Unit = {}, onLa
             TextButton(onClick = { share(state.session) }, enabled = state.session.turns.isNotEmpty()) { Text(uiText(UiR.string.ui_share_conversation_text_0722c)) }
     }
     if (translationSettings) FeatureOptionsSheet(uiText(UiR.string.ui_translator_1fafc), { translationSettings = false }, translationScroll) {
-            TranslatorChooser(ConversationTranslationSettings.selected(context),config.localTranslationModelId,
+            TranslatorChooser(ConversationTranslationSettings.selected(context),localModelId,
                 uiText(UiR.string.ui_used_by_conversation_face_to_face_and_typed_text_472fa),state.session.first,state.session.second,
                 onModels={translationSettings=false;onModels()},onSelect={provider,model->scope.launch {
-                    try { CaptionConfigStore.update(context){it.copy(localTranslationModelId=model)};ConversationTranslationSettings.select(context,provider) }
+                    try { ConversationTranslationSettings.select(context,provider,model) }
                     catch(e: kotlinx.coroutines.CancellationException){throw e}
                     catch(e: Exception){voiceError=e.message ?: e.toString()}
                 }})

@@ -41,6 +41,7 @@ internal class VoicePlayer(context: Context,private val backendOverride: String?
             for(request in queue) {
                 if(request.generation!=generation)continue
                 operation=launch {
+                    var failure: String? = null
                     try {
                         check(audioManager.requestAudioFocus(focus)==AudioManager.AUDIOFOCUS_REQUEST_GRANTED){"Android could not grant audio focus for read aloud"}
                         changed(true,null)
@@ -54,9 +55,9 @@ internal class VoicePlayer(context: Context,private val backendOverride: String?
                             else -> error("Unknown voice backend: ${choice.backend}")
                         }
                     }catch(e: CancellationException){throw e}
-                    catch(e: Exception){if(request.generation==generation)changed(false,e.message ?: e.toString())}
-                    catch(e: LinkageError){if(request.generation==generation)changed(false,e.message ?: e.toString())}
-                    finally {audioManager.abandonAudioFocusRequest(focus);if(request.generation==generation)changed(false,null)}
+                    catch(e: Exception){failure=e.message ?: e.toString()}
+                    catch(e: LinkageError){failure=e.message ?: e.toString()}
+                    finally {audioManager.abandonAudioFocusRequest(focus);if(request.generation==generation)changed(false,failure)}
                 }
                 operation?.join();operation=null
             }
@@ -130,11 +131,12 @@ internal class VoicePlayer(context: Context,private val backendOverride: String?
         }finally {withContext(Dispatchers.IO+NonCancellable){model?.close();model=null}}
     }
     private suspend fun remote(request: Request,choice: VoiceChoice) {
-        val connection=VoiceSettings.remote(context);val client=RemoteVoiceClient();network=client
+        val connection=VoiceSettings.remote(context)
         val language=connection.capabilities.languages.firstOrNull {it.equals(request.language,ignoreCase=true)}
             ?: Locale.forLanguageTag(request.language).language.takeIf {it in connection.capabilities.languages}
             ?: error("The selected voice server does not advertise ${request.language}")
         val voice=VoiceSettings.prefs(context).getString("remote-voice",null)?.takeIf {it in connection.capabilities.voices} ?: connection.capabilities.voices.first()
+        val client=RemoteVoiceClient();network=client
         try {
             for(part in VoiceText.chunks(request.text,300)) {
                 val raw=client.execute(RemoteVoiceProtocol.request(connection.endpoint,connection.key,part,language,voice,connection.capabilities),connection.key,true)

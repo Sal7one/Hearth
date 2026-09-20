@@ -45,4 +45,11 @@ class OcrSelectionTest {
         assertEquals(com.sal7one.transiber.translation.PlatformTranslation.available, "ar" in ocrTranslationTargets(selection,TranslationOptions.ML_KIT,null,true))
         assertTrue(ocrTranslationTargets(selection,"unknown",null,true).isEmpty())
     }
+    @Test fun explicitReaderTranslatorSurvivesCaptionModelAndReaderChanges() {
+        val legacy=OcrSelection()
+        assertEquals("hy-mt2-q4",legacy.translationModel("hy-mt2-q4"))
+        val selected=legacy.copy(localModelId="hy-mt2-q4")
+        assertEquals("hy-mt2-q4",selected.withSource("ja").withProfile("manga").translationModel("different-caption-model"))
+        assertEquals("hy-mt2-q4",selected.copy(providerId="libretranslate").translationModel("different-caption-model"))
+    }
 }

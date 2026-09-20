@@ -19,15 +19,16 @@ internal fun TranslationHub(onModels: () -> Unit, initialLocation: SettingsLocat
     val scope=rememberCoroutineScope()
     val config by remember {CaptionConfigStore.config(context)}.collectAsState(initial=CaptionOverlayConfig())
     val revision by ConversationTranslationSettings.revision.collectAsState()
+    val localModelId = remember(revision, config.localTranslationModelId) { ConversationTranslationSettings.localModel(context, config.localTranslationModelId) }
     val provider=remember(revision){ConversationTranslationSettings.selected(context)}
     var error by remember {mutableStateOf<String?>(null)}
     SettingsTabs(initialLocation, entryRevision) { location ->
         SettingsHeading(if (location == SettingsLocation.LOCAL) uiText(UiR.string.ui_local_translation_010cc) else uiText(UiR.string.ui_cloud_translation_e9d00),
             uiText(UiR.string.ui_choose_a_translator_here_browsing_tabs_does_not_change_the_active_3b0c1))
-        Text(uiText(UiR.string.ui_active_1_s_830d0, ConversationTranslationSettings.label(context, config.localTranslationModelId)), style = MaterialTheme.typography.labelLarge)
-        TranslatorChooser(provider,config.localTranslationModelId,uiText(UiR.string.ui_this_choice_is_shared_by_conversation_face_to_face_and_typed_text_f76d4),
+        Text(uiText(UiR.string.ui_active_1_s_830d0, ConversationTranslationSettings.label(context, localModelId)), style = MaterialTheme.typography.labelLarge)
+        TranslatorChooser(provider,localModelId,uiText(UiR.string.ui_this_choice_is_shared_by_conversation_face_to_face_and_typed_text_f76d4),
             onModels=onModels,location=location,onSelect={id,model->scope.launch {
-                try { CaptionConfigStore.update(context){it.copy(localTranslationModelId=model)};ConversationTranslationSettings.select(context,id) }
+                try { ConversationTranslationSettings.select(context,id,model) }
                 catch(e: CancellationException){throw e}
                 catch(e: Exception){error=e.message ?: e.toString()}
             }})

@@ -134,10 +134,10 @@ class ReadingOverlayService : Service() {
                     if(selection.translate) {
                         val provider=ConversationTranslationSettings.provider(selection.providerId)
                         val languages=provider?.let {ConversationTranslationSettings.capabilities(this@ReadingOverlayService,it)}
-                        check(target in ocrTranslationTargets(selection,config.localTranslationModelId,languages,ByokPolicy.FEATURE_BYOK)) {
+                        check(target in ocrTranslationTargets(selection,selection.translationModel(config.localTranslationModelId),languages,ByokPolicy.FEATURE_BYOK)) {
                             uiText(UiR.string.service_translation_does_not_support_1_s_2_s_choose_langua_d0ec6, source, target)
                         }
-                        snapshot=ConversationTranslationSettings.snapshot(this@ReadingOverlayService,config.localTranslationModelId,selection.providerId)
+                        snapshot=ConversationTranslationSettings.snapshot(this@ReadingOverlayService,selection.translationModel(config.localTranslationModelId),selection.providerId)
                     }
                     setupReady=true
                     controller.state.collect {value->

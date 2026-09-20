@@ -37,12 +37,13 @@ internal class TypedTranslationController(
                     if(reset){release();reset=false}
                     if(request.route==null){release();continue}
                     val requestedRoute=request.route
-                    if(request.source==request.target){mutable.value=TypedTranslationState(request.text);continue}
+                    if(request.source==request.target){release();mutable.value=TypedTranslationState(request.text);continue}
                     if(route!=requestedRoute) {
                         release()
                         if(requestedRoute.cloud==null)lease=acquire()
                         withContext(io+NonCancellable){translator=open(requestedRoute)}
                         ensureActive();route=requestedRoute
+                        if(request.revision!=revision)continue
                     }
                     val engine=checkNotNull(translator);val direction=TranslationDirection(request.source,request.target)
                     check(direction in engine.directions){"${requestedRoute.label} does not support ${request.source} → ${request.target}"}
@@ -57,11 +58,11 @@ internal class TypedTranslationController(
     fun update(text: String,source: String,target: String,snapshot: ConversationTranslatorSnapshot?,immediate: Boolean=false) {
         revision++;debounce?.cancel();val current=revision
         mutable.value=TypedTranslationState(busy=text.isNotBlank() && snapshot!=null)
-        if(text.isBlank() || snapshot==null)return
-        if(text.length>3000){mutable.value=TypedTranslationState(error="Type at most 3000 characters");return}
+        if(text.isBlank() || snapshot==null){pause();return}
+        if(text.length>3000){error(IllegalArgumentException("Type at most 3000 characters"));return}
         debounce=scope.launch {if(!immediate)delay(500);queue.trySend(Request(text,source,target,snapshot,current))}
     }
-    fun error(error: Throwable){mutable.value=TypedTranslationState(error=error.message ?: error.toString())}
+    fun error(error: Throwable){pause();mutable.value=TypedTranslationState(error=error.message ?: error.toString())}
     fun clear(){pause()}
     fun pause(){
         revision++;debounce?.cancel();reset=true;translator?.cancel()

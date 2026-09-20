@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.22.3 — pipeline ownership audit
+
+- Camera/reading and conversation/typed translation now remember their own local model choices; choosing one no longer rewrites the live-caption translator. “Use everywhere” still updates all three groups explicitly.
+- Switching between reading and audio overlays waits for the stopped models to finish releasing, with visible progress and a bounded timeout.
+- Clearing typed text, invalid setup and same-language input release the previous translator and workload reservation. Results from a cancelled load cannot start obsolete inference or replace current text.
+- Read aloud emits one terminal outcome, preserving the actual failure instead of immediately emitting a successful completion; invalid remote voice selections allocate no client.
+- Added native handle-isolation, cancellation/retirement and translation-bridge regression coverage. Common native host checks now run with address and undefined-behavior sanitizers.
+
 ## 0.22.2 — 2026-09-21
 
 - Fix the simple captions speech selector retaining a local translator when switching or reselecting Cloud; integrated OpenAI/Soniox translation now wins on explicit provider selection.

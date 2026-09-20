@@ -61,13 +61,14 @@ internal fun CameraTranslateScreen(onModels: () -> Unit,onConnections: () -> Uni
     val profile=selection.profile
     val config by remember { CaptionConfigStore.config(context) }.collectAsState(initial=CaptionOverlayConfig())
     val currentConfig by rememberUpdatedState(config)
+    val localModelId = selection.translationModel(config.localTranslationModelId)
     var speaking by remember {mutableStateOf(false)}
     var voiceError by remember {mutableStateOf<String?>(null)}
     val voice=remember {com.sal7one.transiber.voice.VoicePlayer(context){active,error->speaking=active;if(error!=null)voiceError=error}}
     val controller=remember {CameraOcrController(context)};val state by controller.state.collectAsState()
-    var previousSettings by remember {mutableStateOf(selection to config.localTranslationModelId)}
-    LaunchedEffect(selection,config.localTranslationModelId) {
-        val next=selection to config.localTranslationModelId
+    var previousSettings by remember {mutableStateOf(selection to localModelId)}
+    LaunchedEffect(selection,localModelId) {
+        val next=selection to localModelId
         if(next!=previousSettings) {controller.stop();controller.invalidate();voice.stop();previousSettings=next}
     }
     val models=remember {OcrModels(File(context.filesDir,"ocr-models"))}
@@ -81,8 +82,8 @@ internal fun CameraTranslateScreen(onModels: () -> Unit,onConnections: () -> Uni
     var importing by remember {mutableStateOf(false)}
     val provider=ConversationTranslationSettings.provider(providerId)
     val cloudLanguages=remember(provider,translationRevision) {provider?.let {ConversationTranslationSettings.capabilities(context,it)}}
-    val targetCodes=ocrTranslationTargets(selection,config.localTranslationModelId,cloudLanguages,ByokPolicy.FEATURE_BYOK)
-    val providerLabel=provider?.label ?: TranslationOptions.label(config.localTranslationModelId)
+    val targetCodes=ocrTranslationTargets(selection,localModelId,cloudLanguages,ByokPolicy.FEATURE_BYOK)
+    val providerLabel=provider?.label ?: TranslationOptions.label(localModelId)
     fun changeSelection(next: OcrSelection) {
         controller.stop();controller.invalidate();voice.stop()
         selectionStore.update { next }
@@ -95,7 +96,7 @@ internal fun CameraTranslateScreen(onModels: () -> Unit,onConnections: () -> Uni
         check(selected.source in selected.profile.languages) {uiText(UiR.string.ui_choose_a_text_language_supported_by_1_s_4940a, uiText.label(selected.profile))}
         val selectedProvider=ConversationTranslationSettings.provider(selected.providerId)
         val capabilities=selectedProvider?.let {ConversationTranslationSettings.capabilities(context,it)}
-        val localId=currentConfig.localTranslationModelId
+        val localId=selected.translationModel(currentConfig.localTranslationModelId)
         check(selected.target in ocrTranslationTargets(selected,localId,capabilities,ByokPolicy.FEATURE_BYOK)) {
             uiText(UiR.string.ui_1_s_does_not_support_2_s_3_s_choose_a_supported_language_pair_or_c8a2b, selectedProvider?.label ?: TranslationOptions.label(localId), selected.source, selected.target)
         }
@@ -197,9 +198,9 @@ internal fun CameraTranslateScreen(onModels: () -> Unit,onConnections: () -> Uni
     }) }
     if(settings)FeatureOptionsSheet(uiText(UiR.string.ui_camera_reading_settings_a67f8), {settings=false}, settingsScroll) {
             OutlinedButton(onClick={voice.stop();settings=false;onVoices()}){Text(uiText(UiR.string.ui_voices_read_aloud_64e95))}
-            TranslatorChooser(providerId,config.localTranslationModelId,uiText(UiR.string.ui_used_by_camera_and_the_screen_reading_overlay_ef332),source,target,
+            TranslatorChooser(providerId,localModelId,uiText(UiR.string.ui_used_by_camera_and_the_screen_reading_overlay_ef332),source,target,
                 enabled=!state.closing, onModels={settings=false;onModels()}, onSelect={provider,model->scope.launch {
-                    try { controller.stop();controller.invalidate();voice.stop();CaptionConfigStore.update(context){it.copy(localTranslationModelId=model)};selectionStore.update {it.copy(providerId=provider)} }
+                    try { controller.stop();controller.invalidate();voice.stop();selectionStore.update {it.copy(providerId=provider,localModelId=model)} }
                     catch(e: kotlinx.coroutines.CancellationException){throw e}
                 catch(e: Exception){controller.error(e)}
                 }})

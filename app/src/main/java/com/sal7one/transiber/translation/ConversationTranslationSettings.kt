@@ -27,17 +27,20 @@ internal object ConversationTranslationSettings {
     private fun prefs(context: Context) = context.applicationContext.getSharedPreferences("conversation-translators", Context.MODE_PRIVATE)
     fun selected(context: Context): String = if (ByokPolicy.FEATURE_BYOK) prefs(context).getString("selected", LOCAL) ?: LOCAL else LOCAL
     fun provider(id: String): TextTranslationProvider? = TextTranslationProvider.entries.firstOrNull { it.id == id }
-    fun select(context: Context, id: String) {
+    fun localModel(context: Context, fallback: String): String = prefs(context).getString("local-model", null) ?: fallback
+    fun select(context: Context, id: String, localId: String? = null) {
         require(id == LOCAL || (ByokPolicy.FEATURE_BYOK && provider(id) != null)) { "Cloud translation is unavailable in the offline build." }
-        prefs(context).edit().putString("selected", id).apply(); changed()
+        prefs(context).edit().putString("selected", id).apply {
+            if (localId != null) putString("local-model", localId)
+        }.apply(); changed()
     }
     /** Explicit user action; does not happen merely by opening a feature or saving a key. */
     suspend fun useEverywhere(context: Context, providerId: String, localId: String) {
         require(providerId == LOCAL || (ByokPolicy.FEATURE_BYOK && provider(providerId) != null)) { "Cloud translation is unavailable in the offline build." }
         com.sal7one.transiber.caption.CaptionConfigStore.update(context) { it.copy(
             localTranslationModelId=localId, textTranslationProviderId=providerId, localTranslationEnabled=true) }
-        check(context.getSharedPreferences("camera-translate",0).edit().putString("provider",providerId).commit()) { "Could not save camera translator" }
-        select(context,providerId)
+        check(context.getSharedPreferences("camera-translate",0).edit().putString("provider",providerId).putString("local-model",localId).commit()) { "Could not save camera translator" }
+        select(context,providerId,localId)
     }
     fun endpoint(context: Context, provider: TextTranslationProvider): String = prefs(context).getString("${provider.id}.endpoint", provider.defaultEndpoint) ?: provider.defaultEndpoint
     fun region(context: Context, provider: TextTranslationProvider): String = prefs(context).getString("${provider.id}.region", "") ?: ""

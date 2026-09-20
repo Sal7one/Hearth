@@ -23,6 +23,7 @@ internal data class OverlayPreflight(val config: CaptionOverlayConfig, val signa
 internal suspend fun overlayPreflight(context: Context, shortcut: OverlayShortcut): OverlayPreflight = withContext(Dispatchers.IO) {
     val config = CaptionConfigStore.config(context).first()
     val camera = context.getSharedPreferences("camera-translate", 0)
+    val readingModel = OcrPreferences(context).read().translationModel(config.localTranslationModelId)
     val profileId = camera.getString("profile", "latin")!!
     val source = camera.getString("source", "en")!!
     val target = camera.getString("target", "ar")!!
@@ -112,10 +113,10 @@ internal suspend fun overlayPreflight(context: Context, shortcut: OverlayShortcu
             "${profile.label} · $source"
         }
         probes += SetupProbe("Text translation", SetupFix.TRANSLATION) {
-            checkTranslator(context, config.localTranslationModelId, provider, source, target)
+            checkTranslator(context, readingModel, provider, source, target)
         }
     }
-    val signature = listOf(config.toString(), cloudMode.name, profileId, source, target, provider).joinToString("\n")
+    val signature = listOf(config.toString(), cloudMode.name, profileId, source, target, provider, readingModel).joinToString("\n")
     OverlayPreflight(config, signature, checkOverlaySetup(probes))
 }
 

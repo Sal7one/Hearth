@@ -41,4 +41,46 @@ class TypedTranslationControllerTest {
         assertEquals("actual failure",c.state.value.error);assertEquals(0,held)
         c.close();runCurrent()
     }
+    @Test fun deletingTextReleasesTheModelAndItsWorkloadLease()=runTest {
+        val dispatcher=StandardTestDispatcher(testScheduler);val engine=Engine();var held=0
+        val c=TypedTranslationController({engine},{held++;AutoCloseable {held--}},dispatcher,dispatcher)
+        c.update("old","en","ar",ConversationTranslatorSnapshot("test"),true);runCurrent()
+        c.update("","en","ar",null);runCurrent()
+        assertEquals(1,engine.cancelled)
+        assertEquals(1,held) // Never admit another native workload before this call finishes.
+        engine.pending.single().complete("obsolete");runCurrent()
+        assertEquals(0,held);assertEquals(1,engine.closed);assertEquals(TypedTranslationState(),c.state.value)
+        c.close();runCurrent()
+    }
+    @Test fun sameLanguageAndInvalidSetupRetirePreviousWork()=runTest {
+        val dispatcher=StandardTestDispatcher(testScheduler);val engine=Engine();var held=0
+        val c=TypedTranslationController({engine},{held++;AutoCloseable {held--}},dispatcher,dispatcher)
+        val route=ConversationTranslatorSnapshot("test")
+        c.update("hello","en","ar",route,true);runCurrent()
+        c.error(IllegalStateException("Provider unavailable"));runCurrent()
+        engine.pending.single().complete("obsolete");runCurrent()
+        assertEquals("Provider unavailable",c.state.value.error);assertEquals(0,held)
+        c.update("unchanged","en","en",route,true);runCurrent()
+        assertEquals("unchanged",c.state.value.output);assertEquals(0,held)
+        c.close();runCurrent()
+    }
+    @Test fun clearingDuringNativeLoadClosesWithoutStartingInference()=runTest {
+        val dispatcher=StandardTestDispatcher(testScheduler);val engine=Engine();var held=0
+        lateinit var c: TypedTranslationController
+        c=TypedTranslationController({c.update("","en","ar",null);engine},
+            {held++;AutoCloseable {held--}},dispatcher,dispatcher)
+        c.update("cancel during load","en","ar",ConversationTranslatorSnapshot("test"),true);runCurrent()
+        assertTrue(engine.inputs.isEmpty());assertEquals(1,engine.closed);assertEquals(0,held)
+        assertEquals(TypedTranslationState(),c.state.value);c.close();runCurrent()
+    }
+    @Test fun changingToSameLanguageReleasesAnIdleResidentModel()=runTest {
+        val dispatcher=StandardTestDispatcher(testScheduler);val engine=Engine();var held=0
+        val c=TypedTranslationController({engine},{held++;AutoCloseable {held--}},dispatcher,dispatcher)
+        val route=ConversationTranslatorSnapshot("test")
+        c.update("hello","en","ar",route,true);runCurrent()
+        engine.pending.single().complete("translated");runCurrent();assertEquals(1,held)
+        c.update("hello","en","en",route,true);runCurrent()
+        assertEquals("hello",c.state.value.output);assertEquals(0,held);assertEquals(1,engine.closed)
+        c.close();runCurrent()
+    }
 }

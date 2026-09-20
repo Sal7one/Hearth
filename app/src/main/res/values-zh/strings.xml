@@ -2,4 +2,6 @@
 <string name="app_name">Hearth</string>
 <string name="tile_captions">实时字幕</string>
 <string name="tile_reading">屏幕翻译</string>
+    <string name="pipeline_waiting_cleanup">正在结束上一个会话…</string>
+    <string name="pipeline_cleanup_timeout">先前的模型仍在释放中。请等待完成后重试。</string>
 </resources>

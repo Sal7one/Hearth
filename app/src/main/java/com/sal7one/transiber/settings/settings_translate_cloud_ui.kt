@@ -45,7 +45,7 @@ internal fun SettingsTranslateCloudUi(initialProvider: String? = null, allowSele
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text(uiText(UiR.string.ui_translation_connections_4a282), style = MaterialTheme.typography.titleLarge)
         Text(uiText(UiR.string.ui_one_connection_library_for_captions_typed_text_conversations_came_a2ee8), style = MaterialTheme.typography.bodySmall)
-        if (allowSelection) Text(uiText(UiR.string.ui_conversation_typed_text_use_1_s_dc9f7, ConversationTranslationSettings.label(context, config.localTranslationModelId)), style = MaterialTheme.typography.titleSmall)
+        if (allowSelection) Text(uiText(UiR.string.ui_conversation_typed_text_use_1_s_dc9f7, ConversationTranslationSettings.label(context, ConversationTranslationSettings.localModel(context, config.localTranslationModelId))), style = MaterialTheme.typography.titleSmall)
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             if (ByokPolicy.FEATURE_BYOK) TextTranslationProvider.entries.forEach { provider ->
                 FilterChip(selected = editing == provider, enabled = !working, onClick = { editing = provider; status = null }, label = { Text(provider.label) })

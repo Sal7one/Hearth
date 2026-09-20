@@ -310,3 +310,15 @@ local overrides, Auto → Spanish, reselection, and preference round trips.
 `StreamingCloudEngine` is the production lifecycle owner; fake-client concurrency
 tests cover shutdown during send, late callbacks/connection acknowledgement, first
 provider error preservation, failed-socket admission and queued tail drainage.
+
+
+## Hearth 0.22.3 pipeline audit
+
+- `TypedTranslationController` now retires blank, invalid and same-language work; production scheduler tests cover clearing during inference/load, lease retention until cleanup, and stale-error/result suppression.
+- `OcrSelection.translationModel` is consumed by Camera, reading setup/service and shortcut diagnostics. A scoped choice survives caption-model and OCR-reader changes; old preferences retain their existing model fallback.
+- `LeaseRegistry` is consumed by speech, OCR, translation and voice JNI adapters. The sanitizer host suite now checks independent handles during blocked retirement, cancellation isolation, stale handles and move-assignment of the last lifetime-bearing lease.
+- `CaptionTranslationBridge` has two-owner regression coverage: closing a previous bridge cannot cancel another or publish its old result into it.
+
+`LocalWorkGate.awaitIdle` is consumed by the explicit audio-to-reading handoff. Host
+coverage verifies it waits for model cleanup and cancelling a waiting page never
+unlocks another owner. The reading controller still acquires its own lease.

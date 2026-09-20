@@ -53,16 +53,17 @@ internal fun TypedTranslateScreen(onModels: ()->Unit,onConnections: ()->Unit,onV
     var voiceError by remember {mutableStateOf<String?>(null)};var speaking by remember {mutableStateOf(false)}
     val config by remember {CaptionConfigStore.config(context)}.collectAsState(initial=CaptionOverlayConfig())
     val connectionRevision by ConversationTranslationSettings.revision.collectAsState()
-    val label=remember(connectionRevision,config.localTranslationModelId){ConversationTranslationSettings.label(context,config.localTranslationModelId)}
+    val localModelId = remember(connectionRevision, config.localTranslationModelId) { ConversationTranslationSettings.localModel(context, config.localTranslationModelId) }
+    val label=remember(connectionRevision,localModelId){ConversationTranslationSettings.label(context,localModelId)}
     var resumeRevision by remember {mutableIntStateOf(0)}
     val controller=remember {TypedTranslationController(context)};val state by controller.state.collectAsState()
     val voice=remember {VoicePlayer(context){active,error->speaking=active;if(error!=null)voiceError=error}}
-    val languages=remember(connectionRevision,config.localTranslationModelId){ConversationTranslationSettings.languages(context,config.localTranslationModelId)}
+    val languages=remember(connectionRevision,localModelId){ConversationTranslationSettings.languages(context,localModelId)}
     fun update(immediate: Boolean=false) {
         voice.stop();voiceError=null
-        try {controller.update(text,source,target,if(text.isBlank())null else ConversationTranslationSettings.snapshot(context,config.localTranslationModelId),immediate)}catch(e: Exception){controller.clear();controller.error(e)}
+        try {controller.update(text,source,target,if(text.isBlank())null else ConversationTranslationSettings.snapshot(context,localModelId),immediate)}catch(e: Exception){controller.clear();controller.error(e)}
     }
-    LaunchedEffect(text,source,target,automatic,connectionRevision,config.localTranslationModelId,resumeRevision) {
+    LaunchedEffect(text,source,target,automatic,connectionRevision,localModelId,resumeRevision) {
         prefs.edit().putString("source",source).putString("target",target).apply()
         if(automatic)update() else controller.clear()
     }
@@ -100,14 +101,14 @@ internal fun TypedTranslateScreen(onModels: ()->Unit,onConnections: ()->Unit,onV
     picker?.let {which->Dialog(onDismissRequest={picker=null},properties=DialogProperties(usePlatformDefaultWidth=false)) {
         Surface(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding()) {LanguagePickerContent(
             title=if(which=="source")uiText(UiR.string.ui_source_language_c951f) else uiText(UiR.string.ui_translate_to_a1ba6),selected=if(which=="source")source else target,
-            choices=CaptionLanguageChoices(if(which=="source")languages.filter {a->languages.any {b->ConversationTranslationSettings.supports(context,config.localTranslationModelId,a,b)}}.toSet() else languages.filter {ConversationTranslationSettings.supports(context,config.localTranslationModelId,source,it)}.toSet(),uiText(UiR.string.ui_1_s_choose_an_explicit_supported_language_eea04, label)),
+            choices=CaptionLanguageChoices(if(which=="source")languages.filter {a->languages.any {b->ConversationTranslationSettings.supports(context,localModelId,a,b)}}.toSet() else languages.filter {ConversationTranslationSettings.supports(context,localModelId,source,it)}.toSet(),uiText(UiR.string.ui_1_s_choose_an_explicit_supported_language_eea04, label)),
             onSelect={if(which=="source")source=it else target=it;picker=null},onDismiss={picker=null})}
     }}
     if(options)FeatureOptionsSheet(uiText(UiR.string.ui_translation_settings_2aee9), {options=false}, optionsScroll) {
-        TranslatorChooser(ConversationTranslationSettings.selected(context),config.localTranslationModelId,
+        TranslatorChooser(ConversationTranslationSettings.selected(context),localModelId,
             uiText(UiR.string.ui_used_by_typed_text_conversation_and_face_to_face_a208e),source,target,onModels={options=false;onModels()},
             onSelect={provider,model->scope.launch {
-                try { CaptionConfigStore.update(context){it.copy(localTranslationModelId=model)};ConversationTranslationSettings.select(context,provider) }
+                try { ConversationTranslationSettings.select(context,provider,model) }
                 catch(e: kotlinx.coroutines.CancellationException){throw e}
                 catch(e: Exception){controller.error(e)}
             }})

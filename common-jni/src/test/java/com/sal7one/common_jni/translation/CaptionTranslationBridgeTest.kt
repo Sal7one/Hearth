@@ -154,4 +154,21 @@ class CaptionTranslationBridgeTest {
         fake.release.complete(Unit); bridge.awaitClosed()
     }
 
+    @Test fun closingOneBridgeDoesNotCancelOrPublishIntoAnother() = runBlocking {
+        val first = Fake(); val second = Fake()
+        val done = CompletableDeferred<String>()
+        val retired = CaptionTranslationBridge(this, "ar", { first }, { _, _, _ -> fail("Retired result") }, {})
+        val active = CaptionTranslationBridge(this, "ar", { second }, { _, text, _ -> done.complete(text) }, {})
+        try {
+            retired.offer(1, "old page", "ru"); active.offer(1, "new page", "ru")
+            withTimeout(3000) { first.entered.await(); second.entered.await() }
+            retired.close(); first.release.complete(Unit); retired.awaitClosed()
+            assertTrue(first.closed); assertFalse(second.cancelled); assertFalse(second.closed)
+            second.release.complete(Unit)
+            assertEquals("translated:new page", withTimeout(3000) { done.await() })
+        } finally {
+            retired.close(); active.close(); first.release.complete(Unit); second.release.complete(Unit)
+            retired.awaitClosed(); active.awaitClosed()
+        }
+    }
 }

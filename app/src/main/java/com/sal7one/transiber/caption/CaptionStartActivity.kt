@@ -58,6 +58,7 @@ import com.sal7one.transiber.ui.theme.AccentPreset
 import com.sal7one.transiber.ui.theme.AppDesign
 import com.sal7one.transiber.ui.theme.FFmpegStudioTheme
 import com.sal7one.transiber.ui.theme.ThemeMode
+import kotlinx.coroutines.launch
 
 /**
  * Entry point for live captions. Orchestrates the two special permissions in
@@ -134,6 +135,25 @@ private fun CaptionStartScreen(requestedSource: CaptionSource?, onDone: () -> Un
     val uiText = rememberUiText()
 
     val context = LocalContext.current
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+    var starting by remember { mutableStateOf(false) }
+    var startError by remember { mutableStateOf<String?>(null) }
+    fun startAfterCleanup(source: CaptionSource, token: Intent?) {
+        if (starting) return
+        starting = true; startError = null
+        scope.launch {
+            try {
+                context.stopService(Intent(context, com.sal7one.transiber.reading.ReadingOverlayService::class.java))
+                if (!CaptionCaptureService.running.value) com.sal7one.transiber.runtime.LocalWorkGate.awaitIdle()
+                CaptionCaptureService.start(context, source, token)
+                onDone()
+            } catch(e: kotlinx.coroutines.TimeoutCancellationException) {
+                startError = uiText(UiR.string.pipeline_cleanup_timeout)
+            } catch(e: kotlinx.coroutines.CancellationException) { throw e }
+            catch(e: Exception) { startError = e.message ?: e.toString() }
+            finally { starting = false }
+        }
+    }
     var overlayGranted by remember {
         mutableStateOf(Settings.canDrawOverlays(context))
     }
@@ -150,8 +170,7 @@ private fun CaptionStartScreen(requestedSource: CaptionSource?, onDone: () -> Un
     }
     val projectionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == Activity.RESULT_OK && result.data != null) {
-            CaptionCaptureService.start(context, CaptionSource.PLAYBACK_CAPTURE, result.data)
-            onDone()
+            startAfterCleanup(CaptionSource.PLAYBACK_CAPTURE, result.data)
         }
     }
     val launchCapture: () -> Unit = {
@@ -159,8 +178,7 @@ private fun CaptionStartScreen(requestedSource: CaptionSource?, onDone: () -> Un
             val manager = context.getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
             projectionLauncher.launch(manager.createScreenCaptureIntent())
         } else {
-            CaptionCaptureService.start(context, CaptionSource.MIC, null)
-            onDone()
+            startAfterCleanup(CaptionSource.MIC, null)
         }
     }
     val notificationLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
@@ -235,6 +253,7 @@ private fun CaptionStartScreen(requestedSource: CaptionSource?, onDone: () -> Un
             when (source) {
                 CaptionSource.PLAYBACK_CAPTURE -> Button(
                     onClick = requestCapture,
+                    enabled = !starting,
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     Icon(Icons.Default.VolumeUp, null)
@@ -244,6 +263,7 @@ private fun CaptionStartScreen(requestedSource: CaptionSource?, onDone: () -> Un
 
                 CaptionSource.MIC -> Button(
                     onClick = requestCapture,
+                    enabled = !starting,
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     Icon(Icons.Default.Mic, null)
@@ -251,6 +271,11 @@ private fun CaptionStartScreen(requestedSource: CaptionSource?, onDone: () -> Un
                 }
             }
 
+            if (starting) {
+                androidx.compose.material3.LinearProgressIndicator(Modifier.fillMaxWidth())
+                Text(uiText(UiR.string.pipeline_waiting_cleanup))
+            }
+            startError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
             if (notificationsDenied) {
                 Text(uiText(UiR.string.ui_notifications_are_disabled_enable_them_for_pause_stop_and_bubble_57b9d),
                     color = MaterialTheme.colorScheme.error)
