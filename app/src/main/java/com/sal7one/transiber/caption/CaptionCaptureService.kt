@@ -36,6 +36,7 @@ class CaptionCaptureService : Service() {
         super.onCreate()
         engine = CaptionEngineController(this)
         overlay = CaptionOverlayController(this, engine)
+        scope.launch { com.sal7one.transiber.shortcuts.OverlaySetupVisibility.active.collect { overlay.suppressForSetup(it) } }
         scope.launch { overlay.config.collect { if (active) updateNotification() } }
         scope.launch {
             engine.state.collect { state ->
@@ -96,7 +97,7 @@ class CaptionCaptureService : Service() {
                         // The audio loop may run while the model connects; the
                         // controller admits audio only once its engine is ready.
                         startReading(record)
-                        engine.start(config) { }
+                        engine.start(config) { if (active) updateNotification() }
 
                     } catch (e: CancellationException) { throw e }
                     catch (e: Exception) { fail("Capture: ${e.message ?: e.javaClass.simpleName}") }

@@ -18,6 +18,9 @@ cloud providers—all through five main screens.
 
 ## What you can try
 
+- **Start from the notification shade.** Add Live captions and Screen translation
+  Quick Settings tiles. Hearth checks setup before requesting capture; missing
+  models or connections open actionable diagnostics. See [phone shortcuts](docs/quick-settings.md).
 - **Read live captions over other apps.** A movable caption bubble transcribes
   device audio or the microphone, with optional translation and retained text.
 - **Have a two-way conversation.** Speak or type in either language, keep originals

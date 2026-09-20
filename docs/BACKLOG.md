@@ -1,5 +1,15 @@
 # Hearth — finish for publication
 
+## Quick Settings shortcuts — 0.17.0
+
+- [x] Live captions and screen/manga translation tiles, with add-tile controls.
+- [x] Reuse saved configuration, permissions and existing capture services.
+- [x] Check model/translation setup and show actionable diagnostics on failure.
+- [x] Recover existing overlays, prevent conflicting starts and preserve cancellation.
+- [x] Local checks only; both tiles available in FOSS without new network permissions.
+
+See [phone shortcuts](quick-settings.md) and [validation](validation-v31.md).
+
 ## Settings separation — 0.16.0
 
 - [x] Separate Local and Cloud settings, with local-only destinations in FOSS.

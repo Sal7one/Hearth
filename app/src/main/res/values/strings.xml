@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">Hearth</string>
+    <string name="tile_captions">Live captions</string>
+    <string name="tile_reading">Screen translation</string>
 </resources>

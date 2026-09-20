@@ -35,6 +35,7 @@ class CaptionOverlayController(
     private var host: OverlayHost? = null
     private var recoveryHandle: ComposeView? = null
     private var hidden = false
+    private var setupSuppressed = false
     private var destroyed = false
     private var sessionSource: CaptionSource? = null
 
@@ -115,15 +116,20 @@ class CaptionOverlayController(
 
     fun persistCurrent() { scope.launch { CaptionConfigStore.update(context) { _config.value } } }
 
+    fun suppressForSetup(suppressed: Boolean) {
+        setupSuppressed = suppressed
+        applyWindowChanges()
+    }
+
     fun centerOverlay() {
         hidden = false
-        view?.visibility = android.view.View.VISIBLE
+        view?.visibility = if (setupSuppressed) android.view.View.INVISIBLE else android.view.View.VISIBLE
         updateConfig { it.copy(anchor = CaptionAnchor.CENTER, xOffsetPx = 0, yOffsetPx = 0, tapThrough = false, showSettings = false, languagePicker = null) }
     }
 
     fun toggleVisibility() {
         hidden = !hidden
-        view?.visibility = if (hidden) android.view.View.INVISIBLE else android.view.View.VISIBLE
+        view?.visibility = if (hidden || setupSuppressed) android.view.View.INVISIBLE else android.view.View.VISIBLE
         applyWindowChanges()
     }
 
@@ -180,6 +186,7 @@ class CaptionOverlayController(
             val next = layoutParams(normalize)
             // Create the escape hatch before making the caption window untouchable.
             syncRecoveryHandle(next)
+            v.visibility = if (hidden || setupSuppressed) android.view.View.INVISIBLE else android.view.View.VISIBLE
             val old = v.layoutParams as? WindowManager.LayoutParams
             if (old == null || old.x != next.x || old.y != next.y || old.width != next.width || old.flags != next.flags || old.alpha != next.alpha) {
                 wm.updateViewLayout(v, next)
@@ -203,6 +210,7 @@ class CaptionOverlayController(
     }
 
     private fun syncRecoveryHandle(main: WindowManager.LayoutParams) {
+        if (setupSuppressed) { removeRecoveryHandle(); return }
         if (!_config.value.tapThrough || hidden) { removeRecoveryHandle(); return }
         val density = context.resources.displayMetrics.density
         val placement = placeTapThroughHandle(viewport(),

@@ -20,6 +20,13 @@
   <service android:name=".caption.CaptionCaptureService" android:exported="false" android:foregroundServiceType="mediaProjection|microphone" />
   <activity android:name=".reading.ReadingStartActivity" android:exported="false" />
   <service android:name=".reading.ReadingOverlayService" android:exported="false" android:foregroundServiceType="mediaProjection" />
+  <activity android:name=".shortcuts.OverlayLaunchActivity" android:exported="false" android:excludeFromRecents="true" android:launchMode="singleTop" android:taskAffinity="${applicationId}.quickstart" />
+  <service android:name=".shortcuts.CaptionTileService" android:label="@string/tile_captions" android:icon="@drawable/ic_tile_captions" android:exported="true" android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+   <intent-filter><action android:name="android.service.quicksettings.action.QS_TILE" /></intent-filter>
+  </service>
+  <service android:name=".shortcuts.ReadingTileService" android:label="@string/tile_reading" android:icon="@drawable/ic_tile_reading" android:exported="true" android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+   <intent-filter><action android:name="android.service.quicksettings.action.QS_TILE" /></intent-filter>
+  </service>
   <provider android:name="androidx.core.content.FileProvider" android:authorities="${applicationId}.files" android:exported="false" android:grantUriPermissions="true">
    <meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/file_paths" />
   </provider>

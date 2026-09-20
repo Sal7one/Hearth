@@ -174,3 +174,16 @@ No native API, model integrity rules or inference scheduling changed.
 explicit directory entries distinct from Back/return restoration, and clamp
 restored Cloud state in FOSS. Per-feature entry revisions do not touch engine
 configuration; per-tab Compose state holders retain scroll positions.
+
+## Hearth 0.17.0
+
+`checkOverlaySetup` is consumed by the tile launch activity's preflight. Host tests
+cover all-failure collection, verbatim errors, empty/native-failed reports,
+readiness and cancellation without subsequent work. `checkSpeechAssetPresence`
+is the quickstart consumer's bounded presence/size check; filesystem tests cover
+missing/truncated assets, traversal and links. It does not replace runtime hashes.
+
+`OverlaySetupVisibility` is consumed by the quickstart activity, caption overlay
+controller and reading service. Its ownership test covers overlapping activities,
+repeated close and stale release; temporary UI suppression never changes saved
+caption settings or stops the existing session.

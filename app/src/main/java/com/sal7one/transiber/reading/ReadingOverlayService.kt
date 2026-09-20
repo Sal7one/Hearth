@@ -73,6 +73,8 @@ class ReadingOverlayService : Service() {
     private var generation=0L
     private var working=false
     private var stopping=false
+    private var setupSuppressed=false
+    private var recoverAfterSetup=false
     private var region: RectF?=null
     private val trigger=ReadingTrigger()
     private val history=ArrayDeque<Pair<String,String>>()
@@ -91,6 +93,7 @@ class ReadingOverlayService : Service() {
         super.onCreate()
         controller=CameraOcrController(this)
         voice=VoicePlayer(this){_,error->if(error!=null)showError(error)}
+        scope.launch { com.sal7one.transiber.shortcuts.OverlaySetupVisibility.active.collect { suppressForSetup(it) } }
     }
     override fun onBind(intent: Intent?)=null
     override fun onStartCommand(intent: Intent?,flags: Int,startId: Int): Int {
@@ -99,7 +102,7 @@ class ReadingOverlayService : Service() {
             "stop" -> {stopSelf();return START_NOT_STICKY}
             "pause" -> {togglePause();return START_NOT_STICKY}
             "translate" -> {requestCapture(false);return START_NOT_STICKY}
-            "recover" -> {handleParams.x=dp(8);handleParams.y=dp(100);handle?.let {wm.updateViewLayout(it,handleParams)};showPanel();return START_NOT_STICKY}
+            "recover" -> {handleParams.x=dp(8);handleParams.y=dp(100);handle?.let {wm.updateViewLayout(it,handleParams)};if(setupSuppressed)recoverAfterSetup=true else showPanel();return START_NOT_STICKY}
         }
         if(projection!=null)return START_NOT_STICKY
         try {
@@ -109,6 +112,7 @@ class ReadingOverlayService : Service() {
             else startForeground(NOTIFICATION,notification())
             @Suppress("DEPRECATION") val token=intent?.getParcelableExtra<Intent>("projection") ?: error("Screen capture permission is missing. Start reading again from Camera.")
             projection=getSystemService(MediaProjectionManager::class.java).getMediaProjection(Activity.RESULT_OK,token)
+            runningState.value=true
             projection!!.registerCallback(object:MediaProjection.Callback(){
                 override fun onStop(){stopSelf()}
                 override fun onCapturedContentResize(width: Int,height: Int){resize(width,height)}
@@ -149,7 +153,7 @@ class ReadingOverlayService : Service() {
             scope.launch {
                 while(isActive) {
                     delay(scanMs)
-                    if(paused || selector!=null || panel?.visibility==View.VISIBLE || captureJob?.isActive==true)continue
+                    if(setupSuppressed || paused || selector!=null || panel?.visibility==View.VISIBLE || captureJob?.isActive==true)continue
                     if(profile.engine=="manga" && region==null)continue
                     if(trigger.mode=="manual" && pageCrop==null && !working)continue
                     captureJob=scope.launch { samplePage() }
@@ -211,7 +215,7 @@ class ReadingOverlayService : Service() {
             }}
         } finally {
             frameWaiter=null;reader?.setOnImageAvailableListener(null,null);display?.surface=null
-            if(clean && !stopping)handle?.visibility=View.VISIBLE
+            if(clean && !stopping && !setupSuppressed)handle?.visibility=View.VISIBLE
         }
     }
     private fun signature(bitmap: Bitmap): IntArray {
@@ -250,7 +254,7 @@ class ReadingOverlayService : Service() {
         }catch(e: CancellationException){throw e}catch(e: Exception){paused=true;showError(e.message ?: e.toString())}
     }
     fun requestCapture(draw: Boolean) {
-        if(stopping || projection==null || captureJob?.isActive==true || selector!=null)return
+        if(setupSuppressed || stopping || projection==null || captureJob?.isActive==true || selector!=null)return
         clearPage();voice.stop();generation++;controller.invalidate();working=false
         captureJob=scope.launch {
             try {
@@ -293,6 +297,17 @@ class ReadingOverlayService : Service() {
             throw e
         }
     }
+    private fun suppressForSetup(suppressed: Boolean) {
+        setupSuppressed=suppressed
+        if(suppressed) {
+            captureJob?.cancel();generation++;working=false;controller.invalidate();voice.stop();clearPage()
+            handle?.visibility=View.GONE;panel?.visibility=View.GONE;selector?.visibility=View.GONE
+        } else if(!stopping) {
+            if(selector!=null)selector?.visibility=View.VISIBLE else handle?.visibility=View.VISIBLE
+            motion.reset();trigger.reset()
+            if(recoverAfterSetup){recoverAfterSetup=false;showPanel()}
+        }
+    }
     private fun clearPage() {
         pageView?.update(emptyList());pageView?.visibility=View.INVISIBLE;pageCrop=null
     }
@@ -321,6 +336,7 @@ class ReadingOverlayService : Service() {
         lockButton?.contentDescription=if(locked)"Scroll through translations. Tap to unlock text boxes." else "Text boxes are interactive. Tap to let touches pass through."
     }
     private fun showTranslations(boxes: List<TranslatedOcrBox> = latest.boxTranslations, automatic: Boolean=false) {
+        if(setupSuppressed)return
         val crop=pageCrop ?: return
         if(boxes.isEmpty())return
         pageView?.update(boxes,pageWidth,pageHeight,crop)
@@ -411,7 +427,7 @@ class ReadingOverlayService : Service() {
         showPanel()
     }
     private fun clear() {viewingBox=false;clearPage();generation++;controller.invalidate();voice.stop();history.clear();historyIndex=-1;lastHistory="";original?.text="";translated?.text="";working=false;handleLabel?.text="Translate";status?.text="Cleared. Tap Translate for the current page."}
-    private fun showPanel() {if(selector==null){pageView?.visibility=View.INVISIBLE;panel?.visibility=View.VISIBLE;handle?.visibility=View.GONE}}
+    private fun showPanel() {if(!setupSuppressed && selector==null){pageView?.visibility=View.INVISIBLE;panel?.visibility=View.VISIBLE;handle?.visibility=View.GONE}}
     private fun showError(message: String) {status?.text=message;working=false;handleLabel?.text="Retry";showPanel()}
     private fun selectRegion(bitmap: Bitmap) {
         selectedBitmap=bitmap;handle?.visibility=View.GONE;panel?.visibility=View.GONE
@@ -463,6 +479,7 @@ class ReadingOverlayService : Service() {
         panelParams.width=minOf(bounds.first-dp(16),dp(440));panelParams.height=minOf((bounds.second*.6).toInt(),dp(560));panel?.let {wm.updateViewLayout(it,panelParams);it.visibility=View.GONE}
     }
     override fun onDestroy() {
+        runningState.value=false
         stopping=true;clearPage()
         frameWaiter?.cancel();frameWaiter=null;scope.cancel();controller.close();voice.close()
         display?.release();display=null;reader?.close();reader=null;projection?.stop();projection=null
@@ -470,6 +487,12 @@ class ReadingOverlayService : Service() {
         stopForeground(STOP_FOREGROUND_REMOVE);super.onDestroy()
     }
     companion object {
+        private val runningState = kotlinx.coroutines.flow.MutableStateFlow(false)
+        val running: kotlinx.coroutines.flow.StateFlow<Boolean> = runningState
+        fun recover(context: android.content.Context) {
+            context.startService(Intent(context, ReadingOverlayService::class.java).setAction("recover"))
+        }
+
         private const val CHANNEL="reading-overlay"
         private const val NOTIFICATION=912
     }

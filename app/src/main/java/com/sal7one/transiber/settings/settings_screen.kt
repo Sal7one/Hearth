@@ -34,6 +34,8 @@ internal fun SettingsScreen(
             SettingsLink("Local benchmark", "Compare installed speech and translation models", onBenchmark)
         }
         HorizontalDivider()
+        SettingsShortcutsUi()
+        HorizontalDivider()
         SettingsAppPreferences(onAdvanced, onHelp)
     }
 }
