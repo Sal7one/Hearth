@@ -1,5 +1,12 @@
 # Hearth — finish for publication
 
+## Visual home correction — 0.18.1
+
+- [x] Replace the text-heavy six-row directory with three large illustrated buttons.
+- [x] Talk presents two visual options; Translate presents three.
+- [x] Remove Home paragraphs and duplicate settings link; retain the toolbar gear.
+- [x] Keep feature access within 1–2 taps and preserve classic navigation/themes.
+
 ## Simple home and theme choices — 0.18.0
 
 - [x] Direct feature entries, including Face to face and screen/manga reading.

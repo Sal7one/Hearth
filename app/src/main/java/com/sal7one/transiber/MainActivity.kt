@@ -175,7 +175,6 @@ class MainActivity : ComponentActivity() {
         onTranslate = { go(11) },
         onCamera = { go(10) },
         onReading = { reading() },
-        onSettings = { quickSettings = true },
        ) else when(page) {
         0 -> CaptionHome(onModels = { go(1) }, onCloud = { speechSettings(SettingsLocation.CLOUD) })
         1 -> ModelsScreen(onDownloads = { go(2) }, onVoices = { voiceSettings(SettingsLocation.LOCAL) }, initialSection = modelsSection)

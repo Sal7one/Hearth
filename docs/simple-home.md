@@ -1,10 +1,15 @@
 # Simple home and themes
 
-Hearth 0.18.0 defaults to a quiet, neutral **Clean** theme and **Simple home**.
-Six labelled rows with circular icons open Live captions, Conversation, Face to
-face, Type to translate, Camera & photos, and Screen & manga. Home does not load
-models, request permissions or start capture. Feature setup and Android consent
-remain explicit.
+Hearth 0.18.1 defaults to a quiet, neutral **Clean** theme and **Simple home**.
+Home has three large illustrated buttons and no explanatory paragraphs:
+**Listen**, **Talk**, and **Translate**. Listen opens captions; Talk opens two
+illustrated choices (Chat, Face to face); Translate opens three (Text,
+Camera, Screen). The gear opens settings. All artwork is original scalable vector
+drawing, with no remote assets or continuous animation.
+
+Home does not load models, request permissions or start capture. Feature setup
+and Android consent remain explicit. The six-row directory shipped in 0.18.0 was
+replaced after owner feedback; Classic tabs remains available.
 
 ## Short paths
 
@@ -14,9 +19,10 @@ paths, not a claim that every provider can be configured from scratch in five ta
 
 | Action | Path | Taps |
 | --- | --- | ---: |
-| Open captions, either conversation layout, typed translation or camera | Feature row | 1 |
-| Open screen/manga overlay setup | Screen & manga | 1 |
-| Move between main features | Home → feature | 2 |
+| Open captions | Listen | 1 |
+| Open either conversation layout | Talk → layout | 2 |
+| Open typed translation, camera or screen/manga setup | Translate → input | 2 |
+| Move between main features | Home → category → input if needed | 2–3 |
 | Change theme, brightness or navigation layout | Settings → Appearance & navigation → choice | 3 |
 | Open local speech/translation/voice/OCR setup | Settings → category | 2 |
 | Open cloud speech/translation/voice setup | Settings → Cloud → category | 3 |
@@ -47,14 +53,16 @@ and are observed by separately composed app activities. Caption text/background
 and reading overlay opacity retain their own settings. Saved `OCEAN` identifiers
 still select Organic. Missing/unknown palette values select Clean.
 
-Labels use native Compose text for shaping, scaling and semantics. Feature rows
-have a single accessible action and decorative icons, flexible height and a
-scrollable layout. Navigation controls retain labelled 48 dp targets. No continuous
+Labels use native Compose text for shaping, scaling and semantics. Feature buttons
+have accessible names and decorative illustrations, flexible height and a
+scrollable fallback for small displays or large text. Navigation controls retain labelled 48 dp targets. No continuous
 animation or new graphics/runtime dependency is introduced.
 
 ## Implementation and validation
 
-- `home/home_screen.kt`: independent feature entry UI.
+- `home/home_screen.kt`: three large feature entries.
+- `home/home_mode_sheet.kt`: two/three-choice visual sheets.
+- `home/home_feature_art.kt`: original scalable illustrations, no raster downloads.
 - `settings/settings_quick_sheet.kt`: shared direct settings destinations.
 - `settings/settings_app_preferences.kt`: common directory links.
 - `ui/theme/AppearanceSettings.kt`: live persisted appearance/navigation choices.

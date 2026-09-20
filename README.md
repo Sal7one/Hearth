@@ -19,8 +19,8 @@ layout remains available in Appearance & navigation.
 
 ## What you can try
 
-- **Keep navigation simple.** Open captions, conversation, Face to face, typed
-  translation, camera/photos or screen/manga reading from Home. Quick settings
+- **Keep navigation simple.** Three illustrated Home buttons—Listen, Talk and
+  Translate—reach captions, conversation, text, camera or screen reading in 1–2 taps. Quick settings
   offers direct Local/Cloud setup links. Choose Clean, Ink, Sky or the original
   Organic theme, with System/Light/Dark modes. See [navigation and themes](docs/simple-home.md).
 
