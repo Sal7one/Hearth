@@ -300,3 +300,13 @@ remembered local weights and permits a later explicit override. `integratedCapti
 is also the caption translator chooser's provider label source. `CaptionCloudSelectionTest`
 covers stored round trips, actual route/picker agreement, CC → Translate, deliberate
 separate translators and ASR-only connections. Opening a screen does not apply a preset.
+
+## Hearth 0.22.2
+
+The simple caption settings now consumes the same `selectCaptionEngine` transition
+as advanced/cloud setup. A persisted speech selection revision makes connection
+changes observable even when the engine remains Cloud. Host cases cover retained
+local overrides, Auto → Spanish, reselection, and preference round trips.
+`StreamingCloudEngine` is the production lifecycle owner; fake-client concurrency
+tests cover shutdown during send, late callbacks/connection acknowledgement, first
+provider error preservation, failed-socket admission and queued tail drainage.

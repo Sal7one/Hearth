@@ -52,4 +52,31 @@ class CaptionCloudSelectionTest {
         }
         assertNull(integratedCaptionProvider(CaptionEngineChoice.NEMOTRON, SttMode.STREAMING_OPENAI))
     }
+
+    @Test fun simpleCloudReselectionRestoresAutomaticSpanishWithoutLoadingHyMt() {
+        val mode = SttMode.STREAMING_OPENAI
+        val stale = previous.copy(engine = CaptionEngineChoice.CLOUD, streamLanguage = "auto",
+            target = TranslationTarget.of("es"))
+        val selected = stale.selectCaptionEngine(CaptionEngineChoice.CLOUD, mode)
+        val prefs = mutablePreferencesOf()
+        CaptionConfigStore.writeInto(prefs, selected)
+        val restored = CaptionConfigStore.readFrom(prefs)
+        assertEquals(CaptionTranslationRoute.LIVE_TARGET, captionTranslationRoute(restored, mode))
+        assertEquals("es", restored.target.languageTag)
+        assertEquals("auto", restored.streamLanguage)
+        assertFalse(restored.localTranslationEnabled)
+        assertEquals(stale.localTranslationModelId, restored.localTranslationModelId)
+        assertTrue(CaptionLanguages.target(restored, mode).note.contains("OpenAI"))
+    }
+
+    @Test fun connectionSelectionPersistsAnObservableRevisionEvenWhenCloudRemainsSelected() {
+        val first = previous.selectCaptionEngine(CaptionEngineChoice.CLOUD, SttMode.STREAMING_OPENAI)
+        val next = first.selectCaptionEngine(CaptionEngineChoice.CLOUD, SttMode.STREAMING_SONIOX)
+        assertEquals(first.speechSelectionRevision + 1, next.speechSelectionRevision)
+        assertNotEquals(first, next)
+        val prefs = mutablePreferencesOf()
+        CaptionConfigStore.writeInto(prefs, next)
+        assertEquals(next.speechSelectionRevision, CaptionConfigStore.readFrom(prefs).speechSelectionRevision)
+        assertEquals(0L, CaptionConfigStore.readFrom(mutablePreferencesOf()).speechSelectionRevision)
+    }
 }

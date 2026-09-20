@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.22.2 — 2026-09-21
+
+- Fix the simple captions speech selector retaining a local translator when switching or reselecting Cloud; integrated OpenAI/Soniox translation now wins on explicit provider selection.
+- Restart streaming connections on explicit provider reselection, and save the provider mode before notifying the caption service.
+- Stop audio admission after socket failure, preserve the first provider error, ignore retired-session callbacks, and finish queued audio before ending provider input.
+
 ## 0.22.1 — 2026-09-20
 
 - Selecting OpenAI or Soniox streaming now selects its integrated cloud translation route instead of retaining an old local/text translator override.

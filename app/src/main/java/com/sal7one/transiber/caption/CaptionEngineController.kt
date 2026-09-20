@@ -430,6 +430,7 @@ class CaptionEngineController(
         val previous = currentConfig
         currentConfig = config
         val localOnlyChange = previous.effectiveEngine.speechBackend != null &&
+            previous.speechSelectionRevision == config.speechSelectionRevision &&
             previous.effectiveEngine == config.effectiveEngine && previous.modelId == config.modelId &&
             previous.streamLanguage == config.streamLanguage && previous.paused == config.paused
         if (localOnlyChange && !config.paused && localSpeech != null) {
@@ -441,6 +442,7 @@ class CaptionEngineController(
             return
         }
         val engineRelevant =
+            previous.speechSelectionRevision != config.speechSelectionRevision ||
             previous.mode != config.mode ||
                 previous.target != config.target ||
                 previous.effectiveEngine != config.effectiveEngine ||
@@ -521,10 +523,9 @@ class CaptionEngineController(
 
     private suspend fun loadEngine(config: CaptionOverlayConfig): LoadedCaptionEngine = withContext(Dispatchers.IO) {
         engineTranslatesToTarget = false
-        activeRoute = captionTranslationRoute(config,
-            if (config.engine == CaptionEngineChoice.CLOUD) com.sal7one.transiber.byok.CloudConfigStore.sttMode(context)
-            else com.sal7one.transiber.byok.CloudConfigStore.SttMode.BATCH)
-        val spokenLanguage = CaptionLanguages.effectiveSource(config, com.sal7one.transiber.byok.CloudConfigStore.sttMode(context), captionLanguageModel(context, config))
+        val cloudMode = com.sal7one.transiber.byok.CloudConfigStore.sttMode(context)
+        activeRoute = captionTranslationRoute(config, cloudMode)
+        val spokenLanguage = CaptionLanguages.effectiveSource(config, cloudMode, captionLanguageModel(context, config))
         resolvedSpokenLanguage = spokenLanguage
         if (config.effectiveEngine.speechBackend != null) {
             val models = LocalSpeechModels(java.io.File(context.filesDir, "speech-models"))
@@ -568,7 +569,7 @@ class CaptionEngineController(
                 )
             }
             val cloudStore = com.sal7one.transiber.byok.CloudConfigStore
-            val sttMode = cloudStore.sttMode(context)
+            val sttMode = cloudMode
             if (sttMode != com.sal7one.transiber.byok.CloudConfigStore.SttMode.BATCH) {
                 // TRUE STREAMING: WebSocket interim results per provider.
                 val client: com.sal7one.transiber.byok.StreamingSttClient = when (sttMode) {

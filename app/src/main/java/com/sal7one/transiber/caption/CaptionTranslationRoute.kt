@@ -48,6 +48,7 @@ internal fun integratedCaptionProvider(engine: CaptionEngineChoice, mode: SttMod
 internal fun CaptionOverlayConfig.selectCaptionEngine(next: CaptionEngineChoice, mode: SttMode): CaptionOverlayConfig {
     val integrated = integratedCaptionProvider(next, mode) != null
     return copy(engine = next, modelId = if (engine == next) modelId else "",
+        speechSelectionRevision = speechSelectionRevision + 1,
         streamLanguage = if (integrated || next.speechBackend != null) "auto" else streamLanguage,
         textTranslationProviderId = if (integrated) "" else textTranslationProviderId,
         localTranslationEnabled = if (integrated) false else localTranslationEnabled)

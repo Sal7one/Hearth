@@ -18,6 +18,10 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.withContext
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.ConcurrentLinkedQueue
 
 /**
@@ -54,6 +58,13 @@ class StreamingCloudEngine(
     @Volatile private var publishedInterim: String = ""
     @Volatile private var lastError: String? = null
     @Volatile private var initialized = false
+    @Volatile private var released = false
+    @Volatile private var failure: String? = null
+    private var providerFailure = false
+    @Volatile private var inputEnded = false
+    private val ready = CompletableDeferred<Unit>()
+    private val clientClosed = AtomicBoolean(false)
+    private var sender: Job? = null
 
     override val engineType: SttEngineType = SttEngineType.WHISPER
     override val isInitialized: Boolean get() = initialized
@@ -63,9 +74,10 @@ class StreamingCloudEngine(
         if (!ByokPolicy.FEATURE_BYOK) {
             return Result.failure(IllegalStateException(RemoteWhisperEngine.NETWORK_DISABLED_MESSAGE))
         }
-        val ready = CompletableDeferred<Unit>()
         wireCallbacks()
-        client.onConnected = { ready.complete(Unit) }
+        client.onConnected = { synchronized(transcriptLock) {
+            if (!released && failure == null) ready.complete(Unit)
+        } }
         val errorHandler = client.onError
         client.onError = { message ->
             ready.completeExceptionally(IllegalStateException(message))
@@ -74,17 +86,25 @@ class StreamingCloudEngine(
         return try {
             client.connect()
             withTimeout(connectTimeoutMs) { ready.await() }
-            initialized = true
-            scope.launch {
+            synchronized(transcriptLock) {
+                check(!released) { "Streaming session released" }
+                failure?.let { error(it) }
+                initialized = true
+            }
+            sender = scope.launch {
                 for (pcm in audioChannel) {
                     if (!initialized) break
                     try { client.sendPcm(pcm) }
-                    catch (e: Exception) { lastError = "stream send: ${e.message}"; break }
+                    catch (e: CancellationException) { throw e }
+                    catch (e: Exception) {
+                        recordFailure("stream send: ${e.message ?: e.javaClass.simpleName}")
+                        break
+                    }
                 }
             }
             Result.success(Unit)
         } catch (e: Exception) {
-            client.close()
+            retire()
             if (e is TimeoutCancellationException) {
                 Result.failure(IllegalStateException("$providerLabel connection timed out after $connectTimeoutMs ms", e))
             } else {
@@ -95,17 +115,18 @@ class StreamingCloudEngine(
     }
 
     override suspend fun pushAudioChunk(chunk: AudioChunk): Result<Unit> {
-        if (!initialized) return Result.failure(IllegalStateException("Not initialized"))
+        failure?.let { return Result.failure(IllegalStateException(it)) }
+        if (!initialized) return Result.failure(IllegalStateException(failure ?: "Not initialized"))
         if (chunk.samples.isNotEmpty()) {
             if (audioChannel.trySend(chunk.samples).isFailure) {
-                return Result.failure(IllegalStateException("Streaming audio queue full"))
+                return Result.failure(IllegalStateException(failure ?: if (inputEnded) "Streaming audio has ended" else "Streaming audio queue full"))
             }
         }
         return Result.success(Unit)
     }
 
     override suspend fun getPartialTranscript(): PartialTranscript? {
-        if (lastError != null) return null
+        if (failure != null || released) return null
         val interim = publishedInterim
         return if (interim.isBlank()) null
         else PartialTranscript(text = interim, timestampMs = now(), isStable = false)
@@ -120,13 +141,26 @@ class StreamingCloudEngine(
 
     /** The audio source ended — flush the provider's buffered audio so the
      * trailing utterance still finalizes (see [StreamingSttClient.onCaptureEnded]). */
-    fun onCaptureEnded() = client.onCaptureEnded()
+    suspend fun onCaptureEnded() {
+        if (inputEnded || released) return
+        inputEnded = true
+        audioChannel.close()
+        // A controller queue drain is not enough: this engine has its own queue.
+        sender?.join()
+        if (initialized && !released) {
+            try { client.onCaptureEnded() }
+            catch (e: CancellationException) { throw e }
+            catch (e: Exception) { recordFailure("stream end: ${e.message ?: e.javaClass.simpleName}") }
+        }
+    }
 
     /** Non-sticky error for UI surfacing (same pattern as RemoteWhisperEngine). */
     fun takeLastErrorForUi(): String? = lastError?.also { lastError = null }
 
     override suspend fun finalize(): Result<TranscriptResult> {
-        client.close()
+        onCaptureEnded()
+        retire()
+        failure?.let { return Result.failure(IllegalStateException(it)) }
         return Result.success(
             TranscriptResult(
                 segments = emptyList(),
@@ -142,16 +176,40 @@ class StreamingCloudEngine(
         publishedInterim = ""
         synchronized(transcriptLock) { captionUpdates.clear(); translatedInterim = "" }
         finals.clear()
-        lastError = null
+        // Clearing text must not make a dead socket look healthy again.
         return Result.success(Unit)
     }
 
     override suspend fun release() {
-        initialized = false
-        client.close()
-        audioChannel.close()
+        retire()
+        withContext(NonCancellable) { sender?.join() }
         finals.clear()
+    }
+
+    private fun retire() {
+        synchronized(transcriptLock) {
+            released = true
+            initialized = false
+            ready.cancel(CancellationException("Streaming session released"))
+        }
+        audioChannel.cancel()
         scope.cancel()
+        closeClient()
+    }
+
+    private fun closeClient() { if (clientClosed.compareAndSet(false, true)) client.close() }
+
+    private fun recordFailure(message: String, fromProvider: Boolean = false) {
+        synchronized(transcriptLock) {
+            // Retired sessions cannot publish errors; retain the original server cause
+            // when rejecting subsequent audio also throws a generic send failure.
+            if (released || (failure != null && (!fromProvider || providerFailure))) return
+            providerFailure = fromProvider
+            failure = message
+            lastError = message
+            initialized = false
+            audioChannel.cancel()
+        }
     }
 
     override suspend fun transcribeBatch(
@@ -179,9 +237,7 @@ class StreamingCloudEngine(
                 publishedInterim = ""
             }
         } }
-        client.onError = { message -> synchronized(transcriptLock) {
-            lastError = "$providerLabel streaming: $message"
-        } }
+        client.onError = { message -> recordFailure("$providerLabel streaming: $message", fromProvider = true) }
     }
 
     private fun now() = System.currentTimeMillis()

@@ -148,7 +148,9 @@ fun CaptionHome(
     if (options) FeatureOptionsSheet(uiText(UiR.string.ui_caption_settings_da0c8), { options = false }, optionsScroll) {
         val engines = CaptionEngineChoice.entries.filter { it != CaptionEngineChoice.CLOUD || ByokPolicy.FEATURE_BYOK }
         HomeChoice(uiText(UiR.string.ui_speech_engine_38c0a), uiText.label(cfg.effectiveEngine), engines.map { uiText.label(it) to it }, enabled = !running) { engine ->
-            if (engine != cfg.effectiveEngine) update { it.copy(engine = engine, modelId = "", localTranslationEnabled = it.mode == CaptionMode.TRANSLATE && (engine.speechBackend != null || it.textTranslationProviderId.isNotBlank())) }
+            if (engine != cfg.effectiveEngine || engine == CaptionEngineChoice.CLOUD) {
+                update { it.selectCaptionEngine(engine, CloudConfigStore.sttMode(context)) }
+            }
         }
         Text(if (isCloud) uiText(UiR.string.ui_audio_goes_to_your_configured_cloud_provider_77561) else uiText(UiR.string.ui_speech_stays_on_this_phone_c93d7), style = MaterialTheme.typography.bodySmall)
         OutlinedButton(onClick = { options = false; if (isCloud) onCloud() else onModels() }, modifier = Modifier.fillMaxWidth()) {

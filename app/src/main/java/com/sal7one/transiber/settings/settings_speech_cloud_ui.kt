@@ -103,8 +103,8 @@ fun SettingsSpeechCloudUi(onStoredChange: (Boolean) -> Unit = {}, onModeChange: 
                     selectingMode = true
                     selectionScope.launch {
                         try {
-                            CaptionConfigStore.update(context) { it.selectCaptionEngine(CaptionEngineChoice.CLOUD, mode) }
                             CloudConfigStore.setSttMode(context, mode)
+                            CaptionConfigStore.update(context) { it.selectCaptionEngine(CaptionEngineChoice.CLOUD, mode) }
                             currentSttMode = mode
                             onModeChange(mode)
                             keyStoreError = null

@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
@@ -128,6 +129,8 @@ data class CaptionOverlayConfig(
     val source: CaptionSource = CaptionSource.PLAYBACK_CAPTURE,
     val engine: CaptionEngineChoice = CaptionEngineChoice.WHISPER,
     val modelId: String = "",
+    // Explicit connection selection must restart even when the engine remains CLOUD.
+    val speechSelectionRevision: Long = 0,
     // Optional local text stage, independently switchable from speech recognition.
     val localTranslationEnabled: Boolean = false,
     val localTranslationModelId: String = "",
@@ -268,6 +271,7 @@ object CaptionConfigStore {
             engine = prefs[Engine]?.let { enumOrDefault(it, CaptionEngineChoice.WHISPER) }
                 ?: CaptionEngineChoice.WHISPER,
             modelId = prefs[ModelId] ?: "",
+            speechSelectionRevision = prefs[SpeechSelectionRevision] ?: 0,
             textTranslationProviderId = prefs[TextTranslationProviderId] ?: "",
             localTranslationEnabled = prefs[LocalTranslationEnabled] ?: false,
             localTranslationModelId = prefs[LocalTranslationModelId] ?: "",
@@ -302,6 +306,7 @@ object CaptionConfigStore {
         prefs[Source] = config.source.name
         prefs[Engine] = config.engine.name
         prefs[ModelId] = config.modelId
+        prefs[SpeechSelectionRevision] = config.speechSelectionRevision
         prefs[TextTranslationProviderId] = config.textTranslationProviderId
         prefs[LocalTranslationEnabled] = config.localTranslationEnabled
         prefs[LocalTranslationModelId] = config.localTranslationModelId
@@ -334,6 +339,7 @@ object CaptionConfigStore {
     private val Source = stringPreferencesKey("source")
     private val Engine = stringPreferencesKey("engine")
     private val ModelId = stringPreferencesKey("model_id")
+    private val SpeechSelectionRevision = longPreferencesKey("speech_selection_revision")
     private val Target = stringPreferencesKey("translation_target")
     private val StreamLanguage = stringPreferencesKey("stream_language")
     private val Display = stringPreferencesKey("caption_display")

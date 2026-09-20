@@ -14,11 +14,16 @@ class StreamingCloudEngineTest {
         override var onError: ((String) -> Unit)? = null
         override var onConnected: (() -> Unit)? = null
         val frames = ConcurrentLinkedQueue<ShortArray>()
+        var sendAction: (ShortArray) -> Unit = { frames.add(it) }
+        var closeAction: () -> Unit = {}
+        var closes = 0
+        var endedAfterFrames = -1
         var closed = false
         var connected = false
         override fun connect() { connected = true; connectAction() }
-        override fun sendPcm(pcm: ShortArray) { frames.add(pcm) }
-        override fun close() { closed = true }
+        override fun sendPcm(pcm: ShortArray) = sendAction(pcm)
+        override fun onCaptureEnded() { endedAfterFrames = frames.size }
+        override fun close() { closed = true; closes++; closeAction() }
     }
     @Test fun silenceTravelsAndExplicitFinalsRemainSeparate() = runBlocking {
         val client = FakeClient()
@@ -76,6 +81,109 @@ class StreamingCloudEngineTest {
                 assertTrue(result.exceptionOrNull()!!.message!!.contains("connection timed out"))
                 assertTrue(client.closed)
             }
+        } finally { engine.release() }
+    }
+
+    @Test fun retiringWhileSendingCannotPublishSocketRejectionOrLateCallbacks() = runBlocking {
+        if (!ByokPolicy.FEATURE_BYOK) return@runBlocking
+        val entered = CompletableDeferred<Unit>()
+        val finished = CompletableDeferred<Unit>()
+        val unblock = java.util.concurrent.CountDownLatch(1)
+        val client = FakeClient()
+        client.sendAction = {
+            entered.complete(Unit)
+            try {
+                check(unblock.await(3, java.util.concurrent.TimeUnit.SECONDS))
+                error("Transcription socket rejected audio")
+            } finally { finished.complete(Unit) }
+        }
+        client.closeAction = { unblock.countDown(); client.onError?.invoke("socket cancelled") }
+        val engine = StreamingCloudEngine(client, "OpenAI")
+        try {
+            engine.initialize("", SttConfig.forStreaming()).getOrThrow()
+            engine.pushAudioChunk(AudioChunk(ShortArray(800), 16000, 0, 50)).getOrThrow()
+            withTimeout(2000) { entered.await() }
+            engine.release()
+            withTimeout(2000) { finished.await() }
+            client.onConnected?.invoke()
+            client.onFinal?.invoke("obsolete")
+            client.onInterim?.invoke("obsolete")
+            assertFalse(engine.isInitialized)
+            assertNull(engine.takeSnapshot().error)
+            assertTrue(engine.takeFinals().isEmpty())
+            assertNull(engine.getPartialTranscript())
+        } finally { unblock.countDown(); engine.release() }
+        assertEquals(1, client.closes)
+    }
+
+    @Test fun providerCauseSurvivesSendFailureAndClearingText() = runBlocking {
+        if (!ByokPolicy.FEATURE_BYOK) return@runBlocking
+        val client = FakeClient()
+        val sent = CompletableDeferred<Unit>()
+        client.sendAction = {
+            client.onError?.invoke("quota_exceeded: test quota")
+            sent.complete(Unit)
+            error("Transcription socket rejected audio")
+        }
+        val engine = StreamingCloudEngine(client, "OpenAI")
+        try {
+            engine.initialize("", SttConfig.forStreaming()).getOrThrow()
+            engine.pushAudioChunk(AudioChunk(ShortArray(800), 16000, 0, 50)).getOrThrow()
+            withTimeout(2000) { sent.await() }
+            val expected = "OpenAI streaming: quota_exceeded: test quota"
+            assertEquals(expected, engine.takeSnapshot().error)
+            engine.reset().getOrThrow()
+            assertFalse(engine.isInitialized)
+            assertEquals(expected, engine.pushAudioChunk(AudioChunk(ShortArray(800), 16000, 0, 50)).exceptionOrNull()?.message)
+        } finally { engine.release() }
+    }
+
+    @Test fun genuineSendFailureStopsAdmissionAndLaterProviderCauseRemainsVisible() = runBlocking {
+        if (!ByokPolicy.FEATURE_BYOK) return@runBlocking
+        val client = FakeClient()
+        client.sendAction = { error("Transcription socket rejected audio") }
+        val engine = StreamingCloudEngine(client, "OpenAI")
+        try {
+            engine.initialize("", SttConfig.forStreaming()).getOrThrow()
+            engine.pushAudioChunk(AudioChunk(ShortArray(800), 16000, 0, 50)).getOrThrow()
+            withTimeout(2000) { while (engine.isInitialized) delay(5) }
+            assertEquals("stream send: Transcription socket rejected audio", engine.takeSnapshot().error)
+            assertTrue(engine.pushAudioChunk(AudioChunk(ShortArray(800), 16000, 0, 50)).isFailure)
+            client.onError?.invoke("HTTP 403: exact provider cause")
+            client.onError?.invoke("secondary close")
+            assertEquals("OpenAI streaming: HTTP 403: exact provider cause", engine.takeSnapshot().error)
+            assertEquals("OpenAI streaming: HTTP 403: exact provider cause", engine.finalize().exceptionOrNull()?.message)
+        } finally { engine.release() }
+    }
+
+    @Test fun releasingPendingConnectionCannotResurrectIt() = runBlocking {
+        if (!ByokPolicy.FEATURE_BYOK) return@runBlocking
+        val connecting = CompletableDeferred<Unit>()
+        val client = FakeClient { connecting.complete(Unit) }
+        val engine = StreamingCloudEngine(client, "OpenAI")
+        val startup = async { runCatching { engine.initialize("", SttConfig.forStreaming()) } }
+        withTimeout(2000) { connecting.await() }
+        engine.release()
+        client.onConnected?.invoke()
+        withTimeout(2000) { assertTrue(startup.await().isFailure) }
+        assertFalse(engine.isInitialized)
+        assertEquals(1, client.closes)
+        assertNull(engine.takeSnapshot().error)
+    }
+
+    @Test fun captureEndDrainsEngineQueueBeforeClosingProviderInput() = runBlocking {
+        if (!ByokPolicy.FEATURE_BYOK) return@runBlocking
+        val client = FakeClient()
+        val engine = StreamingCloudEngine(client, "OpenAI")
+        try {
+            engine.initialize("", SttConfig.forStreaming()).getOrThrow()
+            repeat(3) { engine.pushAudioChunk(AudioChunk(shortArrayOf(it.toShort()), 16000, 0, 1)).getOrThrow() }
+            engine.onCaptureEnded()
+            assertEquals(3, client.endedAfterFrames)
+            assertEquals(listOf<Short>(0,1,2), client.frames.map { it.single() })
+            client.onFinal?.invoke("trailing words")
+            assertEquals(listOf("trailing words"), engine.takeSnapshot().finals)
+            assertNull(engine.takeSnapshot().error)
         } finally { engine.release() }
     }
 }

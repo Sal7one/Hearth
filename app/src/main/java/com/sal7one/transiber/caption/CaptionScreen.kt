@@ -215,7 +215,7 @@ fun CaptionScreen(
                         OutlinedButton(onClick = {
                             CloudConfigStore.setSttMode(context, CloudConfigStore.SttMode.STREAMING_OPENAI)
                             cloudMode = CloudConfigStore.SttMode.STREAMING_OPENAI
-                            update { it.copy(engine = CaptionEngineChoice.CLOUD, mode = CaptionMode.TRANSLATE,
+                            update { it.selectCaptionEngine(CaptionEngineChoice.CLOUD, cloudMode).copy(mode = CaptionMode.TRANSLATE,
                                 target = target, source = CaptionSource.PLAYBACK_CAPTURE, streamLanguage = "auto", textTranslationProviderId = "",
                                 tapThrough = false, xOffsetPx = 0, yOffsetPx = 0, historyLines = maxOf(it.historyLines, CaptionReading.DEFAULT_PREVIOUS_LINES)) }
                         }) { Text(label) }
