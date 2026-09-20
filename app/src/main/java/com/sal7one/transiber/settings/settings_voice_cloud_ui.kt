@@ -21,11 +21,29 @@ internal fun SettingsVoiceCloudUi(language: String,onLanguage: (String)->Unit,on
     var capabilities by remember {mutableStateOf(runCatching{VoiceSettings.remote(context).capabilities}.getOrNull())}
     var selected by remember {mutableStateOf(prefs.getString("remote-voice","").orEmpty())}
     val client=remember {RemoteVoiceClient()};DisposableEffect(Unit){onDispose{client.close()}}
+    val matchesSavedEndpoint = RemoteVoiceProtocol.sameEndpoint(endpoint, prefs.getString("endpoint", "").orEmpty())
+    val dirty = !matchesSavedEndpoint || key.isNotBlank()
     Text("Text is sent to your HTTPS voice server. Chatterbox, Qwen3-TTS and Fish Speech require a separately running server; they are not embedded Android models. Language and voice choices come from that server.")
-    OutlinedTextField(endpoint,{endpoint=it},label={Text("Hearth voice API base URL · HTTPS")},modifier=Modifier.fillMaxWidth().padding(top=2.dp),singleLine=true)
-    OutlinedTextField(key,{key=it},label={Text(if(VoiceSettings.hasKey(context))"Replace saved API key" else "API key · if required")},visualTransformation=PasswordVisualTransformation(),modifier=Modifier.fillMaxWidth().padding(top=2.dp),singleLine=true)
-    Button(enabled=!working,onClick={working=true;onError(null);scope.launch {try {val secret=key.ifBlank {VoiceSettings.readKey(context)};val raw=client.execute(RemoteVoiceProtocol.request(endpoint,secret),secret).toString(Charsets.UTF_8);val found=RemoteVoiceProtocol.capabilities(raw);VoiceSettings.saveRemote(context,endpoint,key.takeIf(String::isNotBlank),raw);capabilities=found;key=""}catch(e: CancellationException){throw e}catch(e: Exception){onError(e.message ?: e.toString())}finally{working=false}}}){Text(if(working)"Checking…" else "Save & check voices")}
-    capabilities?.let {caps ->
+    OutlinedTextField(endpoint,{endpoint=it},enabled=!working,label={Text("Hearth voice API base URL · HTTPS")},modifier=Modifier.fillMaxWidth().padding(top=2.dp),singleLine=true)
+    OutlinedTextField(key,{key=it},enabled=!working,label={Text(if(matchesSavedEndpoint && VoiceSettings.hasKey(context))"Replace saved API key" else "API key · if required")},visualTransformation=PasswordVisualTransformation(),modifier=Modifier.fillMaxWidth().padding(top=2.dp),singleLine=true)
+    Button(enabled=!working,onClick={
+        val nextEndpoint=endpoint.trim()
+        val replacement=key.takeIf(String::isNotBlank) ?: if(matchesSavedEndpoint) null else ""
+        working=true;onError(null)
+        scope.launch {
+            try {
+                val secret=replacement ?: VoiceSettings.readKey(context)
+                val raw=client.execute(RemoteVoiceProtocol.request(nextEndpoint,secret),secret).toString(Charsets.UTF_8)
+                val found=RemoteVoiceProtocol.capabilities(raw)
+                VoiceSettings.saveRemote(context,nextEndpoint,replacement,raw)
+                capabilities=found;key=""
+            } catch(e: CancellationException){throw e}
+            catch(e: Exception){onError(e.message ?: e.toString())}
+            finally{working=false}
+        }
+    }){Text(if(working)"Checking…" else "Save & check voices")}
+    if(dirty) Text("Check this connection to load its languages and voices.",style=MaterialTheme.typography.bodySmall)
+    capabilities?.takeUnless {dirty}?.let {caps ->
         LaunchedEffect(caps){if(language !in caps.languages)onLanguage(caps.languages.first());if(selected !in caps.voices)selected=caps.voices.first()}
         Text("${caps.label} · ${caps.languages.size} languages")
         VoiceMenu("Preview language",language,caps.languages.sorted().map {it to LanguageCatalog.option(it).nativeName},onLanguage)
@@ -37,5 +55,5 @@ internal fun SettingsVoiceCloudUi(language: String,onLanguage: (String)->Unit,on
     VoiceModelCard("Chatterbox Multilingual V3","Self-hosted · Python","23 languages including Arabic. Default or reference voice; Turbo/Nano are separate English models.","MIT","https://github.com/resemble-ai/chatterbox","Source, models & setup",onError)
     VoiceModelCard("Qwen3-TTS 0.6B Base","Self-hosted · Python","10 languages; no Arabic. Requires your reference WAV and matching transcript.","Apache-2.0","https://huggingface.co/Qwen/Qwen3-TTS-12Hz-0.6B-Base","Model card, files & setup",onError)
     VoiceModelCard("Fish Speech","Self-hosted · official Fish server","Languages and voice IDs depend on the deployed checkpoint and server configuration.","Fish Audio Research License; separate commercial terms","https://github.com/fishaudio/fish-speech","Source, models & setup",onError)
-    TextButton(onClick={VoiceSettings.forget(context);capabilities=null;onError(null);onForgot()}){Text("Forget voice connection")}
+    TextButton(enabled=!working,onClick={VoiceSettings.forget(context);capabilities=null;onError(null);onForgot()}){Text("Forget voice connection")}
 }

@@ -25,7 +25,7 @@ class OcrPolicyTest {
         assertFalse(policy.observe("hello",false));assertTrue(policy.observe("hello",false))
     }
     @Test fun recognizerGroupsDeclareTheirActualLanguagesAndPinnedAssets() {
-        assertEquals(setOf("ar"),OcrCatalog.profile("arabic").languages)
+        assertTrue(setOf("ar","fa","ur").all { it in OcrCatalog.profile("arabic").languages })
         assertTrue("ru" in OcrCatalog.profile("cyrillic").languages)
         assertFalse("ar" in OcrCatalog.profile("cjk").languages)
         assertEquals(OcrCatalog.assets.size,OcrCatalog.assets.map{it.id}.distinct().size)

@@ -14,6 +14,9 @@ import kotlin.coroutines.resumeWithException
 /** SDK downloads are explicit setup actions. Inference never downloads packs. */
 object PlatformTranslation {
     val available = true
+    val languages: Set<String> by lazy {
+        TranslateLanguage.getAllLanguages().map { if (it == "tl") "fil" else it }.toSet()
+    }
     private val manager get() = RemoteModelManager.getInstance()
     private fun sdk(code: String) = if (code == "fil") "tl" else code
     private fun model(code: String) = TranslateRemoteModel.Builder(sdk(code)).build()

@@ -61,7 +61,7 @@ class LocalSpeechModelsTest {
     }
     @Test fun localRecognizersCannotAccidentallyUseWhisperTranslationTask() {
         for (engine in listOf(CaptionEngineChoice.QWEN, CaptionEngineChoice.NEMOTRON)) {
-            for (target in TranslationTarget.entries) {
+            for (target in listOf("en", "ar", "zh", "ja", "sv", "fr").map(TranslationTarget::of)) {
                 val config = CaptionOverlayConfig(engine = engine, mode = CaptionMode.TRANSLATE, target = target, streamLanguage = "en")
                 assertEquals(CaptionTranslationRoute.UNSUPPORTED, captionTranslationRoute(config, com.sal7one.transiber.byok.CloudConfigStore.SttMode.BATCH))
             }

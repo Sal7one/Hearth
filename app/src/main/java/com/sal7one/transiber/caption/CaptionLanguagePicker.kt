@@ -53,7 +53,7 @@ fun CaptionLanguageFields(
         }
         if (showTarget && (config.mode == CaptionMode.TRANSLATE || targetChoices != null)) {
             LanguageField("Translate to", config.target.languageTag, enabled) { open(CaptionLanguagePicker.TARGET) }
-            if (config.target.languageTag !in target.codes) Text("Choose an output language supported by this setup.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            if (!target.accepts(config.target.languageTag)) Text("Choose an output language supported by this setup.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
     picker?.let { which ->
@@ -108,7 +108,9 @@ fun LanguagePickerContent(
     searchable: Boolean = true,
 ) {
     var query by rememberSaveable { mutableStateOf("") }
-    val rows = remember(choices.codes, query) { LanguageCatalog.choices(choices.codes, query) }
+    val pickerCodes = choices.pickerCodes(selected)
+    val rows = remember(pickerCodes, query) { LanguageCatalog.choices(pickerCodes, query) }
+    val customCode = choices.customCode(query)
     // The note is lazy item 0; language rows start at 1. Open on the current
     // selection, reset search results to the top, and return to the selection
     // when search is cleared. Manual scrolling does not restart this effect.
@@ -129,7 +131,12 @@ fun LanguagePickerContent(
         LazyColumn(Modifier.weight(1f).fillMaxWidth().selectableGroup(), state = listState, contentPadding = PaddingValues(bottom = 16.dp)) {
             item(key = "note") { Text(choices.note, Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
-            if (rows.isEmpty()) item(key = "empty") { Text("No matching languages", Modifier.padding(16.dp).semantics { liveRegion = LiveRegionMode.Polite }) }
+            if (customCode != null) item(key = "custom-code") {
+                TextButton(onClick = { onSelect(customCode) }, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)) {
+                    Text("Use language code: $customCode · checked by provider")
+                }
+            }
+            if (rows.isEmpty() && customCode == null) item(key = "empty") { Text("No matching languages", Modifier.padding(16.dp).semantics { liveRegion = LiveRegionMode.Polite }) }
             items(rows, key = { it.code }) { language ->
                 Row(Modifier.fillMaxWidth().heightIn(min = 64.dp)
                     .selectable(selected = language.code == selected, role = Role.RadioButton, onClick = { onSelect(language.code) })

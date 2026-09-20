@@ -134,4 +134,13 @@ class CloudTranslationProtocolTest {
         rejects { CloudTranslationProtocol.translateRequest(connection(TextTranslationProvider.GOOGLE), "", "en", "ar") }
         assertFalse(connection(TextTranslationProvider.GOOGLE).toString().contains("test-secret"))
     }
+
+    @Test fun languageDiscoveryAndKeysAreScopedToTheExactApiRoot() {
+        for(provider in TextTranslationProvider.entries) {
+            assertTrue(CloudTranslationProtocol.sameEndpoint(provider,"https://translation.example/v2/","https://translation.example/v2"))
+            assertFalse(CloudTranslationProtocol.sameEndpoint(provider,"https://translation.example/v2","https://other.example/v2"))
+            assertFalse(CloudTranslationProtocol.sameEndpoint(provider,"https://translation.example/v2","https://translation.example/v3"))
+            assertFalse(CloudTranslationProtocol.sameEndpoint(provider,"http://translation.example","http://translation.example"))
+        }
+    }
 }

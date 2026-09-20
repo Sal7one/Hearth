@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.21.4 — 2026-09-20
+
+- Replace OpenAI's three-language restriction with a shared searchable picker and provider-validated language codes in Easy setup and live captions.
+- Read ML Kit language choices from the installed SDK; retain server-discovered translation directions and voice capabilities.
+- Remove invented language fallbacks for unknown local models and empty conversation capabilities.
+- Expand Paddle OCR and Scribe language metadata to their documented model coverage.
+- Bind translation discovery results to the current connection revision, hide stale remote-voice choices, and scope saved keys to their API roots.
+
 ## 0.21.3 — 2026-09-20
 
 - Make Easy setup header and Android Back retrace confirmation, form and chooser before leaving.

@@ -153,7 +153,7 @@ internal fun SettingsTranslateLocalUi(
         }
         if (showCaptionControls) {
         com.sal7one.transiber.caption.CaptionLanguageFields(config, update, showSource = false,
-            targetChoices = com.sal7one.transiber.caption.CaptionLanguageChoices(TranslationOptions.languages(config.localTranslationModelId).ifEmpty { spec.targetLanguages }, "Output languages supported by the active translator."))
+            targetChoices = com.sal7one.transiber.caption.CaptionLanguageChoices(TranslationOptions.languages(config.localTranslationModelId), "Output languages supported by the active translator."))
         val active = installed.firstOrNull { it.id == config.localTranslationModelId }
         Text(when {
             !config.localTranslationEnabled -> "Original-language CC; translation model stays unloaded."

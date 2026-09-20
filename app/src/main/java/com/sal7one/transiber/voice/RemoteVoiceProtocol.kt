@@ -21,6 +21,9 @@ internal object RemoteVoiceProtocol {
     fun endpoint(value: String): HttpUrl = value.trim().toHttpUrlOrNull()?.also {
         require(it.isHttps && it.username.isEmpty() && it.password.isEmpty() && it.query==null && it.fragment==null){"Voice server must be an HTTPS URL without credentials, query or fragment"}
     } ?: error("Enter a valid HTTPS voice server URL")
+    fun sameEndpoint(first: String, second: String): Boolean = runCatching {
+        endpoint(first).toString().trimEnd('/') == endpoint(second).toString().trimEnd('/')
+    }.getOrDefault(false)
     fun capabilities(raw: String): RemoteVoiceCapabilities {
         val json=JSONObject(raw)
         fun strings(name: String,max: Int)=json.getJSONArray(name).let {a ->require(a.length() in 1..max);(0 until a.length()).map {a.getString(it).also {v ->require(v.length in 1..120 && v.none(Char::isISOControl))}}}

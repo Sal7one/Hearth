@@ -71,6 +71,10 @@ object CloudTranslationProtocol {
         }
     }
 
+    fun sameEndpoint(provider: TextTranslationProvider, first: String, second: String): Boolean = runCatching {
+        endpoint(CloudTranslationConnection(provider, first, "")) == endpoint(CloudTranslationConnection(provider, second, ""))
+    }.getOrDefault(false)
+
     fun translateRequest(connection: CloudTranslationConnection, text: String, source: String, target: String,
                          languages: CloudTranslationLanguages? = null): Request {
         require(text.isNotBlank() && text.length <= 5000) { "Translation accepts 1–5000 characters" }

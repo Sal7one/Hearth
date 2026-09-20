@@ -48,7 +48,7 @@ class CaptionTextTranslatorTest {
     }
     @Test fun explicitLocalTargetsUseItsActualDirections() {
         val c=explicit("local").copy(localTranslationModelId=TranslationOptions.ML_KIT)
-        assertTrue("ar" in CaptionLanguages.target(c,SttMode.BATCH).codes)
+        assertEquals(PlatformTranslation.available, "ar" in CaptionLanguages.target(c,SttMode.BATCH).codes)
         assertFalse("ru" in CaptionLanguages.target(c,SttMode.BATCH).codes)
         assertTrue(CaptionLanguages.target(c.copy(streamLanguage="unsupported"),SttMode.BATCH).codes.isEmpty())
     }
@@ -79,6 +79,6 @@ class CaptionTextTranslatorTest {
     @Test fun localCapabilityCheckRejectsUnknownModelAndSameLanguage() {
         assertFalse(TranslationOptions.supports("unknown","ru","ar"))
         assertFalse(TranslationOptions.supports(TranslationOptions.ML_KIT,"ru","ru"))
-        assertTrue(TranslationOptions.supports(TranslationOptions.ML_KIT,"ru","ar"))
+        assertEquals(PlatformTranslation.available, TranslationOptions.supports(TranslationOptions.ML_KIT,"ru","ar"))
     }
 }

@@ -22,4 +22,16 @@ class RemoteVoiceProtocolTest {
         assertThrows(IllegalArgumentException::class.java){RemoteVoiceProtocol.capabilities(raw.replace("\"en\",\"zh\"","\"anything!\""))}
         assertThrows(IllegalArgumentException::class.java){RemoteVoiceProtocol.request("https://host","","text","en","invented",RemoteVoiceProtocol.capabilities(raw))}
     }
+
+    @Test fun capabilitiesAndCredentialsBelongToTheCheckedServer() {
+        assertTrue(RemoteVoiceProtocol.sameEndpoint("https://voice.example/api/", "https://voice.example/api"))
+        assertFalse(RemoteVoiceProtocol.sameEndpoint("https://voice.example/api", "https://other.example/api"))
+        assertFalse(RemoteVoiceProtocol.sameEndpoint("https://voice.example/api", "https://voice.example/other"))
+        assertFalse(RemoteVoiceProtocol.sameEndpoint("", ""))
+        val added=RemoteVoiceProtocol.capabilities(raw.replace("\"en\",\"zh\"", "\"sv\",\"fr\""))
+        val request=RemoteVoiceProtocol.request("https://voice.example/api", "", "bonjour", "fr", "reference", added)
+        val body=Buffer().also { request.body!!.writeTo(it) }.readUtf8()
+        assertEquals("fr",JSONObject(body).getString("language"))
+        assertThrows(IllegalArgumentException::class.java) { RemoteVoiceProtocol.request("https://voice.example/api", "", "hello", "en", "reference", added) }
+    }
 }

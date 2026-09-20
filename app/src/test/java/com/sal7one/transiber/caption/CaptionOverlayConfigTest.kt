@@ -115,7 +115,7 @@ class CaptionOverlayConfigTest {
             assertTrue(it.label.isNotBlank())
             assertTrue(it.multiplier > 0f)
         }
-        TranslationTarget.entries.forEach {
+        listOf("en", "ar", "zh", "ja", "sv", "fr").map(TranslationTarget::of).forEach {
             assertTrue(it.label.isNotBlank())
             assertTrue(it.languageTag.isNotBlank())
         }

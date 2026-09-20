@@ -26,13 +26,13 @@ class OpenAiTranslateClient(
 
     override fun connect() {
         check(ByokPolicy.FEATURE_BYOK) { RemoteWhisperEngine.NETWORK_DISABLED_MESSAGE }
+        val update = sessionUpdate(targetLanguage).toString() // Validate before entering the socket callback thread.
         socket = client.newWebSocket(Request.Builder()
             .url("wss://api.openai.com/v1/realtime/translations?model=gpt-realtime-translate")
             .header("Authorization", "Bearer $apiKey").build(), object : WebSocketListener() {
             override fun onOpen(ws: WebSocket, response: Response) {
                 if (closed) { ws.cancel(); return }
-                ws.send(JSONObject().put("type", "session.update").put("session",
-                    JSONObject().put("audio", JSONObject().put("output", JSONObject().put("language", targetLanguage)))).toString())
+                ws.send(update)
             }
             override fun onMessage(ws: WebSocket, text: String) {
                 if (closed) return
@@ -80,6 +80,14 @@ class OpenAiTranslateClient(
         socket = null
         client.dispatcher.executorService.shutdown()
         client.connectionPool.evictAll()
+    }
+
+    companion object {
+        internal fun sessionUpdate(language: String): JSONObject {
+            require(CloudSpeechLanguages.isExplicitLanguageCode(language)) { "Invalid translation language code: $language" }
+            return JSONObject().put("type", "session.update").put("session",
+                JSONObject().put("audio", JSONObject().put("output", JSONObject().put("language", language))))
+        }
     }
 
     internal fun resample16kTo24k(src: ShortArray): ShortArray = Pcm16Resampler.frame(src, 16_000, 24_000)

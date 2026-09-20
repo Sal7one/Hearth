@@ -3,7 +3,7 @@ package com.sal7one.transiber.caption
 import com.sal7one.common_jni.language.LanguageCatalog
 import com.sal7one.common_jni.speech.SpeechProfile
 import com.sal7one.common_jni.translation.TranslationCatalog
-import com.sal7one.common_jni.translation.TranslationLanguages
+import com.sal7one.transiber.byok.CloudSpeechLanguages
 import com.sal7one.transiber.byok.CloudConfigStore.SttMode
 
 /** Picker options come from recognition + adapter capabilities, never the display-name catalog. */
@@ -11,14 +11,26 @@ data class CaptionLanguageChoices(
     val codes: Set<String>,
     val note: String,
     val languages: List<com.sal7one.common_jni.speech.SpeechSourceLanguage> = emptyList(),
+    /** A provider-validated code field, not an assertion that every ISO language is supported. */
+    val allowsLanguageCode: Boolean = false,
 ) {
-    val allowsSelection: Boolean get() = codes.size > 1
+    val allowsSelection: Boolean get() = codes.size > 1 || allowsLanguageCode
+    fun accepts(code: String): Boolean = code in codes ||
+        (allowsLanguageCode && CloudSpeechLanguages.isExplicitLanguageCode(code))
+    fun customCode(query: String): String? = query.trim().lowercase(java.util.Locale.ROOT)
+        .takeIf { allowsLanguageCode && CloudSpeechLanguages.isExplicitLanguageCode(it) && it !in codes }
+    fun pickerCodes(selected: String): Set<String> = if (accepts(selected)) codes + selected else codes
 }
 
 /** The actual selected model, resolved identically before start and in both settings surfaces. */
 data class CaptionLanguageModel(val id: String, val label: String = id, val whisperVocabulary: Int? = null)
 
 object CaptionLanguages {
+    val openAiTranslation: CaptionLanguageChoices get() = CaptionLanguageChoices(
+        CloudSpeechLanguages.openAiTranslationSuggestions,
+        "OpenAI checks the requested language when you connect. This list shows language names, not guaranteed model coverage. Search by name or enter a 2–3 letter language code.",
+        allowsLanguageCode = true,
+    )
     private fun hinted(label: String, codes: Set<String>, explanation: String) = CaptionLanguageChoices(
         codes + "auto", "$label · $explanation",
         codes.map { com.sal7one.common_jni.speech.SpeechSourceLanguage(it, true) })
@@ -44,32 +56,21 @@ object CaptionLanguages {
             else -> automatic(model.label.ifBlank { "Whisper" }, "Language capabilities are unavailable until a supported model is imported. No language override will be sent.")
         }
         CaptionEngineChoice.CLOUD -> when {
-            cloudMode == SttMode.STREAMING_SONIOX -> hinted("Soniox v5", sonioxCodes, "Select a language hint, or Auto. A hint guides recognition; it does not prohibit other languages.")
-            cloudMode == SttMode.STREAMING_ELEVENLABS -> hinted("Scribe v2 Realtime", scribeCodes, "Select a spoken-language hint, or Auto. Select a source explicitly when using the local translation bridge.")
+            cloudMode == SttMode.STREAMING_SONIOX -> hinted("Soniox v5", CloudSpeechLanguages.sonioxCodes, "Select a language hint, or Auto. A hint guides recognition; it does not prohibit other languages.")
+            cloudMode == SttMode.STREAMING_ELEVENLABS -> hinted("Scribe v2 Realtime", CloudSpeechLanguages.scribeCodes, "Select a spoken-language hint, or Auto. Select a source explicitly when using the local translation bridge.")
             cloudMode == SttMode.STREAMING_ASSEMBLYAI -> automatic("AssemblyAI streaming", "Automatic source language only in this connection. There is no manual language control.")
             cloudMode == SttMode.STREAMING_OPENAI && captionTranslationRoute(config,cloudMode) == CaptionTranslationRoute.LIVE_TARGET -> automatic("OpenAI live translation", "Detects the spoken language automatically. This translation connection does not accept a source-language override.")
             cloudMode == SttMode.BATCH && captionTranslationRoute(config,cloudMode).sttToEnglish -> automatic(model.label.ifBlank { "Cloud audio translation" }, "The audio-translation endpoint detects the source automatically; it accepts no language override.")
-            cloudMode == SttMode.STREAMING_DEEPGRAM -> hinted("Deepgram Nova-3", deepgramCodes,
+            cloudMode == SttMode.STREAMING_DEEPGRAM -> hinted("Deepgram Nova-3", CloudSpeechLanguages.deepgramCodes,
                 "Select the spoken language for dedicated recognition. Auto uses multilingual mode (10 languages).")
-            cloudMode == SttMode.STREAMING_OPENAI -> hinted("OpenAI gpt-live-transcribe", cloudTranscriptionCodes,
+            cloudMode == SttMode.STREAMING_OPENAI -> hinted("OpenAI gpt-live-transcribe", CloudSpeechLanguages.cloudTranscriptionCodes,
                 "Select the spoken language to send an explicit recognition hint, or choose Auto.")
             model.id.substringAfterLast('/') == "whisper-1" || model.id.substringAfterLast('/').startsWith("whisper-large-v3") ||
-                Regex("gpt-4o-(mini-)?transcribe(-[0-9]{4}-[0-9]{2}-[0-9]{2})?").matches(model.id.substringAfterLast('/')) -> hinted(model.label, cloudTranscriptionCodes,
+                Regex("gpt-4o-(mini-)?transcribe(-[0-9]{4}-[0-9]{2}-[0-9]{2})?").matches(model.id.substringAfterLast('/')) -> hinted(model.label, CloudSpeechLanguages.cloudTranscriptionCodes,
                     "Select the spoken language to send an explicit recognition hint, or choose Auto.")
             else -> automatic(model.label.ifBlank { "Custom cloud model" }, "Manual spoken-language selection is not available for this model in this app. Recognition uses its default language behavior.")
         }
     }
-
-    // Conservative common-language hint set for the explicitly identified cloud models above.
-    // This is not a claim of exhaustive provider coverage; unknown models never inherit it.
-    val cloudTranscriptionCodes = "af ar hy az be bs bg ca zh hr cs da nl en et fi fr gl de el he hi hu is id it ja kn kk ko lv lt mk ms mr mi ne no fa pl pt ro ru sr sk sl es sw sv tl ta th tr uk ur vi cy".split(' ').toSet()
-
-    // Nova-3 base codes, publisher documentation checked 2026-09-12. Locale variants remain provider-specific.
-    val deepgramCodes = "af ar hy as be bn bs bg ca zh hr cs da nl en et fi fr ka de el gu he hi hu id it ja kn kk ko lv lt mk ms mr mn ne no ps fa pl pt pa ro ru sr sk sl es sv tl ta te th tr uk ur vi".split(' ').toSet()
-
-    val sonioxCodes = "af sq ar az eu be bn bs bg ca zh hr cs da nl en et fi fr gl de el gu he hi hu id it ja kn kk ko lv lt mk ms ml mr no fa pl pt pa ro ru sr sk sl es sw sv tl ta te th tr uk ur vi cy".split(' ').toSet()
-    // Initial adapter language choices verified in Scribe's supported language list.
-    val scribeCodes = setOf("en", "ar", "ru", "zh", "ja", "ko", "fr", "de", "es", "pt", "it", "hi", "tr", "uk", "nl", "pl", "sv", "fi", "da", "vi", "id", "ms", "th")
 
     fun target(config: CaptionOverlayConfig, cloudMode: SttMode,
                textLanguages: com.sal7one.transiber.translation.CloudTranslationLanguages? = null): CaptionLanguageChoices = when {
@@ -84,15 +85,15 @@ object CaptionLanguages {
                 if (textLanguages == null) "Set up this translation connection and check its languages first." else "Cloud text translation · supported targets from the chosen spoken language.")
         }
         config.engine == CaptionEngineChoice.CLOUD && cloudMode == SttMode.STREAMING_SONIOX ->
-            CaptionLanguageChoices(sonioxCodes, "Soniox v5 integrated translation; original and translated text are retained separately.")
+            CaptionLanguageChoices(CloudSpeechLanguages.sonioxCodes, "Soniox v5 integrated translation; original and translated text are retained separately.")
         config.engine == CaptionEngineChoice.CLOUD && cloudMode == SttMode.STREAMING_OPENAI ->
-            CaptionLanguageChoices(setOf("en", "ar", "zh"), "Available output languages in this app’s live cloud translation setup.")
+            openAiTranslation
         captionTranslationRoute(config.copy(mode = CaptionMode.TRANSLATE), cloudMode) == CaptionTranslationRoute.TEXT_TRANSLATOR && config.localTranslationModelId == com.sal7one.transiber.translation.TranslationOptions.ML_KIT ->
             CaptionLanguageChoices(com.sal7one.transiber.translation.TranslationOptions.mlKitCodes, "ML Kit · download spoken and target language packs in Models. Non-English pairs translate through English.")
         config.engine.speechBackend != null || captionTranslationRoute(config.copy(mode = CaptionMode.TRANSLATE), cloudMode) == CaptionTranslationRoute.TEXT_TRANSLATOR -> {
             val spec = TranslationCatalog.models.firstOrNull { it.id == config.localTranslationModelId }
-            CaptionLanguageChoices(spec?.targetLanguages ?: TranslationLanguages.hyLanguages,
-                if (spec == null) "Choose a local translation model in Setup to translate into these languages."
+            CaptionLanguageChoices(spec?.targetLanguages.orEmpty(),
+                if (spec == null) "Choose a known local translation model in Setup to load its languages."
                 else "${spec.label}: ${spec.targetLanguages.size} output languages. The spoken language must also be supported by this translation model.")
         }
         config.engine == CaptionEngineChoice.WHISPER || (config.engine == CaptionEngineChoice.CLOUD && cloudMode == SttMode.BATCH) ->

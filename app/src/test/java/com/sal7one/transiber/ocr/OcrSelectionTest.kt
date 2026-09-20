@@ -42,7 +42,7 @@ class OcrSelectionTest {
     @Test fun offlineBuildAndUnknownModelsDoNotAdvertiseUnavailablePacks() {
         val selection=OcrSelection()
         assertTrue(ocrTranslationTargets(selection,TranslationOptions.ML_KIT,null,false).isEmpty())
-        assertTrue("ar" in ocrTranslationTargets(selection,TranslationOptions.ML_KIT,null,true))
+        assertEquals(com.sal7one.transiber.translation.PlatformTranslation.available, "ar" in ocrTranslationTargets(selection,TranslationOptions.ML_KIT,null,true))
         assertTrue(ocrTranslationTargets(selection,"unknown",null,true).isEmpty())
     }
 }

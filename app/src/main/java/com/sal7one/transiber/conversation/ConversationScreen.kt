@@ -68,7 +68,7 @@ fun ConversationScreen(onModels: () -> Unit = {}, onCloud: () -> Unit = {}, onLa
     val translationRevision by ConversationTranslationSettings.revision.collectAsState()
     val translationCodes = remember(translationRevision, config.localTranslationModelId) { ConversationTranslationSettings.languages(context, config.localTranslationModelId) }
     val translatorLabel = remember(translationRevision, config.localTranslationModelId) { ConversationTranslationSettings.label(context, config.localTranslationModelId) }
-    val codes = (translationCodes + recognitionCodes).ifEmpty { setOf("ar", "en") }
+    val codes = (translationCodes + recognitionCodes)
     val languageChoices = CaptionLanguageChoices(codes,
         "Choose the languages you and the other person use. Speak is available only when the selected speech model supports that language and the translator supports the direction. ${sourceChoices.note}")
     var picker by rememberSaveable { mutableStateOf<Int?>(null) }

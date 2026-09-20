@@ -36,7 +36,8 @@ internal object VoiceSettings {
     fun saveRemote(context: Context,endpoint: String,key: String?,capabilities: String){
         check(ByokPolicy.FEATURE_BYOK);RemoteVoiceProtocol.endpoint(endpoint);RemoteVoiceProtocol.capabilities(capabilities)
         val edit=prefs(context).edit().putString("endpoint",endpoint.trim()).putString("capabilities",capabilities)
-        key?.let {if(it.isBlank())edit.remove("secret") else {val cipher=Cipher.getInstance("AES/GCM/NoPadding");cipher.init(Cipher.ENCRYPT_MODE,master());edit.putString("secret",Base64.encodeToString(cipher.iv,Base64.NO_WRAP)+":"+Base64.encodeToString(cipher.doFinal(it.toByteArray(Charsets.UTF_8)),Base64.NO_WRAP))}}
+        val scopedKey = key ?: if (RemoteVoiceProtocol.sameEndpoint(endpoint, prefs(context).getString("endpoint", "").orEmpty())) null else ""
+        scopedKey?.let {if(it.isBlank())edit.remove("secret") else {val cipher=Cipher.getInstance("AES/GCM/NoPadding");cipher.init(Cipher.ENCRYPT_MODE,master());edit.putString("secret",Base64.encodeToString(cipher.iv,Base64.NO_WRAP)+":"+Base64.encodeToString(cipher.doFinal(it.toByteArray(Charsets.UTF_8)),Base64.NO_WRAP))}}
         check(edit.commit()){"Could not save voice connection"}
     }
     fun hasKey(context: Context)=prefs(context).contains("secret")

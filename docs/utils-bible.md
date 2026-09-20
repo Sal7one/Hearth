@@ -257,3 +257,22 @@ back chains, completion boundaries and serialized step restoration. Navigation
 state contains no form values or credentials. `HomeServiceStore` additionally
 persists the presentation-only collapsed flag; device checks exercise both values
 across process restart instead of duplicating SharedPreferences implementation.
+
+### Shared language capabilities (0.21.4)
+
+`CaptionLanguageChoices.accepts`, `customCode` and `pickerCodes` are consumed by
+shared caption/setup selection and validation. `CloudSpeechLanguages` centralizes
+provider metadata and ISO-name suggestions without claiming language discovery.
+`OpenAiTranslateClient.sessionUpdate` is the production session payload builder;
+the language tests check its actual output after the Easy setup/preferences path.
+`PlatformTranslation.languages` comes from the Play SDK and is empty in FOSS.
+`LanguageCapabilitiesTest` covers arbitrary-code boundaries, saved selections,
+unknown models, discovered translation directions, flavor isolation and OCR reader
+selection. Fixed model catalogs remain authoritative for local inference.
+
+`CloudTranslationProtocol.sameEndpoint` and `RemoteVoiceProtocol.sameEndpoint`
+are used by connection settings to scope credential reuse; protocol tests cover
+normalized roots, distinct paths/hosts and rejected insecure URLs. Translation
+capability writes require the saved connection generation so a late response cannot
+restore stale language choices after another save/forget. No inference or native
+API was changed. See [capability inventory](language-capabilities.md).

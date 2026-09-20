@@ -46,13 +46,16 @@ internal object ConversationTranslationSettings {
         check(ByokPolicy.FEATURE_BYOK) { "Cloud translation is unavailable in the offline build." }
         return CloudTranslationConnection(provider, endpoint(context, provider), readKey(context, provider), region(context, provider))
     }
-    fun save(context: Context, provider: TextTranslationProvider, endpoint: String, region: String, replacementKey: String?) {
+    @Synchronized
+    fun save(context: Context, provider: TextTranslationProvider, endpoint: String, region: String, replacementKey: String?): String {
         check(ByokPolicy.FEATURE_BYOK) { "Cloud translation is unavailable in the offline build." }
-        val edit = prefs(context).edit()
+        val generation = java.util.UUID.randomUUID().toString()
+        val edit = prefs(context).edit().putString("${provider.id}.generation", generation)
         // A new server/key can expose different languages. Only a successful fresh check restores them.
         edit.remove("${provider.id}.languages").putString("${provider.id}.endpoint", endpoint.trim())
             .putString("${provider.id}.region", region.trim())
-        replacementKey?.let { key ->
+        val scopedKey = replacementKey ?: if (CloudTranslationProtocol.sameEndpoint(provider, endpoint, endpoint(context, provider))) null else ""
+        scopedKey?.let { key ->
             if (key.isBlank()) edit.remove("${provider.id}.key")
             else {
                 val cipher = Cipher.getInstance("AES/GCM/NoPadding")
@@ -61,10 +64,11 @@ internal object ConversationTranslationSettings {
                 edit.putString("${provider.id}.key", Base64.encodeToString(cipher.iv, Base64.NO_WRAP) + ":" + Base64.encodeToString(encrypted, Base64.NO_WRAP))
             }
         }
-        check(edit.commit()) { "Could not save translation connection" }; changed()
+        check(edit.commit()) { "Could not save translation connection" }; changed(); return generation
     }
+    @Synchronized
     fun forget(context: Context, provider: TextTranslationProvider) {
-        val edit = prefs(context).edit().remove("${provider.id}.key").remove("${provider.id}.languages")
+        val edit = prefs(context).edit().remove("${provider.id}.key").remove("${provider.id}.languages").remove("${provider.id}.generation")
         if (selected(context) == provider.id) edit.putString("selected", LOCAL)
         check(edit.commit()) { "Could not remove translation key" }; changed()
     }
@@ -78,7 +82,11 @@ internal object ConversationTranslationSettings {
             })
         } catch (_: Exception) { null } // Corrupt cache requires explicit refresh; never invent capabilities.
     }
-    fun saveCapabilities(context: Context, provider: TextTranslationProvider, languages: CloudTranslationLanguages) {
+    @Synchronized
+    fun saveCapabilities(context: Context, provider: TextTranslationProvider, languages: CloudTranslationLanguages, generation: String) {
+        check(prefs(context).getString("${provider.id}.generation", null) == generation) {
+            "This translation connection changed during language discovery. Check its languages again."
+        }
         val pairs = JSONObject(); languages.targetsBySource.forEach { (from, to) -> pairs.put(from, JSONArray(to.toList())) }
         val json = JSONObject().put("sources", JSONObject(languages.sourceCodes)).put("targets", JSONObject(languages.targetCodes)).put("pairs", pairs)
         check(prefs(context).edit().putString("${provider.id}.languages", json.toString()).commit()) { "Could not save supported translation languages" }

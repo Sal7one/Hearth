@@ -21,13 +21,12 @@ internal object EasySetupPreset {
     }
     fun cloud(previous: CaptionOverlayConfig, provider: CloudConfigStore.Provider, target: String): CaptionOverlayConfig {
         val live=provider==CloudConfigStore.Provider.OPENAI
-        if(live) require(target in openAiTargets) { "Unsupported live translation destination: $target" }
+        if(live) require(CaptionLanguages.openAiTranslation.accepts(target)) { "Unsupported live translation destination: $target" }
         return previous.copy(engine=CaptionEngineChoice.CLOUD, modelId="", streamLanguage="auto",
             mode=if(live) CaptionMode.TRANSLATE else CaptionMode.CAPTIONS,
             target=if(live) TranslationTarget.of(target) else previous.target,
             localTranslationEnabled=false, textTranslationProviderId="")
     }
-    val openAiTargets = setOf("en","ar","zh") // Same destinations as CaptionLanguages' live adapter.
     fun endpoint(value: String): String {
         val trimmed=value.trim().trimEnd('/')
         val uri=runCatching { URI(trimmed) }.getOrElse { error("Enter a valid HTTPS server URL.") }

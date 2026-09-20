@@ -23,7 +23,10 @@ local inference sessions must stop before a preset is applied. Applying the loca
 preset also chooses its translator for the shared conversation/text/camera setup.
 
 Cloud contains only OpenAI, OpenRouter and Local server. OpenAI uses Hearth's existing
-live translation adapter and its supported destination choices. OpenRouter uses the
+live translation adapter and the same searchable destination picker as captions.
+Language names are suggestions; enter a 2–3 letter code when needed. OpenAI validates
+the requested language on connection, so the picker does not promise every ISO
+language is supported. Saved choices reopen at their selected row. OpenRouter uses the
 existing speech model preset and starts in original-language captions. Local server
 accepts an HTTPS OpenAI-compatible speech API base URL and model ID, with an optional
 key; it also starts in captions. Additional translation routes, source hints,

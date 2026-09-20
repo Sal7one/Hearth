@@ -1,3 +1,13 @@
+## 0.21.4 — shared language capabilities
+
+- [x] Audit caption, Easy setup, traveler, typed translation, camera/reading, model settings and voice language sources.
+- [x] Remove duplicated OpenAI target caps; share searchable names and explicit provider-validated codes.
+- [x] Use SDK/server discovery where available and preserve actual local-model restrictions.
+- [x] Remove unknown-model and empty-capability fallback languages; expand truncated OCR/Scribe metadata.
+- [x] Scope asynchronous discovery and saved credentials to the configured connection.
+- [x] Host coverage, both flavor builds/artifact checks and Samsung picker journeys — [validation](validation-v41.md).
+- Evidence and remaining capability boundaries: [language capability map](language-capabilities.md).
+
 ## 0.21.3 — Easy setup navigation and visibility
 
 - [x] Share step-by-step header and Android Back handling, including completion.

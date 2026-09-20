@@ -52,6 +52,7 @@ internal fun SettingsTranslateCloudUi(initialProvider: String? = null, allowSele
             var region by remember { mutableStateOf(ConversationTranslationSettings.region(context, provider)) }
             var secret by remember { mutableStateOf("") }
             val savedKey = remember(revision) { ConversationTranslationSettings.hasKey(context, provider) }
+            val sameEndpoint = CloudTranslationProtocol.sameEndpoint(provider, endpoint, ConversationTranslationSettings.endpoint(context, provider))
             val capabilities = remember(revision) { ConversationTranslationSettings.capabilities(context, provider) }
             val dirty = secret.isNotBlank() || endpoint.trim() != ConversationTranslationSettings.endpoint(context, provider) || region.trim() != ConversationTranslationSettings.region(context, provider)
             Text(when (provider) {
@@ -63,12 +64,12 @@ internal fun SettingsTranslateCloudUi(initialProvider: String? = null, allowSele
             Text("Finalized text is sent to this provider. Audio is handled separately by your selected speech model. Provider charges or limits may apply.", style = MaterialTheme.typography.bodySmall)
             OutlinedTextField(endpoint, { endpoint = it }, enabled = !working, label = { Text("API base URL · HTTPS") }, modifier = Modifier.fillMaxWidth().padding(top = 2.dp), singleLine = true)
             if (provider == TextTranslationProvider.AZURE) OutlinedTextField(region, { region = it }, enabled = !working, label = { Text("Resource region · blank for global") }, modifier = Modifier.fillMaxWidth().padding(top = 2.dp), singleLine = true)
-            OutlinedTextField(secret, { secret = it }, enabled = !working, label = { Text(if (savedKey) "Replace saved API key" else if (provider == TextTranslationProvider.LIBRETRANSLATE) "API key · if required" else "API key") }, visualTransformation = PasswordVisualTransformation(), modifier = Modifier.fillMaxWidth().padding(top = 2.dp), singleLine = true)
-            if (savedKey) Text("A key is encrypted on this device. Leave the field empty to keep it.", style = MaterialTheme.typography.bodySmall)
+            OutlinedTextField(secret, { secret = it }, enabled = !working, label = { Text(if (savedKey && sameEndpoint) "Replace saved API key" else if (provider == TextTranslationProvider.LIBRETRANSLATE) "API key · if required" else "API key") }, visualTransformation = PasswordVisualTransformation(), modifier = Modifier.fillMaxWidth().padding(top = 2.dp), singleLine = true)
+            if (savedKey && sameEndpoint) Text("A key is encrypted on this device. Leave the field empty to keep it.", style = MaterialTheme.typography.bodySmall)
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Button(enabled = !working, onClick = {
                     working = true; status = null; failure = false
-                    val nextEndpoint = endpoint.trim(); val nextRegion = region.trim(); val replacement = secret.takeIf { it.isNotBlank() }
+                    val nextEndpoint = endpoint.trim(); val nextRegion = region.trim(); val replacement = secret.takeIf { it.isNotBlank() } ?: if (sameEndpoint) null else ""
                     scope.launch {
                         try {
                             val found = withContext(Dispatchers.IO) {
@@ -77,13 +78,13 @@ internal fun SettingsTranslateCloudUi(initialProvider: String? = null, allowSele
                                 // Validate the credential/region syntax even for unauthenticated language discovery.
                                 CloudTranslationProtocol.translateRequest(next, "Connection setup", "en", "ar")
                                 val requests = CloudTranslationProtocol.languageRequests(next)
-                                ConversationTranslationSettings.save(context, provider, nextEndpoint, nextRegion, replacement)
+                                val generation = ConversationTranslationSettings.save(context, provider, nextEndpoint, nextRegion, replacement)
                                 val active = TranslationHttpTransport(); transport = active
-                                try { CloudTranslationProtocol.parseLanguages(provider, requests.map { active.execute(it, next.key) }) }
+                                try { generation to CloudTranslationProtocol.parseLanguages(provider, requests.map { active.execute(it, next.key) }) }
                                 finally { active.close(); transport = null }
                             }
-                            ConversationTranslationSettings.saveCapabilities(context, provider, found)
-                            secret = ""; status = "Languages loaded: ${found.sourceLanguages.size} source languages, ${found.targetLanguages.size} target languages."
+                            ConversationTranslationSettings.saveCapabilities(context, provider, found.second, found.first)
+                            secret = ""; status = "Languages loaded: ${found.second.sourceLanguages.size} source languages, ${found.second.targetLanguages.size} target languages."
                         } catch (e: CancellationException) { throw e }
                         catch (e: Exception) { failure = true; status = e.message ?: e.toString() }
                         finally { working = false }

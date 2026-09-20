@@ -9,6 +9,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import com.sal7one.common_jni.language.LanguageCatalog
 import com.sal7one.transiber.byok.*
 import com.sal7one.transiber.caption.*
@@ -25,9 +27,10 @@ import kotlinx.coroutines.flow.first
     var model by rememberSaveable {mutableStateOf(CloudConfigStore.sttModel(context).takeIf {CloudConfigStore.provider(context)==CloudConfigStore.Provider.CUSTOM}.orEmpty())}
     var key by remember {mutableStateOf("")} // Never put credentials in saved instance state.
     var target by rememberSaveable {mutableStateOf("en")}
+    var picker by rememberSaveable {mutableStateOf(false)}
     var busy by remember {mutableStateOf(false)}
     var error by remember {mutableStateOf<String?>(null)}
-    LaunchedEffect(Unit) {target=CaptionConfigStore.config(context).first().target.languageTag.takeIf {it in EasySetupPreset.openAiTargets} ?: "en"}
+    LaunchedEffect(Unit) {target=CaptionConfigStore.config(context).first().target.languageTag.takeIf {CaptionLanguages.openAiTranslation.accepts(it)} ?: "en"}
     val base=if(provider==CloudConfigStore.Provider.CUSTOM)endpoint else provider.baseUrl
     val reuse=EasySetupPreset.canReuseKey(provider,base,CloudConfigStore.provider(context),CloudConfigStore.baseUrl(context)) && ApiKeyStore.hasOpenAiKey(context)
     Text("Connect once.\nStart listening.",style=MaterialTheme.typography.headlineLarge)
@@ -45,10 +48,15 @@ import kotlinx.coroutines.flow.first
         visualTransformation=PasswordVisualTransformation(),label={Text(if(provider==CloudConfigStore.Provider.CUSTOM) "API key · optional" else "API key")},
         placeholder={Text(if(reuse) "Saved key will be used" else "Paste your key")})
     if(provider==CloudConfigStore.Provider.OPENAI) {
-        Text("Translate to",style=MaterialTheme.typography.labelLarge)
-        FlowRow(horizontalArrangement=Arrangement.spacedBy(8.dp)) {EasySetupPreset.openAiTargets.forEach {code->
-            FilterChip(selected=target==code,enabled=!busy,onClick={target=code},label={Text(LanguageCatalog.option(code).nativeName)})
-        }}
+        OutlinedButton(onClick={picker=true},enabled=!busy,modifier=Modifier.fillMaxWidth().heightIn(min=56.dp)) {
+            Text("Translate to ${LanguageCatalog.option(target).label} ▾")
+        }
+        if(picker) Dialog(onDismissRequest={picker=false},properties=DialogProperties(usePlatformDefaultWidth=false)) {
+            Surface(Modifier.fillMaxSize().systemBarsPadding().imePadding()) {
+                LanguagePickerContent("Translate to",CaptionLanguages.openAiTranslation,target,
+                    {target=it;picker=false},{picker=false})
+            }
+        }
     }
     if(busy)LinearProgressIndicator(Modifier.fillMaxWidth())
     Button(enabled=!busy,onClick={scope.launch {
