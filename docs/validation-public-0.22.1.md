@@ -45,3 +45,11 @@ actual device/provider coverage. The older demo video is explicitly labeled 0.8.
 The publication request authorizes pushing reviewed source and a public preview;
 old private drafts are not evidence that their generated source archives match
 those draft binaries. Use the new versioned public release for matching source.
+
+## Hosted runner setup correction
+
+The first publication run stopped before compilation because the pinned Android
+setup action defaults to `tools platform-tools`; Google's SDK repository no longer
+provided `tools`. Explicitly request only `platform-tools` from that action. The
+following SDK step still installs the pinned platform, build tools, NDK and CMake.
+No test or verification gate is removed. The release links the resulting run.
