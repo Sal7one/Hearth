@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.22.3 — pipeline ownership audit
+## 0.22.3 — 2026-09-21 · pipeline ownership audit
 
 - Camera/reading and conversation/typed translation now remember their own local model choices; choosing one no longer rewrites the live-caption translator. “Use everywhere” still updates all three groups explicitly.
 - Switching between reading and audio overlays waits for the stopped models to finish releasing, with visible progress and a bounded timeout.

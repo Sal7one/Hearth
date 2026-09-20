@@ -19,14 +19,25 @@ layout remains available in Appearance & navigation.
 
 ## Download the preview
 
-[Hearth 0.22.1 release and checksums](https://github.com/Sal7one/Hearth/releases/tag/v0.22.1)
+[Hearth 0.22.3 release and checksums](https://github.com/Sal7one/Hearth/releases/tag/v0.22.3)
 
-- [Cloud + local APK](https://github.com/Sal7one/Hearth/releases/download/v0.22.1/hearth-0.22.1-cloud-qa-arm64.apk) — local models, optional cloud connections and downloads.
-- [Offline-only APK](https://github.com/Sal7one/Hearth/releases/download/v0.22.1/hearth-0.22.1-offline-qa-arm64.apk) — no network permission; import model files.
+- [Cloud + local APK](https://github.com/Sal7one/Hearth/releases/download/v0.22.3/hearth-0.22.3-cloud-qa-arm64.apk) — local models, optional cloud connections and downloads.
+- [Offline-only APK](https://github.com/Sal7one/Hearth/releases/download/v0.22.3/hearth-0.22.3-offline-qa-arm64.apk) — no network permission; import model files.
 
 Android 9+, ARM64. These are test-signed PoC builds, compatible with the previous
 public QA release. The two flavors replace each other; install an update without
 uninstalling to preserve your models and settings.
+
+### What changed in 0.22.3
+
+- Selecting OpenAI/Soniox cloud speech correctly selects integrated translation,
+  including when reselecting the current provider; retired sockets cannot keep sending audio.
+- Camera/reading and conversation/typed text remember their own translator choices.
+  **Use everywhere** explicitly applies a choice across features.
+- Switching between audio and reading overlays waits for model cleanup. Clearing
+  typed text releases its model and prevents stale results from reappearing.
+
+See the [changelog](CHANGELOG.md) and [pipeline audit](docs/pipeline-ownership.md).
 
 ## What you can try
 
