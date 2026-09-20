@@ -17,10 +17,12 @@ import kotlinx.coroutines.flow.*
 import java.io.File
 import kotlin.coroutines.resume
 
+internal enum class ConversationStatus { READY, PREPARING, LISTENING, FINISHING, TRANSLATING, SPEAKING }
+
 internal data class ConversationState(
     val session: ConversationSession = ConversationSession(),
     val history: List<ConversationSession> = emptyList(),
-    val status: String = "Ready",
+    val status: ConversationStatus = ConversationStatus.READY,
     val activeSpeaker: Int? = null,
     val partial: String = "",
     val busy: Boolean = false,
@@ -92,7 +94,7 @@ internal class ConversationController(private val context: Context) : AutoClosea
 
     fun speak(speaker: Int, config: CaptionOverlayConfig) = begin(speaker, config, null)
     fun type(speaker: Int, text: String, config: CaptionOverlayConfig) { if (text.isNotBlank()) begin(speaker, config, text.trim()) }
-    fun finish() { finish.complete(Unit); _state.update { it.copy(status = "Finishing", listening = false) } }
+    fun finish() { finish.complete(Unit); _state.update { it.copy(status = ConversationStatus.FINISHING, listening = false) } }
     fun cancel() {
         translator?.cancel()
         operation?.cancel()
@@ -118,7 +120,7 @@ internal class ConversationController(private val context: Context) : AutoClosea
         val turn = retry?.copy(status = TurnStatus.TRANSLATING, error = null, route = route) ?: ConversationTurn(speaker = speaker, source = source, target = target, route = route,
             original = typed.orEmpty(), status = if (typed == null) TurnStatus.LISTENING else TurnStatus.TRANSLATING)
         _state.update { it.copy(session = if (retry == null) it.session.copy(turns = it.session.turns + turn) else it.session.updateTurn(session.id, turn),
-            busy = true, activeSpeaker = speaker, status = "Preparing", error = null, partial = "") }
+            busy = true, activeSpeaker = speaker, status = ConversationStatus.PREPARING, error = null, partial = "") }
         persist()
         val gen = ++generation
         finish = CompletableDeferred()
@@ -150,10 +152,10 @@ internal class ConversationController(private val context: Context) : AutoClosea
                     check(ready.await()) { controller.state.value.error ?: "Speech recognizer could not start" }
                     coroutineContext.ensureActive()
                     startMicrophone(controller)
-                    _state.update { it.copy(status = "Listening", listening = true) }
+                    _state.update { it.copy(status = ConversationStatus.LISTENING, listening = true) }
                     // Explicit bounded turns: avoid unbounded offline windows and encourage a natural handover.
                     withTimeoutOrNull(60_000) { finish.await() }
-                    _state.update { it.copy(status = "Finishing", listening = false) }
+                    _state.update { it.copy(status = ConversationStatus.FINISHING, listening = false) }
                     stopMicrophone()
                     recognitionError?.let { error(it) }
                     suspendCancellableCoroutine { continuation -> controller.stop { if (continuation.isActive) continuation.resume(Unit) } }
@@ -164,7 +166,7 @@ internal class ConversationController(private val context: Context) : AutoClosea
                 }
                 check(currentTurn.original.isNotBlank()) { "No speech was recognized. Try speaking closer to the microphone." }
                 currentTurn = currentTurn.copy(status = TurnStatus.TRANSLATING)
-                _state.update { it.copy(session = it.session.updateTurn(session.id, currentTurn), status = "Translating", partial = "") }; persist()
+                _state.update { it.copy(session = it.session.updateTurn(session.id, currentTurn), status = ConversationStatus.TRANSLATING, partial = "") }; persist()
                 val translated = withContext(Dispatchers.IO) {
                     val opened = translationRoute.open(context)
                     translator = opened
@@ -191,7 +193,7 @@ internal class ConversationController(private val context: Context) : AutoClosea
                     translator?.close(); translator = null
                     lease?.close()
                 }
-                if (generation == gen) _state.update { it.copy(status = "Ready", busy = false, activeSpeaker = null, listening = false, partial = "") }
+                if (generation == gen) _state.update { it.copy(status = ConversationStatus.READY, busy = false, activeSpeaker = null, listening = false, partial = "") }
             }
         }
     }

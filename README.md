@@ -19,6 +19,10 @@ layout remains available in Appearance & navigation.
 
 ## What you can try
 
+- **Use Hearth in English, العربية or 简体中文.** Choose App language in Settings,
+  or follow your phone. Arabic uses right-to-left layout. The interface language is
+  separate from your speech and translation choices. See [localization](docs/localization.md).
+
 - **Browse visual feature cards.** Swipe floating image cards for captions,
   conversation, text, camera and screen translation. Hearth remembers the last
   selected service and each card opens its feature directly. Quick settings

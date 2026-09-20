@@ -1,5 +1,8 @@
 package com.sal7one.transiber.conversation
 
+import com.sal7one.transiber.R as UiR
+import com.sal7one.transiber.i18n.*
+
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -39,6 +42,8 @@ internal fun FaceToFacePanel(
     onCancel: () -> Unit,
     onSwap: () -> Unit,
 ) {
+    val uiText = rememberUiText()
+
     // On short landscape screens and with large system fonts the entire split remains
     // scrollable, instead of compressing either person's Speak/Finish control away.
     BoxWithConstraints(Modifier.fillMaxSize()) {
@@ -55,15 +60,15 @@ internal fun FaceToFacePanel(
                 )
                 Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
                     IconButton(onClick = onOptions, enabled = !state.busy, modifier = Modifier.size(48.dp)) {
-                        Icon(Icons.Default.Tune, "Face-to-face options")
+                        Icon(Icons.Default.Tune, uiText(UiR.string.ui_face_to_face_options_1c07b))
                     }
-                    Text(state.status, Modifier.weight(1f).padding(horizontal = 8.dp).semantics {
+                    Text(uiText.label(state.status), Modifier.weight(1f).padding(horizontal = 8.dp).semantics {
                         liveRegion = LiveRegionMode.Polite
                     }, style = MaterialTheme.typography.labelLarge, textAlign = TextAlign.Center)
                     if (state.busy) IconButton(onClick = onCancel, modifier = Modifier.size(48.dp)) {
-                        Icon(Icons.Default.Close, "Cancel current turn")
+                        Icon(Icons.Default.Close, uiText(UiR.string.ui_cancel_current_turn_4a75e))
                     } else IconButton(onClick = onSwap, modifier = Modifier.size(48.dp)) {
-                        Icon(Icons.Default.SwapVert, "Swap my language and their language")
+                        Icon(Icons.Default.SwapVert, uiText(UiR.string.ui_swap_my_language_and_their_language_d0b42))
                     }
                 }
                 PersonFace(
@@ -94,9 +99,11 @@ private fun PersonFace(
     foreground: Color,
     modifier: Modifier,
 ) {
+    val uiText = rememberUiText()
+
     val code = if (side == 0) state.session.first else state.session.second
     val language = LanguageCatalog.option(code)
-    val person = if (side == 0) "Me" else "Them"
+    val person = if (side == 0) uiText(UiR.string.ui_me_94563) else uiText(UiR.string.ui_them_3dd51)
     // Never relabel old messages after swapping languages. A source is shown only
     // to its original speaker; incoming text is shown only in its actual target.
     val turn = state.session.turns.lastOrNull {
@@ -115,52 +122,52 @@ private fun PersonFace(
     Column(modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
         TextButton(onClick = onLanguage, enabled = !state.busy,
             modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).semantics {
-                contentDescription = "$person, ${language.englishName}, change language"
+                contentDescription = uiText(UiR.string.ui_1_s_2_s_change_language_f3488, person, uiText.languageName(language.code))
             }, contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)) {
             Text("$person · ${language.nativeName}", style = MaterialTheme.typography.titleMedium)
         }
         Surface(color = container, contentColor = foreground, shape = MaterialTheme.shapes.large,
             modifier = Modifier.fillMaxWidth().weight(1f).clickable(
-                role = Role.Button, onClickLabel = "Open ${language.englishName} conversation history", onClick = onHistory,
+                role = Role.Button, onClickLabel = uiText(UiR.string.ui_open_1_s_conversation_history_bdcbf, uiText.languageName(language.code)), onClick = onHistory,
             )) {
             Column(Modifier.fillMaxSize().verticalScroll(scroll).padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 if (turn == null) {
-                    FaceText("Speak, or tap here to read your conversation", code, size, foreground)
+                    FaceText(uiText(UiR.string.ui_speak_or_tap_here_to_read_your_conversation_0c964), code, size, foreground)
                 } else {
-                    Text(if (ownTurn) "You said" else "Translation", style = MaterialTheme.typography.labelMedium)
+                    Text(if (ownTurn) uiText(UiR.string.ui_you_said_f105a) else uiText(UiR.string.ui_translation_ac26a), style = MaterialTheme.typography.labelMedium)
                     if (mainText.isNotBlank()) FaceText(mainText, code, size, foreground)
                     if (partial.isNotBlank()) {
-                        Text("Live speech", style = MaterialTheme.typography.labelSmall)
+                        Text(uiText(UiR.string.ui_live_speech_f37ed), style = MaterialTheme.typography.labelSmall)
                         FaceText(partial, code, size, foreground)
                     }
                     if (!ownTurn && turn.translation.isBlank()) Text(when (turn.status) {
-                        TurnStatus.LISTENING -> "Waiting for the other person to finish"
-                        TurnStatus.TRANSLATING -> "Translating…"
-                        TurnStatus.ERROR, TurnStatus.INTERRUPTED -> "Translation unavailable"
-                        TurnStatus.COMPLETE -> "No translated text is available"
+                        TurnStatus.LISTENING -> uiText(UiR.string.ui_waiting_for_the_other_person_to_finish_64d81)
+                        TurnStatus.TRANSLATING -> uiText(UiR.string.ui_translating_ae47b)
+                        TurnStatus.ERROR, TurnStatus.INTERRUPTED -> uiText(UiR.string.ui_translation_unavailable_162a7)
+                        TurnStatus.COMPLETE -> uiText(UiR.string.ui_no_translated_text_is_available_f3a27)
                     }, style = MaterialTheme.typography.bodyLarge)
                     if (ownTurn && mainText.isBlank() && partial.isBlank() && liveTurn)
-                        Text(state.status, style = MaterialTheme.typography.bodyLarge)
+                        Text(uiText.label(state.status), style = MaterialTheme.typography.bodyLarge)
                     if (showOriginal && !ownTurn && turn.original.isNotBlank()) {
                         HorizontalDivider(color = foreground.copy(alpha = 0.2f))
-                        Text("Original · ${LanguageCatalog.option(turn.source).nativeName}", style = MaterialTheme.typography.labelMedium)
+                        Text(uiText(UiR.string.ui_original_1_s_69b8c, LanguageCatalog.option(turn.source).nativeName), style = MaterialTheme.typography.labelMedium)
                         FaceText(turn.original, turn.source, (size - 3f).coerceAtLeast(16f), foreground)
                     }
                     turn.error?.let { Text(it, style = MaterialTheme.typography.bodyMedium) }
                 }
                 if (side == 0 && state.error != null && state.error != turn?.error)
                     Text(state.error, style = MaterialTheme.typography.bodyMedium)
-                if (!canSpeak && !state.busy) Text("Speech is unavailable for this direction. Check the languages and models in Options.", style = MaterialTheme.typography.bodySmall)
-                Text("Tap for ${language.nativeName} history", style = MaterialTheme.typography.labelSmall)
+                if (!canSpeak && !state.busy) Text(uiText(UiR.string.ui_speech_is_unavailable_for_this_direction_check_the_languages_and_52191), style = MaterialTheme.typography.bodySmall)
+                Text(uiText(UiR.string.ui_tap_for_1_s_history_a9789, language.nativeName), style = MaterialTheme.typography.labelSmall)
             }
         }
         Button(onClick = if (finishing) onFinish else onSpeak,
             enabled = finishing || (!state.busy && canSpeak),
             modifier = Modifier.fillMaxWidth().heightIn(min = 64.dp).semantics {
-                contentDescription = "${if (finishing) "Finish" else "Speak"} ${language.englishName}, $person"
+                contentDescription = "${if (finishing) uiText(UiR.string.ui_finish_b74bd) else uiText(UiR.string.speak_action)} ${uiText.languageName(language.code)}, $person"
             }, contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp)) {
             Icon(if (finishing) Icons.Default.Stop else Icons.Default.Mic, null)
-            Text(if (finishing) "Finish" else "Speak ${language.nativeName}", Modifier.padding(start = 12.dp),
+            Text(if (finishing) uiText(UiR.string.ui_finish_b74bd) else uiText(UiR.string.ui_speak_1_s_77282, language.nativeName), Modifier.padding(start = 12.dp),
                 style = MaterialTheme.typography.titleMedium)
         }
     }

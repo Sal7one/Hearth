@@ -1,5 +1,8 @@
 package com.sal7one.transiber.translation
 
+import com.sal7one.transiber.R as UiR
+import com.sal7one.transiber.i18n.rememberUiText
+
 import androidx.compose.runtime.*
 import androidx.compose.ui.platform.LocalContext
 import com.sal7one.transiber.byok.ByokPolicy
@@ -35,11 +38,13 @@ internal fun captionCloudTranslatorReady(config: CaptionOverlayConfig): Boolean 
 internal fun CaptionTranslatorChooser(config: CaptionOverlayConfig,
     update: ((CaptionOverlayConfig) -> CaptionOverlayConfig) -> Unit,
     onModels: () -> Unit, enabled: Boolean = true) {
-    if(config.engine==CaptionEngineChoice.VOSK) androidx.compose.material3.Text("Vosk imports do not provide source-language metadata to the translator yet. Use another speech engine for this text-translation stage.")
+    val uiText = rememberUiText()
+
+    if(config.engine==CaptionEngineChoice.VOSK) androidx.compose.material3.Text(uiText(UiR.string.ui_vosk_imports_do_not_provide_source_language_metadata_to_the_trans_168ba))
     TranslatorChooser(config.textTranslationProviderId, config.localTranslationModelId,
-        "Used by live audio captions. Original speech text is translated after recognition. Legacy Whisper/batch needs an explicit spoken language for this text stage. Changing this does not change the camera or conversation provider.",
+        uiText(UiR.string.ui_used_by_live_audio_captions_original_speech_text_is_translated_af_7413f),
         source=config.streamLanguage, target=config.target.languageTag, enabled=enabled,
-        automaticLabel=if (config.textTranslationProviderId.isBlank() && captionTranslationRoute(config.copy(mode=CaptionMode.TRANSLATE), com.sal7one.transiber.byok.CloudConfigStore.sttMode(androidx.compose.ui.platform.LocalContext.current)) == CaptionTranslationRoute.TEXT_TRANSLATOR) "${TranslationOptions.label(config.localTranslationModelId)} · existing route" else "Speech provider / existing route", onModels=onModels,
+        automaticLabel=if (config.textTranslationProviderId.isBlank() && captionTranslationRoute(config.copy(mode=CaptionMode.TRANSLATE), com.sal7one.transiber.byok.CloudConfigStore.sttMode(androidx.compose.ui.platform.LocalContext.current)) == CaptionTranslationRoute.TEXT_TRANSLATOR) uiText(UiR.string.ui_1_s_existing_route_97965, TranslationOptions.label(config.localTranslationModelId)) else uiText(UiR.string.ui_speech_provider_existing_route_39ee3), onModels=onModels,
         onSelect={ provider, model -> update { it.copy(textTranslationProviderId=provider,
             localTranslationModelId=model, localTranslationEnabled=provider.isNotBlank() || it.effectiveEngine.speechBackend != null, mode=CaptionMode.TRANSLATE) } })
 }

@@ -1,5 +1,7 @@
 package com.sal7one.transiber.home
 
+import com.sal7one.transiber.i18n.*
+
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -17,6 +19,8 @@ import com.sal7one.transiber.R
 
 @Composable
 internal fun HomeServiceCard(service: HomeService, modifier: Modifier = Modifier, onOpen: () -> Unit) {
+    val uiText = rememberUiText()
+
     val artwork = when (service) {
         HomeService.CAPTIONS -> R.drawable.home_captions
         HomeService.CONVERSATION -> R.drawable.home_conversation
@@ -34,11 +38,11 @@ internal fun HomeServiceCard(service: HomeService, modifier: Modifier = Modifier
                 Image(painterResource(artwork), contentDescription = null, contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxWidth().aspectRatio(1.08f))
                 Column(Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text(service.title, style = MaterialTheme.typography.headlineMedium, modifier = Modifier.semantics { heading() })
-                    Text(service.description, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(uiText.title(service), style = MaterialTheme.typography.headlineMedium, modifier = Modifier.semantics { heading() })
+                    Text(uiText.description(service), style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Spacer(Modifier.height(4.dp))
                     Button(onClick = onOpen, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp), shape = RoundedCornerShape(18.dp)) {
-                        Text(service.action)
+                        Text(uiText.action(service))
                     }
                 }
             }

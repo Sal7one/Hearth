@@ -1,0 +1,63 @@
+<resources>
+    <string name="nav_downloads" formatted="false">"下载"</string>
+    <string name="nav_speech_settings" formatted="false">"语音设置"</string>
+    <string name="nav_advanced_captions" formatted="false">"高级字幕"</string>
+    <string name="nav_help" formatted="false">"帮助"</string>
+    <string name="nav_home" formatted="false">"主页"</string>
+    <string name="nav_quick_settings" formatted="false">"快捷设置"</string>
+    <string name="help_0" formatted="false">"选择音频、原文字幕或翻译，然后开始。Android 可能请求音频或屏幕共享授权。"</string>
+    <string name="help_1" formatted="false">"在悬浮窗设置中调整外观和语言。通知可暂停、恢复或停止字幕。"</string>
+    <string name="help_2" formatted="false">"部分应用禁止设备音频采集。麦克风可改为收听周围声音。"</string>
+    <string name="app_language" formatted="false">"应用语言"</string>
+    <string name="app_language_detail" formatted="false">"仅更改 Hearth 界面，不改变已选语音和翻译语言。"</string>
+    <string name="follow_phone" formatted="false">"跟随手机"</string>
+    <string name="locale_en" formatted="false">"English"</string>
+    <string name="locale_ar" formatted="false">"العربية"</string>
+    <string name="locale_zh" formatted="false">"简体中文"</string>
+    <string name="language_auto" formatted="false">"自动检测"</string>
+    <string name="language_model" formatted="false">"模型语言"</string>
+    <string name="language_spoken" formatted="false">"口语"</string>
+    <string name="language_source" formatted="false">"源"</string>
+    <string name="model_installed" formatted="false">"已安装"</string>
+    <string name="model_not_installed" formatted="false">"未安装"</string>
+    <string name="model_needs_files">"需要 %1$s 个模型文件"</string>
+    <string name="model_download_import" formatted="false">"下载或导入"</string>
+    <string name="needs_attention" formatted="false">"需要处理"</string>
+    <string name="verified" formatted="false">"已验证"</string>
+    <string name="selected_custom" formatted="false">"所选自定义"</string>
+    <string name="choose_value" formatted="false">"选择"</string>
+    <string name="speak_action" formatted="false">"说话"</string>
+    <string name="model_generic" formatted="false">"模型"</string>
+    <string name="import_selected_cc" formatted="false">"并选为原文字幕模型"</string>
+    <string name="needs_attention_suffix" formatted="false">" · 需要处理"</string>
+    <string name="import_file" formatted="false">"文件"</string>
+    <string name="import_folder" formatted="false">"文件夹"</string>
+    <string name="ocr_latin" formatted="false">"拉丁字母 · 英语等"</string>
+    <string name="ocr_cjk" formatted="false">"中文 · 英语 · 日语"</string>
+    <string name="ocr_arabic" formatted="false">"阿拉伯字母 · 阿拉伯语、波斯语、乌尔都语等"</string>
+    <string name="ocr_cyrillic" formatted="false">"俄语 · 乌克兰语 · 白俄罗斯语"</string>
+    <string name="ocr_manga" formatted="false">"日语 · 漫画对话框"</string>
+    <string name="ocr_meiki" formatted="false">"日语 · Meiki 文本行"</string>
+    <string name="ocr_printed" formatted="false">"横排印刷文字 · Apache-2.0"</string>
+    <string name="ocr_manga_details" formatted="false">"圈选单个对话框。支持竖排、横排日语及注音 · 实验性 · Apache-2.0"</string>
+    <string name="ocr_meiki_details" formatted="false">"检测与识别日语文本行。竖排识别为测试版 · 实验性 · 模型权重采用 LGPL-3.0"</string>
+    <string name="install_nemotron" formatted="false">"自动下载安装，原件保留在下载文件夹。多语言流式字幕，翻译使用独立模型。"</string>
+    <string name="install_qwen" formatted="false">"自动下载安装，原件保留在下载文件夹。按短语段生成多语言字幕。运行时包：2026 年 3 月。"</string>
+    <string name="install_qwen_large" formatted="false">"接受兼容的预制包，目前没有已验证的 1.7B 即用下载。无法导入原始权重；除非准备兼容 sherpa 导出，否则请使用 0.6B。"</string>
+    <string name="install_moonshine" formatted="false">"自动下载安装，原件保留在所选文件夹。英语短语段识别，包日期为 2026 年 2 月 27 日。此适配器并非 Moonshine 较新的流式运行时。"</string>
+    <string name="install_whisper" formatted="false">"下载 whisper.cpp GGML .bin 后导入。Tiny/Base 占用更少内存。.en.bin 仅支持英语；多语言模型可指定口语语言。此适配器不接受 Safetensors 或 GGUF。"</string>
+    <string name="install_vosk" formatted="false">"在发布方页面选择口语语言，下载并解压 ZIP，再导入解压后的 Vosk 模型文件夹。每个模型语言固定，不自动切换。"</string>
+    <string name="install_marian" formatted="false">"旧版英语 → 阿拉伯语。导入包含 ONNX 转换中的 source.spm、tokenizer.json、encoder_model.onnx 和 decoder_model_merged.onnx 的文件夹。不是 GGUF 或语音 ZIP。其他 ONNX 变体未经验证，新语音引擎使用上方翻译模型。"</string>
+    <string name="preset_bottom" formatted="false">"底部字幕条"</string>
+    <string name="preset_top" formatted="false">"顶部字幕条"</string>
+    <string name="preset_center" formatted="false">"居中显示"</string>
+    <string name="preset_theater" formatted="false">"影院"</string>
+    <string name="preset_reading" formatted="false">"阅读"</string>
+    <string name="preset_subtle" formatted="false">"轻巧字幕"</string>
+    <string name="phase_ready" formatted="false">"已就绪"</string>
+    <string name="phase_preparing" formatted="false">"正在准备"</string>
+    <string name="phase_listening" formatted="false">"正在聆听"</string>
+    <string name="phase_finishing" formatted="false">"正在结束"</string>
+    <string name="phase_translating" formatted="false">"正在翻译"</string>
+    <string name="phase_speaking" formatted="false">"正在说话"</string>
+</resources>

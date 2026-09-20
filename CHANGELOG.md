@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.22.0 — 2026-09-20
+
+- Add English, Arabic and Simplified Chinese interface resources across Home, setup, settings, captions, conversation, text/camera/reading translation, models, downloads and voice controls.
+- Add a persisted App language choice, including Follow phone, independent of speech and translation languages.
+- Support Arabic right-to-left layout, localized accessibility labels and language-picker search/display names.
+- Localize overlay controls, authored notification actions and shared model capability explanations while preserving actual provider errors.
+- Check resource coverage and format arguments for all three locales in host tests.
+
 ## 0.21.4 — 2026-09-20
 
 - Replace OpenAI's three-language restriction with a shared searchable picker and provider-validated language codes in Easy setup and live captions.

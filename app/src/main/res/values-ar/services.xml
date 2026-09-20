@@ -1,0 +1,77 @@
+<resources>
+    <string name="service_screen_reading_153b9" formatted="false">"قراءة الشاشة"</string>
+    <string name="service_screen_capture_permission_is_missing_start_reading_5f3e2" formatted="false">"إذن التقاط الشاشة غير متاح. ابدأ القراءة مجددًا من الشاشة والمانغا."</string>
+    <string name="service_translation_does_not_support_1_s_2_s_choose_langua_d0ec6">"الترجمة لا تدعم %1$s ← %2$s. اختر اللغات والمترجم في إعدادات القراءة."</string>
+    <string name="service_loading_1_s_aba14">"جارٍ تحميل %1$s…"</string>
+    <string name="service_reading_text_b6863" formatted="false">"جارٍ قراءة النص…"</string>
+    <string name="service_translating_ae47b" formatted="false">"جارٍ الترجمة…"</string>
+    <string name="service_1_s_2_s_ms_ocr_87c9c">"%1$s · التعرف %2$s مللي ثانية"</string>
+    <string name="service_open_a_reader_then_tap_translate_or_draw_area_a9c06" formatted="false">"افتح تطبيق القراءة ثم اضغط ترجمة أو ارسم منطقة."</string>
+    <string name="service_translate_2be17" formatted="false">"ترجمة"</string>
+    <string name="service_no_text_found_in_this_area_draw_a_smaller_region_o_0c8b8" formatted="false">"لم يُعثر على نص هنا. حدّد منطقة أصغر أو اختر نموذج تعرف آخر."</string>
+    <string name="service_no_text_32095" formatted="false">"لا يوجد نص"</string>
+    <string name="service_hearth_screen_reading_0905b" formatted="false">"قراءة الشاشة من Hearth"</string>
+    <string name="service_paused_tap_translate_to_read_once_56c5d" formatted="false">"متوقف مؤقتًا · اضغط ترجمة لقراءة واحدة"</string>
+    <string name="service_read_pages_in_another_app_screenshots_stay_local_64bd9" formatted="false">"اقرأ صفحات تطبيق آخر · تبقى الصور محلية"</string>
+    <string name="service_resume_b3bd0" formatted="false">"استئناف"</string>
+    <string name="service_pause_78196" formatted="false">"إيقاف مؤقت"</string>
+    <string name="service_stop_9e253" formatted="false">"إيقاف"</string>
+    <string name="service_paused_read_989d4" formatted="false">"متوقف مؤقتًا · قراءة"</string>
+    <string name="service_resume_auto_f5626" formatted="false">"استئناف التلقائي"</string>
+    <string name="service_pause_auto_e2a61" formatted="false">"إيقاف التلقائي مؤقتًا"</string>
+    <string name="service_screen_size_changed_please_capture_the_page_again_38901" formatted="false">"تغيّر حجم الشاشة. التقط الصفحة مجددًا."</string>
+    <string name="service_screen_capture_has_stopped_c682a" formatted="false">"توقف التقاط الشاشة"</string>
+    <string name="service_unsupported_screen_pixel_stride_1_s_69dba">"خطوة بكسل الشاشة غير مدعومة: %1$s"</string>
+    <string name="service_reading_settings_are_still_loading_tap_retry_in_a__cd6c6" formatted="false">"إعدادات القراءة قيد التحميل. أعد المحاولة بعد لحظة."</string>
+    <string name="service_choose_a_text_language_supported_by_1_s_in_reading_83c65">"اختر لغة نص يدعمها %1$s في إعدادات القراءة"</string>
+    <string name="service_selected_area_is_too_small_draw_it_again_79441" formatted="false">"المنطقة المحددة صغيرة جدًا. ارسمها مجددًا."</string>
+    <string name="service_the_captured_area_is_black_check_that_the_reader_i_87046" formatted="false">"المنطقة الملتقطة سوداء. تأكد من ظهور تطبيق القراءة؛ قد تمنع الصفحات المحمية لقطات الشاشة."</string>
+    <string name="service_reading_1_s_30d82">"جارٍ القراءة باستخدام %1$s…"</string>
+    <string name="service_reading_ae18b" formatted="false">"جارٍ القراءة…"</string>
+    <string name="service_scroll_through_translations_tap_to_unlock_text_box_1eb00" formatted="false">"مرّر عبر الترجمات. اضغط لإلغاء قفل مربعات النص."</string>
+    <string name="service_text_boxes_are_interactive_tap_to_let_touches_pass_ebaaa" formatted="false">"مربعات النص تفاعلية. اضغط لتمرير اللمس."</string>
+    <string name="service_selected_text_box_3e276" formatted="false">"مربع النص المحدد"</string>
+    <string name="service_hearth_drag_c53ff" formatted="false">"Hearth · اسحب"</string>
+    <string name="service_move_reading_handle_drag_to_reposition_double_tap__55283" formatted="false">"تحريك مقبض القراءة. اسحب لتغيير موضعه، واضغط مرتين لإعادة ضبطه."</string>
+    <string name="service_reading_controls_83fa7" formatted="false">"أدوات القراءة"</string>
+    <string name="service_read_page_33e9a" formatted="false">"قراءة الصفحة"</string>
+    <string name="service_translation_ac26a" formatted="false">"الترجمة"</string>
+    <string name="service_read_aloud_56210" formatted="false">"قراءة صوتية"</string>
+    <string name="service_android_voice_ba5fb" formatted="false">"صوت Android"</string>
+    <string name="service_original_c0a80" formatted="false">"الأصل"</string>
+    <string name="service_read_original_149d2" formatted="false">"قراءة الأصل"</string>
+    <string name="service_stop_voice_84a32" formatted="false">"إيقاف الصوت"</string>
+    <string name="service_copy_af74f" formatted="false">"نسخ"</string>
+    <string name="service_history_90ccd" formatted="false">"السجل"</string>
+    <string name="service_show_translations_6861c" formatted="false">"عرض الترجمات"</string>
+    <string name="service_draw_area_f80f3" formatted="false">"رسم منطقة"</string>
+    <string name="service_whole_page_eeb74" formatted="false">"الصفحة كاملة"</string>
+    <string name="service_clear_719ea" formatted="false">"مسح"</string>
+    <string name="service_smaller_text_a8ea9" formatted="false">"تصغير النص"</string>
+    <string name="service_larger_text_118f9" formatted="false">"تكبير النص"</string>
+    <string name="service_scroll_through_the_live_translations_with_the_lock_e5d32" formatted="false">"مرّر والقفل مغلق. افتحه للضغط على مربعات النص. تُمسح المواضع القديمة عند الحركة، ويترجم الوضع التلقائي بعد استقرار الصفحة. اضغط قراءة الصفحة لإغلاق الأدوات. يبقى سجل هذه الجلسة حتى 20 صفحة."</string>
+    <string name="service_setup_cdd7b" formatted="false">"الإعداد"</string>
+    <string name="service_no_completed_pages_yet_779d8" formatted="false">"لا صفحات مكتملة بعد"</string>
+    <string name="service_history_1_s_2_s_tap_history_for_the_next_page_48713">"السجل %1$s/%2$s · اضغط السجل للصفحة التالية"</string>
+    <string name="service_cleared_tap_translate_for_the_current_page_f78c6" formatted="false">"تم المسح. اضغط ترجمة للصفحة الحالية."</string>
+    <string name="service_retry_9f5cd" formatted="false">"إعادة المحاولة"</string>
+    <string name="service_draw_around_a_bubble_or_paragraph_0f329" formatted="false">"ارسم حول فقاعة أو فقرة"</string>
+    <string name="service_drag_or_circle_the_text_center_and_whole_image_als_b1a82" formatted="false">"اسحب أو ارسم حول النص. يدعم الوسط والصورة كاملة TalkBack أيضًا."</string>
+    <string name="service_center_a2391" formatted="false">"وسط"</string>
+    <string name="service_whole_image_6bd00" formatted="false">"الصورة كاملة"</string>
+    <string name="service_cancel_77dfd" formatted="false">"إلغاء"</string>
+    <string name="service_read_area_9c448" formatted="false">"قراءة المنطقة"</string>
+    <string name="service_draw_an_area_first_or_choose_center_5bc83" formatted="false">"ارسم منطقة أولًا أو اختر الوسط"</string>
+    <string name="service_select_a_text_area_by_drawing_center_and_whole_ima_4c4e8" formatted="false">"حدّد منطقة نص بالرسم. يتوفر زرا الوسط والصورة كاملة أدناه."</string>
+    <string name="service_live_captions_83fd1" formatted="false">"النص المباشر"</string>
+    <string name="service_live_captions_error_9f465" formatted="false">"النص المباشر · خطأ"</string>
+    <string name="service_live_captions_paused_b59ce" formatted="false">"النص المباشر · متوقف مؤقتًا"</string>
+    <string name="service_tap_through_is_on_tap_the_lock_handle_to_restore_c_2e5ea" formatted="false">"تمرير اللمس مفعّل · اضغط مقبض القفل لاستعادة التحكم"</string>
+    <string name="service_audio_is_not_sent_to_the_speech_engine_859aa" formatted="false">"لا يُرسل الصوت إلى محرك الكلام"</string>
+    <string name="service_1_s_tap_this_notification_to_recover_the_bubble_an_16fe0">"%1$s. اضغط الإشعار لاستعادة الفقاعة وتعطيل تمرير اللمس."</string>
+    <string name="service_restore_controls_c97dd" formatted="false">"استعادة التحكم"</string>
+    <string name="service_hide_bubble_658d0" formatted="false">"إخفاء الفقاعة"</string>
+    <string name="service_show_bubble_9a42e" formatted="false">"عرض الفقاعة"</string>
+    <string name="service_tap_to_show_578b6" formatted="false">"اضغط للعرض"</string>
+    <string name="service_tap_to_start_b11de" formatted="false">"اضغط للبدء"</string>
+</resources>

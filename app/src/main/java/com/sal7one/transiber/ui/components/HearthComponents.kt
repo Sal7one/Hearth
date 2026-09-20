@@ -1,5 +1,7 @@
 package com.sal7one.transiber.ui.components
 
+import com.sal7one.transiber.i18n.*
+
 import com.sal7one.transiber.ui.theme.glassPanel
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -69,6 +71,8 @@ fun CapabilityTag(
     modifier: Modifier = Modifier,
     detail: String? = null,
 ) {
+    val uiText = rememberUiText()
+
     val colors = when (status) {
         CapabilityStatus.READY -> MaterialTheme.colorScheme.secondaryContainer to
             MaterialTheme.colorScheme.onSecondaryContainer
@@ -92,7 +96,7 @@ fun CapabilityTag(
     ) {
         Text(
             text = buildString {
-                append(status.label)
+                append(uiText.label(status))
                 if (!detail.isNullOrBlank()) append(" · ").append(detail)
             },
             modifier = Modifier.padding(horizontal = 11.dp, vertical = 5.dp),

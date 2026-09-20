@@ -1,5 +1,8 @@
 package com.sal7one.transiber.caption
 
+import com.sal7one.transiber.R as UiR
+import com.sal7one.transiber.i18n.rememberUiText
+
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.os.Build
@@ -15,6 +18,8 @@ import kotlinx.coroutines.*
 
 @Composable
 internal fun CaptionDiagnosticActions() {
+    val uiText = rememberUiText()
+
  val context = LocalContext.current
  val scope = rememberCoroutineScope()
  var exporting by remember { mutableStateOf(false) }
@@ -23,7 +28,7 @@ internal fun CaptionDiagnosticActions() {
    exporting = true
    try {
     withContext(Dispatchers.IO) { CaptionDiagnostics.exportTrace(context, uri) }
-    Toast.makeText(context, "Android exit trace exported", Toast.LENGTH_LONG).show()
+    Toast.makeText(context, uiText(UiR.string.ui_android_exit_trace_exported_c5ce1), Toast.LENGTH_LONG).show()
    } catch(e: CancellationException) { throw e }
    catch(e: Exception) { Toast.makeText(context, e.message ?: e.toString(), Toast.LENGTH_LONG).show() }
    finally { exporting = false }
@@ -32,11 +37,11 @@ internal fun CaptionDiagnosticActions() {
  Column {
   TextButton(onClick = {
    val report = try { CaptionDiagnostics.report(context) } catch(e: Exception) { e.toString() }
-   context.getSystemService(ClipboardManager::class.java).setPrimaryClip(ClipData.newPlainText("Caption startup report", report))
-   Toast.makeText(context, "Startup report copied", Toast.LENGTH_SHORT).show()
-  }) { Text("Copy startup / crash report") }
+   context.getSystemService(ClipboardManager::class.java).setPrimaryClip(ClipData.newPlainText(uiText(UiR.string.ui_caption_startup_report_3488f), report))
+   Toast.makeText(context, uiText(UiR.string.ui_startup_report_copied_4305c), Toast.LENGTH_SHORT).show()
+  }) { Text(uiText(UiR.string.ui_copy_startup_crash_report_a5045)) }
   if (Build.VERSION.SDK_INT >= 30) TextButton(enabled = !exporting, onClick = { exporter.launch("hearth-android-exit-trace.bin") }) {
-   Text(if (exporting) "Exporting…" else "Export Android crash trace")
+   Text(if (exporting) uiText(UiR.string.ui_exporting_583cc) else uiText(UiR.string.ui_export_android_crash_trace_79311))
   }
  }
 }

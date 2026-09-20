@@ -1,5 +1,9 @@
 package com.sal7one.transiber.reading
 
+import com.sal7one.transiber.R as UiR
+import com.sal7one.transiber.i18n.*
+import com.sal7one.transiber.i18n.uiText as localizedUiText
+
 import android.app.*
 import android.content.*
 import android.content.pm.ServiceInfo
@@ -30,6 +34,8 @@ import java.io.File
 
 /** One projection/display, one OCR worker, bounded history and no stored screenshots. */
 class ReadingOverlayService : Service() {
+    private val uiText get() = this.localizedUiText()
+
     private val scope=CoroutineScope(SupervisorJob()+Dispatchers.Main.immediate)
     private val handler=Handler(Looper.getMainLooper())
     private val wm by lazy {getSystemService(WindowManager::class.java)}
@@ -106,10 +112,10 @@ class ReadingOverlayService : Service() {
         if(projection!=null)return START_NOT_STICKY
         try {
             val manager=getSystemService(NotificationManager::class.java)
-            manager.createNotificationChannel(NotificationChannel(CHANNEL,"Screen reading",NotificationManager.IMPORTANCE_LOW))
+            manager.createNotificationChannel(NotificationChannel(CHANNEL,uiText(UiR.string.service_screen_reading_153b9),NotificationManager.IMPORTANCE_LOW))
             if(Build.VERSION.SDK_INT>=29)startForeground(NOTIFICATION,notification(),ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION)
             else startForeground(NOTIFICATION,notification())
-            @Suppress("DEPRECATION") val token=intent?.getParcelableExtra<Intent>("projection") ?: error("Screen capture permission is missing. Start reading again from Screen & manga.")
+            @Suppress("DEPRECATION") val token=intent?.getParcelableExtra<Intent>("projection") ?: error(uiText(UiR.string.service_screen_capture_permission_is_missing_start_reading_5f3e2))
             projection=getSystemService(MediaProjectionManager::class.java).getMediaProjection(Activity.RESULT_OK,token)
             runningState.value=true
             projection!!.registerCallback(object:MediaProjection.Callback(){
@@ -129,7 +135,7 @@ class ReadingOverlayService : Service() {
                         val provider=ConversationTranslationSettings.provider(selection.providerId)
                         val languages=provider?.let {ConversationTranslationSettings.capabilities(this@ReadingOverlayService,it)}
                         check(target in ocrTranslationTargets(selection,config.localTranslationModelId,languages,ByokPolicy.FEATURE_BYOK)) {
-                            "Translation does not support $source → $target. Choose languages and a translator in Reading settings."
+                            uiText(UiR.string.service_translation_does_not_support_1_s_2_s_choose_langua_d0ec6, source, target)
                         }
                         snapshot=ConversationTranslationSettings.snapshot(this@ReadingOverlayService,config.localTranslationModelId,selection.providerId)
                     }
@@ -140,15 +146,15 @@ class ReadingOverlayService : Service() {
                         if(working && value.boxTranslations.isNotEmpty() && value.error==null)showTranslations(value.boxTranslations,automatic=true)
                         if(!viewingBox && value.translation.isNotBlank())translated?.text=value.translation
                         if(value.error!=null)showError(value.error)
-                        else status?.text=when {value.loading->"Loading ${profile.label}…";value.processing->"Reading text…";value.translating->"Translating…";value.text.isNotBlank()->"${profile.label} · ${value.ocrMs} ms OCR";else->"Open a reader, then tap Translate or Draw area."}
+                        else status?.text=when {value.loading->uiText(UiR.string.service_loading_1_s_aba14, uiText.label(profile));value.processing->uiText(UiR.string.service_reading_text_b6863);value.translating->uiText(UiR.string.service_translating_ae47b);value.text.isNotBlank()->uiText(UiR.string.service_1_s_2_s_ms_ocr_87c9c, uiText.label(profile), value.ocrMs);else->uiText(UiR.string.service_open_a_reader_then_tap_translate_or_draw_area_a9c06)}
                         if(working && !value.loading && !value.processing && !value.translating) {
                             working=false
-                            handleLabel?.text="Translate"
+                            handleLabel?.text=uiText(UiR.string.service_translate_2be17)
                             if(value.text.isNotBlank()) {
                                 val key=value.text+"\u0000"+value.translation
                                 if(key!=lastHistory){historyIndex=-1;lastHistory=key;history.addFirst(value.text to value.translation);while(history.size>20)history.removeLast()}
                                 if(value.boxTranslations.isNotEmpty())showTranslations(value.boxTranslations,automatic=true) else showPanel()
-                            } else if(value.error==null) {status?.text="No text found in this area. Draw a smaller region or choose another OCR model.";handleLabel?.text="No text"}
+                            } else if(value.error==null) {status?.text=uiText(UiR.string.service_no_text_found_in_this_area_draw_a_smaller_region_o_0c8b8);handleLabel?.text=uiText(UiR.string.service_no_text_32095)}
                         }
                     }
                 }catch(e: CancellationException){throw e}catch(e: Exception){setupError=e.message ?: e.toString();showError(setupError!!)}
@@ -167,16 +173,16 @@ class ReadingOverlayService : Service() {
     }
     private fun notification(): Notification {
         fun action(id: Int,name: String)=PendingIntent.getService(this,id,Intent(this,ReadingOverlayService::class.java).setAction(name),PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
-        return NotificationCompat.Builder(this,CHANNEL).setSmallIcon(android.R.drawable.ic_menu_view).setContentTitle("Hearth screen reading")
-            .setContentText(if(paused)"Paused · tap Translate to read once" else "Read pages in another app · screenshots stay local")
+        return NotificationCompat.Builder(this,CHANNEL).setSmallIcon(android.R.drawable.ic_menu_view).setContentTitle(uiText(UiR.string.service_hearth_screen_reading_0905b))
+            .setContentText(if(paused)uiText(UiR.string.service_paused_tap_translate_to_read_once_56c5d) else uiText(UiR.string.service_read_pages_in_another_app_screenshots_stay_local_64bd9))
             .setOngoing(true).setContentIntent(action(44,"recover"))
-            .addAction(0,"Translate",action(41,"translate")).addAction(0,if(paused)"Resume" else "Pause",action(42,"pause")).addAction(0,"Stop",action(43,"stop")).build()
+            .addAction(0,uiText(UiR.string.service_translate_2be17),action(41,"translate")).addAction(0,if(paused)uiText(UiR.string.service_resume_b3bd0) else uiText(UiR.string.service_pause_78196),action(42,"pause")).addAction(0,uiText(UiR.string.service_stop_9e253),action(43,"stop")).build()
     }
     private fun togglePause() {
         paused=!paused;clearPage();trigger.reset();generation++;working=false;controller.invalidate();voice.stop()
         panel?.visibility=View.GONE;handle?.visibility=View.VISIBLE
-        handleLabel?.text=if(paused)"Paused · read" else "Translate"
-        pauseButton?.text=if(paused)"Resume auto" else "Pause auto"
+        handleLabel?.text=if(paused)uiText(UiR.string.service_paused_read_989d4) else uiText(UiR.string.service_translate_2be17)
+        pauseButton?.text=if(paused)uiText(UiR.string.service_resume_auto_f5626) else uiText(UiR.string.service_pause_auto_e2a61)
         getSystemService(NotificationManager::class.java).notify(NOTIFICATION,notification())
     }
     private fun screenSize(): Pair<Int,Int> {
@@ -187,7 +193,7 @@ class ReadingOverlayService : Service() {
         if(width<=0||height<=0)return
         val scale=minOf(1f,1600f/maxOf(width,height));val w=maxOf(1,(width*scale).toInt());val h=maxOf(1,(height*scale).toInt())
         if(reader?.width==w&&reader?.height==h)return
-        frameWaiter?.let {if(it.isActive)it.resumeWithException(IllegalStateException("Screen size changed. Please capture the page again."))};frameWaiter=null
+        frameWaiter?.let {if(it.isActive)it.resumeWithException(IllegalStateException(uiText(UiR.string.service_screen_size_changed_please_capture_the_page_again_38901)))};frameWaiter=null
         display?.surface=null;reader?.close();reader=ImageReader.newInstance(w,h,PixelFormat.RGBA_8888,2)
         display?.resize(w,h,resources.configuration.densityDpi)
         clearPage();region=null;motion.reset();generation++;trigger.reset()
@@ -197,7 +203,7 @@ class ReadingOverlayService : Service() {
         if(clean){handle?.visibility=View.INVISIBLE;panel?.visibility=View.GONE;pageView?.visibility=View.INVISIBLE}
         try {
             if(clean)delay(100) // Only OCR needs a clean frame; motion sampling leaves translations visible.
-            val input=checkNotNull(reader){"Screen capture has stopped"}
+            val input=checkNotNull(reader){uiText(UiR.string.service_screen_capture_has_stopped_c682a)}
             while(true){val old=input.acquireLatestImage() ?: break;old.close()}
             return withTimeout(5000) {suspendCancellableCoroutine {continuation->
                 frameWaiter=continuation
@@ -205,7 +211,7 @@ class ReadingOverlayService : Service() {
                     val image=images.acquireLatestImage() ?: return@setOnImageAvailableListener
                     try {
                         if(!continuation.isActive)return@setOnImageAvailableListener
-                        val plane=image.planes[0];check(plane.pixelStride==4){"Unsupported screen pixel stride: ${plane.pixelStride}"}
+                        val plane=image.planes[0];check(plane.pixelStride==4){uiText(UiR.string.service_unsupported_screen_pixel_stride_1_s_69dba, plane.pixelStride)}
                         val paddedWidth=plane.rowStride/4
                         val padded=Bitmap.createBitmap(paddedWidth,image.height,Bitmap.Config.ARGB_8888)
                         padded.copyPixelsFromBuffer(plane.buffer)
@@ -214,7 +220,7 @@ class ReadingOverlayService : Service() {
                         continuation.resume(cropped)
                     }catch(e: Exception){if(continuation.isActive)continuation.resumeWithException(e)}finally{image.close()}
                 },handler)
-                display?.surface=input.surface ?: error("Screen capture has stopped")
+                display?.surface=input.surface ?: error(uiText(UiR.string.service_screen_capture_has_stopped_c682a))
             }}
         } finally {
             frameWaiter=null;reader?.setOnImageAvailableListener(null,null);display?.surface=null
@@ -271,10 +277,10 @@ class ReadingOverlayService : Service() {
     private suspend fun submit(bitmap: Bitmap) {
         var input: Bitmap?=null
         try {
-            check(setupReady){setupError ?: "Reading settings are still loading. Tap Retry in a moment."}
-            check(source in profile.languages){"Choose a text language supported by ${profile.label} in Reading settings"}
+            check(setupReady){setupError ?: uiText(UiR.string.service_reading_settings_are_still_loading_tap_retry_in_a__cd6c6)}
+            check(source in profile.languages){uiText(UiR.string.service_choose_a_text_language_supported_by_1_s_in_reading_83c65, uiText.label(profile))}
             val crop=region?.let {r->
-                ReadingSelection.crop(bitmap.width,bitmap.height,bitmap.width.toFloat(),bitmap.height.toFloat(),r.left*bitmap.width,r.top*bitmap.height,r.right*bitmap.width,r.bottom*bitmap.height) ?: error("Selected area is too small. Draw it again.")
+                ReadingSelection.crop(bitmap.width,bitmap.height,bitmap.width.toFloat(),bitmap.height.toFloat(),r.left*bitmap.width,r.top*bitmap.height,r.right*bitmap.width,r.bottom*bitmap.height) ?: error(uiText(UiR.string.service_selected_area_is_too_small_draw_it_again_79441))
             } ?: run {
                 // System status/navigation glyphs are not reader text.
                 val screen=screenSize()
@@ -287,8 +293,8 @@ class ReadingOverlayService : Service() {
             val cropped=Bitmap.createBitmap(bitmap,crop.left,crop.top,crop.width,crop.height)
             input=if(cropped===bitmap)bitmap.copy(Bitmap.Config.ARGB_8888,false) else cropped
             val pixels=signature(input)
-            check(pixels.any {it>8}){"The captured area is black. Check that the reader is visible; protected pages may block screenshots."}
-            original?.text="";translated?.text="";status?.text="Reading ${profile.label}…";handleLabel?.text="Reading…"
+            check(pixels.any {it>8}){uiText(UiR.string.service_the_captured_area_is_black_check_that_the_reader_i_87046)}
+            original?.text="";translated?.text="";status?.text=uiText(UiR.string.service_reading_1_s_30d82, uiText.label(profile));handleLabel?.text=uiText(UiR.string.service_reading_ae18b)
             val epoch=generation
             if(latest.closing)controller.awaitStopped()
             if(epoch!=generation){input.recycle();bitmap.recycle();return}
@@ -338,7 +344,7 @@ class ReadingOverlayService : Service() {
             handleParams.y=handleParams.y.coerceIn(dp(24),maxOf(dp(24),bounds.second-dp(if(locked)72 else 184)))
             wm.updateViewLayout(root,handleParams)
         }
-        lockButton?.contentDescription=if(locked)"Scroll through translations. Tap to unlock text boxes." else "Text boxes are interactive. Tap to let touches pass through."
+        lockButton?.contentDescription=if(locked)uiText(UiR.string.service_scroll_through_translations_tap_to_unlock_text_box_1eb00) else uiText(UiR.string.service_text_boxes_are_interactive_tap_to_let_touches_pass_ebaaa)
     }
     private fun showTranslations(boxes: List<TranslatedOcrBox> = latest.boxTranslations, automatic: Boolean=false) {
         if(setupSuppressed)return
@@ -351,7 +357,7 @@ class ReadingOverlayService : Service() {
     }
     private fun params(width: Int,height: Int)=WindowManager.LayoutParams(width,height,WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
         WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,PixelFormat.TRANSLUCENT).apply {gravity=Gravity.TOP or Gravity.LEFT}
-    private fun column()=LinearLayout(this).apply {orientation=LinearLayout.VERTICAL;setPadding(dp(10),dp(6),dp(10),dp(6));background=android.graphics.drawable.GradientDrawable().apply {setColor(paper);cornerRadius=dp(16).toFloat()}}
+    private fun column()=LinearLayout(this).apply {layoutDirection=if(uiText.locale.language=="ar")View.LAYOUT_DIRECTION_RTL else View.LAYOUT_DIRECTION_LTR;orientation=LinearLayout.VERTICAL;setPadding(dp(10),dp(6),dp(10),dp(6));background=android.graphics.drawable.GradientDrawable().apply {setColor(paper);cornerRadius=dp(16).toFloat()}}
     private fun text(value: String,size: Float=16f)=TextView(this).apply {text=value;textSize=size;setTextColor(ink);setPadding(dp(4),dp(4),dp(4),dp(4))}
     private fun button(label: String,action: ()->Unit)=Button(this).apply {text=label;isAllCaps=false;minHeight=dp(48);setTextColor(ink);backgroundTintList=android.content.res.ColorStateList.valueOf(if(dark)Color.rgb(60,68,76) else Color.rgb(224,232,237));setOnClickListener{action()}}
     private fun row(parent: LinearLayout,vararg actions: Pair<String,()->Unit>) {
@@ -365,11 +371,11 @@ class ReadingOverlayService : Service() {
         }
         pageView=ReadingTranslationView(this) {box->
             viewingBox=true;original?.text=box.line.text;translated?.text=box.translation
-            status?.text="Selected text box";showPanel()
+            status?.text=uiText(UiR.string.service_selected_text_box_3e276);showPanel()
         }.also {wm.addView(it,layerParams);it.visibility=View.INVISIBLE}
         handleParams=params(dp(156),-2).apply {x=prefs.getInt("x",dp(8)).coerceIn(0,maxOf(0,size.first-dp(156)));y=prefs.getInt("y",dp(100)).coerceIn(dp(24),maxOf(dp(24),size.second-dp(160)))}
         handle=column().also {root->
-            val grip=text("Hearth · drag",12f);grip.contentDescription="Move reading handle. Drag to reposition. Double tap to reset position."
+            val grip=text(uiText(UiR.string.service_hearth_drag_c53ff),12f);grip.contentDescription=uiText(UiR.string.service_move_reading_handle_drag_to_reposition_double_tap__55283)
             var sx=0f;var sy=0f;var x=0;var y=0
             grip.setOnClickListener {handleParams.x=dp(8);handleParams.y=dp(100);wm.updateViewLayout(root,handleParams)}
             val drag=View.OnTouchListener {view,event->when(event.actionMasked) {
@@ -380,9 +386,9 @@ class ReadingOverlayService : Service() {
             }}
             grip.setOnTouchListener(drag);handleGrip=grip;root.addView(grip)
             val controls=LinearLayout(this)
-            handleLabel=button("Translate"){requestCapture(false)}.apply {textSize=13f}
+            handleLabel=button(uiText(UiR.string.service_translate_2be17)){requestCapture(false)}.apply {textSize=13f}
             controls.addView(handleLabel,LinearLayout.LayoutParams(0,-2,2f))
-            controls.addView(button("⋯"){showPanel()}.apply {contentDescription="Reading controls"},LinearLayout.LayoutParams(0,-2,1f))
+            controls.addView(button("⋯"){showPanel()}.apply {contentDescription=uiText(UiR.string.service_reading_controls_83fa7)},LinearLayout.LayoutParams(0,-2,1f))
             handleControls=controls;root.addView(controls)
             lockButton=ImageButton(this).apply {
                 setOnClickListener {locked=!locked;applyLayerTouch()}
@@ -398,21 +404,21 @@ class ReadingOverlayService : Service() {
         }
         panelParams=params(minOf(size.first-dp(16),dp(440)),minOf((size.second*.60).toInt(),dp(560))).apply {x=dp(8);y=dp(60)}
         panel=column().also {root->
-            row(root,"Read page" to {resumeReader()},"Stop" to {stopSelf()})
-            status=text("Open a reader, then tap Translate or Draw area.",13f);status!!.accessibilityLiveRegion=View.ACCESSIBILITY_LIVE_REGION_POLITE;root.addView(status)
+            row(root,uiText(UiR.string.service_read_page_33e9a) to {resumeReader()},uiText(UiR.string.service_stop_9e253) to {stopSelf()})
+            status=text(uiText(UiR.string.service_open_a_reader_then_tap_translate_or_draw_area_a9c06),13f);status!!.accessibilityLiveRegion=View.ACCESSIBILITY_LIVE_REGION_POLITE;root.addView(status)
             val scroll=ScrollView(this);val content=column();scroll.addView(content);root.addView(scroll,LinearLayout.LayoutParams(-1,0,1f))
-            content.addView(text("Translation",14f));translated=text("",prefs.getFloat("textSize",20f));translated!!.setTextIsSelectable(true);content.addView(translated)
-            row(content,"Read aloud" to {speak(false,VoicePlaybackMode.DEFAULT)},"Android voice" to {speak(false,VoicePlaybackMode.SYSTEM)})
-            content.addView(text("Original",14f));original=text("");original!!.setTextIsSelectable(true);content.addView(original)
-            row(content,"Read original" to {speak(true,VoicePlaybackMode.DEFAULT)},"Stop voice" to {voice.stop()})
-            row(content,"Copy" to {getSystemService(ClipboardManager::class.java).setPrimaryClip(ClipData.newPlainText("Hearth reading",translated?.text?.takeIf {it.isNotBlank()} ?: original?.text))},"History" to {showHistory()})
-            content.addView(button("Show translations"){resumeReader()})
-            row(content,"Translate" to {requestCapture(false)},"Draw area" to {requestCapture(true)})
-            row(content,"Whole page" to {region=null;requestCapture(false)},"Clear" to {clear()})
-            pauseButton=button("Pause auto"){togglePause()};content.addView(pauseButton)
-            row(content,"Smaller text" to {changeText(-2)},"Larger text" to {changeText(2)})
-            content.addView(text("Scroll through the live translations with the lock closed. Open the lock to tap text boxes. Movement clears old placements; automatic mode translates after the page settles. Tap Read page to close these controls. History lasts for this session (20 pages).",12f))
-            row(content,"Setup" to {startActivity(Intent(this,ReadingStartActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));stopSelf()},"Hearth" to {startActivity(Intent(this,MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))})
+            content.addView(text(uiText(UiR.string.service_translation_ac26a),14f));translated=text("",prefs.getFloat("textSize",20f));translated!!.setTextIsSelectable(true);content.addView(translated)
+            row(content,uiText(UiR.string.service_read_aloud_56210) to {speak(false,VoicePlaybackMode.DEFAULT)},uiText(UiR.string.service_android_voice_ba5fb) to {speak(false,VoicePlaybackMode.SYSTEM)})
+            content.addView(text(uiText(UiR.string.service_original_c0a80),14f));original=text("");original!!.setTextIsSelectable(true);content.addView(original)
+            row(content,uiText(UiR.string.service_read_original_149d2) to {speak(true,VoicePlaybackMode.DEFAULT)},uiText(UiR.string.service_stop_voice_84a32) to {voice.stop()})
+            row(content,uiText(UiR.string.service_copy_af74f) to {getSystemService(ClipboardManager::class.java).setPrimaryClip(ClipData.newPlainText("Hearth reading",translated?.text?.takeIf {it.isNotBlank()} ?: original?.text))},uiText(UiR.string.service_history_90ccd) to {showHistory()})
+            content.addView(button(uiText(UiR.string.service_show_translations_6861c)){resumeReader()})
+            row(content,uiText(UiR.string.service_translate_2be17) to {requestCapture(false)},uiText(UiR.string.service_draw_area_f80f3) to {requestCapture(true)})
+            row(content,uiText(UiR.string.service_whole_page_eeb74) to {region=null;requestCapture(false)},uiText(UiR.string.service_clear_719ea) to {clear()})
+            pauseButton=button(uiText(UiR.string.service_pause_auto_e2a61)){togglePause()};content.addView(pauseButton)
+            row(content,uiText(UiR.string.service_smaller_text_a8ea9) to {changeText(-2)},uiText(UiR.string.service_larger_text_118f9) to {changeText(2)})
+            content.addView(text(uiText(UiR.string.service_scroll_through_the_live_translations_with_the_lock_e5d32),12f))
+            row(content,uiText(UiR.string.service_setup_cdd7b) to {startActivity(Intent(this,ReadingStartActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));stopSelf()},"Hearth" to {startActivity(Intent(this,MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))})
             wm.addView(root,panelParams);root.visibility=View.GONE
         }
         applyLayerTouch()
@@ -423,28 +429,28 @@ class ReadingOverlayService : Service() {
         if(text.isNotBlank())voice.speak(text,if(originalText)source else target,mode)
     }
     private fun showHistory() {
-        if(history.isEmpty()){status?.text="No completed pages yet";return}
+        if(history.isEmpty()){status?.text=uiText(UiR.string.service_no_completed_pages_yet_779d8);return}
         historyIndex=(historyIndex+1)%history.size
         val entry=history.elementAt(historyIndex)
         original?.text=entry.first;translated?.text=entry.second
         original?.scrollTo(0,0);translated?.scrollTo(0,0)
-        status?.text="History ${historyIndex+1}/${history.size} · tap History for the next page"
+        status?.text=uiText(UiR.string.service_history_1_s_2_s_tap_history_for_the_next_page_48713, historyIndex+1, history.size)
         showPanel()
     }
-    private fun clear() {viewingBox=false;clearPage();generation++;controller.invalidate();voice.stop();history.clear();historyIndex=-1;lastHistory="";original?.text="";translated?.text="";working=false;handleLabel?.text="Translate";status?.text="Cleared. Tap Translate for the current page."}
+    private fun clear() {viewingBox=false;clearPage();generation++;controller.invalidate();voice.stop();history.clear();historyIndex=-1;lastHistory="";original?.text="";translated?.text="";working=false;handleLabel?.text=uiText(UiR.string.service_translate_2be17);status?.text=uiText(UiR.string.service_cleared_tap_translate_for_the_current_page_f78c6)}
     private fun showPanel() {if(!setupSuppressed && selector==null){pageView?.visibility=View.INVISIBLE;panel?.visibility=View.VISIBLE;handle?.visibility=View.GONE}}
-    private fun showError(message: String) {status?.text=message;working=false;handleLabel?.text="Retry";showPanel()}
+    private fun showError(message: String) {status?.text=message;working=false;handleLabel?.text=uiText(UiR.string.service_retry_9f5cd);showPanel()}
     private fun selectRegion(bitmap: Bitmap) {
         selectedBitmap=bitmap;handle?.visibility=View.GONE;panel?.visibility=View.GONE
         val root=column();selector=root
         val area=SelectionView(bitmap)
-        root.addView(text("Draw around a bubble or paragraph",20f))
-        root.addView(text("Drag or circle the text. Center and Whole image also work with TalkBack.",13f))
+        root.addView(text(uiText(UiR.string.service_draw_around_a_bubble_or_paragraph_0f329),20f))
+        root.addView(text(uiText(UiR.string.service_drag_or_circle_the_text_center_and_whole_image_als_b1a82),13f))
         root.addView(area,LinearLayout.LayoutParams(-1,0,1f))
-        row(root,"Center" to {area.chooseCenter()},"Whole image" to {area.whole()})
-        row(root,"Cancel" to {closeSelection()},"Read area" to {
+        row(root,uiText(UiR.string.service_center_a2391) to {area.chooseCenter()},uiText(UiR.string.service_whole_image_6bd00) to {area.whole()})
+        row(root,uiText(UiR.string.service_cancel_77dfd) to {closeSelection()},uiText(UiR.string.service_read_area_9c448) to {
             val crop=area.crop()
-            if(crop==null){Toast.makeText(this,"Draw an area first, or choose Center",Toast.LENGTH_SHORT).show()}
+            if(crop==null){Toast.makeText(this,uiText(UiR.string.service_draw_an_area_first_or_choose_center_5bc83),Toast.LENGTH_SHORT).show()}
             else {
                 region=RectF(crop.left.toFloat()/bitmap.width,crop.top.toFloat()/bitmap.height,crop.right.toFloat()/bitmap.width,crop.bottom.toFloat()/bitmap.height)
                 val owned=bitmap.copy(Bitmap.Config.ARGB_8888,false);closeSelection()
@@ -457,7 +463,7 @@ class ReadingOverlayService : Service() {
     private inner class SelectionView(private val bitmap: Bitmap): View(this@ReadingOverlayService) {
         private var box: RectF?=null
         private val paint=Paint(Paint.ANTI_ALIAS_FLAG)
-        init {contentDescription="Select a text area by drawing. Center and Whole image buttons are available below."}
+        init {contentDescription=uiText(UiR.string.service_select_a_text_area_by_drawing_center_and_whole_ima_4c4e8)}
         override fun onDraw(canvas: Canvas) {
             val scale=minOf(width.toFloat()/bitmap.width,height.toFloat()/bitmap.height);val dx=(width-bitmap.width*scale)/2;val dy=(height-bitmap.height*scale)/2
             canvas.drawBitmap(bitmap,null,RectF(dx,dy,dx+bitmap.width*scale,dy+bitmap.height*scale),paint)

@@ -1,5 +1,8 @@
 package com.sal7one.transiber.settings
 
+import com.sal7one.transiber.R as UiR
+import com.sal7one.transiber.i18n.rememberUiText
+
 import androidx.compose.foundation.layout.*
 import androidx.compose.ui.graphics.Color
 import com.sal7one.transiber.ui.theme.glassPanel
@@ -14,6 +17,8 @@ import androidx.compose.ui.unit.dp
 /** Large labelled destinations; Local/Cloud remains explicit before entering setup. */
 @Composable
 internal fun SettingsFeatureGrid(location: SettingsLocation, onFeature: (SettingsFeature) -> Unit) {
+    val uiText = rememberUiText()
+
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         settingsFeatures(location).chunked(2).forEach { pair ->
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -34,10 +39,10 @@ internal fun SettingsFeatureGrid(location: SettingsLocation, onFeature: (Setting
                                 SettingsFeature.CAMERA -> Icons.Default.CameraAlt
                             }, null, tint = MaterialTheme.colorScheme.primary)
                             Text(when(feature) {
-                                SettingsFeature.SPEECH -> "Speech"
-                                SettingsFeature.TRANSLATION -> "Translation"
-                                SettingsFeature.VOICES -> "Voices"
-                                SettingsFeature.CAMERA -> "Camera & OCR"
+                                SettingsFeature.SPEECH -> uiText(UiR.string.ui_speech_d00d8)
+                                SettingsFeature.TRANSLATION -> uiText(UiR.string.ui_translation_ac26a)
+                                SettingsFeature.VOICES -> uiText(UiR.string.ui_voices_40273)
+                                SettingsFeature.CAMERA -> uiText(UiR.string.ui_camera_ocr_c1207)
                             }, style = MaterialTheme.typography.titleSmall)
                         }
                     }

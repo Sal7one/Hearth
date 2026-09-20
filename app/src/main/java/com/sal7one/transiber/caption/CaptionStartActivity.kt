@@ -1,5 +1,8 @@
 package com.sal7one.transiber.caption
 
+import com.sal7one.transiber.R as UiR
+import com.sal7one.transiber.i18n.*
+
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
@@ -8,7 +11,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
-import androidx.activity.ComponentActivity
+import androidx.appcompat.app.AppCompatActivity
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.compose.setContent
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -66,7 +69,7 @@ import com.sal7one.transiber.ui.theme.ThemeMode
  * Starts [CaptionCaptureService] and finishes; the overlay takes over from
  * there.
  */
-class CaptionStartActivity : ComponentActivity() {
+class CaptionStartActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -128,6 +131,8 @@ private fun CaptionStartSystemBars(themeMode: ThemeMode) {
 
 @Composable
 private fun CaptionStartScreen(requestedSource: CaptionSource?, onDone: () -> Unit) {
+    val uiText = rememberUiText()
+
     val context = LocalContext.current
     var overlayGranted by remember {
         mutableStateOf(Settings.canDrawOverlays(context))
@@ -199,15 +204,15 @@ private fun CaptionStartScreen(requestedSource: CaptionSource?, onDone: () -> Un
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(modifier = Modifier.weight(1f)) {
-                Text("Live captions", style = MaterialTheme.typography.headlineMedium)
+                Text(uiText(UiR.string.ui_live_captions_83fd1), style = MaterialTheme.typography.headlineMedium)
                 Text(
-                    if (requestedSource == null) "Choose an audio source to start." else "${source.label} · complete Android permissions to start.",
+                    if (requestedSource == null) uiText(UiR.string.ui_choose_an_audio_source_to_start_81909) else uiText(UiR.string.ui_1_s_complete_android_permissions_to_start_e9e4e, uiText.label(source)),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
             IconButton(onClick = onDone) {
-                Icon(Icons.Default.Close, "Close")
+                Icon(Icons.Default.Close, uiText(UiR.string.ui_close_bbfa7))
             }
         }
 
@@ -234,7 +239,7 @@ private fun CaptionStartScreen(requestedSource: CaptionSource?, onDone: () -> Un
                 ) {
                     Icon(Icons.Default.VolumeUp, null)
                     Spacer(Modifier.height(0.dp))
-                    Text("  Start captions from device audio")
+                    Text(uiText(UiR.string.ui_start_captions_from_device_audio_9e84c))
                 }
 
                 CaptionSource.MIC -> Button(
@@ -242,22 +247,22 @@ private fun CaptionStartScreen(requestedSource: CaptionSource?, onDone: () -> Un
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     Icon(Icons.Default.Mic, null)
-                    Text("  Start captions from microphone")
+                    Text(uiText(UiR.string.ui_start_captions_from_microphone_41530))
                 }
             }
 
             if (notificationsDenied) {
-                Text("Notifications are disabled. Enable them for Pause, Stop and bubble recovery controls.",
+                Text(uiText(UiR.string.ui_notifications_are_disabled_enable_them_for_pause_stop_and_bubble_57b9d),
                     color = MaterialTheme.colorScheme.error)
                 TextButton(onClick = {
                     context.startActivity(Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS)
                         .putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, context.packageName))
-                }) { Text("Enable caption notification controls") }
-                TextButton(onClick = launchCapture) { Text("Continue with bubble controls only") }
+                }) { Text(uiText(UiR.string.ui_enable_caption_notification_controls_4594b)) }
+                TextButton(onClick = launchCapture) { Text(uiText(UiR.string.ui_continue_with_bubble_controls_only_0ddfd)) }
             }
             if (micPermissionDenied) {
                 Text(
-                    "Audio recording permission denied — Android requires it for both microphone and device audio capture.",
+                    uiText(UiR.string.ui_audio_recording_permission_denied_android_requires_it_for_both_mi_af57b),
                     color = MaterialTheme.colorScheme.error,
                     style = MaterialTheme.typography.bodySmall,
                 )
@@ -271,14 +276,14 @@ private fun CaptionStartScreen(requestedSource: CaptionSource?, onDone: () -> Un
                             )
                         }
                     },
-                ) { Text("Open settings") }
+                ) { Text(uiText(UiR.string.ui_open_settings_fd710)) }
             }
 
             OutlinedButton(onClick = onDone, modifier = Modifier.fillMaxWidth()) {
-                Text("Cancel")
+                Text(uiText(UiR.string.ui_cancel_77dfd))
             }
 
-            if (requestedSource == null) Text("Some apps block device audio. Choose Microphone if capture is silent.", style = MaterialTheme.typography.bodySmall)
+            if (requestedSource == null) Text(uiText(UiR.string.ui_some_apps_block_device_audio_choose_microphone_if_capture_is_sile_acb86), style = MaterialTheme.typography.bodySmall)
 
         }
     }
@@ -286,6 +291,8 @@ private fun CaptionStartScreen(requestedSource: CaptionSource?, onDone: () -> Un
 
 @Composable
 private fun PermissionCard(onGrant: () -> Unit) {
+    val uiText = rememberUiText()
+
     Surface(
         shape = androidx.compose.foundation.shape.RoundedCornerShape(AppDesign.Dimens.RadiusMd),
         color = MaterialTheme.colorScheme.surfaceVariant,
@@ -295,18 +302,18 @@ private fun PermissionCard(onGrant: () -> Unit) {
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             Text(
-                "Allow display over other apps",
+                uiText(UiR.string.ui_allow_display_over_other_apps_b1453),
                 style = MaterialTheme.typography.titleMedium,
             )
             Text(
-                "Live captions draws a floating caption bubble on top of the app " +
-                    "you are watching. Android requires a one-time setting for this.",
+                uiText(UiR.string.ui_live_captions_draws_a_floating_caption_bubble_on_top_of_the_app_ec64b) +
+                    uiText(UiR.string.ui_you_are_watching_android_requires_a_one_time_setting_for_this_2aea3),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            Button(onClick = onGrant) { Text("Open settings") }
+            Button(onClick = onGrant) { Text(uiText(UiR.string.ui_open_settings_fd710)) }
             Text(
-                "Return here after enabling it.",
+                uiText(UiR.string.ui_return_here_after_enabling_it_29b55),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -319,8 +326,10 @@ private fun SourceCard(
     selected: CaptionSource,
     onSelect: (CaptionSource) -> Unit,
 ) {
+    val uiText = rememberUiText()
+
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Text("Audio source", style = MaterialTheme.typography.titleMedium)
+        Text(uiText(UiR.string.ui_audio_source_a1ee0), style = MaterialTheme.typography.titleMedium)
         CaptionSource.entries.forEach { source ->
             val isSelected = selected == source
             Surface(
@@ -348,9 +357,9 @@ private fun SourceCard(
                             .padding(start = 12.dp)
                             .weight(1f),
                     ) {
-                        Text(source.label, style = MaterialTheme.typography.titleSmall)
+                        Text(uiText.label(source), style = MaterialTheme.typography.titleSmall)
                         Text(
-                            source.explanation,
+                            uiText.explanation(source),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )

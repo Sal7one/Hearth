@@ -1,0 +1,27 @@
+<resources>
+    <string name="capability_note_ace2e8aaad" formatted="false">"يتحقق OpenAI من اللغة المطلوبة عند الاتصال. تعرض القائمة أسماء اللغات، لا ضمان دعم النموذج. ابحث بالاسم أو أدخل رمزًا من حرفين أو ثلاثة."</string>
+    <string name="capability_note_c1aacd9629">"%1$s · %2$s"</string>
+    <string name="capability_note_67daa0fec5" formatted="false">"Moonshine · يتعرف هذا النموذج على الإنجليزية فقط. لا يحتاج اكتشافًا تلقائيًا أو فرض لغة."</string>
+    <string name="capability_note_492861ff93">"%1$s · اختر لغة لتجاوز الاختيار التلقائي أو اختر تلقائي. تظهر فقط لغات النموذج وبيئة تشغيله."</string>
+    <string name="capability_note_8b97049ba5">"%1$s · يحدد النموذج المثبت لغة الكلام. غيّر النموذج لتغيير اللغة؛ لا يتوفر اكتشاف تلقائي أو فرض لغة."</string>
+    <string name="capability_note_302c201b8d">"%1$s · نموذج إنجليزي فقط. لغة الكلام ثابتة ولا تحتاج اكتشافًا."</string>
+    <string name="capability_note_6b9bbaddde" formatted="false">"اختر لغة لتجاوز الاكتشاف أو اختر تلقائي. التغطية من مفردات النموذج."</string>
+    <string name="capability_note_825ace0f79" formatted="false">"لا تتوفر بيانات اللغات حتى استيراد نموذج مدعوم. لن يُرسل فرض للغة."</string>
+    <string name="capability_note_f03453f699" formatted="false">"اختر تلميح لغة أو تلقائي. يوجّه التلميح التعرف ولا يمنع اللغات الأخرى."</string>
+    <string name="capability_note_a9bb5b597d" formatted="false">"اختر تلميح لغة الكلام أو تلقائي. حدد المصدر صراحةً عند استخدام جسر الترجمة المحلي."</string>
+    <string name="capability_note_8975a9a157" formatted="false">"هذا الاتصال يدعم لغة مصدر تلقائية فقط، دون تحكم يدوي."</string>
+    <string name="capability_note_1ffb589569" formatted="false">"يكتشف لغة الكلام تلقائيًا. لا يقبل هذا الاتصال فرض لغة المصدر."</string>
+    <string name="capability_note_e752f4c2db" formatted="false">"تكتشف واجهة ترجمة الصوت المصدر تلقائيًا ولا تقبل فرض لغة."</string>
+    <string name="capability_note_51deda856c" formatted="false">"حدد لغة الكلام للتعرف المخصص. يستخدم تلقائي وضعًا متعدد اللغات (10 لغات)."</string>
+    <string name="capability_note_5715f3cacd" formatted="false">"حدد لغة الكلام لإرسال تلميح صريح، أو اختر تلقائي."</string>
+    <string name="capability_note_be018a0a4e" formatted="false">"لا يتيح التطبيق اختيار لغة الكلام يدويًا لهذا النموذج. يستخدم التعرف سلوك اللغة الافتراضي."</string>
+    <string name="capability_note_de49da057d">"%1$s · ترجمة النص بعد التعرف على الكلام."</string>
+    <string name="capability_note_444ec285c4" formatted="false">"أعدّ اتصال الترجمة وافحص لغاته أولًا."</string>
+    <string name="capability_note_017b414f07" formatted="false">"ترجمة نص سحابية · وجهات مدعومة من لغة الكلام المختارة."</string>
+    <string name="capability_note_0f1a227949" formatted="false">"ترجمة Soniox v5 المدمجة؛ يُحتفظ بالأصل والترجمة منفصلين."</string>
+    <string name="capability_note_b410e7fbf2" formatted="false">"ML Kit · نزّل حزمتي الكلام والترجمة من النماذج. تمر اللغات غير الإنجليزية عبر الإنجليزية."</string>
+    <string name="capability_note_0434e0f540" formatted="false">"اختر نموذج ترجمة محليًا معروفًا في الإعداد لتحميل لغاته."</string>
+    <string name="capability_note_38000e13f0">"%1$s: يدعم %2$s لغة إخراج. يجب أن يدعم نموذج الترجمة لغة الكلام أيضًا."</string>
+    <string name="capability_note_c1004bf540" formatted="false">"تستخدم الإنجليزية ترجمة الصوت. تحتاج العربية إلى نموذج منفصل من الإنجليزية إلى العربية."</string>
+    <string name="capability_note_949094c4d7" formatted="false">"يتطلب هذا المسار كلامًا إنجليزيًا ونموذج الإنجليزية إلى العربية. تبقى اللغات الأخرى نصًا أصليًا فقط."</string>
+</resources>

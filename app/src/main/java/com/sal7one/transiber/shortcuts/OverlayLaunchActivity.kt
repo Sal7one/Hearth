@@ -1,5 +1,8 @@
 package com.sal7one.transiber.shortcuts
 
+import com.sal7one.transiber.R as UiR
+import com.sal7one.transiber.i18n.rememberUiText
+
 import android.Manifest
 import android.app.Activity
 import android.content.Intent
@@ -10,7 +13,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
-import androidx.activity.ComponentActivity
+import androidx.appcompat.app.AppCompatActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
@@ -37,7 +40,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 /** Visible permission owner; tiles never start capture directly from a background service. */
-class OverlayLaunchActivity : ComponentActivity() {
+class OverlayLaunchActivity : AppCompatActivity() {
     private var shortcut by mutableStateOf(OverlayShortcut.CAPTIONS)
     private var phase by mutableStateOf("checking")
     private val defaultFix get() = if (shortcut == OverlayShortcut.READING) SetupFix.CAMERA else SetupFix.CAPTIONS
@@ -181,34 +184,36 @@ class OverlayLaunchActivity : ComponentActivity() {
     private fun openPage(page: Int) { startActivity(Intent(this, MainActivity::class.java).putExtra("page", page).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)) }
 
     @Composable private fun Diagnostics() {
+    val uiText = rememberUiText()
+
         var showReady by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
         Surface(Modifier.fillMaxSize()) {
             Column(Modifier.fillMaxSize().systemBarsPadding().verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                Text(shortcut.label, style = MaterialTheme.typography.headlineMedium)
-                Text(if (phase == "diagnostics") "Setup diagnostics" else if (phase == "checking") "Checking your saved setup…" else "Complete the Android permission prompt.",
+                Text(uiText(if (shortcut == OverlayShortcut.CAPTIONS) UiR.string.tile_captions else UiR.string.tile_reading), style = MaterialTheme.typography.headlineMedium)
+                Text(if (phase == "diagnostics") uiText(UiR.string.ui_setup_diagnostics_19e28) else if (phase == "checking") uiText(UiR.string.ui_checking_your_saved_setup_36b7c) else uiText(UiR.string.ui_complete_the_android_permission_prompt_10ee5),
                     modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }, style = MaterialTheme.typography.titleMedium)
                 if (phase == "checking") LinearProgressIndicator(Modifier.fillMaxWidth())
                 if (phase == "diagnostics") {
-                    Text("Nothing was started. Fix the items below, then check again. Model checks do not test cloud quota or load the full recognizer.")
+                    Text(uiText(UiR.string.ui_nothing_was_started_fix_the_items_below_then_check_again_model_ch_5925e))
                     results.filterNot { it.passed }.forEach { result ->
                         OutlinedCard(Modifier.fillMaxWidth()) {
                             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                Text("${if (result.passed) "Ready" else "Needs attention"} · ${result.label}", style = MaterialTheme.typography.titleMedium)
+                                Text("${if (result.passed) uiText(UiR.string.ui_ready_20c7c) else uiText(UiR.string.needs_attention)} · ${result.label}", style = MaterialTheme.typography.titleMedium)
                                 Text(result.detail, color = if (result.passed) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.error)
                                 if (result.label != "Screen sharing") TextButton(onClick = { fix(result.fix) }) {
-                                    Text(if (result.fix == SetupFix.SESSION && (CaptionCaptureService.running.value || ReadingOverlayService.running.value)) "Stop other overlay & retry" else "Open settings")
+                                    Text(if (result.fix == SetupFix.SESSION && (CaptionCaptureService.running.value || ReadingOverlayService.running.value)) uiText(UiR.string.ui_stop_other_overlay_retry_1a172) else uiText(UiR.string.ui_open_settings_fd710))
                                 }
                             }
                         }
                     }
-                    Button(onClick = ::checkAndStart, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) { Text("Check again & start") }
+                    Button(onClick = ::checkAndStart, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) { Text(uiText(UiR.string.ui_check_again_start_7dd2c)) }
                     val passed = results.filter { it.passed }
                     if (passed.isNotEmpty()) {
-                        TextButton(onClick = { showReady = !showReady }) { Text(if (showReady) "Hide successful checks" else "${passed.size} checks passed · show details") }
+                        TextButton(onClick = { showReady = !showReady }) { Text(if (showReady) uiText(UiR.string.ui_hide_successful_checks_559b0) else uiText(UiR.string.ui_1_s_checks_passed_show_details_7e5ac, passed.size)) }
                         if (showReady) passed.forEach { Text("${it.label}: ${it.detail}", style = MaterialTheme.typography.bodySmall) }
                     }
                 }
-                TextButton(onClick = { finish() }) { Text("Cancel") }
+                TextButton(onClick = { finish() }) { Text(uiText(UiR.string.ui_cancel_77dfd)) }
             }
         }
     }

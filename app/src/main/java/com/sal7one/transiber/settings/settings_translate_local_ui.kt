@@ -1,5 +1,8 @@
 package com.sal7one.transiber.settings
 
+import com.sal7one.transiber.R as UiR
+import com.sal7one.transiber.i18n.rememberUiText
+
 import com.sal7one.transiber.translation.*
 
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -26,6 +29,8 @@ internal fun SettingsTranslateLocalUi(
     includeLegacy: Boolean = false,
     showCaptionControls: Boolean = true,
 ) {
+    val uiText = rememberUiText()
+
     val context = LocalContext.current
     val uriHandler = LocalUriHandler.current
     val scope = rememberCoroutineScope()
@@ -62,16 +67,16 @@ internal fun SettingsTranslateLocalUi(
     val importer = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) scope.launch {
             val importing = spec
-            busy = true; message = "Copying and verifying ${importing.label}…"
+            busy = true; message = uiText(UiR.string.ui_copying_and_verifying_1_s_6575d, importing.label)
             try {
                 withContext(Dispatchers.IO) {
                     val job = currentCoroutineContext()
                     context.contentResolver.openInputStream(uri)?.use { store.import(it, importing) { job.ensureActive() } }
-                        ?: error("Cannot open selected translation GGUF")
+                        ?: error(uiText(UiR.string.ui_cannot_open_selected_translation_gguf_cae88))
                 }
                 installed = withContext(Dispatchers.IO) { store.installed() }
                 update { it.copy(localTranslationModelId = importing.id) }
-                message = "${importing.label} imported and selected as the local model."
+                message = uiText(UiR.string.ui_1_s_imported_and_selected_as_the_local_model_849c7, importing.label)
             } catch (e: CancellationException) { throw e }
             catch (e: Exception) { message = generateSequence<Throwable>(e) { it.cause }.joinToString("\n") { it.message ?: it.toString() } }
             finally { busy = false }
@@ -82,10 +87,10 @@ internal fun SettingsTranslateLocalUi(
             Switch(checked = config.localTranslationEnabled, onCheckedChange = { enabled ->
                 update { it.copy(localTranslationEnabled = enabled, mode = if (enabled) CaptionMode.TRANSLATE else CaptionMode.CAPTIONS) }
             })
-            Text(if (config.localTranslationEnabled) "Translation enabled" else "Disabled · CC only")
+            Text(if (config.localTranslationEnabled) uiText(UiR.string.ui_translation_enabled_8b961) else uiText(UiR.string.ui_disabled_cc_only_9fa78))
         }
-        Text("Active translator: ${TranslationOptions.label(config.localTranslationModelId)}", style = MaterialTheme.typography.labelLarge)
-        Text("Browse translators", style = MaterialTheme.typography.titleSmall)
+        Text(uiText(UiR.string.ui_active_translator_1_s_dfd1a, TranslationOptions.label(config.localTranslationModelId)), style = MaterialTheme.typography.labelLarge)
+        Text(uiText(UiR.string.ui_browse_translators_f9d97), style = MaterialTheme.typography.titleSmall)
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             if (PlatformTranslation.available) FilterChip(
                 selected = !showLegacy && !showGguf, enabled = !busy,
@@ -101,28 +106,28 @@ internal fun SettingsTranslateLocalUi(
                     }, label = { Text(label) })
             }
             if (includeLegacy) FilterChip(selected = showLegacy, enabled = !busy,
-                onClick = { showLegacy = true }, label = { Text("Marian · legacy") })
+                onClick = { showLegacy = true }, label = { Text(uiText(UiR.string.ui_marian_legacy_67b3d)) })
         }
         if (showLegacy && includeLegacy) {
-            Text("Legacy English → Arabic model files", style = MaterialTheme.typography.titleSmall)
+            Text(uiText(UiR.string.ui_legacy_english_arabic_model_files_162d9), style = MaterialTheme.typography.titleSmall)
             com.sal7one.transiber.models.LegacyModelSetup(com.sal7one.transiber.models.ModelEngineType.TRANSLATE, config, update)
             return@Column
         }
         if (!showGguf && PlatformTranslation.available) MlKitSetup(config, update = update)
         if (showGguf) {
-        Text("Size / precision", style = MaterialTheme.typography.labelLarge)
+        Text(uiText(UiR.string.ui_size_precision_49488), style = MaterialTheme.typography.labelLarge)
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             TranslationCatalog.models.filter { it.family == spec.family }.forEach { model ->
                 FilterChip(selected = selected == model.id, enabled = !busy,
                     onClick = { selected = model.id }, label = { Text("${model.quantization} · ${model.bytes / 1_048_576} MiB") })
             }
         }
-        Text("${spec.label} · ${if (installed.any { it.id == spec.id }) "Installed" else "Not installed"}")
+        Text("${spec.label} · ${if (installed.any { it.id == spec.id }) uiText(UiR.string.model_installed) else uiText(UiR.string.model_not_installed)}")
         if (installed.any { it.id == spec.id }) Button(enabled = !busy, onClick = { update { if (showCaptionControls) it.copy(localTranslationModelId = spec.id, localTranslationEnabled = true, mode = CaptionMode.TRANSLATE) else it.copy(localTranslationModelId = spec.id) } }) {
-            Text(if (config.localTranslationModelId == spec.id) "Selected translator" else "Use ${spec.label}")
+            Text(if (config.localTranslationModelId == spec.id) uiText(UiR.string.ui_selected_translator_ee2cb) else uiText(UiR.string.ui_use_1_s_5cc45, spec.label))
         }
-        Text("Q4 uses less storage and memory; Q6/Q8 are larger. Only the active translator loads.", style = MaterialTheme.typography.bodySmall)
-        OutlinedButton(enabled = !busy, onClick = { importer.launch(arrayOf("*/*")) }) { Text("Import ${spec.label} GGUF") }
+        Text(uiText(UiR.string.ui_q4_uses_less_storage_and_memory_q6_q8_are_larger_only_the_active_56fac), style = MaterialTheme.typography.bodySmall)
+        OutlinedButton(enabled = !busy, onClick = { importer.launch(arrayOf("*/*")) }) { Text(uiText(UiR.string.ui_import_1_s_gguf_f7da3, spec.label)) }
         if (ByokPolicy.FEATURE_BYOK) {
             val record = records.firstOrNull { it.title == spec.fileName }
             OutlinedButton(enabled = !busy && record?.active != true, onClick = { scope.launch {
@@ -136,32 +141,32 @@ internal fun SettingsTranslateLocalUi(
                 catch (e: Exception) { message = e.message ?: e.toString() }
                 finally { busy = false }
             } }) { Text(when {
-                record?.installing == true -> "Installing…"
-                record?.active == true -> "Downloading · ${record.bytes / 1_048_576} MiB"
-                record?.failed == true -> "Retry download & install"
-                else -> "Download & install · ${spec.bytes / 1_048_576} MiB"
+                record?.installing == true -> uiText(UiR.string.ui_installing_8d278)
+                record?.active == true -> uiText(UiR.string.ui_downloading_1_s_mib_e010b, record.bytes / 1_048_576)
+                record?.failed == true -> uiText(UiR.string.ui_retry_download_install_e5444)
+                else -> uiText(UiR.string.ui_download_install_1_s_mib_0e3f4, spec.bytes / 1_048_576)
             }) }
-            if (record?.failed == true) Text(record.error.ifBlank { "Download failed · reason ${record.reason}" }, color = MaterialTheme.colorScheme.error)
-            Text("Download folder: ${downloads.locationLabel}/models. The original file stays here after installation.", style = MaterialTheme.typography.bodySmall)
-            TextButton(onClick = { uriHandler.openUri(spec.modelCard) }) { Text("Source, files & license") }
-            if (spec.family == "translategemma") TextButton(onClick = { uriHandler.openUri("https://huggingface.co/google/translategemma-4b-it") }) { Text("Original Google model card") }
+            if (record?.failed == true) Text(record.error.ifBlank { uiText(UiR.string.ui_download_failed_reason_1_s_8bb99, record.reason) }, color = MaterialTheme.colorScheme.error)
+            Text(uiText(UiR.string.ui_download_folder_1_s_models_the_original_file_stays_here_after_ins_5b003, downloads.locationLabel), style = MaterialTheme.typography.bodySmall)
+            TextButton(onClick = { uriHandler.openUri(spec.modelCard) }) { Text(uiText(UiR.string.ui_source_files_license_50a30)) }
+            if (spec.family == "translategemma") TextButton(onClick = { uriHandler.openUri("https://huggingface.co/google/translategemma-4b-it") }) { Text(uiText(UiR.string.ui_original_google_model_card_251ef)) }
         }
-        Text("${spec.license}. Imported files must match the selected artifact.")
-        if (spec.family == "translategemma") Text("Larger quality alternative · 2.49 GB download. Community GGUF conversion of Google TranslateGemma. Phone speed depends on your device.")
-        TextButton(onClick = { showCoverage = !showCoverage }) { Text(if (showCoverage) "Hide language coverage" else "Show supported source → target languages") }
-        if (showCoverage) Text("Any of these source languages → any other listed target:\n" + spec.sourceLanguages.sortedBy(TranslationLanguages::label).joinToString(", ") { TranslationLanguages.label(it) })
+        Text(uiText(UiR.string.ui_1_s_imported_files_must_match_the_selected_artifact_8b0a8, spec.license))
+        if (spec.family == "translategemma") Text(uiText(UiR.string.ui_larger_quality_alternative_2_49_gb_download_community_gguf_conver_0c942))
+        TextButton(onClick = { showCoverage = !showCoverage }) { Text(if (showCoverage) uiText(UiR.string.ui_hide_language_coverage_88f4d) else uiText(UiR.string.ui_show_supported_source_target_languages_87984)) }
+        if (showCoverage) Text(uiText(UiR.string.ui_any_of_these_source_languages_any_other_listed_target_70952) + spec.sourceLanguages.sortedBy(TranslationLanguages::label).joinToString(", ") { TranslationLanguages.label(it) })
         }
         if (showCaptionControls) {
         com.sal7one.transiber.caption.CaptionLanguageFields(config, update, showSource = false,
-            targetChoices = com.sal7one.transiber.caption.CaptionLanguageChoices(TranslationOptions.languages(config.localTranslationModelId), "Output languages supported by the active translator."))
+            targetChoices = com.sal7one.transiber.caption.CaptionLanguageChoices(TranslationOptions.languages(config.localTranslationModelId), uiText(UiR.string.ui_output_languages_supported_by_the_active_translator_a2090)))
         val active = installed.firstOrNull { it.id == config.localTranslationModelId }
         Text(when {
-            !config.localTranslationEnabled -> "Original-language CC; translation model stays unloaded."
-            config.localTranslationModelId == TranslationOptions.ML_KIT -> "ML Kit selected · download spoken and target packs above. Translation works offline after download."
-            active == null -> "Import a translation model to use the bridge. CC can run now."
-            config.streamLanguage == "auto" -> "Automatic routing uses the language reported by ASR. Unknown or mixed language stays CC-only with a notice."
-            active.supports(config.streamLanguage, config.target.languageTag) -> "Supported: ${TranslationLanguages.label(config.streamLanguage)} → ${config.target.label}"
-            else -> "Unsupported pair: ${config.streamLanguage} → ${config.target.languageTag}. CC continues."
+            !config.localTranslationEnabled -> uiText(UiR.string.ui_original_language_cc_translation_model_stays_unloaded_4bd7f)
+            config.localTranslationModelId == TranslationOptions.ML_KIT -> uiText(UiR.string.ui_ml_kit_selected_download_spoken_and_target_packs_above_translatio_7b045)
+            active == null -> uiText(UiR.string.ui_import_a_translation_model_to_use_the_bridge_cc_can_run_now_5f78e)
+            config.streamLanguage == "auto" -> uiText(UiR.string.ui_automatic_routing_uses_the_language_reported_by_asr_unknown_or_mi_6098f)
+            active.supports(config.streamLanguage, config.target.languageTag) -> uiText(UiR.string.ui_supported_1_s_2_s_4844b, TranslationLanguages.label(config.streamLanguage), config.target.label)
+            else -> uiText(UiR.string.ui_unsupported_pair_1_s_2_s_cc_continues_b821c, config.streamLanguage, config.target.languageTag)
         })
         }
         if (busy) LinearProgressIndicator(Modifier.fillMaxWidth())

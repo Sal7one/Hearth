@@ -1,0 +1,27 @@
+<resources>
+    <string name="capability_note_ace2e8aaad" formatted="false">"OpenAI 会在连接时验证请求的语言。此列表显示语言名称，不保证模型支持。可搜索名称或输入 2–3 个字母的语言代码。"</string>
+    <string name="capability_note_c1aacd9629">"%1$s · %2$s"</string>
+    <string name="capability_note_67daa0fec5" formatted="false">"Moonshine · 此模型仅识别英语，无需自动检测或指定语言。"</string>
+    <string name="capability_note_492861ff93">"%1$s · 指定语言可跳过自动检测，也可选择自动。仅列出此模型和运行时支持的语言。"</string>
+    <string name="capability_note_8b97049ba5">"%1$s · 已安装模型决定口语语言。更换模型才能更换语言；不支持自动检测或覆盖语言。"</string>
+    <string name="capability_note_302c201b8d">"%1$s · 仅英语模型。口语语言固定为英语，无需检测。"</string>
+    <string name="capability_note_6b9bbaddde" formatted="false">"指定语言可跳过检测，或选择自动。覆盖范围来自模型词表。"</string>
+    <string name="capability_note_825ace0f79" formatted="false">"导入支持的模型前无法确定语言能力，不会发送语言覆盖设置。"</string>
+    <string name="capability_note_f03453f699" formatted="false">"选择语言提示或自动。提示引导识别，但不排除其他语言。"</string>
+    <string name="capability_note_a9bb5b597d" formatted="false">"选择口语语言提示或自动。使用本地翻译桥接时请明确指定源语言。"</string>
+    <string name="capability_note_8975a9a157" formatted="false">"此连接仅自动检测源语言，无法手动指定。"</string>
+    <string name="capability_note_1ffb589569" formatted="false">"自动检测口语语言。此翻译连接不接受源语言覆盖。"</string>
+    <string name="capability_note_e752f4c2db" formatted="false">"音频翻译接口自动检测源语言，不接受语言覆盖。"</string>
+    <string name="capability_note_51deda856c" formatted="false">"指定口语语言进行专用识别。自动模式使用多语言识别（10 种语言）。"</string>
+    <string name="capability_note_5715f3cacd" formatted="false">"指定口语语言以发送明确识别提示，或选择自动。"</string>
+    <string name="capability_note_be018a0a4e" formatted="false">"此模型在本应用中不支持手动选择口语语言，将使用默认语言行为。"</string>
+    <string name="capability_note_de49da057d">"%1$s · 语音识别后翻译文本。"</string>
+    <string name="capability_note_444ec285c4" formatted="false">"请先配置此翻译连接并检查语言。"</string>
+    <string name="capability_note_017b414f07" formatted="false">"云端文本翻译 · 从所选口语语言支持的目标语言。"</string>
+    <string name="capability_note_0f1a227949" formatted="false">"Soniox v5 内置翻译，分别保留原文和译文。"</string>
+    <string name="capability_note_b410e7fbf2" formatted="false">"ML Kit · 请在模型页下载源语言和目标语言包。非英语语言对通过英语中转。"</string>
+    <string name="capability_note_0434e0f540" formatted="false">"请在设置中选择已知本地翻译模型以加载其语言。"</string>
+    <string name="capability_note_38000e13f0">"%1$s：%2$s 种输出语言。翻译模型也必须支持口语语言。"</string>
+    <string name="capability_note_c1004bf540" formatted="false">"英语使用音频翻译。阿拉伯语需要独立的英语 → 阿拉伯语模型。"</string>
+    <string name="capability_note_949094c4d7" formatted="false">"此路径需要英语语音和英语 → 阿拉伯语模型。其他语音仅显示原文字幕。"</string>
+</resources>

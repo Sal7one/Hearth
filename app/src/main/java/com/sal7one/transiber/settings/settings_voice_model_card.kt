@@ -1,5 +1,8 @@
 package com.sal7one.transiber.settings
 
+import com.sal7one.transiber.R as UiR
+import com.sal7one.transiber.i18n.rememberUiText
+
 import android.content.Intent
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
@@ -11,6 +14,8 @@ import com.sal7one.transiber.byok.ByokPolicy
 
 @Composable
 internal fun VoiceModelCard(title: String, runtime: String, coverage: String, license: String, url: String, linkLabel: String, onError: (String?)->Unit) {
+    val uiText = rememberUiText()
+
     val context=LocalContext.current
     OutlinedCard(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp),verticalArrangement=Arrangement.spacedBy(8.dp)) {
@@ -23,7 +28,7 @@ internal fun VoiceModelCard(title: String, runtime: String, coverage: String, li
                 catch(e: Exception){onError(e.message ?: e.toString())}
             }){Text(linkLabel)}
             else {
-                Text("Publisher address · select to copy. Import its files using the button below.",style=MaterialTheme.typography.bodySmall)
+                Text(uiText(UiR.string.ui_publisher_address_select_to_copy_import_its_files_using_the_butto_23eb3),style=MaterialTheme.typography.bodySmall)
                 androidx.compose.foundation.text.selection.SelectionContainer {Text(url,style=MaterialTheme.typography.bodySmall)}
             }
         }

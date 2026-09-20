@@ -1,5 +1,8 @@
 package com.sal7one.transiber.settings
 
+import com.sal7one.transiber.R as UiR
+import com.sal7one.transiber.i18n.rememberUiText
+
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -18,16 +21,18 @@ internal fun SettingsScreen(
     onAdvanced: () -> Unit,
     onHelp: () -> Unit,
 ) {
+    val uiText = rememberUiText()
+
     SettingsTabs { location ->
         val local = location == SettingsLocation.LOCAL
-        SettingsLink("Easy setup", "Local or Cloud in two steps", onEasySetup)
-        SettingsHeading(if (local) "On your device" else "Connected services",
-            if (local) "Download or import models for offline use."
-            else "Providers and saved keys. Audio or text goes to your chosen service.")
+        SettingsLink(uiText(UiR.string.ui_easy_setup_35fb5), uiText(UiR.string.ui_local_or_cloud_in_two_steps_183c9), onEasySetup)
+        SettingsHeading(if (local) uiText(UiR.string.ui_on_your_device_9f8fd) else uiText(UiR.string.ui_connected_services_35c48),
+            if (local) uiText(UiR.string.ui_download_or_import_models_for_offline_use_693d9)
+            else uiText(UiR.string.ui_providers_and_saved_keys_audio_or_text_goes_to_your_chosen_servic_11f7d))
         SettingsFeatureGrid(location) { onFeature(location, it) }
         if (local) {
-            SettingsLink("Downloads & imports", if (ByokPolicy.FEATURE_BYOK) "Download folder, progress and installed files" else "Import model files from your device", onDownloads)
-            SettingsLink("Local benchmark", "Compare installed speech and translation models", onBenchmark)
+            SettingsLink(uiText(UiR.string.ui_downloads_imports_a2a3b), if (ByokPolicy.FEATURE_BYOK) uiText(UiR.string.ui_download_folder_progress_and_installed_files_d9ced) else uiText(UiR.string.ui_import_model_files_from_your_device_18597), onDownloads)
+            SettingsLink(uiText(UiR.string.ui_local_benchmark_3acfe), uiText(UiR.string.ui_compare_installed_speech_and_translation_models_3e1af), onBenchmark)
         }
         HorizontalDivider()
         SettingsAppPreferences(onAppearance, onShortcuts, onAdvanced, onHelp)

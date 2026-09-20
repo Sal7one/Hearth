@@ -1,3 +1,16 @@
+## 0.22.0 — app interface languages
+
+- [x] Extract shared UI copy into Android resources with English, Arabic and Simplified Chinese translations.
+- [x] Add persisted App language / Follow phone without changing model or conversation languages.
+- [x] Cover Home, setup, Local/Cloud settings, captions, conversation, typed translation, OCR, models, downloads and voices.
+- [x] Localize common capability explanations, overlay controls, notifications and accessibility labels.
+- [x] Apply Arabic RTL and retain readable left-to-right technical connection fields.
+- [x] Check resource completeness and format placeholders; validate all app variants.
+- [x] Exercise locale switching, process restart and key screens on the connected Samsung phone.
+- Scope, extension guide and remaining limitations: [localization](localization.md), [validation](validation-v42.md).
+- [ ] Native-speaker editorial review, full spoken TalkBack journeys and physical pre-Android-13 locale testing.
+- [ ] Localize remaining internal engine diagnostics through structured message codes; keep external errors verbatim.
+
 ## 0.21.4 — shared language capabilities
 
 - [x] Audit caption, Easy setup, traveler, typed translation, camera/reading, model settings and voice language sources.

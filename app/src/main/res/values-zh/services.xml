@@ -1,0 +1,77 @@
+<resources>
+    <string name="service_screen_reading_153b9" formatted="false">"屏幕阅读"</string>
+    <string name="service_screen_capture_permission_is_missing_start_reading_5f3e2" formatted="false">"缺少屏幕采集授权。请从屏幕与漫画重新开始阅读。"</string>
+    <string name="service_translation_does_not_support_1_s_2_s_choose_langua_d0ec6">"翻译不支持 %1$s → %2$s。请在阅读设置中选择语言和翻译引擎。"</string>
+    <string name="service_loading_1_s_aba14">"正在加载 %1$s…"</string>
+    <string name="service_reading_text_b6863" formatted="false">"正在识别文字…"</string>
+    <string name="service_translating_ae47b" formatted="false">"正在翻译…"</string>
+    <string name="service_1_s_2_s_ms_ocr_87c9c">"%1$s · OCR %2$s 毫秒"</string>
+    <string name="service_open_a_reader_then_tap_translate_or_draw_area_a9c06" formatted="false">"打开阅读应用，再点按翻译或圈选区域。"</string>
+    <string name="service_translate_2be17" formatted="false">"翻译"</string>
+    <string name="service_no_text_found_in_this_area_draw_a_smaller_region_o_0c8b8" formatted="false">"此区域未找到文字。请缩小选区或更换 OCR 模型。"</string>
+    <string name="service_no_text_32095" formatted="false">"无文字"</string>
+    <string name="service_hearth_screen_reading_0905b" formatted="false">"Hearth 屏幕阅读"</string>
+    <string name="service_paused_tap_translate_to_read_once_56c5d" formatted="false">"已暂停 · 点按翻译可识别一次"</string>
+    <string name="service_read_pages_in_another_app_screenshots_stay_local_64bd9" formatted="false">"阅读其他应用页面 · 截图保留在本地"</string>
+    <string name="service_resume_b3bd0" formatted="false">"继续"</string>
+    <string name="service_pause_78196" formatted="false">"暂停"</string>
+    <string name="service_stop_9e253" formatted="false">"停止"</string>
+    <string name="service_paused_read_989d4" formatted="false">"已暂停 · 识别"</string>
+    <string name="service_resume_auto_f5626" formatted="false">"继续自动识别"</string>
+    <string name="service_pause_auto_e2a61" formatted="false">"暂停自动识别"</string>
+    <string name="service_screen_size_changed_please_capture_the_page_again_38901" formatted="false">"屏幕尺寸已变化，请重新采集页面。"</string>
+    <string name="service_screen_capture_has_stopped_c682a" formatted="false">"屏幕采集已停止"</string>
+    <string name="service_unsupported_screen_pixel_stride_1_s_69dba">"不支持的屏幕像素步长：%1$s"</string>
+    <string name="service_reading_settings_are_still_loading_tap_retry_in_a__cd6c6" formatted="false">"阅读设置仍在加载，请稍后重试。"</string>
+    <string name="service_choose_a_text_language_supported_by_1_s_in_reading_83c65">"请在阅读设置中选择 %1$s 支持的文字语言"</string>
+    <string name="service_selected_area_is_too_small_draw_it_again_79441" formatted="false">"所选区域太小，请重新圈选。"</string>
+    <string name="service_the_captured_area_is_black_check_that_the_reader_i_87046" formatted="false">"采集区域为黑色。请确认阅读应用可见；受保护页面可能禁止截图。"</string>
+    <string name="service_reading_1_s_30d82">"正在使用 %1$s 识别…"</string>
+    <string name="service_reading_ae18b" formatted="false">"正在识别…"</string>
+    <string name="service_scroll_through_translations_tap_to_unlock_text_box_1eb00" formatted="false">"滚动浏览翻译。点按可解锁文本框。"</string>
+    <string name="service_text_boxes_are_interactive_tap_to_let_touches_pass_ebaaa" formatted="false">"文本框可交互。点按可启用触摸穿透。"</string>
+    <string name="service_selected_text_box_3e276" formatted="false">"已选文本框"</string>
+    <string name="service_hearth_drag_c53ff" formatted="false">"Hearth · 拖动"</string>
+    <string name="service_move_reading_handle_drag_to_reposition_double_tap__55283" formatted="false">"移动阅读手柄。拖动调整位置，双击重置。"</string>
+    <string name="service_reading_controls_83fa7" formatted="false">"阅读控制"</string>
+    <string name="service_read_page_33e9a" formatted="false">"阅读页面"</string>
+    <string name="service_translation_ac26a" formatted="false">"翻译"</string>
+    <string name="service_read_aloud_56210" formatted="false">"朗读"</string>
+    <string name="service_android_voice_ba5fb" formatted="false">"Android 声音"</string>
+    <string name="service_original_c0a80" formatted="false">"原文"</string>
+    <string name="service_read_original_149d2" formatted="false">"朗读原文"</string>
+    <string name="service_stop_voice_84a32" formatted="false">"停止语音"</string>
+    <string name="service_copy_af74f" formatted="false">"复制"</string>
+    <string name="service_history_90ccd" formatted="false">"历史"</string>
+    <string name="service_show_translations_6861c" formatted="false">"显示译文"</string>
+    <string name="service_draw_area_f80f3" formatted="false">"圈选区域"</string>
+    <string name="service_whole_page_eeb74" formatted="false">"整页"</string>
+    <string name="service_clear_719ea" formatted="false">"清除"</string>
+    <string name="service_smaller_text_a8ea9" formatted="false">"缩小文字"</string>
+    <string name="service_larger_text_118f9" formatted="false">"放大文字"</string>
+    <string name="service_scroll_through_the_live_translations_with_the_lock_e5d32" formatted="false">"锁定时滚动浏览实时译文，解锁后可点按文本框。移动会清除旧位置，自动模式在页面稳定后翻译。点按阅读页面可关闭控制面板。本次会话保留 20 页历史。"</string>
+    <string name="service_setup_cdd7b" formatted="false">"设置"</string>
+    <string name="service_no_completed_pages_yet_779d8" formatted="false">"尚无已完成页面"</string>
+    <string name="service_history_1_s_2_s_tap_history_for_the_next_page_48713">"历史 %1$s/%2$s · 点按历史查看下一页"</string>
+    <string name="service_cleared_tap_translate_for_the_current_page_f78c6" formatted="false">"已清除。点按翻译以处理当前页面。"</string>
+    <string name="service_retry_9f5cd" formatted="false">"重试"</string>
+    <string name="service_draw_around_a_bubble_or_paragraph_0f329" formatted="false">"圈选对话框或段落"</string>
+    <string name="service_drag_or_circle_the_text_center_and_whole_image_als_b1a82" formatted="false">"拖动框选或圈选文字。中央区域与整张图像也支持 TalkBack。"</string>
+    <string name="service_center_a2391" formatted="false">"居中"</string>
+    <string name="service_whole_image_6bd00" formatted="false">"整张图像"</string>
+    <string name="service_cancel_77dfd" formatted="false">"取消"</string>
+    <string name="service_read_area_9c448" formatted="false">"识别区域"</string>
+    <string name="service_draw_an_area_first_or_choose_center_5bc83" formatted="false">"请先圈选区域，或选择居中"</string>
+    <string name="service_select_a_text_area_by_drawing_center_and_whole_ima_4c4e8" formatted="false">"圈选文字区域。下方也有中央区域与整张图像按钮。"</string>
+    <string name="service_live_captions_83fd1" formatted="false">"实时字幕"</string>
+    <string name="service_live_captions_error_9f465" formatted="false">"实时字幕 · 错误"</string>
+    <string name="service_live_captions_paused_b59ce" formatted="false">"实时字幕 · 已暂停"</string>
+    <string name="service_tap_through_is_on_tap_the_lock_handle_to_restore_c_2e5ea" formatted="false">"触摸穿透已开启 · 点按锁手柄恢复操作"</string>
+    <string name="service_audio_is_not_sent_to_the_speech_engine_859aa" formatted="false">"未向语音引擎发送音频"</string>
+    <string name="service_1_s_tap_this_notification_to_recover_the_bubble_an_16fe0">"%1$s。点按此通知可恢复悬浮窗并关闭触摸穿透。"</string>
+    <string name="service_restore_controls_c97dd" formatted="false">"恢复操作"</string>
+    <string name="service_hide_bubble_658d0" formatted="false">"隐藏悬浮窗"</string>
+    <string name="service_show_bubble_9a42e" formatted="false">"显示悬浮窗"</string>
+    <string name="service_tap_to_show_578b6" formatted="false">"点按显示"</string>
+    <string name="service_tap_to_start_b11de" formatted="false">"点按开始"</string>
+</resources>

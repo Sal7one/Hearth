@@ -1,5 +1,8 @@
 package com.sal7one.transiber.settings
 
+import com.sal7one.transiber.R as UiR
+import com.sal7one.transiber.i18n.rememberUiText
+
 import com.sal7one.transiber.translation.*
 
 import android.content.Intent
@@ -25,6 +28,8 @@ import kotlinx.coroutines.withContext
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 internal fun SettingsTranslateCloudUi(initialProvider: String? = null, allowSelection: Boolean = true) {
+    val uiText = rememberUiText()
+
     if (!ByokPolicy.FEATURE_BYOK) return
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -38,9 +43,9 @@ internal fun SettingsTranslateCloudUi(initialProvider: String? = null, allowSele
     var transport by remember { mutableStateOf<TranslationHttpTransport?>(null) }
     DisposableEffect(Unit) { onDispose { transport?.close() } }
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text("Translation connections", style = MaterialTheme.typography.titleLarge)
-        Text("One connection library for captions, typed text, conversations, camera and screen reading. Select a translator from the feature where you want to use it.", style = MaterialTheme.typography.bodySmall)
-        if (allowSelection) Text("Conversation & typed text use: ${ConversationTranslationSettings.label(context, config.localTranslationModelId)}", style = MaterialTheme.typography.titleSmall)
+        Text(uiText(UiR.string.ui_translation_connections_4a282), style = MaterialTheme.typography.titleLarge)
+        Text(uiText(UiR.string.ui_one_connection_library_for_captions_typed_text_conversations_came_a2ee8), style = MaterialTheme.typography.bodySmall)
+        if (allowSelection) Text(uiText(UiR.string.ui_conversation_typed_text_use_1_s_dc9f7, ConversationTranslationSettings.label(context, config.localTranslationModelId)), style = MaterialTheme.typography.titleSmall)
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             if (ByokPolicy.FEATURE_BYOK) TextTranslationProvider.entries.forEach { provider ->
                 FilterChip(selected = editing == provider, enabled = !working, onClick = { editing = provider; status = null }, label = { Text(provider.label) })
@@ -56,16 +61,16 @@ internal fun SettingsTranslateCloudUi(initialProvider: String? = null, allowSele
             val capabilities = remember(revision) { ConversationTranslationSettings.capabilities(context, provider) }
             val dirty = secret.isNotBlank() || endpoint.trim() != ConversationTranslationSettings.endpoint(context, provider) || region.trim() != ConversationTranslationSettings.region(context, provider)
             Text(when (provider) {
-                TextTranslationProvider.GOOGLE -> "Google Cloud Translation Basic v2. Requires your Google Cloud API key and an enabled Translation API."
-                TextTranslationProvider.AZURE -> "Microsoft Azure Translator (the official Microsoft translation API). Use its resource key and region when required."
-                TextTranslationProvider.DEEPL -> "DeepL API Free or Pro key. Use api-free.deepl.com/v2 for Free or api.deepl.com/v2 for Pro."
-                TextTranslationProvider.LIBRETRANSLATE -> "Open-source LibreTranslate. Choose your own HTTPS server; a key is optional only if that server allows it. libretranslate.com requires a key."
+                TextTranslationProvider.GOOGLE -> uiText(UiR.string.ui_google_cloud_translation_basic_v2_requires_your_google_cloud_api_5f73d)
+                TextTranslationProvider.AZURE -> uiText(UiR.string.ui_microsoft_azure_translator_the_official_microsoft_translation_api_b8ead)
+                TextTranslationProvider.DEEPL -> uiText(UiR.string.ui_deepl_api_free_or_pro_key_use_api_free_deepl_com_v2_for_free_or_a_62829)
+                TextTranslationProvider.LIBRETRANSLATE -> uiText(UiR.string.ui_open_source_libretranslate_choose_your_own_https_server_a_key_is_1b625)
             }, style = MaterialTheme.typography.bodyMedium)
-            Text("Finalized text is sent to this provider. Audio is handled separately by your selected speech model. Provider charges or limits may apply.", style = MaterialTheme.typography.bodySmall)
-            OutlinedTextField(endpoint, { endpoint = it }, enabled = !working, label = { Text("API base URL · HTTPS") }, modifier = Modifier.fillMaxWidth().padding(top = 2.dp), singleLine = true)
-            if (provider == TextTranslationProvider.AZURE) OutlinedTextField(region, { region = it }, enabled = !working, label = { Text("Resource region · blank for global") }, modifier = Modifier.fillMaxWidth().padding(top = 2.dp), singleLine = true)
-            OutlinedTextField(secret, { secret = it }, enabled = !working, label = { Text(if (savedKey && sameEndpoint) "Replace saved API key" else if (provider == TextTranslationProvider.LIBRETRANSLATE) "API key · if required" else "API key") }, visualTransformation = PasswordVisualTransformation(), modifier = Modifier.fillMaxWidth().padding(top = 2.dp), singleLine = true)
-            if (savedKey && sameEndpoint) Text("A key is encrypted on this device. Leave the field empty to keep it.", style = MaterialTheme.typography.bodySmall)
+            Text(uiText(UiR.string.ui_finalized_text_is_sent_to_this_provider_audio_is_handled_separate_d490d), style = MaterialTheme.typography.bodySmall)
+            OutlinedTextField(endpoint, { endpoint = it }, enabled = !working, label = { Text(uiText(UiR.string.ui_api_base_url_https_43d49)) }, modifier = Modifier.fillMaxWidth().padding(top = 2.dp), singleLine = true, textStyle = MaterialTheme.typography.bodyLarge.copy(textDirection = androidx.compose.ui.text.style.TextDirection.Ltr))
+            if (provider == TextTranslationProvider.AZURE) OutlinedTextField(region, { region = it }, enabled = !working, label = { Text(uiText(UiR.string.ui_resource_region_blank_for_global_64f7b)) }, modifier = Modifier.fillMaxWidth().padding(top = 2.dp), singleLine = true, textStyle = MaterialTheme.typography.bodyLarge.copy(textDirection = androidx.compose.ui.text.style.TextDirection.Ltr))
+            OutlinedTextField(secret, { secret = it }, enabled = !working, label = { Text(if (savedKey && sameEndpoint) uiText(UiR.string.ui_replace_saved_api_key_c2dc3) else if (provider == TextTranslationProvider.LIBRETRANSLATE) uiText(UiR.string.ui_api_key_if_required_49a3c) else uiText(UiR.string.ui_api_key_cf678)) }, visualTransformation = PasswordVisualTransformation(), modifier = Modifier.fillMaxWidth().padding(top = 2.dp), singleLine = true, textStyle = MaterialTheme.typography.bodyLarge.copy(textDirection = androidx.compose.ui.text.style.TextDirection.Ltr))
+            if (savedKey && sameEndpoint) Text(uiText(UiR.string.ui_a_key_is_encrypted_on_this_device_leave_the_field_empty_to_keep_i_2c064), style = MaterialTheme.typography.bodySmall)
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Button(enabled = !working, onClick = {
                     working = true; status = null; failure = false
@@ -84,25 +89,25 @@ internal fun SettingsTranslateCloudUi(initialProvider: String? = null, allowSele
                                 finally { active.close(); transport = null }
                             }
                             ConversationTranslationSettings.saveCapabilities(context, provider, found.second, found.first)
-                            secret = ""; status = "Languages loaded: ${found.second.sourceLanguages.size} source languages, ${found.second.targetLanguages.size} target languages."
+                            secret = ""; status = uiText(UiR.string.ui_languages_loaded_1_s_source_languages_2_s_target_languages_5a0db, found.second.sourceLanguages.size, found.second.targetLanguages.size)
                         } catch (e: CancellationException) { throw e }
                         catch (e: Exception) { failure = true; status = e.message ?: e.toString() }
                         finally { working = false }
                     }
-                }) { Text(if (working) "Checking…" else "Save & check languages") }
-                if (working) TextButton(onClick = { transport?.close() }) { Text("Cancel check") }
-                else TextButton(onClick = { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(provider.sourceUrl))) }) { Text("Key & API help") }
+                }) { Text(if (working) uiText(UiR.string.ui_checking_820d6) else uiText(UiR.string.ui_save_check_languages_7cd32)) }
+                if (working) TextButton(onClick = { transport?.close() }) { Text(uiText(UiR.string.ui_cancel_check_82097)) }
+                else TextButton(onClick = { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(provider.sourceUrl))) }) { Text(uiText(UiR.string.ui_key_api_help_3e3bb)) }
             }
             if (capabilities != null && !dirty) {
-                Text("${capabilities.sourceLanguages.size} source · ${capabilities.targetLanguages.size} target languages. The picker uses this server's supported directions. Language discovery does not verify translation quota or billing.", style = MaterialTheme.typography.bodySmall)
-                if (allowSelection) Button(enabled = !working && selected != provider.id, onClick = { ConversationTranslationSettings.select(context, provider.id) }) { Text(if (selected == provider.id) "Using ${provider.label}" else "Use ${provider.label}") }
-            } else Text("Check this connection to load its supported languages before using it.", style = MaterialTheme.typography.bodySmall)
+                Text(uiText(UiR.string.ui_1_s_source_2_s_target_languages_the_picker_uses_this_server_s_sup_04d3b, capabilities.sourceLanguages.size, capabilities.targetLanguages.size), style = MaterialTheme.typography.bodySmall)
+                if (allowSelection) Button(enabled = !working && selected != provider.id, onClick = { ConversationTranslationSettings.select(context, provider.id) }) { Text(if (selected == provider.id) uiText(UiR.string.ui_using_1_s_922b9, provider.label) else uiText(UiR.string.ui_use_1_s_5cc45, provider.label)) }
+            } else Text(uiText(UiR.string.ui_check_this_connection_to_load_its_supported_languages_before_usin_2b734), style = MaterialTheme.typography.bodySmall)
             if (savedKey) TextButton(enabled = !working, onClick = {
                 scope.launch {
-                    try { withContext(Dispatchers.IO) { ConversationTranslationSettings.forget(context, provider) }; secret = ""; status = "Key removed. On-device translation is used if this connection was selected."; failure = false }
+                    try { withContext(Dispatchers.IO) { ConversationTranslationSettings.forget(context, provider) }; secret = ""; status = uiText(UiR.string.ui_key_removed_on_device_translation_is_used_if_this_connection_was_59cd6); failure = false }
                     catch (e: Exception) { status = e.message ?: e.toString(); failure = true }
                 }
-            }, modifier = Modifier.semantics { contentDescription = "Remove ${provider.label} saved key" }) { Text("Remove saved key") }
+            }, modifier = Modifier.semantics { contentDescription = uiText(UiR.string.ui_remove_1_s_saved_key_71dd0, provider.label) }) { Text(uiText(UiR.string.ui_remove_saved_key_303fd)) }
         }
         status?.let { Text(it, color = if (failure) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface, modifier = Modifier.padding(top = 2.dp)) }
     }

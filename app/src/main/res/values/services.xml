@@ -1,0 +1,77 @@
+<resources>
+    <string name="service_screen_reading_153b9" formatted="false">"Screen reading"</string>
+    <string name="service_screen_capture_permission_is_missing_start_reading_5f3e2" formatted="false">"Screen capture permission is missing. Start reading again from Screen &amp; manga."</string>
+    <string name="service_translation_does_not_support_1_s_2_s_choose_langua_d0ec6">"Translation does not support %1$s → %2$s. Choose languages and a translator in Reading settings."</string>
+    <string name="service_loading_1_s_aba14">"Loading %1$s…"</string>
+    <string name="service_reading_text_b6863" formatted="false">"Reading text…"</string>
+    <string name="service_translating_ae47b" formatted="false">"Translating…"</string>
+    <string name="service_1_s_2_s_ms_ocr_87c9c">"%1$s · %2$s ms OCR"</string>
+    <string name="service_open_a_reader_then_tap_translate_or_draw_area_a9c06" formatted="false">"Open a reader, then tap Translate or Draw area."</string>
+    <string name="service_translate_2be17" formatted="false">"Translate"</string>
+    <string name="service_no_text_found_in_this_area_draw_a_smaller_region_o_0c8b8" formatted="false">"No text found in this area. Draw a smaller region or choose another OCR model."</string>
+    <string name="service_no_text_32095" formatted="false">"No text"</string>
+    <string name="service_hearth_screen_reading_0905b" formatted="false">"Hearth screen reading"</string>
+    <string name="service_paused_tap_translate_to_read_once_56c5d" formatted="false">"Paused · tap Translate to read once"</string>
+    <string name="service_read_pages_in_another_app_screenshots_stay_local_64bd9" formatted="false">"Read pages in another app · screenshots stay local"</string>
+    <string name="service_resume_b3bd0" formatted="false">"Resume"</string>
+    <string name="service_pause_78196" formatted="false">"Pause"</string>
+    <string name="service_stop_9e253" formatted="false">"Stop"</string>
+    <string name="service_paused_read_989d4" formatted="false">"Paused · read"</string>
+    <string name="service_resume_auto_f5626" formatted="false">"Resume auto"</string>
+    <string name="service_pause_auto_e2a61" formatted="false">"Pause auto"</string>
+    <string name="service_screen_size_changed_please_capture_the_page_again_38901" formatted="false">"Screen size changed. Please capture the page again."</string>
+    <string name="service_screen_capture_has_stopped_c682a" formatted="false">"Screen capture has stopped"</string>
+    <string name="service_unsupported_screen_pixel_stride_1_s_69dba">"Unsupported screen pixel stride: %1$s"</string>
+    <string name="service_reading_settings_are_still_loading_tap_retry_in_a__cd6c6" formatted="false">"Reading settings are still loading. Tap Retry in a moment."</string>
+    <string name="service_choose_a_text_language_supported_by_1_s_in_reading_83c65">"Choose a text language supported by %1$s in Reading settings"</string>
+    <string name="service_selected_area_is_too_small_draw_it_again_79441" formatted="false">"Selected area is too small. Draw it again."</string>
+    <string name="service_the_captured_area_is_black_check_that_the_reader_i_87046" formatted="false">"The captured area is black. Check that the reader is visible; protected pages may block screenshots."</string>
+    <string name="service_reading_1_s_30d82">"Reading %1$s…"</string>
+    <string name="service_reading_ae18b" formatted="false">"Reading…"</string>
+    <string name="service_scroll_through_translations_tap_to_unlock_text_box_1eb00" formatted="false">"Scroll through translations. Tap to unlock text boxes."</string>
+    <string name="service_text_boxes_are_interactive_tap_to_let_touches_pass_ebaaa" formatted="false">"Text boxes are interactive. Tap to let touches pass through."</string>
+    <string name="service_selected_text_box_3e276" formatted="false">"Selected text box"</string>
+    <string name="service_hearth_drag_c53ff" formatted="false">"Hearth · drag"</string>
+    <string name="service_move_reading_handle_drag_to_reposition_double_tap__55283" formatted="false">"Move reading handle. Drag to reposition. Double tap to reset position."</string>
+    <string name="service_reading_controls_83fa7" formatted="false">"Reading controls"</string>
+    <string name="service_read_page_33e9a" formatted="false">"Read page"</string>
+    <string name="service_translation_ac26a" formatted="false">"Translation"</string>
+    <string name="service_read_aloud_56210" formatted="false">"Read aloud"</string>
+    <string name="service_android_voice_ba5fb" formatted="false">"Android voice"</string>
+    <string name="service_original_c0a80" formatted="false">"Original"</string>
+    <string name="service_read_original_149d2" formatted="false">"Read original"</string>
+    <string name="service_stop_voice_84a32" formatted="false">"Stop voice"</string>
+    <string name="service_copy_af74f" formatted="false">"Copy"</string>
+    <string name="service_history_90ccd" formatted="false">"History"</string>
+    <string name="service_show_translations_6861c" formatted="false">"Show translations"</string>
+    <string name="service_draw_area_f80f3" formatted="false">"Draw area"</string>
+    <string name="service_whole_page_eeb74" formatted="false">"Whole page"</string>
+    <string name="service_clear_719ea" formatted="false">"Clear"</string>
+    <string name="service_smaller_text_a8ea9" formatted="false">"Smaller text"</string>
+    <string name="service_larger_text_118f9" formatted="false">"Larger text"</string>
+    <string name="service_scroll_through_the_live_translations_with_the_lock_e5d32" formatted="false">"Scroll through the live translations with the lock closed. Open the lock to tap text boxes. Movement clears old placements; automatic mode translates after the page settles. Tap Read page to close these controls. History lasts for this session (20 pages)."</string>
+    <string name="service_setup_cdd7b" formatted="false">"Setup"</string>
+    <string name="service_no_completed_pages_yet_779d8" formatted="false">"No completed pages yet"</string>
+    <string name="service_history_1_s_2_s_tap_history_for_the_next_page_48713">"History %1$s/%2$s · tap History for the next page"</string>
+    <string name="service_cleared_tap_translate_for_the_current_page_f78c6" formatted="false">"Cleared. Tap Translate for the current page."</string>
+    <string name="service_retry_9f5cd" formatted="false">"Retry"</string>
+    <string name="service_draw_around_a_bubble_or_paragraph_0f329" formatted="false">"Draw around a bubble or paragraph"</string>
+    <string name="service_drag_or_circle_the_text_center_and_whole_image_als_b1a82" formatted="false">"Drag or circle the text. Center and Whole image also work with TalkBack."</string>
+    <string name="service_center_a2391" formatted="false">"Center"</string>
+    <string name="service_whole_image_6bd00" formatted="false">"Whole image"</string>
+    <string name="service_cancel_77dfd" formatted="false">"Cancel"</string>
+    <string name="service_read_area_9c448" formatted="false">"Read area"</string>
+    <string name="service_draw_an_area_first_or_choose_center_5bc83" formatted="false">"Draw an area first, or choose Center"</string>
+    <string name="service_select_a_text_area_by_drawing_center_and_whole_ima_4c4e8" formatted="false">"Select a text area by drawing. Center and Whole image buttons are available below."</string>
+    <string name="service_live_captions_83fd1" formatted="false">"Live captions"</string>
+    <string name="service_live_captions_error_9f465" formatted="false">"Live captions · error"</string>
+    <string name="service_live_captions_paused_b59ce" formatted="false">"Live captions · paused"</string>
+    <string name="service_tap_through_is_on_tap_the_lock_handle_to_restore_c_2e5ea" formatted="false">"Tap-through is on · tap the lock handle to restore controls"</string>
+    <string name="service_audio_is_not_sent_to_the_speech_engine_859aa" formatted="false">"Audio is not sent to the speech engine"</string>
+    <string name="service_1_s_tap_this_notification_to_recover_the_bubble_an_16fe0">"%1$s. Tap this notification to recover the bubble and disable tap-through."</string>
+    <string name="service_restore_controls_c97dd" formatted="false">"Restore controls"</string>
+    <string name="service_hide_bubble_658d0" formatted="false">"Hide bubble"</string>
+    <string name="service_show_bubble_9a42e" formatted="false">"Show bubble"</string>
+    <string name="service_tap_to_show_578b6" formatted="false">"Tap to show"</string>
+    <string name="service_tap_to_start_b11de" formatted="false">"Tap to start"</string>
+</resources>

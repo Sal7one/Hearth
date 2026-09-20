@@ -1,5 +1,8 @@
 package com.sal7one.transiber.settings
 
+import com.sal7one.transiber.R as UiR
+import com.sal7one.transiber.i18n.*
+
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -14,10 +17,12 @@ internal fun SettingsSpeechLocalUi(
     config: CaptionOverlayConfig,
     update: ((CaptionOverlayConfig) -> CaptionOverlayConfig) -> Unit,
 ) {
+    val uiText = rememberUiText()
+
     var browsing by rememberSaveable { mutableStateOf(config.engine.takeUnless { it == CaptionEngineChoice.CLOUD } ?: CaptionEngineChoice.NEMOTRON) }
-    Text("Local speech recognition", style = MaterialTheme.typography.titleLarge)
-    Text("Choose a speech engine, then select an installed model or get its files. Translation is a separate choice.", style = MaterialTheme.typography.bodyMedium)
-    Text("Active speech: ${config.engine.label}", style = MaterialTheme.typography.labelLarge)
+    Text(uiText(UiR.string.ui_local_speech_recognition_05b50), style = MaterialTheme.typography.titleLarge)
+    Text(uiText(UiR.string.ui_choose_a_speech_engine_then_select_an_installed_model_or_get_its_979a1), style = MaterialTheme.typography.bodyMedium)
+    Text(uiText(UiR.string.ui_active_speech_1_s_11c55, uiText.label(config.engine)), style = MaterialTheme.typography.labelLarge)
     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
         listOf(
             CaptionEngineChoice.NEMOTRON to "Nemotron",

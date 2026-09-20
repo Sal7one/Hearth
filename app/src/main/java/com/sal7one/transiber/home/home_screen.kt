@@ -1,5 +1,8 @@
 package com.sal7one.transiber.home
 
+import com.sal7one.transiber.R as UiR
+import com.sal7one.transiber.i18n.rememberUiText
+
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -22,6 +25,8 @@ import kotlin.math.abs
 @Composable
 internal fun HomeScreen(onCaptions: () -> Unit, onTalk: (Boolean) -> Unit,
     onTranslate: () -> Unit, onCamera: () -> Unit, onReading: () -> Unit, entryRevision: Int = 0, onSetup: () -> Unit) {
+    val uiText = rememberUiText()
+
     val context = LocalContext.current
     val initial = remember(entryRevision) { HomeServiceStore.selected(context) }
     val pager = rememberPagerState(initialPage = initial.ordinal, pageCount = { HomeService.entries.size })
@@ -60,10 +65,10 @@ internal fun HomeScreen(onCaptions: () -> Unit, onTalk: (Boolean) -> Unit,
             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
             IconButton(onClick = { scope.launch { pager.animateScrollToPage(pager.settledPage - 1) } },
                 enabled = pager.settledPage > 0 && !pager.isScrollInProgress) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, "Previous service")
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, uiText(UiR.string.ui_previous_service_9b734))
             }
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.semantics { contentDescription = "Service ${pager.settledPage + 1} of ${HomeService.entries.size}" }) {
+                modifier = Modifier.semantics { contentDescription = uiText(UiR.string.ui_service_1_s_of_2_s_04283, pager.settledPage + 1, HomeService.entries.size) }) {
                 HomeService.entries.forEachIndexed { index, _ ->
                     Surface(shape = androidx.compose.foundation.shape.CircleShape,
                         color = if (index == pager.settledPage) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,
@@ -72,7 +77,7 @@ internal fun HomeScreen(onCaptions: () -> Unit, onTalk: (Boolean) -> Unit,
             }
             IconButton(onClick = { scope.launch { pager.animateScrollToPage(pager.settledPage + 1) } },
                 enabled = pager.settledPage < HomeService.entries.lastIndex && !pager.isScrollInProgress) {
-                Icon(Icons.AutoMirrored.Filled.ArrowForward, "Next service")
+                Icon(Icons.AutoMirrored.Filled.ArrowForward, uiText(UiR.string.ui_next_service_6d174))
             }
         }
     }

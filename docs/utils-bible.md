@@ -276,3 +276,16 @@ normalized roots, distinct paths/hosts and rejected insecure URLs. Translation
 capability writes require the saved connection generation so a late response cannot
 restore stale language choices after another save/forget. No inference or native
 API was changed. See [capability inventory](language-capabilities.md).
+
+
+## 0.22.0 — interface localization
+
+`UiText` resolves Android resources for Compose, callback and service consumers without
+retaining an Activity. `UiLocaleProvider` supplies locale/RTL configuration to service
+Compose windows; `HearthTheme` supplies it to ordinary screens. `UiLabels` translates
+presentation labels without changing stored enum IDs, model identifiers or request data.
+`UiMessage` defers capability-message localization until display and retains a pure
+English diagnostic representation for existing host consumers. `CaptionLanguages` is
+its production consumer. `LocalizationResourcesTest` checks all locale keys, blanks,
+format arguments and the nested, context-free diagnostic representation. Phone journeys
+exercise `AppLanguageSettings`, persistence and RTL. See [localization](localization.md).

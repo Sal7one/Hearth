@@ -1,0 +1,815 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="ui_stopping_after_the_current_native_operation_c83bb" formatted="false">"جارٍ الإيقاف بعد العملية الحالية…"</string>
+    <string name="ui_selected_recording_39702" formatted="false">"التسجيل المحدد"</string>
+    <string name="ui_cannot_open_selected_wav_98fe8" formatted="false">"تعذّر فتح ملف WAV المحدد"</string>
+    <string name="ui_cannot_write_benchmark_results_a2d0d" formatted="false">"تعذّر حفظ نتائج المقارنة"</string>
+    <string name="ui_results_exported_including_transcripts_8df04" formatted="false">"تم تصدير النتائج مع النصوص."</string>
+    <string name="ui_compare_local_models_62748" formatted="false">"مقارنة النماذج المحلية"</string>
+    <string name="ui_use_the_same_recording_or_corrected_text_for_each_model_three_pas_a5005" formatted="false">"استخدم التسجيل أو النص المصحح نفسه لكل نموذج. ثلاث جولات لكل نموذج، بالتتابع. لا طلبات سحابية ولا تنزيل تلقائي."</string>
+    <string name="ui_1_s_language_2_s_a760d">"لغة %1$s: %2$s"</string>
+    <string name="ui_translate_to_1_s_f70dc">"الترجمة إلى: %1$s"</string>
+    <string name="ui_forced_language_is_used_where_supported_vosk_always_uses_its_mode_86f53" formatted="false">"تُفرض اللغة عند دعمها. يستخدم Vosk لغة النموذج دائمًا. اختر تسجيلًا مطابقًا."</string>
+    <string name="ui_compare_the_same_corrected_source_text_separately_from_recognitio_7e2d4" formatted="false">"قارن ترجمة النص المصحح نفسه، بمعزل عن أخطاء التعرف."</string>
+    <string name="ui_choose_wav_recording_b856e" formatted="false">"اختيار تسجيل WAV"</string>
+    <string name="ui_change_recording_d75fb" formatted="false">"تغيير التسجيل"</string>
+    <string name="ui_0_5_30_seconds_pcm16_wav_mono_or_stereo_8_48_khz_2da63" formatted="false">"0.5–30 ثانية · WAV PCM16 · أحادي أو ستيريو · 8–48 كيلوهرتز"</string>
+    <string name="ui_1_s_2_s_seconds_b64af">"%1$s · %2$s ثانية"</string>
+    <string name="ui_corrected_source_text_165c4" formatted="false">"النص الأصلي المصحح"</string>
+    <string name="ui_paste_a_short_sentence_in_the_chosen_source_language_5bce5" formatted="false">"ألصق جملة قصيرة باللغة الأصلية المحددة"</string>
+    <string name="ui_1_s_500_characters_b6d2a">"%1$s/500 حرف"</string>
+    <string name="ui_installed_models_c45cb" formatted="false">"النماذج المثبتة"</string>
+    <string name="ui_no_models_installed_for_this_comparison_download_or_import_one_in_dc1e2" formatted="false">"لا توجد نماذج مثبتة لهذه المقارنة. نزّل نموذجًا أو استورده من صفحة النماذج."</string>
+    <string name="ui_open_models_53f82" formatted="false">"فتح النماذج"</string>
+    <string name="ui_refresh_56e3b" formatted="false">"تحديث"</string>
+    <string name="ui_select_compatible_models_ee8e9" formatted="false">"تحديد النماذج المتوافقة"</string>
+    <string name="ui_deselect_all_85cce" formatted="false">"إلغاء تحديد الكل"</string>
+    <string name="ui_not_compatible_with_this_language_selection_aa8b5" formatted="false">"غير متوافق مع اللغات المحددة"</string>
+    <string name="ui_benchmark_9ed99" formatted="false">"اختبار الأداء"</string>
+    <string name="ui_stop_1_s_before_comparing_models_fc4d7">"أوقف %1$s قبل مقارنة النماذج."</string>
+    <string name="ui_benchmark_in_progress_c6417" formatted="false">"اختبار الأداء جارٍ"</string>
+    <string name="ui_stop_comparison_7826e" formatted="false">"إيقاف المقارنة"</string>
+    <string name="ui_comparison_complete_review_accuracy_as_well_as_speed_16b3e" formatted="false">"اكتملت المقارنة. راجع الدقة والسرعة معًا."</string>
+    <string name="ui_comparison_stopped_completed_results_were_saved_7c2db" formatted="false">"توقفت المقارنة. حُفظت النتائج المكتملة."</string>
+    <string name="ui_compare_1_s_models_1916c">"مقارنة %1$s نموذج"</string>
+    <string name="ui_speed_is_measured_with_accelerated_replay_not_microphone_to_capti_fcf89" formatted="false">"تُقاس السرعة بإعادة تشغيل مسرّعة، لا بتأخر الميكروفون إلى النص. يشمل التحميل فحص سلامة الملفات، وقد يخزّنها النظام مؤقتًا. يستخدم Whisper وVosk معالجة مجمّعة، وحزم الكلام الأصلية محوّل البث أو النوافذ المستخدم في التطبيق. قارن جودة النص قبل الاختيار."</string>
+    <string name="ui_saved_results_5e7cc" formatted="false">"النتائج المحفوظة"</string>
+    <string name="ui_stored_only_on_this_device_export_includes_recognized_and_transla_f23f5" formatted="false">"تُحفظ على هذا الجهاز فقط. يتضمن التصدير النص الأصلي والمترجم؛ ولا يُحفظ التسجيل."</string>
+    <string name="ui_export_results_fc7d7" formatted="false">"تصدير النتائج"</string>
+    <string name="ui_clear_history_53b51" formatted="false">"مسح السجل"</string>
+    <string name="ui_translate_to_a1ba6" formatted="false">"الترجمة إلى"</string>
+    <string name="ui_source_language_c951f" formatted="false">"اللغة الأصلية"</string>
+    <string name="ui_languages_advertised_by_installed_models_incompatible_models_are_88f7c" formatted="false">"اللغات التي تدعمها النماذج المثبتة؛ تُعطّل النماذج غير المتوافقة."</string>
+    <string name="ui_load_verify_1_s_s_05a13">"التحميل والتحقق: %1$s ث"</string>
+    <string name="ui_first_inference_1_s_s_14e86">"أول استدلال: %1$s ث"</string>
+    <string name="ui_warm_median_1_s_s_0f226">"وسيط الجولات الدافئة: %1$s ث"</string>
+    <string name="ui_real_time_factor_1_s_below_1_keeps_ahead_in_replay_10505">"معامل الزمن الحقيقي: %1$s× (أقل من 1 أسرع من إعادة التشغيل)"</string>
+    <string name="ui_no_speech_recognized_a_fast_empty_result_is_not_a_quality_win_c93af" formatted="false">"لم يُتعرف على كلام. النتيجة الفارغة السريعة لا تعني جودة أفضل."</string>
+    <string name="ui_hide_details_f8c24" formatted="false">"إخفاء التفاصيل"</string>
+    <string name="ui_all_passes_and_runtime_a99e0" formatted="false">"كل الجولات وبيئة التشغيل"</string>
+    <string name="ui_1_s_2_s_3_s_model_4_s_input_sha_256_5_s_run_6_s_42fa7">"%1$s\n%2$s\n%3$s\nالنموذج: %4$s\nSHA-256 للمدخل: %5$s\nالتشغيل: %6$s"</string>
+    <string name="ui_pass_1_s_2_s_ms_first_text_in_replay_3_s_ms_4_s_e7de9">"الجولة %1$s: %2$s مللي ثانية؛ أول نص في الإعادة %3$s مللي ثانية\n%4$s"</string>
+    <string name="ui_screen_sharing_was_cancelled_tap_start_reading_when_ready_b7b72" formatted="false">"أُلغيت مشاركة الشاشة. اضغط بدء القراءة عندما تكون جاهزًا."</string>
+    <string name="ui_allow_hearth_to_display_over_other_apps_return_here_then_tap_star_1c196" formatted="false">"اسمح لـ Hearth بالظهور فوق التطبيقات، ثم عُد واضغط بدء القراءة."</string>
+    <string name="ui_back_b52b3" formatted="false">"رجوع"</string>
+    <string name="ui_screen_manga_6c45b" formatted="false">"الشاشة والمانغا"</string>
+    <string name="ui_translate_as_you_read_7ee96" formatted="false">"ترجم أثناء القراءة"</string>
+    <string name="ui_open_your_reader_after_starting_translate_the_page_or_draw_around_c74fc" formatted="false">"افتح تطبيق القراءة بعد البدء. ترجم الصفحة أو حدّد فقاعة واحدة بالرسم."</string>
+    <string name="ui_translate_when_b5cd2" formatted="false">"الترجمة عند"</string>
+    <string name="ui_i_tap_96db1" formatted="false">"الضغط"</string>
+    <string name="ui_page_changes_25675" formatted="false">"تغيّر الصفحة"</string>
+    <string name="ui_reading_settings_8195d" formatted="false">"إعدادات القراءة"</string>
+    <string name="ui_manga_ocr_needs_a_drawn_area_around_one_speech_bubble_214c9" formatted="false">"يتطلب Manga OCR تحديد فقاعة كلام واحدة بالرسم."</string>
+    <string name="ui_images_stay_on_this_phone_cloud_translation_sends_recognized_text_1cbaa" formatted="false">"تبقى الصور على الهاتف. ترسل الترجمة السحابية النص المتعرف عليه إلى المزوّد المحدد."</string>
+    <string name="ui_starting_screen_translation_stops_live_audio_captions_17e29" formatted="false">"بدء ترجمة الشاشة يوقف الترجمة النصية للصوت."</string>
+    <string name="ui_install_1_s_to_read_this_language_70476">"ثبّت %1$s لقراءة هذه اللغة."</string>
+    <string name="ui_choose_a_supported_translation_destination_or_translator_24a0b" formatted="false">"اختر لغة ترجمة أو مترجمًا مدعومًا."</string>
+    <string name="ui_start_reading_overlay_c2be1" formatted="false">"بدء نافذة القراءة"</string>
+    <string name="ui_ocr_reader_2de99" formatted="false">"محرك التعرف على النص"</string>
+    <string name="ui_wait_after_movement_1_s_ms_25f21">"الانتظار بعد الحركة: %1$s مللي ثانية"</string>
+    <string name="ui_wait_after_movement_milliseconds_ed502" formatted="false">"الانتظار بعد الحركة، بالمللي ثانية"</string>
+    <string name="ui_check_screen_every_1_s_ms_37c5a">"فحص الشاشة كل %1$s مللي ثانية"</string>
+    <string name="ui_screen_movement_check_interval_milliseconds_a06ad" formatted="false">"الفاصل بين فحوص حركة الشاشة، بالمللي ثانية"</string>
+    <string name="ui_faster_checks_use_more_battery_screen_images_are_not_stored_4e8d9" formatted="false">"الفحص الأسرع يستهلك بطارية أكثر. لا تُحفظ صور الشاشة."</string>
+    <string name="ui_scroll_with_the_lock_closed_tap_it_to_interact_with_translated_te_47c95" formatted="false">"مرّر والقفل مغلق. اضغطه للتفاعل مع النص المترجم. يتضمن المقبض والإشعار الترجمة والإيقاف المؤقت والإيقاف."</string>
+    <string name="ui_uses_screen_sharing_no_accessibility_service_camera_or_microphone_e7d33" formatted="false">"يستخدم مشاركة الشاشة. لا يحتاج إلى خدمة تسهيلات الاستخدام أو إذن الكاميرا أو الميكروفون."</string>
+    <string name="ui_page_changes_replaces_the_old_scroll_shortcut_and_detects_visual_3ca76" formatted="false">"يحل تغيّر الصفحة محل اختصار التمرير القديم، ويكتشف الحركة المرئية لا مسافة التمرير الدقيقة."</string>
+    <string name="ui_tap_lock_to_restore_controls_drag_lock_to_move_20d73" formatted="false">"اضغط القفل لاستعادة التحكم · اسحبه للتحريك"</string>
+    <string name="ui_spoken_language_cc_c652a" formatted="false">"لغة الكلام (النص الأصلي)"</string>
+    <string name="ui_read_history_2f89b" formatted="false">"قراءة السجل"</string>
+    <string name="ui_back_to_live_e83c9" formatted="false">"العودة إلى المباشر"</string>
+    <string name="ui_copy_text_06a76" formatted="false">"نسخ النص"</string>
+    <string name="ui_text_held_capture_continues_latest_120_segments_retained_ff712" formatted="false">"النص ثابت · يستمر الالتقاط · تُحفظ آخر 120 فقرة"</string>
+    <string name="ui_move_captions_up_d94cb" formatted="false">"تحريك النص لأعلى"</string>
+    <string name="ui_move_captions_down_f1f06" formatted="false">"تحريك النص لأسفل"</string>
+    <string name="ui_move_captions_left_920be" formatted="false">"تحريك النص لليسار"</string>
+    <string name="ui_move_captions_right_a939e" formatted="false">"تحريك النص لليمين"</string>
+    <string name="ui_drag_to_move_captions_51a37" formatted="false">"اسحب لتحريك النص"</string>
+    <string name="ui_resume_captions_b31f8" formatted="false">"استئناف النص المباشر"</string>
+    <string name="ui_pause_captions_dc66c" formatted="false">"إيقاف النص مؤقتًا"</string>
+    <string name="ui_clear_previous_text_and_pending_translations_4cbd5" formatted="false">"مسح النص السابق والترجمات المعلّقة"</string>
+    <string name="ui_caption_settings_da0c8" formatted="false">"إعدادات النص المباشر"</string>
+    <string name="ui_stop_captions_58b64" formatted="false">"إيقاف النص المباشر"</string>
+    <string name="ui_paused_c7dfb" formatted="false">"متوقف مؤقتًا"</string>
+    <string name="ui_loading_1_s_aba14">"جارٍ تحميل %1$s…"</string>
+    <string name="ui_error_7f2f6" formatted="false">"خطأ"</string>
+    <string name="ui_no_capturable_audio_app_may_block_capture_try_microphone_input_709c8" formatted="false">"لا يوجد صوت قابل للالتقاط؛ قد يمنعه التطبيق. جرّب الميكروفون"</string>
+    <string name="ui_translating_1_s_0d960">"ترجمة · %1$s"</string>
+    <string name="ui_captions_1_s_31caa">"نص مباشر · %1$s"</string>
+    <string name="ui_paused_resume_from_the_bubble_or_notification_58a85" formatted="false">"متوقف مؤقتًا · استأنف من الفقاعة أو الإشعار"</string>
+    <string name="ui_connecting_loading_44380" formatted="false">"جارٍ الاتصال أو التحميل…"</string>
+    <string name="ui_caption_engine_failed_fa936" formatted="false">"فشل محرك النص المباشر"</string>
+    <string name="ui_no_capturable_audio_play_a_stream_if_it_stays_silent_the_app_may_fdefa" formatted="false">"لا يوجد صوت قابل للالتقاط. شغّل بثًا؛ إن استمر الصمت فقد يمنع التطبيق الالتقاط."</string>
+    <string name="ui_listening_6c19a" formatted="false">"جارٍ الاستماع…"</string>
+    <string name="ui_appearance_41def" formatted="false">"المظهر"</string>
+    <string name="ui_cc_translation_508d4" formatted="false">"النص الأصلي والترجمة"</string>
+    <string name="ui_height_3f608" formatted="false">"الارتفاع"</string>
+    <string name="ui_compact_1df39" formatted="false">"صغير"</string>
+    <string name="ui_comfortable_23137" formatted="false">"مريح"</string>
+    <string name="ui_large_738fd" formatted="false">"كبير"</string>
+    <string name="ui_text_size_3cc6e" formatted="false">"حجم النص"</string>
+    <string name="ui_theme_a797e" formatted="false">"السمة"</string>
+    <string name="ui_position_cf1c8" formatted="false">"الموضع"</string>
+    <string name="ui_re_center_a540d" formatted="false">"إعادة التوسيط"</string>
+    <string name="ui_width_1_s_f9552">"العرض %1$s٪"</string>
+    <string name="ui_background_1_s_6f4b0">"الخلفية %1$s٪"</string>
+    <string name="ui_previous_segments_1_s_5e486">"الفقرات السابقة: %1$s"</string>
+    <string name="ui_show_live_partial_text_27286" formatted="false">"عرض النص الجزئي المباشر"</string>
+    <string name="ui_tap_through_keep_unlock_handle_a2050" formatted="false">"تمرير اللمس (مع مقبض إلغاء القفل)"</string>
+    <string name="ui_mode_a7b93" formatted="false">"الوضع"</string>
+    <string name="ui_text_translation_9f474" formatted="false">"ترجمة النص"</string>
+    <string name="ui_current_speech_model_29c90" formatted="false">"نموذج الكلام الحالي"</string>
+    <string name="ui_choose_or_download_models_a1983" formatted="false">"اختيار النماذج أو تنزيلها"</string>
+    <string name="ui_full_setup_cloud_settings_ac020" formatted="false">"الإعداد الكامل والسحابة"</string>
+    <string name="ui_clear_transcript_05690" formatted="false">"مسح النص"</string>
+    <string name="ui_hide_read_aloud_options_c6763" formatted="false">"إخفاء خيارات القراءة الصوتية"</string>
+    <string name="ui_read_aloud_options_dc13d" formatted="false">"خيارات القراءة الصوتية"</string>
+    <string name="ui_speak_captions_47294" formatted="false">"قراءة النص بصوت عالٍ"</string>
+    <string name="ui_read_aloud_voices_downloads_7b18c" formatted="false">"القراءة الصوتية · الأصوات والتنزيلات"</string>
+    <string name="ui_install_supertonic_3_and_a_voice_in_read_aloud_settings_8a8c5" formatted="false">"ثبّت Supertonic 3 وصوتًا من إعدادات القراءة الصوتية."</string>
+    <string name="ui_copying_and_verifying_model_files_keep_this_screen_open_9b0f8" formatted="false">"جارٍ نسخ ملفات النموذج والتحقق منها… أبقِ هذه الشاشة مفتوحة."</string>
+    <string name="ui_choose_the_original_downloaded_model_file_with_its_original_filen_c2fff" formatted="false">"اختر ملف النموذج الأصلي الذي نزّلته باسمه الأصلي."</string>
+    <string name="ui_cannot_open_selected_model_zip_ea4d3" formatted="false">"تعذّر فتح ملف ZIP المحدد للنموذج"</string>
+    <string name="ui_imported_1_s_original_language_captions_selected_f9ef8">"تم استيراد %1$s واختيار النص الأصلي."</string>
+    <string name="ui_none_installed_yet_download_and_install_below_or_import_an_existi_69b24" formatted="false">"لا نماذج مثبتة بعد. نزّل وثبّت أدناه، أو استورد نموذجًا موجودًا."</string>
+    <string name="ui_hide_model_details_41f25" formatted="false">"إخفاء تفاصيل النموذج"</string>
+    <string name="ui_model_details_language_options_055d1" formatted="false">"تفاصيل النموذج واللغات"</string>
+    <string name="ui_native_runtime_available_f25c7" formatted="false">"بيئة التشغيل الأصلية متاحة"</string>
+    <string name="ui_downloads_install_automatically_keep_enough_free_space_for_both_t_5f4db" formatted="false">"تُثبّت التنزيلات تلقائيًا. وفّر مساحة للملف الأصلي والنموذج المثبّت معًا. تعتمد السرعة والذاكرة على النموذج والهاتف."</string>
+    <string name="ui_importing_82059" formatted="false">"جارٍ الاستيراد…"</string>
+    <string name="ui_import_existing_model_344f9" formatted="false">"استيراد نموذج موجود"</string>
+    <string name="ui_cc_language_support_1_s_languages_26530">"لغات النص الأصلي · %1$s لغة"</string>
+    <string name="ui_english_only_short_utterance_decoding_translation_requires_a_sepa_35325" formatted="false">"الإنجليزية فقط؛ معالجة عبارات قصيرة. تتطلب الترجمة مترجمًا منفصلًا."</string>
+    <string name="ui_publisher_coverage_30_languages_plus_chinese_dialects_auto_or_an_529f3" formatted="false">"وفق الناشر: 30 لغة ولهجات صينية؛ تلقائي أو لغة كلام محددة. للتعرف لا للترجمة."</string>
+    <string name="ui_publisher_coverage_28_languages_32_locales_usable_without_fine_tu_a58d7" formatted="false">"وفق الناشر: 28 لغة و32 إعدادًا محليًا دون ضبط دقيق. الماندرين و12 لغة أخرى بتغطية واسعة؛ تختلف الجودة. تُستبعد ثمانية إعدادات تتطلب تكييفًا."</string>
+    <string name="ui_model_licenses_and_publisher_files_are_linked_above_keep_their_no_f91ec" formatted="false">"روابط التراخيص وملفات الناشر أعلاه. احتفظ بإشعاراتها عند إعداد حزمة."</string>
+    <string name="ui_during_capture_compute_audio_below_1_means_inference_is_faster_th_8bc2e" formatted="false">"أثناء الالتقاط، نسبة المعالجة إلى الصوت الأقل من 1× تعني أن الاستدلال أسرع من مدة الصوت. "</string>
+    <string name="ui_the_audio_queue_is_capped_at_3_seconds_overload_reports_an_error_f66c1" formatted="false">"حد قائمة انتظار الصوت 3 ثوانٍ؛ يظهر خطأ عند الحمل الزائد بدل تراكم التأخر."</string>
+    <string name="ui_saved_hint_1_s_is_not_used_by_this_mode_09131">"لا يستخدم هذا الوضع تلميح اللغة المحفوظ %1$s."</string>
+    <string name="ui_choose_an_output_language_supported_by_this_setup_96051" formatted="false">"اختر لغة إخراج يدعمها هذا الإعداد."</string>
+    <string name="ui_back_without_changing_language_4e429" formatted="false">"الرجوع دون تغيير اللغة"</string>
+    <string name="ui_search_languages_ea93e" formatted="false">"البحث عن لغة"</string>
+    <string name="ui_native_name_english_name_or_code_18590" formatted="false">"الاسم الأصلي أو الإنجليزي أو الرمز"</string>
+    <string name="ui_use_language_code_1_s_checked_by_provider_283e3">"استخدام رمز اللغة: %1$s · يتحقق منه المزوّد"</string>
+    <string name="ui_no_matching_languages_e9531" formatted="false">"لا توجد لغات مطابقة"</string>
+    <string name="ui_captions_are_running_open_the_bubble_for_live_controls_or_stop_to_12914" formatted="false">"النص المباشر يعمل. افتح الفقاعة للتحكم، أو أوقفه لتغيير الإعداد."</string>
+    <string name="ui_what_would_you_like_to_hear_dba27" formatted="false">"ماذا تريد أن تسمع؟"</string>
+    <string name="ui_audio_acdac" formatted="false">"الصوت"</string>
+    <string name="ui_microphone_24280" formatted="false">"الميكروفون"</string>
+    <string name="ui_device_audio_c5702" formatted="false">"صوت الجهاز"</string>
+    <string name="ui_show_d97d1" formatted="false">"عرض"</string>
+    <string name="ui_original_captions_9d268" formatted="false">"النص الأصلي"</string>
+    <string name="ui_translation_ac26a" formatted="false">"الترجمة"</string>
+    <string name="ui_speech_translation_8002b" formatted="false">"الكلام والترجمة"</string>
+    <string name="ui_1_s_audio_sent_to_your_provider_db1f9">"%1$s · يُرسل الصوت إلى المزوّد"</string>
+    <string name="ui_1_s_on_this_phone_0832f">"%1$s · على هذا الهاتف"</string>
+    <string name="ui_connect_your_cloud_provider_to_start_14c5d" formatted="false">"اربط مزوّد الخدمة السحابية للبدء."</string>
+    <string name="ui_choose_a_speech_model_to_start_53e5a" formatted="false">"اختر نموذج كلام للبدء."</string>
+    <string name="ui_set_up_translation_1d214" formatted="false">"إعداد الترجمة"</string>
+    <string name="ui_show_captions_78946" formatted="false">"عرض النص المباشر"</string>
+    <string name="ui_connect_cloud_663c4" formatted="false">"ربط السحابة"</string>
+    <string name="ui_choose_a_model_fefb3" formatted="false">"اختيار نموذج"</string>
+    <string name="ui_start_captions_68e1c" formatted="false">"بدء النص المباشر"</string>
+    <string name="ui_speech_engine_38c0a" formatted="false">"محرك الكلام"</string>
+    <string name="ui_audio_goes_to_your_configured_cloud_provider_77561" formatted="false">"يُرسل الصوت إلى مزوّد السحابة الذي أعددته."</string>
+    <string name="ui_speech_stays_on_this_phone_c93d7" formatted="false">"يبقى الكلام على هذا الهاتف."</string>
+    <string name="ui_manage_speech_connection_1959e" formatted="false">"إدارة اتصال الكلام"</string>
+    <string name="ui_choose_or_download_speech_models_34085" formatted="false">"اختيار نماذج الكلام أو تنزيلها"</string>
+    <string name="ui_stop_captions_to_change_setup_19d9d" formatted="false">"أوقف النص المباشر لتغيير الإعداد."</string>
+    <string name="ui_some_apps_block_audio_capture_use_microphone_if_captions_stay_sil_60ad2" formatted="false">"تمنع بعض التطبيقات التقاط الصوت. استخدم الميكروفون إن لم يظهر نص."</string>
+    <string name="ui_live_captions_83fd1" formatted="false">"النص المباشر"</string>
+    <string name="ui_choose_an_audio_source_to_start_81909" formatted="false">"اختر مصدر الصوت للبدء."</string>
+    <string name="ui_1_s_complete_android_permissions_to_start_e9e4e">"%1$s · أكمل أذونات Android للبدء."</string>
+    <string name="ui_close_bbfa7" formatted="false">"إغلاق"</string>
+    <string name="ui_start_captions_from_device_audio_9e84c" formatted="false">"بدء النص من صوت الجهاز"</string>
+    <string name="ui_start_captions_from_microphone_41530" formatted="false">"بدء النص من الميكروفون"</string>
+    <string name="ui_notifications_are_disabled_enable_them_for_pause_stop_and_bubble_57b9d" formatted="false">"الإشعارات معطّلة. فعّلها للتحكم بالإيقاف المؤقت والإيقاف واستعادة الفقاعة."</string>
+    <string name="ui_enable_caption_notification_controls_4594b" formatted="false">"تفعيل التحكم عبر الإشعار"</string>
+    <string name="ui_continue_with_bubble_controls_only_0ddfd" formatted="false">"المتابعة بتحكم الفقاعة فقط"</string>
+    <string name="ui_audio_recording_permission_denied_android_requires_it_for_both_mi_af57b" formatted="false">"رُفض إذن تسجيل الصوت؛ يطلبه Android لالتقاط الميكروفون وصوت الجهاز معًا."</string>
+    <string name="ui_open_settings_fd710" formatted="false">"فتح الإعدادات"</string>
+    <string name="ui_cancel_77dfd" formatted="false">"إلغاء"</string>
+    <string name="ui_some_apps_block_device_audio_choose_microphone_if_capture_is_sile_acb86" formatted="false">"تمنع بعض التطبيقات صوت الجهاز. اختر الميكروفون إن كان الالتقاط صامتًا."</string>
+    <string name="ui_allow_display_over_other_apps_b1453" formatted="false">"السماح بالظهور فوق التطبيقات"</string>
+    <string name="ui_live_captions_draws_a_floating_caption_bubble_on_top_of_the_app_ec64b" formatted="false">"يعرض النص المباشر فقاعة نص فوق التطبيق "</string>
+    <string name="ui_you_are_watching_android_requires_a_one_time_setting_for_this_2aea3" formatted="false">"الذي تشاهده. يتطلب Android تفعيل هذا الإعداد مرة واحدة."</string>
+    <string name="ui_return_here_after_enabling_it_29b55" formatted="false">"عُد هنا بعد التفعيل."</string>
+    <string name="ui_audio_source_a1ee0" formatted="false">"مصدر الصوت"</string>
+    <string name="ui_android_exit_trace_exported_c5ce1" formatted="false">"تم تصدير سجل إنهاء Android"</string>
+    <string name="ui_caption_startup_report_3488f" formatted="false">"تقرير بدء النص المباشر"</string>
+    <string name="ui_startup_report_copied_4305c" formatted="false">"نُسخ تقرير البدء"</string>
+    <string name="ui_copy_startup_crash_report_a5045" formatted="false">"نسخ تقرير البدء أو التعطّل"</string>
+    <string name="ui_exporting_583cc" formatted="false">"جارٍ التصدير…"</string>
+    <string name="ui_export_android_crash_trace_79311" formatted="false">"تصدير سجل تعطّل Android"</string>
+    <string name="ui_live_captions_overlay_92a8d" formatted="false">"نافذة النص المباشر"</string>
+    <string name="ui_floating_captions_over_any_app_s_audio_with_the_cloud_b70cc" formatted="false">"نص عائم لصوت التطبيقات. مع المحرك السحابي، "</string>
+    <string name="ui_engine_utterance_audio_is_uploaded_to_your_provider_fb528" formatted="false">"يُرفع صوت العبارات إلى مزوّدك "</string>
+    <string name="ui_using_your_key_nothing_else_leaves_this_phone_7d264" formatted="false">"باستخدام مفتاحك؛ ولا يغادر الهاتف شيء آخر."</string>
+    <string name="ui_floating_captions_or_translation_over_any_app_s_audio_1e168" formatted="false">"نص أو ترجمة عائمة لصوت التطبيقات. "</string>
+    <string name="ui_everything_runs_on_this_phone_nothing_is_uploaded_c080c" formatted="false">"تعمل المعالجة كلها على الهاتف؛ لا يُرفع شيء."</string>
+    <string name="ui_watch_streams_with_live_subtitles_bcd72" formatted="false">"شاهد البث مع ترجمة مباشرة"</string>
+    <string name="ui_uses_your_openai_key_and_streams_device_audio_for_live_processing_d7a42" formatted="false">"يستخدم مفتاح OpenAI لبث صوت الجهاز ومعالجته مباشرة. الاختصارات تختار العربية أو الإنجليزية؛ النص الأصلي يحتفظ بلغة الكلام. لا يحتاج إلى نموذج محلي."</string>
+    <string name="ui_live_arabic_b472a" formatted="false">"العربية مباشرة"</string>
+    <string name="ui_live_english_32c69" formatted="false">"الإنجليزية مباشرة"</string>
+    <string name="ui_live_cc_a34a0" formatted="false">"النص الأصلي مباشرة"</string>
+    <string name="ui_the_notification_controls_pause_resume_bubble_recovery_and_stop_o_9d432" formatted="false">"يتحكم الإشعار بالإيقاف المؤقت والاستئناف واستعادة الفقاعة والإيقاف. تكتشف ترجمة OpenAI المباشرة لغة الكلام تلقائيًا."</string>
+    <string name="ui_what_should_the_overlay_do_ec3a9" formatted="false">"ماذا تريد من النافذة؟"</string>
+    <string name="ui_1_s_live_translation_2_s_no_on_device_translation_model_needed_d2ee4">"ترجمة %1$s المباشرة ← %2$s؛ لا حاجة إلى نموذج ترجمة محلي."</string>
+    <string name="ui_translation_route_available_model_api_errors_will_appear_in_the_b_40687" formatted="false">"مسار الترجمة متاح؛ تظهر أخطاء النموذج أو الخدمة في الفقاعة."</string>
+    <string name="ui_choose_a_translator_in_the_local_translation_section_below_origin_507ac" formatted="false">"اختر مترجمًا في قسم الترجمة المحلية أدناه. يستمر النص الأصلي إن تعذّرت الترجمة."</string>
+    <string name="ui_caption_engine_a52ee" formatted="false">"محرك النص المباشر"</string>
+    <string name="ui_english_translation_whisper_cloud_translate_in_one_pass_87424" formatted="false">"الترجمة إلى الإنجليزية: يترجم Whisper أو السحابة في جولة واحدة؛ "</string>
+    <string name="ui_an_english_vosk_model_gives_instant_english_captions_b038f" formatted="false">"ويعطي نموذج Vosk الإنجليزي نصًا إنجليزيًا فوريًا."</string>
+    <string name="ui_speech_model_3c5f0" formatted="false">"نموذج الكلام"</string>
+    <string name="ui_vosk_models_transcribe_one_language_each_choose_the_one_that_eea34" formatted="false">"يتعرف كل نموذج Vosk على لغة واحدة؛ اختر النموذج الذي "</string>
+    <string name="ui_matches_the_stream_you_are_watching_0e03a" formatted="false">"يطابق لغة البث الذي تشاهده."</string>
+    <string name="ui_whisper_models_are_multilingual_the_choice_is_a_speed_accuracy_tr_33925" formatted="false">"نماذج Whisper متعددة اللغات؛ الاختيار يوازن السرعة والدقة."</string>
+    <string name="ui_model_files_imports_233e7" formatted="false">"ملفات النماذج والاستيراد"</string>
+    <string name="ui_manage_installed_speech_translation_models_588a3" formatted="false">"إدارة نماذج الكلام والترجمة المثبتة"</string>
+    <string name="ui_before_you_start_2c445" formatted="false">"قبل البدء"</string>
+    <string name="ui_display_over_other_apps_d3869" formatted="false">"الظهور فوق التطبيقات"</string>
+    <string name="ui_granted_the_caption_bubble_can_draw_over_any_app_a88cf" formatted="false">"مسموح؛ يمكن للفقاعة الظهور فوق أي تطبيق."</string>
+    <string name="ui_one_time_android_setting_so_the_caption_bubble_can_float_over_the_b7ec0" formatted="false">"إعداد Android لمرة واحدة لتطفو الفقاعة فوق التطبيق الذي تشاهده."</string>
+    <string name="ui_open_setting_6786d" formatted="false">"فتح الإعداد"</string>
+    <string name="ui_a_1_s_speech_model_a1c7e">"نموذج كلام %1$s"</string>
+    <string name="ui_1_s_whisper_model_s_imported_9e09e">"تم استيراد %1$s من نماذج Whisper"</string>
+    <string name="ui_1_s_vosk_model_s_imported_1d5f4">"تم استيراد %1$s من نماذج Vosk"</string>
+    <string name="ui_verified_local_speech_package_imported_af455" formatted="false">"تم استيراد حزمة كلام محلية موثوقة"</string>
+    <string name="ui_cloud_captions_ready_api_key_stored_492e1" formatted="false">"النص السحابي جاهز؛ حُفظ مفتاح API"</string>
+    <string name="ui_use_import_model_zip_in_the_model_setup_above_ce1a6" formatted="false">"استخدم استيراد ZIP للنموذج في الإعداد أعلاه."</string>
+    <string name="ui_paste_your_api_key_in_the_cloud_engine_your_api_key_box_above_480e0" formatted="false">"ألصق مفتاح API في خانة المحرك السحابي أعلاه."</string>
+    <string name="ui_open_models_speech_to_get_files_or_import_an_installed_model_76586" formatted="false">"افتح النماذج ← الكلام للحصول على الملفات أو استيراد نموذج."</string>
+    <string name="ui_browse_models_3221a" formatted="false">"تصفح النماذج"</string>
+    <string name="ui_start_live_captions_ed786" formatted="false">"بدء النص المباشر"</string>
+    <string name="ui_grant_the_overlay_setting_7eef5" formatted="false">"امنح إذن الظهور فوق التطبيقات. "</string>
+    <string name="ui_paste_your_api_key_in_the_cloud_section_above_2d3b0" formatted="false">"ألصق مفتاح API في القسم السحابي أعلاه. "</string>
+    <string name="ui_import_a_speech_model_b8766" formatted="false">"استورد نموذج كلام. "</string>
+    <string name="ui_how_android_limits_device_audio_capture_83b77" formatted="false">"قيود Android على التقاط صوت الجهاز"</string>
+    <string name="ui_apps_decide_whether_their_audio_can_be_captured_drm_video_94494" formatted="false">"• تحدد التطبيقات إمكانية التقاط صوتها. لا يمكن التقاط الفيديو المحمي "</string>
+    <string name="ui_youtube_app_netflix_is_never_capturable_tiktok_must_be_tried_per_af7d4" formatted="false">"(مثل المحتوى المحمي في YouTube وNetflix)؛ ويلزم تجربة TikTok على كل جهاز.\n"</string>
+    <string name="ui_when_nothing_capturable_is_playing_the_overlay_says_so_and_you_ca_d2b93" formatted="false">"• عند غياب صوت قابل للالتقاط، توضّح النافذة ذلك ويمكنك "</string>
+    <string name="ui_switch_to_the_microphone_source_which_works_with_any_app_6df91" formatted="false">"التحويل إلى الميكروفون الذي يعمل مع صوت أي تطبيق.\n"</string>
+    <string name="ui_captions_pause_automatically_after_a_few_seconds_of_silence_6effc" formatted="false">"• يتوقف النص مؤقتًا تلقائيًا بعد بضع ثوانٍ من الصمت.\n"</string>
+    <string name="ui_english_translation_is_one_whisper_pass_other_targets_keep_origin_6597f" formatted="false">"• الترجمة الإنجليزية جولة واحدة من Whisper. تبقى اللغات الأخرى تعرض النص "</string>
+    <string name="ui_captions_live_while_the_translation_stage_catches_up_4fdd3" formatted="false">"الأصلي مباشرة بينما تلحق به الترجمة."</string>
+    <string name="ui_browse_caption_translation_models_4dbad" formatted="false">"تصفح نماذج النص والترجمة"</string>
+    <string name="ui_stop_a_running_session_c84e9" formatted="false">"إيقاف جلسة نشطة"</string>
+    <string name="ui_ready_20c7c" formatted="false">"جاهز"</string>
+    <string name="ui_not_ready_2b50f" formatted="false">"غير جاهز"</string>
+    <string name="ui_restore_caption_controls_c9c06" formatted="false">"استعادة التحكم بالنص"</string>
+    <string name="ui_restore_caption_controls_drag_to_move_captions_6f8dd" formatted="false">"استعادة التحكم بالنص. اسحب لتحريك الفقاعة."</string>
+    <string name="ui_publisher_address_select_to_copy_import_its_files_using_the_butto_23eb3" formatted="false">"عنوان الناشر؛ حدده للنسخ. استورد ملفاته بالزر أدناه."</string>
+    <string name="ui_settings_c7f73" formatted="false">"الإعدادات"</string>
+    <string name="ui_easy_setup_local_or_cloud_6c3e9" formatted="false">"إعداد سريع · محلي أو سحابي"</string>
+    <string name="ui_downloads_imports_a2a3b" formatted="false">"التنزيلات والاستيراد"</string>
+    <string name="ui_caption_overlay_a4c78" formatted="false">"نافذة النص المباشر"</string>
+    <string name="ui_screen_overlay_773a6" formatted="false">"نافذة ترجمة الشاشة"</string>
+    <string name="ui_all_settings_diagnostics_7b22b" formatted="false">"كل الإعدادات والتشخيص"</string>
+    <string name="ui_app_fc4a6" formatted="false">"التطبيق"</string>
+    <string name="ui_shared_across_local_and_cloud_82c69" formatted="false">"مشترك بين المحلي والسحابي."</string>
+    <string name="ui_appearance_navigation_433af" formatted="false">"المظهر والتنقل"</string>
+    <string name="ui_themes_light_or_dark_simple_home_or_classic_tabs_24bee" formatted="false">"السمات، فاتح أو داكن، الصفحة البسيطة أو التبويبات التقليدية"</string>
+    <string name="ui_phone_shortcuts_b969d" formatted="false">"اختصارات الهاتف"</string>
+    <string name="ui_start_either_overlay_from_quick_settings_f7593" formatted="false">"بدء أي نافذة من الإعدادات السريعة"</string>
+    <string name="ui_caption_overlay_controls_64e81" formatted="false">"التحكم بنافذة النص"</string>
+    <string name="ui_audio_languages_appearance_and_accessibility_04684" formatted="false">"الصوت واللغات والمظهر وتسهيلات الاستخدام"</string>
+    <string name="ui_help_diagnostics_68022" formatted="false">"المساعدة والتشخيص"</string>
+    <string name="ui_setup_guidance_and_actual_engine_errors_30852" formatted="false">"إرشادات الإعداد وأخطاء المحرك الفعلية"</string>
+    <string name="ui_easy_setup_35fb5" formatted="false">"الإعداد السريع"</string>
+    <string name="ui_local_or_cloud_in_two_steps_183c9" formatted="false">"محلي أو سحابي بخطوتين"</string>
+    <string name="ui_on_your_device_9f8fd" formatted="false">"على جهازك"</string>
+    <string name="ui_connected_services_35c48" formatted="false">"الخدمات المتصلة"</string>
+    <string name="ui_download_or_import_models_for_offline_use_693d9" formatted="false">"نزّل أو استورد نماذج للاستخدام دون اتصال."</string>
+    <string name="ui_providers_and_saved_keys_audio_or_text_goes_to_your_chosen_servic_11f7d" formatted="false">"المزوّدون والمفاتيح المحفوظة. يُرسل الصوت أو النص إلى خدمتك المختارة."</string>
+    <string name="ui_download_folder_progress_and_installed_files_d9ced" formatted="false">"مجلد التنزيل والتقدم والملفات المثبتة"</string>
+    <string name="ui_import_model_files_from_your_device_18597" formatted="false">"استيراد ملفات النماذج من جهازك"</string>
+    <string name="ui_local_benchmark_3acfe" formatted="false">"اختبار الأداء المحلي"</string>
+    <string name="ui_compare_installed_speech_and_translation_models_3e1af" formatted="false">"مقارنة نماذج الكلام والترجمة المثبتة"</string>
+    <string name="ui_text_is_sent_to_your_https_voice_server_chatterbox_qwen3_tts_and_b26fd" formatted="false">"يُرسل النص إلى خادم الصوت عبر HTTPS. يتطلب Chatterbox وQwen3-TTS وFish Speech خادمًا منفصلًا، وليست نماذج Android مدمجة. يوفر الخادم اللغات والأصوات المتاحة."</string>
+    <string name="ui_hearth_voice_api_base_url_https_d4d7b" formatted="false">"عنوان Hearth Voice API · HTTPS"</string>
+    <string name="ui_replace_saved_api_key_c2dc3" formatted="false">"استبدال مفتاح API المحفوظ"</string>
+    <string name="ui_api_key_if_required_49a3c" formatted="false">"مفتاح API · عند الحاجة"</string>
+    <string name="ui_checking_820d6" formatted="false">"جارٍ التحقق…"</string>
+    <string name="ui_save_check_voices_f25ab" formatted="false">"حفظ وفحص الأصوات"</string>
+    <string name="ui_check_this_connection_to_load_its_languages_and_voices_701d4" formatted="false">"تحقق من الاتصال لتحميل لغاته وأصواته."</string>
+    <string name="ui_1_s_2_s_languages_242cf">"%1$s · %2$s لغة"</string>
+    <string name="ui_preview_language_fe73d" formatted="false">"لغة المعاينة"</string>
+    <string name="ui_server_voice_ea31b" formatted="false">"صوت الخادم"</string>
+    <string name="ui_supported_server_models_1b8a8" formatted="false">"نماذج الخادم المدعومة"</string>
+    <string name="ui_these_run_on_your_server_set_up_the_included_hearth_voice_bridge_f6248" formatted="false">"تعمل على خادمك. أعدّ جسر Hearth الصوتي المرفق أولًا؛ ثم اربط عنوانه عبر HTTPS لاستخدامه كصوت مخصص."</string>
+    <string name="ui_self_hosted_python_80a0e" formatted="false">"استضافة ذاتية · Python"</string>
+    <string name="ui_23_languages_including_arabic_default_or_reference_voice_turbo_na_b5a55" formatted="false">"23 لغة منها العربية. صوت افتراضي أو مرجعي؛ Turbo وNano نموذجان منفصلان للإنجليزية."</string>
+    <string name="ui_source_models_setup_e17e2" formatted="false">"المصدر والنماذج والإعداد"</string>
+    <string name="ui_10_languages_no_arabic_requires_your_reference_wav_and_matching_t_ffece" formatted="false">"10 لغات دون العربية. يحتاج تسجيل WAV مرجعيًا والنص المطابق له."</string>
+    <string name="ui_model_card_files_setup_2f538" formatted="false">"بطاقة النموذج والملفات والإعداد"</string>
+    <string name="ui_self_hosted_official_fish_server_8efdd" formatted="false">"استضافة ذاتية · خادم Fish الرسمي"</string>
+    <string name="ui_languages_and_voice_ids_depend_on_the_deployed_checkpoint_and_ser_fc6d7" formatted="false">"تعتمد اللغات ومعرّفات الأصوات على إصدار النموذج وإعداد الخادم."</string>
+    <string name="ui_fish_audio_research_license_separate_commercial_terms_14192" formatted="false">"رخصة Fish Audio البحثية؛ شروط تجارية منفصلة"</string>
+    <string name="ui_forget_voice_connection_cebb3" formatted="false">"حذف اتصال الصوت"</string>
+    <string name="ui_speech_d00d8" formatted="false">"الكلام"</string>
+    <string name="ui_voices_40273" formatted="false">"الأصوات"</string>
+    <string name="ui_camera_ocr_c1207" formatted="false">"الكاميرا والتعرف على النص"</string>
+    <string name="ui_android_voices_60cb9" formatted="false">"أصوات Android"</string>
+    <string name="ui_only_installed_offline_android_voices_are_offered_availability_co_8ecc2" formatted="false">"تظهر أصوات Android المثبتة التي تعمل دون اتصال فقط. يحددها محرك القراءة في الهاتف."</string>
+    <string name="ui_voice_language_fc44d" formatted="false">"لغة الصوت"</string>
+    <string name="ui_android_voice_ba5fb" formatted="false">"صوت Android"</string>
+    <string name="ui_automatic_matching_voice_c73e2" formatted="false">"صوت مطابق تلقائيًا"</string>
+    <string name="ui_install_or_manage_android_voices_0f03f" formatted="false">"تثبيت أصوات Android أو إدارتها"</string>
+    <string name="ui_on_device_onnx_runtime_cpu_5b8ad" formatted="false">"على الجهاز · ONNX Runtime CPU"</string>
+    <string name="ui_31_languages_including_arabic_10_voices_about_383_mib_for_all_fil_cb874" formatted="false">"31 لغة منها العربية · 10 أصوات · نحو 383 ميبيبايت لكل الملفات. الصينية غير مدعومة."</string>
+    <string name="ui_model_card_files_license_45e0e" formatted="false">"بطاقة النموذج والملفات والرخصة"</string>
+    <string name="ui_voice_3091c" formatted="false">"الصوت"</string>
+    <string name="ui_quality_steps_1_s_8db63">"خطوات الجودة · %1$s"</string>
+    <string name="ui_supertonic_quality_steps_80187" formatted="false">"خطوات جودة Supertonic"</string>
+    <string name="ui_more_steps_can_improve_quality_and_take_longer_language_support_i_96b86" formatted="false">"قد تحسّن الخطوات الإضافية الجودة وتستغرق وقتًا أطول. اللغات تعتمد على النموذج؛ هذا النموذج لا يعلن دعم الصينية."</string>
+    <string name="ui_selected_engine_and_voice_installed_f2921" formatted="false">"المحرك والصوت المحددان مثبتان"</string>
+    <string name="ui_download_or_import_the_engine_and_selected_voice_f9222" formatted="false">"نزّل أو استورد المحرك والصوت المحدد"</string>
+    <string name="ui_download_progress_1_s_files_cdb9d">"تقدم التنزيل · %1$s ملف"</string>
+    <string name="ui_download_engine_voice_c767f" formatted="false">"تنزيل المحرك والصوت"</string>
+    <string name="ui_verifying_691f4" formatted="false">"جارٍ التحقق…"</string>
+    <string name="ui_import_voice_files_or_zip_068a7" formatted="false">"استيراد ملفات الصوت أو ZIP"</string>
+    <string name="ui_select_the_onnx_engine_files_its_json_files_and_one_or_more_voice_36da5" formatted="false">"اختر ملفات محرك ONNX وملفات JSON وصوتًا واحدًا أو أكثر، أو ملف ZIP يحتويها. تبقى الملفات الأصلية في Downloads/Hearth/models."</string>
+    <string name="ui_start_from_your_notification_shade_each_tile_checks_setup_before_63465" formatted="false">"ابدأ من لوحة الإشعارات. يفحص كل اختصار الإعداد قبل طلب إذن الالتقاط. اضغط الاختصار النشط لاستعادة التحكم."</string>
+    <string name="ui_screen_translation_d51de" formatted="false">"ترجمة الشاشة"</string>
+    <string name="ui_1_s_added_swipe_down_twice_to_use_it_7f59b">"أُضيف %1$s. اسحب للأسفل مرتين لاستخدامه."</string>
+    <string name="ui_1_s_is_already_in_quick_settings_90c4c">"%1$s موجود بالفعل في الإعدادات السريعة."</string>
+    <string name="ui_1_s_was_not_added_you_can_add_it_later_from_quick_settings_edit_ef39d">"لم يُضف %1$s. يمكنك إضافته لاحقًا من الإعدادات السريعة ← تعديل."</string>
+    <string name="ui_android_tile_request_returned_1_s_add_2_s_from_quick_settings_edi_0ed53">"أعاد Android النتيجة %1$s. أضف %2$s من الإعدادات السريعة ← تعديل."</string>
+    <string name="ui_add_1_s_tile_0b83f">"إضافة اختصار %1$s"</string>
+    <string name="ui_you_can_also_swipe_down_twice_edit_buttons_then_drag_live_caption_da189" formatted="false">"يمكنك السحب للأسفل مرتين ثم تعديل الأزرار، وسحب النص المباشر وترجمة الشاشة إلى اختصاراتك. تستخدم ترجمة الشاشة إعدادات الكاميرا والتعرف على النص للمانغا والكتب."</string>
+    <string name="ui_cannot_open_ocr_model_764c9" formatted="false">"تعذّر فتح نموذج التعرف على النص"</string>
+    <string name="ui_ocr_camera_reading_12439" formatted="false">"التعرف على النص · الكاميرا والقراءة"</string>
+    <string name="ui_paddle_for_general_text_manga_for_japanese_bubbles_meiki_for_japa_76763" formatted="false">"Paddle للنص العام، وManga لفقاعات اليابانية، وMeiki لسطورها. يثبّت كل خيار جميع ملفاته تلقائيًا، وتبقى الأصول في Downloads/Hearth/models أو مجلدك المختار."</string>
+    <string name="ui_import_the_files_for_your_selected_ocr_engine_below_this_offline_7e9b3" formatted="false">"استورد ملفات محرك التعرف المحدد أدناه. هذا الإصدار دون اتصال لا ينزّل ملفات أو يتصل بناشري النماذج."</string>
+    <string name="ui_1_s_mib_total_2_s_cee22">"الإجمالي %1$s ميبيبايت · %2$s"</string>
+    <string name="ui_selected_9a976" formatted="false">"محدد"</string>
+    <string name="ui_choose_78b7c" formatted="false">"اختيار"</string>
+    <string name="ui_view_download_progress_fb5a1" formatted="false">"عرض تقدم التنزيل"</string>
+    <string name="ui_download_install_7db0b" formatted="false">"تنزيل وتثبيت"</string>
+    <string name="ui_hide_file_links_216d2" formatted="false">"إخفاء روابط الملفات"</string>
+    <string name="ui_files_import_links_72993" formatted="false">"الملفات وروابط الاستيراد"</string>
+    <string name="ui_copy_exact_file_link_9e1fe" formatted="false">"نسخ رابط الملف المباشر"</string>
+    <string name="ui_source_license_1_s_98997">"المصدر والرخصة · %1$s"</string>
+    <string name="ui_verifying_model_fa771" formatted="false">"جارٍ التحقق من النموذج…"</string>
+    <string name="ui_import_downloaded_onnx_files_1f3bd" formatted="false">"استيراد ملفات ONNX المنزّلة"</string>
+    <string name="ui_select_all_onnx_files_for_the_selected_engine_together_file_names_c1ec6" formatted="false">"اختر كل ملفات ONNX للمحرك معًا. لا تهم أسماؤها؛ يتحقق Hearth من محتوى النموذج نفسه. القواميس المطابقة مضمّنة. يعمل Manga وMeiki حاليًا على الصور الملتقطة أو المستوردة؛ ويدعم Paddle الوضع المباشر."</string>
+    <string name="ui_downloads_folder_settings_668bd" formatted="false">"التنزيلات وإعدادات المجلد"</string>
+    <string name="ui_cloud_provider_connection_49770" formatted="false">"مزوّد السحابة والاتصال"</string>
+    <string name="ui_soniox_stt_rt_v5_streaming_cc_and_optional_integrated_translation_7d848" formatted="false">"Soniox stt-rt-v5: نص مباشر وترجمة مدمجة اختيارية. يُحتفظ بالنص الأصلي والمترجم منفصلين."</string>
+    <string name="ui_elevenlabs_scribe_v2_realtime_streaming_cc_with_optional_spoken_l_07f57" formatted="false">"ElevenLabs Scribe v2 Realtime: نص مباشر مع تلميح اختياري للغة. فعّل مترجمًا محليًا للترجمة. لا يدعم هذا المحوّل بعد توجيه الترجمة المحلية مع لغة تلقائية."</string>
+    <string name="ui_batch_uploads_chunks_of_audio_and_returns_one_result_per_2ca0a" formatted="false">"يرفع الوضع المجمّع مقاطع الصوت ويعيد نتيجة لكل "</string>
+    <string name="ui_round_trip_slowest_but_works_with_any_openai_compatible_76f1d" formatted="false">"طلب؛ وهو الأبطأ، لكنه يعمل مع أي واجهة متوافقة مع OpenAI "</string>
+    <string name="ui_endpoint_openai_openrouter_or_groq_via_a_custom_url_c2b8a" formatted="false">"(OpenAI أو OpenRouter أو Groq بعنوان مخصص)."</string>
+    <string name="ui_deepgram_streams_audio_over_a_websocket_and_emits_interim_text_41705" formatted="false">"يبث Deepgram الصوت عبر WebSocket ويعرض نصًا جزئيًا "</string>
+    <string name="ui_live_nova_3_is_among_the_lowest_latency_asr_on_the_market_7e53c" formatted="false">"مباشرًا؛ يتميز Nova-3 بزمن استجابة منخفض."</string>
+    <string name="ui_openai_realtime_transcription_gpt_live_transcribe_streams_72775" formatted="false">"يبث التعرف المباشر من OpenAI ‏(gpt-live-transcribe) "</string>
+    <string name="ui_deltas_over_a_websocket_uses_the_openai_key_above_2ec40" formatted="false">"تحديثات النص عبر WebSocket باستخدام مفتاح OpenAI أعلاه."</string>
+    <string name="ui_assemblyai_s_realtime_v3_websocket_streams_interim_final_43e88" formatted="false">"يبث WebSocket v3 المباشر من AssemblyAI النص الجزئي والنهائي؛ "</string>
+    <string name="ui_turns_universal_models_are_multilingual_by_default_375dd" formatted="false">"نماذج Universal متعددة اللغات افتراضيًا."</string>
+    <string name="ui_cloud_engine_your_api_key_ad35b" formatted="false">"المحرك السحابي · مفتاح API"</string>
+    <string name="ui_key_stored_type_to_replace_d9e13" formatted="false">"المفتاح محفوظ؛ اكتب لاستبداله"</string>
+    <string name="ui_could_not_store_the_key_on_this_device_4137a" formatted="false">"تعذّر حفظ المفتاح على هذا الجهاز؛ "</string>
+    <string name="ui_storage_failed_edff3" formatted="false">"فشل التخزين"</string>
+    <string name="ui_nothing_was_saved_6815c" formatted="false">". لم يُحفظ شيء."</string>
+    <string name="ui_stored_with_basic_protection_this_device_s_keystore_c01c3" formatted="false">"حُفظ بحماية أساسية لأن مخزن مفاتيح الجهاز "</string>
+    <string name="ui_was_unavailable_06b63" formatted="false">"لم يكن متاحًا ("</string>
+    <string name="ui_replace_key_a55aa" formatted="false">"استبدال المفتاح"</string>
+    <string name="ui_save_key_f5216" formatted="false">"حفظ المفتاح"</string>
+    <string name="ui_remove_e9639" formatted="false">"إزالة"</string>
+    <string name="ui_soniox_api_key_ea6c1" formatted="false">"مفتاح Soniox API"</string>
+    <string name="ui_elevenlabs_api_key_1b0b7" formatted="false">"مفتاح ElevenLabs API"</string>
+    <string name="ui_deepgram_api_key_05f53" formatted="false">"مفتاح Deepgram API"</string>
+    <string name="ui_paste_the_key_from_console_deepgram_com_e16ea" formatted="false">"ألصق المفتاح من console.deepgram.com"</string>
+    <string name="ui_assemblyai_api_key_da25e" formatted="false">"مفتاح AssemblyAI API"</string>
+    <string name="ui_paste_the_key_from_assemblyai_com_app_account_9d6b7" formatted="false">"ألصق المفتاح من assemblyai.com/app/account"</string>
+    <string name="ui_hide_batch_voice_options_f3f31" formatted="false">"إخفاء خيارات المعالجة المجمّعة والصوت"</string>
+    <string name="ui_optional_batch_cloud_voice_settings_6eebe" formatted="false">"إعدادات اختيارية للمعالجة المجمّعة والصوت السحابي"</string>
+    <string name="ui_these_endpoint_and_model_settings_affect_batch_uploads_and_option_a4bba" formatted="false">"تؤثر إعدادات الواجهة والنموذج هذه على رفع المقاطع والصوت السحابي الاختياري. يستخدم البث المزوّد المحدد أعلاه."</string>
+    <string name="ui_provider_7ceee" formatted="false">"المزوّد"</string>
+    <string name="ui_base_url_1dbd6" formatted="false">"العنوان الأساسي"</string>
+    <string name="ui_batch_stt_model_captions_3d989" formatted="false">"نموذج تحويل الكلام إلى نص بالمقاطع"</string>
+    <string name="ui_this_picker_changes_batch_stt_only_live_openai_cc_uses_gpt_live_t_3603e" formatted="false">"يغيّر هذا الاختيار نموذج المعالجة المجمّعة فقط. يستخدم نص OpenAI المباشر gpt-live-transcribe؛ "</string>
+    <string name="ui_live_translation_uses_gpt_realtime_translate_newest_creation_date_4eb89" formatted="false">"وتستخدم الترجمة المباشرة gpt-realtime-translate. الأحدث إنشاءً أولًا "</string>
+    <string name="ui_the_api_does_not_provide_release_dates_or_openai_prices_9cb12" formatted="false">"(لا توفر الواجهة تواريخ الإصدار أو أسعار OpenAI)."</string>
+    <string name="ui_provider_pricing_and_billing_units_f48db" formatted="false">"أسعار المزوّد ووحدات الفوترة"</string>
+    <string name="ui_browse_speech_models_87929" formatted="false">"تصفح نماذج الكلام"</string>
+    <string name="ui_loading_speech_models_f0902" formatted="false">"جارٍ تحميل نماذج الكلام…"</string>
+    <string name="ui_no_recognized_speech_models_returned_custom_model_ids_can_still_b_dac29" formatted="false">"لم تُعد الخدمة نماذج كلام معروفة. يمكنك إدخال معرّف نموذج مخصص يدويًا."</string>
+    <string name="ui_1_s_created_2_s_5f4ce">"%1$s · أُنشئ %2$s"</string>
+    <string name="ui_tts_model_voice_54aa9" formatted="false">"نموذج تحويل النص إلى صوت"</string>
+    <string name="ui_key_stored_encrypted_on_this_device_android_keystore_ef846" formatted="false">"المفتاح محفوظ ومشفّر على الجهاز بمخزن مفاتيح Android. "</string>
+    <string name="ui_utterances_are_uploaded_only_while_an_overlay_session_runs_ac3e8" formatted="false">"لا تُرفع العبارات إلا أثناء تشغيل جلسة النافذة."</string>
+    <string name="ui_paste_the_key_from_your_provider_e_g_platform_openai_com_api_3cb5d" formatted="false">"ألصق مفتاح المزوّد (مثل platform.openai.com ← مفاتيح "</string>
+    <string name="ui_keys_stored_encrypted_on_this_device_the_foss_build_of_this_81a93" formatted="false">"API). يُحفظ مشفّرًا على الجهاز؛ ولا يملك إصدار FOSS من "</string>
+    <string name="ui_app_has_no_network_permission_at_all_cf763" formatted="false">"التطبيق أي إذن للاتصال بالشبكة."</string>
+    <string name="ui_local_speech_recognition_05b50" formatted="false">"التعرف المحلي على الكلام"</string>
+    <string name="ui_choose_a_speech_engine_then_select_an_installed_model_or_get_its_979a1" formatted="false">"اختر محرك كلام، ثم نموذجًا مثبتًا أو احصل على ملفاته. الترجمة اختيار منفصل."</string>
+    <string name="ui_active_speech_1_s_11c55">"الكلام النشط: %1$s"</string>
+    <string name="ui_translation_connections_4a282" formatted="false">"اتصالات الترجمة"</string>
+    <string name="ui_one_connection_library_for_captions_typed_text_conversations_came_a2ee8" formatted="false">"مكتبة اتصالات مشتركة للنص المباشر والكتابة والمحادثة والكاميرا وقراءة الشاشة. اختر المترجم من الميزة التي ستستخدمه فيها."</string>
+    <string name="ui_conversation_typed_text_use_1_s_dc9f7">"تستخدم المحادثة والكتابة: %1$s"</string>
+    <string name="ui_google_cloud_translation_basic_v2_requires_your_google_cloud_api_5f73d" formatted="false">"Google Cloud Translation Basic v2. يتطلب مفتاح Google Cloud وتفعيل Translation API."</string>
+    <string name="ui_microsoft_azure_translator_the_official_microsoft_translation_api_b8ead" formatted="false">"Microsoft Azure Translator، واجهة الترجمة الرسمية من Microsoft. استخدم مفتاح المورد والمنطقة عند طلبها."</string>
+    <string name="ui_deepl_api_free_or_pro_key_use_api_free_deepl_com_v2_for_free_or_a_62829" formatted="false">"مفتاح DeepL API المجاني أو الاحترافي. استخدم api-free.deepl.com/v2 للمجاني أو api.deepl.com/v2 للاحترافي."</string>
+    <string name="ui_open_source_libretranslate_choose_your_own_https_server_a_key_is_1b625" formatted="false">"LibreTranslate مفتوح المصدر. اختر خادم HTTPS الخاص بك؛ المفتاح اختياري فقط إذا سمح الخادم. يتطلب libretranslate.com مفتاحًا."</string>
+    <string name="ui_finalized_text_is_sent_to_this_provider_audio_is_handled_separate_d490d" formatted="false">"يُرسل النص النهائي إلى هذا المزوّد. يعالج نموذج الكلام المحدد الصوت منفصلًا. قد تنطبق رسوم أو حدود استخدام."</string>
+    <string name="ui_api_base_url_https_43d49" formatted="false">"عنوان API الأساسي · HTTPS"</string>
+    <string name="ui_resource_region_blank_for_global_64f7b" formatted="false">"منطقة المورد · اتركها فارغة للعالمي"</string>
+    <string name="ui_api_key_cf678" formatted="false">"مفتاح API"</string>
+    <string name="ui_a_key_is_encrypted_on_this_device_leave_the_field_empty_to_keep_i_2c064" formatted="false">"المفتاح مشفّر على هذا الجهاز. اترك الحقل فارغًا للاحتفاظ به."</string>
+    <string name="ui_languages_loaded_1_s_source_languages_2_s_target_languages_5a0db">"حُمّلت اللغات: %1$s لغة أصلية و%2$s لغة ترجمة."</string>
+    <string name="ui_save_check_languages_7cd32" formatted="false">"حفظ وفحص اللغات"</string>
+    <string name="ui_cancel_check_82097" formatted="false">"إلغاء الفحص"</string>
+    <string name="ui_key_api_help_3e3bb" formatted="false">"مساعدة المفتاح والواجهة"</string>
+    <string name="ui_1_s_source_2_s_target_languages_the_picker_uses_this_server_s_sup_04d3b">"%1$s لغة أصلية · %2$s لغة ترجمة. تستخدم القائمة اتجاهات الخادم المدعومة. اكتشاف اللغات لا يفحص الحصة أو الفوترة."</string>
+    <string name="ui_using_1_s_922b9">"يُستخدم %1$s"</string>
+    <string name="ui_use_1_s_5cc45">"استخدام %1$s"</string>
+    <string name="ui_check_this_connection_to_load_its_supported_languages_before_usin_2b734" formatted="false">"افحص هذا الاتصال لتحميل لغاته المدعومة قبل استخدامه."</string>
+    <string name="ui_key_removed_on_device_translation_is_used_if_this_connection_was_59cd6" formatted="false">"أُزيل المفتاح. ستُستخدم الترجمة المحلية إن كان هذا الاتصال محددًا."</string>
+    <string name="ui_remove_1_s_saved_key_71dd0">"إزالة مفتاح %1$s المحفوظ"</string>
+    <string name="ui_remove_saved_key_303fd" formatted="false">"إزالة المفتاح المحفوظ"</string>
+    <string name="ui_copying_and_verifying_1_s_6575d">"جارٍ نسخ %1$s والتحقق منه…"</string>
+    <string name="ui_cannot_open_selected_translation_gguf_cae88" formatted="false">"تعذّر فتح ملف GGUF المحدد للترجمة"</string>
+    <string name="ui_1_s_imported_and_selected_as_the_local_model_849c7">"تم استيراد %1$s واختياره كنموذج محلي."</string>
+    <string name="ui_translation_enabled_8b961" formatted="false">"الترجمة مفعّلة"</string>
+    <string name="ui_disabled_cc_only_9fa78" formatted="false">"معطّلة · النص الأصلي فقط"</string>
+    <string name="ui_active_translator_1_s_dfd1a">"المترجم النشط: %1$s"</string>
+    <string name="ui_browse_translators_f9d97" formatted="false">"تصفح المترجمين"</string>
+    <string name="ui_marian_legacy_67b3d" formatted="false">"Marian · قديم"</string>
+    <string name="ui_legacy_english_arabic_model_files_162d9" formatted="false">"ملفات النموذج القديم من الإنجليزية إلى العربية"</string>
+    <string name="ui_size_precision_49488" formatted="false">"الحجم والدقة"</string>
+    <string name="ui_selected_translator_ee2cb" formatted="false">"المترجم المحدد"</string>
+    <string name="ui_q4_uses_less_storage_and_memory_q6_q8_are_larger_only_the_active_56fac" formatted="false">"يستهلك Q4 مساحة وذاكرة أقل؛ Q6 وQ8 أكبر. يُحمّل المترجم النشط فقط."</string>
+    <string name="ui_import_1_s_gguf_f7da3">"استيراد GGUF لـ %1$s"</string>
+    <string name="ui_installing_8d278" formatted="false">"جارٍ التثبيت…"</string>
+    <string name="ui_downloading_1_s_mib_e010b">"جارٍ التنزيل · %1$s ميبيبايت"</string>
+    <string name="ui_retry_download_install_e5444" formatted="false">"إعادة محاولة التنزيل والتثبيت"</string>
+    <string name="ui_download_install_1_s_mib_0e3f4">"تنزيل وتثبيت · %1$s ميبيبايت"</string>
+    <string name="ui_download_failed_reason_1_s_8bb99">"فشل التنزيل · السبب %1$s"</string>
+    <string name="ui_download_folder_1_s_models_the_original_file_stays_here_after_ins_5b003">"مجلد التنزيل: %1$s/models. يبقى الملف الأصلي هنا بعد التثبيت."</string>
+    <string name="ui_source_files_license_50a30" formatted="false">"المصدر والملفات والرخصة"</string>
+    <string name="ui_original_google_model_card_251ef" formatted="false">"بطاقة النموذج الأصلية من Google"</string>
+    <string name="ui_1_s_imported_files_must_match_the_selected_artifact_8b0a8">"%1$s. يجب أن يطابق الملف المستورد النموذج المحدد."</string>
+    <string name="ui_larger_quality_alternative_2_49_gb_download_community_gguf_conver_0c942" formatted="false">"بديل أكبر لتحسين الجودة · تنزيل 2.49 غيغابايت. تحويل GGUF مجتمعي لنموذج TranslateGemma من Google. تعتمد السرعة على الهاتف."</string>
+    <string name="ui_hide_language_coverage_88f4d" formatted="false">"إخفاء تغطية اللغات"</string>
+    <string name="ui_show_supported_source_target_languages_87984" formatted="false">"عرض اللغات الأصلية ولغات الترجمة المدعومة"</string>
+    <string name="ui_any_of_these_source_languages_any_other_listed_target_70952" formatted="false">"أي لغة أصلية من هذه ← أي لغة أخرى في القائمة:\n"</string>
+    <string name="ui_output_languages_supported_by_the_active_translator_a2090" formatted="false">"لغات الإخراج التي يدعمها المترجم النشط."</string>
+    <string name="ui_original_language_cc_translation_model_stays_unloaded_4bd7f" formatted="false">"النص باللغة الأصلية؛ لن يُحمّل نموذج الترجمة."</string>
+    <string name="ui_ml_kit_selected_download_spoken_and_target_packs_above_translatio_7b045" formatted="false">"تم اختيار ML Kit؛ نزّل حزمتي لغة الكلام والترجمة أعلاه. تعمل الترجمة دون اتصال بعد التنزيل."</string>
+    <string name="ui_import_a_translation_model_to_use_the_bridge_cc_can_run_now_5f78e" formatted="false">"استورد نموذج ترجمة لاستخدام الجسر. يمكن تشغيل النص الأصلي الآن."</string>
+    <string name="ui_automatic_routing_uses_the_language_reported_by_asr_unknown_or_mi_6098f" formatted="false">"يستخدم التوجيه التلقائي اللغة التي يكتشفها محرك الكلام. تُعرض اللغة المجهولة أو المختلطة كنص أصلي مع تنبيه."</string>
+    <string name="ui_supported_1_s_2_s_4844b">"مدعوم: %1$s ← %2$s"</string>
+    <string name="ui_unsupported_pair_1_s_2_s_cc_continues_b821c">"اتجاه غير مدعوم: %1$s ← %2$s. يستمر النص الأصلي."</string>
+    <string name="ui_previous_service_9b734" formatted="false">"الخدمة السابقة"</string>
+    <string name="ui_service_1_s_of_2_s_04283">"الخدمة %1$s من %2$s"</string>
+    <string name="ui_next_service_6d174" formatted="false">"الخدمة التالية"</string>
+    <string name="ui_expand_easy_setup_f2672" formatted="false">"توسيع الإعداد السريع"</string>
+    <string name="ui_collapse_easy_setup_6b1ce" formatted="false">"طي الإعداد السريع"</string>
+    <string name="ui_vosk_imports_do_not_provide_source_language_metadata_to_the_trans_168ba" formatted="false">"لا توفر نماذج Vosk المستوردة بيانات لغة المصدر للمترجم بعد. استخدم محرك كلام آخر لهذه الترجمة النصية."</string>
+    <string name="ui_used_by_live_audio_captions_original_speech_text_is_translated_af_7413f" formatted="false">"يُستخدم في النص الصوتي المباشر لترجمة الكلام بعد التعرف عليه. يتطلب Whisper القديم والمعالجة المجمّعة لغة كلام محددة. لا يغيّر هذا الاختيار مزوّد الكاميرا أو المحادثة."</string>
+    <string name="ui_1_s_existing_route_97965">"%1$s · المسار الحالي"</string>
+    <string name="ui_speech_provider_existing_route_39ee3" formatted="false">"مزوّد الكلام أو المسار الحالي"</string>
+    <string name="ui_google_translate_on_device_download_the_spoken_and_target_languag_235e1" formatted="false">"ترجمة Google على الجهاز. نزّل حزمتي الكلام والترجمة عبر Wi-Fi. الإنجليزية مضمّنة. يدير ML Kit حزمه في مساحة التطبيق؛ إعداد مجلد التنزيل يخص ملفات النماذج."</string>
+    <string name="ui_use_ml_kit_2fd85" formatted="false">"استخدام ML Kit"</string>
+    <string name="ui_language_pack_1_s_efe52">"حزمة اللغة: %1$s"</string>
+    <string name="ui_download_a_language_pack_64f85" formatted="false">"تنزيل حزمة لغة"</string>
+    <string name="ui_choose_a_language_to_download_or_remove_its_pack_english_is_inclu_265bd" formatted="false">"اختر لغة لتنزيل حزمتها أو إزالتها. الإنجليزية مضمّنة. يدير ML Kit حزمه داخل التطبيق؛ مجلد التنزيل يخص ملفات النماذج."</string>
+    <string name="ui_downloading_1_s_waiting_for_wi_fi_if_needed_a5f4d">"جارٍ تنزيل %1$s · انتظار Wi-Fi عند الحاجة"</string>
+    <string name="ui_1_s_installed_feb78">"تم تثبيت %1$s"</string>
+    <string name="ui_download_pack_5d6f8" formatted="false">"تنزيل الحزمة"</string>
+    <string name="ui_1_s_removed_80296">"تمت إزالة %1$s"</string>
+    <string name="ui_installed_1_s_758c8">"المثبت: %1$s"</string>
+    <string name="ui_hide_language_pack_details_f673e" formatted="false">"إخفاء تفاصيل حزم اللغات"</string>
+    <string name="ui_about_language_packs_25633" formatted="false">"عن حزم اللغات"</string>
+    <string name="ui_non_english_pairs_translate_through_english_packs_live_in_ml_kit_7239f" formatted="false">"تمر الترجمة بين لغتين غير إنجليزيتين عبر الإنجليزية. تُحفظ الحزم في مساحة يديرها ML Kit، منفصلة عن ملفات GGUF."</string>
+    <string name="ui_caption_text_stays_on_device_google_collects_sdk_performance_and_8e899" formatted="false">"يبقى نص الكلام على الجهاز. تجمع Google مقاييس أداء SDK واستخدامه."</string>
+    <string name="ui_google_ml_kit_privacy_terms_e6bc6" formatted="false">"خصوصية Google ML Kit وشروطه"</string>
+    <string name="ui_local_translation_010cc" formatted="false">"الترجمة المحلية"</string>
+    <string name="ui_cloud_translation_e9d00" formatted="false">"الترجمة السحابية"</string>
+    <string name="ui_choose_a_translator_here_browsing_tabs_does_not_change_the_active_3b0c1" formatted="false">"اختر المترجم هنا. تصفح التبويبات لا يغيّر المترجم النشط."</string>
+    <string name="ui_active_1_s_830d0">"النشط: %1$s"</string>
+    <string name="ui_this_choice_is_shared_by_conversation_face_to_face_and_typed_text_f76d4" formatted="false">"هذا الاختيار مشترك للمحادثة ووجهًا لوجه والكتابة. تطبيقه على Hearth كله يحدّث النص المباشر والكاميرا أيضًا."</string>
+    <string name="ui_source_language_1_s_a8c77">"اللغة الأصلية، %1$s"</string>
+    <string name="ui_swap_languages_efa6c" formatted="false">"تبديل اللغتين"</string>
+    <string name="ui_translation_language_1_s_3ac30">"لغة الترجمة، %1$s"</string>
+    <string name="ui_text_is_sent_to_1_s_after_you_pause_typing_4e428">"يُرسل النص إلى %1$s بعد توقفك عن الكتابة."</string>
+    <string name="ui_text_is_sent_to_1_s_when_you_tap_translate_b5f12">"يُرسل النص إلى %1$s عند الضغط على ترجمة."</string>
+    <string name="ui_enter_text_9c05f" formatted="false">"أدخل النص"</string>
+    <string name="ui_clear_text_19135" formatted="false">"مسح النص"</string>
+    <string name="ui_translate_2be17" formatted="false">"ترجمة"</string>
+    <string name="ui_translating_ae47b" formatted="false">"جارٍ الترجمة…"</string>
+    <string name="ui_your_translation_appears_here_aa064" formatted="false">"تظهر ترجمتك هنا"</string>
+    <string name="ui_copy_af74f" formatted="false">"نسخ"</string>
+    <string name="ui_translation_settings_2aee9" formatted="false">"إعدادات الترجمة"</string>
+    <string name="ui_stop_speech_3f0d2" formatted="false">"إيقاف القراءة الصوتية"</string>
+    <string name="ui_1_s_choose_an_explicit_supported_language_eea04">"%1$s · اختر لغة مدعومة صراحةً"</string>
+    <string name="ui_used_by_typed_text_conversation_and_face_to_face_a208e" formatted="false">"مشترك بين الكتابة والمحادثة ووجهًا لوجه."</string>
+    <string name="ui_translate_as_i_type_e7304" formatted="false">"الترجمة أثناء الكتابة"</string>
+    <string name="ui_voices_read_aloud_64e95" formatted="false">"الأصوات والقراءة الصوتية"</string>
+    <string name="ui_manage_cloud_connections_376a5" formatted="false">"إدارة الاتصالات السحابية"</string>
+    <string name="ui_choose_a_spoken_language_or_use_language_reported_by_speech_recog_0b9be" formatted="false">" · اختر لغة الكلام أو استخدم اللغة التي يكتشفها التعرف"</string>
+    <string name="ui_same_language_original_text_only_03af2" formatted="false">" · اللغة نفسها؛ النص الأصلي فقط"</string>
+    <string name="ui_1_s_2_s_supported_5000e">" · %1$s ← %2$s مدعوم"</string>
+    <string name="ui_1_s_2_s_unavailable_change_languages_49ad7">" · %1$s ← %2$s غير متاح؛ غيّر اللغات"</string>
+    <string name="ui_translator_1_s_7405d">"المترجم · %1$s"</string>
+    <string name="ui_local_model_and_saved_connections_are_shared_22351" formatted="false">"النموذج المحلي والاتصالات المحفوظة مشتركة."</string>
+    <string name="ui_saving_56a22" formatted="false">"جارٍ الحفظ…"</string>
+    <string name="ui_use_this_translator_across_hearth_456c5" formatted="false">"استخدام هذا المترجم في Hearth كله"</string>
+    <string name="ui_applies_to_every_feature_restart_active_camera_reading_sessions_t_1fdea" formatted="false">"يُطبق على كل الميزات. أعد تشغيل جلسات الكاميرا أو القراءة النشطة لاستخدام الاختيار الجديد."</string>
+    <string name="ui_translator_saved_for_all_features_59239" formatted="false">"حُفظ المترجم لكل الميزات."</string>
+    <string name="ui_keep_the_speech_engine_s_integrated_or_legacy_translation_route_31ea8" formatted="false">"الاحتفاظ بمسار الترجمة المدمج أو القديم لمحرك الكلام."</string>
+    <string name="ui_on_device_72a3f" formatted="false">"على الجهاز"</string>
+    <string name="ui_cloud_server_ba8c1" formatted="false">"السحابة أو الخادم"</string>
+    <string name="ui_original_text_stays_on_your_phone_2fbea" formatted="false">"يبقى النص الأصلي على هاتفك."</string>
+    <string name="ui_language_packs_required_manage_download_in_models_de735" formatted="false">"تحتاج حزم لغات؛ أدرها أو نزّلها من النماذج"</string>
+    <string name="ui_1_s_2_s_mib_3_s_languages_01ef0">"%1$s · %2$s ميبيبايت · %3$s لغة"</string>
+    <string name="ui_set_up_a5041" formatted="false">"إعداد"</string>
+    <string name="ui_model_downloads_imports_language_packs_1638e" formatted="false">"تنزيل النماذج واستيرادها وحزم اللغات"</string>
+    <string name="ui_cloud_self_hosted_2df1c" formatted="false">"السحابة أو الاستضافة الذاتية"</string>
+    <string name="ui_recognized_or_typed_text_is_sent_to_the_chosen_server_your_speech_5f1ae" formatted="false">"يُرسل النص المتعرف عليه أو المكتوب إلى الخادم المختار. مزوّد الكلام منفصل."</string>
+    <string name="ui_connection_saved_1_s_source_2_s_target_languages_f7ddd">"الاتصال محفوظ · %1$s لغة أصلية و%2$s لغة ترجمة"</string>
+    <string name="ui_connect_your_server_key_depends_on_server_dd541" formatted="false">"اربط خادمك · المفتاح حسب الخادم"</string>
+    <string name="ui_set_up_api_key_check_languages_db97d" formatted="false">"إعداد مفتاح API وفحص اللغات"</string>
+    <string name="ui_manage_1_s_126c2">"إدارة %1$s"</string>
+    <string name="ui_close_connection_setup_0f67b" formatted="false">"إغلاق إعداد الاتصال"</string>
+    <string name="ui_setup_saved_8f224" formatted="false">"حُفظ الإعداد"</string>
+    <string name="ui_nemotron_translation_ready_on_this_phone_7864d" formatted="false">"Nemotron والترجمة جاهزان على هذا الهاتف."</string>
+    <string name="ui_your_speech_connection_is_saved_it_connects_when_you_start_389c0" formatted="false">"حُفظ اتصال الكلام. يتصل عند البدء."</string>
+    <string name="ui_open_live_captions_d696b" formatted="false">"فتح النص المباشر"</string>
+    <string name="ui_explore_hearth_19205" formatted="false">"استكشف Hearth"</string>
+    <string name="ui_how_would_you_like_to_start_f8dd2" formatted="false">"كيف تريد\nأن تبدأ؟"</string>
+    <string name="ui_easy_setup_for_live_captions_caac2" formatted="false">"إعداد سريع للنص المباشر."</string>
+    <string name="ui_on_this_phone_03f49" formatted="false">"على هذا الهاتف"</string>
+    <string name="ui_nemotron_local_translation_fd186" formatted="false">"Nemotron وترجمة محلية"</string>
+    <string name="ui_cloud_b2efe" formatted="false">"السحابة"</string>
+    <string name="ui_openai_openrouter_local_server_6a1cc" formatted="false">"OpenAI · OpenRouter · خادم محلي"</string>
+    <string name="ui_unavailable_in_this_offline_build_89320" formatted="false">"غير متاح في الإصدار دون اتصال"</string>
+    <string name="ui_choose_another_setup_fbf26" formatted="false">"اختيار إعداد آخر"</string>
+    <string name="ui_easy_setup_uses_a_few_defaults_full_setup_is_in_settings_f7349" formatted="false">"يستخدم الإعداد السريع بعض الخيارات الافتراضية. تجد الإعداد الكامل في الإعدادات."</string>
+    <string name="ui_open_full_settings_12aaa" formatted="false">"فتح الإعدادات الكاملة ↗"</string>
+    <string name="ui_choose_the_nemotron_model_for_easy_setup_other_models_are_availab_b3137" formatted="false">"اختر Nemotron للإعداد السريع. النماذج الأخرى متاحة في الإعدادات."</string>
+    <string name="ui_cannot_open_the_model_file_510e7" formatted="false">"تعذّر فتح ملف النموذج."</string>
+    <string name="ui_your_phone_your_words_8fa46" formatted="false">"هاتفك.\nكلماتك."</string>
+    <string name="ui_speech_and_translation_stay_on_this_device_0bdc1" formatted="false">"يبقى الكلام والترجمة على هذا الجهاز."</string>
+    <string name="ui_hy_mt2_translation_389c9" formatted="false">"ترجمة Hy-MT2"</string>
+    <string name="ui_installed_e0586" formatted="false">"مثبت ✓"</string>
+    <string name="ui_included_in_this_setup_4f499" formatted="false">"مضمّن في هذا الإعداد"</string>
+    <string name="ui_translate_to_1_s_f0b21">"الترجمة إلى %1$s ▾"</string>
+    <string name="ui_about_1_9_gb_to_download_extra_space_is_needed_to_install_downloa_c2bcf" formatted="false">"تنزيل نحو 1.9 غيغابايت. يلزم فراغ إضافي للتثبيت. تبقى التنزيلات في المجلد المختار."</string>
+    <string name="ui_import_both_models_to_continue_this_build_stays_offline_b2b39" formatted="false">"استورد النموذجين للمتابعة. يبقى هذا الإصدار دون اتصال."</string>
+    <string name="ui_installing_your_setup_cc124" formatted="false">"جارٍ تثبيت الإعداد…"</string>
+    <string name="ui_use_this_setup_83b35" formatted="false">"استخدام هذا الإعداد"</string>
+    <string name="ui_download_set_up_87437" formatted="false">"تنزيل وإعداد"</string>
+    <string name="ui_return_here_after_the_downloads_finish_to_complete_setup_0e83b" formatted="false">"عُد هنا بعد اكتمال التنزيلات لإتمام الإعداد."</string>
+    <string name="ui_finish_later_4d8bc" formatted="false">"الإكمال لاحقًا"</string>
+    <string name="ui_downloads_folder_3d214" formatted="false">"التنزيلات والمجلد ↗"</string>
+    <string name="ui_import_nemotron_f0905" formatted="false">"استيراد Nemotron"</string>
+    <string name="ui_import_translation_model_6c131" formatted="false">"استيراد نموذج ترجمة"</string>
+    <string name="ui_translator_79f5c" formatted="false">"المترجم ↗"</string>
+    <string name="ui_hy_mt2_supported_destinations_fad6a" formatted="false">"لغات الترجمة التي يدعمها Hy-MT2"</string>
+    <string name="ui_connect_once_start_listening_84a85" formatted="false">"اتصل مرة.\nوابدأ الاستماع."</string>
+    <string name="ui_local_server_444ff" formatted="false">"خادم محلي"</string>
+    <string name="ui_live_speech_translation_with_your_openai_key_1bb6f" formatted="false">"ترجمة كلام مباشرة بمفتاح OpenAI الخاص بك."</string>
+    <string name="ui_speech_captions_add_translation_later_in_settings_6c99e" formatted="false">"نص الكلام. أضف الترجمة لاحقًا من الإعدادات."</string>
+    <string name="ui_https_server_url_a8d51" formatted="false">"عنوان خادم HTTPS"</string>
+    <string name="ui_speech_model_id_13cb8" formatted="false">"معرّف نموذج الكلام"</string>
+    <string name="ui_an_openai_compatible_speech_server_audio_goes_to_this_address_0ae3c" formatted="false">"خادم كلام متوافق مع OpenAI. يُرسل الصوت إلى هذا العنوان."</string>
+    <string name="ui_api_key_optional_9d882" formatted="false">"مفتاح API · اختياري"</string>
+    <string name="ui_saved_key_will_be_used_a8143" formatted="false">"سيُستخدم المفتاح المحفوظ"</string>
+    <string name="ui_paste_your_key_f74a3" formatted="false">"ألصق مفتاحك"</string>
+    <string name="ui_save_finish_88689" formatted="false">"حفظ وإنهاء"</string>
+    <string name="ui_uses_your_server_connection_is_checked_when_you_start_bc3f2" formatted="false">"يستخدم خادمك. يُفحص الاتصال عند البدء."</string>
+    <string name="ui_uses_your_provider_account_usage_may_be_billed_by_the_provider_1916b" formatted="false">"يستخدم حسابك لدى المزوّد. قد يفرض المزوّد رسومًا."</string>
+    <string name="ui_get_a_key_ae0ea" formatted="false">"الحصول على مفتاح ↗"</string>
+    <string name="ui_pricing_d1e51" formatted="false">"الأسعار ↗"</string>
+    <string name="ui_speech_models_d30ae" formatted="false">"نماذج الكلام ↗"</string>
+    <string name="ui_compatible_speech_api_35f3a" formatted="false">"واجهة الكلام المتوافقة ↗"</string>
+    <string name="ui_camera_permission_denied_allow_it_in_android_app_settings_or_impo_7f7c7" formatted="false">"رُفض إذن الكاميرا. اسمح به من إعدادات Android أو استورد صورة."</string>
+    <string name="ui_choose_a_text_language_supported_by_1_s_4940a">"اختر لغة نص يدعمها %1$s"</string>
+    <string name="ui_1_s_does_not_support_2_s_3_s_choose_a_supported_language_pair_or_c8a2b">"لا يدعم %1$s الاتجاه %2$s ← %3$s. اختر لغتين أو مترجمًا مدعومًا."</string>
+    <string name="ui_photo_dimensions_exceed_the_100_megapixel_import_limit_d37e7" formatted="false">"أبعاد الصورة تتجاوز حد الاستيراد البالغ 100 ميغابكسل"</string>
+    <string name="ui_settings_changed_tap_translate_again_to_update_this_photo_f837e" formatted="false">"غيّرت الإعدادات؟ اضغط ترجمة مجددًا لتحديث الصورة."</string>
+    <string name="ui_only_recognized_text_is_sent_to_1_s_camera_images_stay_on_your_ph_0beab">"يُرسل النص المتعرف عليه فقط إلى %1$s. تبقى الصور على الهاتف."</string>
+    <string name="ui_open_camera_672b0" formatted="false">"فتح الكاميرا"</string>
+    <string name="ui_captured_image_7fc88" formatted="false">"الصورة الملتقطة"</string>
+    <string name="ui_install_the_1_s_model_files_to_begin_ocr_works_offline_after_inst_3b7de">"ثبّت ملفات نموذج %1$s للبدء. يعمل التعرف دون اتصال بعد التثبيت."</string>
+    <string name="ui_get_ocr_models_245d8" formatted="false">"الحصول على نماذج التعرف"</string>
+    <string name="ui_capture_translate_a1034" formatted="false">"التقاط وترجمة"</string>
+    <string name="ui_capture_read_bc5ec" formatted="false">"التقاط وقراءة"</string>
+    <string name="ui_opening_b1b85" formatted="false">"جارٍ الفتح…"</string>
+    <string name="ui_choose_photo_4a7ed" formatted="false">"اختيار صورة"</string>
+    <string name="ui_start_live_3d3ad" formatted="false">"بدء المباشر"</string>
+    <string name="ui_stopping_827c9" formatted="false">"جارٍ الإيقاف…"</string>
+    <string name="ui_stop_9e253" formatted="false">"إيقاف"</string>
+    <string name="ui_draw_text_area_22b57" formatted="false">"رسم منطقة النص"</string>
+    <string name="ui_translate_again_02b28" formatted="false">"ترجمة مجددًا"</string>
+    <string name="ui_read_again_c6c84" formatted="false">"قراءة مجددًا"</string>
+    <string name="ui_retake_16457" formatted="false">"إعادة الالتقاط"</string>
+    <string name="ui_camera_settings_c1947" formatted="false">"إعدادات الكاميرا"</string>
+    <string name="ui_original_text_only_7381b" formatted="false">"النص الأصلي فقط"</string>
+    <string name="ui_releasing_models_53a44" formatted="false">"جارٍ تحرير النماذج…"</string>
+    <string name="ui_translating_settled_text_06e2b" formatted="false">"جارٍ ترجمة النص المستقر…"</string>
+    <string name="ui_live_ocr_1_s_ms_hold_steady_c9ca4">"مباشر · التعرف %1$s مللي ثانية · ثبّت الهاتف"</string>
+    <string name="ui_captured_ocr_1_s_ms_faf13">"ملتقطة · التعرف %1$s مللي ثانية"</string>
+    <string name="ui_ready_camera_opens_only_on_this_page_ae38b" formatted="false">"جاهز · تُفتح الكاميرا على هذه الصفحة فقط"</string>
+    <string name="ui_no_readable_text_yet_hold_the_phone_level_move_closer_or_capture_8a5e9" formatted="false">"لا نص مقروء بعد. ثبّت الهاتف واقترب، أو التقط صورة لقراءتها بحجم أكبر."</string>
+    <string name="ui_original_c0a80" formatted="false">"الأصل"</string>
+    <string name="ui_original_text_48909" formatted="false">"النص الأصلي"</string>
+    <string name="ui_copy_original_ae008" formatted="false">"نسخ الأصل"</string>
+    <string name="ui_copy_translation_ef0c0" formatted="false">"نسخ الترجمة"</string>
+    <string name="ui_translate_in_another_app_9f00d" formatted="false">"الترجمة داخل تطبيق آخر"</string>
+    <string name="ui_camera_reading_settings_a67f8" formatted="false">"إعدادات الكاميرا والقراءة"</string>
+    <string name="ui_used_by_camera_and_the_screen_reading_overlay_ef332" formatted="false">"مشترك بين الكاميرا ونافذة قراءة الشاشة."</string>
+    <string name="ui_changing_settings_stops_recognition_your_captured_photo_stays_ava_a5b31" formatted="false">"يوقف تغيير الإعدادات التعرف. تبقى الصورة الملتقطة متاحة للترجمة مجددًا."</string>
+    <string name="ui_text_in_image_a7bcf" formatted="false">"لغة النص في الصورة"</string>
+    <string name="ui_reader_1_s_change_f7947">"القارئ: %1$s · تغيير"</string>
+    <string name="ui_translate_recognized_text_f69ef" formatted="false">"ترجمة النص المتعرف عليه"</string>
+    <string name="ui_choose_a_different_destination_to_translate_or_turn_translation_o_55817" formatted="false">"اختر لغة مختلفة للترجمة، أو أوقف الترجمة لعرض الأصل."</string>
+    <string name="ui_1_s_does_not_support_this_pair_yet_change_translate_to_or_choose_3834f">"لا يدعم %1$s هاتين اللغتين بعد. غيّر لغة الترجمة أو اختر مترجمًا آخر من الإعدادات."</string>
+    <string name="ui_changing_language_selects_a_compatible_ocr_reader_when_needed_man_87d2e" formatted="false">"يختار تغيير اللغة قارئًا متوافقًا عند الحاجة. يقرأ Manga وMeiki اليابانية؛ استخدم تغيير القارئ للاختيار بينهما."</string>
+    <string name="ui_1_s_translations_from_2_s_destinations_depend_on_the_translator_n_83b80">"%1$s · ترجمة من %2$s. تعتمد اللغات المستهدفة على المترجم، لا محرك التعرف."</string>
+    <string name="ui_draw_around_text_6f9d8" formatted="false">"ارسم حول النص"</string>
+    <string name="ui_circle_or_drag_around_one_bubble_or_paragraph_the_highlighted_rec_ec069" formatted="false">"ارسم دائرة أو اسحب حول فقاعة أو فقرة واحدة. المستطيل المحدد هو المنطقة التي سيقرأها Hearth."</string>
+    <string name="ui_page_to_select_5d85d" formatted="false">"الصفحة المراد تحديدها"</string>
+    <string name="ui_draw_a_text_region_whole_image_and_center_region_are_also_availab_edac3" formatted="false">"ارسم منطقة النص؛ يمكنك أيضًا اختيار الصورة كاملة أو المنطقة الوسطى أدناه"</string>
+    <string name="ui_whole_image_6bd00" formatted="false">"الصورة كاملة"</string>
+    <string name="ui_center_region_7c60f" formatted="false">"المنطقة الوسطى"</string>
+    <string name="ui_selected_1_s_2_s_pixels_f2105">"المحدد %1$s × %2$s بكسل"</string>
+    <string name="ui_draw_an_area_or_choose_a_selection_above_deecf" formatted="false">"ارسم منطقة أو اختر تحديدًا أعلاه."</string>
+    <string name="ui_reset_44c57" formatted="false">"إعادة ضبط"</string>
+    <string name="ui_read_area_9c448" formatted="false">"قراءة المنطقة"</string>
+    <string name="ui_copying_and_verifying_1_s_keep_this_screen_open_7989e">"جارٍ نسخ %1$s والتحقق منه… أبقِ هذه الشاشة مفتوحة."</string>
+    <string name="ui_unsupported_model_structure_check_the_installation_steps_below_f7c2f" formatted="false">"بنية النموذج غير مدعومة. راجع خطوات التثبيت أدناه."</string>
+    <string name="ui_imported_1_s_choose_it_in_its_matching_model_group_8afb9">"تم استيراد %1$s؛ اختره من مجموعة النماذج المطابقة."</string>
+    <string name="ui_1_s_imported_2_s_ef91e">"تم استيراد %1$s%2$s."</string>
+    <string name="ui_installed_1_s_models_4b3c9">"نماذج %1$s المثبتة"</string>
+    <string name="ui_none_installed_yet_50d82" formatted="false">"لا نماذج مثبتة بعد."</string>
+    <string name="ui_1_s_2_s_mib_3_s_fbd52">"%1$s · %2$s ميبيبايت%3$s"</string>
+    <string name="ui_import_1_s_2_s_5dda0">"استيراد %1$s %2$s"</string>
+    <string name="ui_android_voices_and_local_supertonic_3_with_model_downloads_and_im_193d5" formatted="false">"أصوات Android وSupertonic 3 المحلي، مع تنزيل النماذج واستيرادها."</string>
+    <string name="ui_language_packs_or_text_models_for_on_device_translation_0d656" formatted="false">"حزم لغات أو نماذج نصية للترجمة على الجهاز."</string>
+    <string name="ui_view_downloads_installation_progress_f57b2" formatted="false">"عرض تقدم التنزيل والتثبيت"</string>
+    <string name="ui_get_model_e95d4" formatted="false">"الحصول على نموذج"</string>
+    <string name="ui_selected_1_s_7c44d">"المحدد %1$s"</string>
+    <string name="ui_download_folder_1_s_models_850ef">"مجلد التنزيل: %1$s/models"</string>
+    <string name="ui_source_license_397e9" formatted="false">"المصدر والرخصة"</string>
+    <string name="ui_browse_publisher_files_e0abe" formatted="false">"تصفح ملفات الناشر"</string>
+    <string name="ui_offline_build_obtain_files_on_another_device_then_import_locally_cd62f">"إصدار دون اتصال: احصل على الملفات بجهاز آخر ثم استوردها محليًا. المصدر: %1$s"</string>
+    <string name="ui_openai_live_speech_translation_d7b5e" formatted="false">"OpenAI · كلام وترجمة مباشرة"</string>
+    <string name="ui_soniox_v5_speech_translation_6a8ec" formatted="false">"Soniox v5 · كلام وترجمة"</string>
+    <string name="ui_scribe_v2_speech_recognition_5c97a" formatted="false">"Scribe v2 · التعرف على الكلام"</string>
+    <string name="ui_deepgram_speech_recognition_3a549" formatted="false">"Deepgram · التعرف على الكلام"</string>
+    <string name="ui_assemblyai_speech_recognition_4e78b" formatted="false">"AssemblyAI · التعرف على الكلام"</string>
+    <string name="ui_openai_compatible_batch_audio_d02f8" formatted="false">"متوافق مع OpenAI · صوت مجمّع"</string>
+    <string name="ui_1_s_documentation_b0463">"توثيق %1$s"</string>
+    <string name="ui_cannot_open_voice_model_b4ec5" formatted="false">"تعذّر فتح نموذج الصوت"</string>
+    <string name="ui_local_voices_29e8b" formatted="false">"الأصوات المحلية"</string>
+    <string name="ui_cloud_self_hosted_voices_b6c84" formatted="false">"الأصوات السحابية أو المستضافة ذاتيًا"</string>
+    <string name="ui_shared_read_aloud_settings_for_captions_conversations_typed_text_c94c1" formatted="false">"إعدادات قراءة مشتركة للنص المباشر والمحادثة والكتابة والكاميرا. تغيير التبويب لا يغيّر الصوت."</string>
+    <string name="ui_custom_default_supertonic_3_1_s_2f603">"الصوت المخصص الافتراضي: Supertonic 3 · %1$s"</string>
+    <string name="ui_custom_default_your_configured_voice_server_c38eb" formatted="false">"الصوت المخصص الافتراضي: خادم الصوت الذي أعددته"</string>
+    <string name="ui_choose_supertonic_or_self_hosted_to_set_your_custom_default_c52b6" formatted="false">"اختر Supertonic أو الاستضافة الذاتية لتعيين الصوت المخصص الافتراضي."</string>
+    <string name="ui_android_playback_is_always_separate_and_does_not_change_your_cust_56d2f" formatted="false">"تشغيل Android منفصل دائمًا ولا يغيّر الصوت المخصص الافتراضي."</string>
+    <string name="ui_speed_1_s_7d1e1">"السرعة · %1$s×"</string>
+    <string name="ui_speech_speed_3f322" formatted="false">"سرعة الكلام"</string>
+    <string name="ui_using_voice_server_12b82" formatted="false">"يُستخدم خادم الصوت"</string>
+    <string name="ui_use_voice_server_as_custom_default_f0ea7" formatted="false">"استخدام خادم الصوت كافتراضي مخصص"</string>
+    <string name="ui_text_to_preview_32ed3" formatted="false">"نص المعاينة"</string>
+    <string name="ui_preview_selected_voice_abd2c" formatted="false">"معاينة الصوت المحدد"</string>
+    <string name="ui_select_a_voice_in_this_tab_to_preview_it_8e4c3" formatted="false">"اختر صوتًا من هذا التبويب لمعاينته."</string>
+    <string name="ui_preparing_or_playing_voice_4e5bc" formatted="false">"جارٍ تحضير الصوت أو تشغيله…"</string>
+    <string name="ui_listen_to_1_s_with_2_s_voice_2cadb">"استماع إلى %1$s بصوت %2$s"</string>
+    <string name="ui_listen_1_s_3cf7d">"استماع · %1$s"</string>
+    <string name="ui_voice_options_for_1_s_978e2">"خيارات الصوت لـ %1$s"</string>
+    <string name="ui_custom_voice_e8546" formatted="false">"صوت مخصص"</string>
+    <string name="ui_set_up_custom_voice_8b3a7" formatted="false">"إعداد صوت مخصص"</string>
+    <string name="ui_voice_settings_9f03d" formatted="false">"إعدادات الصوت"</string>
+    <string name="ui_setup_diagnostics_19e28" formatted="false">"تشخيص الإعداد"</string>
+    <string name="ui_checking_your_saved_setup_36b7c" formatted="false">"جارٍ فحص إعدادك المحفوظ…"</string>
+    <string name="ui_complete_the_android_permission_prompt_10ee5" formatted="false">"أكمل طلب أذونات Android."</string>
+    <string name="ui_nothing_was_started_fix_the_items_below_then_check_again_model_ch_5925e" formatted="false">"لم يبدأ شيء. أصلح البنود أدناه ثم افحص مجددًا. فحص النماذج لا يختبر الحصة السحابية ولا يحمّل محرك التعرف كاملًا."</string>
+    <string name="ui_screen_sharing_6b019" formatted="false">"مشاركة الشاشة"</string>
+    <string name="ui_stop_other_overlay_retry_1a172" formatted="false">"إيقاف النافذة الأخرى وإعادة المحاولة"</string>
+    <string name="ui_check_again_start_7dd2c" formatted="false">"إعادة الفحص والبدء"</string>
+    <string name="ui_hide_successful_checks_559b0" formatted="false">"إخفاء الفحوص الناجحة"</string>
+    <string name="ui_1_s_checks_passed_show_details_7e5ac">"نجح %1$s فحص · عرض التفاصيل"</string>
+    <string name="ui_import_models_already_on_your_device_35a79" formatted="false">"استورد نماذج موجودة على جهازك."</string>
+    <string name="ui_import_models_721f0" formatted="false">"استيراد النماذج"</string>
+    <string name="ui_get_models_21b53" formatted="false">"الحصول على نماذج"</string>
+    <string name="ui_browse_speech_translation_camera_and_voices_d335d" formatted="false">"تصفح الكلام والترجمة والكاميرا والأصوات"</string>
+    <string name="ui_folder_30baa" formatted="false">"المجلد"</string>
+    <string name="ui_from_link_b9ad3" formatted="false">"من رابط"</string>
+    <string name="ui_your_downloads_will_appear_here_1bc2a" formatted="false">"ستظهر تنزيلاتك هنا."</string>
+    <string name="ui_downloaded_c6197" formatted="false">"تم التنزيل"</string>
+    <string name="ui_downloadmanager_failed_reason_1_s_54785">"فشل DownloadManager · السبب %1$s"</string>
+    <string name="ui_paused_downloadmanager_reason_1_s_ea493">"متوقف مؤقتًا · سبب DownloadManager ‏%1$s"</string>
+    <string name="ui_waiting_33d30" formatted="false">"في الانتظار"</string>
+    <string name="ui_downloading_9b459" formatted="false">"جارٍ التنزيل"</string>
+    <string name="ui_installing_1_s_b55a5">"جارٍ تثبيت %1$s…"</string>
+    <string name="ui_installed_select_the_model_in_models_06092" formatted="false">"تم التثبيت. اختر النموذج من صفحة النماذج."</string>
+    <string name="ui_install_downloaded_model_d458c" formatted="false">"تثبيت النموذج المنزّل"</string>
+    <string name="ui_model_selected_8d93b" formatted="false">"تم اختيار النموذج."</string>
+    <string name="ui_use_model_8d558" formatted="false">"استخدام النموذج"</string>
+    <string name="ui_retry_9f5cd" formatted="false">"إعادة المحاولة"</string>
+    <string name="ui_open_file_f11b8" formatted="false">"فتح الملف"</string>
+    <string name="ui_delete_download_d41b5" formatted="false">"حذف التنزيل"</string>
+    <string name="ui_downloads_may_use_mobile_data_installed_models_keep_a_verified_ap_da870" formatted="false">"قد تستخدم التنزيلات بيانات الجوال. تحتفظ النماذج المثبتة بنسخة موثوقة خاصة بالتطبيق؛ حذف التنزيل لا يزيل النموذج."</string>
+    <string name="ui_download_folder_59317" formatted="false">"مجلد التنزيل"</string>
+    <string name="ui_models_go_in_models_other_files_go_in_files_model_downloads_insta_2a3ae" formatted="false">"تُحفظ النماذج في models/ والملفات الأخرى في files/. تُثبّت النماذج تلقائيًا، دون تصدير أو إعادة استيراد."</string>
+    <string name="ui_choose_folder_1838a" formatted="false">"اختيار مجلد"</string>
+    <string name="ui_open_folder_f9630" formatted="false">"فتح المجلد"</string>
+    <string name="ui_use_downloads_folder_59e3c" formatted="false">"استخدام مجلد التنزيلات"</string>
+    <string name="ui_new_downloads_use_this_folder_files_already_downloaded_stay_in_th_67444" formatted="false">"تستخدم التنزيلات الجديدة هذا المجلد. تبقى الملفات السابقة في مجلداتها الأصلية."</string>
+    <string name="ui_download_from_link_1687d" formatted="false">"تنزيل من رابط"</string>
+    <string name="ui_https_file_url_0c976" formatted="false">"رابط ملف HTTPS"</string>
+    <string name="ui_filename_including_extension_ccfb0" formatted="false">"اسم الملف مع الامتداد"</string>
+    <string name="ui_download_file_77402" formatted="false">"تنزيل الملف"</string>
+    <string name="ui_remove_1_s_436e1">"إزالة %1$s؟"</string>
+    <string name="ui_this_cancels_the_transfer_and_deletes_the_downloaded_file_install_a0c35" formatted="false">"يلغي هذا النقل ويحذف الملف المنزّل. تبقى النماذج المثبتة متاحة."</string>
+    <string name="ui_keep_466fc" formatted="false">"الاحتفاظ"</string>
+    <string name="ui_face_to_face_options_1c07b" formatted="false">"خيارات وجهًا لوجه"</string>
+    <string name="ui_cancel_current_turn_4a75e" formatted="false">"إلغاء الدور الحالي"</string>
+    <string name="ui_swap_my_language_and_their_language_d0b42" formatted="false">"تبديل لغتي ولغته"</string>
+    <string name="ui_me_94563" formatted="false">"أنا"</string>
+    <string name="ui_them_3dd51" formatted="false">"الطرف الآخر"</string>
+    <string name="ui_1_s_2_s_change_language_f3488">"%1$s، %2$s، تغيير اللغة"</string>
+    <string name="ui_open_1_s_conversation_history_bdcbf">"فتح سجل المحادثة باللغة %1$s"</string>
+    <string name="ui_speak_or_tap_here_to_read_your_conversation_0c964" formatted="false">"تحدث أو اضغط هنا لقراءة المحادثة"</string>
+    <string name="ui_you_said_f105a" formatted="false">"ما قلته"</string>
+    <string name="ui_live_speech_f37ed" formatted="false">"الكلام المباشر"</string>
+    <string name="ui_waiting_for_the_other_person_to_finish_64d81" formatted="false">"بانتظار انتهاء الطرف الآخر"</string>
+    <string name="ui_translation_unavailable_162a7" formatted="false">"الترجمة غير متاحة"</string>
+    <string name="ui_no_translated_text_is_available_f3a27" formatted="false">"لا يتوفر نص مترجم"</string>
+    <string name="ui_original_1_s_69b8c">"الأصل · %1$s"</string>
+    <string name="ui_speech_is_unavailable_for_this_direction_check_the_languages_and_52191" formatted="false">"الكلام غير متاح لهذا الاتجاه. تحقق من اللغات والنماذج في الخيارات."</string>
+    <string name="ui_tap_for_1_s_history_a9789">"اضغط لسجل %1$s"</string>
+    <string name="ui_finish_b74bd" formatted="false">"إنهاء"</string>
+    <string name="ui_speak_1_s_77282">"تحدث بـ %1$s"</string>
+    <string name="ui_choose_the_languages_you_and_the_other_person_use_speak_is_availa_164dc">"اختر لغتك ولغة الطرف الآخر. يتاح الكلام فقط إذا دعم نموذج الكلام اللغة ودعم المترجم الاتجاه. %1$s"</string>
+    <string name="ui_share_conversation_e187f" formatted="false">"مشاركة المحادثة"</string>
+    <string name="ui_microphone_permission_was_not_granted_type_instead_remains_availa_76bd7" formatted="false">"لم يُمنح إذن الميكروفون. ما زال بإمكانك الكتابة بدلًا من الكلام."</string>
+    <string name="ui_speaking_a771f" formatted="false">"جارٍ الكلام"</string>
+    <string name="ui_face_to_face_c104d" formatted="false">"وجهًا لوجه"</string>
+    <string name="ui_conversation_history_a03d8" formatted="false">"سجل المحادثة"</string>
+    <string name="ui_conversation_settings_575f3" formatted="false">"إعدادات المحادثة"</string>
+    <string name="ui_me_1_s_24999">"أنا · %1$s"</string>
+    <string name="ui_them_1_s_c05c1">"الطرف الآخر · %1$s"</string>
+    <string name="ui_audio_is_sent_to_your_speech_provider_e97e6" formatted="false">"يُرسل الصوت إلى مزوّد الكلام."</string>
+    <string name="ui_set_up_translation_to_begin_887a3" formatted="false">"أعدّ الترجمة للبدء"</string>
+    <string name="ui_your_turn_to_talk_54a90" formatted="false">"دورك للكلام"</string>
+    <string name="ui_tap_speak_below_then_finish_for_the_translation_9257b" formatted="false">"اضغط تحدث أدناه، ثم إنهاء للحصول على الترجمة."</string>
+    <string name="ui_text_history_on_audio_is_not_saved_734f3" formatted="false">"سجل النص مفعّل · لا يُحفظ الصوت"</string>
+    <string name="ui_history_off_this_session_only_ff01c" formatted="false">"السجل معطّل · لهذه الجلسة فقط"</string>
+    <string name="ui_show_large_2d377" formatted="false">"عرض مكبّر"</string>
+    <string name="ui_retry_translation_0bd43" formatted="false">"إعادة محاولة الترجمة"</string>
+    <string name="ui_latest_messages_a7ea5" formatted="false">"أحدث الرسائل ↓"</string>
+    <string name="ui_type_instead_78a8f" formatted="false">"الكتابة بدلًا من الكلام"</string>
+    <string name="ui_1_s_speech_is_unavailable_with_this_model_s_declared_language_sup_032e4">"لا يدعم هذا النموذج الكلام باللغة %1$s وفق بياناته. اكتب بدلًا من الكلام أو غيّر النموذج."</string>
+    <string name="ui_my_language_cdfad" formatted="false">"لغتي"</string>
+    <string name="ui_their_language_2f66c" formatted="false">"لغة الطرف الآخر"</string>
+    <string name="ui_what_would_you_like_to_say_3e4e8" formatted="false">"ماذا تريد أن تقول؟"</string>
+    <string name="ui_face_to_face_settings_83243" formatted="false">"إعدادات وجهًا لوجه"</string>
+    <string name="ui_new_conversation_7f031" formatted="false">"محادثة جديدة"</string>
+    <string name="ui_speech_1_s_679a7">"الكلام · %1$s"</string>
+    <string name="ui_open_conversation_view_c60e0" formatted="false">"فتح عرض المحادثة"</string>
+    <string name="ui_open_face_to_face_view_f43f6" formatted="false">"فتح عرض وجهًا لوجه"</string>
+    <string name="ui_translation_1_s_afc1a">"الترجمة · %1$s"</string>
+    <string name="ui_saved_conversations_5a303" formatted="false">"المحادثات المحفوظة"</string>
+    <string name="ui_show_original_below_translation_190ac" formatted="false">"إظهار الأصل أسفل الترجمة"</string>
+    <string name="ui_keep_screen_awake_e4656" formatted="false">"إبقاء الشاشة مضاءة"</string>
+    <string name="ui_keep_conversation_screen_awake_6e422" formatted="false">"إبقاء شاشة المحادثة مضاءة"</string>
+    <string name="ui_models_f3798" formatted="false">"النماذج"</string>
+    <string name="ui_cloud_connection_ad1ee" formatted="false">"الاتصال السحابي"</string>
+    <string name="ui_read_translations_aloud_f1394" formatted="false">"قراءة الترجمات بصوت عالٍ"</string>
+    <string name="ui_uses_your_shared_android_supertonic_or_self_hosted_voice_listenin_614db" formatted="false">"يستخدم صوت Android أو Supertonic أو الخادم المشترك. يتوقف الاستماع قبل تشغيل الصوت."</string>
+    <string name="ui_save_history_on_this_device_5b5ad" formatted="false">"حفظ السجل على هذا الجهاز"</string>
+    <string name="ui_turning_history_off_starts_a_temporary_conversation_earlier_saved_57b46" formatted="false">"إيقاف السجل يبدأ محادثة مؤقتة؛ تبقى المحادثات السابقة في السجل."</string>
+    <string name="ui_translation_text_size_1_s_d50ff">"حجم نص الترجمة: %1$s"</string>
+    <string name="ui_translation_text_size_408c2" formatted="false">"حجم نص الترجمة"</string>
+    <string name="ui_rename_conversation_30da4" formatted="false">"إعادة تسمية المحادثة"</string>
+    <string name="ui_share_conversation_text_0722c" formatted="false">"مشاركة نص المحادثة"</string>
+    <string name="ui_translator_1fafc" formatted="false">"المترجم"</string>
+    <string name="ui_used_by_conversation_face_to_face_and_typed_text_472fa" formatted="false">"مشترك بين المحادثة ووجهًا لوجه والكتابة."</string>
+    <string name="ui_this_conversation_3af08" formatted="false">"هذه المحادثة"</string>
+    <string name="ui_no_messages_in_this_language_yet_7d846" formatted="false">"لا رسائل بهذه اللغة بعد."</string>
+    <string name="ui_they_said_f60ab" formatted="false">"ما قاله الطرف الآخر"</string>
+    <string name="ui_stored_on_this_device_only_no_audio_is_saved_b80ec" formatted="false">"محفوظ على هذا الجهاز فقط. لا يُحفظ الصوت."</string>
+    <string name="ui_done_e9b45" formatted="false">"تم"</string>
+    <string name="ui_no_saved_conversations_yet_ff5e7" formatted="false">"لا محادثات محفوظة بعد."</string>
+    <string name="ui_continue_2e026" formatted="false">"متابعة"</string>
+    <string name="ui_share_09ca5" formatted="false">"مشاركة"</string>
+    <string name="ui_delete_f6fdb" formatted="false">"حذف"</string>
+    <string name="ui_conversation_name_863c0" formatted="false">"اسم المحادثة"</string>
+    <string name="ui_save_efc00" formatted="false">"حفظ"</string>
+    <string name="ui_flip_5836b" formatted="false">"قلب"</string>
+    <string name="ui_close_1_s_93864">"إغلاق %1$s"</string>
+    <string name="ui_cards_background_7cc95" formatted="false">"البطاقات والخلفية"</string>
+    <string name="ui_color_blur_74755" formatted="false">"ألوان وضبابية"</string>
+    <string name="ui_minimal_backup_d48a8" formatted="false">"بسيط · بديل"</string>
+    <string name="ui_colorful_cards_with_softly_blurred_artwork_minimal_removes_decora_ac1d6" formatted="false">"بطاقات ملونة وصور بخلفية ضبابية ناعمة. يزيل النمط البسيط التأثيرات الزخرفية."</string>
+    <string name="ui_light_dark_1a3d4" formatted="false">"فاتح وداكن"</string>
+    <string name="ui_navigation_cf03c" formatted="false">"التنقل"</string>
+    <string name="ui_simple_home_puts_every_feature_in_one_place_classic_tabs_keeps_th_bde4c" formatted="false">"تجمع الصفحة البسيطة كل الميزات في مكان واحد. تحافظ التبويبات التقليدية على التخطيط السابق."</string>
+    <string name="ui_system_follows_your_phone_bubble_appearance_has_its_own_controls_9159c" formatted="false">"يتبع النظام إعداد الهاتف. لمظهر الفقاعة إعداداته الخاصة."</string>
+</resources>

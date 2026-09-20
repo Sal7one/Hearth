@@ -1,5 +1,8 @@
 package com.sal7one.transiber.caption
 
+import com.sal7one.transiber.R as UiR
+import com.sal7one.transiber.i18n.*
+
 import android.content.Intent
 import android.net.Uri
 import android.provider.Settings
@@ -67,6 +70,8 @@ import kotlinx.coroutines.withContext
 fun CaptionScreen(
     onBrowseModels: () -> Unit,
 ) {
+    val uiText = rememberUiText()
+
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val registry = remember { ModelRegistry.getInstance(context) }
@@ -164,15 +169,15 @@ fun CaptionScreen(
                     modifier = Modifier.size(28.dp),
                 )
                 Column(modifier = Modifier.weight(1f)) {
-                    Text("Live captions overlay", style = MaterialTheme.typography.titleLarge)
+                    Text(uiText(UiR.string.ui_live_captions_overlay_92a8d), style = MaterialTheme.typography.titleLarge)
                     Text(
                         text = if (config.effectiveEngine == CaptionEngineChoice.CLOUD) {
-                            "Floating captions over any app's audio. With the Cloud " +
-                                "engine, utterance audio is uploaded to YOUR provider " +
-                                "using your key — nothing else leaves this phone."
+                            uiText(UiR.string.ui_floating_captions_over_any_app_s_audio_with_the_cloud_b70cc) +
+                                uiText(UiR.string.ui_engine_utterance_audio_is_uploaded_to_your_provider_fb528) +
+                                uiText(UiR.string.ui_using_your_key_nothing_else_leaves_this_phone_7d264)
                         } else {
-                            "Floating captions or translation over any app's audio. " +
-                                "Everything runs on this phone — nothing is uploaded."
+                            uiText(UiR.string.ui_floating_captions_or_translation_over_any_app_s_audio_1e168) +
+                                uiText(UiR.string.ui_everything_runs_on_this_phone_nothing_is_uploaded_c080c)
                         },
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -202,11 +207,11 @@ fun CaptionScreen(
 
         if (ByokPolicy.cloudEngineAvailable()) {
             HearthCard(modifier = Modifier.fillMaxWidth()) {
-                SectionTitle("Watch streams with live subtitles")
-                Text("Uses your OpenAI key and streams device audio for live processing. Arabic and English use live translation; CC keeps the spoken language. No local model is needed.",
+                SectionTitle(uiText(UiR.string.ui_watch_streams_with_live_subtitles_bcd72))
+                Text(uiText(UiR.string.ui_uses_your_openai_key_and_streams_device_audio_for_live_processing_d7a42),
                     style = MaterialTheme.typography.bodySmall)
                 ChipFlow {
-                    listOf("Live Arabic" to TranslationTarget.ARABIC, "Live English" to TranslationTarget.ENGLISH).forEach { (label, target) ->
+                    listOf(uiText(UiR.string.ui_live_arabic_b472a) to TranslationTarget.ARABIC, uiText(UiR.string.ui_live_english_32c69) to TranslationTarget.ENGLISH).forEach { (label, target) ->
                         OutlinedButton(onClick = {
                             CloudConfigStore.setSttMode(context, CloudConfigStore.SttMode.STREAMING_OPENAI)
                             cloudMode = CloudConfigStore.SttMode.STREAMING_OPENAI
@@ -220,22 +225,22 @@ fun CaptionScreen(
                             cloudMode = CloudConfigStore.SttMode.STREAMING_OPENAI
                         update { it.copy(engine = CaptionEngineChoice.CLOUD, mode = CaptionMode.CAPTIONS,
                             source = CaptionSource.PLAYBACK_CAPTURE, tapThrough = false, historyLines = maxOf(it.historyLines, CaptionReading.DEFAULT_PREVIOUS_LINES)) }
-                    }) { Text("Live CC") }
+                    }) { Text(uiText(UiR.string.ui_live_cc_a34a0)) }
                 }
-                Text("The notification controls Pause/Resume, bubble recovery and Stop. OpenAI live translation detects the source language automatically.",
+                Text(uiText(UiR.string.ui_the_notification_controls_pause_resume_bubble_recovery_and_stop_o_9d432),
                     style = MaterialTheme.typography.bodySmall)
             }
         }
 
         // ------------------------------------------------------------- mode
         HearthCard(modifier = Modifier.fillMaxWidth()) {
-            SectionTitle("What should the overlay do?")
+            SectionTitle(uiText(UiR.string.ui_what_should_the_overlay_do_ec3a9))
             ChipFlow {
                 CaptionMode.entries.forEach { mode ->
                     FilterChip(
                         selected = config.mode == mode,
                         onClick = { update { it.withCaptionMode(mode) } },
-                        label = { Text(mode.label) },
+                        label = { Text(uiText.label(mode)) },
                     )
                 }
             }
@@ -254,11 +259,11 @@ fun CaptionScreen(
                     )
                     Text(
                         text = if (liveCloudTranslation) {
-                            "${if (cloudMode == CloudConfigStore.SttMode.STREAMING_SONIOX) "Soniox" else "OpenAI"} live translation → ${config.target.label}; no on-device translation model needed."
+                            uiText(UiR.string.ui_1_s_live_translation_2_s_no_on_device_translation_model_needed_d2ee4, if (cloudMode == CloudConfigStore.SttMode.STREAMING_SONIOX) "Soniox" else "OpenAI", config.target.label)
                         } else if (translationReady) {
-                            "Translation route available; model/API errors will appear in the bubble."
+                            uiText(UiR.string.ui_translation_route_available_model_api_errors_will_appear_in_the_b_40687)
                         } else {
-                            "Choose a translator in the Local translation section below. Original captions continue if translation is unavailable."
+                            uiText(UiR.string.ui_choose_a_translator_in_the_local_translation_section_below_origin_507ac)
                         },
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -266,7 +271,7 @@ fun CaptionScreen(
                 }
             }
             Spacer(Modifier.height(AppDesign.Dimens.SpacingSm))
-            Text("Caption engine", style = MaterialTheme.typography.labelLarge)
+            Text(uiText(UiR.string.ui_caption_engine_a52ee), style = MaterialTheme.typography.labelLarge)
             // Every engine works in every mode: Whisper/Cloud translate into
             // English in one pass, and a Vosk English model IS the English
             // output (identity fast path) — so no engine is ever locked.
@@ -283,17 +288,17 @@ fun CaptionScreen(
                         FilterChip(
                             selected = config.effectiveEngine == engine,
                             onClick = { update { it.copy(engine = engine, modelId = "", streamLanguage = if (engine.speechBackend != null) "auto" else it.streamLanguage) } },
-                            label = { Text(engine.label) },
+                            label = { Text(uiText.label(engine)) },
                         )
                     }
             }
             Text(
                 text = if (englishTranslate) {
-                    config.effectiveEngine.explanation + "\n" +
-                        "English translation: Whisper/Cloud translate in one pass; " +
-                        "an English Vosk model gives instant English captions."
+                    uiText.explanation(config.effectiveEngine) + "\n" +
+                        uiText(UiR.string.ui_english_translation_whisper_cloud_translate_in_one_pass_87424) +
+                        uiText(UiR.string.ui_an_english_vosk_model_gives_instant_english_captions_b038f)
                 } else {
-                    config.effectiveEngine.explanation
+                    uiText.explanation(config.effectiveEngine)
                 },
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -332,7 +337,7 @@ fun CaptionScreen(
             }
             if (engineModels.isNotEmpty()) {
                 Spacer(Modifier.height(AppDesign.Dimens.SpacingSm))
-                Text("Speech model", style = MaterialTheme.typography.labelLarge)
+                Text(uiText(UiR.string.ui_speech_model_3c5f0), style = MaterialTheme.typography.labelLarge)
                 ChipFlow {
                     engineModels.forEach { model ->
                         FilterChip(
@@ -345,10 +350,10 @@ fun CaptionScreen(
                 }
                 Text(
                     text = if (config.effectiveEngine == CaptionEngineChoice.VOSK) {
-                        "Vosk models transcribe ONE language each — choose the one that " +
-                            "matches the stream you are watching."
+                        uiText(UiR.string.ui_vosk_models_transcribe_one_language_each_choose_the_one_that_eea34) +
+                            uiText(UiR.string.ui_matches_the_stream_you_are_watching_0e03a)
                     } else {
-                        "Whisper models are multilingual; the choice is a speed/accuracy trade."
+                        uiText(UiR.string.ui_whisper_models_are_multilingual_the_choice_is_a_speed_accuracy_tr_33925)
                     },
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -359,15 +364,15 @@ fun CaptionScreen(
         com.sal7one.transiber.translation.CaptionTranslatorChooser(config, update, onBrowseModels)
         if (config.effectiveEngine == CaptionEngineChoice.WHISPER || config.effectiveEngine == CaptionEngineChoice.VOSK) {
             HearthCard(modifier = Modifier.fillMaxWidth()) {
-                SectionTitle("Model files & imports")
+                SectionTitle(uiText(UiR.string.ui_model_files_imports_233e7))
                 com.sal7one.transiber.models.ModelSourcePanel(com.sal7one.transiber.models.ModelSources.speech(config.effectiveEngine))
-                TextButton(onClick = onBrowseModels) { Text("Manage installed speech & translation models") }
+                TextButton(onClick = onBrowseModels) { Text(uiText(UiR.string.ui_manage_installed_speech_translation_models_588a3)) }
             }
         }
 
         // ----------------------------------------------------------- source
         HearthCard(modifier = Modifier.fillMaxWidth()) {
-            SectionTitle("Audio source")
+            SectionTitle(uiText(UiR.string.ui_audio_source_a1ee0))
             config.source.let { current ->
                 CaptionSource.entries.forEach { source ->
                     val selected = current == source
@@ -388,9 +393,9 @@ fun CaptionScreen(
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Column(modifier = Modifier.weight(1f)) {
-                                Text(source.label, style = MaterialTheme.typography.titleSmall)
+                                Text(uiText.label(source), style = MaterialTheme.typography.titleSmall)
                                 Text(
-                                    source.explanation,
+                                    uiText.explanation(source),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
@@ -403,16 +408,16 @@ fun CaptionScreen(
 
         // ---------------------------------------------------- requirements
         HearthCard(modifier = Modifier.fillMaxWidth()) {
-            SectionTitle("Before you start")
+            SectionTitle(uiText(UiR.string.ui_before_you_start_2c445))
             RequirementRow(
                 done = overlayAllowed,
-                title = "Display over other apps",
+                title = uiText(UiR.string.ui_display_over_other_apps_d3869),
                 detail = if (overlayAllowed) {
-                    "Granted — the caption bubble can draw over any app."
+                    uiText(UiR.string.ui_granted_the_caption_bubble_can_draw_over_any_app_a88cf)
                 } else {
-                    "One-time Android setting so the caption bubble can float over the app you watch."
+                    uiText(UiR.string.ui_one_time_android_setting_so_the_caption_bubble_can_float_over_the_b7ec0)
                 },
-                actionLabel = if (overlayAllowed) null else "Open setting",
+                actionLabel = if (overlayAllowed) null else uiText(UiR.string.ui_open_setting_6786d),
                 onAction = {
                     context.startActivity(
                         Intent(
@@ -424,24 +429,24 @@ fun CaptionScreen(
             )
             RequirementRow(
                 done = chosenEngineReady,
-                title = "A ${config.effectiveEngine.label} speech model",
+                title = uiText(UiR.string.ui_a_1_s_speech_model_a1c7e, uiText.label(config.effectiveEngine)),
                 detail = if (chosenEngineReady) {
                     when (config.effectiveEngine) {
-                        CaptionEngineChoice.WHISPER -> "$whisperModels Whisper model(s) imported"
-                        CaptionEngineChoice.VOSK -> "$voskModels Vosk model(s) imported"
-                        CaptionEngineChoice.MOONSHINE, CaptionEngineChoice.QWEN, CaptionEngineChoice.NEMOTRON -> "Verified local speech package imported"
-                        CaptionEngineChoice.CLOUD -> "Cloud captions ready — API key stored"
+                        CaptionEngineChoice.WHISPER -> uiText(UiR.string.ui_1_s_whisper_model_s_imported_9e09e, whisperModels)
+                        CaptionEngineChoice.VOSK -> uiText(UiR.string.ui_1_s_vosk_model_s_imported_1d5f4, voskModels)
+                        CaptionEngineChoice.MOONSHINE, CaptionEngineChoice.QWEN, CaptionEngineChoice.NEMOTRON -> uiText(UiR.string.ui_verified_local_speech_package_imported_af455)
+                        CaptionEngineChoice.CLOUD -> uiText(UiR.string.ui_cloud_captions_ready_api_key_stored_492e1)
                     }
                 } else {
                     when (config.effectiveEngine) {
-                        CaptionEngineChoice.MOONSHINE, CaptionEngineChoice.QWEN, CaptionEngineChoice.NEMOTRON -> "Use Import model ZIP in the model setup above."
+                        CaptionEngineChoice.MOONSHINE, CaptionEngineChoice.QWEN, CaptionEngineChoice.NEMOTRON -> uiText(UiR.string.ui_use_import_model_zip_in_the_model_setup_above_ce1a6)
                         CaptionEngineChoice.CLOUD ->
-                            "Paste your API key in the 'Cloud engine · your API key' box above."
+                            uiText(UiR.string.ui_paste_your_api_key_in_the_cloud_engine_your_api_key_box_above_480e0)
                         else ->
-                            "Open Models → Speech to get files or import an installed model."
+                            uiText(UiR.string.ui_open_models_speech_to_get_files_or_import_an_installed_model_76586)
                     }
                 },
-                actionLabel = if (chosenEngineReady || config.effectiveEngine.speechBackend != null) null else "Browse models",
+                actionLabel = if (chosenEngineReady || config.effectiveEngine.speechBackend != null) null else uiText(UiR.string.ui_browse_models_3221a),
                 onAction = onBrowseModels,
             )
         }
@@ -454,17 +459,17 @@ fun CaptionScreen(
             modifier = Modifier.fillMaxWidth(),
         ) {
             Icon(Icons.Default.VolumeUp, null)
-            Text("  Start live captions")
+            Text(uiText(UiR.string.ui_start_live_captions_ed786))
         }
         if (!ready) {
             Text(
                 text = buildString {
-                    if (!overlayAllowed) append("Grant the overlay setting. ")
+                    if (!overlayAllowed) append(uiText(UiR.string.ui_grant_the_overlay_setting_7eef5))
                     if (!chosenEngineReady) {
                         if (config.effectiveEngine == CaptionEngineChoice.CLOUD) {
-                            append("Paste your API key in the cloud section above. ")
+                            append(uiText(UiR.string.ui_paste_your_api_key_in_the_cloud_section_above_2d3b0))
                         } else {
-                            append("Import a speech model. ")
+                            append(uiText(UiR.string.ui_import_a_speech_model_b8766))
                         }
                     }
                 }.trim(),
@@ -483,21 +488,21 @@ fun CaptionScreen(
                 modifier = Modifier.padding(14.dp),
                 verticalArrangement = Arrangement.spacedBy(6.dp),
             ) {
-                Text("How Android limits device-audio capture", style = MaterialTheme.typography.titleSmall)
+                Text(uiText(UiR.string.ui_how_android_limits_device_audio_capture_83b77), style = MaterialTheme.typography.titleSmall)
                 Text(
-                    text = "• Apps decide whether their audio can be captured. DRM video " +
-                        "(YouTube app, Netflix) is never capturable; TikTok must be tried per device.\n" +
-                        "• When nothing capturable is playing, the overlay says so and you can " +
-                        "switch to the microphone source, which works with any app.\n" +
-                        "• Captions pause automatically after a few seconds of silence.\n" +
-                        "• English translation is one Whisper pass. Other targets keep original " +
-                        "captions live while the translation stage catches up.",
+                    text = uiText(UiR.string.ui_apps_decide_whether_their_audio_can_be_captured_drm_video_94494) +
+                        uiText(UiR.string.ui_youtube_app_netflix_is_never_capturable_tiktok_must_be_tried_per_af7d4) +
+                        uiText(UiR.string.ui_when_nothing_capturable_is_playing_the_overlay_says_so_and_you_ca_d2b93) +
+                        uiText(UiR.string.ui_switch_to_the_microphone_source_which_works_with_any_app_6df91) +
+                        uiText(UiR.string.ui_captions_pause_automatically_after_a_few_seconds_of_silence_6effc) +
+                        uiText(UiR.string.ui_english_translation_is_one_whisper_pass_other_targets_keep_origin_6597f) +
+                        uiText(UiR.string.ui_captions_live_while_the_translation_stage_catches_up_4fdd3),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 TextButton(onClick = onBrowseModels) {
                     Icon(Icons.Default.ModelTraining, null, modifier = Modifier.size(16.dp))
-                    Text("  Browse caption & translation models")
+                    Text(uiText(UiR.string.ui_browse_caption_translation_models_4dbad))
                 }
             }
         }
@@ -505,7 +510,7 @@ fun CaptionScreen(
             onClick = { CaptionCaptureService.stop(context) },
             modifier = Modifier.fillMaxWidth(),
         ) {
-            Text("Stop a running session")
+            Text(uiText(UiR.string.ui_stop_a_running_session_c84e9))
         }
     }
 }
@@ -540,6 +545,8 @@ private fun RequirementRow(
     actionLabel: String?,
     onAction: () -> Unit,
 ) {
+    val uiText = rememberUiText()
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -549,7 +556,7 @@ private fun RequirementRow(
     ) {
         Icon(
             Icons.Default.Verified,
-            contentDescription = if (done) "Ready" else "Not ready",
+            contentDescription = if (done) uiText(UiR.string.ui_ready_20c7c) else uiText(UiR.string.ui_not_ready_2b50f),
             tint = if (done) {
                 MaterialTheme.colorScheme.secondary
             } else {

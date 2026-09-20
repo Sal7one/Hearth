@@ -1,5 +1,9 @@
 package com.sal7one.transiber.shortcuts
 
+import com.sal7one.transiber.R as UiR
+import com.sal7one.transiber.i18n.*
+import com.sal7one.transiber.i18n.uiText as localizedUiText
+
 import android.app.PendingIntent
 import android.content.Intent
 import android.os.Build
@@ -11,6 +15,8 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.StateFlow
 
 abstract class OverlayTileService : TileService() {
+    private val uiText get() = this.localizedUiText()
+
     internal abstract val shortcut: OverlayShortcut
     private var listening: CoroutineScope? = null
     private val running: StateFlow<Boolean> get() = if (shortcut == OverlayShortcut.CAPTIONS) CaptionCaptureService.running else ReadingOverlayService.running
@@ -20,10 +26,10 @@ abstract class OverlayTileService : TileService() {
         listening = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate).also { scope ->
             scope.launch { running.collect { active ->
                 qsTile?.apply {
-                    label = shortcut.label
+                    label = uiText(if (shortcut == OverlayShortcut.CAPTIONS) UiR.string.tile_captions else UiR.string.tile_reading)
                     state = if (active) Tile.STATE_ACTIVE else Tile.STATE_INACTIVE
-                    contentDescription = "${shortcut.label} · ${if (active) "show running overlay" else "check setup and start"}"
-                    if (Build.VERSION.SDK_INT >= 29) subtitle = if (active) "Tap to show" else "Tap to start"
+                    contentDescription = "${uiText(if (shortcut == OverlayShortcut.CAPTIONS) UiR.string.tile_captions else UiR.string.tile_reading)} · ${if (active) uiText(UiR.string.service_tap_to_show_578b6) else uiText(UiR.string.service_tap_to_start_b11de)}"
+                    if (Build.VERSION.SDK_INT >= 29) subtitle = if (active) uiText(UiR.string.service_tap_to_show_578b6) else uiText(UiR.string.service_tap_to_start_b11de)
                     updateTile()
                 }
             } }

@@ -1,5 +1,8 @@
 package com.sal7one.transiber.caption
 
+import com.sal7one.transiber.R as UiR
+import com.sal7one.transiber.i18n.rememberUiText
+
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
@@ -22,6 +25,8 @@ internal fun LocalSpeechSetup(
     includeTranslation: Boolean = true,
     onModelsChanged: (List<LocalSpeechModel>) -> Unit,
 ) {
+    val uiText = rememberUiText()
+
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val store = remember { LocalSpeechModels(File(context.filesDir, "speech-models")) }
@@ -49,7 +54,7 @@ internal fun LocalSpeechSetup(
     }
     val importer = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) scope.launch {
-            busy = true; error = null; notice = "Copying and verifying model files… Keep this screen open."
+            busy = true; error = null; notice = uiText(UiR.string.ui_copying_and_verifying_model_files_keep_this_screen_open_9b0f8)
             try {
                 val imported = withContext(Dispatchers.IO) {
                     val job = currentCoroutineContext()
@@ -64,16 +69,16 @@ internal fun LocalSpeechSetup(
                         else {
                             val artifact = com.sal7one.transiber.models.SpeechDownloads.all.firstOrNull { it.fileName == name }
                                 ?: com.sal7one.transiber.models.SpeechDownloads.all.filter { it.profile.backend == backend }.singleOrNull()
-                                ?: error("Choose the original downloaded model file, with its original filename.")
+                                ?: error(uiText(UiR.string.ui_choose_the_original_downloaded_model_file_with_its_original_filen_c2fff))
                             store.installPublisher(stream, artifact, -System.nanoTime()) { job.ensureActive() }
                         }
-                    } ?: error("Cannot open selected model ZIP")
+                    } ?: error(uiText(UiR.string.ui_cannot_open_selected_model_zip_ea4d3))
                 }
                 models = withContext(Dispatchers.IO) { store.list() }
                 onModelsChanged(models)
                 update { it.copy(engine = imported.profile.captionEngine, modelId = imported.id,
                     mode = CaptionMode.CAPTIONS, streamLanguage = "auto") }
-                notice = "Imported ${imported.profile.label}. Original-language captions selected."
+                notice = uiText(UiR.string.ui_imported_1_s_original_language_captions_selected_f9ef8, imported.profile.label)
             } catch (e: CancellationException) { throw e }
             catch (e: Exception) {
                 notice = null
@@ -82,15 +87,15 @@ internal fun LocalSpeechSetup(
         }
     }
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text("Installed models", style = MaterialTheme.typography.titleSmall)
-        if (models.none { it.profile.backend == backend }) Text("None installed yet. Download and install below, or import an existing model.", style = MaterialTheme.typography.bodySmall)
-        TextButton(onClick = { details = !details }) { Text(if (details) "Hide model details" else "Model details & language options") }
+        Text(uiText(UiR.string.ui_installed_models_c45cb), style = MaterialTheme.typography.titleSmall)
+        if (models.none { it.profile.backend == backend }) Text(uiText(UiR.string.ui_none_installed_yet_download_and_install_below_or_import_an_existi_69b24), style = MaterialTheme.typography.bodySmall)
+        TextButton(onClick = { details = !details }) { Text(if (details) uiText(UiR.string.ui_hide_model_details_41f25) else uiText(UiR.string.ui_model_details_language_options_055d1)) }
         if (details) {
-        if (runtimeAvailable) Text("Native runtime available", style = MaterialTheme.typography.labelMedium)
-        Text("Downloads install automatically. Keep enough free space for both the original download and its installed model. Speed and memory use depend on the model and your phone.", style = MaterialTheme.typography.bodySmall)
+        if (runtimeAvailable) Text(uiText(UiR.string.ui_native_runtime_available_f25c7), style = MaterialTheme.typography.labelMedium)
+        Text(uiText(UiR.string.ui_downloads_install_automatically_keep_enough_free_space_for_both_t_5f4db), style = MaterialTheme.typography.bodySmall)
         }
         OutlinedButton(enabled = !busy, onClick = { importer.launch(arrayOf("*/*")) }) {
-            Text(if (busy) "Importing…" else "Import existing model")
+            Text(if (busy) uiText(UiR.string.ui_importing_82059) else uiText(UiR.string.ui_import_existing_model_344f9))
         }
         if (busy) LinearProgressIndicator(Modifier.fillMaxWidth())
         models.filter { it.profile.backend == backend }.forEach { model ->
@@ -104,20 +109,20 @@ internal fun LocalSpeechSetup(
         val profile = if (backend == com.sal7one.common_jni.speech.SpeechBackend.MOONSHINE) com.sal7one.common_jni.speech.SpeechProfile.MOONSHINE_TINY_EN else if (backend == com.sal7one.common_jni.speech.SpeechBackend.QWEN3_ASR)
             com.sal7one.common_jni.speech.SpeechProfile.QWEN3_ASR_0_6B else com.sal7one.common_jni.speech.SpeechProfile.NEMOTRON_3_5_ASR_0_6B
         val ccLanguages = profile.capabilities.sourceLanguages
-        TextButton(onClick = { expandedLanguages = !expandedLanguages }) { Text("CC language support · ${ccLanguages.size} languages") }
+        TextButton(onClick = { expandedLanguages = !expandedLanguages }) { Text(uiText(UiR.string.ui_cc_language_support_1_s_languages_26530, ccLanguages.size)) }
         if (expandedLanguages) {
             Text(ccLanguages.sortedBy(com.sal7one.common_jni.translation.TranslationLanguages::label).joinToString(", ") {
                 com.sal7one.common_jni.translation.TranslationLanguages.label(it)
             })
-            Text(if (backend == com.sal7one.common_jni.speech.SpeechBackend.MOONSHINE) "English only; short utterance decoding. Translation requires a separate translator." else if (backend == com.sal7one.common_jni.speech.SpeechBackend.QWEN3_ASR)
-                "Publisher coverage: 30 languages plus Chinese dialects; Auto or an explicit spoken language. Recognition, not translation."
-            else "Publisher coverage: 28 languages / 32 locales usable without fine-tuning. Mandarin and 12 other languages are broad-coverage tier; quality varies. Eight adaptation-only locales are excluded.")
+            Text(if (backend == com.sal7one.common_jni.speech.SpeechBackend.MOONSHINE) uiText(UiR.string.ui_english_only_short_utterance_decoding_translation_requires_a_sepa_35325) else if (backend == com.sal7one.common_jni.speech.SpeechBackend.QWEN3_ASR)
+                uiText(UiR.string.ui_publisher_coverage_30_languages_plus_chinese_dialects_auto_or_an_529f3)
+            else uiText(UiR.string.ui_publisher_coverage_28_languages_32_locales_usable_without_fine_tu_a58d7))
         }
         if (details) {
         CaptionLanguageFields(config, update, enabled = !busy, showTarget = false)
-        Text("Model licenses and publisher files are linked above. Keep their notices when preparing a package.", style = MaterialTheme.typography.bodySmall)
-        Text("During capture, compute/audio below 1× means inference is faster than the audio duration. " +
-            "The audio queue is capped at 3 seconds; overload reports an error instead of accumulating delay.",
+        Text(uiText(UiR.string.ui_model_licenses_and_publisher_files_are_linked_above_keep_their_no_f91ec), style = MaterialTheme.typography.bodySmall)
+        Text(uiText(UiR.string.ui_during_capture_compute_audio_below_1_means_inference_is_faster_th_8bc2e) +
+            uiText(UiR.string.ui_the_audio_queue_is_capped_at_3_seconds_overload_reports_an_error_f66c1),
             style = MaterialTheme.typography.bodySmall)
         }
         if (includeTranslation) com.sal7one.transiber.settings.SettingsTranslateLocalUi(config, update)

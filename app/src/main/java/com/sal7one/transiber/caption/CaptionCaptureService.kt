@@ -1,5 +1,9 @@
 package com.sal7one.transiber.caption
 
+import com.sal7one.transiber.R as UiR
+import com.sal7one.transiber.i18n.*
+import com.sal7one.transiber.i18n.uiText as localizedUiText
+
 import android.app.*
 import android.content.Context
 import android.content.Intent
@@ -16,6 +20,8 @@ import kotlinx.coroutines.flow.first
 
 /** Owns one consent, recorder, caption engine and overlay. Commands run on Main. */
 class CaptionCaptureService : Service() {
+    private val uiText get() = this.localizedUiText()
+
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private lateinit var engine: CaptionEngineController
     private lateinit var overlay: CaptionOverlayController
@@ -36,6 +42,7 @@ class CaptionCaptureService : Service() {
         super.onCreate()
         engine = CaptionEngineController(this)
         overlay = CaptionOverlayController(this, engine)
+        scope.launch { com.sal7one.transiber.i18n.AppLocale.revision.collect { if (active) updateNotification() } }
         scope.launch { com.sal7one.transiber.shortcuts.OverlaySetupVisibility.active.collect { overlay.suppressForSetup(it) } }
         scope.launch { overlay.config.collect { if (active) updateNotification() } }
         scope.launch {
@@ -224,6 +231,7 @@ class CaptionCaptureService : Service() {
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
         overlay.refreshBounds()
+        if (active) updateNotification()
     }
 
     override fun onDestroy() {
@@ -243,7 +251,7 @@ class CaptionCaptureService : Service() {
 
     private fun notification(): Notification {
         val manager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
-        manager.createNotificationChannel(NotificationChannel(CHANNEL_ID, "Live captions", NotificationManager.IMPORTANCE_LOW))
+        manager.createNotificationChannel(NotificationChannel(CHANNEL_ID, uiText(UiR.string.service_live_captions_83fd1), NotificationManager.IMPORTANCE_LOW))
         val paused = engine.currentConfig.paused
         val tapThrough = overlay.config.value.tapThrough
         fun command(id: Int, action: String) = PendingIntent.getService(this, id,
@@ -251,16 +259,16 @@ class CaptionCaptureService : Service() {
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_btn_speak_now)
-            .setContentTitle(if (failure != null) "Live captions · error" else if (paused) "Live captions · paused" else "Live captions")
-            .setContentText(failure ?: if (tapThrough) "Tap-through is on · tap the lock handle to restore controls" else if (paused) "Audio is not sent to the speech engine" else "${source.label} · ${engine.currentConfig.mode.label}")
-            .setStyle(NotificationCompat.BigTextStyle().bigText(failure ?: "${source.label}. Tap this notification to recover the bubble and disable tap-through."))
+            .setContentTitle(if (failure != null) uiText(UiR.string.service_live_captions_error_9f465) else if (paused) uiText(UiR.string.service_live_captions_paused_b59ce) else uiText(UiR.string.service_live_captions_83fd1))
+            .setContentText(failure ?: if (tapThrough) uiText(UiR.string.service_tap_through_is_on_tap_the_lock_handle_to_restore_c_2e5ea) else if (paused) uiText(UiR.string.service_audio_is_not_sent_to_the_speech_engine_859aa) else "${uiText.label(source)} · ${uiText.label(engine.currentConfig.mode)}")
+            .setStyle(NotificationCompat.BigTextStyle().bigText(failure ?: uiText(UiR.string.service_1_s_tap_this_notification_to_recover_the_bubble_an_16fe0, uiText.label(source))))
             .setContentIntent(command(2, ACTION_CENTER)).setOngoing(true).setOnlyAlertOnce(true)
-            .apply { if (failure == null) addAction(0, if (paused) "Resume" else "Pause", command(1, ACTION_PAUSE)) }
+            .apply { if (failure == null) addAction(0, if (paused) uiText(UiR.string.service_resume_b3bd0) else uiText(UiR.string.service_pause_78196), command(1, ACTION_PAUSE)) }
             .apply {
-                if (tapThrough) addAction(0, "Restore controls", command(2, ACTION_CENTER))
-                else addAction(0, if (overlayVisible) "Hide bubble" else "Show bubble", command(4, ACTION_VISIBILITY))
+                if (tapThrough) addAction(0, uiText(UiR.string.service_restore_controls_c97dd), command(2, ACTION_CENTER))
+                else addAction(0, if (overlayVisible) uiText(UiR.string.service_hide_bubble_658d0) else uiText(UiR.string.service_show_bubble_9a42e), command(4, ACTION_VISIBILITY))
             }
-            .addAction(0, "Stop", command(3, ACTION_STOP))
+            .addAction(0, uiText(UiR.string.service_stop_9e253), command(3, ACTION_STOP))
             .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE).build()
     }
 

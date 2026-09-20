@@ -1,5 +1,8 @@
 package com.sal7one.transiber.ui.components
 
+import com.sal7one.transiber.R as UiR
+import com.sal7one.transiber.i18n.rememberUiText
+
 import com.sal7one.transiber.ui.theme.glassPanel
 import com.sal7one.transiber.ui.theme.LocalFeatureTint
 import com.sal7one.transiber.ui.theme.LocalColorfulUi
@@ -50,13 +53,15 @@ internal fun FeatureOptionsSheet(
     title: String, onDismiss: () -> Unit, scroll: ScrollState = rememberScrollState(),
     content: @Composable ColumnScope.() -> Unit,
 ) {
+    val uiText = rememberUiText()
+
     ModalBottomSheet(onDismissRequest = onDismiss,
         contentColor = MaterialTheme.colorScheme.onSurface,
         containerColor = if(LocalColorfulUi.current) LocalFeatureTint.current.copy(alpha=.15f).compositeOver(MaterialTheme.colorScheme.surface) else MaterialTheme.colorScheme.surface,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
         Row(Modifier.fillMaxWidth().padding(start = 20.dp, end = 8.dp), verticalAlignment = Alignment.CenterVertically) {
             Text(title, Modifier.weight(1f).semantics { heading() }, style = MaterialTheme.typography.titleLarge)
-            IconButton(onClick = onDismiss) { Icon(Icons.Default.Close, "Close $title") }
+            IconButton(onClick = onDismiss) { Icon(Icons.Default.Close, uiText(UiR.string.ui_close_1_s_93864, title)) }
         }
         Column(Modifier.fillMaxWidth().verticalScroll(scroll).imePadding().padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp), content = content)

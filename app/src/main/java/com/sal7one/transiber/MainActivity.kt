@@ -1,7 +1,8 @@
 package com.sal7one.transiber
 
+import com.sal7one.transiber.i18n.*
 import android.os.Bundle
-import androidx.activity.ComponentActivity
+import androidx.appcompat.app.AppCompatActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -40,7 +41,7 @@ import com.sal7one.transiber.settings.*
 import com.sal7one.transiber.models.ModelsScreen
 import com.sal7one.transiber.downloads.DownloadsScreen
 
-class MainActivity : ComponentActivity() {
+class MainActivity : AppCompatActivity() {
  private var sharedImage by mutableStateOf<android.net.Uri?>(null)
  private var sharedText by mutableStateOf<String?>(null)
  private fun receiveShare(intent: android.content.Intent) {
@@ -67,6 +68,7 @@ class MainActivity : ComponentActivity() {
   enableEdgeToEdge()
   setContent {
    HearthTheme {
+    val uiText = rememberUiText()
     val lightBars = MaterialTheme.colorScheme.background.luminance() > 0.5f
     SideEffect {
      WindowCompat.getInsetsController(window, window.decorView).apply {
@@ -157,16 +159,16 @@ class MainActivity : ComponentActivity() {
      tint = androidx.compose.ui.graphics.Color(when(page) { 7 -> 0xFFEAA077; 10 -> 0xFFEDA84C; 11 -> 0xFF9470F5; else -> 0xFF448EFF })) {
     Scaffold(containerColor = androidx.compose.ui.graphics.Color.Transparent, contentColor = MaterialTheme.colorScheme.onBackground, topBar = {
      TopAppBar(colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface.copy(alpha = .55f)), title = { Text(if (atHome) "Hearth" else when(page) {
-      0 -> "Live captions"; 1 -> "Models"; 2 -> "Downloads"; 3 -> "Settings"
-      4 -> "Speech settings"; 5 -> "Advanced captions"
-      7 -> if (faceLayout) "Face to face" else "Conversation"
-      8 -> "Local benchmark"; 9 -> "Translation"; 10 -> "Camera & OCR"
-      11 -> "Type to translate"; 12 -> "Voices & read aloud"; 13 -> "Appearance & navigation"; 14 -> "Phone shortcuts"; 15 -> "Easy setup"; else -> "Help"
+      0 -> uiText(R.string.label_maintab_captions_title); 1 -> uiText(R.string.ui_models_f3798); 2 -> uiText(R.string.nav_downloads); 3 -> uiText(R.string.label_maintab_settings_title)
+      4 -> uiText(R.string.nav_speech_settings); 5 -> uiText(R.string.nav_advanced_captions)
+      7 -> if (faceLayout) uiText(R.string.label_homeservice_face_title) else uiText(R.string.label_homeservice_conversation_title)
+      8 -> uiText(R.string.ui_local_benchmark_3acfe); 9 -> uiText(R.string.label_settingsfeature_translation_label); 10 -> uiText(R.string.label_maintab_camera_title)
+      11 -> uiText(R.string.label_maintab_translate_title); 12 -> uiText(R.string.label_settingsfeature_voices_label); 13 -> uiText(R.string.ui_appearance_navigation_433af); 14 -> uiText(R.string.ui_phone_shortcuts_b969d); 15 -> uiText(R.string.ui_easy_setup_35fb5); else -> uiText(R.string.nav_help)
      }, style = MaterialTheme.typography.titleMedium) },
-      navigationIcon = { if (!atHome && (simple || !route.isRoot)) IconButton(onClick = { back() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } },
+      navigationIcon = { if (!atHome && (simple || !route.isRoot)) IconButton(onClick = { back() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, uiText(R.string.ui_back_b52b3)) } },
       actions = {
-       if (simple && !atHome) IconButton(onClick = { home() }) { Icon(Icons.Default.Home, "Home") }
-       IconButton(onClick = { quickSettings = true }) { Icon(Icons.Default.Settings, "Quick settings") }
+       if (simple && !atHome) IconButton(onClick = { home() }) { Icon(Icons.Default.Home, uiText(R.string.nav_home)) }
+       IconButton(onClick = { quickSettings = true }) { Icon(Icons.Default.Settings, uiText(R.string.nav_quick_settings)) }
       })
     }, bottomBar = {
      if (!simple) NavigationBar {
@@ -181,8 +183,8 @@ class MainActivity : ComponentActivity() {
          MainTab.CAMERA -> Icons.Default.CameraAlt
          MainTab.SETTINGS -> Icons.Default.Settings
         }, contentDescription = null) },
-        label = { Text(tab.label, style = MaterialTheme.typography.labelSmall) },
-        modifier = Modifier.semantics { contentDescription = tab.title },
+        label = { Text(uiText.label(tab), style = MaterialTheme.typography.labelSmall) },
+        modifier = Modifier.semantics { contentDescription = uiText.title(tab) },
        )
       }
      }
@@ -221,9 +223,9 @@ class MainActivity : ComponentActivity() {
         8 -> LocalBenchmarkScreen(onModels = { go(1) })
         9 -> com.sal7one.transiber.translation.TranslationHub(onModels = { localModels("Translation") }, initialLocation = translationLocation, entryRevision = translationEntry)
         else -> Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-          Text("Choose audio and captions or translation, then Start. Android may ask for audio access or screen-sharing consent.")
-          Text("Use the bubble settings for appearance and language controls. The notification can pause, recover or stop captions.")
-          Text("Some apps block device-audio capture. Microphone listens to nearby sound instead.")
+          Text(uiText(R.string.help_0))
+          Text(uiText(R.string.help_1))
+          Text(uiText(R.string.help_2))
           CaptionDiagnosticActions()
         }
        }

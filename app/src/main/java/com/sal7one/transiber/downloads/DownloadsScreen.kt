@@ -1,5 +1,8 @@
 package com.sal7one.transiber.downloads
 
+import com.sal7one.transiber.R as UiR
+import com.sal7one.transiber.i18n.rememberUiText
+
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.Download
@@ -29,6 +32,8 @@ import kotlinx.coroutines.*
 
 @Composable
 fun DownloadsScreen(onBrowseModels: () -> Unit = {}) {
+    val uiText = rememberUiText()
+
  val context = LocalContext.current
  val scope = rememberCoroutineScope()
  val downloads = remember { FileDownloads(context.applicationContext) }
@@ -58,29 +63,29 @@ fun DownloadsScreen(onBrowseModels: () -> Unit = {}) {
  }
  Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
   if (!ByokPolicy.FEATURE_BYOK) {
-   Text("Import models already on your device.")
-   FeatureAction("Import models", Icons.Default.ViewModule, onBrowseModels)
+   Text(uiText(UiR.string.ui_import_models_already_on_your_device_35a79))
+   FeatureAction(uiText(UiR.string.ui_import_models_721f0), Icons.Default.ViewModule, onBrowseModels)
    return@Column
   }
-  FeatureAction("Get models", Icons.Default.ViewModule, onBrowseModels, detail="Browse speech, translation, camera and voices")
+  FeatureAction(uiText(UiR.string.ui_get_models_21b53), Icons.Default.ViewModule, onBrowseModels, detail=uiText(UiR.string.ui_browse_speech_translation_camera_and_voices_d335d))
   Row(horizontalArrangement=Arrangement.spacedBy(8.dp)) {
-   FilledTonalButton(onClick={folderSettings=true},modifier=Modifier.weight(1f).heightIn(min=52.dp)) { Icon(Icons.Default.FolderOpen,null); Spacer(Modifier.width(8.dp)); Text("Folder") }
-   OutlinedButton(onClick={directDownload=true},modifier=Modifier.weight(1f).heightIn(min=52.dp)) { Icon(Icons.Default.Download,null); Spacer(Modifier.width(8.dp)); Text("From link") }
+   FilledTonalButton(onClick={folderSettings=true},modifier=Modifier.weight(1f).heightIn(min=52.dp)) { Icon(Icons.Default.FolderOpen,null); Spacer(Modifier.width(8.dp)); Text(uiText(UiR.string.ui_folder_30baa)) }
+   OutlinedButton(onClick={directDownload=true},modifier=Modifier.weight(1f).heightIn(min=52.dp)) { Icon(Icons.Default.Download,null); Spacer(Modifier.width(8.dp)); Text(uiText(UiR.string.ui_from_link_b9ad3)) }
   }
   Text(folderLabel,style=MaterialTheme.typography.bodySmall,color=MaterialTheme.colorScheme.onSurfaceVariant)
   if (busy) LinearProgressIndicator(Modifier.fillMaxWidth())
   error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
   message?.let { Text(it) }
-  if (records.isEmpty()) Text("Your downloads will appear here.", Modifier.padding(vertical=24.dp))
+  if (records.isEmpty()) Text(uiText(UiR.string.ui_your_downloads_will_appear_here_1bc2a), Modifier.padding(vertical=24.dp))
   records.forEach { item ->
    Card(Modifier.fillMaxWidth().glassPanel(),colors=CardDefaults.cardColors(containerColor=Color.Transparent,contentColor=MaterialTheme.colorScheme.onSurface)) { Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
     Text(item.title, style = MaterialTheme.typography.titleMedium)
     Text(item.phase.ifBlank { when(item.status) {
-     DownloadManager.STATUS_SUCCESSFUL -> "Downloaded"
-     DownloadManager.STATUS_FAILED -> "DownloadManager failed · reason ${item.reason}"
-     DownloadManager.STATUS_PAUSED -> "Paused · DownloadManager reason ${item.reason}"
-     DownloadManager.STATUS_PENDING -> "Waiting"
-     else -> "Downloading"
+     DownloadManager.STATUS_SUCCESSFUL -> uiText(UiR.string.ui_downloaded_c6197)
+     DownloadManager.STATUS_FAILED -> uiText(UiR.string.ui_downloadmanager_failed_reason_1_s_54785, item.reason)
+     DownloadManager.STATUS_PAUSED -> uiText(UiR.string.ui_paused_downloadmanager_reason_1_s_ea493, item.reason)
+     DownloadManager.STATUS_PENDING -> uiText(UiR.string.ui_waiting_33d30)
+     else -> uiText(UiR.string.ui_downloading_9b459)
     } })
     if (item.location.isNotBlank()) Text(item.location, style = MaterialTheme.typography.bodySmall)
     Text("${item.bytes / 1_048_576} MiB" + if(item.total > 0) " / ${item.total / 1_048_576} MiB" else "")
@@ -92,60 +97,60 @@ fun DownloadsScreen(onBrowseModels: () -> Unit = {}) {
     val oldModel = if (item.id > 0) SpeechDownloads.all.firstOrNull { it.fileName == item.title }?.profile?.id
       ?: downloads.translationModel(item)?.id else null
     if (item.complete && oldModel != null) Button(enabled = !busy, onClick = { scope.launch {
-     busy = true; error = null; message = "Installing ${item.title}…"
-     try { downloads.installModel(item.id, oldModel); message = "Installed. Select the model in Models." }
+     busy = true; error = null; message = uiText(UiR.string.ui_installing_1_s_b55a5, item.title)
+     try { downloads.installModel(item.id, oldModel); message = uiText(UiR.string.ui_installed_select_the_model_in_models_06092) }
      catch (e: CancellationException) { throw e }
      catch (e: Exception) { message = null; error = e.message ?: e.toString() }
      finally { busy = false }
-    } }) { Text("Install downloaded model") }
+    } }) { Text(uiText(UiR.string.ui_install_downloaded_model_d458c)) }
     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
      if (item.installed) TextButton(enabled = !busy, onClick = { scope.launch {
-      try { downloads.selectInstalled(item); message = "Model selected." }
+      try { downloads.selectInstalled(item); message = uiText(UiR.string.ui_model_selected_8d93b) }
       catch (e: CancellationException) { throw e }
       catch (e: Exception) { error = e.message ?: e.toString() }
-     } }) { Text("Use model") }
-     if (item.failed && item.id < 0) TextButton(enabled = !busy, onClick = { try { downloads.retry(item.id) } catch(e: Exception) { error = e.message ?: e.toString() } }) { Text("Retry") }
+     } }) { Text(uiText(UiR.string.ui_use_model_8d558)) }
+     if (item.failed && item.id < 0) TextButton(enabled = !busy, onClick = { try { downloads.retry(item.id) } catch(e: Exception) { error = e.message ?: e.toString() } }) { Text(uiText(UiR.string.ui_retry_9f5cd)) }
      if(item.complete) TextButton(onClick = {
       try { context.startActivity(Intent(Intent.ACTION_VIEW).setDataAndType(downloads.uri(item.id), "application/octet-stream").addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)) }
       catch(e: Exception) { error = e.message ?: e.toString() }
-     }) { Text("Open file") }
-     TextButton(enabled = !busy, onClick = { removing = item }) { Text(if(item.active) "Cancel" else "Delete download") }
+     }) { Text(uiText(UiR.string.ui_open_file_f11b8)) }
+     TextButton(enabled = !busy, onClick = { removing = item }) { Text(if(item.active) uiText(UiR.string.ui_cancel_77dfd) else uiText(UiR.string.ui_delete_download_d41b5)) }
     }
    } }
   }
-  Text("Downloads may use mobile data. Installed models keep a verified app-owned copy; deleting a download does not uninstall its model.", style = MaterialTheme.typography.bodySmall)
+  Text(uiText(UiR.string.ui_downloads_may_use_mobile_data_installed_models_keep_a_verified_ap_da870), style = MaterialTheme.typography.bodySmall)
  }
- if(folderSettings && ByokPolicy.FEATURE_BYOK) FeatureOptionsSheet("Download folder",{folderSettings=false},folderScroll) {
+ if(folderSettings && ByokPolicy.FEATURE_BYOK) FeatureOptionsSheet(uiText(UiR.string.ui_download_folder_59317),{folderSettings=false},folderScroll) {
   OutlinedCard(Modifier.fillMaxWidth()) { Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-   Text("Download folder", style = MaterialTheme.typography.titleSmall)
+   Text(uiText(UiR.string.ui_download_folder_59317), style = MaterialTheme.typography.titleSmall)
    Text(folderLabel)
-   Text("Models go in models/; other files go in files/. Model downloads install automatically. No export or re-import.", style = MaterialTheme.typography.bodySmall)
+   Text(uiText(UiR.string.ui_models_go_in_models_other_files_go_in_files_model_downloads_insta_2a3ae), style = MaterialTheme.typography.bodySmall)
    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-    TextButton(onClick = { folderPicker.launch(downloads.folderUri) }) { Text("Choose folder") }
-    TextButton(onClick = { try { context.startActivity(downloads.openFolderIntent()) } catch (e: Exception) { error = e.message ?: e.toString() } }) { Text("Open folder") }
-    if (downloads.folderUri != null) TextButton(onClick = { downloads.useDefaultFolder(); folderLabel = downloads.locationLabel }) { Text("Use Downloads folder") }
+    TextButton(onClick = { folderPicker.launch(downloads.folderUri) }) { Text(uiText(UiR.string.ui_choose_folder_1838a)) }
+    TextButton(onClick = { try { context.startActivity(downloads.openFolderIntent()) } catch (e: Exception) { error = e.message ?: e.toString() } }) { Text(uiText(UiR.string.ui_open_folder_f9630)) }
+    if (downloads.folderUri != null) TextButton(onClick = { downloads.useDefaultFolder(); folderLabel = downloads.locationLabel }) { Text(uiText(UiR.string.ui_use_downloads_folder_59e3c)) }
    }
-   Text("New downloads use this folder. Files already downloaded stay in their original folder.", style = MaterialTheme.typography.bodySmall)
+   Text(uiText(UiR.string.ui_new_downloads_use_this_folder_files_already_downloaded_stay_in_th_67444), style = MaterialTheme.typography.bodySmall)
    error?.let {Text(it,color=MaterialTheme.colorScheme.error)}
   } }
  }
- if(directDownload && ByokPolicy.FEATURE_BYOK) FeatureOptionsSheet("Download from link",{directDownload=false},directScroll) {
+ if(directDownload && ByokPolicy.FEATURE_BYOK) FeatureOptionsSheet(uiText(UiR.string.ui_download_from_link_1687d),{directDownload=false},directScroll) {
 
-   OutlinedTextField(url, { url = it }, label = { Text("HTTPS file URL") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, autoCorrectEnabled = false), modifier = Modifier.fillMaxWidth().padding(top=2.dp), singleLine = true)
-   OutlinedTextField(filename, { filename = it }, label = { Text("Filename, including extension") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Ascii, autoCorrectEnabled = false), modifier = Modifier.fillMaxWidth().padding(top=2.dp), singleLine = true)
+   OutlinedTextField(url, { url = it }, label = { Text(uiText(UiR.string.ui_https_file_url_0c976)) }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, autoCorrectEnabled = false), modifier = Modifier.fillMaxWidth().padding(top=2.dp), singleLine = true)
+   OutlinedTextField(filename, { filename = it }, label = { Text(uiText(UiR.string.ui_filename_including_extension_ccfb0)) }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Ascii, autoCorrectEnabled = false), modifier = Modifier.fillMaxWidth().padding(top=2.dp), singleLine = true)
    Button(enabled = !busy, onClick = { scope.launch {
     busy = true; error = null
     try { val spec = DownloadSpec.parse(url, filename); withContext(Dispatchers.IO) { downloads.enqueue(spec) }; url = ""; filename = ""; directDownload = false }
     catch (e: CancellationException) { throw e }
     catch(e: Exception) { error = e.message ?: e.toString() } finally { busy = false }
-   } }) { Text("Download file") }
+   } }) { Text(uiText(UiR.string.ui_download_file_77402)) }
 
   error?.let {Text(it,color=MaterialTheme.colorScheme.error)}
  }
- removing?.let { item -> AlertDialog(onDismissRequest = { removing = null }, title = { Text("Remove ${item.title}?") }, text = { Text("This cancels the transfer and deletes the downloaded file. Installed models remain available.") }, confirmButton = { TextButton(onClick = { scope.launch {
+ removing?.let { item -> AlertDialog(onDismissRequest = { removing = null }, title = { Text(uiText(UiR.string.ui_remove_1_s_436e1, item.title)) }, text = { Text(uiText(UiR.string.ui_this_cancels_the_transfer_and_deletes_the_downloaded_file_install_a0c35)) }, confirmButton = { TextButton(onClick = { scope.launch {
   try { withContext(Dispatchers.IO) { downloads.remove(item.id) }; records = withContext(Dispatchers.IO) { downloads.list() } }
   catch (e: CancellationException) { throw e }
   catch(e: Exception) { error = e.message ?: e.toString() }
   removing = null
- } }) { Text("Remove") } }, dismissButton = { TextButton(onClick = { removing = null }) { Text("Keep") } }) }
+ } }) { Text(uiText(UiR.string.ui_remove_e9639)) } }, dismissButton = { TextButton(onClick = { removing = null }) { Text(uiText(UiR.string.ui_keep_466fc)) } }) }
 }

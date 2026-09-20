@@ -1,0 +1,815 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="ui_stopping_after_the_current_native_operation_c83bb" formatted="false">"当前原生操作完成后停止…"</string>
+    <string name="ui_selected_recording_39702" formatted="false">"已选录音"</string>
+    <string name="ui_cannot_open_selected_wav_98fe8" formatted="false">"无法打开所选 WAV 文件"</string>
+    <string name="ui_cannot_write_benchmark_results_a2d0d" formatted="false">"无法保存测试结果"</string>
+    <string name="ui_results_exported_including_transcripts_8df04" formatted="false">"已导出结果及转写文本。"</string>
+    <string name="ui_compare_local_models_62748" formatted="false">"比较本地模型"</string>
+    <string name="ui_use_the_same_recording_or_corrected_text_for_each_model_three_pas_a5005" formatted="false">"为每个模型使用同一录音或校正文本。每个模型运行三次，依次执行。不请求云端或自动下载。"</string>
+    <string name="ui_1_s_language_2_s_a760d">"%1$s语言：%2$s"</string>
+    <string name="ui_translate_to_1_s_f70dc">"翻译为：%1$s"</string>
+    <string name="ui_forced_language_is_used_where_supported_vosk_always_uses_its_mode_86f53" formatted="false">"支持时将指定识别语言。Vosk 始终使用模型语言，请选择对应录音。"</string>
+    <string name="ui_compare_the_same_corrected_source_text_separately_from_recognitio_7e2d4" formatted="false">"使用同一校正文本比较翻译，排除识别错误的影响。"</string>
+    <string name="ui_choose_wav_recording_b856e" formatted="false">"选择 WAV 录音"</string>
+    <string name="ui_change_recording_d75fb" formatted="false">"更换录音"</string>
+    <string name="ui_0_5_30_seconds_pcm16_wav_mono_or_stereo_8_48_khz_2da63" formatted="false">"0.5–30 秒 · PCM16 WAV · 单声道或立体声 · 8–48 kHz"</string>
+    <string name="ui_1_s_2_s_seconds_b64af">"%1$s · %2$s 秒"</string>
+    <string name="ui_corrected_source_text_165c4" formatted="false">"校正后的原文"</string>
+    <string name="ui_paste_a_short_sentence_in_the_chosen_source_language_5bce5" formatted="false">"粘贴所选源语言的短句"</string>
+    <string name="ui_1_s_500_characters_b6d2a">"%1$s/500 字符"</string>
+    <string name="ui_installed_models_c45cb" formatted="false">"已安装模型"</string>
+    <string name="ui_no_models_installed_for_this_comparison_download_or_import_one_in_dc1e2" formatted="false">"没有可用于此比较的已安装模型。请在模型页下载或导入。"</string>
+    <string name="ui_open_models_53f82" formatted="false">"打开模型"</string>
+    <string name="ui_refresh_56e3b" formatted="false">"刷新"</string>
+    <string name="ui_select_compatible_models_ee8e9" formatted="false">"选择兼容模型"</string>
+    <string name="ui_deselect_all_85cce" formatted="false">"取消全选"</string>
+    <string name="ui_not_compatible_with_this_language_selection_aa8b5" formatted="false">"与所选语言不兼容"</string>
+    <string name="ui_benchmark_9ed99" formatted="false">"性能测试"</string>
+    <string name="ui_stop_1_s_before_comparing_models_fc4d7">"比较模型前请停止 %1$s。"</string>
+    <string name="ui_benchmark_in_progress_c6417" formatted="false">"正在测试"</string>
+    <string name="ui_stop_comparison_7826e" formatted="false">"停止比较"</string>
+    <string name="ui_comparison_complete_review_accuracy_as_well_as_speed_16b3e" formatted="false">"比较完成。请同时评估准确性和速度。"</string>
+    <string name="ui_comparison_stopped_completed_results_were_saved_7c2db" formatted="false">"比较已停止。已保存完成的结果。"</string>
+    <string name="ui_compare_1_s_models_1916c">"比较 %1$s 个模型"</string>
+    <string name="ui_speed_is_measured_with_accelerated_replay_not_microphone_to_capti_fcf89" formatted="false">"速度通过加速回放测量，并非麦克风到字幕的延迟。加载包含完整性校验，系统可能缓存文件。Whisper/Vosk 使用批处理，原生语音包使用应用的流式或分段适配器。选择前请比较转写质量。"</string>
+    <string name="ui_saved_results_5e7cc" formatted="false">"已保存结果"</string>
+    <string name="ui_stored_only_on_this_device_export_includes_recognized_and_transla_f23f5" formatted="false">"仅保存在此设备。导出包含识别和翻译文本，不保存录音。"</string>
+    <string name="ui_export_results_fc7d7" formatted="false">"导出结果"</string>
+    <string name="ui_clear_history_53b51" formatted="false">"清空历史"</string>
+    <string name="ui_translate_to_a1ba6" formatted="false">"翻译为"</string>
+    <string name="ui_source_language_c951f" formatted="false">"源语言"</string>
+    <string name="ui_languages_advertised_by_installed_models_incompatible_models_are_88f7c" formatted="false">"根据已安装模型声明的语言显示；不兼容的模型将禁用。"</string>
+    <string name="ui_load_verify_1_s_s_05a13">"加载与校验：%1$s 秒"</string>
+    <string name="ui_first_inference_1_s_s_14e86">"首次推理：%1$s 秒"</string>
+    <string name="ui_warm_median_1_s_s_0f226">"预热后中位耗时：%1$s 秒"</string>
+    <string name="ui_real_time_factor_1_s_below_1_keeps_ahead_in_replay_10505">"实时系数：%1$s×（低于 1 表示快于回放速度）"</string>
+    <string name="ui_no_speech_recognized_a_fast_empty_result_is_not_a_quality_win_c93af" formatted="false">"未识别到语音。快速返回空结果不代表质量更好。"</string>
+    <string name="ui_hide_details_f8c24" formatted="false">"隐藏详情"</string>
+    <string name="ui_all_passes_and_runtime_a99e0" formatted="false">"全部轮次与运行环境"</string>
+    <string name="ui_1_s_2_s_3_s_model_4_s_input_sha_256_5_s_run_6_s_42fa7">"%1$s\n%2$s\n%3$s\n模型：%4$s\n输入 SHA-256：%5$s\n运行：%6$s"</string>
+    <string name="ui_pass_1_s_2_s_ms_first_text_in_replay_3_s_ms_4_s_e7de9">"第 %1$s 次：%2$s 毫秒；回放首段文字 %3$s 毫秒\n%4$s"</string>
+    <string name="ui_screen_sharing_was_cancelled_tap_start_reading_when_ready_b7b72" formatted="false">"已取消屏幕共享。准备好后点按开始阅读。"</string>
+    <string name="ui_allow_hearth_to_display_over_other_apps_return_here_then_tap_star_1c196" formatted="false">"允许 Hearth 显示在其他应用上层，然后返回并点按开始阅读。"</string>
+    <string name="ui_back_b52b3" formatted="false">"返回"</string>
+    <string name="ui_screen_manga_6c45b" formatted="false">"屏幕与漫画"</string>
+    <string name="ui_translate_as_you_read_7ee96" formatted="false">"边读边译"</string>
+    <string name="ui_open_your_reader_after_starting_translate_the_page_or_draw_around_c74fc" formatted="false">"启动后打开阅读应用。翻译整页，或圈选一个对话框。"</string>
+    <string name="ui_translate_when_b5cd2" formatted="false">"翻译时机"</string>
+    <string name="ui_i_tap_96db1" formatted="false">"点按时"</string>
+    <string name="ui_page_changes_25675" formatted="false">"页面变化时"</string>
+    <string name="ui_reading_settings_8195d" formatted="false">"阅读设置"</string>
+    <string name="ui_manga_ocr_needs_a_drawn_area_around_one_speech_bubble_214c9" formatted="false">"Manga OCR 需要圈选单个对话框。"</string>
+    <string name="ui_images_stay_on_this_phone_cloud_translation_sends_recognized_text_1cbaa" formatted="false">"图片保留在手机上。云端翻译会将识别文本发送给所选服务商。"</string>
+    <string name="ui_starting_screen_translation_stops_live_audio_captions_17e29" formatted="false">"启动屏幕翻译会停止实时语音字幕。"</string>
+    <string name="ui_install_1_s_to_read_this_language_70476">"安装 %1$s 以识别此语言。"</string>
+    <string name="ui_choose_a_supported_translation_destination_or_translator_24a0b" formatted="false">"请选择支持的目标语言或翻译引擎。"</string>
+    <string name="ui_start_reading_overlay_c2be1" formatted="false">"启动阅读悬浮窗"</string>
+    <string name="ui_ocr_reader_2de99" formatted="false">"文字识别引擎"</string>
+    <string name="ui_wait_after_movement_1_s_ms_25f21">"移动后等待：%1$s 毫秒"</string>
+    <string name="ui_wait_after_movement_milliseconds_ed502" formatted="false">"移动后等待时间，毫秒"</string>
+    <string name="ui_check_screen_every_1_s_ms_37c5a">"每 %1$s 毫秒检查屏幕"</string>
+    <string name="ui_screen_movement_check_interval_milliseconds_a06ad" formatted="false">"屏幕移动检查间隔，毫秒"</string>
+    <string name="ui_faster_checks_use_more_battery_screen_images_are_not_stored_4e8d9" formatted="false">"检查越频繁越耗电。不保存屏幕图像。"</string>
+    <string name="ui_scroll_with_the_lock_closed_tap_it_to_interact_with_translated_te_47c95" formatted="false">"锁定时可滚动下层页面。点按锁可操作译文。手柄和通知中提供翻译、暂停和停止。"</string>
+    <string name="ui_uses_screen_sharing_no_accessibility_service_camera_or_microphone_e7d33" formatted="false">"使用屏幕共享，不需要无障碍服务、相机或麦克风权限。"</string>
+    <string name="ui_page_changes_replaces_the_old_scroll_shortcut_and_detects_visual_3ca76" formatted="false">"页面变化检测替代旧滚动快捷方式，检测画面移动而非精确滚动距离。"</string>
+    <string name="ui_tap_lock_to_restore_controls_drag_lock_to_move_20d73" formatted="false">"点按锁恢复操作 · 拖动锁移动"</string>
+    <string name="ui_spoken_language_cc_c652a" formatted="false">"口语语言（原文字幕）"</string>
+    <string name="ui_read_history_2f89b" formatted="false">"查看历史"</string>
+    <string name="ui_back_to_live_e83c9" formatted="false">"返回实时内容"</string>
+    <string name="ui_copy_text_06a76" formatted="false">"复制文本"</string>
+    <string name="ui_text_held_capture_continues_latest_120_segments_retained_ff712" formatted="false">"文字已固定 · 继续采集 · 保留最近 120 段"</string>
+    <string name="ui_move_captions_up_d94cb" formatted="false">"上移字幕"</string>
+    <string name="ui_move_captions_down_f1f06" formatted="false">"下移字幕"</string>
+    <string name="ui_move_captions_left_920be" formatted="false">"左移字幕"</string>
+    <string name="ui_move_captions_right_a939e" formatted="false">"右移字幕"</string>
+    <string name="ui_drag_to_move_captions_51a37" formatted="false">"拖动以移动字幕"</string>
+    <string name="ui_resume_captions_b31f8" formatted="false">"继续字幕"</string>
+    <string name="ui_pause_captions_dc66c" formatted="false">"暂停字幕"</string>
+    <string name="ui_clear_previous_text_and_pending_translations_4cbd5" formatted="false">"清除此前文本和待处理翻译"</string>
+    <string name="ui_caption_settings_da0c8" formatted="false">"字幕设置"</string>
+    <string name="ui_stop_captions_58b64" formatted="false">"停止字幕"</string>
+    <string name="ui_paused_c7dfb" formatted="false">"已暂停"</string>
+    <string name="ui_loading_1_s_aba14">"正在加载 %1$s…"</string>
+    <string name="ui_error_7f2f6" formatted="false">"错误"</string>
+    <string name="ui_no_capturable_audio_app_may_block_capture_try_microphone_input_709c8" formatted="false">"没有可采集的音频，应用可能禁止采集。请尝试麦克风"</string>
+    <string name="ui_translating_1_s_0d960">"翻译中 · %1$s"</string>
+    <string name="ui_captions_1_s_31caa">"字幕 · %1$s"</string>
+    <string name="ui_paused_resume_from_the_bubble_or_notification_58a85" formatted="false">"已暂停 · 从悬浮窗或通知继续"</string>
+    <string name="ui_connecting_loading_44380" formatted="false">"正在连接或加载…"</string>
+    <string name="ui_caption_engine_failed_fa936" formatted="false">"字幕引擎失败"</string>
+    <string name="ui_no_capturable_audio_play_a_stream_if_it_stays_silent_the_app_may_fdefa" formatted="false">"没有可采集的音频。请播放内容；若仍无声音，应用可能禁止采集。"</string>
+    <string name="ui_listening_6c19a" formatted="false">"正在聆听…"</string>
+    <string name="ui_appearance_41def" formatted="false">"外观"</string>
+    <string name="ui_cc_translation_508d4" formatted="false">"原文与翻译"</string>
+    <string name="ui_height_3f608" formatted="false">"高度"</string>
+    <string name="ui_compact_1df39" formatted="false">"紧凑"</string>
+    <string name="ui_comfortable_23137" formatted="false">"适中"</string>
+    <string name="ui_large_738fd" formatted="false">"大"</string>
+    <string name="ui_text_size_3cc6e" formatted="false">"文字大小"</string>
+    <string name="ui_theme_a797e" formatted="false">"主题"</string>
+    <string name="ui_position_cf1c8" formatted="false">"位置"</string>
+    <string name="ui_re_center_a540d" formatted="false">"重新居中"</string>
+    <string name="ui_width_1_s_f9552">"宽度 %1$s%%"</string>
+    <string name="ui_background_1_s_6f4b0">"背景 %1$s%%"</string>
+    <string name="ui_previous_segments_1_s_5e486">"此前段落：%1$s"</string>
+    <string name="ui_show_live_partial_text_27286" formatted="false">"显示实时临时文本"</string>
+    <string name="ui_tap_through_keep_unlock_handle_a2050" formatted="false">"触摸穿透（保留解锁手柄）"</string>
+    <string name="ui_mode_a7b93" formatted="false">"模式"</string>
+    <string name="ui_text_translation_9f474" formatted="false">"文本翻译"</string>
+    <string name="ui_current_speech_model_29c90" formatted="false">"当前语音模型"</string>
+    <string name="ui_choose_or_download_models_a1983" formatted="false">"选择或下载模型"</string>
+    <string name="ui_full_setup_cloud_settings_ac020" formatted="false">"完整设置与云端配置"</string>
+    <string name="ui_clear_transcript_05690" formatted="false">"清空转写"</string>
+    <string name="ui_hide_read_aloud_options_c6763" formatted="false">"隐藏朗读选项"</string>
+    <string name="ui_read_aloud_options_dc13d" formatted="false">"朗读选项"</string>
+    <string name="ui_speak_captions_47294" formatted="false">"朗读字幕"</string>
+    <string name="ui_read_aloud_voices_downloads_7b18c" formatted="false">"朗读 · 声音与下载"</string>
+    <string name="ui_install_supertonic_3_and_a_voice_in_read_aloud_settings_8a8c5" formatted="false">"请在朗读设置中安装 Supertonic 3 和声音。"</string>
+    <string name="ui_copying_and_verifying_model_files_keep_this_screen_open_9b0f8" formatted="false">"正在复制和校验模型文件…请保持此页面打开。"</string>
+    <string name="ui_choose_the_original_downloaded_model_file_with_its_original_filen_c2fff" formatted="false">"请选择原始下载的模型文件，并保留原文件名。"</string>
+    <string name="ui_cannot_open_selected_model_zip_ea4d3" formatted="false">"无法打开所选模型 ZIP"</string>
+    <string name="ui_imported_1_s_original_language_captions_selected_f9ef8">"已导入 %1$s，并选择原文字幕。"</string>
+    <string name="ui_none_installed_yet_download_and_install_below_or_import_an_existi_69b24" formatted="false">"尚未安装模型。请在下方下载安装，或导入已有模型。"</string>
+    <string name="ui_hide_model_details_41f25" formatted="false">"隐藏模型详情"</string>
+    <string name="ui_model_details_language_options_055d1" formatted="false">"模型详情与语言选项"</string>
+    <string name="ui_native_runtime_available_f25c7" formatted="false">"原生运行时可用"</string>
+    <string name="ui_downloads_install_automatically_keep_enough_free_space_for_both_t_5f4db" formatted="false">"下载后自动安装。请为原始下载和安装后的模型同时预留空间。速度和内存需求取决于模型与手机。"</string>
+    <string name="ui_importing_82059" formatted="false">"正在导入…"</string>
+    <string name="ui_import_existing_model_344f9" formatted="false">"导入已有模型"</string>
+    <string name="ui_cc_language_support_1_s_languages_26530">"原文字幕支持 · %1$s 种语言"</string>
+    <string name="ui_english_only_short_utterance_decoding_translation_requires_a_sepa_35325" formatted="false">"仅英语，按短句识别。翻译需要单独的引擎。"</string>
+    <string name="ui_publisher_coverage_30_languages_plus_chinese_dialects_auto_or_an_529f3" formatted="false">"发布方声明支持 30 种语言及汉语方言，可自动检测或指定语言。仅识别，不翻译。"</string>
+    <string name="ui_publisher_coverage_28_languages_32_locales_usable_without_fine_tu_a58d7" formatted="false">"发布方声明 28 种语言、32 个区域无需微调即可使用。普通话及另外 12 种语言覆盖较广，质量因语言而异。不包含 8 个需要适配的区域。"</string>
+    <string name="ui_model_licenses_and_publisher_files_are_linked_above_keep_their_no_f91ec" formatted="false">"上方提供模型许可与发布方文件链接。打包时请保留相关声明。"</string>
+    <string name="ui_during_capture_compute_audio_below_1_means_inference_is_faster_th_8bc2e" formatted="false">"采集时，计算与音频比低于 1× 表示推理快于音频时长。"</string>
+    <string name="ui_the_audio_queue_is_capped_at_3_seconds_overload_reports_an_error_f66c1" formatted="false">"音频队列上限为 3 秒；过载时报告错误，不无限累积延迟。"</string>
+    <string name="ui_saved_hint_1_s_is_not_used_by_this_mode_09131">"此模式不使用已保存的 %1$s 语言提示。"</string>
+    <string name="ui_choose_an_output_language_supported_by_this_setup_96051" formatted="false">"请选择此配置支持的输出语言。"</string>
+    <string name="ui_back_without_changing_language_4e429" formatted="false">"返回，不更改语言"</string>
+    <string name="ui_search_languages_ea93e" formatted="false">"搜索语言"</string>
+    <string name="ui_native_name_english_name_or_code_18590" formatted="false">"本地名称、英文名称或代码"</string>
+    <string name="ui_use_language_code_1_s_checked_by_provider_283e3">"使用语言代码：%1$s · 由服务商验证"</string>
+    <string name="ui_no_matching_languages_e9531" formatted="false">"没有匹配语言"</string>
+    <string name="ui_captions_are_running_open_the_bubble_for_live_controls_or_stop_to_12914" formatted="false">"字幕正在运行。打开悬浮窗操作，或停止后更改配置。"</string>
+    <string name="ui_what_would_you_like_to_hear_dba27" formatted="false">"你想听什么？"</string>
+    <string name="ui_audio_acdac" formatted="false">"音频"</string>
+    <string name="ui_microphone_24280" formatted="false">"麦克风"</string>
+    <string name="ui_device_audio_c5702" formatted="false">"设备音频"</string>
+    <string name="ui_show_d97d1" formatted="false">"显示"</string>
+    <string name="ui_original_captions_9d268" formatted="false">"原文字幕"</string>
+    <string name="ui_translation_ac26a" formatted="false">"翻译"</string>
+    <string name="ui_speech_translation_8002b" formatted="false">"语音与翻译"</string>
+    <string name="ui_1_s_audio_sent_to_your_provider_db1f9">"%1$s · 音频发送给服务商"</string>
+    <string name="ui_1_s_on_this_phone_0832f">"%1$s · 在此手机上运行"</string>
+    <string name="ui_connect_your_cloud_provider_to_start_14c5d" formatted="false">"连接云端服务商以开始。"</string>
+    <string name="ui_choose_a_speech_model_to_start_53e5a" formatted="false">"选择语音模型以开始。"</string>
+    <string name="ui_set_up_translation_1d214" formatted="false">"设置翻译"</string>
+    <string name="ui_show_captions_78946" formatted="false">"显示字幕"</string>
+    <string name="ui_connect_cloud_663c4" formatted="false">"连接云端"</string>
+    <string name="ui_choose_a_model_fefb3" formatted="false">"选择模型"</string>
+    <string name="ui_start_captions_68e1c" formatted="false">"启动字幕"</string>
+    <string name="ui_speech_engine_38c0a" formatted="false">"语音引擎"</string>
+    <string name="ui_audio_goes_to_your_configured_cloud_provider_77561" formatted="false">"音频将发送给已配置的云端服务商。"</string>
+    <string name="ui_speech_stays_on_this_phone_c93d7" formatted="false">"语音保留在此手机上。"</string>
+    <string name="ui_manage_speech_connection_1959e" formatted="false">"管理语音连接"</string>
+    <string name="ui_choose_or_download_speech_models_34085" formatted="false">"选择或下载语音模型"</string>
+    <string name="ui_stop_captions_to_change_setup_19d9d" formatted="false">"请停止字幕后更改配置。"</string>
+    <string name="ui_some_apps_block_audio_capture_use_microphone_if_captions_stay_sil_60ad2" formatted="false">"部分应用禁止音频采集。若没有字幕，请使用麦克风。"</string>
+    <string name="ui_live_captions_83fd1" formatted="false">"实时字幕"</string>
+    <string name="ui_choose_an_audio_source_to_start_81909" formatted="false">"选择音频来源以开始。"</string>
+    <string name="ui_1_s_complete_android_permissions_to_start_e9e4e">"%1$s · 完成 Android 授权后开始。"</string>
+    <string name="ui_close_bbfa7" formatted="false">"关闭"</string>
+    <string name="ui_start_captions_from_device_audio_9e84c" formatted="false">"从设备音频启动字幕"</string>
+    <string name="ui_start_captions_from_microphone_41530" formatted="false">"从麦克风启动字幕"</string>
+    <string name="ui_notifications_are_disabled_enable_them_for_pause_stop_and_bubble_57b9d" formatted="false">"通知已禁用。启用后可暂停、停止和恢复悬浮窗。"</string>
+    <string name="ui_enable_caption_notification_controls_4594b" formatted="false">"启用字幕通知控制"</string>
+    <string name="ui_continue_with_bubble_controls_only_0ddfd" formatted="false">"仅使用悬浮窗控制继续"</string>
+    <string name="ui_audio_recording_permission_denied_android_requires_it_for_both_mi_af57b" formatted="false">"录音权限被拒绝。Android 对麦克风和设备音频采集都要求此权限。"</string>
+    <string name="ui_open_settings_fd710" formatted="false">"打开设置"</string>
+    <string name="ui_cancel_77dfd" formatted="false">"取消"</string>
+    <string name="ui_some_apps_block_device_audio_choose_microphone_if_capture_is_sile_acb86" formatted="false">"部分应用禁止设备音频采集。若无声音，请选择麦克风。"</string>
+    <string name="ui_allow_display_over_other_apps_b1453" formatted="false">"允许显示在其他应用上层"</string>
+    <string name="ui_live_captions_draws_a_floating_caption_bubble_on_top_of_the_app_ec64b" formatted="false">"实时字幕会在你正在使用的应用上方显示悬浮字幕，"</string>
+    <string name="ui_you_are_watching_android_requires_a_one_time_setting_for_this_2aea3" formatted="false">"需要在 Android 中授权一次。"</string>
+    <string name="ui_return_here_after_enabling_it_29b55" formatted="false">"启用后返回此页面。"</string>
+    <string name="ui_audio_source_a1ee0" formatted="false">"音频来源"</string>
+    <string name="ui_android_exit_trace_exported_c5ce1" formatted="false">"已导出 Android 退出跟踪"</string>
+    <string name="ui_caption_startup_report_3488f" formatted="false">"字幕启动报告"</string>
+    <string name="ui_startup_report_copied_4305c" formatted="false">"已复制启动报告"</string>
+    <string name="ui_copy_startup_crash_report_a5045" formatted="false">"复制启动或崩溃报告"</string>
+    <string name="ui_exporting_583cc" formatted="false">"正在导出…"</string>
+    <string name="ui_export_android_crash_trace_79311" formatted="false">"导出 Android 崩溃跟踪"</string>
+    <string name="ui_live_captions_overlay_92a8d" formatted="false">"实时字幕悬浮窗"</string>
+    <string name="ui_floating_captions_over_any_app_s_audio_with_the_cloud_b70cc" formatted="false">"为应用音频显示悬浮字幕。使用云端引擎时，"</string>
+    <string name="ui_engine_utterance_audio_is_uploaded_to_your_provider_fb528" formatted="false">"语音片段通过你的密钥发送给所选服务商，"</string>
+    <string name="ui_using_your_key_nothing_else_leaves_this_phone_7d264" formatted="false">"不会上传手机上的其他内容。"</string>
+    <string name="ui_floating_captions_or_translation_over_any_app_s_audio_1e168" formatted="false">"为应用音频显示悬浮字幕或翻译。"</string>
+    <string name="ui_everything_runs_on_this_phone_nothing_is_uploaded_c080c" formatted="false">"全部处理在手机上进行，不上传任何内容。"</string>
+    <string name="ui_watch_streams_with_live_subtitles_bcd72" formatted="false">"看直播，读实时字幕"</string>
+    <string name="ui_uses_your_openai_key_and_streams_device_audio_for_live_processing_d7a42" formatted="false">"使用你的 OpenAI 密钥实时处理设备音频。快捷选项选择阿拉伯语或英语；原文字幕保留口语语言。无需本地模型。"</string>
+    <string name="ui_live_arabic_b472a" formatted="false">"实时阿拉伯语"</string>
+    <string name="ui_live_english_32c69" formatted="false">"实时英语"</string>
+    <string name="ui_live_cc_a34a0" formatted="false">"实时原文字幕"</string>
+    <string name="ui_the_notification_controls_pause_resume_bubble_recovery_and_stop_o_9d432" formatted="false">"通知提供暂停、继续、恢复悬浮窗和停止。OpenAI 实时翻译自动检测源语言。"</string>
+    <string name="ui_what_should_the_overlay_do_ec3a9" formatted="false">"悬浮窗要做什么？"</string>
+    <string name="ui_1_s_live_translation_2_s_no_on_device_translation_model_needed_d2ee4">"%1$s 实时翻译 → %2$s；无需本地翻译模型。"</string>
+    <string name="ui_translation_route_available_model_api_errors_will_appear_in_the_b_40687" formatted="false">"翻译路径可用；模型或 API 错误会显示在悬浮窗中。"</string>
+    <string name="ui_choose_a_translator_in_the_local_translation_section_below_origin_507ac" formatted="false">"在下方本地翻译区选择引擎。翻译不可用时仍继续显示原文字幕。"</string>
+    <string name="ui_caption_engine_a52ee" formatted="false">"字幕引擎"</string>
+    <string name="ui_english_translation_whisper_cloud_translate_in_one_pass_87424" formatted="false">"英语翻译：Whisper 或云端一次处理即可翻译；"</string>
+    <string name="ui_an_english_vosk_model_gives_instant_english_captions_b038f" formatted="false">"英语 Vosk 模型可即时生成英语字幕。"</string>
+    <string name="ui_speech_model_3c5f0" formatted="false">"语音模型"</string>
+    <string name="ui_vosk_models_transcribe_one_language_each_choose_the_one_that_eea34" formatted="false">"每个 Vosk 模型只识别一种语言，请选择"</string>
+    <string name="ui_matches_the_stream_you_are_watching_0e03a" formatted="false">"与你正在观看的内容语言相符的模型。"</string>
+    <string name="ui_whisper_models_are_multilingual_the_choice_is_a_speed_accuracy_tr_33925" formatted="false">"Whisper 模型支持多语言，选择时需权衡速度与准确性。"</string>
+    <string name="ui_model_files_imports_233e7" formatted="false">"模型文件与导入"</string>
+    <string name="ui_manage_installed_speech_translation_models_588a3" formatted="false">"管理已安装的语音与翻译模型"</string>
+    <string name="ui_before_you_start_2c445" formatted="false">"开始之前"</string>
+    <string name="ui_display_over_other_apps_d3869" formatted="false">"显示在其他应用上层"</string>
+    <string name="ui_granted_the_caption_bubble_can_draw_over_any_app_a88cf" formatted="false">"已授权，字幕悬浮窗可显示在其他应用上方。"</string>
+    <string name="ui_one_time_android_setting_so_the_caption_bubble_can_float_over_the_b7ec0" formatted="false">"一次性 Android 授权，让字幕浮在正在观看的应用上方。"</string>
+    <string name="ui_open_setting_6786d" formatted="false">"打开设置"</string>
+    <string name="ui_a_1_s_speech_model_a1c7e">"%1$s 语音模型"</string>
+    <string name="ui_1_s_whisper_model_s_imported_9e09e">"已导入 %1$s 个 Whisper 模型"</string>
+    <string name="ui_1_s_vosk_model_s_imported_1d5f4">"已导入 %1$s 个 Vosk 模型"</string>
+    <string name="ui_verified_local_speech_package_imported_af455" formatted="false">"已导入并验证本地语音包"</string>
+    <string name="ui_cloud_captions_ready_api_key_stored_492e1" formatted="false">"云端字幕已就绪，API 密钥已保存"</string>
+    <string name="ui_use_import_model_zip_in_the_model_setup_above_ce1a6" formatted="false">"请使用上方模型设置中的导入模型 ZIP。"</string>
+    <string name="ui_paste_your_api_key_in_the_cloud_engine_your_api_key_box_above_480e0" formatted="false">"将 API 密钥粘贴到上方云端引擎的密钥框。"</string>
+    <string name="ui_open_models_speech_to_get_files_or_import_an_installed_model_76586" formatted="false">"打开模型 → 语音以获取文件或导入模型。"</string>
+    <string name="ui_browse_models_3221a" formatted="false">"浏览模型"</string>
+    <string name="ui_start_live_captions_ed786" formatted="false">"启动实时字幕"</string>
+    <string name="ui_grant_the_overlay_setting_7eef5" formatted="false">"请授予悬浮窗权限。"</string>
+    <string name="ui_paste_your_api_key_in_the_cloud_section_above_2d3b0" formatted="false">"请在上方云端区域粘贴 API 密钥。"</string>
+    <string name="ui_import_a_speech_model_b8766" formatted="false">"请导入语音模型。"</string>
+    <string name="ui_how_android_limits_device_audio_capture_83b77" formatted="false">"Android 的设备音频采集限制"</string>
+    <string name="ui_apps_decide_whether_their_audio_can_be_captured_drm_video_94494" formatted="false">"• 应用可决定是否允许采集音频。受 DRM 保护的视频"</string>
+    <string name="ui_youtube_app_netflix_is_never_capturable_tiktok_must_be_tried_per_af7d4" formatted="false">"（如 YouTube、Netflix 中的受保护内容）无法采集；TikTok 需按设备测试。\n"</string>
+    <string name="ui_when_nothing_capturable_is_playing_the_overlay_says_so_and_you_ca_d2b93" formatted="false">"• 没有可采集音频时，悬浮窗会提示；你可以"</string>
+    <string name="ui_switch_to_the_microphone_source_which_works_with_any_app_6df91" formatted="false">"改用麦克风收听应用外放声音。\n"</string>
+    <string name="ui_captions_pause_automatically_after_a_few_seconds_of_silence_6effc" formatted="false">"• 静音数秒后字幕自动暂停。\n"</string>
+    <string name="ui_english_translation_is_one_whisper_pass_other_targets_keep_origin_6597f" formatted="false">"• 英语翻译只需 Whisper 处理一次。其他目标语言在翻译处理期间，"</string>
+    <string name="ui_captions_live_while_the_translation_stage_catches_up_4fdd3" formatted="false">"仍继续显示实时原文字幕。"</string>
+    <string name="ui_browse_caption_translation_models_4dbad" formatted="false">"浏览字幕与翻译模型"</string>
+    <string name="ui_stop_a_running_session_c84e9" formatted="false">"停止当前会话"</string>
+    <string name="ui_ready_20c7c" formatted="false">"已就绪"</string>
+    <string name="ui_not_ready_2b50f" formatted="false">"未就绪"</string>
+    <string name="ui_restore_caption_controls_c9c06" formatted="false">"恢复字幕操作"</string>
+    <string name="ui_restore_caption_controls_drag_to_move_captions_6f8dd" formatted="false">"恢复字幕操作。拖动以移动字幕。"</string>
+    <string name="ui_publisher_address_select_to_copy_import_its_files_using_the_butto_23eb3" formatted="false">"发布方地址，可选择复制。使用下方按钮导入文件。"</string>
+    <string name="ui_settings_c7f73" formatted="false">"设置"</string>
+    <string name="ui_easy_setup_local_or_cloud_6c3e9" formatted="false">"快速设置 · 本地或云端"</string>
+    <string name="ui_downloads_imports_a2a3b" formatted="false">"下载与导入"</string>
+    <string name="ui_caption_overlay_a4c78" formatted="false">"字幕悬浮窗"</string>
+    <string name="ui_screen_overlay_773a6" formatted="false">"屏幕翻译悬浮窗"</string>
+    <string name="ui_all_settings_diagnostics_7b22b" formatted="false">"全部设置与诊断"</string>
+    <string name="ui_app_fc4a6" formatted="false">"应用"</string>
+    <string name="ui_shared_across_local_and_cloud_82c69" formatted="false">"本地与云端共用。"</string>
+    <string name="ui_appearance_navigation_433af" formatted="false">"外观与导航"</string>
+    <string name="ui_themes_light_or_dark_simple_home_or_classic_tabs_24bee" formatted="false">"主题、明暗模式、简洁主页或经典标签页"</string>
+    <string name="ui_phone_shortcuts_b969d" formatted="false">"手机快捷方式"</string>
+    <string name="ui_start_either_overlay_from_quick_settings_f7593" formatted="false">"从快捷设置启动悬浮窗"</string>
+    <string name="ui_caption_overlay_controls_64e81" formatted="false">"字幕悬浮窗控制"</string>
+    <string name="ui_audio_languages_appearance_and_accessibility_04684" formatted="false">"音频、语言、外观与无障碍"</string>
+    <string name="ui_help_diagnostics_68022" formatted="false">"帮助与诊断"</string>
+    <string name="ui_setup_guidance_and_actual_engine_errors_30852" formatted="false">"设置指导与实际引擎错误"</string>
+    <string name="ui_easy_setup_35fb5" formatted="false">"快速设置"</string>
+    <string name="ui_local_or_cloud_in_two_steps_183c9" formatted="false">"两步配置本地或云端"</string>
+    <string name="ui_on_your_device_9f8fd" formatted="false">"在你的设备上"</string>
+    <string name="ui_connected_services_35c48" formatted="false">"已连接服务"</string>
+    <string name="ui_download_or_import_models_for_offline_use_693d9" formatted="false">"下载或导入模型以离线使用。"</string>
+    <string name="ui_providers_and_saved_keys_audio_or_text_goes_to_your_chosen_servic_11f7d" formatted="false">"服务商和已保存的密钥。音频或文本发送至所选服务。"</string>
+    <string name="ui_download_folder_progress_and_installed_files_d9ced" formatted="false">"下载文件夹、进度与已安装文件"</string>
+    <string name="ui_import_model_files_from_your_device_18597" formatted="false">"从设备导入模型文件"</string>
+    <string name="ui_local_benchmark_3acfe" formatted="false">"本地性能测试"</string>
+    <string name="ui_compare_installed_speech_and_translation_models_3e1af" formatted="false">"比较已安装的语音与翻译模型"</string>
+    <string name="ui_text_is_sent_to_your_https_voice_server_chatterbox_qwen3_tts_and_b26fd" formatted="false">"文本发送至你的 HTTPS 语音服务器。Chatterbox、Qwen3-TTS 和 Fish Speech 需要独立服务器，并非内置 Android 模型。语言与声音选项由服务器提供。"</string>
+    <string name="ui_hearth_voice_api_base_url_https_d4d7b" formatted="false">"Hearth 语音 API 根地址 · HTTPS"</string>
+    <string name="ui_replace_saved_api_key_c2dc3" formatted="false">"替换已保存的 API 密钥"</string>
+    <string name="ui_api_key_if_required_49a3c" formatted="false">"API 密钥 · 按需填写"</string>
+    <string name="ui_checking_820d6" formatted="false">"正在检查…"</string>
+    <string name="ui_save_check_voices_f25ab" formatted="false">"保存并检查声音"</string>
+    <string name="ui_check_this_connection_to_load_its_languages_and_voices_701d4" formatted="false">"检查此连接以加载其语言和声音。"</string>
+    <string name="ui_1_s_2_s_languages_242cf">"%1$s · %2$s 种语言"</string>
+    <string name="ui_preview_language_fe73d" formatted="false">"试听语言"</string>
+    <string name="ui_server_voice_ea31b" formatted="false">"服务器声音"</string>
+    <string name="ui_supported_server_models_1b8a8" formatted="false">"支持的服务器模型"</string>
+    <string name="ui_these_run_on_your_server_set_up_the_included_hearth_voice_bridge_f6248" formatted="false">"这些模型运行在你的服务器上。先配置附带的 Hearth 语音桥接服务，再连接其 HTTPS 地址作为自定义语音。"</string>
+    <string name="ui_self_hosted_python_80a0e" formatted="false">"自托管 · Python"</string>
+    <string name="ui_23_languages_including_arabic_default_or_reference_voice_turbo_na_b5a55" formatted="false">"23 种语言，包括阿拉伯语。默认或参考声音；Turbo/Nano 是独立的英语模型。"</string>
+    <string name="ui_source_models_setup_e17e2" formatted="false">"源码、模型与设置"</string>
+    <string name="ui_10_languages_no_arabic_requires_your_reference_wav_and_matching_t_ffece" formatted="false">"10 种语言，不含阿拉伯语。需要参考 WAV 和对应文本。"</string>
+    <string name="ui_model_card_files_setup_2f538" formatted="false">"模型卡、文件与设置"</string>
+    <string name="ui_self_hosted_official_fish_server_8efdd" formatted="false">"自托管 · Fish 官方服务器"</string>
+    <string name="ui_languages_and_voice_ids_depend_on_the_deployed_checkpoint_and_ser_fc6d7" formatted="false">"语言和声音 ID 取决于部署的模型版本与服务器配置。"</string>
+    <string name="ui_fish_audio_research_license_separate_commercial_terms_14192" formatted="false">"Fish Audio 研究许可；商业使用另有条款"</string>
+    <string name="ui_forget_voice_connection_cebb3" formatted="false">"移除语音连接"</string>
+    <string name="ui_speech_d00d8" formatted="false">"语音"</string>
+    <string name="ui_voices_40273" formatted="false">"声音"</string>
+    <string name="ui_camera_ocr_c1207" formatted="false">"相机与文字识别"</string>
+    <string name="ui_android_voices_60cb9" formatted="false">"Android 声音"</string>
+    <string name="ui_only_installed_offline_android_voices_are_offered_availability_co_8ecc2" formatted="false">"仅提供已安装的 Android 离线声音。可用性由此手机的 TTS 引擎决定。"</string>
+    <string name="ui_voice_language_fc44d" formatted="false">"声音语言"</string>
+    <string name="ui_android_voice_ba5fb" formatted="false">"Android 声音"</string>
+    <string name="ui_automatic_matching_voice_c73e2" formatted="false">"自动匹配声音"</string>
+    <string name="ui_install_or_manage_android_voices_0f03f" formatted="false">"安装或管理 Android 声音"</string>
+    <string name="ui_on_device_onnx_runtime_cpu_5b8ad" formatted="false">"设备端 · ONNX Runtime CPU"</string>
+    <string name="ui_31_languages_including_arabic_10_voices_about_383_mib_for_all_fil_cb874" formatted="false">"31 种语言含阿拉伯语 · 10 种声音 · 全部文件约 383 MiB。不支持中文。"</string>
+    <string name="ui_model_card_files_license_45e0e" formatted="false">"模型卡、文件与许可"</string>
+    <string name="ui_voice_3091c" formatted="false">"声音"</string>
+    <string name="ui_quality_steps_1_s_8db63">"质量步数 · %1$s"</string>
+    <string name="ui_supertonic_quality_steps_80187" formatted="false">"Supertonic 质量步数"</string>
+    <string name="ui_more_steps_can_improve_quality_and_take_longer_language_support_i_96b86" formatted="false">"更多步数可能改善质量，但耗时更长。语言支持取决于模型；此模型未声明支持中文。"</string>
+    <string name="ui_selected_engine_and_voice_installed_f2921" formatted="false">"所选引擎和声音已安装"</string>
+    <string name="ui_download_or_import_the_engine_and_selected_voice_f9222" formatted="false">"下载或导入引擎与所选声音"</string>
+    <string name="ui_download_progress_1_s_files_cdb9d">"下载进度 · %1$s 个文件"</string>
+    <string name="ui_download_engine_voice_c767f" formatted="false">"下载引擎与声音"</string>
+    <string name="ui_verifying_691f4" formatted="false">"正在校验…"</string>
+    <string name="ui_import_voice_files_or_zip_068a7" formatted="false">"导入声音文件或 ZIP"</string>
+    <string name="ui_select_the_onnx_engine_files_its_json_files_and_one_or_more_voice_36da5" formatted="false">"选择 ONNX 引擎文件、JSON 文件和至少一种声音，或包含它们的 ZIP。原始下载保留在 Downloads/Hearth/models。"</string>
+    <string name="ui_start_from_your_notification_shade_each_tile_checks_setup_before_63465" formatted="false">"从通知栏开始。每个快捷开关先检查配置，再请求 Android 采集权限。点按运行中的开关可恢复操作。"</string>
+    <string name="ui_screen_translation_d51de" formatted="false">"屏幕翻译"</string>
+    <string name="ui_1_s_added_swipe_down_twice_to_use_it_7f59b">"已添加 %1$s。下拉两次即可使用。"</string>
+    <string name="ui_1_s_is_already_in_quick_settings_90c4c">"%1$s 已在快捷设置中。"</string>
+    <string name="ui_1_s_was_not_added_you_can_add_it_later_from_quick_settings_edit_ef39d">"未添加 %1$s。可稍后在快捷设置 → 编辑中添加。"</string>
+    <string name="ui_android_tile_request_returned_1_s_add_2_s_from_quick_settings_edi_0ed53">"Android 添加请求返回 %1$s。请从快捷设置 → 编辑添加 %2$s。"</string>
+    <string name="ui_add_1_s_tile_0b83f">"添加 %1$s 快捷开关"</string>
+    <string name="ui_you_can_also_swipe_down_twice_edit_buttons_then_drag_live_caption_da189" formatted="false">"也可下拉两次 → 编辑按钮，将实时字幕和屏幕翻译拖入快捷面板。屏幕翻译使用相机/OCR 配置阅读漫画和书籍。"</string>
+    <string name="ui_cannot_open_ocr_model_764c9" formatted="false">"无法打开 OCR 模型"</string>
+    <string name="ui_ocr_camera_reading_12439" formatted="false">"文字识别 · 相机与阅读"</string>
+    <string name="ui_paddle_for_general_text_manga_for_japanese_bubbles_meiki_for_japa_76763" formatted="false">"Paddle 用于通用文本，Manga 用于日语对话框，Meiki 用于日语行文。每个选项自动下载安装所需文件，原件保留在 Downloads/Hearth/models 或所选文件夹。"</string>
+    <string name="ui_import_the_files_for_your_selected_ocr_engine_below_this_offline_7e9b3" formatted="false">"在下方导入所选 OCR 引擎的文件。离线版不下载文件，也不连接模型发布方。"</string>
+    <string name="ui_1_s_mib_total_2_s_cee22">"共 %1$s MiB · %2$s"</string>
+    <string name="ui_selected_9a976" formatted="false">"已选择"</string>
+    <string name="ui_choose_78b7c" formatted="false">"选择"</string>
+    <string name="ui_view_download_progress_fb5a1" formatted="false">"查看下载进度"</string>
+    <string name="ui_download_install_7db0b" formatted="false">"下载并安装"</string>
+    <string name="ui_hide_file_links_216d2" formatted="false">"隐藏文件链接"</string>
+    <string name="ui_files_import_links_72993" formatted="false">"文件与导入链接"</string>
+    <string name="ui_copy_exact_file_link_9e1fe" formatted="false">"复制准确文件链接"</string>
+    <string name="ui_source_license_1_s_98997">"来源与许可 · %1$s"</string>
+    <string name="ui_verifying_model_fa771" formatted="false">"正在校验模型…"</string>
+    <string name="ui_import_downloaded_onnx_files_1f3bd" formatted="false">"导入已下载的 ONNX 文件"</string>
+    <string name="ui_select_all_onnx_files_for_the_selected_engine_together_file_names_c1ec6" formatted="false">"请一起选择该引擎的所有 ONNX 文件。文件名不限，Hearth 按文件内容精确验证模型，配套字典已内置。Manga 和 Meiki 目前处理拍摄或导入的页面；Paddle 可用于实时模式。"</string>
+    <string name="ui_downloads_folder_settings_668bd" formatted="false">"下载与文件夹设置"</string>
+    <string name="ui_cloud_provider_connection_49770" formatted="false">"云端服务商与连接"</string>
+    <string name="ui_soniox_stt_rt_v5_streaming_cc_and_optional_integrated_translation_7d848" formatted="false">"Soniox stt-rt-v5：流式字幕与可选内置翻译。原文和译文分别保留。"</string>
+    <string name="ui_elevenlabs_scribe_v2_realtime_streaming_cc_with_optional_spoken_l_07f57" formatted="false">"ElevenLabs Scribe v2 Realtime：流式字幕，可指定语言提示。翻译需启用本地引擎；此适配器的自动源语言暂不能用于本地翻译。"</string>
+    <string name="ui_batch_uploads_chunks_of_audio_and_returns_one_result_per_2ca0a" formatted="false">"批处理上传音频片段，每次请求返回一个结果。"</string>
+    <string name="ui_round_trip_slowest_but_works_with_any_openai_compatible_76f1d" formatted="false">"速度最慢，但兼容任何 OpenAI 格式的接口"</string>
+    <string name="ui_endpoint_openai_openrouter_or_groq_via_a_custom_url_c2b8a" formatted="false">"（OpenAI、OpenRouter，或自定义地址的 Groq）。"</string>
+    <string name="ui_deepgram_streams_audio_over_a_websocket_and_emits_interim_text_41705" formatted="false">"Deepgram 通过 WebSocket 传输音频并实时返回临时文本。"</string>
+    <string name="ui_live_nova_3_is_among_the_lowest_latency_asr_on_the_market_7e53c" formatted="false">"Nova-3 专注低延迟语音识别。"</string>
+    <string name="ui_openai_realtime_transcription_gpt_live_transcribe_streams_72775" formatted="false">"OpenAI 实时转写（gpt-live-transcribe）通过 WebSocket"</string>
+    <string name="ui_deltas_over_a_websocket_uses_the_openai_key_above_2ec40" formatted="false">"传输文本增量，使用上方的 OpenAI 密钥。"</string>
+    <string name="ui_assemblyai_s_realtime_v3_websocket_streams_interim_final_43e88" formatted="false">"AssemblyAI 实时 v3 WebSocket 返回临时和最终话轮；"</string>
+    <string name="ui_turns_universal_models_are_multilingual_by_default_375dd" formatted="false">"Universal 模型默认支持多语言。"</string>
+    <string name="ui_cloud_engine_your_api_key_ad35b" formatted="false">"云端引擎 · API 密钥"</string>
+    <string name="ui_key_stored_type_to_replace_d9e13" formatted="false">"密钥已保存，输入可替换"</string>
+    <string name="ui_could_not_store_the_key_on_this_device_4137a" formatted="false">"无法在此设备保存密钥："</string>
+    <string name="ui_storage_failed_edff3" formatted="false">"存储失败"</string>
+    <string name="ui_nothing_was_saved_6815c" formatted="false">"。未保存任何内容。"</string>
+    <string name="ui_stored_with_basic_protection_this_device_s_keystore_c01c3" formatted="false">"已使用基本保护保存，因为此设备的密钥库"</string>
+    <string name="ui_was_unavailable_06b63" formatted="false">"不可用（"</string>
+    <string name="ui_replace_key_a55aa" formatted="false">"替换密钥"</string>
+    <string name="ui_save_key_f5216" formatted="false">"保存密钥"</string>
+    <string name="ui_remove_e9639" formatted="false">"移除"</string>
+    <string name="ui_soniox_api_key_ea6c1" formatted="false">"Soniox API 密钥"</string>
+    <string name="ui_elevenlabs_api_key_1b0b7" formatted="false">"ElevenLabs API 密钥"</string>
+    <string name="ui_deepgram_api_key_05f53" formatted="false">"Deepgram API 密钥"</string>
+    <string name="ui_paste_the_key_from_console_deepgram_com_e16ea" formatted="false">"粘贴 console.deepgram.com 的密钥"</string>
+    <string name="ui_assemblyai_api_key_da25e" formatted="false">"AssemblyAI API 密钥"</string>
+    <string name="ui_paste_the_key_from_assemblyai_com_app_account_9d6b7" formatted="false">"粘贴 assemblyai.com/app/account 的密钥"</string>
+    <string name="ui_hide_batch_voice_options_f3f31" formatted="false">"隐藏批处理与语音选项"</string>
+    <string name="ui_optional_batch_cloud_voice_settings_6eebe" formatted="false">"可选批处理与云端语音设置"</string>
+    <string name="ui_these_endpoint_and_model_settings_affect_batch_uploads_and_option_a4bba" formatted="false">"这些接口与模型设置影响批量上传和可选云端语音。流式处理使用上方所选服务商。"</string>
+    <string name="ui_provider_7ceee" formatted="false">"服务商"</string>
+    <string name="ui_base_url_1dbd6" formatted="false">"根地址"</string>
+    <string name="ui_batch_stt_model_captions_3d989" formatted="false">"批量语音转写模型（字幕）"</string>
+    <string name="ui_this_picker_changes_batch_stt_only_live_openai_cc_uses_gpt_live_t_3603e" formatted="false">"此选择器仅更改批量转写模型。OpenAI 实时原文字幕使用 gpt-live-transcribe；"</string>
+    <string name="ui_live_translation_uses_gpt_realtime_translate_newest_creation_date_4eb89" formatted="false">"实时翻译使用 gpt-realtime-translate。按创建时间从新到旧排序"</string>
+    <string name="ui_the_api_does_not_provide_release_dates_or_openai_prices_9cb12" formatted="false">"（API 不提供发布日期或 OpenAI 价格）。"</string>
+    <string name="ui_provider_pricing_and_billing_units_f48db" formatted="false">"服务商价格与计费单位"</string>
+    <string name="ui_browse_speech_models_87929" formatted="false">"浏览语音模型"</string>
+    <string name="ui_loading_speech_models_f0902" formatted="false">"正在加载语音模型…"</string>
+    <string name="ui_no_recognized_speech_models_returned_custom_model_ids_can_still_b_dac29" formatted="false">"未返回已知语音模型。仍可手动输入自定义模型 ID。"</string>
+    <string name="ui_1_s_created_2_s_5f4ce">"%1$s · 创建于 %2$s"</string>
+    <string name="ui_tts_model_voice_54aa9" formatted="false">"文字转语音模型"</string>
+    <string name="ui_key_stored_encrypted_on_this_device_android_keystore_ef846" formatted="false">"密钥已使用 Android Keystore 在设备上加密保存。"</string>
+    <string name="ui_utterances_are_uploaded_only_while_an_overlay_session_runs_ac3e8" formatted="false">"仅在悬浮窗会话运行时上传语音片段。"</string>
+    <string name="ui_paste_the_key_from_your_provider_e_g_platform_openai_com_api_3cb5d" formatted="false">"粘贴服务商的密钥（例如 platform.openai.com → API"</string>
+    <string name="ui_keys_stored_encrypted_on_this_device_the_foss_build_of_this_81a93" formatted="false">"密钥）。密钥在设备上加密保存；此应用的 FOSS 版本"</string>
+    <string name="ui_app_has_no_network_permission_at_all_cf763" formatted="false">"完全不包含网络权限。"</string>
+    <string name="ui_local_speech_recognition_05b50" formatted="false">"本地语音识别"</string>
+    <string name="ui_choose_a_speech_engine_then_select_an_installed_model_or_get_its_979a1" formatted="false">"先选语音引擎，再选已安装模型或获取文件。翻译单独选择。"</string>
+    <string name="ui_active_speech_1_s_11c55">"当前语音：%1$s"</string>
+    <string name="ui_translation_connections_4a282" formatted="false">"翻译连接"</string>
+    <string name="ui_one_connection_library_for_captions_typed_text_conversations_came_a2ee8" formatted="false">"字幕、文字、对话、相机和屏幕阅读共用连接库。在需要使用的功能中选择翻译引擎。"</string>
+    <string name="ui_conversation_typed_text_use_1_s_dc9f7">"对话与文字翻译使用：%1$s"</string>
+    <string name="ui_google_cloud_translation_basic_v2_requires_your_google_cloud_api_5f73d" formatted="false">"Google Cloud Translation Basic v2。需要 Google Cloud API 密钥并启用 Translation API。"</string>
+    <string name="ui_microsoft_azure_translator_the_official_microsoft_translation_api_b8ead" formatted="false">"Microsoft Azure Translator（微软官方翻译 API）。填写资源密钥，必要时填写区域。"</string>
+    <string name="ui_deepl_api_free_or_pro_key_use_api_free_deepl_com_v2_for_free_or_a_62829" formatted="false">"使用 DeepL API Free 或 Pro 密钥。Free 地址为 api-free.deepl.com/v2，Pro 为 api.deepl.com/v2。"</string>
+    <string name="ui_open_source_libretranslate_choose_your_own_https_server_a_key_is_1b625" formatted="false">"开源 LibreTranslate。选择自己的 HTTPS 服务器；仅当服务器允许时可省略密钥。libretranslate.com 要求密钥。"</string>
+    <string name="ui_finalized_text_is_sent_to_this_provider_audio_is_handled_separate_d490d" formatted="false">"最终文本发送给此服务商。音频由所选语音模型单独处理。可能产生费用或受额度限制。"</string>
+    <string name="ui_api_base_url_https_43d49" formatted="false">"API 根地址 · HTTPS"</string>
+    <string name="ui_resource_region_blank_for_global_64f7b" formatted="false">"资源区域 · 全球资源留空"</string>
+    <string name="ui_api_key_cf678" formatted="false">"API 密钥"</string>
+    <string name="ui_a_key_is_encrypted_on_this_device_leave_the_field_empty_to_keep_i_2c064" formatted="false">"密钥已在此设备加密保存。留空可保留。"</string>
+    <string name="ui_languages_loaded_1_s_source_languages_2_s_target_languages_5a0db">"已加载：%1$s 种源语言，%2$s 种目标语言。"</string>
+    <string name="ui_save_check_languages_7cd32" formatted="false">"保存并检查语言"</string>
+    <string name="ui_cancel_check_82097" formatted="false">"取消检查"</string>
+    <string name="ui_key_api_help_3e3bb" formatted="false">"密钥与 API 帮助"</string>
+    <string name="ui_1_s_source_2_s_target_languages_the_picker_uses_this_server_s_sup_04d3b">"%1$s 种源语言 · %2$s 种目标语言。选择器使用服务器支持的方向。语言发现不验证翻译额度或计费。"</string>
+    <string name="ui_using_1_s_922b9">"正在使用 %1$s"</string>
+    <string name="ui_use_1_s_5cc45">"使用 %1$s"</string>
+    <string name="ui_check_this_connection_to_load_its_supported_languages_before_usin_2b734" formatted="false">"使用前请检查此连接，加载其支持的语言。"</string>
+    <string name="ui_key_removed_on_device_translation_is_used_if_this_connection_was_59cd6" formatted="false">"密钥已移除。如果此前选中此连接，将改用设备端翻译。"</string>
+    <string name="ui_remove_1_s_saved_key_71dd0">"移除已保存的 %1$s 密钥"</string>
+    <string name="ui_remove_saved_key_303fd" formatted="false">"移除已保存的密钥"</string>
+    <string name="ui_copying_and_verifying_1_s_6575d">"正在复制并校验 %1$s…"</string>
+    <string name="ui_cannot_open_selected_translation_gguf_cae88" formatted="false">"无法打开所选翻译 GGUF 文件"</string>
+    <string name="ui_1_s_imported_and_selected_as_the_local_model_849c7">"已导入 %1$s 并选为本地模型。"</string>
+    <string name="ui_translation_enabled_8b961" formatted="false">"翻译已启用"</string>
+    <string name="ui_disabled_cc_only_9fa78" formatted="false">"已禁用 · 仅原文字幕"</string>
+    <string name="ui_active_translator_1_s_dfd1a">"当前翻译引擎：%1$s"</string>
+    <string name="ui_browse_translators_f9d97" formatted="false">"浏览翻译引擎"</string>
+    <string name="ui_marian_legacy_67b3d" formatted="false">"Marian · 旧版"</string>
+    <string name="ui_legacy_english_arabic_model_files_162d9" formatted="false">"旧版英语 → 阿拉伯语模型文件"</string>
+    <string name="ui_size_precision_49488" formatted="false">"大小与精度"</string>
+    <string name="ui_selected_translator_ee2cb" formatted="false">"所选翻译引擎"</string>
+    <string name="ui_q4_uses_less_storage_and_memory_q6_q8_are_larger_only_the_active_56fac" formatted="false">"Q4 占用更少存储和内存；Q6/Q8 更大。只加载当前翻译引擎。"</string>
+    <string name="ui_import_1_s_gguf_f7da3">"导入 %1$s GGUF"</string>
+    <string name="ui_installing_8d278" formatted="false">"正在安装…"</string>
+    <string name="ui_downloading_1_s_mib_e010b">"正在下载 · %1$s MiB"</string>
+    <string name="ui_retry_download_install_e5444" formatted="false">"重试下载并安装"</string>
+    <string name="ui_download_install_1_s_mib_0e3f4">"下载并安装 · %1$s MiB"</string>
+    <string name="ui_download_failed_reason_1_s_8bb99">"下载失败 · 原因 %1$s"</string>
+    <string name="ui_download_folder_1_s_models_the_original_file_stays_here_after_ins_5b003">"下载目录：%1$s/models。安装后原始文件仍保留于此。"</string>
+    <string name="ui_source_files_license_50a30" formatted="false">"来源、文件与许可"</string>
+    <string name="ui_original_google_model_card_251ef" formatted="false">"Google 原始模型卡"</string>
+    <string name="ui_1_s_imported_files_must_match_the_selected_artifact_8b0a8">"%1$s。导入文件必须与所选模型文件一致。"</string>
+    <string name="ui_larger_quality_alternative_2_49_gb_download_community_gguf_conver_0c942" formatted="false">"更大的质量备选 · 下载 2.49 GB。Google TranslateGemma 的社区 GGUF 转换。速度取决于手机。"</string>
+    <string name="ui_hide_language_coverage_88f4d" formatted="false">"隐藏语言覆盖"</string>
+    <string name="ui_show_supported_source_target_languages_87984" formatted="false">"显示支持的源语言 → 目标语言"</string>
+    <string name="ui_any_of_these_source_languages_any_other_listed_target_70952" formatted="false">"以下任一源语言 → 列出的其他目标语言：\n"</string>
+    <string name="ui_output_languages_supported_by_the_active_translator_a2090" formatted="false">"当前翻译引擎支持的输出语言。"</string>
+    <string name="ui_original_language_cc_translation_model_stays_unloaded_4bd7f" formatted="false">"仅原文字幕，不加载翻译模型。"</string>
+    <string name="ui_ml_kit_selected_download_spoken_and_target_packs_above_translatio_7b045" formatted="false">"已选择 ML Kit，请在上方下载源语言与目标语言包。下载后可离线翻译。"</string>
+    <string name="ui_import_a_translation_model_to_use_the_bridge_cc_can_run_now_5f78e" formatted="false">"导入翻译模型后可使用桥接翻译。现在可运行原文字幕。"</string>
+    <string name="ui_automatic_routing_uses_the_language_reported_by_asr_unknown_or_mi_6098f" formatted="false">"自动路由使用语音识别报告的语言。未知或混合语言只显示原文，并给出提示。"</string>
+    <string name="ui_supported_1_s_2_s_4844b">"支持：%1$s → %2$s"</string>
+    <string name="ui_unsupported_pair_1_s_2_s_cc_continues_b821c">"不支持：%1$s → %2$s。原文字幕继续。"</string>
+    <string name="ui_previous_service_9b734" formatted="false">"上一个功能"</string>
+    <string name="ui_service_1_s_of_2_s_04283">"第 %1$s 个功能，共 %2$s 个"</string>
+    <string name="ui_next_service_6d174" formatted="false">"下一个功能"</string>
+    <string name="ui_expand_easy_setup_f2672" formatted="false">"展开快速设置"</string>
+    <string name="ui_collapse_easy_setup_6b1ce" formatted="false">"收起快速设置"</string>
+    <string name="ui_vosk_imports_do_not_provide_source_language_metadata_to_the_trans_168ba" formatted="false">"导入的 Vosk 模型暂不向翻译引擎提供源语言元数据。此文本翻译阶段请使用其他语音引擎。"</string>
+    <string name="ui_used_by_live_audio_captions_original_speech_text_is_translated_af_7413f" formatted="false">"用于实时语音字幕，在识别后翻译原文。旧版 Whisper/批处理需指定口语语言。更改此项不影响相机或对话的服务商。"</string>
+    <string name="ui_1_s_existing_route_97965">"%1$s · 现有路径"</string>
+    <string name="ui_speech_provider_existing_route_39ee3" formatted="false">"语音服务商或现有路径"</string>
+    <string name="ui_google_translate_on_device_download_the_spoken_and_target_languag_235e1" formatted="false">"设备端 Google 翻译。请通过 Wi-Fi 下载源语言和目标语言包。已包含英语。ML Kit 在应用存储中管理语言包；下载文件夹设置仅用于模型文件。"</string>
+    <string name="ui_use_ml_kit_2fd85" formatted="false">"使用 ML Kit"</string>
+    <string name="ui_language_pack_1_s_efe52">"语言包：%1$s"</string>
+    <string name="ui_download_a_language_pack_64f85" formatted="false">"下载语言包"</string>
+    <string name="ui_choose_a_language_to_download_or_remove_its_pack_english_is_inclu_265bd" formatted="false">"选择语言以下载或移除语言包。已包含英语。ML Kit 在应用内管理语言包；下载文件夹设置仅用于模型文件。"</string>
+    <string name="ui_downloading_1_s_waiting_for_wi_fi_if_needed_a5f4d">"正在下载 %1$s · 必要时等待 Wi-Fi"</string>
+    <string name="ui_1_s_installed_feb78">"已安装 %1$s"</string>
+    <string name="ui_download_pack_5d6f8" formatted="false">"下载语言包"</string>
+    <string name="ui_1_s_removed_80296">"已移除 %1$s"</string>
+    <string name="ui_installed_1_s_758c8">"已安装：%1$s"</string>
+    <string name="ui_hide_language_pack_details_f673e" formatted="false">"隐藏语言包详情"</string>
+    <string name="ui_about_language_packs_25633" formatted="false">"关于语言包"</string>
+    <string name="ui_non_english_pairs_translate_through_english_packs_live_in_ml_kit_7239f" formatted="false">"非英语语言之间通过英语中转翻译。语言包保存在 ML Kit 管理的应用空间，与 GGUF 文件分开。"</string>
+    <string name="ui_caption_text_stays_on_device_google_collects_sdk_performance_and_8e899" formatted="false">"字幕文本保留在设备上。Google 会收集 SDK 性能和使用指标。"</string>
+    <string name="ui_google_ml_kit_privacy_terms_e6bc6" formatted="false">"Google ML Kit 隐私与条款"</string>
+    <string name="ui_local_translation_010cc" formatted="false">"本地翻译"</string>
+    <string name="ui_cloud_translation_e9d00" formatted="false">"云端翻译"</string>
+    <string name="ui_choose_a_translator_here_browsing_tabs_does_not_change_the_active_3b0c1" formatted="false">"在此选择翻译引擎。浏览标签页不会更改当前引擎。"</string>
+    <string name="ui_active_1_s_830d0">"当前：%1$s"</string>
+    <string name="ui_this_choice_is_shared_by_conversation_face_to_face_and_typed_text_f76d4" formatted="false">"对话、面对面和文字翻译共用此选择。“在整个 Hearth 使用”也会更新字幕和相机。"</string>
+    <string name="ui_source_language_1_s_a8c77">"源语言，%1$s"</string>
+    <string name="ui_swap_languages_efa6c" formatted="false">"交换语言"</string>
+    <string name="ui_translation_language_1_s_3ac30">"目标语言，%1$s"</string>
+    <string name="ui_text_is_sent_to_1_s_after_you_pause_typing_4e428">"停止输入后，文本发送至 %1$s。"</string>
+    <string name="ui_text_is_sent_to_1_s_when_you_tap_translate_b5f12">"点按翻译时，文本发送至 %1$s。"</string>
+    <string name="ui_enter_text_9c05f" formatted="false">"输入文本"</string>
+    <string name="ui_clear_text_19135" formatted="false">"清除文本"</string>
+    <string name="ui_translate_2be17" formatted="false">"翻译"</string>
+    <string name="ui_translating_ae47b" formatted="false">"正在翻译…"</string>
+    <string name="ui_your_translation_appears_here_aa064" formatted="false">"译文将显示在这里"</string>
+    <string name="ui_copy_af74f" formatted="false">"复制"</string>
+    <string name="ui_translation_settings_2aee9" formatted="false">"翻译设置"</string>
+    <string name="ui_stop_speech_3f0d2" formatted="false">"停止朗读"</string>
+    <string name="ui_1_s_choose_an_explicit_supported_language_eea04">"%1$s · 请选择明确支持的语言"</string>
+    <string name="ui_used_by_typed_text_conversation_and_face_to_face_a208e" formatted="false">"文字翻译、对话与面对面共用。"</string>
+    <string name="ui_translate_as_i_type_e7304" formatted="false">"边输入边翻译"</string>
+    <string name="ui_voices_read_aloud_64e95" formatted="false">"声音与朗读"</string>
+    <string name="ui_manage_cloud_connections_376a5" formatted="false">"管理云端连接"</string>
+    <string name="ui_choose_a_spoken_language_or_use_language_reported_by_speech_recog_0b9be" formatted="false">" · 指定口语语言，或使用语音识别报告的语言"</string>
+    <string name="ui_same_language_original_text_only_03af2" formatted="false">" · 相同语言，仅显示原文"</string>
+    <string name="ui_1_s_2_s_supported_5000e">" · 支持 %1$s → %2$s"</string>
+    <string name="ui_1_s_2_s_unavailable_change_languages_49ad7">" · 不支持 %1$s → %2$s，请更改语言"</string>
+    <string name="ui_translator_1_s_7405d">"翻译引擎 · %1$s"</string>
+    <string name="ui_local_model_and_saved_connections_are_shared_22351" formatted="false">"共用本地模型与已保存连接。"</string>
+    <string name="ui_saving_56a22" formatted="false">"正在保存…"</string>
+    <string name="ui_use_this_translator_across_hearth_456c5" formatted="false">"在整个 Hearth 使用此翻译引擎"</string>
+    <string name="ui_applies_to_every_feature_restart_active_camera_reading_sessions_t_1fdea" formatted="false">"应用于所有功能。正在运行的相机或阅读会话需重启以使用新选择。"</string>
+    <string name="ui_translator_saved_for_all_features_59239" formatted="false">"已为所有功能保存翻译引擎。"</string>
+    <string name="ui_keep_the_speech_engine_s_integrated_or_legacy_translation_route_31ea8" formatted="false">"保留语音引擎内置或旧版翻译路径。"</string>
+    <string name="ui_on_device_72a3f" formatted="false">"设备端"</string>
+    <string name="ui_cloud_server_ba8c1" formatted="false">"云端或服务器"</string>
+    <string name="ui_original_text_stays_on_your_phone_2fbea" formatted="false">"原文保留在手机上。"</string>
+    <string name="ui_language_packs_required_manage_download_in_models_de735" formatted="false">"需要语言包，请在模型页管理或下载"</string>
+    <string name="ui_1_s_2_s_mib_3_s_languages_01ef0">"%1$s · %2$s MiB · %3$s 种语言"</string>
+    <string name="ui_set_up_a5041" formatted="false">"设置"</string>
+    <string name="ui_model_downloads_imports_language_packs_1638e" formatted="false">"模型下载、导入与语言包"</string>
+    <string name="ui_cloud_self_hosted_2df1c" formatted="false">"云端或自托管"</string>
+    <string name="ui_recognized_or_typed_text_is_sent_to_the_chosen_server_your_speech_5f1ae" formatted="false">"识别或输入的文本发送至所选服务器。语音服务商单独配置。"</string>
+    <string name="ui_connection_saved_1_s_source_2_s_target_languages_f7ddd">"连接已保存 · %1$s 种源语言 / %2$s 种目标语言"</string>
+    <string name="ui_connect_your_server_key_depends_on_server_dd541" formatted="false">"连接你的服务器 · 密钥取决于服务器要求"</string>
+    <string name="ui_set_up_api_key_check_languages_db97d" formatted="false">"设置 API 密钥并检查语言"</string>
+    <string name="ui_manage_1_s_126c2">"管理 %1$s"</string>
+    <string name="ui_close_connection_setup_0f67b" formatted="false">"关闭连接设置"</string>
+    <string name="ui_setup_saved_8f224" formatted="false">"设置已保存"</string>
+    <string name="ui_nemotron_translation_ready_on_this_phone_7864d" formatted="false">"Nemotron 与翻译已在此手机就绪。"</string>
+    <string name="ui_your_speech_connection_is_saved_it_connects_when_you_start_389c0" formatted="false">"语音连接已保存，启动时连接。"</string>
+    <string name="ui_open_live_captions_d696b" formatted="false">"打开实时字幕"</string>
+    <string name="ui_explore_hearth_19205" formatted="false">"探索 Hearth"</string>
+    <string name="ui_how_would_you_like_to_start_f8dd2" formatted="false">"想如何\n开始？"</string>
+    <string name="ui_easy_setup_for_live_captions_caac2" formatted="false">"快速设置实时字幕。"</string>
+    <string name="ui_on_this_phone_03f49" formatted="false">"在此手机上"</string>
+    <string name="ui_nemotron_local_translation_fd186" formatted="false">"Nemotron 与本地翻译"</string>
+    <string name="ui_cloud_b2efe" formatted="false">"云端"</string>
+    <string name="ui_openai_openrouter_local_server_6a1cc" formatted="false">"OpenAI · OpenRouter · 本地服务器"</string>
+    <string name="ui_unavailable_in_this_offline_build_89320" formatted="false">"离线版本不可用"</string>
+    <string name="ui_choose_another_setup_fbf26" formatted="false">"选择其他配置"</string>
+    <string name="ui_easy_setup_uses_a_few_defaults_full_setup_is_in_settings_f7349" formatted="false">"快速设置使用部分默认选项。完整配置请前往设置。"</string>
+    <string name="ui_open_full_settings_12aaa" formatted="false">"打开完整设置 ↗"</string>
+    <string name="ui_choose_the_nemotron_model_for_easy_setup_other_models_are_availab_b3137" formatted="false">"快速设置请选择 Nemotron。其他模型可在设置中选择。"</string>
+    <string name="ui_cannot_open_the_model_file_510e7" formatted="false">"无法打开模型文件。"</string>
+    <string name="ui_your_phone_your_words_8fa46" formatted="false">"你的手机。\n你的话语。"</string>
+    <string name="ui_speech_and_translation_stay_on_this_device_0bdc1" formatted="false">"语音和翻译保留在此设备上。"</string>
+    <string name="ui_hy_mt2_translation_389c9" formatted="false">"Hy-MT2 翻译"</string>
+    <string name="ui_installed_e0586" formatted="false">"已安装 ✓"</string>
+    <string name="ui_included_in_this_setup_4f499" formatted="false">"包含在此配置中"</string>
+    <string name="ui_translate_to_1_s_f0b21">"翻译为 %1$s ▾"</string>
+    <string name="ui_about_1_9_gb_to_download_extra_space_is_needed_to_install_downloa_c2bcf" formatted="false">"下载约 1.9 GB，安装还需额外空间。下载文件保留在所选文件夹。"</string>
+    <string name="ui_import_both_models_to_continue_this_build_stays_offline_b2b39" formatted="false">"请导入两个模型以继续。此版本保持离线。"</string>
+    <string name="ui_installing_your_setup_cc124" formatted="false">"正在安装配置…"</string>
+    <string name="ui_use_this_setup_83b35" formatted="false">"使用此配置"</string>
+    <string name="ui_download_set_up_87437" formatted="false">"下载并设置"</string>
+    <string name="ui_return_here_after_the_downloads_finish_to_complete_setup_0e83b" formatted="false">"下载完成后请返回此处完成设置。"</string>
+    <string name="ui_finish_later_4d8bc" formatted="false">"稍后完成"</string>
+    <string name="ui_downloads_folder_3d214" formatted="false">"下载与文件夹 ↗"</string>
+    <string name="ui_import_nemotron_f0905" formatted="false">"导入 Nemotron"</string>
+    <string name="ui_import_translation_model_6c131" formatted="false">"导入翻译模型"</string>
+    <string name="ui_translator_79f5c" formatted="false">"翻译模型 ↗"</string>
+    <string name="ui_hy_mt2_supported_destinations_fad6a" formatted="false">"Hy-MT2 支持的目标语言"</string>
+    <string name="ui_connect_once_start_listening_84a85" formatted="false">"连接一次。\n开始聆听。"</string>
+    <string name="ui_local_server_444ff" formatted="false">"本地服务器"</string>
+    <string name="ui_live_speech_translation_with_your_openai_key_1bb6f" formatted="false">"使用你的 OpenAI 密钥实时翻译语音。"</string>
+    <string name="ui_speech_captions_add_translation_later_in_settings_6c99e" formatted="false">"语音字幕。可稍后在设置中添加翻译。"</string>
+    <string name="ui_https_server_url_a8d51" formatted="false">"HTTPS 服务器地址"</string>
+    <string name="ui_speech_model_id_13cb8" formatted="false">"语音模型 ID"</string>
+    <string name="ui_an_openai_compatible_speech_server_audio_goes_to_this_address_0ae3c" formatted="false">"兼容 OpenAI 的语音服务器。音频将发送至此地址。"</string>
+    <string name="ui_api_key_optional_9d882" formatted="false">"API 密钥 · 可选"</string>
+    <string name="ui_saved_key_will_be_used_a8143" formatted="false">"将使用已保存的密钥"</string>
+    <string name="ui_paste_your_key_f74a3" formatted="false">"粘贴密钥"</string>
+    <string name="ui_save_finish_88689" formatted="false">"保存并完成"</string>
+    <string name="ui_uses_your_server_connection_is_checked_when_you_start_bc3f2" formatted="false">"使用你的服务器，启动时检查连接。"</string>
+    <string name="ui_uses_your_provider_account_usage_may_be_billed_by_the_provider_1916b" formatted="false">"使用你的服务商账户，服务商可能收取费用。"</string>
+    <string name="ui_get_a_key_ae0ea" formatted="false">"获取密钥 ↗"</string>
+    <string name="ui_pricing_d1e51" formatted="false">"价格 ↗"</string>
+    <string name="ui_speech_models_d30ae" formatted="false">"语音模型 ↗"</string>
+    <string name="ui_compatible_speech_api_35f3a" formatted="false">"兼容语音 API ↗"</string>
+    <string name="ui_camera_permission_denied_allow_it_in_android_app_settings_or_impo_7f7c7" formatted="false">"相机权限被拒绝。请在 Android 应用设置中允许，或导入照片。"</string>
+    <string name="ui_choose_a_text_language_supported_by_1_s_4940a">"选择 %1$s 支持的文本语言"</string>
+    <string name="ui_1_s_does_not_support_2_s_3_s_choose_a_supported_language_pair_or_c8a2b">"%1$s 不支持 %2$s → %3$s。请选择支持的语言对或翻译引擎。"</string>
+    <string name="ui_photo_dimensions_exceed_the_100_megapixel_import_limit_d37e7" formatted="false">"照片尺寸超出 1 亿像素导入上限"</string>
+    <string name="ui_settings_changed_tap_translate_again_to_update_this_photo_f837e" formatted="false">"更改设置后，请点按再次翻译以更新此照片。"</string>
+    <string name="ui_only_recognized_text_is_sent_to_1_s_camera_images_stay_on_your_ph_0beab">"仅将识别文本发送至 %1$s。相机图像保留在手机上。"</string>
+    <string name="ui_open_camera_672b0" formatted="false">"打开相机"</string>
+    <string name="ui_captured_image_7fc88" formatted="false">"已拍摄图像"</string>
+    <string name="ui_install_the_1_s_model_files_to_begin_ocr_works_offline_after_inst_3b7de">"安装 %1$s 模型文件以开始。安装后可离线识别文字。"</string>
+    <string name="ui_get_ocr_models_245d8" formatted="false">"获取 OCR 模型"</string>
+    <string name="ui_capture_translate_a1034" formatted="false">"拍摄并翻译"</string>
+    <string name="ui_capture_read_bc5ec" formatted="false">"拍摄并识别"</string>
+    <string name="ui_opening_b1b85" formatted="false">"正在打开…"</string>
+    <string name="ui_choose_photo_4a7ed" formatted="false">"选择照片"</string>
+    <string name="ui_start_live_3d3ad" formatted="false">"开始实时识别"</string>
+    <string name="ui_stopping_827c9" formatted="false">"正在停止…"</string>
+    <string name="ui_stop_9e253" formatted="false">"停止"</string>
+    <string name="ui_draw_text_area_22b57" formatted="false">"框选文字区域"</string>
+    <string name="ui_translate_again_02b28" formatted="false">"再次翻译"</string>
+    <string name="ui_read_again_c6c84" formatted="false">"再次识别"</string>
+    <string name="ui_retake_16457" formatted="false">"重拍"</string>
+    <string name="ui_camera_settings_c1947" formatted="false">"相机设置"</string>
+    <string name="ui_original_text_only_7381b" formatted="false">"仅原文"</string>
+    <string name="ui_releasing_models_53a44" formatted="false">"正在释放模型…"</string>
+    <string name="ui_translating_settled_text_06e2b" formatted="false">"正在翻译稳定文本…"</string>
+    <string name="ui_live_ocr_1_s_ms_hold_steady_c9ca4">"实时 · OCR %1$s 毫秒 · 请保持稳定"</string>
+    <string name="ui_captured_ocr_1_s_ms_faf13">"已拍摄 · OCR %1$s 毫秒"</string>
+    <string name="ui_ready_camera_opens_only_on_this_page_ae38b" formatted="false">"已就绪 · 相机仅在此页面打开"</string>
+    <string name="ui_no_readable_text_yet_hold_the_phone_level_move_closer_or_capture_8a5e9" formatted="false">"尚无可识别文字。请保持手机平稳并靠近，或拍摄更大图像进行识别。"</string>
+    <string name="ui_original_c0a80" formatted="false">"原文"</string>
+    <string name="ui_original_text_48909" formatted="false">"原文文本"</string>
+    <string name="ui_copy_original_ae008" formatted="false">"复制原文"</string>
+    <string name="ui_copy_translation_ef0c0" formatted="false">"复制译文"</string>
+    <string name="ui_translate_in_another_app_9f00d" formatted="false">"在其他应用中翻译"</string>
+    <string name="ui_camera_reading_settings_a67f8" formatted="false">"相机与阅读设置"</string>
+    <string name="ui_used_by_camera_and_the_screen_reading_overlay_ef332" formatted="false">"相机与屏幕阅读悬浮窗共用。"</string>
+    <string name="ui_changing_settings_stops_recognition_your_captured_photo_stays_ava_a5b31" formatted="false">"更改设置会停止识别。拍摄的照片会保留，可再次翻译。"</string>
+    <string name="ui_text_in_image_a7bcf" formatted="false">"图中文字语言"</string>
+    <string name="ui_reader_1_s_change_f7947">"识别引擎：%1$s · 更改"</string>
+    <string name="ui_translate_recognized_text_f69ef" formatted="false">"翻译识别文本"</string>
+    <string name="ui_choose_a_different_destination_to_translate_or_turn_translation_o_55817" formatted="false">"选择不同目标语言以翻译，或关闭翻译仅显示原文。"</string>
+    <string name="ui_1_s_does_not_support_this_pair_yet_change_translate_to_or_choose_3834f">"%1$s 暂不支持此语言对。请更改目标语言，或在设置中选择其他引擎。"</string>
+    <string name="ui_changing_language_selects_a_compatible_ocr_reader_when_needed_man_87d2e" formatted="false">"更改语言时会按需选择兼容引擎。Manga 和 Meiki 识别日语，可通过更改引擎进行选择。"</string>
+    <string name="ui_1_s_translations_from_2_s_destinations_depend_on_the_translator_n_83b80">"%1$s · 从 %2$s 翻译。目标语言取决于翻译引擎，而非 OCR 引擎。"</string>
+    <string name="ui_draw_around_text_6f9d8" formatted="false">"圈选文字"</string>
+    <string name="ui_circle_or_drag_around_one_bubble_or_paragraph_the_highlighted_rec_ec069" formatted="false">"圈选或拖动框选一个对话框或段落。高亮矩形是 Hearth 将识别的区域。"</string>
+    <string name="ui_page_to_select_5d85d" formatted="false">"待选区域的页面"</string>
+    <string name="ui_draw_a_text_region_whole_image_and_center_region_are_also_availab_edac3" formatted="false">"圈选文字区域，也可在下方选择整张图或中央区域"</string>
+    <string name="ui_whole_image_6bd00" formatted="false">"整张图像"</string>
+    <string name="ui_center_region_7c60f" formatted="false">"中央区域"</string>
+    <string name="ui_selected_1_s_2_s_pixels_f2105">"已选择 %1$s × %2$s 像素"</string>
+    <string name="ui_draw_an_area_or_choose_a_selection_above_deecf" formatted="false">"请圈选区域，或使用上方选项。"</string>
+    <string name="ui_reset_44c57" formatted="false">"重置"</string>
+    <string name="ui_read_area_9c448" formatted="false">"识别区域"</string>
+    <string name="ui_copying_and_verifying_1_s_keep_this_screen_open_7989e">"正在复制并校验 %1$s…请保持此页面打开。"</string>
+    <string name="ui_unsupported_model_structure_check_the_installation_steps_below_f7c2f" formatted="false">"不支持此模型结构，请查看下方安装步骤。"</string>
+    <string name="ui_imported_1_s_choose_it_in_its_matching_model_group_8afb9">"已导入 %1$s，请在对应模型组中选择。"</string>
+    <string name="ui_1_s_imported_2_s_ef91e">"已导入 %1$s%2$s。"</string>
+    <string name="ui_installed_1_s_models_4b3c9">"已安装的 %1$s 模型"</string>
+    <string name="ui_none_installed_yet_50d82" formatted="false">"尚未安装模型。"</string>
+    <string name="ui_1_s_2_s_mib_3_s_fbd52">"%1$s · %2$s MiB%3$s"</string>
+    <string name="ui_import_1_s_2_s_5dda0">"导入 %1$s %2$s"</string>
+    <string name="ui_android_voices_and_local_supertonic_3_with_model_downloads_and_im_193d5" formatted="false">"Android 声音与本地 Supertonic 3，支持模型下载和导入。"</string>
+    <string name="ui_language_packs_or_text_models_for_on_device_translation_0d656" formatted="false">"用于设备端翻译的语言包或文本模型。"</string>
+    <string name="ui_view_downloads_installation_progress_f57b2" formatted="false">"查看下载与安装进度"</string>
+    <string name="ui_get_model_e95d4" formatted="false">"获取模型"</string>
+    <string name="ui_selected_1_s_7c44d">"已选择 %1$s"</string>
+    <string name="ui_download_folder_1_s_models_850ef">"下载文件夹：%1$s/models"</string>
+    <string name="ui_source_license_397e9" formatted="false">"来源与许可"</string>
+    <string name="ui_browse_publisher_files_e0abe" formatted="false">"浏览发布方文件"</string>
+    <string name="ui_offline_build_obtain_files_on_another_device_then_import_locally_cd62f">"离线版：在其他设备获取文件，再本地导入。来源：%1$s"</string>
+    <string name="ui_openai_live_speech_translation_d7b5e" formatted="false">"OpenAI · 实时语音与翻译"</string>
+    <string name="ui_soniox_v5_speech_translation_6a8ec" formatted="false">"Soniox v5 · 语音与翻译"</string>
+    <string name="ui_scribe_v2_speech_recognition_5c97a" formatted="false">"Scribe v2 · 语音识别"</string>
+    <string name="ui_deepgram_speech_recognition_3a549" formatted="false">"Deepgram · 语音识别"</string>
+    <string name="ui_assemblyai_speech_recognition_4e78b" formatted="false">"AssemblyAI · 语音识别"</string>
+    <string name="ui_openai_compatible_batch_audio_d02f8" formatted="false">"兼容 OpenAI · 批量音频"</string>
+    <string name="ui_1_s_documentation_b0463">"%1$s 文档"</string>
+    <string name="ui_cannot_open_voice_model_b4ec5" formatted="false">"无法打开语音合成模型"</string>
+    <string name="ui_local_voices_29e8b" formatted="false">"本地声音"</string>
+    <string name="ui_cloud_self_hosted_voices_b6c84" formatted="false">"云端或自托管声音"</string>
+    <string name="ui_shared_read_aloud_settings_for_captions_conversations_typed_text_c94c1" formatted="false">"字幕、对话、文字和相机共用朗读设置。切换标签页不会更改声音。"</string>
+    <string name="ui_custom_default_supertonic_3_1_s_2f603">"默认自定义声音：Supertonic 3 · %1$s"</string>
+    <string name="ui_custom_default_your_configured_voice_server_c38eb" formatted="false">"默认自定义声音：已配置的语音服务器"</string>
+    <string name="ui_choose_supertonic_or_self_hosted_to_set_your_custom_default_c52b6" formatted="false">"选择 Supertonic 或自托管引擎，设置默认自定义声音。"</string>
+    <string name="ui_android_playback_is_always_separate_and_does_not_change_your_cust_56d2f" formatted="false">"Android 播放始终独立，不更改默认自定义声音。"</string>
+    <string name="ui_speed_1_s_7d1e1">"语速 · %1$s×"</string>
+    <string name="ui_speech_speed_3f322" formatted="false">"语速"</string>
+    <string name="ui_using_voice_server_12b82" formatted="false">"正在使用语音服务器"</string>
+    <string name="ui_use_voice_server_as_custom_default_f0ea7" formatted="false">"将语音服务器设为默认自定义声音"</string>
+    <string name="ui_text_to_preview_32ed3" formatted="false">"试听文本"</string>
+    <string name="ui_preview_selected_voice_abd2c" formatted="false">"试听所选声音"</string>
+    <string name="ui_select_a_voice_in_this_tab_to_preview_it_8e4c3" formatted="false">"在此标签页选择声音以试听。"</string>
+    <string name="ui_preparing_or_playing_voice_4e5bc" formatted="false">"正在准备或播放语音…"</string>
+    <string name="ui_listen_to_1_s_with_2_s_voice_2cadb">"使用 %2$s 声音朗读 %1$s"</string>
+    <string name="ui_listen_1_s_3cf7d">"聆听 · %1$s"</string>
+    <string name="ui_voice_options_for_1_s_978e2">"%1$s 的声音选项"</string>
+    <string name="ui_custom_voice_e8546" formatted="false">"自定义声音"</string>
+    <string name="ui_set_up_custom_voice_8b3a7" formatted="false">"设置自定义声音"</string>
+    <string name="ui_voice_settings_9f03d" formatted="false">"声音设置"</string>
+    <string name="ui_setup_diagnostics_19e28" formatted="false">"设置诊断"</string>
+    <string name="ui_checking_your_saved_setup_36b7c" formatted="false">"正在检查已保存配置…"</string>
+    <string name="ui_complete_the_android_permission_prompt_10ee5" formatted="false">"请完成 Android 授权提示。"</string>
+    <string name="ui_nothing_was_started_fix_the_items_below_then_check_again_model_ch_5925e" formatted="false">"尚未启动。请修复下方项目后重新检查。模型检查不测试云端额度，也不完整加载识别引擎。"</string>
+    <string name="ui_screen_sharing_6b019" formatted="false">"屏幕共享"</string>
+    <string name="ui_stop_other_overlay_retry_1a172" formatted="false">"停止其他悬浮窗并重试"</string>
+    <string name="ui_check_again_start_7dd2c" formatted="false">"重新检查并开始"</string>
+    <string name="ui_hide_successful_checks_559b0" formatted="false">"隐藏通过的检查"</string>
+    <string name="ui_1_s_checks_passed_show_details_7e5ac">"%1$s 项检查通过 · 显示详情"</string>
+    <string name="ui_import_models_already_on_your_device_35a79" formatted="false">"导入设备上已有的模型。"</string>
+    <string name="ui_import_models_721f0" formatted="false">"导入模型"</string>
+    <string name="ui_get_models_21b53" formatted="false">"获取模型"</string>
+    <string name="ui_browse_speech_translation_camera_and_voices_d335d" formatted="false">"浏览语音、翻译、相机和声音"</string>
+    <string name="ui_folder_30baa" formatted="false">"文件夹"</string>
+    <string name="ui_from_link_b9ad3" formatted="false">"通过链接"</string>
+    <string name="ui_your_downloads_will_appear_here_1bc2a" formatted="false">"下载内容将显示在这里。"</string>
+    <string name="ui_downloaded_c6197" formatted="false">"已下载"</string>
+    <string name="ui_downloadmanager_failed_reason_1_s_54785">"DownloadManager 失败 · 原因 %1$s"</string>
+    <string name="ui_paused_downloadmanager_reason_1_s_ea493">"已暂停 · DownloadManager 原因 %1$s"</string>
+    <string name="ui_waiting_33d30" formatted="false">"等待中"</string>
+    <string name="ui_downloading_9b459" formatted="false">"正在下载"</string>
+    <string name="ui_installing_1_s_b55a5">"正在安装 %1$s…"</string>
+    <string name="ui_installed_select_the_model_in_models_06092" formatted="false">"已安装。请在模型页选择。"</string>
+    <string name="ui_install_downloaded_model_d458c" formatted="false">"安装已下载模型"</string>
+    <string name="ui_model_selected_8d93b" formatted="false">"已选择模型。"</string>
+    <string name="ui_use_model_8d558" formatted="false">"使用模型"</string>
+    <string name="ui_retry_9f5cd" formatted="false">"重试"</string>
+    <string name="ui_open_file_f11b8" formatted="false">"打开文件"</string>
+    <string name="ui_delete_download_d41b5" formatted="false">"删除下载"</string>
+    <string name="ui_downloads_may_use_mobile_data_installed_models_keep_a_verified_ap_da870" formatted="false">"下载可能使用移动数据。已安装模型保留经过验证的应用副本，删除下载不会卸载模型。"</string>
+    <string name="ui_download_folder_59317" formatted="false">"下载文件夹"</string>
+    <string name="ui_models_go_in_models_other_files_go_in_files_model_downloads_insta_2a3ae" formatted="false">"模型存入 models/，其他文件存入 files/。模型下载后自动安装，无需导出或重新导入。"</string>
+    <string name="ui_choose_folder_1838a" formatted="false">"选择文件夹"</string>
+    <string name="ui_open_folder_f9630" formatted="false">"打开文件夹"</string>
+    <string name="ui_use_downloads_folder_59e3c" formatted="false">"使用下载文件夹"</string>
+    <string name="ui_new_downloads_use_this_folder_files_already_downloaded_stay_in_th_67444" formatted="false">"新下载使用此文件夹，已有文件保留在原位置。"</string>
+    <string name="ui_download_from_link_1687d" formatted="false">"通过链接下载"</string>
+    <string name="ui_https_file_url_0c976" formatted="false">"HTTPS 文件链接"</string>
+    <string name="ui_filename_including_extension_ccfb0" formatted="false">"文件名（含扩展名）"</string>
+    <string name="ui_download_file_77402" formatted="false">"下载文件"</string>
+    <string name="ui_remove_1_s_436e1">"移除 %1$s？"</string>
+    <string name="ui_this_cancels_the_transfer_and_deletes_the_downloaded_file_install_a0c35" formatted="false">"这会取消传输并删除下载文件，已安装模型仍可使用。"</string>
+    <string name="ui_keep_466fc" formatted="false">"保留"</string>
+    <string name="ui_face_to_face_options_1c07b" formatted="false">"面对面选项"</string>
+    <string name="ui_cancel_current_turn_4a75e" formatted="false">"取消当前话轮"</string>
+    <string name="ui_swap_my_language_and_their_language_d0b42" formatted="false">"交换我和对方的语言"</string>
+    <string name="ui_me_94563" formatted="false">"我"</string>
+    <string name="ui_them_3dd51" formatted="false">"对方"</string>
+    <string name="ui_1_s_2_s_change_language_f3488">"%1$s，%2$s，更改语言"</string>
+    <string name="ui_open_1_s_conversation_history_bdcbf">"打开 %1$s 对话历史"</string>
+    <string name="ui_speak_or_tap_here_to_read_your_conversation_0c964" formatted="false">"说话，或点按此处查看对话"</string>
+    <string name="ui_you_said_f105a" formatted="false">"你说的"</string>
+    <string name="ui_live_speech_f37ed" formatted="false">"实时语音"</string>
+    <string name="ui_waiting_for_the_other_person_to_finish_64d81" formatted="false">"等待对方说完"</string>
+    <string name="ui_translation_unavailable_162a7" formatted="false">"翻译不可用"</string>
+    <string name="ui_no_translated_text_is_available_f3a27" formatted="false">"暂无译文"</string>
+    <string name="ui_original_1_s_69b8c">"原文 · %1$s"</string>
+    <string name="ui_speech_is_unavailable_for_this_direction_check_the_languages_and_52191" formatted="false">"此方向不可使用语音。请在选项中检查语言与模型。"</string>
+    <string name="ui_tap_for_1_s_history_a9789">"点按查看 %1$s 历史"</string>
+    <string name="ui_finish_b74bd" formatted="false">"说完了"</string>
+    <string name="ui_speak_1_s_77282">"说 %1$s"</string>
+    <string name="ui_choose_the_languages_you_and_the_other_person_use_speak_is_availa_164dc">"选择你和对方使用的语言。仅当语音模型支持该语言且翻译引擎支持该方向时，才可说话。%1$s"</string>
+    <string name="ui_share_conversation_e187f" formatted="false">"分享对话"</string>
+    <string name="ui_microphone_permission_was_not_granted_type_instead_remains_availa_76bd7" formatted="false">"未获得麦克风权限，仍可使用文字输入。"</string>
+    <string name="ui_speaking_a771f" formatted="false">"正在说话"</string>
+    <string name="ui_face_to_face_c104d" formatted="false">"面对面"</string>
+    <string name="ui_conversation_history_a03d8" formatted="false">"对话历史"</string>
+    <string name="ui_conversation_settings_575f3" formatted="false">"对话设置"</string>
+    <string name="ui_me_1_s_24999">"我 · %1$s"</string>
+    <string name="ui_them_1_s_c05c1">"对方 · %1$s"</string>
+    <string name="ui_audio_is_sent_to_your_speech_provider_e97e6" formatted="false">"音频发送给语音服务商。"</string>
+    <string name="ui_set_up_translation_to_begin_887a3" formatted="false">"设置翻译以开始"</string>
+    <string name="ui_your_turn_to_talk_54a90" formatted="false">"轮到你说话"</string>
+    <string name="ui_tap_speak_below_then_finish_for_the_translation_9257b" formatted="false">"点按下方说话，再点说完了以翻译。"</string>
+    <string name="ui_text_history_on_audio_is_not_saved_734f3" formatted="false">"文本历史已开启 · 不保存音频"</string>
+    <string name="ui_history_off_this_session_only_ff01c" formatted="false">"历史已关闭 · 仅此会话"</string>
+    <string name="ui_show_large_2d377" formatted="false">"放大显示"</string>
+    <string name="ui_retry_translation_0bd43" formatted="false">"重试翻译"</string>
+    <string name="ui_latest_messages_a7ea5" formatted="false">"最新消息 ↓"</string>
+    <string name="ui_type_instead_78a8f" formatted="false">"改用文字"</string>
+    <string name="ui_1_s_speech_is_unavailable_with_this_model_s_declared_language_sup_032e4">"按模型声明，不支持 %1$s 语音。请改用文字或更换语音模型。"</string>
+    <string name="ui_my_language_cdfad" formatted="false">"我的语言"</string>
+    <string name="ui_their_language_2f66c" formatted="false">"对方的语言"</string>
+    <string name="ui_what_would_you_like_to_say_3e4e8" formatted="false">"你想说什么？"</string>
+    <string name="ui_face_to_face_settings_83243" formatted="false">"面对面设置"</string>
+    <string name="ui_new_conversation_7f031" formatted="false">"新对话"</string>
+    <string name="ui_speech_1_s_679a7">"语音 · %1$s"</string>
+    <string name="ui_open_conversation_view_c60e0" formatted="false">"打开对话视图"</string>
+    <string name="ui_open_face_to_face_view_f43f6" formatted="false">"打开面对面视图"</string>
+    <string name="ui_translation_1_s_afc1a">"翻译 · %1$s"</string>
+    <string name="ui_saved_conversations_5a303" formatted="false">"已保存对话"</string>
+    <string name="ui_show_original_below_translation_190ac" formatted="false">"在译文下显示原文"</string>
+    <string name="ui_keep_screen_awake_e4656" formatted="false">"保持屏幕常亮"</string>
+    <string name="ui_keep_conversation_screen_awake_6e422" formatted="false">"保持对话屏幕常亮"</string>
+    <string name="ui_models_f3798" formatted="false">"模型"</string>
+    <string name="ui_cloud_connection_ad1ee" formatted="false">"云端连接"</string>
+    <string name="ui_read_translations_aloud_f1394" formatted="false">"朗读译文"</string>
+    <string name="ui_uses_your_shared_android_supertonic_or_self_hosted_voice_listenin_614db" formatted="false">"使用共用的 Android、Supertonic 或自托管声音。播放语音前停止聆听。"</string>
+    <string name="ui_save_history_on_this_device_5b5ad" formatted="false">"在此设备保存历史"</string>
+    <string name="ui_turning_history_off_starts_a_temporary_conversation_earlier_saved_57b46" formatted="false">"关闭历史会开启临时对话；此前保存的对话仍保留在历史中。"</string>
+    <string name="ui_translation_text_size_1_s_d50ff">"译文大小：%1$s"</string>
+    <string name="ui_translation_text_size_408c2" formatted="false">"译文大小"</string>
+    <string name="ui_rename_conversation_30da4" formatted="false">"重命名对话"</string>
+    <string name="ui_share_conversation_text_0722c" formatted="false">"分享对话文本"</string>
+    <string name="ui_translator_1fafc" formatted="false">"翻译引擎"</string>
+    <string name="ui_used_by_conversation_face_to_face_and_typed_text_472fa" formatted="false">"对话、面对面与文字翻译共用。"</string>
+    <string name="ui_this_conversation_3af08" formatted="false">"此对话"</string>
+    <string name="ui_no_messages_in_this_language_yet_7d846" formatted="false">"此语言暂无消息。"</string>
+    <string name="ui_they_said_f60ab" formatted="false">"对方说的"</string>
+    <string name="ui_stored_on_this_device_only_no_audio_is_saved_b80ec" formatted="false">"仅保存在此设备，不保存音频。"</string>
+    <string name="ui_done_e9b45" formatted="false">"完成"</string>
+    <string name="ui_no_saved_conversations_yet_ff5e7" formatted="false">"尚无已保存对话。"</string>
+    <string name="ui_continue_2e026" formatted="false">"继续"</string>
+    <string name="ui_share_09ca5" formatted="false">"分享"</string>
+    <string name="ui_delete_f6fdb" formatted="false">"删除"</string>
+    <string name="ui_conversation_name_863c0" formatted="false">"对话名称"</string>
+    <string name="ui_save_efc00" formatted="false">"保存"</string>
+    <string name="ui_flip_5836b" formatted="false">"翻转"</string>
+    <string name="ui_close_1_s_93864">"关闭 %1$s"</string>
+    <string name="ui_cards_background_7cc95" formatted="false">"卡片与背景"</string>
+    <string name="ui_color_blur_74755" formatted="false">"色彩与模糊"</string>
+    <string name="ui_minimal_backup_d48a8" formatted="false">"极简 · 备用"</string>
+    <string name="ui_colorful_cards_with_softly_blurred_artwork_minimal_removes_decora_ac1d6" formatted="false">"彩色卡片与柔和模糊背景。极简模式移除装饰效果。"</string>
+    <string name="ui_light_dark_1a3d4" formatted="false">"明暗模式"</string>
+    <string name="ui_navigation_cf03c" formatted="false">"导航"</string>
+    <string name="ui_simple_home_puts_every_feature_in_one_place_classic_tabs_keeps_th_bde4c" formatted="false">"简洁主页集中显示所有功能。经典标签页保留之前布局。"</string>
+    <string name="ui_system_follows_your_phone_bubble_appearance_has_its_own_controls_9159c" formatted="false">"系统模式跟随手机设置。悬浮窗外观单独控制。"</string>
+</resources>

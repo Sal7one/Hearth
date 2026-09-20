@@ -1,5 +1,8 @@
 package com.sal7one.transiber.caption
 
+import com.sal7one.transiber.R as UiR
+import com.sal7one.transiber.i18n.*
+
 import androidx.compose.foundation.layout.*
 import com.sal7one.transiber.ui.theme.glassPanel
 import androidx.compose.foundation.rememberScrollState
@@ -30,6 +33,8 @@ fun CaptionHome(
     onModels: () -> Unit,
     onCloud: () -> Unit,
 ) {
+    val uiText = rememberUiText()
+
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var options by rememberSaveable { mutableStateOf(false) }
@@ -97,26 +102,26 @@ fun CaptionHome(
     Column(Modifier.fillMaxSize()) {
         Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            Text(if (running) "Captions are running. Open the bubble for live controls, or stop to change setup."
-                else "What would you like to hear?",
+            Text(if (running) uiText(UiR.string.ui_captions_are_running_open_the_bubble_for_live_controls_or_stop_to_12914)
+                else uiText(UiR.string.ui_what_would_you_like_to_hear_dba27),
                 style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite })
             Column(Modifier.fillMaxWidth().glassPanel().padding(20.dp),verticalArrangement=Arrangement.spacedBy(16.dp)) {
-            HomeChips("Audio", if (cfg.source == CaptionSource.MIC) "Microphone" else "Device audio",
-                listOf("Device audio" to CaptionSource.PLAYBACK_CAPTURE, "Microphone" to CaptionSource.MIC), enabled = !running) {
+            HomeChips(uiText(UiR.string.ui_audio_acdac), if (cfg.source == CaptionSource.MIC) uiText(UiR.string.ui_microphone_24280) else uiText(UiR.string.ui_device_audio_c5702),
+                listOf(uiText(UiR.string.ui_device_audio_c5702) to CaptionSource.PLAYBACK_CAPTURE, uiText(UiR.string.ui_microphone_24280) to CaptionSource.MIC), enabled = !running) {
                 update { c -> c.copy(source = it) }
             }
-            HomeChips("Show", if (cfg.mode == CaptionMode.CAPTIONS) "Original captions" else "Translation",
-                listOf("Original captions" to CaptionMode.CAPTIONS, "Translation" to CaptionMode.TRANSLATE), enabled = !running) { mode ->
+            HomeChips(uiText(UiR.string.ui_show_d97d1), if (cfg.mode == CaptionMode.CAPTIONS) uiText(UiR.string.ui_original_captions_9d268) else uiText(UiR.string.ui_translation_ac26a),
+                listOf(uiText(UiR.string.ui_original_captions_9d268) to CaptionMode.CAPTIONS, uiText(UiR.string.ui_translation_ac26a) to CaptionMode.TRANSLATE), enabled = !running) { mode ->
                 update { it.withCaptionMode(mode) }
             }
             }
             Column(Modifier.fillMaxWidth().glassPanel().padding(20.dp)) {
                 CaptionLanguageFields(cfg, ::update, enabled = !running, compact = true)
             }
-            FeatureAction("Speech & translation", Icons.Default.Tune, { options = true }, detail = if (isCloud) "${cfg.effectiveEngine.label} · audio sent to your provider" else "${cfg.effectiveEngine.label} · on this phone")
-            if (!engineReady) Text(if (isCloud) "Connect your cloud provider to start." else "Choose a speech model to start.")
-            if (needsTranslator) TextButton(onClick = { options = true }) { Text("Set up translation") }
+            FeatureAction(uiText(UiR.string.ui_speech_translation_8002b), Icons.Default.Tune, { options = true }, detail = if (isCloud) uiText(UiR.string.ui_1_s_audio_sent_to_your_provider_db1f9, uiText.label(cfg.effectiveEngine)) else uiText(UiR.string.ui_1_s_on_this_phone_0832f, uiText.label(cfg.effectiveEngine)))
+            if (!engineReady) Text(if (isCloud) uiText(UiR.string.ui_connect_your_cloud_provider_to_start_14c5d) else uiText(UiR.string.ui_choose_a_speech_model_to_start_53e5a))
+            if (needsTranslator) TextButton(onClick = { options = true }) { Text(uiText(UiR.string.ui_set_up_translation_1d214)) }
             error?.let { Text(it, color = MaterialTheme.colorScheme.error,
                 modifier = Modifier.semantics { liveRegion = LiveRegionMode.Assertive }) }
 
@@ -133,28 +138,28 @@ fun CaptionHome(
                             if (!saveFailed) CaptionStartActivity.start(context, config!!.source)
                         }
                     }
-                }) { Text(when { running -> "Show captions"; !engineReady && isCloud -> "Connect cloud"; !engineReady -> "Choose a model"; needsTranslator -> "Set up translation"; else -> "Start captions" }) }
+                }) { Text(when { running -> uiText(UiR.string.ui_show_captions_78946); !engineReady && isCloud -> uiText(UiR.string.ui_connect_cloud_663c4); !engineReady -> uiText(UiR.string.ui_choose_a_model_fefb3); needsTranslator -> uiText(UiR.string.ui_set_up_translation_1d214); else -> uiText(UiR.string.ui_start_captions_68e1c) }) }
                 if (running) IconButton(onClick = { CaptionCaptureService.stop(context) }, modifier = Modifier.size(52.dp)) {
-                    Icon(Icons.Default.Stop, "Stop captions")
+                    Icon(Icons.Default.Stop, uiText(UiR.string.ui_stop_captions_58b64))
                 }
             }
         }
     }
-    if (options) FeatureOptionsSheet("Caption settings", { options = false }, optionsScroll) {
+    if (options) FeatureOptionsSheet(uiText(UiR.string.ui_caption_settings_da0c8), { options = false }, optionsScroll) {
         val engines = CaptionEngineChoice.entries.filter { it != CaptionEngineChoice.CLOUD || ByokPolicy.FEATURE_BYOK }
-        HomeChoice("Speech engine", cfg.effectiveEngine.label, engines.map { it.label to it }, enabled = !running) { engine ->
+        HomeChoice(uiText(UiR.string.ui_speech_engine_38c0a), uiText.label(cfg.effectiveEngine), engines.map { uiText.label(it) to it }, enabled = !running) { engine ->
             if (engine != cfg.effectiveEngine) update { it.copy(engine = engine, modelId = "", localTranslationEnabled = it.mode == CaptionMode.TRANSLATE && (engine.speechBackend != null || it.textTranslationProviderId.isNotBlank())) }
         }
-        Text(if (isCloud) "Audio goes to your configured cloud provider." else "Speech stays on this phone.", style = MaterialTheme.typography.bodySmall)
+        Text(if (isCloud) uiText(UiR.string.ui_audio_goes_to_your_configured_cloud_provider_77561) else uiText(UiR.string.ui_speech_stays_on_this_phone_c93d7), style = MaterialTheme.typography.bodySmall)
         OutlinedButton(onClick = { options = false; if (isCloud) onCloud() else onModels() }, modifier = Modifier.fillMaxWidth()) {
-            Text(if (isCloud) "Manage speech connection" else "Choose or download speech models")
+            Text(if (isCloud) uiText(UiR.string.ui_manage_speech_connection_1959e) else uiText(UiR.string.ui_choose_or_download_speech_models_34085))
         }
         if (cfg.mode == CaptionMode.TRANSLATE) {
             HorizontalDivider()
             com.sal7one.transiber.translation.CaptionTranslatorChooser(cfg, ::update, { options = false; onModels() }, enabled = !running)
         }
-        if (running) Text("Stop captions to change setup.", style = MaterialTheme.typography.bodySmall)
-        if (cfg.source == CaptionSource.PLAYBACK_CAPTURE) Text("Some apps block audio capture. Use Microphone if captions stay silent.", style = MaterialTheme.typography.bodySmall)
+        if (running) Text(uiText(UiR.string.ui_stop_captions_to_change_setup_19d9d), style = MaterialTheme.typography.bodySmall)
+        if (cfg.source == CaptionSource.PLAYBACK_CAPTURE) Text(uiText(UiR.string.ui_some_apps_block_audio_capture_use_microphone_if_captions_stay_sil_60ad2), style = MaterialTheme.typography.bodySmall)
     }
 }
 

@@ -1,5 +1,8 @@
 package com.sal7one.transiber.settings
 
+import com.sal7one.transiber.R as UiR
+import com.sal7one.transiber.i18n.*
+
 import com.sal7one.transiber.byok.*
 
 import androidx.compose.foundation.layout.Arrangement
@@ -44,6 +47,8 @@ import kotlinx.coroutines.launch
 @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
 fun SettingsSpeechCloudUi(onStoredChange: (Boolean) -> Unit = {}, onModeChange: (CloudConfigStore.SttMode) -> Unit = {}) {
+    val uiText = rememberUiText()
+
     if (!ByokPolicy.FEATURE_BYOK) return
     val context = LocalContext.current
     var keyDraft by remember { mutableStateOf("") }
@@ -81,7 +86,7 @@ fun SettingsSpeechCloudUi(onStoredChange: (Boolean) -> Unit = {}, onModeChange: 
     // streaming option — verified 2026-08 their STT is REST-only; their
     // OpenAI-compatible endpoint works as a Batch provider via Custom URL.
     Spacer(Modifier.height(10.dp))
-    Text("Cloud provider / connection", style = MaterialTheme.typography.labelMedium)
+    Text(uiText(UiR.string.ui_cloud_provider_connection_49770), style = MaterialTheme.typography.labelMedium)
     // FlowRow: four mode chips would squash the last one flat in a Row.
     androidx.compose.foundation.layout.FlowRow(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -95,35 +100,35 @@ fun SettingsSpeechCloudUi(onStoredChange: (Boolean) -> Unit = {}, onModeChange: 
                     currentSttMode = mode
                     onModeChange(mode)
                 },
-                label = { Text(mode.label) },
+                label = { Text(uiText.label(mode)) },
             )
         }
     }
     Spacer(Modifier.height(4.dp))
     Text(
         when (currentSttMode) {
-            CloudConfigStore.SttMode.STREAMING_SONIOX -> "Soniox stt-rt-v5: streaming CC and optional integrated translation. Source and translated text are retained separately."
-            CloudConfigStore.SttMode.STREAMING_ELEVENLABS -> "ElevenLabs Scribe v2 Realtime: streaming CC with optional spoken-language hint. Enable a local translator for translation. Auto source cannot yet route local translation on this adapter."
+            CloudConfigStore.SttMode.STREAMING_SONIOX -> uiText(UiR.string.ui_soniox_stt_rt_v5_streaming_cc_and_optional_integrated_translation_7d848)
+            CloudConfigStore.SttMode.STREAMING_ELEVENLABS -> uiText(UiR.string.ui_elevenlabs_scribe_v2_realtime_streaming_cc_with_optional_spoken_l_07f57)
             CloudConfigStore.SttMode.BATCH ->
-                "Batch uploads chunks of audio and returns one result per " +
-                    "round-trip — slowest, but works with any OpenAI-compatible " +
-                    "endpoint (OpenAI, OpenRouter, or Groq via a custom URL)."
+                uiText(UiR.string.ui_batch_uploads_chunks_of_audio_and_returns_one_result_per_2ca0a) +
+                    uiText(UiR.string.ui_round_trip_slowest_but_works_with_any_openai_compatible_76f1d) +
+                    uiText(UiR.string.ui_endpoint_openai_openrouter_or_groq_via_a_custom_url_c2b8a)
             CloudConfigStore.SttMode.STREAMING_DEEPGRAM ->
-                "Deepgram streams audio over a WebSocket and emits interim text " +
-                    "live; Nova-3 is among the lowest-latency ASR on the market."
+                uiText(UiR.string.ui_deepgram_streams_audio_over_a_websocket_and_emits_interim_text_41705) +
+                    uiText(UiR.string.ui_live_nova_3_is_among_the_lowest_latency_asr_on_the_market_7e53c)
             CloudConfigStore.SttMode.STREAMING_OPENAI ->
-                "OpenAI Realtime transcription (gpt-live-transcribe) streams " +
-                    "deltas over a WebSocket — uses the OpenAI key above."
+                uiText(UiR.string.ui_openai_realtime_transcription_gpt_live_transcribe_streams_72775) +
+                    uiText(UiR.string.ui_deltas_over_a_websocket_uses_the_openai_key_above_2ec40)
             CloudConfigStore.SttMode.STREAMING_ASSEMBLYAI ->
-                "AssemblyAI's realtime v3 WebSocket streams interim + final " +
-                    "turns; Universal models are multilingual by default."
+                uiText(UiR.string.ui_assemblyai_s_realtime_v3_websocket_streams_interim_final_43e88) +
+                    uiText(UiR.string.ui_turns_universal_models_are_multilingual_by_default_375dd)
         },
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
     if (currentSttMode == CloudConfigStore.SttMode.BATCH || currentSttMode == CloudConfigStore.SttMode.STREAMING_OPENAI) {
     Text(
-        "Cloud engine · your API key",
+        uiText(UiR.string.ui_cloud_engine_your_api_key_ad35b),
         style = MaterialTheme.typography.labelLarge,
     )
     Spacer(Modifier.height(8.dp))
@@ -133,7 +138,7 @@ fun SettingsSpeechCloudUi(onStoredChange: (Boolean) -> Unit = {}, onModeChange: 
         onValueChange = { keyDraft = it },
         singleLine = true,
         placeholder = {
-            Text(if (keyStored) "Key stored — type to replace" else "sk-…")
+            Text(if (keyStored) uiText(UiR.string.ui_key_stored_type_to_replace_d9e13) else "sk-…")
         },
         modifier = Modifier.fillMaxWidth(),
     )
@@ -144,15 +149,15 @@ fun SettingsSpeechCloudUi(onStoredChange: (Boolean) -> Unit = {}, onModeChange: 
                 val storageFailure = ApiKeyStore.lastFailure
                 keyDraft = ""
                 if (!stored) {
-                    keyStoreError = "Could not store the key on this device — " +
-                        (storageFailure ?: "storage failed") +
-                        ". Nothing was saved."
+                    keyStoreError = uiText(UiR.string.ui_could_not_store_the_key_on_this_device_4137a) +
+                        (storageFailure ?: uiText(UiR.string.ui_storage_failed_edff3)) +
+                        uiText(UiR.string.ui_nothing_was_saved_6815c)
                 } else {
                     keyStoreError = if (
                         ApiKeyStore.storageMode(context) == ApiKeyStore.StorageMode.BASIC
                     ) {
-                        "Stored with basic protection — this device's Keystore " +
-                            "was unavailable (" + (storageFailure ?: "unknown") + ")."
+                        uiText(UiR.string.ui_stored_with_basic_protection_this_device_s_keystore_c01c3) +
+                            uiText(UiR.string.ui_was_unavailable_06b63) + (storageFailure ?: "unknown") + ")."
                     } else {
                         null
                     }
@@ -161,7 +166,7 @@ fun SettingsSpeechCloudUi(onStoredChange: (Boolean) -> Unit = {}, onModeChange: 
             },
             enabled = keyDraft.isNotBlank(),
         ) {
-            Text(if (keyStored) "Replace key" else "Save key")
+            Text(if (keyStored) uiText(UiR.string.ui_replace_key_a55aa) else uiText(UiR.string.ui_save_key_f5216))
         }
         if (keyStored) {
             OutlinedButton(
@@ -171,27 +176,27 @@ fun SettingsSpeechCloudUi(onStoredChange: (Boolean) -> Unit = {}, onModeChange: 
                     refresh()
                 },
             ) {
-                Text("Remove")
+                Text(uiText(UiR.string.ui_remove_e9639))
             }
         }
     }
     }
     CloudSourceLinks(currentSttMode)
     if (currentSttMode == CloudConfigStore.SttMode.STREAMING_SONIOX) {
-        StreamingKeyField("Soniox API key", "https://console.soniox.com", sonioxStored,
+        StreamingKeyField(uiText(UiR.string.ui_soniox_api_key_ea6c1), "https://console.soniox.com", sonioxStored,
             { ApiKeyStore.setSonioxKey(context, it); sonioxStored = ApiKeyStore.getSonioxKey(context).isNotBlank() },
             { ApiKeyStore.setSonioxKey(context, ""); sonioxStored = false })
     }
     if (currentSttMode == CloudConfigStore.SttMode.STREAMING_ELEVENLABS) {
-        StreamingKeyField("ElevenLabs API key", "https://elevenlabs.io/app/settings/api-keys", elevenStored,
+        StreamingKeyField(uiText(UiR.string.ui_elevenlabs_api_key_1b0b7), "https://elevenlabs.io/app/settings/api-keys", elevenStored,
             { ApiKeyStore.setElevenLabsKey(context, it); elevenStored = ApiKeyStore.getElevenLabsKey(context).isNotBlank() },
             { ApiKeyStore.setElevenLabsKey(context, ""); elevenStored = false })
     }
     if (currentSttMode == CloudConfigStore.SttMode.STREAMING_DEEPGRAM) {
         Spacer(Modifier.height(8.dp))
         StreamingKeyField(
-            label = "Deepgram API key",
-            placeholder = "Paste the key from console.deepgram.com",
+            label = uiText(UiR.string.ui_deepgram_api_key_05f53),
+            placeholder = uiText(UiR.string.ui_paste_the_key_from_console_deepgram_com_e16ea),
             stored = deepgramStored,
             onSave = { key ->
                 ApiKeyStore.setDeepgramKey(context, key)
@@ -206,8 +211,8 @@ fun SettingsSpeechCloudUi(onStoredChange: (Boolean) -> Unit = {}, onModeChange: 
     if (currentSttMode == CloudConfigStore.SttMode.STREAMING_ASSEMBLYAI) {
         Spacer(Modifier.height(8.dp))
         StreamingKeyField(
-            label = "AssemblyAI API key",
-            placeholder = "Paste the key from assemblyai.com/app/account",
+            label = uiText(UiR.string.ui_assemblyai_api_key_da25e),
+            placeholder = uiText(UiR.string.ui_paste_the_key_from_assemblyai_com_app_account_9d6b7),
             stored = assemblyStored,
             onSave = { key ->
                 ApiKeyStore.setAssemblyAiKey(context, key)
@@ -221,16 +226,16 @@ fun SettingsSpeechCloudUi(onStoredChange: (Boolean) -> Unit = {}, onModeChange: 
     }
     var extraOptions by remember { mutableStateOf(false) }
     if (currentSttMode != CloudConfigStore.SttMode.BATCH) {
-        TextButton(onClick = { extraOptions = !extraOptions }) { Text(if (extraOptions) "Hide batch & voice options" else "Optional batch & cloud voice settings") }
+        TextButton(onClick = { extraOptions = !extraOptions }) { Text(if (extraOptions) uiText(UiR.string.ui_hide_batch_voice_options_f3f31) else uiText(UiR.string.ui_optional_batch_cloud_voice_settings_6eebe)) }
     }
     if (currentSttMode == CloudConfigStore.SttMode.BATCH || extraOptions) {
-        Text("These endpoint and model settings affect batch uploads and optional cloud voice. Streaming uses the provider selected above.", style = MaterialTheme.typography.bodySmall)
+        Text(uiText(UiR.string.ui_these_endpoint_and_model_settings_affect_batch_uploads_and_option_a4bba), style = MaterialTheme.typography.bodySmall)
     // ── Provider & model ─────────────────────────────────────────────
     // Endpoint-agnostic: OpenAI keys go to OpenAI, OpenRouter keys to
     // OpenRouter, anything OpenAI-compatible to a custom URL. The model
     // ids are editable — the cloud engine reads them at session start.
     Spacer(Modifier.height(10.dp))
-    Text("Provider", style = MaterialTheme.typography.labelMedium)
+    Text(uiText(UiR.string.ui_provider_7ceee), style = MaterialTheme.typography.labelMedium)
     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
         CloudConfigStore.Provider.entries.forEach { provider ->
             androidx.compose.material3.FilterChip(
@@ -245,7 +250,7 @@ fun SettingsSpeechCloudUi(onStoredChange: (Boolean) -> Unit = {}, onModeChange: 
                     sttModelDraft = provider.sttModel
                     ttsModelDraft = provider.ttsModel
                 },
-                label = { Text(provider.label) },
+                label = { Text(uiText.label(provider)) },
             )
         }
     }
@@ -257,7 +262,7 @@ fun SettingsSpeechCloudUi(onStoredChange: (Boolean) -> Unit = {}, onModeChange: 
         },
         modifier = Modifier.fillMaxWidth(),
         singleLine = true,
-        label = { Text("Base URL") },
+        label = { Text(uiText(UiR.string.ui_base_url_1dbd6)) },
         placeholder = { Text("https://…/v1") },
     )
     OutlinedTextField(
@@ -268,7 +273,7 @@ fun SettingsSpeechCloudUi(onStoredChange: (Boolean) -> Unit = {}, onModeChange: 
         },
         modifier = Modifier.fillMaxWidth(),
         singleLine = true,
-        label = { Text("Batch STT model (captions)") },
+        label = { Text(uiText(UiR.string.ui_batch_stt_model_captions_3d989)) },
         placeholder = { Text("openai/whisper-1 / groq/whisper-large-v3-turbo") },
     )
     // Each explicit open refreshes the selected endpoint/account; no shared disk cache.
@@ -292,9 +297,9 @@ fun SettingsSpeechCloudUi(onStoredChange: (Boolean) -> Unit = {}, onModeChange: 
         }
     }
     Text(
-        "This picker changes batch STT only. Live OpenAI CC uses gpt-live-transcribe; " +
-            "live translation uses gpt-realtime-translate. Newest creation date first " +
-            "(the API does not provide release dates or OpenAI prices).",
+        uiText(UiR.string.ui_this_picker_changes_batch_stt_only_live_openai_cc_uses_gpt_live_t_3603e) +
+            uiText(UiR.string.ui_live_translation_uses_gpt_realtime_translate_newest_creation_date_4eb89) +
+            uiText(UiR.string.ui_the_api_does_not_provide_release_dates_or_openai_prices_9cb12),
         style = MaterialTheme.typography.bodySmall,
     )
     val uriHandler = androidx.compose.ui.platform.LocalUriHandler.current
@@ -304,23 +309,23 @@ fun SettingsSpeechCloudUi(onStoredChange: (Boolean) -> Unit = {}, onModeChange: 
         else -> null
     }
     if (pricingUrl != null) androidx.compose.material3.TextButton(onClick = { uriHandler.openUri(pricingUrl) }) {
-        Text("Provider pricing and billing units")
+        Text(uiText(UiR.string.ui_provider_pricing_and_billing_units_f48db))
     }
     Box {
         OutlinedButton(onClick = { modelMenuOpen = true }) {
-            Text("Browse speech models")
+            Text(uiText(UiR.string.ui_browse_speech_models_87929))
         }
         androidx.compose.material3.DropdownMenu(
             expanded = modelMenuOpen,
             onDismissRequest = { modelMenuOpen = false },
             modifier = Modifier.fillMaxWidth(0.95f).heightIn(max = 420.dp),
         ) {
-            if (modelsLoading) Text("Loading speech models…", modifier = Modifier.padding(12.dp))
+            if (modelsLoading) Text(uiText(UiR.string.ui_loading_speech_models_f0902), modifier = Modifier.padding(12.dp))
             catalogError?.let {
                 Text(it, modifier = Modifier.padding(12.dp), style = MaterialTheme.typography.bodySmall)
             }
             if (catalogModels.isEmpty() && !modelsLoading && catalogError == null) {
-                Text("No recognized speech models returned. Custom model IDs can still be entered manually.",
+                Text(uiText(UiR.string.ui_no_recognized_speech_models_returned_custom_model_ids_can_still_b_dac29),
                     modifier = Modifier.padding(12.dp), style = MaterialTheme.typography.bodySmall)
             }
             catalogModels.forEach { model ->
@@ -330,7 +335,7 @@ fun SettingsSpeechCloudUi(onStoredChange: (Boolean) -> Unit = {}, onModeChange: 
                         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                             Text(model.name)
                             Text(model.id, style = MaterialTheme.typography.labelSmall)
-                            Text("${model.role.label} · Created ${model.created}",
+                            Text(uiText(UiR.string.ui_1_s_created_2_s_5f4ce, uiText.label(model.role), model.created),
                                 style = MaterialTheme.typography.labelSmall)
                             Text(model.pricing, style = MaterialTheme.typography.labelSmall)
                         }
@@ -352,18 +357,18 @@ fun SettingsSpeechCloudUi(onStoredChange: (Boolean) -> Unit = {}, onModeChange: 
         },
         modifier = Modifier.fillMaxWidth(),
         singleLine = true,
-        label = { Text("TTS model (voice)") },
+        label = { Text(uiText(UiR.string.ui_tts_model_voice_54aa9)) },
         placeholder = { Text("tts-1") },
     )
     Spacer(Modifier.height(6.dp))
     Text(
         text = keyStoreError ?: if (keyStored) {
-            "Key stored, encrypted on this device (Android Keystore). " +
-                "Utterances are uploaded only while an overlay session runs."
+            uiText(UiR.string.ui_key_stored_encrypted_on_this_device_android_keystore_ef846) +
+                uiText(UiR.string.ui_utterances_are_uploaded_only_while_an_overlay_session_runs_ac3e8)
         } else {
-            "Paste the key from your provider (e.g. platform.openai.com → API " +
-                "keys). Stored encrypted on this device; the FOSS build of this " +
-                "app has no network permission at all."
+            uiText(UiR.string.ui_paste_the_key_from_your_provider_e_g_platform_openai_com_api_3cb5d) +
+                uiText(UiR.string.ui_keys_stored_encrypted_on_this_device_the_foss_build_of_this_81a93) +
+                uiText(UiR.string.ui_app_has_no_network_permission_at_all_cf763)
         },
         style = MaterialTheme.typography.bodySmall,
         color = if (keyStoreError != null) {
@@ -385,6 +390,8 @@ private fun StreamingKeyField(
     onSave: (String) -> Unit,
     onRemove: () -> Unit,
 ) {
+    val uiText = rememberUiText()
+
     var draft by remember { mutableStateOf("") }
     OutlinedTextField(
         value = draft,
@@ -392,7 +399,7 @@ private fun StreamingKeyField(
         onValueChange = { draft = it },
         singleLine = true,
         label = { Text(label) },
-        placeholder = { Text(if (stored) "Key stored — type to replace" else placeholder) },
+        placeholder = { Text(if (stored) uiText(UiR.string.ui_key_stored_type_to_replace_d9e13) else placeholder) },
         modifier = Modifier.fillMaxWidth(),
     )
     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -403,11 +410,11 @@ private fun StreamingKeyField(
             },
             enabled = draft.isNotBlank(),
         ) {
-            Text(if (stored) "Replace key" else "Save key")
+            Text(if (stored) uiText(UiR.string.ui_replace_key_a55aa) else uiText(UiR.string.ui_save_key_f5216))
         }
         if (stored) {
             OutlinedButton(onClick = onRemove) {
-                Text("Remove")
+                Text(uiText(UiR.string.ui_remove_e9639))
             }
         }
     }

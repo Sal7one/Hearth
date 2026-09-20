@@ -1,5 +1,8 @@
 package com.sal7one.transiber.models
 
+import com.sal7one.transiber.R as UiR
+import com.sal7one.transiber.i18n.*
+
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -15,6 +18,8 @@ import kotlinx.coroutines.*
 
 @Composable
 fun ModelsScreen(onDownloads: () -> Unit = {}, onVoices: () -> Unit = {}, initialSection: String = "Speech") {
+    val uiText = rememberUiText()
+
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var config by remember { mutableStateOf(CaptionOverlayConfig()) }
@@ -41,7 +46,7 @@ fun ModelsScreen(onDownloads: () -> Unit = {}, onVoices: () -> Unit = {}, initia
     Column(Modifier.fillMaxSize()) {
         FlowRow(Modifier.padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             listOf("Speech", "Translation", "Camera", "Voices").forEach { group ->
-                FilterChip(selected = section == group, onClick = { section = group }, label = { Text(group) })
+                FilterChip(selected = section == group, onClick = { section = group }, label = { Text(uiText.modelSection(group)) })
             }
         }
         pages.SaveableStateProvider(section) {
@@ -49,19 +54,19 @@ fun ModelsScreen(onDownloads: () -> Unit = {}, onVoices: () -> Unit = {}, initia
                 error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
                 if (!loaded) { if (error == null) LinearProgressIndicator(Modifier.fillMaxWidth()); return@Column }
                 when (section) {
-                    "Voices" -> { Text("Android voices and local Supertonic 3, with model downloads and import.");Button(onClick=onVoices){Text("Voices & read aloud")} }
+                    "Voices" -> { Text(uiText(UiR.string.ui_android_voices_and_local_supertonic_3_with_model_downloads_and_im_193d5));Button(onClick=onVoices){Text(uiText(UiR.string.ui_voices_read_aloud_64e95))} }
                     "Speech" -> {
                         com.sal7one.transiber.settings.SettingsSpeechLocalUi(config, update)
                     }
                     "Translation" -> {
-                        Text("Local translation", style = MaterialTheme.typography.titleLarge)
-                        Text("Language packs or text models for on-device translation.", style = MaterialTheme.typography.bodySmall)
+                        Text(uiText(UiR.string.ui_local_translation_010cc), style = MaterialTheme.typography.titleLarge)
+                        Text(uiText(UiR.string.ui_language_packs_or_text_models_for_on_device_translation_0d656), style = MaterialTheme.typography.bodySmall)
                         com.sal7one.transiber.settings.SettingsTranslateLocalUi(config, { change -> update { current -> change(current).copy(mode = current.mode, localTranslationEnabled = current.localTranslationEnabled) } }, includeLegacy = true, showCaptionControls = false)
                     }
                     "Camera" -> com.sal7one.transiber.settings.SettingsOcrLocalUi(onDownloads)
 
                 }
-                if (ByokPolicy.FEATURE_BYOK) TextButton(onClick = onDownloads) { Text("View downloads & installation progress") }
+                if (ByokPolicy.FEATURE_BYOK) TextButton(onClick = onDownloads) { Text(uiText(UiR.string.ui_view_downloads_installation_progress_f57b2)) }
             }
         }
     }

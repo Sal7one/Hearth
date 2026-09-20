@@ -1,5 +1,8 @@
 package com.sal7one.transiber.caption
 
+import com.sal7one.transiber.R as UiR
+import com.sal7one.transiber.i18n.*
+
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -35,6 +38,8 @@ fun CaptionLanguageFields(
     showTarget: Boolean = true,
     compact: Boolean = false,
 ) {
+    val uiText = rememberUiText()
+
     val context = LocalContext.current
     val cloudMode = CloudConfigStore.sttMode(context)
     var picker by remember { mutableStateOf<CaptionLanguagePicker?>(null) }
@@ -45,22 +50,22 @@ fun CaptionLanguageFields(
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         if (showSource) {
             val sourceCode = if (config.engine == CaptionEngineChoice.VOSK) "model" else CaptionLanguages.effectiveSource(config, cloudMode, model)
-            LanguageField("Spoken language (CC)", sourceCode, enabled && source.allowsSelection) { open(CaptionLanguagePicker.SOURCE) }
-            Text(if (compact) model.label else source.note, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            LanguageField(uiText(UiR.string.ui_spoken_language_cc_c652a), sourceCode, enabled && source.allowsSelection) { open(CaptionLanguagePicker.SOURCE) }
+            Text(if (compact) model.label else uiText.note(source), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             if (config.streamLanguage != sourceCode && config.streamLanguage != "auto") Text(
-                "Saved hint ${LanguageCatalog.option(config.streamLanguage).englishName} is not used by this mode.",
+                uiText(UiR.string.ui_saved_hint_1_s_is_not_used_by_this_mode_09131, uiText.languageName(config.streamLanguage)),
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         if (showTarget && (config.mode == CaptionMode.TRANSLATE || targetChoices != null)) {
-            LanguageField("Translate to", config.target.languageTag, enabled) { open(CaptionLanguagePicker.TARGET) }
-            if (!target.accepts(config.target.languageTag)) Text("Choose an output language supported by this setup.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            LanguageField(uiText(UiR.string.ui_translate_to_a1ba6), config.target.languageTag, enabled) { open(CaptionLanguagePicker.TARGET) }
+            if (!target.accepts(config.target.languageTag)) Text(uiText(UiR.string.ui_choose_an_output_language_supported_by_this_setup_96051), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
     picker?.let { which ->
         Dialog(onDismissRequest = { picker = null }, properties = DialogProperties(usePlatformDefaultWidth = false)) {
             Surface(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding().imePadding(), color = MaterialTheme.colorScheme.surface) {
                 LanguagePickerContent(
-                    title = if (which == CaptionLanguagePicker.SOURCE) "Spoken language (CC)" else "Translate to",
+                    title = if (which == CaptionLanguagePicker.SOURCE) uiText(UiR.string.ui_spoken_language_cc_c652a) else uiText(UiR.string.ui_translate_to_a1ba6),
                     choices = if (which == CaptionLanguagePicker.SOURCE) source else target,
                     selected = if (which == CaptionLanguagePicker.SOURCE) {
                         if (config.engine == CaptionEngineChoice.VOSK) "model" else CaptionLanguages.effectiveSource(config, cloudMode, model)
@@ -78,19 +83,20 @@ fun CaptionLanguageFields(
 
 @Composable
 private fun LanguageField(title: String, code: String, enabled: Boolean, onClick: () -> Unit) {
+    val uiText = rememberUiText()
     val language = LanguageCatalog.option(code)
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Text(title, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         if (!enabled) {
-            Text(language.label, Modifier.fillMaxWidth().padding(vertical = 8.dp).semantics {
-                contentDescription = "$title, ${language.englishName}"
+            Text(uiText.languageLabel(language), Modifier.fillMaxWidth().padding(vertical = 8.dp).semantics {
+                contentDescription = "$title, ${uiText.languageName(language.code)}"
             }, style = MaterialTheme.typography.bodyLarge)
         } else OutlinedButton(onClick = onClick, enabled = true,
             modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp).semantics {
-                contentDescription = "$title, ${language.englishName}"
+                contentDescription = "$title, ${uiText.languageName(language.code)}"
             }, contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp)) {
             Text(language.flag, Modifier.padding(end = 12.dp).clearAndSetSemantics { })
-            Text(language.label, Modifier.weight(1f), textAlign = TextAlign.Start)
+            Text(uiText.languageLabel(language), Modifier.weight(1f), textAlign = TextAlign.Start)
             if (enabled) Icon(Icons.Default.ExpandMore, null, Modifier.padding(start = 8.dp))
         }
     }
@@ -107,9 +113,14 @@ fun LanguagePickerContent(
     modifier: Modifier = Modifier,
     searchable: Boolean = true,
 ) {
+    val uiText = rememberUiText()
+
     var query by rememberSaveable { mutableStateOf("") }
     val pickerCodes = choices.pickerCodes(selected)
-    val rows = remember(pickerCodes, query) { LanguageCatalog.choices(pickerCodes, query) }
+    val rows = remember(pickerCodes, query, uiText) {
+        val regular = LanguageCatalog.choices(pickerCodes, query).map { it.code }.toSet()
+        LanguageCatalog.choices(pickerCodes).filter { it.code in regular || uiText.languageName(it.code).contains(query.trim(), ignoreCase = true) }
+    }
     val customCode = choices.customCode(query)
     // The note is lazy item 0; language rows start at 1. Open on the current
     // selection, reset search results to the top, and return to the selection
@@ -121,30 +132,30 @@ fun LanguagePickerContent(
     Column(modifier.fillMaxSize().semantics { paneTitle = title }) {
         Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp), verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = onDismiss, modifier = Modifier.size(48.dp)) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back without changing language")
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, uiText(UiR.string.ui_back_without_changing_language_4e429))
             }
             Text(title, Modifier.weight(1f).padding(start = 4.dp).semantics { heading() }, style = MaterialTheme.typography.titleMedium)
         }
         if (searchable) OutlinedTextField(value = query, onValueChange = { query = it },
-            label = { Text("Search languages") }, placeholder = { Text("Native name, English name or code") },
+            label = { Text(uiText(UiR.string.ui_search_languages_ea93e)) }, placeholder = { Text(uiText(UiR.string.ui_native_name_english_name_or_code_18590)) },
             singleLine = true, modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp))
         LazyColumn(Modifier.weight(1f).fillMaxWidth().selectableGroup(), state = listState, contentPadding = PaddingValues(bottom = 16.dp)) {
-            item(key = "note") { Text(choices.note, Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+            item(key = "note") { Text(uiText.note(choices), Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
             if (customCode != null) item(key = "custom-code") {
                 TextButton(onClick = { onSelect(customCode) }, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)) {
-                    Text("Use language code: $customCode · checked by provider")
+                    Text(uiText(UiR.string.ui_use_language_code_1_s_checked_by_provider_283e3, customCode))
                 }
             }
-            if (rows.isEmpty() && customCode == null) item(key = "empty") { Text("No matching languages", Modifier.padding(16.dp).semantics { liveRegion = LiveRegionMode.Polite }) }
+            if (rows.isEmpty() && customCode == null) item(key = "empty") { Text(uiText(UiR.string.ui_no_matching_languages_e9531), Modifier.padding(16.dp).semantics { liveRegion = LiveRegionMode.Polite }) }
             items(rows, key = { it.code }) { language ->
                 Row(Modifier.fillMaxWidth().heightIn(min = 64.dp)
                     .selectable(selected = language.code == selected, role = Role.RadioButton, onClick = { onSelect(language.code) })
                     .padding(horizontal = 16.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
                     Text(language.flag, Modifier.padding(end = 16.dp).clearAndSetSemantics { })
                     Column(Modifier.weight(1f)) {
-                        Text(language.nativeName, style = MaterialTheme.typography.bodyLarge)
-                        if (language.nativeName != language.englishName) Text(language.englishName,
+                        Text(if (language.code in setOf("auto", "model")) uiText.languageName(language.code) else language.nativeName, style = MaterialTheme.typography.bodyLarge)
+                        if (language.nativeName != uiText.languageName(language.code)) Text(uiText.languageName(language.code),
                             style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     RadioButton(selected = language.code == selected, onClick = null, modifier = Modifier.padding(start = 8.dp))

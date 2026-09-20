@@ -1,5 +1,8 @@
 package com.sal7one.transiber.caption
 
+import com.sal7one.transiber.R as UiR
+import com.sal7one.transiber.i18n.*
+
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
@@ -153,6 +156,8 @@ fun CaptionOverlayWindow(
     onClear: () -> Unit,
     availableHeightDp: Float = 240f,
 ) {
+    val uiText = rememberUiText()
+
     val cfg by config.collectAsStateWithLifecycle()
     val state by engineState.collectAsStateWithLifecycle()
     val palette = paletteFor(cfg.theme)
@@ -175,7 +180,7 @@ fun CaptionOverlayWindow(
             .background(palette.surface.copy(alpha = if (cfg.showSettings) 0.97f else effectiveSurfaceAlpha(palette.surface.alpha, cfg.backgroundOpacity)))
             .border(0.5.dp, palette.onSurfaceFaded, RoundedCornerShape(16.dp)),
     ) {
-        if (cfg.tapThrough) Text("Tap lock to restore controls · drag lock to move",
+        if (cfg.tapThrough) Text(uiText(UiR.string.ui_tap_lock_to_restore_controls_drag_lock_to_move_20d73),
             Modifier.padding(horizontal = 12.dp, vertical = 8.dp), color = palette.onSurface, fontSize = 12.sp)
         else ControlStrip(cfg, state, palette, true, onDrag, onDragFinished, onClose, { held = null; onClear() }, onConfigChange)
         Box(Modifier.weight(1f).fillMaxWidth()) {
@@ -186,7 +191,7 @@ fun CaptionOverlayWindow(
                     else androidx.compose.material3.darkColorScheme()) {
                     Surface(Modifier.fillMaxSize()) {
                         LanguagePickerContent(
-                            title = if (which == CaptionLanguagePicker.SOURCE) "Spoken language (CC)" else "Translate to",
+                            title = if (which == CaptionLanguagePicker.SOURCE) uiText(UiR.string.ui_spoken_language_cc_c652a) else uiText(UiR.string.ui_translate_to_a1ba6),
                             choices = if (which == CaptionLanguagePicker.SOURCE) CaptionLanguages.source(cfg, cloudMode, rememberCaptionLanguageModel(cfg)) else com.sal7one.transiber.translation.captionTranslationChoices(cfg, cloudMode),
                             selected = if (which == CaptionLanguagePicker.SOURCE) {
                                 if (cfg.engine == CaptionEngineChoice.VOSK) "model" else CaptionLanguages.effectiveSource(cfg, cloudMode, rememberCaptionLanguageModel(cfg))
@@ -217,7 +222,7 @@ fun CaptionOverlayWindow(
                         TextButton(onClick = {
                             held = if (held == null) CaptionReading.snapshot(state, cfg.showPartial) else null
                         }) {
-                            Text(if (held == null) "Read history" else "Back to live", color = palette.accent)
+                            Text(if (held == null) uiText(UiR.string.ui_read_history_2f89b) else uiText(UiR.string.ui_back_to_live_e83c9), color = palette.accent)
                         }
                         if (held != null) {
                             TextButton(onClick = {
@@ -232,11 +237,11 @@ fun CaptionOverlayWindow(
                                     }
                                 }.trim()
                                 clipboard.setText(AnnotatedString(text))
-                            }) { Text("Copy text", color = palette.accent) }
+                            }) { Text(uiText(UiR.string.ui_copy_text_06a76), color = palette.accent) }
                         }
                     }
                     if (held != null) Text(
-                        "Text held · capture continues · latest 120 segments retained",
+                        uiText(UiR.string.ui_text_held_capture_continues_latest_120_segments_retained_ff712),
                         modifier = Modifier.padding(horizontal = 12.dp), color = palette.onSurfaceMuted, fontSize = 11.sp,
                     )
                     Box(Modifier.weight(1f)) {
@@ -260,12 +265,14 @@ private fun ControlStrip(
     onClear: () -> Unit,
     onConfigChange: ((CaptionOverlayConfig) -> CaptionOverlayConfig) -> Unit,
 ) {
+    val uiText = rememberUiText()
+
     val moveStep = with(LocalDensity.current) { 32.dp.roundToPx() }
     val moveActions = listOf(
-        CustomAccessibilityAction("Move captions up") { onDrag(0, -moveStep); onDragFinished(); true },
-        CustomAccessibilityAction("Move captions down") { onDrag(0, moveStep); onDragFinished(); true },
-        CustomAccessibilityAction("Move captions left") { onDrag(-moveStep, 0); onDragFinished(); true },
-        CustomAccessibilityAction("Move captions right") { onDrag(moveStep, 0); onDragFinished(); true },
+        CustomAccessibilityAction(uiText(UiR.string.ui_move_captions_up_d94cb)) { onDrag(0, -moveStep); onDragFinished(); true },
+        CustomAccessibilityAction(uiText(UiR.string.ui_move_captions_down_f1f06)) { onDrag(0, moveStep); onDragFinished(); true },
+        CustomAccessibilityAction(uiText(UiR.string.ui_move_captions_left_920be)) { onDrag(-moveStep, 0); onDragFinished(); true },
+        CustomAccessibilityAction(uiText(UiR.string.ui_move_captions_right_a939e)) { onDrag(moveStep, 0); onDragFinished(); true },
     )
     val stripDrag = if (dragEnabled) {
         Modifier.pointerInput(Unit) {
@@ -293,7 +300,7 @@ private fun ControlStrip(
         // Only this handle drags the window; scrolling and buttons own their gestures.
         Icon(
             Icons.Default.DragIndicator,
-            contentDescription = "Drag to move captions",
+            contentDescription = uiText(UiR.string.ui_drag_to_move_captions_51a37),
             tint = palette.onSurfaceFaded,
             modifier = Modifier.size(48.dp).then(stripDrag).semantics { customActions = moveActions },
         )
@@ -303,18 +310,18 @@ private fun ControlStrip(
         IconButton(onClick = { onConfigChange { it.copy(paused = !it.paused) } }, enabled = state.status != Status.ERROR, modifier = Modifier.size(controlSize)) {
             Icon(
                 if (cfg.paused) Icons.Default.PlayArrow else Icons.Default.Pause,
-                if (cfg.paused) "Resume captions" else "Pause captions",
+                if (cfg.paused) uiText(UiR.string.ui_resume_captions_b31f8) else uiText(UiR.string.ui_pause_captions_dc66c),
                 tint = palette.onSurfaceFaded,
             )
         }
         IconButton(onClick = onClear, modifier = Modifier.size(controlSize)) {
-            Icon(Icons.Default.Delete, "Clear previous text and pending translations", tint = palette.onSurfaceFaded)
+            Icon(Icons.Default.Delete, uiText(UiR.string.ui_clear_previous_text_and_pending_translations_4cbd5), tint = palette.onSurfaceFaded)
         }
         IconButton(onClick = { onConfigChange { it.copy(showSettings = !it.showSettings, languagePicker = null) } }, modifier = Modifier.size(controlSize)) {
-            Icon(Icons.Default.Settings, "Caption settings", tint = palette.onSurfaceFaded)
+            Icon(Icons.Default.Settings, uiText(UiR.string.ui_caption_settings_da0c8), tint = palette.onSurfaceFaded)
         }
         IconButton(onClick = onClose, modifier = Modifier.size(controlSize)) {
-            Icon(Icons.Default.Close, "Stop captions", tint = palette.onSurfaceFaded)
+            Icon(Icons.Default.Close, uiText(UiR.string.ui_stop_captions_58b64), tint = palette.onSurfaceFaded)
         }
     }
     }
@@ -323,16 +330,18 @@ private fun ControlStrip(
 
 @Composable
 private fun StatusBadge(state: State, cfg: CaptionOverlayConfig, palette: OverlayPalette, modifier: Modifier) {
+    val uiText = rememberUiText()
+
     val label = when {
-        cfg.paused -> "Paused"
-        state.status == Status.LOADING_MODEL -> "Loading ${state.modelName ?: "model"}…"
-        state.status == Status.ERROR -> state.error ?: "Error"
+        cfg.paused -> uiText(UiR.string.ui_paused_c7dfb)
+        state.status == Status.LOADING_MODEL -> uiText(UiR.string.ui_loading_1_s_aba14, state.modelName ?: "model")
+        state.status == Status.ERROR -> state.error ?: uiText(UiR.string.ui_error_7f2f6)
         state.status == Status.CAPTURE_SILENT && cfg.source == CaptionSource.PLAYBACK_CAPTURE ->
-            "No capturable audio — app may block capture. Try microphone input"
-        state.status == Status.RUNNING && cfg.paused -> "Paused"
+            uiText(UiR.string.ui_no_capturable_audio_app_may_block_capture_try_microphone_input_709c8)
+        state.status == Status.RUNNING && cfg.paused -> uiText(UiR.string.ui_paused_c7dfb)
         state.status == Status.RUNNING && cfg.mode == CaptionMode.TRANSLATE ->
-            "Translating · ${state.engineLabel}"
-        state.status == Status.RUNNING -> "Captions · ${state.engineLabel}"
+            uiText(UiR.string.ui_translating_1_s_0d960, state.engineLabel)
+        state.status == Status.RUNNING -> uiText(UiR.string.ui_captions_1_s_31caa, state.engineLabel)
         else -> state.status.name.lowercase(java.util.Locale.ROOT)
     }
     Text(
@@ -356,6 +365,8 @@ private fun CaptionBody(
     palette: OverlayPalette,
     scrollState: ScrollState,
 ) {
+    val uiText = rememberUiText()
+
     // A final remains the current caption even when previous-history is disabled.
     // One bounded scrolling viewport; no content-height feedback or whole-card drag.
     val lines = CaptionReading.visibleFinals(content, cfg.historyLines, reading)
@@ -367,14 +378,14 @@ private fun CaptionBody(
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         if (cfg.paused) {
-            Text("Paused · resume from the bubble or notification", color = palette.accent, fontSize = 13.sp)
+            Text(uiText(UiR.string.ui_paused_resume_from_the_bubble_or_notification_58a85), color = palette.accent, fontSize = 13.sp)
         }
         if (content.history.isEmpty() && content.partial.isBlank()) {
             Text(when (state.status) {
-                Status.LOADING_MODEL -> "Connecting / loading…"
-                Status.ERROR -> state.error ?: "Caption engine failed"
-                Status.CAPTURE_SILENT -> "No capturable audio. Play a stream; if it stays silent, the app may block capture."
-                else -> "Listening…"
+                Status.LOADING_MODEL -> uiText(UiR.string.ui_connecting_loading_44380)
+                Status.ERROR -> state.error ?: uiText(UiR.string.ui_caption_engine_failed_fa936)
+                Status.CAPTURE_SILENT -> uiText(UiR.string.ui_no_capturable_audio_play_a_stream_if_it_stays_silent_the_app_may_fdefa)
+                else -> uiText(UiR.string.ui_listening_6c19a)
             }, color = palette.onSurface, fontSize = 14.sp)
         }
         // Keep diagnostic counters above the text: live scrolling must land on captions.
@@ -451,6 +462,8 @@ private fun SettingsPanel(
     onConfigChange: ((CaptionOverlayConfig) -> CaptionOverlayConfig) -> Unit,
     onClear: () -> Unit,
 ) {
+    val uiText = rememberUiText()
+
     val context = LocalContext.current
     fun openSetup(page: Int) {
         context.startActivity(android.content.Intent(context, com.sal7one.transiber.MainActivity::class.java)
@@ -467,50 +480,50 @@ private fun SettingsPanel(
     )) {
       Column(Modifier.fillMaxWidth()) {
         ChipRow(Modifier.padding(horizontal = 14.dp)) {
-            FilterChip(selected = appearance, onClick = { onAppearanceChange(true) }, label = { Text("Appearance") })
-            FilterChip(selected = !appearance, onClick = { onAppearanceChange(false) }, label = { Text("CC & translation") })
+            FilterChip(selected = appearance, onClick = { onAppearanceChange(true) }, label = { Text(uiText(UiR.string.ui_appearance_41def)) })
+            FilterChip(selected = !appearance, onClick = { onAppearanceChange(false) }, label = { Text(uiText(UiR.string.ui_cc_translation_508d4)) })
         }
         androidx.compose.runtime.key(appearance) {
         Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(scrollState)
             .padding(horizontal = 14.dp, vertical = 4.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         if (appearance) {
-            SliderRow("Height", (cfg.bubbleHeightDp?.toFloat() ?: currentHeightDp).coerceIn(144f, 600f),
+            SliderRow(uiText(UiR.string.ui_height_3f608), (cfg.bubbleHeightDp?.toFloat() ?: currentHeightDp).coerceIn(144f, 600f),
                 144f..600f, palette) { value -> onConfigChange { it.copy(bubbleHeightDp = value.toInt()) } }
             ChipRow {
-                listOf("Compact" to 160, "Comfortable" to 240, "Large" to 320).forEach { (label, size) ->
+                listOf(uiText(UiR.string.ui_compact_1df39) to 160, uiText(UiR.string.ui_comfortable_23137) to 240, uiText(UiR.string.ui_large_738fd) to 320).forEach { (label, size) ->
                     FilterChip(selected = cfg.bubbleHeightDp == size,
                         onClick = { onConfigChange { it.copy(bubbleHeightDp = size) } }, label = { Text(label) })
                 }
             }
-        SettingsLabel("Text size", palette)
+        SettingsLabel(uiText(UiR.string.ui_text_size_3cc6e), palette)
         ChipRow {
             CaptionFontScale.entries.forEach { scale ->
                 FilterChip(
                     selected = cfg.fontScale == scale,
                     onClick = { onConfigChange { it.copy(fontScale = scale) } },
-                    label = { Text(scale.label, fontSize = 11.sp) },
+                    label = { Text(uiText.label(scale), fontSize = 11.sp) },
                 )
             }
         }
 
-        SettingsLabel("Theme", palette)
+        SettingsLabel(uiText(UiR.string.ui_theme_a797e), palette)
         ChipRow {
             CaptionTheme.entries.forEach { theme ->
                 FilterChip(
                     selected = cfg.theme == theme,
                     onClick = { onConfigChange { it.copy(theme = theme) } },
-                    label = { Text(theme.label, fontSize = 11.sp) },
+                    label = { Text(uiText.label(theme), fontSize = 11.sp) },
                 )
             }
         }
 
-        SettingsLabel("Position", palette)
+        SettingsLabel(uiText(UiR.string.ui_position_cf1c8), palette)
         ChipRow {
             CaptionAnchor.entries.forEach { anchor ->
                 FilterChip(
                     selected = cfg.anchor == anchor,
                     onClick = { onConfigChange { it.copy(anchor = anchor, xOffsetPx = 0, yOffsetPx = 0) } },
-                    label = { Text(anchor.label, fontSize = 11.sp) },
+                    label = { Text(uiText.label(anchor), fontSize = 11.sp) },
                 )
             }
             // Recovery from the panel too: snap a dragged bubble back to its
@@ -518,25 +531,25 @@ private fun SettingsPanel(
             FilterChip(
                 selected = false,
                 onClick = { onConfigChange { it.copy(xOffsetPx = 0, yOffsetPx = 0) } },
-                label = { Text("Re-center", fontSize = 11.sp) },
+                label = { Text(uiText(UiR.string.ui_re_center_a540d), fontSize = 11.sp) },
             )
         }
 
         SliderRow(
-            label = "Width ${cfg.widthPercent}%",
+            label = uiText(UiR.string.ui_width_1_s_f9552, cfg.widthPercent),
             value = cfg.widthPercent.toFloat(),
             range = 50f..100f,
             palette = palette,
         ) { value -> onConfigChange { it.copy(widthPercent = value.toInt()) } }
 
         SliderRow(
-            label = "Background ${cfg.backgroundOpacity}%",
+            label = uiText(UiR.string.ui_background_1_s_6f4b0, cfg.backgroundOpacity),
             value = cfg.backgroundOpacity.toFloat(),
             range = 0f..100f,
             palette = palette,
         ) { value -> onConfigChange { it.copy(backgroundOpacity = value.toInt()) } }
 
-        SettingsLabel("Previous segments: ${cfg.historyLines}", palette)
+        SettingsLabel(uiText(UiR.string.ui_previous_segments_1_s_5e486, cfg.historyLines), palette)
         ChipRow {
             listOf(0, 1, 2, 4, 8).forEach { lines ->
                 FilterChip(
@@ -548,31 +561,31 @@ private fun SettingsPanel(
         }
 
         ToggleRow(
-            label = "Show live partial text",
+            label = uiText(UiR.string.ui_show_live_partial_text_27286),
             checked = cfg.showPartial,
             palette = palette,
         ) { checked -> onConfigChange { it.copy(showPartial = checked) } }
 
         ToggleRow(
-            label = "Tap-through (keep unlock handle)",
+            label = uiText(UiR.string.ui_tap_through_keep_unlock_handle_a2050),
             checked = cfg.tapThrough,
             palette = palette,
         ) { checked -> onConfigChange { it.copy(tapThrough = checked) } }
 
         } else {
-        SettingsLabel("Mode", palette)
+        SettingsLabel(uiText(UiR.string.ui_mode_a7b93), palette)
         ChipRow {
             CaptionMode.entries.forEach { mode ->
                 FilterChip(
                     selected = cfg.mode == mode,
                     onClick = { onConfigChange { it.withCaptionMode(mode) } },
-                    label = { Text(mode.label, fontSize = 11.sp, maxLines = 1) },
+                    label = { Text(uiText.label(mode), fontSize = 11.sp, maxLines = 1) },
                 )
             }
         }
 
         if (cfg.effectiveEngine.speechBackend != null) {
-            ToggleRow("Text translation", cfg.localTranslationEnabled, palette) { enabled ->
+            ToggleRow(uiText(UiR.string.ui_text_translation_9f474), cfg.localTranslationEnabled, palette) { enabled ->
                 onConfigChange { it.copy(localTranslationEnabled = enabled,
                     mode = if (enabled) CaptionMode.TRANSLATE else CaptionMode.CAPTIONS) }
             }
@@ -583,36 +596,36 @@ private fun SettingsPanel(
             onConfigChange { it.copy(languagePicker = which) }
         })
         if (cfg.mode == CaptionMode.TRANSLATE) {
-            SettingsLabel("Show", palette)
+            SettingsLabel(uiText(UiR.string.ui_show_d97d1), palette)
             ChipRow {
                 CaptionDisplay.entries.forEach { display ->
                     FilterChip(
                         selected = cfg.display == display,
                         onClick = { onConfigChange { it.copy(display = display) } },
-                        label = { Text(display.label, fontSize = 11.sp, maxLines = 1) },
+                        label = { Text(uiText.label(display), fontSize = 11.sp, maxLines = 1) },
                     )
                 }
             }
 
         }
 
-            SettingsLabel("Current speech model", palette)
-            Text(cfg.effectiveEngine.label, color = palette.onSurface)
-            TextButton(onClick = { openSetup(1) }) { Text("Choose or download models") }
-            TextButton(onClick = { openSetup(3) }) { Text("Full setup & cloud settings") }
-            TextButton(onClick = onClear) { Text("Clear transcript") }
-            TextButton(onClick = { onShowReadAloudChange(!showReadAloud) }) { Text(if (showReadAloud) "Hide read-aloud options" else "Read-aloud options") }
+            SettingsLabel(uiText(UiR.string.ui_current_speech_model_29c90), palette)
+            Text(uiText.label(cfg.effectiveEngine), color = palette.onSurface)
+            TextButton(onClick = { openSetup(1) }) { Text(uiText(UiR.string.ui_choose_or_download_models_a1983)) }
+            TextButton(onClick = { openSetup(3) }) { Text(uiText(UiR.string.ui_full_setup_cloud_settings_ac020)) }
+            TextButton(onClick = onClear) { Text(uiText(UiR.string.ui_clear_transcript_05690)) }
+            TextButton(onClick = { onShowReadAloudChange(!showReadAloud) }) { Text(if (showReadAloud) uiText(UiR.string.ui_hide_read_aloud_options_c6763) else uiText(UiR.string.ui_read_aloud_options_dc13d)) }
             if (showReadAloud) {
         // ── Voice output (TTS) ────────────────────────────────────────────
         // Device voice works everywhere (offline with installed voices);
         // Neural needs an imported ONNX voice model; Cloud is NETWORK
         // CODE (BYOK, play distribution only — byok/CloudTtsSpeaker).
         ToggleRow(
-            label = "Speak captions",
+            label = uiText(UiR.string.ui_speak_captions_47294),
             checked = cfg.speakCaptions,
             palette = palette,
         ) { checked -> onConfigChange { it.copy(speakCaptions = checked) } }
-        TextButton(onClick = { openSetup(12) }) { Text("Read aloud · voices & downloads") }
+        TextButton(onClick = { openSetup(12) }) { Text(uiText(UiR.string.ui_read_aloud_voices_downloads_7b18c)) }
         if (cfg.speakCaptions) {
             val speakerContext = LocalContext.current
             val voiceReady = com.sal7one.transiber.voice.VoiceModels(java.io.File(speakerContext.filesDir, "voice-models")).ready(com.sal7one.transiber.voice.VoiceSettings.choice(speakerContext).voice)
@@ -625,15 +638,15 @@ private fun SettingsPanel(
                             onClick = { onConfigChange { it.copy(speakerChoice = choice) } },
                             // Native speech requires the verified engine and selected voice.
                             enabled = choice != CaptionSpeakerChoice.NATIVE || voiceReady,
-                            label = { Text(choice.label, fontSize = 11.sp) },
+                            label = { Text(uiText.label(choice), fontSize = 11.sp) },
                         )
                     }
             }
             SettingsCaption(
                 if (cfg.speakerChoice == CaptionSpeakerChoice.NATIVE && !voiceReady) {
-                    "Install Supertonic 3 and a voice in Read aloud settings."
+                    uiText(UiR.string.ui_install_supertonic_3_and_a_voice_in_read_aloud_settings_8a8c5)
                 } else {
-                    cfg.speakerChoice.explanation
+                    uiText.explanation(cfg.speakerChoice)
                 },
                 palette,
             )
@@ -677,6 +690,8 @@ private fun PresetCard(
     palette: OverlayPalette,
     onClick: () -> Unit,
 ) {
+    val uiText = rememberUiText()
+
     Surface(
         onClick = onClick,
         modifier = Modifier.width(132.dp),
@@ -692,7 +707,7 @@ private fun PresetCard(
             verticalArrangement = Arrangement.spacedBy(2.dp),
         ) {
             Text(
-                text = preset.label,
+                text = uiText.label(preset),
                 color = if (selected) palette.accent else palette.onSurface,
                 fontSize = 12.sp,
                 maxLines = 1,

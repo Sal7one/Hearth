@@ -1,5 +1,7 @@
 package com.sal7one.transiber.settings
 
+import com.sal7one.transiber.i18n.*
+
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -21,6 +23,8 @@ internal fun SettingsTabs(
     entryRevision: Int = 0,
     content: @Composable ColumnScope.(SettingsLocation) -> Unit,
 ) {
+    val uiText = rememberUiText()
+
     val locations = settingsLocations(ByokPolicy.FEATURE_BYOK)
     var state by rememberSaveable(stateSaver = listSaver(
         save = { value: SettingsTabState -> listOf(value.selected.ordinal, value.entry) },
@@ -35,7 +39,7 @@ internal fun SettingsTabs(
             TabRow(selectedTabIndex = locations.indexOf(selected)) {
                 locations.forEach { location ->
                     Tab(selected = selected == location, onClick = { state = state.copy(selected = location) },
-                        text = { Text(location.label) }, modifier = Modifier.heightIn(min = 48.dp))
+                        text = { Text(uiText.label(location)) }, modifier = Modifier.heightIn(min = 48.dp))
                 }
             }
         }

@@ -1,0 +1,5 @@
+<resources>
+<string name="app_name">Hearth</string>
+<string name="tile_captions">实时字幕</string>
+<string name="tile_reading">屏幕翻译</string>
+</resources>

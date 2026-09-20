@@ -1,0 +1,114 @@
+<resources>
+    <string name="label_homeservice_captions_title" formatted="false">"النص المباشر"</string>
+    <string name="label_homeservice_captions_description" formatted="false">"اقرأ أو ترجم الكلام من الفيديوهات والأصوات حولك."</string>
+    <string name="label_homeservice_captions_action" formatted="false">"فتح النص المباشر"</string>
+    <string name="label_homeservice_conversation_title" formatted="false">"المحادثة"</string>
+    <string name="label_homeservice_conversation_description" formatted="false">"تحدث بلغتين واحتفظ بطرفي المحادثة."</string>
+    <string name="label_homeservice_conversation_action" formatted="false">"بدء محادثة"</string>
+    <string name="label_homeservice_face_title" formatted="false">"وجهًا لوجه"</string>
+    <string name="label_homeservice_face_description" formatted="false">"هاتف واحد لشخصين، وكل منهما يرى ترجمته أمامه."</string>
+    <string name="label_homeservice_face_action" formatted="false">"فتح وجهًا لوجه"</string>
+    <string name="label_homeservice_text_title" formatted="false">"اكتب للترجمة"</string>
+    <string name="label_homeservice_text_description" formatted="false">"اكتب أو ألصق نصًا. اقرأ ترجمته أو استمع إليها."</string>
+    <string name="label_homeservice_text_action" formatted="false">"ترجمة نص"</string>
+    <string name="label_homeservice_camera_title" formatted="false">"الكاميرا والصور"</string>
+    <string name="label_homeservice_camera_description" formatted="false">"وجّه الكاميرا إلى لافتة أو قائمة أو صفحة، أو اختر صورة من هاتفك."</string>
+    <string name="label_homeservice_camera_action" formatted="false">"فتح الكاميرا"</string>
+    <string name="label_homeservice_screen_title" formatted="false">"الشاشة والمانغا"</string>
+    <string name="label_homeservice_screen_description" formatted="false">"اقرأ المانغا والكتب والتطبيقات الأخرى بترجمة فوق الصفحة."</string>
+    <string name="label_homeservice_screen_action" formatted="false">"فتح مترجم الشاشة"</string>
+    <string name="label_maintab_captions_label" formatted="false">"النص المباشر"</string>
+    <string name="label_maintab_captions_title" formatted="false">"النص المباشر"</string>
+    <string name="label_maintab_talk_label" formatted="false">"تحدث"</string>
+    <string name="label_maintab_talk_title" formatted="false">"المحادثة ووجهًا لوجه"</string>
+    <string name="label_maintab_translate_label" formatted="false">"ترجمة"</string>
+    <string name="label_maintab_translate_title" formatted="false">"اكتب للترجمة"</string>
+    <string name="label_maintab_camera_label" formatted="false">"الكاميرا"</string>
+    <string name="label_maintab_camera_title" formatted="false">"الكاميرا والتعرف على النص"</string>
+    <string name="label_maintab_settings_label" formatted="false">"الإعدادات"</string>
+    <string name="label_maintab_settings_title" formatted="false">"الإعدادات"</string>
+    <string name="label_thememode_system_label" formatted="false">"النظام"</string>
+    <string name="label_thememode_light_label" formatted="false">"فاتح"</string>
+    <string name="label_thememode_dark_label" formatted="false">"داكن"</string>
+    <string name="label_accentpreset_clean_label" formatted="false">"نقي"</string>
+    <string name="label_accentpreset_clean_description" formatted="false">"أسطح محايدة بلمسة زرقاء هادئة"</string>
+    <string name="label_accentpreset_ink_label" formatted="false">"حبر"</string>
+    <string name="label_accentpreset_ink_description" formatted="false">"أحادي اللون بخلفية سوداء في الوضع الداكن"</string>
+    <string name="label_accentpreset_sky_label" formatted="false">"سماء"</string>
+    <string name="label_accentpreset_sky_description" formatted="false">"أزرق بارد ورمادي صخري ناعم"</string>
+    <string name="label_accentpreset_ocean_label" formatted="false">"طبيعي · كلاسيكي"</string>
+    <string name="label_accentpreset_ocean_description" formatted="false">"السمة الأصلية بألوان الرق والطين والمريمية"</string>
+    <string name="label_accentpreset_ember_label" formatted="false">"جمر"</string>
+    <string name="label_accentpreset_ember_description" formatted="false">"طيني وخوخي وزيتوني"</string>
+    <string name="label_accentpreset_forest_label" formatted="false">"غابة"</string>
+    <string name="label_accentpreset_forest_description" formatted="false">"طحلب ولحاء وأشنة"</string>
+    <string name="label_accentpreset_amethyst_label" formatted="false">"جمشت"</string>
+    <string name="label_accentpreset_amethyst_description" formatted="false">"برقوقي ووردي ورمادي معدني"</string>
+    <string name="label_navigationlayout_simple_label" formatted="false">"صفحة بسيطة"</string>
+    <string name="label_navigationlayout_tabs_label" formatted="false">"تبويبات تقليدية"</string>
+    <string name="label_settingslocation_local_label" formatted="false">"محلي"</string>
+    <string name="label_settingslocation_cloud_label" formatted="false">"السحابة"</string>
+    <string name="label_settingsfeature_speech_label" formatted="false">"التعرف على الكلام"</string>
+    <string name="label_settingsfeature_translation_label" formatted="false">"الترجمة"</string>
+    <string name="label_settingsfeature_voices_label" formatted="false">"الأصوات والقراءة الصوتية"</string>
+    <string name="label_settingsfeature_camera_label" formatted="false">"الكاميرا وقراءة الشاشة"</string>
+    <string name="label_captionmode_captions_label" formatted="false">"النص باللغة الأصلية"</string>
+    <string name="label_captionmode_translate_label" formatted="false">"ترجمة"</string>
+    <string name="label_captionsource_playback_capture_label" formatted="false">"صوت الجهاز"</string>
+    <string name="label_captionsource_playback_capture_explanation" formatted="false">"يلتقط صوت الهاتف من التطبيقات التي تسمح بذلك. يبقى الصوت المحمي والتطبيقات المانعة صامتة. يعمل دون اتصال."</string>
+    <string name="label_captionsource_mic_label" formatted="false">"الميكروفون"</string>
+    <string name="label_captionsource_mic_explanation" formatted="false">"يستمع بالميكروفون قرب مكبر الصوت. يعمل مع أي تطبيق، حتى المانع للالتقاط، بدقة أقل."</string>
+    <string name="label_captionenginechoice_vosk_label" formatted="false">"Vosk (سريع)"</string>
+    <string name="label_captionenginechoice_vosk_explanation" formatted="false">"نص جزئي فوري بلغة النموذج. استجابة سريعة ونموذج لكل لغة."</string>
+    <string name="label_captionenginechoice_whisper_label" formatted="false">"Whisper (دقيق)"</string>
+    <string name="label_captionenginechoice_whisper_explanation" formatted="false">"متعدد اللغات مع اكتشاف مباشر للغة ونص جزئي أبطأ. يتضمن ترجمة إنجليزية مدمجة."</string>
+    <string name="label_captionenginechoice_moonshine_label" formatted="false">"Moonshine · الإنجليزية"</string>
+    <string name="label_captionenginechoice_moonshine_explanation" formatted="false">"تعرف خفيف للإنجليزية فقط ضمن عبارات قصيرة. ترجمة محلية اختيارية."</string>
+    <string name="label_captionenginechoice_qwen_label" formatted="false">"Qwen3-ASR (محلي)"</string>
+    <string name="label_captionenginechoice_qwen_explanation" formatted="false">"نص متعدد اللغات دون اتصال بحزمة Qwen. يصل النص النهائي على مقاطع مع اكتشاف تلقائي للغة وترجمة محلية اختيارية."</string>
+    <string name="label_captionenginechoice_nemotron_label" formatted="false">"Nemotron 3.5 (محلي)"</string>
+    <string name="label_captionenginechoice_nemotron_explanation" formatted="false">"نص متعدد اللغات دون اتصال مع نتائج جزئية متدفقة من حزمة Nemotron GGUF. ترجمة محلية اختيارية؛ السرعة تعتمد على الجهاز."</string>
+    <string name="label_captionenginechoice_cloud_label" formatted="false">"سحابي · بمفتاحك"</string>
+    <string name="label_captionenginechoice_cloud_explanation" formatted="false">"واجهة Whisper متوافقة مع OpenAI بمفتاحك؛ اللغات حسب المزوّد. تحتاج شبكة (إصدار Play فقط)."</string>
+    <string name="label_captiontheme_dark_label" formatted="false">"داكن"</string>
+    <string name="label_captiontheme_high_contrast_label" formatted="false">"تباين عالٍ"</string>
+    <string name="label_captiontheme_light_label" formatted="false">"فاتح"</string>
+    <string name="label_captiontheme_subtle_label" formatted="false">"هادئ"</string>
+    <string name="label_captionspeakerchoice_system_label" formatted="false">"صوت الجهاز"</string>
+    <string name="label_captionspeakerchoice_system_explanation" formatted="false">"فوري ودون اتصال لأي لغة لها صوت مثبت على الجهاز."</string>
+    <string name="label_captionspeakerchoice_custom_label" formatted="false">"المخصص الافتراضي"</string>
+    <string name="label_captionspeakerchoice_custom_explanation" formatted="false">"استخدم صوت Supertonic أو خادمك المحفوظ. أعدّه في الأصوات والقراءة الصوتية."</string>
+    <string name="label_captionspeakerchoice_native_label" formatted="false">"Supertonic 3"</string>
+    <string name="label_captionspeakerchoice_native_explanation" formatted="false">"كلام محلي في 31 لغة؛ ثبّت النموذج وصوتًا من إعدادات الصوت."</string>
+    <string name="label_captionspeakerchoice_shared_label" formatted="false">"إعدادات الصوت المشتركة"</string>
+    <string name="label_captionspeakerchoice_shared_explanation" formatted="false">"استخدم صوت Android أو الصوت المحلي أو المستضاف المحدد في إعدادات Hearth."</string>
+    <string name="label_captionspeakerchoice_cloud_label" formatted="false">"سحابي · بمفتاحك"</string>
+    <string name="label_captionspeakerchoice_cloud_explanation" formatted="false">"تحويل النص إلى صوت بمفتاح المزوّد (إصدار Play فقط)."</string>
+    <string name="label_captionanchor_top_label" formatted="false">"أعلى"</string>
+    <string name="label_captionanchor_center_label" formatted="false">"وسط"</string>
+    <string name="label_captionanchor_bottom_label" formatted="false">"أسفل"</string>
+    <string name="label_captionfontscale_small_label" formatted="false">"صغير"</string>
+    <string name="label_captionfontscale_normal_label" formatted="false">"عادي"</string>
+    <string name="label_captionfontscale_large_label" formatted="false">"كبير"</string>
+    <string name="label_captionfontscale_huge_label" formatted="false">"كبير جدًا"</string>
+    <string name="label_captiondisplay_original_label" formatted="false">"الأصل فقط"</string>
+    <string name="label_captiondisplay_translated_label" formatted="false">"الترجمة فقط"</string>
+    <string name="label_captiondisplay_both_label" formatted="false">"الأصل والترجمة"</string>
+    <string name="label_sttmode_batch_label" formatted="false">"مقاطع"</string>
+    <string name="label_sttmode_streaming_soniox_label" formatted="false">"بث مباشر · Soniox v5"</string>
+    <string name="label_sttmode_streaming_elevenlabs_label" formatted="false">"بث مباشر · Scribe v2"</string>
+    <string name="label_sttmode_streaming_deepgram_label" formatted="false">"بث مباشر · Deepgram"</string>
+    <string name="label_sttmode_streaming_openai_label" formatted="false">"بث مباشر · OpenAI"</string>
+    <string name="label_sttmode_streaming_assemblyai_label" formatted="false">"بث مباشر · AssemblyAI"</string>
+    <string name="label_provider_openai_label" formatted="false">"OpenAI"</string>
+    <string name="label_provider_openrouter_label" formatted="false">"OpenRouter"</string>
+    <string name="label_provider_custom_label" formatted="false">"مخصص"</string>
+    <string name="label_role_transcription_label" formatted="false">"تفريغ على مقاطع"</string>
+    <string name="label_role_live_label" formatted="false">"تفريغ مباشر · محرك بث"</string>
+    <string name="label_role_translation_label" formatted="false">"ترجمة مباشرة · محرك بث"</string>
+    <string name="label_role_diarization_label" formatted="false">"تمييز المتحدثين · غير مدمج"</string>
+    <string name="label_capabilitystatus_ready_label" formatted="false">"جاهز"</string>
+    <string name="label_capabilitystatus_setup_needed_label" formatted="false">"يحتاج إعدادًا"</string>
+    <string name="label_capabilitystatus_partly_ready_label" formatted="false">"جاهز جزئيًا"</string>
+    <string name="label_capabilitystatus_unavailable_label" formatted="false">"غير متاح"</string>
+</resources>

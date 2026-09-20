@@ -1,0 +1,27 @@
+<resources>
+    <string name="capability_note_ace2e8aaad" formatted="false">"OpenAI checks the requested language when you connect. This list shows language names, not guaranteed model coverage. Search by name or enter a 2–3 letter language code."</string>
+    <string name="capability_note_c1aacd9629">"%1$s · %2$s"</string>
+    <string name="capability_note_67daa0fec5" formatted="false">"Moonshine · This model recognizes English only. No automatic language detection or override is needed."</string>
+    <string name="capability_note_492861ff93">"%1$s · Choose a language to bypass automatic language selection, or choose Auto. Only languages supported by this model and runtime are listed."</string>
+    <string name="capability_note_8b97049ba5">"%1$s · The installed model fixes the spoken language. Change the model to change language; automatic detection and language overrides are unavailable."</string>
+    <string name="capability_note_302c201b8d">"%1$s · English-only model. Spoken language is fixed to English; no detection is needed."</string>
+    <string name="capability_note_6b9bbaddde" formatted="false">"Choose a language to skip detection, or choose Auto. Coverage comes from this model\'s vocabulary."</string>
+    <string name="capability_note_825ace0f79" formatted="false">"Language capabilities are unavailable until a supported model is imported. No language override will be sent."</string>
+    <string name="capability_note_f03453f699" formatted="false">"Select a language hint, or Auto. A hint guides recognition; it does not prohibit other languages."</string>
+    <string name="capability_note_a9bb5b597d" formatted="false">"Select a spoken-language hint, or Auto. Select a source explicitly when using the local translation bridge."</string>
+    <string name="capability_note_8975a9a157" formatted="false">"Automatic source language only in this connection. There is no manual language control."</string>
+    <string name="capability_note_1ffb589569" formatted="false">"Detects the spoken language automatically. This translation connection does not accept a source-language override."</string>
+    <string name="capability_note_e752f4c2db" formatted="false">"The audio-translation endpoint detects the source automatically; it accepts no language override."</string>
+    <string name="capability_note_51deda856c" formatted="false">"Select the spoken language for dedicated recognition. Auto uses multilingual mode (10 languages)."</string>
+    <string name="capability_note_5715f3cacd" formatted="false">"Select the spoken language to send an explicit recognition hint, or choose Auto."</string>
+    <string name="capability_note_be018a0a4e" formatted="false">"Manual spoken-language selection is not available for this model in this app. Recognition uses its default language behavior."</string>
+    <string name="capability_note_de49da057d">"%1$s · text translation after speech recognition."</string>
+    <string name="capability_note_444ec285c4" formatted="false">"Set up this translation connection and check its languages first."</string>
+    <string name="capability_note_017b414f07" formatted="false">"Cloud text translation · supported targets from the chosen spoken language."</string>
+    <string name="capability_note_0f1a227949" formatted="false">"Soniox v5 integrated translation; original and translated text are retained separately."</string>
+    <string name="capability_note_b410e7fbf2" formatted="false">"ML Kit · download spoken and target language packs in Models. Non-English pairs translate through English."</string>
+    <string name="capability_note_0434e0f540" formatted="false">"Choose a known local translation model in Setup to load its languages."</string>
+    <string name="capability_note_38000e13f0">"%1$s: %2$s output languages. The spoken language must also be supported by this translation model."</string>
+    <string name="capability_note_c1004bf540" formatted="false">"English uses audio translation. Arabic needs the separate English → Arabic translation model."</string>
+    <string name="capability_note_949094c4d7" formatted="false">"This path needs English speech and the English → Arabic translation model. Other speech stays CC-only."</string>
+</resources>

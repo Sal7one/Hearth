@@ -55,6 +55,7 @@ class CaptionOverlayController(
                 setViewTreeSavedStateRegistryOwner(owner)
                 setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
                 setContent {
+                    com.sal7one.transiber.i18n.UiLocaleProvider {
                     val maxHeight by heightDp.collectAsState()
                     CaptionOverlayWindow(
                         config, engineController.state, ::updateConfig,
@@ -62,7 +63,8 @@ class CaptionOverlayController(
                         onClose = ::stopSession, onClear = engineController::clearTranscript,
                         availableHeightDp = maxHeight,
                     )
-                }
+                                    }
+}
             }
             view = created
             try {
@@ -237,11 +239,13 @@ class CaptionOverlayController(
             setViewTreeSavedStateRegistryOwner(owner)
             setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
             setContent {
+                    com.sal7one.transiber.i18n.UiLocaleProvider {
                 TapThroughRecoveryHandle(
                     onRestore = { updateConfig { it.copy(tapThrough = false) } },
                     onDrag = ::move, onDragFinished = ::persistCurrent,
                 )
-            }
+                                }
+}
         }
         try { wm.addView(handle, params); recoveryHandle = handle }
         catch (e: Exception) { handle.disposeComposition(); throw e }

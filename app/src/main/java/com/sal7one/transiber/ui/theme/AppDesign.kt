@@ -4,6 +4,8 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.ReadOnlyComposable
@@ -333,6 +335,14 @@ fun HearthTheme(
     accentPreset: AccentPreset = rememberAccentPreset(),
     content: @Composable () -> Unit,
 ) {
+    val baseContext = androidx.compose.ui.platform.LocalContext.current
+    val baseConfiguration = androidx.compose.ui.platform.LocalConfiguration.current
+    val localeRevision by com.sal7one.transiber.i18n.AppLocale.revision.collectAsState()
+    val localizedContext = androidx.compose.runtime.remember(baseContext, baseConfiguration, localeRevision) {
+        androidx.core.content.ContextCompat.getContextForLanguage(baseContext)
+    }
+    val direction = if (localizedContext.resources.configuration.layoutDirection == android.view.View.LAYOUT_DIRECTION_RTL)
+        androidx.compose.ui.unit.LayoutDirection.Rtl else androidx.compose.ui.unit.LayoutDirection.Ltr
     val dark = when (themeMode) {
         ThemeMode.SYSTEM -> isSystemInDarkTheme()
         ThemeMode.LIGHT -> false
@@ -340,6 +350,8 @@ fun HearthTheme(
     }
     val palette = accentPalette(accentPreset)
     androidx.compose.runtime.CompositionLocalProvider(
+        androidx.compose.ui.platform.LocalContext provides localizedContext,
+        androidx.compose.ui.platform.LocalLayoutDirection provides direction,
         LocalHearthColors provides semanticColors(palette, dark),
         LocalColorfulUi provides rememberColorfulUi(),
     ) {

@@ -1,5 +1,9 @@
 package com.sal7one.transiber.translation
 
+import com.sal7one.transiber.R as UiR
+import com.sal7one.transiber.i18n.rememberUiText
+import com.sal7one.transiber.i18n.languageName
+
 import com.sal7one.transiber.ui.theme.glassPanel
 import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -35,6 +39,8 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class,ExperimentalLayoutApi::class)
 @Composable
 internal fun TypedTranslateScreen(onModels: ()->Unit,onConnections: ()->Unit,onVoices: ()->Unit,sharedText: String?=null,onShareConsumed: ()->Unit={}) {
+    val uiText = rememberUiText()
+
     val scope=rememberCoroutineScope()
     val context=LocalContext.current;val lifecycle=LocalLifecycleOwner.current
     val prefs=remember {context.getSharedPreferences("typed-translation",0)}
@@ -63,53 +69,53 @@ internal fun TypedTranslateScreen(onModels: ()->Unit,onConnections: ()->Unit,onV
     DisposableEffect(lifecycle){val observer=LifecycleEventObserver {_,event->if(event==Lifecycle.Event.ON_STOP){voice.stop();controller.pause()};if(event==Lifecycle.Event.ON_START)resumeRevision++};lifecycle.lifecycle.addObserver(observer);onDispose {lifecycle.lifecycle.removeObserver(observer);voice.close();controller.close()}}
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
         FlowRow(horizontalArrangement=Arrangement.spacedBy(8.dp)) {
-            InputChip(false,{picker="source"},label={Text(LanguageCatalog.option(source).nativeName)},modifier=Modifier.semantics {contentDescription="Source language, ${LanguageCatalog.option(source).englishName}"})
-            IconButton(onClick={val old=source;source=target;target=old;text=state.output.takeIf(String::isNotBlank) ?: text}) {Icon(Icons.AutoMirrored.Filled.CompareArrows,"Swap languages")}
-            InputChip(false,{picker="target"},label={Text(LanguageCatalog.option(target).nativeName)},modifier=Modifier.semantics {contentDescription="Translation language, ${LanguageCatalog.option(target).englishName}"})
+            InputChip(false,{picker="source"},label={Text(LanguageCatalog.option(source).nativeName)},modifier=Modifier.semantics {contentDescription=uiText(UiR.string.ui_source_language_1_s_a8c77, uiText.languageName(source))})
+            IconButton(onClick={val old=source;source=target;target=old;text=state.output.takeIf(String::isNotBlank) ?: text}) {Icon(Icons.AutoMirrored.Filled.CompareArrows,uiText(UiR.string.ui_swap_languages_efa6c))}
+            InputChip(false,{picker="target"},label={Text(LanguageCatalog.option(target).nativeName)},modifier=Modifier.semantics {contentDescription=uiText(UiR.string.ui_translation_language_1_s_3ac30, uiText.languageName(target))})
         }
         if(ConversationTranslationSettings.provider(ConversationTranslationSettings.selected(context))!=null)
-            Text(if(automatic)"Text is sent to $label after you pause typing." else "Text is sent to $label when you tap Translate.",style=MaterialTheme.typography.bodySmall)
-        TextField(text,{text=it.take(3000)},label={Text("Enter text")},minLines=4,maxLines=10,shape=RoundedCornerShape(24.dp),modifier=Modifier.fillMaxWidth().padding(top=2.dp).glassPanel(),
+            Text(if(automatic)uiText(UiR.string.ui_text_is_sent_to_1_s_after_you_pause_typing_4e428, label) else uiText(UiR.string.ui_text_is_sent_to_1_s_when_you_tap_translate_b5f12, label),style=MaterialTheme.typography.bodySmall)
+        TextField(text,{text=it.take(3000)},label={Text(uiText(UiR.string.ui_enter_text_9c05f))},minLines=4,maxLines=10,shape=RoundedCornerShape(24.dp),modifier=Modifier.fillMaxWidth().padding(top=2.dp).glassPanel(),
             colors=TextFieldDefaults.colors(focusedContainerColor=Color.Transparent,unfocusedContainerColor=Color.Transparent,
                 focusedIndicatorColor=Color.Transparent,unfocusedIndicatorColor=Color.Transparent),
-            trailingIcon={if(text.isNotBlank())IconButton(onClick={text="";controller.clear();voice.stop()}){Icon(Icons.Default.Clear,"Clear text")}},
+            trailingIcon={if(text.isNotBlank())IconButton(onClick={text="";controller.clear();voice.stop()}){Icon(Icons.Default.Clear,uiText(UiR.string.ui_clear_text_19135))}},
             supportingText={if(text.length>2700)Text("${text.length}/3000")})
         FlowRow(horizontalArrangement=Arrangement.spacedBy(8.dp)) {
-            Button(onClick={update(true)},enabled=text.isNotBlank(),modifier=Modifier.heightIn(min=52.dp)){Text("Translate")}
-            ReadAloudButtons("original",text.isNotBlank(),{system->voiceError=null;voice.speak(text,source,if(system)com.sal7one.transiber.voice.VoicePlaybackMode.SYSTEM else com.sal7one.transiber.voice.VoicePlaybackMode.CUSTOM)},onVoices)
+            Button(onClick={update(true)},enabled=text.isNotBlank(),modifier=Modifier.heightIn(min=52.dp)){Text(uiText(UiR.string.ui_translate_2be17))}
+            ReadAloudButtons(uiText(UiR.string.ui_original_c0a80),text.isNotBlank(),{system->voiceError=null;voice.speak(text,source,if(system)com.sal7one.transiber.voice.VoicePlaybackMode.SYSTEM else com.sal7one.transiber.voice.VoicePlaybackMode.CUSTOM)},onVoices)
         }
         Card(Modifier.fillMaxWidth().glassPanel(), colors=CardDefaults.cardColors(containerColor=Color.Transparent,contentColor=MaterialTheme.colorScheme.onSurface)) {Column(Modifier.padding(16.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
-            Text("Translation",style=MaterialTheme.typography.titleMedium)
+            Text(uiText(UiR.string.ui_translation_ac26a),style=MaterialTheme.typography.titleMedium)
             if(state.busy)LinearProgressIndicator(Modifier.fillMaxWidth())
-            SelectionContainer {Text(state.output.ifBlank {if(state.busy)"Translating…" else "Your translation appears here"},style=MaterialTheme.typography.headlineSmall)}
+            SelectionContainer {Text(state.output.ifBlank {if(state.busy)uiText(UiR.string.ui_translating_ae47b) else uiText(UiR.string.ui_your_translation_appears_here_aa064)},style=MaterialTheme.typography.headlineSmall)}
             if(state.output.isNotBlank())FlowRow(horizontalArrangement=Arrangement.spacedBy(8.dp)) {
-                ReadAloudButtons("translation",onPlay={system->voiceError=null;voice.speak(state.output,target,if(system)com.sal7one.transiber.voice.VoicePlaybackMode.SYSTEM else com.sal7one.transiber.voice.VoicePlaybackMode.CUSTOM)},onSetup=onVoices)
-                TextButton(onClick={context.getSystemService(ClipboardManager::class.java).setPrimaryClip(ClipData.newPlainText("Translation",state.output))}){Text("Copy")}
+                ReadAloudButtons(uiText(UiR.string.ui_translation_ac26a),onPlay={system->voiceError=null;voice.speak(state.output,target,if(system)com.sal7one.transiber.voice.VoicePlaybackMode.SYSTEM else com.sal7one.transiber.voice.VoicePlaybackMode.CUSTOM)},onSetup=onVoices)
+                TextButton(onClick={context.getSystemService(ClipboardManager::class.java).setPrimaryClip(ClipData.newPlainText(uiText(UiR.string.ui_translation_ac26a),state.output))}){Text(uiText(UiR.string.ui_copy_af74f))}
             }
         }}
-        FeatureAction("Translation settings", Icons.Default.Tune, { options=true }, detail=label)
-        if(speaking)OutlinedButton(onClick=voice::stop){Text("Stop speech")}
+        FeatureAction(uiText(UiR.string.ui_translation_settings_2aee9), Icons.Default.Tune, { options=true }, detail=label)
+        if(speaking)OutlinedButton(onClick=voice::stop){Text(uiText(UiR.string.ui_stop_speech_3f0d2))}
         (voiceError ?: state.error)?.let {Text(it,color=MaterialTheme.colorScheme.error,modifier=Modifier.semantics {liveRegion=LiveRegionMode.Polite})}
     }
     picker?.let {which->Dialog(onDismissRequest={picker=null},properties=DialogProperties(usePlatformDefaultWidth=false)) {
         Surface(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding()) {LanguagePickerContent(
-            title=if(which=="source")"Source language" else "Translate to",selected=if(which=="source")source else target,
-            choices=CaptionLanguageChoices(if(which=="source")languages.filter {a->languages.any {b->ConversationTranslationSettings.supports(context,config.localTranslationModelId,a,b)}}.toSet() else languages.filter {ConversationTranslationSettings.supports(context,config.localTranslationModelId,source,it)}.toSet(),"$label · choose an explicit supported language"),
+            title=if(which=="source")uiText(UiR.string.ui_source_language_c951f) else uiText(UiR.string.ui_translate_to_a1ba6),selected=if(which=="source")source else target,
+            choices=CaptionLanguageChoices(if(which=="source")languages.filter {a->languages.any {b->ConversationTranslationSettings.supports(context,config.localTranslationModelId,a,b)}}.toSet() else languages.filter {ConversationTranslationSettings.supports(context,config.localTranslationModelId,source,it)}.toSet(),uiText(UiR.string.ui_1_s_choose_an_explicit_supported_language_eea04, label)),
             onSelect={if(which=="source")source=it else target=it;picker=null},onDismiss={picker=null})}
     }}
-    if(options)FeatureOptionsSheet("Translation settings", {options=false}, optionsScroll) {
+    if(options)FeatureOptionsSheet(uiText(UiR.string.ui_translation_settings_2aee9), {options=false}, optionsScroll) {
         TranslatorChooser(ConversationTranslationSettings.selected(context),config.localTranslationModelId,
-            "Used by typed text, Conversation and Face to face.",source,target,onModels={options=false;onModels()},
+            uiText(UiR.string.ui_used_by_typed_text_conversation_and_face_to_face_a208e),source,target,onModels={options=false;onModels()},
             onSelect={provider,model->scope.launch {
                 try { CaptionConfigStore.update(context){it.copy(localTranslationModelId=model)};ConversationTranslationSettings.select(context,provider) }
                 catch(e: kotlinx.coroutines.CancellationException){throw e}
                 catch(e: Exception){controller.error(e)}
             }})
         Row(verticalAlignment=androidx.compose.ui.Alignment.CenterVertically) {
-            Text("Translate as I type",Modifier.weight(1f))
-            Switch(automatic,{automatic=it},modifier=Modifier.semantics {contentDescription="Translate as I type"})
+            Text(uiText(UiR.string.ui_translate_as_i_type_e7304),Modifier.weight(1f))
+            Switch(automatic,{automatic=it},modifier=Modifier.semantics {contentDescription=uiText(UiR.string.ui_translate_as_i_type_e7304)})
         }
-        OutlinedButton(onClick={options=false;onVoices()},modifier=Modifier.fillMaxWidth()){Text("Voices & read aloud")}
-        if(com.sal7one.transiber.byok.ByokPolicy.FEATURE_BYOK)TextButton(onClick={options=false;onConnections()}){Text("Manage cloud connections")}
+        OutlinedButton(onClick={options=false;onVoices()},modifier=Modifier.fillMaxWidth()){Text(uiText(UiR.string.ui_voices_read_aloud_64e95))}
+        if(com.sal7one.transiber.byok.ByokPolicy.FEATURE_BYOK)TextButton(onClick={options=false;onConnections()}){Text(uiText(UiR.string.ui_manage_cloud_connections_376a5))}
     }
 }

@@ -1,0 +1,114 @@
+<resources>
+    <string name="label_homeservice_captions_title" formatted="false">"实时字幕"</string>
+    <string name="label_homeservice_captions_description" formatted="false">"阅读或翻译视频与周围人的话语。"</string>
+    <string name="label_homeservice_captions_action" formatted="false">"打开字幕"</string>
+    <string name="label_homeservice_conversation_title" formatted="false">"对话"</string>
+    <string name="label_homeservice_conversation_description" formatted="false">"用两种语言交流，保留双方对话。"</string>
+    <string name="label_homeservice_conversation_action" formatted="false">"开始对话"</string>
+    <string name="label_homeservice_face_title" formatted="false">"面对面"</string>
+    <string name="label_homeservice_face_description" formatted="false">"两人共用一部手机，各自面对自己的译文。"</string>
+    <string name="label_homeservice_face_action" formatted="false">"打开面对面"</string>
+    <string name="label_homeservice_text_title" formatted="false">"文字翻译"</string>
+    <string name="label_homeservice_text_description" formatted="false">"输入或粘贴文本，阅读译文或听取朗读。"</string>
+    <string name="label_homeservice_text_action" formatted="false">"翻译文本"</string>
+    <string name="label_homeservice_camera_title" formatted="false">"相机与照片"</string>
+    <string name="label_homeservice_camera_description" formatted="false">"对准标牌、菜单或页面，也可选择手机上的图片。"</string>
+    <string name="label_homeservice_camera_action" formatted="false">"打开相机"</string>
+    <string name="label_homeservice_screen_title" formatted="false">"屏幕与漫画"</string>
+    <string name="label_homeservice_screen_description" formatted="false">"在漫画、书籍与其他应用页面上显示翻译。"</string>
+    <string name="label_homeservice_screen_action" formatted="false">"打开屏幕翻译"</string>
+    <string name="label_maintab_captions_label" formatted="false">"字幕"</string>
+    <string name="label_maintab_captions_title" formatted="false">"实时字幕"</string>
+    <string name="label_maintab_talk_label" formatted="false">"交谈"</string>
+    <string name="label_maintab_talk_title" formatted="false">"对话与面对面"</string>
+    <string name="label_maintab_translate_label" formatted="false">"翻译"</string>
+    <string name="label_maintab_translate_title" formatted="false">"文字翻译"</string>
+    <string name="label_maintab_camera_label" formatted="false">"相机"</string>
+    <string name="label_maintab_camera_title" formatted="false">"相机与文字识别"</string>
+    <string name="label_maintab_settings_label" formatted="false">"设置"</string>
+    <string name="label_maintab_settings_title" formatted="false">"设置"</string>
+    <string name="label_thememode_system_label" formatted="false">"跟随系统"</string>
+    <string name="label_thememode_light_label" formatted="false">"浅色"</string>
+    <string name="label_thememode_dark_label" formatted="false">"深色"</string>
+    <string name="label_accentpreset_clean_label" formatted="false">"清新"</string>
+    <string name="label_accentpreset_clean_description" formatted="false">"中性色表面与柔和蓝色点缀"</string>
+    <string name="label_accentpreset_ink_label" formatted="false">"墨色"</string>
+    <string name="label_accentpreset_ink_description" formatted="false">"单色风格，深色模式使用黑色背景"</string>
+    <string name="label_accentpreset_sky_label" formatted="false">"天空"</string>
+    <string name="label_accentpreset_sky_description" formatted="false">"冷蓝与柔和石板灰"</string>
+    <string name="label_accentpreset_ocean_label" formatted="false">"自然 · 经典"</string>
+    <string name="label_accentpreset_ocean_description" formatted="false">"原版羊皮纸、陶土与鼠尾草配色"</string>
+    <string name="label_accentpreset_ember_label" formatted="false">"余烬"</string>
+    <string name="label_accentpreset_ember_description" formatted="false">"陶土、桃色与橄榄色"</string>
+    <string name="label_accentpreset_forest_label" formatted="false">"森林"</string>
+    <string name="label_accentpreset_forest_description" formatted="false">"苔藓、树皮与地衣"</string>
+    <string name="label_accentpreset_amethyst_label" formatted="false">"紫晶"</string>
+    <string name="label_accentpreset_amethyst_description" formatted="false">"梅紫、玫瑰与矿物灰"</string>
+    <string name="label_navigationlayout_simple_label" formatted="false">"简洁主页"</string>
+    <string name="label_navigationlayout_tabs_label" formatted="false">"经典标签页"</string>
+    <string name="label_settingslocation_local_label" formatted="false">"本地"</string>
+    <string name="label_settingslocation_cloud_label" formatted="false">"云端"</string>
+    <string name="label_settingsfeature_speech_label" formatted="false">"语音识别"</string>
+    <string name="label_settingsfeature_translation_label" formatted="false">"翻译"</string>
+    <string name="label_settingsfeature_voices_label" formatted="false">"声音与朗读"</string>
+    <string name="label_settingsfeature_camera_label" formatted="false">"相机与屏幕阅读"</string>
+    <string name="label_captionmode_captions_label" formatted="false">"原文字幕"</string>
+    <string name="label_captionmode_translate_label" formatted="false">"翻译"</string>
+    <string name="label_captionsource_playback_capture_label" formatted="false">"设备音频"</string>
+    <string name="label_captionsource_playback_capture_explanation" formatted="false">"采集手机播放的音频，仅限允许采集的应用。受保护音频和禁止采集的应用保持静音。可完全离线使用。"</string>
+    <string name="label_captionsource_mic_label" formatted="false">"麦克风"</string>
+    <string name="label_captionsource_mic_explanation" formatted="false">"通过靠近扬声器的麦克风收听。适用于所有应用，包括禁止设备音频采集的应用，但准确性较低。"</string>
+    <string name="label_captionenginechoice_vosk_label" formatted="false">"Vosk（快速）"</string>
+    <string name="label_captionenginechoice_vosk_explanation" formatted="false">"即时生成模型语言的临时字幕，响应迅速，每种语言单独使用模型。"</string>
+    <string name="label_captionenginechoice_whisper_label" formatted="false">"Whisper（准确）"</string>
+    <string name="label_captionenginechoice_whisper_explanation" formatted="false">"多语言与实时语言检测，临时字幕较慢。内置英语翻译。"</string>
+    <string name="label_captionenginechoice_moonshine_label" formatted="false">"Moonshine · 英语"</string>
+    <string name="label_captionenginechoice_moonshine_explanation" formatted="false">"轻量英语识别，按短句分段处理，可选本地翻译。"</string>
+    <string name="label_captionenginechoice_qwen_label" formatted="false">"Qwen3-ASR（本地）"</string>
+    <string name="label_captionenginechoice_qwen_explanation" formatted="false">"使用 Qwen 模型包生成离线多语言字幕。最终文本按语段返回，自动检测语言，可选本地翻译桥接。"</string>
+    <string name="label_captionenginechoice_nemotron_label" formatted="false">"Nemotron 3.5（本地）"</string>
+    <string name="label_captionenginechoice_nemotron_explanation" formatted="false">"Nemotron GGUF 包提供离线多语言字幕和流式临时结果，可选本地翻译桥接。速度取决于设备。"</string>
+    <string name="label_captionenginechoice_cloud_label" formatted="false">"云端 · 自带密钥"</string>
+    <string name="label_captionenginechoice_cloud_explanation" formatted="false">"使用自有密钥的 OpenAI 兼容 Whisper API；语言支持取决于服务商。需要网络（仅 Play 版）。"</string>
+    <string name="label_captiontheme_dark_label" formatted="false">"深色"</string>
+    <string name="label_captiontheme_high_contrast_label" formatted="false">"高对比度"</string>
+    <string name="label_captiontheme_light_label" formatted="false">"浅色"</string>
+    <string name="label_captiontheme_subtle_label" formatted="false">"柔和"</string>
+    <string name="label_captionspeakerchoice_system_label" formatted="false">"设备声音"</string>
+    <string name="label_captionspeakerchoice_system_explanation" formatted="false">"即时离线朗读，支持设备已安装声音的语言。"</string>
+    <string name="label_captionspeakerchoice_custom_label" formatted="false">"默认自定义"</string>
+    <string name="label_captionspeakerchoice_custom_explanation" formatted="false">"使用已保存的 Supertonic 或自托管声音，在声音与朗读中设置。"</string>
+    <string name="label_captionspeakerchoice_native_label" formatted="false">"Supertonic 3"</string>
+    <string name="label_captionspeakerchoice_native_explanation" formatted="false">"设备端支持 31 种语言；在声音设置中安装模型与声音。"</string>
+    <string name="label_captionspeakerchoice_shared_label" formatted="false">"共用声音设置"</string>
+    <string name="label_captionspeakerchoice_shared_explanation" formatted="false">"使用 Hearth 声音设置中选择的 Android、本地或自托管声音。"</string>
+    <string name="label_captionspeakerchoice_cloud_label" formatted="false">"云端 · 自带密钥"</string>
+    <string name="label_captionspeakerchoice_cloud_explanation" formatted="false">"使用 API 密钥调用服务商 TTS（仅 Play 版）。"</string>
+    <string name="label_captionanchor_top_label" formatted="false">"顶部"</string>
+    <string name="label_captionanchor_center_label" formatted="false">"居中"</string>
+    <string name="label_captionanchor_bottom_label" formatted="false">"底部"</string>
+    <string name="label_captionfontscale_small_label" formatted="false">"小"</string>
+    <string name="label_captionfontscale_normal_label" formatted="false">"标准"</string>
+    <string name="label_captionfontscale_large_label" formatted="false">"大"</string>
+    <string name="label_captionfontscale_huge_label" formatted="false">"特大"</string>
+    <string name="label_captiondisplay_original_label" formatted="false">"仅原文"</string>
+    <string name="label_captiondisplay_translated_label" formatted="false">"仅译文"</string>
+    <string name="label_captiondisplay_both_label" formatted="false">"原文与译文"</string>
+    <string name="label_sttmode_batch_label" formatted="false">"批处理"</string>
+    <string name="label_sttmode_streaming_soniox_label" formatted="false">"流式 · Soniox v5"</string>
+    <string name="label_sttmode_streaming_elevenlabs_label" formatted="false">"流式 · Scribe v2"</string>
+    <string name="label_sttmode_streaming_deepgram_label" formatted="false">"流式 · Deepgram"</string>
+    <string name="label_sttmode_streaming_openai_label" formatted="false">"流式 · OpenAI"</string>
+    <string name="label_sttmode_streaming_assemblyai_label" formatted="false">"流式 · AssemblyAI"</string>
+    <string name="label_provider_openai_label" formatted="false">"OpenAI"</string>
+    <string name="label_provider_openrouter_label" formatted="false">"OpenRouter"</string>
+    <string name="label_provider_custom_label" formatted="false">"自定义"</string>
+    <string name="label_role_transcription_label" formatted="false">"批量转写"</string>
+    <string name="label_role_live_label" formatted="false">"实时转写 · 流式引擎"</string>
+    <string name="label_role_translation_label" formatted="false">"实时翻译 · 流式引擎"</string>
+    <string name="label_role_diarization_label" formatted="false">"说话人标签 · 尚未集成"</string>
+    <string name="label_capabilitystatus_ready_label" formatted="false">"已就绪"</string>
+    <string name="label_capabilitystatus_setup_needed_label" formatted="false">"需要设置"</string>
+    <string name="label_capabilitystatus_partly_ready_label" formatted="false">"部分就绪"</string>
+    <string name="label_capabilitystatus_unavailable_label" formatted="false">"不可用"</string>
+</resources>

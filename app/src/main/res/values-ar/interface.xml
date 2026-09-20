@@ -1,0 +1,63 @@
+<resources>
+    <string name="nav_downloads" formatted="false">"التنزيلات"</string>
+    <string name="nav_speech_settings" formatted="false">"إعدادات الكلام"</string>
+    <string name="nav_advanced_captions" formatted="false">"النص المباشر المتقدم"</string>
+    <string name="nav_help" formatted="false">"المساعدة"</string>
+    <string name="nav_home" formatted="false">"الرئيسية"</string>
+    <string name="nav_quick_settings" formatted="false">"إعدادات سريعة"</string>
+    <string name="help_0" formatted="false">"اختر الصوت والنص الأصلي أو الترجمة ثم ابدأ. قد يطلب Android إذن الصوت أو مشاركة الشاشة."</string>
+    <string name="help_1" formatted="false">"استخدم إعدادات الفقاعة للتحكم بالمظهر واللغات. يتيح الإشعار الإيقاف المؤقت والاستعادة والإيقاف."</string>
+    <string name="help_2" formatted="false">"تمنع بعض التطبيقات التقاط صوت الجهاز. يستمع الميكروفون إلى الصوت القريب بدلًا منه."</string>
+    <string name="app_language" formatted="false">"لغة التطبيق"</string>
+    <string name="app_language_detail" formatted="false">"يغيّر واجهة Hearth فقط. تبقى لغات الكلام والترجمة كما اخترتها."</string>
+    <string name="follow_phone" formatted="false">"اتباع لغة الهاتف"</string>
+    <string name="locale_en" formatted="false">"English"</string>
+    <string name="locale_ar" formatted="false">"العربية"</string>
+    <string name="locale_zh" formatted="false">"简体中文"</string>
+    <string name="language_auto" formatted="false">"اكتشاف تلقائي"</string>
+    <string name="language_model" formatted="false">"لغة النموذج"</string>
+    <string name="language_spoken" formatted="false">"الكلام"</string>
+    <string name="language_source" formatted="false">"المصدر"</string>
+    <string name="model_installed" formatted="false">"مثبت"</string>
+    <string name="model_not_installed" formatted="false">"غير مثبت"</string>
+    <string name="model_needs_files">"يحتاج إلى %1$s ملف نموذج"</string>
+    <string name="model_download_import" formatted="false">"تنزيل أو استيراد"</string>
+    <string name="needs_attention" formatted="false">"يحتاج مراجعة"</string>
+    <string name="verified" formatted="false">"موثوق"</string>
+    <string name="selected_custom" formatted="false">"مخصص محدد"</string>
+    <string name="choose_value" formatted="false">"اختيار"</string>
+    <string name="speak_action" formatted="false">"تحدث"</string>
+    <string name="model_generic" formatted="false">"النموذج"</string>
+    <string name="import_selected_cc" formatted="false">" واختير للنص الأصلي"</string>
+    <string name="needs_attention_suffix" formatted="false">" · يحتاج مراجعة"</string>
+    <string name="import_file" formatted="false">"ملف"</string>
+    <string name="import_folder" formatted="false">"مجلد"</string>
+    <string name="ocr_latin" formatted="false">"الخط اللاتيني · الإنجليزية وغيرها"</string>
+    <string name="ocr_cjk" formatted="false">"الصينية · الإنجليزية · اليابانية"</string>
+    <string name="ocr_arabic" formatted="false">"الخط العربي · العربية والفارسية والأردية وغيرها"</string>
+    <string name="ocr_cyrillic" formatted="false">"الروسية · الأوكرانية · البيلاروسية"</string>
+    <string name="ocr_manga" formatted="false">"اليابانية · فقاعة مانغا"</string>
+    <string name="ocr_meiki" formatted="false">"اليابانية · أسطر Meiki"</string>
+    <string name="ocr_printed" formatted="false">"نص مطبوع أفقي · Apache-2.0"</string>
+    <string name="ocr_manga_details" formatted="false">"حدّد فقاعة واحدة. اليابانية العمودية والأفقية والفوريغانا · تجريبي · Apache-2.0"</string>
+    <string name="ocr_meiki_details" formatted="false">"كشف الأسطر اليابانية وقراءتها. القارئ العمودي تجريبي · أوزان برخصة LGPL-3.0"</string>
+    <string name="install_nemotron" formatted="false">"يُنزّل ويُثبّت تلقائيًا، ويبقى الأصل في مجلد التنزيل. نص مباشر متعدد اللغات؛ الترجمة بنموذج منفصل."</string>
+    <string name="install_qwen" formatted="false">"تنزيل وتثبيت تلقائيان مع إبقاء الأصل في مجلد التنزيل. نص متعدد اللغات بمقاطع قصيرة. حزمة التشغيل: مارس 2026."</string>
+    <string name="install_qwen_large" formatted="false">"تُقبل الحزم المعدّة المتوافقة. لا يوجد تنزيل جاهز موثوق لـ 1.7B. لا يمكن استيراد الأوزان الخام؛ استخدم 0.6B إلا عند إعداد تصدير sherpa متوافق."</string>
+    <string name="install_moonshine" formatted="false">"تنزيل وتثبيت تلقائيان مع إبقاء الأصل في مجلدك. الإنجليزية بمقاطع قصيرة. الحزمة: 27 فبراير 2026. ليس هذا محرك Moonshine المتدفق الأحدث."</string>
+    <string name="install_whisper" formatted="false">"نزّل ملف whisper.cpp GGML بامتداد .bin ثم استورده. يستهلك Tiny وBase ذاكرة أقل. ملفات .en.bin للإنجليزية فقط، ومتعددة اللغات تسمح باختيار لغة الكلام. لا يقبل هذا المحوّل Safetensors أو GGUF."</string>
+    <string name="install_vosk" formatted="false">"اختر لغة الكلام من صفحة الناشر. نزّل ZIP وفكّه ثم استورد مجلد النموذج المستخرج نفسه. يحدد كل نموذج لغة ثابتة، دون تبديل تلقائي."</string>
+    <string name="install_marian" formatted="false">"مسار قديم من الإنجليزية إلى العربية. استورد مجلدًا يحتوي source.spm وtokenizer.json وencoder_model.onnx وdecoder_model_merged.onnx من تحويل ONNX. ليس GGUF أو ZIP كلام. المتغيرات الأخرى غير موثقة؛ تستخدم المحركات الجديدة المترجمين أعلاه."</string>
+    <string name="preset_bottom" formatted="false">"شريط سفلي"</string>
+    <string name="preset_top" formatted="false">"شريط علوي"</string>
+    <string name="preset_center" formatted="false">"تركيز وسطي"</string>
+    <string name="preset_theater" formatted="false">"سينما"</string>
+    <string name="preset_reading" formatted="false">"قراءة"</string>
+    <string name="preset_subtle" formatted="false">"شريحة هادئة"</string>
+    <string name="phase_ready" formatted="false">"جاهز"</string>
+    <string name="phase_preparing" formatted="false">"جارٍ التحضير"</string>
+    <string name="phase_listening" formatted="false">"جارٍ الاستماع"</string>
+    <string name="phase_finishing" formatted="false">"جارٍ الإنهاء"</string>
+    <string name="phase_translating" formatted="false">"جارٍ الترجمة"</string>
+    <string name="phase_speaking" formatted="false">"جارٍ الكلام"</string>
+</resources>

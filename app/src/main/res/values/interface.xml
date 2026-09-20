@@ -1,0 +1,63 @@
+<resources>
+    <string name="nav_downloads" formatted="false">"Downloads"</string>
+    <string name="nav_speech_settings" formatted="false">"Speech settings"</string>
+    <string name="nav_advanced_captions" formatted="false">"Advanced captions"</string>
+    <string name="nav_help" formatted="false">"Help"</string>
+    <string name="nav_home" formatted="false">"Home"</string>
+    <string name="nav_quick_settings" formatted="false">"Quick settings"</string>
+    <string name="help_0" formatted="false">"Choose audio and captions or translation, then Start. Android may ask for audio access or screen-sharing consent."</string>
+    <string name="help_1" formatted="false">"Use the bubble settings for appearance and language controls. The notification can pause, recover or stop captions."</string>
+    <string name="help_2" formatted="false">"Some apps block device-audio capture. Microphone listens to nearby sound instead."</string>
+    <string name="app_language" formatted="false">"App language"</string>
+    <string name="app_language_detail" formatted="false">"Changes Hearth’s interface only. Speech and translation languages stay as you chose them."</string>
+    <string name="follow_phone" formatted="false">"Follow phone"</string>
+    <string name="locale_en" formatted="false">"English"</string>
+    <string name="locale_ar" formatted="false">"العربية"</string>
+    <string name="locale_zh" formatted="false">"简体中文"</string>
+    <string name="language_auto" formatted="false">"Auto detect"</string>
+    <string name="language_model" formatted="false">"Model language"</string>
+    <string name="language_spoken" formatted="false">"Spoken"</string>
+    <string name="language_source" formatted="false">"Source"</string>
+    <string name="model_installed" formatted="false">"Installed"</string>
+    <string name="model_not_installed" formatted="false">"Not installed"</string>
+    <string name="model_needs_files">"Needs %1$s model files"</string>
+    <string name="model_download_import" formatted="false">"Download or import"</string>
+    <string name="needs_attention" formatted="false">"Needs attention"</string>
+    <string name="verified" formatted="false">"Verified"</string>
+    <string name="selected_custom" formatted="false">"selected custom"</string>
+    <string name="choose_value" formatted="false">"Choose"</string>
+    <string name="speak_action" formatted="false">"Speak"</string>
+    <string name="model_generic" formatted="false">"model"</string>
+    <string name="import_selected_cc" formatted="false">" and selected for CC"</string>
+    <string name="needs_attention_suffix" formatted="false">" · Needs attention"</string>
+    <string name="import_file" formatted="false">"file"</string>
+    <string name="import_folder" formatted="false">"folder"</string>
+    <string name="ocr_latin" formatted="false">"Latin script · English &amp; more"</string>
+    <string name="ocr_cjk" formatted="false">"Chinese · English · Japanese"</string>
+    <string name="ocr_arabic" formatted="false">"Arabic script · Arabic, Persian, Urdu &amp; more"</string>
+    <string name="ocr_cyrillic" formatted="false">"Russian · Ukrainian · Belarusian"</string>
+    <string name="ocr_manga" formatted="false">"Japanese · Manga bubble"</string>
+    <string name="ocr_meiki" formatted="false">"Japanese · Meiki text lines"</string>
+    <string name="ocr_printed" formatted="false">"Horizontal printed text · Apache-2.0"</string>
+    <string name="ocr_manga_details" formatted="false">"Draw around one bubble. Vertical/horizontal Japanese and furigana · Experimental · Apache-2.0"</string>
+    <string name="ocr_meiki_details" formatted="false">"Japanese line detection and recognition. Vertical reader is beta · Experimental · LGPL-3.0 model weights"</string>
+    <string name="install_nemotron" formatted="false">"Downloads and installs automatically. The original stays in your download folder. Multilingual streaming captions; translation uses a separate model."</string>
+    <string name="install_qwen" formatted="false">"Downloads and installs automatically. The original stays in your download folder. Multilingual captions in short segments. Runtime package: March 2026."</string>
+    <string name="install_qwen_large" formatted="false">"Compatible prepared packages are accepted. No verified ready-made 1.7B download is available. Raw checkpoints cannot be imported; use 0.6B unless preparing a compatible sherpa export."</string>
+    <string name="install_moonshine" formatted="false">"Downloads and installs automatically; originals stay in your folder. English, short segments. Package: 27 February 2026. This adapter is not Moonshine’s newer streaming runtime."</string>
+    <string name="install_whisper" formatted="false">"Download a whisper.cpp GGML .bin file, then Import Whisper file. Tiny/Base use less memory. .en.bin models are English-only; multilingual models allow a spoken language. Safetensors and GGUF are not accepted by this adapter."</string>
+    <string name="install_vosk" formatted="false">"Choose the spoken language on the publisher page. Download and extract its ZIP, then import the extracted Vosk model folder. Each model fixes the language; there is no automatic language switching."</string>
+    <string name="install_marian" formatted="false">"Legacy English → Arabic. Import a folder containing source.spm, tokenizer.json, encoder_model.onnx and decoder_model_merged.onnx from the ONNX conversion. Not GGUF or a speech ZIP. Other ONNX variants are unverified; new speech engines use the translators above."</string>
+    <string name="preset_bottom" formatted="false">"Bottom strip"</string>
+    <string name="preset_top" formatted="false">"Top ticker"</string>
+    <string name="preset_center" formatted="false">"Center focus"</string>
+    <string name="preset_theater" formatted="false">"Theater"</string>
+    <string name="preset_reading" formatted="false">"Reading"</string>
+    <string name="preset_subtle" formatted="false">"Subtle chip"</string>
+    <string name="phase_ready" formatted="false">"Ready"</string>
+    <string name="phase_preparing" formatted="false">"Preparing"</string>
+    <string name="phase_listening" formatted="false">"Listening"</string>
+    <string name="phase_finishing" formatted="false">"Finishing"</string>
+    <string name="phase_translating" formatted="false">"Translating"</string>
+    <string name="phase_speaking" formatted="false">"Speaking"</string>
+</resources>

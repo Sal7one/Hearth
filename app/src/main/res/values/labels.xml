@@ -1,0 +1,114 @@
+<resources>
+    <string name="label_homeservice_captions_title" formatted="false">"Live captions"</string>
+    <string name="label_homeservice_captions_description" formatted="false">"Read or translate speech from videos and voices around you."</string>
+    <string name="label_homeservice_captions_action" formatted="false">"Open captions"</string>
+    <string name="label_homeservice_conversation_title" formatted="false">"Conversation"</string>
+    <string name="label_homeservice_conversation_description" formatted="false">"Speak in two languages. Keep both sides of the conversation."</string>
+    <string name="label_homeservice_conversation_action" formatted="false">"Start a conversation"</string>
+    <string name="label_homeservice_face_title" formatted="false">"Face to face"</string>
+    <string name="label_homeservice_face_description" formatted="false">"Share one phone with two people, each facing their own translation."</string>
+    <string name="label_homeservice_face_action" formatted="false">"Open face to face"</string>
+    <string name="label_homeservice_text_title" formatted="false">"Type to translate"</string>
+    <string name="label_homeservice_text_description" formatted="false">"Write or paste something. Read the translation or hear it aloud."</string>
+    <string name="label_homeservice_text_action" formatted="false">"Translate text"</string>
+    <string name="label_homeservice_camera_title" formatted="false">"Camera &amp; photos"</string>
+    <string name="label_homeservice_camera_description" formatted="false">"Point at a sign, a menu or a page. Or choose an image from your phone."</string>
+    <string name="label_homeservice_camera_action" formatted="false">"Open camera"</string>
+    <string name="label_homeservice_screen_title" formatted="false">"Screen &amp; manga"</string>
+    <string name="label_homeservice_screen_description" formatted="false">"Read manga, books and other apps with translation over the page."</string>
+    <string name="label_homeservice_screen_action" formatted="false">"Open screen translator"</string>
+    <string name="label_maintab_captions_label" formatted="false">"Captions"</string>
+    <string name="label_maintab_captions_title" formatted="false">"Live captions"</string>
+    <string name="label_maintab_talk_label" formatted="false">"Talk"</string>
+    <string name="label_maintab_talk_title" formatted="false">"Conversation &amp; face to face"</string>
+    <string name="label_maintab_translate_label" formatted="false">"Translate"</string>
+    <string name="label_maintab_translate_title" formatted="false">"Type to translate"</string>
+    <string name="label_maintab_camera_label" formatted="false">"Camera"</string>
+    <string name="label_maintab_camera_title" formatted="false">"Camera &amp; OCR"</string>
+    <string name="label_maintab_settings_label" formatted="false">"Settings"</string>
+    <string name="label_maintab_settings_title" formatted="false">"Settings"</string>
+    <string name="label_thememode_system_label" formatted="false">"System"</string>
+    <string name="label_thememode_light_label" formatted="false">"Light"</string>
+    <string name="label_thememode_dark_label" formatted="false">"Dark"</string>
+    <string name="label_accentpreset_clean_label" formatted="false">"Clean"</string>
+    <string name="label_accentpreset_clean_description" formatted="false">"Neutral surfaces with a quiet blue accent"</string>
+    <string name="label_accentpreset_ink_label" formatted="false">"Ink"</string>
+    <string name="label_accentpreset_ink_description" formatted="false">"Monochrome, with a black background in dark mode"</string>
+    <string name="label_accentpreset_sky_label" formatted="false">"Sky"</string>
+    <string name="label_accentpreset_sky_description" formatted="false">"Cool blue and soft slate"</string>
+    <string name="label_accentpreset_ocean_label" formatted="false">"Organic · classic"</string>
+    <string name="label_accentpreset_ocean_description" formatted="false">"The original parchment, terracotta and sage theme"</string>
+    <string name="label_accentpreset_ember_label" formatted="false">"Ember"</string>
+    <string name="label_accentpreset_ember_description" formatted="false">"Clay, peach and olive"</string>
+    <string name="label_accentpreset_forest_label" formatted="false">"Forest"</string>
+    <string name="label_accentpreset_forest_description" formatted="false">"Moss, bark and lichen"</string>
+    <string name="label_accentpreset_amethyst_label" formatted="false">"Amethyst"</string>
+    <string name="label_accentpreset_amethyst_description" formatted="false">"Plum, rose and mineral grey"</string>
+    <string name="label_navigationlayout_simple_label" formatted="false">"Simple home"</string>
+    <string name="label_navigationlayout_tabs_label" formatted="false">"Classic tabs"</string>
+    <string name="label_settingslocation_local_label" formatted="false">"Local"</string>
+    <string name="label_settingslocation_cloud_label" formatted="false">"Cloud"</string>
+    <string name="label_settingsfeature_speech_label" formatted="false">"Speech recognition"</string>
+    <string name="label_settingsfeature_translation_label" formatted="false">"Translation"</string>
+    <string name="label_settingsfeature_voices_label" formatted="false">"Voices &amp; read aloud"</string>
+    <string name="label_settingsfeature_camera_label" formatted="false">"Camera &amp; screen reading"</string>
+    <string name="label_captionmode_captions_label" formatted="false">"Captions (original language)"</string>
+    <string name="label_captionmode_translate_label" formatted="false">"Translate"</string>
+    <string name="label_captionsource_playback_capture_label" formatted="false">"Device audio"</string>
+    <string name="label_captionsource_playback_capture_explanation" formatted="false">"Captures what the phone is playing. Only apps that allow capture are included; Protected audio and apps that opt out are silent. Works fully offline."</string>
+    <string name="label_captionsource_mic_label" formatted="false">"Microphone"</string>
+    <string name="label_captionsource_mic_explanation" formatted="false">"Listens through the microphone near the speaker. Works with any app including ones that block device-audio capture, at reduced accuracy."</string>
+    <string name="label_captionenginechoice_vosk_label" formatted="false">"Vosk (fast)"</string>
+    <string name="label_captionenginechoice_vosk_explanation" formatted="false">"Instant partial captions in the model\'s language. Best responsiveness; one model per language."</string>
+    <string name="label_captionenginechoice_whisper_label" formatted="false">"Whisper (accurate)"</string>
+    <string name="label_captionenginechoice_whisper_explanation" formatted="false">"Multilingual with live language detection; slower partials. Includes built-in English translation."</string>
+    <string name="label_captionenginechoice_moonshine_label" formatted="false">"Moonshine · English"</string>
+    <string name="label_captionenginechoice_moonshine_explanation" formatted="false">"Small English-only recognition in short utterance windows. Optional local translation."</string>
+    <string name="label_captionenginechoice_qwen_label" formatted="false">"Qwen3-ASR (local)"</string>
+    <string name="label_captionenginechoice_qwen_explanation" formatted="false">"Offline multilingual captions from a Qwen model package. Final text arrives in utterance windows; automatic language detection. Original-language CC; optional local translation bridge."</string>
+    <string name="label_captionenginechoice_nemotron_label" formatted="false">"Nemotron 3.5 (local)"</string>
+    <string name="label_captionenginechoice_nemotron_explanation" formatted="false">"Offline multilingual captions with streaming partials from a Nemotron GGUF package. Original-language CC; optional local translation bridge. Phone speed depends on the device."</string>
+    <string name="label_captionenginechoice_cloud_label" formatted="false">"Cloud · BYOK"</string>
+    <string name="label_captionenginechoice_cloud_explanation" formatted="false">"OpenAI-compatible Whisper API with your own key: top accuracy, any language, needs network (play distribution only)."</string>
+    <string name="label_captiontheme_dark_label" formatted="false">"Dark"</string>
+    <string name="label_captiontheme_high_contrast_label" formatted="false">"High contrast"</string>
+    <string name="label_captiontheme_light_label" formatted="false">"Light"</string>
+    <string name="label_captiontheme_subtle_label" formatted="false">"Subtle"</string>
+    <string name="label_captionspeakerchoice_system_label" formatted="false">"Device voice"</string>
+    <string name="label_captionspeakerchoice_system_explanation" formatted="false">"Instant, offline, any language the device has a voice for."</string>
+    <string name="label_captionspeakerchoice_custom_label" formatted="false">"Custom default"</string>
+    <string name="label_captionspeakerchoice_custom_explanation" formatted="false">"Use your saved Supertonic or self-hosted voice. Set it in Voices &amp; read aloud."</string>
+    <string name="label_captionspeakerchoice_native_label" formatted="false">"Supertonic 3"</string>
+    <string name="label_captionspeakerchoice_native_explanation" formatted="false">"On-device speech in 31 languages; install its model and a voice in Voice settings."</string>
+    <string name="label_captionspeakerchoice_shared_label" formatted="false">"Shared voice settings"</string>
+    <string name="label_captionspeakerchoice_shared_explanation" formatted="false">"Use the Android, on-device or self-hosted voice selected in Hearth Voice settings."</string>
+    <string name="label_captionspeakerchoice_cloud_label" formatted="false">"Cloud · BYOK"</string>
+    <string name="label_captionspeakerchoice_cloud_explanation" formatted="false">"Provider TTS with your API key (play distribution only)."</string>
+    <string name="label_captionanchor_top_label" formatted="false">"Top"</string>
+    <string name="label_captionanchor_center_label" formatted="false">"Center"</string>
+    <string name="label_captionanchor_bottom_label" formatted="false">"Bottom"</string>
+    <string name="label_captionfontscale_small_label" formatted="false">"Small"</string>
+    <string name="label_captionfontscale_normal_label" formatted="false">"Normal"</string>
+    <string name="label_captionfontscale_large_label" formatted="false">"Large"</string>
+    <string name="label_captionfontscale_huge_label" formatted="false">"Huge"</string>
+    <string name="label_captiondisplay_original_label" formatted="false">"Original only"</string>
+    <string name="label_captiondisplay_translated_label" formatted="false">"Translation only"</string>
+    <string name="label_captiondisplay_both_label" formatted="false">"Original + translation"</string>
+    <string name="label_sttmode_batch_label" formatted="false">"Batch"</string>
+    <string name="label_sttmode_streaming_soniox_label" formatted="false">"Streaming · Soniox v5"</string>
+    <string name="label_sttmode_streaming_elevenlabs_label" formatted="false">"Streaming · Scribe v2"</string>
+    <string name="label_sttmode_streaming_deepgram_label" formatted="false">"Streaming · Deepgram"</string>
+    <string name="label_sttmode_streaming_openai_label" formatted="false">"Streaming · OpenAI"</string>
+    <string name="label_sttmode_streaming_assemblyai_label" formatted="false">"Streaming · AssemblyAI"</string>
+    <string name="label_provider_openai_label" formatted="false">"OpenAI"</string>
+    <string name="label_provider_openrouter_label" formatted="false">"OpenRouter"</string>
+    <string name="label_provider_custom_label" formatted="false">"Custom"</string>
+    <string name="label_role_transcription_label" formatted="false">"Batch transcription"</string>
+    <string name="label_role_live_label" formatted="false">"Live transcription · streaming engine"</string>
+    <string name="label_role_translation_label" formatted="false">"Live translation · streaming engine"</string>
+    <string name="label_role_diarization_label" formatted="false">"Speaker labels · not integrated"</string>
+    <string name="label_capabilitystatus_ready_label" formatted="false">"Ready"</string>
+    <string name="label_capabilitystatus_setup_needed_label" formatted="false">"Setup needed"</string>
+    <string name="label_capabilitystatus_partly_ready_label" formatted="false">"Partly ready"</string>
+    <string name="label_capabilitystatus_unavailable_label" formatted="false">"Unavailable"</string>
+</resources>

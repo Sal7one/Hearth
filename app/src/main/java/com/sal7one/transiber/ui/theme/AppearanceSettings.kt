@@ -1,5 +1,8 @@
 package com.sal7one.transiber.ui.theme
 
+import com.sal7one.transiber.R as UiR
+import com.sal7one.transiber.i18n.*
+
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.compose.foundation.layout.Arrangement
@@ -68,6 +71,8 @@ fun rememberThemeMode(): ThemeMode = ThemeMode.fromStored(rememberAppearanceValu
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun AppearanceSettings(modifier: Modifier = Modifier) {
+    val uiText = rememberUiText()
+
     val context = LocalContext.current.applicationContext
     val mode = rememberThemeMode()
     val accent = rememberAccentPreset()
@@ -75,13 +80,14 @@ fun AppearanceSettings(modifier: Modifier = Modifier) {
     val colorful = rememberColorfulUi()
     val prefs = remember(context) { context.getSharedPreferences(APPEARANCE_PREFS, Context.MODE_PRIVATE) }
     Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text("Cards & background", style = MaterialTheme.typography.titleMedium, modifier = Modifier.semantics { heading() })
+        com.sal7one.transiber.i18n.AppLanguageSettings()
+        Text(uiText(UiR.string.ui_cards_background_7cc95), style = MaterialTheme.typography.titleMedium, modifier = Modifier.semantics { heading() })
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            FilterChip(selected=colorful,onClick={prefs.edit().putString("surface-style","colorful").apply()},label={Text("Color & blur")})
-            FilterChip(selected=!colorful,onClick={prefs.edit().putString("surface-style","minimal").apply()},label={Text("Minimal · backup")})
+            FilterChip(selected=colorful,onClick={prefs.edit().putString("surface-style","colorful").apply()},label={Text(uiText(UiR.string.ui_color_blur_74755))})
+            FilterChip(selected=!colorful,onClick={prefs.edit().putString("surface-style","minimal").apply()},label={Text(uiText(UiR.string.ui_minimal_backup_d48a8))})
         }
-        Text("Colorful cards with softly blurred artwork. Minimal removes decorative effects.",style=MaterialTheme.typography.bodySmall)
-        Text("Light & dark", style = MaterialTheme.typography.titleMedium, modifier = Modifier.semantics { heading() })
+        Text(uiText(UiR.string.ui_colorful_cards_with_softly_blurred_artwork_minimal_removes_decora_ac1d6),style=MaterialTheme.typography.bodySmall)
+        Text(uiText(UiR.string.ui_light_dark_1a3d4), style = MaterialTheme.typography.titleMedium, modifier = Modifier.semantics { heading() })
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             ThemeMode.entries.forEach { option ->
                 FilterChip(
@@ -90,29 +96,29 @@ fun AppearanceSettings(modifier: Modifier = Modifier) {
                         context.getSharedPreferences(APPEARANCE_PREFS, Context.MODE_PRIVATE)
                             .edit().putString(THEME_KEY, option.name).apply()
                     },
-                    label = { Text(option.label) },
+                    label = { Text(uiText.label(option)) },
                 )
             }
         }
-        Text("Theme", style = MaterialTheme.typography.titleMedium, modifier = Modifier.semantics { heading() })
+        Text(uiText(UiR.string.ui_theme_a797e), style = MaterialTheme.typography.titleMedium, modifier = Modifier.semantics { heading() })
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             AccentPreset.entries.forEach { option ->
                 FilterChip(selected = accent == option,
                     onClick = { prefs.edit().putString(ACCENT_KEY, option.name).apply() },
-                    label = { Text(option.label) })
+                    label = { Text(uiText.label(option)) })
             }
         }
-        Text(accent.description, style = MaterialTheme.typography.bodySmall)
-        Text("Navigation", style = MaterialTheme.typography.titleMedium, modifier = Modifier.semantics { heading() })
+        Text(uiText.description(accent), style = MaterialTheme.typography.bodySmall)
+        Text(uiText(UiR.string.ui_navigation_cf03c), style = MaterialTheme.typography.titleMedium, modifier = Modifier.semantics { heading() })
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             NavigationLayout.entries.forEach { option ->
                 FilterChip(selected = layout == option,
                     onClick = { prefs.edit().putString(LAYOUT_KEY, option.name).apply() },
-                    label = { Text(option.label) })
+                    label = { Text(uiText.label(option)) })
             }
         }
-        Text("Simple home puts every feature in one place. Classic tabs keeps the previous layout.", style = MaterialTheme.typography.bodySmall)
-        Text("System follows your phone. Bubble appearance has its own controls.",
+        Text(uiText(UiR.string.ui_simple_home_puts_every_feature_in_one_place_classic_tabs_keeps_th_bde4c), style = MaterialTheme.typography.bodySmall)
+        Text(uiText(UiR.string.ui_system_follows_your_phone_bubble_appearance_has_its_own_controls_9159c),
             style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
