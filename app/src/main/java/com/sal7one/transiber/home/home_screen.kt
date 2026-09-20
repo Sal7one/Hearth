@@ -1,58 +1,78 @@
 package com.sal7one.transiber.home
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.launch
+import kotlin.math.abs
 
-/** Three actions, no directory copy. Only the chosen feature opens its setup. */
 @Composable
-internal fun HomeScreen(
-    onCaptions: () -> Unit,
-    onTalk: (Boolean) -> Unit,
-    onTranslate: () -> Unit,
-    onCamera: () -> Unit,
-    onReading: () -> Unit,
-) {
-    var chooser by rememberSaveable { mutableStateOf<String?>(null) }
-    BoxWithConstraints(Modifier.fillMaxSize()) {
-        // Scroll at large text/small heights; never shrink or clip the touch targets.
-        val buttonHeight = ((maxHeight - 64.dp) / 3).coerceIn(150.dp, 230.dp)
-        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterVertically)) {
-            HomeVisualButton("Listen", HomeArt.LISTEN, "Listen: live captions and audio translation", buttonHeight, onCaptions)
-            HomeVisualButton("Talk", HomeArt.TALK, "Talk: conversation or face to face", buttonHeight) { chooser = "talk" }
-            HomeVisualButton("Translate", HomeArt.TRANSLATE, "Translate: text, camera or screen", buttonHeight) { chooser = "translate" }
+internal fun HomeScreen(onCaptions: () -> Unit, onTalk: (Boolean) -> Unit,
+    onTranslate: () -> Unit, onCamera: () -> Unit, onReading: () -> Unit) {
+    val context = LocalContext.current
+    val initial = remember { HomeServiceStore.selected(context) }
+    val pager = rememberPagerState(initialPage = initial.ordinal, pageCount = { HomeService.entries.size })
+    val scope = rememberCoroutineScope()
+    LaunchedEffect(Unit) {
+        // An external link or Classic tab may have used another feature since Home was shown.
+        pager.scrollToPage(initial.ordinal)
+        snapshotFlow { pager.settledPage }.distinctUntilChanged().collect { index ->
+            HomeServiceStore.remember(context, HomeService.entries[index])
         }
     }
-    chooser?.let { selected ->
-        HomeModeSheet(selected, onDismiss = { chooser = null },
-            onTalk = { face -> chooser = null; onTalk(face) },
-            onTranslate = { chooser = null; onTranslate() },
-            onCamera = { chooser = null; onCamera() },
-            onReading = { chooser = null; onReading() })
+    fun open(service: HomeService) {
+        HomeServiceStore.remember(context, service)
+        when (service) {
+            HomeService.CAPTIONS -> onCaptions()
+            HomeService.CONVERSATION -> onTalk(false)
+            HomeService.FACE -> onTalk(true)
+            HomeService.TEXT -> onTranslate()
+            HomeService.CAMERA -> onCamera()
+            HomeService.SCREEN -> onReading()
+        }
     }
-}
-
-@Composable
-internal fun HomeVisualButton(title: String, art: HomeArt, description: String,
-    height: androidx.compose.ui.unit.Dp, onClick: () -> Unit) {
-    Card(onClick = onClick,
-        modifier = Modifier.fillMaxWidth().heightIn(min = height).semantics { contentDescription = description },
-        shape = RoundedCornerShape(28.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh)) {
-        Row(Modifier.fillMaxWidth().padding(start = 24.dp, end = 8.dp, top = 12.dp, bottom = 12.dp),
-            verticalAlignment = Alignment.CenterVertically) {
-            Text(title, style = MaterialTheme.typography.headlineMedium, modifier = Modifier.weight(1f))
-            HomeFeatureArt(art, Modifier.weight(1.2f).height(height - 24.dp))
+    Column(Modifier.fillMaxSize()) {
+        HorizontalPager(state = pager, contentPadding = PaddingValues(horizontal = 30.dp), pageSpacing = 14.dp,
+            key = { HomeService.entries[it].id }, verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.weight(1f).fillMaxWidth(), beyondViewportPageCount = 1) { index ->
+            val distance = abs((pager.currentPage - index) + pager.currentPageOffsetFraction).coerceIn(0f, 1f)
+            HomeServiceCard(HomeService.entries[index], Modifier.graphicsLayer {
+                scaleX = 1f - distance * .045f
+                scaleY = 1f - distance * .045f
+                translationY = distance * 10.dp.toPx()
+            }) { open(HomeService.entries[index]) }
+        }
+        Row(Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+            IconButton(onClick = { scope.launch { pager.animateScrollToPage(pager.settledPage - 1) } },
+                enabled = pager.settledPage > 0 && !pager.isScrollInProgress) {
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, "Previous service")
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.semantics { contentDescription = "Service ${pager.settledPage + 1} of ${HomeService.entries.size}" }) {
+                HomeService.entries.forEachIndexed { index, _ ->
+                    Surface(shape = androidx.compose.foundation.shape.CircleShape,
+                        color = if (index == pager.settledPage) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,
+                        modifier = Modifier.size(width = if (index == pager.settledPage) 22.dp else 6.dp, height = 6.dp)) {}
+                }
+            }
+            IconButton(onClick = { scope.launch { pager.animateScrollToPage(pager.settledPage + 1) } },
+                enabled = pager.settledPage < HomeService.entries.lastIndex && !pager.isScrollInProgress) {
+                Icon(Icons.AutoMirrored.Filled.ArrowForward, "Next service")
+            }
         }
     }
 }

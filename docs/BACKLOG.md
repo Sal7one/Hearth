@@ -1,5 +1,13 @@
 # Hearth — finish for publication
 
+## Floating service carousel — 0.19.0
+
+- [x] Horizontal paging with neighboring-card previews and previous/next controls.
+- [x] Six image-led cards, each with a title, short description and direct action.
+- [x] Persist the last selected/used service by stable ID; restore its index.
+- [x] Reuse the preference for feature pages and preserve it when entering settings.
+- [x] Bundle optimized original artwork for fully offline Home rendering.
+
 ## Visual home correction — 0.18.1
 
 - [x] Replace the text-heavy six-row directory with three large illustrated buttons.

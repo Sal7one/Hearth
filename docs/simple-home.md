@@ -1,75 +1,60 @@
-# Simple home and themes
+# Home carousel and themes
 
-Hearth 0.18.1 defaults to a quiet, neutral **Clean** theme and **Simple home**.
-Home has three large illustrated buttons and no explanatory paragraphs:
-**Listen**, **Talk**, and **Translate**. Listen opens captions; Talk opens two
-illustrated choices (Chat, Face to face); Translate opens three (Text,
-Camera, Screen). The gear opens settings. All artwork is original scalable vector
-drawing, with no remote assets or continuous animation.
+Hearth 0.19.0 uses a horizontal carousel of floating, image-led feature cards.
+Each card has an original cover image, a title, a short description and one direct
+Open button. Adjacent cards peek into the viewport; swipe horizontally or use the
+labelled previous/next buttons. Dots identify the current position. There is no
+automatic advancement or ambient animation.
 
-Home does not load models, request permissions or start capture. Feature setup
-and Android consent remain explicit. The six-row directory shipped in 0.18.0 was
-replaced after owner feedback; Classic tabs remains available.
+The six cards are Live captions, Conversation, Face to face, Type to translate,
+Camera & photos, and Screen & manga. They open the existing feature screens or
+reader setup directly. The earlier three-button chooser was removed following the
+owner's request. The gear still opens shared settings; Classic tabs remains an
+optional navigation layout.
 
-## Short paths
+## Remembered service
 
-These counts are navigation taps from Home, excluding scrolling, keyboard entry,
-model downloads and Android permission dialogs. They describe the shipped entry
-paths, not a claim that every provider can be configured from scratch in five taps.
+The last settled/used service is saved under `hearth-home/selected-service`.
+The preference is a stable ID, not an ordinal: an app update can reorder cards
+without restoring a different service. Unknown/missing values fall back to Live
+captions. Main-app feature navigation (including share links and Classic tabs)
+updates the same preference; opening settings does not.
 
-| Action | Path | Taps |
-| --- | --- | ---: |
-| Open captions | Listen | 1 |
-| Open either conversation layout | Talk → layout | 2 |
-| Open typed translation, camera or screen/manga setup | Translate → input | 2 |
-| Move between main features | Home → category → input if needed | 2–3 |
-| Change theme, brightness or navigation layout | Settings → Appearance & navigation → choice | 3 |
-| Open local speech/translation/voice/OCR setup | Settings → category | 2 |
-| Open cloud speech/translation/voice setup | Settings → Cloud → category | 3 |
-| Open caption or screen overlay controls | Settings → overlay controls | 2 |
-| Open downloads/imports | Settings → Downloads & imports | 2 |
-| Open phone tile setup or help | Settings → All settings & diagnostics → destination | 3 |
+Returning Home and cold-starting the app restores the selected service's index.
+Temporary drag offsets are not persisted. No provider, model, credential, transcript
+or history data enters this preference. Scrolling Home starts no inference or
+network work. Screen sharing and other Android consent remain explicit.
 
-The toolbar settings sheet is available on every main-app page in both navigation
-layouts. Local and Cloud keep their separate editors. FOSS exposes Local only;
-appearance/navigation changes never alter the chosen engine or provider.
+## Layout and access
 
-Simple mode provides Home and Back controls. Returning from a setup page follows
-the originating feature; opening setup directly from Home returns there. Existing
-notification/share/overlay deep links still open their requested page. Classic tabs
-preserves the previous five-tab navigation and each tab's return path.
+Cards use a bounded-height, vertically scrollable interior on small displays or
+large font settings. Images are decorative; native text, headings and labelled
+buttons provide the actionable semantics. Previous/next controls have 48 dp touch
+targets. Settings keeps direct Local/Cloud destinations, with Local only in FOSS.
+These design choices are not a claim of a complete TalkBack/device-matrix audit.
+
+When a card is visible, its feature takes one tap to open. Settings → category is
+two taps; a Cloud category adds the Cloud tab. Theme changes take Settings →
+Appearance & navigation → choice. Swiping cards, text entry, setup/download work
+and Android permissions are separate from those navigation tap counts.
 
 ## Appearance
 
-- **Clean:** neutral white/slate surfaces with a restrained blue accent.
-- **Ink:** neutral surfaces, monochrome primary controls, black dark-mode background.
-- **Sky:** softly blue surfaces and slate accents.
-- **Organic · classic:** the previous parchment/terracotta/sage appearance.
-- Ember, Forest and Amethyst remain available.
+Clean, Ink and Sky are minimal palettes with sans-serif headings. Organic · classic,
+Ember, Forest and Amethyst preserve the previous palettes and typography. Every
+palette supports System/Light/Dark. Themes, brightness and navigation choice persist
+across app restart. Caption and reading overlays retain independent text/background
+controls. Classic tabs preserves the previous five-tab layout and return paths.
 
-The three minimal palettes use sans-serif headings; classic palettes retain their
-original typography. Every palette supports System, Light and Dark. Choices persist through app restart
-and are observed by separately composed app activities. Caption text/background
-and reading overlay opacity retain their own settings. Saved `OCEAN` identifiers
-still select Organic. Missing/unknown palette values select Clean.
+## Components
 
-Labels use native Compose text for shaping, scaling and semantics. Feature buttons
-have accessible names and decorative illustrations, flexible height and a
-scrollable fallback for small displays or large text. Navigation controls retain labelled 48 dp targets. No continuous
-animation or new graphics/runtime dependency is introduced.
+- `home/home_screen.kt`: pager, page position, swipe/navigation and launch dispatch.
+- `home/home_service_card.kt`: image, native text and feature action.
+- `home/HomeService.kt`: stable service identities and app-page mapping.
+- `home/HomeServiceStore.kt`: bounded preference storage.
+- `settings/settings_quick_sheet.kt`: shared setup shortcuts.
+- `ui/theme/AppearanceSettings.kt`: live persisted theme/navigation choices.
 
-## Implementation and validation
-
-- `home/home_screen.kt`: three large feature entries.
-- `home/home_mode_sheet.kt`: two/three-choice visual sheets.
-- `home/home_feature_art.kt`: original scalable illustrations, no raster downloads.
-- `settings/settings_quick_sheet.kt`: shared direct settings destinations.
-- `settings/settings_app_preferences.kt`: common directory links.
-- `ui/theme/AppearanceSettings.kt`: live persisted appearance/navigation choices.
-- `ui/theme/MinimalPalette.kt`: the three minimal palettes.
-- `MainActivity.kt`: integration with existing feature screens and saved navigation.
-
-Host checks cover text contrast on the new palettes, compatibility of saved theme
-names, defaults, and appearance/shortcut return paths and restoration. This is not
-a full TalkBack or complete provider-setup usability audit. See the release's
-validation note for actual phone observations.
+[Artwork provenance and exact prompts](home-artwork.md) document the built-in
+image-generation output and its six bundled WebP paths. No image service is used
+at runtime. [Validation](validation-v34.md) records actual checks and limitations.

@@ -104,6 +104,11 @@ class MainActivity : ComponentActivity() {
      requestedPage?.let { if (it == 4) { speechLocation = SettingsLocation.CLOUD; speechEntry++ }; focus.clearFocus(); route = AppNavigation.initial(it); homeDestination = null; showHome = false; navigation.value = null }
     }
     var faceLayout by rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(page, atHome, faceLayout) {
+     if (!atHome) com.sal7one.transiber.home.HomeService.forPage(page, faceLayout)?.let {
+      com.sal7one.transiber.home.HomeServiceStore.remember(this@MainActivity, it)
+     }
+    }
     var modelsSection by rememberSaveable { mutableStateOf("Speech") }
     fun localModels(section: String) { modelsSection = section; go(1) }
     fun speechSettings(location: SettingsLocation) { speechLocation = location; speechEntry++; go(4) }

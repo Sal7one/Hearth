@@ -196,3 +196,12 @@ caption settings or stops the existing session.
 controls, the Ink dark background, saved classic identifiers and defaults.
 `AppNavigationTest` also covers the new appearance/shortcut destinations returning
 to their originating feature and surviving save/restore. No native utilities changed.
+
+
+## Hearth 0.19.0 home selection
+
+`HomeService.restore` and `forPage` are consumed by the carousel and MainActivity.
+`HomeServiceStore` persists only the stable service ID. Host tests cover stored
+identities, missing/unknown fallback, ID uniqueness, the two conversation layouts
+and exclusion of settings pages from last-feature updates. Phone validation covers
+preference restoration through Home and process restart.
