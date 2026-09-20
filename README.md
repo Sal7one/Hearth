@@ -17,6 +17,17 @@ layout remains available in Appearance & navigation.
 > and contributions are welcome; the screenshots show working examples, not a
 > guarantee that every model or language pair will work equally well.
 
+## Download the preview
+
+[Hearth 0.22.1 release and checksums](https://github.com/Sal7one/Hearth/releases/tag/v0.22.1)
+
+- [Cloud + local APK](https://github.com/Sal7one/Hearth/releases/download/v0.22.1/hearth-0.22.1-cloud-qa-arm64.apk) — local models, optional cloud connections and downloads.
+- [Offline-only APK](https://github.com/Sal7one/Hearth/releases/download/v0.22.1/hearth-0.22.1-offline-qa-arm64.apk) — no network permission; import model files.
+
+Android 9+, ARM64. These are test-signed PoC builds, compatible with the previous
+public QA release. The two flavors replace each other; install an update without
+uninstalling to preserve your models and settings.
+
 ## What you can try
 
 - **Use Hearth in English, العربية or 简体中文.** Choose App language in Settings,
@@ -52,45 +63,61 @@ layout remains available in Appearance & navigation.
 
 ## Screenshots
 
-Hearth 0.11.0 on Android 16, using demo text. Tap an image to view it at full size.
-[How these screenshots were captured](docs/screenshots/README.md).
+Hearth **0.22.1** on a Samsung phone running Android 16. Current UI, with synthetic
+example text; tap any image for the full-size screenshot.
+[Capture details and what each screenshot demonstrates](docs/screenshots/README.md).
 
 <table>
   <tr>
-    <th>Live caption setup</th>
+    <th>Home cards</th>
+    <th>Easy setup</th>
+    <th>Live captions</th>
+  </tr>
+  <tr>
+    <td><a href="docs/screenshots/home.png"><img src="docs/screenshots/home.png" width="240" alt="Illustrated floating Home card with a direct action and horizontal service navigation" /></a></td>
+    <td><a href="docs/screenshots/easy-setup.png"><img src="docs/screenshots/easy-setup.png" width="240" alt="Two large choices for local models or a cloud connection" /></a></td>
+    <td><a href="docs/screenshots/live-captions.png"><img src="docs/screenshots/live-captions.png" width="240" alt="Caption setup with device audio, Nemotron recognition and Arabic translation" /></a></td>
+  </tr>
+  <tr>
+    <th>Conversation</th>
     <th>Face to face</th>
     <th>Type to translate</th>
   </tr>
   <tr>
-    <td><a href="docs/screenshots/live-captions.png"><img src="docs/screenshots/live-captions.png" width="240" alt="Live caption setup with device audio, Russian speech and Arabic translation selected" /></a></td>
-    <td><a href="docs/screenshots/face-to-face.png"><img src="docs/screenshots/face-to-face.png" width="240" alt="Split face-to-face screen with an upside-down English section, Arabic translation and two Speak buttons" /></a></td>
-    <td><a href="docs/screenshots/type-to-translate.png"><img src="docs/screenshots/type-to-translate.png" width="240" alt="Typed English station-directions question translated into Arabic, with Android and custom read-aloud controls" /></a></td>
+    <td><a href="docs/screenshots/conversation.png"><img src="docs/screenshots/conversation.png" width="240" alt="Synthetic English station-directions question and Arabic translation, with language swap and speech controls" /></a></td>
+    <td><a href="docs/screenshots/face-to-face.png"><img src="docs/screenshots/face-to-face.png" width="240" alt="Two-person split layout with one half rotated and large Speak buttons" /></a></td>
+    <td><a href="docs/screenshots/type-to-translate.png"><img src="docs/screenshots/type-to-translate.png" width="240" alt="Fresh local Hy-MT2 translation of an English station-directions question into Arabic" /></a></td>
   </tr>
   <tr>
-    <th>Conversation</th>
     <th>Camera &amp; OCR</th>
+    <th>Screen &amp; manga</th>
     <th>Settings</th>
   </tr>
   <tr>
-    <td><a href="docs/screenshots/conversation.png"><img src="docs/screenshots/conversation.png" width="240" alt="Conversation screen preserving an English question and its Arabic translation, with language swap and speech controls" /></a></td>
-    <td><a href="docs/screenshots/camera-ocr.png"><img src="docs/screenshots/camera-ocr.png" width="240" alt="Imported Russian sample image with OCR text boxes, recognized text and its English translation" /></a></td>
-    <td><a href="docs/screenshots/settings.png"><img src="docs/screenshots/settings.png" width="240" alt="Settings for models, downloads, cloud speech, cloud translation, voices and appearance" /></a></td>
+    <td><a href="docs/screenshots/camera-ocr.png"><img src="docs/screenshots/camera-ocr.png" width="240" alt="Synthetic English image recognized locally and translated into Arabic" /></a></td>
+    <td><a href="docs/screenshots/screen-reading.png"><img src="docs/screenshots/screen-reading.png" width="240" alt="Screen translation setup with manual and page-change controls" /></a></td>
+    <td><a href="docs/screenshots/settings.png"><img src="docs/screenshots/settings.png" width="240" alt="Local and Cloud setup tabs with focused feature settings" /></a></td>
   </tr>
 </table>
 
-## Five screens, always within reach
+## Choose a feature from Home
 
-| Tab | What you can do |
+Swipe the illustrated cards and open the feature you want. Hearth remembers the
+last-used card. Easy setup offers Local or Cloud; feature screens keep their
+additional controls in settings sheets.
+
+| Feature | What you can do |
 | --- | --- |
-| **Captions** | Start and manage live captions over other apps. |
-| **Talk** | Have a conversation or switch to the split **Face to face** view. |
-| **Translate** | Type text, read its translation and play either language. |
-| **Camera** | Translate live camera text or import a photo for OCR. |
-| **Settings** | Choose models, downloads, connections, voices and appearance. |
+| **Live captions** | Start and manage captions over other apps. |
+| **Conversation / Face to face** | Speak in turns or use the split two-person layout. |
+| **Type to translate** | Type text, read its translation and play either language. |
+| **Camera & OCR** | Recognize camera or photo text and translate it. |
+| **Screen & manga** | Translate a shared screen or draw around a text region. |
+| **Settings** | Choose local models, cloud connections, downloads, voices and appearance. |
 
-Each tab remembers its place. Back returns from model/voice setup to the screen
-that opened it; tapping the selected tab again returns to its main screen.
-The launcher uses the [Arabic/English speech-bubble mascot](docs/brand/README.md).
+Prefer tabs? Enable **Classic tabs** in Appearance & navigation. The five-tab
+layout remains available alongside the default card-based Home. The launcher uses
+the [Arabic/English speech-bubble mascot](docs/brand/README.md).
 
 ## Development backlog
 
@@ -107,7 +134,7 @@ See the [model contribution guide](docs/model-contributing.md) and [release chec
   4B, or the existing HY-MT1.5/Hy-MT2 quantizations. Explicit CC languages and translation directions;
   bounded background translation, live toggle, and per-line timing.
   See [local translation setup](docs/local-translation.md).
-- Cloud STT and real-time Arabic/English translation with your own provider keys.
+- Cloud STT and live translation with your own provider keys; destination coverage depends on the selected connection.
   Soniox v5 adds original and translated text; Scribe v2 adds another STT choice.
   Speech-only model filtering, provider configuration, and encrypted key storage.
 - Direct HTTPS file downloads with foreground progress, cancellation, selectable public folder,
@@ -116,7 +143,7 @@ See the [model contribution guide](docs/model-contributing.md) and [release chec
 - A local-only `foss` variant with **no network permission**, and a network-enabled
   `play` variant. ML Kit is an optional Google SDK in the play flavor; foss excludes it.
 
-- Two-way **Conversation** with a quick language swap, microphone or typed turns, originals and translations, local history and optional offline TTS. **Face to face**, in the **Talk** tab alongside Conversation, gives each person a half-screen and large Speak button, with the upper half rotated. Translation can use an installed model or Google Cloud, Microsoft Azure, DeepL or LibreTranslate. See [conversation scope](docs/conversation-mode-plan.md) and [translation connections](docs/conversation-cloud-translation.md).
+- Two-way **Conversation** with a quick language swap, microphone or typed turns, originals and translations, local history and optional offline TTS. **Face to face**, available from Home or Conversation, gives each person a half-screen and large Speak button, with the upper half rotated. Translation can use an installed model or Google Cloud, Microsoft Azure, DeepL or LibreTranslate. See [conversation scope](docs/conversation-mode-plan.md) and [translation connections](docs/conversation-cloud-translation.md).
 - **Local benchmark** compares installed models on the same WAV or corrected text, separates loading from inference and saves/export reports on-device. See [method and limitations](docs/local-benchmark.md), [speech phone results](docs/validation-v17.md), and the [eight-option local translation comparison](docs/local-translation-benchmark-2026-09-13.md).
 - Persistent System, Light and Dark appearance in Settings.
 
@@ -221,9 +248,9 @@ ML Kit packs remain managed by Google's SDK. The offline APK has no downloader.
 Custom model packaging is an extension/developer path documented in
 [model contributing](docs/model-contributing.md), not a prerequisite for catalog downloads.
 
-### Screen reading (0.14.0 development build)
+### Screen reading (experimental)
 
-Camera → **Open reading overlay** translates manga and books in another app. Draw around a bubble, translate manually, or refresh after a settled page change. Original text, session history and read aloud reuse Hearth’s existing local/cloud engines. Paddle, Manga OCR and Meiki have been run on an Android phone. This remains experimental. Translations appear over text in the live reader. A separate lock handle enables scrolling through the transparent layer; visual movement clears old placements and refreshes translation after settling. Unlock boxes for full text/read aloud. This is experimental, without artwork inpainting or frame-perfect scroll tracking. [Setup, limitations and tests](docs/screen-reading.md).
+Home → **Screen & manga** translates manga and books in another app. Draw around a bubble, translate manually, or refresh after a settled page change. Original text, session history and read aloud reuse Hearth’s existing local/cloud engines. Paddle, Manga OCR and Meiki have been run on an Android phone. This remains experimental. Translations appear over text in the live reader. A separate lock handle enables scrolling through the transparent layer; visual movement clears old placements and refreshes translation after settling. Unlock boxes for full text/read aloud. This is experimental, without artwork inpainting or frame-perfect scroll tracking. [Setup, limitations and tests](docs/screen-reading.md).
 
 The 0.13.1 build removes the optional Accessibility service after a Play Protect
 installation block was reported. Reading uses explicit screen-sharing consent;

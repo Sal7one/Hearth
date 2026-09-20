@@ -26,7 +26,7 @@ python3 scripts/verify-release.py
 Six app test variants contain 292 cases each, zero failures/errors. Existing skips:
 one per Play variant and two per FOSS variant. Common JNI Debug/Release: 74 cases
 each, zero failures/errors/skips. Three new localization cases verify complete resource
-keys, duplicate/blank rejection, identical format arguments and usable nested diagnostic
+identifiers, duplicate/blank rejection, identical format arguments and usable nested diagnostic
 messages without Android. Existing speech/translation capability tests still pass.
 
 Final build log: `/tmp/hearth-v42-final-gates.log`. Artifact log:

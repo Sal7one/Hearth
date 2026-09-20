@@ -1,6 +1,9 @@
-# Publication audit — Hearth 0.8.2
+# Publication audit — Hearth
 
-Date: 2026-09-13. Scope: this standalone repository and its existing Git history,
+The original audit and follow-ups below retain their historical scope. Current
+release evidence is in [0.22.1 publication validation](validation-public-0.22.1.md).
+
+Original audit date: 2026-09-13. Scope: this standalone repository and its existing Git history,
 Android flavors, credential handling, native supply chain, documentation and builds.
 This audit does not publish the repository or certify every provider/model/device.
 

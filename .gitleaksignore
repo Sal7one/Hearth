@@ -1,0 +1,3 @@
+# Reviewed false positive in prose describing validation of resource identifiers.
+# This exact historical finding contains no credential. No rule or path is disabled.
+30c277f36b77f0e4ad55969b53a8633f7ebd7537:docs/validation-v42.md:generic-api-key:29
