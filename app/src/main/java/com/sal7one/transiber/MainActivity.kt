@@ -80,6 +80,7 @@ class MainActivity : ComponentActivity() {
     val simple = layout == NavigationLayout.SIMPLE
     var showHome by rememberSaveable { mutableStateOf(!intent.hasExtra("page")) }
     var homeDestination by rememberSaveable { mutableStateOf<Int?>(null) }
+    var homeEntry by rememberSaveable { mutableIntStateOf(0) }
     var quickSettings by rememberSaveable { mutableStateOf(false) }
     val atHome = simple && showHome
     val page = route.page
@@ -120,7 +121,8 @@ class MainActivity : ComponentActivity() {
     fun home() { focus.clearFocus(); homeDestination = null; showHome = true }
     fun back() {
      focus.clearFocus()
-     if (simple && (route.isRoot || page == homeDestination)) home() else route = route.back()
+     if (intent.getBooleanExtra("returnToReading", false) && (route.isRoot || page == intent.getIntExtra("page", 0))) finish()
+     else if (simple && (route.isRoot || page == homeDestination)) home() else route = route.back()
     }
     fun settingsFeature(location: SettingsLocation, feature: SettingsFeature) {
      when (feature) {
@@ -130,7 +132,10 @@ class MainActivity : ComponentActivity() {
       SettingsFeature.CAMERA -> localModels("Camera")
      }
     }
-    fun reading() { startActivity(android.content.Intent(this@MainActivity, com.sal7one.transiber.reading.ReadingStartActivity::class.java)) }
+    fun reading() {
+     com.sal7one.transiber.home.HomeServiceStore.remember(this@MainActivity, com.sal7one.transiber.home.HomeService.SCREEN)
+     if (simple) { homeEntry++; home() }
+     startActivity(android.content.Intent(this@MainActivity, com.sal7one.transiber.reading.ReadingStartActivity::class.java)) }
     BackHandler(enabled = !atHome && (simple || route.canGoBack)) { back() }
     if (quickSettings) SettingsQuickSheet(
      onDismiss = { quickSettings = false },
@@ -177,6 +182,7 @@ class MainActivity : ComponentActivity() {
       Box(Modifier.weight(1f)) {
        screenState.SaveableStateProvider(if (atHome) "simple-home" else page) {
        if (atHome) HomeScreen(
+        entryRevision = homeEntry,
         onCaptions = { go(0) },
         onTalk = { face -> faceLayout = face; go(7) },
         onTranslate = { go(11) },
@@ -196,7 +202,7 @@ class MainActivity : ComponentActivity() {
         4 -> SettingsSpeechScreen(speechLocation, speechEntry)
         5 -> CaptionScreen(onBrowseModels = { go(1) })
         7 -> ConversationScreen(onModels = { go(1) }, onCloud = { speechSettings(SettingsLocation.CLOUD) }, onLayoutChanged = { faceLayout = it }, initialFaceToFace = faceLayout, onVoices={voiceSettings()})
-        10 -> com.sal7one.transiber.ocr.CameraTranslateScreen(onModels = { localModels("Camera") }, onConnections = { translationSettings(SettingsLocation.CLOUD) }, onDownloads = { go(2) },onVoices={voiceSettings()},sharedImage=sharedImage,onShareConsumed={sharedImage=null})
+        10 -> com.sal7one.transiber.ocr.CameraTranslateScreen(onModels = { localModels("Camera") }, onConnections = { translationSettings(SettingsLocation.CLOUD) }, onDownloads = { go(2) },onVoices={voiceSettings()},sharedImage=sharedImage,onShareConsumed={sharedImage=null},onReading={reading()})
         11 -> com.sal7one.transiber.translation.TypedTranslateScreen(onModels={localModels("Translation")},onConnections={translationSettings(SettingsLocation.CLOUD)},onVoices={voiceSettings()},sharedText=sharedText,onShareConsumed={sharedText=null})
         12 -> com.sal7one.transiber.voice.VoiceSetup(onDownloads={go(2)}, initialLocation=voiceLocation, entryRevision=voiceEntry)
         8 -> LocalBenchmarkScreen(onModels = { go(1) })

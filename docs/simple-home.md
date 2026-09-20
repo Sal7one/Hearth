@@ -86,8 +86,10 @@ Inside features, everyday actions take priority over setup:
   directly available. Source-language capability failures remain visible.
 - Camera: preview and Capture/Choose photo come first. Live mode remains available;
   the Screen & manga shortcut follows the camera content. Setup uses one sheet.
-- Reading: trigger choice and Start stay on the main page. Timing, translator,
-  OCR/language setup and interaction help live in Reading settings. Start is pinned.
+- Reading: source/destination language cards, OCR reader choice, trigger choice and
+  Start stay on the main page. Timing and translator setup live in Reading settings.
+  Start is pinned. In Simple mode, Back returns to the Screen & manga Home card;
+  model/download setup launched from reading returns to reading first.
 - Downloads: Get models, Folder and From link precede transfer cards. Folder and
   direct URL details open separate sheets. FOSS has an Import models action.
 - Shared setup: large Speech, Translation, Voices and Camera/OCR tiles, separated

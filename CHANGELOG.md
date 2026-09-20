@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.20.1 — 2026-09-20
+
+- Make Screen & manga and Camera languages directly editable with separate source/destination cards.
+- Automatically choose a compatible OCR reader when changing source language; preserve the translation destination.
+- Keep Camera/Reading settings synchronized and allow captured photos to be translated again after changing settings.
+- Return Screen & manga to its remembered Home card; nested model/download setup returns to Reading.
+- Default new installations to Ink + Dark while preserving existing appearance choices.
+
 ## 0.11.0 — 2026-09-13
 
 - Replace the crowded Home launcher with five bottom tabs: Captions, Talk, Translate, Camera and Settings.

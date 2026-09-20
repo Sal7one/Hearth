@@ -18,10 +18,13 @@ connection. Images are never sent to those providers.
    progress, cancellation and retries are in Downloads. Originals remain in
    `Downloads/Hearth/models` or your selected folder. No computer or package manifest
    is required. In foss, import the matching detector and reader ONNX files instead.
-2. Set the text language and translation target. The text-language picker lists
-   the selected OCR group's declared languages; the target picker checks the
-   translator's direction support. Selecting a text language informs translation,
-   not a language-forcing input to the OCR network.
+2. Use **Text in image** and **Translate to**. The source picker lists languages
+   supported by Hearth's OCR catalog and switches to a compatible reader when
+   needed; **Reader · Change** chooses a specific engine. The target picker checks
+   the translator's directions, independently of the OCR reader. The source code
+   informs translation; it is not a language-forcing input to the OCR network.
+   Changing settings stops existing inference, clears stale output and keeps the
+   photo; tap **Translate again** to process it with the new choices.
 3. Tap Open camera to grant camera permission, then Start live or Capture & translate.
    Alternatively, Import photo uses Android's file picker without camera permission.
 4. Hold the phone level. Live text must settle across two observations before it is

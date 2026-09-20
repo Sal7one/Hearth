@@ -1,3 +1,13 @@
+## 0.20.1 — readable OCR language controls and reading return path
+
+- [x] Put labelled source/destination selectors directly in Camera and Screen & manga.
+- [x] Select compatible OCR readers when the source language changes; preserve explicit Manga/Meiki choices for Japanese.
+- [x] Derive destinations from local/cloud translation directions, with clear unsupported-pair feedback.
+- [x] Share observable saved OCR choices; prevent stale Camera state overwriting Reading setup.
+- [x] Stop old inference on setting changes, preserve the photo, and expose Translate again.
+- [x] Return Screen & manga to its Home card in Simple mode; return nested downloads/models to Reading setup.
+- [x] Run both flavor gates, artifact checks and Samsung UI journeys. See [validation](validation-v36.md).
+
 ## 0.20.0 — colorful cards and simpler feature controls
 
 - [x] Add colored translucent panels, blurred local artwork and a persisted Minimal backup.

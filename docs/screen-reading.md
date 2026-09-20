@@ -1,14 +1,18 @@
 # Manga and book screen reading
 
-Added in Hearth 0.13.0; permission reduction in 0.13.1; positioned translations in 0.14.0. Open **Camera → Open reading overlay**. This is a distinct
+Added in Hearth 0.13.0; permission reduction in 0.13.1; positioned translations in 0.14.0. Open **Home → Screen & manga** (or the Camera shortcut). This is a distinct
 cross-app overlay, separate from live audio captions. Starting either capture
 feature stops the other; Android's projection session is never reused after stop.
 
 ## Use it
 
-1. In Camera settings choose Paddle, Manga or Meiki, install its model files, and
-   choose the text language, target language and existing local/cloud translator.
-2. Open the reading overlay. Choose **I tap** or **Page changes**. Grant display-over-apps and screen-sharing access.
+1. Choose **Text in image** and **Translate to** directly in Screen & manga.
+   Changing the text language selects a compatible OCR reader if needed. **Reader · Change**
+   chooses/downloads Paddle, Manga or Meiki without a detour into Camera. Manga and
+   Meiki read Japanese; translation destinations come from the selected translator.
+   **Reading settings** selects the local/cloud translator and timing. Camera and
+   reading share these saved choices.
+2. Choose **I tap** or **Page changes**, then **Start reading overlay**. Grant display-over-apps and screen-sharing access.
    Reading does not request the camera or microphone.
 3. Open your reader. **Translate** reads the page; **Draw area** captures a still
    page and lets you circle/drag a bounding rectangle. Manga requires a selected

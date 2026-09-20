@@ -30,7 +30,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.contentDescription
 import com.sal7one.transiber.caption.CaptionCaptureService
-import com.sal7one.transiber.ocr.OcrCatalog
+import com.sal7one.transiber.ocr.*
+import com.sal7one.transiber.settings.SettingsOcrLocalUi
 import com.sal7one.transiber.ocr.OcrModels
 import com.sal7one.transiber.ui.theme.FFmpegStudioTheme
 import com.sal7one.transiber.ui.theme.rememberThemeMode
@@ -58,15 +59,19 @@ class ReadingStartActivity : ComponentActivity() {
     @Composable private fun Screen() {
         val currentSetup = setupRevision
         val prefs=remember {getSharedPreferences("reading-overlay",0)}
-        val camera=remember {getSharedPreferences("camera-translate",0)}
+        val (selection,selectionStore)=rememberOcrPreferences()
         val scope=rememberCoroutineScope()
         var options by rememberSaveable {mutableStateOf(false)}
         val optionsScroll=rememberScrollState()
         val config by remember {CaptionConfigStore.config(this)}.collectAsState(initial=CaptionOverlayConfig())
         val revision by ConversationTranslationSettings.revision.collectAsState()
-        var provider by remember {mutableStateOf(if(ByokPolicy.FEATURE_BYOK)camera.getString("provider","local")!! else "local")}
-        LaunchedEffect(revision,currentSetup) {provider=if(ByokPolicy.FEATURE_BYOK)camera.getString("provider","local")!! else "local"}
-        val profile=remember(currentSetup) {OcrCatalog.profile(camera.getString("profile","latin")!!)}
+        val provider=selection.providerId
+        val cloud=remember(provider,revision,currentSetup) {ConversationTranslationSettings.provider(provider)?.let {ConversationTranslationSettings.capabilities(this,it)}}
+        val targets=ocrTranslationTargets(selection,config.localTranslationModelId,cloud,ByokPolicy.FEATURE_BYOK)
+        val translator=ConversationTranslationSettings.provider(provider)?.label ?: TranslationOptions.label(config.localTranslationModelId)
+        val profile=selection.profile
+        var models by rememberSaveable {mutableStateOf(false)}
+        val modelsScroll=rememberScrollState()
         val savedMode=remember {prefs.getString("mode","page")}
         var mode by rememberSaveable {mutableStateOf(ReadingTrigger.supportedMode(savedMode))}
         var settle by rememberSaveable {mutableFloatStateOf(prefs.getLong("settle",500).toFloat())}
@@ -107,8 +112,9 @@ class ReadingStartActivity : ComponentActivity() {
                             FilterChip(selected=mode==id,onClick={mode=id},label={Text(label)})
                         }
                     }
+                    OcrLanguageControls(selection,targets,translator,{next->selectionStore.update {next};error=null},{models=true})
                     FeatureAction("Reading settings", Icons.Default.Tune, {options=true},
-                        detail="${profile.label} · ${camera.getString("source","en")} → ${camera.getString("target","ar")}")
+                        detail=translator)
                     if(profile.engine=="manga")Text("Manga OCR needs a drawn area around one speech bubble.",style=MaterialTheme.typography.bodySmall)
                     Text("Images stay on this phone. Cloud translation sends recognized text to your selected provider.",style=MaterialTheme.typography.bodySmall)
                     Text("Starting screen translation stops live audio captions.",style=MaterialTheme.typography.bodySmall)
@@ -116,7 +122,8 @@ class ReadingStartActivity : ComponentActivity() {
                 }
                 Surface(shadowElevation=8.dp) {
                     Button(onClick={
-                        if(!OcrModels(File(filesDir,"ocr-models")).ready(profile)) {error="Install ${profile.label} in Camera settings first.";options=true}
+                        if(!OcrModels(File(filesDir,"ocr-models")).ready(profile)) {error="Install ${profile.label} to read this language.";models=true}
+                        else if(selection.translate && selection.target !in targets) {error="Choose a supported translation destination or translator.";options=true}
                         else if(Build.VERSION.SDK_INT>=33 && checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS)!=android.content.pm.PackageManager.PERMISSION_GRANTED)notifications.launch(android.Manifest.permission.POST_NOTIFICATIONS)
                         else launch()
                     },modifier=Modifier.fillMaxWidth().padding(20.dp).heightIn(min=56.dp)){Text("Start reading overlay")}
@@ -124,13 +131,17 @@ class ReadingStartActivity : ComponentActivity() {
             }
         }
         }
+        if(models)FeatureOptionsSheet("OCR reader",{models=false},modelsScroll) {
+            SettingsOcrLocalUi(selected=selection.profileId,
+                onSelect={id->selectionStore.update {it.withProfile(id)};error=null;models=false},
+                onDownloads={startActivity(Intent(this@ReadingStartActivity,com.sal7one.transiber.MainActivity::class.java).putExtra("page",2).putExtra("returnToReading",true))})
+        }
         if(options)FeatureOptionsSheet("Reading settings", {options=false}, optionsScroll) {
-            OutlinedButton(onClick={options=false;startActivity(Intent(this@ReadingStartActivity,com.sal7one.transiber.MainActivity::class.java).putExtra("page",10))},modifier=Modifier.fillMaxWidth()){Text("OCR model & languages")}
-            TranslatorChooser(provider,config.localTranslationModelId,"Used by Camera and the reading overlay.",camera.getString("source","en"),camera.getString("target","ar"),
-                onModels={startActivity(Intent(this@ReadingStartActivity,com.sal7one.transiber.MainActivity::class.java).putExtra("page",1))},
+            TranslatorChooser(provider,config.localTranslationModelId,"Used by Camera and the reading overlay.",selection.source,selection.target,
+                onModels={getSharedPreferences("translation-browser",0).edit().putBoolean("open",true).apply();startActivity(Intent(this@ReadingStartActivity,com.sal7one.transiber.MainActivity::class.java).putExtra("page",1).putExtra("returnToReading",true))},
                 onSelect={id,model->scope.launch {try {
                     CaptionConfigStore.update(this@ReadingStartActivity){it.copy(localTranslationModelId=model)}
-                    camera.edit().putString("provider",id).apply();provider=id
+                    selectionStore.update {it.copy(providerId=id)};error=null
                 } catch(e: kotlinx.coroutines.CancellationException){throw e}
                 catch(e: Exception){error=e.message ?: e.toString()} }})
             if(mode!="manual") {

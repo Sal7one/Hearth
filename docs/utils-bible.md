@@ -205,3 +205,15 @@ to their originating feature and surviving save/restore. No native utilities cha
 identities, missing/unknown fallback, ID uniqueness, the two conversation layouts
 and exclusion of settings pages from last-feature updates. Phone validation covers
 preference restoration through Home and process restart.
+
+## Hearth 0.20.1 OCR language controls
+
+`OcrSelection` and `ocrTranslationTargets` are consumed by both Camera and Reading
+setup, with target validation also used by ReadingOverlayService. Five host tests
+cover source-driven reader changes, preserving explicit Japanese engines and saved
+destinations, cloud directional restrictions, absent capabilities, unknown models
+and FOSS pack restrictions. `OcrPreferences` observes the existing shared preferences
+so one screen cannot overwrite another's choice just by returning to the foreground.
+Camera releases active inference before changed settings are used and preserves the
+captured bitmap for an explicit retry. Capture/retry callbacks snapshot the current
+selection at invocation rather than retaining an earlier composition’s profile. No native API or language claims changed.

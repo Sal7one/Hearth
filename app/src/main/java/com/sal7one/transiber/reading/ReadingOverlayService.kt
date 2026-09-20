@@ -34,7 +34,6 @@ class ReadingOverlayService : Service() {
     private val handler=Handler(Looper.getMainLooper())
     private val wm by lazy {getSystemService(WindowManager::class.java)}
     private val prefs by lazy {getSharedPreferences("reading-overlay",0)}
-    private val camera by lazy {getSharedPreferences("camera-translate",0)}
     private lateinit var controller: CameraOcrController
     private lateinit var voice: VoicePlayer
     private lateinit var profile: OcrProfile
@@ -110,7 +109,7 @@ class ReadingOverlayService : Service() {
             manager.createNotificationChannel(NotificationChannel(CHANNEL,"Screen reading",NotificationManager.IMPORTANCE_LOW))
             if(Build.VERSION.SDK_INT>=29)startForeground(NOTIFICATION,notification(),ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION)
             else startForeground(NOTIFICATION,notification())
-            @Suppress("DEPRECATION") val token=intent?.getParcelableExtra<Intent>("projection") ?: error("Screen capture permission is missing. Start reading again from Camera.")
+            @Suppress("DEPRECATION") val token=intent?.getParcelableExtra<Intent>("projection") ?: error("Screen capture permission is missing. Start reading again from Screen & manga.")
             projection=getSystemService(MediaProjectionManager::class.java).getMediaProjection(Activity.RESULT_OK,token)
             runningState.value=true
             projection!!.registerCallback(object:MediaProjection.Callback(){
@@ -119,16 +118,20 @@ class ReadingOverlayService : Service() {
             },handler)
             val size=screenSize();resize(size.first,size.second)
             display=projection!!.createVirtualDisplay("Hearth reading",reader!!.width,reader!!.height,resources.configuration.densityDpi,DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR,null,null,handler)
-            profile=OcrCatalog.profile(camera.getString("profile","latin")!!)
-            source=camera.getString("source","en")!!;target=camera.getString("target","ar")!!
+            val selection=OcrPreferences(this).read()
+            profile=selection.profile;source=selection.source;target=selection.target
             trigger.mode=ReadingTrigger.supportedMode(prefs.getString("mode","page"));trigger.settleMs=prefs.getLong("settle",500);scanMs=prefs.getLong("scan",250).coerceIn(200,1000);if(trigger.mode=="page")trigger.movement(now())
             createWindows()
             scope.launch {
                 try {
                     val config=CaptionConfigStore.config(this@ReadingOverlayService).first()
-                    if(camera.getBoolean("translate",true) && source!=target) {
-                        val provider=if(ByokPolicy.FEATURE_BYOK)ConversationTranslationSettings.provider(camera.getString("provider","local")!!) else null
-                        snapshot=if(provider==null)ConversationTranslatorSnapshot(config.localTranslationModelId) else ConversationTranslatorSnapshot(config.localTranslationModelId,ConversationTranslationSettings.connection(this@ReadingOverlayService,provider),checkNotNull(ConversationTranslationSettings.capabilities(this@ReadingOverlayService,provider)){"Check ${provider.label} languages in translation connections first"})
+                    if(selection.translate) {
+                        val provider=ConversationTranslationSettings.provider(selection.providerId)
+                        val languages=provider?.let {ConversationTranslationSettings.capabilities(this@ReadingOverlayService,it)}
+                        check(target in ocrTranslationTargets(selection,config.localTranslationModelId,languages,ByokPolicy.FEATURE_BYOK)) {
+                            "Translation does not support $source → $target. Choose languages and a translator in Reading settings."
+                        }
+                        snapshot=ConversationTranslationSettings.snapshot(this@ReadingOverlayService,config.localTranslationModelId,selection.providerId)
                     }
                     setupReady=true
                     controller.state.collect {value->
@@ -267,7 +270,7 @@ class ReadingOverlayService : Service() {
         var input: Bitmap?=null
         try {
             check(setupReady){setupError ?: "Reading settings are still loading. Tap Retry in a moment."}
-            check(source in profile.languages){"Choose a text language supported by ${profile.label} in Camera settings"}
+            check(source in profile.languages){"Choose a text language supported by ${profile.label} in Reading settings"}
             val crop=region?.let {r->
                 ReadingSelection.crop(bitmap.width,bitmap.height,bitmap.width.toFloat(),bitmap.height.toFloat(),r.left*bitmap.width,r.top*bitmap.height,r.right*bitmap.width,r.bottom*bitmap.height) ?: error("Selected area is too small. Draw it again.")
             } ?: run {

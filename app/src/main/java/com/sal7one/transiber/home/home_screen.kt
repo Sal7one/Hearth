@@ -21,12 +21,12 @@ import kotlin.math.abs
 
 @Composable
 internal fun HomeScreen(onCaptions: () -> Unit, onTalk: (Boolean) -> Unit,
-    onTranslate: () -> Unit, onCamera: () -> Unit, onReading: () -> Unit) {
+    onTranslate: () -> Unit, onCamera: () -> Unit, onReading: () -> Unit, entryRevision: Int = 0) {
     val context = LocalContext.current
-    val initial = remember { HomeServiceStore.selected(context) }
+    val initial = remember(entryRevision) { HomeServiceStore.selected(context) }
     val pager = rememberPagerState(initialPage = initial.ordinal, pageCount = { HomeService.entries.size })
     val scope = rememberCoroutineScope()
-    LaunchedEffect(Unit) {
+    LaunchedEffect(entryRevision) {
         // An external link or Classic tab may have used another feature since Home was shown.
         pager.scrollToPage(initial.ordinal)
         snapshotFlow { pager.settledPage }.distinctUntilChanged().collect { index ->

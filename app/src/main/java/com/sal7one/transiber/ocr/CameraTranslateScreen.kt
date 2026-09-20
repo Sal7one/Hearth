@@ -35,13 +35,10 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.*
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import com.sal7one.common_jni.language.LanguageCatalog
 import com.sal7one.transiber.byok.ByokPolicy
 import com.sal7one.transiber.caption.*
 import com.sal7one.transiber.translation.*
@@ -50,53 +47,60 @@ import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class,ExperimentalLayoutApi::class)
 @Composable
-internal fun CameraTranslateScreen(onModels: () -> Unit,onConnections: () -> Unit,onDownloads: () -> Unit, onVoices: () -> Unit = {}, sharedImage: android.net.Uri? = null, onShareConsumed: () -> Unit = {}) {
+internal fun CameraTranslateScreen(onModels: () -> Unit,onConnections: () -> Unit,onDownloads: () -> Unit, onVoices: () -> Unit = {}, sharedImage: android.net.Uri? = null, onShareConsumed: () -> Unit = {}, onReading: () -> Unit) {
     val context=LocalContext.current;val scope=rememberCoroutineScope();val lifecycle=LocalLifecycleOwner.current
-    val prefs=remember {context.getSharedPreferences("camera-translate",0)}
-    var profileId by rememberSaveable {mutableStateOf(prefs.getString("profile","latin")!!)}
-    var source by rememberSaveable {mutableStateOf(prefs.getString("source","en")!!)}
-    var target by rememberSaveable {mutableStateOf(prefs.getString("target","ar")!!)}
-    var providerId by rememberSaveable {mutableStateOf(if(ByokPolicy.FEATURE_BYOK)prefs.getString("provider","local")!! else "local")}
-    var translate by rememberSaveable {mutableStateOf(prefs.getBoolean("translate",true))}
+    val (selection,selectionStore)=rememberOcrPreferences()
+    val profileId=selection.profileId;val source=selection.source;val target=selection.target
+    val providerId=selection.providerId;val translate=selection.translate
     val translationRevision by ConversationTranslationSettings.revision.collectAsState()
-    LaunchedEffect(translationRevision) { providerId=if(ByokPolicy.FEATURE_BYOK)prefs.getString("provider","local")!! else "local" }
-    val profile=OcrCatalog.profiles.firstOrNull {it.id==profileId} ?: OcrCatalog.profiles.first()
+    val profile=selection.profile
     val config by remember { CaptionConfigStore.config(context) }.collectAsState(initial=CaptionOverlayConfig())
+    val currentConfig by rememberUpdatedState(config)
     var speaking by remember {mutableStateOf(false)}
     var voiceError by remember {mutableStateOf<String?>(null)}
     val voice=remember {com.sal7one.transiber.voice.VoicePlayer(context){active,error->speaking=active;if(error!=null)voiceError=error}}
     val controller=remember {CameraOcrController(context)};val state by controller.state.collectAsState()
+    var previousSettings by remember {mutableStateOf(selection to config.localTranslationModelId)}
+    LaunchedEffect(selection,config.localTranslationModelId) {
+        val next=selection to config.localTranslationModelId
+        if(next!=previousSettings) {controller.stop();controller.invalidate();voice.stop();previousSettings=next}
+    }
     val models=remember {OcrModels(File(context.filesDir,"ocr-models"))}
     var ready by remember {mutableStateOf(models.ready(profile))}
     var permission by remember {mutableStateOf(ContextCompat.checkSelfPermission(context,Manifest.permission.CAMERA)==PackageManager.PERMISSION_GRANTED)}
     val settingsScroll=rememberScrollState()
-    var settings by rememberSaveable {mutableStateOf(false)};var picker by remember {mutableStateOf<String?>(null)}
+    var settings by rememberSaveable {mutableStateOf(false)}
     var capture by remember {mutableStateOf<(() -> Unit)?>(null)}
     var selectionImage by remember {mutableStateOf<Bitmap?>(null)}
     var frozen by remember {mutableStateOf<Bitmap?>(null)}
     var importing by remember {mutableStateOf(false)}
     val provider=ConversationTranslationSettings.provider(providerId)
-    val cloudLanguages=provider?.let {ConversationTranslationSettings.capabilities(context,it)}
-    val targetCodes=if(provider==null) {
-        if(config.localTranslationModelId==TranslationOptions.ML_KIT) {
-            if(source in TranslationOptions.mlKitCodes && ByokPolicy.FEATURE_BYOK) TranslationOptions.mlKitCodes else emptySet()
-        } else com.sal7one.common_jni.translation.TranslationCatalog.models.firstOrNull {it.id==config.localTranslationModelId}
-            ?.let {spec -> spec.targetLanguages.filter {spec.supports(source,it)}.toSet()}.orEmpty()
-    } else cloudLanguages?.targetLanguages.orEmpty().filter {cloudLanguages?.supports(source,it)==true}.toSet()
+    val cloudLanguages=remember(provider,translationRevision) {provider?.let {ConversationTranslationSettings.capabilities(context,it)}}
+    val targetCodes=ocrTranslationTargets(selection,config.localTranslationModelId,cloudLanguages,ByokPolicy.FEATURE_BYOK)
     val providerLabel=provider?.label ?: TranslationOptions.label(config.localTranslationModelId)
+    fun changeSelection(next: OcrSelection) {
+        controller.stop();controller.invalidate();voice.stop()
+        selectionStore.update { next }
+    }
     val permissionRequest=rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()){permission=it;if(!it)controller.error(IllegalStateException("Camera permission denied. Allow it in Android app settings, or import a photo."))}
-    fun snapshot(): ConversationTranslatorSnapshot? {
-        if(!translate)return null
-        check(source in profile.languages) {"Choose a text language supported by ${profile.label}"}
-        if(source==target)return null
-        check(target in targetCodes) {"$providerLabel does not support $source → $target. Choose a supported language pair or translator."}
-        if(provider==null)return ConversationTranslatorSnapshot(config.localTranslationModelId)
-        return ConversationTranslatorSnapshot(config.localTranslationModelId,ConversationTranslationSettings.connection(context,provider),checkNotNull(cloudLanguages){"Check ${provider.label} languages in Translation connections first"})
+    // Capture callbacks can outlive the composition that created them. Snapshot the
+    // current saved selection at the action boundary, never a captured old profile.
+    fun snapshot(selected: OcrSelection): ConversationTranslatorSnapshot? {
+        if(!selected.translate)return null
+        check(selected.source in selected.profile.languages) {"Choose a text language supported by ${selected.profile.label}"}
+        val selectedProvider=ConversationTranslationSettings.provider(selected.providerId)
+        val capabilities=selectedProvider?.let {ConversationTranslationSettings.capabilities(context,it)}
+        val localId=currentConfig.localTranslationModelId
+        check(selected.target in ocrTranslationTargets(selected,localId,capabilities,ByokPolicy.FEATURE_BYOK)) {
+            "${selectedProvider?.label ?: TranslationOptions.label(localId)} does not support ${selected.source} → ${selected.target}. Choose a supported language pair or translator."
+        }
+        return ConversationTranslationSettings.snapshot(context,localId,selected.providerId)
     }
     fun begin(live: Boolean, bitmap: Bitmap?=null) {
         try {
+            val selected=selectionStore.read()
             if(bitmap != null)frozen=bitmap
-            controller.start(profile,source,target,snapshot(),live,bitmap?.copy(Bitmap.Config.ARGB_8888,false))
+            controller.start(selected.profile,selected.source,selected.target,snapshot(selected),live,bitmap?.copy(Bitmap.Config.ARGB_8888,false))
         } catch(e: Exception){controller.error(e)}
     }
     fun recognizePhoto(bitmap: Bitmap) {
@@ -105,7 +109,7 @@ internal fun CameraTranslateScreen(onModels: () -> Unit,onConnections: () -> Uni
         else if(controller.state.value.running) {controller.freeze();controller.offer(bitmap.copy(Bitmap.Config.ARGB_8888,false),true)} else begin(false,bitmap)
     }
     fun photo(bitmap: Bitmap) {
-        if(profile.engine == "manga") {controller.stop();frozen=bitmap;selectionImage=bitmap}
+        if(selectionStore.read().profile.engine == "manga") {controller.stop();frozen=bitmap;selectionImage=bitmap}
         else recognizePhoto(bitmap)
     }
     fun importPhoto(uri: android.net.Uri) { scope.launch {
@@ -120,7 +124,6 @@ internal fun CameraTranslateScreen(onModels: () -> Unit,onConnections: () -> Uni
     }}
     val imagePicker=rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()){uri -> if(uri!=null)importPhoto(uri)}
     LaunchedEffect(sharedImage) {sharedImage?.let {importPhoto(it);onShareConsumed()}}
-    LaunchedEffect(profileId,source,target,providerId,translate) {prefs.edit().putString("profile",profileId).putString("source",source).putString("target",target).putString("provider",providerId).putBoolean("translate",translate).apply()}
     LaunchedEffect(profileId) {while(true){ready=models.ready(profile);delay(1200)}}
     DisposableEffect(lifecycle) {
         val observer=LifecycleEventObserver {_,event -> if(event==Lifecycle.Event.ON_STOP){controller.stop();voice.stop()}}
@@ -128,11 +131,8 @@ internal fun CameraTranslateScreen(onModels: () -> Unit,onConnections: () -> Uni
         onDispose {lifecycle.lifecycle.removeObserver(observer);controller.close();voice.close()}
     }
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
-        FlowRow(horizontalArrangement=Arrangement.spacedBy(8.dp),verticalArrangement=Arrangement.spacedBy(4.dp)) {
-            InputChip(selected=false,onClick={picker="source"},enabled=!state.running,label={Text(LanguageCatalog.option(source).nativeName)},modifier=Modifier.semantics {contentDescription="Text language, ${LanguageCatalog.option(source).englishName}"})
-            Text("→",Modifier.align(Alignment.CenterVertically))
-            InputChip(selected=false,onClick={picker="target"},enabled=!state.running && translate,label={Text(LanguageCatalog.option(target).nativeName)},modifier=Modifier.semantics {contentDescription="Translate to, ${LanguageCatalog.option(target).englishName}"})
-        }
+        OcrLanguageControls(selection,targetCodes,providerLabel,::changeSelection,{settings=true},enabled=!state.closing)
+        if(frozen!=null && !state.running && state.text.isBlank())Text("Settings changed? Tap Translate again to update this photo.",style=MaterialTheme.typography.bodySmall)
         if(translate && provider != null)Text("Only recognized text is sent to ${provider.label}. Camera images stay on your phone.",style=MaterialTheme.typography.bodySmall)
         Box(Modifier.fillMaxWidth().height(280.dp).background(Color.Black),contentAlignment=Alignment.Center) {
             if(permission && frozen==null && !importing && sharedImage==null)CameraPreview(Modifier.fillMaxSize(),state.live && !state.loading,
@@ -156,7 +156,7 @@ internal fun CameraTranslateScreen(onModels: () -> Unit,onConnections: () -> Uni
 
             if(state.running)OutlinedButton(onClick={controller.stop()},enabled=!state.closing){Text(if(state.closing)"Stopping…" else "Stop")}
             if(frozen!=null)OutlinedButton(onClick={controller.stop();selectionImage=frozen},enabled=!state.loading&&!state.closing){Text("Draw text area")}
-            if(frozen!=null && state.error!=null)OutlinedButton(onClick={frozen?.let(::recognizePhoto)},enabled=!state.loading&&!state.closing){Text("Retry")}
+            if(frozen!=null)OutlinedButton(onClick={frozen?.let(::photo)},enabled=!state.loading&&!state.closing){Text(if(translate) "Translate again" else "Read again")}
             if(frozen!=null)TextButton(onClick={controller.stop();frozen=null}){Text("Retake")}
         }
         FeatureAction("Camera settings", Icons.Default.Tune, {settings=true}, detail=if(translate)providerLabel else "Original text only")
@@ -181,8 +181,7 @@ internal fun CameraTranslateScreen(onModels: () -> Unit,onConnections: () -> Uni
                     controller.stop()
                     scope.launch {
                         controller.awaitStopped()
-                        prefs.edit().putString("profile",profileId).putString("source",source).putString("target",target).putString("provider",providerId).putBoolean("translate",translate).apply()
-                        context.startActivity(android.content.Intent(context,com.sal7one.transiber.reading.ReadingStartActivity::class.java))
+                        onReading()
                     }
 
         }, detail="Translate in another app")
@@ -191,24 +190,16 @@ internal fun CameraTranslateScreen(onModels: () -> Unit,onConnections: () -> Uni
         selectionImage=null
         scope.launch {controller.stop();controller.awaitStopped();begin(false,crop)}
     }) }
-    picker?.let { which -> Dialog(onDismissRequest={picker=null},properties=DialogProperties(usePlatformDefaultWidth=false)) {
-        Surface(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding()) {LanguagePickerContent(
-            title=if(which=="source")"Text language" else "Translate to",
-            choices=CaptionLanguageChoices(if(which=="source")profile.languages else targetCodes,
-                if(which=="source")"${profile.label} reads these scripts. This choice tells the translator the source language; it does not force the OCR decoder." else "$providerLabel · targets supported from ${LanguageCatalog.option(source).englishName}"),
-            selected=if(which=="source")source else target,onSelect={if(which=="source")source=it else target=it;picker=null},onDismiss={picker=null})}
-    }}
     if(settings)FeatureOptionsSheet("Camera & reading settings", {settings=false}, settingsScroll) {
             OutlinedButton(onClick={voice.stop();settings=false;onVoices()}){Text("Voices & read aloud")}
-            Row(verticalAlignment=Alignment.CenterVertically){Switch(checked=translate,onCheckedChange={translate=it},modifier=Modifier.semantics {contentDescription="Translate recognized text"});Text("Translate recognized text",Modifier.padding(start=8.dp))}
             TranslatorChooser(providerId,config.localTranslationModelId,"Used by Camera and the screen-reading overlay.",source,target,
-                enabled=!state.running && !state.closing, onModels={settings=false;onModels()}, onSelect={provider,model->scope.launch {
-                    try { CaptionConfigStore.update(context){it.copy(localTranslationModelId=model)};providerId=provider }
+                enabled=!state.closing, onModels={settings=false;onModels()}, onSelect={provider,model->scope.launch {
+                    try { controller.stop();controller.invalidate();voice.stop();CaptionConfigStore.update(context){it.copy(localTranslationModelId=model)};selectionStore.update {it.copy(providerId=provider)} }
                     catch(e: kotlinx.coroutines.CancellationException){throw e}
                 catch(e: Exception){controller.error(e)}
                 }})
-            if(state.running || state.closing)Text("Stop recognition to change its translator.",style=MaterialTheme.typography.bodySmall)
+            Text("Changing settings stops recognition. Your captured photo stays available for Translate again.",style=MaterialTheme.typography.bodySmall)
             HorizontalDivider()
-            SettingsOcrLocalUi(onDownloads={settings=false;onDownloads()},selected=profileId,onSelect={profileId=it;val p=OcrCatalog.profile(it);if(source !in p.languages)source=p.languages.first()})
+            SettingsOcrLocalUi(onDownloads={settings=false;onDownloads()},selected=profileId,onSelect={changeSelection(selection.withProfile(it));settings=false})
     }
 }
