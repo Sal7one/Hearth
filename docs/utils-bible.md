@@ -227,3 +227,12 @@ preserved user appearance/audio choices, credential scope and invalid endpoints.
 engine loader. All public/streaming routes require keys; Custom Batch can omit one.
 The real HTTP client has a MockWebServer test for omitted/authenticated headers and
 the FOSS no-request gate. No native inference implementation was changed.
+
+### Caption translation selection (0.21.1)
+
+`CaptionOverlayConfig.withCaptionMode` reconciles the legacy bridge flag with the
+requested mode and selected translator. Used by persisted reads/updates, route
+resolution and Home/advanced/overlay mode controls. CC remains original-only;
+integrated cloud translation retains priority without an explicit text provider.
+`CaptionTranslationSelectionTest` covers old saved false flags, CC/Translate
+round-trips, language/route agreement and integrated-provider preservation.

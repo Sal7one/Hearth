@@ -140,6 +140,7 @@ private suspend fun checkTranslator(context: Context, localId: String, providerI
         check(missing.isEmpty()) { "Download ML Kit language packs in Models: ${missing.joinToString()}" }
         return "ML Kit packs installed${if (!knownSource) " · source pack must match detected speech" else ""}"
     }
+    check(localId.isNotBlank()) { "Choose a local translator in Live captions → Speech & translation." }
     val model = TranslationCatalog.find(localId)
     check(target in model.targetLanguages && (!knownSource || model.supports(source, target))) { "${model.label} does not support $source → $target." }
     check(LocalTranslationModels(File(context.filesDir, "translation-models")).installed().any { it.id == localId }) { "Download or import ${model.label} in Models → Translation." }

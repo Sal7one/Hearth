@@ -1,3 +1,10 @@
+## 0.21.1 — caption translation setup regression
+
+- [x] Reproduce installed Nemotron + translator rejected after CC → advanced Translate.
+- [x] Unify mode selection and reconcile older saved bridge flags.
+- [x] Preserve original CC and integrated cloud routes; retain missing-model checks.
+- [x] Verify upgrade, both flavor gates and packaged APKs — see [validation](validation-v38.md).
+
 ## 0.21.0 — Easy setup
 
 - [x] Two large Local/Cloud choices with a direct Home and Settings entry.

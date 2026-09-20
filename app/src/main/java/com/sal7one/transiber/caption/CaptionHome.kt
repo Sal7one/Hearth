@@ -108,7 +108,7 @@ fun CaptionHome(
             }
             HomeChips("Show", if (cfg.mode == CaptionMode.CAPTIONS) "Original captions" else "Translation",
                 listOf("Original captions" to CaptionMode.CAPTIONS, "Translation" to CaptionMode.TRANSLATE), enabled = !running) { mode ->
-                update { it.copy(mode = mode, localTranslationEnabled = mode == CaptionMode.TRANSLATE && (it.effectiveEngine.speechBackend != null || it.textTranslationProviderId.isNotBlank())) }
+                update { it.withCaptionMode(mode) }
             }
             }
             Column(Modifier.fillMaxWidth().glassPanel().padding(20.dp)) {
@@ -127,12 +127,13 @@ fun CaptionHome(
                     when {
                         running -> CaptionCaptureService.show(context)
                         !engineReady -> if (isCloud) onCloud() else onModels()
+                        needsTranslator -> options = true
                         else -> scope.launch {
                             pendingWrite?.join()
                             if (!saveFailed) CaptionStartActivity.start(context, config!!.source)
                         }
                     }
-                }) { Text(when { running -> "Show captions"; !engineReady && isCloud -> "Connect cloud"; !engineReady -> "Choose a model"; needsTranslator -> "Start CC"; else -> "Start captions" }) }
+                }) { Text(when { running -> "Show captions"; !engineReady && isCloud -> "Connect cloud"; !engineReady -> "Choose a model"; needsTranslator -> "Set up translation"; else -> "Start captions" }) }
                 if (running) IconButton(onClick = { CaptionCaptureService.stop(context) }, modifier = Modifier.size(52.dp)) {
                     Icon(Icons.Default.Stop, "Stop captions")
                 }

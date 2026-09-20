@@ -12,7 +12,8 @@ internal enum class CaptionTranslationRoute(val sttToEnglish: Boolean = false, v
     UNSUPPORTED,
 }
 
-internal fun captionTranslationRoute(config: CaptionOverlayConfig, cloudMode: SttMode): CaptionTranslationRoute {
+internal fun captionTranslationRoute(saved: CaptionOverlayConfig, cloudMode: SttMode): CaptionTranslationRoute {
+    val config = saved.withCaptionMode(saved.mode)
     if (config.mode == CaptionMode.CAPTIONS) return CaptionTranslationRoute.ORIGINAL
     if (config.localTranslationEnabled && config.textTranslationProviderId.isNotBlank()) return CaptionTranslationRoute.TEXT_TRANSLATOR
     if (config.engine == CaptionEngineChoice.CLOUD && cloudMode in setOf(SttMode.STREAMING_OPENAI, SttMode.STREAMING_SONIOX)) return CaptionTranslationRoute.LIVE_TARGET

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.21.1 — 2026-09-20
+
+- Fix selected local translators being rejected after switching from CC back to Translate.
+- Reconcile older saved translation flags and share mode changes across Home, advanced settings and the overlay.
+- Open translator setup when translation is missing instead of showing a misleading Start CC button.
+
 ## 0.21.0 — 2026-09-20
 
 - Add Easy setup on Home and in Settings, with two large Local/Cloud choices.

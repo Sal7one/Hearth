@@ -234,7 +234,7 @@ fun CaptionScreen(
                 CaptionMode.entries.forEach { mode ->
                     FilterChip(
                         selected = config.mode == mode,
-                        onClick = { update { it.copy(mode = mode) } },
+                        onClick = { update { it.withCaptionMode(mode) } },
                         label = { Text(mode.label) },
                     )
                 }

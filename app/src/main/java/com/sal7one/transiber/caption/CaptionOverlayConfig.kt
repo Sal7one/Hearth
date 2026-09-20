@@ -189,6 +189,16 @@ data class CaptionOverlayConfig(
     val translationRtl: Boolean
         get() = mode == CaptionMode.TRANSLATE && target.rtl
 
+    /** Translation mode activates its selected text stage; CC never loads it.
+     * Reconciles old settings where mode and the legacy bridge switch disagreed.
+     * Integrated cloud and legacy Whisper routes remain selected without an override.
+     */
+    fun withCaptionMode(next: CaptionMode) = copy(
+        mode = next,
+        localTranslationEnabled = next == CaptionMode.TRANSLATE &&
+            (localTranslationEnabled || (engine.speechBackend != null && localTranslationModelId.isNotBlank()) || textTranslationProviderId.isNotBlank()),
+    )
+
     fun withUiClamp() = copy(
         widthPercent = widthPercent.coerceIn(50, 100),
         maxHeightPercent = maxHeightPercent.coerceIn(20, 60),
@@ -244,7 +254,8 @@ object CaptionConfigStore {
         transform: (CaptionOverlayConfig) -> CaptionOverlayConfig,
     ) {
         context.applicationContext.captionDataStore.edit { prefs ->
-            val next = transform(readFrom(prefs)).withUiClamp()
+            val changed = transform(readFrom(prefs))
+            val next = changed.withCaptionMode(changed.mode).withUiClamp()
             writeInto(prefs, next)
         }
     }
@@ -281,7 +292,7 @@ object CaptionConfigStore {
             speakerChoice = prefs[SpeakerChoice]
                 ?.let { enumOrDefault(it, CaptionSpeakerChoice.SYSTEM) }
                 ?: CaptionSpeakerChoice.SYSTEM,
-        ).withUiClamp()
+        ).let { it.withCaptionMode(it.mode).withUiClamp() }
 
     internal fun writeInto(
         prefs: androidx.datastore.preferences.core.MutablePreferences,

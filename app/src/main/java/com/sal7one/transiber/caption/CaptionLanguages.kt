@@ -73,7 +73,7 @@ object CaptionLanguages {
 
     fun target(config: CaptionOverlayConfig, cloudMode: SttMode,
                textLanguages: com.sal7one.transiber.translation.CloudTranslationLanguages? = null): CaptionLanguageChoices = when {
-        config.localTranslationEnabled && config.textTranslationProviderId.isNotBlank() -> {
+        config.textTranslationProviderId.isNotBlank() -> {
             val from = config.streamLanguage
             val known = from !in setOf("auto", "model", "und", "mul", "")
             if (config.textTranslationProviderId == "local") {

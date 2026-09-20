@@ -565,7 +565,7 @@ private fun SettingsPanel(
             CaptionMode.entries.forEach { mode ->
                 FilterChip(
                     selected = cfg.mode == mode,
-                    onClick = { onConfigChange { it.copy(mode = mode) } },
+                    onClick = { onConfigChange { it.withCaptionMode(mode) } },
                     label = { Text(mode.label, fontSize = 11.sp, maxLines = 1) },
                 )
             }
