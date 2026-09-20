@@ -1,6 +1,6 @@
 # Easy setup
 
-Home has a direct **Easy setup · Local or Cloud** button. The same entry is at the
+Home has a direct **Easy setup** button. The same entry is at the
 top of quick Settings and in full Settings. The wizard is optional and does not
 replace the feature carousel or advanced setup.
 
@@ -46,3 +46,18 @@ uses existing stores/downloads. Separate Compose files own the chooser, local an
 cloud pages. Six new host tests cover preset routing, preserved appearance/audio,
 invalid choices, endpoint validation, credential separation and the actual speech
 HTTP client's empty-key/FOSS behavior. Navigation tests cover the new page (15).
+
+## Navigation and Home visibility (0.21.3)
+
+Header Back and Android Back share `EasySetupStep`: confirmation → its local/cloud
+form → chooser → caller. Downloads remains a child route and returns to the current
+setup step. Home explicitly exits the wizard; reopening Easy setup starts at the
+chooser. A normal Activity recreation restores the active step. Choosing full
+Settings explicitly switches to advanced settings; it is not another wizard step.
+No API key is added to saved navigation state.
+
+On Home, the left chevron collapses the entry to a 48 dp left-edge tab. Tap that tab
+to expand it. `hearth-home` SharedPreferences stores `easy-setup-collapsed` (default
+false), independently of the remembered service card. Both directions persist.
+Settings and quick Settings retain their setup links while Home's entry is collapsed.
+Controls have named accessibility actions and minimum 48 dp touch targets.

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.21.3 — 2026-09-20
+
+- Make Easy setup header and Android Back retrace confirmation, form and chooser before leaving.
+- Start fresh setup entries at the Local/Cloud chooser instead of restoring a stranded branch.
+- Collapse the Home Easy setup entry to a left-edge tab and remember its visibility across restarts.
+
 ## 0.21.2 — 2026-09-20
 
 - Reuse reading/camera translations across scrolling with a bounded 256-box session cache.

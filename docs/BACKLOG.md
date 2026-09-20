@@ -1,3 +1,10 @@
+## 0.21.3 — Easy setup navigation and visibility
+
+- [x] Share step-by-step header and Android Back handling, including completion.
+- [x] Reset fresh entries to the chooser and preserve temporary Downloads return.
+- [x] Add a left-edge collapsed Home entry with persisted expanded/collapsed state.
+- [x] Host transitions, connected-phone journeys, both flavor builds and artifact checks — [validation](validation-v40.md).
+
 ## 0.21.2 — stable manga translations after scrolling
 
 - [x] Replace the too-small text cache with bounded session LRU reuse.

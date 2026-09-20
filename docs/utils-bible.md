@@ -248,3 +248,12 @@ inference, always using fresh OCR geometry. Cache fixtures exercise a 64-box
 page after scroll, duplicate text, incremental publication, changed wording,
 eviction, blank/oversized responses and session isolation. `ReadingMotionTest`
 also drives the real settle trigger over consecutive scroll frames.
+
+### Easy setup back navigation (0.21.3)
+
+`EasySetupStep` is the pure step contract consumed by MainActivity's shared header/
+Android Back dispatcher and the setup UI. Four host cases verify full local/cloud
+back chains, completion boundaries and serialized step restoration. Navigation
+state contains no form values or credentials. `HomeServiceStore` additionally
+persists the presentation-only collapsed flag; device checks exercise both values
+across process restart instead of duplicating SharedPreferences implementation.

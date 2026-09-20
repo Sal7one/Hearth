@@ -17,6 +17,7 @@ import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Home
 import com.sal7one.transiber.home.HomeScreen
+import com.sal7one.transiber.setup.EasySetupStep
 import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.semantics.contentDescription
@@ -86,8 +87,13 @@ class MainActivity : ComponentActivity() {
     val page = route.page
     val focus = LocalFocusManager.current
     val screenState = androidx.compose.runtime.saveable.rememberSaveableStateHolder()
+    var setupStep by rememberSaveable { mutableStateOf(EasySetupStep.CHOICE) }
     fun go(next: Int) {
      focus.clearFocus()
+     if (next == 15) {
+      setupStep = EasySetupStep.CHOICE
+      if (atHome || page != 15) screenState.removeState(15)
+     }
      if (atHome) {
       route = AppNavigation.initial(next)
       homeDestination = next
@@ -102,7 +108,7 @@ class MainActivity : ComponentActivity() {
     var voiceEntry by rememberSaveable { mutableIntStateOf(0) }
     val requestedPage by navigation.collectAsState()
     LaunchedEffect(requestedPage) {
-     requestedPage?.let { if (it == 4) { speechLocation = SettingsLocation.CLOUD; speechEntry++ }; focus.clearFocus(); route = AppNavigation.initial(it); homeDestination = null; showHome = false; navigation.value = null }
+     requestedPage?.let { if (it == 15) setupStep = EasySetupStep.CHOICE; if (it == 4) { speechLocation = SettingsLocation.CLOUD; speechEntry++ }; focus.clearFocus(); route = AppNavigation.initial(it); homeDestination = null; showHome = false; navigation.value = null }
     }
     var faceLayout by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(page, atHome, faceLayout) {
@@ -121,6 +127,10 @@ class MainActivity : ComponentActivity() {
     fun home() { focus.clearFocus(); homeDestination = null; showHome = true }
     fun back() {
      focus.clearFocus()
+     if (page == 15 && setupStep.back() != null) {
+      setupStep = requireNotNull(setupStep.back())
+      return
+     }
      if (intent.getBooleanExtra("returnToReading", false) && (route.isRoot || page == intent.getIntExtra("page", 0))) finish()
      else if (simple && (route.isRoot || page == homeDestination)) home() else route = route.back()
     }
@@ -199,7 +209,7 @@ class MainActivity : ComponentActivity() {
             onFeature = ::settingsFeature,
             onDownloads = { go(2) }, onBenchmark = { go(8) }, onAdvanced = { go(5) }, onHelp = { go(6) },
         )
-        15 -> com.sal7one.transiber.setup.EasySetupScreen(onCaptions={go(0)},onHome={home()},onSettings={go(3)},onDownloads={go(2)})
+        15 -> com.sal7one.transiber.setup.EasySetupScreen(step=setupStep,onStep={setupStep=it},onCaptions={go(0)},onHome={home()},onSettings={go(3)},onDownloads={go(2)})
         13 -> Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) { AppearanceSettings() }
         14 -> Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp)) { SettingsShortcutsUi() }
         4 -> SettingsSpeechScreen(speechLocation, speechEntry)
