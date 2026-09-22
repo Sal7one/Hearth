@@ -1,5 +1,28 @@
 # Screenshot capture notes
 
+## Owner-shared overlay and Quick Settings examples
+
+Added on 2026-09-22 from four images supplied by the project owner for publication.
+These JPEGs are copied unchanged; README previews link to the original files.
+The exact Hearth build and device model were not supplied with these images.
+They demonstrate UI and example output, not measured latency or accuracy.
+
+| File | What it shows |
+| --- | --- |
+| [quick-settings.jpg](quick-settings.jpg) | Android Quick Settings with **Live captions** and **Screen translation**, both showing **Tap to start**. |
+| [live-caption-overlay.jpg](live-caption-overlay.jpg) | English captions over a cooking video, with history, pause, clear, settings and close controls. |
+| [translation-overlay-transparent.jpg](translation-overlay-transparent.jpg) | Arabic translated captions in a transparent overlay near the top of the screen. |
+| [translation-overlay-bottom.jpg](translation-overlay-bottom.jpg) | Arabic translated captions in a light overlay moved near the bottom of the screen. |
+
+The three video screenshots contain YouTube UI and a cooking video attributed
+on-screen to **@thehappypear**. That third-party content remains the property of
+its respective owners and is not licensed as Hearth artwork. The screenshots do
+not identify the selected speech/translation provider or prove a particular local
+model’s performance. The Quick Settings image shows shortcut availability, not a
+screen OCR session.
+
+## App gallery — Hearth 0.22.1
+
 Captured from Hearth 0.22.1 (version code 43), cloud-capable QA build, on Samsung
 SM-S908E running Android 16 on 2026-09-21. Ink theme, Dark appearance, default 100%
 font scale, English interface. All nine PNGs are unedited 1440 × 3088 device

@@ -2,81 +2,44 @@
 
 <img src="app/src/main/res/drawable-nodpi/hearth_mascot.png" alt="Hearth: English and Arabic speech bubbles" width="96" />
 
-**Offline-first live captions, translation and conversations on Android.**
+**Read speech. Translate your screen. Talk across languages.**
 
-Hearth helps you read speech, talk across languages, translate text around you and
-hear translations aloud. Use compatible models on your phone or connect your own
-cloud providers. An image-led home carousel opens each feature directly; the previous five-tab
-layout remains available in Appearance & navigation.
+An offline-first Android app for live captions, translation and conversations.
+Use models on your phone, bring your own cloud keys, or mix both. Built to make
+speech and languages more accessible, including for deaf and hard-of-hearing users.
+
+[Download](#download) · [Screenshots](#screenshots) · [Quick start](#quick-start) · [Models](#models-and-connections) · [Build](#build)
 
 > [!IMPORTANT]
-> **Experimental proof of concept (PoC) — currently a test project.**
-> Hearth is under active development and is not a production-ready release.
-> Expect bugs, rough edges and incomplete integrations. Language coverage, accuracy,
-> speed and memory use depend on the model, provider and phone. Testing, feedback
-> and contributions are welcome; the screenshots show working examples, not a
-> guarantee that every model or language pair will work equally well.
-
-## Download the preview
-
-[Hearth 0.22.3 release and checksums](https://github.com/Sal7one/Hearth/releases/tag/v0.22.3)
-
-- [Cloud + local APK](https://github.com/Sal7one/Hearth/releases/download/v0.22.3/hearth-0.22.3-cloud-qa-arm64.apk) — local models, optional cloud connections and downloads.
-- [Offline-only APK](https://github.com/Sal7one/Hearth/releases/download/v0.22.3/hearth-0.22.3-offline-qa-arm64.apk) — no network permission; import model files.
-
-Android 9+, ARM64. These are test-signed PoC builds, compatible with the previous
-public QA release. The two flavors replace each other; install an update without
-uninstalling to preserve your models and settings.
-
-### What changed in 0.22.3
-
-- Selecting OpenAI/Soniox cloud speech correctly selects integrated translation,
-  including when reselecting the current provider; retired sockets cannot keep sending audio.
-- Camera/reading and conversation/typed text remember their own translator choices.
-  **Use everywhere** explicitly applies a choice across features.
-- Switching between audio and reading overlays waits for model cleanup. Clearing
-  typed text releases its model and prevents stale results from reappearing.
-
-See the [changelog](CHANGELOG.md) and [pipeline audit](docs/pipeline-ownership.md).
-
-## What you can try
-
-- **Use Hearth in English, العربية or 简体中文.** Choose App language in Settings,
-  or follow your phone. Arabic uses right-to-left layout. The interface language is
-  separate from your speech and translation choices. See [localization](docs/localization.md).
-
-- **Browse visual feature cards.** Swipe floating image cards for captions,
-  conversation, text, camera and screen translation. Hearth remembers the last
-  selected service and each card opens its feature directly. Quick settings
-  offers large Local/Cloud setup tiles. Colorful translucent cards and softly blurred
-  artwork carry into the feature screens, with Minimal kept as a backup style.
-  Feature screens put their main action first,
-  with model, voice and timing choices in closeable settings sheets. Choose Clean, Ink, Sky or the original
-  Organic theme, with System/Light/Dark modes. New installs default to Ink + Dark. See [navigation and themes](docs/simple-home.md).
-
-- **Start from the notification shade.** Add Live captions and Screen translation
-  Quick Settings tiles. Hearth checks setup before requesting capture; missing
-  models or connections open actionable diagnostics. See [phone shortcuts](docs/quick-settings.md).
-- **Read live captions over other apps.** A movable caption bubble transcribes
-  device audio or the microphone, with optional translation and retained text.
-- **Have a two-way conversation.** Speak or type in either language, keep originals
-  and translations, or use Face to face with a rotated half-screen for each person.
-- **Translate what you type or see.** Live typed translation, camera OCR and photo
-  import share local or cloud translation options.
-- **Listen with your preferred voice.** Play original or translated text using
-  Android voices, local Supertonic or supported self-hosted TTS connections.
-- **Choose local models or bring your own cloud keys.** Separate Local and Cloud
-  settings keep model installation apart from provider connections. Mix speech and translation
-  engines, select supported languages, or use the offline flavor with no network permission.
-- **Download, import and extend.** Install catalogued models on the phone, choose a
-  public download folder, compare installed models and add adapters through Kotlin/JNI.
-  See the [model contribution guide](docs/model-contributing.md).
+> **Experimental proof of concept — actively developed, not production-ready.**
+> Expect bugs and incomplete integrations. Accuracy, language coverage and speed
+> depend on your model, provider and phone. Feedback and contributions are welcome.
 
 ## Screenshots
 
-Hearth **0.22.1** on a Samsung phone running Android 16. Current UI, with synthetic
-example text; tap any image for the full-size screenshot.
-[Capture details and what each screenshot demonstrates](docs/screenshots/README.md).
+Real use shared by the project owner: Quick Settings access, English live captions,
+and Arabic translation over another app. Tap an image to see it full size.
+
+<table>
+  <tr><th>Start from Quick Settings</th><th>Read live captions</th></tr>
+  <tr>
+    <td><a href="docs/screenshots/quick-settings.jpg"><img src="docs/screenshots/quick-settings.jpg" width="280" alt="Android Quick Settings with Hearth Live captions and Screen translation tiles, both ready to start" /></a></td>
+    <td><a href="docs/screenshots/live-caption-overlay.jpg"><img src="docs/screenshots/live-caption-overlay.jpg" width="280" alt="Hearth displaying English captions over a cooking video, with history, pause, clear and settings controls" /></a></td>
+  </tr>
+  <tr><th>Translate with a transparent bubble</th><th>Move the bubble where you want</th></tr>
+  <tr>
+    <td><a href="docs/screenshots/translation-overlay-transparent.jpg"><img src="docs/screenshots/translation-overlay-transparent.jpg" width="280" alt="Arabic translated captions in a transparent Hearth overlay near the top of a video" /></a></td>
+    <td><a href="docs/screenshots/translation-overlay-bottom.jpg"><img src="docs/screenshots/translation-overlay-bottom.jpg" width="280" alt="Arabic translated captions in a light Hearth overlay positioned near the bottom of a video" /></a></td>
+  </tr>
+</table>
+
+The video examples show @thehappypear in YouTube; third-party content belongs to
+its respective owners. [Screenshot details](docs/screenshots/README.md).
+
+<details>
+<summary><strong>Explore the app: Home, setup, conversation, camera and more</strong></summary>
+
+Hearth 0.22.1 on Android 16. Conversation and OCR examples use synthetic text.
 
 <table>
   <tr>
@@ -111,58 +74,94 @@ example text; tap any image for the full-size screenshot.
   </tr>
 </table>
 
-## Choose a feature from Home
+</details>
 
-Swipe the illustrated cards and open the feature you want. Hearth remembers the
-last-used card. Easy setup offers Local or Cloud; feature screens keep their
-additional controls in settings sheets.
+## Download
 
-| Feature | What you can do |
+**[Hearth 0.22.3 — release notes and checksums](https://github.com/Sal7one/Hearth/releases/tag/v0.22.3)**
+
+| Build | Download | Includes |
+| --- | --- | --- |
+| **Cloud + local** | [ARM64 APK](https://github.com/Sal7one/Hearth/releases/download/v0.22.3/hearth-0.22.3-cloud-qa-arm64.apk) | On-device models, optional cloud connections and model downloads. |
+| **Offline only** | [ARM64 APK](https://github.com/Sal7one/Hearth/releases/download/v0.22.3/hearth-0.22.3-offline-qa-arm64.apk) | Local models imported from files. **No network permission.** |
+
+Android 9+; device-audio capture requires Android 10+. These are test-signed preview
+builds. Both flavors use the same app identity and replace each other. **Update
+without uninstalling** to keep your models, keys, settings and history.
+
+Version 0.22.3 fixes cloud translation selection, remembers separate translator
+choices across feature groups, and waits for model cleanup when switching overlays.
+See the [changelog](CHANGELOG.md) and [pipeline audit](docs/pipeline-ownership.md).
+
+## What you can do
+
+| Feature | What it does |
 | --- | --- |
-| **Live captions** | Start and manage captions over other apps. |
-| **Conversation / Face to face** | Speak in turns or use the split two-person layout. |
-| **Type to translate** | Type text, read its translation and play either language. |
-| **Camera & OCR** | Recognize camera or photo text and translate it. |
-| **Screen & manga** | Translate a shared screen or draw around a text region. |
-| **Settings** | Choose local models, cloud connections, downloads, voices and appearance. |
+| **Live captions** | Read device audio or microphone speech over other apps, with optional translation. Move or resize the bubble, change transparency, scroll history, pause or clear text. Touch pass-through has a separate recovery handle; notifications provide session controls. |
+| **Screen & manga** | Translate text over a shared screen, draw around a region, or refresh after a settled page change. A lock handle lets you scroll the app underneath. Experimental; no artwork inpainting or frame-perfect tracking. |
+| **Conversation / Face to face** | Speak or type in two languages, swap them quickly, keep originals and translations, and hear text aloud. Face to face rotates one half of the screen for the other person. |
+| **Type to translate** | Type above a live translation, copy either text and play it aloud. |
+| **Camera & OCR** | Recognize and translate camera or imported-photo text with local OCR and your chosen translator. |
+| **Read aloud** | Use Android voices, local Supertonic, or supported self-hosted TTS across Hearth. |
 
-Prefer tabs? Enable **Classic tabs** in Appearance & navigation. The five-tab
-layout remains available alongside the default card-based Home. The launcher uses
-the [Arabic/English speech-bubble mascot](docs/brand/README.md).
+Swipe the illustrated Home cards to open a feature; Hearth remembers your last
+choice. The interface supports **English, العربية and 简体中文**, with RTL for Arabic.
+Ink + Dark is the default; other themes, appearance controls and Classic tabs are
+available in Settings. Speech and translation languages follow the selected engine’s
+capabilities and are independent of the interface language.
 
-## Development backlog
+## Quick start
 
-See the [model contribution guide](docs/model-contributing.md) and [release checklist](docs/BACKLOG.md) for current release tasks, native integration conventions and model contributions.
+1. Open **Easy setup** from Home or Settings. Choose **On this phone** for Nemotron
+   speech + Hy-MT2 translation, or **Cloud** for OpenAI, OpenRouter or a compatible
+   HTTPS local server. The offline build uses model imports.
+2. Open a feature and choose your languages. For live captions, select **Device
+   audio** or **Microphone**, then original captions or translation.
+3. Tap the start button and accept Android’s required permissions or capture prompt.
 
-## Features
+OpenAI Easy setup starts with live translation; OpenRouter and local servers start
+with speech captions. Full model and provider choices are in Settings, separated
+into **Local** and **Cloud**. [Easy setup guide](docs/easy-setup.md).
 
-- Movable, resizable caption bubble with retained text, prior lines, selectable
-  history, pause/resume, hide/show, recenter and stop notification controls.
-- Capture another app's playback audio or the microphone. Android asks for consent
-  each session. Apps can block playback capture; protected streams may be silent.
-- Local Whisper, Vosk, Qwen3-ASR, Nemotron and English Moonshine runtimes, with verified model imports.
-- Optional local translation using ML Kit language packs (play only), TranslateGemma
-  4B, or the existing HY-MT1.5/Hy-MT2 quantizations. Explicit CC languages and translation directions;
-  bounded background translation, live toggle, and per-line timing.
-  See [local translation setup](docs/local-translation.md).
-- Cloud STT and live translation with your own provider keys; destination coverage depends on the selected connection.
-  Soniox v5 adds original and translated text; Scribe v2 adds another STT choice.
-  Speech-only model filtering, provider configuration, and encrypted key storage.
-- Direct HTTPS file downloads with foreground progress, cancellation, selectable public folder,
-  and automatic installation of catalogued speech/translation models. New downloads use
-  `Downloads/Hearth/models` or `files` on Android 10+. This does not include a video-site extractor.
-- A local-only `foss` variant with **no network permission**, and a network-enabled
-  `play` variant. ML Kit is an optional Google SDK in the play flavor; foss excludes it.
+### Quick access without opening Home
 
-- Two-way **Conversation** with a quick language swap, microphone or typed turns, originals and translations, local history and optional offline TTS. **Face to face**, available from Home or Conversation, gives each person a half-screen and large Speak button, with the upper half rotated. Translation can use an installed model or Google Cloud, Microsoft Azure, DeepL or LibreTranslate. See [conversation scope](docs/conversation-mode-plan.md) and [translation connections](docs/conversation-cloud-translation.md).
-- **Local benchmark** compares installed models on the same WAV or corrected text, separates loading from inference and saves/export reports on-device. See [method and limitations](docs/local-benchmark.md), [speech phone results](docs/validation-v17.md), and the [eight-option local translation comparison](docs/local-translation-benchmark-2026-09-13.md).
-- Persistent System, Light and Dark appearance in Settings.
+Open **Settings → Phone shortcuts** and add **Live captions** and **Screen
+translation** to Android Quick Settings. You can also edit the tiles in your
+notification shade and drag them into place.
 
-- **Camera translate**: live camera and photo text recognition with PaddleOCR v5 mobile, selectable local/cloud text translation, and automatic model installation. See [camera setup, sources and limits](docs/camera-ocr.md).
-- **Manga reading (experimental)**: native Manga OCR and Meiki options, verified model downloads, and drawing around text on captured/imported pages. Reuses translation and read-aloud providers. Cross-app capture supports manual and settled page-change translation. See [setup and current limits](docs/screen-reading.md).
+- **Tap to start:** uses your saved setup, checks readiness, then requests capture consent.
+- **Tap to show:** brings back controls for an overlay that is already running.
+- **Setup missing:** opens diagnostics with the actual problem and links to fix it.
 
-- **Type to translate**: type above a live translation, swap languages, copy and play either text.
-- **Shared read-aloud**: installed Android voices or local Supertonic 3 (31 languages including Arabic, ten voices). Optional self-hosted Chatterbox, Qwen3-TTS and Fish Speech adapters in play. Used by traveler modes, typed translation, camera and captions. See [voice downloads, server setup and capability limits](docs/voices.md).
+Android’s capture consent still applies; apps may block audio or screen capture.
+[Shortcut setup and behavior](docs/quick-settings.md).
+
+## Models and connections
+
+| Task | Available options |
+| --- | --- |
+| **Local speech** | Whisper, Vosk, Qwen3-ASR, Nemotron and English Moonshine. |
+| **Local translation** | HY-MT1.5 / Hy-MT2, TranslateGemma 4B, compatible Marian language-pair bundles, and optional ML Kit packs in the cloud-capable build. |
+| **Cloud speech** | Bring your own provider keys, including OpenAI, Soniox and ElevenLabs Scribe. Translation support depends on the connection. |
+| **Cloud text translation** | Shared translator choices include Google Cloud, Microsoft Azure, DeepL and LibreTranslate connections. |
+| **Local OCR** | PaddleOCR, Manga OCR and Meiki; choose a reader that supports your source language. |
+| **Read aloud** | Android voices, local Supertonic 3, or self-hosted Chatterbox, Qwen3-TTS and Fish Speech connections in the cloud-capable build. |
+
+Local Qwen and Nemotron recognize speech; a separate translator handles translated
+captions. Whisper’s built-in translation targets English. Translator choices are
+remembered by feature group; **Use everywhere** explicitly applies one across Hearth.
+Keys are stored encrypted. [Translation routing](docs/translation-choices.md).
+
+Use **Download & install** for catalogued models—no computer, export or re-import.
+Original downloads go to **Downloads/Hearth/models** (direct files to `files`), or
+choose a different public folder in Downloads. Installed models keep a separate
+verified app-owned copy. ML Kit manages its own packs; the offline build has no
+downloader.
+
+- [Model sources and download links](docs/model-sources.md) · [Speech setup](docs/models.md)
+- [Local translation](docs/local-translation.md) · [Cloud text translation](docs/conversation-cloud-translation.md)
+- [Camera OCR](docs/camera-ocr.md) · [Screen & manga](docs/screen-reading.md) · [Voices](docs/voices.md)
+- [Compare installed models](docs/local-benchmark.md) · [Recorded translation comparison](docs/local-translation-benchmark-2026-09-13.md)
 
 ## Build
 
@@ -194,80 +193,34 @@ Never commit keys or credentials. CI builds and uploads both QA APKs.
 See [changes](CHANGELOG.md), [security reporting](SECURITY.md), and the
 [publication audit](docs/publication-audit.md).
 
-## Easy setup
+## Contribute
 
-Open **Easy setup** from Home or Settings. Choose **On this phone** to install
-and select Nemotron + Hy-MT2 translation, or **Cloud** for OpenAI, OpenRouter or
-a compatible HTTPS local server. Already-installed models are reused.
+Bug reports, device feedback, translations and model adapters are welcome.
+[Open an issue](https://github.com/Sal7one/Hearth/issues) with the app version, phone,
+selected engines and the actual error. Remove API keys and private text from logs.
 
-OpenAI starts with live translation; OpenRouter and local servers start with
-speech captions. Full provider, language and model controls remain in Settings.
-The offline build uses model imports. See [Easy setup](docs/easy-setup.md).
+Start with the [model contribution guide](docs/model-contributing.md),
+[language capability guide](docs/language-pickers.md), [localization guide](docs/localization.md)
+and [release backlog](docs/BACKLOG.md). Kotlin/JNI adapters reuse shared pipelines;
+models have explicit capabilities and verified installation paths.
 
-## Start captions
+## Privacy and scope
 
-1. In **Captions**, choose Device audio or Microphone, original captions or
-   translation, and your language. Your last setup is remembered.
-2. Tap **Start captions**. Android asks for any required permissions or device-audio
-   consent; the app does not ask you to choose the audio source again.
-3. While running, **Show captions** recovers the bubble and **Stop** ends capture.
-   Bubble settings separate Appearance from CC & translation.
+Local models run on your phone; cloud connections send the relevant input to the
+provider you choose. The offline flavor has no network permission.
+Read the [privacy policy](PRIVACY.md) and [security reporting guide](SECURITY.md).
 
-**Settings** contains Models, Downloads, Cloud speech, Cloud translation and Voices & read aloud. Models groups Speech,
-Translation, Camera, Voices and Cloud, with source links, installed models and matching import actions.
-Speech and translation family chips open the matching setup directly; the active
-model is labeled separately. Translation sizes are grouped by family. See [all sources and installation paths](docs/model-sources.md). Connect
-or change your existing cloud provider/key under Settings → Cloud speech. Advanced setup
-retains the detailed engine controls and live cloud presets.
+This is the standalone caption/translation app, separate from the original Hearth
+media suite. Existing standalone Transiber installs upgrade in place to Hearth;
+data from the media suite is not transferred automatically. Uninstalling removes
+app-private models and data; files in public Downloads remain.
 
-Local Qwen and Nemotron recognize speech. The optional local text-model bridge
-translates their output with a separately selected translator. Whisper can
-translate to English. Local Marian translation requires a compatible installed
-language-pair bundle. Recognition accuracy, language coverage, capture eligibility
-and latency depend on the model, device and source. This app does not recognize
-sign language. See [model setup](docs/models.md), [language pickers and extension guide](docs/language-pickers.md), and [device checks](docs/device-checks.md).
-
-## Privacy and project scope
-
-See [PRIVACY.md](PRIVACY.md). This standalone app has a separate Android identity from the original media-suite Hearth. Existing standalone Transiber installations upgrade in place to the Hearth name, retaining saved keys, models and settings. Data from the media-suite app is not transferred automatically. Uninstalling deletes app-private data and installed
-models. New public Downloads files remain; export older app-stored downloads or
-Android 9 downloads first if you need to keep them.
-
-The repo has fresh history and excludes Hearth's editor, FFmpeg, books, sign
-recognition, yt-dlp, chat and unrelated screens. Camera/image OCR translation is included. Shared utilities and speech
-JNI APIs retain their original packages where required for native binding compatibility.
+This repository excludes the media editor, FFmpeg, yt-dlp and sign recognition.
+Native binding packages retain their original names for compatibility.
 
 ## License
 
-First-party code: Apache-2.0. Bundled third-party code and runtime libraries retain
-their own terms; see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
-Model weights are separately licensed downloads, not bundled app assets.
-
-### Model downloads
-
-In Models, **Download & install** downloads catalogued Moonshine Tiny/Base,
-Qwen3-ASR 0.6B, Nemotron, translation GGUFs and PaddleOCR ONNX files, then verifies and installs them
-on the phone. No computer, export or re-import is required. Use the installed
-model when ready; a background completion does not replace a running session's engine.
-
-Original downloads live in **Downloads/Hearth/models** (direct URLs
-in `files`). **Downloads → Choose folder** selects another writable folder for
-future downloads, including on Android 9. Installed engines keep a separate,
-verified app-owned copy. Downloads can be deleted without uninstalling models.
-ML Kit packs remain managed by Google's SDK. The offline APK has no downloader.
-
-Custom model packaging is an extension/developer path documented in
-[model contributing](docs/model-contributing.md), not a prerequisite for catalog downloads.
-
-### Screen reading (experimental)
-
-Home → **Screen & manga** translates manga and books in another app. Draw around a bubble, translate manually, or refresh after a settled page change. Original text, session history and read aloud reuse Hearth’s existing local/cloud engines. Paddle, Manga OCR and Meiki have been run on an Android phone. This remains experimental. Translations appear over text in the live reader. A separate lock handle enables scrolling through the transparent layer; visual movement clears old placements and refreshes translation after settling. Unlock boxes for full text/read aloud. This is experimental, without artwork inpainting or frame-perfect scroll tracking. [Setup, limitations and tests](docs/screen-reading.md).
-
-The 0.13.1 build removes the optional Accessibility service after a Play Protect
-installation block was reported. Reading uses explicit screen-sharing consent;
-scroll-count/distance and Volume Up shortcuts are no longer offered.
-[Installation validation and limitations](docs/validation-v27.md).
-
-### Shared translation choices (0.15.0 development build)
-
-The same **Translator** chooser now appears across captions, typed text, conversation, camera and screen reading. Browse installed/downloadable local models or Google, Microsoft, DeepL and LibreTranslate connections; **Use across Hearth** applies one choice everywhere. Captions can reuse these text translators after recognition. [Choices, privacy and routing](docs/translation-choices.md).
+First-party code: **Apache-2.0**. Third-party runtimes and model weights have their
+own terms; see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). Model weights are
+separate downloads. Third-party content visible in screenshots is not part of
+Hearth’s code or artwork license.
