@@ -36,8 +36,7 @@ and Arabic translation over another app. Tap an image to see it full size.
 The video examples show @thehappypear in YouTube; third-party content belongs to
 its respective owners. [Screenshot details](docs/screenshots/README.md).
 
-<details>
-<summary><strong>Explore the app: Home, setup, conversation, camera and more</strong></summary>
+### Inside the app
 
 Hearth 0.22.1 on Android 16. Conversation and OCR examples use synthetic text.
 
@@ -73,8 +72,6 @@ Hearth 0.22.1 on Android 16. Conversation and OCR examples use synthetic text.
     <td><a href="docs/screenshots/settings.png"><img src="docs/screenshots/settings.png" width="240" alt="Local and Cloud setup tabs with focused feature settings" /></a></td>
   </tr>
 </table>
-
-</details>
 
 ## Download
 
