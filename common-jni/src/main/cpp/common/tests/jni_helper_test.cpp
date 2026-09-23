@@ -1,6 +1,7 @@
 #include <iostream>
 #include <stdexcept>
 #include <string>
+#include <thread>
 #include <vector>
 
 #include "../../jni/jni_helper.h"
@@ -59,6 +60,17 @@ int main() {
 
     jni::throwRuntimeException(env, "bad\xC0\xAF UTF-8");
     CHECK(takeException(env).find("UTF-8") != std::string::npos);
+
+    CHECK(jni::getEnvForVm(vm) == env); // JVM-owned thread is not registered for detach.
+    for (int i = 0; i < 16; ++i) {
+        std::thread worker([&] {
+            JNIEnv* first = jni::getEnvForVm(vm);
+            CHECK(first != nullptr);
+            CHECK(jni::getEnvForVm(vm) == first); // attach once per native thread
+            CHECK(vm->GetEnv(reinterpret_cast<void**>(&first), JNI_VERSION_1_6) == JNI_OK);
+        });
+        worker.join(); // pthread-key destructor detaches before join returns.
+    }
 
     CHECK(vm->DestroyJavaVM() == JNI_OK);
     if (failures) {

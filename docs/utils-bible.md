@@ -417,3 +417,10 @@ helper converts standard UTF-8 to Java UTF-16 before constructing an exception
 and leaves an existing pending Java exception untouched. `jni_helper_test.cpp`
 uses a host JVM with `-Xcheck:jni` to cover supplementary characters, the
 catch macros, invalid UTF-8, and pending-exception preservation.
+
+`jni::getEnvForVm` is shared by the JNI log bridge, `ModelLoader`, and the
+legacy `jni_utils` adapter. It leaves JVM-owned threads alone, attaches native
+threads as named daemon threads, and detaches them from a pthread-key
+destructor. `jni_helper_test.cpp` starts and joins native threads under a real
+host JVM before VM shutdown; Android's thread-exit behavior remains a device
+check owned by the app owner.

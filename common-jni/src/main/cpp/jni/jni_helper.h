@@ -7,6 +7,7 @@
 #include <string>
 #include <vector>
 #include "../common/utf8_utils.h"
+#include "jni_attachment.h"
 
 namespace jni {
 

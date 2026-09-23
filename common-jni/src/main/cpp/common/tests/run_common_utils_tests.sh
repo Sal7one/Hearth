@@ -67,7 +67,7 @@ esac
 log "compiling jni_helper"
 "${CXX_BIN}" -std=c++17 -O1 -Wall -Wextra -fsanitize=address,undefined \
     -I"${JDK_HOME}/include" -I"${JDK_HOME}/include/${JNI_PLATFORM}" \
-    "${SCRIPT_DIR}/jni_helper_test.cpp" \
+    "${SCRIPT_DIR}/jni_helper_test.cpp" "${CPP_DIR}/jni/jni_helper.cpp" \
     -L"${JDK_HOME}/lib/server" -Wl,-rpath,"${JDK_HOME}/lib/server" -ljvm \
     -pthread -o "${BUILD_DIR}/jni_helper_test"
 log "running jni_helper"

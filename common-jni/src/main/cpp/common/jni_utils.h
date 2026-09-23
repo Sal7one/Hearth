@@ -212,22 +212,7 @@ private:
  * Returns nullptr on failure.
  */
 inline JNIEnv* getEnvForCurrentThread(JavaVM* jvm) {
-    if (!jvm) return nullptr;
-    
-    JNIEnv* env = nullptr;
-    int status = jvm->GetEnv(reinterpret_cast<void**>(&env), JNI_VERSION_1_6);
-    
-    if (status == JNI_EDETACHED) {
-        if (jvm->AttachCurrentThread(&env, nullptr) != JNI_OK) {
-            LOG_E("JNI", "Failed to attach thread");
-            return nullptr;
-        }
-    } else if (status != JNI_OK) {
-        LOG_E("JNI", "Failed to get JNI environment: %d", status);
-        return nullptr;
-    }
-    
-    return env;
+    return jni::getEnvForVm(jvm);
 }
 
 } // namespace stt
