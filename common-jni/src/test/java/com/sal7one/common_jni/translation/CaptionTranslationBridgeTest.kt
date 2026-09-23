@@ -49,6 +49,16 @@ class CaptionTranslationBridgeTest {
         withTimeout(3000) { ready.await() }; bridge.close(); bridge.awaitClosed()
         assertEquals(0, fake.calls); assertTrue(errors.any { "unknown or mixed" in it }); assertTrue(errors.any { "ja → ar" in it })
     }
+    @Test fun missingNemotronLanguageCanStillTranslateCyrillicThroughTheSelectedRoute() = runBlocking {
+        val fake = Fake().apply { release.complete(Unit) }
+        val translated = CompletableDeferred<Long>()
+        val bridge = CaptionTranslationBridge(this, "ar", { fake }, { id, _, _ -> translated.complete(id) }, {})
+        try {
+            assertTrue(bridge.offer(17, "Это русская речь", null))
+            assertEquals(17L, withTimeout(3000) { translated.await() })
+            assertEquals(1, fake.calls)
+        } finally { bridge.close(); bridge.awaitClosed() }
+    }
     @Test fun staleInferenceDoesNotPublish() = runBlocking {
         val fake = Fake(); var now = 0L; val noticed = CompletableDeferred<String>()
         val bridge = CaptionTranslationBridge(this, "ar", { fake }, { _, _, _ -> fail("Stale result") }, { if(it != null) noticed.complete(it) }, clock = { now }, maxAgeMs = 100)

@@ -51,13 +51,13 @@ class CaptionTranslationBridge(
                 var completed = false
                 try {
                     check(clock() - maxOf(request.at, preparedAt) < maxAgeMs) { "Translation queue is behind; this line stays CC only" }
-                    val source = request.source?.let(TranslationLanguages::normalize)
-                    check(source != null && source !in setOf("", "auto", "mul", "und")) {
+                    val active = checkNotNull(translator)
+                    val to = TranslationLanguages.normalize(target)
+                    val source = TranslationSourceEvidence.resolve(request.source, request.text, to, active.directions)
+                    check(source != null) {
                         "Source language is unknown or mixed. Choose the spoken language to enable local translation; CC continues"
                     }
-                    val to = TranslationLanguages.normalize(target)
                     if (source == to) { publish(request) { notice(null) }; continue }
-                    val active = checkNotNull(translator)
                     if (closed.get() || !isActive) break
                     val direction = TranslationDirection(source, to)
                     check(direction in active.directions) { "${active.id} does not support $source → $to; CC continues" }
