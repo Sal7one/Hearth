@@ -10,7 +10,8 @@ import kotlinx.coroutines.withContext
 
 internal object LocalTranslationNative {
     init { System.loadLibrary("transiber_translation") }
-    external fun create(path: ByteArray): Long
+    external fun promptProtocolVersion(): Int
+    external fun create(path: ByteArray, rawPrompt: Boolean): Long
     external fun translate(handle: Long, prompt: ByteArray): ByteArray
     external fun cancel(handle: Long)
     external fun destroy(handle: Long)
@@ -32,9 +33,12 @@ class LocalTranslationSession private constructor(private val spec: TranslationM
     companion object {
         /** Blocking ownership-safe load; caller must keep this off Main and close even after cancellation. */
         fun open(file: File, spec: TranslationModelSpec): LocalTranslationSession {
+            val protocol = try { LocalTranslationNative.promptProtocolVersion() }
+                catch (e: UnsatisfiedLinkError) { throw IllegalStateException("Local translation native runtime is outdated: ${e.message}", e) }
+            check(protocol == 2) { "Local translation native prompt protocol mismatch: expected 2, got $protocol" }
             check(file.length() == spec.bytes) { "Local translation model is missing or has the wrong size" }
             ModelIntegrity.inspect(file, spec.sha256)
-            val handle = LocalTranslationNative.create(file.absolutePath.toByteArray(Charsets.UTF_8))
+            val handle = LocalTranslationNative.create(file.absolutePath.toByteArray(Charsets.UTF_8), spec.family == "milmmt-46")
             check(handle != 0L) { "Local translation returned an invalid native handle" }
             return LocalTranslationSession(spec, handle)
         }

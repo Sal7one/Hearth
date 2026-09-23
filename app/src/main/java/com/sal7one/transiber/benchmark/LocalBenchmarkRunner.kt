@@ -88,19 +88,29 @@ internal data class BenchmarkResult(
     }
 }
 internal class BenchmarkResults(context: Context) {
+    companion object {
+        const val MAX_HISTORY = 200
+        private const val MAX_FILE_BYTES = 8 * 1024 * 1024
+    }
     private val file = File(context.filesDir, "benchmark-results.json")
     fun load(): List<BenchmarkResult> {
         if (!file.exists()) return emptyList()
-        require(file.length() <= 8 * 1024 * 1024) { "Benchmark results exceed the local storage limit" }
+        require(file.length() <= MAX_FILE_BYTES) { "Benchmark results exceed the local storage limit" }
         val array = JSONArray(file.readText())
         return (0 until array.length()).map { BenchmarkResult.from(array.getJSONObject(it)) }
     }
     fun append(result: BenchmarkResult) {
-        val records = (listOf(result) + load()).take(40)
+        val records = (listOf(result) + load()).take(MAX_HISTORY).toMutableList()
+        var bytes = JSONArray(records.map { it.json() }).toString(2).toByteArray()
+        while (bytes.size > MAX_FILE_BYTES && records.size > 1) {
+            records.removeAt(records.lastIndex)
+            bytes = JSONArray(records.map { it.json() }).toString(2).toByteArray()
+        }
+        require(bytes.size <= MAX_FILE_BYTES) { "One benchmark result exceeds the local storage limit" }
         val atomic = android.util.AtomicFile(file)
         val stream = atomic.startWrite()
         try {
-            stream.write(JSONArray(records.map { it.json() }).toString(2).toByteArray())
+            stream.write(bytes)
             atomic.finishWrite(stream)
         } catch (e: Throwable) { atomic.failWrite(stream); throw e }
     }

@@ -17,7 +17,17 @@ installed candidate that you check, in order. **Deselect all** keeps the list
 empty until you choose a model. For speech it also runs 1-second and 2.5-second
 silence checks; these are shown separately and are not included in reference
 error rates. Choose **My recording or text** to run a single private sample with
-optional corrected reference text.
+optional corrected reference text. The language pickers offer the languages
+advertised by the models installed on that phone; for a pair outside the
+bundled quick set, the screen offers a direct switch to your own WAV/text.
+This lets the S25 owner compare any **supported** language pair with their own
+material, without claiming a public reference score for a language we did not
+bundle. Saved results can be filtered to the current language pair or viewed
+together, and the JSON export records exact model identity, phone, timing,
+outputs and any reference scores. The suggested export name includes the
+current date/time so repeated exports do not silently replace earlier runs.
+Run the same sample on both phones and inspect the output as well as elapsed
+time.
 
 No network request, model download, microphone, or recording permission is used
 by the benchmark. ML Kit runs only with packs already installed by the user in
@@ -127,7 +137,7 @@ promising result with representative recordings and bilingual review. No
 unmeasured model is called faster or more accurate based on model-card claims.
 
 `BenchmarkAudio` bounds WAV parsing and decodes selected samples once for equal
-inputs. Benchmark history is capped at 40 results. **Stop comparison**, leaving
+inputs. Benchmark history is capped at 200 results. **Stop comparison**, leaving
 the screen, or backgrounding the activity cancels cooperatively; a current
 native operation may need to finish before model resources close. Native crashes
 and process-level OOM cannot be converted into managed benchmark results.

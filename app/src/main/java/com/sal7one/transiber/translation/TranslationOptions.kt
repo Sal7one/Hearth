@@ -14,9 +14,12 @@ object TranslationOptions {
     fun sourceLanguages(id: String): Set<String> = if (id == ML_KIT) mlKitCodes
         else if (MarianPackage.find(id) != null) setOf(checkNotNull(MarianPackage.find(id)).source)
         else TranslationCatalog.models.firstOrNull { it.id == id }?.sourceLanguages.orEmpty()
-    fun targetLanguages(id: String): Set<String> = if (id == ML_KIT) mlKitCodes
+    fun targetLanguages(id: String, source: String = "auto"): Set<String> = if (id == ML_KIT) mlKitCodes
         else if (MarianPackage.find(id) != null) setOf(checkNotNull(MarianPackage.find(id)).target)
-        else TranslationCatalog.models.firstOrNull { it.id == id }?.targetLanguages.orEmpty()
+        else TranslationCatalog.models.firstOrNull { it.id == id }?.let { spec ->
+            if (source in setOf("auto", "model", "und", "mul", "")) spec.targetLanguages
+            else spec.targetLanguages.filterTo(mutableSetOf()) { spec.supports(source, it) }
+        }.orEmpty()
     fun languages(id: String): Set<String> = sourceLanguages(id) + targetLanguages(id)
     fun supports(id: String, source: String, target: String): Boolean = source != target &&
         if (id == ML_KIT) source in mlKitCodes && target in mlKitCodes

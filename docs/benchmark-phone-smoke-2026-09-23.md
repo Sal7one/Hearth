@@ -16,6 +16,12 @@ all six low-level recordings as empty, so it is excluded below.
 | ML Kit installed packs | English → Arabic text | WER 89.04%; CER 54.13%; chrF++ 38.21 | 0.06 s | 0.75 s | 0.39 s |
 | Hy-MT2 1.8B Q4_K_M | English → Arabic text | WER 76.71%; CER 54.99%; chrF++ 40.35 | 2.05 s | 44.44 s | 53.01 s |
 
+The later [MiLMMT Q4 phone check](translation-models-jun-sep-2026.md#samsung-s22-ultra-q4-phone-check)
+used a corrected Android native library and the same English→Arabic quick set:
+22.72 s warm with chrF++ 40.45%. It also measured Russian→Arabic at 25.75 s
+warm. MiLMMT is an experimental option, not a replacement for the small direct
+Marian pair.
+
 The translation scores compare each output with one publisher reference; a
 different valid phrasing can score poorly. They require bilingual review before
 ranking quality. The Q4 warm pass is about 8.8 seconds per sentence here,

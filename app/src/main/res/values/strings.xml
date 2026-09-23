@@ -1,4 +1,6 @@
 <resources>
+    <string name="model_milmmt_description">Newer 1B translation family, about %1$d MiB. Arabic, Russian, Chinese and more; phone speed and quality are still experimental. Uses Gemma terms.</string>
+    <string name="model_milmmt_original_card">Original MiLMMT model card</string>
     <string name="app_name">Hearth</string>
     <string name="tile_captions">Live captions</string>
     <string name="tile_reading">Screen translation</string>

@@ -102,7 +102,7 @@ internal fun SettingsTranslateLocalUi(
                 onClick = { showLegacy = false; showGguf = false }, label = { Text("ML Kit") })
             FilterChip(selected = showLegacy, enabled = !busy,
                 onClick = { showLegacy = true; showGguf = false }, label = { Text(uiText(UiR.string.model_marian_title)) })
-            listOf("hy-mt1.5" to "HY-MT1.5", "hy-mt2" to "Hy-MT2", "translategemma" to "TranslateGemma").forEach { (family, label) ->
+            listOf("milmmt-46" to "MiLMMT-46", "hy-mt1.5" to "HY-MT1.5", "hy-mt2" to "Hy-MT2", "translategemma" to "TranslateGemma").forEach { (family, label) ->
                 FilterChip(selected = !showLegacy && showGguf && spec.family == family, enabled = !busy,
                     onClick = {
                         if (spec.family != family) {
@@ -175,7 +175,8 @@ internal fun SettingsTranslateLocalUi(
         if (installed.any { it.id == spec.id }) Button(enabled = !busy, onClick = { update { if (showCaptionControls) it.copy(localTranslationModelId = spec.id, localTranslationEnabled = true, mode = CaptionMode.TRANSLATE) else it.copy(localTranslationModelId = spec.id) } }) {
             Text(if (config.localTranslationModelId == spec.id) uiText(UiR.string.ui_selected_translator_ee2cb) else uiText(UiR.string.ui_use_1_s_5cc45, spec.label))
         }
-        Text(uiText(UiR.string.ui_q4_uses_less_storage_and_memory_q6_q8_are_larger_only_the_active_56fac), style = MaterialTheme.typography.bodySmall)
+        Text(if (spec.family == "milmmt-46") uiText(UiR.string.model_milmmt_description, spec.bytes / 1_048_576)
+            else uiText(UiR.string.ui_q4_uses_less_storage_and_memory_q6_q8_are_larger_only_the_active_56fac), style = MaterialTheme.typography.bodySmall)
         OutlinedButton(enabled = !busy, onClick = { importer.launch(arrayOf("*/*")) }) { Text(uiText(UiR.string.ui_import_1_s_gguf_f7da3, spec.label)) }
         if (ByokPolicy.FEATURE_BYOK) {
             val record = records.firstOrNull { it.modelId == spec.id }
@@ -198,6 +199,7 @@ internal fun SettingsTranslateLocalUi(
             if (record?.failed == true) Text(record.error.ifBlank { uiText(UiR.string.ui_download_failed_reason_1_s_8bb99, record.reason) }, color = MaterialTheme.colorScheme.error)
             Text(uiText(UiR.string.ui_download_folder_1_s_models_the_original_file_stays_here_after_ins_5b003, downloads.locationLabel), style = MaterialTheme.typography.bodySmall)
             TextButton(onClick = { uriHandler.openUri(spec.modelCard) }) { Text(uiText(UiR.string.ui_source_files_license_50a30)) }
+            if (spec.family == "milmmt-46") TextButton(onClick = { uriHandler.openUri("https://huggingface.co/xiaomi-research/MiLMMT-46-1B-v1.0") }) { Text(uiText(UiR.string.model_milmmt_original_card)) }
             if (spec.family == "translategemma") TextButton(onClick = { uriHandler.openUri("https://huggingface.co/google/translategemma-4b-it") }) { Text(uiText(UiR.string.ui_original_google_model_card_251ef)) }
         }
         Text(uiText(UiR.string.ui_1_s_imported_files_must_match_the_selected_artifact_8b0a8, spec.license))
@@ -207,7 +209,7 @@ internal fun SettingsTranslateLocalUi(
         }
         if (showCaptionControls) {
         com.sal7one.transiber.caption.CaptionLanguageFields(config, update, showSource = false,
-            targetChoices = com.sal7one.transiber.caption.CaptionLanguageChoices(TranslationOptions.targetLanguages(config.localTranslationModelId), uiText(UiR.string.ui_output_languages_supported_by_the_active_translator_a2090)))
+            targetChoices = com.sal7one.transiber.caption.CaptionLanguageChoices(TranslationOptions.targetLanguages(config.localTranslationModelId, config.streamLanguage), uiText(UiR.string.ui_output_languages_supported_by_the_active_translator_a2090)))
         val active = installed.firstOrNull { it.id == config.localTranslationModelId }
         Text(when {
             !config.localTranslationEnabled -> uiText(UiR.string.ui_original_language_cc_translation_model_stays_unloaded_4bd7f)

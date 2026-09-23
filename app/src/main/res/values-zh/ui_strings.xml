@@ -6,7 +6,7 @@
     <string name="ui_cannot_write_benchmark_results_a2d0d" formatted="false">"无法保存测试结果"</string>
     <string name="ui_results_exported_including_transcripts_8df04" formatted="false">"已导出结果及转写文本。"</string>
     <string name="ui_compare_local_models_62748" formatted="false">"比较本地模型"</string>
-    <string name="ui_use_the_same_recording_or_corrected_text_for_each_model_three_pas_a5005" formatted="false">"为每个模型使用同一录音或校正文本。每个模型运行三次，依次执行。不请求云端或自动下载。"</string>
+    <string name="ui_use_the_same_recording_or_corrected_text_for_each_model_three_pas_a5005" formatted="false">"在本机比较已安装模型。选择模型支持的任意语言，再使用快速样本或自己的 WAV／文本。每个模型运行三次；结果保存在本机，直到你导出。"</string>
     <string name="ui_1_s_language_2_s_a760d">"%1$s语言：%2$s"</string>
     <string name="ui_translate_to_1_s_f70dc">"翻译为：%1$s"</string>
     <string name="ui_forced_language_is_used_where_supported_vosk_always_uses_its_mode_86f53" formatted="false">"支持时将指定识别语言。Vosk 始终使用模型语言，请选择对应录音。"</string>
@@ -834,6 +834,10 @@
     <string name="benchmark_no_reference">没有参考文本 · 此结果仅比较速度。</string>
     <string name="benchmark_builtin_set">内置快速测试集</string>
     <string name="benchmark_custom_input">我的录音或文本</string>
+    <string name="benchmark_all_results">所有结果</string>
+    <string name="benchmark_this_language_pair">当前语言组合</string>
+    <string name="benchmark_this_language">当前语言</string>
+    <string name="benchmark_no_results_for_language">此语言选择暂无已保存的结果。</string>
     <string name="benchmark_suite_summary">六条简短、对齐的发布者样本，用于语音或翻译测试。语音测试还会检查两段静音。语言：阿拉伯语、英语、俄语、中文；翻译方向：阿↔英、俄→阿/英、中→阿/英。</string>
     <string name="benchmark_suite_attribution">FLEURS 测试数据 · CC BY 4.0 · Google / Conneau 等 · 自动文本相似度不等于人工质量评价。</string>
     <string name="benchmark_suite_pair_unavailable">内置测试集没有 %1$s → %2$s 的样本。请选择支持的语言对，或使用自己的文本。</string>

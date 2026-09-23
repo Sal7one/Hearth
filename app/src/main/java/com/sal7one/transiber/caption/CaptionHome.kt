@@ -99,7 +99,7 @@ fun CaptionHome(
             !com.sal7one.transiber.translation.PlatformTranslation.available else {
             val from = CaptionLanguages.effectiveSource(cfg, CloudConfigStore.sttMode(context), captionLanguageModel(context, cfg))
             cfg.localTranslationModelId !in translations ||
-                cfg.target.languageTag !in com.sal7one.transiber.translation.TranslationOptions.targetLanguages(cfg.localTranslationModelId) ||
+                cfg.target.languageTag !in com.sal7one.transiber.translation.TranslationOptions.targetLanguages(cfg.localTranslationModelId, cfg.streamLanguage) ||
                 (from !in setOf("auto", "model", "und", "mul", "") &&
                     !com.sal7one.transiber.translation.TranslationOptions.supports(cfg.localTranslationModelId, from, cfg.target.languageTag))
         }

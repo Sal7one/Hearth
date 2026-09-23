@@ -25,6 +25,7 @@ class TextModel {
     std::unique_ptr<llama_context, decltype(&llama_free)> context{nullptr, llama_free};
     std::chrono::steady_clock::time_point deadline;
     bool gemma = false;
+    bool rawPrompt = false;
     static bool abortDecode(void* p) {
         auto& self = *static_cast<TextModel*>(p);
         return self.cancelled.load() || std::chrono::steady_clock::now() >= self.deadline;
@@ -32,7 +33,7 @@ class TextModel {
 public:
     std::mutex mutex;
     std::atomic<bool> cancelled{false};
-    explicit TextModel(const std::string& path, int threads = 2, int gpuLayers = 0) {
+    explicit TextModel(const std::string& path, int threads = 2, int gpuLayers = 0, bool useRawPrompt = false) : rawPrompt(useRawPrompt) {
         static std::once_flag init;
         std::call_once(init, [] { llama_log_set(captureLog, nullptr); llama_backend_init(); });
         nativeError.clear();
@@ -44,6 +45,7 @@ public:
         llama_model_meta_val_str(model.get(), "general.architecture", architecture, sizeof(architecture));
         gemma = std::string(architecture) == "gemma3";
         if (!gemma && std::string(architecture) != "hunyuan-dense") throw std::runtime_error("Unsupported translation architecture: " + std::string(architecture));
+        if (rawPrompt && !gemma) throw std::runtime_error("Raw translation prompt requires a Gemma 3 model");
         auto cp = llama_context_default_params();
         cp.n_ctx = 2048; cp.n_batch = 128; cp.n_ubatch = 128;
         cp.n_threads = std::max(1, threads); cp.n_threads_batch = std::max(1, threads);
@@ -68,9 +70,13 @@ public:
             if (n < 0) throw std::runtime_error("llama_tokenize failed");
             tokens.resize(n); return tokens;
         };
-        auto tokens = tokenize(gemma ? "<bos><start_of_turn>user\n" : "<｜hy_begin▁of▁sentence｜><｜hy_User｜>", true, false);
+        std::vector<llama_token> tokens;
+        if (!rawPrompt) tokens = tokenize(gemma ? "<bos><start_of_turn>user\n" : "<｜hy_begin▁of▁sentence｜><｜hy_User｜>", true, false);
         auto content = tokenize(prompt, false, false); tokens.insert(tokens.end(), content.begin(), content.end());
-        auto suffix = tokenize(gemma ? "<end_of_turn>\n<start_of_turn>model\n" : "<｜hy_Assistant｜>", true, false); tokens.insert(tokens.end(), suffix.begin(), suffix.end());
+        if (!rawPrompt) {
+            auto suffix = tokenize(gemma ? "<end_of_turn>\n<start_of_turn>model\n" : "<｜hy_Assistant｜>", true, false);
+            tokens.insert(tokens.end(), suffix.begin(), suffix.end());
+        }
         constexpr int maxOutput = 384;
         if (tokens.size() + maxOutput > 2048) throw std::runtime_error("Caption exceeds the local translation context (2048 tokens)");
         llama_memory_clear(llama_get_memory(context.get()), true);

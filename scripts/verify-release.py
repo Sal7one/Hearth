@@ -75,6 +75,7 @@ for flavor in ['play','foss']:
                 symbols = subprocess.check_output([readelf, '--dyn-syms', '-W', file], text=True)
                 exports = [line.split()[-1] for line in symbols.splitlines() if re.search(r'\b(?:GLOBAL|WEAK)\s+DEFAULT\s+\d+\s+', line)]
                 assert exports and all(s.startswith('Java_com_sal7one_common_1jni_translation_LocalTranslationNative_') for s in exports), exports
+                assert 'Java_com_sal7one_common_1jni_translation_LocalTranslationNative_promptProtocolVersion' in exports, 'Translation JNI prompt protocol missing'
                 assert not needed & {'libvosk.so', 'libcommon_jni.so', 'libhearth_qwen.so', 'libhearth_nemotron.so'}, needed
             if file.name == 'libcommon_jni.so':
                 assert 'libvosk.so' not in needed, 'Vosk must remain behind its local C API loader: its exported static libc++ conflicts with speech plugins'

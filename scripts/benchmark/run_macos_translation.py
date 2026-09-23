@@ -35,6 +35,10 @@ def sha256_file(path):
 
 def make_prompt(text, family, source, target):
     to = NAMES.get(target, target)
+    if family == "milmmt-46":
+        from_name = "Chinese (Simplified)" if source == "zh" else NAMES.get(source, source)
+        to_name = "Chinese (Simplified)" if target == "zh" else to
+        return f"Translate this from {from_name} to {to_name}:\n{from_name}: {text.strip()}\n{to_name}:"
     if family == "hy-mt2":
         return f"Translate the following text into {to}. Note that you should only output the translated result without any additional explanation:\n\n{text}"
     if family == "translategemma":
@@ -125,7 +129,7 @@ def machine_name():
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--model", required=True, type=Path, help="already-downloaded GGUF file; weights are never fetched")
-    parser.add_argument("--family", choices=("hy-mt1.5", "hy-mt2", "translategemma"), required=True)
+    parser.add_argument("--family", choices=("hy-mt1.5", "hy-mt2", "translategemma", "milmmt-46"), required=True)
     parser.add_argument("--source", choices=tuple(NAMES), required=True)
     parser.add_argument("--target", choices=tuple(NAMES), required=True)
     parser.add_argument("--threads", type=int, default=2)
@@ -162,6 +166,8 @@ def main():
     input_bytes = b"".join(prompt.encode("utf-8") + b"\0" for _, _, prompt in ordered_prompts)
     command = [str(args.runtime), str(args.model), "--stream", str(args.threads), str(gpu_layers),
                "NUL-DELIMITED-STDIN", "STOP-ON-ERROR"]
+    if args.family == "milmmt-46":
+        command.append("RAW-PROMPT")
     hash_start = time.perf_counter()
     model_hash = sha256_file(args.model)
     verify_ms = (time.perf_counter() - hash_start) * 1000

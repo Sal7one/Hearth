@@ -18,6 +18,10 @@ class HostTranslationBenchmarkTests(unittest.TestCase):
             "将以下文本翻译为English，注意只需要输出翻译后的结果，不要额外解释：\n\n你好",
         )
         self.assertIn("Russian (ru) to Arabic (ar)", host.make_prompt("Hi", "translategemma", "ru", "ar"))
+        self.assertEqual("Translate this from Russian to Arabic:\nRussian: Привет\nArabic:",
+                         host.make_prompt(" Привет ", "milmmt-46", "ru", "ar"))
+        self.assertEqual("Translate this from Chinese (Simplified) to English:\nChinese (Simplified): 你好\nEnglish:",
+                         host.make_prompt("你好", "milmmt-46", "zh", "en"))
 
     def test_error_rates_and_sentence_chrf(self):
         self.assertEqual(0.0, host.error_rate("Hello, world!", "hello world"))

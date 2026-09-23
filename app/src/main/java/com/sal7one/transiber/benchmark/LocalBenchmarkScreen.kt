@@ -29,6 +29,7 @@ import com.sal7one.transiber.caption.LanguagePickerContent
 import com.sal7one.transiber.runtime.LocalWorkGate
 import kotlinx.coroutines.*
 import java.text.DateFormat
+import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
@@ -55,6 +56,7 @@ fun LocalBenchmarkScreen(onModels: () -> Unit = {}) {
     var text by rememberSaveable { mutableStateOf("") }
     var referenceText by rememberSaveable { mutableStateOf("") }
     var useBuiltInSet by rememberSaveable { mutableStateOf(true) }
+    var historyForPair by rememberSaveable { mutableStateOf(false) }
     var picker by remember { mutableStateOf<String?>(null) }
     var busy by remember { mutableStateOf(false) }
     var running by remember { mutableStateOf(false) }
@@ -84,8 +86,12 @@ fun LocalBenchmarkScreen(onModels: () -> Unit = {}) {
         suite?.selected(mode == "Speech", source, target, full = false).orEmpty()
     }
     fun supports(candidate: BenchmarkCandidate) = (source in candidate.sourceCodes || candidate.sourceCodes == setOf("model")) &&
-        (mode == "Speech" || (target in candidate.targetCodes && source != target))
+        (mode == "Speech" || (candidate.translation?.supports(source, target)
+            ?: (target in candidate.targetCodes && source != target)))
     val availableIds = visible.filter(::supports).map { it.id }
+    val displayedResults = results.filter { !historyForPair ||
+        (it.target.isNotBlank() == (mode == "Translation") && it.source == source &&
+            (mode == "Speech" || it.target == target)) }
     LaunchedEffect(mode, source, target, candidates) {
         // Empty is an intentional choice (Deselect all), including when a
         // newly installed model refreshes the list. Do not silently run the
@@ -158,9 +164,14 @@ fun LocalBenchmarkScreen(onModels: () -> Unit = {}) {
                     modifier = Modifier.padding(top = 4.dp))
                 Text(uiText(UiR.string.benchmark_suite_attribution), style = MaterialTheme.typography.labelSmall,
                     modifier = Modifier.padding(top = 4.dp), color = MaterialTheme.colorScheme.onSurfaceVariant)
-                if (builtInCases.isEmpty()) Text(uiText(UiR.string.benchmark_suite_pair_unavailable, source, target),
-                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.padding(top = 4.dp))
+                if (builtInCases.isEmpty()) {
+                    Text(uiText(UiR.string.benchmark_suite_pair_unavailable, source, target),
+                        style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.padding(top = 4.dp))
+                    TextButton({ useBuiltInSet = false }, enabled = !running && !busy) {
+                        Text(uiText(UiR.string.benchmark_custom_input))
+                    }
+                }
             }
             if (mode == "Speech") {
                 if (!useBuiltInSet) {
@@ -229,7 +240,7 @@ fun LocalBenchmarkScreen(onModels: () -> Unit = {}) {
                         } else emptyList()
                         runner.run(chosen, clip, text, referenceText.takeIf(String::isNotBlank), source, target,
                             benchmarkInputs = inputs, progress = { status = it }, onResult = { result ->
-                            results = (listOf(result) + results).take(40)
+                            results = (listOf(result) + results).take(BenchmarkResults.MAX_HISTORY)
                         })
                         status = uiText(UiR.string.ui_comparison_complete_review_accuracy_as_well_as_speed_16b3e)
                     } catch (e: CancellationException) { status = uiText(UiR.string.ui_comparison_stopped_completed_results_were_saved_7c2db); throw e }
@@ -252,18 +263,34 @@ fun LocalBenchmarkScreen(onModels: () -> Unit = {}) {
                 Text(uiText(UiR.string.ui_saved_results_5e7cc), style = MaterialTheme.typography.titleLarge)
                 Text(uiText(UiR.string.ui_stored_only_on_this_device_export_includes_recognized_and_transla_f23f5), style = MaterialTheme.typography.bodySmall)
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    TextButton({ export.launch("hearth-benchmark-results.json") }, enabled = !running) { Text(uiText(UiR.string.ui_export_results_fc7d7)) }
+                    TextButton({
+                        val name = "hearth-benchmarks-${SimpleDateFormat("yyyyMMdd-HHmmss", Locale.US).format(Date())}.json"
+                        export.launch(name)
+                    }, enabled = !running) { Text(uiText(UiR.string.ui_export_results_fc7d7)) }
                     TextButton({ scope.launch {
                         try { withContext(Dispatchers.IO) { store.clear() }; results = emptyList() }
                         catch (e: Exception) { error = e.message ?: e.toString() }
                     } }, enabled = !running) { Text(uiText(UiR.string.ui_clear_history_53b51)) }
                 }
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    FilterChip(!historyForPair, { historyForPair = false }, label = { Text(uiText(UiR.string.benchmark_all_results)) })
+                    FilterChip(historyForPair, { historyForPair = true }, label = {
+                        Text(uiText(if (mode == "Speech") UiR.string.benchmark_this_language else UiR.string.benchmark_this_language_pair))
+                    })
+                }
             }
-            items(results, key = { it.runId + it.identity }) { result -> BenchmarkResultCard(result) }
+            if (displayedResults.isEmpty()) item {
+                Text(uiText(UiR.string.benchmark_no_results_for_language), style = MaterialTheme.typography.bodyMedium)
+            }
+            items(displayedResults, key = { it.runId + it.identity }) { result -> BenchmarkResultCard(result) }
         }
     }
     picker?.let { which ->
-        val codes = (if (which == "target") visible.flatMap { it.targetCodes } else visible.flatMap { it.sourceCodes })
+        val candidatesForPicker = if (which == "target") visible.filter { source in it.sourceCodes || it.sourceCodes == setOf("model") } else visible
+        val codes = (if (which == "target") candidatesForPicker.flatMap { candidate ->
+            candidate.targetCodes.filter { code -> candidate.translation?.supports(source, code)
+                ?: (code != source && code in candidate.targetCodes) }
+        } else candidatesForPicker.flatMap { it.sourceCodes })
             .toSet().let { if (mode == "Translation") it - setOf("auto", "model") else it }
         Dialog({ picker = null }, properties = DialogProperties(usePlatformDefaultWidth = false)) {
             Surface(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding().imePadding()) {

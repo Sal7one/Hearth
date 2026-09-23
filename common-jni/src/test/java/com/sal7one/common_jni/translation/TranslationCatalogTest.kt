@@ -6,13 +6,26 @@ class TranslationCatalogTest {
   assertEquals(TranslationCatalog.models.size, TranslationCatalog.models.map { it.id }.toSet().size)
   TranslationCatalog.models.forEach {
    assertTrue(it.sha256.matches(Regex("[0-9a-f]{64}"))); assertTrue(it.revision.matches(Regex("[0-9a-f]{40}")))
-   assertTrue(it.supports("ru-RU", "ar")); assertTrue(it.supports("zh-CN", "en")); if (it.family != "translategemma") assertTrue(it.supports("tl", "ar"))
+   assertTrue(it.supports("ru-RU", "ar")); assertTrue(it.supports("zh-CN", "en")); if (it.family !in setOf("translategemma", "milmmt-46")) assertTrue(it.supports("tl", "ar"))
    assertFalse(it.supports("auto", "ar")); assertFalse(it.supports("mul", "en")); assertFalse(it.supports("xx", "ar"))
-   assertTrue(it.prompt("hello", "en", "ar").endsWith("\n\nhello"))
+   assertFalse(it.supports("ar", "ar"))
+   assertTrue(it.prompt("hello", "en", "ar").contains("hello"))
   }
  }
  @Test fun overlongCaptionIsRejectedBeforeNative() {
   try { TranslationCatalog.models.first().prompt("x".repeat(2001), "en", "ar"); fail("Too long") } catch (_: IllegalArgumentException) {}
+ }
+ @Test fun milmmtUsesPublishedRawPromptAndCoverage() {
+  val spec = TranslationCatalog.find("milmmt-46-1b-q4")
+  assertEquals(806057408L, spec.bytes)
+  assertEquals(851344832L, TranslationCatalog.find("milmmt-46-1b-q5").bytes)
+  assertEquals(spec.revision, TranslationCatalog.find("milmmt-46-1b-q5").revision)
+  assertEquals("Gemma terms", spec.license)
+  assertTrue(spec.supports("ru-RU", "ar"))
+  assertTrue(spec.supports("zh-CN", "en"))
+  assertEquals("Translate this from Russian to Arabic:\nRussian: Привет\nArabic:", spec.prompt(" Привет ", "ru", "ar"))
+  assertEquals("Translate this from Chinese (Simplified) to English:\nChinese (Simplified): 你好\nEnglish:", spec.prompt("你好", "zh", "en"))
+  assertFalse(spec.supports("ug", "ar"))
  }
  @Test fun hyMt2IncludesPinnedLowerFootprintChoicesFromOneImmutableRevision() {
   val variants = TranslationCatalog.models.filter { it.family == "hy-mt2" }

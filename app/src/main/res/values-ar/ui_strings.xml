@@ -6,7 +6,7 @@
     <string name="ui_cannot_write_benchmark_results_a2d0d" formatted="false">"تعذّر حفظ نتائج المقارنة"</string>
     <string name="ui_results_exported_including_transcripts_8df04" formatted="false">"تم تصدير النتائج مع النصوص."</string>
     <string name="ui_compare_local_models_62748" formatted="false">"مقارنة النماذج المحلية"</string>
-    <string name="ui_use_the_same_recording_or_corrected_text_for_each_model_three_pas_a5005" formatted="false">"استخدم التسجيل أو النص المصحح نفسه لكل نموذج. ثلاث جولات لكل نموذج، بالتتابع. لا طلبات سحابية ولا تنزيل تلقائي."</string>
+    <string name="ui_use_the_same_recording_or_corrected_text_for_each_model_three_pas_a5005" formatted="false">"قارن النماذج المثبّتة على هذا الهاتف. اختر أي لغة تدعمها، ثم استخدم العينات السريعة أو ملف WAV أو نصك. ثلاث جولات لكل نموذج؛ تبقى النتائج على الجهاز حتى تصدّرها."</string>
     <string name="ui_1_s_language_2_s_a760d">"لغة %1$s: %2$s"</string>
     <string name="ui_translate_to_1_s_f70dc">"الترجمة إلى: %1$s"</string>
     <string name="ui_forced_language_is_used_where_supported_vosk_always_uses_its_mode_86f53" formatted="false">"تُفرض اللغة عند دعمها. يستخدم Vosk لغة النموذج دائمًا. اختر تسجيلًا مطابقًا."</string>
@@ -834,6 +834,10 @@
     <string name="benchmark_no_reference">لا يوجد نص مرجعي · هذه النتيجة تقارن السرعة فقط.</string>
     <string name="benchmark_builtin_set">مجموعة اختبار سريعة مدمجة</string>
     <string name="benchmark_custom_input">تسجيل أو نص خاص بي</string>
+    <string name="benchmark_all_results">كل النتائج</string>
+    <string name="benchmark_this_language_pair">هذا الزوج اللغوي</string>
+    <string name="benchmark_this_language">هذه اللغة</string>
+    <string name="benchmark_no_results_for_language">لا توجد نتائج محفوظة لهذا الاختيار اللغوي.</string>
     <string name="benchmark_suite_summary">ست عينات قصيرة ومتطابقة من بيانات الناشر للكلام أو الترجمة. يتضمن اختبار الكلام مقطعين صامتين. اللغات: العربية والإنجليزية والروسية والصينية؛ أزواج الترجمة: العربية↔الإنجليزية، الروسية→العربية/الإنجليزية، الصينية→العربية/الإنجليزية.</string>
     <string name="benchmark_suite_attribution">بيانات اختبار FLEURS · رخصة CC BY 4.0 · Google / Conneau وآخرون · تشابه النص آلي وليس تقييماً بشرياً للجودة.</string>
     <string name="benchmark_suite_pair_unavailable">لا تتوفر عينات مدمجة للزوج %1$s → %2$s. اختر زوج لغات مدعوماً أو استخدم نصك.</string>
