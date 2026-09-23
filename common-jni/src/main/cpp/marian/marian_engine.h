@@ -42,14 +42,14 @@ namespace marian {
  *   - Only the present.N.decoder.* tensors are fed back, step after step.
  *   - logits are [1, 1, vocab]; the pad id (62801) is masked to -inf
  *     (generation_config bad_words_ids) before greedy argmax; stop at the
- *     </s> id (0) or kMaxNewTokens.
+ *     </s> id (0) or the configured output-token limit.
  *
  * All failures are reported through status strings; nothing throws across
  * the public API (see the JNI caller).
  */
 class MarianEngine {
 public:
-    static constexpr int64_t kMaxNewTokens = 64;
+    static constexpr int64_t kMaxNewTokens = 128;
     static constexpr int kHeads = 8;
     static constexpr int kLayers = 6;
     static constexpr int kHeadDim = 64;
@@ -83,10 +83,15 @@ public:
      */
     static std::unique_ptr<MarianEngine> create(const std::string& modelDir,
                                                 int numThreads,
-                                                std::string* error);
+                                                std::string* error,
+                                                int maxNewTokens = kMaxNewTokens,
+                                                int deadlineMs = 20000);
 
     /** Translates one caption utterance. Blocking; thread-safe. */
     TranslateResult translate(const std::string& text);
+
+    /** Permanently cancels this session, including an ONNX Run in progress. */
+    void cancel() noexcept;
 
     /** Latency of the most recent successful translation, in milliseconds. */
     int64_t lastLatencyMs() const {
@@ -114,11 +119,19 @@ private:
     bool decodeLoop(const std::vector<float>& hidden, size_t encLen,
                     std::vector<int64_t>& decodedIds, std::string* error);
     bool setError(std::string* error, const std::string& message) const;
+    bool interrupted(std::string* error) const;
+    void terminateRun(bool timeout) noexcept;
 
     // Persistent ORT handles.
     const OrtApi* api_ = nullptr;
     OrtEnv* env_ = nullptr;
     OrtSessionOptions* options_ = nullptr;
+    OrtRunOptions* runOptions_ = nullptr;
+    mutable std::mutex runOptionsMutex_;
+    std::atomic<bool> cancelled_{false};
+    std::atomic<bool> timedOut_{false};
+    int maxNewTokens_ = 64;
+    int deadlineMs_ = 20000;
     OrtMemoryInfo* memoryInfo_ = nullptr;
     OrtAllocator* allocator_ = nullptr;
     OrtSession* encoderSession_ = nullptr;

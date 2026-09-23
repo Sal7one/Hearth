@@ -19,6 +19,7 @@
 #include "../common/logging.h"
 #include "../jni/jni_helper.h"
 #include "marian_engine.h"
+#include "../common/lease_registry.h"
 
 #if defined(MARIAN_AVAILABLE) && MARIAN_AVAILABLE
 #define MARIAN_COMPILED 1
@@ -30,12 +31,7 @@ static const char* TAG = "MarianJNI";
 
 namespace {
 
-std::mutex g_handlesMutex;
-int64_t g_nextHandle = 1;
-// shared_ptr so a translate in flight keeps its engine alive while
-// nativeRelease erases the map entry; the global mutex never guards a
-// whole decode (release would stall behind inference).
-std::map<int64_t, std::shared_ptr<stt::marian::MarianEngine>> g_engines;
+stt::concurrency::LeaseRegistry<stt::marian::MarianEngine> g_engines;
 
 void clearError() {
     stt::ThreadLocalError::get().clear();
@@ -44,12 +40,6 @@ void clearError() {
 void setError(stt::ErrorCode code, const std::string& message) {
     stt::ThreadLocalError::get().set(code, message);
     LOG_E(TAG, "%s", message.c_str());
-}
-
-stt::marian::MarianEngine* getEngine(int64_t handle) {
-    std::lock_guard<std::mutex> lock(g_handlesMutex);
-    auto it = g_engines.find(handle);
-    return it == g_engines.end() ? nullptr : it->second.get();
 }
 
 }  // namespace
@@ -92,10 +82,7 @@ Java_com_sal7one_common_1jni_marian_MarianNative_nativeCreate(
             return 0;
         }
 
-        std::lock_guard<std::mutex> lock(g_handlesMutex);
-        const int64_t handle = g_nextHandle++;
-        g_engines.emplace(
-            handle, std::shared_ptr<stt::marian::MarianEngine>(std::move(engine)));
+        const int64_t handle = g_engines.insert(std::move(engine));
         LOG_I(TAG, "Created translation engine (handle %lld)",
               static_cast<long long>(handle));
         return handle;
@@ -122,18 +109,11 @@ Java_com_sal7one_common_1jni_marian_MarianNative_nativeTranslate(
             return nullptr;
         }
 
-        std::shared_ptr<stt::marian::MarianEngine> engine;
-        {
-            std::lock_guard<std::mutex> lock(g_handlesMutex);
-            auto it = g_engines.find(handle);
-            if (it == g_engines.end()) {
-                setError(stt::ErrorCode::INVALID_HANDLE, "Invalid engine handle");
-                return nullptr;
-            }
-            engine = it->second;
+        auto engine = g_engines.acquire(handle);
+        if (!engine) {
+            setError(stt::ErrorCode::INVALID_HANDLE, "Invalid engine handle");
+            return nullptr;
         }
-        // Decode outside the registry lock: concurrent release waits only for
-        // the map swap, never for inference.
         const auto result = engine->translate(text.str());
         if (!result.ok) {
             setError(stt::ErrorCode::ENGINE_INFERENCE_FAILED,
@@ -158,7 +138,7 @@ JNIEXPORT jlong JNICALL
 Java_com_sal7one_common_1jni_marian_MarianNative_nativeLastLatencyMs(
     JNIEnv* /*env*/, jobject /*thiz*/, jlong handle
 ) {
-    stt::marian::MarianEngine* engine = getEngine(handle);
+    auto engine = g_engines.acquire(handle);
     return engine ? engine->lastLatencyMs() : -1;
 }
 
@@ -166,12 +146,48 @@ JNIEXPORT void JNICALL
 Java_com_sal7one_common_1jni_marian_MarianNative_nativeRelease(
     JNIEnv* /*env*/, jobject /*thiz*/, jlong handle
 ) {
-    std::lock_guard<std::mutex> lock(g_handlesMutex);
-    const size_t removed = g_engines.erase(handle);
-    if (removed > 0) {
-        LOG_I(TAG, "Released translation engine (handle %lld)",
-              static_cast<long long>(handle));
+    auto retired = g_engines.retire(handle);
+    if (auto* engine = retired.signalTarget()) engine->cancel();
+    // Return only when the old inference and statistics leases have drained.
+    auto cleanup = std::move(retired).lockExclusive();
+}
+
+JNIEXPORT void JNICALL
+Java_com_sal7one_common_1jni_marian_MarianNative_nativeCancel(JNIEnv*, jobject, jlong handle) {
+    auto engine = g_engines.acquire(handle);
+    if (engine) engine->cancel();
+}
+
+JNIEXPORT jlongArray JNICALL
+Java_com_sal7one_common_1jni_marian_MarianNative_nativeLastStats(JNIEnv* env, jobject, jlong handle) {
+    auto engine = g_engines.acquire(handle);
+    if (!engine) return nullptr;
+    const auto stats = engine->lastStageStats();
+    const jlong values[] = {stats.tokenizeMs, stats.encoderMs, stats.decoderMs,
+        stats.tokensDecoded, engine->lastLatencyMs()};
+    auto result = env->NewLongArray(5);
+    if (result) env->SetLongArrayRegion(result, 0, 5, values);
+    return result;
+}
+
+JNIEXPORT jlong JNICALL
+Java_com_sal7one_common_1jni_marian_MarianNative_nativeCreateConfigured(
+    JNIEnv* env, jobject, jstring jModelDir, jint threads, jint maxTokens, jint deadlineMs) {
+    clearError();
+    if (!MARIAN_COMPILED) {
+        setError(stt::ErrorCode::ENGINE_CREATE_FAILED,
+                 "Marian translation runtime is not compiled into this build");
+        return 0;
     }
+    try {
+        jni::JStringGuard dir(env, jModelDir);
+        if (!dir.valid()) { setError(stt::ErrorCode::INVALID_ARGUMENT, dir.error()); return 0; }
+        std::string error;
+        auto engine = stt::marian::MarianEngine::create(dir.str(), threads, &error, maxTokens, deadlineMs);
+        if (!engine) { setError(stt::ErrorCode::ENGINE_CREATE_FAILED, error); return 0; }
+        return g_engines.insert(std::move(engine));
+    } catch (const std::exception& e) { setError(stt::ErrorCode::ENGINE_CREATE_FAILED, e.what()); return 0; }
+    catch (...) { setError(stt::ErrorCode::ENGINE_CREATE_FAILED, "Unknown Marian initialization failure"); return 0; }
 }
 
 JNIEXPORT jstring JNICALL

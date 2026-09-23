@@ -8,11 +8,35 @@
 #include <cstring>
 #include <fstream>
 #include <limits>
+#include <condition_variable>
+#include <functional>
+#include <thread>
 
 namespace stt {
 namespace marian {
 
 namespace {
+
+// The timer interrupts even one long ORT Run. Joining before returning prevents
+// a late timeout from poisoning the next request or touching a retired engine.
+class RunDeadline {
+    std::mutex mutex_;
+    std::condition_variable condition_;
+    bool finished_ = false;
+    std::thread timer_;
+public:
+    RunDeadline(int milliseconds, std::function<void()> expire)
+        : timer_([this, milliseconds, expire = std::move(expire)] {
+            std::unique_lock<std::mutex> lock(mutex_);
+            if (!condition_.wait_for(lock, std::chrono::milliseconds(milliseconds),
+                                     [this] { return finished_; })) expire();
+        }) {}
+    ~RunDeadline() {
+        { std::lock_guard<std::mutex> lock(mutex_); finished_ = true; }
+        condition_.notify_one();
+        timer_.join();
+    }
+};
 
 constexpr const char* kEncoderInputNames[2] = {"input_ids", "attention_mask"};
 constexpr const char* kEncoderOutputNames[1] = {"last_hidden_state"};
@@ -114,6 +138,7 @@ MarianEngine::~MarianEngine() {
         if (decoderSession_) api_->ReleaseSession(decoderSession_);
         if (allocator_) api_->ReleaseAllocator(allocator_);
         if (memoryInfo_) api_->ReleaseMemoryInfo(memoryInfo_);
+        if (runOptions_) api_->ReleaseRunOptions(runOptions_);
         if (options_) api_->ReleaseSessionOptions(options_);
         if (env_) api_->ReleaseEnv(env_);
     }
@@ -140,8 +165,16 @@ bool MarianEngine::loadSession(const std::string& path, OrtSession** session,
 
 std::unique_ptr<MarianEngine> MarianEngine::create(const std::string& modelDir,
                                                    int numThreads,
-                                                   std::string* error) {
+                                                   std::string* error,
+                                                   int maxNewTokens, int deadlineMs) {
     auto engine = std::unique_ptr<MarianEngine>(new MarianEngine());
+    if (numThreads < 1 || numThreads > 8 || maxNewTokens < 1 || maxNewTokens > 384 ||
+        deadlineMs < 100 || deadlineMs > 60000) {
+        engine->setError(error, "Invalid Marian runtime options");
+        return nullptr;
+    }
+    engine->maxNewTokens_ = maxNewTokens;
+    engine->deadlineMs_ = deadlineMs;
     if (!engine->init(modelDir, numThreads, error)) return nullptr;
     return engine;
 }
@@ -204,6 +237,13 @@ bool MarianEngine::init(const std::string& modelDir, int numThreads,
                               (msg ? msg : "unknown error");
         api_->ReleaseStatus(status);
         return setError(error, message);
+    }
+
+    status = api_->CreateRunOptions(&runOptions_);
+    if (status) {
+        const std::string message = api_->GetErrorMessage(status);
+        api_->ReleaseStatus(status);
+        return setError(error, "CreateRunOptions failed: " + message);
     }
 
     status = api_->SetSessionGraphOptimizationLevel(options_, ORT_ENABLE_ALL);
@@ -323,7 +363,7 @@ bool MarianEngine::runEncoder(const std::vector<int64_t>& ids,
     const char* inputNames[2] = {kEncoderInputNames[0], kEncoderInputNames[1]};
     const char* outputNames[1] = {kEncoderOutputNames[0]};
 
-    status = api_->Run(encoderSession_, nullptr, inputNames, inputs, 2,
+    status = api_->Run(encoderSession_, runOptions_, inputNames, inputs, 2,
                        outputNames, 1, outputs);
     if (status) {
         const char* msg = api_->GetErrorMessage(status);
@@ -450,7 +490,7 @@ bool MarianEngine::decodeLoop(const std::vector<float>& hidden, size_t encLen,
             }
         }
 
-        status = api_->Run(decoderSession_, nullptr, inputNames_.data(),
+        status = api_->Run(decoderSession_, runOptions_, inputNames_.data(),
                            inputs.data(), static_cast<size_t>(kDecoderInputCount),
                            outputNames_.data(),
                            static_cast<size_t>(kDecoderOutputCount),
@@ -529,7 +569,7 @@ bool MarianEngine::decodeLoop(const std::vector<float>& hidden, size_t encLen,
 
     const int64_t branchShape[1] = {1};
     uint8_t branchTrue = 1;
-    for (int64_t step = 1; step < kMaxNewTokens && token != eosId_; ++step) {
+    for (int64_t step = 1; step < maxNewTokens_ && token != eosId_; ++step) {
         decInput_.assign(1, token);
         const int64_t shape[2] = {1, 1};
         OrtValue* inputIds = nullptr;
@@ -629,7 +669,7 @@ bool MarianEngine::decodeLoop(const std::vector<float>& hidden, size_t encLen,
             }
         }
 
-        status = api_->Run(decoderSession_, nullptr, inputNames_.data(),
+        status = api_->Run(decoderSession_, runOptions_, inputNames_.data(),
                            inputs.data(), static_cast<size_t>(kDecoderInputCount),
                            outputNames_.data(),
                            static_cast<size_t>(kDecoderOutputCount),
@@ -695,13 +735,44 @@ bool MarianEngine::decodeLoop(const std::vector<float>& hidden, size_t encLen,
         if (token != eosId_) decodedIds.push_back(token);
     }
 
+    if (interrupted(error)) return false;
+    if (token != eosId_) return setError(error, "Marian translation exceeded " +
+        std::to_string(maxNewTokens_) + " output tokens; incomplete text was not published");
     return true;
+}
+
+void MarianEngine::terminateRun(bool timeout) noexcept {
+    std::lock_guard<std::mutex> lock(runOptionsMutex_);
+    if (timeout) timedOut_.store(true); else cancelled_.store(true);
+    if (api_ && runOptions_) {
+        if (auto* status = api_->RunOptionsSetTerminate(runOptions_)) api_->ReleaseStatus(status);
+    }
+}
+void MarianEngine::cancel() noexcept { terminateRun(false); }
+bool MarianEngine::interrupted(std::string* error) const {
+    if (cancelled_.load()) { setError(error, "Marian translation cancelled"); return true; }
+    if (timedOut_.load()) { setError(error, "Marian translation exceeded " + std::to_string(deadlineMs_) + " ms"); return true; }
+    return false;
 }
 
 MarianEngine::TranslateResult MarianEngine::translate(const std::string& text) {
     TranslateResult result;
     std::lock_guard<std::mutex> lock(mutex_);
     const auto start = std::chrono::steady_clock::now();
+    {
+        std::lock_guard<std::mutex> optionsLock(runOptionsMutex_);
+        if (cancelled_.load()) { result.error = "Marian translation cancelled"; return result; }
+        timedOut_.store(false);
+        if (api_ && runOptions_) {
+            if (auto* status = api_->RunOptionsUnsetTerminate(runOptions_)) {
+                result.error = api_->GetErrorMessage(status); api_->ReleaseStatus(status); return result;
+            }
+        }
+    }
+    RunDeadline deadline(deadlineMs_, [this] { terminateRun(true); });
+    if (text.empty() || text.size() > 12000) {
+        result.error = "Marian translation accepts 1–12000 UTF-8 bytes"; return result;
+    }
 
     if (!encoderSession_ || !decoderSession_) {
         result.error = "engine is not initialized";
@@ -721,6 +792,8 @@ MarianEngine::TranslateResult MarianEngine::translate(const std::string& text) {
         return result;
     }
 
+    if (encoded.ids.size() > 512) { result.error = "Marian input exceeds 512 tokens"; return result; }
+    if (interrupted(&result.error)) return result;
     const size_t encLen = encoded.ids.size();
     encIds_ = encoded.ids;
     attention_.assign(encLen, 1);
@@ -729,6 +802,7 @@ MarianEngine::TranslateResult MarianEngine::translate(const std::string& text) {
     const auto encoderStart = std::chrono::steady_clock::now();
     if (!runEncoder(encIds_, hidden_, &error)) {
         result.error = error;
+        interrupted(&result.error);
         return result;
     }
     result.stages.encoderMs = std::chrono::duration_cast<std::chrono::milliseconds>(
@@ -738,13 +812,16 @@ MarianEngine::TranslateResult MarianEngine::translate(const std::string& text) {
     const auto decoderStart = std::chrono::steady_clock::now();
     if (!decodeLoop(hidden_, encLen, decodedIds, &error)) {
         result.error = error;
+        interrupted(&result.error);
         return result;
     }
     result.stages.decoderMs = std::chrono::duration_cast<std::chrono::milliseconds>(
         std::chrono::steady_clock::now() - decoderStart).count();
     result.stages.tokensDecoded = static_cast<int64_t>(decodedIds.size());
 
+    if (interrupted(&result.error)) return result;
     result.text = tokenizer_.decode(decodedIds);
+    if (result.text.empty()) { result.error = "Marian translation returned empty text"; return result; }
     const auto end = std::chrono::steady_clock::now();
     result.latencyMs = std::chrono::duration_cast<std::chrono::milliseconds>(
                            end - start)

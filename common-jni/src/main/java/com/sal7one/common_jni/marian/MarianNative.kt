@@ -20,6 +20,10 @@ internal object MarianNative {
     /** Latency of the most recent successful translation, in milliseconds. */
     external fun nativeLastLatencyMs(handle: Long): Long
 
+    external fun nativeCreateConfigured(modelDir: String, threads: Int, maxTokens: Int, deadlineMs: Int): Long
+
+    external fun nativeCancel(handle: Long)
+    external fun nativeLastStats(handle: Long): LongArray?
     external fun nativeRelease(handle: Long)
 
     external fun nativeGetLastError(): String?

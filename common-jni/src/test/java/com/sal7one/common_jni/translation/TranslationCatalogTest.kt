@@ -14,6 +14,13 @@ class TranslationCatalogTest {
  @Test fun overlongCaptionIsRejectedBeforeNative() {
   try { TranslationCatalog.models.first().prompt("x".repeat(2001), "en", "ar"); fail("Too long") } catch (_: IllegalArgumentException) {}
  }
+ @Test fun hyMt2IncludesPinnedLowerFootprintChoicesFromOneImmutableRevision() {
+  val variants = TranslationCatalog.models.filter { it.family == "hy-mt2" }
+  assertTrue(variants.any { it.id == "hy-mt2-q2" && it.bytes < 800_000_000L })
+  assertTrue(variants.any { it.id == "hy-mt2-q3km" && it.bytes < 1_000_000_000L })
+  assertEquals(1, variants.filter { it.id in setOf("hy-mt2-q2", "hy-mt2-q3km") }.map { it.revision }.distinct().size)
+  assertTrue(variants.all { it.sha256.matches(Regex("[0-9a-f]{64}")) })
+ }
     @org.junit.Test fun gemmaUsesItsOwnDirectionsAndTemplate() {
         val spec = TranslationCatalog.find("translategemma-4b-q4")
         org.junit.Assert.assertTrue(spec.supports("ru", "ar"))

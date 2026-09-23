@@ -11,6 +11,14 @@ FLAGS=(-DCMAKE_BUILD_TYPE=Release -DLLAMA_SOURCE="$WORK/llama.cpp" -DCPP="$REPO/
 if [ "$PLATFORM" = android ]; then
  NDK="${ANDROID_NDK_HOME:-$HOME/Library/Android/sdk/ndk/27.0.12077973}"
  FLAGS+=(-DCMAKE_TOOLCHAIN_FILE="$NDK/build/cmake/android.toolchain.cmake" -DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM=android-28 -DANDROID_STL=c++_shared -DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON)
-elif [ "$PLATFORM" != host ]; then echo 'Expected android or host' >&2; exit 2; fi
+elif [ "$PLATFORM" = host ]; then
+ if [[ "$(uname -s)" == "Darwin" ]] && command -v xcrun >/dev/null 2>&1 && xcrun --find metal >/dev/null 2>&1; then
+  FLAGS+=(-DHEARTH_HOST_METAL=ON)
+  echo 'Building host translation runtime with Metal.'
+ else
+  FLAGS+=(-DHEARTH_HOST_METAL=OFF)
+  echo 'Metal compiler unavailable; building the host translation runtime for CPU.'
+ fi
+else echo 'Expected android or host' >&2; exit 2; fi
 cmake -S "$REPO/scripts/translation" -B "$WORK/$PLATFORM" "${FLAGS[@]}"
 cmake --build "$WORK/$PLATFORM" -j 4

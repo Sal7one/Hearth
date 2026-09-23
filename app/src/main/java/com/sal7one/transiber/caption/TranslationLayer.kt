@@ -157,6 +157,10 @@ class OnnxMarianTranslator(
         return when (val outcome = active.translate(text)) {
             is MarianTranslatorEngine.Outcome.Translated -> {
                 Log.i(TAG, "Native translate took ${outcome.latencyMs} ms for ${text.length} chars")
+                outcome.stages?.let { stats ->
+                    Log.i(TAG, "Marian stages: tokenize=${stats.tokenizeMs} ms, encoder=${stats.encoderMs} ms, " +
+                        "decoder=${stats.decoderMs} ms, output=${stats.tokensDecoded} tokens")
+                }
                 TranslationResult.Translated(outcome.text)
             }
 
@@ -186,13 +190,13 @@ class OnnxMarianTranslator(
             engine?.close()
             engine = null
             engineModelPath = null
-            val created = runCatching {
-                MarianTranslatorEngine.create(directory.absolutePath)
-            }.getOrNull()
+            val attempt = runCatching { MarianTranslatorEngine.create(directory.absolutePath) }
+            val created = attempt.getOrNull()
             if (created == null) {
+                val cause = attempt.exceptionOrNull()?.message ?: MarianTranslatorEngine.lastError()
                 lastUnavailability =
                     "The imported translation model could not be loaded (" +
-                        "${MarianTranslatorEngine.lastError()}). Re-import the model folder " +
+                        "$cause). Re-import the model folder " +
                         "with source.spm, tokenizer.json, encoder_model_quantized.onnx and " +
                         "decoder_model_merged_quantized.onnx."
                 return null

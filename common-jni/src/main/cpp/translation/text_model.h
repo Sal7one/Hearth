@@ -1,5 +1,6 @@
 #pragma once
 #include "llama.h"
+#include <algorithm>
 #include <atomic>
 #include <chrono>
 #include <memory>
@@ -31,12 +32,12 @@ class TextModel {
 public:
     std::mutex mutex;
     std::atomic<bool> cancelled{false};
-    explicit TextModel(const std::string& path) {
+    explicit TextModel(const std::string& path, int threads = 2, int gpuLayers = 0) {
         static std::once_flag init;
         std::call_once(init, [] { llama_log_set(captureLog, nullptr); llama_backend_init(); });
         nativeError.clear();
         auto mp = llama_model_default_params();
-        mp.n_gpu_layers = 0;
+        mp.n_gpu_layers = gpuLayers;
         model.reset(llama_model_load_from_file(path.c_str(), mp));
         if (!model) throw failure("llama_model_load_from_file failed: " + path);
         char architecture[128]{};
@@ -45,7 +46,7 @@ public:
         if (!gemma && std::string(architecture) != "hunyuan-dense") throw std::runtime_error("Unsupported translation architecture: " + std::string(architecture));
         auto cp = llama_context_default_params();
         cp.n_ctx = 2048; cp.n_batch = 128; cp.n_ubatch = 128;
-        cp.n_threads = 2; cp.n_threads_batch = 2;
+        cp.n_threads = std::max(1, threads); cp.n_threads_batch = std::max(1, threads);
         context.reset(llama_init_from_model(model.get(), cp));
         if (!context) throw failure("llama_init_from_model failed");
         llama_set_abort_callback(context.get(), abortDecode, this);

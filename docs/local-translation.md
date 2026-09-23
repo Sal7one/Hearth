@@ -8,8 +8,10 @@ is a separate text model; it never changes the ASR model's language capabilities
 1. Import/select Qwen or Nemotron in Models. Expand **CC language support** to
    see the speech model's supported languages.
 2. Under **Local translation bridge**, choose ML Kit language packs (play only),
-   an existing HY model, or TranslateGemma. HY Q4_K_M is 1080 MiB; Q6_K is
-   1406 MiB; Q8_0 is 1820 MiB. TranslateGemma Q4_K_M is 2.49 GB.
+   a Hy-MT2, HY-MT1.5 model, or TranslateGemma. Hy-MT2 now offers Q2_K (about
+   741 MiB), Q3_K_M (about 907 MiB), Q4_K_M (1080 MiB), Q6_K (1406 MiB), and
+   Q8_0 (1820 MiB). Smaller quants save storage; they are not presumed to improve
+   speed or translation quality. TranslateGemma Q4_K_M is 2.49 GB.
    Weights are separate from the APK. Total RAM also includes both inference
    contexts and speech weights.
 3. Download using the model button (network-enabled build), then tap **Install
@@ -36,8 +38,10 @@ integrated translation take priority over a remembered local bridge preference.
 
 ## Models and coverage
 
-The current runtime supports the publisher's HY-MT1.5 1.8B and Hy-MT2 1.8B GGUFs
-in Q4_K_M, Q6_K and Q8_0. Both are translation-specialized Hunyuan models. Their
+The current runtime supports the publisher's HY-MT1.5 1.8B GGUFs in Q4_K_M,
+Q6_K and Q8_0, and Hy-MT2 1.8B in Q2_K, Q3_K_M, Q4_K_M, Q6_K and Q8_0. The
+Q2/Q3 files are ordinary GGUF conversions pinned by exact revision and hash;
+they use the same supported Hunyuan adapter. Both families are translation-specialized models. Their
 catalogues publish mutual translation across 33 languages plus variants; the UI
 lists the supported normalized language set. Chinese script variants share the
 zh route here; there is no separate Traditional Chinese output selector.
@@ -100,6 +104,9 @@ build/translation-runtime/host/translation_smoke MODEL.gguf 'Translate the follo
 The weather is pleasant today.'
 ```
 
+For six aligned reference samples with timings and automatic WER/CER/chrF++
+scores, see [the macOS/phone benchmark instructions](local-benchmark.md#run-speech-and-translation-samples-on-macos).
+
 llama.cpp revision and adapter hashes are recorded in
 `common-jni/src/main/assets/licenses/translation/runtime-build.json`. Source
 checkouts and weights stay in ignored build directories. Normal APK builds use
@@ -140,6 +147,12 @@ runtime does not include that kernel. The advertised 440 MB footprint is a
 publisher claim for this special artifact, not the size of our Q4 model or a
 measured Android performance result. It is an integration candidate, not an
 available download option in Hearth.
+
+Hy-MT2 Q2_K and Q3_K_M are catalogued from the pinned
+[community conversion revision](https://huggingface.co/mradermacher/Hy-MT2-1.8B-GGUF/tree/d760e9708bbded7cee9aa135b4f1dedb42ed2fc4).
+Their hashes and lengths were verified against the model repository. Smaller
+artifacts may trade translation quality for storage; use the in-app quick
+reference set and review each output before choosing one for live captions.
 
 Nemotron now requests an endpoint after four seconds of decoded speech with a
 nonempty transcript, in addition to natural endpoints. This gives the final-only
