@@ -12,9 +12,9 @@ auditable.
   upstream source, or a recorded phone/host result. **Proven** means shown from
   code or artifacts. **Hypothesis** means the mechanism is real but the size of
   the effect needs measurement.
-- Not done in this pass: no Gradle or full host suites were run (the owner asked
-  for review, not runs; the baseline runs I started were stopped). No device was
-  used. Only the targeted host tests for the patches in §6 were run.
+- Initial pass: no Gradle or full host suites were run. Phase 0 on
+  2026-09-24 ran the host, Gradle, QA-build and release-verifier checks in §6.
+  No device or paid provider was used.
 - The original `ffmpegmakercustom` repo is not on this machine at the given path.
   The only copies found are a 2025-09-06 git clone
   (`~/AndroidStudioProjects/whisperIME/ffmpegmakercustom`) and an April 2026
@@ -26,22 +26,22 @@ auditable.
 ## 0. Start here — handoff for the next agent (updated 2026-09-24)
 
 **Focus order (owner, 2026-09-24):** utils (`common/`, `jni/`), `speech/`,
-`translation/`, `ffmpeg/`, `audio/` come first. **Nothing is dropped.**
+`translation/`, `audio/`, `ffmpeg/` come first. **Nothing is dropped.**
 Everything else stays recorded and tracked in the *Later queue* below, with
 its findings and its unread files, and is reviewed after the focus areas.
 Whisper is in the Later queue because it is heavy for real-time mobile use
 (candidate for a future notes-transcription app); so are Vosk and the legacy
 `IEngine`/`EngineRouter`/`SttEngine` stack.
 
-**Branch and state:** `review/common-jni-audit` (pushed, HEAD `91b2a3c`).
-Commit `1768a12` holds patches A–E (§6); `91b2a3c` merges upstream `6ad8305`.
-This file has uncommitted appends. Local `codex/model-phase` is one commit
-behind `origin`.
+**Branch and state:** `review/common-jni-audit` at the start of this session:
+`02aa830` (pushed). Commit `1768a12` holds patches A–E (§6); `91b2a3c`
+merges upstream `6ad8305`; `02aa830` adds this review log.
 
-**Environment:** host tests must use `CXX=/opt/homebrew/opt/llvm/bin/clang++`
-(Xcode-beta's ASan hangs every binary; see Log E1). The owner asked for review,
-not long runs: run only the targeted host test for any change, and no device
-use (AGENTS.md).
+**Environment:** the original reviewer's Mac needed Homebrew Clang because
+its Xcode-beta ASan hung (Log E1). On this Mac that path is absent; an
+ASan hello-world probe and both host suites passed with
+`CXX=/usr/bin/clang++`. Use the compiler verified on the current host.
+Run the AGENTS.md gates before each code commit; no device or paid calls.
 
 **Rules for this file:** append findings with evidence (file:line, probe,
 upstream source); mark fixed items **Resolved (commit)** instead of deleting; never drop an item —
@@ -410,6 +410,16 @@ hygiene, or a smaller speed loss.
   worker first so its Operation is released, pause, reset, release the pause,
   then start the worker. It still returns `false` only when a batch/finalize
   call is active or the engine is closing.
+- **Review finding (2026-09-24):** D needs changes before treating F11 as
+  resolved. `stopWorker()` sets `workerStop`, but the decode abort callback
+  calls `checkCancelled()` (`whisper_engine.cpp:603-605,646-652`), which does
+  not observe that flag. `safeReset()` joins before `tryPause()` (`:331-349`),
+  so Clear can wait for a whole in-flight decode. `finalize()` calls
+  `stopWorker()`/`startWorker()` without `transitionMutex` (`:1054-1055,1115`),
+  racing reset's join/restart for native callers outside the Kotlin dispatcher.
+  A separate proposed fix exists at `7b44a00` on
+  `codex/whisper-reset-lifecycle`; it is **not merged** because Whisper is in
+  the Later queue and this branch's focus order is controlled by the owner.
 - **Follow-up:** propagate a rejection to Kotlin (`reset()` is
   `virtual void` on the shared `ISttEngine`; add a `bool tryReset()` or check
   `getLastError()` in JNI). Add a native test seam so safeReset can run on the
@@ -661,6 +671,38 @@ Status: committed by the owner as `1768a12` on `review/common-jni-audit` (pushed
   whisper headers. **Not run:** Gradle, `externalNativeBuildDebug`,
   QA APK builds, `verify-release.py`, and a device check.
 
+**Independent Phase 0 review on `02aa830` (2026-09-24):** A **approve**
+(`repairUtf8` produces valid UTF-8 for strict JNI conversion); B **approve**
+(NaN/Inf never enter the smoothing state); C **approve** (known-answer and
+padding-boundary coverage); D **change requested** (F11's in-flight-decode
+wait and unsynchronized finalize above); E **approve as a narrow JNI exception
+guard** (invalid-handle/reset-failure reporting remains open under F11/U8).
+The accidental `.vscode/settings.json` is outside this review.
+
+On this Mac, the ASan hello-world probe passed with Apple Clang 17; the
+Homebrew Clang path from the earlier machine is absent. With
+`CXX=/usr/bin/clang++`, `run_common_utils_tests.sh` passed all **9** programs
+(including UTF-8 28, AudioGate 25, SHA-256 538 checks) and
+`run_speech_tests.sh` passed **57** checks. The combined
+`./gradlew test :app:compilePlayQaKotlin :app:compileFossQaKotlin
+:common-jni:externalNativeBuildDebug :app:assemblePlayQa :app:assembleFossQa`
+passed (exit 0). `python3 scripts/verify-release.py` passed: Play QA
+44,618,710 bytes and FOSS QA 36,693,765 bytes, 16 KiB alignment and
+permissions verified. No APK was delivered and no device was used.
+
+**Upstream `6ad8305`: approve for the scoped change.**
+`speech/backends/nemotron_backend.cpp:65-78` now compares primary language
+codes instead of treating `ru-RU` and `ru` as mixed; the new
+`speech/source_language.h` is covered by four host assertions in
+`speech_test.cpp:38-41`. `TranslationSourceEvidence.kt:7-30` only recovers
+missing/uncertain ASR tags when exactly one supported translator direction
+matches the caption's non-Latin script; explicit language metadata wins.
+The bridge and helper JVM tests cover the Russian path, ambiguous Cyrillic,
+Latin text, target mismatch and explicit-source priority. This is a
+conservative fallback, not proof that mixed-language captions translate well.
+The merged tree compiled and passed the checks above; no paid or phone test
+was run for the rebuilt Nemotron library.
+
 ---
 
 ## 7. Implementation slices for the larger fixes
@@ -739,6 +781,10 @@ Qwen/Moonshine/Omnilingual and Nemotron adapters, speech JNI), `translation/`
 `ring_buffer.h`, `sha256.h`, `lifecycle_gate.h`, `utf8_utils.h`, `CMakeLists.txt`.
 Kotlin: `SpeechSession`, `LiveSpeechProcessor`, `SpeechModels`,
 `SpeechModelPackage`, `CaptionTranslationBridge`.
+The 2026-09-24 Phase 0 pass also read the `6ad8305` diff for
+`nemotron_backend.cpp`, `source_language.h`, `speech_test.cpp`,
+`CaptionTranslationBridge.kt`, `TranslationSourceEvidence.kt` and their tests;
+this was a diff review, not a new whole-file audit of every caller.
 
 **Read in part:** `whisper_engine.cpp` (~550/1330: worker, params, inference,
 reset/release; not initialize, push, detectLanguage, batch), `router/stt_jni.cpp`
@@ -1297,3 +1343,10 @@ source was changed in this pass.
   queue (tracked)" instead of "deprioritized", and lists every non-focus area
   with its open findings and unread files. The previous log line's
   "deprioritized" means "in the Later queue".
+- 2026-09-24 — Phase 0 at `02aa830`: reviewed patches A–E and `6ad8305`;
+  A/B/C/E approved, D change requested with the abort/finalize evidence in
+  F11. The current Mac's Apple Clang ASan probe and 9 common/57 speech checks
+  passed; Gradle test, both QA compiles, native debug build, both QA assembles
+  and `verify-release.py` passed with the exact APK sizes recorded in §6.
+  No device or paid call. The prior Whisper fix branch `7b44a00` remains
+  unmerged in the tracked Later queue.
