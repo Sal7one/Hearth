@@ -1,0 +1,6 @@
+Selected FLEURS test data: Creative Commons Attribution 4.0 International.
+https://creativecommons.org/licenses/by/4.0/
+Source https://huggingface.co/datasets/google/fleurs at 70bb2e84b976b7e960aa89f1c648e09c59f894dd
+Conneau et al. (2022), FLEURS: Few-shot Learning Evaluation of Universal Representations of Speech.
+Audio converted to mono 16 kHz PCM16; text unmodified; subset selected deterministically.
+No training data. Sentence IDs align references across languages; not an exhaustive language/dialect evaluation.

@@ -94,16 +94,20 @@ fun DownloadsScreen(onBrowseModels: () -> Unit = {}) {
      if (item.installing || item.total <= 0) LinearProgressIndicator(Modifier.fillMaxWidth())
      else LinearProgressIndicator(progress = { (item.bytes.toFloat() / item.total).coerceIn(0f,1f) }, modifier = Modifier.fillMaxWidth())
     }
-    val oldModel = if (item.id > 0) SpeechDownloads.all.firstOrNull { it.fileName == item.title }?.profile?.id
-      ?: downloads.translationModel(item)?.id else null
-    if (item.complete && oldModel != null) Button(enabled = !busy, onClick = { scope.launch {
+    val installableModel = item.modelId.takeIf { it.isNotBlank() }
+      ?: if (item.id > 0) SpeechDownloads.all.firstOrNull { it.fileName == item.title }?.profile?.id
+        ?: downloads.translationModel(item)?.id else null
+    if (item.complete && !item.installed && installableModel != null) Button(enabled = !busy, onClick = { scope.launch {
      busy = true; error = null; message = uiText(UiR.string.ui_installing_1_s_b55a5, item.title)
-     try { downloads.installModel(item.id, oldModel); message = uiText(UiR.string.ui_installed_select_the_model_in_models_06092) }
+     try { downloads.installModel(item.id, installableModel); message = uiText(UiR.string.ui_installed_select_the_model_in_models_06092) }
      catch (e: CancellationException) { throw e }
      catch (e: Exception) { message = null; error = e.message ?: e.toString() }
      finally { busy = false }
     } }) { Text(uiText(UiR.string.ui_install_downloaded_model_d458c)) }
     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+     if (item.id < 0 && item.active) TextButton(enabled = !busy, onClick = { try { downloads.pause(item.id) } catch (e: Exception) { error = e.message ?: e.toString() } }) { Text(uiText(UiR.string.ui_pause_download)) }
+     if (item.id < 0 && item.paused) TextButton(enabled = !busy, onClick = { try { downloads.retry(item.id) } catch (e: Exception) { error = e.message ?: e.toString() } }) { Text(uiText(UiR.string.ui_resume_download)) }
+     if (item.id < 0 && (item.paused || item.failed)) TextButton(enabled = !busy, onClick = { try { downloads.restart(item.id) } catch (e: Exception) { error = e.message ?: e.toString() } }) { Text(uiText(UiR.string.ui_restart_download)) }
      if (item.installed) TextButton(enabled = !busy, onClick = { scope.launch {
       try { downloads.selectInstalled(item); message = uiText(UiR.string.ui_model_selected_8d93b) }
       catch (e: CancellationException) { throw e }

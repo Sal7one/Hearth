@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.sal7one.transiber.caption.*
 import com.sal7one.transiber.models.LegacyModelSetup
@@ -45,4 +46,6 @@ internal fun SettingsSpeechLocalUi(
         if (browsing.speechBackend != null) LocalSpeechSetup(shown, select, includeTranslation = false, onModelsChanged = {})
         else LegacyModelSetup(if (browsing == CaptionEngineChoice.WHISPER) ModelEngineType.WHISPER else ModelEngineType.VOSK, shown, select)
     }
+    Spacer(Modifier.height(12.dp))
+    SpeechArtifactBrowser(config)
 }

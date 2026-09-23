@@ -8,6 +8,7 @@ import java.security.MessageDigest
 internal object BenchmarkAudio {
     const val MAX_SECONDS = 30
     const val MAX_BYTES = 6 * 1024 * 1024
+    const val NORMALIZATION = "peak normalize to 0.90 when source peak < 0.50; digital silence is unchanged"
     data class Clip(val samples: ShortArray, val sha256: String) {
         val durationMs: Long get() = samples.size * 1000L / 16000
     }
@@ -30,6 +31,17 @@ internal object BenchmarkAudio {
         val digest = MessageDigest.getInstance("SHA-256")
         samples.forEach { digest.update(it.toByte()); digest.update((it.toInt() shr 8).toByte()) }
         return Clip(samples, digest.digest().joinToString("") { "%02x".format(it.toInt() and 255) })
+    }
+
+    /** Match the Mac harness and keep quiet publisher recordings above the segmenter's energy gate. */
+    fun normalizeForComparison(samples: ShortArray): ShortArray {
+        val peak = samples.maxOfOrNull { kotlin.math.abs(it.toInt()) } ?: 0
+        val peakFloat = peak / 32768f
+        if (peakFloat <= 0.0001f || peakFloat >= 0.5f) return samples
+        val gain = 0.9f / peakFloat
+        return ShortArray(samples.size) { index ->
+            (samples[index] * gain).toInt().coerceIn(Short.MIN_VALUE.toInt(), Short.MAX_VALUE.toInt()).toShort()
+        }
     }
 }
 

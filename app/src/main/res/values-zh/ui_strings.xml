@@ -41,8 +41,8 @@
     <string name="ui_source_language_c951f" formatted="false">"源语言"</string>
     <string name="ui_languages_advertised_by_installed_models_incompatible_models_are_88f7c" formatted="false">"根据已安装模型声明的语言显示；不兼容的模型将禁用。"</string>
     <string name="ui_load_verify_1_s_s_05a13">"加载与校验：%1$s 秒"</string>
-    <string name="ui_first_inference_1_s_s_14e86">"首次推理：%1$s 秒"</string>
-    <string name="ui_warm_median_1_s_s_0f226">"预热后中位耗时：%1$s 秒"</string>
+    <string name="ui_first_inference_1_s_s_14e86">"首次完整测试（所有样本）：%1$s 秒"</string>
+    <string name="ui_warm_median_1_s_s_0f226">"后续完整测试中位耗时（所有样本）：%1$s 秒"</string>
     <string name="ui_real_time_factor_1_s_below_1_keeps_ahead_in_replay_10505">"实时系数：%1$s×（低于 1 表示快于回放速度）"</string>
     <string name="ui_no_speech_recognized_a_fast_empty_result_is_not_a_quality_win_c93af" formatted="false">"未识别到语音。快速返回空结果不代表质量更好。"</string>
     <string name="ui_hide_details_f8c24" formatted="false">"隐藏详情"</string>
@@ -439,7 +439,7 @@
     <string name="ui_legacy_english_arabic_model_files_162d9" formatted="false">"旧版英语 → 阿拉伯语模型文件"</string>
     <string name="ui_size_precision_49488" formatted="false">"大小与精度"</string>
     <string name="ui_selected_translator_ee2cb" formatted="false">"所选翻译引擎"</string>
-    <string name="ui_q4_uses_less_storage_and_memory_q6_q8_are_larger_only_the_active_56fac" formatted="false">"Q4 占用更少存储和内存；Q6/Q8 更大。只加载当前翻译引擎。"</string>
+    <string name="ui_q4_uses_less_storage_and_memory_q6_q8_are_larger_only_the_active_56fac" formatted="false">"较小量化版本可节省存储空间，但可能降低质量或无法完成翻译。Q2 在一次简短的 Mac 测试中超时。只加载当前翻译模型。"</string>
     <string name="ui_import_1_s_gguf_f7da3">"导入 %1$s GGUF"</string>
     <string name="ui_installing_8d278" formatted="false">"正在安装…"</string>
     <string name="ui_downloading_1_s_mib_e010b">"正在下载 · %1$s MiB"</string>
@@ -812,4 +812,33 @@
     <string name="ui_navigation_cf03c" formatted="false">"导航"</string>
     <string name="ui_simple_home_puts_every_feature_in_one_place_classic_tabs_keeps_th_bde4c" formatted="false">"简洁主页集中显示所有功能。经典标签页保留之前布局。"</string>
     <string name="ui_system_follows_your_phone_bubble_appearance_has_its_own_controls_9159c" formatted="false">"系统模式跟随手机设置。悬浮窗外观单独控制。"</string>
+    <string name="speech_artifacts_heading">下载语音模型</string>
+    <string name="speech_artifacts_hint">选择模型系列、大小和量化版本。下载文件保存在 Downloads/Hearth/models，已安装模型会保留在应用中。</string>
+    <string name="speech_model_size">模型大小</string>
+    <string name="speech_quantization">量化</string>
+    <string name="speech_artifact_languages">语言：%1$s</string>
+    <string name="speech_artifact_license">许可证：%1$s</string>
+    <string name="speech_artifact_space">设备约需 %1$s MB（含安装空间）。保存到 %2$s。</string>
+    <string name="speech_artifact_import_play_only">在线下载模型仅在 Play 版本中提供。你仍可导入模型文件。</string>
+    <string name="speech_artifact_selected">已选择模型</string>
+    <string name="speech_artifact_select">使用此模型</string>
+    <string name="speech_artifact_download">下载并安装 · %1$s MiB</string>
+    <string name="ui_pause_download">暂停</string>
+    <string name="ui_resume_download">继续</string>
+    <string name="ui_restart_download">重新开始</string>
+    <string name="benchmark_reference_transcript">参考转录</string>
+    <string name="benchmark_reference_translation">参考译文</string>
+    <string name="benchmark_reference_optional">可选 · 添加校正文本以比较准确度</string>
+    <string name="benchmark_scoring_explainer">WER 和 CER 是规范化后的文本错误率，不代表对翻译含义的判断。中文建议重点看 CER。留空时仅比较速度。</string>
+    <string name="benchmark_error_rates">参考文本错误 · WER %1$s%% · CER %2$s%%</string>
+    <string name="benchmark_no_reference">没有参考文本 · 此结果仅比较速度。</string>
+    <string name="benchmark_builtin_set">内置快速测试集</string>
+    <string name="benchmark_custom_input">我的录音或文本</string>
+    <string name="benchmark_suite_summary">六条简短、对齐的发布者样本，用于语音或翻译测试。语音测试还会检查两段静音。语言：阿拉伯语、英语、俄语、中文；翻译方向：阿↔英、俄→阿/英、中→阿/英。</string>
+    <string name="benchmark_suite_attribution">FLEURS 测试数据 · CC BY 4.0 · Google / Conneau 等 · 自动文本相似度不等于人工质量评价。</string>
+    <string name="benchmark_suite_pair_unavailable">内置测试集没有 %1$s → %2$s 的样本。请选择支持的语言对，或使用自己的文本。</string>
+    <string name="benchmark_translation_chrf">参考相似度 · chrF++ %1$s%%（自动计算，不代表语义评分）</string>
+    <string name="benchmark_silence_check">静音检查</string>
+    <string name="benchmark_silence_false_positives">静音误识别 · %2$d 次中有 %1$d 次</string>
+    <string name="benchmark_source_sample">源文</string>
 </resources>

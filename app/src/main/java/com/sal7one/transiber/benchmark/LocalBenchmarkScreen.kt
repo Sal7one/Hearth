@@ -45,6 +45,7 @@ fun LocalBenchmarkScreen(onModels: () -> Unit = {}) {
     val store = remember { BenchmarkResults(context.applicationContext) }
     var candidates by remember { mutableStateOf<List<BenchmarkCandidate>>(emptyList()) }
     var results by remember { mutableStateOf<List<BenchmarkResult>>(emptyList()) }
+    var suite by remember { mutableStateOf<BenchmarkSuite?>(null) }
     var clip by remember { mutableStateOf<BenchmarkAudio.Clip?>(null) }
     var clipName by remember { mutableStateOf("") }
     var mode by rememberSaveable { mutableStateOf("Speech") }
@@ -52,6 +53,8 @@ fun LocalBenchmarkScreen(onModels: () -> Unit = {}) {
     var source by rememberSaveable { mutableStateOf("en") }
     var target by rememberSaveable { mutableStateOf("ar") }
     var text by rememberSaveable { mutableStateOf("") }
+    var referenceText by rememberSaveable { mutableStateOf("") }
+    var useBuiltInSet by rememberSaveable { mutableStateOf(true) }
     var picker by remember { mutableStateOf<String?>(null) }
     var busy by remember { mutableStateOf(false) }
     var running by remember { mutableStateOf(false) }
@@ -69,6 +72,7 @@ fun LocalBenchmarkScreen(onModels: () -> Unit = {}) {
     LaunchedEffect(refresh) {
         try {
             busy = true
+            suite = withContext(Dispatchers.IO) { BenchmarkSuite.bundled(context) }
             candidates = runner.candidates()
             results = withContext(Dispatchers.IO) { store.load() }
         } catch (e: CancellationException) { throw e }
@@ -76,11 +80,14 @@ fun LocalBenchmarkScreen(onModels: () -> Unit = {}) {
         finally { busy = false }
     }
     val visible = candidates.filter { it.targetCodes.isNotEmpty() == (mode == "Translation") }
+    val builtInCases = remember(suite, mode, source, target) {
+        suite?.selected(mode == "Speech", source, target, full = false).orEmpty()
+    }
     fun supports(candidate: BenchmarkCandidate) = (source in candidate.sourceCodes || candidate.sourceCodes == setOf("model")) &&
         (mode == "Speech" || (target in candidate.targetCodes && source != target))
     val availableIds = visible.filter(::supports).map { it.id }
     LaunchedEffect(mode, source, target, candidates) {
-        selected = selected.filter { it in availableIds }.ifEmpty { availableIds.take(12) }
+        selected = selected.filter { it in availableIds }.ifEmpty { availableIds.take(2) }
     }
     val openAudio = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) scope.launch {
@@ -137,16 +144,42 @@ fun LocalBenchmarkScreen(onModels: () -> Unit = {}) {
                 modifier = Modifier.padding(top = 4.dp))
         }
         item {
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FilterChip(useBuiltInSet, { useBuiltInSet = true }, enabled = !running && !busy,
+                    label = { Text(uiText(UiR.string.benchmark_builtin_set)) })
+                FilterChip(!useBuiltInSet, { useBuiltInSet = false }, enabled = !running && !busy,
+                    label = { Text(uiText(UiR.string.benchmark_custom_input)) })
+            }
+            if (useBuiltInSet) {
+                Text(uiText(UiR.string.benchmark_suite_summary), style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.padding(top = 4.dp))
+                Text(uiText(UiR.string.benchmark_suite_attribution), style = MaterialTheme.typography.labelSmall,
+                    modifier = Modifier.padding(top = 4.dp), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                if (builtInCases.isEmpty()) Text(uiText(UiR.string.benchmark_suite_pair_unavailable, source, target),
+                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.padding(top = 4.dp))
+            }
             if (mode == "Speech") {
-                OutlinedButton({ openAudio.launch(arrayOf("audio/*", "application/octet-stream")) }, enabled = !running && !busy,
-                    modifier = Modifier.fillMaxWidth()) { Text(if (clip == null) uiText(UiR.string.ui_choose_wav_recording_b856e) else uiText(UiR.string.ui_change_recording_d75fb)) }
-                Text(if (clip == null) uiText(UiR.string.ui_0_5_30_seconds_pcm16_wav_mono_or_stereo_8_48_khz_2da63) else
-                    uiText(UiR.string.ui_1_s_2_s_seconds_b64af, clipName, number(checkNotNull(clip).durationMs / 1000.0)), modifier = Modifier.padding(top = 4.dp))
+                if (!useBuiltInSet) {
+                    OutlinedButton({ openAudio.launch(arrayOf("audio/*", "application/octet-stream")) }, enabled = !running && !busy,
+                        modifier = Modifier.fillMaxWidth()) { Text(if (clip == null) uiText(UiR.string.ui_choose_wav_recording_b856e) else uiText(UiR.string.ui_change_recording_d75fb)) }
+                    Text(if (clip == null) uiText(UiR.string.ui_0_5_30_seconds_pcm16_wav_mono_or_stereo_8_48_khz_2da63) else
+                        uiText(UiR.string.ui_1_s_2_s_seconds_b64af, clipName, number(checkNotNull(clip).durationMs / 1000.0)), modifier = Modifier.padding(top = 4.dp))
+                }
             } else {
-                OutlinedTextField(text, { if (it.length <= 500) text = it }, label = { Text(uiText(UiR.string.ui_corrected_source_text_165c4)) },
-                    placeholder = { Text(uiText(UiR.string.ui_paste_a_short_sentence_in_the_chosen_source_language_5bce5)) },
-                    supportingText = { Text(uiText(UiR.string.ui_1_s_500_characters_b6d2a, text.length)) }, enabled = !running,
-                    modifier = Modifier.fillMaxWidth(), minLines = 3, maxLines = 6)
+                if (!useBuiltInSet) {
+                    OutlinedTextField(text, { if (it.length <= 500) text = it }, label = { Text(uiText(UiR.string.ui_corrected_source_text_165c4)) },
+                        placeholder = { Text(uiText(UiR.string.ui_paste_a_short_sentence_in_the_chosen_source_language_5bce5)) },
+                        supportingText = { Text(uiText(UiR.string.ui_1_s_500_characters_b6d2a, text.length)) }, enabled = !running,
+                        modifier = Modifier.fillMaxWidth(), minLines = 3, maxLines = 6)
+                }
+            }
+            if (!useBuiltInSet) {
+                OutlinedTextField(referenceText, { if (it.length <= 2000) referenceText = it },
+                    label = { Text(uiText(UiR.string.benchmark_reference_transcript.takeIf { mode == "Speech" } ?: UiR.string.benchmark_reference_translation)) },
+                    placeholder = { Text(uiText(UiR.string.benchmark_reference_optional)) }, enabled = !running,
+                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp), minLines = 2, maxLines = 5)
+                Text(uiText(UiR.string.benchmark_scoring_explainer), style = MaterialTheme.typography.bodySmall)
             }
         }
         item {
@@ -183,16 +216,27 @@ fun LocalBenchmarkScreen(onModels: () -> Unit = {}) {
                 running = true; error = null
                 job = scope.launch {
                     try {
-                        runner.run(chosen, clip, text, source, target, { status = it }) { result ->
+                        val inputs = if (useBuiltInSet) withContext(Dispatchers.IO) {
+                            val activeSuite = checkNotNull(suite) { "Built-in benchmark data is unavailable" }
+                            builtInCases.map { sample ->
+                                BenchmarkInput(sample.id, text = sample.text, reference = sample.reference,
+                                    clip = if (sample.speech) activeSuite.audio(context, sample) else null,
+                                    silence = sample.silenceMs > 0)
+                            }
+                        } else emptyList()
+                        runner.run(chosen, clip, text, referenceText.takeIf(String::isNotBlank), source, target,
+                            benchmarkInputs = inputs, progress = { status = it }, onResult = { result ->
                             results = (listOf(result) + results).take(40)
-                        }
+                        })
                         status = uiText(UiR.string.ui_comparison_complete_review_accuracy_as_well_as_speed_16b3e)
                     } catch (e: CancellationException) { status = uiText(UiR.string.ui_comparison_stopped_completed_results_were_saved_7c2db); throw e }
                     catch (e: Exception) { error = e.message ?: e.toString() }
                     finally { running = false }
                 }
             }, modifier = Modifier.fillMaxWidth(), enabled = !busy && gateOwner == null && selected.isNotEmpty() &&
-                (if (mode == "Speech") clip != null else text.isNotBlank() && source != target)) { Text(uiText(UiR.string.ui_compare_1_s_models_1916c, selected.size)) }
+                (if (useBuiltInSet) builtInCases.isNotEmpty() else if (mode == "Speech") clip != null else text.isNotBlank() && source != target)) {
+                Text(uiText(UiR.string.ui_compare_1_s_models_1916c, selected.size))
+            }
             if (status.isNotBlank()) Text(status, Modifier.padding(top = 8.dp).semantics { liveRegion = LiveRegionMode.Polite })
             error?.let { SelectionContainer { Text(it, Modifier.padding(top = 8.dp), color = MaterialTheme.colorScheme.error) } }
         }
@@ -241,6 +285,23 @@ private fun BenchmarkResultCard(result: BenchmarkResult) {
             Text("${result.source}${if (result.target.isBlank()) "" else " → ${result.target}"} · ${DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT).format(Date(result.timestamp))}",
                 style = MaterialTheme.typography.bodySmall)
             result.error?.let { SelectionContainer { Text(it, color = MaterialTheme.colorScheme.error) } }
+            if (result.wordErrorRate != null && result.characterErrorRate != null) {
+                Text(uiText(UiR.string.benchmark_error_rates,
+                    number(result.wordErrorRate * 100.0), number(result.characterErrorRate * 100.0)),
+                    style = MaterialTheme.typography.bodyMedium)
+            } else if (result.referenceText == null) {
+                Text(uiText(UiR.string.benchmark_no_reference), style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            val silenceChecks = result.samples.filter { it.silence }
+            if (result.target.isBlank() && silenceChecks.isNotEmpty()) {
+                val falsePositives = silenceChecks.count { it.text.isNotBlank() }
+                Text(uiText(UiR.string.benchmark_silence_false_positives, falsePositives, silenceChecks.size),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = if (falsePositives == 0) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.error)
+            }
+            result.translationChrf?.let { Text(uiText(UiR.string.benchmark_translation_chrf, number(it * 100.0)),
+                style = MaterialTheme.typography.bodyMedium) }
             Text(uiText(UiR.string.ui_load_verify_1_s_s_05a13, number(result.loadMs / 1000)))
             if (result.computeMs.isNotEmpty()) Text(uiText(UiR.string.ui_first_inference_1_s_s_14e86, number(result.computeMs.first() / 1000)))
             if (result.computeMs.size >= 3) {
@@ -256,6 +317,19 @@ private fun BenchmarkResultCard(result: BenchmarkResult) {
                     Text(uiText(UiR.string.ui_1_s_2_s_3_s_model_4_s_input_sha_256_5_s_run_6_s_42fa7, result.route, result.device, result.runtime, result.identity, result.inputHash, result.runId), style = MaterialTheme.typography.bodySmall)
                     result.computeMs.forEachIndexed { i, time ->
                         Text(uiText(UiR.string.ui_pass_1_s_2_s_ms_first_text_in_replay_3_s_ms_4_s_e7de9, i + 1, number(time), number(result.firstTextMs[i]), result.texts[i]), style = MaterialTheme.typography.bodySmall)
+                    }
+                    result.samples.forEach { sample ->
+                        HorizontalDivider(Modifier.padding(vertical = 4.dp))
+                        Text("${sample.id} · ${number(sample.computeMs)} ms${if (sample.silence) " · ${uiText(UiR.string.benchmark_silence_check)}" else ""}",
+                            style = MaterialTheme.typography.labelMedium)
+                        sample.sourceText?.takeIf(String::isNotBlank)?.let {
+                            Text("${uiText(UiR.string.benchmark_source_sample)}: $it", style = MaterialTheme.typography.bodySmall)
+                        }
+                        sample.reference?.takeIf(String::isNotBlank)?.let {
+                            val referenceLabel = if (result.target.isBlank()) UiR.string.benchmark_reference_transcript else UiR.string.benchmark_reference_translation
+                            Text("${uiText(referenceLabel)}: $it", style = MaterialTheme.typography.bodySmall)
+                        }
+                        Text(sample.text.ifBlank { uiText(UiR.string.ui_no_speech_recognized_a_fast_empty_result_is_not_a_quality_win_c93af) }, style = MaterialTheme.typography.bodySmall)
                     }
                 }
             }

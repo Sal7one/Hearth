@@ -322,3 +322,21 @@ provider error preservation, failed-socket admission and queued tail drainage.
 `LocalWorkGate.awaitIdle` is consumed by the explicit audio-to-reading handoff. Host
 coverage verifies it waits for model cleanup and cancelling a waiting page never
 unlocks another owner. The reading controller still acquires its own lease.
+
+## Model comparison and download review · 2026-09-23
+
+`BenchmarkSuite` supplies pinned, hash-checked FLEURS cases to
+`LocalBenchmarkScreen`; `BenchmarkAudio.normalizeForComparison` is consumed by
+`LocalBenchmarkRunner` and its host test covers quiet speech and silence.
+`BenchmarkScoring` is consumed by saved result cards and has normalization/error
+metric fixtures. The selected production adapters supply the actual timings;
+phone evidence and limits are in `docs/benchmark-phone-smoke-2026-09-23.md`.
+
+`SpeechArtifactCatalog` and `WhisperDownloads` supply pinned variants to
+`SpeechArtifactBrowser`, which uses digest identity for installed Whisper files;
+catalog tests cover grouping, HTTPS revisions, hashes and language scope.
+`DownloadBudget` and `DownloadResume` are used by the foreground
+`DownloadService`; host tests cover capacity arithmetic and range validation.
+`FileDownloads.progress` makes pause/removal take priority over late transfer
+updates. A completed phone transfer exercised the hash/install path; interrupted
+network resume still needs a physical test.

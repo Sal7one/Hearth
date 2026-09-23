@@ -117,7 +117,7 @@ internal fun SettingsTranslateLocalUi(
         if (showGguf) {
         Text(uiText(UiR.string.ui_size_precision_49488), style = MaterialTheme.typography.labelLarge)
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            TranslationCatalog.models.filter { it.family == spec.family }.forEach { model ->
+            TranslationCatalog.models.filter { it.family == spec.family }.sortedBy { it.bytes }.forEach { model ->
                 FilterChip(selected = selected == model.id, enabled = !busy,
                     onClick = { selected = model.id }, label = { Text("${model.quantization} · ${model.bytes / 1_048_576} MiB") })
             }
@@ -129,7 +129,7 @@ internal fun SettingsTranslateLocalUi(
         Text(uiText(UiR.string.ui_q4_uses_less_storage_and_memory_q6_q8_are_larger_only_the_active_56fac), style = MaterialTheme.typography.bodySmall)
         OutlinedButton(enabled = !busy, onClick = { importer.launch(arrayOf("*/*")) }) { Text(uiText(UiR.string.ui_import_1_s_gguf_f7da3, spec.label)) }
         if (ByokPolicy.FEATURE_BYOK) {
-            val record = records.firstOrNull { it.title == spec.fileName }
+            val record = records.firstOrNull { it.modelId == spec.id }
             OutlinedButton(enabled = !busy && record?.active != true, onClick = { scope.launch {
                 busy = true
                 try {

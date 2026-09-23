@@ -33,4 +33,19 @@ class ModelSourcesTest {
         assertTrue(ModelSources.speech(CaptionEngineChoice.VOSK).single().installation.contains("extract"))
         assertTrue(ModelSources.marian.installation.contains("English → Arabic"))
     }
+
+    @Test fun whisperArtifactsArePinnedAndGroupedByCheckpointAndQuant() {
+        val artifacts = SpeechArtifactCatalog.all.filter { it.kind == SpeechArtifactKind.WHISPER }
+        assertEquals(27, artifacts.size)
+        assertEquals(27, artifacts.map { it.id }.distinct().size)
+        assertEquals(setOf("tiny", "tiny.en", "base", "base.en", "small", "small.en", "medium", "medium.en", "large-v3-turbo"),
+            artifacts.map { it.checkpoint }.toSet())
+        artifacts.forEach {
+            assertTrue(it.url.contains("/${WhisperDownloads.REVISION}/"))
+            assertTrue(it.bytes > 0)
+            assertTrue(it.sha256.matches(Regex("[a-f0-9]{64}")))
+            assertTrue(it.publisherUrl.startsWith("https://"))
+        }
+        assertTrue(artifacts.filter { it.checkpoint.endsWith(".en") }.all { it.languages == setOf("en") })
+    }
 }

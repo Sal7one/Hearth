@@ -41,8 +41,8 @@
     <string name="ui_source_language_c951f" formatted="false">"Source language"</string>
     <string name="ui_languages_advertised_by_installed_models_incompatible_models_are_88f7c" formatted="false">"Languages advertised by installed models; incompatible models are disabled."</string>
     <string name="ui_load_verify_1_s_s_05a13">"Load + verify: %1$s s"</string>
-    <string name="ui_first_inference_1_s_s_14e86">"First inference: %1$s s"</string>
-    <string name="ui_warm_median_1_s_s_0f226">"Warm median: %1$s s"</string>
+    <string name="ui_first_inference_1_s_s_14e86">"First pass (all samples): %1$s s"</string>
+    <string name="ui_warm_median_1_s_s_0f226">"Warm pass median (all samples): %1$s s"</string>
     <string name="ui_real_time_factor_1_s_below_1_keeps_ahead_in_replay_10505">"Real-time factor: %1$s× (below 1 keeps ahead in replay)"</string>
     <string name="ui_no_speech_recognized_a_fast_empty_result_is_not_a_quality_win_c93af" formatted="false">"No speech recognized. A fast empty result is not a quality win."</string>
     <string name="ui_hide_details_f8c24" formatted="false">"Hide details"</string>
@@ -439,7 +439,7 @@
     <string name="ui_legacy_english_arabic_model_files_162d9" formatted="false">"Legacy English → Arabic model files"</string>
     <string name="ui_size_precision_49488" formatted="false">"Size / precision"</string>
     <string name="ui_selected_translator_ee2cb" formatted="false">"Selected translator"</string>
-    <string name="ui_q4_uses_less_storage_and_memory_q6_q8_are_larger_only_the_active_56fac" formatted="false">"Q4 uses less storage and memory; Q6/Q8 are larger. Only the active translator loads."</string>
+    <string name="ui_q4_uses_less_storage_and_memory_q6_q8_are_larger_only_the_active_56fac" formatted="false">"Smaller quants save storage, but may reduce quality or fail to finish. Q2 timed out in a short Mac test. Only the active translator loads."</string>
     <string name="ui_import_1_s_gguf_f7da3">"Import %1$s GGUF"</string>
     <string name="ui_installing_8d278" formatted="false">"Installing…"</string>
     <string name="ui_downloading_1_s_mib_e010b">"Downloading · %1$s MiB"</string>
@@ -812,4 +812,33 @@
     <string name="ui_navigation_cf03c" formatted="false">"Navigation"</string>
     <string name="ui_simple_home_puts_every_feature_in_one_place_classic_tabs_keeps_th_bde4c" formatted="false">"Simple home puts every feature in one place. Classic tabs keeps the previous layout."</string>
     <string name="ui_system_follows_your_phone_bubble_appearance_has_its_own_controls_9159c" formatted="false">"System follows your phone. Bubble appearance has its own controls."</string>
+    <string name="speech_artifacts_heading">Download speech models</string>
+    <string name="speech_artifacts_hint">Choose a family, model size and quantization. Downloads go to Downloads/Hearth/models; installed models stay ready in the app.</string>
+    <string name="speech_model_size">Model size</string>
+    <string name="speech_quantization">Quantization</string>
+    <string name="speech_artifact_languages">Languages: %1$s</string>
+    <string name="speech_artifact_license">License: %1$s</string>
+    <string name="speech_artifact_space">About %1$s MB needed on device, including installation space. Save to %2$s.</string>
+    <string name="speech_artifact_import_play_only">Online model downloads are available in the Play build. You can still import a model file.</string>
+    <string name="speech_artifact_selected">Model selected</string>
+    <string name="speech_artifact_select">Use this model</string>
+    <string name="speech_artifact_download">Download and install · %1$s MiB</string>
+    <string name="ui_pause_download">Pause</string>
+    <string name="ui_resume_download">Resume</string>
+    <string name="ui_restart_download">Restart</string>
+    <string name="benchmark_reference_transcript">Reference transcript</string>
+    <string name="benchmark_reference_translation">Reference translation</string>
+    <string name="benchmark_reference_optional">Optional · add corrected text to compare accuracy</string>
+    <string name="benchmark_scoring_explainer">WER and CER are normalized text-error rates, not a judgment of translation meaning. Chinese is best compared by CER. Leave this blank to compare speed only.</string>
+    <string name="benchmark_error_rates">Reference text errors · WER %1$s%% · CER %2$s%%</string>
+    <string name="benchmark_no_reference">No reference text · this result compares speed only.</string>
+    <string name="benchmark_builtin_set">Built-in quick set</string>
+    <string name="benchmark_custom_input">My recording or text</string>
+    <string name="benchmark_suite_summary">Six short, aligned publisher samples for speech or translation. Speech also checks two silence clips. Coverage: Arabic, English, Russian, Chinese; translation pairs: AR↔EN, RU→AR/EN, ZH→AR/EN.</string>
+    <string name="benchmark_suite_attribution">FLEURS test data · CC BY 4.0 · Google / Conneau et al. · Automatic text similarity is not a human quality rating.</string>
+    <string name="benchmark_suite_pair_unavailable">The built-in set has no samples for %1$s → %2$s. Choose a covered language pair or use your own text.</string>
+    <string name="benchmark_translation_chrf">Reference similarity · chrF++ %1$s%% (automatic, not a meaning score)</string>
+    <string name="benchmark_silence_check">silence check</string>
+    <string name="benchmark_silence_false_positives">Silence false positives · %1$d of %2$d checks</string>
+    <string name="benchmark_source_sample">Source</string>
 </resources>

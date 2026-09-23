@@ -56,8 +56,11 @@ HY-MT1.5, Hy-MT2 or TranslateGemma translation model, or uses ML Kit packs in pl
 
 ## Other models and downloads
 
-- Whisper: import a whisper.cpp GGML `.bin` model under **Models → Speech → Whisper**.
-  Sources and sizes: https://huggingface.co/ggerganov/whisper.cpp
+- Whisper: **Models → Speech** now offers pinned whisper.cpp GGML `.bin` downloads
+  grouped by tiny/base/small/medium/large-v3-turbo, English-only variants and
+  available Q5/Q8/F16 quants. You can still import a compatible file. The pinned
+  repository is
+  [ggerganov/whisper.cpp](https://huggingface.co/ggerganov/whisper.cpp/tree/5359861c739e955e79d9a303bcbc70fb988958b1).
 - Vosk: extract a model ZIP on your computer/device, then **Models → Speech → Vosk → Import Vosk folder**. Publisher catalogue: https://alphacephei.com/vosk/models
 - Marian: import a compatible OPUS-MT folder with `source.spm`, `tokenizer.json`,
   encoder ONNX and merged-decoder ONNX. The translation route must match its language pair.

@@ -403,7 +403,11 @@ See [model expansion plan](oss-extension-plan.md) and [validation-v11.md](valida
 
 The separate HY-MT1.5 2-bit SEQ artifact fails in the pinned native runtime; the
 publisher's required kernel is not available there. Keep it out of the catalog.
-Existing HY-MT1.5 and Hy-MT2 Q4/Q6/Q8 remain available. No benchmark/telemetry system.
+HY-MT1.5 Q4/Q6/Q8 and Hy-MT2 Q2/Q3/Q4/Q6/Q8 are catalogued. The local quick
+benchmark compares installed speech and translation models on-device; see
+[local benchmark](local-benchmark.md) and the
+[2026-09-23 phone smoke results](benchmark-phone-smoke-2026-09-23.md). Results remain on-device and export only
+when requested. Long-session thermal testing and telemetry remain deferred.
 
 ## Existing work to preserve
 
@@ -416,7 +420,7 @@ versionName alone do not mean an APK was delivered.
 ## Deferred, not release requirements
 
 - RT-08: broad settings/state refactor. Make only local fixes needed by the visible UI.
-- RT-10: benchmark system, telemetry, 30-minute performance program, GPU/NPU backend work.
+- RT-10: telemetry, 30-minute sustained performance program, GPU/NPU backend work.
 - RT-11: cloud/BYOK redesign or another provider/model-catalog audit without a reported bug.
 - RT-12: new diagnostics/export infrastructure. Retain existing real errors and useful diagnostics.
 - RT-13 remainder: full navigation/design-system rewrite and exhaustive localization project.

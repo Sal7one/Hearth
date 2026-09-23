@@ -17,6 +17,11 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
+import java.io.FileInputStream
+import java.io.FileOutputStream
+import java.security.MessageDigest
+import android.system.Os
+import android.system.OsConstants
 
 /** User-started transfers stream directly into public storage; preparation runs in the same notification. */
 class DownloadService : Service() {
@@ -45,8 +50,8 @@ class DownloadService : Service() {
                     val id = downloads.pendingIds().firstOrNull() ?: break
                     val task = launch(Dispatchers.IO) {
                         try { runDownload(id) }
-                        catch (e: CancellationException) { if (downloads.record(id) != null) downloads.fail(id, IllegalStateException("Download interrupted. Tap Retry to continue.")); throw e }
-                        catch (e: Exception) { downloads.fail(id, e) }
+                        catch (e: CancellationException) { if (downloads.record(id)?.optString("phase") !in setOf(null, "Paused", "Waiting")) downloads.fail(id, IllegalStateException("Download interrupted. Tap Retry to continue.")); throw e }
+                        catch (e: Exception) { if (downloads.record(id)?.optString("phase") !in setOf(null, "Paused")) downloads.fail(id, e) }
                     }
                     jobs[id] = task
                     task.join()
@@ -58,62 +63,119 @@ class DownloadService : Service() {
     }
     private suspend fun runDownload(id: Long) {
         val record = downloads.record(id) ?: return
+        if (record.optString("phase") != "Waiting") return
         val modelId = record.optString("model")
+        val asset = DownloadAssets.find(modelId)
         var complete = record.optBoolean("downloadComplete")
         if (!complete) {
-            // An interrupted partial is replaced only on explicit retry or service restart.
-            record.optString("uri").takeIf(String::isNotBlank)?.let { contentResolver.delete(Uri.parse(it), null, null) }
-            val destination = createDestination(record)
-            downloads.update(id) { it.put("uri", destination.toString()).put("phase", "Downloading").put("bytes", 0).remove("error") }
+            var destination = record.optString("uri").takeIf(String::isNotBlank)?.let(Uri::parse)
+            var offset = 0L
+            if (destination != null && !record.optBoolean("restart")) {
+                // Resume only seekable destinations; never assume SAF append support.
+                offset = runCatching { contentResolver.openFileDescriptor(destination!!, "rw")?.use {
+                    val size = Os.lseek(it.fileDescriptor, 0, OsConstants.SEEK_END)
+                    require(size >= 0); size
+                } ?: 0L }.getOrElse {
+                    error("This folder cannot resume the partial download. Choose Restart download.")
+                }
+            }
+            // A direct URL has no pinned hash. Restart it instead of joining bytes
+            // from potentially different server revisions into one file.
+            if (record.optBoolean("restart") || (asset == null && offset > 0) || (asset != null && offset > asset.bytes)) {
+                destination?.let { contentResolver.delete(it, null, null) }
+                destination = null; offset = 0
+            }
+            if (destination == null) destination = createDestination(record)
+            val target = checkNotNull(destination)
+            DownloadStorage.requireSpace(this, asset, offset, record.optString("tree").isNotBlank())
+            downloads.progress(id) { it.put("uri", target.toString()).put("phase", "Downloading").put("bytes", offset); it.remove("restart"); it.remove("error") }
             val title = record.getString("title")
             publish("Downloading $title")
             val checked = DownloadSpec.parse(record.getString("url"), title)
-            val call = client.newCall(Request.Builder().url(checked.url).build())
-            val cancel = CoroutineScope(currentCoroutineContext()).launch(start = CoroutineStart.UNDISPATCHED) {
-                try { awaitCancellation() } finally { call.cancel() }
-            }
-            try {
-                call.execute().use { response ->
-                    check(response.isSuccessful) { "HTTP ${response.code} ${response.message}" }
-                    val expected = com.sal7one.transiber.voice.VoiceCatalog.find(modelId)?.bytes ?: OcrCatalog.find(modelId)?.bytes ?: SpeechDownloads.find(modelId)?.bytes ?: TranslationCatalog.models.firstOrNull { it.id == modelId }?.bytes
-                    val length = response.body?.contentLength() ?: -1
-                    if (expected != null && length >= 0) require(length == expected) { "Download size differs from the selected model: $length, expected $expected" }
-                    val total = expected ?: length
-                    downloads.update(id) { it.put("total", total) }
-                    val body = response.body ?: error("Download response has no body")
-                    contentResolver.openOutputStream(destination, "wt")?.use { output ->
-                        body.byteStream().use { input ->
-                            val buffer = ByteArray(65536); var bytes = 0L; var last = 0L
-                            while (true) {
-                                currentCoroutineContext().ensureActive()
-                                check(downloads.record(id) != null) { "Download removed" }
-                                val n = input.read(buffer); if (n < 0) break
-                                bytes += n
-                                require(bytes <= (expected ?: MAX_DOWNLOAD)) { "Download exceeds allowed size" }
-                                output.write(buffer, 0, n)
-                                val now = SystemClock.elapsedRealtime()
-                                if (now - last > 1000) { last = now; downloads.update(id) { it.put("bytes", bytes) }; publish("$title · ${bytes / 1_048_576} MiB") }
+            val validator = record.optString("validator").takeIf(String::isNotBlank)
+            // A fully transferred file may only need verification after process death.
+            if (asset == null || offset != asset.bytes) {
+                val request = Request.Builder().url(checked.url).header("Accept-Encoding", "identity")
+                if (offset > 0) {
+                    request.header("Range", "bytes=$offset-")
+                    validator?.let { request.header("If-Range", it) }
+                }
+                val call = client.newCall(request.build())
+                val cancel = CoroutineScope(currentCoroutineContext()).launch(start = CoroutineStart.UNDISPATCHED) {
+                    try { awaitCancellation() } finally { call.cancel() }
+                }
+                try {
+                    call.execute().use { response ->
+                        check(response.isSuccessful) { "HTTP ${response.code} ${response.message}" }
+                        val body = response.body ?: error("Download response has no body")
+                        val responseValidator = response.header("ETag")?.takeUnless { it.startsWith("W/") }
+                            ?: response.header("Last-Modified")
+                        val transfer = DownloadResume.response(response.code, offset, response.header("Content-Range"),
+                            body.contentLength(), asset?.bytes, validator, responseValidator)
+                        var bytes = transfer.offset
+                        downloads.progress(id) { it.put("bytes", bytes).put("total", transfer.total)
+                            if (responseValidator != null) it.put("validator", responseValidator) else it.remove("validator") }
+                        contentResolver.openFileDescriptor(target, if (transfer.offset == 0L) "rwt" else "rw")?.use { descriptor ->
+                            if (transfer.offset > 0) check(Os.lseek(descriptor.fileDescriptor, transfer.offset, OsConstants.SEEK_SET) == transfer.offset) { "Cannot seek partial download; choose Restart download" }
+                            FileOutputStream(descriptor.fileDescriptor).use { output ->
+                                body.byteStream().use { input ->
+                                    val buffer = ByteArray(65536); var last = 0L
+                                    while (true) {
+                                        currentCoroutineContext().ensureActive()
+                                        if (downloads.record(id)?.optString("phase") != "Downloading") throw CancellationException("Download paused or removed")
+                                        val n = input.read(buffer); if (n < 0) break
+                                        bytes = Math.addExact(bytes, n.toLong())
+                                        require(bytes <= (asset?.bytes ?: MAX_DOWNLOAD)) { "Download exceeds allowed size" }
+                                        output.write(buffer, 0, n)
+                                        val now = SystemClock.elapsedRealtime()
+                                        if (now - last > 1000) { last = now; downloads.progress(id) { it.put("bytes", bytes) }; publish("$title · ${bytes / 1_048_576} MiB") }
+                                    }
+                                    if (transfer.total >= 0) require(bytes == transfer.total) { "Download truncated: $bytes bytes, expected ${transfer.total}" }
+                                    require(bytes > 0) { "Downloaded file is empty" }
+                                    output.flush(); output.fd.sync()
+                                    downloads.progress(id) { it.put("bytes", bytes).put("total", bytes) }
+                                }
                             }
-                            if (total >= 0) require(bytes == total) { "Download truncated: $bytes bytes, expected $total" }
-                            require(bytes > 0) { "Downloaded file is empty" }
-                            output.flush()
-                            downloads.update(id) { it.put("bytes", bytes).put("total", bytes) }
-                        }
-                    } ?: error("Cannot write to the selected download folder")
+                        } ?: error("Cannot write to the selected download folder")
+                    }
+                } finally { cancel.cancel() }
+            }
+            if (asset != null) {
+                downloads.progress(id) { it.put("phase", "Verifying") }
+                publish("Verifying $title")
+                val digest = MessageDigest.getInstance("SHA-256")
+                var length = 0L
+                contentResolver.openInputStream(target)?.use { input ->
+                    val buffer = ByteArray(65536)
+                    while (true) {
+                        currentCoroutineContext().ensureActive()
+                        if (downloads.record(id)?.optString("phase") != "Verifying") throw CancellationException("Download paused or removed")
+                        val n = input.read(buffer); if (n < 0) break
+                        length += n; require(length <= asset.bytes) { "Downloaded artifact is too large" }
+                        digest.update(buffer, 0, n)
+                    }
+                } ?: error("Cannot verify downloaded file")
+                if (length != asset.bytes || digest.digest().joinToString("") { "%02x".format(it.toInt() and 255) } != asset.sha256) {
+                    downloads.progress(id) { it.put("restart", true) }
+                    error("Downloaded model failed SHA-256 verification. Retry will download it again.")
                 }
-                if (Build.VERSION.SDK_INT >= 29 && destination.authority == MediaStore.AUTHORITY) {
-                    contentResolver.update(destination, ContentValues().apply { put(MediaStore.Downloads.IS_PENDING, 0) }, null, null)
-                }
-                downloads.update(id) { it.put("downloadComplete", true) }
-                complete = true
-            } finally { cancel.cancel() }
+            }
+            currentCoroutineContext().ensureActive()
+            if (Build.VERSION.SDK_INT >= 29 && target.authority == MediaStore.AUTHORITY) {
+                contentResolver.update(target, ContentValues().apply { put(MediaStore.Downloads.IS_PENDING, 0) }, null, null)
+            }
+            downloads.progress(id) { it.put("downloadComplete", true) }
+            complete = true
         }
         if (complete && modelId.isNotBlank()) {
-            downloads.update(id) { it.put("phase", "Installing") }
+            currentCoroutineContext().ensureActive()
+            DownloadStorage.requireSpace(this, asset, asset?.bytes ?: 0, record.optString("tree").isNotBlank())
+            downloads.progress(id) { it.put("phase", "Installing") }
             publish("Installing ${record.getString("title")}")
             val installed = downloads.installModel(id, modelId)
-            downloads.update(id) { it.put("phase", "Installed").put("installed", installed).remove("error") }
-        } else downloads.update(id) { it.put("phase", "Complete").remove("error") }
+            currentCoroutineContext().ensureActive()
+            downloads.progress(id) { it.put("phase", "Installed").put("installed", installed).remove("error") }
+        } else downloads.progress(id) { it.put("phase", "Complete").remove("error") }
     }
     private fun createDestination(record: org.json.JSONObject): Uri {
         val subfolder = if (record.getBoolean("modelsFolder")) "models" else "files"

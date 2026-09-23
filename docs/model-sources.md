@@ -1,9 +1,9 @@
 # Sources and installation by model group
 
-Updated 2026-09-13 for 0.8.2. These are supported adapters, not a claim that every
+Updated 2026-09-23. These are supported adapters, not a claim that every
 artifact/language pair was tested on a phone. Models → Speech / Translation / Cloud
-contains the same source links and installation distinctions. Network actions are
-available only in play. All imported files still pass their existing validation.
+contains the same source links and installation distinctions. App downloads are
+available only in Play. FOSS remains offline; custom files can still be imported.
 
 ## Speech on this phone
 
@@ -14,11 +14,16 @@ available only in play. All imported files still pass their existing validation.
 | Qwen3-ASR 1.7B | [Qwen card/files](https://huggingface.co/Qwen/Qwen3-ASR-1.7B) | Compatible custom package only; no verified ready-made download in this app. |
 | Moonshine Tiny English | [Moonshine](https://github.com/moonshine-ai/moonshine), [sherpa Tiny files](https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-moonshine-tiny-en-quantized-2026-02-27.tar.bz2) | 28.5 MiB publisher archive; automatic on-phone installation. |
 | Moonshine Base English | [sherpa Base files](https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-moonshine-base-en-quantized-2026-02-27.tar.bz2) | 106.1 MiB publisher archive; automatic on-phone installation; inference not phone-tested here. |
-| Whisper | [whisper.cpp files](https://huggingface.co/ggerganov/whisper.cpp/tree/main) | Import GGML .bin; .en variants fix English. |
-| Vosk | [publisher language catalog](https://alphacephei.com/vosk/models) | Download/extract model ZIP, import the extracted model folder. |
+| Whisper | [pinned whisper.cpp artifacts](https://huggingface.co/ggerganov/whisper.cpp/tree/5359861c739e955e79d9a303bcbc70fb988958b1) | The app now offers 27 verified `.bin` downloads: tiny, base, small, medium and large-v3-turbo; English-only variants where published; Q5, Q8 and F16 choices where available. Select family → checkpoint → quant in Models → Speech. |
+| Vosk | [publisher language catalog](https://alphacephei.com/vosk/models) | Import an extracted, compatible model folder. Hearth does not offer an unverified Vosk download button. |
 
-Catalogued downloads install automatically, including tar.bz2 extraction and raw
-Nemotron GGUF packaging. Existing prepared ZIPs remain importable. Developer
+Catalogued downloads install automatically, including tar.bz2 extraction, raw
+Nemotron GGUF packaging and Whisper GGML `.bin` files. Existing prepared ZIPs
+remain importable. Downloads are saved under the device's `Downloads/Hearth`
+folder; installed models are copied into app-managed model storage and remain
+ready without an export/re-import step. Large downloads support pause/resume
+when the selected storage provider supports seeking and the server validates the
+saved range. The app checks required transfer/install space first. Developer
 packaging instructions are in [model setup](models.md), for custom packages only.
 Archive sizes are download sizes, not peak RAM or installed-model sizes.
 
@@ -27,16 +32,23 @@ Archive sizes are download sizes, not peak RAM or installed-model sizes.
 | Choice | Source | Installation |
 | --- | --- | --- |
 | ML Kit | [Google translation guide](https://developers.google.com/ml-kit/language/translation/android), [terms/privacy](https://developers.google.com/ml-kit/terms) | Explicit Wi-Fi language-pack download inside Models; SDK-managed storage. Play only. |
-| HY-MT1.5 Q4/Q6/Q8 | [Tencent GGUF files/card](https://huggingface.co/tencent/HY-MT1.5-1.8B-GGUF) | Choose size, download and install, or import exact pinned GGUF. |
-| Hy-MT2 Q4/Q6/Q8 | [Tencent GGUF files/card](https://huggingface.co/tencent/Hy-MT2-1.8B-GGUF) | Same verified download/install flow. |
+| HY-MT1.5 Q4/Q6/Q8 | [Tencent GGUF files/card](https://huggingface.co/tencent/HY-MT1.5-1.8B-GGUF) | Choose size/quant, download and install, or import exact pinned GGUF. |
+| Hy-MT2 Q2/Q3/Q4/Q6/Q8 | [Tencent GGUF files/card](https://huggingface.co/tencent/Hy-MT2-1.8B-GGUF), [pinned community Q2/Q3 conversions](https://huggingface.co/mradermacher/Hy-MT2-1.8B-GGUF/tree/d760e9708bbded7cee9aa135b4f1dedb42ed2fc4) | Five verified quant choices appear together by file size. Q2 is about 777 MB and Q3 about 951 MB; they reduce download/storage cost, but have not been proven more accurate or faster on every phone. |
 | TranslateGemma 4B Q4 | [Google original](https://huggingface.co/google/translategemma-4b-it), [supported conversion](https://huggingface.co/mradermacher/translategemma-4b-it-GGUF) | Download/install the catalog’s pinned 2.49 GB conversion. |
 | Marian English → Arabic | [original](https://huggingface.co/Helsinki-NLP/opus-mt-en-ar), [ONNX conversion files](https://huggingface.co/onnx-community/opus-mt-en-ar/tree/main) | Legacy folder import; required tokenizer and merged-decoder files are described in the app. |
 
 The catalog pins exact GGUF URLs, revisions, byte sizes and hashes; changing a file
-name does not make an unsupported architecture compatible. See
+name does not make an unsupported architecture compatible. The smaller Q2/Q3
+Hy-MT2 artifacts are ordinary GGUF quantizations supported by the current
+runtime. They are distinct from Tencent's special 1.25-bit STQ file, which still
+needs a different kernel and is not an installable Hearth option. See
 [local translation](local-translation.md) for terms, supported routes and limits.
 The unsupported HY 2-bit SEQ artifact and unimplemented Gemma 4 runtime are not
-presented as installable choices.
+presented as installable choices. Phone speed/quality evidence is in the
+[local translation measurements](local-translation-benchmark-2026-09-13.md);
+the [Mac host smoke report](benchmark-host-smoke-2026-09-23.md) records newer
+Q2/Q4 and Whisper comparisons. Mac and phone results must keep their
+backend/device labels.
 
 ## Cloud providers
 

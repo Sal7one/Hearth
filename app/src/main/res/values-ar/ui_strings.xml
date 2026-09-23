@@ -41,8 +41,8 @@
     <string name="ui_source_language_c951f" formatted="false">"اللغة الأصلية"</string>
     <string name="ui_languages_advertised_by_installed_models_incompatible_models_are_88f7c" formatted="false">"اللغات التي تدعمها النماذج المثبتة؛ تُعطّل النماذج غير المتوافقة."</string>
     <string name="ui_load_verify_1_s_s_05a13">"التحميل والتحقق: %1$s ث"</string>
-    <string name="ui_first_inference_1_s_s_14e86">"أول استدلال: %1$s ث"</string>
-    <string name="ui_warm_median_1_s_s_0f226">"وسيط الجولات الدافئة: %1$s ث"</string>
+    <string name="ui_first_inference_1_s_s_14e86">"الجولة الأولى (كل العينات): %1$s ث"</string>
+    <string name="ui_warm_median_1_s_s_0f226">"وسيط الجولات الدافئة (كل العينات): %1$s ث"</string>
     <string name="ui_real_time_factor_1_s_below_1_keeps_ahead_in_replay_10505">"معامل الزمن الحقيقي: %1$s× (أقل من 1 أسرع من إعادة التشغيل)"</string>
     <string name="ui_no_speech_recognized_a_fast_empty_result_is_not_a_quality_win_c93af" formatted="false">"لم يُتعرف على كلام. النتيجة الفارغة السريعة لا تعني جودة أفضل."</string>
     <string name="ui_hide_details_f8c24" formatted="false">"إخفاء التفاصيل"</string>
@@ -439,7 +439,7 @@
     <string name="ui_legacy_english_arabic_model_files_162d9" formatted="false">"ملفات النموذج القديم من الإنجليزية إلى العربية"</string>
     <string name="ui_size_precision_49488" formatted="false">"الحجم والدقة"</string>
     <string name="ui_selected_translator_ee2cb" formatted="false">"المترجم المحدد"</string>
-    <string name="ui_q4_uses_less_storage_and_memory_q6_q8_are_larger_only_the_active_56fac" formatted="false">"يستهلك Q4 مساحة وذاكرة أقل؛ Q6 وQ8 أكبر. يُحمّل المترجم النشط فقط."</string>
+    <string name="ui_q4_uses_less_storage_and_memory_q6_q8_are_larger_only_the_active_56fac" formatted="false">"توفّر النسخ الأصغر المساحة، لكنها قد تقلل الجودة أو لا تكمل الترجمة. انتهت مهلة Q2 في اختبار قصير على Mac. يُحمّل المترجم النشط فقط."</string>
     <string name="ui_import_1_s_gguf_f7da3">"استيراد GGUF لـ %1$s"</string>
     <string name="ui_installing_8d278" formatted="false">"جارٍ التثبيت…"</string>
     <string name="ui_downloading_1_s_mib_e010b">"جارٍ التنزيل · %1$s ميبيبايت"</string>
@@ -812,4 +812,33 @@
     <string name="ui_navigation_cf03c" formatted="false">"التنقل"</string>
     <string name="ui_simple_home_puts_every_feature_in_one_place_classic_tabs_keeps_th_bde4c" formatted="false">"تجمع الصفحة البسيطة كل الميزات في مكان واحد. تحافظ التبويبات التقليدية على التخطيط السابق."</string>
     <string name="ui_system_follows_your_phone_bubble_appearance_has_its_own_controls_9159c" formatted="false">"يتبع النظام إعداد الهاتف. لمظهر الفقاعة إعداداته الخاصة."</string>
+    <string name="speech_artifacts_heading">تنزيل نماذج الكلام</string>
+    <string name="speech_artifacts_hint">اختر العائلة وحجم النموذج ودقته. تُحفظ التنزيلات في Downloads/Hearth/models، وتبقى النماذج المثبتة جاهزة داخل التطبيق.</string>
+    <string name="speech_model_size">حجم النموذج</string>
+    <string name="speech_quantization">الدقة الكمية</string>
+    <string name="speech_artifact_languages">اللغات: %1$s</string>
+    <string name="speech_artifact_license">الترخيص: %1$s</string>
+    <string name="speech_artifact_space">يلزم نحو %1$s م.ب على الجهاز، بما في ذلك مساحة التثبيت. الحفظ في %2$s.</string>
+    <string name="speech_artifact_import_play_only">تنزيل النماذج عبر الإنترنت متاح في إصدار Play. ويمكنك استيراد ملف نموذج.</string>
+    <string name="speech_artifact_selected">تم اختيار النموذج</string>
+    <string name="speech_artifact_select">استخدم هذا النموذج</string>
+    <string name="speech_artifact_download">تنزيل وتثبيت · %1$s م.ب</string>
+    <string name="ui_pause_download">إيقاف مؤقت</string>
+    <string name="ui_resume_download">استئناف</string>
+    <string name="ui_restart_download">إعادة البدء</string>
+    <string name="benchmark_reference_transcript">النص المرجعي المنطوق</string>
+    <string name="benchmark_reference_translation">الترجمة المرجعية</string>
+    <string name="benchmark_reference_optional">اختياري · أضف النص المصحح لمقارنة الدقة</string>
+    <string name="benchmark_scoring_explainer">معدلا WER وCER يقيسان اختلاف النص بعد التطبيع، ولا يحكمان على معنى الترجمة. الأنسب للصينية هو CER. اتركه فارغًا لمقارنة السرعة فقط.</string>
+    <string name="benchmark_error_rates">أخطاء النص المرجعي · WER %1$s%% · CER %2$s%%</string>
+    <string name="benchmark_no_reference">لا يوجد نص مرجعي · هذه النتيجة تقارن السرعة فقط.</string>
+    <string name="benchmark_builtin_set">مجموعة اختبار سريعة مدمجة</string>
+    <string name="benchmark_custom_input">تسجيل أو نص خاص بي</string>
+    <string name="benchmark_suite_summary">ست عينات قصيرة ومتطابقة من بيانات الناشر للكلام أو الترجمة. يتضمن اختبار الكلام مقطعين صامتين. اللغات: العربية والإنجليزية والروسية والصينية؛ أزواج الترجمة: العربية↔الإنجليزية، الروسية→العربية/الإنجليزية، الصينية→العربية/الإنجليزية.</string>
+    <string name="benchmark_suite_attribution">بيانات اختبار FLEURS · رخصة CC BY 4.0 · Google / Conneau وآخرون · تشابه النص آلي وليس تقييماً بشرياً للجودة.</string>
+    <string name="benchmark_suite_pair_unavailable">لا تتوفر عينات مدمجة للزوج %1$s → %2$s. اختر زوج لغات مدعوماً أو استخدم نصك.</string>
+    <string name="benchmark_translation_chrf">تشابه مع المرجع · chrF++ %1$s%% (آلي، ولا يقيس المعنى)</string>
+    <string name="benchmark_silence_check">اختبار الصمت</string>
+    <string name="benchmark_silence_false_positives">نتائج خاطئة أثناء الصمت · %1$d من %2$d اختبارين</string>
+    <string name="benchmark_source_sample">المصدر</string>
 </resources>

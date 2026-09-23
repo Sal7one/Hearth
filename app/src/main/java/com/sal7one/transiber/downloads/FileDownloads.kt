@@ -16,6 +16,10 @@ import com.sal7one.common_jni.translation.TranslationModelSpec
 import com.sal7one.transiber.byok.ByokPolicy
 import com.sal7one.transiber.caption.*
 import com.sal7one.transiber.models.SpeechDownloads
+import com.sal7one.transiber.models.SpeechArtifactCatalog
+import com.sal7one.transiber.models.SpeechArtifactKind
+import com.sal7one.transiber.models.ModelRegistry
+import com.sal7one.transiber.models.ModelEngineType
 import com.sal7one.transiber.translation.LocalTranslationModels
 import kotlinx.coroutines.*
 import org.json.JSONObject
@@ -23,12 +27,13 @@ import java.io.File
 
 /** Positive IDs are existing system downloads; negative IDs use public-folder downloads. */
 data class FileDownload(val id: Long, val title: String, val status: Int, val reason: Int, val bytes: Long, val total: Long,
- val phase: String = "", val error: String = "", val location: String = "", val installedId: String = "") {
+ val phase: String = "", val error: String = "", val location: String = "", val installedId: String = "", val modelId: String = "") {
  val complete: Boolean get() = status == DownloadManager.STATUS_SUCCESSFUL
  val failed: Boolean get() = status == DownloadManager.STATUS_FAILED
- val installing get() = phase == "Installing"
+ val installing get() = phase in setOf("Installing", "Verifying")
+ val paused get() = phase == "Paused"
  val installed get() = phase == "Installed"
- val active get() = phase in setOf("Waiting", "Downloading", "Installing") || (!complete && !failed && id > 0)
+ val active get() = phase in setOf("Waiting", "Downloading", "Verifying", "Installing") || (!complete && !failed && id > 0)
 }
 
 /** Downloaded originals live in a public folder; verified runtime installs remain app-owned. */
@@ -62,19 +67,33 @@ class FileDownloads(private val context: Context) {
   val checked = DownloadSpec.parse(spec.url, spec.fileName)
   check(Build.VERSION.SDK_INT >= 29 || folderUri != null) { "Choose a download folder first on Android 9" }
   if (installModelId.isNotEmpty()) {
-   val expected = VoiceCatalog.find(installModelId)?.url ?: OcrCatalog.find(installModelId)?.url ?: SpeechDownloads.find(installModelId)?.url ?: TranslationCatalog.models.firstOrNull { it.id == installModelId }?.url
+   val expected = DownloadAssets.find(installModelId)?.url
    require(expected == checked.url) { "Download does not match the selected model" }
   }
+  DownloadStorage.requireSpace(context, DownloadAssets.find(installModelId), 0, folderUri != null)
   val id = synchronized(lock) {
    val ids = newIds()
-   var next = -System.currentTimeMillis()
-   while (next.toString() in ids) next--
-   val json = JSONObject().put("id", next).put("url", checked.url).put("title", checked.fileName)
-    .put("model", installModelId).put("modelsFolder", modelPackage).put("tree", folderUri?.toString().orEmpty())
-    .put("location", locationLabel + if (modelPackage) "/models" else "/files")
-    .put("phase", "Waiting").put("bytes", 0).put("total", -1)
-   check(prefs.edit().putString("download_$next", json.toString()).putStringSet("public_ids", ids + next.toString()).commit()) { "Cannot save download" }
-   next
+   val existing = ids.mapNotNull { it.toLongOrNull()?.let(::record) }.firstOrNull {
+    it.optString("url") == checked.url && it.optString("model") == installModelId &&
+     it.optString("phase") in setOf("Waiting", "Downloading", "Verifying", "Installing", "Paused")
+   }
+   if (existing != null) {
+    if (existing.optString("phase") == "Paused") {
+     existing.put("phase", "Waiting")
+     existing.remove("error")
+     check(prefs.edit().putString("download_${existing.getLong("id")}", existing.toString()).commit()) { "Cannot resume download" }
+    }
+    existing.getLong("id")
+   } else {
+    var next = -System.currentTimeMillis()
+    while (next.toString() in ids) next--
+    val json = JSONObject().put("id", next).put("url", checked.url).put("title", checked.fileName)
+     .put("model", installModelId).put("modelsFolder", modelPackage).put("tree", folderUri?.toString().orEmpty())
+     .put("location", locationLabel + if (modelPackage) "/models" else "/files")
+     .put("phase", "Waiting").put("bytes", 0).put("total", -1)
+    check(prefs.edit().putString("download_$next", json.toString()).putStringSet("public_ids", ids + next.toString()).commit()) { "Cannot save download" }
+    next
+   }
   }
   try { DownloadRunner.start(context) } catch (e: Exception) { fail(id, e); throw e }
   return id
@@ -85,13 +104,30 @@ class FileDownloads(private val context: Context) {
   change(json)
   check(prefs.edit().putString("download_$id", json.toString()).commit()) { "Cannot save download progress" }
  }
+ internal fun progress(id: Long, change: (JSONObject) -> Unit) = synchronized(lock) {
+  val json = record(id) ?: throw CancellationException("Download removed")
+  if (json.optString("phase") == "Paused") throw CancellationException("Download paused")
+  change(json)
+  check(prefs.edit().putString("download_$id", json.toString()).commit()) { "Cannot save download progress" }
+ }
  internal fun fail(id: Long, error: Throwable) = update(id) {
   it.put("phase", "Failed").put("error", generateSequence(error) { cause -> cause.cause }.joinToString("\n") { cause -> cause.message ?: cause.toString() })
  }
  internal fun pendingIds() = synchronized(lock) { newIds().mapNotNull(String::toLongOrNull).filter { record(it)?.optString("phase") == "Waiting" }.sortedDescending() }
  internal fun recoverInterrupted() { synchronized(lock) { newIds().mapNotNull(String::toLongOrNull).forEach { id ->
-  update(id) { if (it.optString("phase") in setOf("Downloading", "Installing")) it.put("phase", "Waiting") }
+  update(id) { if (it.optString("phase") in setOf("Downloading", "Verifying", "Installing")) it.put("phase", "Paused") }
  } } }
+ fun pause(id: Long) {
+  check(ByokPolicy.FEATURE_BYOK)
+  update(id) { if (it.optString("phase") in setOf("Waiting", "Downloading", "Verifying", "Installing")) it.put("phase", "Paused") }
+  DownloadRunner.cancel(id)
+ }
+ fun restart(id: Long) {
+  check(ByokPolicy.FEATURE_BYOK)
+  check(!list().any { it.id == id && it.active }) { "Pause the download before restarting" }
+  update(id) { it.put("restart", true).put("downloadComplete", false) }
+  retry(id)
+ }
  fun retry(id: Long) {
   check(ByokPolicy.FEATURE_BYOK)
   update(id) { it.put("phase", "Waiting").remove("error") }
@@ -101,15 +137,16 @@ class FileDownloads(private val context: Context) {
   if (!ByokPolicy.FEATURE_BYOK) return emptyList()
   val local = synchronized(lock) { newIds().mapNotNull { it.toLongOrNull()?.let(::record) }.map { j ->
    val savedPhase = j.getString("phase")
-   val interrupted = !DownloadRunner.running && (savedPhase in setOf("Downloading", "Installing") ||
+   val interrupted = !DownloadRunner.running && (savedPhase in setOf("Downloading", "Verifying", "Installing") ||
        (savedPhase == "Waiting" && System.currentTimeMillis() + j.getLong("id") > 5000))
    val phase = if (interrupted) "Interrupted" else savedPhase
    FileDownload(j.getLong("id"), j.getString("title"), when (phase) {
     "Complete", "Installed" -> DownloadManager.STATUS_SUCCESSFUL
     "Failed", "Interrupted" -> DownloadManager.STATUS_FAILED
     "Waiting" -> DownloadManager.STATUS_PENDING
+    "Paused" -> DownloadManager.STATUS_PAUSED
     else -> DownloadManager.STATUS_RUNNING
-   }, 0, j.optLong("bytes"), j.optLong("total", -1), phase, if (interrupted) "Transfer interrupted. Tap Retry to finish." else j.optString("error"), j.optString("location"), j.optString("installed"))
+   }, 0, j.optLong("bytes"), j.optLong("total", -1), phase, if (interrupted) "Transfer interrupted. Tap Retry to finish." else j.optString("error"), j.optString("location"), j.optString("installed"), j.optString("model"))
   } }
   val ids = prefs.getStringSet("ids", emptySet()).orEmpty().mapNotNull { it.toLongOrNull() }
   val legacy = if (ids.isEmpty()) emptyList() else buildList {
@@ -157,6 +194,14 @@ class FileDownloads(private val context: Context) {
    } ?: error("Cannot open downloaded speech model")
    model.id
   } else {
+   val artifact = SpeechArtifactCatalog.find(modelId)
+   if (artifact?.kind == SpeechArtifactKind.WHISPER) {
+    val expected = artifact.sha256
+    val imported = ModelRegistry.getInstance(context).importModel(uri(id), expected)
+        ?: error("Whisper model was not registered")
+    require(imported.engineType == ModelEngineType.WHISPER && imported.isValid) { "Downloaded file is not a supported Whisper model" }
+    return@withContext imported.id
+   }
    val spec = TranslationCatalog.models.firstOrNull { it.id == modelId } ?: error("Unknown downloadable model: $modelId")
    installTranslation(id, spec)
    spec.id
@@ -184,13 +229,22 @@ class FileDownloads(private val context: Context) {
    return
   }
   val speech = SpeechDownloads.find(modelId)
+  val artifact = SpeechArtifactCatalog.find(modelId)
+  if (artifact?.kind == SpeechArtifactKind.WHISPER) {
+   require(item.installed && item.installedId.isNotBlank()) { "Whisper model is not installed" }
+   val model = ModelRegistry.getInstance(context).getModel(item.installedId)
+   require(model?.isValid == true && model.engineType == ModelEngineType.WHISPER) { "Installed Whisper model is unavailable" }
+   CaptionConfigStore.update(context) { it.copy(engine = com.sal7one.transiber.caption.CaptionEngineChoice.WHISPER,
+    modelId = item.installedId, streamLanguage = "auto") }
+   return
+  }
   require(item.installed && item.installedId.isNotBlank()) { "Model is not installed" }
   CaptionConfigStore.update(context) {
    if (speech != null) it.copy(engine = speech.profile.captionEngine, modelId = item.installedId, streamLanguage = "auto")
    else it.copy(localTranslationModelId = item.installedId)
   }
  }
- fun translationModel(record: FileDownload): TranslationModelSpec? = TranslationCatalog.models.firstOrNull { it.fileName == record.title }
+ fun translationModel(record: FileDownload): TranslationModelSpec? = TranslationCatalog.models.firstOrNull { if (record.modelId.isNotBlank()) it.id == record.modelId else it.fileName == record.title }
  fun uri(id: Long): Uri = if (id > 0) manager.getUriForDownloadedFile(id) ?: error("Downloaded file is not available")
   else record(id)?.optString("uri")?.takeIf(String::isNotBlank)?.let(Uri::parse) ?: error("Downloaded file is not available")
  private fun newIds() = prefs.getStringSet("public_ids", emptySet()).orEmpty().toSet()

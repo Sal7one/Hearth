@@ -31,16 +31,44 @@ internal data class BenchmarkCandidate(
     val sourceCodes: Set<String>, val targetCodes: Set<String> = emptySet(),
     val file: File? = null, val profile: SpeechProfile? = null, val translation: TranslationModelSpec? = null,
 )
+internal data class BenchmarkInput(
+    val id: String,
+    val text: String = "",
+    val reference: String? = null,
+    val clip: BenchmarkAudio.Clip? = null,
+    val silence: Boolean = false,
+)
+internal data class BenchmarkSampleResult(
+    val id: String, val text: String, val reference: String?, val computeMs: Double,
+    val firstTextMs: Double, val audioMs: Long, val silence: Boolean, val sourceText: String? = null,
+) {
+    fun json() = JSONObject().put("id", id).put("text", text).put("reference", reference ?: JSONObject.NULL)
+        .put("computeMs", computeMs).put("firstTextMs", firstTextMs).put("audioMs", audioMs).put("silence", silence)
+        .put("sourceText", sourceText ?: JSONObject.NULL)
+    companion object {
+        fun from(j: JSONObject) = BenchmarkSampleResult(j.getString("id"), j.optString("text"),
+            if (j.has("reference") && !j.isNull("reference")) j.getString("reference") else null,
+            j.optDouble("computeMs"), j.optDouble("firstTextMs"), j.optLong("audioMs"), j.optBoolean("silence"),
+            if (j.has("sourceText") && !j.isNull("sourceText")) j.getString("sourceText") else null)
+    }
+}
 internal data class BenchmarkResult(
     val runId: String, val timestamp: Long, val model: String, val identity: String, val route: String,
     val inputHash: String, val source: String, val target: String, val audioMs: Long,
     val loadMs: Double, val computeMs: List<Double>, val texts: List<String>, val runtime: String,
     val firstTextMs: List<Double>, val device: String, val error: String? = null,
+    val referenceText: String? = null, val wordErrorRate: Double? = null, val characterErrorRate: Double? = null,
+    val scoringNormalization: String? = null,
+    val translationChrf: Double? = null, val samples: List<BenchmarkSampleResult> = emptyList(),
 ) {
     fun json() = JSONObject().put("runId", runId).put("timestamp", timestamp).put("model", model)
         .put("identity", identity).put("route", route).put("inputHash", inputHash).put("source", source).put("target", target)
         .put("audioMs", audioMs).put("loadMs", loadMs).put("computeMs", JSONArray(computeMs)).put("texts", JSONArray(texts))
         .put("runtime", runtime).put("firstTextMs", JSONArray(firstTextMs)).put("device", device).put("error", error)
+        .put("referenceText", referenceText ?: JSONObject.NULL)
+        .put("wordErrorRate", wordErrorRate ?: JSONObject.NULL).put("characterErrorRate", characterErrorRate ?: JSONObject.NULL)
+        .put("scoringNormalization", scoringNormalization ?: JSONObject.NULL)
+        .put("translationChrf", translationChrf ?: JSONObject.NULL).put("samples", JSONArray(samples.map { it.json() }))
     companion object {
         fun from(j: JSONObject) = BenchmarkResult(
             j.getString("runId"), j.getLong("timestamp"), j.getString("model"), j.getString("identity"), j.getString("route"),
@@ -48,7 +76,13 @@ internal data class BenchmarkResult(
             j.getJSONArray("computeMs").let { a -> (0 until a.length()).map(a::getDouble) },
             j.getJSONArray("texts").let { a -> (0 until a.length()).map(a::getString) }, j.getString("runtime"),
             j.getJSONArray("firstTextMs").let { a -> (0 until a.length()).map(a::getDouble) }, j.getString("device"),
-            if (j.has("error") && !j.isNull("error")) j.getString("error") else null)
+            if (j.has("error") && !j.isNull("error")) j.getString("error") else null,
+            if (j.has("referenceText") && !j.isNull("referenceText")) j.getString("referenceText") else null,
+            j.optDouble("wordErrorRate", Double.NaN).takeIf(Double::isFinite),
+            j.optDouble("characterErrorRate", Double.NaN).takeIf(Double::isFinite),
+            if (j.has("scoringNormalization") && !j.isNull("scoringNormalization")) j.getString("scoringNormalization") else null,
+            j.optDouble("translationChrf", Double.NaN).takeIf(Double::isFinite),
+            j.optJSONArray("samples")?.let { a -> (0 until a.length()).map { BenchmarkSampleResult.from(a.getJSONObject(it)) } }.orEmpty())
     }
 }
 internal class BenchmarkResults(context: Context) {
@@ -108,21 +142,34 @@ internal class LocalBenchmarkRunner(private val context: Context) {
     }
 
     suspend fun run(
-        selected: List<BenchmarkCandidate>, clip: BenchmarkAudio.Clip?, text: String,
-        source: String, target: String, progress: (String) -> Unit, onResult: (BenchmarkResult) -> Unit,
+        selected: List<BenchmarkCandidate>, clip: BenchmarkAudio.Clip?, text: String, referenceText: String?,
+        source: String, target: String, benchmarkInputs: List<BenchmarkInput> = emptyList(),
+        progress: (String) -> Unit, onResult: (BenchmarkResult) -> Unit,
     ) {
         require(selected.isNotEmpty() && selected.size <= 12) { "Choose between 1 and 12 installed models" }
         val translating = selected.first().targetCodes.isNotEmpty()
         require(selected.all { it.targetCodes.isNotEmpty() == translating }) { "Compare speech and translation separately" }
-        if (translating) {
+        if (benchmarkInputs.isNotEmpty()) {
+            require(benchmarkInputs.size <= 32) { "Choose a benchmark set with no more than 32 samples" }
+            require(benchmarkInputs.all { if (translating) it.text.isNotBlank() && it.clip == null else it.clip != null }) {
+                "Benchmark samples do not match the selected task"
+            }
+        } else if (translating) {
             require(text.isNotBlank() && text.length <= 500) { "Use 1–500 characters of corrected source text" }
             require(source != target) { "Choose different source and translation languages" }
         } else require(clip != null) { "Choose a WAV recording first" }
+        require(referenceText == null || referenceText.length <= 8000) { "Reference text must be 8,000 characters or fewer" }
         val lease = LocalWorkGate.acquire("Benchmark")
         try {
             val runId = UUID.randomUUID().toString()
-            val hash = clip?.takeUnless { translating }?.sha256 ?: MessageDigest.getInstance("SHA-256")
-                .digest(text.toByteArray()).joinToString("") { "%02x".format(it.toInt() and 255) }
+            val hash = if (benchmarkInputs.isNotEmpty()) MessageDigest.getInstance("SHA-256")
+                .digest(benchmarkInputs.joinToString("\u0000") {
+                    listOf(it.id, it.clip?.sha256 ?: it.text, it.reference.orEmpty(), it.silence.toString()).joinToString("\u0001")
+                }.toByteArray())
+                .joinToString("") { "%02x".format(it.toInt() and 255) }
+            else MessageDigest.getInstance("SHA-256")
+                .digest("$source\u0000$target\u0000${clip?.takeUnless { translating }?.sha256.orEmpty()}\u0000$text\u0000${referenceText.orEmpty()}".toByteArray())
+                .joinToString("") { "%02x".format(it.toInt() and 255) }
             for (candidate in selected) {
                 currentCoroutineContext().ensureActive()
                 progress("${candidate.label}: loading and verifying")
@@ -130,6 +177,21 @@ internal class LocalBenchmarkRunner(private val context: Context) {
                 val elapsed = mutableListOf<Double>(); val texts = mutableListOf<String>(); val first = mutableListOf<Double>()
                 var speech: SpeechSession? = null; var legacy: SttEngine? = null; var translator: CancellableTextTranslator? = null
                 var failure: String? = null
+                val samples = mutableListOf<BenchmarkSampleResult>()
+                val rawInputs = benchmarkInputs.ifEmpty {
+                    listOf(BenchmarkInput("custom", text, referenceText, clip = clip.takeUnless { translating }))
+                }
+                // FLEURS English includes valid but unusually low-level PCM. Normalize every
+                // comparison route identically (also used by the macOS host harness), leaving
+                // digital silence untouched so the false-positive checks remain meaningful.
+                val inputs = if (translating) rawInputs else rawInputs.map { input ->
+                    input.copy(clip = input.clip?.let { audio ->
+                        audio.copy(samples = BenchmarkAudio.normalizeForComparison(audio.samples))
+                    })
+                }
+                val totalAudioMs = if (translating) 0L else inputs.sumOf { it.clip?.durationMs ?: 0L }
+                val allReferences = inputs.filterNot { it.silence }.mapNotNull { it.reference }
+                val combinedReference = allReferences.takeIf { it.isNotEmpty() }?.joinToString(" ")
                 val loading = System.nanoTime()
                 try {
                     require(source in candidate.sourceCodes || candidate.sourceCodes == setOf("model")) { "${candidate.label} cannot use spoken language $source" }
@@ -179,15 +241,20 @@ internal class LocalBenchmarkRunner(private val context: Context) {
                         }
                     }
                     load = (System.nanoTime() - loading) / 1e6
-                    repeat(3) { pass ->
+                repeat(3) { pass ->
+                    currentCoroutineContext().ensureActive()
+                    progress("${candidate.label}: ${if (pass == 0) "first pass" else "warm pass $pass of 2"}")
+                    val passTexts = mutableListOf<String>()
+                    val passFirstText = mutableListOf<Double>()
+                    var passComputeMs = 0.0
+                    inputs.forEachIndexed { inputIndex, input ->
                         currentCoroutineContext().ensureActive()
-                        progress("${candidate.label}: ${if (pass == 0) "first inference" else "warm pass $pass of 2"}")
                         val start = System.nanoTime()
                         var firstMs: Double? = null
                         val output = when {
                             speech != null -> {
                                 val session = checkNotNull(speech)
-                                if (pass > 0) session.reset()
+                                if (pass > 0 || inputIndex > 0) session.reset()
                                 val finals = linkedMapOf<Long, String>()
                                 fun collect(update: SpeechUpdate) {
                                     update.transcripts.forEach { t ->
@@ -195,9 +262,9 @@ internal class LocalBenchmarkRunner(private val context: Context) {
                                         if (t.isFinal) finals[t.utteranceId] = t.text
                                     }
                                 }
-                                val samples = checkNotNull(clip).samples
+                                val samples = checkNotNull(input.clip).samples
                                 var offset = 0
-                                // Same 20 ms frames as capture; accelerated replay measures compute, not live latency.
+                                // Match captured 20 ms frames; accelerated replay is compute, not live latency.
                                 while (offset < samples.size) {
                                     currentCoroutineContext().ensureActive()
                                     val end = minOf(offset + 320, samples.size)
@@ -206,17 +273,27 @@ internal class LocalBenchmarkRunner(private val context: Context) {
                                 collect(session.finish())
                                 finals.values.filter { it.isNotBlank() }.joinToString(" ")
                             }
-                            translator != null -> checkNotNull(translator).translate(text, TranslationDirection(source, target))
+                            translator != null -> checkNotNull(translator).translate(input.text, TranslationDirection(source, target))
                             else -> {
                                 val engine = checkNotNull(legacy)
-                                if (pass > 0) engine.reset().getOrThrow()
-                                engine.transcribeBatch(checkNotNull(clip).samples, 16000).getOrThrow().fullText
+                                if (pass > 0 || inputIndex > 0) engine.reset().getOrThrow()
+                                engine.transcribeBatch(checkNotNull(input.clip).samples, 16000).getOrThrow().fullText
                             }
                         }
                         currentCoroutineContext().ensureActive()
-                        val ms = (System.nanoTime() - start) / 1e6
-                        elapsed += ms; first += firstMs ?: ms; texts += output.take(8000)
+                        val sampleMs = (System.nanoTime() - start) / 1e6
+                        val sampleFirstMs = firstMs ?: sampleMs
+                        passComputeMs += sampleMs
+                        passFirstText += sampleFirstMs
+                        passTexts += output.take(8000)
+                        if (pass == 2) samples += BenchmarkSampleResult(input.id, output.take(2000), input.reference,
+                            sampleMs, sampleFirstMs, input.clip?.durationMs ?: 0L, input.silence,
+                            input.text.takeIf { translating })
                     }
+                    elapsed += passComputeMs
+                    first += if (passFirstText.isEmpty()) passComputeMs else passFirstText.average()
+                    texts += passTexts.filterIndexed { index, _ -> !inputs[index].silence }.joinToString(" ").take(8000)
+                }
                 } catch (e: CancellationException) { throw e }
                 catch (e: Exception) { failure = e.message ?: e.toString() }
                 catch (e: LinkageError) { failure = e.message ?: e.toString() }
@@ -227,10 +304,20 @@ internal class LocalBenchmarkRunner(private val context: Context) {
                         speech?.close(); legacy?.release(); translator?.close()
                     }
                 }
+                if (!translating) runtime += "; benchmark audio: ${BenchmarkAudio.NORMALIZATION}"
                 val result = BenchmarkResult(runId, System.currentTimeMillis(), candidate.label, candidate.id, candidate.route,
-                    hash, source, if (translating) target else "", if (translating) 0 else checkNotNull(clip).durationMs,
+                    hash, source, if (translating) target else "", totalAudioMs,
                     load, elapsed, texts, runtime, first,
-                    "${Build.MANUFACTURER} ${Build.MODEL}; Android ${Build.VERSION.RELEASE}; API ${Build.VERSION.SDK_INT}; app ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})", failure)
+                    "${Build.MANUFACTURER} ${Build.MODEL}; Android ${Build.VERSION.RELEASE}; API ${Build.VERSION.SDK_INT}; app ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})", failure,
+                    combinedReference, combinedReference?.takeIf { failure == null }?.let { BenchmarkScoring.wordErrors(it, texts.lastOrNull().orEmpty()).rate },
+                    combinedReference?.takeIf { failure == null }?.let { BenchmarkScoring.characterErrors(it, texts.lastOrNull().orEmpty()).rate },
+                    combinedReference?.takeIf { failure == null }?.let {
+                        BenchmarkScoring.NORMALIZATION + if (translating) "; ${BenchmarkScoring.CHRF_PARAMETERS}" else ""
+                    },
+                    if (translating && failure == null) samples.mapNotNull { sample ->
+                        sample.reference?.let { expected -> BenchmarkScoring.chrf(expected, sample.text) }
+                    }.takeIf { it.isNotEmpty() }?.average()?.div(100.0) else null,
+                    samples)
                 withContext(Dispatchers.IO) { BenchmarkResults(context).append(result) }
                 onResult(result)
             }

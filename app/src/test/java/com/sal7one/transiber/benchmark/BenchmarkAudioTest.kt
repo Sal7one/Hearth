@@ -35,6 +35,16 @@ class BenchmarkAudioTest {
         assertTrue(decoded.samples.all { it == 1234.toShort() })
         assertEquals(BenchmarkAudio.decode(wav()).sha256, decoded.sha256)
     }
+    @Test fun comparisonGainMatchesHostPolicyAndPreservesSilenceAndNormalLevelAudio() {
+        val quiet = shortArrayOf(1, -2, 100, -311)
+        val boosted = BenchmarkAudio.normalizeForComparison(quiet)
+        assertEquals(Short.MAX_VALUE.toInt() * 0.9, kotlin.math.abs(boosted.minOrNull()!!.toInt()).toDouble(), 2.0)
+        assertNotSame(quiet, boosted)
+        val silence = shortArrayOf(0, 0, 0)
+        assertSame(silence, BenchmarkAudio.normalizeForComparison(silence))
+        val normal = shortArrayOf(16384, -22000)
+        assertSame(normal, BenchmarkAudio.normalizeForComparison(normal))
+    }
     @Test fun rejectsFloatTruncatedOversizedAndPartialFrames() {
         rejected(wav().also { it[20] = 3 })
         rejected(wav().copyOf(50))
