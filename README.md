@@ -110,8 +110,10 @@ capabilities and are independent of the interface language.
 ## Quick start
 
 1. Open **Easy setup** from Home or Settings. Choose **On this phone** for Nemotron
-   speech + Hy-MT2 translation, or **Cloud** for OpenAI, OpenRouter or a compatible
-   HTTPS local server. The offline build uses model imports.
+   speech and a small English→Arabic, Russian→English or Chinese→English translator;
+   choose **More languages** for the larger, slower Hy-MT2 model. **Cloud** offers
+   OpenAI, OpenRouter or a compatible HTTPS local server. The offline build uses
+   model imports.
 2. Open a feature and choose your languages. For live captions, select **Device
    audio** or **Microphone**, then original captions or translation.
 3. Tap the start button and accept Android’s required permissions or capture prompt.

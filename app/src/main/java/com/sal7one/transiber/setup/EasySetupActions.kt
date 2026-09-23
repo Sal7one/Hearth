@@ -1,6 +1,7 @@
 package com.sal7one.transiber.setup
 
 import android.content.Context
+import com.sal7one.common_jni.translation.TranslationCatalog
 import com.sal7one.transiber.byok.*
 import com.sal7one.transiber.caption.*
 import com.sal7one.transiber.downloads.*
@@ -21,10 +22,12 @@ internal class EasySetupActions(context: Context) {
     private val speechStore=LocalSpeechModels(File(context.filesDir,"speech-models"))
     private val translations=LocalTranslationModels(File(context.filesDir,"translation-models"))
     val speechDownload get() = checkNotNull(SpeechDownloads.find(EasySetupPreset.speech.id))
-    suspend fun localStatus(): EasyLocalStatus = withContext(Dispatchers.IO) {
+    suspend fun localStatus(translatorId: String): EasyLocalStatus = withContext(Dispatchers.IO) {
         val speech=speechStore.list().firstOrNull { it.profile==EasySetupPreset.speech }
         speech?.let { checkSpeechAssetPresence(it.root) }
-        EasyLocalStatus(speech,translations.installed().any { it.id==EasySetupPreset.translatorId },
+        val translation=MarianPackage.find(translatorId)?.let { MarianPackage.installed(context,it)!=null }
+            ?: translations.installed().any { it.id==translatorId }
+        EasyLocalStatus(speech,translation,
             if(ByokPolicy.FEATURE_BYOK) FileDownloads(context).list() else emptyList())
     }
     private fun idle() {
@@ -32,9 +35,9 @@ internal class EasySetupActions(context: Context) {
             "Stop the current session before changing setup."
         }
     }
-    suspend fun downloadMissing() = withContext(Dispatchers.IO) {
+    suspend fun downloadMissing(translatorId: String) = withContext(Dispatchers.IO) {
         check(ByokPolicy.FEATURE_BYOK) { "Import models in the offline build." };idle()
-        val state=localStatus();val downloads=FileDownloads(context)
+        val state=localStatus(translatorId);val downloads=FileDownloads(context)
         fun enqueue(id: String, url: String, name: String) {
             val record=state.downloads.firstOrNull {it.title==name}
             if(record?.active==true)return
@@ -42,12 +45,16 @@ internal class EasySetupActions(context: Context) {
             else downloads.enqueue(DownloadSpec.parse(url,name),true,id)
         }
         if(state.speech==null)enqueue(speechDownload.profile.id,speechDownload.url,speechDownload.fileName)
-        if(!state.translation)EasySetupPreset.translator.let {enqueue(it.id,it.url,it.fileName)}
+        if(!state.translation) {
+            val pair=MarianPackage.find(translatorId)
+            if(pair!=null)MarianPackage.enqueue(context,downloads,pair)
+            else TranslationCatalog.find(translatorId).let {enqueue(it.id,it.url,it.fileName)}
+        }
     }
-    suspend fun applyLocal(target: String) {
-        idle();val status=localStatus();check(status.ready) { "Wait for both models to install." }
-        CaptionConfigStore.update(context) { EasySetupPreset.local(it,checkNotNull(status.speech).id,target) }
-        ConversationTranslationSettings.useEverywhere(context,"local",EasySetupPreset.translatorId)
+    suspend fun applyLocal(translatorId: String, source: String, target: String) {
+        idle();val status=localStatus(translatorId);check(status.ready) { "Wait for both models to install." }
+        CaptionConfigStore.update(context) { EasySetupPreset.local(it,checkNotNull(status.speech).id,translatorId,source,target) }
+        ConversationTranslationSettings.useEverywhere(context,"local",translatorId)
         com.sal7one.transiber.ocr.OcrPreferences(context).update {it.copy(translate=true)}
     }
     suspend fun applyCloud(provider: CloudConfigStore.Provider, baseUrl: String, model: String, key: String, target: String) {

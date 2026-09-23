@@ -14,4 +14,12 @@
     <string name="model_marian_download_notice">Downloading publisher files to %1$s/models. Installation starts when all four verify.</string>
     <string name="model_marian_card">Model card and license</string>
     <string name="model_marian_setup">Download four verified publisher files in Models</string>
+    <string name="easy_setup_choose_pair">Choose what you want to translate</string>
+    <string name="easy_setup_broad_languages">More languages · larger model</string>
+    <string name="easy_setup_fast_pair_note">Fast on this phone. These small models support only the shown direction; check important names and numbers.</string>
+    <string name="easy_setup_broad_note">Hy-MT2 supports more languages but was slow in our phone test. Choose the spoken language to avoid Auto detection and enable local translation.</string>
+    <string name="easy_setup_spoken_language">Spoken language: %1$s</string>
+    <string name="easy_setup_spoken_title">Spoken language</string>
+    <string name="easy_setup_download_size">About %1$d MiB to download; installation needs additional space. Originals stay in your Downloads folder.</string>
+    <string name="easy_setup_choose_different_languages">Choose different spoken and translated languages.</string>
 </resources>

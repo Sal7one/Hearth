@@ -14,4 +14,12 @@
     <string name="model_marian_download_notice">يجري تنزيل ملفات الناشر إلى %1$s/models. يبدأ التثبيت بعد التحقق من الملفات الأربعة.</string>
     <string name="model_marian_card">بطاقة النموذج والترخيص</string>
     <string name="model_marian_setup">نزّل ملفات الناشر الأربعة المعتمدة من صفحة النماذج</string>
+    <string name="easy_setup_choose_pair">اختر ما تريد ترجمته</string>
+    <string name="easy_setup_broad_languages">لغات أكثر · نموذج أكبر</string>
+    <string name="easy_setup_fast_pair_note">سريع على هذا الهاتف. تدعم هذه النماذج الصغيرة الاتجاه المعروض فقط؛ راجع الأسماء والأرقام المهمة.</string>
+    <string name="easy_setup_broad_note">يدعم Hy-MT2 لغات أكثر لكنه كان بطيئًا في اختبار الهاتف. اختر لغة الكلام لتجاوز الكشف التلقائي وتفعيل الترجمة المحلية.</string>
+    <string name="easy_setup_spoken_language">لغة الكلام: %1$s</string>
+    <string name="easy_setup_spoken_title">لغة الكلام</string>
+    <string name="easy_setup_download_size">حوالي %1$d ميبيبايت للتنزيل؛ يحتاج التثبيت مساحة إضافية. تبقى الملفات الأصلية في مجلد التنزيلات.</string>
+    <string name="easy_setup_choose_different_languages">اختر لغتين مختلفتين للكلام والترجمة.</string>
 </resources>

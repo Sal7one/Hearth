@@ -14,4 +14,12 @@
     <string name="model_marian_download_notice">正在将发布者文件下载到 %1$s/models。四个文件全部验证后开始安装。</string>
     <string name="model_marian_card">模型卡片和许可证</string>
     <string name="model_marian_setup">在“模型”中下载四个已验证的发布者文件</string>
+    <string name="easy_setup_choose_pair">选择要翻译的语言</string>
+    <string name="easy_setup_broad_languages">更多语言 · 更大的模型</string>
+    <string name="easy_setup_fast_pair_note">在这台手机上速度较快。这些小模型只支持所示方向；重要的姓名和数字请核对。</string>
+    <string name="easy_setup_broad_note">Hy-MT2 支持更多语言，但在我们的手机测试中较慢。选择口语语言可跳过自动检测并启用本地翻译。</string>
+    <string name="easy_setup_spoken_language">口语语言：%1$s</string>
+    <string name="easy_setup_spoken_title">口语语言</string>
+    <string name="easy_setup_download_size">约需下载 %1$d MiB；安装还需要额外空间。原始文件保存在下载文件夹中。</string>
+    <string name="easy_setup_choose_different_languages">口语语言和翻译语言不能相同。</string>
 </resources>

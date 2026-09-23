@@ -11,14 +11,20 @@ class EasySetupPresetTest {
     @Test fun localActivatesBothModelsAndPreservesAppearanceAndAudioChoice() {
         val before=CaptionOverlayConfig(engine=CaptionEngineChoice.CLOUD,textTranslationProviderId="google",
             source=CaptionSource.MIC,theme=CaptionTheme.LIGHT,bubbleHeightDp=230)
-        val after=EasySetupPreset.local(before,"speech-installed","ar")
+        val after=EasySetupPreset.local(before,"speech-installed","marian-en-ar","en","ar")
         assertEquals(CaptionEngineChoice.NEMOTRON,after.engine);assertEquals("speech-installed",after.modelId)
-        assertEquals("hy-mt2-q4",after.localTranslationModelId);assertTrue(after.localTranslationEnabled)
-        assertEquals("local",after.textTranslationProviderId);assertEquals("auto",after.streamLanguage)
+        assertEquals("marian-en-ar",after.localTranslationModelId);assertTrue(after.localTranslationEnabled)
+        assertEquals("local",after.textTranslationProviderId);assertEquals("en",after.streamLanguage)
         assertEquals(CaptionTranslationRoute.TEXT_TRANSLATOR,captionTranslationRoute(after,SttMode.BATCH))
         assertEquals(before.source,after.source);assertEquals(before.theme,after.theme);assertEquals(230,after.bubbleHeightDp)
-        assertThrows(IllegalArgumentException::class.java) {EasySetupPreset.local(before,"","ar")}
-        assertThrows(IllegalArgumentException::class.java) {EasySetupPreset.local(before,"speech-installed","zz")}
+        assertThrows(IllegalArgumentException::class.java) {EasySetupPreset.local(before,"","marian-en-ar","en","ar")}
+        assertThrows(IllegalArgumentException::class.java) {EasySetupPreset.local(before,"speech-installed","marian-en-ar","ru","ar")}
+        assertThrows(IllegalArgumentException::class.java) {EasySetupPreset.local(before,"speech-installed","marian-en-ar","en","zz")}
+        val russian=EasySetupPreset.local(before,"speech-installed","marian-ru-en","ru","en")
+        assertEquals("ru",russian.streamLanguage)
+        assertEquals("en",russian.target.languageTag)
+        val broad=EasySetupPreset.local(before,"speech-installed","hy-mt2-q4","zh","ar")
+        assertEquals("zh",broad.streamLanguage)
     }
     @Test fun openAiUsesLiveTranslationAndOtherEndpointsStartWithCaptions() {
         assertEquals(listOf(Provider.OPENAI,Provider.OPENROUTER,Provider.CUSTOM),EasySetupPreset.providers)
