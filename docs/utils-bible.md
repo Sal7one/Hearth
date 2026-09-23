@@ -340,3 +340,11 @@ catalog tests cover grouping, HTTPS revisions, hashes and language scope.
 `FileDownloads.progress` makes pause/removal take priority over late transfer
 updates. A completed phone transfer exercised the hash/install path; interrupted
 network resume still needs a physical test.
+
+`DownloadIntegrity.matches` is consumed by the Play foreground downloader both
+after transfer and before retrying installation from a previously completed public
+file. Its host test covers valid, changed, truncated and oversized bytes and
+cancellation. A failed recheck makes Retry start a fresh transfer, while a valid
+original avoids wasting another model download. The phone has verified a normal
+transfer and pause/resume; corrupt-file retry and custom-folder recovery remain
+device checks.
