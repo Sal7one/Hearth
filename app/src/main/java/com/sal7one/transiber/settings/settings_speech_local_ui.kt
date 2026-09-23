@@ -28,6 +28,7 @@ internal fun SettingsSpeechLocalUi(
         listOf(
             CaptionEngineChoice.NEMOTRON to "Nemotron",
             CaptionEngineChoice.QWEN to "Qwen3-ASR",
+            CaptionEngineChoice.OMNILINGUAL to "Omnilingual CTC",
             CaptionEngineChoice.MOONSHINE to "Moonshine",
             CaptionEngineChoice.WHISPER to "Whisper",
             CaptionEngineChoice.VOSK to "Vosk",

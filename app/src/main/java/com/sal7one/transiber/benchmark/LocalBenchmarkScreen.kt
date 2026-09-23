@@ -315,10 +315,12 @@ private fun BenchmarkResultCard(result: BenchmarkResult) {
             Text("${result.source}${if (result.target.isBlank()) "" else " → ${result.target}"} · ${DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT).format(Date(result.timestamp))}",
                 style = MaterialTheme.typography.bodySmall)
             result.error?.let { SelectionContainer { Text(it, color = MaterialTheme.colorScheme.error) } }
-            if (result.wordErrorRate != null && result.characterErrorRate != null) {
-                Text(uiText(UiR.string.benchmark_error_rates,
-                    number(result.wordErrorRate * 100.0), number(result.characterErrorRate * 100.0)),
-                    style = MaterialTheme.typography.bodyMedium)
+            if (result.target.isBlank() && result.characterErrorRate != null) {
+                val errorLabel = if (result.source == "zh" || result.wordErrorRate == null)
+                    uiText(UiR.string.benchmark_character_error_only, number(result.characterErrorRate * 100.0))
+                else uiText(UiR.string.benchmark_error_rates,
+                    number(result.wordErrorRate * 100.0), number(result.characterErrorRate * 100.0))
+                Text(errorLabel, style = MaterialTheme.typography.bodyMedium)
             } else if (result.referenceText == null) {
                 Text(uiText(UiR.string.benchmark_no_reference), style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)

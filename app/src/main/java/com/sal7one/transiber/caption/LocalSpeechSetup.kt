@@ -106,8 +106,12 @@ internal fun LocalSpeechSetup(
         }
         com.sal7one.transiber.models.ModelSourcePanel(com.sal7one.transiber.models.ModelSources.speech(config.effectiveEngine))
         var expandedLanguages by remember { mutableStateOf(false) }
-        val profile = if (backend == com.sal7one.common_jni.speech.SpeechBackend.MOONSHINE) com.sal7one.common_jni.speech.SpeechProfile.MOONSHINE_TINY_EN else if (backend == com.sal7one.common_jni.speech.SpeechBackend.QWEN3_ASR)
-            com.sal7one.common_jni.speech.SpeechProfile.QWEN3_ASR_0_6B else com.sal7one.common_jni.speech.SpeechProfile.NEMOTRON_3_5_ASR_0_6B
+        val profile = when (backend) {
+            com.sal7one.common_jni.speech.SpeechBackend.MOONSHINE -> com.sal7one.common_jni.speech.SpeechProfile.MOONSHINE_TINY_EN
+            com.sal7one.common_jni.speech.SpeechBackend.QWEN3_ASR -> com.sal7one.common_jni.speech.SpeechProfile.QWEN3_ASR_0_6B
+            com.sal7one.common_jni.speech.SpeechBackend.OMNILINGUAL_CTC -> com.sal7one.common_jni.speech.SpeechProfile.OMNILINGUAL_CTC_300M_V2
+            com.sal7one.common_jni.speech.SpeechBackend.NEMOTRON_3_5 -> com.sal7one.common_jni.speech.SpeechProfile.NEMOTRON_3_5_ASR_0_6B
+        }
         val ccLanguages = profile.capabilities.sourceLanguages
         TextButton(onClick = { expandedLanguages = !expandedLanguages }) { Text(uiText(UiR.string.ui_cc_language_support_1_s_languages_26530, ccLanguages.size)) }
         if (expandedLanguages) {
@@ -116,6 +120,7 @@ internal fun LocalSpeechSetup(
             })
             Text(if (backend == com.sal7one.common_jni.speech.SpeechBackend.MOONSHINE) uiText(UiR.string.ui_english_only_short_utterance_decoding_translation_requires_a_sepa_35325) else if (backend == com.sal7one.common_jni.speech.SpeechBackend.QWEN3_ASR)
                 uiText(UiR.string.ui_publisher_coverage_30_languages_plus_chinese_dialects_auto_or_an_529f3)
+            else if (backend == com.sal7one.common_jni.speech.SpeechBackend.OMNILINGUAL_CTC) uiText(UiR.string.model_omnilingual_language_note)
             else uiText(UiR.string.ui_publisher_coverage_28_languages_32_locales_usable_without_fine_tu_a58d7))
         }
         if (details) {

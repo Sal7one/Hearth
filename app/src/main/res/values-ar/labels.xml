@@ -65,6 +65,8 @@
     <string name="label_captionenginechoice_moonshine_label" formatted="false">"Moonshine · الإنجليزية"</string>
     <string name="label_captionenginechoice_moonshine_explanation" formatted="false">"تعرف خفيف للإنجليزية فقط ضمن عبارات قصيرة. ترجمة محلية اختيارية."</string>
     <string name="label_captionenginechoice_qwen_label" formatted="false">"Qwen3-ASR (محلي)"</string>
+    <string name="label_captionenginechoice_omnilingual_label" formatted="false">"Omnilingual CTC 300M (محلي)"</string>
+    <string name="label_captionenginechoice_omnilingual_explanation" formatted="false">"نص تجريبي خفيف متعدد اللغات في مقاطع قصيرة. لا يمكن إجبار النموذج على لغة منطوقة؛ اختيارك يحدد لغة النص للترجمة."</string>
     <string name="label_captionenginechoice_qwen_explanation" formatted="false">"نص متعدد اللغات دون اتصال بحزمة Qwen. يصل النص النهائي على مقاطع مع اكتشاف تلقائي للغة وترجمة محلية اختيارية."</string>
     <string name="label_captionenginechoice_nemotron_label" formatted="false">"Nemotron 3.5 (محلي)"</string>
     <string name="label_captionenginechoice_nemotron_explanation" formatted="false">"نص متعدد اللغات دون اتصال مع نتائج جزئية متدفقة من حزمة Nemotron GGUF. ترجمة محلية اختيارية؛ السرعة تعتمد على الجهاز."</string>

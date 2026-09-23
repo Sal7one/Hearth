@@ -829,8 +829,9 @@
     <string name="benchmark_reference_transcript">النص المرجعي المنطوق</string>
     <string name="benchmark_reference_translation">الترجمة المرجعية</string>
     <string name="benchmark_reference_optional">اختياري · أضف النص المصحح لمقارنة الدقة</string>
-    <string name="benchmark_scoring_explainer">معدلا WER وCER يقيسان اختلاف النص بعد التطبيع، ولا يحكمان على معنى الترجمة. الأنسب للصينية هو CER. اتركه فارغًا لمقارنة السرعة فقط.</string>
+    <string name="benchmark_scoring_explainer">يعرض التعرف على الكلام WER وCER مقارنة بنص مصحح. تعرض الترجمة تشابه chrF++ مع مرجع، وليس حكمًا على المعنى. اترك المرجع فارغًا لمقارنة السرعة فقط.</string>
     <string name="benchmark_error_rates">أخطاء النص المرجعي · WER %1$s%% · CER %2$s%%</string>
+    <string name="benchmark_character_error_only">أخطاء النص المرجعي · CER %1$s%%</string>
     <string name="benchmark_no_reference">لا يوجد نص مرجعي · هذه النتيجة تقارن السرعة فقط.</string>
     <string name="benchmark_builtin_set">مجموعة اختبار سريعة مدمجة</string>
     <string name="benchmark_custom_input">تسجيل أو نص خاص بي</string>
@@ -845,4 +846,6 @@
     <string name="benchmark_silence_check">اختبار الصمت</string>
     <string name="benchmark_silence_false_positives">نتائج خاطئة أثناء الصمت · %1$d من %2$d اختبارين</string>
     <string name="benchmark_source_sample">المصدر</string>
+    <string name="model_marian_via_english_warning">يستخدم نموذجين للترجمة عبر الإنجليزية. قد يتغير المعنى؛ قارن النص العربي النهائي بمترجمات أخرى قبل استخدامه للتعليقات المباشرة.</string>
+    <string name="model_omnilingual_language_note">يتعرف Omnilingual CTC على اللغة تلقائياً. اختيار لغة الكلام يحدد لغة النص للترجمة ولا يجبر النموذج عليها. يبقى الوضع التلقائي للترجمة النصية فقط عندما يكون المصدر مجهولاً.</string>
 </resources>

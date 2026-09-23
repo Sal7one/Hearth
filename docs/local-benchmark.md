@@ -47,8 +47,10 @@ public references, but never the custom audio bytes.
   audio duration. Below 1 means the measured adapter processes that test set
   faster than its audio duration. It does not measure phrase-finality or live
   queue behavior.
-- **WER and CER** compare normalized reference/output text. Chinese is more
-  meaningfully inspected with CER than word segmentation. For translation,
+- **WER and CER** compare normalized reference/output speech text. Chinese
+  publisher references insert spaces between characters, while model output
+  typically does not; the app therefore reports CER only for Chinese. Translation does not
+  receive WER/CER because different valid wording would be counted as errors. For translation,
   **chrF++** is the mean sentence score over the six aligned samples. These are
   automatic text-similarity scores, not bilingual judgments of meaning,
   fluency, dialect, or safety.
@@ -101,9 +103,10 @@ runner uses forced language, batch greedy decoding, 16 kHz mono input, gain
 normalization, and the app's batch Whisper thresholds. Silence clips stay in
 the per-sample output and count as false positives if any text is emitted. It
 is an equivalent host setup for comparison, not the Android NDK build: host
-CPU, compiler and thermal behavior differ. The host tools currently cover
-Whisper speech and GGUF translation; they do not run Nemotron, Qwen, Moonshine,
-or ML Kit on macOS. Host results must name the Mac/backend and cannot predict
+CPU, compiler and thermal behavior differ. The host benchmark tools currently cover
+Whisper speech and GGUF translation; a separate sherpa C++ smoke tool exercises
+the Omnilingual CTC backend on real clips. They do not run Nemotron, Qwen, Moonshine,
+or ML Kit as benchmark candidates on macOS. Host results must name the Mac/backend and cannot predict
 phone speed, battery or sustained thermal behavior. The phone remains the
 authority for Android speed and memory.
 

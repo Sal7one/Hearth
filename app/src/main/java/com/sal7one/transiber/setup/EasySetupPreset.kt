@@ -3,6 +3,7 @@ package com.sal7one.transiber.setup
 import com.sal7one.common_jni.speech.SpeechProfile
 import com.sal7one.common_jni.translation.TranslationCatalog
 import com.sal7one.transiber.translation.MarianPackage
+import com.sal7one.transiber.translation.MarianCascade
 import com.sal7one.transiber.translation.TranslationOptions
 import com.sal7one.transiber.byok.CloudConfigStore
 import com.sal7one.transiber.caption.*
@@ -15,6 +16,7 @@ internal object EasySetupPreset {
     const val broadTranslatorId = "hy-mt2-q4"
     val broadTranslator get() = TranslationCatalog.find(broadTranslatorId)
     val fastPairs get() = MarianPackage.pairs
+    val fastRoutes get() = MarianCascade.routes
     fun local(previous: CaptionOverlayConfig, modelId: String, translatorId: String,
               source: String, target: String): CaptionOverlayConfig {
         require(modelId.isNotBlank()) { "Install Nemotron first." }

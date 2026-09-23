@@ -21,6 +21,7 @@ import com.sal7one.transiber.byok.ByokPolicy
 import com.sal7one.transiber.caption.*
 import com.sal7one.transiber.translation.LocalTranslationModels
 import com.sal7one.transiber.translation.MarianPackage
+import com.sal7one.transiber.translation.MarianCascade
 import com.sal7one.transiber.ui.theme.glassPanel
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.first
@@ -40,17 +41,22 @@ import java.io.File
     var busy by remember {mutableStateOf(false)}
     var error by remember {mutableStateOf<String?>(null)}
     val selectedPair=MarianPackage.find(selectedId)
-    val selectedSpec=if(selectedPair==null) EasySetupPreset.broadTranslator else null
+    val selectedRoute=MarianCascade.find(selectedId)
+    val selectedParts=selectedPair?.parts ?: selectedRoute?.let { it.first.parts + it.second.parts }
+    val selectedSpec=if(selectedPair==null && selectedRoute==null) EasySetupPreset.broadTranslator else null
     LaunchedEffect(Unit) {
         val saved=CaptionConfigStore.config(context).first()
         val savedId=saved.localTranslationModelId
         if(savedId==EasySetupPreset.broadTranslatorId || MarianPackage.find(savedId)?.let {
                 ByokPolicy.FEATURE_BYOK || MarianPackage.installed(context,it)!=null
+            } == true || MarianCascade.find(savedId)?.let {
+                ByokPolicy.FEATURE_BYOK || MarianCascade.installed(context,it)
             } == true) {
             selectedId=savedId
             source=saved.streamLanguage.takeIf { it in EasySetupPreset.speech.capabilities.sourceLanguageHints } ?: "en"
             target=saved.target.languageTag
             MarianPackage.find(savedId)?.let {source=it.source;target=it.target}
+            MarianCascade.find(savedId)?.let {source=it.source;target=it.target}
         }
     }
     LaunchedEffect(selectedId) {
@@ -74,7 +80,7 @@ import java.io.File
     LaunchedEffect(requested,status?.downloads,selectedId) {
         if(requested)status?.downloads?.firstOrNull {it.failed &&
             ((status?.speech==null && it.title==actions.speechDownload.fileName) ||
-             (status?.translation!=true && (selectedPair?.parts?.any { part -> part.id==it.modelId } == true ||
+             (status?.translation!=true && (selectedParts?.any { part -> part.id==it.modelId } == true ||
                  it.title==selectedSpec?.fileName)))}?.let {
             requested=false;error=it.error.ifBlank {it.phase}
         }
@@ -111,11 +117,17 @@ import java.io.File
                 selectedId=pair.id;source=pair.source;target=pair.target;error=null
             },label={Text("${TranslationLanguages.label(pair.source)} → ${TranslationLanguages.label(pair.target)}")})
         }
+        EasySetupPreset.fastRoutes.filter { ByokPolicy.FEATURE_BYOK || MarianCascade.installed(context,it) }.forEach { route ->
+            FilterChip(selected=selectedId==route.id,enabled=!busy&&!requested,onClick={
+                selectedId=route.id;source=route.source;target=route.target;error=null
+            },label={Text("${TranslationLanguages.label(route.source)} → English → ${TranslationLanguages.label(route.target)}")})
+        }
         FilterChip(selected=selectedId==EasySetupPreset.broadTranslatorId,enabled=!busy&&!requested,
             onClick={selectedId=EasySetupPreset.broadTranslatorId;error=null},
             label={Text(uiText(UiR.string.easy_setup_broad_languages))})
     }
-    Text(if(selectedPair!=null) uiText(UiR.string.easy_setup_fast_pair_note)
+    Text(if(selectedRoute!=null) uiText(UiR.string.model_marian_via_english_warning)
+        else if(selectedPair!=null) uiText(UiR.string.easy_setup_fast_pair_note)
         else uiText(UiR.string.easy_setup_broad_note),style=MaterialTheme.typography.bodySmall)
     Column(Modifier.fillMaxWidth().glassPanel().padding(20.dp),verticalArrangement=Arrangement.spacedBy(14.dp)) {
         val speechRecord=status?.downloads?.firstOrNull {it.title==actions.speechDownload.fileName}
@@ -124,21 +136,22 @@ import java.io.File
             ?:uiText(UiR.string.ui_included_in_this_setup_4f499),style=MaterialTheme.typography.bodySmall)
         speechRecord?.takeIf {it.failed}?.let {Text(it.error,color=MaterialTheme.colorScheme.error)}
         Text(selectedPair?.let {"Marian / OPUS-MT · ${TranslationLanguages.label(it.source)} → ${TranslationLanguages.label(it.target)}"}
+            ?: selectedRoute?.let {"Marian / OPUS-MT · ${TranslationLanguages.label(it.source)} → English → ${TranslationLanguages.label(it.target)}"}
             ?:uiText(UiR.string.ui_hy_mt2_translation_389c9),style=MaterialTheme.typography.titleLarge)
-        val translationRecords=if(selectedPair!=null)selectedPair.parts.mapNotNull {part->status?.downloads?.firstOrNull {it.modelId==part.id}}
+        val translationRecords=if(selectedParts!=null)selectedParts.mapNotNull {part->status?.downloads?.firstOrNull {it.modelId==part.id}}
             else listOfNotNull(status?.downloads?.firstOrNull {it.title==selectedSpec?.fileName})
         Text(if(status?.translation==true)uiText(UiR.string.ui_installed_e0586)
-            else if(translationRecords.isNotEmpty()) "${translationRecords.count {it.complete}}/${if(selectedPair!=null) selectedPair.parts.size else 1} · ${translationRecords.sumOf {it.bytes}/1_048_576} MiB"
+            else if(translationRecords.isNotEmpty()) "${translationRecords.count {it.complete}}/${selectedParts?.size ?: 1} · ${translationRecords.sumOf {it.bytes}/1_048_576} MiB"
             else uiText(UiR.string.ui_included_in_this_setup_4f499),style=MaterialTheme.typography.bodySmall)
         translationRecords.firstOrNull {it.failed}?.let {Text(it.error,color=MaterialTheme.colorScheme.error)}
     }
-    if(selectedPair==null) {
+    if(selectedParts==null) {
         TextButton(enabled=!busy&&!requested,onClick={picker="source"}) {Text(uiText(UiR.string.easy_setup_spoken_language,LanguageCatalog.option(source).nativeName))}
         TextButton(enabled=!busy&&!requested,onClick={picker="target"}) {Text(uiText(UiR.string.ui_translate_to_1_s_f0b21,LanguageCatalog.option(target).nativeName))}
         if(source==target)Text(uiText(UiR.string.easy_setup_choose_different_languages),color=MaterialTheme.colorScheme.error)
     }
     if(status?.ready!=true)Text(if(ByokPolicy.FEATURE_BYOK)
-        uiText(UiR.string.easy_setup_download_size,((selectedPair?.downloadBytes ?: EasySetupPreset.broadTranslator.bytes)+actions.speechDownload.bytes)/1_048_576)
+        uiText(UiR.string.easy_setup_download_size,((selectedPair?.downloadBytes ?: selectedRoute?.downloadBytes ?: EasySetupPreset.broadTranslator.bytes)+actions.speechDownload.bytes)/1_048_576)
         else uiText(UiR.string.ui_import_both_models_to_continue_this_build_stays_offline_b2b39),style=MaterialTheme.typography.bodySmall)
     if(busy || requested || status==null)LinearProgressIndicator(Modifier.fillMaxWidth())
     if(ByokPolicy.FEATURE_BYOK || status?.ready==true)Button(enabled=!busy && !requested && status!=null && source!=target,onClick={scope.launch {
@@ -161,7 +174,7 @@ import java.io.File
     }
     if(ByokPolicy.FEATURE_BYOK)Row(horizontalArrangement=Arrangement.spacedBy(8.dp)) {
         TextButton(onClick={links.openUri("https://huggingface.co/nvidia/nemotron-3.5-asr-streaming-0.6b")}) {Text("Nemotron ↗")}
-        TextButton(onClick={links.openUri(selectedPair?.modelCard ?: EasySetupPreset.broadTranslator.modelCard)}) {Text(uiText(UiR.string.ui_translator_79f5c))}
+        TextButton(onClick={links.openUri(selectedPair?.modelCard ?: selectedRoute?.first?.modelCard ?: EasySetupPreset.broadTranslator.modelCard)}) {Text(uiText(UiR.string.ui_translator_79f5c))}
     }
     error?.let {Text(it,color=MaterialTheme.colorScheme.error)}
     if(picker!=null)Dialog(onDismissRequest={picker=null},properties=DialogProperties(usePlatformDefaultWidth=false)) {

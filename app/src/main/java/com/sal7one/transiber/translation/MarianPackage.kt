@@ -75,6 +75,7 @@ internal object MarianPackage {
             .firstOrNull { it.digest?.hex == pair.treeSha256 && it.isDirectory }
 
     fun enqueue(context: Context, downloads: FileDownloads, pair: Pair) {
+        if (installed(context, pair) != null) return
         val records = downloads.list()
         for (part in pair.parts) {
             val existing = records.firstOrNull { it.id < 0 && it.modelId == part.id }

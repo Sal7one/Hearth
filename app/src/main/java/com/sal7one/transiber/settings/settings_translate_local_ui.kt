@@ -43,16 +43,17 @@ internal fun SettingsTranslateLocalUi(
     var message by remember { mutableStateOf<String?>(null) }
     var busy by remember { mutableStateOf(false) }
     var showGguf by rememberSaveable { mutableStateOf(config.localTranslationModelId != TranslationOptions.ML_KIT) }
-    var showLegacy by rememberSaveable { mutableStateOf(MarianPackage.find(config.localTranslationModelId) != null) }
+    var showLegacy by rememberSaveable { mutableStateOf(
+        MarianPackage.find(config.localTranslationModelId) != null || MarianCascade.find(config.localTranslationModelId) != null) }
     var selectedMarianId by rememberSaveable { mutableStateOf(
-        config.localTranslationModelId.takeIf { MarianPackage.find(it) != null } ?: TranslationOptions.MARIAN_EN_AR) }
+        config.localTranslationModelId.takeIf { MarianPackage.find(it) != null || MarianCascade.find(it) != null } ?: TranslationOptions.MARIAN_EN_AR) }
     val registryModels by remember(context) { ModelRegistry.getInstance(context).registeredModels }.collectAsState()
     var showCoverage by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
         val browse = context.getSharedPreferences("translation-browser",0)
         browse.getString("model",null)?.let { id ->
             if (TranslationCatalog.models.any { it.id == id }) { selected = id; showGguf = true; showLegacy = false }
-            else if (MarianPackage.find(id) != null) { selectedMarianId = id; showGguf = false; showLegacy = true }
+            else if (MarianPackage.find(id) != null || MarianCascade.find(id) != null) { selectedMarianId = id; showGguf = false; showLegacy = true }
             browse.edit().remove("model").apply()
         }
     }
@@ -114,49 +115,68 @@ internal fun SettingsTranslateLocalUi(
             }
         }
         if (showLegacy) {
-            val pair = checkNotNull(MarianPackage.find(selectedMarianId))
+            val pair = MarianPackage.find(selectedMarianId)
+            val cascade = MarianCascade.find(selectedMarianId)
+            check(pair != null || cascade != null) { "Unknown Marian route: $selectedMarianId" }
+            val source = pair?.source ?: checkNotNull(cascade).source
+            val target = pair?.target ?: checkNotNull(cascade).target
+            val sizeMiB = (pair?.downloadBytes ?: checkNotNull(cascade).downloadBytes) / 1_048_576
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 MarianPackage.pairs.forEach { option ->
                     FilterChip(selected = selectedMarianId == option.id, enabled = !busy,
                         onClick = { selectedMarianId = option.id },
                         label = { Text("${TranslationLanguages.label(option.source)} → ${TranslationLanguages.label(option.target)}") })
                 }
+                MarianCascade.routes.forEach { option ->
+                    FilterChip(selected = selectedMarianId == option.id, enabled = !busy,
+                        onClick = { selectedMarianId = option.id },
+                        label = { Text("${TranslationLanguages.label(option.source)} → English → ${TranslationLanguages.label(option.target)}") })
+                }
             }
-            val model = registryModels.firstOrNull {
+            val directModel = pair?.let { direct -> registryModels.firstOrNull {
                 it.engineType == com.sal7one.transiber.models.ModelEngineType.TRANSLATE &&
-                    it.isValid && it.isDirectory && it.digest?.hex == pair.treeSha256
-            }
-            val parts = pair.parts.map { part -> records.firstOrNull { it.modelId == part.id } }
+                    it.isValid && it.isDirectory && it.digest?.hex == direct.treeSha256
+            } }
+            val ready = if (cascade != null) TranslationOptions.installed(context, cascade.id) else directModel != null
+            val routeParts = pair?.parts ?: checkNotNull(cascade).let { it.first.parts + it.second.parts }
+            val parts = routeParts.map { part -> records.firstOrNull { it.modelId == part.id } }
             val completed = parts.count { it?.complete == true }
-            Text(uiText(UiR.string.model_marian_description, pair.downloadBytes / 1_048_576, MarianPackage.license),
+            Text(uiText(UiR.string.model_marian_description, sizeMiB, MarianPackage.license),
                 style = MaterialTheme.typography.bodySmall)
-            Text(if (model != null) uiText(UiR.string.model_installed_verified)
+            if (cascade != null) Text(uiText(UiR.string.model_marian_via_english_warning), style = MaterialTheme.typography.bodySmall)
+            Text(if (ready) uiText(UiR.string.model_installed_verified)
                 else uiText(UiR.string.model_files_downloaded, completed, parts.size),
                 style = MaterialTheme.typography.bodyMedium)
-            if (model != null) Button(enabled = !busy, onClick = { update {
-                if (showCaptionControls) it.copy(localTranslationModelId = pair.id,
+            if (ready) Button(enabled = !busy, onClick = { update {
+                if (showCaptionControls) it.copy(localTranslationModelId = selectedMarianId,
                     textTranslationProviderId = "local", localTranslationEnabled = true,
-                    mode = CaptionMode.TRANSLATE, target = TranslationTarget.of(pair.target))
-                else it.copy(localTranslationModelId = pair.id, textTranslationProviderId = "local")
-            } }) { Text(if (config.localTranslationModelId == pair.id) uiText(UiR.string.ui_selected_translator_ee2cb)
-                else uiText(UiR.string.model_use_marian, TranslationLanguages.label(pair.source),
-                    TranslationLanguages.label(pair.target))) }
-            if (ByokPolicy.FEATURE_BYOK && model == null) OutlinedButton(enabled = !busy, onClick = { scope.launch {
+                    mode = CaptionMode.TRANSLATE, target = TranslationTarget.of(target))
+                else it.copy(localTranslationModelId = selectedMarianId, textTranslationProviderId = "local")
+            } }) { Text(if (config.localTranslationModelId == selectedMarianId) uiText(UiR.string.ui_selected_translator_ee2cb)
+                else uiText(UiR.string.model_use_marian, TranslationLanguages.label(source),
+                    TranslationLanguages.label(target))) }
+            if (ByokPolicy.FEATURE_BYOK && !ready) OutlinedButton(enabled = !busy, onClick = { scope.launch {
                 busy = true
                 try {
-                    withContext(Dispatchers.IO) { MarianPackage.enqueue(context, downloads, pair) }
+                    withContext(Dispatchers.IO) {
+                        if (cascade != null) MarianCascade.enqueue(context, downloads, cascade)
+                        else MarianPackage.enqueue(context, downloads, checkNotNull(pair))
+                    }
                     records = withContext(Dispatchers.IO) { downloads.list() }
                     message = uiText(UiR.string.model_marian_download_notice, downloads.locationLabel)
                 } catch (e: CancellationException) { throw e }
                 catch (e: Exception) { message = e.message ?: e.toString() }
                 finally { busy = false }
             } }) { Text(if (completed > 0) uiText(UiR.string.model_continue_marian)
-                else uiText(UiR.string.model_download_marian, TranslationLanguages.label(pair.source),
-                    TranslationLanguages.label(pair.target),
-                    pair.downloadBytes / 1_048_576)) }
+                else uiText(UiR.string.model_download_marian, TranslationLanguages.label(source),
+                    TranslationLanguages.label(target), sizeMiB)) }
             parts.filterNotNull().firstOrNull { it.failed }?.let { Text(it.error, color = MaterialTheme.colorScheme.error) }
-            TextButton(onClick = { uriHandler.openUri(pair.modelCard) }) { Text(uiText(UiR.string.model_marian_card)) }
-            if (includeLegacy && pair.id == TranslationOptions.MARIAN_EN_AR) com.sal7one.transiber.models.LegacyModelSetup(
+            if (ByokPolicy.FEATURE_BYOK && pair != null) TextButton(onClick = { uriHandler.openUri(pair.modelCard) }) { Text(uiText(UiR.string.model_marian_card)) }
+            if (ByokPolicy.FEATURE_BYOK && cascade != null) {
+                TextButton(onClick = { uriHandler.openUri(cascade.first.modelCard) }) { Text(uiText(UiR.string.model_marian_card) + " · ${TranslationLanguages.label(source)} → English") }
+                TextButton(onClick = { uriHandler.openUri(cascade.second.modelCard) }) { Text(uiText(UiR.string.model_marian_card) + " · English → ${TranslationLanguages.label(target)}") }
+            }
+            if (includeLegacy && pair?.id == TranslationOptions.MARIAN_EN_AR) com.sal7one.transiber.models.LegacyModelSetup(
                 com.sal7one.transiber.models.ModelEngineType.TRANSLATE, config, update)
             if (busy) LinearProgressIndicator(Modifier.fillMaxWidth())
             message?.let { Text(it) }

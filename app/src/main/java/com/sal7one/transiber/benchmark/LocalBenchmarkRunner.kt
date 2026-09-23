@@ -20,6 +20,7 @@ import com.sal7one.transiber.translation.LocalTranslationModels
 import com.sal7one.transiber.translation.PlatformTranslation
 import com.sal7one.transiber.translation.TranslationOptions
 import com.sal7one.transiber.translation.MarianPackage
+import com.sal7one.transiber.translation.MarianCascade
 import com.sal7one.common_jni.marian.MarianTranslationSession
 import kotlinx.coroutines.*
 import org.json.JSONArray
@@ -126,7 +127,7 @@ internal class LocalBenchmarkRunner(private val context: Context) {
     suspend fun candidates(): List<BenchmarkCandidate> = withContext(Dispatchers.IO) {
         val speech = LocalSpeechModels(File(context.filesDir, "speech-models")).list().map { model ->
             BenchmarkCandidate(model.id, model.profile.label + " · " + model.id.takeLast(6),
-                "Speech / ${model.profile.capabilities.streaming}", model.profile.capabilities.sourceLanguageHints + (if (model.profile.capabilities.sourceLanguageHints.size > 1) setOf("auto") else emptySet()),
+                "Speech / ${model.profile.capabilities.streaming}", model.profile.capabilities.sourceLanguages + (if (model.profile.capabilities.sourceLanguages.size > 1) setOf("auto") else emptySet()),
                 file = model.root, profile = model.profile)
         }
         val legacy = ModelRegistry.getInstance(context).registeredModels.value.filter {
@@ -154,14 +155,19 @@ internal class LocalBenchmarkRunner(private val context: Context) {
             BenchmarkCandidate(pair.id, TranslationOptions.label(pair.id), "Translation / ONNX",
                 setOf(pair.source), setOf(pair.target), file = File(model.path))
         } }
-        speech + legacy + gguf + mlKit + marian
+        val cascades = MarianCascade.routes.filter { MarianCascade.installed(context, it) }.map { route ->
+            BenchmarkCandidate(route.id, TranslationOptions.label(route.id), "Translation / ONNX via English",
+                setOf(route.source), setOf(route.target))
+        }
+        speech + legacy + gguf + mlKit + marian + cascades
     }
 
     suspend fun run(
         selected: List<BenchmarkCandidate>, clip: BenchmarkAudio.Clip?, text: String, referenceText: String?,
         source: String, target: String, benchmarkInputs: List<BenchmarkInput> = emptyList(),
         progress: (String) -> Unit, onResult: (BenchmarkResult) -> Unit,
-    ) {
+    ) = withContext(Dispatchers.Default) {
+        suspend fun reportProgress(message: String) = withContext(Dispatchers.Main.immediate) { progress(message) }
         require(selected.isNotEmpty() && selected.size <= 12) { "Choose between 1 and 12 installed models" }
         val translating = selected.first().targetCodes.isNotEmpty()
         require(selected.all { it.targetCodes.isNotEmpty() == translating }) { "Compare speech and translation separately" }
@@ -188,7 +194,7 @@ internal class LocalBenchmarkRunner(private val context: Context) {
                 .joinToString("") { "%02x".format(it.toInt() and 255) }
             for (candidate in selected) {
                 currentCoroutineContext().ensureActive()
-                progress("${candidate.label}: loading and verifying")
+                reportProgress("${candidate.label}: loading and verifying")
                 var load = 0.0; var runtime = "Bundled app runtime"
                 val elapsed = mutableListOf<Double>(); val texts = mutableListOf<String>(); val first = mutableListOf<Double>()
                 var speech: SpeechSession? = null; var legacy: SttEngine? = null; var translator: CancellableTextTranslator? = null
@@ -242,6 +248,12 @@ internal class LocalBenchmarkRunner(private val context: Context) {
                             cancelNative = { translator?.cancel() }
                             runtime = "Pinned Marian ONNX ${pair.revision}; tree SHA-256 ${pair.treeSha256}"
                         }
+                        MarianCascade.find(candidate.id) != null -> {
+                            val route = checkNotNull(MarianCascade.find(candidate.id))
+                            translator = withContext(Dispatchers.IO) { MarianCascade.open(context, route) }
+                            cancelNative = { translator?.cancel() }
+                            runtime = "Two pinned Marian ONNX models via English; ${route.first.source}→en tree SHA-256 ${route.first.treeSha256}; en→${route.target} tree SHA-256 ${route.second.treeSha256}"
+                        }
                         candidate.id == TranslationOptions.ML_KIT -> {
                             require(target in candidate.targetCodes) { "Download the $target ML Kit language pack first" }
                             translator = PlatformTranslation.open(); cancelNative = { translator?.cancel() }
@@ -268,7 +280,7 @@ internal class LocalBenchmarkRunner(private val context: Context) {
                     load = (System.nanoTime() - loading) / 1e6
                 repeat(3) { pass ->
                     currentCoroutineContext().ensureActive()
-                    progress("${candidate.label}: ${if (pass == 0) "first pass" else "warm pass $pass of 2"}")
+                    reportProgress("${candidate.label}: ${if (pass == 0) "first pass" else "warm pass $pass of 2"}")
                     val passTexts = mutableListOf<String>()
                     val passFirstText = mutableListOf<Double>()
                     var passComputeMs = 0.0
@@ -334,17 +346,17 @@ internal class LocalBenchmarkRunner(private val context: Context) {
                     hash, source, if (translating) target else "", totalAudioMs,
                     load, elapsed, texts, runtime, first,
                     "${Build.MANUFACTURER} ${Build.MODEL}; Android ${Build.VERSION.RELEASE}; API ${Build.VERSION.SDK_INT}; app ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})", failure,
-                    combinedReference, combinedReference?.takeIf { failure == null }?.let { BenchmarkScoring.wordErrors(it, texts.lastOrNull().orEmpty()).rate },
-                    combinedReference?.takeIf { failure == null }?.let { BenchmarkScoring.characterErrors(it, texts.lastOrNull().orEmpty()).rate },
+                    combinedReference, combinedReference?.takeIf { failure == null && !translating && source != "zh" }?.let { BenchmarkScoring.wordErrors(it, texts.lastOrNull().orEmpty()).rate },
+                    combinedReference?.takeIf { failure == null && !translating }?.let { BenchmarkScoring.characterErrors(it, texts.lastOrNull().orEmpty()).rate },
                     combinedReference?.takeIf { failure == null }?.let {
-                        BenchmarkScoring.NORMALIZATION + if (translating) "; ${BenchmarkScoring.CHRF_PARAMETERS}" else ""
+                        if (translating) BenchmarkScoring.CHRF_PARAMETERS else BenchmarkScoring.NORMALIZATION
                     },
                     if (translating && failure == null) samples.mapNotNull { sample ->
                         sample.reference?.let { expected -> BenchmarkScoring.chrf(expected, sample.text) }
                     }.takeIf { it.isNotEmpty() }?.average()?.div(100.0) else null,
                     samples)
                 withContext(Dispatchers.IO) { BenchmarkResults(context).append(result) }
-                onResult(result)
+                withContext(Dispatchers.Main.immediate) { onResult(result) }
             }
         } finally { cancelNative = null; lease.close() }
     }

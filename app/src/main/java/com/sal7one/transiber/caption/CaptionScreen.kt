@@ -118,7 +118,7 @@ fun CaptionScreen(
     val chosenEngineReady = when (config.effectiveEngine) {
         CaptionEngineChoice.WHISPER -> whisperModels > 0
         CaptionEngineChoice.VOSK -> voskModels > 0
-        CaptionEngineChoice.MOONSHINE, CaptionEngineChoice.QWEN, CaptionEngineChoice.NEMOTRON -> localSpeechModels.any {
+        CaptionEngineChoice.MOONSHINE, CaptionEngineChoice.QWEN, CaptionEngineChoice.OMNILINGUAL, CaptionEngineChoice.NEMOTRON -> localSpeechModels.any {
             it.profile.backend == config.effectiveEngine.speechBackend && (config.modelId.isBlank() || it.id == config.modelId)
         }
         // NETWORK PATH (BYOK, play distribution only — see byok/ByokPolicy):
@@ -322,7 +322,7 @@ fun CaptionScreen(
                     model.isValid && model.engineType == when (config.effectiveEngine) {
                         CaptionEngineChoice.WHISPER -> ModelEngineType.WHISPER
                         CaptionEngineChoice.VOSK -> ModelEngineType.VOSK
-                        CaptionEngineChoice.CLOUD, CaptionEngineChoice.MOONSHINE, CaptionEngineChoice.QWEN, CaptionEngineChoice.NEMOTRON -> ModelEngineType.WHISPER // unreachable
+                        CaptionEngineChoice.CLOUD, CaptionEngineChoice.MOONSHINE, CaptionEngineChoice.QWEN, CaptionEngineChoice.OMNILINGUAL, CaptionEngineChoice.NEMOTRON -> ModelEngineType.WHISPER // unreachable
                     }
                 }
             }
@@ -435,12 +435,12 @@ fun CaptionScreen(
                     when (config.effectiveEngine) {
                         CaptionEngineChoice.WHISPER -> uiText(UiR.string.ui_1_s_whisper_model_s_imported_9e09e, whisperModels)
                         CaptionEngineChoice.VOSK -> uiText(UiR.string.ui_1_s_vosk_model_s_imported_1d5f4, voskModels)
-                        CaptionEngineChoice.MOONSHINE, CaptionEngineChoice.QWEN, CaptionEngineChoice.NEMOTRON -> uiText(UiR.string.ui_verified_local_speech_package_imported_af455)
+                        CaptionEngineChoice.MOONSHINE, CaptionEngineChoice.QWEN, CaptionEngineChoice.OMNILINGUAL, CaptionEngineChoice.NEMOTRON -> uiText(UiR.string.ui_verified_local_speech_package_imported_af455)
                         CaptionEngineChoice.CLOUD -> uiText(UiR.string.ui_cloud_captions_ready_api_key_stored_492e1)
                     }
                 } else {
                     when (config.effectiveEngine) {
-                        CaptionEngineChoice.MOONSHINE, CaptionEngineChoice.QWEN, CaptionEngineChoice.NEMOTRON -> uiText(UiR.string.ui_use_import_model_zip_in_the_model_setup_above_ce1a6)
+                        CaptionEngineChoice.MOONSHINE, CaptionEngineChoice.QWEN, CaptionEngineChoice.OMNILINGUAL, CaptionEngineChoice.NEMOTRON -> uiText(UiR.string.ui_use_import_model_zip_in_the_model_setup_above_ce1a6)
                         CaptionEngineChoice.CLOUD ->
                             uiText(UiR.string.ui_paste_your_api_key_in_the_cloud_engine_your_api_key_box_above_480e0)
                         else ->

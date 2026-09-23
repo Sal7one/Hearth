@@ -45,6 +45,13 @@ object CaptionLanguages {
     fun source(config: CaptionOverlayConfig, cloudMode: SttMode,
         model: CaptionLanguageModel = CaptionLanguageModel(config.modelId)): CaptionLanguageChoices = when (config.engine) {
         CaptionEngineChoice.MOONSHINE -> CaptionLanguageChoices(setOf("en"), UiMessage(UiR.string.capability_note_67daa0fec5, "Moonshine · This model recognizes English only. No automatic language detection or override is needed."))
+        CaptionEngineChoice.OMNILINGUAL -> {
+            val capabilities = SpeechProfile.OMNILINGUAL_CTC_300M_V2.capabilities
+            CaptionLanguageChoices(capabilities.sourceLanguages + "auto",
+                UiMessage(UiR.string.model_omnilingual_language_note,
+                    "Omnilingual CTC · The model cannot force a spoken language. Choose a known source to label captions for translation; recognition still detects automatically. Auto is CC-only when the source is unknown."),
+                capabilities.languages)
+        }
         CaptionEngineChoice.NEMOTRON, CaptionEngineChoice.QWEN -> {
             val profile = if (config.engine == CaptionEngineChoice.NEMOTRON) SpeechProfile.NEMOTRON_3_5_ASR_0_6B
                 else if (model.id == SpeechProfile.QWEN3_ASR_1_7B.id) SpeechProfile.QWEN3_ASR_1_7B else SpeechProfile.QWEN3_ASR_0_6B

@@ -42,6 +42,10 @@ SpeechConfig::SpeechConfig(const std::string& json) {
     } else if (backend == "qwen3_asr") {
         for (int i = 1; i <= 4; ++i) if (paths[i].empty()) throw std::invalid_argument("Qwen requires frontend, encoder, decoder and tokenizer paths");
         qwenLanguageName(paths[5]); // Validate before loading the backend.
+    } else if (backend == "omnilingual_ctc") {
+        if (paths[0].empty() || paths[4].empty()) throw std::invalid_argument("Omnilingual CTC requires ONNX model and tokens paths");
+        if (paths[5] != "auto" && paths[5] != "en" && paths[5] != "ar" && paths[5] != "ru" && paths[5] != "zh")
+            throw std::invalid_argument("Unsupported Omnilingual source declaration: " + paths[5]);
     } else if (backend == "nemotron_3_5") {
         if (paths[0].empty() || paths[5].empty()) throw std::invalid_argument("Nemotron requires a model path and source language");
         const int r = value.right_context;
@@ -51,7 +55,7 @@ SpeechConfig::SpeechConfig(const std::string& json) {
 
 const HearthSpeechBackend& loadBackend(const std::string& id) {
     std::string name, revision;
-    if (id == "qwen3_asr" || id == "moonshine") { name = "libhearth_qwen"; revision = HEARTH_QWEN_REVISION; }
+    if (id == "qwen3_asr" || id == "moonshine" || id == "omnilingual_ctc") { name = "libhearth_qwen"; revision = HEARTH_QWEN_REVISION; }
     else if (id == "nemotron_3_5") { name = "libhearth_nemotron"; revision = HEARTH_NEMO_REVISION; }
     else throw std::invalid_argument("Unknown speech backend: " + id);
 #ifdef __APPLE__
@@ -67,7 +71,9 @@ const HearthSpeechBackend& loadBackend(const std::string& id) {
     if (auto it = loaded.find(id); it != loaded.end()) return *it->second;
     void* library = dlopen(name.c_str(), RTLD_NOW | RTLD_LOCAL);
     if (!library) { const char* e = dlerror(); throw std::runtime_error(e ? e : "dlopen failed without an error string"); }
-    auto entry = reinterpret_cast<HearthSpeechEntry>(dlsym(library, id == "moonshine" ? "hearth_moonshine_backend_v1" : "hearth_speech_backend_v1"));
+    const char* symbol = id == "moonshine" ? "hearth_moonshine_backend_v1" :
+        id == "omnilingual_ctc" ? "hearth_omnilingual_backend_v1" : "hearth_speech_backend_v1";
+    auto entry = reinterpret_cast<HearthSpeechEntry>(dlsym(library, symbol));
     const auto* api = entry ? entry() : nullptr;
     if (!api || api->abi_version != HEARTH_SPEECH_ABI_VERSION || api->size != sizeof(HearthSpeechBackend) ||
         !api->id || id != api->id || !api->revision || revision != api->revision || !api->create || !api->destroy ||

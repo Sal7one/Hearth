@@ -139,8 +139,8 @@ Android’s capture consent still applies; apps may block audio or screen captur
 
 | Task | Available options |
 | --- | --- |
-| **Local speech** | Whisper, Vosk, Qwen3-ASR, Nemotron and English Moonshine. |
-| **Local translation** | HY-MT1.5 / Hy-MT2, TranslateGemma 4B, compatible Marian language-pair bundles, and optional ML Kit packs in the cloud-capable build. |
+| **Local speech** | Whisper, Vosk, Qwen3-ASR, Nemotron, English Moonshine, and experimental Omnilingual CTC 300M. |
+| **Local translation** | HY-MT1.5 / Hy-MT2, TranslateGemma 4B, compatible Marian language-pair bundles (including optional Russian/Chinese → English → Arabic routes), and ML Kit packs in the cloud-capable build. |
 | **Cloud speech** | Bring your own provider keys, including OpenAI, Soniox and ElevenLabs Scribe. Translation support depends on the connection. |
 | **Cloud text translation** | Shared translator choices include Google Cloud, Microsoft Azure, DeepL and LibreTranslate connections. |
 | **Local OCR** | PaddleOCR, Manga OCR and Meiki; choose a reader that supports your source language. |
@@ -150,6 +150,8 @@ Local Qwen and Nemotron recognize speech; a separate translator handles translat
 captions. Whisper’s built-in translation targets English. Translator choices are
 remembered by feature group; **Use everywhere** explicitly applies one across Hearth.
 Keys are stored encrypted. [Translation routing](docs/translation-choices.md).
+Omnilingual CTC uses short utterance windows and does not support forced source
+language; its language choice declares the source for translation.
 
 Use **Download & install** for catalogued models—no computer, export or re-import.
 Original downloads go to **Downloads/Hearth/models** (direct files to `files`), or

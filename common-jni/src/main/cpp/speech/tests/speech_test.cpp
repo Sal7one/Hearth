@@ -3,6 +3,7 @@
 #include "../endpoint_budget.h"
 #include "../utterance_segmenter.h"
 #include <cassert>
+#include <cstring>
 #include <iostream>
 #include <limits>
 
@@ -100,5 +101,13 @@ int main() {
     check(destroyed == 2);
     fails([] { loadBackend("not-a-backend"); }, "Unknown speech backend");
     fails([] { SpeechConfig c("{\"backend\":\"qwen3_asr\",\"backend\":\"nemotron_3_5\"}"); }, "Speech config");
+    const std::string omni = R"({"backend":"omnilingual_ctc","model":"model.int8.onnx","frontend":"","encoder":"","decoder":"","tokenizer":"tokens.txt","language":"ar","numThreads":2,"rightContext":0,"maxUtteranceMs":4000,"silenceMs":400,"silenceThresholdDb":-45})";
+    check(SpeechConfig(omni).backend == "omnilingual_ctc");
+    auto missingTokens = omni;
+    missingTokens.replace(missingTokens.find("tokens.txt"), std::strlen("tokens.txt"), "");
+    fails([&] { SpeechConfig c(missingTokens); }, "requires ONNX model and tokens");
+    auto unsupportedSource = omni;
+    unsupportedSource.replace(unsupportedSource.find("\"ar\""), 4, "\"he\"");
+    fails([&] { SpeechConfig c(unsupportedSource); }, "Unsupported Omnilingual source declaration");
     std::cout << "speech_test: " << checks << " checks PASS\n";
 }

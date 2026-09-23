@@ -33,7 +33,7 @@ for filename in ("libhearth_qwen.so", "libhearth_nemotron.so"):
         raise RuntimeError(f"{filename}: bad SONAME: {soname}")
     symbols = subprocess.check_output([str(tool_dir / "llvm-nm"), "-D", "--defined-only", str(file)], text=True)
     exported = [line.split()[-1] for line in symbols.splitlines() if line.split()]
-    if sorted(exported) != (sorted(["hearth_speech_backend_v1", "hearth_moonshine_backend_v1"]) if "qwen" in filename else ["hearth_speech_backend_v1"]):
+    if sorted(exported) != (sorted(["hearth_speech_backend_v1", "hearth_moonshine_backend_v1", "hearth_omnilingual_backend_v1"]) if "qwen" in filename else ["hearth_speech_backend_v1"]):
         raise RuntimeError(f"{filename}: unexpected exports: {exported[:20]}")
     records.append({"file": filename, "bytes": file.stat().st_size, "sha256": hashlib.sha256(file.read_bytes()).hexdigest(), "minPageAlignment": min(alignments), "dependencies": needed})
 if not records:

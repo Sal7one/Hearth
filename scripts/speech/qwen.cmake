@@ -17,5 +17,5 @@ if(ANDROID)
   target_link_options(hearth_qwen PRIVATE "-Wl,-z,max-page-size=16384" "-Wl,--exclude-libs,ALL"
     "-Wl,--version-script=${HEARTH_CPP}/speech/backends/qwen_exports.map")
 elseif(APPLE)
-  target_link_options(hearth_qwen PRIVATE "-Wl,-exported_symbol,_hearth_speech_backend_v1" "-Wl,-exported_symbol,_hearth_moonshine_backend_v1")
+  target_link_options(hearth_qwen PRIVATE "-Wl,-exported_symbol,_hearth_speech_backend_v1" "-Wl,-exported_symbol,_hearth_moonshine_backend_v1" "-Wl,-exported_symbol,_hearth_omnilingual_backend_v1")
 endif()

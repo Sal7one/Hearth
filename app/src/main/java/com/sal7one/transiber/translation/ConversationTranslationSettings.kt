@@ -145,5 +145,6 @@ internal data class ConversationTranslatorSnapshot(
             MarianTranslationSession.open(MarianPackage.modelDirectory(context, pair),
                 TranslationDirection(pair.source, pair.target), TranslationOptions.label(pair.id))
         }
+        else if (MarianCascade.find(localId) != null) MarianCascade.open(context, checkNotNull(MarianCascade.find(localId)))
         else TranslationCatalog.find(localId).let { spec -> LocalTranslationSession.open(LocalTranslationModels(File(context.filesDir, "translation-models")).file(spec), spec) }
 }

@@ -19,6 +19,9 @@ internal object ModelSources {
                 packaging + " Multilingual captions in short audio segments. Runtime package: March 2026.", sherpa + "sherpa-onnx-qwen3-asr-0.6B-int8-2026-03-25.tar.bz2", 878702423),
             ModelSource("qwen3-asr-1.7b", "Qwen3-ASR · 1.7B · custom package", "https://huggingface.co/Qwen/Qwen3-ASR-1.7B", "https://huggingface.co/Qwen/Qwen3-ASR-1.7B/tree/main",
                 "Compatible prepared packages are accepted, but this app has no verified ready-made 1.7B download. Raw checkpoints cannot be imported. Use the 0.6B package unless you are preparing a compatible sherpa export."))
+        CaptionEngineChoice.OMNILINGUAL -> listOf(ModelSource("omnilingual-ctc-300m-v2-int8", "Omnilingual CTC · 300M v2 INT8", "https://huggingface.co/facebook/omniASR-CTC-300M",
+            "https://github.com/k2-fsa/sherpa-onnx/releases/tag/asr-models", packaging + " Experimental, short utterance windows. Recognition has no language-forcing input; the source selection labels its output for translation.",
+            sherpa + "sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-v2-int8-2026-02-05.tar.bz2", 292313120))
         CaptionEngineChoice.MOONSHINE -> listOf("tiny" to 29858559L, "base" to 111266225L).map { (size, bytes) ->
             ModelSource("moonshine-$size-en-v2", "Moonshine · ${size.replaceFirstChar { it.uppercase() }} · English", "https://github.com/moonshine-ai/moonshine", "https://github.com/k2-fsa/sherpa-onnx/releases/tag/asr-models",
                 packaging + " English only, short audio segments. Runtime package: 27 February 2026. This adapter is not Moonshine’s newer streaming runtime.",

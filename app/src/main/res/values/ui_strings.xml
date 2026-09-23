@@ -829,8 +829,9 @@
     <string name="benchmark_reference_transcript">Reference transcript</string>
     <string name="benchmark_reference_translation">Reference translation</string>
     <string name="benchmark_reference_optional">Optional · add corrected text to compare accuracy</string>
-    <string name="benchmark_scoring_explainer">WER and CER are normalized text-error rates, not a judgment of translation meaning. Chinese is best compared by CER. Leave this blank to compare speed only.</string>
+    <string name="benchmark_scoring_explainer">Speech shows WER/CER against a corrected transcript. Translation shows chrF++ similarity against a reference, not a meaning score. Leave the reference blank to compare speed only.</string>
     <string name="benchmark_error_rates">Reference text errors · WER %1$s%% · CER %2$s%%</string>
+    <string name="benchmark_character_error_only">Reference text errors · CER %1$s%%</string>
     <string name="benchmark_no_reference">No reference text · this result compares speed only.</string>
     <string name="benchmark_builtin_set">Built-in quick set</string>
     <string name="benchmark_custom_input">My recording or text</string>
@@ -845,4 +846,6 @@
     <string name="benchmark_silence_check">silence check</string>
     <string name="benchmark_silence_false_positives">Silence false positives · %1$d of %2$d checks</string>
     <string name="benchmark_source_sample">Source</string>
+    <string name="model_marian_via_english_warning">Two models translate through English. This may change meaning; compare the final Arabic with other translators before using it for live captions.</string>
+    <string name="model_omnilingual_language_note">Omnilingual CTC recognizes automatically. Selecting a spoken language labels captions for translation; it does not force the model. Auto stays CC-only when the source is unknown.</string>
 </resources>

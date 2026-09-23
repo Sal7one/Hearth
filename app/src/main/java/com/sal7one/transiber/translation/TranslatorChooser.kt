@@ -123,6 +123,21 @@ internal fun TranslatorChooser(
                         }
                     }
                 }
+                MarianCascade.routes.forEach { route ->
+                    val ready = TranslationOptions.installed(context, route.id)
+                    TranslatorRow(TranslationOptions.label(route.id),
+                        (if (ready) uiText(UiR.string.model_installed_verified) else uiText(UiR.string.model_marian_setup)) +
+                            pair { a,b -> TranslationOptions.supports(route.id,a,b) },
+                        providerId == "local" && localId == route.id, enabled,
+                        actionLabel = if (ready) null else uiText(UiR.string.ui_set_up_a5041)) {
+                        if (ready) { onSelect("local", route.id); expanded = location != null }
+                        else {
+                            context.getSharedPreferences("translation-browser",0).edit()
+                                .putString("model", route.id).putBoolean("open",true).apply()
+                            onModels()
+                        }
+                    }
+                }
                 TranslationCatalog.models.sortedWith(compareByDescending<com.sal7one.common_jni.translation.TranslationModelSpec> { providerId=="local" && it.id==localId }.thenByDescending { it.id in installed }).forEach { model ->
                     val ready = model.id in installed
                     TranslatorRow(model.label,

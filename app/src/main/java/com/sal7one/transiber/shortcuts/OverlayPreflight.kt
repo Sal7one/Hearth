@@ -152,6 +152,15 @@ private suspend fun checkTranslator(context: Context, localId: String, providerI
         }
         return "Marian / OPUS-MT · $source → $target · four files verified"
     }
+    com.sal7one.transiber.translation.MarianCascade.find(localId)?.let { route ->
+        check(target == route.target && (!knownSource || source == route.source)) {
+            "Marian via English ${route.source} → ${route.target} does not support $source → $target."
+        }
+        check(com.sal7one.transiber.translation.MarianCascade.installed(context, route)) {
+            "Install both Marian ${route.first.source} → English and English → ${route.target} in Models → Translation."
+        }
+        return "Marian / OPUS-MT · $source → English → $target · both models verified"
+    }
     val model = TranslationCatalog.find(localId)
     check(target in model.targetLanguages && (!knownSource || model.supports(source, target))) { "${model.label} does not support $source → $target." }
     check(LocalTranslationModels(File(context.filesDir, "translation-models")).installed().any { it.id == localId }) { "Download or import ${model.label} in Models → Translation." }

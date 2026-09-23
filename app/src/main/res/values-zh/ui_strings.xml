@@ -829,8 +829,9 @@
     <string name="benchmark_reference_transcript">参考转录</string>
     <string name="benchmark_reference_translation">参考译文</string>
     <string name="benchmark_reference_optional">可选 · 添加校正文本以比较准确度</string>
-    <string name="benchmark_scoring_explainer">WER 和 CER 是规范化后的文本错误率，不代表对翻译含义的判断。中文建议重点看 CER。留空时仅比较速度。</string>
+    <string name="benchmark_scoring_explainer">语音识别用 WER/CER 与校正文本比较。翻译用 chrF++ 与参考译文比较相似度，不代表语义质量。参考留空时仅比较速度。</string>
     <string name="benchmark_error_rates">参考文本错误 · WER %1$s%% · CER %2$s%%</string>
+    <string name="benchmark_character_error_only">参考文本错误 · CER %1$s%%</string>
     <string name="benchmark_no_reference">没有参考文本 · 此结果仅比较速度。</string>
     <string name="benchmark_builtin_set">内置快速测试集</string>
     <string name="benchmark_custom_input">我的录音或文本</string>
@@ -845,4 +846,6 @@
     <string name="benchmark_silence_check">静音检查</string>
     <string name="benchmark_silence_false_positives">静音误识别 · %2$d 次中有 %1$d 次</string>
     <string name="benchmark_source_sample">源文</string>
+    <string name="model_marian_via_english_warning">此路线使用两个模型，先译成英语再译成阿拉伯语，可能改变原意。用于实时字幕前请比较最终译文。</string>
+    <string name="model_omnilingual_language_note">Omnilingual CTC 会自动识别语言。选择口语语言只用于标记字幕和路由翻译，不能强制模型。来源未知时，自动模式仅显示原文字幕。</string>
 </resources>

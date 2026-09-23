@@ -26,6 +26,7 @@ internal class EasySetupActions(context: Context) {
         val speech=speechStore.list().firstOrNull { it.profile==EasySetupPreset.speech }
         speech?.let { checkSpeechAssetPresence(it.root) }
         val translation=MarianPackage.find(translatorId)?.let { MarianPackage.installed(context,it)!=null }
+            ?: MarianCascade.find(translatorId)?.let { MarianCascade.installed(context,it) }
             ?: translations.installed().any { it.id==translatorId }
         EasyLocalStatus(speech,translation,
             if(ByokPolicy.FEATURE_BYOK) FileDownloads(context).list() else emptyList())
@@ -48,6 +49,7 @@ internal class EasySetupActions(context: Context) {
         if(!state.translation) {
             val pair=MarianPackage.find(translatorId)
             if(pair!=null)MarianPackage.enqueue(context,downloads,pair)
+            else if(MarianCascade.find(translatorId)!=null)MarianCascade.enqueue(context,downloads,checkNotNull(MarianCascade.find(translatorId)))
             else TranslationCatalog.find(translatorId).let {enqueue(it.id,it.url,it.fileName)}
         }
     }

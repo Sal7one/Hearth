@@ -60,6 +60,9 @@ fun CaptionHome(
                     .installed().map { it.id }.toSet() +
                     com.sal7one.transiber.translation.MarianPackage.pairs.filter {
                         com.sal7one.transiber.translation.MarianPackage.installed(context, it) != null
+                    }.map { it.id } +
+                    com.sal7one.transiber.translation.MarianCascade.routes.filter {
+                        com.sal7one.transiber.translation.MarianCascade.installed(context, it)
                     }.map { it.id }
             }
         } catch (e: CancellationException) { throw e }
