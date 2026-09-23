@@ -36,6 +36,8 @@ Whisper is in the Later queue because it is heavy for real-time mobile use
 **Branch and state:** `review/common-jni-audit` at the start of this session:
 `02aa830` (pushed). Commit `1768a12` holds patches A–E (§6); `91b2a3c`
 merges upstream `6ad8305`; `02aa830` adds this review log.
+This session added `7ffcc37`, `b50952e`, `1fd333c`, `6a44656`, `a45d6b7`,
+`873f33c`, and `27b5e0f` on the same review branch. The owner decides merges.
 
 **Environment:** the original reviewer's Mac needed Homebrew Clang because
 its Xcode-beta ASan hung (Log E1). On this Mac that path is absent; an
@@ -51,11 +53,11 @@ add a Log line for every session.
 ### Status by priority area
 | Area | Read so far | Still to read | Top open items |
 |---|---|---|---|
-| **utils** (`common/`, `jni/`) | Everything (§11) | Nothing | U2, U3, U4, U8, U11, U12, U13 consolidation, U14 tests, U10, U9 (affects Vosk too) |
+| **utils** (`common/`, `jni/`) | Everything (§11), plus U2/U3/U4/U9/U11/U12 fixes and host tests this session | Nothing | U8, U13 consolidation, U14 tests, U10, U12 log-callback wiring (owner decision); U2/U3/U4/U9/U11/U12 attachment resolved below |
 | **speech/** | Native ABI, session, segmenter, endpoint budget, Qwen/Moonshine/Omnilingual/Nemotron adapters, speech JNI; Kotlin `SpeechSession`, `LiveSpeechProcessor`, `SpeechModels`, `SpeechModelPackage` | Upstream `6ad8305` (`nemotron_backend.cpp`, new `source_language.h`, test additions); `SpeechTranslation.kt` (60); app `PublisherSpeechPackage.kt` (87), `LocalSpeechModels.kt` (109); `speech_smoke.cpp` (52); runtime scripts `build-runtimes.sh`, `stage-runtimes.py`, `verify-android-runtimes.py`, `make-package.py`, `qwen.cmake`, `nemo-inject.cmake` (~330) | F2 async windowed decode, F1 ggml ARM variants, H1 ABI v2 (sample rate, interrupt, capabilities), H2/H3 (cut points, neural VAD), U21 |
 | **translation/** | `text_model.h`, `translation_jni.cpp`, Marian tokenizer/engine/JNI, `CaptionTranslationBridge` | Upstream `TranslationSourceEvidence.kt` (31) + bridge diff; `LocalTranslationSession.kt` (46), `TranslationCatalog.kt` (107), `MarianTranslationSession.kt` (36); app `MarianCascade.kt` (67, new pivot routes), `TranslationLayer.kt` (246), `LocalTranslationModels.kt` (27); `translation_smoke.cpp` (69); `scripts/translation/*` (75) | F1 (llama without dotprod), F9 (wasted compute, 2 threads, prefix KV reuse), U23, U24 |
 | **audio/** | `common/audio_utils.h`, `audio_gate.h`, `ring_buffer.h`, `core/vad.cpp`, Kotlin `audio/` (all), capture service | App `BenchmarkAudio.kt` (58) | U16 `MicRecorder`, U10 stateful resampler, U21 VAD chunk dependence, U17 |
-| **ffmpeg/** | Nothing: not in this repo | **Blocked** — needs a current checkout of the original `ffmpegmakercustom` (only stale copies exist: `~/Downloads/ffmpegmakercustom-main`, April 2026, no git; `~/AndroidStudioProjects/whisperIME/ffmpegmakercustom`, Sept 2025) | §9 questions |
+| **ffmpeg/** | Nothing: not in this repo | A current Git checkout is available on this host at `/Users/salehalanazi/ZCodeProject/ffmpegmakercustom`; inspect after audio, respecting its ADD-only contracts | §9 questions |
 
 ### Later queue (tracked, not the current focus — nothing dropped)
 Every item keeps its finding, evidence and status; it is reviewed and fixed
@@ -63,19 +65,17 @@ after the focus areas.
 
 | Area | Open findings | Still to read (approx. lines) |
 |---|---|---|
-| Whisper (`whisper/whisper_engine.cpp`, Kotlin `engine/whisper/`) | F3 (patched A), F5, F6, F11 (patched D, E), H12, Whisper half of U9 | `whisper_engine.cpp` batch, `detectLanguage`, finalize and cancel paths (~780); `WhisperEngine.kt` (~355) |
-| Vosk (`vosk/`, Kotlin `engine/vosk/`) | U25, Vosk half of U9 | rest of `vosk_engine.cpp` (init, batch, loader ~450); `VoskEngine.kt` (~430) |
+| Whisper (`whisper/whisper_engine.cpp`, Kotlin `engine/whisper/`) | F3 (patched A), F5, F6, F11 (patched D, E), H12; U9 resolved (`b50952e`) | `whisper_engine.cpp` batch, `detectLanguage`, finalize and cancel paths (~780); `WhisperEngine.kt` (~355) |
+| Vosk (`vosk/`, Kotlin `engine/vosk/`) | U25; U9 resolved (`b50952e`) | rest of `vosk_engine.cpp` (init, batch, loader ~450); `VoskEngine.kt` (~430) |
 | Legacy engine stack (`router/`, `common_jni_bridge.cpp`, Kotlin `engine/`, `core/`) | F7, U8, U13 (two engine contracts), H7 | rest of `stt_jni.cpp` (~850), rest of `common_jni_bridge.cpp` (~680); Kotlin `SttEngine`, `SttEngineFactoryImpl`, `RealtimeSttSession`, `CommonJni` (rest), `EngineCapabilities`, `SttTypes`, `AudioModels`, `ProcessingConfig` |
 | ONNX STT engine (`onnx/onnx_engine.cpp`) — no current consumer | none yet | all (~490); Kotlin `OnnxEngine` (~270) |
-| `core/` model_loader / session / JNI (only the VAD binding is exercised) | U12 (`ModelLoader::getEnv`), U21 (VAD) | `model_loader.cpp`, `session.cpp`, `core_jni.cpp` (~650); Kotlin `core/` (`ModelLoader`, `VadDetector`, `LanguageDetector`, ~615) |
+| `core/` model_loader / session / JNI (only the VAD binding is exercised) | U12 attachment resolved (`27b5e0f`), U21 (VAD) | `model_loader.cpp`, `session.cpp`, `core_jni.cpp` (~650); Kotlin `core/` (`ModelLoader`, `VadDetector`, `LanguageDetector`, ~615) |
 | TTS stack (`tts/`) — no current consumer | U27 (keep as an optional module or remove: owner decision) | all native (~1,600) and Kotlin `tts/` (~870) |
 
 ### Recommended next actions, in order
-1. **Small proven fixes, each with a host test:** U2 (delete `BufferPool` or
-   make it RAII), U3 (typed `json_options` defaults), U9 (fix the macro, silence
-   hot-path timers), U11 (one central JNI throw helper), U12 (detach attached
-   threads), U4 (`PipeProgress` races and torn lines), U16 (`MicRecorder`
-   dead-object handling and drop accounting), U23 (size check before read, no
+1. **Small proven fixes, each with a host test:** U2/U3/U9/U11/U12/U4 are
+   resolved below. Continue with U16 (`MicRecorder` dead-object handling and
+   drop accounting), U23 (size check before read, no
    UB cast, fail loudly on a bad charsmap), U24 (real option to disable Marian
    spinning).
 2. **Build:** F1 — per-CPU ggml variants for `libhearth_nemotron.so` and
@@ -785,8 +785,14 @@ The 2026-09-24 Phase 0 pass also read the `6ad8305` diff for
 `nemotron_backend.cpp`, `source_language.h`, `speech_test.cpp`,
 `CaptionTranslationBridge.kt`, `TranslationSourceEvidence.kt` and their tests;
 this was a diff review, not a new whole-file audit of every caller.
+**This session's additional coverage:** read the full utility implementations
+and tests for `pipe_progress.h`, `scoped_timer.h`, `buffer_pool.h` and
+`json_options.h`; the `jni_helper.h/.cpp` exception and attachment paths,
+`jni_utils.h` attachment adapter, `ModelLoader::getEnv`, and the Whisper/Vosk
+live push timer call sites. Read the current original media repository's Git
+identity only; no FFmpeg source has been audited yet.
 
-**Read in part:** `whisper_engine.cpp` (~550/1330: worker, params, inference,
+**Read in part (initial pass; current coverage is above and in §0):** `whisper_engine.cpp` (~550/1330: worker, params, inference,
 reset/release; not initialize, push, detectLanguage, batch), `router/stt_jni.cpp`
 (~200/1103), `common_jni_bridge.cpp` (JNI_OnLoad and the registration table
 only), `marian_engine.cpp` (~200/846: session options and decode step),
@@ -796,7 +802,7 @@ only), `marian_engine.cpp` (~200/846: session options and decode step),
 `json_utils.cpp` (string escaping only; not the parser), `jni/jni_helper.h`
 (UTF-8 conversion and macros), `WhisperEngine.kt`, `CommonJni.kt` (externals).
 
-**Not read (scans only):** `vosk/vosk_engine.cpp`, `onnx/onnx_engine.cpp`,
+**Not read in the initial pass (historical snapshot, since superseded):** `vosk/vosk_engine.cpp`, `onnx/onnx_engine.cpp`,
 `marian/marian_tokenizer.cpp` (1195 lines; parses model vocab files),
 `marian/marian_jni.cpp`, `router/engine_router.*`, `core/*` (session,
 model_loader, vad, core_jni), `ocr/*`, `tts/*`, `voice/*`, `jni/jni_helper.cpp`,
@@ -815,7 +821,7 @@ other classes listed in F8.
 (F7, F8); exported-JNI exception-guard scan (F12); Kotlin class usage map
 (F8); instruction-set disassembly of the shipped prebuilt runtimes (F1).
 
-**Next pass, by risk:** (1) parsers of untrusted files: `json_utils.cpp`
+**Original next-pass proposal (superseded by the owner's §0 order):** (1) parsers of untrusted files: `json_utils.cpp`
 parser, `marian_tokenizer.cpp`, `model_integrity.h` tree walk and
 `verified_model_file.h` (fd, TOCTOU, size limits); (2) the rest of
 `whisper_engine.cpp` and `stt_jni.cpp` (push paths, detectLanguage, batch);
@@ -863,6 +869,8 @@ source was changed in this pass.
   an underflowing literal such as `1e-400` is rejected as "number out of range".
 
 ### U2 · P2 · Proven (probe) · `BufferPool` hands the same buffer to two owners
+**Resolved (`6a44656`).** Slot ownership is enforced in debug and NDEBUG;
+`resetAll()` leaves live borrows intact; the existing public stats API remains.
 - `common/buffer_pool.h` `release()` never detects a double release, and with
   `NDEBUG` it accepts any foreign pointer. Probe: `release(a); release(a);`
   then two `acquire()` calls return the same pointer (debug and NDEBUG), and
@@ -870,11 +878,13 @@ source was changed in this pass.
 - Its only use is `nativeGetBufferPoolStats`, which allocates the ~3 MB
   `AudioBufferPool` singleton just to report on it; `whisper_engine.cpp`
   includes the header without using it.
-- **Fix:** delete it. If a pool is wanted for video frames, return an RAII
-  handle (`unique_ptr` with a pool deleter), track an in-use bit per slot, and
-  avoid a process-wide singleton.
+- **Applied:** retained the public stats API and pool, added slot in-use
+  tracking and an RAII acquisition path, and avoided singleton construction
+  for a stats-only query. Any later deletion needs owner consent.
 
 ### U3 · P2 · Proven (probe) · `json_options` loses small numeric defaults
+**Resolved (`1fd333c`).** Registration keeps typed defaults and rejects
+malformed or out-of-bounds specs; the no-consumer cleanup remains in U13.
 - `number(name, def, …)` stores the default as `std::to_string(def)` (`%f`,
   6 decimals), then parses it with `std::stod`. Probe:
   `number("threshold", 1e-7, 0, 1)` → default **0**. Integer defaults use
@@ -886,6 +896,10 @@ source was changed in this pass.
   bounds when the spec is added.
 
 ### U4 · P2 · Proven (by reading) · `PipeProgress` data races and torn lines
+**Resolved (`a45d6b7`).** State access is locked; pipe descriptors are made
+nonblocking at bind, and each record is at most `PIPE_BUF` and written once.
+Oversized terminal fields explicitly report truncation. ASan/UBSan and host
+ThreadSanitizer passed `pipe_progress_test.cpp` on this Mac.
 - It's documented as thread-safe, but `valid()`, `invalidate()` and
   `droppedLines()` read or write `fd_`, `dead_` and `droppedLines_` without the
   mutex while `writeLine()` changes them under it (a data race by the C++ memory
@@ -943,6 +957,8 @@ source was changed in this pass.
 
 
 ### U9 · P2 · Proven (compile probe) · `PROFILE_SCOPE` spams logcat on the live audio path
+**Resolved (`b50952e`).** Two-level macro expansion, monotonic timer, and no
+per-push timer on Whisper or Vosk; batch profiling remains.
 - `common/scoped_timer.h:161` — `_timer_##__LINE__` pastes the literal
   `__LINE__` (`##` blocks expansion). Probe: two `PROFILE_SCOPE_SILENT`s in one
   scope → `error: redefinition of '_timer___LINE__'`.
@@ -973,6 +989,10 @@ source was changed in this pass.
   against one-shot resampling.
 
 ### U11 · P2 · Proven (by reading) · Shared JNI exception helper violates JNI rules on edge inputs
+**Resolved (`873f33c`).** One helper constructs Java exceptions from UTF-16
+messages, preserves a pending exception, and all existing catch/null-check
+macros use it. A real host JVM with `-Xcheck:jni` passed Unicode, invalid
+UTF-8, catch-macro and pending-exception cases.
 - `jni/jni_helper.h` `throwRuntimeException`/`throwIllegalArgumentException`/
   `throwIllegalStateException` pass `e.what()` straight to `ThrowNew`, which
   requires Modified UTF-8. A message with a supplementary character (an emoji
@@ -987,6 +1007,10 @@ source was changed in this pass.
   `NewObject` + `Throw`. Route every macro through it.
 
 ### U12 · P2 · Latent · `getEnv()` attaches native threads and never detaches
+**Attachment resolved (`27b5e0f`).** JNI bridge, ModelLoader and the legacy
+adapter share a named daemon attachment with a pthread-key detach destructor;
+16 native thread exits passed under a host JVM. **Still open (owner decision):**
+`CommonJni.logs` has no producer because `dispatchLog` is unused.
 - `jni_helper.cpp` `jni::getEnv()` and `core/model_loader.cpp:98`
   `ModelLoader::getEnv()` call `AttachCurrentThread` without a matching detach.
   In ART, a native thread that exits while still attached ends in
@@ -1350,3 +1374,13 @@ source was changed in this pass.
   and `verify-release.py` passed with the exact APK sizes recorded in §6.
   No device or paid call. The prior Whisper fix branch `7b44a00` remains
   unmerged in the tracked Later queue.
+- 2026-09-24 — Follow-up on `review/common-jni-audit`: U9 `b50952e`, U3
+  `1fd333c`, U2 `6a44656`, U4 `a45d6b7`, U11 `873f33c`, and U12 attachment
+  `27b5e0f` landed as separate review commits with host coverage and
+  `docs/utils-bible.md` entries. Before each code commit, all Gradle unit
+  tests, both QA Kotlin compiles, common/speech host suites and native debug
+  build passed; the final common suite has 12 programs (including a real JVM
+  `-Xcheck:jni` test), speech has 57 checks. U4 also passed host TSan. The
+  current Mac has a Git checkout of the original media app at
+  `/Users/salehalanazi/ZCodeProject/ffmpegmakercustom`; FFmpeg is queued
+  after audio, not blocked by a missing checkout. No device or paid call.
