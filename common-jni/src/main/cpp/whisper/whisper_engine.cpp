@@ -970,7 +970,6 @@ namespace stt {
     }
 
     int WhisperEngine::pushAudioFloat(const float* samples, int count, int sampleRate) {
-        PROFILE_SCOPE("WhisperEngine::pushAudioFloat");
         const auto pushStart = std::chrono::steady_clock::now();
 
         if (!impl_->initialized) {

@@ -114,10 +114,10 @@ public:
     explicit ScopedTimer(const char* name, bool logOnDestroy = true)
         : name_(name)
         , logOnDestroy_(logOnDestroy)
-        , start_(std::chrono::high_resolution_clock::now()) {}
+        , start_(std::chrono::steady_clock::now()) {}
     
     ~ScopedTimer() {
-        auto end = std::chrono::high_resolution_clock::now();
+        auto end = std::chrono::steady_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start_);
         durationUs_ = duration.count();
         
@@ -139,7 +139,7 @@ public:
      * Get elapsed time so far (without stopping).
      */
     int64_t elapsedUs() const {
-        auto now = std::chrono::high_resolution_clock::now();
+        auto now = std::chrono::steady_clock::now();
         return std::chrono::duration_cast<std::chrono::microseconds>(now - start_).count();
     }
     
@@ -153,13 +153,15 @@ public:
 private:
     const char* name_;
     bool logOnDestroy_;
-    std::chrono::high_resolution_clock::time_point start_;
+    std::chrono::steady_clock::time_point start_;
     int64_t durationUs_ = 0;
 };
 
 // Convenience macros
-#define PROFILE_SCOPE(name) stt::ScopedTimer _timer_##__LINE__(name)
-#define PROFILE_SCOPE_SILENT(name) stt::ScopedTimer _timer_##__LINE__(name, false)
+#define STT_TIMER_CONCAT_INNER(left, right) left##right
+#define STT_TIMER_CONCAT(left, right) STT_TIMER_CONCAT_INNER(left, right)
+#define PROFILE_SCOPE(name) stt::ScopedTimer STT_TIMER_CONCAT(_timer_, __LINE__)(name)
+#define PROFILE_SCOPE_SILENT(name) stt::ScopedTimer STT_TIMER_CONCAT(_timer_, __LINE__)(name, false)
 
 #ifdef VERBOSE_LOGGING
 #define PROFILE_VERBOSE(name) PROFILE_SCOPE(name)

@@ -290,7 +290,6 @@ bool VoskEngine::initialize(const EngineConfig& config) {
 }
 
 int VoskEngine::pushAudio(const int16_t* samples, int count, int sampleRate) {
-    PROFILE_SCOPE("VoskEngine::pushAudio");
 
     Impl::ProcessingGuard guard(impl_.get());
     if (!guard.acquired()) return -1;
@@ -337,7 +336,6 @@ int VoskEngine::pushAudio(const int16_t* samples, int count, int sampleRate) {
 }
 
 int VoskEngine::pushAudioFloat(const float* samples, int count, int sampleRate) {
-    PROFILE_SCOPE("VoskEngine::pushAudioFloat");
 
     Impl::ProcessingGuard guard(impl_.get());
     if (!guard.acquired()) return -1;

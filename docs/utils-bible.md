@@ -384,3 +384,9 @@ model verification for Whisper and Vosk through `verified_model_file.h` and
 `model_integrity.h`) now have known-answer coverage in `sha256_test.cpp`: NIST
 vectors, every padding boundary, incremental split points and the lowercase-only
 digest contract shared with Kotlin `ModelIntegrity`.
+
+`ScopedTimer` remains a batch-operation consumer of `PerformanceStats` in the
+Whisper/Vosk engines. Live audio pushes no longer construct a global stats key,
+lock its map, or log every 50 ms. `scoped_timer_test.cpp` compiles two macros
+in one scope and checks timer recording, lookup and reset; elapsed time uses a
+monotonic clock.
