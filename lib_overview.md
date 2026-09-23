@@ -22,6 +22,74 @@ auditable.
   `media_engine.h`, `MediaEditKit.kt`, `latest_handover.md` or the media test
   runner, so the FFmpeg media engine is **not reviewed** here (§9).
 
+
+## 0. Start here — handoff for the next agent (updated 2026-09-24)
+
+**Focus order (owner, 2026-09-24):** utils (`common/`, `jni/`), `speech/`,
+`translation/`, `ffmpeg/`, `audio/` come first. **Nothing is dropped.**
+Everything else stays recorded and tracked in the *Later queue* below, with
+its findings and its unread files, and is reviewed after the focus areas.
+Whisper is in the Later queue because it is heavy for real-time mobile use
+(candidate for a future notes-transcription app); so are Vosk and the legacy
+`IEngine`/`EngineRouter`/`SttEngine` stack.
+
+**Branch and state:** `review/common-jni-audit` (pushed, HEAD `91b2a3c`).
+Commit `1768a12` holds patches A–E (§6); `91b2a3c` merges upstream `6ad8305`.
+This file has uncommitted appends. Local `codex/model-phase` is one commit
+behind `origin`.
+
+**Environment:** host tests must use `CXX=/opt/homebrew/opt/llvm/bin/clang++`
+(Xcode-beta's ASan hangs every binary; see Log E1). The owner asked for review,
+not long runs: run only the targeted host test for any change, and no device
+use (AGENTS.md).
+
+**Rules for this file:** append findings with evidence (file:line, probe,
+upstream source); mark fixed items **Resolved (commit)** instead of deleting; never drop an item —
+move it between the focus areas and the Later queue;
+add a Log line for every session.
+
+### Status by priority area
+| Area | Read so far | Still to read | Top open items |
+|---|---|---|---|
+| **utils** (`common/`, `jni/`) | Everything (§11) | Nothing | U2, U3, U4, U8, U11, U12, U13 consolidation, U14 tests, U10, U9 (affects Vosk too) |
+| **speech/** | Native ABI, session, segmenter, endpoint budget, Qwen/Moonshine/Omnilingual/Nemotron adapters, speech JNI; Kotlin `SpeechSession`, `LiveSpeechProcessor`, `SpeechModels`, `SpeechModelPackage` | Upstream `6ad8305` (`nemotron_backend.cpp`, new `source_language.h`, test additions); `SpeechTranslation.kt` (60); app `PublisherSpeechPackage.kt` (87), `LocalSpeechModels.kt` (109); `speech_smoke.cpp` (52); runtime scripts `build-runtimes.sh`, `stage-runtimes.py`, `verify-android-runtimes.py`, `make-package.py`, `qwen.cmake`, `nemo-inject.cmake` (~330) | F2 async windowed decode, F1 ggml ARM variants, H1 ABI v2 (sample rate, interrupt, capabilities), H2/H3 (cut points, neural VAD), U21 |
+| **translation/** | `text_model.h`, `translation_jni.cpp`, Marian tokenizer/engine/JNI, `CaptionTranslationBridge` | Upstream `TranslationSourceEvidence.kt` (31) + bridge diff; `LocalTranslationSession.kt` (46), `TranslationCatalog.kt` (107), `MarianTranslationSession.kt` (36); app `MarianCascade.kt` (67, new pivot routes), `TranslationLayer.kt` (246), `LocalTranslationModels.kt` (27); `translation_smoke.cpp` (69); `scripts/translation/*` (75) | F1 (llama without dotprod), F9 (wasted compute, 2 threads, prefix KV reuse), U23, U24 |
+| **audio/** | `common/audio_utils.h`, `audio_gate.h`, `ring_buffer.h`, `core/vad.cpp`, Kotlin `audio/` (all), capture service | App `BenchmarkAudio.kt` (58) | U16 `MicRecorder`, U10 stateful resampler, U21 VAD chunk dependence, U17 |
+| **ffmpeg/** | Nothing: not in this repo | **Blocked** — needs a current checkout of the original `ffmpegmakercustom` (only stale copies exist: `~/Downloads/ffmpegmakercustom-main`, April 2026, no git; `~/AndroidStudioProjects/whisperIME/ffmpegmakercustom`, Sept 2025) | §9 questions |
+
+### Later queue (tracked, not the current focus — nothing dropped)
+Every item keeps its finding, evidence and status; it is reviewed and fixed
+after the focus areas.
+
+| Area | Open findings | Still to read (approx. lines) |
+|---|---|---|
+| Whisper (`whisper/whisper_engine.cpp`, Kotlin `engine/whisper/`) | F3 (patched A), F5, F6, F11 (patched D, E), H12, Whisper half of U9 | `whisper_engine.cpp` batch, `detectLanguage`, finalize and cancel paths (~780); `WhisperEngine.kt` (~355) |
+| Vosk (`vosk/`, Kotlin `engine/vosk/`) | U25, Vosk half of U9 | rest of `vosk_engine.cpp` (init, batch, loader ~450); `VoskEngine.kt` (~430) |
+| Legacy engine stack (`router/`, `common_jni_bridge.cpp`, Kotlin `engine/`, `core/`) | F7, U8, U13 (two engine contracts), H7 | rest of `stt_jni.cpp` (~850), rest of `common_jni_bridge.cpp` (~680); Kotlin `SttEngine`, `SttEngineFactoryImpl`, `RealtimeSttSession`, `CommonJni` (rest), `EngineCapabilities`, `SttTypes`, `AudioModels`, `ProcessingConfig` |
+| ONNX STT engine (`onnx/onnx_engine.cpp`) — no current consumer | none yet | all (~490); Kotlin `OnnxEngine` (~270) |
+| `core/` model_loader / session / JNI (only the VAD binding is exercised) | U12 (`ModelLoader::getEnv`), U21 (VAD) | `model_loader.cpp`, `session.cpp`, `core_jni.cpp` (~650); Kotlin `core/` (`ModelLoader`, `VadDetector`, `LanguageDetector`, ~615) |
+| TTS stack (`tts/`) — no current consumer | U27 (keep as an optional module or remove: owner decision) | all native (~1,600) and Kotlin `tts/` (~870) |
+
+### Recommended next actions, in order
+1. **Small proven fixes, each with a host test:** U2 (delete `BufferPool` or
+   make it RAII), U3 (typed `json_options` defaults), U9 (fix the macro, silence
+   hot-path timers), U11 (one central JNI throw helper), U12 (detach attached
+   threads), U4 (`PipeProgress` races and torn lines), U16 (`MicRecorder`
+   dead-object handling and drop accounting), U23 (size check before read, no
+   UB cast, fail loudly on a bad charsmap), U24 (real option to disable Marian
+   spinning).
+2. **Build:** F1 — per-CPU ggml variants for `libhearth_nemotron.so` and
+   `libtransiber_translation.so` (the largest speed lever for both speech and
+   translation); F4 — build type.
+3. **Design:** F2 async windowed decode; H1 speech ABI v2; U13
+   consolidation (one registry, one UTF-8 decoder, one stateful native
+   resampler, one VAD, one JNI helper set, one error channel); U18/U20 one
+   integrity and JSON contract with shared golden vectors.
+4. **Tests to add:** `audio_utils` conversions and resampler continuity,
+   `ring_buffer`, `lifecycle_gate`, `native_registry`, model-integrity tree
+   walk, `buffer_view` plane packers, Marian tokenizer golden ids, JSON parser
+   fuzz corpus.
+
 ---
 
 ## 1. Architecture map (actual boundaries)
@@ -286,7 +354,8 @@ hygiene, or a smaller speed loss.
   `#if WITH_FFMPEG` blocks and the `FfmpegAudioPipeline_*` symbols,
   `AudioExtractionProgressCallback`, `CommonJni.nativeExtractAudio*`,
   `hearth_media_set_java_vm`.
-- **Fix:** delete, or move to an excluded `legacy/` directory. Add the JNI
+- **Fix (owner decision; tracked):** delete, or move to an excluded `legacy/`
+  directory or an optional module. Add the JNI
   cross-reference check (`scratchpad/jni_xref.py` logic) to CI so every Kotlin
   `external` resolves to a symbol or a registration.
 
@@ -411,9 +480,20 @@ hygiene, or a smaller speed loss.
   (`HWCAP_SHA2`) typically run several times faster than portable C++. Add a
   runtime-dispatched `sha256h`/`sha256su` block function; the new known-answer
   test (patch C) guards it. Measure verification time alone for a 466 MB model.
+- **H12 · P2 · Proven (by reading) · Whisper start reads the model three times and
+  hashes it twice.** `FileModelProvider.getModelPath()` (`ModelProvider.kt:218`,
+  also `:130`, `:259` for the other providers) fully re-hashes the file in Kotlin
+  on every load; native `VerifiedModelFile::open` then hashes it again
+  (scalar SHA-256, H11) and whisper.cpp parses it through the same fd. The
+  native check is strictly stronger (fd-bound, TOCTOU-safe), so for Whisper the
+  Kotlin pass is redundant: skip it (pass the pinned digest straight to native),
+  or cache `(dev, ino, size, mtime, ctime) → digest` as in H5. Measure load time
+  for a 466 MB model before and after.
 - **H10 · P2 · Hypothesis · CPU oversubscription during captions + translation.**
   Nemotron has no thread knob (default threads), Marian runs 4 ORT threads
-  (spinning disabled — good), llama runs 2 and Whisper up to 8, all on big.LITTLE
+  **with ORT's default spin-waiting** (correction 2026-09-24: the
+  `allow_spinning=0` entry is applied only when env `MARIAN_ORT_SPIN=0`, which
+  nothing sets; see U24), llama runs 2 and Whisper up to 8, all on big.LITTLE
   cores. Measure per-thread CPU time and try pinned or smaller pools.
 
 ---
@@ -568,7 +648,7 @@ worker after the pause is released.
 **E. JNI guard on `nativeResetWhisper` (F12).** `stt_jni.cpp`: wrapped in
 `JNI_TRY_CATCH_BEGIN`/`JNI_TRY_CATCH_END_VOID`.
 
-Status: implemented on `review/common-jni-audit` (not committed). Results:
+Status: committed by the owner as `1768a12` on `review/common-jni-audit` (pushed); upstream `6ad8305` merged on top as `91b2a3c`. Results:
 - `run_common_utils_tests.sh` with `CXX=/opt/homebrew/opt/llvm/bin/clang++`
   (ASan+UBSan): all 8 tests PASS, including `utf8_utils` (28 checks) and
   `audio_gate` (25 checks).
@@ -636,7 +716,21 @@ Status: implemented on `review/common-jni-audit` (not committed). Results:
 First-party native code is about 22,000 lines (excluding vendored whisper.cpp,
 ORT headers and tests); the Kotlin library is about 8,300 lines. As of
 2026-09-23, about **4,300 native lines (~20%)** and **~900 Kotlin lines
-(~11%)** were read line by line. The rest was covered only by whole-tree scans
+(~11%)** were read line by line. **Update 2026-09-24 (pass 2):** all of
+`common/` and `jni/` (about 10,300 lines) has now been read (the unused
+media/image headers by outline), plus the Kotlin `audio/`, `model/ModelIntegrity`,
+`handles/NativeHandle` and `ReleasingPooledChannel`. Native total ≈ 12,800
+lines (~58%); Kotlin ≈ 2,100 lines (~25%). **Update later on 2026-09-24:**
+also read `marian/` (tokenizer, engine, JNI), `router/engine_router`,
+`vosk_engine` push/partial/finalize, Whisper `initialize`/push, the stt_jni
+direct-buffer path, `core/vad`, `ocr/` (all), `voice/supertonic`, and Kotlin
+`perf/`, `json/`, `error/`, `config/AudioGateConfig`, `ModelProvider`
+(digest path). Native ≈ 16,500 lines (~75%); Kotlin ≈ 2,700 (~33%).
+Not read: `tts/` (dead, U27), `onnx/onnx_engine.cpp` (dead), `core/`
+model_loader/session/core_jni, the rest of `common_jni_bridge.cpp` and
+`stt_jni.cpp` (ONNX/batch/language paths), Whisper batch/detectLanguage, and
+Kotlin `engine/`, `core/`, `CommonJni` (beyond externals), `RealtimeSttSession`,
+`EngineCapabilities`, `SttTypes`, `AudioModels`, `ProcessingConfig`. The rest was covered only by whole-tree scans
 (below), which find classes of bugs, not every bug.
 
 **Read in full:** `speech/` (session, segmenter, endpoint budget, backend ABI,
@@ -683,6 +777,467 @@ parser, `marian_tokenizer.cpp`, `model_integrity.h` tree walk and
 `native_registry.h`, `jni_helper.cpp`; (5) OCR, TTS, voice, `core/`;
 (6) the rest of the Kotlin library, starting with `MicRecorder` and `ModelIntegrity`.
 
+
+## 11. Pass 2: reusable core (`common/`, `jni/`) — for use by other apps
+
+Goal: judge each util as a dependency for other apps (video editors, other
+tools, third parties). "Reuse verdict" = keep as is / fix then keep / merge /
+delete. Probes were compiled with Homebrew clang 22 in the scratchpad; no
+source was changed in this pass.
+
+| Util | Production consumer | Tests | Reuse verdict |
+|---|---|---|---|
+| `json_utils` | speech config, TTS, engines, transcript JSON | via speech tests | Keep; decouple from STT types (U1) |
+| `buffer_view.h` | checked math only (plane packers unused) | none | Keep; add plane-packer tests before reuse |
+| `buffer_pool.h` | none (only a stats JNI) | none | Delete, or rewrite with RAII ownership (U2) |
+| `cancel_token.h` | Whisper, `job_future.h` | yes | Keep; make deadline lock-free (U5) |
+| `pipe_progress.h` | Whisper (inert unless an fd is attached) | yes | Fix races, then keep (U4) |
+| `job_system.h` / `job_future.h` | none | yes | Keep for app/host orchestration; chunk `parallelFor` (U6) |
+| `json_options.h` | none | yes | Fix defaults, then keep (U3) |
+| `native_registry.h` vs `lease_registry.h` | both used | lease_registry only | Merge into one (U7) |
+| `error_codes.h` + `logging` `ErrorStore` | stt_jni, engines | none | Replace with explicit error results (U8) |
+
+### U1 · P3 · `json_utils` notes
+- Sound: strict RFC 8259 parsing, 1 MiB / depth 64 / 100k-node limits,
+  duplicate keys rejected, surrogate and UTF-8 validation, whole document
+  consumed.
+- `json_utils.h` includes `engine_interface.h` only for `buildTranscriptJson`,
+  which couples a generic util to STT types. Move that helper next to the
+  engines.
+- `stringify` escapes every non-ASCII character as `\uXXXX`, so Arabic/CJK
+  payloads grow 2–3×, and it replaces invalid UTF-8 byte by byte (inconsistent
+  with `repairUtf8`'s maximal-subpart rule). Emit valid UTF-8 as-is, since the
+  JNI path already converts it strictly with `utf8ToJString`.
+- `JsonValue` stores every alternative in every node (bool, int64, uint64,
+  double, string, object, array): ~150 B per node. `std::variant` would cut it
+  roughly 3×.
+- `getString`/`getInt`/`getFloat`/`getBool` re-parse the whole document for
+  each field. Parse once and use `find`.
+- Numbers use `istringstream`/`ostringstream` (locale machinery, allocations);
+  an underflowing literal such as `1e-400` is rejected as "number out of range".
+
+### U2 · P2 · Proven (probe) · `BufferPool` hands the same buffer to two owners
+- `common/buffer_pool.h` `release()` never detects a double release, and with
+  `NDEBUG` it accepts any foreign pointer. Probe: `release(a); release(a);`
+  then two `acquire()` calls return the same pointer (debug and NDEBUG), and
+  `active()` is wrong. `resetAll()` re-frees buffers that are still held.
+- Its only use is `nativeGetBufferPoolStats`, which allocates the ~3 MB
+  `AudioBufferPool` singleton just to report on it; `whisper_engine.cpp`
+  includes the header without using it.
+- **Fix:** delete it. If a pool is wanted for video frames, return an RAII
+  handle (`unique_ptr` with a pool deleter), track an in-use bit per slot, and
+  avoid a process-wide singleton.
+
+### U3 · P2 · Proven (probe) · `json_options` loses small numeric defaults
+- `number(name, def, …)` stores the default as `std::to_string(def)` (`%f`,
+  6 decimals), then parses it with `std::stod`. Probe:
+  `number("threshold", 1e-7, 0, 1)` → default **0**. Integer defaults use
+  `stoll`, which throws on a malformed spec added through `add()`; defaults are
+  never checked against min/max.
+- (A locale round-trip was also suspected; the probe showed it is consistent
+  within one process, so it's not a bug.)
+- **Fix:** store the default as a typed `Value`, and validate it against the
+  bounds when the spec is added.
+
+### U4 · P2 · Proven (by reading) · `PipeProgress` data races and torn lines
+- It's documented as thread-safe, but `valid()`, `invalidate()` and
+  `droppedLines()` read or write `fd_`, `dead_` and `droppedLines_` without the
+  mutex while `writeLine()` changes them under it (a data race by the C++ memory
+  model; TSan would flag it).
+- A line longer than `PIPE_BUF` (4 KiB; possible for a long `FAILED` message or
+  output path) can be written partially and then dropped on `EAGAIN`, leaving a
+  torn JSON line the reader will concatenate with the next one.
+- **Fix:** lock (or use atomics) in the accessors; cap the escaped message so
+  one line is < `PIPE_BUF`, or retry until the whole line is written.
+  It also relies on a transitive `<cstdio>` include for `snprintf`.
+
+### U5 · P3 · `CancelToken`
+- Correct. `shouldStop()` takes a mutex on every call (ggml calls the abort
+  callback between graph nodes); store the deadline as an atomic
+  `steady_clock` tick count with a sentinel instead. `setDeadline()` with a
+  negative timeout silently disables the deadline; reject it or treat it as
+  already expired.
+
+### U6 · P3 · `JobSystem`
+- Correct and careful: rejected work gets an exceptional future, nested
+  submissions run inline (no deadlock with one worker), and `waitAll`/`shutdown`
+  fail fast from a worker. Unused in production.
+- `parallelFor`/`parallelForIndex` create one job, one `std::function` and one
+  promise per item; for per-row frame work (1080 rows) that means 1080
+  allocations. Chunk the range into about `workerCount × 4` pieces.
+- `submitWithResult<T>(std::function<T()>)` forces an explicit `T` and a type
+  erasure; `template<class F> auto submit(F&&) -> std::future<invoke_result_t<F>>`
+  is the reusable form. `JobResult<T>` needs a default-constructible `T`.
+- The singleton pool is joined during static destruction.
+
+### U7 · P2 · Two handle registries
+- `common/native_registry.h` (`NativeRegistry`: kind-tagged 48-bit handles,
+  serialized leases; used by core, TTS, stt_jni streams) and
+  `common/lease_registry.h` (`LeaseRegistry`: speech, OCR, Marian, llama,
+  voice, engine_router). Both implement retire → exclusive-drain correctly.
+- For one library, keep one. `NativeRegistry`'s kind tag is the better base,
+  because a handle from one subsystem can't be replayed into another. It lives
+  in namespace `jni` despite being JNI-free, and the `JNI_HANDLE_CHECK` macros
+  declare reserved identifiers (`__handle_guard`, `__obj`).
+
+### U8 · P2 · Proven (by reading) · Error messages set at the JNI layer are never shown
+- `router/stt_jni.cpp` records 52 validation failures with `SET_ERROR(...)`
+  into the thread-local `ThreadLocalError` and returns `-1`. Kotlin then calls
+  `nativeGetLastErrorWhisper(handle)` (`WhisperEngine.kt:179`, `:223`, `:256`,
+  `:323`), which returns the engine's own `lastError` — not the thread-local
+  message. "Invalid handle", "samples array is required…", "Failed to get
+  array" are therefore replaced by a stale engine error or "Push failed".
+- Even when the thread-local store is read (`CommonJni.getLastError()`),
+  coroutine dispatchers can run consecutive JNI calls on different threads.
+- Three overlapping channels exist: `ThreadLocalError`, legacy `ErrorStore`
+  (which also `LOG_E`s every message), per-engine `lastError`.
+- **Fix:** throw a Java exception with the actual message at the JNI
+  boundary (the speech and translation JNI already do this), or return a
+  status plus message in one call. Retire `ErrorStore`.
+
+
+### U9 · P2 · Proven (compile probe) · `PROFILE_SCOPE` spams logcat on the live audio path
+- `common/scoped_timer.h:161` — `_timer_##__LINE__` pastes the literal
+  `__LINE__` (`##` blocks expansion). Probe: two `PROFILE_SCOPE_SILENT`s in one
+  scope → `error: redefinition of '_timer___LINE__'`.
+- Non-silent `PROFILE_SCOPE` runs on every 50 ms push:
+  `whisper_engine.cpp:973` (`WhisperEngine::pushAudioFloat`, which the int16
+  path at `:968` calls) and `vosk_engine.cpp:293/340`. Each push takes a global
+  mutex, builds a `std::string` key (29 chars, beyond libc++ SSO → heap
+  allocation) and emits an **INFO logcat line** (`LOG_I` is not gated by
+  `NDEBUG`). That's about 20 lines/s during Whisper or Vosk captions in release
+  builds.
+- `high_resolution_clock` is not monotonic on libstdc++ hosts; use
+  `steady_clock`.
+- **Fix:** two-level concat macro; make hot-path timers silent (or sampled)
+  with a fixed-size, lock-free per-site counter instead of a global map.
+
+### U10 · P2 · Proven (by reading) · Streaming resampler drifts and resets phase per chunk
+- `AudioUtils::resampleInto`/`resampleLinearInto` size each call's output as
+  `ceil(n·dst/src)` and restart phase at 0. Streaming 44.1 kHz → 16 kHz in
+  1024-sample chunks yields 372 instead of 371.52 samples per chunk: about
+  +0.13% (≈4.6 s per hour) of timeline drift, plus a discontinuity at every
+  chunk boundary, and no anti-alias filter.
+- Not on Hearth's live path (AudioRecord delivers 16 kHz), but used by the
+  Whisper/Vosk/ONNX push paths whenever a caller passes another rate, and fatal
+  for A/V sync in an editor.
+- **Fix:** a stateful `Resampler` object (carry phase and the last input
+  sample; optionally a polyphase windowed-sinc for anti-aliasing) with a test
+  that feeds random chunk sizes and checks total output length and continuity
+  against one-shot resampling.
+
+### U11 · P2 · Proven (by reading) · Shared JNI exception helper violates JNI rules on edge inputs
+- `jni/jni_helper.h` `throwRuntimeException`/`throwIllegalArgumentException`/
+  `throwIllegalStateException` pass `e.what()` straight to `ThrowNew`, which
+  requires Modified UTF-8. A message with a supplementary character (an emoji
+  path, backend text such as the speech test's `原因: invalid graph 🧪`) is
+  invalid MUTF-8 and aborts under CheckJNI (debuggable builds). They also call
+  `FindClass` without first checking for a pending Java exception.
+  `JNI_TRY_CATCH_END` uses these helpers.
+- `speech_jni.cpp` (`throwSpeechError`) and `translation_jni.cpp` (`fail`)
+  already work around both problems locally.
+- **Fix:** one central `throwJava(env, className, utf8)` that returns if an
+  exception is pending, builds the message with `utf8ToJString`, and uses
+  `NewObject` + `Throw`. Route every macro through it.
+
+### U12 · P2 · Latent · `getEnv()` attaches native threads and never detaches
+- `jni_helper.cpp` `jni::getEnv()` and `core/model_loader.cpp:98`
+  `ModelLoader::getEnv()` call `AttachCurrentThread` without a matching detach.
+  In ART, a native thread that exits while still attached ends in
+  `LOG(FATAL) "Native thread exited without calling DetachCurrentThread"`
+  (a process abort).
+- Today it is latent: the only `jni::getEnv()` caller, `dispatchLog`
+  (`common_jni_bridge.cpp:71`), has no callers. The first future use from a
+  worker thread would crash on thread exit.
+- **Fix:** attach once per thread with a `pthread_key` destructor that detaches,
+  and name attached threads (`JavaVMAttachArgs.name`).
+- Side effect of the dead `dispatchLog`: Kotlin `CommonJni.init()` registers a
+  log callback and exposes a `logs` flow that never receives anything.
+
+### U13 · P3 · Library hygiene in `common/`
+- **Four UTF-8 validators:** `utf8_utils.h` (`utf8ToUtf16`, `repairUtf8`),
+  `json_utils.cpp` (`validUtf8SequenceLength`), `model_integrity.h`
+  (`isValidUtf8`). Keep one decoder and build the others on it.
+- **Three copies of the file-snapshot comparison** (`model_integrity.h`
+  `sameFileSnapshot`, `verified_model_file.h` `sameSnapshot`, `mmap_model.h`
+  `sameSnapshot`) and two copies of the 64 KiB `pread` + SHA-256 loop.
+- **`cpu_affinity.h` (unused) does not compile on macOS/iOS** (`cpu_set_t`,
+  `sched_setaffinity`), and its big-core rule (within 10% of the top max
+  frequency) picks only the 2 prime cores on 2+6 or 1+3+4 SoCs such as the
+  S25's. Delete it rather than ship it in a reusable library.
+- `stt_kit.cpp`/`stt_kit.h` are compiled into `libcommon_jni` with no consumer
+  (`core_jni.cpp` notes the bindings were removed). `stt_mode.h` is unused.
+- **Two engine contracts:** legacy C++ `IEngine` (string/JSON results,
+  `int` status + `getLastError()`) and the versioned C ABI
+  `HearthSpeechBackend`. Most cross-engine inconsistencies (F3, F5, F11, U8)
+  come from this split. Porting Whisper and Vosk behind `HearthSpeechBackend`
+  would retire `EngineRouter`, `IEngine` and the legacy Kotlin `SttEngine`
+  stack.
+
+### U14 · P3 · `model_integrity.h` / `verified_model_file.h` / `mmap_model.h`
+- These are the strongest code in `common/`: no-follow `openat`/`fstatat`,
+  named-vs-opened inode checks, before/after snapshots, EINTR-safe `pread`,
+  size/count/depth/path limits, and a domain-separated tree digest.
+  `VerifiedModelFile` feeds whisper.cpp's loader from the same verified fd
+  (no check-then-load race).
+- **Gaps:** there's no native host test for the tree walk (symlink rejection,
+  changed-during-hash, limits). The `model-tree-sha256-v1` contract is
+  implemented twice (C++ and `ModelIntegrity.kt`) with no shared golden
+  vector.
+- Only Whisper loads through the verified fd; Vosk, sherpa, Nemotron, llama
+  and ORT re-open by path after Kotlin verification. That's safe for
+  app-private copies; make it an explicit library contract, or add a
+  `VerifiedMapping` (mmap + hash + pass bytes to ORT
+  `CreateSessionFromArray`), which also removes the second read.
+- `MmapModel` (unused) is clean; it's the natural base for that.
+
+### U15 · P3 · Small API notes
+- `SecureMemory` (unused): fine as best effort; prefer `explicit_bzero`/
+  `memset_s` when available.
+- `AudioUtils::processBatch` ignores conversion failure (output left
+  uninitialized). `AudioUtils::normalize` has the same up-to-9000× gain as F6.
+- `jni/native_registry.h` macros declare reserved identifiers
+  (`__handle_guard`, `__obj`).
+- `JStringGuard` et al. are sound; `JCriticalArrayGuard` always commits (`0`
+  mode) even for read-only use.
+
+
+### U16 · P2 · Proven (by reading) · `MicRecorder` spins on a dead recorder and drops audio silently
+- `common-jni/.../audio/MicRecorder.kt` (no Hearth consumer; the obvious
+  capture component for other apps).
+- `captureLoop` (`:198-220`) handles only `> 0`, `ERROR_INVALID_OPERATION` and
+  `ERROR_BAD_VALUE`; `directCaptureLoop` (`:290-293`) treats every other
+  result as "transient, keep going". `AudioRecord.read` returns
+  `ERROR_DEAD_OBJECT` (-6) immediately and repeatedly after an audio-server
+  restart or invalidation, so both loops **busy-spin at 100% CPU** until
+  `stop()`.
+- Drops are silent: `audioFlow` is a `SharedFlow` with DROP_OLDEST; direct
+  mode skips a read (`delay`) when the pool is empty and drops the newest chunk
+  when the channel is full. `timestampMs` advances only for delivered chunks
+  (and in truncated milliseconds), so after a drop the timestamps are early and
+  consumers cannot see the gap — fatal for A/V sync in an editor.
+- Hard-coded `VOICE_RECOGNITION`, mono, 16-bit; no `AudioRecord.getTimestamp`.
+- **Fix:** treat every negative read as an error (surface
+  `ERROR_DEAD_OBJECT` and let the owner recreate); use a sample counter as the
+  timeline and expose a dropped-sample counter or gap event; make source,
+  channels and encoding parameters.
+
+### U17 · P3 · Two resamplers with different semantics; WAV parser strictness
+- Kotlin `audio/Pcm16Resampler.kt` is stateful and chunk-invariant
+  (`Pcm16ResamplerTest` proves split == continuous) — the design native
+  `AudioUtils::resampleInto` lacks (U10). Both are linear with no anti-alias
+  filter for downsampling, and the Kotlin one truncates rather than rounds.
+  Keep one algorithm (native, exposed to Kotlin) with a stateful API.
+- `audio/PcmWave.kt` is strict and bounded (good for untrusted input), but
+  rejects `WAVE_FORMAT_EXTENSIBLE` PCM (`0xFFFE` with PCM subformat, written by
+  many recorders/DAWs) and a final odd-sized chunk without its pad byte (common
+  in real files). Accept both for general reuse.
+
+### U18 · P3 · Kotlin and native model-integrity contracts differ
+- Same `model-tree-sha256-v1` digest, different acceptance rules:
+  - Path components: Kotlin `requireSafeName` rejects ISO control characters
+    and components over 255 UTF-8 bytes; native `validateRelativePath` does not.
+    One directory can verify natively and fail in Kotlin.
+  - Expected digests: Kotlin accepts uppercase and a `sha256:` prefix;
+    native requires 64 lowercase hex characters.
+  - Change detection: Kotlin compares size, mtime and `fileKey`; native also
+    compares ctime.
+- Kotlin opens files by path (`FileInputStream`) after a NOFOLLOW attribute
+  read. A swap to a symlink between the two is caught only if it persists until
+  the post-read snapshot; the fd-based native walk is immune. This matters only
+  for sources outside app-private storage.
+- Publication moves atomically after `fd.sync()` but never fsyncs the parent
+  directory, so the rename itself is not crash-durable.
+- **Fix:** one written contract (path rules, digest encoding, change
+  detection) plus a golden test vector (a small directory tree and its expected
+  digest) checked in both `ModelIntegrityTest` and a native host test.
+
+### U19 · P3 · Other Kotlin/JNI helper notes
+- `handles/NativeHandle.kt` (unused) releases native resources from
+  `finalize()`. Native destroy can block on an in-flight inference lease, and
+  Android's FinalizerWatchdog kills the process after about 10 s. `close()`
+  logs and swallows release failures. Prefer explicit `close()`, plus
+  `java.lang.ref.Cleaner` (API 33+) or a leak-reporting `PhantomReference`.
+- `common/jni_utils.h` duplicates `jni/jni_helper.h`: its
+  `CriticalArrayGuard` releases with `JNI_ABORT` while `JCriticalArrayGuard`
+  commits; `GlobalRef` stores a `JNIEnv*` and uses it in its destructor
+  (`JNIEnv` is thread-local, so destroying it on another thread is undefined
+  behavior); `getEnvForCurrentThread` is a third attach-without-detach (U12);
+  `JNI_CHECK_EXCEPTION*` describe **and clear** Java exceptions, turning a
+  failure into a null return. Only the critical-array guards are used
+  (`stt_jni.cpp`). A JNI-only header also lives in portable `common/`.
+- `jni/transactional_cache.h` is correct and unused.
+- Media-suite leftovers with no consumer, about 1,400 lines:
+  `audio_decoder.h` (`IAudioDecoder`), `audio_format.h`, `audio_types.h`
+  (`AudioFrame`, `VideoFrame`), `image_engine.h`, `image_types.h`,
+  `image_utils.h` (`vision::`, NEON colour conversion). Move them to the media
+  repository or a separate media-core module instead of shipping them unused.
+
+
+### U20 · P3 · Proven (AOSP source) · Kotlin and native JSON parsers accept different languages, and tests use a third
+- Native `JsonUtils::parse` is strict RFC 8259 (duplicate keys and leading
+  zeros rejected). Android's `org.json` is documented lenient in AOSP
+  `JSONTokener.java`: it accepts `//`, `#` and `/* */` comments, unquoted and
+  single-quoted strings, `0x` hex and leading-`0` **octal** integers, and
+  `=`/`=>`/`;` separators, and it **silently overwrites duplicate keys**
+  (`result.put((String) name, nextValue())`).
+- The JVM unit tests use `org.json:json:20231013`
+  (`common-jni/build.gradle.kts`), a different implementation (it rejects
+  duplicate keys and treats `01` as a string), so host tests do not exercise
+  device parsing. Example: a manifest with `"schemaVersion": 01` is accepted
+  on device and rejected in tests.
+- Impact is limited for model packages because `SpeechModelPackage.verify`
+  independently checks the on-disk file set and every SHA-256.
+  `JsonInterop.parseDocument` also swallows the parse exception, so the actual
+  error text is lost.
+- **Fix:** parse security-relevant manifests with one strict parser on both
+  sides (the native one through a small JNI call, or a strict Kotlin reader), or
+  run manifest tests as Robolectric/instrumented tests against Android's
+  `org.json`.
+
+### U21 · P2 · Proven (by reading) · `core/vad.cpp` decisions depend on the caller's chunk size
+- `VadDetector::pushAudio` (`core/vad.cpp`) splits each call into
+  `windowSamples_` windows starting at that call's offset 0. With 800-sample
+  reads and a 480-sample (30 ms) window, windows alternate 480/320 samples.
+  The fixed 5-window dB history then covers a different duration depending on
+  read size. `UtteranceSegmenter` explicitly avoids this by buffering fixed
+  20 ms frames.
+- In streaming mode `segments_` grows without bound (cleared only by
+  `process()`/`reset()`), and `getSegments()` copies all of them.
+- `inSpeech_` is atomic but the other state isn't; safe only because
+  `core_jni` serializes access (`acquireSerialized`).
+- It's the third energy VAD (with `AudioGate` and `UtteranceSegmenter`) and has
+  no Hearth consumer (only Kotlin `VadDetector`).
+- **Fix:** carry a partial-window buffer across pushes (as the segmenter
+  does); bound or drain segments; keep one VAD component, and treat a neural
+  VAD (sherpa's Silero) as the upgrade path (H3).
+
+### U22 · P3 · Kotlin mirrors of native types have drifted
+- `config/AudioGateConfig.kt` defaults (−40 dB, ZCR ceiling 0.3, 300/500 ms,
+  one smoothing alpha 0.1) differ from native `AudioGateConfig` (−45 dB, 0.55,
+  200/200 ms, attack 0.5 and release 0.25). A ZCR ceiling of 0.3 would reject
+  the fricatives the native comment calls speech. Its only apply path,
+  `nativeSetAudioGateConfig`, throws `UnsupportedOperation`, so it's a
+  misleading dead API.
+- `error/NativeError.kt` mirrors `ErrorCode` but lacks
+  `ENGINE_CREATE_FAILED` (204), `INIT_FAILED` (205) and `MEMORY_ERROR` (250),
+  and still carries the FFmpeg codes (500-505).
+- `perf/ChunkPacing.kt` is documented as a copy of `MicRecorder`'s private
+  pacing code; have `MicRecorder` use it. `RollingStats` keeps a
+  subtract-on-evict float sum (slow drift over very long sessions).
+
+
+### U23 · P2 · Proven (by reading) · Marian tokenizer: robust parsers, three reuse gaps
+- `marian/marian_tokenizer.cpp` (hand-written SentencePiece protobuf reader,
+  bounded JSON walker, Darts charsmap normalizer, unigram Viterbi). Bounds are
+  careful: varint shifts capped, length-delimited fields checked against the
+  remaining bytes, Darts indices checked on every step, `strlen` bounded by
+  `std::string`'s terminating NUL, special-token ids range-checked, exactly
+  one UNKNOWN piece required.
+- **Reads before limiting:** `load()` (`:786-797`, `:896-907`) reads the whole
+  spm and `tokenizer.json` through `ostringstream` and copies with `.str()`
+  (about 2× file size in memory) before comparing with the 16 MB / 64 MB
+  limits. A wrong multi-GB path is fully read before rejection. `stat` first
+  and read at most limit + 1 bytes.
+- **Silent normalization loss:** a charsmap blob shorter than 1028 bytes, or with
+  an inconsistent trie length or missing NUL (`:847-863`), is dropped
+  silently, and tokenization then differs from Hugging Face with no error.
+  Fail loudly instead (identity-normalizer models have no blob, so they're
+  unaffected).
+- **UB on hostile ids:** added-token `id` is parsed as `double` and cast with
+  `static_cast<int64_t>` (`:1063`) before the range check; `1e300` or `NaN`
+  is undefined behavior. Range-check the double first.
+- **No host test:** add a golden test with fixture sentences and the token ids
+  produced by `transformers.MarianTokenizer` for each pinned pair (the phone
+  runs exercise it only indirectly).
+- Minor: `p_ + 1 >= end_` in the surrogate check can form a pointer two past
+  the end (technically UB); use `end_ - p_ < 2`.
+
+
+### U24 · P2 · Proven (by reading) · Marian engine: spin-waiting threads and base-size-only models
+- **Spinning:** `marian_engine.cpp` `applyEnvSessionConfig` sets
+  `session.intra_op.allow_spinning=0` (and `arena.extend_strategy`) **only**
+  when the process environment has `MARIAN_ORT_SPIN=0` / `MARIAN_ORT_ARENA=1`.
+  Nothing sets them on Android, so Marian's 4 intra-op threads use ORT's
+  default spin-wait while ASR runs on the same cores. The OCR sessions
+  (`paddle_ocr.cpp:25`, `japanese_ocr.cpp:59-60`) disable spinning
+  unconditionally. Make it a real option (default off for live captions).
+- **Model shape:** `marian_engine.h:53-56` hard-codes 6 layers, 8 heads,
+  head dim 64 and hidden 512 (OPUS-MT base). "tc-big" pairs (1024 hidden, 16
+  heads) fail at runtime with an ORT shape error. Read the dimensions from the
+  session's input metadata.
+- **Per call:** `RunDeadline` starts and joins a `std::thread` for every
+  translation (created even before input validation). One long-lived timer
+  thread per engine would do. Decoder KV copies per step: see H6.
+- Sound: cancel and deadline use `RunOptionsSetTerminate`; each translate
+  clears the terminate flag under the options lock, and the previous deadline
+  thread is always joined first, so a stale timer cannot abort a new sentence.
+  The JNI reports errors through thread-local storage read by a separate call
+  (`nativeGetLastError`). Both current callers (`TranslationLayer.kt:193-196`,
+  `MarianTranslationSession.kt:31-32`) read it without suspending, so it is
+  correct today but fragile for other apps (see U8).
+
+
+### U25 · P2 · Proven (by reading) · Vosk partials grow with the whole session
+- `vosk/vosk_engine.cpp` `getPartial()` builds each partial from **every
+  final segment since the session started** plus Vosk's current partial, then
+  JSON-escapes it (non-ASCII → `\uXXXX`), converts it to UTF-16 and hands it
+  to Kotlin, which parses it again. `segments` is cleared only on reset,
+  release or batch transcription (`:112`, `:145`, `:475`, `:531`), never
+  during streaming.
+- The controller polls Vosk every 500 ms, so per-poll cost and memory grow
+  linearly and total cost quadratically over a long session. An hour of speech
+  (~50 KB of text; 3–6× larger once Arabic/CJK is escaped) is rebuilt, escaped,
+  converted and re-parsed twice a second.
+- `CaptionEngineController` works around the symptom (`PARTIAL_MAX_CHARS = 200`
+  head promotion, `SILENCE_PROMOTE_MS`). Its comment attributes the endless
+  partial to Vosk, but the accumulation of previous finals comes from this
+  wrapper; Vosk's own `partial_result` restarts after each final.
+- **Fix:** return only the current Vosk partial, and expose new finals
+  separately (a `takeFinals()` queue like `RemoteWhisperEngine`/the speech ABI
+  path), so the controller promotes finals directly. Bound `segments` to the
+  unconsumed ones.
+- `OnnxEngine` (`onnx/onnx_engine.cpp`, 462 lines) has no Hearth consumer
+  (no `CaptionEngineChoice` uses it); it was not reviewed line by line.
+
+
+### U26 · P3 · OCR adapters: sound, with an undocumented permanent cancel
+- `ocr/paddle_ocr.cpp`, `ocr/japanese_ocr.cpp`, `ocr/ocr_jni.cpp`: input
+  capped at 2048 px per side, output rank/shape/element count bounded,
+  non-finite scores rejected, Manga token and 45 s limits, ORT spinning disabled,
+  LeaseRegistry handles. Pixel order is correct: Java `int` ARGB
+  (`0xAARRGGBB`) read as little-endian `uint32` puts B in byte 0, giving the
+  BGR planes the publisher preprocessing expects.
+- `cancel()` sets `cancelled` and `RunOptionsSetTerminate` and never clears
+  them, so the engine is dead afterwards. Hearth only cancels right before
+  closing (`CameraOcrController.kt:145`), but the `OcrEngine.cancel()`
+  interface doesn't say so; another app would reasonably expect per-run cancel
+  (as Marian implements). Document it or reset per call.
+- Minor: input/output names are looked up through the allocator on every run;
+  the detector output (up to 2048×2048 floats) is copied out of the ORT value.
+
+### U27 · P2 · The whole `tts/` stack is dead weight in the library
+- `tts/tts_jni.cpp`, `tts_engine_factory.cpp`, `vits_onnx_engine.cpp`,
+  `tts_router.h`, `tts_engine_interface.h` (about 1,600 lines) plus Kotlin
+  `TtsKit`, `TtsEngine`, `BaseTtsEngine`, `TtsNative` (about 870 lines) have
+  no app consumer (only a comment in `CaptionOverlayConfig.kt:93`). Every
+  `ENABLE_*` backend is OFF (`CMakeLists.txt:252-254`), so it can only report
+  "no engine", yet it's compiled into `libcommon_jni` and kept by the consumer
+  ProGuard rule. Read-aloud actually runs through `voice/` Supertonic. Owner
+  decision (tracked): keep it as an optional module, or remove it.
+
+### U28 · P2 · Hypothesis · Read aloud reloads the Supertonic model for every request
+- `VoicePlayer.kt:125` opens `SupertonicVoice` (four ONNX sessions:
+  duration predictor, text encoder, vector estimator, vocoder) inside each
+  speak request and closes it at `:131`. Every caption line spoken through
+  `speakLine` pays the model load before the first sample plays.
+- `voice/supertonic.cpp` itself is careful (bounded shapes and sizes, finite
+  checks, host-tested `voice_bounds.h`, spinning disabled); its `cancel()` is
+  permanent, which is consistent with one instance per request.
+- **Measure** time to first audio with a cold vs warm instance. If load
+  dominates, keep one instance warm while the player is active (with an idle
+  timeout) and make cancel per-run.
+
 ---
 
 ## Log (append-only)
@@ -703,3 +1258,42 @@ parser, `marian_tokenizer.cpp`, `model_integrity.h` tree walk and
   patch E for the path touched). New hypothesis H11.
 - 2026-09-23 — Added §10 coverage: about 20% of native and 11% of Kotlin
   lines read in full so far; next-pass order recorded.
+- 2026-09-23 — Branch state: the owner committed the patches as `1768a12`
+  ("other agent"; it also committed `.vscode/settings.json` with a local path),
+  then `git pull origin codex/model-phase` on this branch merged upstream
+  `6ad8305` (Nemotron uncertain-tag fix, rebuilt `libhearth_nemotron.so`) as
+  `91b2a3c`, now pushed. Local `codex/model-phase` is still `46d42b7`. F1
+  re-checked on the new `libhearth_nemotron.so` (2,267,200 bytes): still 0
+  `sdot`/`udot`/`smmla`/fp16 `fmla .8h`.
+- 2026-09-23 — Pass 2 started (reusable core): json_utils, buffer_view, buffer_pool,
+  cancel_token, pipe_progress, job_system, job_future, json_options, both
+  registries, error_codes, logging. Findings U1–U8 (§11). Probe results: U2 and
+  U3 confirmed; suspected json_options locale bug refuted.
+- 2026-09-24 — Pass 2 continued: model_integrity (rest), verified_model_file,
+  mmap_model, secure_memory, cpu_affinity, scoped_timer, audio_utils (rest),
+  engine_interface/stt_kit/stt_mode, jni_helper, jni/native_registry. Findings
+  U9–U15; U9 macro bug confirmed by compile probe.
+- 2026-09-24 — Pass 2 finished for `common/` and `jni/`; started the Kotlin
+  library (audio, ModelIntegrity, NativeHandle). Findings U16–U19. Coverage
+  updated in §10. Still unread: vosk/onnx/marian_tokenizer/engine_router,
+  core/, ocr/, tts/, voice/, rest of whisper_engine and stt_jni, and most
+  remaining Kotlin (engine/, core/, tts/, perf/, error/, json/, config/).
+- 2026-09-24 — Kotlin perf/, json/JsonInterop, error/, config/AudioGateConfig
+  and native core/vad reviewed. Findings U20–U22 (U20 confirmed from AOSP
+  JSONTokener source).
+- 2026-09-24 — marian_tokenizer.cpp read in full (U23).
+- 2026-09-24 — marian_jni + marian_engine (rest) reviewed (U24). **Corrected H10**:
+  Marian does not disable ORT spinning by default.
+- 2026-09-24 — engine_router and vosk_engine (push/partial/finalize) reviewed (U25;
+  router notes folded into U13/U8).
+- 2026-09-24 — Whisper initialize/push reviewed (sound); H12 added (double hashing).
+- 2026-09-24 — OCR, voice (Supertonic) and tts/ usage reviewed (U26–U28). Coverage
+  in §10 updated (native ≈75%, Kotlin ≈33%).
+- 2026-09-24 — Owner set priorities (utils, speech, translation, ffmpeg, audio;
+  Whisper deprioritized). Added §0 handoff with per-area status, remaining files
+  (~1,700 lines in scope, plus upstream 6ad8305) and ordered next actions.
+  FFmpeg review blocked pending a current original checkout.
+- 2026-09-24 — Owner: nothing is dropped, only refocused. §0 now says "Later
+  queue (tracked)" instead of "deprioritized", and lists every non-focus area
+  with its open findings and unread files. The previous log line's
+  "deprioritized" means "in the Later queue".
