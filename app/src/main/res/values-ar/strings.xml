@@ -4,4 +4,14 @@
 <string name="tile_reading">ترجمة الشاشة</string>
     <string name="pipeline_waiting_cleanup">جارٍ إنهاء الجلسة السابقة…</string>
     <string name="pipeline_cleanup_timeout">لا يزال تحرير النماذج السابقة جاريًا. انتظر حتى يكتمل، ثم حاول مجددًا.</string>
+    <string name="model_marian_title">Marian / OPUS-MT</string>
+    <string name="model_marian_description">نموذج ترجمة صغير · %1$d ميبيبايت · %2$s</string>
+    <string name="model_files_downloaded">تم تنزيل %1$d من %2$d ملفات</string>
+    <string name="model_installed_verified">مثبّت وتم التحقق منه</string>
+    <string name="model_use_marian">استخدام Marian للترجمة %1$s → %2$s</string>
+    <string name="model_download_marian">تنزيل Marian %1$s → %2$s · %3$d ميبيبايت</string>
+    <string name="model_continue_marian">متابعة تنزيل Marian</string>
+    <string name="model_marian_download_notice">يجري تنزيل ملفات الناشر إلى %1$s/models. يبدأ التثبيت بعد التحقق من الملفات الأربعة.</string>
+    <string name="model_marian_card">بطاقة النموذج والترخيص</string>
+    <string name="model_marian_setup">نزّل ملفات الناشر الأربعة المعتمدة من صفحة النماذج</string>
 </resources>

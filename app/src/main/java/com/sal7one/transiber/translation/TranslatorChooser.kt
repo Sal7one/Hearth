@@ -18,6 +18,8 @@ import androidx.compose.ui.unit.dp
 import com.sal7one.transiber.settings.SettingsLocation
 import com.sal7one.common_jni.translation.TranslationCatalog
 import com.sal7one.transiber.byok.ByokPolicy
+import com.sal7one.transiber.models.ModelRegistry
+import com.sal7one.transiber.models.ModelEngineType
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Dispatchers
@@ -48,6 +50,7 @@ internal fun TranslatorChooser(
     val showCloud = location?.let { it == SettingsLocation.CLOUD } ?: cloudTab
     var editing by remember { mutableStateOf<TextTranslationProvider?>(null) }
     var installed by remember { mutableStateOf<Set<String>>(emptySet()) }
+    val registered by remember(context) { ModelRegistry.getInstance(context).registeredModels }.collectAsState()
     var applying by remember { mutableStateOf(false) }
     var applied by remember { mutableStateOf(false) }
     var failure by remember { mutableStateOf<String?>(null) }
@@ -103,6 +106,22 @@ internal fun TranslatorChooser(
                     uiText(UiR.string.ui_language_packs_required_manage_download_in_models_de735) + pair { a,b -> a in TranslationOptions.mlKitCodes && b in TranslationOptions.mlKitCodes },
                     providerId == "local" && localId == TranslationOptions.ML_KIT, enabled) {
                     onSelect("local", TranslationOptions.ML_KIT); expanded = location != null
+                }
+                MarianPackage.pairs.forEach { marian ->
+                    val marianReady = registered.any { it.engineType == ModelEngineType.TRANSLATE &&
+                        it.isValid && it.isDirectory && it.digest?.hex == marian.treeSha256 }
+                    TranslatorRow(TranslationOptions.label(marian.id),
+                        (if (marianReady) uiText(UiR.string.model_installed_verified) else uiText(UiR.string.model_marian_setup)) +
+                            pair { a,b -> TranslationOptions.supports(marian.id,a,b) },
+                        providerId == "local" && localId == marian.id, enabled,
+                        actionLabel = if (marianReady) null else uiText(UiR.string.ui_set_up_a5041)) {
+                        if (marianReady) { onSelect("local", marian.id); expanded = location != null }
+                        else {
+                            context.getSharedPreferences("translation-browser",0).edit()
+                                .putString("model", marian.id).putBoolean("open",true).apply()
+                            onModels()
+                        }
+                    }
                 }
                 TranslationCatalog.models.sortedWith(compareByDescending<com.sal7one.common_jni.translation.TranslationModelSpec> { providerId=="local" && it.id==localId }.thenByDescending { it.id in installed }).forEach { model ->
                     val ready = model.id in installed

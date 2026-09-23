@@ -131,13 +131,14 @@ fun CaptionScreen(
     // (native engine load) happens when the session starts; a load failure
     // surfaces as an overlay notice from the caption controller.
     val translationModelImported = registered.any {
-        it.engineType == ModelEngineType.TRANSLATE && it.isValid
+        it.engineType == ModelEngineType.TRANSLATE && it.isValid &&
+            it.digest?.hex == com.sal7one.transiber.translation.MarianPackage.find(
+                com.sal7one.transiber.translation.TranslationOptions.MARIAN_EN_AR)?.treeSha256
     }
     var localTranslationInstalled by remember { mutableStateOf(false) }
     LaunchedEffect(config.localTranslationModelId) {
         localTranslationInstalled = withContext(Dispatchers.IO) {
-            com.sal7one.transiber.translation.LocalTranslationModels(java.io.File(context.filesDir, "translation-models"))
-                .installed().any { it.id == config.localTranslationModelId }
+            com.sal7one.transiber.translation.TranslationOptions.installed(context, config.localTranslationModelId)
         }
     }
     val route = captionTranslationRoute(config, cloudMode)

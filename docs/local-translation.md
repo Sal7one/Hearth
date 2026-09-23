@@ -8,15 +8,18 @@ is a separate text model; it never changes the ASR model's language capabilities
 1. Import/select Qwen or Nemotron in Models. Expand **CC language support** to
    see the speech model's supported languages.
 2. Under **Local translation bridge**, choose ML Kit language packs (play only),
-   a Hy-MT2, HY-MT1.5 model, or TranslateGemma. Hy-MT2 now offers Q2_K (about
+   a small Marian language pair, Hy-MT2, HY-MT1.5, or TranslateGemma. Marian
+   offers English→Arabic, Russian→English, and Chinese→English only. It does
+   not claim Russian/Chinese→Arabic or arbitrary language pairs. Hy-MT2 offers Q2_K (about
    741 MiB), Q3_K_M (about 907 MiB), Q4_K_M (1080 MiB), Q6_K (1406 MiB), and
    Q8_0 (1820 MiB). Smaller quants save storage; they are not presumed to improve
    speed or translation quality. TranslateGemma Q4_K_M is 2.49 GB.
    Weights are separate from the APK. Total RAM also includes both inference
    contexts and speech weights.
-3. Download using the model button (network-enabled build), then tap **Install
-   downloaded model** here or **Install translation model** in Downloads. New
-   downloads go to `Downloads/Hearth/models` on Android 10 and later.
+3. Download using the model button (network-enabled build). Catalogued
+   downloads verify and install automatically; the Marian button fetches its
+   four pinned publisher files in one action. New originals go to
+   `Downloads/Hearth/models` on Android 10 and later.
    Existing app-stored downloads also install directly; no export is needed.
    Alternatively import a publisher GGUF with the matching model selected. Exact
    pinned SHA-256 and size are required. The offline build only imports local files.
@@ -25,8 +28,9 @@ is a separate text model; it never changes the ASR model's language capabilities
    CC appears immediately; translation attaches to its original line later.
    The bubble settings can disable/re-enable translation while ASR keeps running.
 5. To compare another model, import/select it. The old translator is cancelled
-   and released before the next one loads. Timings in the bubble include waiting
-   for translation. They are not audio-to-display latency or an accuracy score.
+   and released before the next one loads. The bubble separates preparation,
+   queue and inference time for each completed translation. These are not
+   audio-to-display latency or an accuracy score.
 
 Automatic routing uses the language reported by ASR. Unknown/mixed language shows
 an actionable notice and retains CC. A user-selected spoken language overrides
@@ -38,7 +42,12 @@ integrated translation take priority over a remembered local bridge preference.
 
 ## Models and coverage
 
-The current runtime supports the publisher's HY-MT1.5 1.8B GGUFs in Q4_K_M,
+The current runtime also supports three pinned Marian ONNX language pairs,
+each about 235–242 MiB on disk. See the [phone smoke](marian-phone-smoke-2026-09-23.md)
+for the measured short-pass speed and a meaning-changing English→Arabic error.
+Do not choose a pair based on speed alone.
+
+The GGUF runtime supports the publisher's HY-MT1.5 1.8B GGUFs in Q4_K_M,
 Q6_K and Q8_0, and Hy-MT2 1.8B in Q2_K, Q3_K_M, Q4_K_M, Q6_K and Q8_0. The
 Q2/Q3 files are ordinary GGUF conversions pinned by exact revision and hash;
 they use the same supported Hunyuan adapter. Both families are translation-specialized models. Their
@@ -72,6 +81,10 @@ redistribution. The APK contains no model weights.
 - `LocalTranslationModels`: app-private atomic imports through `ModelIntegrity`.
 - `LocalTranslationSession`: common JNI implementation of `SpeechTextTranslator`;
   owns one native handle, re-verifies its model before opening, and exposes cancel.
+- `MarianTranslationSession`: common JNI adapter for a verified ONNX pair;
+  advertises exactly one source→target direction. The legacy English→Arabic
+  Whisper fallback selects only the pinned English→Arabic package, never an
+  arbitrary installed Russian or Chinese model.
 - `CaptionTranslationBridge`: independent serial worker, final utterances only,
   three queued lines plus one in flight. Each result is attached by line ID and
   bridge generation. Late results from a stopped/replaced bridge cannot attach.

@@ -93,8 +93,9 @@ internal suspend fun overlayPreflight(context: Context, shortcut: OverlayShortcu
                     checkTranslator(context, config.localTranslationModelId, config.textTranslationProviderId.ifBlank { "local" }, spoken, config.target.languageTag)
                 }
                 CaptionTranslationRoute.ENGLISH_PIVOT, CaptionTranslationRoute.ENGLISH_TEXT -> {
-                    check(ModelRegistry.getInstance(context).getModelsForEngine(ModelEngineType.TRANSLATE).any { it.isValid && File(it.path).exists() }) {
-                        "Import the English → Arabic translation model, or choose a different text translator."
+                    val pair = checkNotNull(MarianPackage.find(TranslationOptions.MARIAN_EN_AR))
+                    check(MarianPackage.installed(context, pair) != null) {
+                        "Download the verified English → Arabic translation model, or choose a different text translator."
                     }
                     "English → Arabic translation model registered"
                 }
@@ -142,6 +143,15 @@ private suspend fun checkTranslator(context: Context, localId: String, providerI
         return "ML Kit packs installed${if (!knownSource) " · source pack must match detected speech" else ""}"
     }
     check(localId.isNotBlank()) { "Choose a local translator in Live captions → Speech & translation." }
+    MarianPackage.find(localId)?.let { pair ->
+        check(target == pair.target && (!knownSource || source == pair.source)) {
+            "Marian / OPUS-MT ${pair.source} → ${pair.target} does not support $source → $target."
+        }
+        check(MarianPackage.installed(context, pair) != null) {
+            "Download and install Marian ${pair.source} → ${pair.target} in Models → Translation."
+        }
+        return "Marian / OPUS-MT · $source → $target · four files verified"
+    }
     val model = TranslationCatalog.find(localId)
     check(target in model.targetLanguages && (!knownSource || model.supports(source, target))) { "${model.label} does not support $source → $target." }
     check(LocalTranslationModels(File(context.filesDir, "translation-models")).installed().any { it.id == localId }) { "Download or import ${model.label} in Models → Translation." }

@@ -87,7 +87,10 @@ fun LocalBenchmarkScreen(onModels: () -> Unit = {}) {
         (mode == "Speech" || (target in candidate.targetCodes && source != target))
     val availableIds = visible.filter(::supports).map { it.id }
     LaunchedEffect(mode, source, target, candidates) {
-        selected = selected.filter { it in availableIds }.ifEmpty { availableIds.take(2) }
+        // Empty is an intentional choice (Deselect all), including when a
+        // newly installed model refreshes the list. Do not silently run the
+        // first two models instead of the one the user just chose.
+        selected = selected.filter { it in availableIds }
     }
     val openAudio = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) scope.launch {

@@ -19,6 +19,8 @@ import com.sal7one.transiber.runtime.LocalWorkGate
 import com.sal7one.transiber.translation.LocalTranslationModels
 import com.sal7one.transiber.translation.PlatformTranslation
 import com.sal7one.transiber.translation.TranslationOptions
+import com.sal7one.transiber.translation.MarianPackage
+import com.sal7one.common_jni.marian.MarianTranslationSession
 import kotlinx.coroutines.*
 import org.json.JSONArray
 import org.json.JSONObject
@@ -138,7 +140,11 @@ internal class LocalBenchmarkRunner(private val context: Context) {
         val packs = if (PlatformTranslation.available) PlatformTranslation.installed() else emptySet()
         val mlKit = if (packs.size >= 2) listOf(BenchmarkCandidate(TranslationOptions.ML_KIT, "ML Kit · installed packs",
             "Translation / ML Kit", packs, packs)) else emptyList()
-        speech + legacy + gguf + mlKit
+        val marian = MarianPackage.pairs.mapNotNull { pair -> MarianPackage.installed(context, pair)?.let { model ->
+            BenchmarkCandidate(pair.id, TranslationOptions.label(pair.id), "Translation / ONNX",
+                setOf(pair.source), setOf(pair.target), file = File(model.path))
+        } }
+        speech + legacy + gguf + mlKit + marian
     }
 
     suspend fun run(
@@ -216,6 +222,15 @@ internal class LocalBenchmarkRunner(private val context: Context) {
                             withContext(Dispatchers.IO) { translator = LocalTranslationSession.open(checkNotNull(candidate.file), candidate.translation) }
                             cancelNative = { translator?.cancel() }
                             runtime = "Pinned GGUF ${candidate.translation.revision}; SHA-256 ${candidate.translation.sha256}"
+                        }
+                        MarianPackage.find(candidate.id) != null -> {
+                            val pair = checkNotNull(MarianPackage.find(candidate.id))
+                            translator = withContext(Dispatchers.IO) { MarianTranslationSession.open(
+                                MarianPackage.modelDirectory(context, pair),
+                                com.sal7one.common_jni.speech.TranslationDirection(pair.source, pair.target),
+                                TranslationOptions.label(pair.id)) }
+                            cancelNative = { translator?.cancel() }
+                            runtime = "Pinned Marian ONNX ${pair.revision}; tree SHA-256 ${pair.treeSha256}"
                         }
                         candidate.id == TranslationOptions.ML_KIT -> {
                             require(target in candidate.targetCodes) { "Download the $target ML Kit language pack first" }

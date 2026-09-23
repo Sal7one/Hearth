@@ -174,7 +174,10 @@ class DownloadService : Service() {
             publish("Installing ${record.getString("title")}")
             val installed = downloads.installModel(id, modelId)
             currentCoroutineContext().ensureActive()
-            downloads.progress(id) { it.put("phase", "Installed").put("installed", installed).remove("error") }
+            downloads.progress(id) {
+                it.put("phase", if (installed.isBlank()) "Complete" else "Installed")
+                    .put("installed", installed).remove("error")
+            }
         } else downloads.progress(id) { it.put("phase", "Complete").remove("error") }
     }
     private fun createDestination(record: org.json.JSONObject): Uri {

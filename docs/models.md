@@ -62,8 +62,11 @@ HY-MT1.5, Hy-MT2 or TranslateGemma translation model, or uses ML Kit packs in pl
   repository is
   [ggerganov/whisper.cpp](https://huggingface.co/ggerganov/whisper.cpp/tree/5359861c739e955e79d9a303bcbc70fb988958b1).
 - Vosk: extract a model ZIP on your computer/device, then **Models → Speech → Vosk → Import Vosk folder**. Publisher catalogue: https://alphacephei.com/vosk/models
-- Marian: import a compatible OPUS-MT folder with `source.spm`, `tokenizer.json`,
-  encoder ONNX and merged-decoder ONNX. The translation route must match its language pair.
+- Marian: **Models → Translation → Marian / OPUS-MT** downloads and installs
+  the exact English→Arabic, Russian→English or Chinese→English four-file pair.
+  Compatible custom OPUS-MT folders can still be imported for experiments,
+  but only the pinned pairs have selectable source/target routes. An
+  unlabelled folder is never silently used as a different language pair.
 - Download a prepared speech ZIP or another direct HTTPS file through **Downloads**.
   Catalogued downloads install automatically. For arbitrary custom speech archives,
   use the developer packaging flow above; a filename alone does not establish compatibility.

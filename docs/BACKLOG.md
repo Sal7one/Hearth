@@ -271,23 +271,14 @@ without scrolling through engine settings or losing the current transcript.
 
 ### 3. Smaller local translator, easy to swap — RT-02 / RT-03
 
-Status: superseded by the shipped HY/TranslateGemma/ML Kit catalog and the
-[eight-option phone comparison](local-translation-benchmark-2026-09-13.md).
-The unchecked items below are the original experiment proposal, not release blockers.
-
-- [ ] Try the official HY-MT1.5 2-bit mobile variant first if it works with the existing runtime. Its publisher advertises about 574 MB versus our current roughly 1.1 GB Q4 download.
-- [ ] Keep the current working model available. Add the smaller choice through the existing translator interface, without an engine redesign.
-- [ ] Verify the exact file/hash and do a few real Russian/Chinese → Arabic/English translations; check that switching/off still works.
-- [ ] Use a brief side-by-side phone check to see whether it feels faster and remains useful. Use the newly approved local comparison screen; do not promise a universal speed winner.
-- [ ] Consider the advertised 440 MB 1.25-bit variant only if its extra STQ kernel support is a small, safe integration. Otherwise leave it for later.
-- [ ] Label download size and supported languages plainly. Do not call an untested option faster, or a new compressed variant a newer base model.
-
-Done when: a smaller working model is selectable and can translate locally, with
-honest feedback about its observed responsiveness. If integration becomes a large
-runtime project, ship the UX improvements first; it is not a publication blocker.
-
-Sources: [official 2-bit model](https://huggingface.co/tencent/Hy-MT1.5-1.8B-2bit-GGUF)
-and [1.25-bit model / kernel requirement](https://huggingface.co/tencent/Hy-MT1.5-1.8B-1.25bit-GGUF).
+Status: catalog and comparison UI shipped, but the 2026-09-23 phone run shows
+fast, good-quality offline translation is still unresolved. Follow the active
+[speech and translation todo table](model-phase-todos.md), especially M01–M03.
+The special HY-MT1.5 2-bit SEQ artifact was tried and cannot run with the
+pinned native kernels; the 1.25-bit STQ variant also needs different kernels.
+Hy-MT2 Q2/Q3 are now pinned and selectable, with honest size labels, but have
+not established a useful phone speed/quality win. The smaller-model goal stays
+open under M02 rather than repeating the rejected 2-bit experiment.
 Publisher sizes are approximate; these remain 1.8B-parameter models. No new speed
 claim has been validated by this project.
 

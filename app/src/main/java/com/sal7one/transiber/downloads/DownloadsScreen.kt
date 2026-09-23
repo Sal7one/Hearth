@@ -28,6 +28,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.sal7one.transiber.byok.ByokPolicy
 import com.sal7one.transiber.models.SpeechDownloads
+import com.sal7one.transiber.translation.MarianPackage
 import kotlinx.coroutines.*
 
 @Composable
@@ -97,7 +98,7 @@ fun DownloadsScreen(onBrowseModels: () -> Unit = {}) {
     val installableModel = item.modelId.takeIf { it.isNotBlank() }
       ?: if (item.id > 0) SpeechDownloads.all.firstOrNull { it.fileName == item.title }?.profile?.id
         ?: downloads.translationModel(item)?.id else null
-    if (item.complete && !item.installed && installableModel != null) Button(enabled = !busy, onClick = { scope.launch {
+    if (item.complete && !item.installed && installableModel != null && MarianPackage.part(item.modelId) == null) Button(enabled = !busy, onClick = { scope.launch {
      busy = true; error = null; message = uiText(UiR.string.ui_installing_1_s_b55a5, item.title)
      try { downloads.installModel(item.id, installableModel); message = uiText(UiR.string.ui_installed_select_the_model_in_models_06092) }
      catch (e: CancellationException) { throw e }

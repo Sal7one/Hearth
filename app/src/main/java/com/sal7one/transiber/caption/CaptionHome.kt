@@ -57,7 +57,10 @@ fun CaptionHome(
             withContext(Dispatchers.IO) {
                 speech = LocalSpeechModels(File(context.filesDir, "speech-models")).list()
                 translations = com.sal7one.transiber.translation.LocalTranslationModels(File(context.filesDir, "translation-models"))
-                    .installed().map { it.id }.toSet()
+                    .installed().map { it.id }.toSet() +
+                    com.sal7one.transiber.translation.MarianPackage.pairs.filter {
+                        com.sal7one.transiber.translation.MarianPackage.installed(context, it) != null
+                    }.map { it.id }
             }
         } catch (e: CancellationException) { throw e }
         catch (e: Exception) { error = e.message ?: e.toString() }
@@ -93,10 +96,16 @@ fun CaptionHome(
     }
     val needsTranslator = when (captionTranslationRoute(cfg, CloudConfigStore.sttMode(context))) {
         CaptionTranslationRoute.TEXT_TRANSLATOR -> if (cfg.textTranslationProviderId !in setOf("", "local")) !com.sal7one.transiber.translation.captionCloudTranslatorReady(cfg) else if (cfg.localTranslationModelId == com.sal7one.transiber.translation.TranslationOptions.ML_KIT)
-            !com.sal7one.transiber.translation.PlatformTranslation.available else cfg.localTranslationModelId !in translations
+            !com.sal7one.transiber.translation.PlatformTranslation.available else {
+            val from = CaptionLanguages.effectiveSource(cfg, CloudConfigStore.sttMode(context), captionLanguageModel(context, cfg))
+            cfg.localTranslationModelId !in translations ||
+                cfg.target.languageTag !in com.sal7one.transiber.translation.TranslationOptions.targetLanguages(cfg.localTranslationModelId) ||
+                (from !in setOf("auto", "model", "und", "mul", "") &&
+                    !com.sal7one.transiber.translation.TranslationOptions.supports(cfg.localTranslationModelId, from, cfg.target.languageTag))
+        }
         CaptionTranslationRoute.UNSUPPORTED -> true
         CaptionTranslationRoute.ENGLISH_PIVOT, CaptionTranslationRoute.ENGLISH_TEXT ->
-            !registered.any { it.isValid && it.engineType == ModelEngineType.TRANSLATE }
+            com.sal7one.transiber.translation.TranslationOptions.MARIAN_EN_AR !in translations
         else -> false
     }
     Column(Modifier.fillMaxSize()) {

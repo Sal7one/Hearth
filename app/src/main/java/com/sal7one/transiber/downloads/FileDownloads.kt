@@ -21,6 +21,7 @@ import com.sal7one.transiber.models.SpeechArtifactKind
 import com.sal7one.transiber.models.ModelRegistry
 import com.sal7one.transiber.models.ModelEngineType
 import com.sal7one.transiber.translation.LocalTranslationModels
+import com.sal7one.transiber.translation.MarianPackage
 import kotlinx.coroutines.*
 import org.json.JSONObject
 import java.io.File
@@ -172,6 +173,9 @@ class FileDownloads(private val context: Context) {
   } ?: error("Cannot open downloaded translation model")
  }
  internal suspend fun installModel(id: Long, modelId: String): String = withContext(Dispatchers.IO) {
+  MarianPackage.pairForPart(modelId)?.let { pair ->
+   return@withContext MarianPackage.install(context, this@FileDownloads, pair).orEmpty()
+  }
   VoiceCatalog.find(modelId)?.let { asset ->
    val job = currentCoroutineContext()
    val installed = context.contentResolver.openInputStream(uri(id))?.use { input ->
@@ -210,6 +214,13 @@ class FileDownloads(private val context: Context) {
  /** Installing is deliberately separate from activating: a late background completion must not change a running session. */
  suspend fun selectInstalled(item: FileDownload) {
   val modelId = record(item.id)?.optString("model").orEmpty()
+  MarianPackage.pairForPart(modelId)?.let { pair ->
+   require(MarianPackage.installed(context, pair) != null) { "Finish installing the Marian model files first" }
+   CaptionConfigStore.update(context) { it.copy(localTranslationModelId = pair.id,
+    textTranslationProviderId = "local", localTranslationEnabled = true,
+    mode = CaptionMode.TRANSLATE, target = TranslationTarget.of(pair.target)) }
+   return
+  }
   VoiceCatalog.find(modelId)?.let { asset ->
    require(item.installed) { "Voice model is not installed" }
    val voice=asset.filename.removeSuffix(".json").takeIf {it in VoiceCatalog.voices} ?: "F1"

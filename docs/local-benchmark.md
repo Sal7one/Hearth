@@ -13,7 +13,8 @@ Gulf dialect accuracy, every accent, or specialized captions.
 Open **Compare local models**, choose Speech or Translation, select the source
 language and (for translation) destination, then select the built-in set. It is
 selected by default. The app applies the same six samples to each compatible
-installed candidate, in order. For speech it also runs 1-second and 2.5-second
+installed candidate that you check, in order. **Deselect all** keeps the list
+empty until you choose a model. For speech it also runs 1-second and 2.5-second
 silence checks; these are shown separately and are not included in reference
 error rates. Choose **My recording or text** to run a single private sample with
 optional corrected reference text.
@@ -46,7 +47,8 @@ public references, but never the custom audio bytes.
   is not a quality win. Errors remain failed results; they do not become zero
   scores or successful output.
 
-The phone selects up to 12 compatible models and runs them sequentially under
+The phone selects up to 12 compatible models, including installed Marian ONNX
+language pairs, and runs them sequentially under
 `LocalWorkGate`; Overlay and Traveler cannot load another local engine during
 the run. Speech models receive the same decoded 16 kHz mono PCM. Streaming
 adapters use 20 ms frames and their production options; batch adapters remain

@@ -4,4 +4,14 @@
     <string name="tile_reading">Screen translation</string>
     <string name="pipeline_waiting_cleanup">Finishing the previous session…</string>
     <string name="pipeline_cleanup_timeout">Previous models are still releasing. Wait for cleanup, then try again.</string>
+    <string name="model_marian_title">Marian / OPUS-MT</string>
+    <string name="model_marian_description">Small translator · %1$d MiB · %2$s</string>
+    <string name="model_files_downloaded">%1$d of %2$d files downloaded</string>
+    <string name="model_installed_verified">Installed and verified</string>
+    <string name="model_use_marian">Use Marian for %1$s → %2$s</string>
+    <string name="model_download_marian">Download Marian %1$s → %2$s · %3$d MiB</string>
+    <string name="model_continue_marian">Continue Marian download</string>
+    <string name="model_marian_download_notice">Downloading publisher files to %1$s/models. Installation starts when all four verify.</string>
+    <string name="model_marian_card">Model card and license</string>
+    <string name="model_marian_setup">Download four verified publisher files in Models</string>
 </resources>
