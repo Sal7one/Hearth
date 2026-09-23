@@ -48,6 +48,36 @@ for name in "${TESTS[@]}"; do
     fi
 done
 
+# Exercise JNI exception construction under a real JVM with -Xcheck:jni.
+# Android's jni.h uses the same JNI call ABI, while the host VM catches
+# pending-exception misuse and preserves supplementary Unicode in messages.
+JDK_HOME="${JAVA_HOME:-}"
+if [ -z "${JDK_HOME}" ] && [ "$(uname -s)" = Darwin ]; then
+    JDK_HOME="$(/usr/libexec/java_home)"
+fi
+if [ -z "${JDK_HOME}" ] && [ "$(uname -s)" = Linux ] && command -v javac >/dev/null 2>&1; then
+    JDK_HOME="$(dirname -- "$(dirname -- "$(readlink -f -- "$(command -v javac)")")")"
+fi
+[ -n "${JDK_HOME}" ] || die "JDK home required for jni_helper_test (set JAVA_HOME)"
+case "$(uname -s)" in
+    Darwin) JNI_PLATFORM=darwin ;;
+    Linux) JNI_PLATFORM=linux ;;
+    *) die "unsupported host platform for jni_helper_test" ;;
+esac
+log "compiling jni_helper"
+"${CXX_BIN}" -std=c++17 -O1 -Wall -Wextra -fsanitize=address,undefined \
+    -I"${JDK_HOME}/include" -I"${JDK_HOME}/include/${JNI_PLATFORM}" \
+    "${SCRIPT_DIR}/jni_helper_test.cpp" \
+    -L"${JDK_HOME}/lib/server" -Wl,-rpath,"${JDK_HOME}/lib/server" -ljvm \
+    -pthread -o "${BUILD_DIR}/jni_helper_test"
+log "running jni_helper"
+if "${BUILD_DIR}/jni_helper_test"; then
+    log "PASS jni_helper"
+else
+    log "FAIL jni_helper"
+    OVERALL=1
+fi
+
 if [ "${OVERALL}" -ne 0 ]; then
     die "one or more util tests failed"
 fi

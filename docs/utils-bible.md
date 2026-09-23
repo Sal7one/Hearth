@@ -411,3 +411,9 @@ newline-delimited JSON record in one write no larger than the pipe's `PIPE_BUF`.
 Long terminal fields carry an explicit `truncated` flag, while the engine's
 error channel keeps its full error. `pipe_progress_test.cpp` checks wire format,
 overflow, atomic drop on a full pipe, and concurrent rebinding/state access.
+
+`jni_helper` is the legacy router's JNI exception boundary. Its shared throw
+helper converts standard UTF-8 to Java UTF-16 before constructing an exception
+and leaves an existing pending Java exception untouched. `jni_helper_test.cpp`
+uses a host JVM with `-Xcheck:jni` to cover supplementary characters, the
+catch macros, invalid UTF-8, and pending-exception preservation.

@@ -6,10 +6,11 @@
 #include <new>
 #include <string>
 #include <vector>
-#include <android/log.h>
 #include "../common/utf8_utils.h"
 
 namespace jni {
+
+inline void throwRuntimeException(JNIEnv* env, const char* msg) noexcept;
 
 // ============================================================================
 // Global JVM Reference (set in JNI_OnLoad)
@@ -26,7 +27,7 @@ class JStringGuard {
 public:
     JStringGuard(JNIEnv* env, jstring str) 
         : valid_(false) {
-        if (!env || !str) return;
+        if (!env || !str || env->ExceptionCheck()) return;
 
         const jsize length = env->GetStringLength(str);
         if (env->ExceptionCheck()) return;
@@ -41,19 +42,17 @@ public:
             );
         } catch (const std::bad_alloc&) {
             env->ReleaseStringChars(str, chars);
-            jclass type = env->FindClass("java/lang/OutOfMemoryError");
-            if (type) {
-                env->ThrowNew(type, "Unable to allocate native UTF-8 string");
-                env->DeleteLocalRef(type);
+            if (!env->ExceptionCheck()) {
+                jclass type = env->FindClass("java/lang/OutOfMemoryError");
+                if (type) {
+                    env->ThrowNew(type, "Unable to allocate native UTF-8 string");
+                    env->DeleteLocalRef(type);
+                }
             }
             return;
         } catch (...) {
             env->ReleaseStringChars(str, chars);
-            jclass type = env->FindClass("java/lang/RuntimeException");
-            if (type) {
-                env->ThrowNew(type, "Unable to convert Java UTF-16 string");
-                env->DeleteLocalRef(type);
-            }
+            throwRuntimeException(env, "Unable to convert Java UTF-16 string");
             return;
         }
         env->ReleaseStringChars(str, chars);
@@ -257,7 +256,11 @@ public:
         
         int status = g_jvm->GetEnv(reinterpret_cast<void**>(&env_), JNI_VERSION_1_6);
         if (status == JNI_EDETACHED) {
+#ifdef __ANDROID__
             if (g_jvm->AttachCurrentThread(&env_, nullptr) == JNI_OK) {
+#else
+            if (g_jvm->AttachCurrentThread(reinterpret_cast<void**>(&env_), nullptr) == JNI_OK) {
+#endif
                 attached_ = true;
             }
         }
@@ -294,31 +297,21 @@ inline bool checkException(JNIEnv* env) {
     return false;
 }
 
-// Throw a Java RuntimeException with message
-inline void throwRuntimeException(JNIEnv* env, const char* msg) {
-    jclass cls = env->FindClass("java/lang/RuntimeException");
-    if (cls) {
-        env->ThrowNew(cls, msg);
-        env->DeleteLocalRef(cls);
-    }
+void throwJavaException(JNIEnv* env, const char* className, const char* message) noexcept;
+
+// Throw a Java RuntimeException with standard UTF-8 message.
+inline void throwRuntimeException(JNIEnv* env, const char* msg) noexcept {
+    throwJavaException(env, "java/lang/RuntimeException", msg);
 }
 
 // Throw a Java IllegalArgumentException
-inline void throwIllegalArgumentException(JNIEnv* env, const char* msg) {
-    jclass cls = env->FindClass("java/lang/IllegalArgumentException");
-    if (cls) {
-        env->ThrowNew(cls, msg);
-        env->DeleteLocalRef(cls);
-    }
+inline void throwIllegalArgumentException(JNIEnv* env, const char* msg) noexcept {
+    throwJavaException(env, "java/lang/IllegalArgumentException", msg);
 }
 
 // Throw a Java IllegalStateException
-inline void throwIllegalStateException(JNIEnv* env, const char* msg) {
-    jclass cls = env->FindClass("java/lang/IllegalStateException");
-    if (cls) {
-        env->ThrowNew(cls, msg);
-        env->DeleteLocalRef(cls);
-    }
+inline void throwIllegalStateException(JNIEnv* env, const char* msg) noexcept {
+    throwJavaException(env, "java/lang/IllegalStateException", msg);
 }
 
 /**
@@ -329,6 +322,7 @@ inline void throwIllegalStateException(JNIEnv* env, const char* msg) {
  */
 inline jstring utf8ToJString(JNIEnv* env, const std::string& value) {
     if (!env) return nullptr;
+    if (env->ExceptionCheck()) return nullptr;
     try {
         std::vector<std::uint16_t> utf16;
         std::string error;
@@ -353,15 +347,49 @@ inline jstring utf8ToJString(JNIEnv* env, const std::string& value) {
             static_cast<jsize>(chars.size())
         );
     } catch (const std::bad_alloc&) {
-        jclass type = env->FindClass("java/lang/OutOfMemoryError");
-        if (type) {
-            env->ThrowNew(type, "Unable to allocate Java UTF-16 string");
-            env->DeleteLocalRef(type);
+        if (!env->ExceptionCheck()) {
+            jclass type = env->FindClass("java/lang/OutOfMemoryError");
+            if (type) {
+                env->ThrowNew(type, "Unable to allocate Java UTF-16 string");
+                env->DeleteLocalRef(type);
+            }
         }
         return nullptr;
     } catch (...) {
         throwRuntimeException(env, "Unable to convert native UTF-8 string");
         return nullptr;
+    }
+}
+
+inline void throwJavaException(JNIEnv* env, const char* className,
+                               const char* message) noexcept {
+    if (!env || env->ExceptionCheck()) return;
+    try {
+        const jstring text = utf8ToJString(env, message ? std::string(message) : std::string());
+        if (!text || env->ExceptionCheck()) return;
+        jclass cls = env->FindClass(className);
+        if (!cls) {
+            env->DeleteLocalRef(text);
+            return;
+        }
+        jmethodID ctor = env->GetMethodID(cls, "<init>", "(Ljava/lang/String;)V");
+        if (ctor) {
+            jobject exception = env->NewObject(cls, ctor, text);
+            if (exception) {
+                env->Throw(static_cast<jthrowable>(exception));
+                env->DeleteLocalRef(exception);
+            }
+        }
+        env->DeleteLocalRef(cls);
+        env->DeleteLocalRef(text);
+    } catch (...) {
+        if (!env->ExceptionCheck()) {
+            jclass type = env->FindClass("java/lang/OutOfMemoryError");
+            if (type) {
+                env->ThrowNew(type, "Unable to allocate native exception message");
+                env->DeleteLocalRef(type);
+            }
+        }
     }
 }
 
