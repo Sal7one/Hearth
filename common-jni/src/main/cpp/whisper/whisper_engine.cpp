@@ -11,6 +11,7 @@
 #include "verified_model_file.h"
 #include "cancel_token.h"
 #include "pipe_progress.h"
+#include "utf8_utils.h"
 
 #include <chrono>
 #include <condition_variable>
@@ -328,12 +329,23 @@ namespace stt {
         }
 
         bool safeReset() {
-            auto pause = lifecycle.tryPause();
-            if (!pause) return false;
-            std::lock_guard<std::mutex> operation(operationMutex);
-            if (parentEngine) parentEngine->clearCancellation();
+            std::lock_guard<std::mutex> transition(transitionMutex);
+            // Join the streaming worker before pausing: its in-flight inference
+            // holds a gate operation, so tryPause() failed during speech and
+            // Clear silently kept transcribing the old audio.
             stopWorker();
-            resetState();
+            {
+                auto pause = lifecycle.tryPause();
+                if (!pause) {
+                    startWorker();  // a batch/finalize call is active, or closing
+                    return false;
+                }
+                std::lock_guard<std::mutex> operation(operationMutex);
+                if (parentEngine) parentEngine->clearCancellation();
+                resetState();
+            }
+            // Start after the pause ends: the worker exits when it observes the
+            // gate closing, and a temporary pause must not end streaming.
             startWorker();
             return true;
         }
@@ -598,7 +610,9 @@ namespace stt {
 
         std::string sanitizeTranscript(const char* rawText) {
             if (!rawText) return "";
-            std::string text(rawText);
+            // max_tokens and segment splits can cut a CJK/Arabic character;
+            // strict JNI conversion would otherwise end the caption session.
+            std::string text = common_jni::text::repairUtf8(rawText);
             size_t start = text.find_first_not_of(" \t\n\r");
             if (start == std::string::npos) return "";
             size_t end = text.find_last_not_of(" \t\n\r");

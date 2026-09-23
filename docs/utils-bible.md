@@ -348,3 +348,26 @@ cancellation. A failed recheck makes Retry start a fresh transfer, while a valid
 original avoids wasting another model download. The phone has verified a normal
 transfer and pause/resume; corrupt-file retry and custom-folder recovery remain
 device checks.
+
+## Native text and audio gate hardening (review 2026-09-23)
+
+`common_jni::text::repairUtf8` (`common/utf8_utils.h`) is consumed by
+`whisper_engine.cpp` `sanitizeTranscript` for partial, promoted and batch text.
+A token cap or segment split can end inside a multi-byte character; the strict
+JNI converter then threw and ended the caption session. A truncated final
+character is dropped and other ill-formed parts become U+FFFD, matching the
+speech ABI's JSON path. `utf8_utils_test.cpp` covers well-formed text, tail
+truncation, split joins, overlongs, surrogates, out-of-range and invalid leads,
+boundary scalars and an exhaustive two-byte sweep through `utf8ToUtf16`.
+
+`AudioGate` (segmenter, Whisper, Vosk, ONNX) now treats a non-finite frame level
+as an inactive frame that never enters its smoothing state; one NaN frame used to
+report silence forever and Inf speech forever. `audio_gate_test.cpp` is the first
+direct gate test: -45 dBFS edges for float and int16, full-scale int16, default
+hysteresis timing, ZCR ceiling, reset, NaN/Inf recovery and active regions.
+
+`Sha256`, `ExpectedSha256`, `sha256ToHex` and `verifySha256` (consumed by native
+model verification for Whisper and Vosk through `verified_model_file.h` and
+`model_integrity.h`) now have known-answer coverage in `sha256_test.cpp`: NIST
+vectors, every padding boundary, incremental split points and the lowercase-only
+digest contract shared with Kotlin `ModelIntegrity`.
