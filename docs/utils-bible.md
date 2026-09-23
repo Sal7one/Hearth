@@ -404,3 +404,10 @@ borrows unavailable. `PooledBuffer` is the RAII acquisition path. The existing
 JNI buffer-pool stats consumer uses a snapshot that does not construct the
 otherwise idle 3 MB `AudioBufferPool`. `buffer_pool_test.cpp` covers ownership,
 reset, RAII movement and the uninitialized stats path.
+
+`PipeProgress` is the Whisper engine's caller-owned progress-pipe writer. It
+serializes state and writes, makes the bound pipe nonblocking, and emits each
+newline-delimited JSON record in one write no larger than the pipe's `PIPE_BUF`.
+Long terminal fields carry an explicit `truncated` flag, while the engine's
+error channel keeps its full error. `pipe_progress_test.cpp` checks wire format,
+overflow, atomic drop on a full pipe, and concurrent rebinding/state access.
