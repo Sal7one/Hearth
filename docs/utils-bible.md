@@ -397,3 +397,10 @@ fail before parsing a request. `json_options_test.cpp` covers precision,
 bounds and malformed `add(Spec)` inputs. This existing utility still has no
 production consumer; it remains tracked as a consolidation candidate in
 `lib_overview.md` rather than being advertised as an active app boundary.
+
+`BufferPool` now tracks slot ownership in release builds too: double, foreign
+and interior-pointer releases are rejected, and `resetAll()` keeps outstanding
+borrows unavailable. `PooledBuffer` is the RAII acquisition path. The existing
+JNI buffer-pool stats consumer uses a snapshot that does not construct the
+otherwise idle 3 MB `AudioBufferPool`. `buffer_pool_test.cpp` covers ownership,
+reset, RAII movement and the uninitialized stats path.

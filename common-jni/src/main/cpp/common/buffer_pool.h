@@ -5,10 +5,15 @@
 #include <memory>
 #include <mutex>
 #include <atomic>
+#include <algorithm>
 #include <cstddef>
 #include <cstring>
+#include <cstdint>
+#include <utility>
 
 namespace stt {
+
+template<typename T> class PooledBuffer;
 
 /**
  * Thread-safe buffer pool for hot-path allocations.
@@ -42,10 +47,11 @@ public:
         // Pre-allocate all buffers
         storage_.reserve(poolCapacity);
         freeList_.reserve(poolCapacity);
+        inUse_.resize(poolCapacity, false);
         
         for (size_t i = 0; i < poolCapacity; ++i) {
             auto buffer = std::make_unique<T[]>(bufferSize);
-            freeList_.push_back(buffer.get());
+            freeList_.push_back(i);
             storage_.push_back(std::move(buffer));
         }
     }
@@ -62,40 +68,36 @@ public:
             return nullptr;
         }
         
-        T* buffer = freeList_.back();
+        const size_t slot = freeList_.back();
         freeList_.pop_back();
+        inUse_[slot] = true;
         ++activeCount_;
         
-        return buffer;
+        return storage_[slot].get();
     }
+
+    /** Prefer this handle when the borrower does not need the raw-pointer API. */
+    PooledBuffer<T> acquirePooled();
     
     /**
      * Release a buffer back to the pool.
      * @param buffer Pointer previously returned by acquire()
      */
-    void release(T* buffer) {
-        if (!buffer) return;
-        
+    bool tryRelease(T* buffer) {
+        if (!buffer) return false;
         std::lock_guard<std::mutex> lock(mutex_);
-        
-        // Verify buffer belongs to this pool (debug only)
-        #ifndef NDEBUG
-        bool found = false;
-        for (const auto& stored : storage_) {
-            if (stored.get() == buffer) {
-                found = true;
-                break;
-            }
+        for (size_t slot = 0; slot < storage_.size(); ++slot) {
+            if (storage_[slot].get() != buffer) continue;
+            if (!inUse_[slot]) return false; // Double release, in every build mode.
+            inUse_[slot] = false;
+            freeList_.push_back(slot);
+            --activeCount_;
+            return true;
         }
-        if (!found) {
-            // Buffer doesn't belong to this pool!
-            return;
-        }
-        #endif
-        
-        freeList_.push_back(buffer);
-        --activeCount_;
+        return false; // Foreign or interior pointer.
     }
+
+    void release(T* buffer) { (void)tryRelease(buffer); }
     
     /**
      * Acquire a buffer and zero it.
@@ -103,7 +105,7 @@ public:
     T* acquireZeroed() {
         T* buffer = acquire();
         if (buffer) {
-            std::memset(buffer, 0, bufferSize_ * sizeof(T));
+            std::fill_n(buffer, bufferSize_, T{});
         }
         return buffer;
     }
@@ -117,23 +119,21 @@ public:
     }
     size_t active() const { return activeCount_.load(); }
     
-    /**
-     * Reset all buffers to pool (use with caution - invalidates all acquired buffers).
-     */
+    /** Rebuild the free list without reclaiming buffers held by borrowers. */
     void resetAll() {
         std::lock_guard<std::mutex> lock(mutex_);
         freeList_.clear();
-        for (const auto& buffer : storage_) {
-            freeList_.push_back(buffer.get());
+        for (size_t slot = 0; slot < storage_.size(); ++slot) {
+            if (!inUse_[slot]) freeList_.push_back(slot);
         }
-        activeCount_ = 0;
     }
 
 private:
     size_t bufferSize_;
     size_t capacity_;
     std::vector<std::unique_ptr<T[]>> storage_;
-    std::vector<T*> freeList_;
+    std::vector<size_t> freeList_;
+    std::vector<bool> inUse_;
     mutable std::mutex mutex_;
     std::atomic<size_t> activeCount_{0};
 };
@@ -170,6 +170,9 @@ private:
     T* buffer_;
 };
 
+template<typename T>
+PooledBuffer<T> BufferPool<T>::acquirePooled() { return PooledBuffer<T>(*this); }
+
 // ============================================================================
 // Specialized Audio Buffer Pool
 // ============================================================================
@@ -181,10 +184,26 @@ class AudioBufferPool {
 public:
     static constexpr size_t BUFFER_SAMPLES = 16000;  // 1 second at 16kHz
     static constexpr size_t POOL_SIZE = 32;
+
+    struct Stats {
+        size_t availableInt16;
+        size_t availableFloat;
+    };
     
     static AudioBufferPool& getInstance() {
         static AudioBufferPool instance;
         return instance;
+    }
+
+    static bool wasInitialized() noexcept {
+        return initialized_.load(std::memory_order_acquire);
+    }
+
+    /** A stats request alone must not allocate the 3 MB singleton. */
+    static Stats snapshotStats() {
+        if (!wasInitialized()) return {POOL_SIZE, POOL_SIZE};
+        auto& pool = getInstance();
+        return {pool.availableInt16(), pool.availableFloat()};
     }
     
     // int16 buffers
@@ -202,7 +221,11 @@ public:
 private:
     AudioBufferPool() 
         : int16Pool_(BUFFER_SAMPLES, POOL_SIZE)
-        , floatPool_(BUFFER_SAMPLES, POOL_SIZE) {}
+        , floatPool_(BUFFER_SAMPLES, POOL_SIZE) {
+        initialized_.store(true, std::memory_order_release);
+    }
+
+    static inline std::atomic<bool> initialized_{false};
     
     BufferPool<int16_t> int16Pool_;
     BufferPool<float> floatPool_;
@@ -248,4 +271,3 @@ private:
 } // namespace stt
 
 #endif // BUFFER_POOL_H
-
