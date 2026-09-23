@@ -341,6 +341,19 @@ catalog tests cover grouping, HTTPS revisions, hashes and language scope.
 updates. A completed phone transfer exercised the hash/install path; interrupted
 network resume still needs a physical test.
 
+## Hearth 0.22.6 source-language recovery
+
+`source_language.h` is consumed by the Nemotron native adapter. It compares
+locale tags by primary language, so `ru-RU` and `ru` do not become a false
+mixed-language result. The speech host suite covers matching, different and
+empty codes. `TranslationSourceEvidence` is consumed by the shared
+`CaptionTranslationBridge` when an ASR final has no usable language code. It
+accepts a source only if a selected translator direction and the caption's
+non-Latin script agree uniquely. Host tests cover Russian recovery, ambiguous
+Cyrillic directions, Latin text, target mismatch and explicit-source priority.
+Other unknown or genuinely ambiguous captions remain CC with the original
+source-language error.
+
 `DownloadIntegrity.matches` is consumed by the Play foreground downloader both
 after transfer and before retrying installation from a previously completed public
 file. Its host test covers valid, changed, truncated and oversized bytes and

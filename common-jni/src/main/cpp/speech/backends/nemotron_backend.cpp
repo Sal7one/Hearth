@@ -1,6 +1,7 @@
 #include "backend_guard.h"
 #include "../backend_versions.h"
 #include "../endpoint_budget.h"
+#include "../source_language.h"
 #include "nemo_speech/asr.h"
 #include <memory>
 
@@ -64,10 +65,16 @@ int next(void* p, HearthSpeechResult* out, int* available) { return guarded([&] 
     if (!*available) return;
     const bool hasText = nemo_speech_asr_result_alternative_count(n.result) != 0;
     const auto languageCount = hasText ? nemo_speech_asr_result_language_count(n.result, 0) : 0;
-    // Never label a mixed-language final as entirely its first detected language.
-    const char* lang = languageCount > 1 ? "mul" : languageCount == 1
-        ? nemo_speech_asr_result_language_code(n.result, 0, 0)
+    const char* lang = languageCount != 0 ? nemo_speech_asr_result_language_code(n.result, 0, 0)
         : n.language != "auto" ? n.language.c_str() : "";
+    // Distinct locale tags such as ru-RU and ru are still one source language.
+    // Keep genuinely different languages marked mixed for the translation stage.
+    for (size_t i = 1; i < languageCount; ++i) {
+        if (!samePrimaryLanguage(lang, nemo_speech_asr_result_language_code(n.result, 0, i))) {
+            lang = "mul";
+            break;
+        }
+    }
     *out = {sizeof(*out), hasText ? nemo_speech_asr_result_transcript(n.result, 0) : "", lang,
         nemo_speech_asr_result_is_final(n.result) ? 1 : 0,
         static_cast<int64_t>(nemo_speech_asr_result_audio_processed(n.result) * 16000.0)};

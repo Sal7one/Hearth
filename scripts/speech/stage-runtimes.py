@@ -59,7 +59,7 @@ for name, sha in ort_notices.items():
     target.write_bytes(data)
 
 pins = dict(re.findall(r'#define (HEARTH_\w+_REVISION) "([a-f0-9]+)"', (repo / "common-jni/src/main/cpp/speech/backend_versions.h").read_text()))
-source_files = list((repo / "common-jni/src/main/cpp/speech/backends").glob("*")) + list((repo / "scripts/speech").glob("*.cmake")) + [repo / "scripts/speech/build-runtimes.sh", repo / "common-jni/src/main/cpp/speech/backend_abi.h", repo / "common-jni/src/main/cpp/speech/utterance_segmenter.h", repo / "common-jni/src/main/cpp/speech/qwen_language.h", repo / "common-jni/src/main/cpp/speech/endpoint_budget.h"]
+source_files = list((repo / "common-jni/src/main/cpp/speech/backends").glob("*")) + list((repo / "scripts/speech").glob("*.cmake")) + [repo / "scripts/speech/build-runtimes.sh", repo / "common-jni/src/main/cpp/speech/backend_abi.h", repo / "common-jni/src/main/cpp/speech/utterance_segmenter.h", repo / "common-jni/src/main/cpp/speech/qwen_language.h", repo / "common-jni/src/main/cpp/speech/endpoint_budget.h", repo / "common-jni/src/main/cpp/speech/source_language.h"]
 source_hashes = {str(p.relative_to(repo)): hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(source_files) if p.is_file()}
 (asset_dir / "runtime-build.json").write_text(json.dumps({"abi": 1, "platform": "android-28-arm64-v8a", "pins": pins, "artifacts": records, "adapterSources": source_hashes, "ndk": (ndk / "source.properties").read_text()}, indent=2) + "\n")
 (asset_dir / "README.txt").write_text("Hearth optional speech runtimes. CPU-only, no model weights or network clients.\n"

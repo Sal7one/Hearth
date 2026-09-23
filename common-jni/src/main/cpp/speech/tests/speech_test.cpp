@@ -1,6 +1,7 @@
 #include "../speech_session.h"
 #include "../qwen_language.h"
 #include "../endpoint_budget.h"
+#include "../source_language.h"
 #include "../utterance_segmenter.h"
 #include <cassert>
 #include <cstring>
@@ -37,6 +38,10 @@ std::vector<Segment> segmented(const std::vector<float>& audio, size_t chunk) {
 }
 }
 int main() {
+    check(primaryLanguageCode("ru-RU") == "ru");
+    check(samePrimaryLanguage("ru-RU", "RU"));
+    check(!samePrimaryLanguage("ru-RU", "en-US"));
+    check(!samePrimaryLanguage("", "ru"));
     EndpointBudget endpoint(4000);
     check(!endpoint.observe(false, false, 160000)); // silence never finalizes
     check(!endpoint.observe(true, false, 160000));
