@@ -8,3 +8,6 @@ trap 'rm -rf "$BUILD"' EXIT
   "$SPEECH/../common/json_utils.cpp" "$SPEECH/../common/engine_interface.cpp" \
   -pthread -ldl -o "$BUILD/speech_test"
 "$BUILD/speech_test"
+"${CXX:-c++}" -std=c++17 -O1 -g -Wall -Wextra -fsanitize=address,undefined \
+  "$SPEECH/tests/segmenter_allocation_test.cpp" -pthread -o "$BUILD/segmenter_allocation_test"
+"$BUILD/segmenter_allocation_test"
