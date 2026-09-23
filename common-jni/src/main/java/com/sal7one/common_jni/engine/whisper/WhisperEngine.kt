@@ -84,7 +84,7 @@ class WhisperEngine : SttEngine {
     ): Int
     private external fun nativeGetPartialWhisper(handle: Long): String?
     private external fun nativeFinalizeWhisper(handle: Long): String?
-    private external fun nativeResetWhisper(handle: Long)
+    private external fun nativeResetWhisper(handle: Long): Boolean
     private external fun nativeTranscribeBatchWhisper(handle: Long, samples: ShortArray, count: Int, sampleRate: Int): String?
     private external fun nativeGetLastErrorWhisper(handle: Long): String?
     private external fun nativeIsProcessingWhisper(handle: Long): Boolean
@@ -265,7 +265,10 @@ class WhisperEngine : SttEngine {
     override suspend fun reset(): Result<Unit> = withContext(inferenceDispatcher) {
         if (nativeHandle == 0L) return@withContext Result.failure(SttError.NotInitialized())
         try {
-            nativeResetWhisper(nativeHandle)
+            if (!nativeResetWhisper(nativeHandle)) {
+                val error = nativeGetLastErrorWhisper(nativeHandle) ?: "Whisper reset failed"
+                return@withContext Result.failure(SttError.ProcessingFailed(error))
+            }
             accumulatedAudioMs = 0L
             Result.success(Unit)
         } catch (e: kotlinx.coroutines.CancellationException) { throw e }

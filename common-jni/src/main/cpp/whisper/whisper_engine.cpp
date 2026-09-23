@@ -12,6 +12,7 @@
 #include "cancel_token.h"
 #include "pipe_progress.h"
 #include "utf8_utils.h"
+#include "inference_stop_signal.h"
 
 #include <chrono>
 #include <condition_variable>
@@ -133,6 +134,7 @@ namespace stt {
         // =========================================================================
         std::thread workerThread;
         std::atomic<bool> workerStop{false};
+        concurrency::InferenceStopSignal workerDecodeAbort;
 
         std::mutex streamMutex;              // buffer + timeline + voice markers
         std::condition_variable streamCv;
@@ -239,10 +241,11 @@ namespace stt {
             return false;
         }
 
-        // Stops the worker and joins it. Safe to call repeatedly. The worker
-        // never holds the lifecycle gate while waiting, so a join only waits
-        // for the in-flight inference (aborted early via the abort callback).
-        void stopWorker() {
+        // Clear/release abort an in-flight decode. Finalize instead lets that
+        // decode complete so its promoted segments are included in the final
+        // transcript before the worker exits.
+        void stopWorker(bool abortInFlight = true) {
+            if (abortInFlight) workerDecodeAbort.request();
             workerStop = true;
             streamCv.notify_all();
             if (workerThread.joinable()) workerThread.join();
@@ -250,6 +253,7 @@ namespace stt {
 
         void startWorker() {
             if (workerThread.joinable()) return;
+            workerDecodeAbort.clear();
             workerStop = false;
             workerThread = std::thread([this]() { workerLoop(); });
         }
@@ -330,6 +334,10 @@ namespace stt {
 
         bool safeReset() {
             std::lock_guard<std::mutex> transition(transitionMutex);
+            if (!initialized) {
+                setError("Whisper reset rejected: engine is not initialized");
+                return false;
+            }
             // Join the streaming worker before pausing: its in-flight inference
             // holds a gate operation, so tryPause() failed during speech and
             // Clear silently kept transcribing the old audio.
@@ -337,7 +345,8 @@ namespace stt {
             {
                 auto pause = lifecycle.tryPause();
                 if (!pause) {
-                    startWorker();  // a batch/finalize call is active, or closing
+                    setError("Whisper reset rejected: engine is busy or closing");
+                    if (!lifecycle.isClosing()) startWorker();
                     return false;
                 }
                 std::lock_guard<std::mutex> operation(operationMutex);
@@ -600,9 +609,13 @@ namespace stt {
 
             p.translate = config.translateToEnglish;
             p.single_segment = false;
-            p.abort_callback = [](void* userData) -> bool {
-                return static_cast<Impl*>(userData)->checkCancelled();
-            };
+            p.abort_callback = isStreaming
+                ? static_cast<ggml_abort_callback>([](void* userData) -> bool {
+                    return static_cast<Impl*>(userData)->checkCancelled(true);
+                })
+                : static_cast<ggml_abort_callback>([](void* userData) -> bool {
+                    return static_cast<Impl*>(userData)->checkCancelled();
+                });
             p.abort_callback_user_data = this;
 
             return p;
@@ -644,7 +657,8 @@ namespace stt {
         void onDecodeProgress(int percent) { progress.report(percent / 100.0F); }
 
         // Check if we should abort (either cancelled by user OR release requested)
-        bool checkCancelled() const {
+        bool checkCancelled(bool streamingInference = false) const {
+            if (workerDecodeAbort.shouldAbort(streamingInference)) return true;
             if (parentEngine && parentEngine->isShuttingDown()) return true;
             if (parentEngine && parentEngine->isCancelled()) return true;
             if (cancelToken.shouldStop()) return true;
@@ -688,7 +702,7 @@ namespace stt {
         ) {
             if (!ctx || count == 0) return "";
 
-            if (checkCancelled()) {
+            if (checkCancelled(streamingParams)) {
                 LOG_I(TAG_WHISPER, "Cancelled/released before inference started");
                 progress.reportCancelled();
                 return "";
@@ -718,7 +732,7 @@ namespace stt {
                 }
             }
 
-            if (checkCancelled()) {
+            if (checkCancelled(streamingParams)) {
                 LOG_I(TAG_WHISPER, "Cancelled before whisper_full");
                 progress.reportCancelled();
                 return R"({"cancelled": true, "text": ""})";
@@ -739,7 +753,7 @@ namespace stt {
             int res = whisper_full(ctx, p, audioData, count);
 
             if (res != 0) {
-                if (checkCancelled()) {
+                if (checkCancelled(streamingParams)) {
                     LOG_I(TAG_WHISPER, "whisper_full aborted by cancellation");
                     progress.reportCancelled();
                     return "";
@@ -800,7 +814,7 @@ namespace stt {
             }
 
             for (int i = 0; i < n; ++i) {
-                if (checkCancelled()) {
+                if (checkCancelled(streamingParams)) {
                     LOG_I(TAG_WHISPER, "Cancelled at segment %d/%d", i, n);
                     break;
                 }
@@ -973,6 +987,15 @@ namespace stt {
         PROFILE_SCOPE("WhisperEngine::pushAudioFloat");
         const auto pushStart = std::chrono::steady_clock::now();
 
+        // A reset pauses the lifecycle gate before clearing the ring buffer.
+        // Count pushes as operations so an in-flight push cannot append old
+        // audio after that clear, even when a native caller uses another thread.
+        auto operation = impl_->lifecycle.tryAcquire();
+        if (!operation) {
+            impl_->setError("Whisper audio push rejected: engine is resetting or closing");
+            return -1;
+        }
+
         if (!impl_->initialized) {
             impl_->setError("Not initialized");
             return -1;
@@ -980,6 +1003,15 @@ namespace stt {
         if (impl_->lifecycle.isClosing() || impl_->checkCancelled()) return -1;
 
         if (!samples || count <= 0) return 0;
+        if (sampleRate <= 0) {
+            impl_->setError("Invalid streaming sample rate");
+            return -1;
+        }
+        const auto pcmStatus = AudioUtils::validateFinitePcm(samples, static_cast<size_t>(count));
+        if (pcmStatus != AudioStatus::OK) {
+            impl_->setError(std::string("Invalid streaming audio: ") + audioStatusMessage(pcmStatus));
+            return -1;
+        }
 
         // Handle resampling if needed (shouldn't happen if called correctly)
         std::vector<float> resampled;
@@ -989,7 +1021,10 @@ namespace stt {
             resampled = AudioUtils::resample(samples, count, sampleRate, WHISPER_RATE);
             data = resampled.data();
             dataCount = static_cast<int>(resampled.size());
-            if (dataCount == 0) return 0;
+            if (dataCount == 0) {
+                impl_->setError("Streaming resample failed");
+                return -1;
+            }
         }
 
         // O(chunk) append. Voice detection only MARKS utterance boundaries
@@ -1052,7 +1087,8 @@ namespace stt {
     }
 
     std::string WhisperEngine::finalize() {
-        impl_->stopWorker();
+        std::lock_guard<std::mutex> transition(impl_->transitionMutex);
+        impl_->stopWorker(/*abortInFlight=*/false);
         Impl::ProcessingGuard guard(impl_.get());
         if (!guard.acquired()) return R"({"cancelled": true, "text": ""})";
         if (!impl_->initialized) {
@@ -1122,16 +1158,17 @@ namespace stt {
         );
     }
 
-    void WhisperEngine::reset() {
-        if (!impl_->safeReset()) {
-            LOG_W(TAG_WHISPER, "reset() rejected while engine is busy or closing");
-            return;
-        }
-    }
+    bool WhisperEngine::resetChecked() { return impl_->safeReset(); }
+
+    void WhisperEngine::reset() { (void)resetChecked(); }
 
     void WhisperEngine::release() { impl_->doRelease(); }
 
     std::string WhisperEngine::transcribeBatch(const int16_t* samples, int count, int sampleRate) {
+        if (!samples || count <= 0 || sampleRate <= 0) {
+            impl_->setError("Invalid PCM16 batch input");
+            return "";
+        }
         std::vector<float> f(count);
         AudioUtils::int16ToFloat(samples, f.data(), count);
         return transcribeBatchFloat(f.data(), count, sampleRate);
@@ -1143,6 +1180,15 @@ namespace stt {
         Impl::ProcessingGuard guard(impl_.get());
         if (!guard.acquired()) return R"({"cancelled": true, "text": ""})";
         if (!impl_->initialized) { impl_->setError("Not initialized"); return ""; }
+        if (!samples || count <= 0 || sampleRate <= 0) {
+            impl_->setError("Invalid float batch input");
+            return "";
+        }
+        const auto pcmStatus = AudioUtils::validateFinitePcm(samples, static_cast<size_t>(count));
+        if (pcmStatus != AudioStatus::OK) {
+            impl_->setError(std::string("Invalid float batch audio: ") + audioStatusMessage(pcmStatus));
+            return "";
+        }
 
         // Fresh cooperative-cancellation scope for this decode. The engine's
         // own cancelled_ flag (checked by checkCancelled) stays authoritative
@@ -1155,6 +1201,10 @@ namespace stt {
         std::vector<float> processBuffer;
         if (sampleRate != WHISPER_RATE) {
             processBuffer = AudioUtils::resample(samples, count, sampleRate, WHISPER_RATE);
+            if (processBuffer.empty()) {
+                impl_->setError("Batch resample failed");
+                return "";
+            }
         } else {
             processBuffer.assign(samples, samples + count);
         }
@@ -1317,6 +1367,7 @@ int WhisperEngine::pushAudioFloat(const float*, int) { return -1; }
 std::string WhisperEngine::getPartial() { return ""; }
 std::string WhisperEngine::finalize() { return ""; }
 void WhisperEngine::reset() {}
+bool WhisperEngine::resetChecked() { return false; }
 void WhisperEngine::release() {}
 std::string WhisperEngine::transcribeBatch(const int16_t*, int, int) { return ""; }
 std::string WhisperEngine::transcribeBatchFloat(const float*, int, int) { return ""; }

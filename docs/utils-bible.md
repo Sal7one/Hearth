@@ -373,7 +373,7 @@ speech ABI's JSON path. `utf8_utils_test.cpp` covers well-formed text, tail
 truncation, split joins, overlongs, surrogates, out-of-range and invalid leads,
 boundary scalars and an exhaustive two-byte sweep through `utf8ToUtf16`.
 
-`AudioGate` (segmenter, Whisper, Vosk, ONNX) now treats a non-finite frame level
+`AudioGate` (utterance segmenter and Whisper streaming) now treats a non-finite frame level
 as an inactive frame that never enters its smoothing state; one NaN frame used to
 report silence forever and Inf speech forever. `audio_gate_test.cpp` is the first
 direct gate test: -45 dBFS edges for float and int16, full-scale int16, default
@@ -384,3 +384,16 @@ model verification for Whisper and Vosk through `verified_model_file.h` and
 `model_integrity.h`) now have known-answer coverage in `sha256_test.cpp`: NIST
 vectors, every padding boundary, incremental split points and the lowercase-only
 digest contract shared with Kotlin `ModelIntegrity`.
+
+## Whisper reset and PCM ingress follow-up
+
+`InferenceStopSignal` is consumed by the Whisper streaming worker's decode
+callback. Its host test checks that a stop interrupts an active streaming
+decode without cancelling a subsequent batch/finalize decode. Finalize drains
+the in-flight worker decode; Clear aborts it before resetting the buffer.
+Reset and finalize share the native transition lock, and the JNI reset result
+reaches Kotlin so Clear cannot report success when the reset was rejected.
+
+`AudioUtils::validateFinitePcm` is consumed by Whisper streaming and batch
+float ingress before resampling or buffering. Its host test covers finite,
+null, NaN and infinity inputs; invalid PCM reports the actual input error.
