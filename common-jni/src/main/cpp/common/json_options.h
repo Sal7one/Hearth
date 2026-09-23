@@ -2,8 +2,15 @@
 #define STT_JSON_OPTIONS_H
 
 #include <cstdint>
+#include <cmath>
+#include <iomanip>
+#include <limits>
 #include <map>
+#include <optional>
+#include <sstream>
+#include <stdexcept>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "json_utils.h"
@@ -24,18 +31,6 @@ namespace stt {
 class OptionsTable {
 public:
     enum class Type { String, Int, Double, Bool };
-
-    struct Spec {
-        std::string name;
-        Type type = Type::String;
-        bool required = false;
-        std::string defaultValue;  // string-encoded; used when absent and !required
-        bool hasMin = false;
-        double minValue = 0.0;
-        bool hasMax = false;
-        double maxValue = 0.0;
-        std::string description;  // surfaces in error messages
-    };
 
     /** One parsed, typed option value. */
     class Value {
@@ -60,30 +55,58 @@ public:
         bool bool_ = false;
     };
 
+    struct Spec {
+        std::string name;
+        Type type = Type::String;
+        bool required = false;
+        std::string defaultValue;  // legacy add(Spec) input; normalized at registration
+        bool hasMin = false;
+        double minValue = 0.0;
+        bool hasMax = false;
+        double maxValue = 0.0;
+        std::string description;  // surfaces in error messages
+        std::optional<Value> typedDefault;
+    };
+
     using Options = std::map<std::string, Value>;
 
     OptionsTable& add(Spec spec) {
+        if ((spec.hasMin && !std::isfinite(spec.minValue)) ||
+            (spec.hasMax && !std::isfinite(spec.maxValue)) ||
+            (spec.hasMin && spec.hasMax && spec.minValue > spec.maxValue)) {
+            throw std::invalid_argument("invalid bounds for option '" + spec.name + "'");
+        }
+        if (!spec.typedDefault && (!spec.required || !spec.defaultValue.empty())) {
+            spec.typedDefault = parseLegacyDefault(spec);
+        }
+        if (spec.typedDefault) validateDefault(spec);
         specs_.push_back(std::move(spec));
         return *this;
     }
 
     OptionsTable& string(const std::string& name, std::string def = "",
                          const std::string& description = "") {
-        return add(Spec{name, Type::String, false, std::move(def), false, 0, false, 0, description});
+        return add(Spec{name, Type::String, false, std::move(def), false, 0, false, 0, description, std::nullopt});
     }
     OptionsTable& requiredString(const std::string& name, const std::string& description = "") {
-        return add(Spec{name, Type::String, true, {}, false, 0, false, 0, description});
+        return add(Spec{name, Type::String, true, {}, false, 0, false, 0, description, std::nullopt});
     }
     OptionsTable& integer(const std::string& name, int64_t def, double minValue, double maxValue,
                           const std::string& description = "") {
-        return add(Spec{name, Type::Int, false, std::to_string(def), true, minValue, true, maxValue, description});
+        Spec spec{name, Type::Int, false, {}, true, minValue, true, maxValue, description, std::nullopt};
+        spec.typedDefault = Value(def);
+        return add(std::move(spec));
     }
     OptionsTable& boolean(const std::string& name, bool def, const std::string& description = "") {
-        return add(Spec{name, Type::Bool, false, def ? "true" : "false", false, 0, false, 0, description});
+        Spec spec{name, Type::Bool, false, {}, false, 0, false, 0, description, std::nullopt};
+        spec.typedDefault = Value(def);
+        return add(std::move(spec));
     }
     OptionsTable& number(const std::string& name, double def, double minValue, double maxValue,
                          const std::string& description = "") {
-        return add(Spec{name, Type::Double, false, std::to_string(def), true, minValue, true, maxValue, description});
+        Spec spec{name, Type::Double, false, {}, true, minValue, true, maxValue, description, std::nullopt};
+        spec.typedDefault = Value(def);
+        return add(std::move(spec));
     }
 
     /**
@@ -158,6 +181,49 @@ public:
     }
 
 private:
+    static std::optional<Value> parseLegacyDefault(const Spec& spec) {
+        if (spec.type == Type::String) return Value(spec.defaultValue);
+        if (spec.defaultValue.empty()) return std::nullopt;
+        try {
+            std::size_t consumed = 0;
+            switch (spec.type) {
+                case Type::String: break;
+                case Type::Int: {
+                    const auto value = std::stoll(spec.defaultValue, &consumed);
+                    if (consumed == spec.defaultValue.size()) return Value(static_cast<int64_t>(value));
+                    break;
+                }
+                case Type::Double: {
+                    const auto value = std::stod(spec.defaultValue, &consumed);
+                    if (consumed == spec.defaultValue.size()) return Value(value);
+                    break;
+                }
+                case Type::Bool:
+                    if (spec.defaultValue == "true") return Value(true);
+                    if (spec.defaultValue == "false") return Value(false);
+                    break;
+            }
+        } catch (const std::exception&) {
+            // Invalid user-constructed Specs fail at registration, not parse.
+        }
+        throw std::invalid_argument("invalid default for option '" + spec.name + "'");
+    }
+
+    static void validateDefault(const Spec& spec) {
+        const Value& value = *spec.typedDefault;
+        if (value.type() != spec.type) {
+            throw std::invalid_argument("default type mismatch for option '" + spec.name + "'");
+        }
+        if (spec.type != Type::Int && spec.type != Type::Double) return;
+        const double number = spec.type == Type::Int
+            ? static_cast<double>(value.asInt()) : value.asDouble();
+        if (!std::isfinite(number) ||
+            (spec.hasMin && number < spec.minValue) ||
+            (spec.hasMax && number > spec.maxValue)) {
+            throw std::invalid_argument("default outside bounds for option '" + spec.name + "'");
+        }
+    }
+
     static bool fail(std::string* error, const std::string& message) {
         if (error) *error = message;
         return false;
@@ -173,25 +239,12 @@ private:
     }
 
     bool applyDefault(const Spec& spec, Options& parsed, std::string* error) const {
-        if (spec.defaultValue.empty() && spec.type != Type::String) {
+        if (!spec.typedDefault) {
             // A numeric/bool spec without a default is treated as required.
             return fail(error, "missing required option '" + spec.name + "'");
         }
-        switch (spec.type) {
-            case Type::String:
-                parsed.emplace(spec.name, Value(spec.defaultValue));
-                return true;
-            case Type::Int:
-                parsed.emplace(spec.name, Value(static_cast<std::int64_t>(std::stoll(spec.defaultValue))));
-                return true;
-            case Type::Double:
-                parsed.emplace(spec.name, Value(std::stod(spec.defaultValue)));
-                return true;
-            case Type::Bool:
-                parsed.emplace(spec.name, Value(spec.defaultValue == "true"));
-                return true;
-        }
-        return false;
+        parsed.emplace(spec.name, *spec.typedDefault);
+        return true;
     }
 
     bool applyField(const Spec& spec, const JsonValue& field, Options& parsed,
@@ -247,10 +300,9 @@ private:
     }
 
     static std::string trim(double value) {
-        std::string text = std::to_string(value);
-        while (!text.empty() && text.back() == '0') text.pop_back();
-        if (!text.empty() && text.back() == '.') text.pop_back();
-        return text;
+        std::ostringstream out;
+        out << std::setprecision(std::numeric_limits<double>::max_digits10) << value;
+        return out.str();
     }
 
     std::vector<Spec> specs_;

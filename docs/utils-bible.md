@@ -390,3 +390,10 @@ Whisper/Vosk engines. Live audio pushes no longer construct a global stats key,
 lock its map, or log every 50 ms. `scoped_timer_test.cpp` compiles two macros
 in one scope and checks timer recording, lookup and reset; elapsed time uses a
 monotonic clock.
+
+`OptionsTable` keeps typed defaults at registration, so small numeric values
+are not rounded through `std::to_string`, and malformed/out-of-range schemas
+fail before parsing a request. `json_options_test.cpp` covers precision,
+bounds and malformed `add(Spec)` inputs. This existing utility still has no
+production consumer; it remains tracked as a consolidation candidate in
+`lib_overview.md` rather than being advertised as an active app boundary.
