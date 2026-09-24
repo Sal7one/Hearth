@@ -75,12 +75,13 @@ after the focus areas.
 | TTS stack (`tts/`) — no current consumer | U27 (keep as an optional module or remove: owner decision) | all native (~1,600) and Kotlin `tts/` (~870) |
 
 ### Recommended next actions, in order
-1. **Small proven fixes, each with a host test:** U2/U3/U9/U11/U12/U4 are
-   resolved below. Continue with U16 (`MicRecorder` dead-object handling and
-   drop accounting), U23 (size check before read, no
-   UB cast, fail loudly on a bad charsmap), U24 (real option to disable Marian
-   spinning).
-2. **Build:** F1 — per-CPU ggml variants for `libhearth_nemotron.so` and
+1. **Continue the focus areas:** utils U8/U10/U13/U14; speech H4 only with
+   a coupled Qwen runtime rebuild, then F2/H1; translation U23 malformed
+   charsmap and official token goldens, U24 model shapes/deadline timer, F9;
+   audio U16/U17/U21; then FFmpeg from the current checkout. U2/U3/U4/U9/
+   U11/U12 attachment and the bounded-read/ID and ORT-spin portions of
+   U23/U24 are resolved below. Keep one test and the required gates per fix.
+2. **Build after the owner chooses the variant strategy:** F1 — per-CPU ggml variants for `libhearth_nemotron.so` and
    `libtransiber_translation.so` (the largest speed lever for both speech and
    translation); F4 — build type.
 3. **Design:** F2 async windowed decode; H1 speech ABI v2; U13
