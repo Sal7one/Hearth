@@ -42,11 +42,15 @@ find_library(jnigraphics-lib jnigraphics)
 set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -g -O0")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g -O0")
 
-# Release flags - optimize and strip
+# AGP configures Android release variants as RelWithDebInfo. Keep symbols in
+# its build output for crash diagnosis; APK packaging strips the shipped copy.
+# Optimize both release configurations and discard unreachable sections.
 # Preserve IEEE floating-point behavior for speech inference
 # -fomit-frame-pointer: free up a register for general use (safe)
 set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -O3 -DNDEBUG -fvisibility=hidden -ffunction-sections -fdata-sections")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -DNDEBUG -fvisibility=hidden -ffunction-sections -fdata-sections")
+set(CMAKE_C_FLAGS_RELWITHDEBINFO "${CMAKE_C_FLAGS_RELWITHDEBINFO} -O3 -fvisibility=hidden -ffunction-sections -fdata-sections")
+set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -O3 -fvisibility=hidden -ffunction-sections -fdata-sections")
 
 # Security hardening flags
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fstack-protector-strong")
@@ -54,9 +58,13 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fstack-protector-strong")
 
 # Release linker flags - strip symbols and garbage collect unused sections
 set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} -Wl,--gc-sections -Wl,-s")
+set(CMAKE_SHARED_LINKER_FLAGS_RELWITHDEBINFO "${CMAKE_SHARED_LINKER_FLAGS_RELWITHDEBINFO} -Wl,--gc-sections")
 
-# Enable LTO for release builds (Link Time Optimization)
-if(CMAKE_BUILD_TYPE STREQUAL "Release")
+# NDK r27 + CMake 3.22's IPO check injects -fuse-ld=gold, which Android's
+# clang rejects. Keep Android on its supported lld path until a separate LTO
+# integration pins and validates explicit linker flags.
+if(NOT ANDROID AND
+   (CMAKE_BUILD_TYPE STREQUAL "Release" OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo"))
     set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
     message(STATUS "✓ LTO enabled for release build")
 endif()
