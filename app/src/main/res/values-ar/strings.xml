@@ -3,7 +3,9 @@
     <string name="model_milmmt_original_card">بطاقة نموذج MiLMMT الأصلية</string>
 <string name="app_name">Hearth</string>
 <string name="action_hearth_translate">ترجمة Hearth</string>
-<string name="action_hearth_translate_empty">لم يُرسل أي نص إلى ترجمة Hearth.</string>
+    <string name="action_hearth_translate_empty">لم يُرسل أي نص إلى ترجمة Hearth.</string>
+    <string name="action_hearth_translate_replace">استبدال النص المحدد</string>
+    <string name="action_hearth_translate_open_full">فتح المترجم الكامل</string>
 <string name="tile_captions">النص المباشر</string>
 <string name="tile_reading">ترجمة الشاشة</string>
     <string name="pipeline_waiting_cleanup">جارٍ إنهاء الجلسة السابقة…</string>

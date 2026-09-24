@@ -18,7 +18,7 @@
    <intent-filter><action android:name="android.intent.action.MAIN" /><category android:name="android.intent.category.LAUNCHER" /></intent-filter>
    <intent-filter><action android:name="android.intent.action.SEND" /><category android:name="android.intent.category.DEFAULT" /><data android:mimeType="image/*" /></intent-filter>
   </activity>
-  <activity android:name=".translation.TranslateSelectionActivity" android:label="@string/action_hearth_translate" android:icon="@drawable/ic_launcher" android:theme="@android:style/Theme.NoDisplay" android:excludeFromRecents="true" android:exported="true">
+  <activity android:name=".translation.TranslateSelectionActivity" android:label="@string/action_hearth_translate" android:icon="@drawable/ic_launcher" android:theme="@style/QuickTranslateTheme" android:excludeFromRecents="true" android:taskAffinity="" android:exported="true">
    <intent-filter android:label="@string/action_hearth_translate"><action android:name="android.intent.action.PROCESS_TEXT" /><category android:name="android.intent.category.DEFAULT" /><data android:mimeType="text/plain" /></intent-filter>
    <intent-filter android:label="@string/action_hearth_translate"><action android:name="android.intent.action.SEND" /><category android:name="android.intent.category.DEFAULT" /><data android:mimeType="text/plain" /><data android:mimeType="text/html" /></intent-filter>
   </activity>

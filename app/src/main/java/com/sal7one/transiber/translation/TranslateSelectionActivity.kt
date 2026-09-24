@@ -1,15 +1,20 @@
 package com.sal7one.transiber.translation
 
-import android.app.Activity
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Intent
 import android.os.Bundle
 import android.text.Html
+import android.view.WindowManager
 import android.widget.Toast
+import androidx.activity.compose.setContent
+import androidx.appcompat.app.AppCompatActivity
 import com.sal7one.transiber.MainActivity
 import com.sal7one.transiber.R
+import com.sal7one.transiber.ui.theme.HearthTheme
 
-/** Android text-menu and Sharesheet entry point; the translation UI lives in MainActivity. */
-class TranslateSelectionActivity : Activity() {
+/** A floating text-selection result in the caller's task, not a MainActivity trampoline. */
+class TranslateSelectionActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val selected = try {
@@ -31,12 +36,45 @@ class TranslateSelectionActivity : Activity() {
             finish()
             return
         }
-        startActivity(Intent(this, MainActivity::class.java).apply {
-            action = Intent.ACTION_PROCESS_TEXT
-            type = "text/plain"
-            putExtra(Intent.EXTRA_PROCESS_TEXT, selected)
-        })
         setResult(RESULT_CANCELED)
-        finish()
+        setFinishOnTouchOutside(true)
+        window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
+        val canReplace = intent.action == Intent.ACTION_PROCESS_TEXT &&
+            !intent.getBooleanExtra(Intent.EXTRA_PROCESS_TEXT_READONLY, true)
+        setContent {
+            HearthTheme {
+                QuickTranslateContent(
+                    selectedText = selected,
+                    canReplace = canReplace,
+                    onDismiss = ::finish,
+                    onCopy = { translation ->
+                        getSystemService(ClipboardManager::class.java).setPrimaryClip(
+                            ClipData.newPlainText(getString(R.string.action_hearth_translate), translation),
+                        )
+                        finish()
+                    },
+                    onReplace = { translation ->
+                        setResult(RESULT_OK, Intent().putExtra(Intent.EXTRA_PROCESS_TEXT, translation))
+                        finish()
+                    },
+                    onOpenFull = {
+                        startActivity(Intent(this, MainActivity::class.java).apply {
+                            action = Intent.ACTION_PROCESS_TEXT
+                            type = "text/plain"
+                            putExtra(Intent.EXTRA_PROCESS_TEXT, selected)
+                        })
+                        finish()
+                    },
+                )
+            }
+        }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        window.setLayout(
+            WindowManager.LayoutParams.MATCH_PARENT,
+            WindowManager.LayoutParams.WRAP_CONTENT,
+        )
     }
 }

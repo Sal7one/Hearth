@@ -3,7 +3,9 @@
     <string name="model_milmmt_original_card">MiLMMT 原始模型卡</string>
 <string name="app_name">Hearth</string>
 <string name="action_hearth_translate">Hearth 翻译</string>
-<string name="action_hearth_translate_empty">没有向 Hearth 翻译提供文本。</string>
+    <string name="action_hearth_translate_empty">没有向 Hearth 翻译提供文本。</string>
+    <string name="action_hearth_translate_replace">替换所选文本</string>
+    <string name="action_hearth_translate_open_full">打开完整翻译器</string>
 <string name="tile_captions">实时字幕</string>
 <string name="tile_reading">屏幕翻译</string>
     <string name="pipeline_waiting_cleanup">正在结束上一个会话…</string>
