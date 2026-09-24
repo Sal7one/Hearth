@@ -1589,3 +1589,9 @@ long-lived deadline timer per engine.
   and ran its host media suite: 95 goldens and session-v2
   equivalence all green. M1/M2 in §9 are untested fault-path findings; no
   original-repo edit, device or paid call.
+- 2026-09-24 — Final main integration check at `f2291a4`: every named local
+  and remote branch is an ancestor of standalone `main` (no remote branch
+  remains unmerged). Both QA APKs assembled, and `verify-release.py` passed:
+  Play 44,687,278 bytes and FOSS 36,761,101 bytes, both 16 KiB aligned with
+  expected permissions. Main was pushed; the original media-suite checkout
+  remains separate and unpushed.
