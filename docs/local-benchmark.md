@@ -1,11 +1,24 @@
 # Compare local speech and translation models
 
-The in-app benchmark runs the installed production adapters on the phone. Its
-built-in quick set contains six aligned, publisher-provided sentences for each
-supported language or direction. Speech checks add two silence inputs. The
-current pack covers Egyptian Arabic (`ar_eg`), US English (`en_us`), Russian
-(`ru_ru`) and Mainland Mandarin (`cmn_hans_cn`), with translation
+The in-app benchmark runs the installed production adapters on the phone.
+**Saudi speech is now the primary Arabic comparison.** Open Speech / Arabic,
+record up to six clips in your own Saudi dialect (or import PCM16 WAV files),
+correct each transcript, and save. The app replays these same private clips
+through every selected model, with two silence checks. Recordings and their
+SHA-256-checked references remain in private app storage until cleared. The
+suggested prompts are original examples, not publisher audio, and should be
+edited to match exactly what you actually said. The four-language sweep uses
+the saved Saudi clips for Arabic and skips Arabic speech if none are saved.
+This avoids silently using Egyptian audio as a stand-in for Saudi dialect.
+
+The separate **Egyptian reference** choice remains available. Its built-in
+quick set contains six aligned, publisher-provided sentences for each
+supported language or direction. The reference audio pack covers Egyptian
+Arabic (`ar_eg`), US English (`en_us`), Russian (`ru_ru`) and Mainland Mandarin
+(`cmn_hans_cn`), with translation
 pairs Arabic↔English, Russian→Arabic/English, and Chinese→Arabic/English.
+Those publisher Arabic text references are not a Saudi dialect translation test;
+use **My recording or text** and your own reviewed references for that.
 Audio and references come from the pinned FLEURS test split; see
 [`app/src/main/assets/benchmark/LICENSE.txt`](../app/src/main/assets/benchmark/LICENSE.txt)
 for attribution and CC BY 4.0 terms. These general test sentences do not model
@@ -62,8 +75,9 @@ exact input, and language direction. It needs at least two comparable models; an
 label requires reference scores. This prevents old results or a fast empty
 transcript from winning.
 
-No network request, microphone, or recording permission is used by a benchmark
-run. The optional preset download buttons use the existing pinned model
+The benchmark run itself never accesses the network or microphone. Recording
+a Saudi clip asks for microphone permission; importing a WAV does not. The
+optional preset download buttons use the existing pinned model
 downloader and are absent in FOSS. ML Kit runs only with packs already installed by the user in
 the Play build. The speech corpus adds about 7.6 MB to the APK. Phone benchmark
 results and user-selected custom recordings stay on that phone unless the user

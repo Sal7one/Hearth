@@ -48,7 +48,8 @@ internal data class BenchmarkSuite(
     val warmupId: String?, val root: File? = null,
 ) {
     fun selected(speech: Boolean, source: String, target: String, full: Boolean): List<BenchmarkCase> {
-        val compatible = cases.filter { it.speech == speech && it.source == source && (speech || it.target == target) && it.publisherSentenceId != warmupId }
+        val compatible = cases.filter { it.speech == speech && it.source == source &&
+            (speech || it.target == target) && (warmupId == null || it.publisherSentenceId != warmupId) }
         val ids = if (full) fullIds else quickIds
         val ordered = if (ids.isEmpty()) compatible else ids.mapNotNull { id -> compatible.firstOrNull { it.publisherSentenceId == id || it.id == id } }
         val chosen = ordered.take(if (full) 30 else 6) + if (full && speech && fullIds == quickIds) {

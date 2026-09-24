@@ -12,6 +12,12 @@ internal object BenchmarkAudio {
     data class Clip(val samples: ShortArray, val sha256: String) {
         val durationMs: Long get() = samples.size * 1000L / 16000
     }
+    fun fromPcm16(samples: ShortArray): Clip {
+        require(samples.size in 8_000..(MAX_SECONDS * 16_000)) { "Choose audio between 0.5 and 30 seconds" }
+        val digest = MessageDigest.getInstance("SHA-256")
+        samples.forEach { digest.update(it.toByte()); digest.update((it.toInt() shr 8).toByte()) }
+        return Clip(samples, digest.digest().joinToString("") { "%02x".format(it.toInt() and 255) })
+    }
     fun read(input: InputStream): Clip {
         val output = java.io.ByteArrayOutputStream()
         val buffer = ByteArray(8192)
@@ -28,9 +34,7 @@ internal object BenchmarkAudio {
         val mono=audio.samples;val rate=audio.sampleRate
         require(mono.size>=rate/2) { "Choose audio between 0.5 and 30 seconds" }
         val samples = Pcm16Resampler.frame(mono, rate, 16000)
-        val digest = MessageDigest.getInstance("SHA-256")
-        samples.forEach { digest.update(it.toByte()); digest.update((it.toInt() shr 8).toByte()) }
-        return Clip(samples, digest.digest().joinToString("") { "%02x".format(it.toInt() and 255) })
+        return fromPcm16(samples)
     }
 
     /** Match the Mac harness and keep quiet publisher recordings above the segmenter's energy gate. */

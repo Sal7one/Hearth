@@ -61,6 +61,11 @@ internal fun BenchmarkResultsTable(
                 Text(uiText(R.string.benchmark_table_scope, rows.size),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
+                if (target.isBlank() && source == "ar") Text(uiText(
+                    if (rows.first().samples.any { it.id.startsWith("saudi-") }) R.string.benchmark_saudi_set
+                    else if (rows.first().samples.any { it.id.startsWith("fleurs-ar-") }) R.string.benchmark_egyptian_set
+                    else R.string.benchmark_custom_input), style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.primary)
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp),
                     verticalArrangement = Arrangement.spacedBy(0.dp)) {
                     BenchmarkTableSort.entries.forEach { choice ->

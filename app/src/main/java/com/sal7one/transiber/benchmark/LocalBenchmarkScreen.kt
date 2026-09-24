@@ -4,6 +4,9 @@ import com.sal7one.transiber.R as UiR
 import com.sal7one.transiber.i18n.*
 
 import android.provider.OpenableColumns
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.core.content.ContextCompat
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -44,6 +47,7 @@ import java.text.DateFormat
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.math.roundToInt
 
 /** Explicit finite local-only experiments. Leaving/backgrounding this page cancels safely. */
@@ -57,21 +61,26 @@ fun LocalBenchmarkScreen(onModels: (String) -> Unit = {}, onDownloads: () -> Uni
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     val runner = remember { LocalBenchmarkRunner(context.applicationContext) }
     val store = remember { BenchmarkResults(context.applicationContext) }
+    val saudiStore = remember { SaudiBenchmarkPack(java.io.File(context.filesDir, "benchmark-saudi")) }
     val downloads = remember { FileDownloads(context.applicationContext) }
     var candidates by remember { mutableStateOf<List<BenchmarkCandidate>>(emptyList()) }
     var downloadRecords by remember { mutableStateOf<List<FileDownload>>(emptyList()) }
     var results by remember { mutableStateOf<List<BenchmarkResult>>(emptyList()) }
     var suite by remember { mutableStateOf<BenchmarkSuite?>(null) }
+    var saudiSuite by remember { mutableStateOf<BenchmarkSuite?>(null) }
     var clip by remember { mutableStateOf<BenchmarkAudio.Clip?>(null) }
     var clipName by remember { mutableStateOf("") }
     var mode by rememberSaveable { mutableStateOf("Speech") }
     var preset by rememberSaveable { mutableStateOf(BenchmarkPreset.SPEED) }
     var selected by rememberSaveable { mutableStateOf(listOf<String>()) }
-    var source by rememberSaveable { mutableStateOf("en") }
+    var source by rememberSaveable { mutableStateOf("ar") }
     var target by rememberSaveable { mutableStateOf("ar") }
     var text by rememberSaveable { mutableStateOf("") }
     var referenceText by rememberSaveable { mutableStateOf("") }
     var useBuiltInSet by rememberSaveable { mutableStateOf(true) }
+    var useSaudiSet by rememberSaveable { mutableStateOf(true) }
+    var recordingStop by remember { mutableStateOf<AtomicBoolean?>(null) }
+    var saudiPrompt by rememberSaveable { mutableIntStateOf(0) }
     var extendedSpeech by rememberSaveable { mutableStateOf(false) }
     var historyForPair by rememberSaveable { mutableStateOf(false) }
     var tableSort by rememberSaveable { mutableStateOf(BenchmarkTableSort.WARM) }
@@ -88,11 +97,11 @@ fun LocalBenchmarkScreen(onModels: (String) -> Unit = {}, onDownloads: () -> Uni
     val currentRunning by rememberUpdatedState(running)
     DisposableEffect(lifecycle, runner) {
         val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_STOP) currentStop()
+            if (event == Lifecycle.Event.ON_STOP) { recordingStop?.set(true); currentStop() }
             if (event == Lifecycle.Event.ON_RESUME && !currentRunning) refresh++
         }
         lifecycle.addObserver(observer)
-        onDispose { lifecycle.removeObserver(observer); currentStop() }
+        onDispose { lifecycle.removeObserver(observer); recordingStop?.set(true); currentStop() }
     }
     LaunchedEffect(lifecycle, downloads) {
         if (ByokPolicy.FEATURE_BYOK) lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -114,6 +123,9 @@ fun LocalBenchmarkScreen(onModels: (String) -> Unit = {}, onDownloads: () -> Uni
         try {
             busy = true
             suite = withContext(Dispatchers.IO) { BenchmarkSuite.bundled(context) }
+            try { saudiSuite = withContext(Dispatchers.IO) { saudiStore.load() } }
+            catch (e: CancellationException) { throw e }
+            catch (e: Exception) { saudiSuite = null; error = e.message ?: e.toString() }
             candidates = runner.candidates()
             results = withContext(Dispatchers.IO) { store.load() }
         } catch (e: CancellationException) { throw e }
@@ -154,15 +166,19 @@ fun LocalBenchmarkScreen(onModels: (String) -> Unit = {}, onDownloads: () -> Uni
             finally { busy = false }
         }
     }
-    val builtInCases = remember(suite, mode, source, target, extendedSpeech) {
-        suite?.selected(mode == "Speech", source, target, full = mode == "Speech" && extendedSpeech).orEmpty()
+    val activeSpeechSuite = if (source == "ar" && useSaudiSet) saudiSuite else suite
+    val builtInCases = remember(suite, saudiSuite, useSaudiSet, mode, source, target, extendedSpeech) {
+        (if (mode == "Speech") activeSpeechSuite else suite)
+            ?.selected(mode == "Speech", source, target, full = mode == "Speech" && extendedSpeech).orEmpty()
     }
     fun supports(candidate: BenchmarkCandidate) = (source in candidate.sourceCodes || candidate.sourceCodes == setOf("model")) &&
         (mode == "Speech" || (candidate.translation?.supports(source, target)
             ?: (target in candidate.targetCodes && source != target)))
     fun runLanguageSweep(candidate: BenchmarkCandidate) {
         val activeSuite = suite ?: return
-        val routes = BenchmarkLanguageSweep.routes(candidate, activeSuite)
+        val routes = BenchmarkLanguageSweep.routes(candidate, activeSuite).filter { route ->
+            route.target.isNotEmpty() || route.source != "ar" || saudiSuite?.selected(true, "ar", "", false)?.isNotEmpty() == true
+        }
         if (routes.isEmpty()) return
         running = true; error = null
         job = scope.launch {
@@ -173,9 +189,10 @@ fun LocalBenchmarkScreen(onModels: (String) -> Unit = {}, onDownloads: () -> Uni
                     status = uiText(UiR.string.benchmark_sweep_progress, candidate.label, index + 1, routes.size,
                         if (route.target.isEmpty()) route.source.uppercase(Locale.ROOT) else "${route.source.uppercase(Locale.ROOT)} → ${route.target.uppercase(Locale.ROOT)}")
                     val inputs = withContext(Dispatchers.IO) {
-                        activeSuite.selected(route.target.isEmpty(), route.source, route.target, false).map { sample ->
+                        val inputSuite = if (route.target.isEmpty() && route.source == "ar") checkNotNull(saudiSuite) else activeSuite
+                        inputSuite.selected(route.target.isEmpty(), route.source, route.target, false).map { sample ->
                             BenchmarkInput(sample.id, sample.text, sample.reference,
-                                if (sample.speech) activeSuite.audio(context, sample) else null, sample.silenceMs > 0)
+                                if (sample.speech) inputSuite.audio(context, sample) else null, sample.silenceMs > 0)
                         }
                     }
                     runner.run(listOf(candidate), null, "", null, route.source, route.target,
@@ -226,6 +243,22 @@ fun LocalBenchmarkScreen(onModels: (String) -> Unit = {}, onDownloads: () -> Uni
             catch (e: Exception) { error = e.message ?: e.toString() }
             finally { busy = false }
         }
+    }
+    fun startSaudiRecording() {
+        val stop = AtomicBoolean(false)
+        recordingStop = stop
+        scope.launch {
+            error = null
+            try {
+                clip = SaudiBenchmarkRecorder.capture(stop)
+                clipName = uiText(UiR.string.benchmark_saudi_recording)
+            } catch (e: CancellationException) { throw e }
+            catch (e: Exception) { error = e.message ?: e.toString() }
+            finally { recordingStop = null }
+        }
+    }
+    val microphonePermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (granted) startSaudiRecording() else error = uiText(UiR.string.benchmark_saudi_mic_permission)
     }
     val export = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
         if (uri != null) scope.launch {
@@ -360,7 +393,7 @@ fun LocalBenchmarkScreen(onModels: (String) -> Unit = {}, onDownloads: () -> Uni
                     }
                     val speechModel = installed(plan.speech)
                     val translationModel = installed(plan.translation)
-                    val speechSamples = suite?.selected(true, source, target, full = false).orEmpty()
+                    val speechSamples = activeSpeechSuite?.selected(true, source, target, full = false).orEmpty()
                     val translationSamples = suite?.selected(false, source, target, full = false).orEmpty()
                     if (speechModel != null && translationModel != null && speechSamples.isNotEmpty() && translationSamples.isNotEmpty())
                         Button(onClick = {
@@ -369,20 +402,20 @@ fun LocalBenchmarkScreen(onModels: (String) -> Unit = {}, onDownloads: () -> Uni
                                 try {
                                     val failures = mutableListOf<String>()
                                     val activeSuite = checkNotNull(suite)
-                                    suspend fun inputs(samples: List<BenchmarkCase>) = withContext(Dispatchers.IO) {
+                                    suspend fun inputs(samples: List<BenchmarkCase>, from: BenchmarkSuite) = withContext(Dispatchers.IO) {
                                         samples.map { sample -> BenchmarkInput(sample.id, text = sample.text,
                                             reference = sample.reference,
-                                            clip = if (sample.speech) activeSuite.audio(context, sample) else null,
+                                            clip = if (sample.speech) from.audio(context, sample) else null,
                                             silence = sample.silenceMs > 0) }
                                     }
                                     runner.run(listOf(speechModel), null, "", null, source, target,
-                                        benchmarkInputs = inputs(speechSamples), progress = { status = it },
+                                        benchmarkInputs = inputs(speechSamples, checkNotNull(activeSpeechSuite)), progress = { status = it },
                                         onResult = {
                                             results = (listOf(it) + results).take(BenchmarkResults.MAX_HISTORY)
                                             it.error?.let { cause -> failures += "${it.model}: $cause" }
                                         })
                                     runner.run(listOf(translationModel), null, "", null, source, target,
-                                        benchmarkInputs = inputs(translationSamples), progress = { status = it },
+                                        benchmarkInputs = inputs(translationSamples, activeSuite), progress = { status = it },
                                         onResult = {
                                             results = (listOf(it) + results).take(BenchmarkResults.MAX_HISTORY)
                                             it.error?.let { cause -> failures += "${it.model}: $cause" }
@@ -409,27 +442,94 @@ fun LocalBenchmarkScreen(onModels: (String) -> Unit = {}, onDownloads: () -> Uni
         }
         item {
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                FilterChip(useBuiltInSet, { useBuiltInSet = true }, enabled = !running && !busy,
-                    label = { Text(uiText(UiR.string.benchmark_builtin_set)) })
+                if (mode == "Speech" && source == "ar") FilterChip(useBuiltInSet && useSaudiSet,
+                    { useBuiltInSet = true; useSaudiSet = true }, enabled = !running && !busy,
+                    label = { Text(uiText(UiR.string.benchmark_saudi_set)) })
+                FilterChip(useBuiltInSet && !(mode == "Speech" && source == "ar" && useSaudiSet),
+                    { useBuiltInSet = true; useSaudiSet = false }, enabled = !running && !busy,
+                    label = { Text(if (mode == "Speech" && source == "ar") uiText(UiR.string.benchmark_egyptian_set)
+                        else uiText(UiR.string.benchmark_builtin_set)) })
                 FilterChip(!useBuiltInSet, { useBuiltInSet = false }, enabled = !running && !busy,
                     label = { Text(uiText(UiR.string.benchmark_custom_input)) })
             }
             if (useBuiltInSet) {
-                Text(uiText(UiR.string.benchmark_suite_summary), style = MaterialTheme.typography.bodySmall,
+                if (mode == "Speech" && source == "ar" && useSaudiSet) {
+                    Text(uiText(UiR.string.benchmark_saudi_explainer), style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.padding(top = 4.dp))
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        SaudiBenchmarkPack.prompts.forEachIndexed { index, prompt ->
+                            FilterChip(saudiPrompt == index, { saudiPrompt = index; referenceText = prompt },
+                                enabled = !running && recordingStop == null && !busy,
+                                label = { Text("${index + 1}") },
+                                modifier = Modifier.semantics { contentDescription = "${index + 1}. $prompt" })
+                        }
+                    }
+                    ElevatedCard(Modifier.fillMaxWidth()) {
+                        Text(SaudiBenchmarkPack.prompts[saudiPrompt], Modifier.padding(16.dp),
+                            style = MaterialTheme.typography.titleLarge)
+                    }
+                    if (referenceText.isBlank()) LaunchedEffect(saudiPrompt) { referenceText = SaudiBenchmarkPack.prompts[saudiPrompt] }
+                    if (recordingStop != null) Button({ recordingStop?.set(true) }, Modifier.fillMaxWidth()) {
+                        Text(uiText(UiR.string.benchmark_stop_recording))
+                    } else Button({
+                        if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED)
+                            startSaudiRecording()
+                        else microphonePermission.launch(Manifest.permission.RECORD_AUDIO)
+                    }, Modifier.fillMaxWidth(), enabled = !running && !busy &&
+                        (saudiSuite?.cases?.size ?: 0) < SaudiBenchmarkPack.MAX_CLIPS) {
+                        Text(uiText(UiR.string.benchmark_record_saudi)) }
+                    OutlinedButton({ openAudio.launch(arrayOf("audio/*", "application/octet-stream")) },
+                        Modifier.fillMaxWidth(), enabled = !running && !busy && recordingStop == null &&
+                            (saudiSuite?.cases?.size ?: 0) < SaudiBenchmarkPack.MAX_CLIPS) {
+                        Text(uiText(UiR.string.benchmark_import_saudi))
+                    }
+                    clip?.let { chosen ->
+                        Text("$clipName · ${number(chosen.durationMs / 1000.0)} s", style = MaterialTheme.typography.bodySmall)
+                        OutlinedTextField(referenceText, { if (it.length <= 500) referenceText = it },
+                            label = { Text(uiText(UiR.string.benchmark_reference_transcript)) },
+                            supportingText = { Text(uiText(UiR.string.benchmark_saudi_reference_hint)) },
+                            modifier = Modifier.fillMaxWidth(), enabled = !running && !busy && recordingStop == null)
+                        Button({ scope.launch {
+                            busy = true; error = null
+                            try {
+                                saudiSuite = withContext(Dispatchers.IO) { saudiStore.save(chosen, referenceText) }
+                                clip = null; clipName = ""
+                                saudiPrompt = ((saudiSuite?.cases?.size ?: 0) % SaudiBenchmarkPack.MAX_CLIPS)
+                                referenceText = SaudiBenchmarkPack.prompts[saudiPrompt]
+                            } catch (e: CancellationException) { throw e }
+                            catch (e: Exception) { error = e.message ?: e.toString() }
+                            finally { busy = false }
+                        } }, enabled = !running && !busy && referenceText.isNotBlank()) {
+                            Text(uiText(UiR.string.benchmark_save_saudi))
+                        }
+                    }
+                    Text(uiText(UiR.string.benchmark_saudi_saved, saudiSuite?.cases?.size ?: 0),
+                        style = MaterialTheme.typography.bodySmall)
+                    saudiSuite?.cases?.forEach { case ->
+                        Text("${case.id}: ${case.reference}", style = MaterialTheme.typography.bodySmall)
+                    }
+                    if (saudiStore.hasFiles()) TextButton({ scope.launch {
+                        try { withContext(Dispatchers.IO) { saudiStore.clear() }; saudiSuite = null }
+                        catch (e: Exception) { error = e.message ?: e.toString() }
+                    } }, enabled = !running && !busy) { Text(uiText(UiR.string.benchmark_clear_saudi)) }
+                } else Text(uiText(UiR.string.benchmark_suite_summary), style = MaterialTheme.typography.bodySmall,
                     modifier = Modifier.padding(top = 4.dp))
-                if (mode == "Speech") FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                if (mode == "Speech" && !(source == "ar" && useSaudiSet)) FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     FilterChip(!extendedSpeech, { extendedSpeech = false }, enabled = !running && !busy,
                         label = { Text(uiText(UiR.string.benchmark_quick_set)) })
                     FilterChip(extendedSpeech, { extendedSpeech = true }, enabled = !running && !busy,
                         label = { Text(uiText(UiR.string.benchmark_long_clip_set)) })
                 }
-                Text(uiText(UiR.string.benchmark_suite_attribution), style = MaterialTheme.typography.labelSmall,
-                    modifier = Modifier.padding(top = 4.dp), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                if (!(mode == "Speech" && source == "ar" && useSaudiSet)) Text(uiText(UiR.string.benchmark_suite_attribution),
+                    style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(top = 4.dp),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
                 if (builtInCases.isEmpty()) {
-                    Text(uiText(UiR.string.benchmark_suite_pair_unavailable, source, target),
+                    Text(if (mode == "Speech" && source == "ar" && useSaudiSet)
+                        uiText(UiR.string.benchmark_saudi_empty)
+                    else uiText(UiR.string.benchmark_suite_pair_unavailable, source, target),
                         style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error,
                         modifier = Modifier.padding(top = 4.dp))
-                    TextButton({ useBuiltInSet = false }, enabled = !running && !busy) {
+                    if (!(mode == "Speech" && source == "ar" && useSaudiSet)) TextButton({ useBuiltInSet = false }, enabled = !running && !busy) {
                         Text(uiText(UiR.string.benchmark_custom_input))
                     }
                 }
@@ -469,10 +569,14 @@ fun LocalBenchmarkScreen(onModels: (String) -> Unit = {}, onDownloads: () -> Uni
         }
         items(visible, key = { it.id }) { candidate ->
             val enabled = !running && !busy && supports(candidate)
-            val sweepRoutes = suite?.let { BenchmarkLanguageSweep.routes(candidate, it) }.orEmpty()
+            val sweepRoutes = suite?.let { BenchmarkLanguageSweep.routes(candidate, it) }.orEmpty().filter { route ->
+                route.target.isNotEmpty() || route.source != "ar" || saudiSuite != null
+            }
             val sweepResults = suite?.let { activeSuite -> sweepRoutes.mapNotNull { route ->
+                val inputSuite = if (route.target.isEmpty() && route.source == "ar") saudiSuite else activeSuite
                 results.firstOrNull { result -> result.identity == candidate.id && result.source == route.source &&
-                    result.target == route.target && BenchmarkLanguageSweep.isBundled(result, activeSuite) && result.error == null }
+                    result.target == route.target && inputSuite != null &&
+                    BenchmarkLanguageSweep.isBundled(result, inputSuite) && result.error == null }
             } }.orEmpty()
             Column {
             Row(Modifier.fillMaxWidth().heightIn(min = 56.dp)
@@ -533,7 +637,8 @@ fun LocalBenchmarkScreen(onModels: (String) -> Unit = {}, onDownloads: () -> Uni
                     try {
                         val failures = mutableListOf<String>()
                         val inputs = if (useBuiltInSet) withContext(Dispatchers.IO) {
-                            val activeSuite = checkNotNull(suite) { "Built-in benchmark data is unavailable" }
+                            val activeSuite = checkNotNull(if (mode == "Speech") activeSpeechSuite else suite) {
+                                "Selected benchmark data is unavailable" }
                             builtInCases.map { sample ->
                                 BenchmarkInput(sample.id, text = sample.text, reference = sample.reference,
                                     clip = if (sample.speech) activeSuite.audio(context, sample) else null,
@@ -625,6 +730,11 @@ private fun BenchmarkResultCard(result: BenchmarkResult) {
                 color = if (result.error == null) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.error)
             Text("${result.source}${if (result.target.isBlank()) "" else " → ${result.target}"} · ${DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT).format(Date(result.timestamp))}",
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            if (result.target.isBlank() && result.source == "ar") Text(uiText(
+                if (result.samples.any { it.id.startsWith("saudi-") }) UiR.string.benchmark_saudi_set
+                else if (result.samples.any { it.id.startsWith("fleurs-ar-") }) UiR.string.benchmark_egyptian_set
+                else UiR.string.benchmark_custom_input), style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.primary)
             result.error?.let { SelectionContainer { Text(it, color = MaterialTheme.colorScheme.error) } }
             val warm = BenchmarkTableModel.warmMs(result)
             val quality = BenchmarkTableModel.qualityValue(result)
