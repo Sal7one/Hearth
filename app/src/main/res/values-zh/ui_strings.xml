@@ -6,7 +6,7 @@
     <string name="ui_cannot_write_benchmark_results_a2d0d" formatted="false">"无法保存测试结果"</string>
     <string name="ui_results_exported_including_transcripts_8df04" formatted="false">"已导出结果及转写文本。"</string>
     <string name="ui_compare_local_models_62748" formatted="false">"比较本地模型"</string>
-    <string name="ui_use_the_same_recording_or_corrected_text_for_each_model_three_pas_a5005" formatted="false">"为每个模型使用同一录音或校正文本。每个模型运行三次，依次执行。不请求云端或自动下载。"</string>
+    <string name="ui_use_the_same_recording_or_corrected_text_for_each_model_three_pas_a5005" formatted="false">"在本机比较已安装模型。选择模型支持的任意语言，再使用快速样本或自己的 WAV／文本。每个模型运行三次；结果保存在本机，直到你导出。"</string>
     <string name="ui_1_s_language_2_s_a760d">"%1$s语言：%2$s"</string>
     <string name="ui_translate_to_1_s_f70dc">"翻译为：%1$s"</string>
     <string name="ui_forced_language_is_used_where_supported_vosk_always_uses_its_mode_86f53" formatted="false">"支持时将指定识别语言。Vosk 始终使用模型语言，请选择对应录音。"</string>
@@ -829,11 +829,16 @@
     <string name="benchmark_reference_transcript">参考转录</string>
     <string name="benchmark_reference_translation">参考译文</string>
     <string name="benchmark_reference_optional">可选 · 添加校正文本以比较准确度</string>
-    <string name="benchmark_scoring_explainer">WER 和 CER 是规范化后的文本错误率，不代表对翻译含义的判断。中文建议重点看 CER。留空时仅比较速度。</string>
+    <string name="benchmark_scoring_explainer">语音识别用 WER/CER 与校正文本比较。翻译用 chrF++ 与参考译文比较相似度，不代表语义质量。参考留空时仅比较速度。</string>
     <string name="benchmark_error_rates">参考文本错误 · WER %1$s%% · CER %2$s%%</string>
+    <string name="benchmark_character_error_only">参考文本错误 · CER %1$s%%</string>
     <string name="benchmark_no_reference">没有参考文本 · 此结果仅比较速度。</string>
     <string name="benchmark_builtin_set">内置快速测试集</string>
     <string name="benchmark_custom_input">我的录音或文本</string>
+    <string name="benchmark_all_results">所有结果</string>
+    <string name="benchmark_this_language_pair">当前语言组合</string>
+    <string name="benchmark_this_language">当前语言</string>
+    <string name="benchmark_no_results_for_language">此语言选择暂无已保存的结果。</string>
     <string name="benchmark_suite_summary">六条简短、对齐的发布者样本，用于语音或翻译测试。语音测试还会检查两段静音。语言：阿拉伯语、英语、俄语、中文；翻译方向：阿↔英、俄→阿/英、中→阿/英。</string>
     <string name="benchmark_suite_attribution">FLEURS 测试数据 · CC BY 4.0 · Google / Conneau 等 · 自动文本相似度不等于人工质量评价。</string>
     <string name="benchmark_suite_pair_unavailable">内置测试集没有 %1$s → %2$s 的样本。请选择支持的语言对，或使用自己的文本。</string>
@@ -841,4 +846,6 @@
     <string name="benchmark_silence_check">静音检查</string>
     <string name="benchmark_silence_false_positives">静音误识别 · %2$d 次中有 %1$d 次</string>
     <string name="benchmark_source_sample">源文</string>
+    <string name="model_marian_via_english_warning">此路线使用两个模型，先译成英语再译成阿拉伯语，可能改变原意。用于实时字幕前请比较最终译文。</string>
+    <string name="model_omnilingual_language_note">Omnilingual CTC 会自动识别语言。选择口语语言只用于标记字幕和路由翻译，不能强制模型。来源未知时，自动模式仅显示原文字幕。</string>
 </resources>

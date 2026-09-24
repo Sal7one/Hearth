@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.22.4 — 2026-09-23 · experimental local models and comparison
+
+- Add Xiaomi MiLMMT-46 1B Q4/Q5 as an experimental local translator with pinned downloads, advertised language coverage and its publisher-format native prompt. It is not the Easy setup default.
+- Guard the Kotlin/JNI translation prompt protocol so an older native library cannot silently run the wrong prompt.
+- Expand the on-device speech and translation comparison to model-supported languages through personal WAV/text samples, retain up to 200 local results, filter history by language or pair, and export timestamped JSON.
+- Document publisher-verified June–September model candidates, deployment limits and the small Samsung S22/Mac comparison results. No new speech backend is claimed in this update.
+
 ## 0.22.3 — 2026-09-21 · pipeline ownership audit
 
 - Camera/reading and conversation/typed translation now remember their own local model choices; choosing one no longer rewrites the live-caption translator. “Use everywhere” still updates all three groups explicitly.

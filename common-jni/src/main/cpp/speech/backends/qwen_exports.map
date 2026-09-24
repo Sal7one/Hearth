@@ -1,1 +1,1 @@
-{ global: hearth_speech_backend_v1; hearth_moonshine_backend_v1; local: *; };
+{ global: hearth_speech_backend_v1; hearth_moonshine_backend_v1; hearth_omnilingual_backend_v1; local: *; };

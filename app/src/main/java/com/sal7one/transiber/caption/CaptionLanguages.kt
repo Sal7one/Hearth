@@ -45,6 +45,13 @@ object CaptionLanguages {
     fun source(config: CaptionOverlayConfig, cloudMode: SttMode,
         model: CaptionLanguageModel = CaptionLanguageModel(config.modelId)): CaptionLanguageChoices = when (config.engine) {
         CaptionEngineChoice.MOONSHINE -> CaptionLanguageChoices(setOf("en"), UiMessage(UiR.string.capability_note_67daa0fec5, "Moonshine · This model recognizes English only. No automatic language detection or override is needed."))
+        CaptionEngineChoice.OMNILINGUAL -> {
+            val capabilities = SpeechProfile.OMNILINGUAL_CTC_300M_V2.capabilities
+            CaptionLanguageChoices(capabilities.sourceLanguages + "auto",
+                UiMessage(UiR.string.model_omnilingual_language_note,
+                    "Omnilingual CTC · The model cannot force a spoken language. Choose a known source to label captions for translation; recognition still detects automatically. Auto is CC-only when the source is unknown."),
+                capabilities.languages)
+        }
         CaptionEngineChoice.NEMOTRON, CaptionEngineChoice.QWEN -> {
             val profile = if (config.engine == CaptionEngineChoice.NEMOTRON) SpeechProfile.NEMOTRON_3_5_ASR_0_6B
                 else if (model.id == SpeechProfile.QWEN3_ASR_1_7B.id) SpeechProfile.QWEN3_ASR_1_7B else SpeechProfile.QWEN3_ASR_0_6B
@@ -84,7 +91,7 @@ object CaptionLanguages {
             val from = config.streamLanguage
             val known = from !in setOf("auto", "model", "und", "mul", "")
             if (config.textTranslationProviderId == "local") {
-                val codes = com.sal7one.transiber.translation.TranslationOptions.languages(config.localTranslationModelId)
+                val codes = com.sal7one.transiber.translation.TranslationOptions.targetLanguages(config.localTranslationModelId, config.streamLanguage)
                 CaptionLanguageChoices(if (known) codes.filter { com.sal7one.transiber.translation.TranslationOptions.supports(config.localTranslationModelId, from, it) }.toSet() else codes,
                     UiMessage(UiR.string.capability_note_de49da057d, "%1\$s · text translation after speech recognition.", listOf(com.sal7one.transiber.translation.TranslationOptions.label(config.localTranslationModelId))))
             } else CaptionLanguageChoices(textLanguages?.targetLanguages.orEmpty().filter { !known || textLanguages?.supports(from,it) == true }.toSet(),
@@ -98,9 +105,11 @@ object CaptionLanguages {
             CaptionLanguageChoices(com.sal7one.transiber.translation.TranslationOptions.mlKitCodes, UiMessage(UiR.string.capability_note_b410e7fbf2, "ML Kit · download spoken and target language packs in Models. Non-English pairs translate through English."))
         config.engine.speechBackend != null || captionTranslationRoute(config.copy(mode = CaptionMode.TRANSLATE), cloudMode) == CaptionTranslationRoute.TEXT_TRANSLATOR -> {
             val spec = TranslationCatalog.models.firstOrNull { it.id == config.localTranslationModelId }
-            CaptionLanguageChoices(spec?.targetLanguages.orEmpty(),
-                if (spec == null) UiMessage(UiR.string.capability_note_0434e0f540, "Choose a known local translation model in Setup to load its languages.")
-                else UiMessage(UiR.string.capability_note_38000e13f0, "%1\$s: %2\$s output languages. The spoken language must also be supported by this translation model.", listOf(spec.label, spec.targetLanguages.size)))
+            val targets = com.sal7one.transiber.translation.TranslationOptions.targetLanguages(config.localTranslationModelId, config.streamLanguage)
+            CaptionLanguageChoices(targets,
+                if (targets.isEmpty()) UiMessage(UiR.string.capability_note_0434e0f540, "Choose a known local translation model in Setup to load its languages.")
+                else UiMessage(UiR.string.capability_note_38000e13f0, "%1\$s: %2\$s output languages. The spoken language must also be supported by this translation model.",
+                    listOf(spec?.label ?: com.sal7one.transiber.translation.TranslationOptions.label(config.localTranslationModelId), targets.size)))
         }
         config.engine == CaptionEngineChoice.WHISPER || (config.engine == CaptionEngineChoice.CLOUD && cloudMode == SttMode.BATCH) ->
             CaptionLanguageChoices(setOf("en", "ar"), UiMessage(UiR.string.capability_note_c1004bf540, "English uses audio translation. Arabic needs the separate English → Arabic translation model."))

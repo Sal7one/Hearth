@@ -57,6 +57,10 @@ enum class CaptionEngineChoice(val label: String, val explanation: String) {
         "Offline multilingual captions from a Qwen model package. Final text arrives in utterance windows; " +
             "automatic language detection. Original-language CC; optional local translation bridge.",
     ),
+    OMNILINGUAL(
+        "Omnilingual CTC 300M (local)",
+        "Compact multilingual captions in short utterance windows. No language-forcing input; selecting a spoken language declares it for downstream translation.",
+    ),
     NEMOTRON(
         "Nemotron 3.5 (local)",
         "Offline multilingual captions with streaming partials from a Nemotron GGUF package. " +

@@ -105,6 +105,21 @@ class PublisherSpeechPackageTest {
             assertEquals(source.profile, SpeechModelPackage.verify(result).profile)
         } finally { root.deleteRecursively() }
     }
+    @Test fun omnilingualArchiveIsInstalledAsTwoVerifiedNativeAssets() {
+        val entries = listOf("fixture/model.int8.onnx" to "onnx-fixture".toByteArray(), "fixture/tokens.txt" to "a 1\n".toByteArray())
+        val bytes = archive(entries)
+        val source = spec(bytes).copy(profile = SpeechProfile.OMNILINGUAL_CTC_300M_V2,
+            roles = mapOf("model" to "model.int8.onnx", "tokenizer" to "tokens.txt"))
+        val root = Files.createTempDirectory("publisher-omnilingual").toFile()
+        try {
+            val installed = PublisherSpeechPackage.stage(bytes.inputStream(), source, root)
+            val verified = SpeechModelPackage.verify(installed)
+            assertEquals(SpeechProfile.OMNILINGUAL_CTC_300M_V2, verified.profile)
+            assertEquals("a 1\n", installed.resolve("tokens.txt").readText())
+        } finally { root.deleteRecursively() }
+        rejected(archive(entries.dropLast(1)), source.copy(bytes = archive(entries.dropLast(1)).size.toLong(),
+            sha256 = MessageDigest.getInstance("SHA-256").digest(archive(entries.dropLast(1))).joinToString("") { "%02x".format(it) }))
+    }
     @Test fun rejectsOversizedRawArtifact() {
         val bytes = "GGUFtest".toByteArray()
         rejected(bytes, spec(bytes).copy(profile = SpeechProfile.NEMOTRON_3_5_ASR_0_6B, bytes = 4, archiveRoot = null, roles = mapOf("model" to "model.gguf")))

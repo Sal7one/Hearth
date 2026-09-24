@@ -1,7 +1,27 @@
 <resources>
+    <string name="model_milmmt_description">较新的 10 亿参数翻译模型系列，约 %1$d MiB。支持阿拉伯语、俄语、中文等；手机端速度和质量仍在验证中。适用 Gemma 条款。</string>
+    <string name="model_milmmt_original_card">MiLMMT 原始模型卡</string>
 <string name="app_name">Hearth</string>
 <string name="tile_captions">实时字幕</string>
 <string name="tile_reading">屏幕翻译</string>
     <string name="pipeline_waiting_cleanup">正在结束上一个会话…</string>
     <string name="pipeline_cleanup_timeout">先前的模型仍在释放中。请等待完成后重试。</string>
+    <string name="model_marian_title">Marian / OPUS-MT</string>
+    <string name="model_marian_description">轻量翻译模型 · %1$d MiB · %2$s</string>
+    <string name="model_files_downloaded">已下载 %1$d / %2$d 个文件</string>
+    <string name="model_installed_verified">已安装并验证</string>
+    <string name="model_use_marian">使用 Marian 翻译 %1$s → %2$s</string>
+    <string name="model_download_marian">下载 Marian %1$s → %2$s · %3$d MiB</string>
+    <string name="model_continue_marian">继续下载 Marian</string>
+    <string name="model_marian_download_notice">正在将发布者文件下载到 %1$s/models。四个文件全部验证后开始安装。</string>
+    <string name="model_marian_card">模型卡片和许可证</string>
+    <string name="model_marian_setup">在“模型”中下载四个已验证的发布者文件</string>
+    <string name="easy_setup_choose_pair">选择要翻译的语言</string>
+    <string name="easy_setup_broad_languages">更多语言 · 更大的模型</string>
+    <string name="easy_setup_fast_pair_note">在这台手机上速度较快。这些小模型只支持所示方向；重要的姓名和数字请核对。</string>
+    <string name="easy_setup_broad_note">Hy-MT2 支持更多语言，但在我们的手机测试中较慢。选择口语语言可跳过自动检测并启用本地翻译。</string>
+    <string name="easy_setup_spoken_language">口语语言：%1$s</string>
+    <string name="easy_setup_spoken_title">口语语言</string>
+    <string name="easy_setup_download_size">约需下载 %1$d MiB；安装还需要额外空间。原始文件保存在下载文件夹中。</string>
+    <string name="easy_setup_choose_different_languages">口语语言和翻译语言不能相同。</string>
 </resources>

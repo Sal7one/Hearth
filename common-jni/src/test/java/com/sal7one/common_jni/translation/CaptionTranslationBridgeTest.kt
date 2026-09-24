@@ -5,6 +5,7 @@ import kotlinx.coroutines.*
 import org.junit.Assert.*
 import org.junit.Test
 import java.util.concurrent.CopyOnWriteArrayList
+import java.util.concurrent.atomic.AtomicLong
 
 class CaptionTranslationBridgeTest {
     private class Fake : CancellableTextTranslator {
@@ -47,6 +48,16 @@ class CaptionTranslationBridgeTest {
         bridge.offer(1, "mixed", "mul"); bridge.offer(2, "unsupported", "ja")
         withTimeout(3000) { ready.await() }; bridge.close(); bridge.awaitClosed()
         assertEquals(0, fake.calls); assertTrue(errors.any { "unknown or mixed" in it }); assertTrue(errors.any { "ja → ar" in it })
+    }
+    @Test fun missingNemotronLanguageCanStillTranslateCyrillicThroughTheSelectedRoute() = runBlocking {
+        val fake = Fake().apply { release.complete(Unit) }
+        val translated = CompletableDeferred<Long>()
+        val bridge = CaptionTranslationBridge(this, "ar", { fake }, { id, _, _ -> translated.complete(id) }, {})
+        try {
+            assertTrue(bridge.offer(17, "Это русская речь", null))
+            assertEquals(17L, withTimeout(3000) { translated.await() })
+            assertEquals(1, fake.calls)
+        } finally { bridge.close(); bridge.awaitClosed() }
     }
     @Test fun staleInferenceDoesNotPublish() = runBlocking {
         val fake = Fake(); var now = 0L; val noticed = CompletableDeferred<String>()
@@ -170,5 +181,52 @@ class CaptionTranslationBridgeTest {
             retired.close(); active.close(); first.release.complete(Unit); second.release.complete(Unit)
             retired.awaitClosed(); active.awaitClosed()
         }
+    }
+
+    @Test fun completedLineReportsPreparationQueueAndInferenceSeparately() = runBlocking {
+        val now = AtomicLong(0)
+        val releaseLoad = CompletableDeferred<Unit>()
+        val result = CompletableDeferred<TranslationTiming>()
+        val progress = CopyOnWriteArrayList<String>()
+        val fake = Fake()
+        val bridge = CaptionTranslationBridge(this, "ar", {
+            releaseLoad.await(); fake
+        }, { _, _, _ -> }, {}, clock = now::get, progress = progress::add,
+            timing = { _, stages -> result.complete(stages) })
+        try {
+            bridge.offer(5, "hello", "ru")
+            now.set(50); releaseLoad.complete(Unit)
+            withTimeout(3000) { fake.entered.await() }
+            now.set(65)
+            fake.release.complete(Unit)
+            val stages = withTimeout(3000) { result.await() }
+            assertEquals(50L, stages.preparationMs)
+            assertEquals(0L, stages.queueMs)
+            assertEquals(15L, stages.inferenceMs)
+            assertEquals(65L, stages.totalMs)
+            withTimeout(3000) { while (bridge.hasPendingWork) yield() }
+            assertTrue(progress.last().startsWith("Translating ru → ar"))
+        } finally { bridge.close(); releaseLoad.complete(Unit); fake.release.complete(Unit); bridge.awaitClosed() }
+    }
+
+    @Test fun inferenceFailureRestoresReadyProgressAndKeepsRealError() = runBlocking {
+        val progress = CopyOnWriteArrayList<String>()
+        val error = CompletableDeferred<String>()
+        val translator = object : CancellableTextTranslator {
+            override val id = "broken"
+            override val directions = setOf(TranslationDirection("zh", "en"))
+            override suspend fun translate(text: String, direction: TranslationDirection): String =
+                throw IllegalStateException("native decoder failed")
+            override fun cancel() {}
+            override fun close() {}
+        }
+        val bridge = CaptionTranslationBridge(this, "en", { translator }, { _, _, _ -> fail("No result expected") },
+            { if (it != null) error.complete(it) }, progress = progress::add)
+        try {
+            assertTrue(bridge.offer(4, "中文", "zh"))
+            assertEquals("native decoder failed", withTimeout(3000) { error.await() })
+            withTimeout(3000) { while (bridge.hasPendingWork) yield() }
+            assertEquals("Translator ready", progress.last())
+        } finally { bridge.close(); bridge.awaitClosed() }
     }
 }

@@ -1,6 +1,9 @@
 // json_options_test.cpp — direct unit tests for common/json_options.h.
 #include <iostream>
+#include <limits>
+#include <stdexcept>
 #include <string>
+#include <utility>
 
 #include "json_options.h"
 
@@ -114,6 +117,43 @@ int main() {
         auto table = sampleTable();
         error.clear();
         CHECK(!table.parse(R"({"language":"en","language":"ar"})", options, &error));
+    }
+
+    // Numeric defaults keep their original precision and obey declared bounds.
+    {
+        OptionsTable table;
+        table.number("tiny", 1e-7, 0.0, 1.0);
+        error.clear();
+        CHECK(table.parse("{}", options, &error));
+        CHECK(OptionsTable::getDouble(options, "tiny") == 1e-7);
+        CHECK(!table.parse(R"({"tiny":-0.1})", options, &error));
+        CHECK(error.find("option 'tiny' must be >= 0") != std::string::npos);
+    }
+
+    // Bad schema defaults fail when added, before any caller parses input.
+    {
+        auto rejects = [](auto addSpec) {
+            try { OptionsTable table; addSpec(table); return false; }
+            catch (const std::invalid_argument&) { return true; }
+        };
+        CHECK(rejects([](OptionsTable& t) { t.number("too_big", 2.0, 0.0, 1.0); }));
+        CHECK(rejects([](OptionsTable& t) { t.integer("too_small", 0, 1, 10); }));
+        CHECK(rejects([](OptionsTable& t) { t.number("nan", std::numeric_limits<double>::quiet_NaN(), 0, 1); }));
+        CHECK(rejects([](OptionsTable& t) { t.number("bounds", 0.5, 2, 1); }));
+        CHECK(rejects([](OptionsTable& t) {
+            OptionsTable::Spec spec;
+            spec.name = "malformed";
+            spec.type = OptionsTable::Type::Int;
+            spec.defaultValue = "12oops";
+            t.add(std::move(spec));
+        }));
+        CHECK(rejects([](OptionsTable& t) {
+            OptionsTable::Spec spec;
+            spec.name = "malformed_bool";
+            spec.type = OptionsTable::Type::Bool;
+            spec.defaultValue = "yes";
+            t.add(std::move(spec));
+        }));
     }
 
     if (failures == 0) {

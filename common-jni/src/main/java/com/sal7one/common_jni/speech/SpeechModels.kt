@@ -2,7 +2,7 @@ package com.sal7one.common_jni.speech
 
 /** Runtime identity is separate from model format: arbitrary ONNX/GGUF files are not ASR models. */
 enum class SpeechBackend(val id: String) {
-    MOONSHINE("moonshine"), QWEN3_ASR("qwen3_asr"), NEMOTRON_3_5("nemotron_3_5")
+    MOONSHINE("moonshine"), QWEN3_ASR("qwen3_asr"), OMNILINGUAL_CTC("omnilingual_ctc"), NEMOTRON_3_5("nemotron_3_5")
 }
 enum class SpeechStreamingKind { UTTERANCE_WINDOWED, CACHE_AWARE }
 enum class SpeechProfile(val id: String, val backend: SpeechBackend) {
@@ -10,6 +10,7 @@ enum class SpeechProfile(val id: String, val backend: SpeechBackend) {
     MOONSHINE_BASE_EN("moonshine-base-en-v2", SpeechBackend.MOONSHINE),
     QWEN3_ASR_0_6B("qwen3-asr-0.6b", SpeechBackend.QWEN3_ASR),
     QWEN3_ASR_1_7B("qwen3-asr-1.7b", SpeechBackend.QWEN3_ASR),
+    OMNILINGUAL_CTC_300M_V2("omnilingual-ctc-300m-v2-int8", SpeechBackend.OMNILINGUAL_CTC),
     NEMOTRON_3_5_ASR_0_6B("nemotron-3.5-asr-0.6b", SpeechBackend.NEMOTRON_3_5);
 
     val capabilities: SpeechCapabilities get() = when (backend) {
@@ -17,6 +18,11 @@ enum class SpeechProfile(val id: String, val backend: SpeechBackend) {
         SpeechBackend.QWEN3_ASR -> SpeechCapabilities(
             streaming = SpeechStreamingKind.UTTERANCE_WINDOWED,
             partialResults = false, sourceLanguages = QWEN_LANGUAGES, sourceLanguageHints = QWEN_LANGUAGES,
+            configurableThreads = true,
+        )
+        SpeechBackend.OMNILINGUAL_CTC -> SpeechCapabilities(
+            streaming = SpeechStreamingKind.UTTERANCE_WINDOWED,
+            partialResults = false, sourceLanguages = setOf("en", "ar", "ru", "zh"), sourceLanguageHints = emptySet(),
             configurableThreads = true,
         )
         SpeechBackend.NEMOTRON_3_5 -> SpeechCapabilities(
@@ -71,8 +77,8 @@ data class SpeechOptions(
         require(silenceMs in 200..2000 && silenceMs % 20 == 0) { "silenceMs must be 200..2000 in 20ms frames" }
         require(silenceThresholdDb.isFinite() && silenceThresholdDb in -100f..-10f) { "Invalid silenceThresholdDb" }
         val source = SpeechLanguage.normalize(sourceLanguage)
-        require(source == "auto" || source in profile.capabilities.sourceLanguageHints) {
-            "${profile.id} does not support this source-language hint: $sourceLanguage"
+        require(source == "auto" || source in profile.capabilities.sourceLanguages) {
+            "${profile.id} does not support this source-language selection: $sourceLanguage"
         }
     }
 }

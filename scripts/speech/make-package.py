@@ -10,13 +10,13 @@ import json
 import os
 from pathlib import Path
 
-PROFILES = {"moonshine-tiny-en-v2", "moonshine-base-en-v2", "qwen3-asr-0.6b", "qwen3-asr-1.7b", "nemotron-3.5-asr-0.6b"}
+PROFILES = {"moonshine-tiny-en-v2", "moonshine-base-en-v2", "qwen3-asr-0.6b", "qwen3-asr-1.7b", "omnilingual-ctc-300m-v2-int8", "nemotron-3.5-asr-0.6b"}
 MANIFEST = "hearth-speech.json"
 
 def create_manifest(root, profile, roles):
     if profile not in PROFILES:
         raise ValueError("Unsupported profile")
-    expected = {"model", "encoder", "decoder"} if profile.startswith("moonshine") else {"model"} if profile.startswith("nemotron") else {"frontend", "encoder", "decoder", "tokenizer"}
+    expected = {"model", "encoder", "decoder"} if profile.startswith("moonshine") else {"model"} if profile.startswith("nemotron") else {"model", "tokenizer"} if profile.startswith("omnilingual") else {"frontend", "encoder", "decoder", "tokenizer"}
     if set(roles) != expected:
         raise ValueError(f"Required roles: {sorted(expected)}")
     if not root.is_dir() or root.is_symlink():
@@ -40,7 +40,7 @@ def create_manifest(root, profile, roles):
         parts = relative.split("/")
         if any(p in ("", ".", "..") for p in parts) or "\\" in relative or ":" in relative or "\0" in relative:
             raise ValueError(f"Invalid role path: {relative}")
-        required = [relative] if role != "tokenizer" else [f"{relative}/{n}" for n in ("vocab.json", "merges.txt", "tokenizer_config.json")]
+        required = [relative] if role != "tokenizer" or profile.startswith("omnilingual") else [f"{relative}/{n}" for n in ("vocab.json", "merges.txt", "tokenizer_config.json")]
         if not set(required) <= declared:
             raise ValueError(f"Missing assets for role {role}: {required}")
     if not 1 <= len(files) <= 1000 or sum(f["bytes"] for f in files) > 16 * 1024**3:

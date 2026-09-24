@@ -1,7 +1,27 @@
 <resources>
+    <string name="model_milmmt_description">Newer 1B translation family, about %1$d MiB. Arabic, Russian, Chinese and more; phone speed and quality are still experimental. Uses Gemma terms.</string>
+    <string name="model_milmmt_original_card">Original MiLMMT model card</string>
     <string name="app_name">Hearth</string>
     <string name="tile_captions">Live captions</string>
     <string name="tile_reading">Screen translation</string>
     <string name="pipeline_waiting_cleanup">Finishing the previous session…</string>
     <string name="pipeline_cleanup_timeout">Previous models are still releasing. Wait for cleanup, then try again.</string>
+    <string name="model_marian_title">Marian / OPUS-MT</string>
+    <string name="model_marian_description">Small translator · %1$d MiB · %2$s</string>
+    <string name="model_files_downloaded">%1$d of %2$d files downloaded</string>
+    <string name="model_installed_verified">Installed and verified</string>
+    <string name="model_use_marian">Use Marian for %1$s → %2$s</string>
+    <string name="model_download_marian">Download Marian %1$s → %2$s · %3$d MiB</string>
+    <string name="model_continue_marian">Continue Marian download</string>
+    <string name="model_marian_download_notice">Downloading publisher files to %1$s/models. Installation starts when all four verify.</string>
+    <string name="model_marian_card">Model card and license</string>
+    <string name="model_marian_setup">Download four verified publisher files in Models</string>
+    <string name="easy_setup_choose_pair">Choose what you want to translate</string>
+    <string name="easy_setup_broad_languages">More languages · larger model</string>
+    <string name="easy_setup_fast_pair_note">Fast on this phone. These small models support only the shown direction; check important names and numbers.</string>
+    <string name="easy_setup_broad_note">Hy-MT2 supports more languages but was slow in our phone test. Choose the spoken language to avoid Auto detection and enable local translation.</string>
+    <string name="easy_setup_spoken_language">Spoken language: %1$s</string>
+    <string name="easy_setup_spoken_title">Spoken language</string>
+    <string name="easy_setup_download_size">About %1$d MiB to download; installation needs additional space. Originals stay in your Downloads folder.</string>
+    <string name="easy_setup_choose_different_languages">Choose different spoken and translated languages.</string>
 </resources>

@@ -280,10 +280,10 @@ class CaptionEngineController(
      */
     private val onnxTranslator = OnnxMarianTranslator(
         modelDirectoryProvider = {
-            ModelRegistry.getInstance(context)
-                .getModelsForEngine(ModelEngineType.TRANSLATE)
-                .firstOrNull()
-                ?.let { java.io.File(it.path) }
+            com.sal7one.transiber.translation.MarianPackage.find(
+                com.sal7one.transiber.translation.TranslationOptions.MARIAN_EN_AR)?.let { pair ->
+                com.sal7one.transiber.translation.MarianPackage.installed(context, pair)?.let { java.io.File(it.path) }
+            }
         },
     )
 
@@ -497,6 +497,12 @@ class CaptionEngineController(
                     }
                 }
             },
+            timing = { id, stages -> scope.launch {
+                if (generation == translationGeneration && _state.value.history.any { it.id == id }) {
+                    _state.update { it.copy(localTranslationMetrics =
+                        "${snapshot.label} · load ${stages.preparationMs} ms · queue ${stages.queueMs} ms · infer ${stages.inferenceMs} ms") }
+                }
+            } },
             progress = { message -> scope.launch {
                 if (generation == translationGeneration) _state.update { it.copy(localTranslationMetrics = message) }
             } },
@@ -788,7 +794,7 @@ class CaptionEngineController(
                 delay(
                     when (config.effectiveEngine) {
                         CaptionEngineChoice.VOSK -> 500L
-                        CaptionEngineChoice.CLOUD, CaptionEngineChoice.MOONSHINE, CaptionEngineChoice.QWEN, CaptionEngineChoice.NEMOTRON -> 100L
+                        CaptionEngineChoice.CLOUD, CaptionEngineChoice.MOONSHINE, CaptionEngineChoice.QWEN, CaptionEngineChoice.OMNILINGUAL, CaptionEngineChoice.NEMOTRON -> 100L
                         CaptionEngineChoice.WHISPER -> 700L
                     },
                 )

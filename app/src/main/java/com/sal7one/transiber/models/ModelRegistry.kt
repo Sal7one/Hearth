@@ -288,6 +288,22 @@ class ModelRegistry private constructor(private val context: Context) {
         }
         registerStagedModelInternal(staged, deleteIfRejected = false)
     }
+
+    /** Publish a publisher-pinned multi-file package only after its complete tree matches. */
+    suspend fun registerPinnedDirectory(
+        name: String,
+        expectedTreeSha256: String,
+        populate: (ModelIntegrity.DirectorySink) -> Unit,
+    ): RegisteredModel = withContext(Dispatchers.IO) {
+        val staged = ModelIntegrity.stageDirectory(modelsDir, name, expectedTreeSha256, populate)
+        val registered = registerStagedModelInternal(staged, deleteIfRejected = true)
+            ?: throw ModelIntegrityException("Publisher model package has an unsupported structure")
+        if (!registered.isValid) {
+            unregisterModel(registered.id, deleteFiles = true)
+            throw ModelIntegrityException("Publisher model package was not accepted by its runtime")
+        }
+        registered
+    }
     
     /**
      * Register a model from app assets.

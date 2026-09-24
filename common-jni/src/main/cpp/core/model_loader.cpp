@@ -1,6 +1,7 @@
 #include "model_loader.h"
 #include "model_integrity.h"
 #include "logging.h"
+#include "../jni/jni_attachment.h"
 #include <android/asset_manager.h>
 #include <android/asset_manager_jni.h>
 #include <array>
@@ -96,13 +97,7 @@ void ModelLoader::init(JavaVM* vm, jobject assetManager) {
 }
 
 JNIEnv* ModelLoader::getEnv() {
-    if (!vm_) return nullptr;
-    JNIEnv* env = nullptr;
-    int status = vm_->GetEnv(reinterpret_cast<void**>(&env), JNI_VERSION_1_6);
-    if (status == JNI_EDETACHED) {
-        vm_->AttachCurrentThread(&env, nullptr);
-    }
-    return env;
+    return jni::getEnvForVm(vm_);
 }
 
 std::string ModelLoader::loadFromAssets(const std::string& assetPath, ModelLoadProgress progress) {

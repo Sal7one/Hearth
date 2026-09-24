@@ -5,6 +5,11 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import java.util.concurrent.atomic.AtomicBoolean
 
+/** Monotonic stage timings for one published translation, including model preparation. */
+data class TranslationTiming(val preparationMs: Long, val queueMs: Long, val inferenceMs: Long) {
+    val totalMs: Long get() = preparationMs + queueMs + inferenceMs
+}
+
 /** Bounded, final-only second stage. It never blocks ASR, guesses a missing language, or publishes stale work. */
 class CaptionTranslationBridge(
     scope: CoroutineScope,
@@ -16,6 +21,7 @@ class CaptionTranslationBridge(
     capacity: Int = 3,
     private val maxAgeMs: Long = 20_000,
     private val progress: (String) -> Unit = {},
+    private val timing: (Long, TranslationTiming) -> Unit = { _, _ -> },
 ) : AutoCloseable {
     private data class Request(val id: Long, val text: String, val source: String?, val at: Long, val generation: Long)
     private val lock = Any()
@@ -42,29 +48,45 @@ class CaptionTranslationBridge(
             for (request in queue) {
                 if (closed.get()) break
                 if (!isCurrent(request)) continue
+                var completed = false
                 try {
                     check(clock() - maxOf(request.at, preparedAt) < maxAgeMs) { "Translation queue is behind; this line stays CC only" }
-                    val source = request.source?.let(TranslationLanguages::normalize)
-                    check(source != null && source !in setOf("", "auto", "mul", "und")) {
+                    val active = checkNotNull(translator)
+                    val to = TranslationLanguages.normalize(target)
+                    val source = TranslationSourceEvidence.resolve(request.source, request.text, to, active.directions)
+                    check(source != null) {
                         "Source language is unknown or mixed. Choose the spoken language to enable local translation; CC continues"
                     }
-                    val to = TranslationLanguages.normalize(target)
                     if (source == to) { publish(request) { notice(null) }; continue }
-                    val active = checkNotNull(translator)
                     if (closed.get() || !isActive) break
                     val direction = TranslationDirection(source, to)
                     check(direction in active.directions) { "${active.id} does not support $source → $to; CC continues" }
                     if (!isCurrent(request)) continue
+                    val startedAt = clock()
                     publish(request) { progress("Translating ${source} → $to · CC continues") }
                     val text = active.translate(request.text, direction)
                     check(text.isNotBlank()) { "${active.id} returned empty translation" }
                     check(clock() - maxOf(request.at, preparedAt) < maxAgeMs) { "Translation arrived too late; this line stays CC only" }
-                    if (isActive) publish(request) { result(request.id, text, clock() - request.at); notice(null) }
-                    publish(request) { progress("Translator ready") }
+                    if (isActive) publish(request) {
+                        val stages = TranslationTiming(
+                            preparationMs = (preparedAt - request.at).coerceAtLeast(0),
+                            queueMs = (startedAt - maxOf(request.at, preparedAt)).coerceAtLeast(0),
+                            inferenceMs = (clock() - startedAt).coerceAtLeast(0),
+                        )
+                        result(request.id, text, stages.totalMs)
+                        timing(request.id, stages)
+                        notice(null)
+                        completed = true
+                    }
                 } catch (e: CancellationException) { throw e }
                 catch (e: LinkageError) { publish(request) { notice(e.toString()) } }
                 catch (e: Exception) { publish(request) { notice(e.message ?: e.toString()) } }
-                finally { synchronized(lock) { if (!closed.get() && request.generation == generation) pending-- } }
+                finally {
+                    // Keep the completed line's stage timing visible; only a
+                    // failed request needs its transient progress cleared.
+                    if (!completed) publish(request) { progress("Translator ready") }
+                    synchronized(lock) { if (!closed.get() && request.generation == generation) pending-- }
+                }
             }
         } finally {
             synchronized(lock) { closed.set(true); pending = 0; queue.cancel() }

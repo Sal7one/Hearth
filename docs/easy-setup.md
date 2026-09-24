@@ -7,13 +7,24 @@ replace the feature carousel or advanced setup.
 1. Choose **On this phone** or **Cloud**.
 2. Confirm the local preset, or enter a cloud connection and save.
 
-Local automatically selects Nemotron 3.5 ASR 0.6B and Hy-MT2 1.8B Q4, enables
-translation and uses automatic source recognition. The destination remains visible
-and editable before applying. Installed models are reused. One download action
-queues only missing files through the existing verified downloader; originals stay
-in Downloads/Hearth/models or the selected folder. The two original downloads total
-about 1.9 GB; installation needs additional space. Existing imports, hash checks,
-model manifests and native ownership remain unchanged.
+Local selects Nemotron 3.5 ASR 0.6B and one explicit translation route. The default
+in the Play build is the small Marian English→Arabic pair; Russian→English and
+Chinese→English are one-tap alternatives. Each pair supports only its shown
+direction. Selecting one also forces Nemotron's spoken-language hint, avoiding
+automatic detection and the unknown-source local-translation failure. These pairs
+were fast in a short Samsung phone test but have not passed bilingual quality review;
+important names and numbers need checking. **More languages** selects Hy-MT2 Q4,
+with spoken and destination language pickers. That route covers more pairs, but
+its six-sentence phone run took 53 seconds, so it is not presented as a fast option.
+The FOSS wizard offers the importable Hy-MT2 route and any already installed
+Marian pair; it never downloads models.
+
+Installed models are reused. One download action queues only missing files through
+the existing verified downloader; originals stay in Downloads/Hearth/models or the
+selected folder. A Marian package is about 235–242 MiB plus the speech model and
+requires extra installation space; the broad-language two-model download is about
+1.9 GB. Existing imports, hash checks, model manifests and native ownership remain
+unchanged.
 
 The page waits for both verified installations before selecting the preset. Downloads
 can continue in the background; returning to the requested setup finishes selection.
@@ -21,6 +32,12 @@ Finish later cancels that automatic selection, not the downloads; Downloads prov
 cancellation and retry controls. Errors remain visible. Active caption, reading or
 local inference sessions must stop before a preset is applied. Applying the local
 preset also chooses its translator for the shared conversation/text/camera setup.
+On the Samsung SM-S908E, the Play QA chooser displayed all three installed Marian
+pairs, switching to Chinese→English updated the installed state, and applying it
+opened Live captions with Nemotron, forced Chinese, English output and Translation
+selected. The earlier Russian→English setup was then restored. This was a setup
+route check, separate from the live-caption smoke in
+[Marian phone smoke](marian-phone-smoke-2026-09-23.md).
 
 Cloud contains only OpenAI, OpenRouter and Local server. OpenAI uses Hearth's existing
 live translation adapter and the same searchable destination picker as captions.
@@ -41,7 +58,7 @@ are omitted from the request header. Public providers and all streaming modes st
 require keys. No cloud call or audio capture starts just by opening or saving setup.
 
 FOSS keeps the Cloud card disabled, has no external model links/download actions,
-and offers the existing file import path for the two local models. Its network gate
+and offers the existing file import path for Nemotron and Hy-MT2. Its network gate
 and permission manifest remain intact.
 
 `EasySetupPreset` owns pure choice/endpoint/key-reuse policies. `EasySetupActions`

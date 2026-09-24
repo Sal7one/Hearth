@@ -624,11 +624,11 @@ static jstring nativeGetAudioGateStatus(JNIEnv* env, jobject) {
 static jstring nativeGetBufferPoolStats(JNIEnv* env, jobject) {
     JNI_TRY_CATCH_BEGIN
     
-    auto& pool = AudioBufferPool::getInstance();
+    const auto poolStats = AudioBufferPool::snapshotStats();
     
     const std::string json = JsonUtils::stringify(JsonValue::object({
-        {"availableInt16", static_cast<int64_t>(pool.availableInt16())},
-        {"availableFloat", static_cast<int64_t>(pool.availableFloat())},
+        {"availableInt16", static_cast<int64_t>(poolStats.availableInt16)},
+        {"availableFloat", static_cast<int64_t>(poolStats.availableFloat)},
         {"bufferSamples", static_cast<int64_t>(AudioBufferPool::BUFFER_SAMPLES)},
         {"poolSize", static_cast<int64_t>(AudioBufferPool::POOL_SIZE)}
     }));

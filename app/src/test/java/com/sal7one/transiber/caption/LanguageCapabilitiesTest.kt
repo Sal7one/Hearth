@@ -43,6 +43,14 @@ class LanguageCapabilitiesTest {
         }
         assertTrue(TranslationOptions.languages("future-model").isEmpty())
     }
+    @Test fun installedModelTargetPickerExcludesSameLanguageButKeepsUnknownSourceChoices() {
+        val id = "milmmt-46-1b-q4"
+        assertTrue("ar" in TranslationOptions.targetLanguages(id, "ru"))
+        assertFalse("ru" in TranslationOptions.targetLanguages(id, "ru"))
+        assertEquals(TranslationOptions.targetLanguages(id), TranslationOptions.targetLanguages(id, "mul"))
+        assertEquals(TranslationOptions.targetLanguages(id), TranslationOptions.targetLanguages(id, "auto"))
+        assertTrue(TranslationOptions.targetLanguages(id, "xx").isEmpty())
+    }
     @Test fun languageCodeEntryIsExplicitBoundedAndIndependentOfDisplayLocale() {
         val choices=CaptionLanguages.openAiTranslation
         assertTrue("sv" in choices.codes)

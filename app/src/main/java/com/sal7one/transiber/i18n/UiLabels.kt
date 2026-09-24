@@ -109,6 +109,7 @@ internal fun UiText.label(value: com.sal7one.transiber.caption.CaptionEngineChoi
     com.sal7one.transiber.caption.CaptionEngineChoice.WHISPER -> R.string.label_captionenginechoice_whisper_label
     com.sal7one.transiber.caption.CaptionEngineChoice.MOONSHINE -> R.string.label_captionenginechoice_moonshine_label
     com.sal7one.transiber.caption.CaptionEngineChoice.QWEN -> R.string.label_captionenginechoice_qwen_label
+    com.sal7one.transiber.caption.CaptionEngineChoice.OMNILINGUAL -> R.string.label_captionenginechoice_omnilingual_label
     com.sal7one.transiber.caption.CaptionEngineChoice.NEMOTRON -> R.string.label_captionenginechoice_nemotron_label
     com.sal7one.transiber.caption.CaptionEngineChoice.CLOUD -> R.string.label_captionenginechoice_cloud_label
 })
@@ -118,6 +119,7 @@ internal fun UiText.explanation(value: com.sal7one.transiber.caption.CaptionEngi
     com.sal7one.transiber.caption.CaptionEngineChoice.WHISPER -> R.string.label_captionenginechoice_whisper_explanation
     com.sal7one.transiber.caption.CaptionEngineChoice.MOONSHINE -> R.string.label_captionenginechoice_moonshine_explanation
     com.sal7one.transiber.caption.CaptionEngineChoice.QWEN -> R.string.label_captionenginechoice_qwen_explanation
+    com.sal7one.transiber.caption.CaptionEngineChoice.OMNILINGUAL -> R.string.label_captionenginechoice_omnilingual_explanation
     com.sal7one.transiber.caption.CaptionEngineChoice.NEMOTRON -> R.string.label_captionenginechoice_nemotron_explanation
     com.sal7one.transiber.caption.CaptionEngineChoice.CLOUD -> R.string.label_captionenginechoice_cloud_explanation
 })

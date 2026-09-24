@@ -340,3 +340,103 @@ catalog tests cover grouping, HTTPS revisions, hashes and language scope.
 `FileDownloads.progress` makes pause/removal take priority over late transfer
 updates. A completed phone transfer exercised the hash/install path; interrupted
 network resume still needs a physical test.
+
+## Hearth 0.22.6 source-language recovery
+
+`source_language.h` is consumed by the Nemotron native adapter. It compares
+locale tags by primary language, so `ru-RU` and `ru` do not become a false
+mixed-language result. The speech host suite covers matching, different and
+empty codes. `TranslationSourceEvidence` is consumed by the shared
+`CaptionTranslationBridge` when an ASR final has no usable language code. It
+accepts a source only if a selected translator direction and the caption's
+non-Latin script agree uniquely. Host tests cover Russian recovery, ambiguous
+Cyrillic directions, Latin text, target mismatch and explicit-source priority.
+Other unknown or genuinely ambiguous captions remain CC with the original
+source-language error.
+
+`DownloadIntegrity.matches` is consumed by the Play foreground downloader both
+after transfer and before retrying installation from a previously completed public
+file. Its host test covers valid, changed, truncated and oversized bytes and
+cancellation. A failed recheck makes Retry start a fresh transfer, while a valid
+original avoids wasting another model download. The phone has verified a normal
+transfer and pause/resume; corrupt-file retry and custom-folder recovery remain
+device checks.
+
+## Native text and audio gate hardening (review 2026-09-23)
+
+`common_jni::text::repairUtf8` (`common/utf8_utils.h`) is consumed by
+`whisper_engine.cpp` `sanitizeTranscript` for partial, promoted and batch text.
+A token cap or segment split can end inside a multi-byte character; the strict
+JNI converter then threw and ended the caption session. A truncated final
+character is dropped and other ill-formed parts become U+FFFD, matching the
+speech ABI's JSON path. `utf8_utils_test.cpp` covers well-formed text, tail
+truncation, split joins, overlongs, surrogates, out-of-range and invalid leads,
+boundary scalars and an exhaustive two-byte sweep through `utf8ToUtf16`.
+
+`AudioGate` (utterance segmenter and Whisper streaming) now treats a non-finite frame level
+as an inactive frame that never enters its smoothing state; one NaN frame used to
+report silence forever and Inf speech forever. `audio_gate_test.cpp` is the first
+direct gate test: -45 dBFS edges for float and int16, full-scale int16, default
+hysteresis timing, ZCR ceiling, reset, NaN/Inf recovery and active regions.
+
+`Sha256`, `ExpectedSha256`, `sha256ToHex` and `verifySha256` (consumed by native
+model verification for Whisper and Vosk through `verified_model_file.h` and
+`model_integrity.h`) now have known-answer coverage in `sha256_test.cpp`: NIST
+vectors, every padding boundary, incremental split points and the lowercase-only
+digest contract shared with Kotlin `ModelIntegrity`.
+
+`ScopedTimer` remains a batch-operation consumer of `PerformanceStats` in the
+Whisper/Vosk engines. Live audio pushes no longer construct a global stats key,
+lock its map, or log every 50 ms. `scoped_timer_test.cpp` compiles two macros
+in one scope and checks timer recording, lookup and reset; elapsed time uses a
+monotonic clock.
+
+`OptionsTable` keeps typed defaults at registration, so small numeric values
+are not rounded through `std::to_string`, and malformed/out-of-range schemas
+fail before parsing a request. `json_options_test.cpp` covers precision,
+bounds and malformed `add(Spec)` inputs. This existing utility still has no
+production consumer; it remains tracked as a consolidation candidate in
+`lib_overview.md` rather than being advertised as an active app boundary.
+
+`BufferPool` now tracks slot ownership in release builds too: double, foreign
+and interior-pointer releases are rejected, and `resetAll()` keeps outstanding
+borrows unavailable. `PooledBuffer` is the RAII acquisition path. The existing
+JNI buffer-pool stats consumer uses a snapshot that does not construct the
+otherwise idle 3 MB `AudioBufferPool`. `buffer_pool_test.cpp` covers ownership,
+reset, RAII movement and the uninitialized stats path.
+
+`PipeProgress` is the Whisper engine's caller-owned progress-pipe writer. It
+serializes state and writes, makes the bound pipe nonblocking, and emits each
+newline-delimited JSON record in one write no larger than the pipe's `PIPE_BUF`.
+Long terminal fields carry an explicit `truncated` flag, while the engine's
+error channel keeps its full error. `pipe_progress_test.cpp` checks wire format,
+overflow, atomic drop on a full pipe, and concurrent rebinding/state access.
+
+`jni_helper` is the legacy router's JNI exception boundary. Its shared throw
+helper converts standard UTF-8 to Java UTF-16 before constructing an exception
+and leaves an existing pending Java exception untouched. `jni_helper_test.cpp`
+uses a host JVM with `-Xcheck:jni` to cover supplementary characters, the
+catch macros, invalid UTF-8, and pending-exception preservation.
+
+`jni::getEnvForVm` is shared by the JNI log bridge, `ModelLoader`, and the
+legacy `jni_utils` adapter. It leaves JVM-owned threads alone, attaches native
+threads as named daemon threads, and detaches them from a pthread-key
+destructor. `jni_helper_test.cpp` starts and joins native threads under a real
+host JVM before VM shutdown; Android's thread-exit behavior remains a device
+check owned by the app owner.
+
+The Marian tokenizer consumes the pinned `source.spm` and `tokenizer.json`
+files during local translation setup. It checks each file's length before
+reading and rejects an out-of-range added-token ID before integer conversion.
+`marian/tests/run_marian_tokenizer_tests.sh` exercises a tiny valid fixture,
+token IDs, oversized sparse files and a 1e300 token ID under ASan/UBSan.
+Malformed precompiled charsmaps and publisher-tokenizer golden vectors remain
+tracked separately in `lib_overview.md` U23.
+
+`marian_session_config.h` is consumed by `MarianEngine` during local model
+setup. It disables ONNX Runtime intra-op worker spinning by default so the
+translator does not contend with ASR, permits explicit `MARIAN_ORT_SPIN=1`
+for benchmarks, and fails setup with ORT's actual error if the setting cannot
+be applied. `marian_session_config_test.cpp` runs the production function
+against a fake ORT API, covering defaults, opt-in, invalid overrides and
+provider rejection.

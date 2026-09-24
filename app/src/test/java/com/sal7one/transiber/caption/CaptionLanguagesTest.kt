@@ -5,6 +5,7 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import com.sal7one.common_jni.speech.SpeechProfile
 import com.sal7one.common_jni.translation.TranslationCatalog
 import com.sal7one.transiber.byok.CloudConfigStore.SttMode
+import com.sal7one.transiber.translation.MarianPackage
 import org.junit.Assert.*
 import org.junit.Test
 
@@ -61,6 +62,14 @@ class CaptionLanguagesTest {
             val prefs = mutablePreferencesOf()
             CaptionConfigStore.writeInto(prefs, config)
             assertEquals(config.target, CaptionConfigStore.readFrom(prefs).target)
+        }
+        MarianPackage.pairs.forEach { pair ->
+            val config = CaptionOverlayConfig(engine = CaptionEngineChoice.NEMOTRON,
+                localTranslationEnabled = true, localTranslationModelId = pair.id,
+                mode = CaptionMode.TRANSLATE, streamLanguage = pair.source,
+                target = TranslationTarget.of(pair.target))
+            assertEquals(setOf(pair.target), CaptionLanguages.target(config, SttMode.BATCH).codes)
+            assertEquals(CaptionTranslationRoute.TEXT_TRANSLATOR, captionTranslationRoute(config, SttMode.BATCH))
         }
         for (old in listOf("ENGLISH", "ARABIC", "CHINESE")) {
             val prefs = mutablePreferencesOf(stringPreferencesKey("translation_target") to old)

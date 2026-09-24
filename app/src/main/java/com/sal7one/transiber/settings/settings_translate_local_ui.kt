@@ -19,6 +19,7 @@ import com.sal7one.common_jni.translation.*
 import com.sal7one.transiber.byok.ByokPolicy
 import com.sal7one.transiber.caption.*
 import com.sal7one.transiber.downloads.*
+import com.sal7one.transiber.models.ModelRegistry
 import kotlinx.coroutines.*
 import java.io.File
 
@@ -42,12 +43,17 @@ internal fun SettingsTranslateLocalUi(
     var message by remember { mutableStateOf<String?>(null) }
     var busy by remember { mutableStateOf(false) }
     var showGguf by rememberSaveable { mutableStateOf(config.localTranslationModelId != TranslationOptions.ML_KIT) }
-    var showLegacy by rememberSaveable { mutableStateOf(false) }
+    var showLegacy by rememberSaveable { mutableStateOf(
+        MarianPackage.find(config.localTranslationModelId) != null || MarianCascade.find(config.localTranslationModelId) != null) }
+    var selectedMarianId by rememberSaveable { mutableStateOf(
+        config.localTranslationModelId.takeIf { MarianPackage.find(it) != null || MarianCascade.find(it) != null } ?: TranslationOptions.MARIAN_EN_AR) }
+    val registryModels by remember(context) { ModelRegistry.getInstance(context).registeredModels }.collectAsState()
     var showCoverage by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
         val browse = context.getSharedPreferences("translation-browser",0)
         browse.getString("model",null)?.let { id ->
             if (TranslationCatalog.models.any { it.id == id }) { selected = id; showGguf = true; showLegacy = false }
+            else if (MarianPackage.find(id) != null || MarianCascade.find(id) != null) { selectedMarianId = id; showGguf = false; showLegacy = true }
             browse.edit().remove("model").apply()
         }
     }
@@ -95,7 +101,9 @@ internal fun SettingsTranslateLocalUi(
             if (PlatformTranslation.available) FilterChip(
                 selected = !showLegacy && !showGguf, enabled = !busy,
                 onClick = { showLegacy = false; showGguf = false }, label = { Text("ML Kit") })
-            listOf("hy-mt1.5" to "HY-MT1.5", "hy-mt2" to "Hy-MT2", "translategemma" to "TranslateGemma").forEach { (family, label) ->
+            FilterChip(selected = showLegacy, enabled = !busy,
+                onClick = { showLegacy = true; showGguf = false }, label = { Text(uiText(UiR.string.model_marian_title)) })
+            listOf("milmmt-46" to "MiLMMT-46", "hy-mt1.5" to "HY-MT1.5", "hy-mt2" to "Hy-MT2", "translategemma" to "TranslateGemma").forEach { (family, label) ->
                 FilterChip(selected = !showLegacy && showGguf && spec.family == family, enabled = !busy,
                     onClick = {
                         if (spec.family != family) {
@@ -105,12 +113,73 @@ internal fun SettingsTranslateLocalUi(
                         showLegacy = false; showGguf = true
                     }, label = { Text(label) })
             }
-            if (includeLegacy) FilterChip(selected = showLegacy, enabled = !busy,
-                onClick = { showLegacy = true }, label = { Text(uiText(UiR.string.ui_marian_legacy_67b3d)) })
         }
-        if (showLegacy && includeLegacy) {
-            Text(uiText(UiR.string.ui_legacy_english_arabic_model_files_162d9), style = MaterialTheme.typography.titleSmall)
-            com.sal7one.transiber.models.LegacyModelSetup(com.sal7one.transiber.models.ModelEngineType.TRANSLATE, config, update)
+        if (showLegacy) {
+            val pair = MarianPackage.find(selectedMarianId)
+            val cascade = MarianCascade.find(selectedMarianId)
+            check(pair != null || cascade != null) { "Unknown Marian route: $selectedMarianId" }
+            val source = pair?.source ?: checkNotNull(cascade).source
+            val target = pair?.target ?: checkNotNull(cascade).target
+            val sizeMiB = (pair?.downloadBytes ?: checkNotNull(cascade).downloadBytes) / 1_048_576
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                MarianPackage.pairs.forEach { option ->
+                    FilterChip(selected = selectedMarianId == option.id, enabled = !busy,
+                        onClick = { selectedMarianId = option.id },
+                        label = { Text("${TranslationLanguages.label(option.source)} → ${TranslationLanguages.label(option.target)}") })
+                }
+                MarianCascade.routes.forEach { option ->
+                    FilterChip(selected = selectedMarianId == option.id, enabled = !busy,
+                        onClick = { selectedMarianId = option.id },
+                        label = { Text("${TranslationLanguages.label(option.source)} → English → ${TranslationLanguages.label(option.target)}") })
+                }
+            }
+            val directModel = pair?.let { direct -> registryModels.firstOrNull {
+                it.engineType == com.sal7one.transiber.models.ModelEngineType.TRANSLATE &&
+                    it.isValid && it.isDirectory && it.digest?.hex == direct.treeSha256
+            } }
+            val ready = if (cascade != null) TranslationOptions.installed(context, cascade.id) else directModel != null
+            val routeParts = pair?.parts ?: checkNotNull(cascade).let { it.first.parts + it.second.parts }
+            val parts = routeParts.map { part -> records.firstOrNull { it.modelId == part.id } }
+            val completed = parts.count { it?.complete == true }
+            Text(uiText(UiR.string.model_marian_description, sizeMiB, MarianPackage.license),
+                style = MaterialTheme.typography.bodySmall)
+            if (cascade != null) Text(uiText(UiR.string.model_marian_via_english_warning), style = MaterialTheme.typography.bodySmall)
+            Text(if (ready) uiText(UiR.string.model_installed_verified)
+                else uiText(UiR.string.model_files_downloaded, completed, parts.size),
+                style = MaterialTheme.typography.bodyMedium)
+            if (ready) Button(enabled = !busy, onClick = { update {
+                if (showCaptionControls) it.copy(localTranslationModelId = selectedMarianId,
+                    textTranslationProviderId = "local", localTranslationEnabled = true,
+                    mode = CaptionMode.TRANSLATE, target = TranslationTarget.of(target))
+                else it.copy(localTranslationModelId = selectedMarianId, textTranslationProviderId = "local")
+            } }) { Text(if (config.localTranslationModelId == selectedMarianId) uiText(UiR.string.ui_selected_translator_ee2cb)
+                else uiText(UiR.string.model_use_marian, TranslationLanguages.label(source),
+                    TranslationLanguages.label(target))) }
+            if (ByokPolicy.FEATURE_BYOK && !ready) OutlinedButton(enabled = !busy, onClick = { scope.launch {
+                busy = true
+                try {
+                    withContext(Dispatchers.IO) {
+                        if (cascade != null) MarianCascade.enqueue(context, downloads, cascade)
+                        else MarianPackage.enqueue(context, downloads, checkNotNull(pair))
+                    }
+                    records = withContext(Dispatchers.IO) { downloads.list() }
+                    message = uiText(UiR.string.model_marian_download_notice, downloads.locationLabel)
+                } catch (e: CancellationException) { throw e }
+                catch (e: Exception) { message = e.message ?: e.toString() }
+                finally { busy = false }
+            } }) { Text(if (completed > 0) uiText(UiR.string.model_continue_marian)
+                else uiText(UiR.string.model_download_marian, TranslationLanguages.label(source),
+                    TranslationLanguages.label(target), sizeMiB)) }
+            parts.filterNotNull().firstOrNull { it.failed }?.let { Text(it.error, color = MaterialTheme.colorScheme.error) }
+            if (ByokPolicy.FEATURE_BYOK && pair != null) TextButton(onClick = { uriHandler.openUri(pair.modelCard) }) { Text(uiText(UiR.string.model_marian_card)) }
+            if (ByokPolicy.FEATURE_BYOK && cascade != null) {
+                TextButton(onClick = { uriHandler.openUri(cascade.first.modelCard) }) { Text(uiText(UiR.string.model_marian_card) + " · ${TranslationLanguages.label(source)} → English") }
+                TextButton(onClick = { uriHandler.openUri(cascade.second.modelCard) }) { Text(uiText(UiR.string.model_marian_card) + " · English → ${TranslationLanguages.label(target)}") }
+            }
+            if (includeLegacy && pair?.id == TranslationOptions.MARIAN_EN_AR) com.sal7one.transiber.models.LegacyModelSetup(
+                com.sal7one.transiber.models.ModelEngineType.TRANSLATE, config, update)
+            if (busy) LinearProgressIndicator(Modifier.fillMaxWidth())
+            message?.let { Text(it) }
             return@Column
         }
         if (!showGguf && PlatformTranslation.available) MlKitSetup(config, update = update)
@@ -126,7 +195,8 @@ internal fun SettingsTranslateLocalUi(
         if (installed.any { it.id == spec.id }) Button(enabled = !busy, onClick = { update { if (showCaptionControls) it.copy(localTranslationModelId = spec.id, localTranslationEnabled = true, mode = CaptionMode.TRANSLATE) else it.copy(localTranslationModelId = spec.id) } }) {
             Text(if (config.localTranslationModelId == spec.id) uiText(UiR.string.ui_selected_translator_ee2cb) else uiText(UiR.string.ui_use_1_s_5cc45, spec.label))
         }
-        Text(uiText(UiR.string.ui_q4_uses_less_storage_and_memory_q6_q8_are_larger_only_the_active_56fac), style = MaterialTheme.typography.bodySmall)
+        Text(if (spec.family == "milmmt-46") uiText(UiR.string.model_milmmt_description, spec.bytes / 1_048_576)
+            else uiText(UiR.string.ui_q4_uses_less_storage_and_memory_q6_q8_are_larger_only_the_active_56fac), style = MaterialTheme.typography.bodySmall)
         OutlinedButton(enabled = !busy, onClick = { importer.launch(arrayOf("*/*")) }) { Text(uiText(UiR.string.ui_import_1_s_gguf_f7da3, spec.label)) }
         if (ByokPolicy.FEATURE_BYOK) {
             val record = records.firstOrNull { it.modelId == spec.id }
@@ -149,6 +219,7 @@ internal fun SettingsTranslateLocalUi(
             if (record?.failed == true) Text(record.error.ifBlank { uiText(UiR.string.ui_download_failed_reason_1_s_8bb99, record.reason) }, color = MaterialTheme.colorScheme.error)
             Text(uiText(UiR.string.ui_download_folder_1_s_models_the_original_file_stays_here_after_ins_5b003, downloads.locationLabel), style = MaterialTheme.typography.bodySmall)
             TextButton(onClick = { uriHandler.openUri(spec.modelCard) }) { Text(uiText(UiR.string.ui_source_files_license_50a30)) }
+            if (spec.family == "milmmt-46") TextButton(onClick = { uriHandler.openUri("https://huggingface.co/xiaomi-research/MiLMMT-46-1B-v1.0") }) { Text(uiText(UiR.string.model_milmmt_original_card)) }
             if (spec.family == "translategemma") TextButton(onClick = { uriHandler.openUri("https://huggingface.co/google/translategemma-4b-it") }) { Text(uiText(UiR.string.ui_original_google_model_card_251ef)) }
         }
         Text(uiText(UiR.string.ui_1_s_imported_files_must_match_the_selected_artifact_8b0a8, spec.license))
@@ -158,7 +229,7 @@ internal fun SettingsTranslateLocalUi(
         }
         if (showCaptionControls) {
         com.sal7one.transiber.caption.CaptionLanguageFields(config, update, showSource = false,
-            targetChoices = com.sal7one.transiber.caption.CaptionLanguageChoices(TranslationOptions.languages(config.localTranslationModelId), uiText(UiR.string.ui_output_languages_supported_by_the_active_translator_a2090)))
+            targetChoices = com.sal7one.transiber.caption.CaptionLanguageChoices(TranslationOptions.targetLanguages(config.localTranslationModelId, config.streamLanguage), uiText(UiR.string.ui_output_languages_supported_by_the_active_translator_a2090)))
         val active = installed.firstOrNull { it.id == config.localTranslationModelId }
         Text(when {
             !config.localTranslationEnabled -> uiText(UiR.string.ui_original_language_cc_translation_model_stays_unloaded_4bd7f)

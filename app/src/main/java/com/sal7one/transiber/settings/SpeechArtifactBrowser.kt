@@ -37,6 +37,7 @@ internal fun SpeechArtifactBrowser(config: CaptionOverlayConfig) {
     val suggestedFamily = when (config.engine) {
         CaptionEngineChoice.MOONSHINE -> "moonshine"
         CaptionEngineChoice.QWEN -> "qwen3-asr"
+        CaptionEngineChoice.OMNILINGUAL -> "omnilingual"
         CaptionEngineChoice.NEMOTRON -> "nemotron"
         else -> "whisper"
     }
@@ -75,6 +76,7 @@ internal fun SpeechArtifactBrowser(config: CaptionOverlayConfig) {
                     val title = when (id) {
                         "nemotron" -> "Nemotron"
                         "qwen3-asr" -> "Qwen3-ASR"
+                        "omnilingual" -> "Omnilingual"
                         "whisper" -> "Whisper"
                         else -> "Moonshine"
                     }

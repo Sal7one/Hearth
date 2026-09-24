@@ -19,7 +19,6 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 import java.io.FileInputStream
 import java.io.FileOutputStream
-import java.security.MessageDigest
 import android.system.Os
 import android.system.OsConstants
 
@@ -67,6 +66,29 @@ class DownloadService : Service() {
         val modelId = record.optString("model")
         val asset = DownloadAssets.find(modelId)
         var complete = record.optBoolean("downloadComplete")
+        if (complete && asset != null) {
+            // A completed public original can be edited or removed before an
+            // installation retry. Verify it again instead of retrying a bad copy.
+            downloads.progress(id) { it.put("phase", "Verifying") }
+            publish("Verifying ${record.getString("title")}")
+            val job = currentCoroutineContext()
+            val intact = try {
+                record.optString("uri").takeIf(String::isNotBlank)?.let(Uri::parse)?.let { uri ->
+                    contentResolver.openInputStream(uri)?.use { input ->
+                        DownloadIntegrity.matches(input, asset) {
+                            job.ensureActive()
+                            if (downloads.record(id)?.optString("phase") != "Verifying") throw CancellationException("Download paused or removed")
+                        }
+                    }
+                } == true
+            } catch (e: CancellationException) { throw e }
+            catch (_: java.io.FileNotFoundException) { false }
+            if (!intact) {
+                downloads.progress(id) { it.put("restart", true).put("downloadComplete", false) }
+                record.put("restart", true).put("downloadComplete", false)
+                complete = false
+            }
+        }
         if (!complete) {
             var destination = record.optString("uri").takeIf(String::isNotBlank)?.let(Uri::parse)
             var offset = 0L
@@ -143,19 +165,14 @@ class DownloadService : Service() {
             if (asset != null) {
                 downloads.progress(id) { it.put("phase", "Verifying") }
                 publish("Verifying $title")
-                val digest = MessageDigest.getInstance("SHA-256")
-                var length = 0L
-                contentResolver.openInputStream(target)?.use { input ->
-                    val buffer = ByteArray(65536)
-                    while (true) {
-                        currentCoroutineContext().ensureActive()
+                val job = currentCoroutineContext()
+                val valid = contentResolver.openInputStream(target)?.use { input ->
+                    DownloadIntegrity.matches(input, asset) {
+                        job.ensureActive()
                         if (downloads.record(id)?.optString("phase") != "Verifying") throw CancellationException("Download paused or removed")
-                        val n = input.read(buffer); if (n < 0) break
-                        length += n; require(length <= asset.bytes) { "Downloaded artifact is too large" }
-                        digest.update(buffer, 0, n)
                     }
                 } ?: error("Cannot verify downloaded file")
-                if (length != asset.bytes || digest.digest().joinToString("") { "%02x".format(it.toInt() and 255) } != asset.sha256) {
+                if (!valid) {
                     downloads.progress(id) { it.put("restart", true) }
                     error("Downloaded model failed SHA-256 verification. Retry will download it again.")
                 }
@@ -174,7 +191,10 @@ class DownloadService : Service() {
             publish("Installing ${record.getString("title")}")
             val installed = downloads.installModel(id, modelId)
             currentCoroutineContext().ensureActive()
-            downloads.progress(id) { it.put("phase", "Installed").put("installed", installed).remove("error") }
+            downloads.progress(id) {
+                it.put("phase", if (installed.isBlank()) "Complete" else "Installed")
+                    .put("installed", installed).remove("error")
+            }
         } else downloads.progress(id) { it.put("phase", "Complete").remove("error") }
     }
     private fun createDestination(record: org.json.JSONObject): Uri {

@@ -110,8 +110,10 @@ capabilities and are independent of the interface language.
 ## Quick start
 
 1. Open **Easy setup** from Home or Settings. Choose **On this phone** for Nemotron
-   speech + Hy-MT2 translation, or **Cloud** for OpenAI, OpenRouter or a compatible
-   HTTPS local server. The offline build uses model imports.
+   speech and a small English→Arabic, Russian→English or Chinese→English translator;
+   choose **More languages** for the larger, slower Hy-MT2 model. **Cloud** offers
+   OpenAI, OpenRouter or a compatible HTTPS local server. The offline build uses
+   model imports.
 2. Open a feature and choose your languages. For live captions, select **Device
    audio** or **Microphone**, then original captions or translation.
 3. Tap the start button and accept Android’s required permissions or capture prompt.
@@ -137,8 +139,8 @@ Android’s capture consent still applies; apps may block audio or screen captur
 
 | Task | Available options |
 | --- | --- |
-| **Local speech** | Whisper, Vosk, Qwen3-ASR, Nemotron and English Moonshine. |
-| **Local translation** | HY-MT1.5 / Hy-MT2, TranslateGemma 4B, compatible Marian language-pair bundles, and optional ML Kit packs in the cloud-capable build. |
+| **Local speech** | Whisper, Vosk, Qwen3-ASR, Nemotron, English Moonshine, and experimental Omnilingual CTC 300M. |
+| **Local translation** | HY-MT1.5 / Hy-MT2, TranslateGemma 4B, compatible Marian language-pair bundles (including optional Russian/Chinese → English → Arabic routes), and ML Kit packs in the cloud-capable build. |
 | **Cloud speech** | Bring your own provider keys, including OpenAI, Soniox and ElevenLabs Scribe. Translation support depends on the connection. |
 | **Cloud text translation** | Shared translator choices include Google Cloud, Microsoft Azure, DeepL and LibreTranslate connections. |
 | **Local OCR** | PaddleOCR, Manga OCR and Meiki; choose a reader that supports your source language. |
@@ -148,6 +150,8 @@ Local Qwen and Nemotron recognize speech; a separate translator handles translat
 captions. Whisper’s built-in translation targets English. Translator choices are
 remembered by feature group; **Use everywhere** explicitly applies one across Hearth.
 Keys are stored encrypted. [Translation routing](docs/translation-choices.md).
+Omnilingual CTC uses short utterance windows and does not support forced source
+language; its language choice declares the source for translation.
 
 Use **Download & install** for catalogued models—no computer, export or re-import.
 Original downloads go to **Downloads/Hearth/models** (direct files to `files`), or

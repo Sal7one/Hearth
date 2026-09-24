@@ -13,10 +13,21 @@ Gulf dialect accuracy, every accent, or specialized captions.
 Open **Compare local models**, choose Speech or Translation, select the source
 language and (for translation) destination, then select the built-in set. It is
 selected by default. The app applies the same six samples to each compatible
-installed candidate, in order. For speech it also runs 1-second and 2.5-second
+installed candidate that you check, in order. **Deselect all** keeps the list
+empty until you choose a model. For speech it also runs 1-second and 2.5-second
 silence checks; these are shown separately and are not included in reference
 error rates. Choose **My recording or text** to run a single private sample with
-optional corrected reference text.
+optional corrected reference text. The language pickers offer the languages
+advertised by the models installed on that phone; for a pair outside the
+bundled quick set, the screen offers a direct switch to your own WAV/text.
+This lets the S25 owner compare any **supported** language pair with their own
+material, without claiming a public reference score for a language we did not
+bundle. Saved results can be filtered to the current language pair or viewed
+together, and the JSON export records exact model identity, phone, timing,
+outputs and any reference scores. The suggested export name includes the
+current date/time so repeated exports do not silently replace earlier runs.
+Run the same sample on both phones and inspect the output as well as elapsed
+time.
 
 No network request, model download, microphone, or recording permission is used
 by the benchmark. ML Kit runs only with packs already installed by the user in
@@ -36,8 +47,10 @@ public references, but never the custom audio bytes.
   audio duration. Below 1 means the measured adapter processes that test set
   faster than its audio duration. It does not measure phrase-finality or live
   queue behavior.
-- **WER and CER** compare normalized reference/output text. Chinese is more
-  meaningfully inspected with CER than word segmentation. For translation,
+- **WER and CER** compare normalized reference/output speech text. Chinese
+  publisher references insert spaces between characters, while model output
+  typically does not; the app therefore reports CER only for Chinese. Translation does not
+  receive WER/CER because different valid wording would be counted as errors. For translation,
   **chrF++** is the mean sentence score over the six aligned samples. These are
   automatic text-similarity scores, not bilingual judgments of meaning,
   fluency, dialect, or safety.
@@ -46,7 +59,8 @@ public references, but never the custom audio bytes.
   is not a quality win. Errors remain failed results; they do not become zero
   scores or successful output.
 
-The phone selects up to 12 compatible models and runs them sequentially under
+The phone selects up to 12 compatible models, including installed Marian ONNX
+language pairs, and runs them sequentially under
 `LocalWorkGate`; Overlay and Traveler cannot load another local engine during
 the run. Speech models receive the same decoded 16 kHz mono PCM. Streaming
 adapters use 20 ms frames and their production options; batch adapters remain
@@ -89,9 +103,10 @@ runner uses forced language, batch greedy decoding, 16 kHz mono input, gain
 normalization, and the app's batch Whisper thresholds. Silence clips stay in
 the per-sample output and count as false positives if any text is emitted. It
 is an equivalent host setup for comparison, not the Android NDK build: host
-CPU, compiler and thermal behavior differ. The host tools currently cover
-Whisper speech and GGUF translation; they do not run Nemotron, Qwen, Moonshine,
-or ML Kit on macOS. Host results must name the Mac/backend and cannot predict
+CPU, compiler and thermal behavior differ. The host benchmark tools currently cover
+Whisper speech and GGUF translation; a separate sherpa C++ smoke tool exercises
+the Omnilingual CTC backend on real clips. They do not run Nemotron, Qwen, Moonshine,
+or ML Kit as benchmark candidates on macOS. Host results must name the Mac/backend and cannot predict
 phone speed, battery or sustained thermal behavior. The phone remains the
 authority for Android speed and memory.
 
@@ -125,7 +140,7 @@ promising result with representative recordings and bilingual review. No
 unmeasured model is called faster or more accurate based on model-card claims.
 
 `BenchmarkAudio` bounds WAV parsing and decodes selected samples once for equal
-inputs. Benchmark history is capped at 40 results. **Stop comparison**, leaving
+inputs. Benchmark history is capped at 200 results. **Stop comparison**, leaving
 the screen, or backgrounding the activity cancels cooperatively; a current
 native operation may need to finish before model resources close. Native crashes
 and process-level OOM cannot be converted into managed benchmark results.

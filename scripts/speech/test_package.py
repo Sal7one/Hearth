@@ -43,6 +43,17 @@ class PackageTest(unittest.TestCase):
             (root / "decoder.ort").unlink()
             with self.assertRaisesRegex(ValueError, "Missing assets"):
                 packager.create_manifest(root, "moonshine-tiny-en-v2", roles)
+    def test_omnilingual_requires_model_and_tokens(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            (root / "model.int8.onnx").write_bytes(b"onnx-fixture")
+            (root / "tokens.txt").write_bytes(b"a 1\n")
+            roles = {"model": "model.int8.onnx", "tokenizer": "tokens.txt"}
+            result = packager.create_manifest(root, "omnilingual-ctc-300m-v2-int8", roles)
+            self.assertEqual({entry["path"] for entry in result["files"]}, set(roles.values()))
+            (root / "tokens.txt").unlink()
+            with self.assertRaisesRegex(ValueError, "Missing assets"):
+                packager.create_manifest(root, "omnilingual-ctc-300m-v2-int8", roles)
     def test_unknown_model_is_rejected(self):
         with tempfile.TemporaryDirectory() as d:
             with self.assertRaisesRegex(ValueError, "Unsupported"):

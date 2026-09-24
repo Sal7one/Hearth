@@ -90,13 +90,12 @@ public:
         // slow release to ride through inter-word pauses. The old symmetric
         // alpha=0.1 needed ~700ms of continuous speech to cross the
         // threshold, so gate reopenings failed on conversational onsets.
-        const float alpha =
-            (rms > smoothedRms_) ? config_.attackAlpha : config_.smoothingAlpha;
-        smoothedRms_ = alpha * rms + (1.0f - alpha) * smoothedRms_;
+        const bool finiteLevel = smoothLevel(rms);
 
         // Decision logic. The ZCR ceiling admits unvoiced fricatives
         // (s/f/sh — ZCR 0.3-0.5): they are speech, not noise.
-        bool frameActive = (smoothedRms_ >= config_.rmsThresholdLinear()) &&
+        bool frameActive = finiteLevel &&
+                          (smoothedRms_ >= config_.rmsThresholdLinear()) &&
                           (zcr <= config_.zeroCrossingMax);
         
         // Hysteresis: require minimum consecutive samples
@@ -138,11 +137,10 @@ public:
         float zcr = calculateZeroCrossingRateFloat(samples, count);
 
         // Asymmetric smoothing — see analyze() for the rationale.
-        const float alpha =
-            (rms > smoothedRms_) ? config_.attackAlpha : config_.smoothingAlpha;
-        smoothedRms_ = alpha * rms + (1.0f - alpha) * smoothedRms_;
+        const bool finiteLevel = smoothLevel(rms);
 
-        bool frameActive = (smoothedRms_ >= config_.rmsThresholdLinear()) &&
+        bool frameActive = finiteLevel &&
+                          (smoothedRms_ >= config_.rmsThresholdLinear()) &&
                           (zcr <= config_.zeroCrossingMax);
         
         if (frameActive) {
@@ -229,6 +227,17 @@ private:
     int consecutiveSilent_;
     int consecutiveActive_;
     bool wasActive_ = false;
+
+    // A non-finite level (NaN/Inf samples from a float caller) is an inactive
+    // frame and never enters the IIR: one bad frame must not pin the smoothed
+    // level at NaN (silence forever) or Inf (speech forever).
+    bool smoothLevel(float rms) noexcept {
+        if (!std::isfinite(rms)) return false;
+        const float alpha =
+            (rms > smoothedRms_) ? config_.attackAlpha : config_.smoothingAlpha;
+        smoothedRms_ = alpha * rms + (1.0f - alpha) * smoothedRms_;
+        return true;
+    }
 
     static int saturatingSampleCount(int current, size_t increment) noexcept {
         const auto available = static_cast<size_t>(

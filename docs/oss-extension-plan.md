@@ -2,6 +2,9 @@
 
 Assessment: 2026-09-12, against the current standalone source (0.4.2).
 Status: implementation update in 0.5.0; see validation-v11.md for evidence and limits.
+Later 2026-09-23 model/benchmark work and its active priorities are in
+[speech and translation: next phase](model-phase-todos.md). The assessment
+below preserves the original 0.5.0 scope.
 
 The supplied report is a useful shortlist, but did not inspect this application.
 Keep the working capture, overlay, key storage, import validation and native
@@ -49,9 +52,11 @@ parameter model. This complements the smaller open-weight task RT-02/RT-03.
 - [x] Show required language packs, download/remove actions, availability and
   attribution in the existing model UI. Do not promise SDK-managed packs can be
   imported/exported like our GGUF packages or live in our public models folder.
-- [ ] Explain the English intermediate step for non-English pairs. Exercise
-  Russian/Chinese to Arabic/English, missing packs, offline use after download,
-  Clear, Stop and translator switching. Make no unmeasured speed/quality claim.
+- [x] Explain the English intermediate step for non-English pairs in
+  [local translation](local-translation.md).
+- [ ] Exercise Russian/Chinese to Arabic/English, missing packs, offline use
+  after download, Clear, Stop and translator switching. Make no unmeasured
+  speed/quality claim.
 
 Google documents 50+ languages and downloaded local packs, with an English pivot
 for non-English pairs and quality intended for casual translation.
@@ -72,8 +77,9 @@ the translation, useful in both captions and the planned conversation screen.
   instead of inventing word alignment or translating already translated text.
 - [x] Preserve Clear/Stop/reconnect behavior, reject old-session results, and keep
   both text streams readable with Arabic/RTL and TalkBack labels.
-- [ ] Add focused parser/lifecycle tests and a brief authorized account check;
-  document any missing live verification. No automatic second paid request.
+- [x] Add focused parser tests for interim/committed tokens.
+- [ ] Complete lifecycle and authorized account checks; document missing live
+  verification. No automatic second paid request.
 
 [Soniox's protocol](https://soniox.com/docs/translation/stt-translation/rt-translation)
 documents source and translation token tags in one connection, with independent
@@ -113,10 +119,10 @@ audio capture or encrypted key storage.
 - [x] Implement its own template/tokenizer adapter, matching the publisher's
   structured source/target-language input. Preserve caption text as data and test
   control-token-like input, output stopping and cancellation.
-- [ ] Add exact artifact hashes, license, coverage and actual file size. Exercise
-  short translations while Nemotron is loaded and verify switching/cleanup.
-- [ ] Offer it as a larger optional translator only after it works. Do not label
-  it the smaller/faster choice or a requirement for OSS publication.
+- [x] Add exact artifact hashes, license, coverage and actual file size; offer
+  it as a larger optional catalogued translator, without a speed claim.
+- [ ] Exercise short translations while Nemotron is loaded on a phone and
+  verify switching/cleanup before claiming joint-device suitability.
 
 The [official model card](https://huggingface.co/google/translategemma-4b-it)
 documents 55 languages and a specialized template. Parameter count alone does

@@ -7,6 +7,8 @@ import android.util.Base64
 import com.sal7one.common_jni.translation.CancellableTextTranslator
 import com.sal7one.common_jni.translation.LocalTranslationSession
 import com.sal7one.common_jni.translation.TranslationCatalog
+import com.sal7one.common_jni.marian.MarianTranslationSession
+import com.sal7one.common_jni.speech.TranslationDirection
 import com.sal7one.transiber.byok.ByokPolicy
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -103,7 +105,7 @@ internal object ConversationTranslationSettings {
         if (source == target) return false
         return provider(selected(context))?.let { capabilities(context, it)?.supports(source, target) == true }
             ?: if (localId == TranslationOptions.ML_KIT) source in TranslationOptions.mlKitCodes && target in TranslationOptions.mlKitCodes
-            else TranslationCatalog.models.firstOrNull { it.id == localId }?.supports(source, target) == true
+            else TranslationOptions.supports(localId, source, target)
     }
     /** Snapshot credentials/capabilities once, before a turn. Later settings cannot reroute in-flight text. */
     fun snapshot(context: Context, localId: String, providerId: String = selected(context)): ConversationTranslatorSnapshot {
@@ -139,5 +141,10 @@ internal data class ConversationTranslatorSnapshot(
     val label get() = cloud?.provider?.label ?: TranslationOptions.label(localId)
     fun open(context: Context): CancellableTextTranslator = cloud?.let { CloudTextTranslator(it, checkNotNull(languages)) }
         ?: if (localId == TranslationOptions.ML_KIT) PlatformTranslation.open()
+        else if (MarianPackage.find(localId) != null) checkNotNull(MarianPackage.find(localId)).let { pair ->
+            MarianTranslationSession.open(MarianPackage.modelDirectory(context, pair),
+                TranslationDirection(pair.source, pair.target), TranslationOptions.label(pair.id))
+        }
+        else if (MarianCascade.find(localId) != null) MarianCascade.open(context, checkNotNull(MarianCascade.find(localId)))
         else TranslationCatalog.find(localId).let { spec -> LocalTranslationSession.open(LocalTranslationModels(File(context.filesDir, "translation-models")).file(spec), spec) }
 }

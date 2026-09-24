@@ -31,7 +31,7 @@ class LocalizationResourcesTest {
     }
     @Test fun translatedFormatArgumentsArePreservedAndAllMessagesFormat() {
         val english = strings("values")
-        val placeholders = Regex("%([0-9]+)\\\$s")
+        val placeholders = Regex("%([0-9]+)\\\$([sd])")
         for (folder in listOf("values", "values-ar", "values-zh")) {
             val locale = Locale.forLanguageTag(folder.substringAfter('-', "en"))
             strings(folder).forEach { (key, value) ->
@@ -40,8 +40,16 @@ class LocalizationResourcesTest {
                 assertEquals("Placeholder mismatch $folder/$key", expected, actual)
                 if (actual.isNotEmpty()) {
                     val count = placeholders.findAll(value).maxOf { it.groupValues[1].toInt() }
-                    val formatted = String.format(locale, value, *Array(count) { "argument-${it+1}" })
-                    for (index in 1..count) assertTrue("Lost argument $folder/$key", formatted.contains("argument-$index"))
+                    val types = placeholders.findAll(value).associate { it.groupValues[1].toInt() to it.groupValues[2] }
+                    val arguments = Array<Any>(count) { index ->
+                        if (types[index + 1] == "d") 777 + index else "argument-${index + 1}"
+                    }
+                    val formatted = String.format(locale, value, *arguments)
+                    for (index in 1..count) {
+                        val expectedValue = if (types[index] == "d") String.format(locale, "%d", arguments[index - 1])
+                            else arguments[index - 1].toString()
+                        assertTrue("Lost argument $folder/$key", formatted.contains(expectedValue))
+                    }
                 }
             }
         }

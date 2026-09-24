@@ -154,6 +154,65 @@ inline bool utf8ToUtf16(
     return true;
 }
 
+/**
+ * Make decoder output safe for strict UTF-8 consumers such as utf8ToUtf16().
+ *
+ * Token decoders emit bytes, not characters: a token cap or segment split can
+ * stop inside a multi-byte character. A truncated character at the very end is
+ * dropped (the next hypothesis re-emits it whole). Every other maximal
+ * ill-formed subpart becomes U+FFFD (Unicode 3.9, as Java's UTF-8 decoder
+ * does). Well-formed input is returned unchanged.
+ */
+inline std::string repairUtf8(std::string_view input) {
+    constexpr std::string_view replacement = "\xEF\xBF\xBD";
+    std::string output;
+    output.reserve(input.size());
+
+    std::size_t index = 0;
+    while (index < input.size()) {
+        const auto lead = static_cast<std::uint8_t>(input[index]);
+        std::size_t width = 0;
+        std::uint8_t secondLow = 0x80U;
+        std::uint8_t secondHigh = 0xBFU;
+        if (lead <= 0x7FU) {
+            width = 1;
+        } else if (lead >= 0xC2U && lead <= 0xDFU) {
+            width = 2;
+        } else if (lead >= 0xE0U && lead <= 0xEFU) {
+            width = 3;
+            if (lead == 0xE0U) secondLow = 0xA0U;   // no overlongs
+            if (lead == 0xEDU) secondHigh = 0x9FU;  // no surrogates
+        } else if (lead >= 0xF0U && lead <= 0xF4U) {
+            width = 4;
+            if (lead == 0xF0U) secondLow = 0x90U;   // no overlongs
+            if (lead == 0xF4U) secondHigh = 0x8FU;  // <= U+10FFFF
+        }
+        if (width == 0) {
+            output.append(replacement);
+            ++index;
+            continue;
+        }
+
+        std::size_t valid = 1;
+        while (valid < width && index + valid < input.size()) {
+            const auto next = static_cast<std::uint8_t>(input[index + valid]);
+            const std::uint8_t low = valid == 1U ? secondLow : 0x80U;
+            const std::uint8_t high = valid == 1U ? secondHigh : 0xBFU;
+            if (next < low || next > high) break;
+            ++valid;
+        }
+        if (valid == width) {
+            output.append(input.substr(index, width));
+        } else if (index + valid == input.size()) {
+            break;  // Truncated final character: drop it, never guess it.
+        } else {
+            output.append(replacement);
+        }
+        index += valid;
+    }
+    return output;
+}
+
 } // namespace common_jni::text
 
 #endif // COMMON_JNI_UTF8_UTILS_H

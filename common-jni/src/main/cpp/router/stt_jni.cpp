@@ -368,10 +368,14 @@ Java_com_sal7one_common_1jni_engine_whisper_WhisperEngine_nativePushAudioDirectW
 
 JNIEXPORT void JNICALL
 Java_com_sal7one_common_1jni_engine_whisper_WhisperEngine_nativeResetWhisper(
-    JNIEnv*, jobject, jlong handle
+    JNIEnv* env, jobject, jlong handle
 ) {
+    // reset() joins and restarts the streaming thread; std::system_error must
+    // not cross the JNI boundary (std::terminate).
+    JNI_TRY_CATCH_BEGIN
     auto engine = EngineRouter::getInstance().getEngine(handle, EngineType::WHISPER);
     if (engine) engine->reset();
+    JNI_TRY_CATCH_END_VOID(env)
 }
 
 JNIEXPORT jstring JNICALL

@@ -36,8 +36,14 @@ void fail(JNIEnv* env, const char* error) {
     if (instance) env->Throw(instance);
 }
 }
-extern "C" JNIEXPORT jlong JNICALL Java_com_sal7one_common_1jni_translation_LocalTranslationNative_create(JNIEnv* env, jobject, jbyteArray path) {
-    try { return models.insert(std::make_unique<transiber::TextModel>(bytes(env, path))); }
+// Reject APKs that accidentally bundle an older JNI binary: JNI can resolve
+// create(byte[], boolean) to an old create(byte[]) symbol without noticing the
+// extra argument, silently selecting a different translation prompt.
+extern "C" JNIEXPORT jint JNICALL Java_com_sal7one_common_1jni_translation_LocalTranslationNative_promptProtocolVersion(JNIEnv*, jobject) {
+    return 2;
+}
+extern "C" JNIEXPORT jlong JNICALL Java_com_sal7one_common_1jni_translation_LocalTranslationNative_create(JNIEnv* env, jobject, jbyteArray path, jboolean rawPrompt) {
+    try { return models.insert(std::make_unique<transiber::TextModel>(bytes(env, path), 2, 0, rawPrompt == JNI_TRUE)); }
     catch (const std::exception& e) { fail(env, e.what()); return 0; }
     catch (...) { fail(env, "Unknown local translation initialization failure"); return 0; }
 }

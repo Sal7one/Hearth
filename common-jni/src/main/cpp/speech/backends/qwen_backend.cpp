@@ -15,15 +15,22 @@ struct Qwen {
     std::deque<Text> ready;
     Text current;
     std::string sourceCode, languageName;
-    explicit Qwen(const HearthSpeechConfig& c, bool moonshine = false)
+    explicit Qwen(const HearthSpeechConfig& c, bool moonshine = false, bool omnilingual = false)
         : segmenter(c.max_utterance_ms, c.silence_ms, c.silence_threshold_db),
-          sourceCode(moonshine ? "en" : c.language), languageName(moonshine ? "" : qwenLanguageName(sourceCode)) {
+          sourceCode(moonshine ? "en" : c.language),
+          languageName(moonshine || omnilingual ? "" : qwenLanguageName(sourceCode)) {
         SherpaOnnxOfflineRecognizerConfig cfg{};
         cfg.feat_config.sample_rate = 16000;
-        cfg.feat_config.feature_dim = 128;
+        cfg.feat_config.feature_dim = omnilingual ? 80 : 128;
         cfg.model_config.num_threads = c.num_threads;
         cfg.model_config.provider = "cpu";
-        if (moonshine) {
+        if (omnilingual) {
+            // Upstream's CTC adapter has no language-conditioning input. The
+            // caller's source code is a routing declaration, never a model hint.
+            cfg.model_config.tokens = c.tokenizer;
+            cfg.model_config.omnilingual.model = c.model;
+            cfg.decoding_method = "greedy_search";
+        } else if (moonshine) {
             cfg.model_config.tokens = c.model;
             cfg.model_config.moonshine.encoder = c.encoder;
             cfg.model_config.moonshine.merged_decoder = c.decoder;
@@ -40,7 +47,7 @@ struct Qwen {
     }
     ~Qwen() { if (recognizer) SherpaOnnxDestroyOfflineRecognizer(recognizer); }
     void decode(const std::vector<float>& audio, int64_t end) {
-        if (ready.size() >= 32) throw std::runtime_error("Qwen result queue full; drain results after each push");
+        if (ready.size() >= 32) throw std::runtime_error("Sherpa result queue full; drain results after each push");
         auto stream = std::unique_ptr<const SherpaOnnxOfflineStream, decltype(&SherpaOnnxDestroyOfflineStream)>(
             SherpaOnnxCreateOfflineStream(recognizer), SherpaOnnxDestroyOfflineStream);
         if (!stream) throw std::runtime_error("SherpaOnnxCreateOfflineStream returned null");
@@ -62,6 +69,10 @@ int createMoonshine(const HearthSpeechConfig* c, void** out) { return guarded([&
     if (!out) throw std::invalid_argument("Missing output handle");
     *out = nullptr; requireConfig(c); *out = new Qwen(*c, true);
 }); }
+int createOmnilingual(const HearthSpeechConfig* c, void** out) { return guarded([&] {
+    if (!out) throw std::invalid_argument("Missing output handle");
+    *out = nullptr; requireConfig(c); *out = new Qwen(*c, false, true);
+}); }
 void destroy(void* p) { delete static_cast<Qwen*>(p); }
 int push(void* p, const float* a, size_t n) { return guarded([&] {
     auto& q = *static_cast<Qwen*>(p); q.segmenter.push(a, n, q.consumer());
@@ -76,6 +87,8 @@ int finish(void* p) { return guarded([&] { auto& q = *static_cast<Qwen*>(p); q.s
 int reset(void* p) { return guarded([&] { auto& q = *static_cast<Qwen*>(p); q.segmenter.reset(); q.ready.clear(); q.current = {}; }); }
 const HearthSpeechBackend moonshineApi{HEARTH_SPEECH_ABI_VERSION, sizeof(HearthSpeechBackend), "moonshine", HEARTH_QWEN_REVISION,
     createMoonshine, destroy, push, next, finish, reset, lastError};
+const HearthSpeechBackend omnilingualApi{HEARTH_SPEECH_ABI_VERSION, sizeof(HearthSpeechBackend), "omnilingual_ctc", HEARTH_QWEN_REVISION,
+    createOmnilingual, destroy, push, next, finish, reset, lastError};
 const HearthSpeechBackend api{HEARTH_SPEECH_ABI_VERSION, sizeof(HearthSpeechBackend), "qwen3_asr", HEARTH_QWEN_REVISION,
     create, destroy, push, next, finish, reset, lastError};
 }
@@ -83,3 +96,4 @@ const HearthSpeechBackend api{HEARTH_SPEECH_ABI_VERSION, sizeof(HearthSpeechBack
 extern "C" __attribute__((visibility("default"))) const HearthSpeechBackend* hearth_speech_backend_v1() { return &stt::speech::api; }
 
 extern "C" __attribute__((visibility("default"))) const HearthSpeechBackend* hearth_moonshine_backend_v1() { return &stt::speech::moonshineApi; }
+extern "C" __attribute__((visibility("default"))) const HearthSpeechBackend* hearth_omnilingual_backend_v1() { return &stt::speech::omnilingualApi; }

@@ -27,7 +27,7 @@ command -v "${CXX_BIN}" >/dev/null 2>&1 || die "C++ compiler not found (set CXX=
 BUILD_DIR="${BUILD_DIR:-$(mktemp -d)}"
 trap 'if [ "${KEEP:-0}" = "1" ]; then echo "build dir: ${BUILD_DIR}"; else rm -rf "${BUILD_DIR}"; fi' EXIT
 
-TESTS=(cancel_token pipe_progress job_future json_options pcm_buffer_range lease_registry)
+TESTS=(cancel_token pipe_progress job_future json_options pcm_buffer_range lease_registry utf8_utils audio_gate scoped_timer buffer_pool sha256 marian_session_config)
 
 OVERALL=0
 for name in "${TESTS[@]}"; do
@@ -47,6 +47,36 @@ for name in "${TESTS[@]}"; do
         OVERALL=1
     fi
 done
+
+# Exercise JNI exception construction under a real JVM with -Xcheck:jni.
+# Android's jni.h uses the same JNI call ABI, while the host VM catches
+# pending-exception misuse and preserves supplementary Unicode in messages.
+JDK_HOME="${JAVA_HOME:-}"
+if [ -z "${JDK_HOME}" ] && [ "$(uname -s)" = Darwin ]; then
+    JDK_HOME="$(/usr/libexec/java_home)"
+fi
+if [ -z "${JDK_HOME}" ] && [ "$(uname -s)" = Linux ] && command -v javac >/dev/null 2>&1; then
+    JDK_HOME="$(dirname -- "$(dirname -- "$(readlink -f -- "$(command -v javac)")")")"
+fi
+[ -n "${JDK_HOME}" ] || die "JDK home required for jni_helper_test (set JAVA_HOME)"
+case "$(uname -s)" in
+    Darwin) JNI_PLATFORM=darwin ;;
+    Linux) JNI_PLATFORM=linux ;;
+    *) die "unsupported host platform for jni_helper_test" ;;
+esac
+log "compiling jni_helper"
+"${CXX_BIN}" -std=c++17 -O1 -Wall -Wextra -fsanitize=address,undefined \
+    -I"${JDK_HOME}/include" -I"${JDK_HOME}/include/${JNI_PLATFORM}" \
+    "${SCRIPT_DIR}/jni_helper_test.cpp" "${CPP_DIR}/jni/jni_helper.cpp" \
+    -L"${JDK_HOME}/lib/server" -Wl,-rpath,"${JDK_HOME}/lib/server" -ljvm \
+    -pthread -o "${BUILD_DIR}/jni_helper_test"
+log "running jni_helper"
+if "${BUILD_DIR}/jni_helper_test"; then
+    log "PASS jni_helper"
+else
+    log "FAIL jni_helper"
+    OVERALL=1
+fi
 
 if [ "${OVERALL}" -ne 0 ]; then
     die "one or more util tests failed"

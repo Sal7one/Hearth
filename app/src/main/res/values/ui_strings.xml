@@ -6,7 +6,7 @@
     <string name="ui_cannot_write_benchmark_results_a2d0d" formatted="false">"Cannot write benchmark results"</string>
     <string name="ui_results_exported_including_transcripts_8df04" formatted="false">"Results exported, including transcripts."</string>
     <string name="ui_compare_local_models_62748" formatted="false">"Compare local models"</string>
-    <string name="ui_use_the_same_recording_or_corrected_text_for_each_model_three_pas_a5005" formatted="false">"Use the same recording or corrected text for each model. Three passes per model; models run one at a time. No cloud requests or automatic downloads."</string>
+    <string name="ui_use_the_same_recording_or_corrected_text_for_each_model_three_pas_a5005" formatted="false">"Compare installed models on this phone. Choose any language they support, then use the quick set or your own WAV/text. Three passes per model; results stay on this device until you export them."</string>
     <string name="ui_1_s_language_2_s_a760d">"%1$s language: %2$s"</string>
     <string name="ui_translate_to_1_s_f70dc">"Translate to: %1$s"</string>
     <string name="ui_forced_language_is_used_where_supported_vosk_always_uses_its_mode_86f53" formatted="false">"Forced language is used where supported. Vosk always uses its model’s language. Choose a matching recording."</string>
@@ -829,11 +829,16 @@
     <string name="benchmark_reference_transcript">Reference transcript</string>
     <string name="benchmark_reference_translation">Reference translation</string>
     <string name="benchmark_reference_optional">Optional · add corrected text to compare accuracy</string>
-    <string name="benchmark_scoring_explainer">WER and CER are normalized text-error rates, not a judgment of translation meaning. Chinese is best compared by CER. Leave this blank to compare speed only.</string>
+    <string name="benchmark_scoring_explainer">Speech shows WER/CER against a corrected transcript. Translation shows chrF++ similarity against a reference, not a meaning score. Leave the reference blank to compare speed only.</string>
     <string name="benchmark_error_rates">Reference text errors · WER %1$s%% · CER %2$s%%</string>
+    <string name="benchmark_character_error_only">Reference text errors · CER %1$s%%</string>
     <string name="benchmark_no_reference">No reference text · this result compares speed only.</string>
     <string name="benchmark_builtin_set">Built-in quick set</string>
     <string name="benchmark_custom_input">My recording or text</string>
+    <string name="benchmark_all_results">All results</string>
+    <string name="benchmark_this_language_pair">This language pair</string>
+    <string name="benchmark_this_language">This language</string>
+    <string name="benchmark_no_results_for_language">No saved results for this language selection.</string>
     <string name="benchmark_suite_summary">Six short, aligned publisher samples for speech or translation. Speech also checks two silence clips. Coverage: Arabic, English, Russian, Chinese; translation pairs: AR↔EN, RU→AR/EN, ZH→AR/EN.</string>
     <string name="benchmark_suite_attribution">FLEURS test data · CC BY 4.0 · Google / Conneau et al. · Automatic text similarity is not a human quality rating.</string>
     <string name="benchmark_suite_pair_unavailable">The built-in set has no samples for %1$s → %2$s. Choose a covered language pair or use your own text.</string>
@@ -841,4 +846,6 @@
     <string name="benchmark_silence_check">silence check</string>
     <string name="benchmark_silence_false_positives">Silence false positives · %1$d of %2$d checks</string>
     <string name="benchmark_source_sample">Source</string>
+    <string name="model_marian_via_english_warning">Two models translate through English. This may change meaning; compare the final Arabic with other translators before using it for live captions.</string>
+    <string name="model_omnilingual_language_note">Omnilingual CTC recognizes automatically. Selecting a spoken language labels captions for translation; it does not force the model. Auto stays CC-only when the source is unknown.</string>
 </resources>

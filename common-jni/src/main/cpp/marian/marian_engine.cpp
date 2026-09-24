@@ -1,4 +1,5 @@
 #include "marian_engine.h"
+#include "marian_session_config.h"
 
 #include <algorithm>
 #include <cctype>
@@ -257,10 +258,10 @@ bool MarianEngine::init(const std::string& modelDir, int numThreads,
         return setError(error, "SetIntraOpNumThreads failed");
     }
 
-    // Optional per-session config knobs (measurement only). Default behavior
-    // is unchanged when the environment variables are unset.
-    applyEnvSessionConfig(api_, options_, "MARIAN_ORT_SPIN", "0",
-                          "session.intra_op.allow_spinning", "0");
+    // Worker spinning would compete with ASR's CPU threads. Fail model setup
+    // if ORT cannot honor this, instead of silently running four hot waiters.
+    if (!configureIntraOpSpinning(api_, options_, std::getenv("MARIAN_ORT_SPIN"), error))
+        return false;
     applyEnvSessionConfig(api_, options_, "MARIAN_ORT_ARENA", "1",
                           "arena.extend_strategy", "kNextPowerOfTwo");
 

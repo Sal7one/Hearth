@@ -5,14 +5,14 @@
   "inference": "CPU, two threads, isolated GGML symbols",
   "binary": {
     "name": "libtransiber_translation.so",
-    "sha256": "87d2392a375660c13b8ae23ae7431e6788d06d54b5435f27f765601fe30fc9e5"
+    "sha256": "b9879045df734b793c94f62a05516905f9548a79a2535418398dcf689772724d"
   },
   "sources": {
     "common-jni/src/main/cpp/common/lease_registry.h": "555d0d227579c671a92f594de45ff7b7ee35eb646d4d68a4266758e00eec94bd",
     "common-jni/src/main/cpp/translation/exports.map": "01a3130f08b26ac1f00ff059093f9df6c761a73e48cc56a8b4572954f61f1f45",
-    "common-jni/src/main/cpp/translation/text_model.h": "6f4992a221dbbb685140bd208c9eaf220fb1a1ad94f63b29d806bf03f62fbc07",
-    "common-jni/src/main/cpp/translation/translation_jni.cpp": "c6a7f20a72df16a971f1349321bef04c88b9a50d705b0bdb6d64ebb8de5b1ff3",
-    "common-jni/src/main/cpp/translation/translation_smoke.cpp": "e9e8d396bf5fc4d106c838e5b3f2b57fd0f356a6afb35b851d2c733f32dfad8a",
+    "common-jni/src/main/cpp/translation/text_model.h": "a8c4f0d1c3478280228ec54032d1b54a381792c7306254f4099e71f1a4be8f3e",
+    "common-jni/src/main/cpp/translation/translation_jni.cpp": "051c8e60302fcc74798007c6748ae472dd89d0de337db3bf3ef810922eecf2f5",
+    "common-jni/src/main/cpp/translation/translation_smoke.cpp": "21f7925cbca47d4b6418eeb446487954ab78718971d9971d620616801da4a985",
     "scripts/translation/CMakeLists.txt": "a86803eba3e804dd97b3fb4c184a51afab17376a77afba635f5d700725d84bb1",
     "scripts/translation/build-runtime.sh": "5b5644438832700f124155ad02b40c236807ce0b90261905487ce208fc40ba28"
   }

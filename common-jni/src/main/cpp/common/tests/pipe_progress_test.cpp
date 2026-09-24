@@ -2,6 +2,7 @@
 #include <cassert>
 #include <chrono>
 #include <csignal>
+#include <cstring>
 #include <fcntl.h>
 #include <iostream>
 #include <string>
@@ -9,6 +10,7 @@
 #include <unistd.h>
 
 #include "pipe_progress.h"
+#include "json_utils.h"
 
 using stt::PipeProgress;
 
@@ -73,6 +75,60 @@ int main() {
         PipeProgress progress(fds[1]);
         progress.reportFailed("boom \"quoted\"");
         CHECK(readLine(fds[0]) == R"({"status":"FAILED","message":"boom \"quoted\""})");
+    }
+
+    // A long terminal field is explicit about truncation, remains parseable,
+    // and fits in one atomic pipe write even after Unicode JSON escaping.
+    {
+        int large[2];
+        CHECK(::pipe(large) == 0);
+        PipeProgress progress(large[1]);
+        progress.reportFailed(std::string(2000, 'x') + "\xe4\xb8\xad");
+        const std::string line = readLine(large[0]);
+        CHECK(line.size() + 1 <= static_cast<size_t>(::fpathconf(large[1], _PC_PIPE_BUF)));
+        stt::JsonValue parsed;
+        std::string error;
+        CHECK(stt::JsonUtils::parse(line, parsed, &error));
+        CHECK(stt::JsonUtils::getBool(line, "truncated"));
+        CHECK(stt::JsonUtils::getString(line, "status") == "FAILED");
+        CHECK(!stt::JsonUtils::getString(line, "message").empty());
+        ::close(large[0]);
+        ::close(large[1]);
+    }
+
+    // With less than PIPE_BUF free, an oversized FAILED line is wholly
+    // dropped; the next reader sees no partial JSON fragment.
+    {
+        int full[2];
+        CHECK(::pipe(full) == 0);
+        PipeProgress progress(full[1]);
+        CHECK(::fcntl(full[0], F_SETFL, O_NONBLOCK) == 0);
+        char junk[512];
+        std::memset(junk, 'x', sizeof(junk));
+        size_t filled = 0;
+        while (true) {
+            const ssize_t n = ::write(full[1], junk, sizeof(junk));
+            if (n < 0 && errno == EAGAIN) break;
+            CHECK(n > 0);
+            if (n <= 0) break;
+            filled += static_cast<size_t>(n);
+        }
+        char consumed[64];
+        CHECK(::read(full[0], consumed, sizeof(consumed)) == sizeof(consumed));
+        progress.reportFailed(std::string(2000, 'y'));
+        CHECK(progress.droppedLines() == 1);
+        size_t remaining = 0;
+        while (true) {
+            const ssize_t n = ::read(full[0], junk, sizeof(junk));
+            if (n < 0 && errno == EAGAIN) break;
+            CHECK(n > 0);
+            if (n <= 0) break;
+            remaining += static_cast<size_t>(n);
+            for (ssize_t i = 0; i < n; ++i) CHECK(junk[i] == 'x');
+        }
+        CHECK(remaining + sizeof(consumed) == filled);
+        ::close(full[0]);
+        ::close(full[1]);
     }
 
     // Dead pipe: writes latch dead, never throw, invalidate detaches
@@ -145,8 +201,6 @@ int main() {
 
     // Thread-safety: two threads interleaving reports never corrupt a line
     {
-        int sync[2];
-        CHECK(::pipe(sync) == 0);
         PipeProgress progress(fds[1]);
         std::thread a([&] {
             for (int i = 0; i < 50; ++i) progress.report(0.01F * (i % 100));
@@ -170,7 +224,34 @@ int main() {
             }
         }
         CHECK(lines == 100);
-        (void)sync;
+    }
+
+    // State readers and rebinding may run concurrently with progress writers.
+    {
+        int concurrent[2];
+        CHECK(::pipe(concurrent) == 0);
+        PipeProgress progress(concurrent[1]);
+        std::thread writer([&] {
+            for (int i = 0; i < 200; ++i) progress.report(0.5F);
+        });
+        std::thread rebinder([&] {
+            for (int i = 0; i < 200; ++i) {
+                progress.invalidate();
+                progress.reattach(concurrent[1]);
+            }
+        });
+        std::thread reader([&] {
+            for (int i = 0; i < 200; ++i) {
+                (void)progress.valid();
+                (void)progress.droppedLines();
+            }
+        });
+        writer.join();
+        rebinder.join();
+        reader.join();
+        CHECK(progress.valid());
+        ::close(concurrent[0]);
+        ::close(concurrent[1]);
     }
 
     ::close(fds[0]);

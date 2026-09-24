@@ -85,6 +85,29 @@ class SpeechFoundationTest {
         File(root, SpeechModelPackage.MANIFEST).writeText(j.toString())
         rejects("tokenizer") { SpeechModelPackage.verify(root) }
     }
+    @Test fun omnilingualPackageAndDeclaredSourceAreDistinctFromLanguageForcing() = withPackage { root ->
+        File(root, "model.int8.onnx").writeBytes("onnx-fixture".toByteArray())
+        File(root, "tokens.txt").writeText("a 1\n")
+        val entries = JSONArray()
+        listOf("model.int8.onnx", "tokens.txt").forEach { name ->
+            val file = File(root, name)
+            val sha = MessageDigest.getInstance("SHA-256").digest(file.readBytes()).joinToString("") { "%02x".format(it) }
+            entries.put(JSONObject().put("path", name).put("bytes", file.length()).put("sha256", sha))
+        }
+        File(root, "model.gguf").delete()
+        val manifest = JSONObject().put("schemaVersion", 1).put("profile", "omnilingual-ctc-300m-v2-int8")
+            .put("roles", JSONObject().put("model", "model.int8.onnx").put("tokenizer", "tokens.txt"))
+            .put("files", entries)
+        File(root, SpeechModelPackage.MANIFEST).writeText(manifest.toString())
+        assertEquals(SpeechProfile.OMNILINGUAL_CTC_300M_V2, SpeechModelPackage.verify(root).profile)
+        val capabilities = SpeechProfile.OMNILINGUAL_CTC_300M_V2.capabilities
+        assertTrue(capabilities.sourceLanguageHints.isEmpty())
+        assertTrue(capabilities.languages.all { !it.canForce })
+        SpeechOptions(sourceLanguage = "ar").validate(SpeechProfile.OMNILINGUAL_CTC_300M_V2)
+        rejects("source-language") { SpeechOptions(sourceLanguage = "he").validate(SpeechProfile.OMNILINGUAL_CTC_300M_V2) }
+        File(root, "tokens.txt").delete()
+        rejects("missing") { SpeechModelPackage.verify(root) }
+    }
     @Test fun rejectsFractionalSchemaAndAssetSizes() = withPackage { root ->
         val j = manifest(root).put("schemaVersion", 1.5)
         File(root, SpeechModelPackage.MANIFEST).writeText(j.toString())
