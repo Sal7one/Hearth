@@ -60,7 +60,7 @@ add a Log line for every session.
 | **utils** (`common/`, `jni/`) | Everything (§11), plus U2/U3/U4/U9/U10/U11/U12 fixes and host tests | Nothing | U8 FFmpeg legacy path, U13 consolidation, U12 log-callback wiring (owner decision); U2/U3/U4/U9/U10/U11/U12 attachment and U14 host coverage resolved below |
 | **speech/** | Native ABI, session, segmenter, endpoint budget, Qwen/Moonshine/Omnilingual/Nemotron adapters, speech JNI; Kotlin `SpeechSession`, `LiveSpeechProcessor`, `SpeechModels`, `SpeechModelPackage`, `SpeechTranslation`; app publisher/local-model adapters; `speech_smoke.cpp` and runtime scripts | Full caller audit of upstream `6ad8305`; remaining app/runtime integration paths | F2 async windowed decode, F1 ggml ARM variants, H1 ABI v2 (sample rate, interrupt, capabilities), H2/H3/H4, H13/H14, U21 |
 | **translation/** | `text_model.h`, `translation_jni.cpp`, Marian tokenizer/engine/JNI, `CaptionTranslationBridge`; U23 bounded-read/ID and U24 spin fixes with host tests | Upstream `TranslationSourceEvidence.kt` (31) + bridge diff; `LocalTranslationSession.kt` (46), `TranslationCatalog.kt` (107), `MarianTranslationSession.kt` (36); app `MarianCascade.kt` (67, new pivot routes), `TranslationLayer.kt` (246), `LocalTranslationModels.kt` (27); `translation_smoke.cpp` (69); `scripts/translation/*` (75) | F1, F9, U23 malformed charsmap/golden ids, U24 model shapes/timer |
-| **audio/** | `common/audio_utils.h`, `audio_gate.h`, `ring_buffer.h`, `core/vad.cpp`, Kotlin `audio/` (all), capture service | App `BenchmarkAudio.kt` (58) | U16 `MicRecorder`, U21 VAD chunk dependence, U17 native/Kotlin API consolidation; U10 and U17 WAV parsing resolved |
+| **audio/** | `common/audio_utils.h`, `audio_gate.h`, `ring_buffer.h`, `core/vad.cpp`, Kotlin `audio/` (all), capture service | App `BenchmarkAudio.kt` (58) | U16 configurable capture/ShortArray overflow observability, U21 VAD chunk dependence, U17 native/Kotlin API consolidation; U16 read failure/timeline, U10 and U17 WAV parsing resolved |
 | **ffmpeg/** | Nothing: not in this repo | A current Git checkout is available on this host at `/Users/salehalanazi/ZCodeProject/ffmpegmakercustom`; inspect after audio, respecting its ADD-only contracts | §9 questions |
 
 ### Later queue (tracked, not the current focus — nothing dropped)
@@ -1139,24 +1139,34 @@ remaining cross-language implementation consolidation stays under U18/U20.
 
 
 ### U16 · P2 · Proven (by reading) · `MicRecorder` spins on a dead recorder and drops audio silently
-- `common-jni/.../audio/MicRecorder.kt` (no Hearth consumer; the obvious
-  capture component for other apps).
-- `captureLoop` (`:198-220`) handles only `> 0`, `ERROR_INVALID_OPERATION` and
+**Read failure and timeline resolved (`41cc027`).** Both capture modes stop on
+every negative read, preserve the raw code in `readErrorCode`, enter `ERROR`,
+and release the recorder. `RealtimeSttSession` forwards that code through its
+error stream and failed `stop()` result. A sample-count clock prevents rounding
+drift; direct capture drains into a discard buffer under backpressure, advances
+the clock, and counts dropped samples. The short-array read loop is exercised
+with injected error codes (including `-6`) in `CaptureReadLoopTest`. The
+private pacing duplicate was replaced with `ChunkPacing`.
+**Still open:** `audioFlow` uses `SharedFlow` DROP_OLDEST without an observable
+drop count; source/channels/encoding remain fixed to `VOICE_RECOGNITION`, mono,
+PCM16, and the recorder does not expose `AudioRecord.getTimestamp`.
+- `common-jni/.../audio/MicRecorder.kt` has a `RealtimeSttSession` library
+  consumer, but no current Hearth app consumer.
+- Before the fix, `captureLoop` (`:198-220`) handled only `> 0`, `ERROR_INVALID_OPERATION` and
   `ERROR_BAD_VALUE`; `directCaptureLoop` (`:290-293`) treats every other
   result as "transient, keep going". `AudioRecord.read` returns
   `ERROR_DEAD_OBJECT` (-6) immediately and repeatedly after an audio-server
   restart or invalidation, so both loops **busy-spin at 100% CPU** until
   `stop()`.
-- Drops are silent: `audioFlow` is a `SharedFlow` with DROP_OLDEST; direct
+- Before the fix, drops were silent: `audioFlow` is a `SharedFlow` with DROP_OLDEST; direct
   mode skips a read (`delay`) when the pool is empty and drops the newest chunk
   when the channel is full. `timestampMs` advances only for delivered chunks
   (and in truncated milliseconds), so after a drop the timestamps are early and
   consumers cannot see the gap — fatal for A/V sync in an editor.
 - Hard-coded `VOICE_RECOGNITION`, mono, 16-bit; no `AudioRecord.getTimestamp`.
-- **Fix:** treat every negative read as an error (surface
-  `ERROR_DEAD_OBJECT` and let the owner recreate); use a sample counter as the
-  timeline and expose a dropped-sample counter or gap event; make source,
-  channels and encoding parameters.
+- The completed slice treats every negative read as an error and uses a sample
+  clock. A future slice should make capture format/source configurable and
+  account for ShortArray `SharedFlow` drops.
 
 ### U17 · P3 · Two resamplers with different semantics; WAV parser strictness
 **WAV parser resolved (`8d4d48f`); shared native/Kotlin resampler API remains open.**
@@ -1188,9 +1198,9 @@ wrong subtype, short extension, invalid bit count/mask, and the unpadded tail.
   for sources outside app-private storage.
 - Publication moves atomically after `fd.sync()` but never fsyncs the parent
   directory, so the rename itself is not crash-durable.
-- **Fix:** one written contract (path rules, digest encoding, change
-  detection) plus a golden test vector (a small directory tree and its expected
-  digest) checked in both `ModelIntegrityTest` and a native host test.
+- **Fix:** one written contract for path rules, digest encoding and change
+  detection. The shared digest golden is now checked in both
+  `ModelIntegrityTest` and the native host test (`5094530`).
 
 ### U19 · P3 · Other Kotlin/JNI helper notes
 - `handles/NativeHandle.kt` (unused) releases native resources from
@@ -1529,3 +1539,12 @@ long-lived deadline timer per engine.
   suite, 57-check speech suite and required Gradle/native gates passed.
   FFmpeg JNI error conversion and direct device coverage remain open. No
   device or paid call.
+- 2026-09-24 — U16 `41cc027`: extracted an injectable short-array capture
+  loop, stopped every negative microphone read, reported the raw failure code
+  through `RealtimeSttSession`, and used a sample-count clock across delivered
+  and dropped direct-buffer audio. The first full Kotlin gate failed verbatim
+  with `Unresolved reference 'getAndSet'` because the coroutine scope's
+  `isActive` shadowed the session field; explicit qualification fixed it. The
+  final Gradle unit tests and both QA Kotlin compiles passed. Device capture
+  and ShortArray overflow accounting remain unverified/open. No device or paid
+  call.
