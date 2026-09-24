@@ -385,6 +385,12 @@ model verification for Whisper and Vosk through `verified_model_file.h` and
 vectors, every padding boundary, incremental split points and the lowercase-only
 digest contract shared with Kotlin `ModelIntegrity`.
 
+`model_integrity.h` is consumed by native model verification for Whisper and
+Vosk. `model_integrity_test.cpp` now walks actual host directories, rejects
+symlinks, checks path/size limits and changed-file snapshots, and asserts the
+same `model-tree-sha256-v1` digest vector as Kotlin `ModelIntegrityTest`. This
+guards the portable model identity contract used before loading model bytes.
+
 `ScopedTimer` remains a batch-operation consumer of `PerformanceStats` in the
 Whisper/Vosk engines. Live audio pushes no longer construct a global stats key,
 lock its map, or log every 50 ms. `scoped_timer_test.cpp` compiles two macros

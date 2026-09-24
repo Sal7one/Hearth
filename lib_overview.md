@@ -38,8 +38,9 @@ and Whisper reset branches through merge `d4ab6ec` (pushed 2026-09-24).
 The old `hearth-branding` branch was already an ancestor of main.
 `8f1cac9` adds the stateful native resampler, `df44925` removes the duplicate
 JNI resampling, `8d4d48f` extends bounded WAV parsing, and `5f2af68` applies
-release native optimization flags. These later main commits still need a final
-push. The `f863476` segmenter experiment was
+release native optimization flags. `c3d8b64` and `e2071dc` make active STT JNI
+validation failures visible; `5094530` adds native model-tree integrity coverage.
+The `f863476` segmenter experiment was
 reverted by `e9903e6` because the pinned Qwen runtime must be rebuilt with it.
 
 **Environment:** the original reviewer's Mac needed Homebrew Clang because
@@ -56,7 +57,7 @@ add a Log line for every session.
 ### Status by priority area
 | Area | Read so far | Still to read | Top open items |
 |---|---|---|---|
-| **utils** (`common/`, `jni/`) | Everything (§11), plus U2/U3/U4/U9/U10/U11/U12 fixes and host tests | Nothing | U8, U13 consolidation, U14 tests, U12 log-callback wiring (owner decision); U2/U3/U4/U9/U10/U11/U12 attachment resolved below |
+| **utils** (`common/`, `jni/`) | Everything (§11), plus U2/U3/U4/U9/U10/U11/U12 fixes and host tests | Nothing | U8 FFmpeg legacy path, U13 consolidation, U12 log-callback wiring (owner decision); U2/U3/U4/U9/U10/U11/U12 attachment and U14 host coverage resolved below |
 | **speech/** | Native ABI, session, segmenter, endpoint budget, Qwen/Moonshine/Omnilingual/Nemotron adapters, speech JNI; Kotlin `SpeechSession`, `LiveSpeechProcessor`, `SpeechModels`, `SpeechModelPackage`, `SpeechTranslation`; app publisher/local-model adapters; `speech_smoke.cpp` and runtime scripts | Full caller audit of upstream `6ad8305`; remaining app/runtime integration paths | F2 async windowed decode, F1 ggml ARM variants, H1 ABI v2 (sample rate, interrupt, capabilities), H2/H3/H4, H13/H14, U21 |
 | **translation/** | `text_model.h`, `translation_jni.cpp`, Marian tokenizer/engine/JNI, `CaptionTranslationBridge`; U23 bounded-read/ID and U24 spin fixes with host tests | Upstream `TranslationSourceEvidence.kt` (31) + bridge diff; `LocalTranslationSession.kt` (46), `TranslationCatalog.kt` (107), `MarianTranslationSession.kt` (36); app `MarianCascade.kt` (67, new pivot routes), `TranslationLayer.kt` (246), `LocalTranslationModels.kt` (27); `translation_smoke.cpp` (69); `scripts/translation/*` (75) | F1, F9, U23 malformed charsmap/golden ids, U24 model shapes/timer |
 | **audio/** | `common/audio_utils.h`, `audio_gate.h`, `ring_buffer.h`, `core/vad.cpp`, Kotlin `audio/` (all), capture service | App `BenchmarkAudio.kt` (58) | U16 `MicRecorder`, U21 VAD chunk dependence, U17 native/Kotlin API consolidation; U10 and U17 WAV parsing resolved |
@@ -76,12 +77,13 @@ after the focus areas.
 | TTS stack (`tts/`) — no current consumer | U27 (keep as an optional module or remove: owner decision) | all native (~1,600) and Kotlin `tts/` (~870) |
 
 ### Recommended next actions, in order
-1. **Continue the focus areas:** utils U8/U13/U14; speech H4 only with
+1. **Continue the focus areas:** utils U8 FFmpeg path/U13; speech H4 only with
    a coupled Qwen runtime rebuild, then F2/H1; translation U23 malformed
    charsmap and official token goldens, U24 model shapes/deadline timer, F9;
    audio U16/U17 native/Kotlin API/U21; then FFmpeg from the current checkout.
-   U2/U3/U4/U9/U10/U11/U12 attachment and the bounded-read/ID and ORT-spin portions of
-   U23/U24 are resolved below. Keep one test and the required gates per fix.
+   U2/U3/U4/U9/U10/U11/U12 attachment, U14 host coverage, and the bounded-read/ID
+   and ORT-spin portions of U23/U24 are resolved below. Keep one test and the
+   required gates per fix.
 2. **Build after the owner chooses the variant strategy:** F1 — per-CPU ggml variants for `libhearth_nemotron.so` and
    `libtransiber_translation.so` (the largest speed lever for both speech and
    translation); F4 — build type.
@@ -981,7 +983,16 @@ ThreadSanitizer passed `pipe_progress_test.cpp` on this Mac.
   declare reserved identifiers (`__handle_guard`, `__obj`).
 
 ### U8 · P2 · Proven (by reading) · Error messages set at the JNI layer are never shown
-- `router/stt_jni.cpp` records 52 validation failures with `SET_ERROR(...)`
+**Active STT validation resolved (`c3d8b64`, `e2071dc`).** Whisper, Vosk and
+ONNX validation now throw the exact Java exception at the failing JNI edge;
+the Kotlin engine wrappers convert it into a failed result. The existing
+`jni_helper_test` exercises exception construction under a real JVM with
+`-Xcheck:jni`. Batch/partial text uses `utf8ToJString` so supplementary
+Unicode does not fail Modified UTF-8 conversion. **Still open:** the disabled
+FFmpeg entry points at `stt_jni.cpp:981-1139` use `SET_ERROR`, and the broader
+`ErrorStore` retirement is tracked under U13. Direct engine/device testing was
+not run under the owner's device-testing policy.
+- Before these fixes, `router/stt_jni.cpp` recorded validation failures with `SET_ERROR(...)`
   into the thread-local `ThreadLocalError` and returns `-1`. Kotlin then calls
   `nativeGetLastErrorWhisper(handle)` (`WhisperEngine.kt:179`, `:223`, `:256`,
   `:323`), which returns the engine's own `lastError` — not the thread-local
@@ -1095,15 +1106,20 @@ adapter share a named daemon attachment with a pthread-key detach destructor;
   stack.
 
 ### U14 · P3 · `model_integrity.h` / `verified_model_file.h` / `mmap_model.h`
+**Native host coverage resolved (`5094530`).** `model_integrity_test.cpp`
+walks a real model directory, checks the same tree digest vector used by
+Kotlin `ModelIntegrityTest`, rejects root/nested symlinks, verifies path and
+size limits, and tests a changed opened file snapshot under ASan/UBSan. The
+remaining cross-language implementation consolidation stays under U18/U20.
 - These are the strongest code in `common/`: no-follow `openat`/`fstatat`,
   named-vs-opened inode checks, before/after snapshots, EINTR-safe `pread`,
   size/count/depth/path limits, and a domain-separated tree digest.
   `VerifiedModelFile` feeds whisper.cpp's loader from the same verified fd
   (no check-then-load race).
-- **Gaps:** there's no native host test for the tree walk (symlink rejection,
-  changed-during-hash, limits). The `model-tree-sha256-v1` contract is
-  implemented twice (C++ and `ModelIntegrity.kt`) with no shared golden
-  vector.
+- The former native host-test gap for the tree walk and shared digest vector
+  is closed by `5094530`. The `model-tree-sha256-v1` contract remains
+  implemented twice (C++ and `ModelIntegrity.kt`), with a shared golden vector
+  guarding compatibility.
 - Only Whisper loads through the verified fd; Vosk, sherpa, Nemotron, llama
   and ORT re-open by path after Kotlin verification. That's safe for
   app-private copies; make it an explicit library contract, or add a
@@ -1504,3 +1520,12 @@ long-lived deadline timer per engine.
   QA Kotlin compiles, native debug build, 16-program common and 57-check
   speech suites passed. Play QA 44,681,482 bytes and FOSS QA 36,756,525 bytes
   passed `verify-release.py`. No device or paid call.
+- 2026-09-24 — Main follow-up: `c3d8b64` and `e2071dc` replaced hidden
+  Whisper/Vosk/ONNX JNI validation errors with exceptions carrying the actual
+  cause; the 16-program common suite (including real-JVM CheckJNI), 57-check
+  speech suite, Gradle unit tests, QA Kotlin compiles and native debug build
+  passed. `5094530` added the shared Kotlin/native model-tree digest golden,
+  symlink, path/size limit and changed-file host checks. Its 17-program common
+  suite, 57-check speech suite and required Gradle/native gates passed.
+  FFmpeg JNI error conversion and direct device coverage remain open. No
+  device or paid call.
