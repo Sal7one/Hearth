@@ -36,9 +36,10 @@ Whisper is in the Later queue because it is heavy for real-time mobile use
 **Branch and state:** `main` now contains the model phase, common-jni audit
 and Whisper reset branches through merge `d4ab6ec` (pushed 2026-09-24).
 The old `hearth-branding` branch was already an ancestor of main.
-`8f1cac9` adds the stateful native resampler, `8d4d48f` extends bounded WAV
-parsing, and `5f2af68` applies release native optimization flags. These later
-main commits still need a final push. The `f863476` segmenter experiment was
+`8f1cac9` adds the stateful native resampler, `df44925` removes the duplicate
+JNI resampling, `8d4d48f` extends bounded WAV parsing, and `5f2af68` applies
+release native optimization flags. These later main commits still need a final
+push. The `f863476` segmenter experiment was
 reverted by `e9903e6` because the pinned Qwen runtime must be rebuilt with it.
 
 **Environment:** the original reviewer's Mac needed Homebrew Clang because
@@ -1017,6 +1018,8 @@ per-push timer on Whisper or Vosk; batch profiling remains.
 **Resolved (`8f1cac9`) for Whisper streaming PCM16/float input.**
 `AudioStreamResampler` carries the source clock and previous sample across
 pushes under `streamMutex`; it resets on Clear/release or input-rate change.
+`df44925` removed the stateless conversion in all three Whisper JNI push
+entry points, so Kotlin array/direct-buffer callers reach that same path.
 The 16-program common host suite compares full-buffer and deterministic
 random-chunk output at 44.1→16, 16→24 and 16→16 kHz, including output count,
 continuity and invalid input. The stateless compatibility functions remain
@@ -1494,3 +1497,10 @@ long-lived deadline timer per engine.
   speech suites passed. Play QA 44,684,502 bytes and FOSS QA 36,759,541 bytes
   both passed `verify-release.py` with expected permissions and 16 KiB page
   alignment. LTO and measured device speed remain open; no device or paid call.
+- 2026-09-24 — U10 end-to-end follow-up `df44925`: `stt_jni.cpp` was still
+  resampling non-16 kHz Whisper chunks statelessly before the engine could
+  carry phase. All three JNI push variants now pass the caller's source rate
+  through after copying/unpinning arrays where necessary. Gradle test, both
+  QA Kotlin compiles, native debug build, 16-program common and 57-check
+  speech suites passed. Play QA 44,681,482 bytes and FOSS QA 36,756,525 bytes
+  passed `verify-release.py`. No device or paid call.

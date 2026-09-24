@@ -455,7 +455,9 @@ float ingress before resampling or buffering. Its host test covers finite,
 null, NaN and infinity inputs; invalid PCM reports the actual input error.
 
 `AudioStreamResampler` is the Whisper streaming input's sample-rate converter
-when the caller supplies PCM other than 16 kHz. It carries interpolation phase
+when the caller supplies PCM other than 16 kHz. The JNI array and direct-buffer
+entry points pass the original rate through to that single engine-owned path.
+It carries interpolation phase
 and the previous sample across calls; the caller serializes pushes under the
 stream lock and resets it when the stream is cleared or its input rate changes.
 `audio_stream_resampler_test.cpp` checks a one-shot stream against deterministic
