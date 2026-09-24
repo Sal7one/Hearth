@@ -427,7 +427,7 @@ Java_com_sal7one_common_1jni_engine_whisper_WhisperEngine_nativeTranscribeBatchW
     const std::string result = engine->transcribeBatch(
         t_i16Scratch.data(), count, sampleRate);
     LOG_I("JNI", "TranscribeBatch result length: %zu", result.length());
-    return result.empty() ? nullptr : env->NewStringUTF(result.c_str());
+    return result.empty() ? nullptr : jni::utf8ToJString(env, result);
 
     JNI_TRY_CATCH_END(env, nullptr)
 }
@@ -569,21 +569,24 @@ Java_com_sal7one_common_1jni_engine_vosk_VoskEngine_nativeInitVosk(
     JNI_TRY_CATCH_BEGIN
 
     auto engine = EngineRouter::getInstance().getEngine(handle, EngineType::VOSK);
-    if (!engine) return JNI_FALSE;
+    if (!engine) {
+        jni::throwIllegalStateException(env, "Invalid Vosk handle");
+        return JNI_FALSE;
+    }
 
     JNI_NULL_CHECK(env, modelPath, "modelPath cannot be null", JNI_FALSE);
     JNI_NULL_CHECK(env, configJson, "configJson cannot be null", JNI_FALSE);
     jni::JStringGuard modelPathGuard(env, modelPath);
     jni::JStringGuard configJsonGuard(env, configJson);
     if (!modelPathGuard.valid() || !configJsonGuard.valid()) {
-        SET_ERROR_CODE(INVALID_ARGUMENT, "Invalid UTF-16 in model path or STT config");
+        jni::throwIllegalArgumentException(env, "Invalid UTF-16 in model path or STT config");
         return JNI_FALSE;
     }
 
     EngineConfig config;
     std::string configError;
     if (!parseConfig(configJsonGuard.str(), config, &configError)) {
-        SET_ERROR_CODE(INVALID_ARGUMENT, configError);
+        jni::throwIllegalArgumentException(env, configError.c_str());
         return JNI_FALSE;
     }
     config.modelPath = modelPathGuard.str();
@@ -600,9 +603,13 @@ Java_com_sal7one_common_1jni_engine_vosk_VoskEngine_nativePushAudioVosk(
     JNI_TRY_CATCH_BEGIN
 
     auto engine = EngineRouter::getInstance().getEngine(handle, EngineType::VOSK);
-    if (!engine) { SET_ERROR("Invalid handle"); return -1; }
+    if (!engine) {
+        jni::throwIllegalStateException(env, "Invalid Vosk handle");
+        return -1;
+    }
     if (!clampSampleCount(env, samples, count)) {
-        SET_ERROR("samples array is required with a positive in-range count");
+        jni::throwIllegalArgumentException(
+            env, "samples array is required with a positive in-range count");
         return -1;
     }
 
@@ -610,7 +617,10 @@ Java_com_sal7one_common_1jni_engine_vosk_VoskEngine_nativePushAudioVosk(
     // accepting waveforms.
     {
         ShortArrayGuard guard(env, samples);
-        if (!guard) { SET_ERROR("Failed to get array"); return -1; }
+        if (!guard) {
+            jni::throwRuntimeException(env, "Failed to get Vosk audio array");
+            return -1;
+        }
         copyOutAndRelease(guard, count);
     }
     return engine->pushAudio(t_i16Scratch.data(), count, sampleRate);
@@ -626,16 +636,24 @@ Java_com_sal7one_common_1jni_engine_vosk_VoskEngine_nativePushAudioDirectVosk(
 ) {
     JNI_TRY_CATCH_BEGIN
     auto engine = EngineRouter::getInstance().getEngine(handle, EngineType::VOSK);
-    if (!engine) { SET_ERROR("Invalid handle"); return -1; }
+    if (!engine) {
+        jni::throwIllegalStateException(env, "Invalid Vosk handle");
+        return -1;
+    }
 
-    if (!directBuffer) { SET_ERROR("null direct buffer"); return -1; }
+    if (!directBuffer) {
+        jni::throwIllegalArgumentException(env, "null direct buffer");
+        return -1;
+    }
     auto* base = static_cast<uint8_t*>(env->GetDirectBufferAddress(directBuffer));
-    if (!base) { SET_ERROR("Not a direct buffer"); return -1; }
+    if (!base) {
+        jni::throwIllegalArgumentException(env, "Not a direct buffer");
+        return -1;
+    }
 
     const jlong capacity = env->GetDirectBufferCapacity(directBuffer);
     if (const char* error = pcmBufferRangeError(capacity, byteOffset, byteCount, sampleRate)) {
-        SET_ERROR(error);
-        env->ThrowNew(env->FindClass("java/lang/IllegalArgumentException"), error);
+        jni::throwIllegalArgumentException(env, error);
         return -1;
     }
 
@@ -652,7 +670,10 @@ Java_com_sal7one_common_1jni_engine_vosk_VoskEngine_nativeGetPartialVosk(JNIEnv*
     JNI_TRY_CATCH_BEGIN
 
     auto engine = EngineRouter::getInstance().getEngine(handle, EngineType::VOSK);
-    if (!engine) return nullptr;
+    if (!engine) {
+        jni::throwIllegalStateException(env, "Invalid Vosk handle");
+        return nullptr;
+    }
     std::string result = engine->getPartial();
     return result.empty() ? nullptr : jni::utf8ToJString(env, result);
 
@@ -664,7 +685,10 @@ Java_com_sal7one_common_1jni_engine_vosk_VoskEngine_nativeFinalizeVosk(JNIEnv* e
     JNI_TRY_CATCH_BEGIN
 
     auto engine = EngineRouter::getInstance().getEngine(handle, EngineType::VOSK);
-    if (!engine) return nullptr;
+    if (!engine) {
+        jni::throwIllegalStateException(env, "Invalid Vosk handle");
+        return nullptr;
+    }
     std::string result = engine->finalize();
     return result.empty() ? nullptr : jni::utf8ToJString(env, result);
 
@@ -684,22 +708,29 @@ Java_com_sal7one_common_1jni_engine_vosk_VoskEngine_nativeTranscribeBatchVosk(
     JNI_TRY_CATCH_BEGIN
 
     auto engine = EngineRouter::getInstance().getEngine(handle, EngineType::VOSK);
-    if (!engine) { SET_ERROR("Invalid handle"); return nullptr; }
+    if (!engine) {
+        jni::throwIllegalStateException(env, "Invalid Vosk handle");
+        return nullptr;
+    }
     if (!clampSampleCount(env, samples, count)) {
-        SET_ERROR("samples array is required with a positive in-range count");
+        jni::throwIllegalArgumentException(
+            env, "samples array is required with a positive in-range count");
         return nullptr;
     }
 
     // Copy out of the critical section before batch inference.
     {
         ShortArrayGuard guard(env, samples);
-        if (!guard) { SET_ERROR("Failed to get audio array"); return nullptr; }
+        if (!guard) {
+            jni::throwRuntimeException(env, "Failed to get Vosk audio array");
+            return nullptr;
+        }
         copyOutAndRelease(guard, count);
     }
 
     const std::string result = engine->transcribeBatch(
         t_i16Scratch.data(), count, sampleRate);
-    return result.empty() ? nullptr : env->NewStringUTF(result.c_str());
+    return result.empty() ? nullptr : jni::utf8ToJString(env, result);
 
     JNI_TRY_CATCH_END(env, nullptr)
 }
@@ -761,21 +792,24 @@ Java_com_sal7one_common_1jni_engine_onnx_OnnxEngine_nativeInitOnnx(
     JNI_TRY_CATCH_BEGIN
 
     auto engine = EngineRouter::getInstance().getEngine(handle, EngineType::ONNX);
-    if (!engine) return JNI_FALSE;
+    if (!engine) {
+        jni::throwIllegalStateException(env, "Invalid ONNX handle");
+        return JNI_FALSE;
+    }
 
     JNI_NULL_CHECK(env, modelPath, "modelPath cannot be null", JNI_FALSE);
     JNI_NULL_CHECK(env, configJson, "configJson cannot be null", JNI_FALSE);
     jni::JStringGuard modelPathGuard(env, modelPath);
     jni::JStringGuard configJsonGuard(env, configJson);
     if (!modelPathGuard.valid() || !configJsonGuard.valid()) {
-        SET_ERROR_CODE(INVALID_ARGUMENT, "Invalid UTF-16 in model path or STT config");
+        jni::throwIllegalArgumentException(env, "Invalid UTF-16 in model path or STT config");
         return JNI_FALSE;
     }
 
     EngineConfig config;
     std::string configError;
     if (!parseConfig(configJsonGuard.str(), config, &configError)) {
-        SET_ERROR_CODE(INVALID_ARGUMENT, configError);
+        jni::throwIllegalArgumentException(env, configError.c_str());
         return JNI_FALSE;
     }
     config.modelPath = modelPathGuard.str();
@@ -792,15 +826,22 @@ Java_com_sal7one_common_1jni_engine_onnx_OnnxEngine_nativePushAudioOnnx(
     JNI_TRY_CATCH_BEGIN
 
     auto engine = EngineRouter::getInstance().getEngine(handle, EngineType::ONNX);
-    if (!engine) { SET_ERROR("Invalid handle"); return -1; }
+    if (!engine) {
+        jni::throwIllegalStateException(env, "Invalid ONNX handle");
+        return -1;
+    }
     if (!clampSampleCount(env, samples, count)) {
-        SET_ERROR("samples array is required with a positive in-range count");
+        jni::throwIllegalArgumentException(
+            env, "samples array is required with a positive in-range count");
         return -1;
     }
 
     {
         ShortArrayGuard guard(env, samples);
-        if (!guard) { SET_ERROR("Failed to get array"); return -1; }
+        if (!guard) {
+            jni::throwRuntimeException(env, "Failed to get ONNX audio array");
+            return -1;
+        }
         copyOutAndRelease(guard, count);
     }
     return engine->pushAudio(t_i16Scratch.data(), count, sampleRate);
@@ -813,9 +854,12 @@ Java_com_sal7one_common_1jni_engine_onnx_OnnxEngine_nativeGetPartialOnnx(JNIEnv*
     JNI_TRY_CATCH_BEGIN
 
     auto engine = EngineRouter::getInstance().getEngine(handle, EngineType::ONNX);
-    if (!engine) return nullptr;
+    if (!engine) {
+        jni::throwIllegalStateException(env, "Invalid ONNX handle");
+        return nullptr;
+    }
     std::string result = engine->getPartial();
-    return result.empty() ? nullptr : env->NewStringUTF(result.c_str());
+    return result.empty() ? nullptr : jni::utf8ToJString(env, result);
 
     JNI_TRY_CATCH_END(env, nullptr)
 }
@@ -825,9 +869,12 @@ Java_com_sal7one_common_1jni_engine_onnx_OnnxEngine_nativeFinalizeOnnx(JNIEnv* e
     JNI_TRY_CATCH_BEGIN
 
     auto engine = EngineRouter::getInstance().getEngine(handle, EngineType::ONNX);
-    if (!engine) return nullptr;
+    if (!engine) {
+        jni::throwIllegalStateException(env, "Invalid ONNX handle");
+        return nullptr;
+    }
     std::string result = engine->finalize();
-    return result.empty() ? nullptr : env->NewStringUTF(result.c_str());
+    return result.empty() ? nullptr : jni::utf8ToJString(env, result);
 
     JNI_TRY_CATCH_END(env, nullptr)
 }
@@ -845,21 +892,28 @@ Java_com_sal7one_common_1jni_engine_onnx_OnnxEngine_nativeTranscribeBatchOnnx(
     JNI_TRY_CATCH_BEGIN
 
     auto engine = EngineRouter::getInstance().getEngine(handle, EngineType::ONNX);
-    if (!engine) { SET_ERROR("Invalid handle"); return nullptr; }
+    if (!engine) {
+        jni::throwIllegalStateException(env, "Invalid ONNX handle");
+        return nullptr;
+    }
     if (!clampSampleCount(env, samples, count)) {
-        SET_ERROR("samples array is required with a positive in-range count");
+        jni::throwIllegalArgumentException(
+            env, "samples array is required with a positive in-range count");
         return nullptr;
     }
 
     {
         ShortArrayGuard guard(env, samples);
-        if (!guard) { SET_ERROR("Failed to get audio array"); return nullptr; }
+        if (!guard) {
+            jni::throwRuntimeException(env, "Failed to get ONNX audio array");
+            return nullptr;
+        }
         copyOutAndRelease(guard, count);
     }
 
     const std::string result = engine->transcribeBatch(
         t_i16Scratch.data(), count, sampleRate);
-    return result.empty() ? nullptr : env->NewStringUTF(result.c_str());
+    return result.empty() ? nullptr : jni::utf8ToJString(env, result);
 
     JNI_TRY_CATCH_END(env, nullptr)
 }
