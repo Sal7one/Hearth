@@ -873,4 +873,18 @@
     <string name="benchmark_measured_accurate">最接近参考：%1$s</string>
     <string name="benchmark_measured_no_reference">添加参考转录或译文才能比较准确度。</string>
     <string name="benchmark_measured_scope">仅比较同一设备、同一输入的成功结果。简短参考得分不能证明实际质量。</string>
+    <string name="benchmark_table_empty">暂无可比较的结果。请在下方选择模型并运行相同测试。</string>
+    <string name="benchmark_table_scope">%1$d 个模型 · 相同输入和设备</string>
+    <string name="benchmark_table_sort_warm">热运行时间</string>
+    <string name="benchmark_table_sort_load">加载时间</string>
+    <string name="benchmark_table_sort_quality">参考得分</string>
+    <string name="benchmark_table_sort_recent">最新</string>
+    <string name="benchmark_table_model">模型</string>
+    <string name="benchmark_table_warm">热运行</string>
+    <string name="benchmark_table_load">加载</string>
+    <string name="benchmark_table_reference">参考</string>
+    <string name="benchmark_table_fastest">最快</string>
+    <string name="benchmark_table_best_reference">最佳得分</string>
+    <string name="benchmark_table_balanced">均衡</string>
+    <string name="benchmark_table_legend">这里是加速重放的计算时间，并非实时延迟。热运行条越短越快。WER/CER 越低越好；chrF 越高越好。</string>
 </resources>

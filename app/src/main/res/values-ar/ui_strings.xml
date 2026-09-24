@@ -873,4 +873,18 @@
     <string name="benchmark_measured_accurate">الأقرب إلى المرجع: %1$s</string>
     <string name="benchmark_measured_no_reference">أضف نصاً مرجعياً أو ترجمة مرجعية لمقارنة الدقة.</string>
     <string name="benchmark_measured_scope">تُقارن النتائج الناجحة بنفس المدخلات والهاتف فقط. الدرجات القصيرة لا تثبت الجودة في الاستخدام الحقيقي.</string>
+    <string name="benchmark_table_empty">لا توجد نتيجة قابلة للمقارنة بعد. اختر النماذج وشغّل الاختبار نفسه أدناه.</string>
+    <string name="benchmark_table_scope">%1$d نماذج · نفس المدخلات والجهاز</string>
+    <string name="benchmark_table_sort_warm">وقت التشغيل الدافئ</string>
+    <string name="benchmark_table_sort_load">وقت التحميل</string>
+    <string name="benchmark_table_sort_quality">درجة المرجع</string>
+    <string name="benchmark_table_sort_recent">الأحدث</string>
+    <string name="benchmark_table_model">النموذج</string>
+    <string name="benchmark_table_warm">الدافئ</string>
+    <string name="benchmark_table_load">التحميل</string>
+    <string name="benchmark_table_reference">المرجع</string>
+    <string name="benchmark_table_fastest">الأسرع</string>
+    <string name="benchmark_table_best_reference">أفضل درجة</string>
+    <string name="benchmark_table_balanced">متوازن</string>
+    <string name="benchmark_table_legend">وقت المعالجة أثناء التشغيل السريع، وليس التأخير المباشر. الشريط الأقصر أسرع. WER/CER: الأقل أفضل؛ chrF: الأعلى أفضل.</string>
 </resources>

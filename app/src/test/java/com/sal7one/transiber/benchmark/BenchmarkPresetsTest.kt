@@ -42,6 +42,25 @@ class BenchmarkPresetsTest {
         assertEquals("one", leaders.fastest?.identity)
     }
 
+    @Test fun tableSortsTimesAndPutsMissingReferenceLast() {
+        val slowAccurate = result("slow-accurate", 300.0, 0.05, 3).copy(loadMs = 10.0)
+        val fastUnscored = result("fast-unscored", 100.0, null, 2).copy(loadMs = 30.0)
+        val middle = result("middle", 200.0, 0.20, 1).copy(loadMs = 20.0)
+        val rows = listOf(slowAccurate, fastUnscored, middle)
+        assertEquals(listOf("fast-unscored", "middle", "slow-accurate"),
+            BenchmarkTableModel.sorted(rows, BenchmarkTableSort.WARM).map { it.identity })
+        assertEquals(listOf("slow-accurate", "middle", "fast-unscored"),
+            BenchmarkTableModel.sorted(rows, BenchmarkTableSort.LOAD).map { it.identity })
+        assertEquals(listOf("slow-accurate", "middle", "fast-unscored"),
+            BenchmarkTableModel.sorted(rows, BenchmarkTableSort.QUALITY).map { it.identity })
+        assertEquals(listOf("slow-accurate", "fast-unscored", "middle"),
+            BenchmarkTableModel.sorted(rows, BenchmarkTableSort.RECENT).map { it.identity })
+        assertEquals(0.95, BenchmarkTableModel.qualityScore(slowAccurate)!!, 0.00001)
+        assertNull(BenchmarkTableModel.qualityScore(fastUnscored))
+        val translation = slowAccurate.copy(target = "ar", wordErrorRate = null, translationChrf = 0.72)
+        assertEquals(0.72, BenchmarkTableModel.qualityScore(translation)!!, 0.00001)
+    }
+
     private fun result(id: String, warm: Double, wer: Double?, timestamp: Long) = BenchmarkResult(
         runId = id, timestamp = timestamp, model = id, identity = id, route = "speech",
         inputHash = "same", source = "en", target = "", audioMs = 1000,

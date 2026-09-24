@@ -82,8 +82,7 @@ internal object BenchmarkComparison {
                     (target.isNotBlank() || result.samples.none { it.silence && it.text.isNotBlank() })
             }
         fun time(result: BenchmarkResult) = BenchmarkMetrics.median(result.computeMs.drop(1))
-        fun quality(result: BenchmarkResult): Double? = if (target.isNotBlank()) result.translationChrf
-            else (if (source == "zh") result.characterErrorRate else result.wordErrorRate ?: result.characterErrorRate)?.let { 1.0 - it }
+        fun quality(result: BenchmarkResult): Double? = BenchmarkTableModel.qualityScore(result)
         val fastest = comparable.minByOrNull(::time)
         val scored = comparable.filter { quality(it)?.isFinite() == true }
         val accurate = scored.maxByOrNull { quality(it)!! }

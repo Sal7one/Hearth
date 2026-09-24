@@ -6,6 +6,7 @@ import com.sal7one.transiber.i18n.*
 import android.provider.OpenableColumns
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -68,6 +69,7 @@ fun LocalBenchmarkScreen(onModels: (String) -> Unit = {}, onDownloads: () -> Uni
     var referenceText by rememberSaveable { mutableStateOf("") }
     var useBuiltInSet by rememberSaveable { mutableStateOf(true) }
     var historyForPair by rememberSaveable { mutableStateOf(false) }
+    var tableSort by rememberSaveable { mutableStateOf(BenchmarkTableSort.WARM) }
     var picker by remember { mutableStateOf<String?>(null) }
     var busy by remember { mutableStateOf(false) }
     var running by remember { mutableStateOf(false) }
@@ -138,6 +140,9 @@ fun LocalBenchmarkScreen(onModels: (String) -> Unit = {}, onDownloads: () -> Uni
     val displayedResults = results.filter { !historyForPair ||
         (it.target.isNotBlank() == (mode == "Translation") && it.source == source &&
             (mode == "Speech" || it.target == target)) }
+    val leaders = remember(results, mode, source, target) {
+        BenchmarkComparison.latest(results, source, if (mode == "Speech") "" else target)
+    }
     LaunchedEffect(mode, source, target, candidates) {
         // Empty is an intentional choice (Deselect all), including when a
         // newly installed model refreshes the list. Do not silently run the
@@ -178,8 +183,6 @@ fun LocalBenchmarkScreen(onModels: (String) -> Unit = {}, onDownloads: () -> Uni
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         item {
             Text(uiText(UiR.string.ui_compare_local_models_62748), style = MaterialTheme.typography.headlineSmall)
-            Text(uiText(UiR.string.ui_use_the_same_recording_or_corrected_text_for_each_model_three_pas_a5005),
-                Modifier.padding(top = 8.dp), style = MaterialTheme.typography.bodyMedium)
         }
         item {
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -197,6 +200,10 @@ fun LocalBenchmarkScreen(onModels: (String) -> Unit = {}, onDownloads: () -> Uni
             Text(if (mode == "Speech") uiText(UiR.string.ui_forced_language_is_used_where_supported_vosk_always_uses_its_mode_86f53)
                 else uiText(UiR.string.ui_compare_the_same_corrected_source_text_separately_from_recognitio_7e2d4), style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier.padding(top = 4.dp))
+        }
+        item {
+            BenchmarkResultsTable(leaders, source, if (mode == "Speech") "" else target,
+                tableSort, { tableSort = it })
         }
         item {
             Text(uiText(UiR.string.benchmark_presets_title), style = MaterialTheme.typography.titleLarge)
@@ -404,26 +411,6 @@ fun LocalBenchmarkScreen(onModels: (String) -> Unit = {}, onDownloads: () -> Uni
         }
         if (results.isNotEmpty()) {
             item {
-                val leaders = BenchmarkComparison.latest(results, source, if (mode == "Speech") "" else target)
-                ElevatedCard(Modifier.fillMaxWidth()) {
-                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Text(uiText(UiR.string.benchmark_measured_title), style = MaterialTheme.typography.titleMedium)
-                        if (leaders == null || leaders.candidates.size < 2)
-                            Text(uiText(UiR.string.benchmark_measured_need_two), style = MaterialTheme.typography.bodySmall)
-                        else {
-                            leaders.fastest?.let { Text(uiText(UiR.string.benchmark_measured_fastest,
-                                it.model, number(BenchmarkMetrics.median(it.computeMs.drop(1)) / 1000))) }
-                            leaders.balanced?.let { Text(uiText(UiR.string.benchmark_measured_balanced, it.model)) }
-                            if (leaders.balanced == null && leaders.mostAccurate != null)
-                                Text(uiText(UiR.string.benchmark_measured_need_three), style = MaterialTheme.typography.bodySmall)
-                            leaders.mostAccurate?.let { Text(uiText(UiR.string.benchmark_measured_accurate, it.model)) }
-                            if (leaders.mostAccurate == null) Text(uiText(UiR.string.benchmark_measured_no_reference), style = MaterialTheme.typography.bodySmall)
-                            Text(uiText(UiR.string.benchmark_measured_scope), style = MaterialTheme.typography.bodySmall)
-                        }
-                    }
-                }
-            }
-            item {
                 Text(uiText(UiR.string.ui_saved_results_5e7cc), style = MaterialTheme.typography.titleLarge)
                 Text(uiText(UiR.string.ui_stored_only_on_this_device_export_includes_recognized_and_transla_f23f5), style = MaterialTheme.typography.bodySmall)
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -480,42 +467,55 @@ private fun BenchmarkResultCard(result: BenchmarkResult) {
 
     var details by rememberSaveable(result.runId, result.identity) { mutableStateOf(false) }
     OutlinedCard(Modifier.fillMaxWidth()) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text(result.model, style = MaterialTheme.typography.titleMedium)
+        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(result.model, style = MaterialTheme.typography.titleMedium,
+                color = if (result.error == null) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.error)
             Text("${result.source}${if (result.target.isBlank()) "" else " → ${result.target}"} · ${DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT).format(Date(result.timestamp))}",
-                style = MaterialTheme.typography.bodySmall)
+                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             result.error?.let { SelectionContainer { Text(it, color = MaterialTheme.colorScheme.error) } }
-            if (result.target.isBlank() && result.characterErrorRate != null) {
-                val errorLabel = if (result.source == "zh" || result.wordErrorRate == null)
-                    uiText(UiR.string.benchmark_character_error_only, number(result.characterErrorRate * 100.0))
-                else uiText(UiR.string.benchmark_error_rates,
-                    number(result.wordErrorRate * 100.0), number(result.characterErrorRate * 100.0))
-                Text(errorLabel, style = MaterialTheme.typography.bodyMedium)
-            } else if (result.referenceText == null) {
-                Text(uiText(UiR.string.benchmark_no_reference), style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+            val warm = BenchmarkTableModel.warmMs(result)
+            val quality = BenchmarkTableModel.qualityValue(result)
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                Column(Modifier.weight(1f).background(MaterialTheme.colorScheme.primaryContainer,
+                    MaterialTheme.shapes.small).padding(8.dp)) {
+                    Text(uiText(UiR.string.benchmark_table_warm), style = MaterialTheme.typography.labelSmall)
+                    Text(warm?.let { "${number(it / 1000)}s" } ?: "—", style = MaterialTheme.typography.titleSmall)
+                }
+                Column(Modifier.weight(1f).background(MaterialTheme.colorScheme.secondaryContainer,
+                    MaterialTheme.shapes.small).padding(8.dp)) {
+                    Text(uiText(UiR.string.benchmark_table_load), style = MaterialTheme.typography.labelSmall)
+                    Text("${number(result.loadMs / 1000)}s", style = MaterialTheme.typography.titleSmall)
+                }
+                Column(Modifier.weight(1f).background(MaterialTheme.colorScheme.tertiaryContainer,
+                    MaterialTheme.shapes.small).padding(8.dp)) {
+                    Text(uiText(UiR.string.benchmark_table_reference), style = MaterialTheme.typography.labelSmall)
+                    Text(quality?.let { "${number(it * 100)}%" } ?: "—", style = MaterialTheme.typography.titleSmall)
+                }
             }
-            val silenceChecks = result.samples.filter { it.silence }
-            if (result.target.isBlank() && silenceChecks.isNotEmpty()) {
-                val falsePositives = silenceChecks.count { it.text.isNotBlank() }
-                Text(uiText(UiR.string.benchmark_silence_false_positives, falsePositives, silenceChecks.size),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = if (falsePositives == 0) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.error)
-            }
-            result.translationChrf?.let { Text(uiText(UiR.string.benchmark_translation_chrf, number(it * 100.0)),
-                style = MaterialTheme.typography.bodyMedium) }
-            Text(uiText(UiR.string.ui_load_verify_1_s_s_05a13, number(result.loadMs / 1000)))
-            if (result.computeMs.isNotEmpty()) Text(uiText(UiR.string.ui_first_inference_1_s_s_14e86, number(result.computeMs.first() / 1000)))
-            if (result.computeMs.size >= 3) {
-                val warm = BenchmarkMetrics.median(result.computeMs.drop(1))
-                Text(uiText(UiR.string.ui_warm_median_1_s_s_0f226, number(warm / 1000)))
-                if (result.audioMs > 0) Text(uiText(UiR.string.ui_real_time_factor_1_s_below_1_keeps_ahead_in_replay_10505, number(BenchmarkMetrics.realTimeFactor(warm, result.audioMs))))
-            }
-            val output = result.texts.lastOrNull()
-            if (output != null) SelectionContainer { Text(output.ifBlank { uiText(UiR.string.ui_no_speech_recognized_a_fast_empty_result_is_not_a_quality_win_c93af) }) }
             TextButton({ details = !details }) { Text(if (details) uiText(UiR.string.ui_hide_details_f8c24) else uiText(UiR.string.ui_all_passes_and_runtime_a99e0)) }
             if (details) SelectionContainer {
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    if (result.target.isBlank() && result.characterErrorRate != null) {
+                        val errorLabel = if (result.source == "zh" || result.wordErrorRate == null)
+                            uiText(UiR.string.benchmark_character_error_only, number(result.characterErrorRate * 100.0))
+                        else uiText(UiR.string.benchmark_error_rates,
+                            number(result.wordErrorRate * 100.0), number(result.characterErrorRate * 100.0))
+                        Text(errorLabel, style = MaterialTheme.typography.bodySmall)
+                    } else result.translationChrf?.let { Text(uiText(UiR.string.benchmark_translation_chrf,
+                        number(it * 100.0)), style = MaterialTheme.typography.bodySmall) }
+                    val silenceChecks = result.samples.filter { it.silence }
+                    if (result.target.isBlank() && silenceChecks.isNotEmpty()) {
+                        val falsePositives = silenceChecks.count { it.text.isNotBlank() }
+                        Text(uiText(UiR.string.benchmark_silence_false_positives, falsePositives, silenceChecks.size),
+                            color = if (falsePositives == 0) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.error)
+                    }
+                    if (result.computeMs.isNotEmpty()) Text(uiText(UiR.string.ui_first_inference_1_s_s_14e86,
+                        number(result.computeMs.first() / 1000)))
+                    if (warm != null && result.audioMs > 0) Text(uiText(UiR.string.ui_real_time_factor_1_s_below_1_keeps_ahead_in_replay_10505,
+                        number(BenchmarkMetrics.realTimeFactor(warm, result.audioMs))))
+                    result.texts.lastOrNull()?.let { output ->
+                        Text(output.ifBlank { uiText(UiR.string.ui_no_speech_recognized_a_fast_empty_result_is_not_a_quality_win_c93af) })
+                    }
                     Text(uiText(UiR.string.ui_1_s_2_s_3_s_model_4_s_input_sha_256_5_s_run_6_s_42fa7, result.route, result.device, result.runtime, result.identity, result.inputHash, result.runId), style = MaterialTheme.typography.bodySmall)
                     result.computeMs.forEachIndexed { i, time ->
                         Text(uiText(UiR.string.ui_pass_1_s_2_s_ms_first_text_in_replay_3_s_ms_4_s_e7de9, i + 1, number(time), number(result.firstTextMs[i]), result.texts[i]), style = MaterialTheme.typography.bodySmall)
