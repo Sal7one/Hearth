@@ -27,7 +27,7 @@ command -v "${CXX_BIN}" >/dev/null 2>&1 || die "C++ compiler not found (set CXX=
 BUILD_DIR="${BUILD_DIR:-$(mktemp -d)}"
 trap 'if [ "${KEEP:-0}" = "1" ]; then echo "build dir: ${BUILD_DIR}"; else rm -rf "${BUILD_DIR}"; fi' EXIT
 
-TESTS=(cancel_token pipe_progress job_future json_options pcm_buffer_range lease_registry utf8_utils audio_gate scoped_timer buffer_pool sha256)
+TESTS=(cancel_token pipe_progress job_future json_options pcm_buffer_range lease_registry utf8_utils audio_gate scoped_timer buffer_pool sha256 marian_session_config)
 
 OVERALL=0
 for name in "${TESTS[@]}"; do

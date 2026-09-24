@@ -432,3 +432,11 @@ reading and rejects an out-of-range added-token ID before integer conversion.
 token IDs, oversized sparse files and a 1e300 token ID under ASan/UBSan.
 Malformed precompiled charsmaps and publisher-tokenizer golden vectors remain
 tracked separately in `lib_overview.md` U23.
+
+`marian_session_config.h` is consumed by `MarianEngine` during local model
+setup. It disables ONNX Runtime intra-op worker spinning by default so the
+translator does not contend with ASR, permits explicit `MARIAN_ORT_SPIN=1`
+for benchmarks, and fails setup with ORT's actual error if the setting cannot
+be applied. `marian_session_config_test.cpp` runs the production function
+against a fake ORT API, covering defaults, opt-in, invalid overrides and
+provider rejection.
