@@ -12,6 +12,7 @@ import android.graphics.*
 import android.hardware.display.DisplayManager
 import android.hardware.display.VirtualDisplay
 import android.media.ImageReader
+import android.media.Image
 import android.media.projection.MediaProjection
 import android.media.projection.MediaProjectionManager
 import android.os.*
@@ -51,7 +52,7 @@ class ReadingOverlayService : Service() {
     private var projection: MediaProjection?=null
     private var display: VirtualDisplay?=null
     private var reader: ImageReader?=null
-    private var frameWaiter: CancellableContinuation<Bitmap>?=null
+    private var frameWaiter: CancellableContinuation<*>?=null
     private var handle: LinearLayout?=null
     private var panel: LinearLayout?=null
     private var selector: LinearLayout?=null
@@ -199,25 +200,19 @@ class ReadingOverlayService : Service() {
         clearPage();region=null;motion.reset();generation++;trigger.reset()
         if(::controller.isInitialized)controller.invalidate()
     }
-    private suspend fun screenshot(clean: Boolean=true): Bitmap {
+    private suspend fun <T> capture(clean: Boolean, read: (Image)->T): T {
         if(clean){handle?.visibility=View.INVISIBLE;panel?.visibility=View.GONE;pageView?.visibility=View.INVISIBLE}
         try {
             if(clean)delay(100) // Only OCR needs a clean frame; motion sampling leaves translations visible.
             val input=checkNotNull(reader){uiText(UiR.string.service_screen_capture_has_stopped_c682a)}
             while(true){val old=input.acquireLatestImage() ?: break;old.close()}
-            return withTimeout(5000) {suspendCancellableCoroutine {continuation->
+            return withTimeout(5000) {suspendCancellableCoroutine {continuation: CancellableContinuation<T>->
                 frameWaiter=continuation
                 input.setOnImageAvailableListener({images->
                     val image=images.acquireLatestImage() ?: return@setOnImageAvailableListener
                     try {
                         if(!continuation.isActive)return@setOnImageAvailableListener
-                        val plane=image.planes[0];check(plane.pixelStride==4){uiText(UiR.string.service_unsupported_screen_pixel_stride_1_s_69dba, plane.pixelStride)}
-                        val paddedWidth=plane.rowStride/4
-                        val padded=Bitmap.createBitmap(paddedWidth,image.height,Bitmap.Config.ARGB_8888)
-                        padded.copyPixelsFromBuffer(plane.buffer)
-                        val cropped=Bitmap.createBitmap(padded,0,0,image.width,image.height)
-                        if(cropped!==padded)padded.recycle()
-                        continuation.resume(cropped)
+                        continuation.resume(read(image))
                     }catch(e: Exception){if(continuation.isActive)continuation.resumeWithException(e)}finally{image.close()}
                 },handler)
                 display?.surface=input.surface ?: error(uiText(UiR.string.service_screen_capture_has_stopped_c682a))
@@ -227,38 +222,49 @@ class ReadingOverlayService : Service() {
             if(clean && !stopping && !setupSuppressed)handle?.visibility=View.VISIBLE
         }
     }
+    private suspend fun screenshot(clean: Boolean=true): Bitmap = capture(clean) { image ->
+        val plane=image.planes[0];check(plane.pixelStride==4){uiText(UiR.string.service_unsupported_screen_pixel_stride_1_s_69dba, plane.pixelStride)}
+        val paddedWidth=plane.rowStride/4
+        val padded=Bitmap.createBitmap(paddedWidth,image.height,Bitmap.Config.ARGB_8888)
+        padded.copyPixelsFromBuffer(plane.buffer)
+        val cropped=Bitmap.createBitmap(padded,0,0,image.width,image.height)
+        if(cropped!==padded)padded.recycle()
+        cropped
+    }
+    private data class MotionFrame(val pixels: IntArray,val width: Int,val height: Int)
+    private suspend fun motionFrame(): MotionFrame = capture(false) { image ->
+        val plane=image.planes[0]
+        check(plane.pixelStride==4){uiText(UiR.string.service_unsupported_screen_pixel_stride_1_s_69dba, plane.pixelStride)}
+        MotionFrame(ReadingMotionSampler.sample(plane.buffer,image.width,image.height,plane.rowStride,plane.pixelStride),image.width,image.height)
+    }
     private fun signature(bitmap: Bitmap): IntArray {
         val tiny=Bitmap.createScaledBitmap(bitmap,32,48,false)
         return IntArray(32*48).also {pixels->tiny.getPixels(pixels,0,32,0,0,32,48);pixels.indices.forEach {i->val p=pixels[i];pixels[i]=(Color.red(p)*3+Color.green(p)*6+Color.blue(p))/10};tiny.recycle()}
     }
     private suspend fun samplePage() {
         try {
-            val bitmap=screenshot(clean=false)
-            try {
-                val masks=mutableListOf(PixelCrop(0,0,bitmap.width,(bitmap.height*.055f).toInt()),
-                    PixelCrop(0,(bitmap.height*.94f).toInt(),bitmap.width,bitmap.height))
+            val frame=motionFrame()
+            run {
+                val masks=mutableListOf(PixelCrop(0,0,frame.width,(frame.height*.055f).toInt()),
+                    PixelCrop(0,(frame.height*.94f).toInt(),frame.width,frame.height))
                 handle?.let {view->
                     val position=IntArray(2);view.getLocationOnScreen(position);val screen=screenSize()
-                    masks+=PixelCrop(position[0]*bitmap.width/screen.first,position[1]*bitmap.height/screen.second,
-                        (position[0]+view.width)*bitmap.width/screen.first,(position[1]+view.height)*bitmap.height/screen.second)
+                    masks+=PixelCrop(position[0]*frame.width/screen.first,position[1]*frame.height/screen.second,
+                        (position[0]+view.width)*frame.width/screen.first,(position[1]+view.height)*frame.height/screen.second)
                 }
                 pageCrop?.let {crop->
                     // Ignore our replacement pixels, including the previous frame's masks,
                     // so asynchronous layout/font changes cannot imitate reader movement.
                     if(pageView?.visibility==View.VISIBLE)latest.boxTranslations.forEach {box->
-                        OcrPageLayout.box(box.line,crop,pageWidth,pageHeight,bitmap.width,bitmap.height,coverEdges=true)?.let {masks+=it}
+                        OcrPageLayout.box(box.line,crop,pageWidth,pageHeight,frame.width,frame.height,coverEdges=true)?.let {masks+=it}
                     }
                 }
-                val grid=Bitmap.createScaledBitmap(bitmap,ReadingMotion.WIDTH,ReadingMotion.HEIGHT,false)
-                val pixels=IntArray(ReadingMotion.WIDTH*ReadingMotion.HEIGHT)
-                grid.getPixels(pixels,0,ReadingMotion.WIDTH,0,0,ReadingMotion.WIDTH,ReadingMotion.HEIGHT)
-                if(grid!==bitmap)grid.recycle()
-                if(motion.observe(pixels,bitmap.width,bitmap.height,masks)) {
+                if(motion.observe(frame.pixels,frame.width,frame.height,masks)) {
                     // observe() already advanced the baseline. Keeping it measures every
                     // moving frame; resetting here used to skip alternate scroll samples.
                     clearPage();trigger.movement(now());generation++;working=false;controller.invalidate();original?.text="";translated?.text=""
                 }
-            }finally{bitmap.recycle()}
+            }
             if(trigger.ready(now()) && !working) {
                 val clean=screenshot();trigger.accepted(now());submit(clean)
             }

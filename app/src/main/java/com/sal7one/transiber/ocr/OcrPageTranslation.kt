@@ -4,6 +4,66 @@ import com.sal7one.common_jni.ocr.OcrLine
 
 internal data class TranslatedOcrBox(val line: OcrLine, val translation: String)
 
+/** Join adjacent lines from one reading block before invoking a text translator.
+ * Keep distant balloons separate and retain their union geometry for the overlay.
+ */
+internal object OcrReadingGroups {
+    fun group(lines: List<OcrLine>): List<OcrLine> {
+        if (lines.size < 2) return lines
+        val groups = ArrayList<OcrLine>(lines.size)
+        var first = lines.first()
+        var last = first
+        var count = 1
+        for (next in lines.drop(1)) {
+            if (count < 4 && first.text.length + next.text.length + 1 <= 400 && adjacent(last, next)) {
+                val left = minOf(first.x.toLong(), next.x.toLong())
+                val top = minOf(first.y.toLong(), next.y.toLong())
+                val right = maxOf(first.x.toLong() + first.width, next.x.toLong() + next.width)
+                val bottom = maxOf(first.y.toLong() + first.height, next.y.toLong() + next.height)
+                if (right - left <= Int.MAX_VALUE && bottom - top <= Int.MAX_VALUE) {
+                    first = first.copy(x = left.toInt(), y = top.toInt(), width = (right - left).toInt(),
+                        height = (bottom - top).toInt(), text = first.text + "\n" + next.text,
+                        confidence = minOf(first.confidence, next.confidence))
+                    last = next
+                    count++
+                } else {
+                    groups += first
+                    first = next
+                    last = next
+                    count = 1
+                }
+            } else {
+                groups += first
+                first = next
+                last = next
+                count = 1
+            }
+        }
+        groups += first
+        return groups
+    }
+
+    private fun adjacent(a: OcrLine, b: OcrLine): Boolean {
+        if (a.width <= 0 || a.height <= 0 || b.width <= 0 || b.height <= 0) return false
+        val aVertical = a.height.toLong() * 2 > a.width.toLong() * 3
+        val bVertical = b.height.toLong() * 2 > b.width.toLong() * 3
+        val vertical = aVertical && bVertical
+        if (vertical) {
+            // Japanese columns are read right to left. Do not join columns from
+            // different panels whose vertical extents barely intersect.
+            val overlap = minOf(a.y.toLong() + a.height, b.y.toLong() + b.height) - maxOf(a.y, b.y)
+            val gap = a.x.toLong() - (b.x.toLong() + b.width)
+            return b.x < a.x && overlap * 2 >= minOf(a.height, b.height) &&
+                gap >= -minOf(a.width, b.width) / 4 && gap <= maxOf(a.width, b.width)
+        }
+        if (aVertical || bVertical) return false
+        val overlap = minOf(a.x.toLong() + a.width, b.x.toLong() + b.width) - maxOf(a.x, b.x)
+        val gap = b.y.toLong() - (a.y.toLong() + a.height)
+        return b.y > a.y && overlap * 2 >= minOf(a.width, b.width) &&
+            gap >= -minOf(a.height, b.height) / 4 && gap <= maxOf(a.height, b.height)
+    }
+}
+
 /** Keeps each response attached to its source box; never guesses alignment from generated newlines. */
 internal object OcrPageTranslation {
     suspend fun run(

@@ -90,12 +90,13 @@ internal class CameraOcrController(context: Context) : AutoCloseable {
                         }
                         ensureActive()
                         if(frame.epoch != frameEpoch.get()) continue // A stale frame must not mark the newer request finished.
+                        val readingLines=if(positioned) OcrReadingGroups.group(lines) else lines
                         val text=lines.joinToString("\n") { it.text }
                         val settled = stability.observe(text,frame.captured)
                         if(text.isBlank() && !frame.captured && !settled) continue
                         if(positioned || text != mutable.value.text) { revision++;mutable.update { it.copy(text=text,translation="",boxTranslations=emptyList()) } }
                         mutable.update { it.copy(processing=false,translating=settled && text.isNotBlank() && snapshot!=null && source!=target,lines=lines,width=bitmap.width,height=bitmap.height,ocrMs=(System.nanoTime()-begun)/1_000_000) }
-                        if(settled && text.isNotBlank() && snapshot != null && source != target) textQueue.trySend(TextRequest(text,revision,lines))
+                        if(settled && text.isNotBlank() && snapshot != null && source != target) textQueue.trySend(TextRequest(text,revision,readingLines))
                     } finally { frame.bitmap.recycle() }
                 }
             } catch(e: CancellationException) { throw e }

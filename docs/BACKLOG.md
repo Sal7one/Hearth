@@ -45,6 +45,13 @@
 - [x] Preserve continuous motion sampling and discard stale OCR frames safely.
 - [x] Complete phone reading checks, flavor gates and APK checks — [validation](validation-v39.md).
 
+## Screen reading performance follow-up
+
+- [x] Translate adjacent OCR lines as one positioned block where geometry supports it; keep separate balloons separate.
+- [x] Retain existing overlay labels as translations arrive instead of rebuilding every box per result.
+- [x] Sample scroll motion directly from the RGBA capture plane, avoiding a full-size Bitmap allocation on every check.
+- [ ] Measure Manga OCR's autoregressive ONNX decoder and Meiki on the owner's phone with real pages. The pinned Manga export has no cache input; any decoder replacement needs a verified artifact and matching native contract.
+
 ## 0.21.1 — caption translation setup regression
 
 - [x] Reproduce installed Nemotron + translator rejected after CC → advanced Translate.

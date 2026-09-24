@@ -503,3 +503,12 @@ headers, including a last odd-sized metadata chunk whose pad byte is omitted.
 It still rejects other subformats, invalid channel masks, misaligned frames and
 over-limit files. `PcmWaveTest` covers those boundaries. The extensible header
 fields follow [Microsoft's WAVEFORMATEXTENSIBLE specification](https://learn.microsoft.com/en-us/windows/win32/api/mmreg/ns-mmreg-waveformatextensible).
+
+`OcrReadingGroups` is consumed only by positioned camera/screen reading: it joins
+nearby consecutive horizontal lines or right-to-left Japanese columns before
+the existing translator is called, preserving one union box for each block.
+`OcrPageTranslationTest` covers call reduction, geometry, reading order and
+separate balloons. `ReadingMotionSampler` is consumed by the screen-reading
+service's periodic scroll check; it samples a padded RGBA capture plane into
+the existing 64×128 motion grid without allocating a full-size Bitmap.
+`ReadingMotionTest` covers channel order, row padding and invalid stride.

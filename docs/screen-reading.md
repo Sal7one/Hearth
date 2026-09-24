@@ -41,7 +41,8 @@ original files in Downloads/Hearth/models or the folder selected in Downloads.
 
 ## Automatic reading
 
-Motion checks sample a 64×128 luminance grid with the overlay still visible; they
+Motion checks read only a 64×128 grid from the capture plane, without creating
+a full-screen Bitmap on every 250 ms check. They run with the overlay still visible and
 exclude the handle, status bar, navigation region and current/previous translation
 rectangles. Changes to Hearth's own painted text do not trigger a capture loop.
 Movement is detected from the remaining visible reader content. Motion-only
@@ -70,12 +71,13 @@ releases capture resources. A session cannot restart without fresh consent.
 - Replacements are translucent white text covers over OCR boxes, without artwork
   inpainting. Android limits pass-through overlay opacity (normally 80%); the app
   respects the device's maximum, so some original text can remain faintly visible.
-- Meiki/Paddle return line boxes; Manga uses the drawn bubble. Semantic paragraph
-  grouping and dense-page reading order remain future work. A small clipped cover
+- Meiki/Paddle return line boxes; Manga uses the drawn bubble. Nearby consecutive
+  lines in a single horizontal or vertical reading block are grouped before
+  translation. Dense-page panel order remains future work. A small clipped cover
   margin handles detector-trimmed glyphs without scaling to a vertical column's length.
-- Each box is translated independently through the selected existing provider.
-  This preserves geometry but loses cross-line sentence context and may take more
-  requests/time. Pages are bounded to 64 boxes and 3,000 characters; larger pages
+- Each grouped block is translated through the selected existing provider, retaining
+  its union geometry and cross-line context. Separate blocks still require separate
+  requests. Pages are bounded to 64 blocks and 3,000 characters; larger pages
   need a smaller selection. Identical text is cached within the session.
 - Visual detection can miss tiny/low-contrast movement, especially when little
   unpainted page content remains, or react to animations.

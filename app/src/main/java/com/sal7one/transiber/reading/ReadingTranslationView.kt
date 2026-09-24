@@ -17,26 +17,46 @@ internal class ReadingTranslationView(
     private val onBox: (TranslatedOcrBox) -> Unit,
 ) : FrameLayout(context) {
     private var boxes=emptyList<TranslatedOcrBox>()
+    private val labels=LinkedHashMap<TranslatedOcrBox, TextView>()
     private var imageWidth=1
     private var imageHeight=1
     private var crop=PixelCrop(0,0,1,1)
     var showOriginal=false
-        set(value) { field=value; rebuild() }
+        set(value) { if(field!=value) { field=value; render(true) } }
     init { setBackgroundColor(Color.TRANSPARENT) }
     fun update(value: List<TranslatedOcrBox>, width: Int=imageWidth, height: Int=imageHeight, area: PixelCrop=crop) {
         if(boxes!=value || imageWidth!=width || imageHeight!=height || crop!=area) {
-            boxes=value;imageWidth=width;imageHeight=height;crop=area;rebuild()
+            val layoutChanged=imageWidth!=width || imageHeight!=height || crop!=area
+            boxes=value;imageWidth=width;imageHeight=height;crop=area;render(layoutChanged)
         }
     }
     override fun onSizeChanged(w: Int,h: Int,oldw: Int,oldh: Int) {
         // Cached translations can arrive before first layout. Adding children inside
         // onSizeChanged leaves them unmeasured until another UI event; defer a traversal.
-        post { if(isAttachedToWindow)rebuild() }
+        post { if(isAttachedToWindow)render(true) }
     }
-    private fun rebuild() {
-        removeAllViews()
-        if(!showOriginal)boxes.forEach { box ->
-            val bounds=OcrPageLayout.box(box.line,crop,imageWidth,imageHeight,width,height,coverEdges=true) ?: return@forEach
+    private fun render(layoutChanged: Boolean) {
+        if(showOriginal) {
+            if(labels.isNotEmpty()) { removeAllViews();labels.clear() }
+            return
+        }
+        val wanted=boxes.toSet()
+        val old=labels.entries.iterator()
+        while(old.hasNext()) {
+            val entry=old.next()
+            if(entry.key !in wanted) { removeView(entry.value);old.remove() }
+        }
+        boxes.forEach { box ->
+            val bounds=OcrPageLayout.box(box.line,crop,imageWidth,imageHeight,width,height,coverEdges=true)
+            if(bounds==null) {
+                labels.remove(box)?.let(::removeView)
+                return@forEach
+            }
+            val existing=labels[box]
+            if(existing!=null) {
+                if(layoutChanged) existing.layoutParams=LayoutParams(bounds.width,bounds.height).apply {leftMargin=bounds.left;topMargin=bounds.top}
+                return@forEach
+            }
             val label=TextView(context).apply {
                 text=box.translation
                 setTextColor(Color.BLACK);setBackgroundColor(Color.WHITE)
@@ -50,7 +70,7 @@ internal class ReadingTranslationView(
                 setOnClickListener {onBox(box)}
             }
             addView(label,LayoutParams(bounds.width,bounds.height).apply {leftMargin=bounds.left;topMargin=bounds.top})
+            labels[box]=label
         }
-        invalidate()
     }
 }

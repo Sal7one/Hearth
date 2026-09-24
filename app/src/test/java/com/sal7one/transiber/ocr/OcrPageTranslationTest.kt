@@ -7,6 +7,28 @@ import org.junit.Test
 
 class OcrPageTranslationTest {
     private fun line(text: String,x: Int=0,y: Int=0,w: Int=100,h: Int=50)=OcrLine(x,y,w,h,text,1f)
+    @Test fun nearbyLinesUseOneTranslationWhileSeparateBalloonsStaySeparate()=runBlocking {
+        val lines=listOf(line("Good",10,10),line("morning",12,65),line("Other bubble",240,10))
+        val grouped=OcrReadingGroups.group(lines)
+        assertEquals(2,grouped.size)
+        assertEquals("Good\nmorning",grouped[0].text)
+        assertEquals(line("Good\nmorning",10,10,102,105),grouped[0])
+        var calls=0
+        OcrPageTranslation.run(grouped,{true},{calls++;"translated"},{})
+        assertEquals(2,calls)
+    }
+    @Test fun adjacentJapaneseColumnsKeepRightToLeftReadingOrder() {
+        val grouped=OcrReadingGroups.group(listOf(
+            line("右",120,20,24,120),line("左",84,24,24,116),line("別",20,220,24,100)))
+        assertEquals(listOf("右\n左","別"),grouped.map { it.text })
+        assertEquals(line("右\n左",84,20,60,120),grouped[0])
+    }
+    @Test fun groupingDoesNotMergeUnrelatedRowsOrUnlimitedText() {
+        val rows=listOf(line("a",0,0),line("b",0,200),line("c",0,400))
+        assertEquals(rows,OcrReadingGroups.group(rows))
+        val close=(0..5).map {line("x",0,it*55)}
+        assertEquals(listOf(4,2),OcrReadingGroups.group(close).map { it.text.count { c -> c == 'x' } })
+    }
     @Test fun duplicateAndMultilineOutputsStayAttachedToTheirOwnBoxes()=runBlocking {
         val lines=listOf(line("駅",10),line("駅",200))
         val updates=mutableListOf<List<TranslatedOcrBox>>()

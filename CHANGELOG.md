@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.22.16 — 2026-09-24 · screen reading speed
+
+- Group nearby OCR lines into one positioned translation block, reducing translation calls for multi-line bubbles while keeping separate bubbles apart.
+- Keep existing on-screen translation labels as new blocks finish instead of rebuilding the whole overlay each time.
+- Sample motion directly from the small RGBA capture grid without allocating a full-size Bitmap on each scroll check.
+- Add host tests for grouping, geometry, and padded capture-plane sampling. Manga OCR's uncached autoregressive decoder remains a separate device-performance follow-up.
+
 ## 0.22.4 — 2026-09-23 · experimental local models and comparison
 
 - Add Xiaomi MiLMMT-46 1B Q4/Q5 as an experimental local translator with pinned downloads, advertised language coverage and its publisher-format native prompt. It is not the Easy setup default.
