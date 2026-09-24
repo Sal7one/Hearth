@@ -769,7 +769,38 @@ was run for the rebuilt Nemotron library.
 - Is it acceptable to ship two runtime variants per ggml plugin (APK size) or
   use ggml's backend-DL variants? (F1.)
 
-## 9. Media-engine questions not verified (original repo unavailable)
+## 9. Original media-engine review (separate repository)
+
+The original media-suite checkout is
+`/Users/salehalanazi/ZCodeProject/ffmpegmakercustom` at `978382d` on its own
+`main` (171 local commits ahead of its remote). It is **not** part of this
+standalone app and was not merged into this repository. Its media host suite
+passed on 2026-09-24 (including 95 filter goldens and session-v2
+equivalence). The following findings are code-path reviews, not reproduced
+I/O-fault tests:
+
+- **M1 · P1 · demux read errors can become success.**
+  `media/media_engine.cpp:1409-1507` loops while `av_read_frame >= 0` and then
+  writes a trailer and reports success without distinguishing `AVERROR_EOF`
+  from another negative read result. `feedLeg` at `:2302-2318` likewise treats
+  every negative read as file EOF; in loop-audio mode it even seeks and loops
+  after a read error. A damaged file or I/O failure can therefore produce a
+  truncated output marked successful. Save the read result, accept only EOF as
+  completion, and surface the actual `avErrStr(ret)` otherwise. Add a
+  fault-injectable demux test before landing this in the original repo.
+- **M2 · P2 · decoder flush error code is overwritten.**
+  `drainDecoder` at `media_engine.cpp:2228-2256` writes the original FFmpeg
+  error through `errOut` and returns `-1`; both callers at `:2280-2292` assign
+  that return value back into the same variable and then call `avErrStr(r)`.
+  The user sees `-1` instead of the decoder's actual code. Keep a separate
+  `ffmpegError` variable and test the injected failure path.
+
+The media-engine `media_engine.h` and Kotlin `MediaEditKit.kt` remain ADD-only
+contracts in that repository. These findings are tracked here for the owner's
+library program; fixing them requires a separate original-repo commit and its
+native, Gradle and flavor gates.
+
+Further media-engine questions not yet verified:
 - Packet/frame ownership (`av_packet_unref`/`av_frame_unref` on every path,
   `av_read_frame` error vs EOF handling).
 - Decoder and encoder flush/drain on EOF and on cancel (`avcodec_send_packet(NULL)`
@@ -833,6 +864,11 @@ For Marian, re-read the tokenizer's file I/O, JSON number and surrogate paths
 and the engine's ORT session-options path; added fixture-based host coverage.
 The rest of Marian engine shape/deadline behavior remains at the earlier
 review level recorded in U24.
+The follow-up pass read the complete native `model_integrity.h` tree walk and
+its Kotlin golden, all Vosk/ONNX JNI validation paths and their Kotlin wrappers,
+the `MicRecorder`/`RealtimeSttSession` capture failure path, and selected
+original-repo `media_engine.cpp` remux/feed/flush loops (§9). The original
+media host suite passed; no original-repo source was edited.
 
 **Read in part (initial pass; current coverage is above and in §0):** `whisper_engine.cpp` (~550/1330: worker, params, inference,
 reset/release; not initialize, push, detectLanguage, batch), `router/stt_jni.cpp`
@@ -1548,3 +1584,8 @@ long-lived deadline timer per engine.
   final Gradle unit tests and both QA Kotlin compiles passed. Device capture
   and ShortArray overflow accounting remain unverified/open. No device or paid
   call.
+- 2026-09-24 — Selected original media-engine audit: read remux and
+  transcode feed/flush paths in the separate original checkout (`978382d`),
+  and ran its host media suite: 95 goldens and session-v2
+  equivalence all green. M1/M2 in §9 are untested fault-path findings; no
+  original-repo edit, device or paid call.
