@@ -462,3 +462,10 @@ stream lock and resets it when the stream is cleared or its input rate changes.
 random chunk sizes for 44.1→16, 16→24 and 16→16 kHz, plus output count,
 continuity, reset and invalid input. It is a linear interpolator: downsampling
 still requires band-limited input for alias-free conversion.
+
+`PcmWave` is consumed by benchmark-file import and generated-voice playback.
+Its bounded parser accepts PCM16 in both the ordinary and extensible WAV
+headers, including a last odd-sized metadata chunk whose pad byte is omitted.
+It still rejects other subformats, invalid channel masks, misaligned frames and
+over-limit files. `PcmWaveTest` covers those boundaries. The extensible header
+fields follow Microsoft's WAVEFORMATEXTENSIBLE specification.

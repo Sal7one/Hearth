@@ -19,10 +19,28 @@ object PcmWave {
             when (text(offset)) {
                 "fmt " -> {
                     require(!hasFormat && count >= 16) { "Invalid or repeated WAV format" }
-                    require(u16(start) == 1 && u16(start + 14) == 16) { "WAV must use uncompressed 16-bit PCM" }
+                    val format = u16(start)
+                    require((format == 1 || format == 0xfffe) && u16(start + 14) == 16) {
+                        "WAV must use uncompressed 16-bit PCM"
+                    }
                     channels = u16(start + 2); rate = u32(start + 4).toInt()
                     require(channels in 1..2 && rate in 8000..48000) { "WAV must be mono/stereo at 8–48 kHz" }
                     require(u16(start + 12) == channels * 2 && u32(start + 8) == rate.toLong() * channels * 2) { "Invalid WAV frame alignment" }
+                    if (format == 0xfffe) {
+                        require(count >= 40 && u16(start + 16) >= 22 &&
+                            18L + u16(start + 16) <= count) { "Invalid extensible WAV format" }
+                        require(u16(start + 18) in 1..16) { "Invalid PCM valid-bit count" }
+                        val mask = u32(start + 20)
+                        require(mask == 0L || java.lang.Long.bitCount(mask) == channels) {
+                            "Invalid WAV channel mask"
+                        }
+                        val pcmGuid = byteArrayOf(
+                            1, 0, 0, 0, 0, 0, 0x10, 0, 0x80.toByte(), 0,
+                            0, 0xAA.toByte(), 0, 0x38, 0x9B.toByte(), 0x71)
+                        require((0 until 16).all { bytes[start + 24 + it] == pcmGuid[it] }) {
+                            "WAV extensible subformat must be PCM"
+                        }
+                    }
                     hasFormat = true
                 }
                 "data" -> {
@@ -31,8 +49,11 @@ object PcmWave {
                 }
             }
             val next = start.toLong() + count + (count and 1)
-            require(next <= bytes.size) { "Missing WAV chunk padding" }
-            offset = next.toInt()
+            val unpaddedEnd = start.toLong() + count
+            require(next <= bytes.size || unpaddedEnd == bytes.size.toLong()) {
+                "Missing WAV chunk padding"
+            }
+            offset = minOf(next, bytes.size.toLong()).toInt()
         }
         require(hasFormat && data != null && !data.isEmpty()) { "WAV has no PCM audio" }
         val range = data
