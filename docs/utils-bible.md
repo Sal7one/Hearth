@@ -453,3 +453,12 @@ reaches Kotlin so Clear cannot report success when the reset was rejected.
 `AudioUtils::validateFinitePcm` is consumed by Whisper streaming and batch
 float ingress before resampling or buffering. Its host test covers finite,
 null, NaN and infinity inputs; invalid PCM reports the actual input error.
+
+`AudioStreamResampler` is the Whisper streaming input's sample-rate converter
+when the caller supplies PCM other than 16 kHz. It carries interpolation phase
+and the previous sample across calls; the caller serializes pushes under the
+stream lock and resets it when the stream is cleared or its input rate changes.
+`audio_stream_resampler_test.cpp` checks a one-shot stream against deterministic
+random chunk sizes for 44.1→16, 16→24 and 16→16 kHz, plus output count,
+continuity, reset and invalid input. It is a linear interpolator: downsampling
+still requires band-limited input for alias-free conversion.

@@ -42,7 +42,6 @@ namespace stt {
         // per-thread rather than shared by an engine. It grows to the largest
         // observed streaming chunk and performs no further hot-path allocation.
         thread_local std::vector<float> t_pcmFloatScratch;
-        thread_local std::vector<float> t_resampleScratch;
 
         void resizeScratch(std::vector<float>& scratch, std::size_t size) {
             if (scratch.size() < size) scratch.resize(size);
@@ -137,6 +136,9 @@ namespace stt {
         concurrency::InferenceStopSignal workerDecodeAbort;
 
         std::mutex streamMutex;              // buffer + timeline + voice markers
+        AudioStreamResampler streamResampler; // also guarded by streamMutex
+        std::vector<float> streamResampleScratch;
+        int streamInputRate = 0;
         std::condition_variable streamCv;
 
         std::mutex partialMutex;             // publishedPartial + language cache
@@ -276,6 +278,9 @@ namespace stt {
             silentFramesSkipped = 0;
             droppedSamples = 0;
             audioGate.reset();
+            streamResampler.reset();
+            streamResampleScratch.clear();
+            streamInputRate = 0;
             {
                 std::lock_guard<std::mutex> plock(partialMutex);
                 publishedPartial.clear();
@@ -322,6 +327,9 @@ namespace stt {
                 lastPartialAt = {};
                 lastPromoteAt = {};
                 audioGate.reset();
+                streamResampler.reset();
+                streamResampleScratch.clear();
+                streamInputRate = 0;
             }
             segments.clear();
             detectedLang.clear();
@@ -958,29 +966,7 @@ namespace stt {
         resizeScratch(t_pcmFloatScratch, inputCount);
         AudioUtils::int16ToFloat(samples, t_pcmFloatScratch.data(), inputCount);
 
-        if (sampleRate != WHISPER_RATE) {
-            const std::size_t outputCapacity = AudioUtils::calculateResampleOutputSize(
-                inputCount, sampleRate, WHISPER_RATE
-            );
-            if (outputCapacity == 0 ||
-                outputCapacity > static_cast<std::size_t>(std::numeric_limits<int>::max())) {
-                impl_->setError("Invalid streaming resample configuration");
-                return -1;
-            }
-            resizeScratch(t_resampleScratch, outputCapacity);
-            const std::size_t outputCount = AudioUtils::resampleInto(
-                t_pcmFloatScratch.data(), inputCount, sampleRate, WHISPER_RATE,
-                t_resampleScratch.data(), outputCapacity
-            );
-            if (outputCount == 0) {
-                impl_->setError("Streaming resample failed");
-                return -1;
-            }
-            return pushAudioFloat(
-                t_resampleScratch.data(), static_cast<int>(outputCount), WHISPER_RATE
-            );
-        }
-        return pushAudioFloat(t_pcmFloatScratch.data(), count, WHISPER_RATE);
+        return pushAudioFloat(t_pcmFloatScratch.data(), count, sampleRate);
     }
 
     int WhisperEngine::pushAudioFloat(const float* samples, int count, int sampleRate) {
@@ -1012,19 +998,11 @@ namespace stt {
             return -1;
         }
 
-        // Handle resampling if needed (shouldn't happen if called correctly)
-        std::vector<float> resampled;
+        // The source clock belongs to this streaming session. Keep conversion
+        // and the subsequent buffer append under the same lock so another push
+        // cannot interleave its phase or samples.
         const float* data = samples;
         int dataCount = count;
-        if (sampleRate != WHISPER_RATE) {
-            resampled = AudioUtils::resample(samples, count, sampleRate, WHISPER_RATE);
-            data = resampled.data();
-            dataCount = static_cast<int>(resampled.size());
-            if (dataCount == 0) {
-                impl_->setError("Streaming resample failed");
-                return -1;
-            }
-        }
 
         // O(chunk) append. Voice detection only MARKS utterance boundaries
         // (lastVoiceAt) — it never gates buffering. The previous
@@ -1035,6 +1013,32 @@ namespace stt {
         // be blocked by a slow partial.
         {
             std::lock_guard<std::mutex> lock(impl_->streamMutex);
+            if (sampleRate != impl_->streamInputRate) {
+                impl_->streamInputRate = sampleRate;
+                if (sampleRate != WHISPER_RATE &&
+                    !impl_->streamResampler.configure(sampleRate, WHISPER_RATE)) {
+                    impl_->setError("Invalid streaming resample configuration");
+                    return -1;
+                }
+            }
+            if (sampleRate != WHISPER_RATE) {
+                impl_->streamResampleScratch.clear();
+                const auto result = impl_->streamResampler.push(
+                    samples, static_cast<std::size_t>(count), impl_->streamResampleScratch);
+                if (!result) {
+                    impl_->setError(std::string("Streaming resample failed: ") +
+                                    audioStatusMessage(result.status));
+                    return -1;
+                }
+                if (impl_->streamResampleScratch.empty()) return 0;
+                if (impl_->streamResampleScratch.size() >
+                    static_cast<std::size_t>(std::numeric_limits<int>::max())) {
+                    impl_->setError("Streaming resample output is too large");
+                    return -1;
+                }
+                data = impl_->streamResampleScratch.data();
+                dataCount = static_cast<int>(impl_->streamResampleScratch.size());
+            }
 
             bool active = true;
             if (impl_->vadEnabled && impl_->config.enableVad) {

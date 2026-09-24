@@ -607,6 +607,80 @@ private:
     }
 };
 
+/**
+ * Linear streaming resampler with a continuous integer sample clock.
+ *
+ * Each output is published when its right-hand input sample arrives. This
+ * keeps output identical for one large push and arbitrary chunk boundaries.
+ * The caller owns this mutable instance and serializes pushes. Input must be
+ * band-limited before downsampling; interpolation is not an anti-alias filter.
+ */
+class AudioStreamResampler {
+public:
+    bool configure(int sourceRate, int destinationRate) noexcept {
+        if (sourceRate <= 0 || destinationRate <= 0) return false;
+        sourceRate_ = static_cast<std::uint64_t>(sourceRate);
+        destinationRate_ = static_cast<std::uint64_t>(destinationRate);
+        reset();
+        return true;
+    }
+
+    void reset() noexcept {
+        inputIndex_ = 0;
+        nextOutputNumerator_ = 0;
+        previous_ = 0.0F;
+    }
+
+    int sourceRate() const noexcept { return static_cast<int>(sourceRate_); }
+    int destinationRate() const noexcept { return static_cast<int>(destinationRate_); }
+
+    /** Append this chunk's output; invalid input leaves both state and output intact. */
+    AudioResult push(
+        const float* source, std::size_t sourceCount, std::vector<float>& destination
+    ) {
+        if (sourceRate_ == 0 || destinationRate_ == 0 ||
+            (!source && sourceCount != 0)) {
+            return {AudioStatus::INVALID_ARGUMENT, 0, 0};
+        }
+        if (sourceCount == 0) return {AudioStatus::OK, 0, 0};
+        const auto maximum = std::numeric_limits<std::uint64_t>::max();
+        if (sourceCount > maximum - inputIndex_ ||
+            inputIndex_ + sourceCount - 1 >
+                (maximum - sourceRate_) / destinationRate_) {
+            return {AudioStatus::SIZE_OVERFLOW, 0, 0};
+        }
+        const auto pcmStatus = AudioUtils::validateFinitePcm(source, sourceCount);
+        if (pcmStatus != AudioStatus::OK) return {pcmStatus, 0, 0};
+
+        const std::size_t before = destination.size();
+        for (std::size_t index = 0; index < sourceCount; ++index) {
+            const float sample = source[index];
+            const std::uint64_t end = inputIndex_ * destinationRate_;
+            while (nextOutputNumerator_ <= end) {
+                const double fraction = inputIndex_ == 0 ? 0.0 :
+                    static_cast<double>(nextOutputNumerator_ -
+                        (inputIndex_ - 1) * destinationRate_) /
+                    static_cast<double>(destinationRate_);
+                destination.push_back(static_cast<float>(
+                    static_cast<double>(previous_) * (1.0 - fraction) +
+                    static_cast<double>(sample) * fraction));
+                nextOutputNumerator_ += sourceRate_;
+            }
+            previous_ = sample;
+            ++inputIndex_;
+        }
+        const std::size_t written = destination.size() - before;
+        return {AudioStatus::OK, written, written};
+    }
+
+private:
+    std::uint64_t sourceRate_ = 0;
+    std::uint64_t destinationRate_ = 0;
+    std::uint64_t inputIndex_ = 0;
+    std::uint64_t nextOutputNumerator_ = 0;
+    float previous_ = 0.0F;
+};
+
 } // namespace stt
 
 #undef STT_AUDIO_UTILS_HAS_AARCH64_NEON
