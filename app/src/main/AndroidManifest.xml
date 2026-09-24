@@ -17,11 +17,11 @@
   <activity android:name=".MainActivity" android:exported="true">
    <intent-filter><action android:name="android.intent.action.MAIN" /><category android:name="android.intent.category.LAUNCHER" /></intent-filter>
    <intent-filter><action android:name="android.intent.action.SEND" /><category android:name="android.intent.category.DEFAULT" /><data android:mimeType="image/*" /></intent-filter>
-   <intent-filter><action android:name="android.intent.action.SEND" /><category android:name="android.intent.category.DEFAULT" /><data android:mimeType="text/plain" /></intent-filter>
   </activity>
-  <activity-alias android:name=".HearthTranslate" android:targetActivity=".MainActivity" android:label="@string/action_hearth_translate" android:icon="@drawable/ic_launcher" android:exported="true">
-   <intent-filter><action android:name="android.intent.action.PROCESS_TEXT" /><category android:name="android.intent.category.DEFAULT" /><data android:mimeType="text/plain" /></intent-filter>
-  </activity-alias>
+  <activity android:name=".translation.TranslateSelectionActivity" android:label="@string/action_hearth_translate" android:icon="@drawable/ic_launcher" android:theme="@android:style/Theme.NoDisplay" android:excludeFromRecents="true" android:exported="true">
+   <intent-filter android:label="@string/action_hearth_translate"><action android:name="android.intent.action.PROCESS_TEXT" /><category android:name="android.intent.category.DEFAULT" /><data android:mimeType="text/plain" /></intent-filter>
+   <intent-filter android:label="@string/action_hearth_translate"><action android:name="android.intent.action.SEND" /><category android:name="android.intent.category.DEFAULT" /><data android:mimeType="text/plain" /><data android:mimeType="text/html" /></intent-filter>
+  </activity>
   <activity android:name=".caption.CaptionStartActivity" android:exported="false" />
   <service android:name=".caption.CaptionCaptureService" android:exported="false" android:foregroundServiceType="mediaProjection|microphone" />
   <activity android:name=".reading.ReadingStartActivity" android:exported="false" />

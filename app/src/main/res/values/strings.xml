@@ -3,6 +3,7 @@
     <string name="model_milmmt_original_card">Original MiLMMT model card</string>
     <string name="app_name">Hearth</string>
     <string name="action_hearth_translate">Hearth Translate</string>
+    <string name="action_hearth_translate_empty">No text was provided to Hearth Translate.</string>
     <string name="tile_captions">Live captions</string>
     <string name="tile_reading">Screen translation</string>
     <string name="pipeline_waiting_cleanup">Finishing the previous session…</string>
