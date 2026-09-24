@@ -163,21 +163,24 @@ Java_com_sal7one_common_1jni_engine_whisper_WhisperEngine_nativeInitWhisper(
     JNI_TRY_CATCH_BEGIN
 
     auto engine = EngineRouter::getInstance().getEngine(handle, EngineType::WHISPER);
-    if (!engine) { SET_ERROR("Invalid handle"); return JNI_FALSE; }
+    if (!engine) {
+        jni::throwIllegalStateException(env, "Invalid Whisper handle");
+        return JNI_FALSE;
+    }
 
     JNI_NULL_CHECK(env, modelPath, "modelPath cannot be null", JNI_FALSE);
     JNI_NULL_CHECK(env, configJson, "configJson cannot be null", JNI_FALSE);
     jni::JStringGuard modelPathGuard(env, modelPath);
     jni::JStringGuard configJsonGuard(env, configJson);
     if (!modelPathGuard.valid() || !configJsonGuard.valid()) {
-        SET_ERROR_CODE(INVALID_ARGUMENT, "Invalid UTF-16 in model path or STT config");
+        jni::throwIllegalArgumentException(env, "Invalid UTF-16 in model path or STT config");
         return JNI_FALSE;
     }
 
     EngineConfig config;
     std::string configError;
     if (!parseConfig(configJsonGuard.str(), config, &configError)) {
-        SET_ERROR_CODE(INVALID_ARGUMENT, configError);
+        jni::throwIllegalArgumentException(env, configError.c_str());
         return JNI_FALSE;
     }
     config.modelPath = modelPathGuard.str();
@@ -194,9 +197,13 @@ Java_com_sal7one_common_1jni_engine_whisper_WhisperEngine_nativePushAudioWhisper
     JNI_TRY_CATCH_BEGIN
 
     auto engine = EngineRouter::getInstance().getEngine(handle, EngineType::WHISPER);
-    if (!engine) { SET_ERROR("Invalid handle"); return -1; }
+    if (!engine) {
+        jni::throwIllegalStateException(env, "Invalid Whisper handle");
+        return -1;
+    }
     if (!clampSampleCount(env, samples, count)) {
-        SET_ERROR("samples array is required with a positive in-range count");
+        jni::throwIllegalArgumentException(
+            env, "samples array is required with a positive in-range count");
         return -1;
     }
 
@@ -204,7 +211,10 @@ Java_com_sal7one_common_1jni_engine_whisper_WhisperEngine_nativePushAudioWhisper
     // phase. Copy out before the engine call so JNI does not pin the GC.
     {
         ShortArrayGuard guard(env, samples);
-        if (!guard) { SET_ERROR("Failed to get array"); return -1; }
+        if (!guard) {
+            jni::throwRuntimeException(env, "Failed to get Whisper audio array");
+            return -1;
+        }
         copyOutAndRelease(guard, count);
     }
     return engine->pushAudio(t_i16Scratch.data(), count, sampleRate);
@@ -219,16 +229,23 @@ Java_com_sal7one_common_1jni_engine_whisper_WhisperEngine_nativePushAudioFloatWh
     JNI_TRY_CATCH_BEGIN
 
     auto engine = EngineRouter::getInstance().getEngine(handle, EngineType::WHISPER);
-    if (!engine) { SET_ERROR("Invalid handle"); return -1; }
+    if (!engine) {
+        jni::throwIllegalStateException(env, "Invalid Whisper handle");
+        return -1;
+    }
     if (!clampSampleCount(env, samples, count)) {
-        SET_ERROR("samples array is required with a positive in-range count");
+        jni::throwIllegalArgumentException(
+            env, "samples array is required with a positive in-range count");
         return -1;
     }
 
     // Preserve the caller's rate for the engine-owned streaming resampler.
     {
         FloatArrayGuard guard(env, samples);
-        if (!guard) { SET_ERROR("Failed to get array"); return -1; }
+        if (!guard) {
+            jni::throwRuntimeException(env, "Failed to get Whisper float audio array");
+            return -1;
+        }
         ensureScratch(t_floatScratch, static_cast<size_t>(count));
         std::memcpy(t_floatScratch.data(), guard.get(),
                     static_cast<size_t>(count) * sizeof(float));
@@ -245,7 +262,10 @@ Java_com_sal7one_common_1jni_engine_whisper_WhisperEngine_nativeGetPartialWhispe
     JNI_TRY_CATCH_BEGIN
 
     auto engine = EngineRouter::getInstance().getEngine(handle, EngineType::WHISPER);
-    if (!engine) return nullptr;
+    if (!engine) {
+        jni::throwIllegalStateException(env, "Invalid Whisper handle");
+        return nullptr;
+    }
 
     // Plain transcript text, not Group C JSON: convert as real UTF-8.
     std::string result = engine->getPartial();
@@ -261,7 +281,10 @@ Java_com_sal7one_common_1jni_engine_whisper_WhisperEngine_nativeFinalizeWhisper(
     JNI_TRY_CATCH_BEGIN
 
     auto engine = EngineRouter::getInstance().getEngine(handle, EngineType::WHISPER);
-    if (!engine) { SET_ERROR("Invalid handle"); return nullptr; }
+    if (!engine) {
+        jni::throwIllegalStateException(env, "Invalid Whisper handle");
+        return nullptr;
+    }
 
     std::string result = engine->finalize();
     return result.empty() ? nullptr : jni::utf8ToJString(env, result);
@@ -289,16 +312,24 @@ Java_com_sal7one_common_1jni_engine_whisper_WhisperEngine_nativePushAudioDirectW
 ) {
     JNI_TRY_CATCH_BEGIN
     auto engine = EngineRouter::getInstance().getEngine(handle, EngineType::WHISPER);
-    if (!engine) { SET_ERROR("Invalid handle"); return -1; }
+    if (!engine) {
+        jni::throwIllegalStateException(env, "Invalid Whisper handle");
+        return -1;
+    }
 
-    if (!directBuffer) { SET_ERROR("null direct buffer"); return -1; }
+    if (!directBuffer) {
+        jni::throwIllegalArgumentException(env, "null direct buffer");
+        return -1;
+    }
     auto* base = static_cast<uint8_t*>(env->GetDirectBufferAddress(directBuffer));
-    if (!base) { SET_ERROR("Not a direct buffer"); return -1; }
+    if (!base) {
+        jni::throwIllegalArgumentException(env, "Not a direct buffer");
+        return -1;
+    }
 
     const jlong capacity = env->GetDirectBufferCapacity(directBuffer);
     if (const char* error = pcmBufferRangeError(capacity, byteOffset, byteCount, sampleRate)) {
-        SET_ERROR(error);
-        env->ThrowNew(env->FindClass("java/lang/IllegalArgumentException"), error);
+        jni::throwIllegalArgumentException(env, error);
         return -1;
     }
 
@@ -317,12 +348,15 @@ Java_com_sal7one_common_1jni_engine_whisper_WhisperEngine_nativeResetWhisper(
     // to Kotlin instead of treating the old audio as successfully cleared.
     JNI_TRY_CATCH_BEGIN
     auto engine = EngineRouter::getInstance().getEngine(handle, EngineType::WHISPER);
-    if (!engine) { SET_ERROR("Invalid Whisper handle"); return JNI_FALSE; }
+    if (!engine) {
+        jni::throwIllegalStateException(env, "Invalid Whisper handle");
+        return JNI_FALSE;
+    }
 #if WITH_WHISPER
     return static_cast<WhisperEngine*>(engine.operator->())->resetChecked()
         ? JNI_TRUE : JNI_FALSE;
 #else
-    SET_ERROR("Whisper not compiled");
+    jni::throwIllegalStateException(env, "Whisper not compiled");
     return JNI_FALSE;
 #endif
     JNI_TRY_CATCH_END(env, JNI_FALSE)
@@ -336,11 +370,12 @@ Java_com_sal7one_common_1jni_engine_whisper_WhisperEngine_nativeTranscribeBatchW
 
     auto engine = EngineRouter::getInstance().getEngine(handle, EngineType::WHISPER);
     if (!engine) {
-        SET_ERROR("Invalid handle");
+        jni::throwIllegalStateException(env, "Invalid Whisper handle");
         return nullptr;
     }
     if (!clampSampleCount(env, samples, count)) {
-        SET_ERROR("samples array is required with a positive in-range count");
+        jni::throwIllegalArgumentException(
+            env, "samples array is required with a positive in-range count");
         return nullptr;
     }
 
@@ -351,7 +386,7 @@ Java_com_sal7one_common_1jni_engine_whisper_WhisperEngine_nativeTranscribeBatchW
     {
         ShortArrayGuard guard(env, samples);
         if (!guard) {
-            SET_ERROR("Failed to get audio array");
+            jni::throwRuntimeException(env, "Failed to get Whisper audio array");
             return nullptr;
         }
 
@@ -375,7 +410,9 @@ Java_com_sal7one_common_1jni_engine_whisper_WhisperEngine_nativeTranscribeBatchW
 
             if (nonZeroCount == 0 && maxSample == 0) {
                 LOG_E("JNI", "CRITICAL: All samples are zero - audio corruption detected!");
-                SET_ERROR("Audio data appears corrupted (all zeros)");
+                guard.release();
+                jni::throwIllegalArgumentException(
+                    env, "Audio data appears corrupted (all zeros)");
                 return nullptr;
             }
             if (maxSample < 10) {
