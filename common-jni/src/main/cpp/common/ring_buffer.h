@@ -8,6 +8,10 @@
 #include <cmath>
 #include <cassert>
 #include <cstdint>
+#include <limits>
+#include <stdexcept>
+#include <type_traits>
+#include <utility>
 
 namespace stt {
 
@@ -32,6 +36,8 @@ namespace stt {
 template<typename T>
 class RingBuffer {
 public:
+    static_assert(std::is_trivially_copyable<T>::value,
+                  "RingBuffer requires trivially copyable samples");
     /**
      * Create ring buffer with specified capacity.
      * Capacity is rounded up to next power of two for performance.
@@ -47,26 +53,24 @@ public:
      */
     void reserve(size_t capacity) {
         if (capacity <= buffer_.size()) return;
-        
-        // Round up to next power of two
-        size_t newCapacity = nextPowerOfTwo(capacity);
-        
-        // Linearize existing data before resizing
-        std::vector<T> temp;
+        const size_t newCapacity = nextPowerOfTwo(capacity);
+        if (newCapacity > buffer_.max_size()) {
+            throw std::length_error("RingBuffer capacity exceeds vector max_size");
+        }
+
+        // Allocate once, then copy the two possible contiguous regions. Keep
+        // the old buffer intact if allocation fails.
+        std::vector<T> grown(newCapacity);
         if (size_ > 0) {
-            temp.resize(size_);
-            for (size_t i = 0; i < size_; ++i) {
-                temp[i] = buffer_[(head_ + i) & mask_];
+            const size_t first = std::min(size_, buffer_.size() - head_);
+            std::memcpy(grown.data(), buffer_.data() + head_, first * sizeof(T));
+            if (size_ > first) {
+                std::memcpy(grown.data() + first, buffer_.data(),
+                            (size_ - first) * sizeof(T));
             }
         }
-        
-        buffer_.resize(newCapacity);
+        buffer_.swap(grown);
         mask_ = newCapacity - 1;
-        
-        // Copy back linearized data
-        if (!temp.empty()) {
-            std::copy(temp.begin(), temp.end(), buffer_.begin());
-        }
         head_ = 0;
         
         // Debug: verify invariant
@@ -87,6 +91,29 @@ public:
      * Automatically grows if needed.
      */
     void push_back(const T* data, size_t count) {
+        if (count == 0) return;
+        if (!data) throw std::invalid_argument("RingBuffer push source is null");
+        if (count > std::numeric_limits<size_t>::max() - size_) {
+            throw std::length_error("RingBuffer size overflow");
+        }
+
+        // A caller may append its own contiguousRegion(). Copy that source
+        // before growth or a wrapped write can invalidate/overwrite it.
+        std::vector<T> aliasedSource;
+        if (!buffer_.empty()) {
+            const auto begin = reinterpret_cast<std::uintptr_t>(buffer_.data());
+            const auto source = reinterpret_cast<std::uintptr_t>(data);
+            const size_t bytes = buffer_.size() * sizeof(T);
+            if (source >= begin && source - begin < bytes) {
+                const size_t offsetBytes = static_cast<size_t>(source - begin);
+                if (offsetBytes % sizeof(T) != 0 ||
+                    count > (bytes - offsetBytes) / sizeof(T)) {
+                    throw std::invalid_argument("RingBuffer push source exceeds storage");
+                }
+                aliasedSource.assign(data, data + count);
+                data = aliasedSource.data();
+            }
+        }
         ensureCapacity(size_ + count);
         
         size_t tail = (head_ + size_) & mask_;
@@ -141,6 +168,7 @@ public:
     size_t peek_front(T* dest, size_t count) const {
         count = std::min(count, size_);
         if (count == 0) return 0;
+        if (!dest) throw std::invalid_argument("RingBuffer peek destination is null");
         
         size_t firstChunk = std::min(count, buffer_.size() - head_);
         std::memcpy(dest, &buffer_[head_], firstChunk * sizeof(T));
@@ -166,7 +194,7 @@ public:
      * If true, data() returns a valid pointer to all size_ elements.
      */
     bool isContiguous() const {
-        return size_ == 0 || (head_ + size_) <= buffer_.size();
+        return size_ == 0 || size_ <= buffer_.size() - head_;
     }
     
     /**
@@ -191,8 +219,10 @@ public:
 protected:
     void ensureCapacity(size_t required) {
         if (required <= buffer_.size()) return;
-        
-        size_t newCapacity = std::max(required, buffer_.size() * 2);
+        const size_t doubled = buffer_.size() <=
+            std::numeric_limits<size_t>::max() / 2
+                ? buffer_.size() * 2 : std::numeric_limits<size_t>::max();
+        size_t newCapacity = std::max(required, doubled);
         newCapacity = std::max(newCapacity, size_t(1024));
         
         reserve(newCapacity);
@@ -204,7 +234,10 @@ protected:
      */
     static size_t nextPowerOfTwo(size_t n) {
         if (n == 0) return 1;
-        if (n > (SIZE_MAX >> 1) + 1) return n; // Overflow protection
+        const size_t highestPower = size_t(1) << (sizeof(size_t) * 8 - 1);
+        if (n > highestPower) {
+            throw std::length_error("RingBuffer power-of-two capacity overflow");
+        }
         n--;
         n |= n >> 1;
         n |= n >> 2;

@@ -458,6 +458,18 @@ provider rejection.
 
 ## Whisper reset and PCM ingress follow-up
 
+`RingBuffer` is Whisper's bounded streaming-audio staging buffer. Empty
+pushes are no-ops even before allocation; growth checks arithmetic limits and
+copies wrapped content into one new allocation. Appending its own contiguous
+region is safe when growth or wrap would invalidate the source. The direct
+`ring_buffer_test.cpp` compares 10,000 deterministic push/pop operations with
+a deque and covers empty input, wrap, growth, self-aliasing and overflow.
+
+`LifecycleGate` is held by Whisper, Vosk and ONNX engine operations while a
+reset or teardown excludes new work. `lifecycle_gate_test.cpp` directly checks
+pause admission, timeout remaining closed, a permanent close during pause,
+blocking drain and explicit reopen.
+
 `InferenceStopSignal` is consumed by the Whisper streaming worker's decode
 callback. Its host test checks that a stop interrupts an active streaming
 decode without cancelling a subsequent batch/finalize decode. Finalize drains
