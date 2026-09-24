@@ -57,7 +57,7 @@ add a Log line for every session.
 |---|---|---|---|
 | **utils** (`common/`, `jni/`) | Everything (§11), plus U2/U3/U4/U9/U11/U12 fixes and host tests this session | Nothing | U8, U13 consolidation, U14 tests, U10, U12 log-callback wiring (owner decision); U2/U3/U4/U9/U11/U12 attachment resolved below |
 | **speech/** | Native ABI, session, segmenter, endpoint budget, Qwen/Moonshine/Omnilingual/Nemotron adapters, speech JNI; Kotlin `SpeechSession`, `LiveSpeechProcessor`, `SpeechModels`, `SpeechModelPackage`, `SpeechTranslation`; app publisher/local-model adapters; `speech_smoke.cpp` and runtime scripts | Full caller audit of upstream `6ad8305`; remaining app/runtime integration paths | F2 async windowed decode, F1 ggml ARM variants, H1 ABI v2 (sample rate, interrupt, capabilities), H2/H3/H4, H13/H14, U21 |
-| **translation/** | `text_model.h`, `translation_jni.cpp`, Marian tokenizer/engine/JNI, `CaptionTranslationBridge` | Upstream `TranslationSourceEvidence.kt` (31) + bridge diff; `LocalTranslationSession.kt` (46), `TranslationCatalog.kt` (107), `MarianTranslationSession.kt` (36); app `MarianCascade.kt` (67, new pivot routes), `TranslationLayer.kt` (246), `LocalTranslationModels.kt` (27); `translation_smoke.cpp` (69); `scripts/translation/*` (75) | F1 (llama without dotprod), F9 (wasted compute, 2 threads, prefix KV reuse), U23, U24 |
+| **translation/** | `text_model.h`, `translation_jni.cpp`, Marian tokenizer/engine/JNI, `CaptionTranslationBridge`; U23 bounded-read/ID and U24 spin fixes with host tests | Upstream `TranslationSourceEvidence.kt` (31) + bridge diff; `LocalTranslationSession.kt` (46), `TranslationCatalog.kt` (107), `MarianTranslationSession.kt` (36); app `MarianCascade.kt` (67, new pivot routes), `TranslationLayer.kt` (246), `LocalTranslationModels.kt` (27); `translation_smoke.cpp` (69); `scripts/translation/*` (75) | F1, F9, U23 malformed charsmap/golden ids, U24 model shapes/timer |
 | **audio/** | `common/audio_utils.h`, `audio_gate.h`, `ring_buffer.h`, `core/vad.cpp`, Kotlin `audio/` (all), capture service | App `BenchmarkAudio.kt` (58) | U16 `MicRecorder`, U10 stateful resampler, U21 VAD chunk dependence, U17 |
 | **ffmpeg/** | Nothing: not in this repo | A current Git checkout is available on this host at `/Users/salehalanazi/ZCodeProject/ffmpegmakercustom`; inspect after audio, respecting its ADD-only contracts | §9 questions |
 
@@ -818,6 +818,10 @@ Also read `SpeechTranslation.kt`, app `PublisherSpeechPackage.kt` and
 `scripts/speech/` build, stage, verify and package files in full. The pinned
 Qwen binary/header link was checked against `scripts/verify-release.py` and
 the recorded `runtime-build.json` hashes.
+For Marian, re-read the tokenizer's file I/O, JSON number and surrogate paths
+and the engine's ORT session-options path; added fixture-based host coverage.
+The rest of Marian engine shape/deadline behavior remains at the earlier
+review level recorded in U24.
 
 **Read in part (initial pass; current coverage is above and in §0):** `whisper_engine.cpp` (~550/1330: worker, params, inference,
 reset/release; not initialize, push, detectLanguage, batch), `router/stt_jni.cpp`
@@ -1225,6 +1229,13 @@ adapter share a named daemon attachment with a pthread-key detach destructor;
 
 
 ### U23 · P2 · Proven (by reading) · Marian tokenizer: robust parsers, three reuse gaps
+**Partly resolved (`dc3f32c`):** both files are size-checked before a bounded
+single allocation/read; non-finite/out-of-int64/fractional added-token IDs are
+rejected before casting; the surrogate pointer check is defined. A tiny
+valid-model fixture checks token IDs and oversized sparse files/1e300 under
+ASan/UBSan. **Still open:** malformed charsmap rejection and golden vectors
+from the official tokenizer for pinned language pairs. Changing normalization
+output or rejecting formerly loaded malformed models needs owner approval.
 - `marian/marian_tokenizer.cpp` (hand-written SentencePiece protobuf reader,
   bounded JSON walker, Darts charsmap normalizer, unigram Viterbi). Bounds are
   careful: varint shifts capped, length-delimited fields checked against the
@@ -1252,6 +1263,11 @@ adapter share a named daemon attachment with a pthread-key detach destructor;
 
 
 ### U24 · P2 · Proven (by reading) · Marian engine: spin-waiting threads and base-size-only models
+**Spinning resolved (`2959fef`):** ORT intra-op worker spinning is disabled
+at every Marian session setup, `MARIAN_ORT_SPIN=1` explicitly opts in for
+benchmarks, and an ORT rejection returns its actual error. Nine fake-ORT host
+checks cover the policy. **Still open:** model-derived dimensions and one
+long-lived deadline timer per engine.
 - **Spinning:** `marian_engine.cpp` `applyEnvSessionConfig` sets
   `session.intra_op.allow_spinning=0` (and `arena.extend_strategy`) **only**
   when the process environment has `MARIAN_ORT_SPIN=0` / `MARIAN_ORT_ARENA=1`.
@@ -1418,3 +1434,14 @@ adapter share a named daemon attachment with a pthread-key detach destructor;
   but `verify-release.py:30-32` requires its pinned Qwen runtime binary to be
   rebuilt. Reverted by `e9903e6` after rerunning the same gates;
   `verify-release.py` then passed. H4 remains open for a coupled rebuild.
+- 2026-09-24 — Marian slices: `dc3f32c` bounds tokenizer file reads before
+  allocation and rejects hostile numeric IDs before conversion; the new host
+  fixture passed a valid token sequence, sparse over-limit files and 1e300.
+  `2959fef` disables ORT worker spinning by default beside ASR; a fake-ORT
+  test passed nine policy/error checks. Before both commits, common (now 13
+  programs), speech (57 checks), Marian host ASan/UBSan and the required
+  Gradle/native debug gates passed. Both QA APKs were assembled on the final
+  code and `verify-release.py` passed: Play 44,619,594 bytes; FOSS 36,694,653
+  bytes, both 16 KiB aligned with the expected permissions. U23 malformed
+  charsmap/goldens and U24
+  dynamic shapes/deadline timer remain open; no device or paid call.
