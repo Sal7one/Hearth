@@ -57,7 +57,7 @@ add a Log line for every session.
 ### Status by priority area
 | Area | Read so far | Still to read | Top open items |
 |---|---|---|---|
-| **utils** (`common/`, `jni/`) | Everything (§11), plus U2/U3/U4/U9/U10/U11/U12 fixes and host tests | Nothing | U8 FFmpeg legacy path, U13 consolidation, U12 log-callback wiring (owner decision); U2/U3/U4/U9/U10/U11/U12 attachment and U14 host coverage resolved below |
+| **utils** (`common/`, `jni/`) | Everything (§11), plus U2/U3/U4/U9/U10/U11/U12 fixes and host tests | Nothing | U8 FFmpeg legacy path, U13 consolidation, U12 log-callback wiring (owner decision); H15/H16 deferred unused-API issues; U2/U3/U4/U9/U10/U11/U12 attachment, U14 host coverage, H9 ring safety and lifecycle host coverage resolved below |
 | **speech/** | Native ABI, session, segmenter, endpoint budget, Qwen/Moonshine/Omnilingual/Nemotron adapters, speech JNI; Kotlin `SpeechSession`, `LiveSpeechProcessor`, `SpeechModels`, `SpeechModelPackage`, `SpeechTranslation`; app publisher/local-model adapters; `speech_smoke.cpp` and runtime scripts | Full caller audit of upstream `6ad8305`; remaining app/runtime integration paths | F2 async windowed decode, F1 ggml ARM variants, H1 ABI v2 (sample rate, interrupt, capabilities), H2/H3/H4, H13/H14, U21 |
 | **translation/** | `text_model.h`, `translation_jni.cpp`, Marian tokenizer/engine/JNI, `CaptionTranslationBridge`; U23 bounded-read/ID and U24 spin fixes with host tests | Upstream `TranslationSourceEvidence.kt` (31) + bridge diff; `LocalTranslationSession.kt` (46), `TranslationCatalog.kt` (107), `MarianTranslationSession.kt` (36); app `MarianCascade.kt` (67, new pivot routes), `TranslationLayer.kt` (246), `LocalTranslationModels.kt` (27); `translation_smoke.cpp` (69); `scripts/translation/*` (75) | F1, F9, U23 malformed charsmap/golden ids, U24 model shapes/timer |
 | **audio/** | `common/audio_utils.h`, `audio_gate.h`, `ring_buffer.h`, `core/vad.cpp`, Kotlin `audio/` (all), capture service | App `BenchmarkAudio.kt` (58) | U16 configurable capture/ShortArray overflow observability, U21 VAD chunk dependence, U17 native/Kotlin API consolidation; U16 read failure/timeline, U10 and U17 WAV parsing resolved |
@@ -92,7 +92,7 @@ after the focus areas.
    resampler, one VAD, one JNI helper set, one error channel); U18/U20 one
    integrity and JSON contract with shared golden vectors.
 4. **Tests to add:** `audio_utils` conversions and resampler continuity,
-   `ring_buffer`, `lifecycle_gate`, `native_registry`, model-integrity tree
+   `native_registry`, model-integrity tree
    walk, `buffer_view` plane packers, Marian tokenizer golden ids, JSON parser
    fuzz corpus.
 
@@ -357,6 +357,8 @@ claimed without measurement.
   through the segmenter in `speech_test.cpp`), `audio_utils.h`, `ring_buffer.h`,
   `buffer_pool.h`, `lifecycle_gate.h`, `sha256.h`, `model_integrity.h`,
   `verified_model_file.h`, `utf8_utils.h`.
+  Direct ring-buffer and lifecycle-gate tests landed in `20403e5`; the other
+  utilities have their own coverage updates elsewhere in this log.
 - **Kotlin classes that reference only themselves** (no library or app use):
   `RealtimeSttSession`, `ChunkPacing`, `NativeHandle`, `LanguageDetector`,
   `SttEngineFactoryImpl`. No app use and no tests: `MicRecorder`, `VadDetector`,
@@ -514,9 +516,24 @@ claimed without measurement.
   input): no anti-alias filter and per-chunk rounding drift. The doc comment
   admits it; it's off the live path (AudioRecord delivers 16 kHz). Provide one
   stateful polyphase SRC before any caller streams 44.1/48 kHz.
-- **H9 · P3 · Proven · `RingBuffer::push_back(p, 0)`** on an unallocated buffer
-  takes `&buffer_[0]` of an empty vector (UB; traps under libc++ hardening).
-  Unreachable from current JNI callers (`count > 0` is enforced).
+- **H9 · P3 · Resolved (`20403e5`) · `RingBuffer::push_back(p, 0)`** on an
+  unallocated buffer took `&buffer_[0]` of an empty vector (UB; traps under
+  libc++ hardening). The fix also checks growth overflow, permits self-append
+  and copies wrapped content with one allocation. A direct 10,000-operation
+  deque comparison and sanitizer run now cover this utility. Current JNI
+  callers already enforced `count > 0`.
+- **H15 · P3 · Proven by reading · Unused `stt_kit` resampler violates its
+  published failure contract.** `stt_kit.h:71-78` says a too-small destination
+  returns 0, but `stt_kit.cpp:105-108,139-143` writes and returns a truncated
+  prefix. `stt_kit.cpp:100,127,135` allocates inside a `noexcept` function, so
+  allocation failure terminates the process instead of returning failure.
+  This API has no production caller (F8); repair and test it when a real
+  downstream consumer adopts it, without silently changing its public contract.
+- **H16 · P3 · Proven by reading · Unused `AudioFormat` arithmetic accepts
+  invalid geometry.** `audio_format.h:58-69` casts negative/NaN duration to
+  `size_t`, multiplies sizes without overflow checks and divides by a possibly
+  zero sample rate. It has no production caller (F8). Replace it with checked
+  frame/byte calculations if the type becomes an active library contract.
 - **H11 · P2 · Hypothesis · Native SHA-256 is scalar only** (`common/sha256.h`)
   and re-hashes whole Whisper/Vosk models on every native load
   (`verified_model_file.h`, `model_integrity.h`). ARMv8 SHA-2 instructions
@@ -1595,3 +1612,13 @@ long-lived deadline timer per engine.
   Play 44,687,278 bytes and FOSS 36,761,101 bytes, both 16 KiB aligned with
   expected permissions. Main was pushed; the original media-suite checkout
   remains separate and unpushed.
+- 2026-09-24 — Current native-utils correctness pass (`20403e5`): reviewed
+  `ring_buffer.h`, `lifecycle_gate.h`, their Whisper/Vosk/ONNX consumers,
+  `buffer_view.h`, `audio_utils.h`, and the unused `stt_kit`/`AudioFormat`
+  contracts. H9 is resolved; H15/H16 record the two unused-API hazards.
+  The 19-program common host suite (including new ring/lifecycle tests) passed
+  under Apple Clang ASan/UBSan; speech passed 57 checks. `./gradlew test`, both
+  QA Kotlin compiles and `:common-jni:externalNativeBuildDebug` passed. One
+  preliminary Homebrew-clang invocation failed because that compiler is not
+  installed on this Mac; the successful suite used `/usr/bin/clang++`. No APK,
+  device or paid provider check was run in this pass.
