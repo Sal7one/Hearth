@@ -424,9 +424,3 @@ threads as named daemon threads, and detaches them from a pthread-key
 destructor. `jni_helper_test.cpp` starts and joins native threads under a real
 host JVM before VM shutdown; Android's thread-exit behavior remains a device
 check owned by the app owner.
-
-`UtteranceSegmenter` is consumed by the Qwen windowed speech backend. Starting
-a new utterance copies the bounded pre-roll into its pre-reserved maximum-sized
-buffer; swapping vectors had discarded that reserve. The speech host suite
-includes an allocation-counting test for two maximum-size utterances and the
-existing chunk-size/output equivalence checks.

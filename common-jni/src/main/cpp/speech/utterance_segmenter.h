@@ -41,7 +41,7 @@ private:
     void consumeFrame(const Consumer& emit) {
         position_ += frame_.size();
         const bool speech = gate_.analyzeFloat(frame_.data(), frame_.size()).isActive;
-        if (speech && !active_) { active_ = true; utterance_.assign(preRoll_.begin(), preRoll_.end()); preRoll_.clear(); }
+        if (speech && !active_) { active_ = true; utterance_.swap(preRoll_); preRoll_.clear(); }
         if (active_) {
             utterance_.insert(utterance_.end(), frame_.begin(), frame_.end());
             quiet_ = speech ? 0 : quiet_ + frame_.size();
