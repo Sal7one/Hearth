@@ -2,6 +2,7 @@
     <string name="model_milmmt_description">عائلة ترجمة أحدث بحجم 1 مليار معامل، نحو %1$d ميبيبايت. تدعم العربية والروسية والصينية وغيرها؛ سرعة الهاتف وجودته ما زالتا قيد التجربة. تخضع لشروط Gemma.</string>
     <string name="model_milmmt_original_card">بطاقة نموذج MiLMMT الأصلية</string>
 <string name="app_name">Hearth</string>
+<string name="action_hearth_translate">ترجمة Hearth</string>
 <string name="tile_captions">النص المباشر</string>
 <string name="tile_reading">ترجمة الشاشة</string>
     <string name="pipeline_waiting_cleanup">جارٍ إنهاء الجلسة السابقة…</string>

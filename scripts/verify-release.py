@@ -101,6 +101,7 @@ for flavor in ['play','foss']:
     # Service binding permissions are NOT uses-permission entries: inspect the packaged
     # binary manifest as well, including declarations contributed by dependencies.
     manifest = subprocess.check_output([aapt, 'dump', 'xmltree', apk, '--file', 'AndroidManifest.xml'], text=True)
+    assert 'com.sal7one.transiber.HearthTranslate' in manifest and 'android.intent.action.PROCESS_TEXT' in manifest, f'{flavor}: selected-text translation action missing'
     for sensitive in ('android.permission.BIND_ACCESSIBILITY_SERVICE',
                       'android.accessibilityservice.AccessibilityService',
                       'android.permission.BIND_NOTIFICATION_LISTENER_SERVICE',

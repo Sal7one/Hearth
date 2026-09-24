@@ -38,7 +38,7 @@ import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class,ExperimentalLayoutApi::class)
 @Composable
-internal fun TypedTranslateScreen(onModels: ()->Unit,onConnections: ()->Unit,onVoices: ()->Unit,sharedText: String?=null,onShareConsumed: ()->Unit={}) {
+internal fun TypedTranslateScreen(onModels: ()->Unit,onConnections: ()->Unit,onVoices: ()->Unit,sharedText: String?=null,translateSharedTextImmediately: Boolean=false,onShareConsumed: ()->Unit={}) {
     val uiText = rememberUiText()
 
     val scope=rememberCoroutineScope()
@@ -47,7 +47,7 @@ internal fun TypedTranslateScreen(onModels: ()->Unit,onConnections: ()->Unit,onV
     var source by rememberSaveable {mutableStateOf(prefs.getString("source","en")!!)}
     var target by rememberSaveable {mutableStateOf(prefs.getString("target","ar")!!)}
     var text by rememberSaveable {mutableStateOf("")};var automatic by rememberSaveable {mutableStateOf(true)}
-    LaunchedEffect(sharedText) {sharedText?.let {text=it;automatic=false;onShareConsumed()}}
+    LaunchedEffect(sharedText) {sharedText?.let {text=it;automatic=translateSharedTextImmediately;onShareConsumed()}}
     var picker by remember {mutableStateOf<String?>(null)};var options by rememberSaveable {mutableStateOf(false)}
     val optionsScroll=rememberScrollState()
     var voiceError by remember {mutableStateOf<String?>(null)};var speaking by remember {mutableStateOf(false)}

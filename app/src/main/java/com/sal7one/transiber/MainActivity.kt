@@ -44,13 +44,18 @@ import com.sal7one.transiber.downloads.DownloadsScreen
 class MainActivity : AppCompatActivity() {
  private var sharedImage by mutableStateOf<android.net.Uri?>(null)
  private var sharedText by mutableStateOf<String?>(null)
+ private var translateSharedTextImmediately by mutableStateOf(false)
  private fun receiveShare(intent: android.content.Intent) {
-  if(intent.action!=android.content.Intent.ACTION_SEND)return
-  if(intent.type?.startsWith("image/")==true) {
+  if(intent.action==android.content.Intent.ACTION_PROCESS_TEXT) {
+   sharedText=intent.getCharSequenceExtra(android.content.Intent.EXTRA_PROCESS_TEXT)?.toString()
+   translateSharedTextImmediately=true
+   intent.putExtra("page",11)
+  } else if(intent.action==android.content.Intent.ACTION_SEND && intent.type?.startsWith("image/")==true) {
    @Suppress("DEPRECATION") val uri=intent.getParcelableExtra<android.net.Uri>(android.content.Intent.EXTRA_STREAM)
    if(uri?.scheme=="content") {sharedImage=uri;intent.putExtra("page",10)}
-  } else if(intent.type=="text/plain") {
+  } else if(intent.action==android.content.Intent.ACTION_SEND && intent.type=="text/plain") {
    sharedText=intent.getCharSequenceExtra(android.content.Intent.EXTRA_TEXT)?.toString()
+   translateSharedTextImmediately=false
    intent.putExtra("page",11)
   }
  }
@@ -129,6 +134,7 @@ class MainActivity : AppCompatActivity() {
     fun home() { focus.clearFocus(); homeDestination = null; showHome = true }
     fun back() {
      focus.clearFocus()
+     if (intent.action == android.content.Intent.ACTION_PROCESS_TEXT && page == 11 && route.isRoot) { finish(); return }
      if (page == 15 && setupStep.back() != null) {
       setupStep = requireNotNull(setupStep.back())
       return
@@ -218,7 +224,7 @@ class MainActivity : AppCompatActivity() {
         5 -> CaptionScreen(onBrowseModels = { go(1) })
         7 -> ConversationScreen(onModels = { go(1) }, onCloud = { speechSettings(SettingsLocation.CLOUD) }, onLayoutChanged = { faceLayout = it }, initialFaceToFace = faceLayout, onVoices={voiceSettings()})
         10 -> com.sal7one.transiber.ocr.CameraTranslateScreen(onModels = { localModels("Camera") }, onConnections = { translationSettings(SettingsLocation.CLOUD) }, onDownloads = { go(2) },onVoices={voiceSettings()},sharedImage=sharedImage,onShareConsumed={sharedImage=null},onReading={reading()})
-        11 -> com.sal7one.transiber.translation.TypedTranslateScreen(onModels={localModels("Translation")},onConnections={translationSettings(SettingsLocation.CLOUD)},onVoices={voiceSettings()},sharedText=sharedText,onShareConsumed={sharedText=null})
+        11 -> com.sal7one.transiber.translation.TypedTranslateScreen(onModels={localModels("Translation")},onConnections={translationSettings(SettingsLocation.CLOUD)},onVoices={voiceSettings()},sharedText=sharedText,translateSharedTextImmediately=translateSharedTextImmediately,onShareConsumed={sharedText=null;translateSharedTextImmediately=false})
         12 -> com.sal7one.transiber.voice.VoiceSetup(onDownloads={go(2)}, initialLocation=voiceLocation, entryRevision=voiceEntry)
         8 -> LocalBenchmarkScreen(onModels = { localModels(it) }, onDownloads = { go(2) })
         9 -> com.sal7one.transiber.translation.TranslationHub(onModels = { localModels("Translation") }, initialLocation = translationLocation, entryRevision = translationEntry)

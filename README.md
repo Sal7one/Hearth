@@ -97,7 +97,7 @@ See the [changelog](CHANGELOG.md) and [pipeline audit](docs/pipeline-ownership.m
 | **Live captions** | Read device audio or microphone speech over other apps, with optional translation. Move or resize the bubble, change transparency, scroll history, pause or clear text. Touch pass-through has a separate recovery handle; notifications provide session controls. |
 | **Screen & manga** | Translate text over a shared screen, draw around a region, or refresh after a settled page change. A lock handle lets you scroll the app underneath. Experimental; no artwork inpainting or frame-perfect tracking. |
 | **Conversation / Face to face** | Speak or type in two languages, swap them quickly, keep originals and translations, and hear text aloud. Face to face rotates one half of the screen for the other person. |
-| **Type to translate** | Type above a live translation, copy either text and play it aloud. |
+| **Type to translate** | Type above a live translation, copy either text and play it aloud. Highlight text in another Android app and choose **Hearth Translate** to open it here with your selected translator. |
 | **Camera & OCR** | Recognize and translate camera or imported-photo text with local OCR and your chosen translator. |
 | **Read aloud** | Use Android voices, local Supertonic, or supported self-hosted TTS across Hearth. |
 
