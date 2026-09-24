@@ -38,6 +38,8 @@ Whisper is in the Later queue because it is heavy for real-time mobile use
 merges upstream `6ad8305`; `02aa830` adds this review log.
 This session added `7ffcc37`, `b50952e`, `1fd333c`, `6a44656`, `a45d6b7`,
 `873f33c`, and `27b5e0f` on the same review branch. The owner decides merges.
+The later `f863476` segmenter source experiment was reverted by `e9903e6`
+after the release verifier exposed its pinned-runtime coupling (H4).
 
 **Environment:** the original reviewer's Mac needed Homebrew Clang because
 its Xcode-beta ASan hung (Log E1). On this Mac that path is absent; an
@@ -54,7 +56,7 @@ add a Log line for every session.
 | Area | Read so far | Still to read | Top open items |
 |---|---|---|---|
 | **utils** (`common/`, `jni/`) | Everything (§11), plus U2/U3/U4/U9/U11/U12 fixes and host tests this session | Nothing | U8, U13 consolidation, U14 tests, U10, U12 log-callback wiring (owner decision); U2/U3/U4/U9/U11/U12 attachment resolved below |
-| **speech/** | Native ABI, session, segmenter, endpoint budget, Qwen/Moonshine/Omnilingual/Nemotron adapters, speech JNI; Kotlin `SpeechSession`, `LiveSpeechProcessor`, `SpeechModels`, `SpeechModelPackage` | Upstream `6ad8305` (`nemotron_backend.cpp`, new `source_language.h`, test additions); `SpeechTranslation.kt` (60); app `PublisherSpeechPackage.kt` (87), `LocalSpeechModels.kt` (109); `speech_smoke.cpp` (52); runtime scripts `build-runtimes.sh`, `stage-runtimes.py`, `verify-android-runtimes.py`, `make-package.py`, `qwen.cmake`, `nemo-inject.cmake` (~330) | F2 async windowed decode, F1 ggml ARM variants, H1 ABI v2 (sample rate, interrupt, capabilities), H2/H3 (cut points, neural VAD), U21 |
+| **speech/** | Native ABI, session, segmenter, endpoint budget, Qwen/Moonshine/Omnilingual/Nemotron adapters, speech JNI; Kotlin `SpeechSession`, `LiveSpeechProcessor`, `SpeechModels`, `SpeechModelPackage`, `SpeechTranslation`; app publisher/local-model adapters; `speech_smoke.cpp` and runtime scripts | Full caller audit of upstream `6ad8305`; remaining app/runtime integration paths | F2 async windowed decode, F1 ggml ARM variants, H1 ABI v2 (sample rate, interrupt, capabilities), H2/H3/H4, H13/H14, U21 |
 | **translation/** | `text_model.h`, `translation_jni.cpp`, Marian tokenizer/engine/JNI, `CaptionTranslationBridge` | Upstream `TranslationSourceEvidence.kt` (31) + bridge diff; `LocalTranslationSession.kt` (46), `TranslationCatalog.kt` (107), `MarianTranslationSession.kt` (36); app `MarianCascade.kt` (67, new pivot routes), `TranslationLayer.kt` (246), `LocalTranslationModels.kt` (27); `translation_smoke.cpp` (69); `scripts/translation/*` (75) | F1 (llama without dotprod), F9 (wasted compute, 2 threads, prefix KV reuse), U23, U24 |
 | **audio/** | `common/audio_utils.h`, `audio_gate.h`, `ring_buffer.h`, `core/vad.cpp`, Kotlin `audio/` (all), capture service | App `BenchmarkAudio.kt` (58) | U16 `MicRecorder`, U10 stateful resampler, U21 VAD chunk dependence, U17 |
 | **ffmpeg/** | Nothing: not in this repo | A current Git checkout is available on this host at `/Users/salehalanazi/ZCodeProject/ffmpegmakercustom`; inspect after audio, respecting its ADD-only contracts | §9 questions |
@@ -461,6 +463,26 @@ hygiene, or a smaller speed loss.
   (`utterance_segmenter.h:44`): `swap(preRoll_)` hands the reserved
   `maximum_`-sized buffer to `preRoll_` every other utterance, so `utterance_`
   reallocates as it grows. Fix: `utterance_.assign(preRoll_)`. Small effect.
+  **Open, with build coupling proved 2026-09-24:** `f863476` implemented the
+  source fix and an allocation-counting host test, but the shipped Qwen backend
+  is a pinned prebuilt `libhearth_qwen.so`. `scripts/speech/stage-runtimes.py:62-64`
+  hashes this header, and `scripts/verify-release.py:30-32` rejects a changed
+  header without the rebuilt binary. Commit `e9903e6` reverted the source-only
+  change; the host test had passed, and `verify-release.py` passes after the
+  revert. Reapply H4 with a pinned Qwen runtime rebuild/stage and new hashes.
+- **H13 · P2 · Proven by reading · One bad local speech install blocks all model selection.**
+  `app/.../caption/LocalSpeechModels.kt:37-47` maps every manifest through
+  `require`/`JSONObject` without isolating a corrupt package; `select()` calls
+  `list()`, so a damaged unrelated install prevents selecting a healthy one.
+  Preserve the actual corruption error for the affected package, but list
+  other verified installs and expose a repair/remove action. Add a JVM fixture
+  with one corrupt and one valid package.
+- **H14 · P3 · Proven by reading · Speech smoke tool dereferences missing JSON fields.**
+  `speech/tests/speech_smoke.cpp:15-22` parses any JSON object, then dereferences
+  `profile` and `roles` without null/type checks. A malformed package can crash
+  this host diagnostic instead of printing an error. Validate the manifest or
+  use the package verifier before building the inference config; add a malformed
+  fixture test.
 - **H5 · P2 · Proven · Model files are re-hashed on every open**
   (`SpeechModelPackage.kt:53`, full SHA-256 of every asset), then native code
   re-opens them by path. It's deliberate integrity, but it adds seconds of start
@@ -791,6 +813,11 @@ and tests for `pipe_progress.h`, `scoped_timer.h`, `buffer_pool.h` and
 `jni_utils.h` attachment adapter, `ModelLoader::getEnv`, and the Whisper/Vosk
 live push timer call sites. Read the current original media repository's Git
 identity only; no FFmpeg source has been audited yet.
+Also read `SpeechTranslation.kt`, app `PublisherSpeechPackage.kt` and
+`LocalSpeechModels.kt`, `speech_smoke.cpp`, and all six listed
+`scripts/speech/` build, stage, verify and package files in full. The pinned
+Qwen binary/header link was checked against `scripts/verify-release.py` and
+the recorded `runtime-build.json` hashes.
 
 **Read in part (initial pass; current coverage is above and in §0):** `whisper_engine.cpp` (~550/1330: worker, params, inference,
 reset/release; not initialize, push, detectLanguage, batch), `router/stt_jni.cpp`
@@ -1384,3 +1411,10 @@ adapter share a named daemon attachment with a pthread-key detach destructor;
   current Mac has a Git checkout of the original media app at
   `/Users/salehalanazi/ZCodeProject/ffmpegmakercustom`; FFmpeg is queued
   after audio, not blocked by a missing checkout. No device or paid call.
+- 2026-09-24 — Speech packaging pass: read `SpeechTranslation.kt`, app
+  `PublisherSpeechPackage.kt`/`LocalSpeechModels.kt`, `speech_smoke.cpp`, and
+  six runtime/package scripts. H13/H14 added with file:line evidence. The
+  H4 source/test slice `f863476` passed common/speech/Gradle/native gates,
+  but `verify-release.py:30-32` requires its pinned Qwen runtime binary to be
+  rebuilt. Reverted by `e9903e6` after rerunning the same gates;
+  `verify-release.py` then passed. H4 remains open for a coupled rebuild.
