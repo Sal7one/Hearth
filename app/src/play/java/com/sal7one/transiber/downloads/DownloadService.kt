@@ -66,27 +66,38 @@ class DownloadService : Service() {
         val modelId = record.optString("model")
         val asset = DownloadAssets.find(modelId)
         var complete = record.optBoolean("downloadComplete")
-        if (complete && asset != null) {
-            // A completed public original can be edited or removed before an
-            // installation retry. Verify it again instead of retrying a bad copy.
+        if (complete) {
+            // A completed public original can be edited or removed. Recheck all
+            // transfers before reuse, including direct URLs with a saved TOFU digest.
             downloads.progress(id) { it.put("phase", "Verifying") }
             publish("Verifying ${record.getString("title")}")
             val job = currentCoroutineContext()
+            val expected = asset?.let { DownloadIntegrity.Fingerprint(it.bytes, it.sha256) }
+                ?: record.optString("sha256").takeIf { it.matches(Regex("[0-9a-f]{64}")) }
+                    ?.let { DownloadIntegrity.Fingerprint(record.optLong("verifiedBytes", -1), it) }
+                ?: error("This older download has no saved checksum. Choose Restart download or download another copy.")
             val intact = try {
                 record.optString("uri").takeIf(String::isNotBlank)?.let(Uri::parse)?.let { uri ->
                     contentResolver.openInputStream(uri)?.use { input ->
-                        DownloadIntegrity.matches(input, asset) {
+                        DownloadIntegrity.fingerprint(input, expected.bytes.coerceAtLeast(1)) {
                             job.ensureActive()
                             if (downloads.record(id)?.optString("phase") != "Verifying") throw CancellationException("Download paused or removed")
-                        }
+                        } == expected
                     }
                 } == true
             } catch (e: CancellationException) { throw e }
             catch (_: java.io.FileNotFoundException) { false }
+            catch (_: IllegalArgumentException) { false }
             if (!intact) {
-                downloads.progress(id) { it.put("restart", true).put("downloadComplete", false) }
-                record.put("restart", true).put("downloadComplete", false)
-                complete = false
+                error("Saved download is missing or failed SHA-256 verification. Choose Restart download or download another copy.")
+            }
+            if (record.optString("previousPhase") == "Installed" && record.optString("installed").isNotBlank()) {
+                val health = downloads.inspect(id, checkOriginal = false)
+                if (health.installed == DownloadHealth.VERIFIED) {
+                    downloads.progress(id) { it.put("phase", "Installed"); it.remove("previousPhase"); it.remove("error") }
+                    return
+                }
+                error("Installed model folder is missing or damaged. Original download is verified; reinstall from the downloaded file or download another copy.")
             }
         }
         if (!complete) {
@@ -162,26 +173,24 @@ class DownloadService : Service() {
                     }
                 } finally { cancel.cancel() }
             }
-            if (asset != null) {
-                downloads.progress(id) { it.put("phase", "Verifying") }
-                publish("Verifying $title")
-                val job = currentCoroutineContext()
-                val valid = contentResolver.openInputStream(target)?.use { input ->
-                    DownloadIntegrity.matches(input, asset) {
-                        job.ensureActive()
-                        if (downloads.record(id)?.optString("phase") != "Verifying") throw CancellationException("Download paused or removed")
-                    }
-                } ?: error("Cannot verify downloaded file")
-                if (!valid) {
-                    downloads.progress(id) { it.put("restart", true) }
-                    error("Downloaded model failed SHA-256 verification. Retry will download it again.")
+            downloads.progress(id) { it.put("phase", "Verifying") }
+            publish("Verifying $title")
+            val job = currentCoroutineContext()
+            val actual = contentResolver.openInputStream(target)?.use { input ->
+                DownloadIntegrity.fingerprint(input, asset?.bytes ?: MAX_DOWNLOAD) {
+                    job.ensureActive()
+                    if (downloads.record(id)?.optString("phase") != "Verifying") throw CancellationException("Download paused or removed")
                 }
+            } ?: error("Cannot verify downloaded file")
+            if (asset != null && actual != DownloadIntegrity.Fingerprint(asset.bytes, asset.sha256)) {
+                downloads.progress(id) { it.put("restart", true) }
+                error("Downloaded model failed SHA-256 verification. Restart will download it again.")
             }
             currentCoroutineContext().ensureActive()
             if (Build.VERSION.SDK_INT >= 29 && target.authority == MediaStore.AUTHORITY) {
                 contentResolver.update(target, ContentValues().apply { put(MediaStore.Downloads.IS_PENDING, 0) }, null, null)
             }
-            downloads.progress(id) { it.put("downloadComplete", true) }
+            downloads.progress(id) { it.put("downloadComplete", true).put("sha256", actual.sha256).put("verifiedBytes", actual.bytes) }
             complete = true
         }
         if (complete && modelId.isNotBlank()) {
@@ -193,9 +202,10 @@ class DownloadService : Service() {
             currentCoroutineContext().ensureActive()
             downloads.progress(id) {
                 it.put("phase", if (installed.isBlank()) "Complete" else "Installed")
-                    .put("installed", installed).remove("error")
+                    .put("installed", installed)
+                it.remove("previousPhase"); it.remove("error")
             }
-        } else downloads.progress(id) { it.put("phase", "Complete").remove("error") }
+        } else downloads.progress(id) { it.put("phase", "Complete"); it.remove("previousPhase"); it.remove("error") }
     }
     private fun createDestination(record: org.json.JSONObject): Uri {
         val subfolder = if (record.getBoolean("modelsFolder")) "models" else "files"

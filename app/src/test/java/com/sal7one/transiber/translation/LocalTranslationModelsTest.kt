@@ -15,6 +15,9 @@ class LocalTranslationModelsTest {
    assertFalse(store.file(valid).exists()); assertTrue(root.listFiles().orEmpty().isEmpty())
    val installed = store.import(data.inputStream(), valid); assertArrayEquals(data, installed.readBytes())
    assertEquals(installed, store.import(data.inputStream(), valid))
+   installed.writeBytes("GGUF fixture bytex".toByteArray())
+   assertEquals(installed, store.import(data.inputStream(), valid))
+   assertArrayEquals(data, installed.readBytes())
   } finally { root.deleteRecursively() }
  }
 }

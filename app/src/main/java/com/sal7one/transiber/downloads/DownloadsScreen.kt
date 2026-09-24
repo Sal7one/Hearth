@@ -31,6 +31,22 @@ import com.sal7one.transiber.models.SpeechDownloads
 import com.sal7one.transiber.translation.MarianPackage
 import kotlinx.coroutines.*
 
+private data class DownloadChoice(val spec: DownloadSpec, val modelId: String, val modelPackage: Boolean,
+    val existingId: Long, val inspection: DownloadInspection, val location: String, val fromLink: Boolean)
+
+@Composable
+private fun healthLabel(health: DownloadHealth): String {
+    val text = rememberUiText()
+    return text(when (health) {
+        DownloadHealth.VERIFIED -> UiR.string.ui_download_health_verified
+        DownloadHealth.INCOMPLETE -> UiR.string.ui_download_health_incomplete
+        DownloadHealth.UNVERIFIED -> UiR.string.ui_download_health_unverified
+        DownloadHealth.CHANGED -> UiR.string.ui_download_health_changed
+        DownloadHealth.MISSING -> UiR.string.ui_download_health_missing
+        DownloadHealth.NOT_INSTALLED -> UiR.string.ui_download_health_not_installed
+    })
+}
+
 @Composable
 fun DownloadsScreen(onBrowseModels: () -> Unit = {}) {
     val uiText = rememberUiText()
@@ -50,6 +66,27 @@ fun DownloadsScreen(onBrowseModels: () -> Unit = {}) {
  var message by remember { mutableStateOf<String?>(null) }
  var folderLabel by remember { mutableStateOf(downloads.locationLabel) }
  var removing by remember { mutableStateOf<FileDownload?>(null) }
+ var choice by remember { mutableStateOf<DownloadChoice?>(null) }
+ fun consider(spec: DownloadSpec, modelId: String = "", modelPackage: Boolean = false, fromLink: Boolean = false) {
+  scope.launch {
+   busy = true; error = null
+   try {
+    val existing = withContext(Dispatchers.IO) { downloads.existingId(spec, modelId) }
+    if (existing == null) {
+     withContext(Dispatchers.IO) { downloads.enqueue(spec, modelPackage, modelId) }
+     if (fromLink) { url = ""; filename = ""; directDownload = false }
+    } else {
+     val inspection = downloads.inspect(existing)
+     choice = DownloadChoice(spec, modelId, modelPackage, existing, inspection,
+      withContext(Dispatchers.IO) { downloads.list().firstOrNull { it.id == existing }?.location.orEmpty() }, fromLink)
+     if (fromLink) directDownload = false
+    }
+    records = withContext(Dispatchers.IO) { downloads.list() }
+   } catch (e: CancellationException) { throw e }
+   catch (e: Exception) { error = e.message ?: e.toString() }
+   finally { busy = false }
+  }
+ }
  val folderPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
   if (uri != null) try { downloads.chooseFolder(uri); folderLabel = downloads.locationLabel; error = null }
   catch (e: Exception) { error = e.message ?: e.toString() }
@@ -100,7 +137,11 @@ fun DownloadsScreen(onBrowseModels: () -> Unit = {}) {
         ?: downloads.translationModel(item)?.id else null
     if (item.complete && !item.installed && installableModel != null && MarianPackage.part(item.modelId) == null) Button(enabled = !busy, onClick = { scope.launch {
      busy = true; error = null; message = uiText(UiR.string.ui_installing_1_s_b55a5, item.title)
-     try { downloads.installModel(item.id, installableModel); message = uiText(UiR.string.ui_installed_select_the_model_in_models_06092) }
+     try {
+      val inspection = downloads.inspect(item.id)
+      check(inspection.original == DownloadHealth.VERIFIED) { "Downloaded original failed integrity validation. Restart or download another copy first." }
+      downloads.installModel(item.id, installableModel); message = uiText(UiR.string.ui_installed_select_the_model_in_models_06092)
+     }
      catch (e: CancellationException) { throw e }
      catch (e: Exception) { message = null; error = e.message ?: e.toString() }
      finally { busy = false }
@@ -108,12 +149,31 @@ fun DownloadsScreen(onBrowseModels: () -> Unit = {}) {
     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
      if (item.id < 0 && item.active) TextButton(enabled = !busy, onClick = { try { downloads.pause(item.id) } catch (e: Exception) { error = e.message ?: e.toString() } }) { Text(uiText(UiR.string.ui_pause_download)) }
      if (item.id < 0 && item.paused) TextButton(enabled = !busy, onClick = { try { downloads.retry(item.id) } catch (e: Exception) { error = e.message ?: e.toString() } }) { Text(uiText(UiR.string.ui_resume_download)) }
-     if (item.id < 0 && (item.paused || item.failed)) TextButton(enabled = !busy, onClick = { try { downloads.restart(item.id) } catch (e: Exception) { error = e.message ?: e.toString() } }) { Text(uiText(UiR.string.ui_restart_download)) }
+     if (item.id < 0 && (item.paused || item.failed)) TextButton(enabled = !busy, onClick = {
+      try {
+       val saved = downloads.record(item.id) ?: error("Download record no longer exists")
+       consider(DownloadSpec.parse(saved.getString("url"), saved.getString("title")), item.modelId,
+        saved.optBoolean("modelsFolder"))
+      } catch (e: Exception) { error = e.message ?: e.toString() }
+     }) { Text(uiText(UiR.string.ui_restart_download)) }
      if (item.installed) TextButton(enabled = !busy, onClick = { scope.launch {
-      try { downloads.selectInstalled(item); message = uiText(UiR.string.ui_model_selected_8d93b) }
+      busy = true
+      try {
+       val inspection = downloads.inspect(item.id)
+       check(inspection.installed == DownloadHealth.VERIFIED) { "Installed model failed integrity validation. Reinstall it from the downloaded file." }
+       downloads.selectInstalled(item); message = uiText(UiR.string.ui_model_selected_8d93b)
+      }
       catch (e: CancellationException) { throw e }
       catch (e: Exception) { error = e.message ?: e.toString() }
+      finally { busy = false }
      } }) { Text(uiText(UiR.string.ui_use_model_8d558)) }
+     if (item.id < 0) TextButton(enabled = !busy, onClick = {
+      try {
+       val saved = downloads.record(item.id) ?: error("Download record no longer exists")
+       consider(DownloadSpec.parse(saved.getString("url"), saved.getString("title")), item.modelId,
+        saved.optBoolean("modelsFolder"))
+      } catch (e: Exception) { error = e.message ?: e.toString() }
+     }) { Text(uiText(UiR.string.ui_check_download)) }
      if (item.failed && item.id < 0) TextButton(enabled = !busy, onClick = { try { downloads.retry(item.id) } catch(e: Exception) { error = e.message ?: e.toString() } }) { Text(uiText(UiR.string.ui_retry_9f5cd)) }
      if(item.complete) TextButton(onClick = {
       try { context.startActivity(Intent(Intent.ACTION_VIEW).setDataAndType(downloads.uri(item.id), "application/octet-stream").addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)) }
@@ -143,12 +203,10 @@ fun DownloadsScreen(onBrowseModels: () -> Unit = {}) {
 
    OutlinedTextField(url, { url = it }, label = { Text(uiText(UiR.string.ui_https_file_url_0c976)) }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, autoCorrectEnabled = false), modifier = Modifier.fillMaxWidth().padding(top=2.dp), singleLine = true)
    OutlinedTextField(filename, { filename = it }, label = { Text(uiText(UiR.string.ui_filename_including_extension_ccfb0)) }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Ascii, autoCorrectEnabled = false), modifier = Modifier.fillMaxWidth().padding(top=2.dp), singleLine = true)
-   Button(enabled = !busy, onClick = { scope.launch {
-    busy = true; error = null
-    try { val spec = DownloadSpec.parse(url, filename); withContext(Dispatchers.IO) { downloads.enqueue(spec) }; url = ""; filename = ""; directDownload = false }
-    catch (e: CancellationException) { throw e }
-    catch(e: Exception) { error = e.message ?: e.toString() } finally { busy = false }
-   } }) { Text(uiText(UiR.string.ui_download_file_77402)) }
+   Button(enabled = !busy, onClick = {
+    try { consider(DownloadSpec.parse(url, filename), fromLink = true) }
+    catch (e: Exception) { error = e.message ?: e.toString() }
+   }) { Text(uiText(UiR.string.ui_download_file_77402)) }
 
   error?.let {Text(it,color=MaterialTheme.colorScheme.error)}
  }
@@ -158,4 +216,46 @@ fun DownloadsScreen(onBrowseModels: () -> Unit = {}) {
   catch(e: Exception) { error = e.message ?: e.toString() }
   removing = null
  } }) { Text(uiText(UiR.string.ui_remove_e9639)) } }, dismissButton = { TextButton(onClick = { removing = null }) { Text(uiText(UiR.string.ui_keep_466fc)) } }) }
+ choice?.let { selected ->
+  AlertDialog(onDismissRequest = { choice = null; if (selected.fromLink) directDownload = true },
+   title = { Text(uiText(UiR.string.ui_existing_download_title)) },
+   text = { Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Text(selected.spec.fileName)
+    if (selected.location.isNotBlank()) Text(selected.location, style = MaterialTheme.typography.bodySmall)
+    Text(uiText(UiR.string.ui_original_check, healthLabel(selected.inspection.original)))
+    selected.inspection.originalError?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error) }
+    if (selected.modelId.isNotBlank()) Text(uiText(UiR.string.ui_installed_check, healthLabel(selected.inspection.installed)))
+    selected.inspection.installedError?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error) }
+    Text(uiText(UiR.string.ui_download_choice_hint), style = MaterialTheme.typography.bodySmall)
+   } },
+   confirmButton = { TextButton(enabled = !busy, onClick = { scope.launch {
+    busy = true; error = null
+    try {
+     withContext(Dispatchers.IO) { downloads.enqueue(selected.spec, selected.modelPackage, selected.modelId, duplicate = true) }
+     records = withContext(Dispatchers.IO) { downloads.list() }
+     if (selected.fromLink) { url = ""; filename = ""; directDownload = false }
+     choice = null
+    } catch (e: CancellationException) { throw e }
+    catch (e: Exception) { error = e.message ?: e.toString() }
+    finally { busy = false }
+   } }) { Text(uiText(UiR.string.ui_download_another_copy)) } },
+   dismissButton = { FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+    TextButton(onClick = { choice = null; if (selected.fromLink) directDownload = false }) { Text(uiText(UiR.string.ui_keep_copy)) }
+    TextButton(enabled = !busy, onClick = { scope.launch {
+     busy = true; error = null
+     try {
+      withContext(Dispatchers.IO) {
+       if (selected.inspection.original == DownloadHealth.VERIFIED && selected.modelId.isNotBlank() && selected.inspection.installed != DownloadHealth.VERIFIED)
+        downloads.reinstall(selected.existingId)
+       else downloads.restart(selected.existingId)
+      }
+      records = withContext(Dispatchers.IO) { downloads.list() }
+      if (selected.fromLink) { url = ""; filename = ""; directDownload = false }
+      choice = null
+     } catch (e: CancellationException) { throw e }
+     catch (e: Exception) { error = e.message ?: e.toString() }
+     finally { busy = false }
+    } }) { Text(uiText(UiR.string.ui_repair_copy)) }
+   } })
+ }
 }

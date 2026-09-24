@@ -88,9 +88,11 @@ internal class LocalSpeechModels(private val root: File) {
         val id = "speech-${UUID.nameUUIDFromBytes("download-$downloadId".toByteArray())}"
         val destination = File(root, id)
         if (destination.isDirectory) {
-            val verified = SpeechModelPackage.verify(destination)
-            require(verified.profile == source.profile) { "Installed download profile differs" }
-            return LocalSpeechModel(id, verified.profile, destination)
+            val verified = runCatching { SpeechModelPackage.verify(destination) }.getOrNull()
+            if (verified != null) {
+                require(verified.profile == source.profile) { "Installed download profile differs" }
+                return LocalSpeechModel(id, verified.profile, destination)
+            }
         }
         // Reuse the job's staging path so a killed process cannot leave a second
         // partially extracted model behind when that download is retried.
@@ -100,7 +102,14 @@ internal class LocalSpeechModels(private val root: File) {
         try {
             val staged = com.sal7one.transiber.models.PublisherSpeechPackage.stage(input, source, work, checkActive)
             checkActive()
-            Files.move(staged.toPath(), destination.toPath())
+            val damaged = File(root, ".damaged-${UUID.randomUUID()}")
+            if (destination.exists()) Files.move(destination.toPath(), damaged.toPath())
+            try { Files.move(staged.toPath(), destination.toPath()) }
+            catch (e: Exception) {
+                if (damaged.exists()) Files.move(damaged.toPath(), destination.toPath())
+                throw e
+            }
+            damaged.deleteRecursively()
             return LocalSpeechModel(id, source.profile, destination)
         } finally { work.deleteRecursively() }
     }

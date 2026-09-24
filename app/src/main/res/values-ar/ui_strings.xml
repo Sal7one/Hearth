@@ -901,4 +901,18 @@
     <string name="benchmark_table_best_reference">أفضل درجة</string>
     <string name="benchmark_table_balanced">متوازن</string>
     <string name="benchmark_table_legend">وقت المعالجة أثناء التشغيل السريع، وليس التأخير المباشر. الشريط الأقصر أسرع. WER/CER: الأقل أفضل؛ chrF: الأعلى أفضل.</string>
+    <string name="ui_check_download">فحص الملف</string>
+    <string name="ui_existing_download_title">تنزيل موجود</string>
+    <string name="ui_original_check">الملف الأصلي: %1$s</string>
+    <string name="ui_installed_check">النموذج المثبت: %1$s</string>
+    <string name="ui_download_choice_hint">تكشف البصمة المحفوظة تغيّر الملفات المباشرة. وتُفحص النماذج المثبتة وفق بصمة SHA-256 الخاصة بالناشر.</string>
+    <string name="ui_keep_copy">الاحتفاظ بهذه النسخة</string>
+    <string name="ui_repair_copy">إصلاح / إعادة البدء</string>
+    <string name="ui_download_another_copy">تنزيل نسخة أخرى</string>
+    <string name="ui_download_health_verified">تم التحقق</string>
+    <string name="ui_download_health_incomplete">غير مكتمل</string>
+    <string name="ui_download_health_unverified">لا توجد بصمة محفوظة</string>
+    <string name="ui_download_health_changed">تغيّر أو تلف</string>
+    <string name="ui_download_health_missing">مفقود أو غير قابل للقراءة</string>
+    <string name="ui_download_health_not_installed">غير مثبت</string>
 </resources>

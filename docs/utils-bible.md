@@ -354,13 +354,18 @@ Cyrillic directions, Latin text, target mismatch and explicit-source priority.
 Other unknown or genuinely ambiguous captions remain CC with the original
 source-language error.
 
-`DownloadIntegrity.matches` is consumed by the Play foreground downloader both
-after transfer and before retrying installation from a previously completed public
-file. Its host test covers valid, changed, truncated and oversized bytes and
-cancellation. A failed recheck makes Retry start a fresh transfer, while a valid
-original avoids wasting another model download. The phone has verified a normal
-transfer and pause/resume; corrupt-file retry and custom-folder recovery remain
-device checks.
+`DownloadIntegrity.fingerprint` streams a bounded SHA-256 and byte count. The Play
+foreground downloader consumes it after every transfer and before reusing a saved
+original. Model downloads compare against publisher pins; direct URLs save a
+first-download checksum that detects later local edits but does not authenticate
+the server. `FileDownloads.inspect` also validates the app-private installed
+model or folder on an IO dispatcher. Default enqueue reuses the same URL/model
+record; the Downloads screen shows original and install health and requires an
+explicit choice to restart/reinstall or create another copy. A failed recheck
+does not silently overwrite the user's public file. Host tests cover valid,
+changed, truncated and oversized bytes, cancellation, reuse ordering, and
+repairing damaged private speech and GGUF installs. Corrupt-file recovery and
+custom-folder behavior still need device checks.
 
 ## Native text and audio gate hardening (review 2026-09-23)
 

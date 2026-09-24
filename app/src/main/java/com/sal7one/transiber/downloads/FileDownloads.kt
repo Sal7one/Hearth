@@ -37,14 +37,18 @@ data class FileDownload(val id: Long, val title: String, val status: Int, val re
  val active get() = phase in setOf("Waiting", "Downloading", "Verifying", "Installing") || (!complete && !failed && id > 0)
 }
 
-/** A model's original is reusable until explicitly removed or restarted. Direct URLs may be downloaded again. */
+enum class DownloadHealth { VERIFIED, INCOMPLETE, UNVERIFIED, CHANGED, MISSING, NOT_INSTALLED }
+data class DownloadInspection(val original: DownloadHealth, val installed: DownloadHealth,
+ val originalError: String? = null, val installedError: String? = null)
+
+/** Reuse a transfer by URL and model identity. Another copy requires an explicit user choice. */
 internal fun reusableDownload(records: List<JSONObject>, url: String, modelId: String): JSONObject? {
  val matching = records.filter { it.optString("url") == url && it.optString("model") == modelId }
  fun newest(phases: Set<String>) = matching.asSequence().filter { it.optString("phase") in phases }
   .minByOrNull { it.optLong("id") }
  return newest(setOf("Waiting", "Downloading", "Verifying", "Installing", "Paused"))
-  ?: if (modelId.isNotBlank()) newest(setOf("Complete", "Installed"))
-   ?: newest(setOf("Failed", "Interrupted")) else null
+  ?: newest(setOf("Complete", "Installed"))
+  ?: newest(setOf("Failed", "Interrupted"))
 }
 
 /** Downloaded originals live in a public folder; verified runtime installs remain app-owned. */
@@ -73,7 +77,12 @@ class FileDownloads(private val context: Context) {
  fun openFolderIntent() = Intent(Intent.ACTION_VIEW).setDataAndType(folderUri?.let { android.provider.DocumentsContract.buildDocumentUriUsingTree(it, android.provider.DocumentsContract.getTreeDocumentId(it)) } ?: Uri.parse("content://com.android.externalstorage.documents/document/primary%3ADownload%2FHearth"), "vnd.android.document/directory")
   .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
 
- fun enqueue(spec: DownloadSpec, modelPackage: Boolean = false, installModelId: String = ""): Long {
+ fun existingId(spec: DownloadSpec, modelId: String = ""): Long? = synchronized(lock) {
+  val checked = DownloadSpec.parse(spec.url, spec.fileName)
+  reusableDownload(newIds().mapNotNull { it.toLongOrNull()?.let(::record) }, checked.url, modelId)?.optLong("id")
+ }
+
+ fun enqueue(spec: DownloadSpec, modelPackage: Boolean = false, installModelId: String = "", duplicate: Boolean = false): Long {
   check(ByokPolicy.FEATURE_BYOK) { "Downloads are unavailable in the offline build" }
   val checked = DownloadSpec.parse(spec.url, spec.fileName)
   check(Build.VERSION.SDK_INT >= 29 || folderUri != null) { "Choose a download folder first on Android 9" }
@@ -83,11 +92,17 @@ class FileDownloads(private val context: Context) {
   }
   val (id, shouldStart) = synchronized(lock) {
    val ids = newIds()
-   val existing = reusableDownload(ids.mapNotNull { it.toLongOrNull()?.let(::record) }, checked.url, installModelId)
+   val existing = if (duplicate) null else reusableDownload(ids.mapNotNull { it.toLongOrNull()?.let(::record) }, checked.url, installModelId)
    if (existing != null) {
     val phase = existing.optString("phase")
     when {
-     phase in setOf("Complete", "Installed") -> existing.getLong("id") to false
+     phase in setOf("Complete", "Installed") -> {
+      // The foreground worker rehashes the saved original and checks the installed
+      // model before restoring this state. Never trust a saved phase by itself.
+      existing.put("phase", "Waiting").put("previousPhase", phase)
+      check(prefs.edit().putString("download_${existing.getLong("id")}", existing.toString()).commit())
+      existing.getLong("id") to true
+     }
      phase in setOf("Downloading", "Verifying", "Installing") && DownloadRunner.running -> existing.getLong("id") to false
      else -> {
       DownloadStorage.requireSpace(context, DownloadAssets.find(installModelId), existing.optLong("bytes"), folderUri != null)
@@ -139,13 +154,73 @@ class FileDownloads(private val context: Context) {
  fun restart(id: Long) {
   check(ByokPolicy.FEATURE_BYOK)
   check(!list().any { it.id == id && it.active }) { "Pause the download before restarting" }
-  update(id) { it.put("restart", true).put("downloadComplete", false) }
+  update(id) { it.put("restart", true).put("downloadComplete", false).remove("previousPhase") }
+  retry(id)
+ }
+ fun reinstall(id: Long) {
+  check(ByokPolicy.FEATURE_BYOK)
+  val saved = record(id) ?: error("Download record no longer exists")
+  check(saved.optBoolean("downloadComplete") && saved.optString("model").isNotBlank()) { "A complete model download is required to reinstall" }
+  check(!list().any { it.id == id && it.active }) { "Pause the download before reinstalling" }
+  update(id) { it.remove("previousPhase") }
   retry(id)
  }
  fun retry(id: Long) {
   check(ByokPolicy.FEATURE_BYOK)
   update(id) { it.put("phase", "Waiting").remove("error") }
   try { DownloadRunner.start(context) } catch (e: Exception) { fail(id, e); throw e }
+ }
+ /** Inspect the actual public file on IO before offering reuse, repair or another copy. */
+ suspend fun inspect(id: Long, checkOriginal: Boolean = true): DownloadInspection = withContext(Dispatchers.IO) {
+  val saved = record(id) ?: error("Download record no longer exists")
+  val phase = saved.optString("phase")
+  val asset = DownloadAssets.find(saved.optString("model"))
+  val expected = asset?.let { DownloadIntegrity.Fingerprint(it.bytes, it.sha256) }
+   ?: saved.optString("sha256").takeIf { it.matches(Regex("[0-9a-f]{64}")) }
+    ?.let { DownloadIntegrity.Fingerprint(saved.optLong("verifiedBytes", -1), it) }
+  val job = currentCoroutineContext()
+  var originalError: String? = null
+  val original = when {
+   !checkOriginal -> DownloadHealth.VERIFIED
+   phase in setOf("Waiting", "Downloading", "Verifying", "Installing", "Paused", "Interrupted", "Failed") && !saved.optBoolean("downloadComplete") -> DownloadHealth.INCOMPLETE
+   expected == null -> DownloadHealth.UNVERIFIED
+   else -> try {
+    val input = context.contentResolver.openInputStream(uri(id)) ?: error("Cannot open downloaded file")
+    val actual = input.use { DownloadIntegrity.fingerprint(it, expected.bytes.coerceAtLeast(1)) { job.ensureActive() } }
+    if (actual == expected) DownloadHealth.VERIFIED else DownloadHealth.CHANGED
+   } catch (e: CancellationException) { throw e }
+     catch (e: IllegalArgumentException) { originalError = e.message ?: e.toString(); DownloadHealth.CHANGED }
+     catch (e: Exception) { originalError = e.message ?: e.toString(); DownloadHealth.MISSING }
+  }
+  val installedId = saved.optString("installed")
+  var installedError: String? = null
+  val installed = if (installedId.isBlank()) DownloadHealth.NOT_INSTALLED else try {
+   val modelId = saved.optString("model")
+   when {
+    com.sal7one.transiber.translation.MarianPackage.part(modelId) != null ->
+     ModelRegistry.getInstance(context).getProvider(installedId)?.getModelPath() ?: error("Installed model folder is missing")
+    SpeechDownloads.find(modelId) != null ->
+     com.sal7one.common_jni.speech.SpeechModelPackage.verify(File(context.filesDir, "speech-models/$installedId"))
+    TranslationCatalog.models.any { it.id == modelId } -> {
+     val spec = TranslationCatalog.models.first { it.id == modelId }
+     com.sal7one.common_jni.model.ModelIntegrity.inspect(LocalTranslationModels(File(context.filesDir, "translation-models")).file(spec), spec.sha256)
+    }
+    OcrCatalog.find(modelId) != null -> {
+     val part = checkNotNull(OcrCatalog.find(modelId))
+     val file = OcrModels(File(context.filesDir, "ocr-models")).file(part)
+     check(file.inputStream().use { DownloadIntegrity.matches(it, checkNotNull(asset)) }) { "Installed OCR checksum failed" }
+    }
+    VoiceCatalog.find(modelId) != null -> {
+     val part = checkNotNull(VoiceCatalog.find(modelId))
+     val file = VoiceModels(File(context.filesDir, "voice-models")).file(part)
+     check(file.inputStream().use { DownloadIntegrity.matches(it, checkNotNull(asset)) }) { "Installed voice checksum failed" }
+    }
+    else -> ModelRegistry.getInstance(context).getProvider(installedId)?.getModelPath() ?: error("Installed model is missing")
+   }
+   DownloadHealth.VERIFIED
+  } catch (e: CancellationException) { throw e }
+    catch (e: Exception) { installedError = e.message ?: e.toString(); DownloadHealth.MISSING }
+  DownloadInspection(original, installed, originalError, installedError)
  }
  fun list(): List<FileDownload> {
   if (!ByokPolicy.FEATURE_BYOK) return emptyList()
@@ -214,7 +289,12 @@ class FileDownloads(private val context: Context) {
    val artifact = SpeechArtifactCatalog.find(modelId)
    if (artifact?.kind == SpeechArtifactKind.WHISPER) {
     val expected = artifact.sha256
-    val imported = ModelRegistry.getInstance(context).importModel(uri(id), expected)
+    val registry = ModelRegistry.getInstance(context)
+    record(id)?.optString("installed")?.takeIf(String::isNotBlank)?.let { installedId ->
+     if (runCatching { registry.getProvider(installedId)?.getModelPath() ?: error("Installed model is missing") }.isFailure)
+      registry.unregisterModel(installedId, deleteFiles = true)
+    }
+    val imported = registry.importModel(uri(id), expected)
         ?: error("Whisper model was not registered")
     require(imported.engineType == ModelEngineType.WHISPER && imported.isValid) { "Downloaded file is not a supported Whisper model" }
     return@withContext imported.id

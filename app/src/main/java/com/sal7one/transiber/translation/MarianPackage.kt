@@ -75,31 +75,30 @@ internal object MarianPackage {
             .firstOrNull { it.digest?.hex == pair.treeSha256 && it.isDirectory }
 
     fun enqueue(context: Context, downloads: FileDownloads, pair: Pair) {
-        if (installed(context, pair) != null) return
-        val records = downloads.list()
-        for (part in pair.parts) {
-            val existing = records.firstOrNull { it.id < 0 && it.modelId == part.id }
-            when {
-                existing == null -> downloads.enqueue(DownloadSpec.parse(part.url, part.downloadName), true, part.id)
-                existing.installed || existing.complete || existing.active -> Unit
-                existing.paused || existing.failed -> downloads.retry(existing.id)
-            }
+        installed(context, pair)?.let { model ->
+            if (runCatching { ModelRegistry.getInstance(context).getProvider(model.id)?.getModelPath()
+                    ?: error("Installed model folder is missing") }.isSuccess) return
         }
-        if (installed(context, pair) == null && pair.parts.all { p ->
-                records.any { it.modelId == p.id && it.complete }
-            }) records.firstOrNull { it.modelId == pair.parts.last().id && it.complete }
-                ?.let { downloads.retry(it.id) }
+        for (part in pair.parts) {
+            downloads.enqueue(DownloadSpec.parse(part.url, part.downloadName), true, part.id)
+        }
     }
 
     /** Returns null until all originals verify; never publishes a partial folder. */
     suspend fun install(context: Context, downloads: FileDownloads, pair: Pair): String? {
-        installed(context, pair)?.let { return it.id }
+        val registry = ModelRegistry.getInstance(context)
+        installed(context, pair)?.let { existing ->
+            if (runCatching { registry.getProvider(existing.id)?.getModelPath() ?: error("Installed model folder is missing") }.isSuccess)
+                return existing.id
+            // An explicit install/reinstall can replace a damaged private snapshot.
+            registry.unregisterModel(existing.id, deleteFiles = true)
+        }
         val job = currentCoroutineContext()
         val originals = pair.parts.map { part ->
             downloads.list().firstOrNull { row -> row.modelId == part.id &&
                 downloads.record(row.id)?.optBoolean("downloadComplete") == true } ?: return null
         }
-        val result = ModelRegistry.getInstance(context).registerPinnedDirectory(
+        val result = registry.registerPinnedDirectory(
             "opus-mt-${pair.source}-${pair.target}", pair.treeSha256) { sink ->
             pair.parts.zip(originals).forEach { (part, row) ->
                 job.ensureActive()

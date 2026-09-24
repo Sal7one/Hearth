@@ -93,6 +93,10 @@ class PublisherSpeechPackageTest {
             val installed = store.installPublisher(bytes.inputStream(), spec(bytes), 7)
             assertFalse(root.resolve(".staging/publisher-7").exists())
             assertEquals(installed.id, store.installPublisher(bytes.inputStream(), spec(bytes), 7).id)
+            installed.root.resolve("encoder_model.ort").writeText("corrupt")
+            assertEquals(installed.id, store.installPublisher(bytes.inputStream(), spec(bytes), 7).id)
+            SpeechModelPackage.verify(installed.root)
+            assertEquals("asset", installed.root.resolve("encoder_model.ort").readText())
             assertEquals(1, store.list().size)
         } finally { root.deleteRecursively() }
     }

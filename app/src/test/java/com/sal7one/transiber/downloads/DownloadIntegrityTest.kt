@@ -3,6 +3,7 @@ package com.sal7one.transiber.downloads
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Assert.assertThrows
+import org.junit.Assert.assertEquals
 import org.junit.Test
 import java.io.ByteArrayInputStream
 import java.security.MessageDigest
@@ -23,6 +24,17 @@ class DownloadIntegrityTest {
     @Test fun verificationCanBeCancelledWhileReading() {
         assertThrows(CancellationException::class.java) {
             DownloadIntegrity.matches(ByteArrayInputStream(original), asset) { throw CancellationException("paused") }
+        }
+    }
+
+    @Test fun directFileFingerprintDetectsSameSizeEditsAndTruncation() {
+        val saved = DownloadIntegrity.fingerprint(ByteArrayInputStream(original), original.size.toLong())
+        assertEquals(asset.sha256, saved.sha256)
+        assertEquals(original.size.toLong(), saved.bytes)
+        assertTrue(saved != DownloadIntegrity.fingerprint(ByteArrayInputStream("publisher model bytex".toByteArray()), original.size.toLong()))
+        assertTrue(saved != DownloadIntegrity.fingerprint(ByteArrayInputStream(original.copyOf(original.size - 1)), original.size.toLong()))
+        assertThrows(IllegalArgumentException::class.java) {
+            DownloadIntegrity.fingerprint(ByteArrayInputStream(original + byteArrayOf(1)), original.size.toLong())
         }
     }
 }

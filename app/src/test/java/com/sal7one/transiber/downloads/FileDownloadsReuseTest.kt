@@ -18,9 +18,9 @@ class FileDownloadsReuseTest {
         assertNull(reusableDownload(listOf(record(-1, "Installed")), "https://example.org/new-revision", "model"))
     }
 
-    @Test fun completedDirectFileCanBeDownloadedAgain() {
+    @Test fun directFileIsIdempotentUntilAnotherCopyIsExplicitlyRequested() {
         val records = listOf(record(-1, "Complete", model = ""))
-        assertNull(reusableDownload(records, "https://example.org/model", ""))
+        assertEquals(-1L, reusableDownload(records, "https://example.org/model", "")?.getLong("id"))
         assertEquals(-2L, reusableDownload(records + record(-2, "Paused", model = ""),
             "https://example.org/model", "")?.getLong("id"))
     }

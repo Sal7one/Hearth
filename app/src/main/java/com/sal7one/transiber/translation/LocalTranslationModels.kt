@@ -19,8 +19,20 @@ class LocalTranslationModels(private val root: File) {
             check(result.file.length() == spec.bytes) { "Translation GGUF has the wrong size" }
             checkActive()
             val destination = file(spec)
-            if (destination.exists()) { ModelIntegrity.inspect(destination, spec.sha256); return destination }
-            Files.move(result.file.toPath(), destination.toPath())
+            if (destination.exists()) {
+                try { ModelIntegrity.inspect(destination, spec.sha256); return destination }
+                catch (_: com.sal7one.common_jni.model.ModelIntegrityException) {
+                    // The freshly staged publisher-pinned file repairs a damaged private copy.
+                }
+            }
+            val damaged = File(root, ".damaged-${UUID.randomUUID()}")
+            if (destination.exists()) Files.move(destination.toPath(), damaged.toPath())
+            try { Files.move(result.file.toPath(), destination.toPath()) }
+            catch (e: Exception) {
+                if (damaged.exists()) Files.move(damaged.toPath(), destination.toPath())
+                throw e
+            }
+            damaged.deleteRecursively()
             return destination
         } finally { staging.deleteRecursively() }
     }

@@ -901,4 +901,18 @@
     <string name="benchmark_table_best_reference">最佳得分</string>
     <string name="benchmark_table_balanced">均衡</string>
     <string name="benchmark_table_legend">这里是加速重放的计算时间，并非实时延迟。热运行条越短越快。WER/CER 越低越好；chrF 越高越好。</string>
+    <string name="ui_check_download">检查文件</string>
+    <string name="ui_existing_download_title">已有下载</string>
+    <string name="ui_original_check">原始文件：%1$s</string>
+    <string name="ui_installed_check">已安装模型：%1$s</string>
+    <string name="ui_download_choice_hint">保存的校验值可检测直接下载文件的改动。模型文件会与发布者的 SHA-256 校验值核对。</string>
+    <string name="ui_keep_copy">保留此副本</string>
+    <string name="ui_repair_copy">修复／重新下载</string>
+    <string name="ui_download_another_copy">再下载一份</string>
+    <string name="ui_download_health_verified">已验证</string>
+    <string name="ui_download_health_incomplete">未完成</string>
+    <string name="ui_download_health_unverified">没有保存的校验值</string>
+    <string name="ui_download_health_changed">已更改或损坏</string>
+    <string name="ui_download_health_missing">丢失或无法读取</string>
+    <string name="ui_download_health_not_installed">未安装</string>
 </resources>

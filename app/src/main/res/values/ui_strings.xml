@@ -901,4 +901,18 @@
     <string name="benchmark_table_best_reference">Best score</string>
     <string name="benchmark_table_balanced">Balanced</string>
     <string name="benchmark_table_legend">Replay compute time, not live delay. Shorter warm bar is faster. WER/CER: lower is better; chrF: higher is better.</string>
+    <string name="ui_check_download">Check file</string>
+    <string name="ui_existing_download_title">Existing download</string>
+    <string name="ui_original_check">Original file: %1$s</string>
+    <string name="ui_installed_check">Installed model: %1$s</string>
+    <string name="ui_download_choice_hint">A saved checksum detects changes to direct files. Publisher-pinned models are checked against their published SHA-256.</string>
+    <string name="ui_keep_copy">Keep this copy</string>
+    <string name="ui_repair_copy">Repair / restart</string>
+    <string name="ui_download_another_copy">Download another copy</string>
+    <string name="ui_download_health_verified">Verified</string>
+    <string name="ui_download_health_incomplete">Incomplete</string>
+    <string name="ui_download_health_unverified">No saved checksum</string>
+    <string name="ui_download_health_changed">Changed or damaged</string>
+    <string name="ui_download_health_missing">Missing or unreadable</string>
+    <string name="ui_download_health_not_installed">Not installed</string>
 </resources>
