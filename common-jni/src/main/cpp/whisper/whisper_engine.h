@@ -18,6 +18,8 @@ public:
     std::string getPartial() override;
     std::string finalize() override;
     void reset() override;
+    /** Report whether a reset actually cleared the streaming session. */
+    bool resetChecked();
     void release() override;
     std::string transcribeBatch(const int16_t* samples, int count, int sampleRate) override;
     std::string transcribeBatchFloat(const float* samples, int count, int sampleRate) override;

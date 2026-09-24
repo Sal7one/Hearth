@@ -420,13 +420,12 @@ hygiene, or a smaller speed loss.
   so Clear can wait for a whole in-flight decode. `finalize()` calls
   `stopWorker()`/`startWorker()` without `transitionMutex` (`:1054-1055,1115`),
   racing reset's join/restart for native callers outside the Kotlin dispatcher.
-  A separate proposed fix exists at `7b44a00` on
-  `codex/whisper-reset-lifecycle`; it is **not merged** because Whisper is in
-  the Later queue and this branch's focus order is controlled by the owner.
-- **Follow-up:** propagate a rejection to Kotlin (`reset()` is
-  `virtual void` on the shared `ISttEngine`; add a `bool tryReset()` or check
-  `getLastError()` in JNI). Add a native test seam so safeReset can run on the
-  host without a model.
+  **Resolved (`7b44a00`, integrated 2026-09-24):** the worker's decode callback
+  now observes a separate stop signal during Clear/release, while finalize
+  drains the in-flight decode. Reset and finalize serialize on the transition
+  mutex. JNI returns a checked reset result and Kotlin reports rejection.
+  `InferenceStopSignal` has direct host coverage. A native model-free reset
+  lifecycle test seam remains open in the Later queue.
 
 ### F12 · P2 · Proven · 74 of 118 exported JNI functions have no exception guard
 - A C++ exception crossing JNI calls `std::terminate` (process abort). Most
@@ -1446,3 +1445,13 @@ long-lived deadline timer per engine.
   bytes, both 16 KiB aligned with the expected permissions. U23 malformed
   charsmap/goldens and U24
   dynamic shapes/deadline timer remain open; no device or paid call.
+- 2026-09-24 — Main-bound integration: `review/common-jni-audit` merged with
+  `codex/model-phase` already included; the old `hearth-branding` branch is an
+  ancestor of main. The separate Whisper lifecycle patch `7b44a00` was
+  reviewed and integrated, combining both branches' utility test lists and
+  documentation. The accidentally tracked `.vscode/settings.json` was
+  excluded. After the Whisper integration, Gradle test, both QA Kotlin
+  compiles, native debug build, 15-program common host suite, 57-check speech
+  suite and Marian tokenizer host suite passed. Reset/release now abort the
+  worker decode, while finalize drains it; a model-free native lifecycle
+  regression test remains tracked under F11. No device or paid call.

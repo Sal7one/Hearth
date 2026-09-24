@@ -440,3 +440,16 @@ for benchmarks, and fails setup with ORT's actual error if the setting cannot
 be applied. `marian_session_config_test.cpp` runs the production function
 against a fake ORT API, covering defaults, opt-in, invalid overrides and
 provider rejection.
+
+## Whisper reset and PCM ingress follow-up
+
+`InferenceStopSignal` is consumed by the Whisper streaming worker's decode
+callback. Its host test checks that a stop interrupts an active streaming
+decode without cancelling a subsequent batch/finalize decode. Finalize drains
+the in-flight worker decode; Clear aborts it before resetting the buffer.
+Reset and finalize share the native transition lock, and the JNI reset result
+reaches Kotlin so Clear cannot report success when the reset was rejected.
+
+`AudioUtils::validateFinitePcm` is consumed by Whisper streaming and batch
+float ingress before resampling or buffering. Its host test covers finite,
+null, NaN and infinity inputs; invalid PCM reports the actual input error.

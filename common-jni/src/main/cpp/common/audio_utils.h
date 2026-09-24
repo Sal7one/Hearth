@@ -78,6 +78,17 @@ public:
         return STT_AUDIO_UTILS_HAS_NEON != 0;
     }
 
+    /** Validate float PCM before an engine buffers or decodes it unchanged. */
+    static AudioStatus validateFinitePcm(
+        const float* samples, std::size_t count
+    ) noexcept {
+        if (!samples && count != 0) return AudioStatus::INVALID_ARGUMENT;
+        for (std::size_t index = 0; index < count; ++index) {
+            if (!std::isfinite(samples[index])) return AudioStatus::NON_FINITE;
+        }
+        return AudioStatus::OK;
+    }
+
     static AudioResult pcm16ToFloat(
         const std::int16_t* source,
         std::size_t count,
