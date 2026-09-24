@@ -468,4 +468,4 @@ Its bounded parser accepts PCM16 in both the ordinary and extensible WAV
 headers, including a last odd-sized metadata chunk whose pad byte is omitted.
 It still rejects other subformats, invalid channel masks, misaligned frames and
 over-limit files. `PcmWaveTest` covers those boundaries. The extensible header
-fields follow Microsoft's WAVEFORMATEXTENSIBLE specification.
+fields follow [Microsoft's WAVEFORMATEXTENSIBLE specification](https://learn.microsoft.com/en-us/windows/win32/api/mmreg/ns-mmreg-waveformatextensible).

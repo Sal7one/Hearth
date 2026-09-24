@@ -33,13 +33,13 @@ Whisper is in the Later queue because it is heavy for real-time mobile use
 (candidate for a future notes-transcription app); so are Vosk and the legacy
 `IEngine`/`EngineRouter`/`SttEngine` stack.
 
-**Branch and state:** `review/common-jni-audit` at the start of this session:
-`02aa830` (pushed). Commit `1768a12` holds patches A–E (§6); `91b2a3c`
-merges upstream `6ad8305`; `02aa830` adds this review log.
-This session added `7ffcc37`, `b50952e`, `1fd333c`, `6a44656`, `a45d6b7`,
-`873f33c`, and `27b5e0f` on the same review branch. The owner decides merges.
-The later `f863476` segmenter source experiment was reverted by `e9903e6`
-after the release verifier exposed its pinned-runtime coupling (H4).
+**Branch and state:** `main` now contains the model phase, common-jni audit
+and Whisper reset branches through merge `d4ab6ec` (pushed 2026-09-24).
+The old `hearth-branding` branch was already an ancestor of main.
+`8f1cac9` adds the stateful native resampler, `8d4d48f` extends bounded WAV
+parsing, and `5f2af68` applies release native optimization flags. These later
+main commits still need a final push. The `f863476` segmenter experiment was
+reverted by `e9903e6` because the pinned Qwen runtime must be rebuilt with it.
 
 **Environment:** the original reviewer's Mac needed Homebrew Clang because
 its Xcode-beta ASan hung (Log E1). On this Mac that path is absent; an
@@ -55,10 +55,10 @@ add a Log line for every session.
 ### Status by priority area
 | Area | Read so far | Still to read | Top open items |
 |---|---|---|---|
-| **utils** (`common/`, `jni/`) | Everything (§11), plus U2/U3/U4/U9/U11/U12 fixes and host tests this session | Nothing | U8, U13 consolidation, U14 tests, U10, U12 log-callback wiring (owner decision); U2/U3/U4/U9/U11/U12 attachment resolved below |
+| **utils** (`common/`, `jni/`) | Everything (§11), plus U2/U3/U4/U9/U10/U11/U12 fixes and host tests | Nothing | U8, U13 consolidation, U14 tests, U12 log-callback wiring (owner decision); U2/U3/U4/U9/U10/U11/U12 attachment resolved below |
 | **speech/** | Native ABI, session, segmenter, endpoint budget, Qwen/Moonshine/Omnilingual/Nemotron adapters, speech JNI; Kotlin `SpeechSession`, `LiveSpeechProcessor`, `SpeechModels`, `SpeechModelPackage`, `SpeechTranslation`; app publisher/local-model adapters; `speech_smoke.cpp` and runtime scripts | Full caller audit of upstream `6ad8305`; remaining app/runtime integration paths | F2 async windowed decode, F1 ggml ARM variants, H1 ABI v2 (sample rate, interrupt, capabilities), H2/H3/H4, H13/H14, U21 |
 | **translation/** | `text_model.h`, `translation_jni.cpp`, Marian tokenizer/engine/JNI, `CaptionTranslationBridge`; U23 bounded-read/ID and U24 spin fixes with host tests | Upstream `TranslationSourceEvidence.kt` (31) + bridge diff; `LocalTranslationSession.kt` (46), `TranslationCatalog.kt` (107), `MarianTranslationSession.kt` (36); app `MarianCascade.kt` (67, new pivot routes), `TranslationLayer.kt` (246), `LocalTranslationModels.kt` (27); `translation_smoke.cpp` (69); `scripts/translation/*` (75) | F1, F9, U23 malformed charsmap/golden ids, U24 model shapes/timer |
-| **audio/** | `common/audio_utils.h`, `audio_gate.h`, `ring_buffer.h`, `core/vad.cpp`, Kotlin `audio/` (all), capture service | App `BenchmarkAudio.kt` (58) | U16 `MicRecorder`, U10 stateful resampler, U21 VAD chunk dependence, U17 |
+| **audio/** | `common/audio_utils.h`, `audio_gate.h`, `ring_buffer.h`, `core/vad.cpp`, Kotlin `audio/` (all), capture service | App `BenchmarkAudio.kt` (58) | U16 `MicRecorder`, U21 VAD chunk dependence, U17 native/Kotlin API consolidation; U10 and U17 WAV parsing resolved |
 | **ffmpeg/** | Nothing: not in this repo | A current Git checkout is available on this host at `/Users/salehalanazi/ZCodeProject/ffmpegmakercustom`; inspect after audio, respecting its ADD-only contracts | §9 questions |
 
 ### Later queue (tracked, not the current focus — nothing dropped)
@@ -67,7 +67,7 @@ after the focus areas.
 
 | Area | Open findings | Still to read (approx. lines) |
 |---|---|---|
-| Whisper (`whisper/whisper_engine.cpp`, Kotlin `engine/whisper/`) | F3 (patched A), F5, F6, F11 (patched D, E), H12; U9 resolved (`b50952e`) | `whisper_engine.cpp` batch, `detectLanguage`, finalize and cancel paths (~780); `WhisperEngine.kt` (~355) |
+| Whisper (`whisper/whisper_engine.cpp`, Kotlin `engine/whisper/`) | F3 (patched A), F5, F6, H12; F11 resolved (`7b44a00`), U9 resolved (`b50952e`) | `whisper_engine.cpp` batch, `detectLanguage`, finalize and cancel paths (~780); `WhisperEngine.kt` (~355) |
 | Vosk (`vosk/`, Kotlin `engine/vosk/`) | U25; U9 resolved (`b50952e`) | rest of `vosk_engine.cpp` (init, batch, loader ~450); `VoskEngine.kt` (~430) |
 | Legacy engine stack (`router/`, `common_jni_bridge.cpp`, Kotlin `engine/`, `core/`) | F7, U8, U13 (two engine contracts), H7 | rest of `stt_jni.cpp` (~850), rest of `common_jni_bridge.cpp` (~680); Kotlin `SttEngine`, `SttEngineFactoryImpl`, `RealtimeSttSession`, `CommonJni` (rest), `EngineCapabilities`, `SttTypes`, `AudioModels`, `ProcessingConfig` |
 | ONNX STT engine (`onnx/onnx_engine.cpp`) — no current consumer | none yet | all (~490); Kotlin `OnnxEngine` (~270) |
@@ -75,11 +75,11 @@ after the focus areas.
 | TTS stack (`tts/`) — no current consumer | U27 (keep as an optional module or remove: owner decision) | all native (~1,600) and Kotlin `tts/` (~870) |
 
 ### Recommended next actions, in order
-1. **Continue the focus areas:** utils U8/U10/U13/U14; speech H4 only with
+1. **Continue the focus areas:** utils U8/U13/U14; speech H4 only with
    a coupled Qwen runtime rebuild, then F2/H1; translation U23 malformed
    charsmap and official token goldens, U24 model shapes/deadline timer, F9;
-   audio U16/U17/U21; then FFmpeg from the current checkout. U2/U3/U4/U9/
-   U11/U12 attachment and the bounded-read/ID and ORT-spin portions of
+   audio U16/U17 native/Kotlin API/U21; then FFmpeg from the current checkout.
+   U2/U3/U4/U9/U10/U11/U12 attachment and the bounded-read/ID and ORT-spin portions of
    U23/U24 are resolved below. Keep one test and the required gates per fix.
 2. **Build after the owner chooses the variant strategy:** F1 — per-CPU ggml variants for `libhearth_nemotron.so` and
    `libtransiber_translation.so` (the largest speed lever for both speech and
@@ -261,6 +261,14 @@ hygiene, or a smaller speed loss.
 - **Fix:** §6 patch A.
 
 ### F4 · P2 · Proven · QA/release native code is built as `RelWithDebInfo`; the "Release" flags never apply
+**Partially resolved (`5f2af68`):** Android `RelWithDebInfo` now applies
+`-O3`, hidden visibility, per-function/data sections and link-time section
+garbage collection while retaining build-side debug symbols. The generated
+`compile_commands.json` shows `-O3` after CMake's default `-O2`; both QA APKs
+build and pass `verify-release.py`. Enabling CMake IPO failed with
+`clang++: error: invalid linker name in argument '-fuse-ld=gold'` under NDK r27
+and CMake 3.22, so Android LTO is explicitly deferred. No phone speed gain is
+claimed without measurement.
 - **Where:** `common-jni/src/main/cpp/CMakeLists.txt:48-62` puts `-O3`,
   `-fvisibility=hidden`, `-ffunction-sections -fdata-sections`,
   `--gc-sections -s` and LTO under `*_RELEASE` or `CMAKE_BUILD_TYPE STREQUAL
@@ -1006,6 +1014,14 @@ per-push timer on Whisper or Vosk; batch profiling remains.
   with a fixed-size, lock-free per-site counter instead of a global map.
 
 ### U10 · P2 · Proven (by reading) · Streaming resampler drifts and resets phase per chunk
+**Resolved (`8f1cac9`) for Whisper streaming PCM16/float input.**
+`AudioStreamResampler` carries the source clock and previous sample across
+pushes under `streamMutex`; it resets on Clear/release or input-rate change.
+The 16-program common host suite compares full-buffer and deterministic
+random-chunk output at 44.1→16, 16→24 and 16→16 kHz, including output count,
+continuity and invalid input. The stateless compatibility functions remain
+for one-shot callers. Linear downsampling still needs a band-limited source;
+anti-alias filtering is a separate open quality task.
 - `AudioUtils::resampleInto`/`resampleLinearInto` size each call's output as
   `ceil(n·dst/src)` and restart phase at 0. Streaming 44.1 kHz → 16 kHz in
   1024-sample chunks yields 372 instead of 371.52 samples per chunk: about
@@ -1124,6 +1140,10 @@ adapter share a named daemon attachment with a pthread-key detach destructor;
   channels and encoding parameters.
 
 ### U17 · P3 · Two resamplers with different semantics; WAV parser strictness
+**WAV parser resolved (`8d4d48f`); shared native/Kotlin resampler API remains open.**
+`PcmWave` now accepts bounded PCM16 WAVE_FORMAT_EXTENSIBLE and a missing pad
+byte only on the final odd-sized metadata chunk. JVM tests cover valid input,
+wrong subtype, short extension, invalid bit count/mask, and the unpadded tail.
 - Kotlin `audio/Pcm16Resampler.kt` is stateful and chunk-invariant
   (`Pcm16ResamplerTest` proves split == continuous) — the design native
   `AudioUtils::resampleInto` lacks (U10). Both are linear with no anti-alias
@@ -1455,3 +1475,22 @@ long-lived deadline timer per engine.
   suite and Marian tokenizer host suite passed. Reset/release now abort the
   worker decode, while finalize drains it; a model-free native lifecycle
   regression test remains tracked under F11. No device or paid call.
+- 2026-09-24 — U10 `8f1cac9`: added a chunk-invariant native streaming
+  resampler and connected both Whisper PCM16/float streaming paths while
+  preserving the existing one-shot APIs. Before commit, Gradle test, both QA
+  Kotlin compiles, native debug build, 16-program common host suite and
+  57-check speech suite passed. No device or paid call.
+- 2026-09-24 — U17 WAV slice `8d4d48f`: checked the extensible header layout
+  against Microsoft's WAVEFORMATEXTENSIBLE documentation and added bounded
+  parsing for its PCM16 subtype plus a missing final metadata pad byte. The
+  targeted `PcmWaveTest`, all Gradle unit tests and both QA Kotlin compiles
+  passed. Kotlin/native resampler API consolidation remains open. No device or
+  paid call.
+- 2026-09-24 — F4 `5f2af68`: AGP's RelWithDebInfo compile command now includes
+  `-O3` and section flags. The first IPO-enabled build failed verbatim with
+  `clang++: error: invalid linker name in argument '-fuse-ld=gold'`; disabling
+  Android IPO kept the supported lld path. Gradle test, both QA Kotlin
+  compiles, native debug and release builds, 16-program common and 57-check
+  speech suites passed. Play QA 44,684,502 bytes and FOSS QA 36,759,541 bytes
+  both passed `verify-release.py` with expected permissions and 16 KiB page
+  alignment. LTO and measured device speed remain open; no device or paid call.
