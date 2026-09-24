@@ -7,7 +7,6 @@
 #include <cstring>
 #include <fstream>
 #include <limits>
-#include <sstream>
 #include <utility>
 
 namespace stt {
@@ -211,7 +210,7 @@ public:
                         uint32_t cp = 0;
                         if (!parseHex4(cp)) return false;
                         if (cp >= 0xD800U && cp <= 0xDBFFU) {
-                            if (p_ + 1 >= end_ || p_[0] != '\\' ||
+                            if (end_ - p_ < 2 || p_[0] != '\\' ||
                                 p_[1] != 'u') {
                                 return false;
                             }
@@ -788,11 +787,16 @@ bool MarianTokenizer::load(const std::string& spmPath,
         if (error) *error = fail("cannot open spm model", spmPath);
         return false;
     }
-    std::ostringstream spmBuffer;
-    spmBuffer << spmFile.rdbuf();
-    const std::string spmProto = spmBuffer.str();
-    if (spmProto.size() > kMaxSpmBytes) {
+    spmFile.seekg(0, std::ios::end);
+    const std::streamoff spmBytes = spmFile.tellg();
+    if (spmBytes < 0 || static_cast<uint64_t>(spmBytes) > kMaxSpmBytes) {
         if (error) *error = "spm model exceeds the size limit";
+        return false;
+    }
+    spmFile.seekg(0, std::ios::beg);
+    std::string spmProto(static_cast<size_t>(spmBytes), '\0');
+    if (!spmFile.read(spmProto.data(), spmBytes) || spmFile.peek() != std::char_traits<char>::eof()) {
+        if (error) *error = "spm model changed while reading";
         return false;
     }
 
@@ -898,11 +902,16 @@ bool MarianTokenizer::load(const std::string& spmPath,
         if (error) *error = fail("cannot open tokenizer.json", tokenizerJsonPath);
         return false;
     }
-    std::ostringstream jsonBuffer;
-    jsonBuffer << jsonFile.rdbuf();
-    const std::string document = jsonBuffer.str();
-    if (document.size() > kMaxDocumentBytes) {
+    jsonFile.seekg(0, std::ios::end);
+    const std::streamoff jsonBytes = jsonFile.tellg();
+    if (jsonBytes < 0 || static_cast<uint64_t>(jsonBytes) > kMaxDocumentBytes) {
         if (error) *error = "tokenizer.json exceeds the size limit";
+        return false;
+    }
+    jsonFile.seekg(0, std::ios::beg);
+    std::string document(static_cast<size_t>(jsonBytes), '\0');
+    if (!jsonFile.read(document.data(), jsonBytes) || jsonFile.peek() != std::char_traits<char>::eof()) {
+        if (error) *error = "tokenizer.json changed while reading";
         return false;
     }
 
@@ -1058,6 +1067,13 @@ bool MarianTokenizer::load(const std::string& spmPath,
                         double value = 0.0;
                         if (!walker.parseNumber(value)) {
                             if (error) *error = "invalid added token id";
+                            return false;
+                        }
+                        // Conversion outside int64 range is undefined behavior.
+                        if (!std::isfinite(value) || std::trunc(value) != value ||
+                            value < -9223372036854775808.0 ||
+                            value >= 9223372036854775808.0) {
+                            if (error) *error = "added token id is not a finite int64";
                             return false;
                         }
                         id = static_cast<int64_t>(value);

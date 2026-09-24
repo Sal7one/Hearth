@@ -424,3 +424,11 @@ threads as named daemon threads, and detaches them from a pthread-key
 destructor. `jni_helper_test.cpp` starts and joins native threads under a real
 host JVM before VM shutdown; Android's thread-exit behavior remains a device
 check owned by the app owner.
+
+The Marian tokenizer consumes the pinned `source.spm` and `tokenizer.json`
+files during local translation setup. It checks each file's length before
+reading and rejects an out-of-range added-token ID before integer conversion.
+`marian/tests/run_marian_tokenizer_tests.sh` exercises a tiny valid fixture,
+token IDs, oversized sparse files and a 1e300 token ID under ASan/UBSan.
+Malformed precompiled charsmaps and publisher-tokenizer golden vectors remain
+tracked separately in `lib_overview.md` U23.
