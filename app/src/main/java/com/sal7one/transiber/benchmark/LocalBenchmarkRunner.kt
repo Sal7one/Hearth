@@ -63,6 +63,7 @@ internal data class BenchmarkResult(
     val referenceText: String? = null, val wordErrorRate: Double? = null, val characterErrorRate: Double? = null,
     val scoringNormalization: String? = null,
     val translationChrf: Double? = null, val samples: List<BenchmarkSampleResult> = emptyList(),
+    val protocolVersion: Int = 1,
 ) {
     fun json() = JSONObject().put("runId", runId).put("timestamp", timestamp).put("model", model)
         .put("identity", identity).put("route", route).put("inputHash", inputHash).put("source", source).put("target", target)
@@ -72,6 +73,7 @@ internal data class BenchmarkResult(
         .put("wordErrorRate", wordErrorRate ?: JSONObject.NULL).put("characterErrorRate", characterErrorRate ?: JSONObject.NULL)
         .put("scoringNormalization", scoringNormalization ?: JSONObject.NULL)
         .put("translationChrf", translationChrf ?: JSONObject.NULL).put("samples", JSONArray(samples.map { it.json() }))
+        .put("protocolVersion", protocolVersion)
     companion object {
         fun from(j: JSONObject) = BenchmarkResult(
             j.getString("runId"), j.getLong("timestamp"), j.getString("model"), j.getString("identity"), j.getString("route"),
@@ -85,7 +87,8 @@ internal data class BenchmarkResult(
             j.optDouble("characterErrorRate", Double.NaN).takeIf(Double::isFinite),
             if (j.has("scoringNormalization") && !j.isNull("scoringNormalization")) j.getString("scoringNormalization") else null,
             j.optDouble("translationChrf", Double.NaN).takeIf(Double::isFinite),
-            j.optJSONArray("samples")?.let { a -> (0 until a.length()).map { BenchmarkSampleResult.from(a.getJSONObject(it)) } }.orEmpty())
+            j.optJSONArray("samples")?.let { a -> (0 until a.length()).map { BenchmarkSampleResult.from(a.getJSONObject(it)) } }.orEmpty(),
+            j.optInt("protocolVersion", 1))
     }
 }
 internal class BenchmarkResults(context: Context) {
@@ -286,12 +289,15 @@ internal class LocalBenchmarkRunner(private val context: Context) {
                     var passComputeMs = 0.0
                     inputs.forEachIndexed { inputIndex, input ->
                         currentCoroutineContext().ensureActive()
+                        // Reset is a separate operation in the live overlay. Do not charge it to
+                        // every replay clip, and feed the same 800-sample (50 ms) capture frames.
+                        if (speech != null && (pass > 0 || inputIndex > 0)) checkNotNull(speech).reset()
+                        if (legacy != null && (pass > 0 || inputIndex > 0)) checkNotNull(legacy).reset().getOrThrow()
                         val start = System.nanoTime()
                         var firstMs: Double? = null
                         val output = when {
                             speech != null -> {
                                 val session = checkNotNull(speech)
-                                if (pass > 0 || inputIndex > 0) session.reset()
                                 val finals = linkedMapOf<Long, String>()
                                 fun collect(update: SpeechUpdate) {
                                     update.transcripts.forEach { t ->
@@ -301,10 +307,10 @@ internal class LocalBenchmarkRunner(private val context: Context) {
                                 }
                                 val samples = checkNotNull(input.clip).samples
                                 var offset = 0
-                                // Match captured 20 ms frames; accelerated replay is compute, not live latency.
+                                // Match CaptionCaptureService's 50 ms capture cadence.
                                 while (offset < samples.size) {
                                     currentCoroutineContext().ensureActive()
-                                    val end = minOf(offset + 320, samples.size)
+                                    val end = minOf(offset + 800, samples.size)
                                     collect(session.accept(samples.copyOfRange(offset, end), offset.toLong())); offset = end
                                 }
                                 collect(session.finish())
@@ -313,22 +319,21 @@ internal class LocalBenchmarkRunner(private val context: Context) {
                             translator != null -> checkNotNull(translator).translate(input.text, TranslationDirection(source, target))
                             else -> {
                                 val engine = checkNotNull(legacy)
-                                if (pass > 0 || inputIndex > 0) engine.reset().getOrThrow()
                                 engine.transcribeBatch(checkNotNull(input.clip).samples, 16000).getOrThrow().fullText
                             }
                         }
                         currentCoroutineContext().ensureActive()
                         val sampleMs = (System.nanoTime() - start) / 1e6
-                        val sampleFirstMs = firstMs ?: sampleMs
+                        val sampleFirstMs = if (input.silence) 0.0 else firstMs ?: sampleMs
                         passComputeMs += sampleMs
-                        passFirstText += sampleFirstMs
+                        if (!input.silence) passFirstText += sampleFirstMs
                         passTexts += output.take(8000)
                         if (pass == 2) samples += BenchmarkSampleResult(input.id, output.take(2000), input.reference,
                             sampleMs, sampleFirstMs, input.clip?.durationMs ?: 0L, input.silence,
                             input.text.takeIf { translating })
                     }
                     elapsed += passComputeMs
-                    first += if (passFirstText.isEmpty()) passComputeMs else passFirstText.average()
+                    first += if (passFirstText.isEmpty()) 0.0 else passFirstText.average()
                     texts += passTexts.filterIndexed { index, _ -> !inputs[index].silence }.joinToString(" ").take(8000)
                 }
                 } catch (e: CancellationException) { throw e }
@@ -354,7 +359,7 @@ internal class LocalBenchmarkRunner(private val context: Context) {
                     if (translating && failure == null) samples.mapNotNull { sample ->
                         sample.reference?.let { expected -> BenchmarkScoring.chrf(expected, sample.text) }
                     }.takeIf { it.isNotEmpty() }?.average()?.div(100.0) else null,
-                    samples)
+                    samples, protocolVersion = 2)
                 withContext(Dispatchers.IO) { BenchmarkResults(context).append(result) }
                 withContext(Dispatchers.Main.immediate) { onResult(result) }
             }

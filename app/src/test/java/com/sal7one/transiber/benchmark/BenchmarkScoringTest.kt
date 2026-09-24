@@ -17,4 +17,13 @@ class BenchmarkScoringTest {
     @Test fun doesNotInventAReferenceRateForInsertionsAgainstAnEmptyReference() {
         assertNull(BenchmarkScoring.wordErrors("", "unreferenced output").rate)
     }
+
+    @Test fun publisherChineseCharacterSpacingDoesNotPenalizeUnspacedCaptions() {
+        assertEquals(0.0, BenchmarkScoring.characterErrors("毋 庸 置 疑", "毋庸置疑").rate!!, 0.0)
+    }
+
+    @Test fun arabicAndRussianReferenceScriptsSurviveNormalization() {
+        assertEquals(0.0, BenchmarkScoring.wordErrors("مرحبا، بالعالم!", "مرحبا بالعالم").rate!!, 0.0)
+        assertEquals(0.0, BenchmarkScoring.wordErrors("Привет, мир!", "привет мир").rate!!, 0.0)
+    }
 }

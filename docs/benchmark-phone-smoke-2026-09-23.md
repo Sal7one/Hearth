@@ -6,6 +6,12 @@ the built-in six-sentence FLEURS quick set. Speech also included two digital
 silence clips. The English audio was peak-normalized by the documented common
 policy before inference; an initial run without that policy incorrectly scored
 all six low-level recordings as empty, so it is excluded below.
+These runs used the older benchmark timing protocol, which included a model
+reset between clips and 20 ms feed frames. Newer 50 ms capture-frame runs
+exclude reset time and must be compared in a separate cohort. The older
+Nemotron warm pass below already processed the Russian corpus in about half
+its audio duration; a 24-second total over several clips was not a 24-second
+live caption delay.
 
 | Installed option | Direction | Accuracy signals | Load + verify | First full pass | Warm full-pass median |
 | --- | --- | --- | ---: | ---: | ---: |

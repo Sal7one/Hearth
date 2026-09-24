@@ -41,7 +41,8 @@ internal fun BenchmarkResultsTable(
 ) {
     val uiText = rememberUiText()
     val rows = BenchmarkTableModel.sorted(leaders?.candidates.orEmpty(), sort)
-    val maximumWarm = rows.mapNotNull(BenchmarkTableModel::warmMs).maxOrNull()?.coerceAtLeast(1.0) ?: 1.0
+    val minimumWarm = rows.mapNotNull(BenchmarkTableModel::warmMs).minOrNull()?.coerceAtLeast(0.01) ?: 1.0
+    val maximumSpeed = rows.mapNotNull(BenchmarkTableModel::audioSpeed).maxOrNull()?.coerceAtLeast(0.01) ?: 1.0
     val speedColor = MaterialTheme.colorScheme.primary
     val qualityColor = MaterialTheme.colorScheme.tertiary
     ElevatedCard(Modifier.fillMaxWidth()) {
@@ -74,7 +75,7 @@ internal fun BenchmarkResultsTable(
                 Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp),
                     horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                     TableHeading(uiText(R.string.benchmark_table_model), 2f)
-                    TableHeading(uiText(R.string.benchmark_table_warm), 1f)
+                    TableHeading(uiText(if (target.isBlank()) R.string.benchmark_table_audio_speed else R.string.benchmark_table_each), 1f)
                     TableHeading(uiText(R.string.benchmark_table_load), 1f)
                     TableHeading(uiText(R.string.benchmark_table_reference), 1f)
                 }
@@ -93,11 +94,17 @@ internal fun BenchmarkResultsTable(
                     }
                     val warm = BenchmarkTableModel.warmMs(result)
                     val quality = BenchmarkTableModel.qualityValue(result)
-                    val qualityText = quality?.let { "${qualityMetric(result)} ${percent(it)}" } ?: "—"
+                    val qualityText = quality?.let {
+                        if (result.target.isBlank()) uiText(R.string.benchmark_quality_errors, percent(it))
+                        else uiText(R.string.benchmark_quality_similarity, percent(it))
+                    } ?: "—"
+                    val speed = BenchmarkTableModel.audioSpeed(result)
+                    val speedText = speed?.let { String.format(Locale.getDefault(), "%.1f×", it) }
+                        ?: BenchmarkTableModel.translationMsPerSentence(result)?.let(::elapsed) ?: "—"
                     Row(Modifier.fillMaxWidth().background(rowColor, MaterialTheme.shapes.small)
                         .heightIn(min = 64.dp).padding(horizontal = 8.dp, vertical = 6.dp)
                         .semantics(mergeDescendants = true) {
-                            contentDescription = "${result.model}, ${uiText(R.string.benchmark_table_warm)} ${warm?.let(::elapsed) ?: "—"}, " +
+                            contentDescription = "${result.model}, ${uiText(if (target.isBlank()) R.string.benchmark_table_audio_speed else R.string.benchmark_table_each)} $speedText, " +
                                 "${uiText(R.string.benchmark_table_load)} ${elapsed(result.loadMs)}, " +
                                 "${uiText(R.string.benchmark_table_reference)} $qualityText"
                         }, horizontalArrangement = Arrangement.spacedBy(4.dp),
@@ -117,10 +124,10 @@ internal fun BenchmarkResultsTable(
                                     else -> MaterialTheme.colorScheme.secondary })
                         }
                         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                            Text(warm?.let(::elapsed) ?: "—", style = MaterialTheme.typography.labelMedium,
+                            Text(speedText, style = MaterialTheme.typography.labelMedium,
                                 fontWeight = FontWeight.SemiBold, maxLines = 1)
                             if (warm != null) LinearProgressIndicator(
-                                progress = { (warm / maximumWarm).toFloat().coerceIn(0f, 1f) },
+                                progress = { (if (speed != null) speed / maximumSpeed else minimumWarm / warm).toFloat().coerceIn(0f, 1f) },
                                 modifier = Modifier.fillMaxWidth(), color = speedColor,
                                 trackColor = MaterialTheme.colorScheme.surfaceVariant)
                         }
@@ -133,6 +140,8 @@ internal fun BenchmarkResultsTable(
                 }
                 Text(uiText(R.string.benchmark_table_legend), style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
+                if (rows.any { it.protocolVersion < 2 }) Text(uiText(R.string.benchmark_old_timing),
+                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
             }
         }
     }
@@ -148,11 +157,5 @@ private fun RowScope.TableHeading(label: String, weight: Float) {
 private fun elapsed(ms: Double): String = if (!ms.isFinite() || ms < 0) "—"
     else if (ms < 1000) "${ms.roundToInt()}ms"
     else String.format(Locale.getDefault(), "%.2fs", ms / 1000.0)
-
-private fun qualityMetric(result: BenchmarkResult): String = when {
-    result.target.isNotBlank() -> "chrF"
-    result.source == "zh" || result.wordErrorRate == null -> "CER"
-    else -> "WER"
-}
 
 private fun percent(value: Double): String = String.format(Locale.getDefault(), "%.1f%%", value * 100.0)

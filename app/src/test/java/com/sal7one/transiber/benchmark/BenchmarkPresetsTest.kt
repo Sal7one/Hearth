@@ -42,6 +42,17 @@ class BenchmarkPresetsTest {
         assertEquals("one", leaders.fastest?.identity)
     }
 
+    @Test fun oldAndNewTimingProtocolsNeverCompete() {
+        val new = result("new", 100.0, 0.20, 3).copy(protocolVersion = 2)
+        val old = result("old", 10.0, 0.01, 2)
+        val leaders = requireNotNull(BenchmarkComparison.latest(listOf(new, old), "en", ""))
+        assertEquals(listOf("new"), leaders.candidates.map { it.identity })
+        assertEquals(10.0, BenchmarkTableModel.audioSpeed(new)!!, 0.0001)
+        assertEquals(2, BenchmarkResult.from(new.json()).protocolVersion)
+        val legacy = org.json.JSONObject(old.json().toString()).apply { remove("protocolVersion") }
+        assertEquals(1, BenchmarkResult.from(legacy).protocolVersion)
+    }
+
     @Test fun tableSortsTimesAndPutsMissingReferenceLast() {
         val slowAccurate = result("slow-accurate", 300.0, 0.05, 3).copy(loadMs = 10.0)
         val fastUnscored = result("fast-unscored", 100.0, null, 2).copy(loadMs = 30.0)

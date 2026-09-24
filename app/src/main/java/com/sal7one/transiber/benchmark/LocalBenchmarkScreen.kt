@@ -72,6 +72,7 @@ fun LocalBenchmarkScreen(onModels: (String) -> Unit = {}, onDownloads: () -> Uni
     var text by rememberSaveable { mutableStateOf("") }
     var referenceText by rememberSaveable { mutableStateOf("") }
     var useBuiltInSet by rememberSaveable { mutableStateOf(true) }
+    var extendedSpeech by rememberSaveable { mutableStateOf(false) }
     var historyForPair by rememberSaveable { mutableStateOf(false) }
     var tableSort by rememberSaveable { mutableStateOf(BenchmarkTableSort.WARM) }
     var picker by remember { mutableStateOf<String?>(null) }
@@ -153,12 +154,48 @@ fun LocalBenchmarkScreen(onModels: (String) -> Unit = {}, onDownloads: () -> Uni
             finally { busy = false }
         }
     }
-    val builtInCases = remember(suite, mode, source, target) {
-        suite?.selected(mode == "Speech", source, target, full = false).orEmpty()
+    val builtInCases = remember(suite, mode, source, target, extendedSpeech) {
+        suite?.selected(mode == "Speech", source, target, full = mode == "Speech" && extendedSpeech).orEmpty()
     }
     fun supports(candidate: BenchmarkCandidate) = (source in candidate.sourceCodes || candidate.sourceCodes == setOf("model")) &&
         (mode == "Speech" || (candidate.translation?.supports(source, target)
             ?: (target in candidate.targetCodes && source != target)))
+    fun runLanguageSweep(candidate: BenchmarkCandidate) {
+        val activeSuite = suite ?: return
+        val routes = BenchmarkLanguageSweep.routes(candidate, activeSuite)
+        if (routes.isEmpty()) return
+        running = true; error = null
+        job = scope.launch {
+            try {
+                val failures = mutableListOf<String>()
+                routes.forEachIndexed { index, route ->
+                    currentCoroutineContext().ensureActive()
+                    status = uiText(UiR.string.benchmark_sweep_progress, candidate.label, index + 1, routes.size,
+                        if (route.target.isEmpty()) route.source.uppercase(Locale.ROOT) else "${route.source.uppercase(Locale.ROOT)} → ${route.target.uppercase(Locale.ROOT)}")
+                    val inputs = withContext(Dispatchers.IO) {
+                        activeSuite.selected(route.target.isEmpty(), route.source, route.target, false).map { sample ->
+                            BenchmarkInput(sample.id, sample.text, sample.reference,
+                                if (sample.speech) activeSuite.audio(context, sample) else null, sample.silenceMs > 0)
+                        }
+                    }
+                    runner.run(listOf(candidate), null, "", null, route.source, route.target,
+                        benchmarkInputs = inputs,
+                        progress = { step -> status = "${index + 1}/${routes.size} · $step" },
+                        onResult = { result ->
+                            results = (listOf(result) + results).take(BenchmarkResults.MAX_HISTORY)
+                            result.error?.let { failures += "${route.source} → ${route.target}: $it" }
+                        })
+                }
+                status = if (failures.isEmpty()) uiText(UiR.string.benchmark_sweep_complete, routes.size)
+                    else ""
+                if (failures.isNotEmpty()) error = failures.joinToString("\n")
+            } catch (e: CancellationException) {
+                status = uiText(UiR.string.ui_comparison_stopped_completed_results_were_saved_7c2db)
+                throw e
+            } catch (e: Exception) { error = e.message ?: e.toString() }
+            finally { running = false }
+        }
+    }
     val availableIds = visible.filter(::supports).map { it.id }
     val displayedResults = results.filter { !historyForPair ||
         (it.target.isNotBlank() == (mode == "Translation") && it.source == source &&
@@ -218,7 +255,7 @@ fun LocalBenchmarkScreen(onModels: (String) -> Unit = {}, onDownloads: () -> Uni
             OutlinedButton({ picker = "source" }, enabled = !running && !busy, modifier = Modifier.fillMaxWidth()) {
                 Text(uiText(UiR.string.ui_1_s_language_2_s_a760d, if (mode == "Speech") uiText(UiR.string.language_spoken) else uiText(UiR.string.language_source), uiText.languageLabel(LanguageCatalog.option(source))))
             }
-            OutlinedButton({ picker = "target" }, enabled = !running && !busy,
+            if (mode == "Translation") OutlinedButton({ picker = "target" }, enabled = !running && !busy,
                 modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) { Text(uiText(UiR.string.ui_translate_to_1_s_f70dc, uiText.languageLabel(LanguageCatalog.option(target)))) }
             Text(if (mode == "Speech") uiText(UiR.string.ui_forced_language_is_used_where_supported_vosk_always_uses_its_mode_86f53)
                 else uiText(UiR.string.ui_compare_the_same_corrected_source_text_separately_from_recognitio_7e2d4), style = MaterialTheme.typography.bodySmall,
@@ -380,6 +417,12 @@ fun LocalBenchmarkScreen(onModels: (String) -> Unit = {}, onDownloads: () -> Uni
             if (useBuiltInSet) {
                 Text(uiText(UiR.string.benchmark_suite_summary), style = MaterialTheme.typography.bodySmall,
                     modifier = Modifier.padding(top = 4.dp))
+                if (mode == "Speech") FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    FilterChip(!extendedSpeech, { extendedSpeech = false }, enabled = !running && !busy,
+                        label = { Text(uiText(UiR.string.benchmark_quick_set)) })
+                    FilterChip(extendedSpeech, { extendedSpeech = true }, enabled = !running && !busy,
+                        label = { Text(uiText(UiR.string.benchmark_long_clip_set)) })
+                }
                 Text(uiText(UiR.string.benchmark_suite_attribution), style = MaterialTheme.typography.labelSmall,
                     modifier = Modifier.padding(top = 4.dp), color = MaterialTheme.colorScheme.onSurfaceVariant)
                 if (builtInCases.isEmpty()) {
@@ -426,6 +469,12 @@ fun LocalBenchmarkScreen(onModels: (String) -> Unit = {}, onDownloads: () -> Uni
         }
         items(visible, key = { it.id }) { candidate ->
             val enabled = !running && !busy && supports(candidate)
+            val sweepRoutes = suite?.let { BenchmarkLanguageSweep.routes(candidate, it) }.orEmpty()
+            val sweepResults = suite?.let { activeSuite -> sweepRoutes.mapNotNull { route ->
+                results.firstOrNull { result -> result.identity == candidate.id && result.source == route.source &&
+                    result.target == route.target && BenchmarkLanguageSweep.isBundled(result, activeSuite) && result.error == null }
+            } }.orEmpty()
+            Column {
             Row(Modifier.fillMaxWidth().heightIn(min = 56.dp)
                 .toggleable(candidate.id in selected, enabled = enabled, role = Role.Checkbox) { checked ->
                     selected = if (checked) (selected + candidate.id).take(12) else selected - candidate.id
@@ -436,6 +485,40 @@ fun LocalBenchmarkScreen(onModels: (String) -> Unit = {}, onDownloads: () -> Uni
                     Text(if (supports(candidate)) candidate.route else uiText(UiR.string.ui_not_compatible_with_this_language_selection_aa8b5),
                         style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
+            }
+            if (sweepRoutes.isNotEmpty()) {
+                TextButton({ runLanguageSweep(candidate) }, enabled = !running && !busy && gateOwner == null,
+                    modifier = Modifier.padding(start = 48.dp)) {
+                    Text(uiText(UiR.string.benchmark_test_all_languages, sweepRoutes.size))
+                }
+                Text(sweepRoutes.joinToString(" · ") { route ->
+                    if (route.target.isEmpty()) route.source.uppercase(Locale.ROOT)
+                    else "${route.source.uppercase(Locale.ROOT)}→${route.target.uppercase(Locale.ROOT)}"
+                }, Modifier.padding(start = 48.dp), style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                if (sweepResults.isNotEmpty()) {
+                    Text(uiText(UiR.string.benchmark_sweep_saved, sweepResults.size, sweepRoutes.size),
+                        Modifier.padding(start = 48.dp), style = MaterialTheme.typography.bodySmall)
+                    FlowRow(Modifier.padding(start = 48.dp, bottom = 8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        sweepResults.forEach { result ->
+                            val label = if (result.target.isEmpty()) result.source.uppercase(Locale.ROOT)
+                                else "${result.source.uppercase(Locale.ROOT)}→${result.target.uppercase(Locale.ROOT)}"
+                            val speedText = BenchmarkTableModel.audioSpeed(result)?.let { "${number(it)}×" }
+                                ?: BenchmarkTableModel.translationMsPerSentence(result)?.let { "${number(it)}ms" } ?: "—"
+                            val qualityText = BenchmarkTableModel.qualityValue(result)?.let { value ->
+                                uiText(if (result.target.isEmpty()) UiR.string.benchmark_quality_errors
+                                    else UiR.string.benchmark_quality_similarity, "${number(value * 100)}%")
+                            } ?: "—"
+                            AssistChip(onClick = {
+                                source = result.source
+                                if (result.target.isNotEmpty()) target = result.target
+                                historyForPair = true
+                            }, label = { Text("$label · $speedText · $qualityText") }, enabled = !running)
+                        }
+                    }
+                }
+            }
             }
         }
         item {
@@ -545,11 +628,14 @@ private fun BenchmarkResultCard(result: BenchmarkResult) {
             result.error?.let { SelectionContainer { Text(it, color = MaterialTheme.colorScheme.error) } }
             val warm = BenchmarkTableModel.warmMs(result)
             val quality = BenchmarkTableModel.qualityValue(result)
+            val speed = BenchmarkTableModel.audioSpeed(result)
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 Column(Modifier.weight(1f).background(MaterialTheme.colorScheme.primaryContainer,
                     MaterialTheme.shapes.small).padding(8.dp)) {
-                    Text(uiText(UiR.string.benchmark_table_warm), style = MaterialTheme.typography.labelSmall)
-                    Text(warm?.let { "${number(it / 1000)}s" } ?: "—", style = MaterialTheme.typography.titleSmall)
+                    Text(uiText(if (result.target.isBlank()) UiR.string.benchmark_table_audio_speed else UiR.string.benchmark_table_each), style = MaterialTheme.typography.labelSmall)
+                    Text(speed?.let { "${number(it)}×" }
+                        ?: BenchmarkTableModel.translationMsPerSentence(result)?.let { "${number(it)}ms" } ?: "—",
+                        style = MaterialTheme.typography.titleSmall)
                 }
                 Column(Modifier.weight(1f).background(MaterialTheme.colorScheme.secondaryContainer,
                     MaterialTheme.shapes.small).padding(8.dp)) {
@@ -559,7 +645,9 @@ private fun BenchmarkResultCard(result: BenchmarkResult) {
                 Column(Modifier.weight(1f).background(MaterialTheme.colorScheme.tertiaryContainer,
                     MaterialTheme.shapes.small).padding(8.dp)) {
                     Text(uiText(UiR.string.benchmark_table_reference), style = MaterialTheme.typography.labelSmall)
-                    Text(quality?.let { "${number(it * 100)}%" } ?: "—", style = MaterialTheme.typography.titleSmall)
+                    Text(quality?.let { if (result.target.isBlank()) uiText(UiR.string.benchmark_quality_errors, "${number(it * 100)}%")
+                        else uiText(UiR.string.benchmark_quality_similarity, "${number(it * 100)}%") } ?: "—",
+                        style = MaterialTheme.typography.titleSmall)
                 }
             }
             TextButton({ details = !details }) { Text(if (details) uiText(UiR.string.ui_hide_details_f8c24) else uiText(UiR.string.ui_all_passes_and_runtime_a99e0)) }
@@ -583,6 +671,7 @@ private fun BenchmarkResultCard(result: BenchmarkResult) {
                         number(result.computeMs.first() / 1000)))
                     if (warm != null && result.audioMs > 0) Text(uiText(UiR.string.ui_real_time_factor_1_s_below_1_keeps_ahead_in_replay_10505,
                         number(BenchmarkMetrics.realTimeFactor(warm, result.audioMs))))
+                    if (result.protocolVersion < 2) Text(uiText(UiR.string.benchmark_old_timing), style = MaterialTheme.typography.bodySmall)
                     result.texts.lastOrNull()?.let { output ->
                         Text(output.ifBlank { uiText(UiR.string.ui_no_speech_recognized_a_fast_empty_result_is_not_a_quality_win_c93af) })
                     }

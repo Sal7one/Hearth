@@ -3,17 +3,33 @@
 The in-app benchmark runs the installed production adapters on the phone. Its
 built-in quick set contains six aligned, publisher-provided sentences for each
 supported language or direction. Speech checks add two silence inputs. The
-current pack covers Arabic, English, Russian and Chinese, with translation
+current pack covers Egyptian Arabic (`ar_eg`), US English (`en_us`), Russian
+(`ru_ru`) and Mainland Mandarin (`cmn_hans_cn`), with translation
 pairs Arabic↔English, Russian→Arabic/English, and Chinese→Arabic/English.
 Audio and references come from the pinned FLEURS test split; see
 [`app/src/main/assets/benchmark/LICENSE.txt`](../app/src/main/assets/benchmark/LICENSE.txt)
 for attribution and CC BY 4.0 terms. These general test sentences do not model
-Gulf dialect accuracy, every accent, or specialized captions.
+Gulf dialect accuracy, every accent, or specialized captions. The four pinned
+publisher `test.tsv` files, all 28 bundled WAV/PCM digests and transcriptions,
+and all 36 translation references can be checked offline with
+`python3 scripts/benchmark/verify_fleurs_pack.py` after the pinned metadata
+has been cached by the pack generator. This verifies provenance and byte
+integrity; it does not turn six sentences into a representative accuracy study.
+For speech, **Long clip · 7 clips** adds the already-bundled distinct 14–17
+second publisher recording to the six short clips. This exposes longer
+utterance behavior without another download. The per-model four-language
+sweep uses the faster six-clip set; choose a single language and Long clip
+for a closer follow-up.
 
 Open **Compare local models**, choose Speech or Translation, select the source
 language and (for translation) destination, then select the built-in set. It is
 selected by default. The app applies the same six samples to each compatible
-installed candidate that you check, in order. **Deselect all** keeps the list
+installed candidate that you check, in order. **Test supported languages**
+on an installed model runs the quick set for every bundled language or
+translation direction that its manifest explicitly advertises, then saves a
+result for each route. The per-model progress and saved AR/EN/RU/ZH speed
+summary stay visible on this page. Models with only `auto` or an unknown
+language do not inherit an unproven four-language claim. **Deselect all** keeps the list
 empty until you choose a model. For speech it also runs 1-second and 2.5-second
 silence checks; these are shown separately and are not included in reference
 error rates. Choose **My recording or text** to run a single private sample with
@@ -61,10 +77,19 @@ public references, but never the custom audio bytes.
 - **First pass** is the first complete pass over all selected samples;
   **warm pass median** is the median of two more complete passes with weights retained.
 - **Compute time** is accelerated replay, not microphone-to-caption latency.
+  Starting with benchmark timing protocol 2, speech feeds the same 50 ms frame
+  size as the overlay capture path and excludes between-clip `reset()` from
+  measured inference. Earlier saved results remain readable but never rank
+  against the new timing protocol. Silence clips remain in the throughput
+  workload but are excluded from the average time-to-first-text calculation.
   For speech the real-time factor divides the warm corpus compute time by total
   audio duration. Below 1 means the measured adapter processes that test set
   faster than its audio duration. It does not measure phrase-finality or live
-  queue behavior.
+  queue behavior. The table shows the reciprocal as **audio speed**: for
+  example, `2.0×` means the model processed this corpus twice as fast as its
+  duration. Translation shows milliseconds per sentence. **Best speed** and
+  **Best quality** are relative labels among comparable runs, not universal
+  model rankings.
 - **WER and CER** compare normalized reference/output speech text. Chinese
   publisher references insert spaces between characters, while model output
   typically does not; the app therefore reports CER only for Chinese. Translation does not
@@ -81,7 +106,7 @@ The phone selects up to 12 compatible models, including installed Marian ONNX
 language pairs, and runs them sequentially under
 `LocalWorkGate`; Overlay and Traveler cannot load another local engine during
 the run. Speech models receive the same decoded 16 kHz mono PCM. Streaming
-adapters use 20 ms frames and their production options; batch adapters remain
+adapters use 50 ms capture frames and their production options; batch adapters remain
 identified as batch. Each model's weights stay loaded for its three measured
 passes and are released before the next candidate.
 

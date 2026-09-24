@@ -4,6 +4,13 @@ package com.sal7one.transiber.benchmark
 internal enum class BenchmarkTableSort { WARM, LOAD, QUALITY, RECENT }
 
 internal object BenchmarkTableModel {
+    /** Speech audio seconds processed per second of accelerated replay. */
+    fun audioSpeed(result: BenchmarkResult): Double? = warmMs(result)?.takeIf { it > 0 && result.audioMs > 0 }
+        ?.let { result.audioMs / it }
+
+    fun translationMsPerSentence(result: BenchmarkResult): Double? = warmMs(result)?.takeIf { result.target.isNotBlank() }
+        ?.let { total -> result.samples.count { !it.silence }.takeIf { it > 0 }?.let { total / it } }
+
     fun warmMs(result: BenchmarkResult): Double? = result.computeMs.drop(1)
         .takeIf { it.isNotEmpty() && it.all { time -> time.isFinite() && time >= 0 } }
         ?.let(BenchmarkMetrics::median)

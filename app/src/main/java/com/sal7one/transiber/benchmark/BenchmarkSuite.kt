@@ -51,7 +51,11 @@ internal data class BenchmarkSuite(
         val compatible = cases.filter { it.speech == speech && it.source == source && (speech || it.target == target) && it.publisherSentenceId != warmupId }
         val ids = if (full) fullIds else quickIds
         val ordered = if (ids.isEmpty()) compatible else ids.mapNotNull { id -> compatible.firstOrNull { it.publisherSentenceId == id || it.id == id } }
-        val chosen = ordered.take(if (full) 30 else 6)
+        val chosen = ordered.take(if (full) 30 else 6) + if (full && speech && fullIds == quickIds) {
+            // The compact APK already bundles a distinct 14–17 s publisher clip.
+            // Offer it as an optional long-speech check without another download.
+            listOfNotNull(cases.firstOrNull { it.speech && it.source == source && it.publisherSentenceId == warmupId })
+        } else emptyList()
         return if (speech && chosen.isNotEmpty()) chosen + listOf(1000,2500).map { ms ->
             BenchmarkCase("silence-$ms",source,reference="",referenceStatus="human-reviewed",silenceMs=ms)
         } else chosen

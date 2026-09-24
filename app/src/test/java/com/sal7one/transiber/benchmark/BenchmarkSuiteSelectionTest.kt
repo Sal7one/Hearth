@@ -35,4 +35,11 @@ class BenchmarkSuiteSelectionTest {
         assertTrue(selected.all { it.source == "ru" && it.target == "ar" && it.referenceStatus == "publisher" })
         assertTrue(suite.selected(speech = false, source = "ru", target = "zh", full = false).isEmpty())
     }
+
+    @Test fun extendedSpeechUsesTheAlreadyBundledLongPublisherClip() {
+        val selected = suite.selected(speech = true, source = "ru", target = "", full = true)
+        assertEquals(9, selected.size)
+        assertEquals("warmup", selected[6].publisherSentenceId)
+        assertEquals(listOf(1000, 2500), selected.takeLast(2).map { it.silenceMs })
+    }
 }

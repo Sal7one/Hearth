@@ -75,7 +75,8 @@ internal object BenchmarkComparison {
     fun latest(results: List<BenchmarkResult>, source: String, target: String): BenchmarkLeaders? {
         val matching = results.filter { it.source == source && it.target == target }
         val seed = matching.firstOrNull() ?: return null
-        val comparable = matching.filter { it.inputHash == seed.inputHash && it.device == seed.device }
+        val comparable = matching.filter { it.inputHash == seed.inputHash && it.device == seed.device &&
+            it.protocolVersion == seed.protocolVersion }
             .distinctBy { it.identity }.filter { result ->
                 result.error == null && result.computeMs.size >= 3 && result.computeMs.all { it.isFinite() && it >= 0 } &&
                     result.texts.lastOrNull()?.isNotBlank() == true &&
