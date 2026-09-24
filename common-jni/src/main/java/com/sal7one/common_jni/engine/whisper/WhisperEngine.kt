@@ -199,8 +199,8 @@ class WhisperEngine : SttEngine {
      *               duration of this call.
      * @param byteOffset Starting byte offset inside the buffer.
      * @param byteCount  Number of bytes to read (must be even; sampleCount = byteCount / 2).
-     * @param sampleRate Input sample rate. If != 16000 the native side resamples
-     *                   using thread-local scratch buffers (no heap allocation).
+     * @param sampleRate Input sample rate. The native engine keeps resampling
+     *                   phase across streaming chunks when this is not 16 kHz.
      */
     suspend fun pushAudioDirect(
         buffer: java.nio.ByteBuffer,

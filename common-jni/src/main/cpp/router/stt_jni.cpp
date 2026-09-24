@@ -43,7 +43,6 @@ EngineType intToEngineType(int type) {
 // Reused across calls so streaming STT does NOT allocate per-chunk.
 // Each JNI-calling thread has its own pair (int16->float, resample out).
 thread_local std::vector<float> t_floatScratch;
-thread_local std::vector<float> t_resampleScratch;
 thread_local std::vector<int16_t> t_i16Scratch;
 
 // Ensure scratch has at least `n` capacity without shrinking.
@@ -201,36 +200,14 @@ Java_com_sal7one_common_1jni_engine_whisper_WhisperEngine_nativePushAudioWhisper
         return -1;
     }
 
-    constexpr int WHISPER_REQUIRED_RATE = 16000;
-    if (sampleRate != WHISPER_REQUIRED_RATE) {
-        // Resample into thread-local scratch, then release the critical
-        // section before the engine call (conversion itself is non-blocking).
-        size_t outCount = 0;
-        {
-            ShortArrayGuard guard(env, samples);
-            if (!guard) { SET_ERROR("Failed to get array"); return -1; }
-            ensureScratch(t_floatScratch, static_cast<size_t>(count));
-            AudioUtils::int16ToFloat(guard.get(), t_floatScratch.data(), count);
-
-            const size_t outCap = AudioUtils::calculateResampleOutputSize(
-                static_cast<size_t>(count), sampleRate, WHISPER_REQUIRED_RATE);
-            ensureScratch(t_resampleScratch, outCap);
-            outCount = AudioUtils::resampleInto(
-                t_floatScratch.data(), static_cast<size_t>(count),
-                sampleRate, WHISPER_REQUIRED_RATE,
-                t_resampleScratch.data(), outCap);
-        }
-        return engine->pushAudioFloat(t_resampleScratch.data(), outCount, WHISPER_REQUIRED_RATE);
-    }
-
-    // 16 kHz path: copy out and release the critical section first — the
-    // engine may run a full chunk inference inside pushAudio.
+    // Preserve the caller's rate: the engine owns the stream's resampler
+    // phase. Copy out before the engine call so JNI does not pin the GC.
     {
         ShortArrayGuard guard(env, samples);
         if (!guard) { SET_ERROR("Failed to get array"); return -1; }
         copyOutAndRelease(guard, count);
     }
-    return engine->pushAudio(t_i16Scratch.data(), count, WHISPER_REQUIRED_RATE);
+    return engine->pushAudio(t_i16Scratch.data(), count, sampleRate);
 
     JNI_TRY_CATCH_END(env, -1)
 }
@@ -248,24 +225,7 @@ Java_com_sal7one_common_1jni_engine_whisper_WhisperEngine_nativePushAudioFloatWh
         return -1;
     }
 
-    constexpr int WHISPER_REQUIRED_RATE = 16000;
-    if (sampleRate != WHISPER_REQUIRED_RATE) {
-        ensureScratch(t_resampleScratch,
-                      AudioUtils::calculateResampleOutputSize(
-                          static_cast<size_t>(count), sampleRate, WHISPER_REQUIRED_RATE));
-        size_t outCount = 0;
-        {
-            FloatArrayGuard guard(env, samples);
-            if (!guard) { SET_ERROR("Failed to get array"); return -1; }
-            outCount = AudioUtils::resampleInto(
-                guard.get(), static_cast<size_t>(count),
-                sampleRate, WHISPER_REQUIRED_RATE,
-                t_resampleScratch.data(), t_resampleScratch.size());
-        }
-        return engine->pushAudioFloat(t_resampleScratch.data(), outCount, WHISPER_REQUIRED_RATE);
-    }
-
-    // Copy out and release the critical section before the engine call.
+    // Preserve the caller's rate for the engine-owned streaming resampler.
     {
         FloatArrayGuard guard(env, samples);
         if (!guard) { SET_ERROR("Failed to get array"); return -1; }
@@ -273,7 +233,7 @@ Java_com_sal7one_common_1jni_engine_whisper_WhisperEngine_nativePushAudioFloatWh
         std::memcpy(t_floatScratch.data(), guard.get(),
                     static_cast<size_t>(count) * sizeof(float));
     }
-    return engine->pushAudioFloat(t_floatScratch.data(), count, WHISPER_REQUIRED_RATE);
+    return engine->pushAudioFloat(t_floatScratch.data(), count, sampleRate);
 
     JNI_TRY_CATCH_END(env, -1)
 }
@@ -345,24 +305,7 @@ Java_com_sal7one_common_1jni_engine_whisper_WhisperEngine_nativePushAudioDirectW
     const auto* samples = reinterpret_cast<const int16_t*>(base + byteOffset);
     const int sampleCount = byteCount / 2;
 
-    constexpr int WHISPER_REQUIRED_RATE = 16000;
-    if (sampleRate != WHISPER_REQUIRED_RATE) {
-        // Resample via thread-local scratch (zero hot-path allocation)
-        ensureScratch(t_floatScratch, static_cast<size_t>(sampleCount));
-        AudioUtils::int16ToFloat(samples, t_floatScratch.data(), sampleCount);
-
-        const size_t outCap = AudioUtils::calculateResampleOutputSize(
-            static_cast<size_t>(sampleCount), sampleRate, WHISPER_REQUIRED_RATE);
-        ensureScratch(t_resampleScratch, outCap);
-        const size_t outCount = AudioUtils::resampleInto(
-            t_floatScratch.data(), static_cast<size_t>(sampleCount),
-            sampleRate, WHISPER_REQUIRED_RATE,
-            t_resampleScratch.data(), outCap);
-
-        return engine->pushAudioFloat(t_resampleScratch.data(), outCount, WHISPER_REQUIRED_RATE);
-    }
-
-    return engine->pushAudio(samples, sampleCount, WHISPER_REQUIRED_RATE);
+    return engine->pushAudio(samples, sampleCount, sampleRate);
     JNI_TRY_CATCH_END(env, -1)
 }
 
