@@ -1,8 +1,7 @@
 package com.sal7one.common_jni.perf
 
 /**
- * Pure-JVM mirror of [MicRecorder]'s chunk-pacing bookkeeping (see
- * `MicRecorder.recordChunkPacing`). It aggregates delivery jitter — the
+ * Pure-JVM chunk-pacing bookkeeping consumed by [MicRecorder]. It aggregates delivery jitter — the
  * wall-clock interval between delivered chunks minus the configured chunk
  * duration — into a [RollingStats], and recomputes the human-readable summary
  * every [logEvery] chunks.
@@ -11,7 +10,7 @@ package com.sal7one.common_jni.perf
  * `AudioRecord` runtime, so the identical arithmetic is expressed here as a
  * dependency-free helper that the host JVM benchmark can exercise directly.
  * This is a measurement-only type: it never alters capture or delivery; the
- * original recorder keeps its own private copy unchanged.
+ * recorder uses the same implementation as host tests.
  *
  * @param chunkDurationMs nominal wall duration of one chunk (MicRecorder default 100).
  * @param stats rolling window receiving the per-delivery jitter samples.

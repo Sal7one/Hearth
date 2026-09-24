@@ -1,6 +1,6 @@
 package com.sal7one.common_jni.audio
 
-import com.sal7one.common_jni.perf.RollingStats
+import com.sal7one.common_jni.perf.ChunkPacing
 import android.Manifest
 import android.annotation.SuppressLint
 import android.media.AudioFormat
@@ -55,6 +55,12 @@ class MicRecorder(
     private val _isRecording = AtomicBoolean(false)
     private val captureGeneration = AtomicLong(0L)
     val isRecording: Boolean get() = _isRecording.get()
+    private val _droppedSamples = AtomicLong(0L)
+    /** PCM samples lost by direct-buffer backpressure or discarded queued chunks. */
+    val droppedSamples: Long get() = _droppedSamples.get()
+    private val _readErrorCode = MutableStateFlow<Int?>(null)
+    /** Raw negative AudioRecord.read() result; null until a capture read fails. */
+    val readErrorCode: StateFlow<Int?> = _readErrorCode.asStateFlow()
 
     // Legacy ShortArray flow
     private val _audioFlow = MutableSharedFlow<AudioChunkData>(
@@ -69,7 +75,10 @@ class MicRecorder(
     // the newest chunk and immediately return its buffer to the pool.
     private val directAudioChannel = ReleasingPooledChannel<PooledAudioChunk>(
         capacity = DIRECT_POOL_SIZE,
-        release = PooledAudioChunk::release,
+        release = { chunk ->
+            _droppedSamples.addAndGet(chunk.sampleCount.toLong())
+            chunk.release()
+        },
     )
     private val directDeliveryLock = Any()
     val directAudioFlow: Flow<PooledAudioChunk> = directAudioChannel.flow
@@ -80,6 +89,7 @@ class MicRecorder(
 
     // Internal
     private var audioRecord: AudioRecord? = null
+    private val audioRecordLock = Any()
     private var recordingJob: Job? = null
     private val scope = CoroutineScope(Dispatchers.Default + SupervisorJob())
 
@@ -113,6 +123,9 @@ class MicRecorder(
 
         try {
             _state.value = RecordingState.STARTING
+            _droppedSamples.set(0L)
+            _readErrorCode.value = null
+            synchronized(chunkPacing) { chunkPacing.reset() }
 
             audioRecord = AudioRecord(
                 MediaRecorder.AudioSource.VOICE_RECOGNITION,
@@ -153,7 +166,7 @@ class MicRecorder(
      * Stop recording and release resources.
      */
     fun stop() {
-        if (!_isRecording.getAndSet(false)) {
+        if (!_isRecording.getAndSet(false) && _state.value == RecordingState.IDLE) {
             return
         }
 
@@ -185,40 +198,19 @@ class MicRecorder(
     }
 
     private suspend fun captureLoop(generation: Long) {
-        val buffer = ShortArray(chunkSamples)
-        var timestampMs = 0L
-
-        while (_isRecording.get() && generation == captureGeneration.get() &&
-            currentCoroutineContext().isActive) {
-            val record = audioRecord ?: break
-            if (generation != captureGeneration.get()) break
-
-            val samplesRead = record.read(buffer, 0, chunkSamples)
-
-            when {
-                samplesRead > 0 -> {
-                    if (generation != captureGeneration.get()) break
-                    recordChunkPacing()
-                    val chunk = AudioChunkData(
-                        samples = buffer.copyOf(samplesRead),
-                        sampleRate = sampleRate,
-                        timestampMs = timestampMs,
-                        durationMs = (samplesRead * 1000L) / sampleRate
-                    )
-
-                    _audioFlow.emit(chunk)
-                    timestampMs += chunk.durationMs
-                }
-                samplesRead == AudioRecord.ERROR_INVALID_OPERATION -> {
-                    Log.e(TAG, "Invalid operation during read")
-                    break
-                }
-                samplesRead == AudioRecord.ERROR_BAD_VALUE -> {
-                    Log.e(TAG, "Bad value during read")
-                    break
-                }
-            }
-        }
+        val record = audioRecord ?: return
+        val context = currentCoroutineContext()
+        val error = captureShortChunks(
+            sampleRate = sampleRate,
+            chunkSamples = chunkSamples,
+            active = {
+                _isRecording.get() && generation == captureGeneration.get() && context.isActive
+            },
+            read = { buffer -> record.read(buffer, 0, buffer.size) },
+            publish = { chunk -> _audioFlow.emit(chunk) },
+            onDelivered = ::recordChunkPacing,
+        )
+        if (error != null) failCapture(generation, error)
     }
 
     /**
@@ -231,19 +223,32 @@ class MicRecorder(
      * its buffer is immediately returned to the pool.
      */
     private suspend fun directCaptureLoop(generation: Long) {
-        var timestampMs = 0L
+        val clock = CaptureSampleClock(sampleRate)
         val pool = freeBuffers ?: return
+        val discardBuffer = ByteBuffer.allocateDirect(chunkBytes)
         while (_isRecording.get() && generation == captureGeneration.get() &&
             currentCoroutineContext().isActive) {
             val record = audioRecord ?: break
             if (generation != captureGeneration.get()) break
 
-            // Acquire a free buffer (non-blocking; if empty, drop this cycle)
+            // Drain audio even when the consumer holds every pooled buffer.
+            // Sleeping here would let AudioRecord's internal queue grow stale.
             val buf = pool.poll()
             if (buf == null) {
-                // Consumer is backed up — yield briefly so we don't busy-spin.
-                // At 100ms chunks this is at most one frame skipped.
-                delay(chunkDurationMs.toLong())
+                discardBuffer.clear()
+                val discardedBytes = record.read(discardBuffer, chunkBytes)
+                if (generation != captureGeneration.get()) break
+                if (discardedBytes < 0) {
+                    failCapture(generation, discardedBytes)
+                    break
+                }
+                if (discardedBytes > 0) {
+                    val discardedSamples = discardedBytes / 2
+                    clock.advance(discardedSamples)
+                    _droppedSamples.addAndGet(discardedSamples.toLong())
+                } else {
+                    delay(5)
+                }
                 continue
             }
 
@@ -252,9 +257,13 @@ class MicRecorder(
 
             when {
                 bytesRead > 0 -> {
+                    if (generation != captureGeneration.get()) {
+                        pool.offer(buf)
+                        break
+                    }
                     buf.position(0).limit(bytesRead)
                     val sampleCount = bytesRead / 2
-                    val durationMs = (sampleCount * 1000L) / sampleRate
+                    val (timestampMs, durationMs) = clock.advance(sampleCount)
                     val chunk = PooledAudioChunk(
                         buffer = buf,
                         byteOffset = 0,
@@ -264,7 +273,6 @@ class MicRecorder(
                         durationMs = durationMs,
                         releaseFn = { pool.offer(buf) }
                     )
-                    timestampMs += durationMs
                     recordChunkPacing()
 
                     // The bounded queue explicitly releases a rejected newest
@@ -273,61 +281,67 @@ class MicRecorder(
                         if (_isRecording.get() && generation == captureGeneration.get()) {
                             directAudioChannel.offer(chunk)
                         } else {
+                            _droppedSamples.addAndGet(sampleCount.toLong())
                             chunk.release()
                         }
                     }
                 }
-                bytesRead == AudioRecord.ERROR_INVALID_OPERATION -> {
+                bytesRead < 0 -> {
                     pool.offer(buf)
-                    Log.e(TAG, "Invalid operation during direct read")
-                    break
-                }
-                bytesRead == AudioRecord.ERROR_BAD_VALUE -> {
-                    pool.offer(buf)
-                    Log.e(TAG, "Bad value during direct read")
+                    failCapture(generation, bytesRead)
                     break
                 }
                 else -> {
-                    // 0 bytes or transient error: return buffer, keep going
+                    // A zero-length read is not a failure, but must not spin.
                     pool.offer(buf)
+                    delay(5)
                 }
             }
         }
     }
 
-    // Measurement-only chunk-pacing instrumentation (additive; never alters
-    // capture or delivery behavior). Aggregates delivery jitter — the
-    // wall-clock interval between delivered chunks minus chunkDurationMs — into
-    // a RollingStats and debug-logs a summary every 50 chunks.
-    private val chunkJitterStats = RollingStats(capacity = 512)
-    private var lastChunkDeliveryNanos = 0L
-    private var deliveredChunkCount = 0L
+    // Measurement-only chunk-pacing instrumentation shared with host tests.
+    private val chunkPacing = ChunkPacing(chunkDurationMs.toDouble())
 
     private fun recordChunkPacing() {
-        val now = System.nanoTime()
-        if (lastChunkDeliveryNanos != 0L) {
-            val intervalMs = (now - lastChunkDeliveryNanos) / 1_000_000.0
-            chunkJitterStats.record(intervalMs - chunkDurationMs)
+        synchronized(chunkPacing) {
+            chunkPacing.onChunkDelivered(System.nanoTime())
+            if (chunkPacing.deliveredCount % 50L == 0L) {
+                Log.d(TAG, "chunk pacing (${chunkPacing.deliveredCount} chunks): ${chunkPacing.lastSummary}")
+            }
         }
-        lastChunkDeliveryNanos = now
-        deliveredChunkCount++
-        if (deliveredChunkCount % 50L == 0L) {
-            Log.d(TAG, "chunk pacing (${deliveredChunkCount} chunks): ${chunkJitterStats.format()}")
+    }
+
+    private fun failCapture(generation: Long, code: Int) {
+        if (generation != captureGeneration.get()) return
+        _readErrorCode.value = code
+        _isRecording.set(false)
+        _state.value = RecordingState.ERROR
+        Log.e(TAG, "AudioRecord.read failed with code $code")
+        releaseAudioRecord()
+        synchronized(directDeliveryLock) {
+            directAudioChannel.discardPending()
         }
     }
 
     private fun releaseAudioRecord() {
-        audioRecord?.let { record ->
+        val record = synchronized(audioRecordLock) {
+            audioRecord.also { audioRecord = null }
+        }
+        record?.let {
             try {
-                if (record.recordingState == AudioRecord.RECORDSTATE_RECORDING) {
-                    record.stop()
+                if (it.recordingState == AudioRecord.RECORDSTATE_RECORDING) {
+                    it.stop()
                 }
-                record.release()
+            } catch (e: Exception) {
+                Log.e(TAG, "Error stopping AudioRecord", e)
+            }
+            try {
+                it.release()
             } catch (e: Exception) {
                 Log.e(TAG, "Error releasing AudioRecord", e)
             }
         }
-        audioRecord = null
     }
 }
 

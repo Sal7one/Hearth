@@ -113,6 +113,7 @@ class RealtimeSttSession(
     
     private var processingJob: Job? = null
     private var partialJob: Job? = null
+    private var captureErrorJob: Job? = null
     private val isActive = AtomicBoolean(false)
     
     // Mutex for initialize() to prevent double-init races
@@ -203,6 +204,17 @@ class RealtimeSttSession(
         partialJob = null
         
         _state.value = RealtimeSessionState.LISTENING
+        // Observe capture failure outside the single inference lane: a slow
+        // native push must not delay the microphone error reaching callers.
+        captureErrorJob = pipelineScope.launch(Dispatchers.Default) {
+            val code = micRecorder.readErrorCode.filterNotNull().first()
+            if (this@RealtimeSttSession.isActive.getAndSet(false)) {
+                _state.value = RealtimeSessionState.ERROR
+                _error.tryEmit("Microphone capture failed: AudioRecord.read returned $code")
+                audioProbe.cancel()
+                processingJob?.cancel()
+            }
+        }
         Log.i(TAG, "Real-time session started")
     }
     
@@ -211,7 +223,13 @@ class RealtimeSttSession(
      */
     suspend fun stop(): Result<TranscriptResult> {
         if (!isActive.getAndSet(false)) {
-            return Result.failure(IllegalStateException("Session not active"))
+            val readCode = micRecorder.readErrorCode.value
+            val message = if (readCode != null) {
+                "Microphone capture failed: AudioRecord.read returned $readCode"
+            } else {
+                "Session not active"
+            }
+            return Result.failure(IllegalStateException(message))
         }
         
         _state.value = RealtimeSessionState.PROCESSING
@@ -223,8 +241,10 @@ class RealtimeSttSession(
         // Cancel processing jobs and wait for them
         processingJob?.cancelAndJoin()
         partialJob?.cancelAndJoin()
+        captureErrorJob?.cancelAndJoin()
         processingJob = null
         partialJob = null
+        captureErrorJob = null
         
         // Get final result
         return try {
@@ -249,8 +269,10 @@ class RealtimeSttSession(
         audioProbe.cancel()
         processingJob?.cancelAndJoin()
         partialJob?.cancelAndJoin()
+        captureErrorJob?.cancelAndJoin()
         processingJob = null
         partialJob = null
+        captureErrorJob = null
         
         withContext(sttScope.coroutineContext) {
             engine.reset()

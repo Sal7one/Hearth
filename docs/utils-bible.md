@@ -391,6 +391,15 @@ symlinks, checks path/size limits and changed-file snapshots, and asserts the
 same `model-tree-sha256-v1` digest vector as Kotlin `ModelIntegrityTest`. This
 guards the portable model identity contract used before loading model bytes.
 
+`CaptureSampleClock` and `captureShortChunks` in `audio/CaptureReadLoop.kt` are
+used by `MicRecorder` to timestamp microphone chunks by sample count and stop
+on every negative `AudioRecord.read()` code. `CaptureReadLoopTest` injects a
+reader that returns audio then each error code, checks exact termination and
+late-chunk suppression, and verifies 44.1 kHz timing without per-chunk rounding
+drift. Direct-buffer capture uses the same clock and drains to a discard buffer
+under backpressure, recording the dropped sample count. `MicRecorder` also
+consumes the tested `perf/ChunkPacing` helper instead of duplicating its math.
+
 `ScopedTimer` remains a batch-operation consumer of `PerformanceStats` in the
 Whisper/Vosk engines. Live audio pushes no longer construct a global stats key,
 lock its map, or log every 50 ms. `scoped_timer_test.cpp` compiles two macros
