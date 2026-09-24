@@ -162,7 +162,7 @@ downloader.
 - [Model sources and download links](docs/model-sources.md) · [Speech setup](docs/models.md)
 - [Local translation](docs/local-translation.md) · [Cloud text translation](docs/conversation-cloud-translation.md)
 - [Camera OCR](docs/camera-ocr.md) · [Screen & manga](docs/screen-reading.md) · [Voices](docs/voices.md)
-- [Compare installed models](docs/local-benchmark.md) · [Recorded translation comparison](docs/local-translation-benchmark-2026-09-13.md)
+- [Choose, download and compare local speech/translation models](docs/local-benchmark.md) · [Recorded translation comparison](docs/local-translation-benchmark-2026-09-13.md)
 
 ## Build
 

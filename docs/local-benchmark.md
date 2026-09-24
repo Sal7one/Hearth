@@ -18,7 +18,7 @@ empty until you choose a model. For speech it also runs 1-second and 2.5-second
 silence checks; these are shown separately and are not included in reference
 error rates. Choose **My recording or text** to run a single private sample with
 optional corrected reference text. The language pickers offer the languages
-advertised by the models installed on that phone; for a pair outside the
+advertised by installed or downloadable catalog models; for a pair outside the
 bundled quick set, the screen offers a direct switch to your own WAV/text.
 This lets the S25 owner compare any **supported** language pair with their own
 material, without claiming a public reference score for a language we did not
@@ -29,8 +29,26 @@ current date/time so repeated exports do not silently replace earlier runs.
 Run the same sample on both phones and inspect the output as well as elapsed
 time.
 
-No network request, model download, microphone, or recording permission is used
-by the benchmark. ML Kit runs only with packs already installed by the user in
+The **Speed first / Balanced / Quality first** cards suggest one pinned speech
+artifact and one translator for the selected direction. These are trial plans,
+not claims that their speed or quality has already won on the phone. The plans
+use the current catalog and the limited [S22 phone smoke results](benchmark-phone-smoke-2026-09-23.md)
+where available; a different phone or language may reverse the order. Each stage
+shows whether its artifact is installed, a direct download action in the Play
+build where supported, and a shortcut to its model browser. FOSS keeps model
+import/browsing without a download action. Once both stages are installed and
+the quick set covers the pair, **Test speech + translation** runs their normal
+production adapters sequentially and saves both results. It does not measure
+simultaneous ASR/MT contention or live caption delay. The saved-result summary
+shows fastest warm pass, a speed/reference-score balance, and the result closest
+to the reference only among successful outputs from the same phone/app build,
+exact input, and language direction. It needs at least two comparable models; an accuracy
+label requires reference scores. This prevents old results or a fast empty
+transcript from winning.
+
+No network request, microphone, or recording permission is used by a benchmark
+run. The optional preset download buttons use the existing pinned model
+downloader and are absent in FOSS. ML Kit runs only with packs already installed by the user in
 the Play build. The speech corpus adds about 7.6 MB to the APK. Phone benchmark
 results and user-selected custom recordings stay on that phone unless the user
 exports the results JSON. Export includes recognized/translated text and the

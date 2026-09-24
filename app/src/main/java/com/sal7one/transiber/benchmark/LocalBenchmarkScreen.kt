@@ -24,9 +24,18 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.sal7one.common_jni.language.LanguageCatalog
+import com.sal7one.transiber.byok.ByokPolicy
 import com.sal7one.transiber.caption.CaptionLanguageChoices
 import com.sal7one.transiber.caption.LanguagePickerContent
+import com.sal7one.transiber.downloads.DownloadSpec
+import com.sal7one.transiber.downloads.FileDownloads
+import com.sal7one.transiber.models.SpeechArtifactCatalog
 import com.sal7one.transiber.runtime.LocalWorkGate
+import com.sal7one.transiber.translation.MarianPackage
+import com.sal7one.transiber.translation.MarianCascade
+import com.sal7one.transiber.translation.PlatformTranslation
+import com.sal7one.transiber.translation.TranslationOptions
+import com.sal7one.common_jni.translation.TranslationCatalog
 import kotlinx.coroutines.*
 import java.text.DateFormat
 import java.text.SimpleDateFormat
@@ -36,7 +45,7 @@ import java.util.Locale
 /** Explicit finite local-only experiments. Leaving/backgrounding this page cancels safely. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun LocalBenchmarkScreen(onModels: () -> Unit = {}) {
+fun LocalBenchmarkScreen(onModels: (String) -> Unit = {}, onDownloads: () -> Unit = {}) {
     val uiText = rememberUiText()
 
     val context = LocalContext.current
@@ -44,12 +53,14 @@ fun LocalBenchmarkScreen(onModels: () -> Unit = {}) {
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     val runner = remember { LocalBenchmarkRunner(context.applicationContext) }
     val store = remember { BenchmarkResults(context.applicationContext) }
+    val downloads = remember { FileDownloads(context.applicationContext) }
     var candidates by remember { mutableStateOf<List<BenchmarkCandidate>>(emptyList()) }
     var results by remember { mutableStateOf<List<BenchmarkResult>>(emptyList()) }
     var suite by remember { mutableStateOf<BenchmarkSuite?>(null) }
     var clip by remember { mutableStateOf<BenchmarkAudio.Clip?>(null) }
     var clipName by remember { mutableStateOf("") }
     var mode by rememberSaveable { mutableStateOf("Speech") }
+    var preset by rememberSaveable { mutableStateOf(BenchmarkPreset.SPEED) }
     var selected by rememberSaveable { mutableStateOf(listOf<String>()) }
     var source by rememberSaveable { mutableStateOf("en") }
     var target by rememberSaveable { mutableStateOf("ar") }
@@ -61,15 +72,21 @@ fun LocalBenchmarkScreen(onModels: () -> Unit = {}) {
     var busy by remember { mutableStateOf(false) }
     var running by remember { mutableStateOf(false) }
     var status by remember { mutableStateOf("") }
+    var downloadMessage by remember { mutableStateOf("") }
     var error by remember { mutableStateOf<String?>(null) }
     var job by remember { mutableStateOf<Job?>(null) }
     var refresh by remember { mutableIntStateOf(0) }
     val gateOwner by LocalWorkGate.owner.collectAsState()
     fun stop() { runner.cancel(); job?.cancel(); if (running) status = uiText(UiR.string.ui_stopping_after_the_current_native_operation_c83bb) }
+    val currentStop by rememberUpdatedState(newValue = { stop() })
+    val currentRunning by rememberUpdatedState(running)
     DisposableEffect(lifecycle, runner) {
-        val observer = LifecycleEventObserver { _, event -> if (event == Lifecycle.Event.ON_STOP) stop() }
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_STOP) currentStop()
+            if (event == Lifecycle.Event.ON_RESUME && !currentRunning) refresh++
+        }
         lifecycle.addObserver(observer)
-        onDispose { lifecycle.removeObserver(observer); runner.cancel(); job?.cancel() }
+        onDispose { lifecycle.removeObserver(observer); currentStop() }
     }
     LaunchedEffect(refresh) {
         try {
@@ -82,6 +99,35 @@ fun LocalBenchmarkScreen(onModels: () -> Unit = {}) {
         finally { busy = false }
     }
     val visible = candidates.filter { it.targetCodes.isNotEmpty() == (mode == "Translation") }
+    val plan = remember(source, target, preset) { BenchmarkPresets.forPair(source, target).first { it.preset == preset } }
+    fun installed(model: SuggestedModel?): BenchmarkCandidate? = when (model?.kind) {
+        "speech" -> candidates.firstOrNull { it.profile?.id == model.id && source in it.sourceCodes }
+        else -> candidates.firstOrNull { it.id == model?.id && source in it.sourceCodes && target in it.targetCodes &&
+            (it.translation?.supports(source, target) ?: true) }
+    }
+    fun queue(model: SuggestedModel) {
+        scope.launch {
+            busy = true; error = null
+            try {
+                withContext(Dispatchers.IO) {
+                    when (model.kind) {
+                        "speech" -> checkNotNull(SpeechArtifactCatalog.find(model.id)).let {
+                            downloads.enqueue(DownloadSpec.parse(it.url, it.fileName), true, it.id)
+                        }
+                        "gguf" -> checkNotNull(TranslationCatalog.models.firstOrNull { it.id == model.id }).let {
+                            downloads.enqueue(DownloadSpec.parse(it.url, it.fileName), true, it.id)
+                        }
+                        "marian" -> MarianPackage.enqueue(context, downloads, checkNotNull(MarianPackage.find(model.id)))
+                        "cascade" -> MarianCascade.enqueue(context, downloads, checkNotNull(MarianCascade.find(model.id)))
+                        else -> error("${model.label} is configured from Models")
+                    }
+                }
+                downloadMessage = uiText(UiR.string.benchmark_download_queued, model.label)
+            } catch (e: CancellationException) { throw e }
+            catch (e: Exception) { error = e.message ?: e.toString() }
+            finally { busy = false }
+        }
+    }
     val builtInCases = remember(suite, mode, source, target) {
         suite?.selected(mode == "Speech", source, target, full = false).orEmpty()
     }
@@ -146,11 +192,106 @@ fun LocalBenchmarkScreen(onModels: () -> Unit = {}) {
             OutlinedButton({ picker = "source" }, enabled = !running && !busy, modifier = Modifier.fillMaxWidth()) {
                 Text(uiText(UiR.string.ui_1_s_language_2_s_a760d, if (mode == "Speech") uiText(UiR.string.language_spoken) else uiText(UiR.string.language_source), uiText.languageLabel(LanguageCatalog.option(source))))
             }
-            if (mode == "Translation") OutlinedButton({ picker = "target" }, enabled = !running && !busy,
+            OutlinedButton({ picker = "target" }, enabled = !running && !busy,
                 modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) { Text(uiText(UiR.string.ui_translate_to_1_s_f70dc, uiText.languageLabel(LanguageCatalog.option(target)))) }
             Text(if (mode == "Speech") uiText(UiR.string.ui_forced_language_is_used_where_supported_vosk_always_uses_its_mode_86f53)
                 else uiText(UiR.string.ui_compare_the_same_corrected_source_text_separately_from_recognitio_7e2d4), style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier.padding(top = 4.dp))
+        }
+        item {
+            Text(uiText(UiR.string.benchmark_presets_title), style = MaterialTheme.typography.titleLarge)
+            Text(uiText(UiR.string.benchmark_presets_hint), style = MaterialTheme.typography.bodySmall)
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                BenchmarkPreset.entries.forEach { choice ->
+                    FilterChip(preset == choice, { preset = choice }, enabled = !running && !busy,
+                        label = { Text(uiText(when (choice) {
+                            BenchmarkPreset.SPEED -> UiR.string.benchmark_preset_speed
+                            BenchmarkPreset.BALANCED -> UiR.string.benchmark_preset_balanced
+                            BenchmarkPreset.QUALITY -> UiR.string.benchmark_preset_quality
+                        })) })
+                }
+            }
+            ElevatedCard(Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    listOf("Speech" to plan.speech, "Translation" to plan.translation).forEach { (stage, model) ->
+                        Text(uiText.modelSection(stage), style = MaterialTheme.typography.titleMedium)
+                        if (model == null) Text(uiText(UiR.string.benchmark_no_preset_model), style = MaterialTheme.typography.bodySmall)
+                        else {
+                            Text(model.label, style = MaterialTheme.typography.bodyMedium)
+                            val ready = installed(model)
+                            Text(if (ready != null) uiText(UiR.string.benchmark_installed_ready)
+                                else if (model.kind == "mlkit") uiText(UiR.string.benchmark_mlkit_packs_needed)
+                                else uiText(UiR.string.benchmark_download_size, model.bytes?.div(1_048_576)?.toString() ?: "—"),
+                                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                if (ready != null) Button(onClick = {
+                                    mode = stage; selected = listOf(ready.id); useBuiltInSet = true
+                                }, enabled = !busy && !running,
+                                    modifier = Modifier.semantics { contentDescription = "${uiText(UiR.string.benchmark_test_this)}: ${model.label}" }) {
+                                    Text(uiText(UiR.string.benchmark_test_this))
+                                }
+                                else if (ByokPolicy.FEATURE_BYOK && model.kind != "mlkit")
+                                    Button(onClick = { queue(model) }, enabled = !busy && !running,
+                                        modifier = Modifier.semantics { contentDescription = "${uiText(UiR.string.benchmark_download_model)}: ${model.label}" }) {
+                                        Text(uiText(UiR.string.benchmark_download_model))
+                                    }
+                                TextButton(onClick = { onModels(stage) }, enabled = !busy && !running,
+                                    modifier = Modifier.semantics { contentDescription = "${uiText(UiR.string.benchmark_browse_models)}: ${uiText.modelSection(stage)}" }) {
+                                    Text(uiText(UiR.string.benchmark_browse_models))
+                                }
+                            }
+                        }
+                    }
+                    val speechModel = installed(plan.speech)
+                    val translationModel = installed(plan.translation)
+                    val speechSamples = suite?.selected(true, source, target, full = false).orEmpty()
+                    val translationSamples = suite?.selected(false, source, target, full = false).orEmpty()
+                    if (speechModel != null && translationModel != null && speechSamples.isNotEmpty() && translationSamples.isNotEmpty())
+                        Button(onClick = {
+                            running = true; error = null
+                            job = scope.launch {
+                                try {
+                                    val failures = mutableListOf<String>()
+                                    val activeSuite = checkNotNull(suite)
+                                    suspend fun inputs(samples: List<BenchmarkCase>) = withContext(Dispatchers.IO) {
+                                        samples.map { sample -> BenchmarkInput(sample.id, text = sample.text,
+                                            reference = sample.reference,
+                                            clip = if (sample.speech) activeSuite.audio(context, sample) else null,
+                                            silence = sample.silenceMs > 0) }
+                                    }
+                                    runner.run(listOf(speechModel), null, "", null, source, target,
+                                        benchmarkInputs = inputs(speechSamples), progress = { status = it },
+                                        onResult = {
+                                            results = (listOf(it) + results).take(BenchmarkResults.MAX_HISTORY)
+                                            it.error?.let { cause -> failures += "${it.model}: $cause" }
+                                        })
+                                    runner.run(listOf(translationModel), null, "", null, source, target,
+                                        benchmarkInputs = inputs(translationSamples), progress = { status = it },
+                                        onResult = {
+                                            results = (listOf(it) + results).take(BenchmarkResults.MAX_HISTORY)
+                                            it.error?.let { cause -> failures += "${it.model}: $cause" }
+                                        })
+                                    if (failures.isEmpty()) status = uiText(UiR.string.benchmark_pair_complete)
+                                    else { status = ""; error = failures.joinToString("\n") }
+                                } catch (e: CancellationException) { status = uiText(UiR.string.ui_comparison_stopped_completed_results_were_saved_7c2db); throw e }
+                                catch (e: Exception) { error = e.message ?: e.toString() }
+                                finally { running = false }
+                            }
+                        }, enabled = !busy && !running && gateOwner == null, modifier = Modifier.fillMaxWidth()) {
+                            Text(uiText(UiR.string.benchmark_test_pair))
+                        }
+                    if (ByokPolicy.FEATURE_BYOK) TextButton(onDownloads) { Text(uiText(UiR.string.benchmark_view_downloads)) }
+                    TextButton({ refresh++ }, enabled = !running && !busy) { Text(uiText(UiR.string.ui_refresh_56e3b)) }
+                    if (running) {
+                        LinearProgressIndicator(Modifier.fillMaxWidth())
+                        Text(status, Modifier.semantics { liveRegion = LiveRegionMode.Polite }, style = MaterialTheme.typography.bodySmall)
+                        TextButton(::stop) { Text(uiText(UiR.string.ui_stop_comparison_7826e)) }
+                    }
+                    if (downloadMessage.isNotBlank()) Text(downloadMessage, Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+                        style = MaterialTheme.typography.bodySmall)
+                    error?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
+                }
+            }
         }
         item {
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -200,7 +341,7 @@ fun LocalBenchmarkScreen(onModels: () -> Unit = {}) {
             Text(uiText(UiR.string.ui_installed_models_c45cb), style = MaterialTheme.typography.titleMedium)
             if (visible.isEmpty()) Text(uiText(UiR.string.ui_no_models_installed_for_this_comparison_download_or_import_one_in_dc1e2), Modifier.padding(top = 8.dp))
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                TextButton(onModels, enabled = !running && !busy) { Text(uiText(UiR.string.ui_open_models_53f82)) }
+                TextButton({ onModels(mode) }, enabled = !running && !busy) { Text(uiText(UiR.string.ui_open_models_53f82)) }
                 TextButton({ refresh++ }, enabled = !running && !busy) { Text(uiText(UiR.string.ui_refresh_56e3b)) }
                 if (availableIds.isNotEmpty()) TextButton({ selected = if (selected.isEmpty()) availableIds.take(12) else emptyList() },
                     enabled = !running && !busy) { Text(if (selected.isEmpty()) uiText(UiR.string.ui_select_compatible_models_ee8e9) else uiText(UiR.string.ui_deselect_all_85cce)) }
@@ -230,6 +371,7 @@ fun LocalBenchmarkScreen(onModels: () -> Unit = {}) {
                 running = true; error = null
                 job = scope.launch {
                     try {
+                        val failures = mutableListOf<String>()
                         val inputs = if (useBuiltInSet) withContext(Dispatchers.IO) {
                             val activeSuite = checkNotNull(suite) { "Built-in benchmark data is unavailable" }
                             builtInCases.map { sample ->
@@ -241,8 +383,10 @@ fun LocalBenchmarkScreen(onModels: () -> Unit = {}) {
                         runner.run(chosen, clip, text, referenceText.takeIf(String::isNotBlank), source, target,
                             benchmarkInputs = inputs, progress = { status = it }, onResult = { result ->
                             results = (listOf(result) + results).take(BenchmarkResults.MAX_HISTORY)
+                            result.error?.let { cause -> failures += "${result.model}: $cause" }
                         })
-                        status = uiText(UiR.string.ui_comparison_complete_review_accuracy_as_well_as_speed_16b3e)
+                        if (failures.isEmpty()) status = uiText(UiR.string.ui_comparison_complete_review_accuracy_as_well_as_speed_16b3e)
+                        else { status = ""; error = failures.joinToString("\n") }
                     } catch (e: CancellationException) { status = uiText(UiR.string.ui_comparison_stopped_completed_results_were_saved_7c2db); throw e }
                     catch (e: Exception) { error = e.message ?: e.toString() }
                     finally { running = false }
@@ -259,6 +403,26 @@ fun LocalBenchmarkScreen(onModels: () -> Unit = {}) {
                 style = MaterialTheme.typography.bodySmall)
         }
         if (results.isNotEmpty()) {
+            item {
+                val leaders = BenchmarkComparison.latest(results, source, if (mode == "Speech") "" else target)
+                ElevatedCard(Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text(uiText(UiR.string.benchmark_measured_title), style = MaterialTheme.typography.titleMedium)
+                        if (leaders == null || leaders.candidates.size < 2)
+                            Text(uiText(UiR.string.benchmark_measured_need_two), style = MaterialTheme.typography.bodySmall)
+                        else {
+                            leaders.fastest?.let { Text(uiText(UiR.string.benchmark_measured_fastest,
+                                it.model, number(BenchmarkMetrics.median(it.computeMs.drop(1)) / 1000))) }
+                            leaders.balanced?.let { Text(uiText(UiR.string.benchmark_measured_balanced, it.model)) }
+                            if (leaders.balanced == null && leaders.mostAccurate != null)
+                                Text(uiText(UiR.string.benchmark_measured_need_three), style = MaterialTheme.typography.bodySmall)
+                            leaders.mostAccurate?.let { Text(uiText(UiR.string.benchmark_measured_accurate, it.model)) }
+                            if (leaders.mostAccurate == null) Text(uiText(UiR.string.benchmark_measured_no_reference), style = MaterialTheme.typography.bodySmall)
+                            Text(uiText(UiR.string.benchmark_measured_scope), style = MaterialTheme.typography.bodySmall)
+                        }
+                    }
+                }
+            }
             item {
                 Text(uiText(UiR.string.ui_saved_results_5e7cc), style = MaterialTheme.typography.titleLarge)
                 Text(uiText(UiR.string.ui_stored_only_on_this_device_export_includes_recognized_and_transla_f23f5), style = MaterialTheme.typography.bodySmall)
@@ -290,12 +454,18 @@ fun LocalBenchmarkScreen(onModels: () -> Unit = {}) {
         val codes = (if (which == "target") candidatesForPicker.flatMap { candidate ->
             candidate.targetCodes.filter { code -> candidate.translation?.supports(source, code)
                 ?: (code != source && code in candidate.targetCodes) }
-        } else candidatesForPicker.flatMap { it.sourceCodes })
+        } + TranslationCatalog.models.flatMap { it.targetLanguages.filter { code -> it.supports(source, code) } } +
+            MarianPackage.pairs.filter { it.source == source }.map { it.target } +
+            (if (PlatformTranslation.available) TranslationOptions.mlKitCodes.filter { it != source } else emptyList())
+        else candidatesForPicker.flatMap { it.sourceCodes } + if (mode == "Speech")
+            SpeechArtifactCatalog.all.flatMap { it.languages } else
+            TranslationCatalog.models.flatMap { it.sourceLanguages } + MarianPackage.pairs.map { it.source } +
+                (if (PlatformTranslation.available) TranslationOptions.mlKitCodes else emptySet()))
             .toSet().let { if (mode == "Translation") it - setOf("auto", "model") else it }
         Dialog({ picker = null }, properties = DialogProperties(usePlatformDefaultWidth = false)) {
             Surface(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding().imePadding()) {
                 LanguagePickerContent(if (which == "target") uiText(UiR.string.ui_translate_to_a1ba6) else uiText(UiR.string.ui_source_language_c951f),
-                    CaptionLanguageChoices(codes, uiText(UiR.string.ui_languages_advertised_by_installed_models_incompatible_models_are_88f7c)),
+                    CaptionLanguageChoices(codes, uiText(UiR.string.benchmark_picker_hint)),
                     if (which == "target") target else source,
                     { if (which == "target") target = it else source = it; picker = null }, { picker = null })
             }
