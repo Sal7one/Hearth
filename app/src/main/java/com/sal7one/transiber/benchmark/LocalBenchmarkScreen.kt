@@ -24,11 +24,13 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.repeatOnLifecycle
 import com.sal7one.common_jni.language.LanguageCatalog
 import com.sal7one.transiber.byok.ByokPolicy
 import com.sal7one.transiber.caption.CaptionLanguageChoices
 import com.sal7one.transiber.caption.LanguagePickerContent
 import com.sal7one.transiber.downloads.DownloadSpec
+import com.sal7one.transiber.downloads.FileDownload
 import com.sal7one.transiber.downloads.FileDownloads
 import com.sal7one.transiber.models.SpeechArtifactCatalog
 import com.sal7one.transiber.runtime.LocalWorkGate
@@ -42,6 +44,7 @@ import java.text.DateFormat
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import kotlin.math.roundToInt
 
 /** Explicit finite local-only experiments. Leaving/backgrounding this page cancels safely. */
 @OptIn(ExperimentalLayoutApi::class)
@@ -56,6 +59,7 @@ fun LocalBenchmarkScreen(onModels: (String) -> Unit = {}, onDownloads: () -> Uni
     val store = remember { BenchmarkResults(context.applicationContext) }
     val downloads = remember { FileDownloads(context.applicationContext) }
     var candidates by remember { mutableStateOf<List<BenchmarkCandidate>>(emptyList()) }
+    var downloadRecords by remember { mutableStateOf<List<FileDownload>>(emptyList()) }
     var results by remember { mutableStateOf<List<BenchmarkResult>>(emptyList()) }
     var suite by remember { mutableStateOf<BenchmarkSuite?>(null) }
     var clip by remember { mutableStateOf<BenchmarkAudio.Clip?>(null) }
@@ -74,7 +78,6 @@ fun LocalBenchmarkScreen(onModels: (String) -> Unit = {}, onDownloads: () -> Uni
     var busy by remember { mutableStateOf(false) }
     var running by remember { mutableStateOf(false) }
     var status by remember { mutableStateOf("") }
-    var downloadMessage by remember { mutableStateOf("") }
     var error by remember { mutableStateOf<String?>(null) }
     var job by remember { mutableStateOf<Job?>(null) }
     var refresh by remember { mutableIntStateOf(0) }
@@ -89,6 +92,22 @@ fun LocalBenchmarkScreen(onModels: (String) -> Unit = {}, onDownloads: () -> Uni
         }
         lifecycle.addObserver(observer)
         onDispose { lifecycle.removeObserver(observer); currentStop() }
+    }
+    LaunchedEffect(lifecycle, downloads) {
+        if (ByokPolicy.FEATURE_BYOK) lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            var previousInstalled: Set<Long>? = null
+            while (isActive) {
+                try {
+                    val current = withContext(Dispatchers.IO) { downloads.list() }
+                    val installedIds = current.filter(FileDownload::installed).map(FileDownload::id).toSet()
+                    if (previousInstalled != null && (installedIds - checkNotNull(previousInstalled)).isNotEmpty()) refresh++
+                    previousInstalled = installedIds
+                    downloadRecords = current
+                } catch (e: CancellationException) { throw e }
+                catch (e: Exception) { error = e.message ?: e.toString() }
+                delay(1000)
+            }
+        }
     }
     LaunchedEffect(refresh) {
         try {
@@ -111,8 +130,12 @@ fun LocalBenchmarkScreen(onModels: (String) -> Unit = {}, onDownloads: () -> Uni
         scope.launch {
             busy = true; error = null
             try {
-                withContext(Dispatchers.IO) {
-                    when (model.kind) {
+                downloadRecords = withContext(Dispatchers.IO) {
+                    val existing = BenchmarkDownloadProgress.forModel(model, downloads.list())
+                    if (model.kind !in setOf("marian", "cascade") && existing?.complete == true &&
+                        existing.records.singleOrNull()?.installed == false) {
+                        downloads.retry(existing.records.single().id)
+                    } else when (model.kind) {
                         "speech" -> checkNotNull(SpeechArtifactCatalog.find(model.id)).let {
                             downloads.enqueue(DownloadSpec.parse(it.url, it.fileName), true, it.id)
                         }
@@ -123,8 +146,8 @@ fun LocalBenchmarkScreen(onModels: (String) -> Unit = {}, onDownloads: () -> Uni
                         "cascade" -> MarianCascade.enqueue(context, downloads, checkNotNull(MarianCascade.find(model.id)))
                         else -> error("${model.label} is configured from Models")
                     }
+                    downloads.list()
                 }
-                downloadMessage = uiText(UiR.string.benchmark_download_queued, model.label)
             } catch (e: CancellationException) { throw e }
             catch (e: Exception) { error = e.message ?: e.toString() }
             finally { busy = false }
@@ -226,10 +249,45 @@ fun LocalBenchmarkScreen(onModels: (String) -> Unit = {}, onDownloads: () -> Uni
                         else {
                             Text(model.label, style = MaterialTheme.typography.bodyMedium)
                             val ready = installed(model)
-                            Text(if (ready != null) uiText(UiR.string.benchmark_installed_ready)
-                                else if (model.kind == "mlkit") uiText(UiR.string.benchmark_mlkit_packs_needed)
-                                else uiText(UiR.string.benchmark_download_size, model.bytes?.div(1_048_576)?.toString() ?: "—"),
-                                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            val transfer = BenchmarkDownloadProgress.forModel(model, downloadRecords)
+                            Text(when {
+                                ready != null -> uiText(UiR.string.benchmark_installed_ready)
+                                model.kind == "mlkit" -> uiText(UiR.string.benchmark_mlkit_packs_needed)
+                                transfer == null -> uiText(UiR.string.benchmark_download_size,
+                                    model.bytes?.div(1_048_576)?.toString() ?: "—")
+                                else -> {
+                                    val phase = when {
+                                        transfer.active -> when (transfer.currentPhase) {
+                                            "Verifying" -> UiR.string.benchmark_transfer_verifying
+                                            "Installing" -> UiR.string.benchmark_transfer_installing
+                                            "Downloading" -> UiR.string.benchmark_transfer_downloading
+                                            else -> UiR.string.benchmark_transfer_waiting
+                                        }
+                                        transfer.failed -> UiR.string.benchmark_transfer_failed
+                                        transfer.paused -> UiR.string.benchmark_transfer_paused
+                                        transfer.complete -> UiR.string.benchmark_transfer_downloaded
+                                        else -> UiR.string.benchmark_transfer_waiting
+                                    }
+                                    uiText(UiR.string.benchmark_transfer_state, uiText(phase), transfer.doneFiles, transfer.expectedFiles)
+                                }
+                            }, style = MaterialTheme.typography.bodySmall,
+                                color = if (transfer?.failed == true) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite })
+                            if (ready == null && transfer != null) {
+                                val total = transfer.total
+                                Text(if (total != null) uiText(UiR.string.benchmark_transfer_bytes,
+                                    transfer.bytes / 1_048_576, total / 1_048_576,
+                                    ((transfer.fraction ?: 0f) * 100).roundToInt())
+                                else uiText(UiR.string.benchmark_transfer_bytes_unknown,
+                                    transfer.bytes / 1_048_576), style = MaterialTheme.typography.labelSmall)
+                                if (transfer.active) {
+                                    if (transfer.fraction != null) LinearProgressIndicator(
+                                        progress = { transfer.fraction ?: 0f }, modifier = Modifier.fillMaxWidth())
+                                    else LinearProgressIndicator(Modifier.fillMaxWidth())
+                                }
+                                transfer.errors.forEach { cause -> Text(cause, color = MaterialTheme.colorScheme.error,
+                                    style = MaterialTheme.typography.bodySmall) }
+                            }
                             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 if (ready != null) Button(onClick = {
                                     mode = stage; selected = listOf(ready.id); useBuiltInSet = true
@@ -237,11 +295,25 @@ fun LocalBenchmarkScreen(onModels: (String) -> Unit = {}, onDownloads: () -> Uni
                                     modifier = Modifier.semantics { contentDescription = "${uiText(UiR.string.benchmark_test_this)}: ${model.label}" }) {
                                     Text(uiText(UiR.string.benchmark_test_this))
                                 }
-                                else if (ByokPolicy.FEATURE_BYOK && model.kind != "mlkit")
-                                    Button(onClick = { queue(model) }, enabled = !busy && !running,
-                                        modifier = Modifier.semantics { contentDescription = "${uiText(UiR.string.benchmark_download_model)}: ${model.label}" }) {
-                                        Text(uiText(UiR.string.benchmark_download_model))
+                                else if (ByokPolicy.FEATURE_BYOK && model.kind != "mlkit") when {
+                                    transfer?.active == true -> TextButton(onClick = onDownloads) {
+                                        Text(uiText(UiR.string.benchmark_view_downloads))
                                     }
+                                    transfer?.complete == true && transfer.records.all(FileDownload::installed) ->
+                                        TextButton(onClick = { refresh++ }, enabled = !busy && !running) {
+                                            Text(uiText(UiR.string.ui_refresh_56e3b))
+                                        }
+                                    else -> Button(onClick = { queue(model) }, enabled = !busy && !running,
+                                        modifier = Modifier.semantics { contentDescription = "${uiText(UiR.string.benchmark_download_model)}: ${model.label}" }) {
+                                        Text(uiText(when {
+                                            transfer?.paused == true -> UiR.string.benchmark_transfer_resume
+                                            transfer?.failed == true -> UiR.string.benchmark_transfer_retry
+                                            transfer?.complete == true -> UiR.string.benchmark_transfer_finish_install
+                                            transfer != null -> UiR.string.benchmark_transfer_continue
+                                            else -> UiR.string.benchmark_download_model
+                                        }))
+                                    }
+                                }
                                 TextButton(onClick = { onModels(stage) }, enabled = !busy && !running,
                                     modifier = Modifier.semantics { contentDescription = "${uiText(UiR.string.benchmark_browse_models)}: ${uiText.modelSection(stage)}" }) {
                                     Text(uiText(UiR.string.benchmark_browse_models))
@@ -294,8 +366,6 @@ fun LocalBenchmarkScreen(onModels: (String) -> Unit = {}, onDownloads: () -> Uni
                         Text(status, Modifier.semantics { liveRegion = LiveRegionMode.Polite }, style = MaterialTheme.typography.bodySmall)
                         TextButton(::stop) { Text(uiText(UiR.string.ui_stop_comparison_7826e)) }
                     }
-                    if (downloadMessage.isNotBlank()) Text(downloadMessage, Modifier.semantics { liveRegion = LiveRegionMode.Polite },
-                        style = MaterialTheme.typography.bodySmall)
                     error?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
                 }
             }

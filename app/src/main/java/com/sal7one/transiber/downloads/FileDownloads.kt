@@ -37,6 +37,16 @@ data class FileDownload(val id: Long, val title: String, val status: Int, val re
  val active get() = phase in setOf("Waiting", "Downloading", "Verifying", "Installing") || (!complete && !failed && id > 0)
 }
 
+/** A model's original is reusable until explicitly removed or restarted. Direct URLs may be downloaded again. */
+internal fun reusableDownload(records: List<JSONObject>, url: String, modelId: String): JSONObject? {
+ val matching = records.filter { it.optString("url") == url && it.optString("model") == modelId }
+ fun newest(phases: Set<String>) = matching.asSequence().filter { it.optString("phase") in phases }
+  .minByOrNull { it.optLong("id") }
+ return newest(setOf("Waiting", "Downloading", "Verifying", "Installing", "Paused"))
+  ?: if (modelId.isNotBlank()) newest(setOf("Complete", "Installed"))
+   ?: newest(setOf("Failed", "Interrupted")) else null
+}
+
 /** Downloaded originals live in a public folder; verified runtime installs remain app-owned. */
 class FileDownloads(private val context: Context) {
  private val manager = context.getSystemService(DownloadManager::class.java)
@@ -71,21 +81,24 @@ class FileDownloads(private val context: Context) {
    val expected = DownloadAssets.find(installModelId)?.url
    require(expected == checked.url) { "Download does not match the selected model" }
   }
-  DownloadStorage.requireSpace(context, DownloadAssets.find(installModelId), 0, folderUri != null)
-  val id = synchronized(lock) {
+  val (id, shouldStart) = synchronized(lock) {
    val ids = newIds()
-   val existing = ids.mapNotNull { it.toLongOrNull()?.let(::record) }.firstOrNull {
-    it.optString("url") == checked.url && it.optString("model") == installModelId &&
-     it.optString("phase") in setOf("Waiting", "Downloading", "Verifying", "Installing", "Paused")
-   }
+   val existing = reusableDownload(ids.mapNotNull { it.toLongOrNull()?.let(::record) }, checked.url, installModelId)
    if (existing != null) {
-    if (existing.optString("phase") == "Paused") {
-     existing.put("phase", "Waiting")
-     existing.remove("error")
-     check(prefs.edit().putString("download_${existing.getLong("id")}", existing.toString()).commit()) { "Cannot resume download" }
+    val phase = existing.optString("phase")
+    when {
+     phase in setOf("Complete", "Installed") -> existing.getLong("id") to false
+     phase in setOf("Downloading", "Verifying", "Installing") && DownloadRunner.running -> existing.getLong("id") to false
+     else -> {
+      DownloadStorage.requireSpace(context, DownloadAssets.find(installModelId), existing.optLong("bytes"), folderUri != null)
+      existing.put("phase", "Waiting")
+      existing.remove("error")
+      check(prefs.edit().putString("download_${existing.getLong("id")}", existing.toString()).commit()) { "Cannot resume download" }
+      existing.getLong("id") to true
+     }
     }
-    existing.getLong("id")
    } else {
+    DownloadStorage.requireSpace(context, DownloadAssets.find(installModelId), 0, folderUri != null)
     var next = -System.currentTimeMillis()
     while (next.toString() in ids) next--
     val json = JSONObject().put("id", next).put("url", checked.url).put("title", checked.fileName)
@@ -93,10 +106,10 @@ class FileDownloads(private val context: Context) {
      .put("location", locationLabel + if (modelPackage) "/models" else "/files")
      .put("phase", "Waiting").put("bytes", 0).put("total", -1)
     check(prefs.edit().putString("download_$next", json.toString()).putStringSet("public_ids", ids + next.toString()).commit()) { "Cannot save download" }
-    next
+    next to true
    }
   }
-  try { DownloadRunner.start(context) } catch (e: Exception) { fail(id, e); throw e }
+  if (shouldStart) try { DownloadRunner.start(context) } catch (e: Exception) { fail(id, e); throw e }
   return id
  }
  internal fun record(id: Long): JSONObject? = synchronized(lock) { prefs.getString("download_$id", null)?.let(::JSONObject) }
