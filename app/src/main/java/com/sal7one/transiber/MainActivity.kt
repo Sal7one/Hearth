@@ -67,6 +67,13 @@ class MainActivity : AppCompatActivity() {
  @OptIn(ExperimentalMaterial3Api::class)
  override fun onCreate(savedInstanceState: Bundle?) {
   super.onCreate(savedInstanceState)
+  // QA-only adb hook: on-device sign acceptance run (SignDeviceEval); the
+  // exported launcher is the one component shell may start on Android 16.
+  if (savedInstanceState == null && intent.getBooleanExtra("run_device_eval", false) &&
+   packageName.endsWith(".qa")) {
+   Thread { com.sal7one.transiber.sign.SignDeviceEval.run(filesDir) }.start()
+   finish(); return
+  }
   if(savedInstanceState==null)receiveShare(intent)
   val nativeFailure = try { com.sal7one.common_jni.CommonJni.init(applicationContext); null }
    catch(e: Exception) { e.message ?: e.toString() }

@@ -56,8 +56,15 @@ if not sign_handmodels.is_dir():
 else:
     provenance_file = sign_handmodels/'PROVENANCE.json'
     assert provenance_file.is_file(), 'research/sign/handmodels/PROVENANCE.json missing'
+    provenance = json.loads(provenance_file.read_text())
     sign_hashes = {}
-    stack = [json.loads(provenance_file.read_text())]
+    # Primary schema: models[] records with onnx_file + onnx_sha256.
+    for model in provenance.get('models', []):
+        name, digest = model.get('onnx_file'), model.get('onnx_sha256')
+        if isinstance(name, str) and isinstance(digest, str) and re.fullmatch(r'[0-9a-f]{64}', digest):
+            sign_hashes[Path(name).name] = digest
+    # Generic fallback for any nested {file|name|path, sha256} records.
+    stack = [provenance]
     while stack:
         node = stack.pop()
         if isinstance(node, dict):

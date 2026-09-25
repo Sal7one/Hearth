@@ -31,6 +31,15 @@ class SignStartActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (savedInstanceState != null) { finish(); return }
+        // QA-build-only device acceptance run (adb-driven; SignDeviceEval).
+        // The package gate keeps production builds from ever reaching it.
+        if (intent.getBooleanExtra(EXTRA_DEVICE_EVAL, false)) {
+            if (packageName.endsWith(".qa")) {
+                Thread { SignDeviceEval.run(filesDir) }.start()
+            }
+            finish()
+            return
+        }
         if (!intent.getBooleanExtra(EXTRA_START, false)) {
             openSignPage()
             return
@@ -87,6 +96,8 @@ class SignStartActivity : AppCompatActivity() {
         /** In-app page id for the sign-language screen (see AppNavigation). */
         const val SIGN_PAGE = 16
         const val EXTRA_START = "start"
+        /** QA-only adb hook: run SignDeviceEval and finish (no UI). */
+        const val EXTRA_DEVICE_EVAL = "run_device_eval"
         private const val REQUEST_CAMERA = 4201
         private const val REQUEST_NOTIFICATIONS = 4202
         fun start(context: Context) {

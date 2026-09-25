@@ -1,0 +1,783 @@
+{
+  "started_at": 1790375343945,
+  "ok": true,
+  "classifier": "arsl_classifier.onnx",
+  "frames": 109,
+  "ref_hands": 109,
+  "matched_hands": 109,
+  "dxy_mean": 0.01439,
+  "dxy_max": 0.16763,
+  "dz_mean": 0.03593,
+  "dz_max": 0.31134,
+  "accepted": 109,
+  "correct": 108,
+  "accuracy_at_0.4": 0.99083,
+  "coverage_at_0.4": 1,
+  "detect_ms_mean": 309.48645,
+  "classify_ms_mean": 0.52463,
+  "per_image": [
+    {
+      "file": "images\/Ain_Ain_55.jpg",
+      "letter": "ع",
+      "detected": 1,
+      "label": "ع",
+      "confidence": 0.999366
+    },
+    {
+      "file": "images\/Ain_Ain_50.jpg",
+      "letter": "ع",
+      "detected": 1,
+      "label": "ع",
+      "confidence": 0.99543744
+    },
+    {
+      "file": "images\/Ain_Ain_158.jpg",
+      "letter": "ع",
+      "detected": 1,
+      "label": "ع",
+      "confidence": 0.99178255
+    },
+    {
+      "file": "images\/Ain_Ain_197.jpg",
+      "letter": "ع",
+      "detected": 1,
+      "label": "ع",
+      "confidence": 0.96373993
+    },
+    {
+      "file": "images\/Alef_Alef_17.jpg",
+      "letter": "ا",
+      "detected": 1,
+      "label": "ا",
+      "confidence": 0.99980575
+    },
+    {
+      "file": "images\/Alef_Alef_121.jpg",
+      "letter": "ا",
+      "detected": 1,
+      "label": "ا",
+      "confidence": 0.999853
+    },
+    {
+      "file": "images\/Alef_Alef_92.jpg",
+      "letter": "ا",
+      "detected": 1,
+      "label": "ا",
+      "confidence": 0.99975234
+    },
+    {
+      "file": "images\/Alef_Alef_144.jpg",
+      "letter": "ا",
+      "detected": 1,
+      "label": "ا",
+      "confidence": 0.9998381
+    },
+    {
+      "file": "images\/Beh_Beh_257.jpg",
+      "letter": "ب",
+      "detected": 1,
+      "label": "ب",
+      "confidence": 0.9992859
+    },
+    {
+      "file": "images\/Beh_Beh_252.jpg",
+      "letter": "ب",
+      "detected": 1,
+      "label": "ب",
+      "confidence": 0.9924366
+    },
+    {
+      "file": "images\/Beh_Beh_108.jpg",
+      "letter": "ب",
+      "detected": 1,
+      "label": "ب",
+      "confidence": 0.9976525
+    },
+    {
+      "file": "images\/Beh_Beh_219.jpg",
+      "letter": "ب",
+      "detected": 1,
+      "label": "ب",
+      "confidence": 0.99828666
+    },
+    {
+      "file": "images\/Dad_Dad_85.jpg",
+      "letter": "ض",
+      "detected": 1,
+      "label": "ض",
+      "confidence": 0.99775165
+    },
+    {
+      "file": "images\/Dad_Dad_224.jpg",
+      "letter": "ض",
+      "detected": 1,
+      "label": "ض",
+      "confidence": 0.99793744
+    },
+    {
+      "file": "images\/Dad_Dad_146.jpg",
+      "letter": "ض",
+      "detected": 1,
+      "label": "ض",
+      "confidence": 0.99875593
+    },
+    {
+      "file": "images\/Dad_Dad_73.jpg",
+      "letter": "ض",
+      "detected": 1,
+      "label": "ض",
+      "confidence": 0.9998229
+    },
+    {
+      "file": "images\/Dal_Dal_73.jpg",
+      "letter": "د",
+      "detected": 1,
+      "label": "د",
+      "confidence": 0.91865087
+    },
+    {
+      "file": "images\/Dal_Dal_75.jpg",
+      "letter": "د",
+      "detected": 1,
+      "label": "د",
+      "confidence": 0.937515
+    },
+    {
+      "file": "images\/Dal_Dal_158.jpg",
+      "letter": "د",
+      "detected": 1,
+      "label": "د",
+      "confidence": 0.5234067
+    },
+    {
+      "file": "images\/Dal_Dal_186.jpg",
+      "letter": "د",
+      "detected": 1,
+      "label": "د",
+      "confidence": 0.8866057
+    },
+    {
+      "file": "images\/Feh_Feh_227.jpg",
+      "letter": "ف",
+      "detected": 1,
+      "label": "ف",
+      "confidence": 0.97838664
+    },
+    {
+      "file": "images\/Feh_Feh_148.jpg",
+      "letter": "ف",
+      "detected": 1,
+      "label": "ف",
+      "confidence": 0.99146515
+    },
+    {
+      "file": "images\/Feh_Feh_52.jpg",
+      "letter": "ف",
+      "detected": 1,
+      "label": "ف",
+      "confidence": 0.99471843
+    },
+    {
+      "file": "images\/Feh_Feh_208.jpg",
+      "letter": "ف",
+      "detected": 1,
+      "label": "ف",
+      "confidence": 0.99158984
+    },
+    {
+      "file": "images\/Ghain_Ghain_219.jpg",
+      "letter": "غ",
+      "detected": 1,
+      "label": "غ",
+      "confidence": 0.99806863
+    },
+    {
+      "file": "images\/Ghain_Ghain_216.jpg",
+      "letter": "غ",
+      "detected": 1,
+      "label": "غ",
+      "confidence": 0.9445799
+    },
+    {
+      "file": "images\/Ghain_Ghain_12.jpg",
+      "letter": "غ",
+      "detected": 1,
+      "label": "غ",
+      "confidence": 0.9393477
+    },
+    {
+      "file": "images\/Ghain_Ghain_115.jpg",
+      "letter": "غ",
+      "detected": 1,
+      "label": "غ",
+      "confidence": 0.99863976
+    },
+    {
+      "file": "images\/Hah_Hah_130.jpg",
+      "letter": "ح",
+      "detected": 1,
+      "label": "ح",
+      "confidence": 0.8380371
+    },
+    {
+      "file": "images\/Hah_Hah_14.jpg",
+      "letter": "ح",
+      "detected": 1,
+      "label": "ح",
+      "confidence": 0.89694774
+    },
+    {
+      "file": "images\/Hah_Hah_184.jpg",
+      "letter": "ح",
+      "detected": 1,
+      "label": "ح",
+      "confidence": 0.8946521
+    },
+    {
+      "file": "images\/Heh_Heh_225.jpg",
+      "letter": "ه",
+      "detected": 1,
+      "label": "ه",
+      "confidence": 0.95630825
+    },
+    {
+      "file": "images\/Heh_Heh_130.jpg",
+      "letter": "ه",
+      "detected": 1,
+      "label": "ه",
+      "confidence": 0.90892696
+    },
+    {
+      "file": "images\/Heh_Heh_187.jpg",
+      "letter": "ه",
+      "detected": 1,
+      "label": "ه",
+      "confidence": 0.9930402
+    },
+    {
+      "file": "images\/Heh_Heh_50.jpg",
+      "letter": "ه",
+      "detected": 1,
+      "label": "ه",
+      "confidence": 0.9271482
+    },
+    {
+      "file": "images\/Jeem_Jeem_4.jpg",
+      "letter": "ج",
+      "detected": 1,
+      "label": "ج",
+      "confidence": 0.76212585
+    },
+    {
+      "file": "images\/Jeem_Jeem_164.jpg",
+      "letter": "ج",
+      "detected": 1,
+      "label": "ج",
+      "confidence": 0.8358012
+    },
+    {
+      "file": "images\/Jeem_Jeem_43.jpg",
+      "letter": "ج",
+      "detected": 1,
+      "label": "ج",
+      "confidence": 0.9943948
+    },
+    {
+      "file": "images\/Jeem_Jeem_175.jpg",
+      "letter": "ج",
+      "detected": 1,
+      "label": "ج",
+      "confidence": 0.67716295
+    },
+    {
+      "file": "images\/Kaf_Kaf_193.jpg",
+      "letter": "ك",
+      "detected": 1,
+      "label": "ك",
+      "confidence": 0.97935265
+    },
+    {
+      "file": "images\/Kaf_Kaf_222.jpg",
+      "letter": "ك",
+      "detected": 1,
+      "label": "ك",
+      "confidence": 0.99361295
+    },
+    {
+      "file": "images\/Kaf_Kaf_261.jpg",
+      "letter": "ك",
+      "detected": 1,
+      "label": "ك",
+      "confidence": 0.99929154
+    },
+    {
+      "file": "images\/Kaf_Kaf_182.jpg",
+      "letter": "ك",
+      "detected": 1,
+      "label": "ك",
+      "confidence": 0.9974855
+    },
+    {
+      "file": "images\/Khah_Khah_172.jpg",
+      "letter": "خ",
+      "detected": 1,
+      "label": "خ",
+      "confidence": 0.9591635
+    },
+    {
+      "file": "images\/Khah_Khah_25.jpg",
+      "letter": "خ",
+      "detected": 1,
+      "label": "خ",
+      "confidence": 0.960337
+    },
+    {
+      "file": "images\/Khah_Khah_136.jpg",
+      "letter": "خ",
+      "detected": 1,
+      "label": "خ",
+      "confidence": 0.9492439
+    },
+    {
+      "file": "images\/Khah_Khah_111.jpg",
+      "letter": "خ",
+      "detected": 1,
+      "label": "خ",
+      "confidence": 0.852005
+    },
+    {
+      "file": "images\/Lam_Lam_117.jpg",
+      "letter": "ل",
+      "detected": 1,
+      "label": "ل",
+      "confidence": 0.9999578
+    },
+    {
+      "file": "images\/Lam_Lam_0.jpg",
+      "letter": "ل",
+      "detected": 1,
+      "label": "ل",
+      "confidence": 0.9979876
+    },
+    {
+      "file": "images\/Lam_Lam_171.jpg",
+      "letter": "ل",
+      "detected": 1,
+      "label": "ل",
+      "confidence": 0.8734573
+    },
+    {
+      "file": "images\/Lam_Lam_210.jpg",
+      "letter": "ل",
+      "detected": 1,
+      "label": "ل",
+      "confidence": 0.998086
+    },
+    {
+      "file": "images\/Meem_Meem_128.jpg",
+      "letter": "م",
+      "detected": 1,
+      "label": "م",
+      "confidence": 0.9923626
+    },
+    {
+      "file": "images\/Meem_Meem_192.jpg",
+      "letter": "م",
+      "detected": 1,
+      "label": "م",
+      "confidence": 0.9929444
+    },
+    {
+      "file": "images\/Meem_Meem_5.jpg",
+      "letter": "م",
+      "detected": 1,
+      "label": "م",
+      "confidence": 0.9421553
+    },
+    {
+      "file": "images\/Meem_Meem_159.jpg",
+      "letter": "م",
+      "detected": 1,
+      "label": "م",
+      "confidence": 0.98285055
+    },
+    {
+      "file": "images\/Noon_Noon_130.jpg",
+      "letter": "ن",
+      "detected": 1,
+      "label": "ن",
+      "confidence": 0.9914163
+    },
+    {
+      "file": "images\/Noon_Noon_137.jpg",
+      "letter": "ن",
+      "detected": 1,
+      "label": "ن",
+      "confidence": 0.94447184
+    },
+    {
+      "file": "images\/Noon_Noon_164.jpg",
+      "letter": "ن",
+      "detected": 1,
+      "label": "ن",
+      "confidence": 0.9958264
+    },
+    {
+      "file": "images\/Noon_Noon_199.jpg",
+      "letter": "ن",
+      "detected": 1,
+      "label": "ن",
+      "confidence": 0.97247225
+    },
+    {
+      "file": "images\/Qaf_Qaf_39.jpg",
+      "letter": "ق",
+      "detected": 1,
+      "label": "ق",
+      "confidence": 0.98262686
+    },
+    {
+      "file": "images\/Qaf_Qaf_115.jpg",
+      "letter": "ق",
+      "detected": 1,
+      "label": "ق",
+      "confidence": 0.99800533
+    },
+    {
+      "file": "images\/Qaf_Qaf_98.jpg",
+      "letter": "ق",
+      "detected": 1,
+      "label": "ق",
+      "confidence": 0.9961333
+    },
+    {
+      "file": "images\/Qaf_Qaf_31.jpg",
+      "letter": "ق",
+      "detected": 1,
+      "label": "ق",
+      "confidence": 0.98932683
+    },
+    {
+      "file": "images\/Reh_Reh_173.jpg",
+      "letter": "ر",
+      "detected": 1,
+      "label": "ن",
+      "confidence": 0.54621226
+    },
+    {
+      "file": "images\/Reh_Reh_175.jpg",
+      "letter": "ر",
+      "detected": 1,
+      "label": "ر",
+      "confidence": 0.96276534
+    },
+    {
+      "file": "images\/Reh_Reh_177.jpg",
+      "letter": "ر",
+      "detected": 1,
+      "label": "ر",
+      "confidence": 0.73631406
+    },
+    {
+      "file": "images\/Reh_Reh_77.jpg",
+      "letter": "ر",
+      "detected": 1,
+      "label": "ر",
+      "confidence": 0.7575042
+    },
+    {
+      "file": "images\/Sad_Sad_185.jpg",
+      "letter": "ص",
+      "detected": 1,
+      "label": "ص",
+      "confidence": 0.877856
+    },
+    {
+      "file": "images\/Sad_Sad_231.jpg",
+      "letter": "ص",
+      "detected": 1,
+      "label": "ص",
+      "confidence": 0.98386717
+    },
+    {
+      "file": "images\/Sad_Sad_248.jpg",
+      "letter": "ص",
+      "detected": 1,
+      "label": "ص",
+      "confidence": 0.94957864
+    },
+    {
+      "file": "images\/Sad_Sad_174.jpg",
+      "letter": "ص",
+      "detected": 1,
+      "label": "ص",
+      "confidence": 0.98858225
+    },
+    {
+      "file": "images\/Seen_Seen_192.jpg",
+      "letter": "س",
+      "detected": 1,
+      "label": "س",
+      "confidence": 0.98587704
+    },
+    {
+      "file": "images\/Seen_Seen_84.jpg",
+      "letter": "س",
+      "detected": 1,
+      "label": "س",
+      "confidence": 0.9460364
+    },
+    {
+      "file": "images\/Seen_Seen_18.jpg",
+      "letter": "س",
+      "detected": 1,
+      "label": "س",
+      "confidence": 0.80251205
+    },
+    {
+      "file": "images\/Seen_Seen_104.jpg",
+      "letter": "س",
+      "detected": 1,
+      "label": "س",
+      "confidence": 0.963197
+    },
+    {
+      "file": "images\/Sheen_Sheen_196.jpg",
+      "letter": "ش",
+      "detected": 1,
+      "label": "ش",
+      "confidence": 0.99916995
+    },
+    {
+      "file": "images\/Sheen_Sheen_99.jpg",
+      "letter": "ش",
+      "detected": 1,
+      "label": "ش",
+      "confidence": 0.99957925
+    },
+    {
+      "file": "images\/Sheen_Sheen_258.jpg",
+      "letter": "ش",
+      "detected": 1,
+      "label": "ش",
+      "confidence": 0.9986442
+    },
+    {
+      "file": "images\/Sheen_Sheen_83.jpg",
+      "letter": "ش",
+      "detected": 1,
+      "label": "ش",
+      "confidence": 0.9997924
+    },
+    {
+      "file": "images\/Tah_Tah_16.jpg",
+      "letter": "ط",
+      "detected": 1,
+      "label": "ط",
+      "confidence": 0.8365168
+    },
+    {
+      "file": "images\/Tah_Tah_131.jpg",
+      "letter": "ط",
+      "detected": 1,
+      "label": "ط",
+      "confidence": 0.9375695
+    },
+    {
+      "file": "images\/Tah_Tah_141.jpg",
+      "letter": "ط",
+      "detected": 1,
+      "label": "ط",
+      "confidence": 0.94351584
+    },
+    {
+      "file": "images\/Teh_Teh_285.jpg",
+      "letter": "ت",
+      "detected": 1,
+      "label": "ت",
+      "confidence": 0.9735101
+    },
+    {
+      "file": "images\/Teh_Teh_192.jpg",
+      "letter": "ت",
+      "detected": 1,
+      "label": "ت",
+      "confidence": 0.9927718
+    },
+    {
+      "file": "images\/Teh_Teh_33.jpg",
+      "letter": "ت",
+      "detected": 1,
+      "label": "ت",
+      "confidence": 0.91024566
+    },
+    {
+      "file": "images\/Teh_Teh_262.jpg",
+      "letter": "ت",
+      "detected": 1,
+      "label": "ت",
+      "confidence": 0.98135203
+    },
+    {
+      "file": "images\/Theh_Theh_110.jpg",
+      "letter": "ث",
+      "detected": 1,
+      "label": "ث",
+      "confidence": 0.9993742
+    },
+    {
+      "file": "images\/Theh_Theh_118.jpg",
+      "letter": "ث",
+      "detected": 1,
+      "label": "ث",
+      "confidence": 0.9951448
+    },
+    {
+      "file": "images\/Theh_Theh_249.jpg",
+      "letter": "ث",
+      "detected": 1,
+      "label": "ث",
+      "confidence": 0.99968195
+    },
+    {
+      "file": "images\/Theh_Theh_226.jpg",
+      "letter": "ث",
+      "detected": 1,
+      "label": "ث",
+      "confidence": 0.9990023
+    },
+    {
+      "file": "images\/Waw_Waw_90.jpg",
+      "letter": "و",
+      "detected": 1,
+      "label": "و",
+      "confidence": 0.99918693
+    },
+    {
+      "file": "images\/Waw_Waw_68.jpg",
+      "letter": "و",
+      "detected": 1,
+      "label": "و",
+      "confidence": 0.9981025
+    },
+    {
+      "file": "images\/Waw_Waw_221.jpg",
+      "letter": "و",
+      "detected": 1,
+      "label": "و",
+      "confidence": 0.99349844
+    },
+    {
+      "file": "images\/Yeh_Yeh_200.jpg",
+      "letter": "ي",
+      "detected": 1,
+      "label": "ي",
+      "confidence": 0.9993998
+    },
+    {
+      "file": "images\/Yeh_Yeh_107.jpg",
+      "letter": "ي",
+      "detected": 1,
+      "label": "ي",
+      "confidence": 0.9872491
+    },
+    {
+      "file": "images\/Yeh_Yeh_28.jpg",
+      "letter": "ي",
+      "detected": 1,
+      "label": "ي",
+      "confidence": 0.9956779
+    },
+    {
+      "file": "images\/Yeh_Yeh_82.jpg",
+      "letter": "ي",
+      "detected": 1,
+      "label": "ي",
+      "confidence": 0.9991818
+    },
+    {
+      "file": "images\/Zah_Zah_171.jpg",
+      "letter": "ظ",
+      "detected": 1,
+      "label": "ظ",
+      "confidence": 0.9853059
+    },
+    {
+      "file": "images\/Zah_Zah_114.jpg",
+      "letter": "ظ",
+      "detected": 1,
+      "label": "ظ",
+      "confidence": 0.76590115
+    },
+    {
+      "file": "images\/Zah_Zah_38.jpg",
+      "letter": "ظ",
+      "detected": 1,
+      "label": "ظ",
+      "confidence": 0.8880355
+    },
+    {
+      "file": "images\/Zah_Zah_30.jpg",
+      "letter": "ظ",
+      "detected": 1,
+      "label": "ظ",
+      "confidence": 0.7331353
+    },
+    {
+      "file": "images\/Zain_Zain_140.jpg",
+      "letter": "ز",
+      "detected": 1,
+      "label": "ز",
+      "confidence": 0.99338293
+    },
+    {
+      "file": "images\/Zain_Zain_136.jpg",
+      "letter": "ز",
+      "detected": 1,
+      "label": "ز",
+      "confidence": 0.9095729
+    },
+    {
+      "file": "images\/Zain_Zain_154.jpg",
+      "letter": "ز",
+      "detected": 1,
+      "label": "ز",
+      "confidence": 0.90962964
+    },
+    {
+      "file": "images\/Zain_Zain_66.jpg",
+      "letter": "ز",
+      "detected": 1,
+      "label": "ز",
+      "confidence": 0.9764847
+    },
+    {
+      "file": "images\/thal_thal_123.jpg",
+      "letter": "ذ",
+      "detected": 1,
+      "label": "ذ",
+      "confidence": 0.89513946
+    },
+    {
+      "file": "images\/thal_thal_130.jpg",
+      "letter": "ذ",
+      "detected": 1,
+      "label": "ذ",
+      "confidence": 0.9937239
+    },
+    {
+      "file": "images\/thal_thal_141.jpg",
+      "letter": "ذ",
+      "detected": 1,
+      "label": "ذ",
+      "confidence": 0.97721726
+    },
+    {
+      "file": "images\/thal_thal_55.jpg",
+      "letter": "ذ",
+      "detected": 1,
+      "label": "ذ",
+      "confidence": 0.9437578
+    }
+  ]
+}

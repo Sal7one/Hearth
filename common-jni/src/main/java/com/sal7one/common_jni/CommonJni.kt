@@ -109,6 +109,7 @@ object CommonJni {
     fun hasVosk(): Boolean = initialized && nativeHasVosk()
     fun hasOnnx(): Boolean = initialized && nativeHasOnnx()
     fun hasOpenCV(): Boolean = initialized && nativeHasOpenCV()
+    fun hasSign(): Boolean = initialized && nativeHasSign()
 
     fun getVersion(): String = if (initialized) nativeGetVersion() else "not initialized"
     fun getCapabilityMask(): Int = if (initialized) nativeGetCapabilityMask() else 0
@@ -384,6 +385,7 @@ object CommonJni {
     private external fun nativeHasVosk(): Boolean
     private external fun nativeHasOnnx(): Boolean
     private external fun nativeHasOpenCV(): Boolean
+    private external fun nativeHasSign(): Boolean
 
     private external fun nativeDecodeAudio(filePath: String, targetSampleRate: Int): ShortArray?
     private external fun nativeExtractAudio(
