@@ -10,6 +10,7 @@ internal fun UiText.title(value: com.sal7one.transiber.home.HomeService): String
     com.sal7one.transiber.home.HomeService.TEXT -> R.string.label_homeservice_text_title
     com.sal7one.transiber.home.HomeService.CAMERA -> R.string.label_homeservice_camera_title
     com.sal7one.transiber.home.HomeService.SCREEN -> R.string.label_homeservice_screen_title
+    com.sal7one.transiber.home.HomeService.SIGN -> R.string.label_homeservice_sign_title
 })
 
 internal fun UiText.description(value: com.sal7one.transiber.home.HomeService): String = this(when (value) {
@@ -19,6 +20,7 @@ internal fun UiText.description(value: com.sal7one.transiber.home.HomeService): 
     com.sal7one.transiber.home.HomeService.TEXT -> R.string.label_homeservice_text_description
     com.sal7one.transiber.home.HomeService.CAMERA -> R.string.label_homeservice_camera_description
     com.sal7one.transiber.home.HomeService.SCREEN -> R.string.label_homeservice_screen_description
+    com.sal7one.transiber.home.HomeService.SIGN -> R.string.label_homeservice_sign_description
 })
 
 internal fun UiText.action(value: com.sal7one.transiber.home.HomeService): String = this(when (value) {
@@ -28,6 +30,7 @@ internal fun UiText.action(value: com.sal7one.transiber.home.HomeService): Strin
     com.sal7one.transiber.home.HomeService.TEXT -> R.string.label_homeservice_text_action
     com.sal7one.transiber.home.HomeService.CAMERA -> R.string.label_homeservice_camera_action
     com.sal7one.transiber.home.HomeService.SCREEN -> R.string.label_homeservice_screen_action
+    com.sal7one.transiber.home.HomeService.SIGN -> R.string.label_homeservice_sign_action
 })
 
 internal fun UiText.label(value: com.sal7one.transiber.ui.MainTab): String = this(when (value) {
@@ -199,6 +202,7 @@ internal fun UiText.modelSection(id: String): String = when (id) {
     "Speech" -> this(R.string.ui_speech_d00d8)
     "Translation" -> this(R.string.label_settingsfeature_translation_label)
     "Camera" -> this(R.string.label_maintab_camera_label)
+    "Sign" -> this(R.string.ui_sign_language_7b123)
     "Voices" -> this(R.string.ui_voices_40273)
     else -> id
 }

@@ -113,4 +113,7 @@
     <string name="label_capabilitystatus_setup_needed_label" formatted="false">"يحتاج إعدادًا"</string>
     <string name="label_capabilitystatus_partly_ready_label" formatted="false">"جاهز جزئيًا"</string>
     <string name="label_capabilitystatus_unavailable_label" formatted="false">"غير متاح"</string>
+    <string name="label_homeservice_sign_title" formatted="false">"لغة الإشارة"</string>
+    <string name="label_homeservice_sign_description" formatted="false">"اقرأ تهجئة الحروف بالإصبع من الكاميرا واكتبها نصًا فوق التطبيقات الأخرى."</string>
+    <string name="label_homeservice_sign_action" formatted="false">"افتح لغة الإشارة"</string>
 </resources>

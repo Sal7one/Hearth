@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased — sign language
+
+- Add real-time sign-language fingerspelling: camera frames run through a native hand-landmark pipeline into a per-frame letter classifier, and a 3-frame consensus rule appends settled letters to a floating overlay with history, pause and clear.
+- Ship two alphabets: ASL static letters (24; J and Z require motion and are excluded) and Arabic fingerspelling (28 letters) trained on the Saudi-collected AASL and ArSL2018 datasets. This is fingerspelling only, not continuous or sentence-level sign language.
+- Hand palm detection and landmarks run as MediaPipe hand models converted to ONNX on the app's vendored ONNX Runtime; no LiteRT, TFLite or ML Kit runtime is involved, and converted weights keep their upstream Apache-2.0 MediaPipe license (see THIRD_PARTY_NOTICES.md).
+- Sign models are not bundled: play installs catalogued verified downloads and foss imports files, matching the existing speech-model flow.
+- Add native sign host tests, scripts/sign unit tests in CI, release provenance checks, and the docs/sign-language.md and docs/sign-training-and-validation.md guides.
+
 ## 0.22.16 — 2026-09-24 · screen reading speed
 
 - Group nearby OCR lines into one positioned translation block, reducing translation calls for multi-line bubbles while keeping separate bubbles apart.

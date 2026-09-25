@@ -1,5 +1,8 @@
 package com.sal7one.transiber.ui
 
+/** Highest routable page id; 16 is the sign-language screen (SignStartActivity.SIGN_PAGE). */
+private const val MAX_PAGE = 16
+
 /** Stable page IDs also serve the caption notification/overlay's existing deep links. */
 internal enum class MainTab(val page: Int, val label: String, val title: String) {
     CAPTIONS(0, "Captions", "Live captions"),
@@ -22,7 +25,7 @@ internal class AppNavigation private constructor(
         if (next == tab) replace(listOf(next.page)) else AppNavigation(next, stacks)
 
     fun open(next: Int): AppNavigation {
-        require(next in 0..15) { "Unknown page: $next" }
+        require(next in 0..MAX_PAGE) { "Unknown page: $next" }
         MainTab.entries.firstOrNull { it.page == next }?.let { return select(it) }
         val stack = stacks[tab.ordinal]
         val existing = stack.indexOf(next)
@@ -44,7 +47,7 @@ internal class AppNavigation private constructor(
 
     companion object {
         fun initial(page: Int = 0): AppNavigation {
-            val destination = page.coerceIn(0, 15)
+            val destination = page.coerceIn(0, MAX_PAGE)
             val root = MainTab.entries.firstOrNull { it.page == destination } ?: MainTab.SETTINGS
             val state = AppNavigation(root, MainTab.entries.map { listOf(it.page) })
             return if (destination == root.page) state else state.open(destination)
@@ -59,7 +62,7 @@ internal class AppNavigation private constructor(
                 val stack = saved.subList(offset, offset + size).toList()
                 offset += size
                 if (stack.first() != root.page || stack.distinct().size != stack.size ||
-                    stack.any { it !in 0..15 } || stack.drop(1).any { id -> MainTab.entries.any { it.page == id } }) return initial()
+                    stack.any { it !in 0..MAX_PAGE } || stack.drop(1).any { id -> MainTab.entries.any { it.page == id } }) return initial()
                 stack
             }
             return if (offset == saved.size) AppNavigation(tab, stacks) else initial()

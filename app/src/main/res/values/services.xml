@@ -74,4 +74,19 @@
     <string name="service_show_bubble_9a42e" formatted="false">"Show bubble"</string>
     <string name="service_tap_to_show_578b6" formatted="false">"Tap to show"</string>
     <string name="service_tap_to_start_b11de" formatted="false">"Tap to start"</string>
+    <string name="service_sign_language_7b123" formatted="false">"Sign language"</string>
+    <string name="service_sign_language_paused_bb251" formatted="false">"Sign language paused"</string>
+    <string name="service_sign_language_error_94056" formatted="false">"Sign language error"</string>
+    <string name="service_fingerspelling_from_the_camera_frames_stay_local_7e343" formatted="false">"Fingerspelling from the camera · frames stay local"</string>
+    <string name="service_paused_no_camera_frames_reach_the_hand_models_6fc56" formatted="false">"Paused · no camera frames reach the hand models"</string>
+    <string name="service_tap_this_notification_to_bring_back_the_sign_bubble_0a8fb" formatted="false">"Tap this notification to bring back the sign bubble."</string>
+    <string name="service_drag_79d0e" formatted="false">"Drag"</string>
+    <string name="service_drag_the_grip_to_move_the_bubble_32952" formatted="false">"Drag the grip to move the bubble"</string>
+    <string name="service_no_hand_a1f1f" formatted="false">"No hand"</string>
+    <string name="service_hand_detected_6868e" formatted="false">"Hand detected"</string>
+    <string name="service_1_s_fps_47f21">"%1$s fps"</string>
+    <string name="service_show_a_letter_to_the_camera_4a87a" formatted="false">"Show a letter to the camera"</string>
+    <string name="service_switch_3e44c" formatted="false">"Switch"</string>
+    <string name="service_paused_c7dfb" formatted="false">"Paused"</string>
+    <string name="service_loading_33ce4" formatted="false">"Loading…"</string>
 </resources>

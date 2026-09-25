@@ -15,6 +15,8 @@ import com.sal7one.common_jni.translation.TranslationCatalog
 import com.sal7one.common_jni.translation.TranslationModelSpec
 import com.sal7one.transiber.byok.ByokPolicy
 import com.sal7one.transiber.caption.*
+import com.sal7one.transiber.models.SignCatalog
+import com.sal7one.transiber.models.SignModelFiles
 import com.sal7one.transiber.models.SpeechDownloads
 import com.sal7one.transiber.models.SpeechArtifactCatalog
 import com.sal7one.transiber.models.SpeechArtifactKind
@@ -278,6 +280,13 @@ class FileDownloads(private val context: Context) {
    } ?: error("Cannot open downloaded OCR model")
    return@withContext installed.id
   }
+  SignCatalog.find(modelId)?.let { artifact ->
+   val job = currentCoroutineContext()
+   val installed = context.contentResolver.openInputStream(uri(id))?.use { input ->
+    SignModelFiles(File(context.filesDir, SignCatalog.ROOT_DIR)).import(input, artifact) { job.ensureActive() }
+   } ?: error("Cannot open downloaded sign model")
+   return@withContext installed.id
+  }
   val speech = SpeechDownloads.find(modelId)
   if (speech != null) {
    val job = currentCoroutineContext()
@@ -307,6 +316,12 @@ class FileDownloads(private val context: Context) {
  /** Installing is deliberately separate from activating: a late background completion must not change a running session. */
  suspend fun selectInstalled(item: FileDownload) {
   val modelId = record(item.id)?.optString("model").orEmpty()
+  SignCatalog.languages.firstOrNull { it.classifier.id == modelId }?.let { language ->
+   val files = SignModelFiles(File(context.filesDir, SignCatalog.ROOT_DIR))
+   require(files.ready(language)) { "Finish installing all sign models for ${language.label} first" }
+   com.sal7one.transiber.sign.selectClassifier(context, language.classifier.id)
+   return
+  }
   MarianPackage.pairForPart(modelId)?.let { pair ->
    require(MarianPackage.installed(context, pair) != null) { "Finish installing the Marian model files first" }
    CaptionConfigStore.update(context) { it.copy(localTranslationModelId = pair.id,

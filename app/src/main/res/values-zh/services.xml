@@ -74,4 +74,19 @@
     <string name="service_show_bubble_9a42e" formatted="false">"显示悬浮窗"</string>
     <string name="service_tap_to_show_578b6" formatted="false">"点按显示"</string>
     <string name="service_tap_to_start_b11de" formatted="false">"点按开始"</string>
+    <string name="service_sign_language_7b123" formatted="false">"手语"</string>
+    <string name="service_sign_language_paused_bb251" formatted="false">"手语已暂停"</string>
+    <string name="service_sign_language_error_94056" formatted="false">"手语出错"</string>
+    <string name="service_fingerspelling_from_the_camera_frames_stay_local_7e343" formatted="false">"摄像头手指拼字 · 画面只保留在本机"</string>
+    <string name="service_paused_no_camera_frames_reach_the_hand_models_6fc56" formatted="false">"已暂停 · 摄像头画面不会送入手部模型"</string>
+    <string name="service_tap_this_notification_to_bring_back_the_sign_bubble_0a8fb" formatted="false">"点按此通知可找回手语悬浮窗。"</string>
+    <string name="service_drag_79d0e" formatted="false">"拖动"</string>
+    <string name="service_drag_the_grip_to_move_the_bubble_32952" formatted="false">"拖动手柄移动悬浮窗"</string>
+    <string name="service_no_hand_a1f1f" formatted="false">"未检测到手"</string>
+    <string name="service_hand_detected_6868e" formatted="false">"已检测到手"</string>
+    <string name="service_1_s_fps_47f21">"%1$s fps"</string>
+    <string name="service_show_a_letter_to_the_camera_4a87a" formatted="false">"向摄像头展示一个字母"</string>
+    <string name="service_switch_3e44c" formatted="false">"切换"</string>
+    <string name="service_paused_c7dfb" formatted="false">"已暂停"</string>
+    <string name="service_loading_33ce4" formatted="false">"加载中…"</string>
 </resources>

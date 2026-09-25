@@ -194,6 +194,14 @@ static jboolean nativeHasOpenCV(JNIEnv*, jobject) {
 #endif
 }
 
+static jboolean nativeHasSign(JNIEnv*, jobject) {
+#if defined(WITH_SIGN) && WITH_SIGN
+    return JNI_TRUE;
+#else
+    return JNI_FALSE;
+#endif
+}
+
 static jshortArray nativeDecodeAudio(JNIEnv* env, jobject, jstring filePath, jint targetSampleRate) {
     JNI_TRY_CATCH_BEGIN
     
@@ -669,6 +677,7 @@ static const JNINativeMethod gCommonJniMethods[] = {
     {"nativeHasVosk", "()Z", reinterpret_cast<void*>(nativeHasVosk)},
     {"nativeHasOnnx", "()Z", reinterpret_cast<void*>(nativeHasOnnx)},
     {"nativeHasOpenCV", "()Z", reinterpret_cast<void*>(nativeHasOpenCV)},
+    {"nativeHasSign", "()Z", reinterpret_cast<void*>(nativeHasSign)},
     {"nativeDecodeAudio", "(Ljava/lang/String;I)[S", reinterpret_cast<void*>(nativeDecodeAudio)},
     {"nativeExtractAudio", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;I)Z", reinterpret_cast<void*>(nativeExtractAudio)},
     {"nativeGetFileDuration", "(Ljava/lang/String;)J", reinterpret_cast<void*>(nativeGetFileDuration)},

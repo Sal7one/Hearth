@@ -1,0 +1,258 @@
+{
+  "source_task_url": "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task",
+  "source_task_sha256": "fbc2a30080c3c557093b5ddfc334698132eb341044ccee322ccf8bcf3607cde1",
+  "source_task_bytes": 7819105,
+  "extraction_note": "hand_landmarker.task is a ZIP archive containing hand_detector.tflite and hand_landmarks_detector.tflite (verified byte-identical to the copies in the legacy repo's app/src/main/assets/hand_models/).",
+  "conversion": {
+    "tool": "tf2onnx (TFLite frontend) via tf2onnx.convert.from_tflite",
+    "tool_version": "1.17.0",
+    "onnx_package_version": "1.23.0",
+    "onnxruntime_version": "1.20.0",
+    "python": "3.12.14",
+    "platform": "macOS-26.3.1-arm64-arm-64bit",
+    "opset": 13,
+    "dtype": "float32 (FP16-quantized TFLite weights dequantized to float32 initializers)",
+    "fallback_note": "tflite2onnx 0.4.1 fails on these graphs (rank-4 NHWC->NCHW permutation applied to rank-3 PReLU tensors in the detector head); tf2onnx's TFLite frontend is used instead.",
+    "reproducibility": "The converted graph is canonicalized (structure-derived merkle names, deterministic topological ordering); with the same .task, tool versions and Python the serialized ONNX bytes and sha256 are identical across runs.",
+    "generated_utc": "2026-09-25T20:48:02+00:00"
+  },
+  "license": {
+    "spdx": "Apache-2.0",
+    "copyright": "Copyright 2023 The MediaPipe Authors",
+    "note": "Converted weights retain the upstream Apache-2.0 license and attribution."
+  },
+  "models": [
+    {
+      "source_tflite": "hand_detector.tflite",
+      "source_tflite_sha256": "945f713bc23570bd4ed60f848c401dc8eaf95713183d43ba14cf12e467d27a7d",
+      "onnx_file": "hand_detector.onnx",
+      "onnx_sha256": "0923eb04fef6c9cc4c8a3094c990d215341aebb2140eaf022c8cac0370681415",
+      "onnx_bytes": 4589016,
+      "ir_version": 7,
+      "opsets": {
+        "ai.onnx": 13,
+        "ai.onnx.ml": 2
+      },
+      "inputs": [
+        {
+          "name": "input_1",
+          "dtype": "FLOAT",
+          "shape": [
+            1,
+            192,
+            192,
+            3
+          ]
+        }
+      ],
+      "outputs": [
+        {
+          "name": "Identity",
+          "dtype": "FLOAT",
+          "shape": [
+            1,
+            2016,
+            18
+          ]
+        },
+        {
+          "name": "Identity_1",
+          "dtype": "FLOAT",
+          "shape": [
+            1,
+            2016,
+            1
+          ]
+        }
+      ],
+      "smoke_test": {
+        "seed": 0,
+        "input_distribution": "numpy default_rng(seed).standard_normal, float32",
+        "per_output_min_max": {
+          "Identity": {
+            "shape": [
+              1,
+              2016,
+              18
+            ],
+            "min": -3535.23876953125,
+            "max": 3943.5859375,
+            "finite": true
+          },
+          "Identity_1": {
+            "shape": [
+              1,
+              2016,
+              1
+            ],
+            "min": -3194.289306640625,
+            "max": 178.1745147705078,
+            "finite": true
+          }
+        }
+      },
+      "tflite_cross_check": {
+        "runtime": "ai-edge-litert 2.2.0",
+        "per_output": {
+          "Identity": {
+            "tflite_shape": [
+              1,
+              2016,
+              18
+            ],
+            "max_abs_diff": 0.0078125,
+            "max_rel_diff": 1.9810646129795266e-06
+          },
+          "Identity_1": {
+            "tflite_shape": [
+              1,
+              2016,
+              1
+            ],
+            "max_abs_diff": 0.00390625,
+            "max_rel_diff": 1.2228851958435355e-06
+          }
+        },
+        "note": "Source TFLite weights are FP16-quantized; ONNX dequantizes them to float32. Absolute diffs on the detector grow with logit magnitude (out-of-distribution noise input); relative diffs stay at float32 rounding level (~1e-6)."
+      }
+    },
+    {
+      "source_tflite": "hand_landmarks_detector.tflite",
+      "source_tflite_sha256": "6acda74af3fbf40e68265c20c7394b2bad81a16a481dcd79ad7a081887c3d6b9",
+      "onnx_file": "hand_landmarks_detector.onnx",
+      "onnx_sha256": "4e81514a9141f52e1fb3b387a242c7dc33cb2f2d26c996a28c3d42bf8d012040",
+      "onnx_bytes": 10902245,
+      "ir_version": 7,
+      "opsets": {
+        "ai.onnx": 13,
+        "ai.onnx.ml": 2
+      },
+      "inputs": [
+        {
+          "name": "input_1",
+          "dtype": "FLOAT",
+          "shape": [
+            1,
+            224,
+            224,
+            3
+          ]
+        }
+      ],
+      "outputs": [
+        {
+          "name": "Identity",
+          "dtype": "FLOAT",
+          "shape": [
+            1,
+            63
+          ]
+        },
+        {
+          "name": "Identity_1",
+          "dtype": "FLOAT",
+          "shape": [
+            1,
+            1
+          ]
+        },
+        {
+          "name": "Identity_2",
+          "dtype": "FLOAT",
+          "shape": [
+            1,
+            1
+          ]
+        },
+        {
+          "name": "Identity_3",
+          "dtype": "FLOAT",
+          "shape": [
+            1,
+            63
+          ]
+        }
+      ],
+      "smoke_test": {
+        "seed": 0,
+        "input_distribution": "numpy default_rng(seed).standard_normal, float32",
+        "per_output_min_max": {
+          "Identity": {
+            "shape": [
+              1,
+              63
+            ],
+            "min": -11.778066635131836,
+            "max": 183.00094604492188,
+            "finite": true
+          },
+          "Identity_1": {
+            "shape": [
+              1,
+              1
+            ],
+            "min": 0.0017175078392028809,
+            "max": 0.0017175078392028809,
+            "finite": true
+          },
+          "Identity_2": {
+            "shape": [
+              1,
+              1
+            ],
+            "min": 0.6184738278388977,
+            "max": 0.6184738278388977,
+            "finite": true
+          },
+          "Identity_3": {
+            "shape": [
+              1,
+              63
+            ],
+            "min": -0.0883166640996933,
+            "max": 0.07664397358894348,
+            "finite": true
+          }
+        }
+      },
+      "tflite_cross_check": {
+        "runtime": "ai-edge-litert 2.2.0",
+        "per_output": {
+          "Identity": {
+            "tflite_shape": [
+              1,
+              63
+            ],
+            "max_abs_diff": 9.1552734375e-05,
+            "max_rel_diff": 5.002856631136379e-07
+          },
+          "Identity_1": {
+            "tflite_shape": [
+              1,
+              1
+            ],
+            "max_abs_diff": 4.9709342420101166e-08,
+            "max_rel_diff": 4.9709342420101166e-08
+          },
+          "Identity_2": {
+            "tflite_shape": [
+              1,
+              1
+            ],
+            "max_abs_diff": 4.172325134277344e-07,
+            "max_rel_diff": 4.172325134277344e-07
+          },
+          "Identity_3": {
+            "tflite_shape": [
+              1,
+              63
+            ],
+            "max_abs_diff": 2.2351741790771484e-07,
+            "max_rel_diff": 2.2351741790771484e-07
+          }
+        },
+        "note": "Source TFLite weights are FP16-quantized; ONNX dequantizes them to float32. Absolute diffs on the detector grow with logit magnitude (out-of-distribution noise input); relative diffs stay at float32 rounding level (~1e-6)."
+      }
+    }
+  ]
+}

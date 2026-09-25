@@ -8,6 +8,7 @@
 #define WITH_ONNX @WITH_ONNX_VAL@
 #define WITH_FFMPEG @WITH_FFMPEG_VAL@
 #define WITH_OPENCV @WITH_OPENCV_VAL@
+#define WITH_SIGN @WITH_SIGN_VAL@
 #cmakedefine01 VERBOSE_LOGGING
 
 // Capability bit flags (must match Kotlin CommonJni.Capability)
@@ -16,6 +17,7 @@
 #define CAP_ONNX     4
 #define CAP_FFMPEG   8
 #define CAP_OPENCV   16
+#define CAP_SIGN     32
 
 // Capability mask computed by CMake
 #define STT_CAPABILITY_MASK @STT_CAPABILITY_MASK@

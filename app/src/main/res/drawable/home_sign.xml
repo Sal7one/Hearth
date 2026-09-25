@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Sign-language home card artwork: a raised hand fingerspelling over
+     caption bubbles. Vector so it scales like the illustrated webp cards. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="320dp"
+    android:height="296dp"
+    android:viewportWidth="320"
+    android:viewportHeight="296">
+    <!-- Card backdrop -->
+    <path
+        android:fillColor="#101826"
+        android:pathData="M0,0h320v296h-320z"/>
+    <path
+        android:fillColor="#1B2B44"
+        android:pathData="M0,196a56,56 0 0 1 56,-56h208a56,56 0 0 1 56,56v100H0z"/>
+    <!-- Caption bubbles -->
+    <path
+        android:fillColor="#448EFF"
+        android:pathData="M46,34h150a26,26 0 0 1 26,26v52a26,26 0 0 1 -26,26h-96l-28,24v-24h-26a26,26 0 0 1 -26,-26v-52a26,26 0 0 1 26,-26z"/>
+    <!-- Letter glyphs in the bubble -->
+    <path
+        android:fillColor="#0B1220"
+        android:pathData="M78,64l10,44h-11l-2,-9h-11l-2,9h-11l10,-44h17zM76,90l-3.5,0 -3.5,0 -3.5,0 3.5,-16z"/>
+    <path
+        android:fillColor="#0B1220"
+        android:pathData="M126,64h22a11,11 0 0 1 11,11v22a11,11 0 0 1 -11,11h-22zM137,74v24h9a4,4 0 0 0 4,-4v-16a4,4 0 0 0 -4,-4z"/>
+    <!-- Raised hand -->
+    <path
+        android:fillColor="#E8B98A"
+        android:pathData="M212,296c-34,0 -52,-20 -52,-46v-72a11,11 0 0 1 22,0v-40a11,11 0 0 1 22,0v34a11,11 0 0 1 22,0v-26a11,11 0 0 1 22,0v70c0,44 -10,80 -36,80z"/>
+    <!-- Cuff -->
+    <path
+        android:fillColor="#EAA077"
+        android:pathData="M150,242h96v54h-96z"/>
+</vector>

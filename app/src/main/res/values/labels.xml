@@ -113,4 +113,7 @@
     <string name="label_capabilitystatus_setup_needed_label" formatted="false">"Setup needed"</string>
     <string name="label_capabilitystatus_partly_ready_label" formatted="false">"Partly ready"</string>
     <string name="label_capabilitystatus_unavailable_label" formatted="false">"Unavailable"</string>
+    <string name="label_homeservice_sign_title" formatted="false">"Sign language"</string>
+    <string name="label_homeservice_sign_description" formatted="false">"Read fingerspelling from the camera and type it as text over other apps."</string>
+    <string name="label_homeservice_sign_action" formatted="false">"Open sign language"</string>
 </resources>

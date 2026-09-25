@@ -28,6 +28,7 @@ internal fun HomeServiceCard(service: HomeService, modifier: Modifier = Modifier
         HomeService.TEXT -> R.drawable.home_text
         HomeService.CAMERA -> R.drawable.home_camera
         HomeService.SCREEN -> R.drawable.home_screen
+        HomeService.SIGN -> R.drawable.home_sign
     }
     BoxWithConstraints(modifier.fillMaxWidth().padding(vertical = 18.dp)) {
         ElevatedCard(shape = RoundedCornerShape(32.dp),

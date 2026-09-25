@@ -48,6 +48,37 @@ manga = json.loads((ocr_assets/'manga-provenance.json').read_text())
 assert hashlib.sha256((ocr_assets/'manga.json').read_bytes()).hexdigest() == manga['dictionary_sha256']
 assert len(json.loads((ocr_assets/'manga.json').read_text())) == manga['classes'] == 6144
 
+assert (root/'docs/sign-language.md').is_file(), 'docs/sign-language.md missing'
+sign_handmodels = root/'research/sign/handmodels'
+if not sign_handmodels.is_dir():
+    print('Sign hand-model provenance skipped: research/sign outputs are not present '
+          '(research tree is untracked on CI); nothing to hash')
+else:
+    provenance_file = sign_handmodels/'PROVENANCE.json'
+    assert provenance_file.is_file(), 'research/sign/handmodels/PROVENANCE.json missing'
+    sign_hashes = {}
+    stack = [json.loads(provenance_file.read_text())]
+    while stack:
+        node = stack.pop()
+        if isinstance(node, dict):
+            name = node.get('file') or node.get('name') or node.get('path')
+            digest = node.get('sha256')
+            if isinstance(name, str) and isinstance(digest, str) and re.fullmatch(r'[0-9a-f]{64}', digest):
+                sign_hashes[Path(name).name] = digest
+            stack.extend(node.values())
+        elif isinstance(node, list):
+            stack.extend(node)
+    sign_onnx = sorted(sign_handmodels.glob('*.onnx'))
+    if not sign_onnx:
+        print('Sign hand-model hash check skipped: converted ONNX weights absent; PROVENANCE.json present')
+    else:
+        assert sign_hashes, 'PROVENANCE.json lists no sha256 records while ONNX files are present'
+        for onnx_file in sign_onnx:
+            assert onnx_file.name in sign_hashes, f'{onnx_file.name}: no sha256 recorded in PROVENANCE.json'
+            assert hashlib.sha256(onnx_file.read_bytes()).hexdigest() == sign_hashes[onnx_file.name], \
+                f'Sign hand model changed, re-run the conversion pipeline: {onnx_file.name}'
+        print(f'Sign hand models PASS: {len(sign_onnx)} ONNX files match PROVENANCE.json')
+
 expected_libs = {'libtransiber_translation.so','libcommon_jni.so','libc++_shared.so','libvosk.so','libonnxruntime.so','libhearth_qwen.so','libhearth_nemotron.so','libandroidx.graphics.path.so','libdatastore_shared_counter.so','libimage_processing_util_jni.so'}
 platform = {'liblog.so','libandroid.so','libjnigraphics.so','libm.so','libdl.so','libc.so','libz.so'}
 for flavor in ['play','foss']:

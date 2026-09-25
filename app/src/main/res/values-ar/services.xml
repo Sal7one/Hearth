@@ -74,4 +74,19 @@
     <string name="service_show_bubble_9a42e" formatted="false">"عرض الفقاعة"</string>
     <string name="service_tap_to_show_578b6" formatted="false">"اضغط للعرض"</string>
     <string name="service_tap_to_start_b11de" formatted="false">"اضغط للبدء"</string>
+    <string name="service_sign_language_7b123" formatted="false">"لغة الإشارة"</string>
+    <string name="service_sign_language_paused_bb251" formatted="false">"لغة الإشارة متوقفة مؤقتًا"</string>
+    <string name="service_sign_language_error_94056" formatted="false">"خطأ في لغة الإشارة"</string>
+    <string name="service_fingerspelling_from_the_camera_frames_stay_local_7e343" formatted="false">"تهجئة بالإصبع من الكاميرا · تبقى اللقطات على الجهاز"</string>
+    <string name="service_paused_no_camera_frames_reach_the_hand_models_6fc56" formatted="false">"متوقف مؤقتًا · لا تصل أي لقطات كاميرا إلى النماذج"</string>
+    <string name="service_tap_this_notification_to_bring_back_the_sign_bubble_0a8fb" formatted="false">"انقر هذا الإشعار لإرجاع فقاعة لغة الإشارة."</string>
+    <string name="service_drag_79d0e" formatted="false">"اسحب"</string>
+    <string name="service_drag_the_grip_to_move_the_bubble_32952" formatted="false">"اسحب المقبض لتحريك الفقاعة"</string>
+    <string name="service_no_hand_a1f1f" formatted="false">"لا توجد يد"</string>
+    <string name="service_hand_detected_6868e" formatted="false">"تم رصد يد"</string>
+    <string name="service_1_s_fps_47f21">"%1$s إطار/ث"</string>
+    <string name="service_show_a_letter_to_the_camera_4a87a" formatted="false">"اعرض حرفًا أمام الكاميرا"</string>
+    <string name="service_switch_3e44c" formatted="false">"تبديل"</string>
+    <string name="service_paused_c7dfb" formatted="false">"متوقف مؤقتًا"</string>
+    <string name="service_loading_33ce4" formatted="false">"جارٍ التحميل…"</string>
 </resources>

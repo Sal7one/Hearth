@@ -72,3 +72,30 @@ Apache-2.0, but its detector/reader weights declare LGPL-3.0. These are separate
 licenses and the weights are not bundled. Publisher links, pinned artifacts and
 limitations are recorded in [Japanese OCR adapters](docs/manga-ocr-adapters.md)
 and packaged in `assets/licenses/ocr/NOTICE.txt`.
+
+## Sign-language recognition
+
+The hand-landmark stage uses Google MediaPipe hand landmarker models
+(© 2023 The MediaPipe Authors, Apache-2.0) as weights converted to ONNX with
+[tflite2onnx](https://github.com/onnx/tflite2onnx) (Apache-2.0). Conversion
+commands, pinned source artifacts and SHA-256 hashes are recorded in
+`research/sign/handmodels/PROVENANCE.json` and re-checked by
+`scripts/verify-release.py` when the converted files are present. No LiteRT,
+TFLite or ML Kit runtime is used; inference runs on the vendored ONNX Runtime
+described above, and the converted weights keep their upstream MediaPipe
+license. Hand and classifier models are verified downloads or imports and are
+never bundled in this repository or the APK.
+
+Classifier weights and training records under `research/sign/` are for training
+and evaluation only, derived from: the Kaggle
+[grassknoted/asl-alphabet](https://www.kaggle.com/datasets/grassknoted/asl-alphabet)
+image set (user-uploaded; no formal license published — treat as
+all-rights-reserved and do not redistribute), the Saudi-collected AASL Arabic
+alphabets dataset (license ambiguity: the source page lists CC BY-SA while the
+dataset's documentation indicates CC BY-NC-SA; the stricter BY-NC-SA terms
+apply), and ArSL2018 from Al Khobar (CC BY 4.0,
+[DOI 10.17632/y7pckrw6z2.1](https://doi.org/10.17632/y7pckrw6z2.1)). No source
+images, landmark CSVs or dataset-derived test data are redistributed. Dataset
+details and honest capability limits are in
+[sign language](docs/sign-language.md) and
+[training methodology](docs/sign-training-and-validation.md).

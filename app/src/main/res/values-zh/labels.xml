@@ -113,4 +113,7 @@
     <string name="label_capabilitystatus_setup_needed_label" formatted="false">"需要设置"</string>
     <string name="label_capabilitystatus_partly_ready_label" formatted="false">"部分就绪"</string>
     <string name="label_capabilitystatus_unavailable_label" formatted="false">"不可用"</string>
+    <string name="label_homeservice_sign_title" formatted="false">"手语"</string>
+    <string name="label_homeservice_sign_description" formatted="false">"通过摄像头读取手指拼字，并作为文字显示在其他应用上方。"</string>
+    <string name="label_homeservice_sign_action" formatted="false">"打开手语"</string>
 </resources>

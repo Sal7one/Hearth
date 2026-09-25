@@ -3,6 +3,7 @@
  <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
  <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
  <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
+ <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CAMERA" />
  <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
  <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
  <uses-feature android:name="android.hardware.microphone" android:required="false" />
@@ -26,6 +27,8 @@
   <service android:name=".caption.CaptionCaptureService" android:exported="false" android:foregroundServiceType="mediaProjection|microphone" />
   <activity android:name=".reading.ReadingStartActivity" android:exported="false" />
   <service android:name=".reading.ReadingOverlayService" android:exported="false" android:foregroundServiceType="mediaProjection" />
+  <activity android:name=".sign.SignStartActivity" android:exported="false" android:theme="@android:style/Theme.Translucent.NoTitleBar" android:excludeFromRecents="true" />
+  <service android:name=".sign.SignOverlayService" android:exported="false" android:foregroundServiceType="camera" />
   <activity android:name=".shortcuts.OverlayLaunchActivity" android:exported="false" android:excludeFromRecents="true" android:launchMode="singleTop" android:taskAffinity="${applicationId}.quickstart" />
   <service android:name=".shortcuts.CaptionTileService" android:label="@string/tile_captions" android:icon="@drawable/ic_tile_captions" android:exported="true" android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
    <intent-filter><action android:name="android.service.quicksettings.action.QS_TILE" /></intent-filter>

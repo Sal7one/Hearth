@@ -24,7 +24,7 @@ import kotlin.math.abs
 
 @Composable
 internal fun HomeScreen(onCaptions: () -> Unit, onTalk: (Boolean) -> Unit,
-    onTranslate: () -> Unit, onCamera: () -> Unit, onReading: () -> Unit, entryRevision: Int = 0, onSetup: () -> Unit) {
+    onTranslate: () -> Unit, onCamera: () -> Unit, onReading: () -> Unit, entryRevision: Int = 0, onSetup: () -> Unit, onSign: () -> Unit = {}) {
     val uiText = rememberUiText()
 
     val context = LocalContext.current
@@ -47,6 +47,7 @@ internal fun HomeScreen(onCaptions: () -> Unit, onTalk: (Boolean) -> Unit,
             HomeService.TEXT -> onTranslate()
             HomeService.CAMERA -> onCamera()
             HomeService.SCREEN -> onReading()
+            HomeService.SIGN -> onSign()
         }
     }
     Column(Modifier.fillMaxSize()) {

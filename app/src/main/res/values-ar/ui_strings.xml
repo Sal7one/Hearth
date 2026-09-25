@@ -939,4 +939,22 @@
     <string name="benchmark_old_timing">الطريقة القديمة تضمنت إعادة ضبط النموذج بين المقاطع. أعد الاختبار لمقارنة السرعة بعدل.</string>
     <string name="benchmark_quick_set">سريع · 6 مقاطع</string>
     <string name="benchmark_long_clip_set">مقطع طويل · 7 مقاطع</string>
+    <string name="ui_sign_language_7b123" formatted="false">"لغة الإشارة"</string>
+    <string name="ui_hand_models_installed_17d26" formatted="false">"نماذج اليدين مثبتة"</string>
+    <string name="ui_hand_models_are_missing_open_models_to_download_or_import_them_33e3d" formatted="false">"نماذج اليدين غير موجودة. افتح النماذج لتنزيلها أو استيرادها."</string>
+    <string name="ui_1_s_classifier_installed_11bd8">"مصنف %1$s مثبت"</string>
+    <string name="ui_1_s_classifier_not_installed_5e06f">"مصنف %1$s غير مثبت"</string>
+    <string name="ui_without_the_trained_classifier_only_a_geometric_subset_of_asl_let_84210" formatted="false">"بدون المصنف المدرَّب، يتم التعرف هندسيًا فقط على مجموعة جزئية من حروف لغة الإشارة الأمريكية."</string>
+    <string name="ui_sign_overlay_is_running_6ee79" formatted="false">"تراكب لغة الإشارة يعمل"</string>
+    <string name="ui_start_fingerspelling_overlay_170e8" formatted="false">"ابدأ تراكب التهجئة بالإصبع"</string>
+    <string name="ui_stop_overlay_67e13" formatted="false">"إيقاف التراكب"</string>
+    <string name="ui_fingerspelling_language_c8f50" formatted="false">"لغة التهجئة بالإصبع"</string>
+    <string name="ui_what_this_does_0da9d" formatted="false">"ماذا تفعل هذه الميزة"</string>
+    <string name="ui_hearth_watches_the_front_camera_and_types_the_letters_it_reads_ov_9e5ec" formatted="false">"يراقب Hearth الكاميرا الأمامية ويكتب الحروف التي يقرأها فوق التطبيقات الأخرى. تجري عملية التعرف بالكامل على هذا الهاتف؛ ولا يخرج أي فيديو من جهازك."</string>
+    <string name="ui_static_letters_only_motion_letters_such_as_j_and_z_in_asl_are_not_1d76b" formatted="false">"حروف ثابتة فقط. الحروف الحركية مثل J وZ في لغة الإشارة الأمريكية غير مدعومة بعد، وتقل الدقة في الإضاءة الضعيفة. تحقق من الكلمات المهمة."</string>
+    <string name="ui_details_and_model_sources_docs_sign_language_md_a6d81" formatted="false">"التفاصيل ومصادر النماذج: docs/sign-language.md"</string>
+    <string name="ui_android_requires_camera_access_to_read_fingerspelling_from_the_ca_3e33c" formatted="false">"يتطلب Android صلاحية الكاميرا لقراءة التهجئة بالإصبع من الكاميرا."</string>
+    <string name="ui_sign_language_draws_a_floating_letter_bubble_on_top_of_the_app_yo_00afa" formatted="false">"ترسم لغة الإشارة فقاعة حروف عائمة فوق التطبيق الذي تشاهده. ويتطلب Android إعدادًا لمرة واحدة لذلك."</string>
+    <string name="ui_stop_1_s_before_starting_sign_language_bbf83">"أوقف %1$s قبل بدء لغة الإشارة."</string>
+    <string name="ui_allow_camera_1dfb1" formatted="false">"السماح بالكاميرا"</string>
 </resources>

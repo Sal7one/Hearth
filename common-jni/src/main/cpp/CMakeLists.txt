@@ -234,6 +234,38 @@ else()
 endif()
 
 # =============================================================================
+# 4.5 Sign-language pipeline (ONNX Runtime only, no Google runtimes)
+# =============================================================================
+# Hand landmark + landmark classifier models run as ONNX on the same vendored
+# ONNX Runtime as Marian/OCR/TTS. The MediaPipe hand models ship as converted
+# ONNX weights (scripts/sign/convert/); LiteRT/TFLite/ML Kit are deliberately
+# absent so any ONNX hand model following the documented contract works.
+option(WITH_SIGN "Enable sign-language hand pipeline (ONNX)" ON)
+
+if(WITH_SIGN AND HAS_ONNX)
+    message(STATUS "✓ Sign pipeline enabled (ONNX Runtime)")
+
+    add_library(sign_engine STATIC
+        sign/hand_geometry.cpp
+        sign/hand_landmarks.cpp
+        sign/ort_session.cpp
+        sign/sign_classifier.cpp
+    )
+    target_include_directories(sign_engine PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}
+        ${CMAKE_CURRENT_SOURCE_DIR}/sign
+        ${CMAKE_CURRENT_SOURCE_DIR}/onnx
+        ${CMAKE_CURRENT_SOURCE_DIR}/onnx/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/common
+    )
+    target_link_libraries(sign_engine onnx_prebuilt)
+    set(HAS_SIGN TRUE)
+else()
+    message(STATUS "✗ Sign pipeline disabled (ONNX Runtime missing)")
+    set(HAS_SIGN FALSE)
+endif()
+
+# =============================================================================
 # 7. Core Library (Session, VAD, Model Loading)
 # =============================================================================
 add_library(stt_core STATIC
@@ -326,6 +358,9 @@ endif()
 if(HAS_ONNX)
     math(EXPR STT_CAPABILITY_MASK "${STT_CAPABILITY_MASK} | 4")
 endif()
+if(HAS_SIGN)
+    math(EXPR STT_CAPABILITY_MASK "${STT_CAPABILITY_MASK} | 32")
+endif()
 
 
 
@@ -334,6 +369,7 @@ set(WITH_VOSK_VAL 0)
 set(WITH_ONNX_VAL 0)
 set(WITH_FFMPEG_VAL 0)
 set(WITH_OPENCV_VAL 0)
+set(WITH_SIGN_VAL 0)
 if(HAS_WHISPER)
     set(WITH_WHISPER_VAL 1)
 endif()
@@ -342,6 +378,9 @@ if(HAS_VOSK)
 endif()
 if(HAS_ONNX)
     set(WITH_ONNX_VAL 1)
+endif()
+if(HAS_SIGN)
+    set(WITH_SIGN_VAL 1)
 endif()
 
 
@@ -383,6 +422,11 @@ endif()
 # Add Marian translation JNI if ONNX Runtime is present.
 if(HAS_ONNX)
     list(APPEND COMMON_JNI_SOURCES marian/marian_jni.cpp ocr/ocr_jni.cpp ocr/paddle_ocr.cpp ocr/japanese_jni.cpp ocr/japanese_ocr.cpp voice/voice_jni.cpp voice/supertonic.cpp)
+endif()
+
+# Add sign-language JNI if LiteRT + ONNX Runtime are present.
+if(HAS_SIGN)
+    list(APPEND COMMON_JNI_SOURCES sign/sign_jni.cpp)
 endif()
 
 
@@ -439,6 +483,12 @@ if(HAS_ONNX)
     target_compile_definitions(common_jni PRIVATE WITH_ONNX=1 MARIAN_AVAILABLE=1)
 endif()
 
+if(HAS_SIGN)
+    target_link_libraries(common_jni sign_engine)
+    target_compile_definitions(common_jni PRIVATE WITH_SIGN=1)
+    target_include_directories(common_jni PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/sign)
+endif()
+
 
 
 
@@ -465,5 +515,6 @@ message(STATUS "  FFmpeg:   ${HAS_FFMPEG}")
 message(STATUS "  OpenCV:   ${HAS_OPENCV}")
 message(STATUS "  TTS:      ${HAS_TTS}")
 message(STATUS "  Marian:   ${HAS_ONNX}")
+message(STATUS "  Sign:     ${HAS_SIGN}")
 message(STATUS "  Capability Mask: ${STT_CAPABILITY_MASK}")
 message(STATUS "========================================")

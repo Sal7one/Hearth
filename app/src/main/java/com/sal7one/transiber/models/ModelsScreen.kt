@@ -45,7 +45,7 @@ fun ModelsScreen(onDownloads: () -> Unit = {}, onVoices: () -> Unit = {}, initia
     val pages = rememberSaveableStateHolder()
     Column(Modifier.fillMaxSize()) {
         FlowRow(Modifier.padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            listOf("Speech", "Translation", "Camera", "Voices").forEach { group ->
+            listOf("Speech", "Translation", "Camera", "Sign", "Voices").forEach { group ->
                 FilterChip(selected = section == group, onClick = { section = group }, label = { Text(uiText.modelSection(group)) })
             }
         }
@@ -64,6 +64,7 @@ fun ModelsScreen(onDownloads: () -> Unit = {}, onVoices: () -> Unit = {}, initia
                         com.sal7one.transiber.settings.SettingsTranslateLocalUi(config, { change -> update { current -> change(current).copy(mode = current.mode, localTranslationEnabled = current.localTranslationEnabled) } }, includeLegacy = true, showCaptionControls = false)
                     }
                     "Camera" -> com.sal7one.transiber.settings.SettingsOcrLocalUi(onDownloads)
+                    "Sign" -> com.sal7one.transiber.sign.SignModelsSection(onDownloads = onDownloads)
 
                 }
                 if (ByokPolicy.FEATURE_BYOK) TextButton(onClick = onDownloads) { Text(uiText(UiR.string.ui_view_downloads_installation_progress_f57b2)) }

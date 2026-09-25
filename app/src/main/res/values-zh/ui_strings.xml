@@ -939,4 +939,22 @@
     <string name="benchmark_old_timing">旧版计时包含片段间的模型重置。请重新测试，以便公平比较速度。</string>
     <string name="benchmark_quick_set">快速 · 6 段</string>
     <string name="benchmark_long_clip_set">长片段 · 7 段</string>
+    <string name="ui_sign_language_7b123" formatted="false">"手语"</string>
+    <string name="ui_hand_models_installed_17d26" formatted="false">"手部模型已安装"</string>
+    <string name="ui_hand_models_are_missing_open_models_to_download_or_import_them_33e3d" formatted="false">"缺少手部模型。请打开“模型”页面下载或导入。"</string>
+    <string name="ui_1_s_classifier_installed_11bd8">"%1$s 分类器已安装"</string>
+    <string name="ui_1_s_classifier_not_installed_5e06f">"%1$s 分类器未安装"</string>
+    <string name="ui_without_the_trained_classifier_only_a_geometric_subset_of_asl_let_84210" formatted="false">"未安装训练好的分类器时，只能通过几何规则识别部分 ASL 字母。"</string>
+    <string name="ui_sign_overlay_is_running_6ee79" formatted="false">"手语悬浮窗正在运行"</string>
+    <string name="ui_start_fingerspelling_overlay_170e8" formatted="false">"启动手指拼字悬浮窗"</string>
+    <string name="ui_stop_overlay_67e13" formatted="false">"停止悬浮窗"</string>
+    <string name="ui_fingerspelling_language_c8f50" formatted="false">"手指拼字语言"</string>
+    <string name="ui_what_this_does_0da9d" formatted="false">"此功能说明"</string>
+    <string name="ui_hearth_watches_the_front_camera_and_types_the_letters_it_reads_ov_9e5ec" formatted="false">"Hearth 会观察前置摄像头，并在其他应用上方打出识别到的字母。识别完全在本机运行，不会上传任何视频。"</string>
+    <string name="ui_static_letters_only_motion_letters_such_as_j_and_z_in_asl_are_not_1d76b" formatted="false">"仅支持静态字母。ASL 中的动态字母（如 J 和 Z）暂不支持，光线较差时准确率会下降。重要内容请自行核对。"</string>
+    <string name="ui_details_and_model_sources_docs_sign_language_md_a6d81" formatted="false">"详细信息与模型来源：docs/sign-language.md"</string>
+    <string name="ui_android_requires_camera_access_to_read_fingerspelling_from_the_ca_3e33c" formatted="false">"Android 需要相机权限才能通过摄像头读取手指拼字。"</string>
+    <string name="ui_sign_language_draws_a_floating_letter_bubble_on_top_of_the_app_yo_00afa" formatted="false">"手语会在你正在观看的应用上方显示悬浮字母气泡。Android 需要为此进行一次性设置。"</string>
+    <string name="ui_stop_1_s_before_starting_sign_language_bbf83">"开始使用手语前，请先停止 %1$s。"</string>
+    <string name="ui_allow_camera_1dfb1" formatted="false">"允许使用相机"</string>
 </resources>
