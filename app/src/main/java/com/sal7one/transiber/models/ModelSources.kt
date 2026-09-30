@@ -22,9 +22,10 @@ internal object ModelSources {
         CaptionEngineChoice.OMNILINGUAL -> listOf(ModelSource("omnilingual-ctc-300m-v2-int8", "Omnilingual CTC · 300M v2 INT8", "https://huggingface.co/facebook/omniASR-CTC-300M",
             "https://github.com/k2-fsa/sherpa-onnx/releases/tag/asr-models", packaging + " Experimental, short utterance windows. Recognition has no language-forcing input; the source selection labels its output for translation.",
             sherpa + "sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-v2-int8-2026-02-05.tar.bz2", 292313120))
-        CaptionEngineChoice.PHONON -> listOf(ModelSource("phonon-2", "Phonon 2 · English · parakeet-tdt ONNX", "https://huggingface.co/FermionResearch/Phonon-2",
+        CaptionEngineChoice.PHONON -> listOf(ModelSource("phonon-2", "Phonon 2 · English · INT8", "https://huggingface.co/FermionResearch/Phonon-2",
             "https://github.com/fermionresearch/phonon",
-            "Fermion publishes packed five-value weights, not a runtime package. Convert them once with scripts/speech/phonon-2-export.py, then package with make-package.py and Import speech ZIP. English only, short utterance windows. The raw .bps archive is not importable."))
+            packaging + " Fermion's five-value weights converted to sherpa transducer ONNX (int8); English utterance windows. The raw .bps archive is not importable.",
+            "https://github.com/Sal7one/Hearth/releases/download/v0.23.0/phonon-2-hearth-int8.tar.bz2", 339918748))
         CaptionEngineChoice.MOONSHINE -> listOf("tiny" to 29858559L, "base" to 111266225L).map { (size, bytes) ->
             ModelSource("moonshine-$size-en-v2", "Moonshine · ${size.replaceFirstChar { it.uppercase() }} · English", "https://github.com/moonshine-ai/moonshine", "https://github.com/k2-fsa/sherpa-onnx/releases/tag/asr-models",
                 packaging + " English only, short audio segments. Runtime package: 27 February 2026. This adapter is not Moonshine’s newer streaming runtime.",

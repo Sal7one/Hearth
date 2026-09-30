@@ -38,10 +38,14 @@ never supply code. Therefore:
   `--verify` transcript parity step are the accuracy chain. No quality
   superiority over existing engines is claimed here.
 
-Because no converted package has been published yet, there is deliberately no
-`SpeechDownloads` entry: the engine is importable (like Vosk), and a pinned
-download button follows only after the export is run on the real artifact and
-reviewed.
+The conversion has been run on Fermion's real artifact. The pinned Hearth
+archive (`phonon-2-hearth-int8.tar.bz2`, 339,918,748 bytes, SHA-256
+`6b6cd464a3271f25f0bcbde0c12839516cd1e9b49f8292368da6a1931a2fa805`) carries
+`tokens.txt` plus int8 encoder/decoder/joiner graphs, and the model transcribed
+Fermion's bundled LibriSpeech sample exactly ("He could wait no longer.")
+through `hearth_phonon_backend_v1` on the host: 0.90 s cold load, 0.068 s
+inference for 2.09 s of audio. The archive must be attached to the `v0.23.0`
+release for the catalog download button to resolve.
 
 ## Evidence
 

@@ -104,30 +104,26 @@ Catalogued tar.bz2 downloads install automatically; arbitrary ONNX files still n
 
 ## Phonon 2 (English, parakeet-tdt)
 
-Fermion publishes Phonon 2 as packed five-value weights, not a runtime package,
-so this model arrives through a one-time host conversion — the phone runtime is
-the same shared speech ABI (sherpa nemo_transducer, TDT-aware greedy decoding)
-used by Moonshine/Qwen/Omnilingual. English is fixed in the picker and decoding
-is utterance-windowed, like those engines.
+Phonon 2 installs from the catalog like the other speech models. Fermion
+publishes only packed five-value weights, so Hearth ships a converted INT8
+sherpa transducer archive produced once by `scripts/speech/phonon-2-export.py`
+from the hash-verified Fermion artifact; the phone runtime is the same shared
+speech ABI (sherpa nemo_transducer, TDT-aware greedy decoding) used by
+Moonshine/Qwen/Omnilingual. English is fixed in the picker and decoding is
+utterance-windowed, like those engines. The `frontend` role holds the TDT
+joiner graph. Weights are CC-BY-4.0 (as is NVIDIA's parakeet-tdt-0.6b-v3 base).
 
-From a machine with `torch`, `transformers`, `onnx`, `onnxruntime`, `numpy`,
-`zstandard` and `soundfile` installed:
+The converter (host-only, needs `torch`, `transformers`, `onnx`,
+`onnxruntime`, `zstandard`, `soundfile`) can rebuild the package from Fermion's
+pin and verify transcripts against the dense reference:
 
 ```sh
 python3 scripts/speech/phonon-2-export.py /tmp/phonon2-export \
-  --verify /path/to/16khz-mono.wav   # optional transcript parity check
-python3 scripts/speech/make-package.py /tmp/phonon2-export --profile phonon-2 \
-  --role model=tokens.txt --role frontend=joiner.int8.onnx \
-  --role encoder=encoder.int8.onnx --role decoder=decoder.int8.onnx
-cd /tmp/phonon2-export
-zip -0 -r ../phonon-2.zip .
+  --verify /path/to/16khz-mono.wav
 ```
 
-Import under Models → Speech → Phonon 2 → Import model ZIP. The converter
-verifies Fermion's pinned archive and container hashes before decoding; weights
-are CC-BY-4.0 (as is NVIDIA's parakeet-tdt-0.6b-v3 base). The `frontend` role
-holds the TDT joiner graph in this package layout. No catalog download exists
-until the converted package is published and pinned in `SpeechDownloads`.
+A custom rebuild still packages and imports as a speech ZIP through
+`make-package.py --profile phonon-2`.
 
 ## Camera OCR
 

@@ -47,7 +47,7 @@ PINNED = {
     "archive_url": "https://huggingface.co/FermionResearch/Phonon-2/resolve/main/phonon-2.bps.tar.zst",
     "archive_bytes": 163515201,
     "archive_sha256": "98125795b6dda72f5c6eee9ba33d19815df65dcb18b50a357bf9f73c9935309e",
-    "container": "model_phonon2_c4c_int6/model.fermion",
+    "container": "model.fermion",
     "container_bytes": 177438361,
     "container_sha256": "4b6bfa3a12cc3c4e0a54f2ab3ec4ca7a842b09e5c7ecfc8e7ca0ac6cc8c11468",
     "base_repo": "nvidia/parakeet-tdt-0.6b-v3",
@@ -228,64 +228,87 @@ def load_reference_model(container: Path):
 
 
 def vocabulary_of(model) -> list[str]:
-    for holder in (getattr(model, "head", None), getattr(model, "joint", None)):
-        vocab = getattr(holder, "vocabulary", None)
-        if vocab:
-            return list(vocab)
-    raise RuntimeError("cannot locate joint vocabulary on the reference model")
+    """Tokenizer symbols indexed by id; the final id is the blank (config.blank_token_id)."""
+    from transformers import AutoTokenizer
+
+    blank = model.config.blank_token_id
+    tok = AutoTokenizer.from_pretrained(PINNED["base_repo"])
+    vocab = tok.get_vocab()
+    ids = sorted(vocab.values())
+    if ids != list(range(len(ids))) or ids[-1] != blank:
+        raise RuntimeError(f"tokenizer ids are not contiguous ending at blank {blank}")
+    symbols = [""] * len(vocab)
+    for symbol, i in vocab.items():
+        symbols[i] = symbol
+    return symbols  # symbols[blank] is the blank token; written as <blk> for sherpa
 
 
-class EncoderWrapper:
-    """sherpa nemo_transducer encoder IO: x [B,C,T] -> encoder_out [B,D,T'], lengths."""
+class EncoderExportModule:
+    """sherpa nemo_transducer encoder IO: x [B,C,T] -> encoder_out [B,D,T'], lengths.
+
+    Includes HF's encoder_projector (1024 -> 640) so the graph emits the joint's
+    encoder dim, exactly like NeMo's exported encoder. Submodules are registered
+    through __init__ so the tracer emits initializers (not folded Constants),
+    which is what lets the int8 quantizer stream the weights."""
 
     def __init__(self, model):
         import torch
 
-        self.encoder = model.audio_encoder
-        self.subsampling = 8  # parakeet-tdt-0.6b-v3: conv stride 8 (k2-fsa recipe)
-
         class Module(torch.nn.Module):
+            subsampling = 8  # parakeet-tdt-0.6b-v3: conv stride 8 (k2-fsa recipe)
+
+            def __init__(inner):
+                super().__init__()
+                inner.encoder = model.encoder
+                inner.projector = model.encoder_projector
+
             def forward(inner, x, x_lens):
                 features = x.transpose(1, 2)  # [B,T,C] for the HF encoder
                 out = inner.encoder(features).last_hidden_state
+                out = inner.projector(out)
                 t = out.shape[1]
-                lengths = ((x_lens.float() / self.subsampling) - 1).ceil().long().clamp(min=1, max=t)
+                lengths = ((x_lens.float() / inner.subsampling) - 1).ceil().long().clamp(min=1, max=t)
                 return out.transpose(1, 2), lengths  # [B,D,T']
 
         self.module = Module()
 
 
-class DecoderWrapper:
+class DecoderExportModule:
     """sherpa nemo_transducer decoder IO: targets, length, s0, s1 -> out, out_len, s0', s1'."""
 
     def __init__(self, model):
         import torch
 
-        decoder = model.decoder
-
         class Module(torch.nn.Module):
+            def __init__(inner):
+                super().__init__()
+                inner.decoder = model.decoder
+
             def forward(inner, targets, targets_length, s0, s1):
-                embedded = decoder.embedding(targets)
-                out, (h, c) = decoder.lstm(embedded, (s0, s1))
-                out = decoder.decoder_projector(out)
-                return out, targets_length, h, c
+                embedded = inner.decoder.embedding(targets.long())
+                out, (h, c) = inner.decoder.lstm(embedded, (s0, s1))
+                out = inner.decoder.decoder_projector(out)
+                # sherpa feeds the decoder output straight into the joiner as
+                # [B, hidden, U]; the prediction network computes [B, U, hidden].
+                return out.transpose(1, 2), targets_length, h, c
 
         self.module = Module()
 
 
-class JoinerWrapper:
+class JoinerExportModule:
     """sherpa nemo_transducer joiner IO: encoder_out [B,D,1], decoder_out [B,D,1] -> logits."""
 
     def __init__(self, model):
         import torch
 
-        joint = model.joint if hasattr(model, "joint") else model.head.joint
-
         class Module(torch.nn.Module):
+            def __init__(inner):
+                super().__init__()
+                inner.joint = model.joint
+
             def forward(inner, encoder_out, decoder_out):
-                logits = joint(decoder_hidden_states=decoder_out.transpose(1, 2),
-                               encoder_hidden_states=encoder_out.transpose(1, 2))
-                return logits
+                return inner.joint(decoder_hidden_states=decoder_out.transpose(1, 2),
+                                   encoder_hidden_states=encoder_out.transpose(1, 2))
 
         self.module = Module()
 
@@ -295,25 +318,37 @@ def export_onnx(model, outdir: Path):
     from onnxruntime.quantization import QuantType, quantize_dynamic
     import onnx
 
-    vocab = vocabulary_of(model)
-    durations = getattr(model.config, "durations", None)
+    # Some parakeet weights live outside registered submodules; the tracer then
+    # wants them as constants, which forbids gradients.
+    for p in model.parameters():
+        p.requires_grad_(False)
+
+    symbols = vocabulary_of(model)
+    blank = model.config.blank_token_id
+    durations = list(getattr(model.config, "durations", None) or [])
     if not durations:
         raise RuntimeError("reference config carries no TDT durations; refusing a non-TDT export")
+    # sherpa tokens.txt: joint vocabulary then <blk>; metadata vocab_size excludes the blank.
+    (outdir / "tokens.txt").write_text(
+        "".join(f"{s} {i}\n" for i, s in enumerate(symbols) if i != blank) + f"<blk> {blank}\n", encoding="utf-8")
 
-    (outdir / "tokens.txt").write_text("".join(f"{s} {i}\n" for i, s in enumerate(vocab)) + f"<blk> {len(vocab)}\n", encoding="utf-8")
-
-    def add_meta(filename: str, meta: dict[str, str]):
+    def add_meta(filename: str, meta: dict[str, str], external: bool = False):
         m = onnx.load(filename)
         while len(m.metadata_props):
             m.metadata_props.pop()
         for key, value in meta.items():
             e = m.metadata_props.add()
             e.key, e.value = key, str(value)
-        onnx.save(m, filename)
+        if external:
+            # The fp32 encoder exceeds the 2 GB protobuf limit; keep weights beside it.
+            onnx.save(m, filename, save_as_external_data=True, all_tensors_to_one_file=True,
+                      location=Path(filename).stem + ".weights")
+        else:
+            onnx.save(m, filename)
 
     meta = {
-        "vocab_size": len(vocab),
-        "normalize_type": "",
+        "vocab_size": blank,
+        "normalize_type": "per_feature",  # parakeet-tdt-0.6b-v3 preprocessor.cfg
         "pred_rnn_layers": model.config.num_decoder_layers,
         "pred_hidden": model.config.decoder_hidden_size,
         "subsampling_factor": 8,
@@ -328,41 +363,49 @@ def export_onnx(model, outdir: Path):
     with torch.no_grad():
         x = torch.randn(1, 128, 67, dtype=torch.float32)
         x_lens = torch.tensor([67], dtype=torch.int64)
-        torch.onnx.export(EncoderWrapper(model).module, (x, x_lens), str(outdir / "encoder.onnx"),
+        print("[export] tracing encoder...")
+        torch.onnx.export(EncoderExportModule(model).module, (x, x_lens), str(outdir / "encoder.onnx"),
                           input_names=["x", "x_lens"], output_names=["encoder_out", "encoder_out_lens"],
                           dynamic_axes={"x": {0: "B", 2: "T"}, "x_lens": {0: "B"},
                                         "encoder_out": {0: "B", 2: "T"}, "encoder_out_lens": {0: "B"}},
-                          opset_version=17, do_constant_folding=True)
+                          opset_version=17, do_constant_folding=True, dynamo=False)
 
         targets = torch.zeros(1, 1, dtype=torch.int32)
         t_lens = torch.ones(1, dtype=torch.int32)
         s0 = torch.zeros(model.config.num_decoder_layers, 1, model.config.decoder_hidden_size)
         s1 = torch.zeros_like(s0)
-        torch.onnx.export(DecoderWrapper(model).module, (targets, t_lens, s0, s1), str(outdir / "decoder.onnx"),
+        torch.onnx.export(DecoderExportModule(model).module, (targets, t_lens, s0, s1), str(outdir / "decoder.onnx"),
                           input_names=["targets", "targets_lens", "s0", "s1"],
                           output_names=["decoder_out", "decoder_out_lens", "s0_next", "s1_next"],
                           dynamic_axes={"targets": {0: "B", 1: "U"}, "targets_lens": {0: "B"},
-                                        "decoder_out": {0: "B", 1: "U"}},
-                          opset_version=17)
+                                        "decoder_out": {0: "B", 2: "U"}},
+                          opset_version=17, dynamo=False)
 
         enc = torch.randn(1, model.config.decoder_hidden_size, 1)
         dec = torch.randn(1, model.config.decoder_hidden_size, 1)
-        torch.onnx.export(JoinerWrapper(model).module, (enc, dec), str(outdir / "joiner.onnx"),
+        torch.onnx.export(JoinerExportModule(model).module, (enc, dec), str(outdir / "joiner.onnx"),
                           input_names=["encoder_out", "decoder_out"], output_names=["logits"],
                           dynamic_axes={"encoder_out": {0: "B", 2: "T"}, "decoder_out": {0: "B", 2: "U"}},
-                          opset_version=17)
+                          opset_version=17, dynamo=False)
 
     for name, weight_type in (("encoder", QuantType.QUInt8), ("decoder", QuantType.QInt8), ("joiner", QuantType.QInt8)):
-        quantize_dynamic(model_input=str(outdir / f"{name}.onnx"), model_output=str(outdir / f"{name}.int8.onnx"), weight_type=weight_type)
+        quantize_dynamic(model_input=str(outdir / f"{name}.onnx"),
+                         model_output=str(outdir / f"{name}.int8.onnx"), weight_type=weight_type)
+        print(f"[quant] {name}.int8.onnx: {(outdir / (name + '.int8.onnx')).stat().st_size} bytes")
     add_meta(str(outdir / "encoder.int8.onnx"), meta)
-    add_meta(str(outdir / "encoder.onnx"), meta)
+    # Keep only the installable artifacts; drop fp32 graphs and their scattered
+    # external constant files so a later make-package pass hashes a clean tree.
+    keep = {"encoder.int8.onnx", "decoder.int8.onnx", "joiner.int8.onnx", "tokens.txt"}
+    for stale in outdir.iterdir():
+        if stale.is_file() and stale.name not in keep:
+            stale.unlink()
 
-    expected = len(vocab) + 1 + len(durations)
+    expected = blank + 1 + len(durations)
     session = __import__("onnxruntime").InferenceSession(str(outdir / "joiner.int8.onnx"), providers=["CPUExecutionProvider"])
     actual = session.get_outputs()[0].shape[-1]
     if not isinstance(actual, int) or actual != expected:
-        raise RuntimeError(f"joiner output {actual} != tokens({len(vocab)}) + blank + durations({len(durations)})")
-    print(f"[4] exported encoder/decoder/joiner (+int8) and tokens.txt ({len(vocab)} symbols, {len(durations)} durations)")
+        raise RuntimeError(f"joiner output {actual} != tokens({blank + 1}) + durations({len(durations)})")
+    print(f"[4] exported encoder/decoder/joiner (+int8) and tokens.txt ({blank + 1} symbols incl <blk>, {len(durations)} durations)")
 
 
 # ---------------------------------------------------------------------------
@@ -438,14 +481,18 @@ def main():
     args = ap.parse_args()
 
     args.outdir.mkdir(parents=True, exist_ok=True)
+    # Cache (pinned archive + container) stays outside the package directory:
+    # make-package hashes every file under the directory it is given.
+    package = args.outdir / "package"
+    package.mkdir(exist_ok=True)
     container = obtain_container(args.archive, args.outdir)
     model, _cfg = load_reference_model(container)
-    export_onnx(model, args.outdir)
+    export_onnx(model, package)
     if args.verify:
-        verify(args.outdir, args.verify)
+        verify(package, args.verify)
     print(f"""
 Next: package the export for Hearth import
-  python3 scripts/speech/make-package.py {args.outdir} --profile phonon-2 \\
+  python3 scripts/speech/make-package.py {package} --profile phonon-2 \\
     --role model=tokens.txt --role frontend=joiner.int8.onnx \\
     --role encoder=encoder.int8.onnx --role decoder=decoder.int8.onnx
 Then Import speech ZIP (or publish the directory pinned and add it to SpeechDownloads).

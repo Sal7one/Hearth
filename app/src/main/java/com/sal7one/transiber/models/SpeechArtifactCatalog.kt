@@ -75,6 +75,7 @@ internal object SpeechArtifactCatalog {
             com.sal7one.common_jni.speech.SpeechProfile.MOONSHINE_BASE_EN -> ArtifactInfo("INT8", "sherpa-onnx/asr-models/2026-02-27", "2026-02-27", "MIT", "https://github.com/moonshine-ai/moonshine", "Moonshine Base · English · INT8")
             com.sal7one.common_jni.speech.SpeechProfile.QWEN3_ASR_0_6B -> ArtifactInfo("INT8", "sherpa-onnx/asr-models/2026-03-25", "2026-03-25", "Apache-2.0", "https://huggingface.co/Qwen/Qwen3-ASR-0.6B", "Qwen3-ASR 0.6B · INT8")
             com.sal7one.common_jni.speech.SpeechProfile.OMNILINGUAL_CTC_300M_V2 -> ArtifactInfo("INT8", "sherpa-onnx/asr-models/2026-02-05", "2026-02-05", "Apache-2.0", "https://huggingface.co/facebook/omniASR-CTC-300M", "Omnilingual CTC 300M v2 · INT8 · experimental")
+            com.sal7one.common_jni.speech.SpeechProfile.PHONON_2 -> ArtifactInfo("INT8", "FermionResearch/Phonon-2 bps sha256/98125795b6dda72f5c6eee9ba33d19815df65dcb18b50a357bf9f73c9935309e", "2026-09-25", "CC-BY-4.0", "https://huggingface.co/FermionResearch/Phonon-2", "Phonon 2 · English · INT8")
             com.sal7one.common_jni.speech.SpeechProfile.NEMOTRON_3_5_ASR_0_6B -> ArtifactInfo("Q8_0", "1c8deaecc64b91f034d73e08dd8b64625eb3395d", "2026-06-04", "OpenMDW-1.1", "https://huggingface.co/nvidia/nemotron-3.5-asr-streaming-0.6b", "Nemotron 3.5 ASR 0.6B · Q8_0")
             else -> error("No published artifact metadata for ${profile.id}")
         }

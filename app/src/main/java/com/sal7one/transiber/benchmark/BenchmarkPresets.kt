@@ -30,9 +30,9 @@ internal object BenchmarkPresets {
                 else -> listOf("omnilingual-ctc-300m-v2-int8", "nemotron-3.5-asr-0.6b")
             }
             BenchmarkPreset.BALANCED -> if (source == "ru") listOf("qwen3-asr-0.6b", "nemotron-3.5-asr-0.6b")
-                else listOf("nemotron-3.5-asr-0.6b", "qwen3-asr-0.6b", "moonshine-base-en-v2")
+                else listOf("nemotron-3.5-asr-0.6b", "qwen3-asr-0.6b", "phonon-2", "moonshine-base-en-v2")
             BenchmarkPreset.QUALITY -> if (source == "ru") listOf("nemotron-3.5-asr-0.6b", "qwen3-asr-0.6b")
-                else listOf("qwen3-asr-0.6b", "nemotron-3.5-asr-0.6b", "moonshine-base-en-v2")
+                else listOf("qwen3-asr-0.6b", "nemotron-3.5-asr-0.6b", "phonon-2", "moonshine-base-en-v2")
         }
         return ids.asSequence().mapNotNull(SpeechArtifactCatalog::find).firstOrNull { source in it.languages }
             ?.let { SuggestedModel(it.id, it.label, it.bytes, "speech") }

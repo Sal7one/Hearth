@@ -7,6 +7,7 @@
 - Add `scripts/speech/phonon-2-export.py` (host-only): verifies Fermion's pinned `phonon-2.bps.tar.zst`, decodes the five-value container to dense fp32 exactly, re-exports encoder/decoder/joiner ONNX int8 with sherpa metadata, and offers greedy TDT transcript verification. Packages import through `make-package.py --profile phonon-2`.
 - Wire the Phonon engine into captions setup, language pickers (fixed English), settings chips, artifact browser and localized labels (en/ar/zh). No download button until a converted package is published and pinned.
 - Extend speech package/manifest tests (Kotlin, C++ config, Python packager) with the phonon role layout: tokens, joiner, encoder, decoder.
+- Convert Fermion's real artifact end to end: the pinned Hearth archive (339,918,748 bytes, sha256 6b6cd464…) transcribes Fermion's LibriSpeech sample exactly through the new backend and now appears in the model catalog, model selector links and benchmark presets like every other speech model. Attach it to the v0.23.0 release to activate the download button.
 
 ## 0.22.16 — 2026-09-24 · screen reading speed
 
