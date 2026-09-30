@@ -15,16 +15,28 @@ struct Qwen {
     std::deque<Text> ready;
     Text current;
     std::string sourceCode, languageName;
-    explicit Qwen(const HearthSpeechConfig& c, bool moonshine = false, bool omnilingual = false)
+    explicit Qwen(const HearthSpeechConfig& c, bool moonshine = false, bool omnilingual = false, bool phonon = false)
         : segmenter(c.max_utterance_ms, c.silence_ms, c.silence_threshold_db),
-          sourceCode(moonshine ? "en" : c.language),
-          languageName(moonshine || omnilingual ? "" : qwenLanguageName(sourceCode)) {
+          sourceCode(moonshine || phonon ? "en" : c.language),
+          languageName(moonshine || omnilingual || phonon ? "" : qwenLanguageName(sourceCode)) {
         SherpaOnnxOfflineRecognizerConfig cfg{};
         cfg.feat_config.sample_rate = 16000;
         cfg.feat_config.feature_dim = omnilingual ? 80 : 128;
         cfg.model_config.num_threads = c.num_threads;
         cfg.model_config.provider = "cpu";
-        if (omnilingual) {
+        if (phonon) {
+            // Fermion Phonon-2 is a parakeet-tdt-0.6b-v3 derivative. Sherpa's
+            // NeMo transducer adapter auto-detects the TDT head from the
+            // export metadata and greedy-decodes (token, duration) pairs.
+            // The package carries tokens, encoder, decoder and joiner; the
+            // config's "frontend" path slot holds the joiner file.
+            cfg.model_config.model_type = "nemo_transducer";
+            cfg.model_config.tokens = c.model;
+            cfg.model_config.transducer.encoder = c.encoder;
+            cfg.model_config.transducer.decoder = c.decoder;
+            cfg.model_config.transducer.joiner = c.conv_frontend;
+            cfg.decoding_method = "greedy_search";
+        } else if (omnilingual) {
             // Upstream's CTC adapter has no language-conditioning input. The
             // caller's source code is a routing declaration, never a model hint.
             cfg.model_config.tokens = c.tokenizer;
@@ -73,6 +85,10 @@ int createOmnilingual(const HearthSpeechConfig* c, void** out) { return guarded(
     if (!out) throw std::invalid_argument("Missing output handle");
     *out = nullptr; requireConfig(c); *out = new Qwen(*c, false, true);
 }); }
+int createPhonon(const HearthSpeechConfig* c, void** out) { return guarded([&] {
+    if (!out) throw std::invalid_argument("Missing output handle");
+    *out = nullptr; requireConfig(c); *out = new Qwen(*c, false, false, true);
+}); }
 void destroy(void* p) { delete static_cast<Qwen*>(p); }
 int push(void* p, const float* a, size_t n) { return guarded([&] {
     auto& q = *static_cast<Qwen*>(p); q.segmenter.push(a, n, q.consumer());
@@ -89,6 +105,8 @@ const HearthSpeechBackend moonshineApi{HEARTH_SPEECH_ABI_VERSION, sizeof(HearthS
     createMoonshine, destroy, push, next, finish, reset, lastError};
 const HearthSpeechBackend omnilingualApi{HEARTH_SPEECH_ABI_VERSION, sizeof(HearthSpeechBackend), "omnilingual_ctc", HEARTH_QWEN_REVISION,
     createOmnilingual, destroy, push, next, finish, reset, lastError};
+const HearthSpeechBackend phononApi{HEARTH_SPEECH_ABI_VERSION, sizeof(HearthSpeechBackend), "phonon", HEARTH_QWEN_REVISION,
+    createPhonon, destroy, push, next, finish, reset, lastError};
 const HearthSpeechBackend api{HEARTH_SPEECH_ABI_VERSION, sizeof(HearthSpeechBackend), "qwen3_asr", HEARTH_QWEN_REVISION,
     create, destroy, push, next, finish, reset, lastError};
 }
@@ -97,3 +115,5 @@ extern "C" __attribute__((visibility("default"))) const HearthSpeechBackend* hea
 
 extern "C" __attribute__((visibility("default"))) const HearthSpeechBackend* hearth_moonshine_backend_v1() { return &stt::speech::moonshineApi; }
 extern "C" __attribute__((visibility("default"))) const HearthSpeechBackend* hearth_omnilingual_backend_v1() { return &stt::speech::omnilingualApi; }
+
+extern "C" __attribute__((visibility("default"))) const HearthSpeechBackend* hearth_phonon_backend_v1() { return &stt::speech::phononApi; }

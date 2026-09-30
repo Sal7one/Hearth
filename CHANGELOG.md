@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.23.0 — 2026-09-30 · Phonon 2 speech backend
+
+- Add the `phonon` speech backend and `phonon-2` profile: English-only parakeet-tdt recognition through sherpa's nemo_transducer adapter in `libhearth_qwen.so`, exported as a new `hearth_phonon_backend_v1` C ABI entry and routed by the speech session.
+- Rebuild and re-stage both pinned Android speech runtimes with verified exports, page alignment and dependency lists; record fresh source hashes in the runtime build metadata.
+- Add `scripts/speech/phonon-2-export.py` (host-only): verifies Fermion's pinned `phonon-2.bps.tar.zst`, decodes the five-value container to dense fp32 exactly, re-exports encoder/decoder/joiner ONNX int8 with sherpa metadata, and offers greedy TDT transcript verification. Packages import through `make-package.py --profile phonon-2`.
+- Wire the Phonon engine into captions setup, language pickers (fixed English), settings chips, artifact browser and localized labels (en/ar/zh). No download button until a converted package is published and pinned.
+- Extend speech package/manifest tests (Kotlin, C++ config, Python packager) with the phonon role layout: tokens, joiner, encoder, decoder.
+
+## 0.22.16 — 2026-09-24 · screen reading speed
+
 ## 0.22.16 — 2026-09-24 · screen reading speed
 
 - Group nearby OCR lines into one positioned translation block, reducing translation calls for multi-line bubbles while keeping separate bubbles apart.

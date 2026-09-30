@@ -2,7 +2,7 @@ package com.sal7one.common_jni.speech
 
 /** Runtime identity is separate from model format: arbitrary ONNX/GGUF files are not ASR models. */
 enum class SpeechBackend(val id: String) {
-    MOONSHINE("moonshine"), QWEN3_ASR("qwen3_asr"), OMNILINGUAL_CTC("omnilingual_ctc"), NEMOTRON_3_5("nemotron_3_5")
+    MOONSHINE("moonshine"), QWEN3_ASR("qwen3_asr"), OMNILINGUAL_CTC("omnilingual_ctc"), PHONON("phonon"), NEMOTRON_3_5("nemotron_3_5")
 }
 enum class SpeechStreamingKind { UTTERANCE_WINDOWED, CACHE_AWARE }
 enum class SpeechProfile(val id: String, val backend: SpeechBackend) {
@@ -11,6 +11,7 @@ enum class SpeechProfile(val id: String, val backend: SpeechBackend) {
     QWEN3_ASR_0_6B("qwen3-asr-0.6b", SpeechBackend.QWEN3_ASR),
     QWEN3_ASR_1_7B("qwen3-asr-1.7b", SpeechBackend.QWEN3_ASR),
     OMNILINGUAL_CTC_300M_V2("omnilingual-ctc-300m-v2-int8", SpeechBackend.OMNILINGUAL_CTC),
+    PHONON_2("phonon-2", SpeechBackend.PHONON),
     NEMOTRON_3_5_ASR_0_6B("nemotron-3.5-asr-0.6b", SpeechBackend.NEMOTRON_3_5);
 
     val capabilities: SpeechCapabilities get() = when (backend) {
@@ -23,6 +24,11 @@ enum class SpeechProfile(val id: String, val backend: SpeechBackend) {
         SpeechBackend.OMNILINGUAL_CTC -> SpeechCapabilities(
             streaming = SpeechStreamingKind.UTTERANCE_WINDOWED,
             partialResults = false, sourceLanguages = setOf("en", "ar", "ru", "zh"), sourceLanguageHints = emptySet(),
+            configurableThreads = true,
+        )
+        SpeechBackend.PHONON -> SpeechCapabilities(
+            streaming = SpeechStreamingKind.UTTERANCE_WINDOWED,
+            partialResults = false, sourceLanguages = setOf("en"), sourceLanguageHints = setOf("en"),
             configurableThreads = true,
         )
         SpeechBackend.NEMOTRON_3_5 -> SpeechCapabilities(

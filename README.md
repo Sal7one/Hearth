@@ -139,7 +139,7 @@ Android’s capture consent still applies; apps may block audio or screen captur
 
 | Task | Available options |
 | --- | --- |
-| **Local speech** | Whisper, Vosk, Qwen3-ASR, Nemotron, English Moonshine, and experimental Omnilingual CTC 300M. |
+| **Local speech** | Whisper, Vosk, Qwen3-ASR, Nemotron, English Moonshine, experimental Omnilingual CTC 300M, and English Phonon 2 (import package). |
 | **Local translation** | HY-MT1.5 / Hy-MT2, TranslateGemma 4B, compatible Marian language-pair bundles (including optional Russian/Chinese → English → Arabic routes), and ML Kit packs in the cloud-capable build. |
 | **Cloud speech** | Bring your own provider keys, including OpenAI, Soniox and ElevenLabs Scribe. Translation support depends on the connection. |
 | **Cloud text translation** | Shared translator choices include Google Cloud, Microsoft Azure, DeepL and LibreTranslate connections. |
@@ -151,7 +151,9 @@ captions. Whisper’s built-in translation targets English. Translator choices a
 remembered by feature group; **Use everywhere** explicitly applies one across Hearth.
 Keys are stored encrypted. [Translation routing](docs/translation-choices.md).
 Omnilingual CTC uses short utterance windows and does not support forced source
-language; its language choice declares the source for translation.
+language; its language choice declares the source for translation. Phonon 2 is an
+English-only parakeet-tdt package imported from a converted Fermion artifact.
+See [docs/native-speech-phonon-2026-09-30.md](docs/native-speech-phonon-2026-09-30.md).
 
 Use **Download & install** for catalogued models—no computer, export or re-import.
 Original downloads go to **Downloads/Hearth/models** (direct files to `files`), or

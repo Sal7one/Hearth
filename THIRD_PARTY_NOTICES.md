@@ -25,7 +25,8 @@ The Qwen/Nemotron build provenance and adapter hashes are in
 
 FFmpeg, x264/x265, OpenCV, LiteRT, media editing, ASL models and sample media
 are not part of this extraction. Model weights are not in this repository or APK.
-Qwen weights use their publisher's Apache-2.0 terms; Nemotron weights have their own
+Phonon 2 packages are user-converted from Fermion's pinned artifact; its weights are
+CC-BY-4.0 (as is NVIDIA's parakeet-tdt-0.6b-v3 base). Qwen weights use their publisher's Apache-2.0 terms; Nemotron weights have their own
 OpenMDW-1.1 terms. Imported Whisper/Vosk/Marian/voice models likewise retain their
 publisher's terms. Model source links are in docs/models.md.
 

@@ -861,6 +861,7 @@
     <string name="benchmark_source_sample">Source</string>
     <string name="model_marian_via_english_warning">Two models translate through English. This may change meaning; compare the final Arabic with other translators before using it for live captions.</string>
     <string name="model_omnilingual_language_note">Omnilingual CTC recognizes automatically. Selecting a spoken language labels captions for translation; it does not force the model. Auto stays CC-only when the source is unknown.</string>
+    <string name="model_phonon_language_note">Phonon 2 recognizes English only. No automatic language detection or override is needed.</string>
     <string name="benchmark_presets_title">Try a model pair</string>
     <string name="benchmark_picker_hint">Installed and downloadable model languages. A model may still need downloading; incompatible choices stay unavailable when testing.</string>
     <string name="benchmark_presets_hint">Speed, balance and quality are starting points, not winners. Test both stages on your phone to find what works for this language pair.</string>

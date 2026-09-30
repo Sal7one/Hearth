@@ -54,6 +54,17 @@ class PackageTest(unittest.TestCase):
             (root / "tokens.txt").unlink()
             with self.assertRaisesRegex(ValueError, "Missing assets"):
                 packager.create_manifest(root, "omnilingual-ctc-300m-v2-int8", roles)
+    def test_phonon_requires_tokens_joiner_encoder_and_decoder(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            for name in ("tokens.txt", "encoder.int8.onnx", "decoder.int8.onnx", "joiner.int8.onnx"):
+                (root / name).write_bytes(b"fixture")
+            roles = {"model": "tokens.txt", "frontend": "joiner.int8.onnx", "encoder": "encoder.int8.onnx", "decoder": "decoder.int8.onnx"}
+            result = packager.create_manifest(root, "phonon-2", roles)
+            self.assertEqual({entry["path"] for entry in result["files"]}, set(roles.values()))
+            (root / "encoder.int8.onnx").unlink()
+            with self.assertRaisesRegex(ValueError, "Missing assets"):
+                packager.create_manifest(root, "phonon-2", roles)
     def test_unknown_model_is_rejected(self):
         with tempfile.TemporaryDirectory() as d:
             with self.assertRaisesRegex(ValueError, "Unsupported"):

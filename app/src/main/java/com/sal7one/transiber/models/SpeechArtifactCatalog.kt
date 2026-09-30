@@ -35,6 +35,7 @@ internal data class SpeechArtifact(
             "moonshine" -> CaptionEngineChoice.MOONSHINE
             "qwen3-asr" -> CaptionEngineChoice.QWEN
             "omnilingual" -> CaptionEngineChoice.OMNILINGUAL
+            "phonon" -> CaptionEngineChoice.PHONON
             "nemotron" -> CaptionEngineChoice.NEMOTRON
             else -> error("Unknown speech artifact family: $family")
         }
@@ -66,6 +67,7 @@ internal object SpeechArtifactCatalog {
             com.sal7one.common_jni.speech.SpeechBackend.MOONSHINE -> "moonshine"
             com.sal7one.common_jni.speech.SpeechBackend.QWEN3_ASR -> "qwen3-asr"
             com.sal7one.common_jni.speech.SpeechBackend.OMNILINGUAL_CTC -> "omnilingual"
+            com.sal7one.common_jni.speech.SpeechBackend.PHONON -> "phonon"
             com.sal7one.common_jni.speech.SpeechBackend.NEMOTRON_3_5 -> "nemotron"
         }
         val info = when (profile) {

@@ -114,5 +114,13 @@ int main() {
     auto unsupportedSource = omni;
     unsupportedSource.replace(unsupportedSource.find("\"ar\""), 4, "\"he\"");
     fails([&] { SpeechConfig c(unsupportedSource); }, "Unsupported Omnilingual source declaration");
+    const std::string phonon = R"({"backend":"phonon","model":"tokens.txt","frontend":"joiner.int8.onnx","encoder":"encoder.int8.onnx","decoder":"decoder.int8.onnx","tokenizer":"","language":"auto","numThreads":4,"rightContext":3,"maxUtteranceMs":4000,"silenceMs":600,"silenceThresholdDb":-45})";
+    check(SpeechConfig(phonon).backend == "phonon");
+    auto missingJoiner = phonon;
+    missingJoiner.replace(missingJoiner.find("joiner.int8.onnx"), std::strlen("joiner.int8.onnx"), "");
+    fails([&] { SpeechConfig c(missingJoiner); }, "Phonon requires tokens, joiner, encoder and decoder");
+    auto nonEnglish = phonon;
+    nonEnglish.replace(nonEnglish.find("\"auto\""), 6, "\"ar\"");
+    fails([&] { SpeechConfig c(nonEnglish); }, "Phonon is English-only");
     std::cout << "speech_test: " << checks << " checks PASS\n";
 }

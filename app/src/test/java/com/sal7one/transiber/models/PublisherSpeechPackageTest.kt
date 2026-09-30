@@ -124,6 +124,24 @@ class PublisherSpeechPackageTest {
         rejected(archive(entries.dropLast(1)), source.copy(bytes = archive(entries.dropLast(1)).size.toLong(),
             sha256 = MessageDigest.getInstance("SHA-256").digest(archive(entries.dropLast(1))).joinToString("") { "%02x".format(it) }))
     }
+    @Test fun phononArchiveIsInstalledAsFourVerifiedTransducerAssets() {
+        val entries = listOf("fixture/tokens.txt" to "a 1\n".toByteArray(),
+            "fixture/encoder.int8.onnx" to "onnx-encoder-fixture".toByteArray(),
+            "fixture/decoder.int8.onnx" to "onnx-decoder-fixture".toByteArray(),
+            "fixture/joiner.int8.onnx" to "onnx-joiner-fixture".toByteArray())
+        val bytes = archive(entries)
+        val source = spec(bytes).copy(profile = SpeechProfile.PHONON_2,
+            roles = mapOf("model" to "tokens.txt", "frontend" to "joiner.int8.onnx", "encoder" to "encoder.int8.onnx", "decoder" to "decoder.int8.onnx"))
+        val root = Files.createTempDirectory("publisher-phonon").toFile()
+        try {
+            val installed = PublisherSpeechPackage.stage(bytes.inputStream(), source, root)
+            val verified = SpeechModelPackage.verify(installed)
+            assertEquals(SpeechProfile.PHONON_2, verified.profile)
+            assertEquals("a 1\n", installed.resolve("tokens.txt").readText())
+        } finally { root.deleteRecursively() }
+        rejected(archive(entries.dropLast(1)), source.copy(bytes = archive(entries.dropLast(1)).size.toLong(),
+            sha256 = MessageDigest.getInstance("SHA-256").digest(archive(entries.dropLast(1))).joinToString("") { "%02x".format(it) }))
+    }
     @Test fun rejectsOversizedRawArtifact() {
         val bytes = "GGUFtest".toByteArray()
         rejected(bytes, spec(bytes).copy(profile = SpeechProfile.NEMOTRON_3_5_ASR_0_6B, bytes = 4, archiveRoot = null, roles = mapOf("model" to "model.gguf")))

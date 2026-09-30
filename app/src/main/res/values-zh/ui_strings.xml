@@ -861,6 +861,7 @@
     <string name="benchmark_source_sample">源文</string>
     <string name="model_marian_via_english_warning">此路线使用两个模型，先译成英语再译成阿拉伯语，可能改变原意。用于实时字幕前请比较最终译文。</string>
     <string name="model_omnilingual_language_note">Omnilingual CTC 会自动识别语言。选择口语语言只用于标记字幕和路由翻译，不能强制模型。来源未知时，自动模式仅显示原文字幕。</string>
+    <string name="model_phonon_language_note">Phonon 2 仅识别英语。无需自动语言检测或手动覆盖。</string>
     <string name="benchmark_presets_title">试用模型组合</string>
     <string name="benchmark_picker_hint">已安装和可下载模型支持的语言。模型可能仍需下载；不兼容的选择不能用于测试。</string>
     <string name="benchmark_presets_hint">速度、均衡和质量只是起点，不是已测出的赢家。请在手机上分别测试语音和翻译。</string>

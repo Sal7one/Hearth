@@ -16,7 +16,8 @@ int main(int argc, char** argv) {
         std::string profile; j.find("profile")->asString(profile);
         const auto* roles = j.find("roles");
         stt::JsonValue::Object cfg{{"backend", profile.find("qwen") == 0 ? "qwen3_asr" :
-            profile.find("omnilingual") == 0 ? "omnilingual_ctc" : profile.find("moonshine") == 0 ? "moonshine" : "nemotron_3_5"}};
+            profile.find("omnilingual") == 0 ? "omnilingual_ctc" : profile.find("phonon") == 0 ? "phonon" :
+            profile.find("moonshine") == 0 ? "moonshine" : "nemotron_3_5"}};
         for (const char* name : {"model", "frontend", "encoder", "decoder", "tokenizer"}) {
             std::string path;
             if (const auto* value = roles->find(name)) { value->asString(path); path = root + "/" + path; }

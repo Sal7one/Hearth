@@ -102,6 +102,33 @@ and its own corresponding encoder/merged decoder; do not mix package versions.
 Catalogued tar.bz2 downloads install automatically; arbitrary ONNX files still need a supported adapter/profile. See the
 [contribution guide](model-contributing.md) for actual extension points.
 
+## Phonon 2 (English, parakeet-tdt)
+
+Fermion publishes Phonon 2 as packed five-value weights, not a runtime package,
+so this model arrives through a one-time host conversion — the phone runtime is
+the same shared speech ABI (sherpa nemo_transducer, TDT-aware greedy decoding)
+used by Moonshine/Qwen/Omnilingual. English is fixed in the picker and decoding
+is utterance-windowed, like those engines.
+
+From a machine with `torch`, `transformers`, `onnx`, `onnxruntime`, `numpy`,
+`zstandard` and `soundfile` installed:
+
+```sh
+python3 scripts/speech/phonon-2-export.py /tmp/phonon2-export \
+  --verify /path/to/16khz-mono.wav   # optional transcript parity check
+python3 scripts/speech/make-package.py /tmp/phonon2-export --profile phonon-2 \
+  --role model=tokens.txt --role frontend=joiner.int8.onnx \
+  --role encoder=encoder.int8.onnx --role decoder=decoder.int8.onnx
+cd /tmp/phonon2-export
+zip -0 -r ../phonon-2.zip .
+```
+
+Import under Models → Speech → Phonon 2 → Import model ZIP. The converter
+verifies Fermion's pinned archive and container hashes before decoding; weights
+are CC-BY-4.0 (as is NVIDIA's parakeet-tdt-0.6b-v3 base). The `frontend` role
+holds the TDT joiner graph in this package layout. No catalog download exists
+until the converted package is published and pinned in `SpeechDownloads`.
+
 ## Camera OCR
 
 PaddleOCR uses a separate image adapter with pinned detector/reader files, bundled

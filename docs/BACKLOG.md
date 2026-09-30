@@ -1,3 +1,13 @@
+## 0.23.0 — Phonon 2 local speech backend
+
+- [x] `phonon` backend + `phonon-2` profile with English-only capabilities, package roles (tokens/joiner/encoder/decoder) and strict manifest verification.
+- [x] Native adapter over the pinned sherpa revision (TDT-aware nemo_transducer path), exported from the same `libhearth_qwen.so`; Android arm64 rebuild verified (16 KiB alignment, four expected exports).
+- [x] Host conversion tooling from Fermion's pinned five-value artifact with per-stage hash verification and optional transcript parity check.
+- [x] Host smoke with real TDT weights: the pinned parakeet-tdt-0.6b-v3 int8 package (Phonon 2's base architecture) packaged as `phonon-2` and decoded correctly through the new backend entry on macOS.
+- [x] Engine wiring, localized labels and import path in all three app locales.
+- [ ] Run the export on the real artifact, validate transcripts on LibriSpeech samples, then publish the package and add the pinned `SpeechDownloads` entry (no fake download buttons until then).
+- [ ] Phone smoke: load the converted package on the S22 and record warm pass times; compare against Moonshine/Qwen utterance-window numbers.
+
 ## 0.22.1 — cloud selection and translator identity
 
 - [x] Trace local-model labels to a retained text-translation override after Cloud engine selection.

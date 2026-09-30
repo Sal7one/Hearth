@@ -108,6 +108,36 @@ class SpeechFoundationTest {
         File(root, "tokens.txt").delete()
         rejects("missing") { SpeechModelPackage.verify(root) }
     }
+    @Test fun phononPackageRequiresTransducerRolesAndStaysEnglishOnly() = withPackage { root ->
+        File(root, "tokens.txt").writeText("a 1\n")
+        File(root, "encoder.int8.onnx").writeBytes("onnx-encoder-fixture".toByteArray())
+        File(root, "decoder.int8.onnx").writeBytes("onnx-decoder-fixture".toByteArray())
+        File(root, "joiner.int8.onnx").writeBytes("onnx-joiner-fixture".toByteArray())
+        val entries = JSONArray()
+        listOf("tokens.txt", "encoder.int8.onnx", "decoder.int8.onnx", "joiner.int8.onnx").forEach { name ->
+            val file = File(root, name)
+            val sha = MessageDigest.getInstance("SHA-256").digest(file.readBytes()).joinToString("") { "%02x".format(it) }
+            entries.put(JSONObject().put("path", name).put("bytes", file.length()).put("sha256", sha))
+        }
+        File(root, "model.gguf").delete()
+        val manifest = JSONObject().put("schemaVersion", 1).put("profile", "phonon-2")
+            .put("roles", JSONObject().put("model", "tokens.txt").put("frontend", "joiner.int8.onnx")
+                .put("encoder", "encoder.int8.onnx").put("decoder", "decoder.int8.onnx"))
+            .put("files", entries)
+        File(root, SpeechModelPackage.MANIFEST).writeText(manifest.toString())
+        assertEquals(SpeechProfile.PHONON_2, SpeechModelPackage.verify(root).profile)
+        val capabilities = SpeechProfile.PHONON_2.capabilities
+        assertEquals(setOf("en"), capabilities.sourceLanguages)
+        assertTrue(capabilities.languages.all { it.canForce })
+        assertTrue(capabilities.configurableThreads)
+        assertFalse(capabilities.partialResults)
+        SpeechOptions(sourceLanguage = "en").validate(SpeechProfile.PHONON_2)
+        SpeechOptions().validate(SpeechProfile.PHONON_2)
+        rejects("source-language") { SpeechOptions(sourceLanguage = "ru").validate(SpeechProfile.PHONON_2) }
+        val missingDecoder = JSONObject(manifest.toString()).put("roles", JSONObject().put("model", "tokens.txt").put("frontend", "joiner.int8.onnx").put("encoder", "encoder.int8.onnx"))
+        File(root, SpeechModelPackage.MANIFEST).writeText(missingDecoder.toString())
+        rejects("roles") { SpeechModelPackage.verify(root) }
+    }
     @Test fun rejectsFractionalSchemaAndAssetSizes() = withPackage { root ->
         val j = manifest(root).put("schemaVersion", 1.5)
         File(root, SpeechModelPackage.MANIFEST).writeText(j.toString())

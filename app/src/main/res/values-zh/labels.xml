@@ -68,6 +68,8 @@
     <string name="label_captionenginechoice_omnilingual_label" formatted="false">"Omnilingual CTC 300M（本地）"</string>
     <string name="label_captionenginechoice_omnilingual_explanation" formatted="false">"实验性轻量多语言字幕，按短语分段输出。此模型不能强制识别语言；你选择的语言用于标记字幕并路由翻译。"</string>
     <string name="label_captionenginechoice_qwen_explanation" formatted="false">"使用 Qwen 模型包生成离线多语言字幕。最终文本按语段返回，自动检测语言，可选本地翻译桥接。"</string>
+    <string name="label_captionenginechoice_phonon_label" formatted="false">"Phonon 2（本地）"</string>
+    <string name="label_captionenginechoice_phonon_explanation" formatted="false">"由转换后的 Phonon 2 parakeet-tdt ONNX 包提供仅英语字幕，按短语分段输出。可选本地翻译桥接。"</string>
     <string name="label_captionenginechoice_nemotron_label" formatted="false">"Nemotron 3.5（本地）"</string>
     <string name="label_captionenginechoice_nemotron_explanation" formatted="false">"Nemotron GGUF 包提供离线多语言字幕和流式临时结果，可选本地翻译桥接。速度取决于设备。"</string>
     <string name="label_captionenginechoice_cloud_label" formatted="false">"云端 · 自带密钥"</string>
