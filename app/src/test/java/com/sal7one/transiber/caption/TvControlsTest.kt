@@ -23,10 +23,19 @@ class TvControlsTest {
 
     @Test fun remoteMediaKeysMapToServiceActions() {
         assertEquals(CaptionCaptureService.ACTION_PAUSE, TvControls.remoteKeyToAction(KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE))
-        assertEquals(CaptionCaptureService.ACTION_PAUSE, TvControls.remoteKeyToAction(KeyEvent.KEYCODE_MEDIA_PLAY))
+        assertEquals(CaptionCaptureService.ACTION_RESUME, TvControls.remoteKeyToAction(KeyEvent.KEYCODE_MEDIA_PLAY))
+        assertEquals(CaptionCaptureService.ACTION_PAUSE_ONLY, TvControls.remoteKeyToAction(KeyEvent.KEYCODE_MEDIA_PAUSE))
         assertEquals(CaptionCaptureService.ACTION_STOP, TvControls.remoteKeyToAction(KeyEvent.KEYCODE_MEDIA_STOP))
         assertNull(TvControls.remoteKeyToAction(KeyEvent.KEYCODE_DPAD_CENTER))
         assertNull(TvControls.remoteKeyToAction(KeyEvent.KEYCODE_VOLUME_UP))
         assertNull(TvControls.remoteKeyToAction(KeyEvent.KEYCODE_BACK))
+    }
+
+    @Test fun repeatedPlayAndPauseCommandsAreIdempotentWhileToggleStillToggles() {
+        for (paused in listOf(false, true)) {
+            assertFalse(TvControls.pausedForAction(CaptionCaptureService.ACTION_RESUME, paused))
+            assertTrue(TvControls.pausedForAction(CaptionCaptureService.ACTION_PAUSE_ONLY, paused))
+            assertEquals(!paused, TvControls.pausedForAction(CaptionCaptureService.ACTION_PAUSE, paused))
+        }
     }
 }

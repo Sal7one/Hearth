@@ -106,14 +106,11 @@ internal class VoicePlayer(context: Context,private val backendOverride: String?
         initSystem();withTimeout(15000){systemReady.await()};val tts=checkNotNull(system)
         val baseLanguage=Locale.forLanguageTag(language).language
         // Gender is best-effort here: Android voice names rarely carry it.
-        val candidates=if(gender==VoiceGender.ANY) tts.voices.orEmpty().filterNot {it.isNetworkConnectionRequired}
-            else tts.voices.orEmpty().filterNot {it.isNetworkConnectionRequired}.let { all ->
-                all.filter {VoiceGenderMapping.systemVoiceMatches(it.name,gender)}.ifEmpty { all }
-            }
+        val candidates=tts.voices.orEmpty().filterNot {it.isNetworkConnectionRequired}
         val saved=VoiceSettings.prefs(context).getString("system-voice-$baseLanguage",null)
-        val id=if(saved!=null) candidates.firstOrNull {it.name==saved && it.locale.language==baseLanguage}?.name
-            ?: error("Selected Android $language voice is unavailable. Choose a voice in Voice settings")
-        else OfflineVoicePolicy.select(candidates.map {OfflineVoicePolicy.Candidate(it.name,it.locale,false,it.quality)},Locale.forLanguageTag(language))
+        val id=OfflineVoicePolicy.selectForReadAloud(
+            candidates.map {OfflineVoicePolicy.Candidate(it.name,it.locale,false,it.quality)},
+            Locale.forLanguageTag(language), saved, gender)
         val voice=candidates.firstOrNull {it.name==id} ?: error("No installed offline $language voice. Install one in Android text-to-speech settings")
         check(tts.setVoice(voice)==TextToSpeech.SUCCESS){"Android could not select voice ${voice.name}"}
         check(tts.setSpeechRate(rate)==TextToSpeech.SUCCESS){"Android could not set speech speed"}
@@ -128,9 +125,10 @@ internal class VoicePlayer(context: Context,private val backendOverride: String?
         val baseLanguage=Locale.forLanguageTag(request.language).language
         require(baseLanguage in VoiceCatalog.languages){"Supertonic 3 does not support ${request.language}. Choose an installed Android voice or a compatible voice server"}
         val models=VoiceModels(File(context.filesDir,"voice-models"))
+        val voice=VoiceGenderMapping.supertonicVoice(choice.voice,request.gender)
         try {
             val job=currentCoroutineContext()
-            val data=withContext(Dispatchers.IO){models.verify(choice.voice){job.ensureActive()};models.indexer() to models.style(choice.voice)}
+            val data=withContext(Dispatchers.IO){models.verify(voice){job.ensureActive()};models.indexer() to models.style(voice)}
             withContext(Dispatchers.IO+NonCancellable){model=models.open()}
             currentCoroutineContext().ensureActive()
             for(part in VoiceText.chunks(request.text)) {

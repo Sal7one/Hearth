@@ -5,6 +5,24 @@ import org.junit.Test
 import java.util.Locale
 
 class OfflineVoicePolicyTest {
+    @Test fun genderPreferenceOnlyConsidersTheRequestedLanguageAndFallsBackToSavedVoice() {
+        val voices = listOf(voice("english-female", "en-US"), voice("arabic-local", "ar-SA"))
+        assertEquals("arabic-local", OfflineVoicePolicy.selectForReadAloud(voices, Locale.forLanguageTag("ar"),
+            "arabic-local", VoiceGender.FEMALE))
+    }
+
+    @Test fun explicitGenderCanSelectAnotherInstalledVoiceWithoutClaimingSavedVoiceIsMissing() {
+        val voices = listOf(voice("english-male", "en-US"), voice("english-female", "en-US"))
+        assertEquals("english-female", OfflineVoicePolicy.selectForReadAloud(voices, Locale.US,
+            "english-male", VoiceGender.FEMALE))
+        assertEquals("english-male", OfflineVoicePolicy.selectForReadAloud(voices, Locale.US,
+            "english-male", VoiceGender.ANY))
+    }
+
+    @Test(expected = IllegalStateException::class) fun actuallyMissingSavedVoiceStillFails() {
+        OfflineVoicePolicy.selectForReadAloud(listOf(voice("other", "en-US")), Locale.US, "missing", VoiceGender.ANY)
+    }
+
     private fun voice(id: String, tag: String, network: Boolean = false, quality: Int = 100) =
         OfflineVoicePolicy.Candidate(id, Locale.forLanguageTag(tag), network, quality)
     @Test fun refusesNetworkAndWrongLanguageFallbacks() {

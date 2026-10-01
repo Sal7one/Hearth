@@ -5,8 +5,48 @@ import androidx.datastore.preferences.core.mutablePreferencesOf
 import androidx.datastore.preferences.core.stringPreferencesKey
 import org.junit.Assert.*
 import org.junit.Test
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.take
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.runTest
 
 class OverlayOrientationTest {
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    @Test fun repeatedRotationNotificationsEmitWithoutASettingsWrite() = runTest {
+        val events = mutableListOf<Long>()
+        val collector = launch(UnconfinedTestDispatcher(testScheduler)) { CaptionConfigStore.rotation.take(3).toList(events) }
+        CaptionConfigStore.onOrientationChanged(android.content.res.Configuration.ORIENTATION_LANDSCAPE)
+        CaptionConfigStore.onOrientationChanged(android.content.res.Configuration.ORIENTATION_PORTRAIT)
+        collector.join()
+        assertEquals(listOf(events.first(), events.first() + 1, events.first() + 2), events)
+    }
+
+    @Test fun rotationSwapsGeometryWhilePreservingPauseAndOpenControls() {
+        val live = CaptionOverlayConfig(paused = true, showSettings = true, tapThrough = true,
+            speakCaptions = true, speakerVolume = 25, xOffsetPx = 99)
+        val landscape = CaptionConfigStore.readFrom(prefs(), OverlayOrientation.LANDSCAPE)
+        val rotated = live.withStoredGeometry(landscape)
+        assertEquals(40, rotated.widthPercent)
+        assertEquals(60, rotated.maxHeightPercent)
+        assertEquals(0, rotated.xOffsetPx)
+        assertTrue(rotated.paused && rotated.showSettings && rotated.tapThrough && rotated.speakCaptions)
+        assertEquals(25, rotated.speakerVolume)
+    }
+
+    @Test fun savedReadAloudChangesApplyWithoutResettingSessionControls() {
+        val live = CaptionOverlayConfig(source = CaptionSource.MIC, paused = true, showSettings = true,
+            tapThrough = true, speakCaptions = true)
+        val stored = CaptionOverlayConfig(source = CaptionSource.PLAYBACK_CAPTURE, speakCaptions = false,
+            speakerGender = SpeakerGender.FEMALE, speakerVolume = 30)
+        val next = stored.withLiveOverlayState(live, CaptionSource.MIC)
+        assertFalse(next.speakCaptions)
+        assertEquals(30, next.speakerVolume)
+        assertEquals(SpeakerGender.FEMALE, next.speakerGender)
+        assertEquals(CaptionSource.MIC, next.source)
+        assertTrue(next.paused && next.showSettings && next.tapThrough)
+    }
+
     private fun prefs(vararg pairs: Pair<String, Any>) = mutablePreferencesOf(
         *pairs.map { (k, v) ->
             when (v) {

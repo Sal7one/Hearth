@@ -9,6 +9,7 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.update
 
 /**
  * What the caption engine does with recognized speech.
@@ -271,9 +272,9 @@ object CaptionConfigStore {
      * freshly collected screen always reads its current orientation here, so
      * a stale signal can never redirect someone's edits to the wrong set.
      */
-    private val rotation = kotlinx.coroutines.flow.MutableStateFlow(Unit)
+    internal val rotation = kotlinx.coroutines.flow.MutableStateFlow(0L)
     fun onOrientationChanged(@Suppress("UNUSED_PARAMETER") configurationOrientation: Int) {
-        rotation.value = Unit
+        rotation.update { it + 1L }
     }
 
     fun config(context: Context): Flow<CaptionOverlayConfig> =

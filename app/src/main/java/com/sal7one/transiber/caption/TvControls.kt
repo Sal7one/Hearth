@@ -30,8 +30,17 @@ object TvControls {
 
     /** Remote media key → service action, shared by the activity and the media session. */
     fun remoteKeyToAction(keyCode: Int): String? = when (keyCode) {
-        android.view.KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE, android.view.KeyEvent.KEYCODE_MEDIA_PLAY -> CaptionCaptureService.ACTION_PAUSE
+        android.view.KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE -> CaptionCaptureService.ACTION_PAUSE
+        android.view.KeyEvent.KEYCODE_MEDIA_PLAY -> CaptionCaptureService.ACTION_RESUME
+        android.view.KeyEvent.KEYCODE_MEDIA_PAUSE -> CaptionCaptureService.ACTION_PAUSE_ONLY
         android.view.KeyEvent.KEYCODE_MEDIA_STOP -> CaptionCaptureService.ACTION_STOP
         else -> null
+    }
+
+    internal fun pausedForAction(action: String, current: Boolean): Boolean = when (action) {
+        CaptionCaptureService.ACTION_RESUME -> false
+        CaptionCaptureService.ACTION_PAUSE_ONLY -> true
+        CaptionCaptureService.ACTION_PAUSE -> !current
+        else -> current
     }
 }

@@ -26,6 +26,7 @@ class SpeakerSettingsTest {
         assertEquals(40, out[intPreferencesKey("speaker_volume_v1")])
 
         val legacy = CaptionConfigStore.readFrom(mutablePreferencesOf())
+        assertFalse("read aloud is opt-in", legacy.speakCaptions)
         assertEquals(SpeakerGender.ANY, legacy.speakerGender)
         assertEquals(100, legacy.speakerVolume)
 

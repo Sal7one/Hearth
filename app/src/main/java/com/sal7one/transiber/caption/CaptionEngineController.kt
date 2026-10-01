@@ -429,6 +429,7 @@ class CaptionEngineController(
         if (_state.value.status == Status.ERROR) return
         val previous = currentConfig
         currentConfig = config
+        if (!config.speakCaptions || previous.speakerChoice != config.speakerChoice) releaseSpeaker()
         val localOnlyChange = previous.effectiveEngine.speechBackend != null &&
             previous.speechSelectionRevision == config.speechSelectionRevision &&
             previous.effectiveEngine == config.effectiveEngine && previous.modelId == config.modelId &&
@@ -1155,7 +1156,9 @@ class CaptionEngineController(
 
     private fun speakLine(config: CaptionOverlayConfig, text: String, detectedLanguage: String? = null) {
         if (!config.speakCaptions || text.isBlank()) return
+        val generation = sessionGeneration
         scope.launch(Dispatchers.Main.immediate) {
+            if (generation != sessionGeneration || !currentConfig.speakCaptions || currentConfig.paused || stopping) return@launch
             val choice = config.speakerChoice
             if (!CaptionSpeakerFactory.isAvailable(context, choice)) {
                 _state.update {

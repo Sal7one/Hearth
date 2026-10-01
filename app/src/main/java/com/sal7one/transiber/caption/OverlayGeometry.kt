@@ -2,6 +2,19 @@ package com.sal7one.transiber.caption
 
 import android.content.res.Configuration
 
+/** Stored options can change live; capture source, pause and open controls belong to the session. */
+internal fun CaptionOverlayConfig.withLiveOverlayState(live: CaptionOverlayConfig, source: CaptionSource?) = copy(
+    source = source ?: live.source, paused = live.paused, tapThrough = live.tapThrough,
+    showSettings = live.showSettings, languagePicker = live.languagePicker,
+)
+
+/** Rotation replaces persisted geometry without resetting the live session or controls. */
+internal fun CaptionOverlayConfig.withStoredGeometry(stored: CaptionOverlayConfig) = copy(
+    widthPercent = stored.widthPercent, maxHeightPercent = stored.maxHeightPercent,
+    bubbleHeightDp = stored.bubbleHeightDp, anchor = stored.anchor,
+    xOffsetPx = stored.xOffsetPx, yOffsetPx = stored.yOffsetPx,
+)
+
 /** Geometry is remembered per orientation: a bubble tuned for a fullscreen video is
  *  not the bubble you want over a portrait feed, and vice versa. */
 internal enum class OverlayOrientation { PORTRAIT, LANDSCAPE;

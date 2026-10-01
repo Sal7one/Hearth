@@ -512,3 +512,16 @@ separate balloons. `ReadingMotionSampler` is consumed by the screen-reading
 service's periodic scroll check; it samples a padded RGBA capture plane into
 the existing 64×128 motion grid without allocating a full-size Bitmap.
 `ReadingMotionTest` covers channel order, row padding and invalid stride.
+
+`CaptionSpeechQueue` is the cloud caption speaker's bounded sequential work queue.
+It admits three waiting requests, preserves each request's voice/volume, and uses
+a generation boundary to reject stale errors after Stop. Cancellation reaches
+the HTTP connection and cancellable Android playback in the production consumer.
+`CaptionSpeechQueueTest` covers capacity, cancellation before and during work,
+restart after Stop, actual failures, close and per-request ordering. It is an app
+adapter utility, not a new native speech API.
+
+`OfflineVoicePolicy.selectForReadAloud` filters by language and offline capability
+before applying a gender-name preference. It preserves an available saved voice
+when no matching gender is advertised, but still rejects a genuinely missing
+selection. `OfflineVoicePolicyTest` covers those failure and fallback cases.

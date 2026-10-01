@@ -38,6 +38,7 @@ class CaptionOverlayController(
     private var setupSuppressed = false
     private var destroyed = false
     private var sessionSource: CaptionSource? = null
+    private var settingsJob: Job? = null
 
     fun show(sourceForSession: CaptionSource? = null) {
         scope.launch {
@@ -71,6 +72,17 @@ class CaptionOverlayController(
                 wm.addView(created, layoutParams())
                 applyWindowChanges()
                 created.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ -> applyWindowChanges() }
+                settingsJob = scope.launch {
+                    CaptionConfigStore.config(context).collect { stored ->
+                        val live = _config.value
+                        val next = stored.withLiveOverlayState(live, sessionSource)
+                        if (next != live) {
+                            _config.value = next
+                            applyWindowChanges()
+                            engineController.updateRuntimeConfig(next)
+                        }
+                    }
+                }
 
             } catch (e: Exception) {
                 engineController.reportError("Overlay: "+(e.message ?: e.javaClass.simpleName))
@@ -81,6 +93,7 @@ class CaptionOverlayController(
 
     fun hide() {
         scope.launch {
+            settingsJob?.cancel(); settingsJob = null
             removeRecoveryHandle()
             view?.let { runCatching { wm.removeViewImmediate(it) }; it.disposeComposition() }
             view = null
@@ -123,10 +136,10 @@ class CaptionOverlayController(
         applyWindowChanges()
     }
 
-    fun centerOverlay() {
+    fun centerOverlay(showSettings: Boolean = false) {
         hidden = false
         view?.visibility = if (setupSuppressed) android.view.View.INVISIBLE else android.view.View.VISIBLE
-        updateConfig { it.copy(anchor = CaptionAnchor.CENTER, xOffsetPx = 0, yOffsetPx = 0, tapThrough = false, showSettings = false, languagePicker = null) }
+        updateConfig { it.copy(anchor = CaptionAnchor.CENTER, xOffsetPx = 0, yOffsetPx = 0, tapThrough = false, showSettings = showSettings, languagePicker = null) }
     }
 
     fun toggleVisibility() {
@@ -135,7 +148,11 @@ class CaptionOverlayController(
         applyWindowChanges()
     }
 
-    fun refreshBounds() { scope.launch { applyWindowChanges(normalize = true) } }
+    fun refreshBounds() { scope.launch {
+        val stored = CaptionConfigStore.config(context).first()
+        _config.value = _config.value.withStoredGeometry(stored)
+        applyWindowChanges(normalize = true)
+    } }
 
     private fun viewport(): OverlayViewport {
         val margin = (8 * context.resources.displayMetrics.density).toInt()

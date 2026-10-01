@@ -27,7 +27,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.sal7one.common_jni.speech.SpeechProfile
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 /**
@@ -45,8 +44,10 @@ internal fun SpeechWindowTuningSection(profile: SpeechProfile, onApplied: () -> 
     var stored by remember(profile.id) { mutableStateOf<SpeechTuning?>(null) }
     var ready by remember(profile.id) { mutableStateOf(false) }
     LaunchedEffect(profile.id) {
-        stored = SpeechTuningStore.tuning(context, profile.id).first()
-        ready = true
+        SpeechTuningStore.tuning(context, profile.id).collect {
+            stored = it
+            ready = true
+        }
     }
     if (!ready) return
     val current = stored ?: SpeechTuning.STANDARD
@@ -58,6 +59,7 @@ internal fun SpeechWindowTuningSection(profile: SpeechProfile, onApplied: () -> 
         scope.launch {
             if (tuning == null || tuning.isStandard) SpeechTuningStore.clear(context, profile.id)
             else SpeechTuningStore.save(context, profile.id, tuning)
+            stored = tuning?.takeUnless { it.isStandard }
             onApplied()
         }
     }
@@ -75,7 +77,7 @@ internal fun SpeechWindowTuningSection(profile: SpeechProfile, onApplied: () -> 
         ExposedDropdownMenuBox(expanded = menuOpen, onExpandedChange = { menuOpen = it }) {
             OutlinedTextField(
                 readOnly = true,
-                value = if (!editingCustom) uiText(presetLabels.first { it.first.matches(current) }.second)
+                value = if (!editingCustom && current.preset != null) uiText(presetLabels.first { it.first.matches(current) }.second)
                 else uiText(UiR.string.ui_tuning_custom_4b71a),
                 onValueChange = {},
                 label = { Text(uiText(UiR.string.ui_tuning_preset_label_6d94e)) },

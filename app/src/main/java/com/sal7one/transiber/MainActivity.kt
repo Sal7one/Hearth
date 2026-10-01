@@ -73,7 +73,9 @@ class MainActivity : AppCompatActivity() {
   if (keyCode == android.view.KeyEvent.KEYCODE_BACK && event != null) {
    event.startTracking(); return super.onKeyDown(keyCode, event)
   }
-  com.sal7one.transiber.caption.TvControls.remoteKeyToAction(keyCode)?.let { action ->
+  com.sal7one.transiber.caption.TvControls.remoteKeyToAction(keyCode)?.takeIf {
+   com.sal7one.transiber.caption.TvControls.isTvDevice(this) && com.sal7one.transiber.caption.CaptionCaptureService.running.value
+  }?.let { action ->
    startService(android.content.Intent(this, com.sal7one.transiber.caption.CaptionCaptureService::class.java).setAction(action))
    return true
   }
@@ -81,7 +83,7 @@ class MainActivity : AppCompatActivity() {
  }
 
  override fun onKeyLongPress(keyCode: Int, event: android.view.KeyEvent?): Boolean {
-  if (keyCode == android.view.KeyEvent.KEYCODE_BACK) {
+  if (keyCode == android.view.KeyEvent.KEYCODE_BACK && com.sal7one.transiber.caption.TvControls.isTvDevice(this)) {
    com.sal7one.transiber.caption.CaptionCaptureService.stopCaptions(this)
    return true
   }

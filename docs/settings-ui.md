@@ -75,7 +75,8 @@ run at the standard windows.
 
 Settings → Speech → Local → Read captions aloud speaks each finalized caption
 line straight after recognition (captions mode: the recognized language;
-translate mode: the translation once it lands). The engine picker matches the
+translate mode: the translation once it lands). It is off by default and is
+independent of recognizing or displaying captions. The engine picker matches the
 overlay's — Device voice (Android TTS), Supertonic 3 on-device, shared voice
 settings, a self-hosted voice server, or the BYOK cloud voice (play build).
 Voice gender (Follow voice choice / Female / Male) is exact on Supertonic
@@ -84,6 +85,13 @@ best-effort on Android system voices, and ignored where a server does not
 expose it. Loudness (0–100%) scales the utterance volume on every backend.
 Both options also live in the overlay's settings sheet for live changes; the
 speaker applies them on the next spoken line.
+
+Turning read aloud off, silencing it, or stopping captions cancels queued voice
+work. Cloud voice work is sequential and bounded to three waiting lines; each
+line retains its own voice and volume. Provider and playback errors are shown
+instead of silently losing a line. Synthesized cloud speech uses a non-media
+audio usage so it is excluded from Hearth's playback capture. Microphone input
+can still hear a device's physical speaker; use headphones when needed.
 
 ## Overlay geometry per orientation
 
@@ -97,11 +105,16 @@ Everything else (theme, engines, languages, TTS) remains shared.
 
 ## Android TV and remotes
 
-Hearth installs on TV hardware. Remotes without touch control captions through
-four paths: media play/pause toggles pause, media stop ends captions and any
-spoken audio, hold BACK kills everything, and the MediaStyle notification row
-carries Pause / Silence voice / Controls / Stop (selecting Controls opens the
-overlay settings sheet, which becomes D-pad focusable on TV while open and
-returns to non-focusable when closed so keys stay with the video app). All
-regular screens, settings and sheets are traversable with the D-pad through
-Compose focus.
+TV support is experimental. Optional TV features allow installation without
+requiring a touchscreen; a TV launcher entry/banner and real-hardware validation
+remain pending. On TV, media Play resumes captions, Pause pauses them,
+Play/Pause toggles them, and Stop ends captions and spoken audio. Holding BACK
+in Hearth's TV activity stops captions.
+
+The notification places Pause / Controls / Stop first, with Silence voice when
+read aloud is enabled. Controls opens the overlay settings sheet, which becomes
+D-pad focusable on TV while open and returns to non-focusable when closed.
+TV captions register a media session for remote commands; phone captions leave
+media-key ownership with the underlying video or music app. Compose supplies
+focus navigation, but controller traversal of every screen is still unverified
+on real TV hardware.

@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.23.1 — 2026-10-01 · optional read aloud and overlay controls
+
+- Add optional read-aloud settings after speech recognition, with engine, gender preference and volume controls; read aloud stays off by default. Fix Supertonic actually applying the requested voice and system voices falling back within the requested language when gender names are unavailable.
+- Bound cloud speech to three waiting lines, retain voice/volume per request, cancel pending work on Stop or disabling read aloud, and surface actual provider/playback failures. Keep synthesized cloud speech out of playback capture.
+- Include Standard, Responsive, Eager and custom per-model caption windows. Keep the picker in sync after saving or resetting custom settings.
+- Restore the correct saved overlay geometry on rotation and preserve live pause/settings state. Apply saved caption settings to an already running overlay.
+- Include experimental Android TV remote controls. Fix Controls staying open and explicit Play/Pause commands being idempotent; phone captions leave media-key ownership with the underlying player. Stop remains among the first notification actions. Real TV validation and a TV launcher listing remain pending.
+- Keep Phonon 2's existing pinned model download on v0.23.0 unchanged. QA APKs use version code 74.
+
 ## 0.23.0 — 2026-09-30 · Phonon 2 speech backend
 
 - Add the `phonon` speech backend and `phonon-2` profile: English-only parakeet-tdt recognition through sherpa's nemo_transducer adapter in `libhearth_qwen.so`, exported as a new `hearth_phonon_backend_v1` C ABI entry and routed by the speech session.
@@ -7,13 +16,7 @@
 - Add `scripts/speech/phonon-2-export.py` (host-only): verifies Fermion's pinned `phonon-2.bps.tar.zst`, decodes the five-value container to dense fp32 exactly, re-exports encoder/decoder/joiner ONNX int8 with sherpa metadata, and offers greedy TDT transcript verification. Packages import through `make-package.py --profile phonon-2`.
 - Wire the Phonon engine into captions setup, language pickers (fixed English), settings chips, artifact browser and localized labels (en/ar/zh). No download button until a converted package is published and pinned.
 - Extend speech package/manifest tests (Kotlin, C++ config, Python packager) with the phonon role layout: tokens, joiner, encoder, decoder.
-- Android TV and remote support: the app installs on TV hardware (tv/leanback features optional, touchscreen not required) and every control path works without touch. Remote media play/pause toggles capture pause, media stop kills captions and spoken audio, and holding BACK stops everything. A MediaSession plus MediaStyle notification puts Pause, Silence voice (stops TTS), Controls and Stop in the system media row remotes navigate; the overlay's settings sheet becomes D-pad focusable on TV while open. Standard screens and sheets rely on Compose focus for D-pad traversal.
-- Orientation-aware overlay geometry: width, height cap, bubble height, anchor and drag offsets are remembered separately for portrait and landscape across every overlay (captions, reading bubble, quick translate). Portrait defaults are 60% width / 40% height, landscape 40% / 60%; existing installs keep their tuned portrait values (legacy storage migrates automatically) while landscape starts from its own default, and rotating swaps sets live. Non-geometry settings stay shared; the width floor widens to 40% for the landscape default.
-- Read-aloud TTS layer surfaced in Settings → Speech: speak finalized captions immediately after recognition with engine choice (device voice, on-device Supertonic, shared/self-hosted, BYOK cloud), voice gender preference (exact on Supertonic and cloud voices, best-effort on Android system voices) and a 0–100% loudness control applied per backend (utterance volume, track gain, player gain). Gender and loudness are also adjustable live from the overlay settings sheet; localized in all three app locales.
-- Per-model caption delivery tuning: preset Responsiveness dropdown (Standard marked as default, Responsive, Eager) with custom utterance-window/silence sliders, persisted per speech profile, reset to default, applied on session restart. Localized in all three app locales; shown for utterance-windowed engines.
-- Convert Fermion's real artifact end to end: the pinned Hearth archive (339,918,748 bytes, sha256 6b6cd464…) transcribes Fermion's LibriSpeech sample exactly through the new backend and now appears in the model catalog, model selector links and benchmark presets like every other speech model. Attach it to the v0.23.0 release to activate the download button.
-
-## 0.22.16 — 2026-09-24 · screen reading speed
+- Convert Fermion's real artifact end to end: the pinned Hearth archive (339,918,748 bytes, sha256 6b6cd464…) transcribes Fermion's LibriSpeech sample exactly through the new backend and now appears in the model catalog, model selector links and benchmark presets like every other speech model. The pinned archive is published on the v0.23.0 release.
 
 ## 0.22.16 — 2026-09-24 · screen reading speed
 
