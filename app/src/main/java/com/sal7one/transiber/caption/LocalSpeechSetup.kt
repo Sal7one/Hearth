@@ -23,6 +23,7 @@ internal fun LocalSpeechSetup(
     config: CaptionOverlayConfig,
     update: ((CaptionOverlayConfig) -> CaptionOverlayConfig) -> Unit,
     includeTranslation: Boolean = true,
+    onTuningApplied: () -> Unit = {},
     onModelsChanged: (List<LocalSpeechModel>) -> Unit,
 ) {
     val uiText = rememberUiText()
@@ -124,6 +125,10 @@ internal fun LocalSpeechSetup(
             else if (backend == com.sal7one.common_jni.speech.SpeechBackend.OMNILINGUAL_CTC) uiText(UiR.string.model_omnilingual_language_note)
             else if (backend == com.sal7one.common_jni.speech.SpeechBackend.PHONON) uiText(UiR.string.model_phonon_language_note)
             else uiText(UiR.string.ui_publisher_coverage_28_languages_32_locales_usable_without_fine_tu_a58d7))
+        }
+        if (profile.capabilities.streaming == com.sal7one.common_jni.speech.SpeechStreamingKind.UTTERANCE_WINDOWED) {
+            val tuningProfile = models.firstOrNull { it.id == config.modelId && it.profile.backend == backend }?.profile ?: profile
+            SpeechWindowTuningSection(tuningProfile, onTuningApplied)
         }
         if (details) {
         CaptionLanguageFields(config, update, enabled = !busy, showTarget = false)

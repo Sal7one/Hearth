@@ -940,4 +940,16 @@
     <string name="benchmark_old_timing">旧版计时包含片段间的模型重置。请重新测试，以便公平比较速度。</string>
     <string name="benchmark_quick_set">快速 · 6 段</string>
     <string name="benchmark_long_clip_set">长片段 · 7 段</string>
+    <string name="ui_caption_delivery_for_1_s_47c31">字幕输出 · %1$s</string>
+    <string name="ui_caption_delivery_note_5a1e0">窗口越小，字幕越快出现、分段越短。设置按模型保存，应用时识别器会重启。流式引擎不使用此项。</string>
+    <string name="ui_tuning_preset_label_6d94e">响应速度</string>
+    <string name="ui_tuning_standard_2c94d">标准 · 4 秒窗口</string>
+    <string name="ui_tuning_responsive_7b36e">灵敏 · 2 秒</string>
+    <string name="ui_tuning_eager_9f58c">即显 · 1.2 秒</string>
+    <string name="ui_tuning_custom_4b71a">自定义</string>
+    <string name="ui_tuning_window_slider_8e02f">最长语音窗口 · %1$s 秒</string>
+    <string name="ui_tuning_silence_slider_31d5b">结束字幕的静音 · %1$s 秒</string>
+    <string name="ui_tuning_reset_a903c">恢复默认</string>
+    <string name="ui_tuning_default_badge_c6158">默认</string>
+    <string name="ui_tuning_invalid_bounds_9d27a">窗口须为 1–15 秒、静音 0.2–2 秒，步进 20 毫秒。</string>
 </resources>

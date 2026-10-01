@@ -58,3 +58,15 @@ Keep runtime/provider/network code in feature packages. Add a focused UI file un
 settings and register the destination rather than duplicating stores or pipelines.
 The simplified home shipped in 0.18.0; Classic tabs retains the earlier navigation.
 See [navigation and themes](simple-home.md).
+
+## Caption delivery tuning (per model)
+
+Utterance-windowed speech engines (Moonshine, Qwen3-ASR, Omnilingual CTC,
+Phonon 2) expose a per-model Responsiveness control in Settings → Local speech
+(model details) and in the caption setup card: Standard (4 s windows — the
+default), Responsive (2 s), Eager (1.2 s) presets, or Custom sliders for the
+utterance window (1–15 s) and end-of-caption silence (0.2–2 s) in 20 ms steps.
+Choices are saved per speech profile (DataStore), the default is marked in the
+dropdown, Reset restores it, and the recognizer restarts on apply. Streaming
+engines (Nemotron) and non-package engines are not affected; benchmarks always
+run at the standard windows.

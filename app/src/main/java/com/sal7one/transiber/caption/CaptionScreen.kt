@@ -310,7 +310,8 @@ fun CaptionScreen(
             // Whisper models are multilingual; Vosk models are single-language,
             // so pick the Vosk matching the stream's language.
             if (config.effectiveEngine.speechBackend != null) {
-                LocalSpeechSetup(config, update, includeTranslation = false) { localSpeechModels = it }
+                LocalSpeechSetup(config, update, includeTranslation = false,
+                    onTuningApplied = { update { it.copy(speechSelectionRevision = it.speechSelectionRevision + 1) } }) { localSpeechModels = it }
             }
             val engineModels = if (config.effectiveEngine == CaptionEngineChoice.CLOUD || config.effectiveEngine.speechBackend != null) {
                 // Cloud engine: no local speech models involved — never show

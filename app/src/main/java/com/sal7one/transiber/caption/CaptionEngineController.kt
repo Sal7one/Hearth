@@ -542,10 +542,13 @@ class CaptionEngineController(
             CaptionDiagnostics.record(context, "${model.profile.label}: probing runtime")
             val availability = runtime.availability(model.profile.backend)
             check(availability.available) { availability.error ?: "${model.profile.label} runtime unavailable" }
+            val tuning = SpeechTuningStore.current(context, model.profile.id)
             val session = runtime.open(
                 model.root,
                 com.sal7one.common_jni.speech.SpeechOptions(
                     sourceLanguage = spokenLanguage,
+                    maxUtteranceMs = tuning.maxUtteranceMs,
+                    silenceMs = tuning.silenceMs,
                 ),
                 onStage = { stage -> CaptionDiagnostics.record(context, "${model.profile.label}: $stage") },
             )

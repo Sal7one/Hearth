@@ -45,7 +45,8 @@ internal fun SettingsSpeechLocalUi(
             browsing = next.engine
             update { it.copy(engine = next.engine, modelId = next.modelId, mode = next.mode, streamLanguage = next.streamLanguage) }
         }
-        if (browsing.speechBackend != null) LocalSpeechSetup(shown, select, includeTranslation = false, onModelsChanged = {})
+        if (browsing.speechBackend != null) LocalSpeechSetup(shown, select, includeTranslation = false,
+                onTuningApplied = { update { it.copy(speechSelectionRevision = it.speechSelectionRevision + 1) } }, onModelsChanged = {})
         else LegacyModelSetup(if (browsing == CaptionEngineChoice.WHISPER) ModelEngineType.WHISPER else ModelEngineType.VOSK, shown, select)
     }
     Spacer(Modifier.height(12.dp))

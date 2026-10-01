@@ -940,4 +940,16 @@
     <string name="benchmark_old_timing">الطريقة القديمة تضمنت إعادة ضبط النموذج بين المقاطع. أعد الاختبار لمقارنة السرعة بعدل.</string>
     <string name="benchmark_quick_set">سريع · 6 مقاطع</string>
     <string name="benchmark_long_clip_set">مقطع طويل · 7 مقاطع</string>
+    <string name="ui_caption_delivery_for_1_s_47c31">إخراج التسميات · %1$s</string>
+    <string name="ui_caption_delivery_note_5a1e0">النوافذ الأصغر تعرض التسميات أسرع وبقطع أصغر. يُحفظ لهذا الطراز ويُعاد تشغيل التعرف لتطبيقه. لا يُستخدم في المحركات المتدفقة.</string>
+    <string name="ui_tuning_preset_label_6d94e">سرعة الاستجابة</string>
+    <string name="ui_tuning_standard_2c94d">قياسي · نوافذ 4 ثوانٍ</string>
+    <string name="ui_tuning_responsive_7b36e">سريع · ثانيتان</string>
+    <string name="ui_tuning_eager_9f58c">فوري · 1.2 ثانية</string>
+    <string name="ui_tuning_custom_4b71a">مخصص</string>
+    <string name="ui_tuning_window_slider_8e02f">أقصى نافذة للكلام · %1$s ث</string>
+    <string name="ui_tuning_silence_slider_31d5b">الصمت الذي ينهي التسمية · %1$s ث</string>
+    <string name="ui_tuning_reset_a903c">إعادة التعيين إلى الافتراضي</string>
+    <string name="ui_tuning_default_badge_c6158">الافتراضي</string>
+    <string name="ui_tuning_invalid_bounds_9d27a">يجب أن تكون النوافذ 1–15 ثانية والصمت 0.2–2 ثانية بخطوات 20 مللي ثانية.</string>
 </resources>
