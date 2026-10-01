@@ -28,3 +28,6 @@ signing.properties
 
 # Local upstream research checkouts (never shipped)
 /research/
+
+# locally generated LAN QA overlay; never ship
+app/src/qa/

@@ -6,7 +6,8 @@
 - [x] Host smoke with real TDT weights: the pinned parakeet-tdt-0.6b-v3 int8 package (Phonon 2's base architecture) packaged as `phonon-2` and decoded correctly through the new backend entry on macOS.
 - [x] Engine wiring, localized labels and import path in all three app locales.
 - [x] Run the export on the real artifact; the converted int8 archive transcribes Fermion's LibriSpeech sample exactly through the new backend and is pinned in `SpeechDownloads` (339,918,748 bytes, sha256 6b6cd464…).
-- [ ] Attach `phonon-2-hearth-int8.tar.bz2` to the v0.23.0 release so the catalog download resolves.
+- [x] Device-verified on the S25 Ultra: catalog Download & install of the converted package completes and the model is selectable (v0.23.0 QA, code 69).
+- [ ] Attach `phonon-2-hearth-int8.tar.bz2` to the published v0.23.0 release so the catalog download resolves off-LAN; record on-device benchmark numbers and long-session behavior.
 - [ ] Phone smoke: load the converted package on the S22 and record warm pass times; compare against Moonshine/Qwen utterance-window numbers.
 
 ## 0.22.1 — cloud selection and translator identity
