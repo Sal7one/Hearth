@@ -94,3 +94,14 @@ the device swaps to the other set live; editing in one orientation never
 touches the other. Defaults: portrait 60% width / 40% height, landscape 40% /
 60%. Upgrades keep a user's previously stored values as the portrait set.
 Everything else (theme, engines, languages, TTS) remains shared.
+
+## Android TV and remotes
+
+Hearth installs on TV hardware. Remotes without touch control captions through
+four paths: media play/pause toggles pause, media stop ends captions and any
+spoken audio, hold BACK kills everything, and the MediaStyle notification row
+carries Pause / Silence voice / Controls / Stop (selecting Controls opens the
+overlay settings sheet, which becomes D-pad focusable on TV while open and
+returns to non-focusable when closed so keys stay with the video app). All
+regular screens, settings and sheets are traversable with the D-pad through
+Compose focus.

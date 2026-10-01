@@ -1181,6 +1181,11 @@ class CaptionEngineController(
         }
     }
 
+    /** Stop the current utterance immediately (remote "silence voice"). */
+    fun silenceSpeaker() {
+        speaker?.stop()
+    }
+
     private fun releaseSpeaker() {
         speaker?.release()
         speaker = null

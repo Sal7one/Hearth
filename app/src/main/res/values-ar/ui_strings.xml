@@ -958,4 +958,6 @@
     <string name="ui_speaker_gender_label_3d84e">جنس الصوت</string>
     <string name="ui_speaker_gender_note_9a25c">الأصوات العصبية على الجهاز مرمّزة بالجنس؛ وأصوات السحابة تُحوَّل إلى صوت مطابق؛ وأصوات النظام تُطبّقه عندما يكشفه أندرويد.</string>
     <string name="ui_speaker_volume_label_b31f0">مستوى الصوت · %1$d%%</string>
+    <string name="service_silence_voice_7c1e9">إسكات الصوت</string>
+    <string name="service_controls_f3d21">التحكم</string>
 </resources>

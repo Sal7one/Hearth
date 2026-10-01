@@ -165,8 +165,7 @@ class CaptionOverlayController(
             _config.value = c.copy(xOffsetPx = p.x - origin.x,
                 yOffsetPx = if (c.anchor == CaptionAnchor.BOTTOM) origin.y - p.y else p.y - origin.y)
         }
-        var flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN
-        if (c.tapThrough) flags = flags or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE
+        val flags = TvControls.overlayWindowFlags(c.tapThrough, c.showSettings, TvControls.isTvDevice(context))
         return WindowManager.LayoutParams(p.width, WindowManager.LayoutParams.WRAP_CONTENT,
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY, flags, PixelFormat.TRANSLUCENT).apply {
             gravity = Gravity.TOP or Gravity.LEFT

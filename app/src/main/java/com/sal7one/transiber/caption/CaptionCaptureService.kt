@@ -56,6 +56,34 @@ class CaptionCaptureService : Service() {
 
     override fun onBind(intent: Intent?): IBinder? = null
 
+    private var mediaSession: android.support.v4.media.session.MediaSessionCompat? = null
+
+    /** Remote/media-row controls: play-pause mirrors the notification action, stop kills captions and TTS. */
+    private fun syncMediaSession(paused: Boolean) {
+        val session = mediaSession ?: android.support.v4.media.session.MediaSessionCompat(this, "hearth-captions").also { created ->
+            created.setCallback(object : android.support.v4.media.session.MediaSessionCompat.Callback() {
+                override fun onPlay() { onStartCommand(Intent().setAction(ACTION_PAUSE), 0, 0) }
+                override fun onPause() { onStartCommand(Intent().setAction(ACTION_PAUSE), 0, 0) }
+                override fun onStop() { onStartCommand(Intent().setAction(ACTION_STOP), 0, 0) }
+            })
+            mediaSession = created
+            created.isActive = true
+        }
+        session.setPlaybackState(android.support.v4.media.session.PlaybackStateCompat.Builder()
+            .setActions(android.support.v4.media.session.PlaybackStateCompat.ACTION_PLAY
+                or android.support.v4.media.session.PlaybackStateCompat.ACTION_PAUSE
+                or android.support.v4.media.session.PlaybackStateCompat.ACTION_PLAY_PAUSE
+                or android.support.v4.media.session.PlaybackStateCompat.ACTION_STOP)
+            .setState(if (paused) android.support.v4.media.session.PlaybackStateCompat.STATE_PAUSED else android.support.v4.media.session.PlaybackStateCompat.STATE_PLAYING,
+                android.support.v4.media.session.PlaybackStateCompat.PLAYBACK_POSITION_UNKNOWN, 0f)
+            .build())
+    }
+
+    private fun releaseMediaSession() {
+        mediaSession?.run { isActive = false; release() }
+        mediaSession = null
+    }
+
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
             ACTION_STOP -> stopCaptioning()
@@ -67,6 +95,16 @@ class CaptionCaptureService : Service() {
             ACTION_PAUSE -> if (active && failure == null) {
                 overlay.updateConfig { it.copy(paused = !it.paused) }
             } else if (!active) stopSelf(startId)
+            ACTION_SILENCE -> if (active) {
+                engine.silenceSpeaker()
+                overlay.updateConfig { it.copy(speakCaptions = false) }
+            } else stopSelf(startId)
+            ACTION_SETTINGS -> if (active) {
+                overlayVisible = true
+                overlay.updateConfig { it.copy(showSettings = true) }
+                overlay.centerOverlay()
+                updateNotification()
+            } else stopSelf(startId)
             ACTION_VISIBILITY -> if (active) {
                 overlayVisible = !overlayVisible
                 if (overlayVisible) overlay.centerOverlay() else overlay.toggleVisibility()
@@ -120,6 +158,7 @@ class CaptionCaptureService : Service() {
             else ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION
         if (Build.VERSION.SDK_INT >= 29) startForeground(NOTIFICATION_ID, notification(), type)
         else startForeground(NOTIFICATION_ID, notification())
+        syncMediaSession(paused = false)
         true
     } catch (e: Exception) {
         failure = "Foreground service: ${e.message ?: e.javaClass.simpleName}"
@@ -237,6 +276,7 @@ class CaptionCaptureService : Service() {
 
     override fun onDestroy() {
         active = false
+        releaseMediaSession()
         releaseCapture()
         overlay.destroy()
         engine.shutdown()
@@ -248,6 +288,7 @@ class CaptionCaptureService : Service() {
 
     private fun updateNotification() {
         (getSystemService(NOTIFICATION_SERVICE) as NotificationManager).notify(NOTIFICATION_ID, notification())
+        syncMediaSession(paused = engine.currentConfig.paused)
     }
 
     private fun notification(): Notification {
@@ -264,7 +305,12 @@ class CaptionCaptureService : Service() {
             .setContentText(failure ?: if (tapThrough) uiText(UiR.string.service_tap_through_is_on_tap_the_lock_handle_to_restore_c_2e5ea) else if (paused) uiText(UiR.string.service_audio_is_not_sent_to_the_speech_engine_859aa) else "${uiText.label(source)} · ${uiText.label(engine.currentConfig.mode)}")
             .setStyle(NotificationCompat.BigTextStyle().bigText(failure ?: uiText(UiR.string.service_1_s_tap_this_notification_to_recover_the_bubble_an_16fe0, uiText.label(source))))
             .setContentIntent(command(2, ACTION_CENTER)).setOngoing(true).setOnlyAlertOnce(true)
+            .setStyle(androidx.media.app.NotificationCompat.MediaStyle().also { style ->
+                mediaSession?.sessionToken?.let { style.setMediaSession(it) }
+            })
             .apply { if (failure == null) addAction(0, if (paused) uiText(UiR.string.service_resume_b3bd0) else uiText(UiR.string.service_pause_78196), command(1, ACTION_PAUSE)) }
+            .apply { if (failure == null && engine.currentConfig.speakCaptions) addAction(0, uiText(UiR.string.service_silence_voice_7c1e9), command(5, ACTION_SILENCE)) }
+            .apply { if (failure == null) addAction(0, uiText(UiR.string.service_controls_f3d21), command(6, ACTION_SETTINGS)) }
             .apply {
                 if (tapThrough) addAction(0, uiText(UiR.string.service_restore_controls_c97dd), command(2, ACTION_CENTER))
                 else addAction(0, if (overlayVisible) uiText(UiR.string.service_hide_bubble_658d0) else uiText(UiR.string.service_show_bubble_9a42e), command(4, ACTION_VISIBILITY))
@@ -276,6 +322,9 @@ class CaptionCaptureService : Service() {
     companion object {
         private val runningState = kotlinx.coroutines.flow.MutableStateFlow(false)
         val running: kotlinx.coroutines.flow.StateFlow<Boolean> = runningState
+        fun stopCaptions(context: Context) {
+            context.startService(Intent(context, CaptionCaptureService::class.java).setAction(ACTION_STOP))
+        }
         fun show(context: Context) {
             context.startService(Intent(context, CaptionCaptureService::class.java).setAction(ACTION_CENTER))
         }
@@ -284,9 +333,11 @@ class CaptionCaptureService : Service() {
         private const val CHANNEL_ID = "caption_capture"
         private const val NOTIFICATION_ID = 410
         private const val ACTION_START = "com.sal7one.transiber.caption.START"
-        private const val ACTION_STOP = "com.sal7one.transiber.caption.STOP"
+        internal const val ACTION_STOP = "com.sal7one.transiber.caption.STOP"
         private const val ACTION_CENTER = "com.sal7one.transiber.caption.CENTER"
-        private const val ACTION_PAUSE = "com.sal7one.transiber.caption.PAUSE"
+        internal const val ACTION_PAUSE = "com.sal7one.transiber.caption.PAUSE"
+        private const val ACTION_SILENCE = "com.sal7one.transiber.caption.SILENCE"
+        private const val ACTION_SETTINGS = "com.sal7one.transiber.caption.SETTINGS"
         private const val ACTION_VISIBILITY = "com.sal7one.transiber.caption.VISIBILITY"
         private const val EXTRA_SOURCE = "source"
         private const val EXTRA_PROJECTION_RESULT = "projection_result"

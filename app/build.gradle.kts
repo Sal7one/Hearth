@@ -11,7 +11,7 @@ android {
   applicationId = "com.sal7one.transiber"
   minSdk = 28
   targetSdk = 36
-  versionCode = 72
+  versionCode = 73
   versionName = "0.23.0"
   ndk { abiFilters += "arm64-v8a" }
  }
@@ -36,6 +36,7 @@ dependencies {
  "playImplementation"("com.google.mlkit:translate:17.0.3")
  implementation(libs.androidx.core.ktx)
  implementation(libs.androidx.appcompat)
+ implementation("androidx.media:media:1.7.0")
  implementation(libs.androidx.lifecycle.runtime.ktx)
  implementation(libs.androidx.activity.compose)
  implementation(platform(libs.androidx.compose.bom))

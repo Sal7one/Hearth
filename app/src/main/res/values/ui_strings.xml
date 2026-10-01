@@ -958,4 +958,6 @@
     <string name="ui_speaker_gender_label_3d84e">Voice gender</string>
     <string name="ui_speaker_gender_note_9a25c">On-device neural voices are gender-coded; cloud voices map to a matching voice; device voices apply it when Android exposes it.</string>
     <string name="ui_speaker_volume_label_b31f0">Loudness · %1$d%%</string>
+    <string name="service_silence_voice_7c1e9">Silence voice</string>
+    <string name="service_controls_f3d21">Controls</string>
 </resources>
