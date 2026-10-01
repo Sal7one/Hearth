@@ -650,6 +650,24 @@ private fun SettingsPanel(
                 },
                 palette,
             )
+            ChipRow {
+                SpeakerGender.entries.forEach { gender ->
+                    FilterChip(
+                        selected = cfg.speakerGender == gender,
+                        onClick = { onConfigChange { it.copy(speakerGender = gender) } },
+                        label = { Text(uiText.label(gender), fontSize = 11.sp) },
+                    )
+                }
+            }
+            var overlayVolume by remember(cfg.speakerVolume) { mutableStateOf(cfg.speakerVolume.toFloat()) }
+            Text(uiText(UiR.string.ui_speaker_volume_label_b31f0, overlayVolume.toInt()), color = palette.onSurfaceMuted, fontSize = 11.sp)
+            Slider(
+                value = overlayVolume,
+                onValueChange = { overlayVolume = it },
+                onValueChangeFinished = { onConfigChange { it.copy(speakerVolume = overlayVolume.toInt().coerceIn(0, 100)) } },
+                valueRange = 0f..100f,
+                modifier = Modifier.fillMaxWidth(),
+            )
         }
 
             }

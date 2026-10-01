@@ -74,6 +74,9 @@
     <string name="label_captionenginechoice_nemotron_explanation" formatted="false">"Nemotron GGUF 包提供离线多语言字幕和流式临时结果，可选本地翻译桥接。速度取决于设备。"</string>
     <string name="label_captionenginechoice_cloud_label" formatted="false">"云端 · 自带密钥"</string>
     <string name="label_captionenginechoice_cloud_explanation" formatted="false">"使用自有密钥的 OpenAI 兼容 Whisper API；语言支持取决于服务商。需要网络（仅 Play 版）。"</string>
+    <string name="label_speakergender_any_label" formatted="false">"跟随所选声音"</string>
+    <string name="label_speakergender_female_label" formatted="false">"女声"</string>
+    <string name="label_speakergender_male_label" formatted="false">"男声"</string>
     <string name="label_captiontheme_dark_label" formatted="false">"深色"</string>
     <string name="label_captiontheme_high_contrast_label" formatted="false">"高对比度"</string>
     <string name="label_captiontheme_light_label" formatted="false">"浅色"</string>

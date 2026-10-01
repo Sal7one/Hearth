@@ -50,5 +50,7 @@ internal fun SettingsSpeechLocalUi(
         else LegacyModelSetup(if (browsing == CaptionEngineChoice.WHISPER) ModelEngineType.WHISPER else ModelEngineType.VOSK, shown, select)
     }
     Spacer(Modifier.height(12.dp))
+    SettingsSpeechAloudUi(config, update)
+    Spacer(Modifier.height(12.dp))
     SpeechArtifactBrowser(config)
 }

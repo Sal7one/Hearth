@@ -126,6 +126,12 @@ internal fun UiText.explanation(value: com.sal7one.transiber.caption.CaptionEngi
     com.sal7one.transiber.caption.CaptionEngineChoice.CLOUD -> R.string.label_captionenginechoice_cloud_explanation
 })
 
+internal fun UiText.label(value: com.sal7one.transiber.caption.SpeakerGender): String = this(when (value) {
+    com.sal7one.transiber.caption.SpeakerGender.ANY -> R.string.label_speakergender_any_label
+    com.sal7one.transiber.caption.SpeakerGender.FEMALE -> R.string.label_speakergender_female_label
+    com.sal7one.transiber.caption.SpeakerGender.MALE -> R.string.label_speakergender_male_label
+})
+
 internal fun UiText.label(value: com.sal7one.transiber.caption.CaptionTheme): String = this(when (value) {
     com.sal7one.transiber.caption.CaptionTheme.DARK -> R.string.label_captiontheme_dark_label
     com.sal7one.transiber.caption.CaptionTheme.HIGH_CONTRAST -> R.string.label_captiontheme_high_contrast_label

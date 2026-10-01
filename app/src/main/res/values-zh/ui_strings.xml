@@ -952,4 +952,10 @@
     <string name="ui_tuning_reset_a903c">恢复默认</string>
     <string name="ui_tuning_default_badge_c6158">默认</string>
     <string name="ui_tuning_invalid_bounds_9d27a">窗口须为 1–15 秒、静音 0.2–2 秒，步进 20 毫秒。</string>
+    <string name="ui_read_captions_aloud_title_e5b31">朗读字幕（语音层）</string>
+    <string name="ui_speak_captions_setting_note_4c1a9">识别完成后立即朗读每一行定稿，使用字幕语言或译文。</string>
+    <string name="ui_speaker_engine_label_7f2c6">语音引擎</string>
+    <string name="ui_speaker_gender_label_3d84e">声音性别</string>
+    <string name="ui_speaker_gender_note_9a25c">端侧神经语音按性别编号；云端语音会映射到相应声音；系统语音在 Android 提供性别信息时生效。</string>
+    <string name="ui_speaker_volume_label_b31f0">音量 · %1$d%%</string>
 </resources>

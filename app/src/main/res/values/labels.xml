@@ -74,6 +74,9 @@
     <string name="label_captionenginechoice_nemotron_explanation" formatted="false">"Offline multilingual captions with streaming partials from a Nemotron GGUF package. Original-language CC; optional local translation bridge. Phone speed depends on the device."</string>
     <string name="label_captionenginechoice_cloud_label" formatted="false">"Cloud · BYOK"</string>
     <string name="label_captionenginechoice_cloud_explanation" formatted="false">"OpenAI-compatible Whisper API with your own key: top accuracy, any language, needs network (play distribution only)."</string>
+    <string name="label_speakergender_any_label" formatted="false">"Follow voice choice"</string>
+    <string name="label_speakergender_female_label" formatted="false">"Female"</string>
+    <string name="label_speakergender_male_label" formatted="false">"Male"</string>
     <string name="label_captiontheme_dark_label" formatted="false">"Dark"</string>
     <string name="label_captiontheme_high_contrast_label" formatted="false">"High contrast"</string>
     <string name="label_captiontheme_light_label" formatted="false">"Light"</string>

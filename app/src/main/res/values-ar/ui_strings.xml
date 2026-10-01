@@ -952,4 +952,10 @@
     <string name="ui_tuning_reset_a903c">إعادة التعيين إلى الافتراضي</string>
     <string name="ui_tuning_default_badge_c6158">الافتراضي</string>
     <string name="ui_tuning_invalid_bounds_9d27a">يجب أن تكون النوافذ 1–15 ثانية والصمت 0.2–2 ثانية بخطوات 20 مللي ثانية.</string>
+    <string name="ui_read_captions_aloud_title_e5b31">قراءة التسميات بصوت (طبقة نطق)</string>
+    <string name="ui_speak_captions_setting_note_4c1a9">انطق كل سطر نهائي مباشرة بعد التعرف، بلغة التسمية أو بالترجمة.</string>
+    <string name="ui_speaker_engine_label_7f2c6">محرك الصوت</string>
+    <string name="ui_speaker_gender_label_3d84e">جنس الصوت</string>
+    <string name="ui_speaker_gender_note_9a25c">الأصوات العصبية على الجهاز مرمّزة بالجنس؛ وأصوات السحابة تُحوَّل إلى صوت مطابق؛ وأصوات النظام تُطبّقه عندما يكشفه أندرويد.</string>
+    <string name="ui_speaker_volume_label_b31f0">مستوى الصوت · %1$d%%</string>
 </resources>

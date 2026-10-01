@@ -74,6 +74,9 @@
     <string name="label_captionenginechoice_nemotron_explanation" formatted="false">"نص متعدد اللغات دون اتصال مع نتائج جزئية متدفقة من حزمة Nemotron GGUF. ترجمة محلية اختيارية؛ السرعة تعتمد على الجهاز."</string>
     <string name="label_captionenginechoice_cloud_label" formatted="false">"سحابي · بمفتاحك"</string>
     <string name="label_captionenginechoice_cloud_explanation" formatted="false">"واجهة Whisper متوافقة مع OpenAI بمفتاحك؛ اللغات حسب المزوّد. تحتاج شبكة (إصدار Play فقط)."</string>
+    <string name="label_speakergender_any_label" formatted="false">"حسب الصوت المختار"</string>
+    <string name="label_speakergender_female_label" formatted="false">"أنثى"</string>
+    <string name="label_speakergender_male_label" formatted="false">"ذكر"</string>
     <string name="label_captiontheme_dark_label" formatted="false">"داكن"</string>
     <string name="label_captiontheme_high_contrast_label" formatted="false">"تباين عالٍ"</string>
     <string name="label_captiontheme_light_label" formatted="false">"فاتح"</string>

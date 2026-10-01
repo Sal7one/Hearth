@@ -55,3 +55,33 @@ internal object VoiceSettings {
         return KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES,"AndroidKeyStore").apply {init(KeyGenParameterSpec.Builder(alias,KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT).setKeySize(256).setBlockModes(KeyProperties.BLOCK_MODE_GCM).setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE).build())}.generateKey()
     }
 }
+
+/** Preferred voice gender; engines apply it where they can and keep the configured voice otherwise. */
+enum class VoiceGender { ANY, FEMALE, MALE }
+
+/** Pure gender→voice mappings per backend, unit-testable without engines. */
+object VoiceGenderMapping {
+    /** Supertonic voices are gender-coded ids (F1..F5, M1..M5): swap the prefix, keep the index. */
+    fun supertonicVoice(current: String, gender: VoiceGender): String {
+        if (gender == VoiceGender.ANY) return current
+        val index = current.drop(1).takeIf { current.length == 2 && it.toIntOrNull() in 1..5 } ?: "1"
+        val wanted = (if (gender == VoiceGender.FEMALE) "F" else "M") + index
+        return if (wanted in VoiceCatalog.voices) wanted else current
+    }
+
+    /** OpenAI-compatible cloud voices; ANY keeps the user's configured voice. */
+    fun cloudVoice(configured: String, gender: VoiceGender): String = when (gender) {
+        VoiceGender.FEMALE -> listOf("nova", "shimmer", "coral").firstOrNull { it == configured } ?: "nova"
+        VoiceGender.MALE -> listOf("echo", "onyx", "fable", "ash").firstOrNull { it == configured } ?: "echo"
+        VoiceGender.ANY -> configured
+    }
+
+    /** Android system voice names rarely carry gender; match "fem" before "male" ("female" contains "male"). */
+    fun systemVoiceMatches(name: String, gender: VoiceGender): Boolean {
+        if (gender == VoiceGender.ANY) return true
+        val lower = name.lowercase(java.util.Locale.ROOT)
+        val female = lower.contains("fem") || lower.contains("-f-") || lower.endsWith(".f")
+        val male = !female && (lower.contains("male") || lower.contains("-m-") || lower.endsWith(".m"))
+        return if (gender == VoiceGender.FEMALE) female else male
+    }
+}

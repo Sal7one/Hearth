@@ -70,3 +70,17 @@ Choices are saved per speech profile (DataStore), the default is marked in the
 dropdown, Reset restores it, and the recognizer restarts on apply. Streaming
 engines (Nemotron) and non-package engines are not affected; benchmarks always
 run at the standard windows.
+
+## Read captions aloud (TTS layer)
+
+Settings → Speech → Local → Read captions aloud speaks each finalized caption
+line straight after recognition (captions mode: the recognized language;
+translate mode: the translation once it lands). The engine picker matches the
+overlay's — Device voice (Android TTS), Supertonic 3 on-device, shared voice
+settings, a self-hosted voice server, or the BYOK cloud voice (play build).
+Voice gender (Follow voice choice / Female / Male) is exact on Supertonic
+(F1–F5 / M1–M5 ids) and the cloud voice (nova/shimmer vs echo/onyx), mapped
+best-effort on Android system voices, and ignored where a server does not
+expose it. Loudness (0–100%) scales the utterance volume on every backend.
+Both options also live in the overlay's settings sheet for live changes; the
+speaker applies them on the next spoken line.

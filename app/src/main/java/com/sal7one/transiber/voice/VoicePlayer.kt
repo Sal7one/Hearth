@@ -21,7 +21,8 @@ import java.util.UUID
 internal class VoicePlayer(context: Context,private val backendOverride: String?=null, private val changed: (Boolean,String?) -> Unit) : AutoCloseable {
     private val context=context.applicationContext
     private val scope=CoroutineScope(SupervisorJob()+Dispatchers.Main.immediate)
-    private data class Request(val text: String,val language: String,val generation: Long,val requestedBackend: String?=null)
+    private data class Request(val text: String,val language: String,val generation: Long,val requestedBackend: String?=null,
+                              val gender: VoiceGender = VoiceGender.ANY,val volume: Float = 1f)
     private val queue=Channel<Request>(3)
     private var generation=0L
     private var operation: Job?=null
@@ -49,7 +50,7 @@ internal class VoicePlayer(context: Context,private val backendOverride: String?
                         val selectedBackend=request.requestedBackend ?: backendOverride
                         val choice=if(selectedBackend==null)saved else saved.copy(backend=selectedBackend)
                         when(choice.backend) {
-                            "system" -> systemSpeak(request.text,request.language,choice.rate)
+                            "system" -> systemSpeak(request.text,request.language,choice.rate,request.gender,request.volume)
                             "supertonic" -> local(request,choice)
                             "remote" -> remote(request,choice)
                             else -> error("Unknown voice backend: ${choice.backend}")
@@ -69,19 +70,22 @@ internal class VoicePlayer(context: Context,private val backendOverride: String?
     fun enqueue(text: String,language: String,mode: VoicePlaybackMode=VoicePlaybackMode.DEFAULT) {
         scope.launch {queueSpeech(text,language,mode)}
     }
-    private fun queueSpeech(text: String,language: String,mode: VoicePlaybackMode) {
+    fun enqueue(text: String,language: String,mode: VoicePlaybackMode,gender: VoiceGender,volume: Float) {
+        scope.launch {queueSpeech(text,language,mode,gender,volume)}
+    }
+    private fun queueSpeech(text: String,language: String,mode: VoicePlaybackMode,gender: VoiceGender=VoiceGender.ANY,volume: Float=1f) {
         try {
             val override=if(mode==VoicePlaybackMode.DEFAULT)null else VoiceSelection.backend(mode,
                 VoiceSettings.choice(context).backend,VoiceSettings.customBackend(context),com.sal7one.transiber.byok.ByokPolicy.FEATURE_BYOK)
-            enqueueNow(text,language,override)
+            enqueueNow(text,language,override,gender,volume)
         } catch(e: Exception) {changed(false,e.message ?: e.toString())}
     }
-    private fun enqueueNow(text: String,language: String,requestedBackend: String?=null) {
+    private fun enqueueNow(text: String,language: String,requestedBackend: String?=null,gender: VoiceGender=VoiceGender.ANY,volume: Float=1f) {
         if(text.isBlank())return
         if(text.length>5000){changed(false,"Read aloud accepts at most 5000 characters");return}
         val owner=audibleOwner
         if(owner!==this){owner?.stop();audibleOwner=this}
-        if(!queue.trySend(Request(text,Locale.forLanguageTag(language).toLanguageTag(),generation,requestedBackend)).isSuccess)
+        if(!queue.trySend(Request(text,Locale.forLanguageTag(language).toLanguageTag(),generation,requestedBackend,gender,volume)).isSuccess)
             changed(true,"Speech queue is full. Skipped a new line to avoid falling behind.")
     }
     private fun initSystem() {
@@ -98,10 +102,14 @@ internal class VoicePlayer(context: Context,private val backendOverride: String?
         }
     }
     private fun finish(id: String?,error: String?) {Handler(Looper.getMainLooper()).post {systemPending?.takeIf {it.first==id}?.second?.let {if(error==null)it.complete(Unit) else it.completeExceptionally(IllegalStateException(error))}}}
-    private suspend fun systemSpeak(text: String,language: String,rate: Float) {
+    private suspend fun systemSpeak(text: String,language: String,rate: Float,gender: VoiceGender=VoiceGender.ANY,volume: Float=1f) {
         initSystem();withTimeout(15000){systemReady.await()};val tts=checkNotNull(system)
         val baseLanguage=Locale.forLanguageTag(language).language
-        val candidates=tts.voices.orEmpty().filterNot {it.isNetworkConnectionRequired}
+        // Gender is best-effort here: Android voice names rarely carry it.
+        val candidates=if(gender==VoiceGender.ANY) tts.voices.orEmpty().filterNot {it.isNetworkConnectionRequired}
+            else tts.voices.orEmpty().filterNot {it.isNetworkConnectionRequired}.let { all ->
+                all.filter {VoiceGenderMapping.systemVoiceMatches(it.name,gender)}.ifEmpty { all }
+            }
         val saved=VoiceSettings.prefs(context).getString("system-voice-$baseLanguage",null)
         val id=if(saved!=null) candidates.firstOrNull {it.name==saved && it.locale.language==baseLanguage}?.name
             ?: error("Selected Android $language voice is unavailable. Choose a voice in Voice settings")
@@ -109,9 +117,10 @@ internal class VoicePlayer(context: Context,private val backendOverride: String?
         val voice=candidates.firstOrNull {it.name==id} ?: error("No installed offline $language voice. Install one in Android text-to-speech settings")
         check(tts.setVoice(voice)==TextToSpeech.SUCCESS){"Android could not select voice ${voice.name}"}
         check(tts.setSpeechRate(rate)==TextToSpeech.SUCCESS){"Android could not set speech speed"}
+        val utteranceParams=android.os.Bundle().apply {putFloat(TextToSpeech.Engine.KEY_PARAM_VOLUME,volume.coerceIn(0f,1f))}
         for(part in VoiceText.chunks(text,300)) {
             val pending=UUID.randomUUID().toString() to CompletableDeferred<Unit>();systemPending=pending
-            try {check(tts.speak(part,TextToSpeech.QUEUE_FLUSH,null,pending.first)==TextToSpeech.SUCCESS){"Android rejected the speech request"};withTimeout(120000){pending.second.await()}}
+            try {check(tts.speak(part,TextToSpeech.QUEUE_FLUSH,utteranceParams,pending.first)==TextToSpeech.SUCCESS){"Android rejected the speech request"};withTimeout(120000){pending.second.await()}}
             finally {systemPending=null}
         }
     }
@@ -126,7 +135,7 @@ internal class VoicePlayer(context: Context,private val backendOverride: String?
             currentCoroutineContext().ensureActive()
             for(part in VoiceText.chunks(request.text)) {
                 val samples=withContext(Dispatchers.Default){checkNotNull(model).synthesize(VoiceText.ids(part,baseLanguage,data.first),data.second,choice.steps,choice.rate)}
-                currentCoroutineContext().ensureActive();play(samples,SupertonicVoice.SAMPLE_RATE)
+                currentCoroutineContext().ensureActive();play(samples,SupertonicVoice.SAMPLE_RATE,1f,request.volume)
             }
         }finally {withContext(Dispatchers.IO+NonCancellable){model?.close();model=null}}
     }
@@ -136,23 +145,25 @@ internal class VoicePlayer(context: Context,private val backendOverride: String?
             ?: Locale.forLanguageTag(request.language).language.takeIf {it in connection.capabilities.languages}
             ?: error("The selected voice server does not advertise ${request.language}")
         val voice=VoiceSettings.prefs(context).getString("remote-voice",null)?.takeIf {it in connection.capabilities.voices} ?: connection.capabilities.voices.first()
+        val spokenVoice=if(request.gender==VoiceGender.ANY) voice
+            else connection.capabilities.voices.firstOrNull {VoiceGenderMapping.systemVoiceMatches(it,request.gender)} ?: voice
         val client=RemoteVoiceClient();network=client
         try {
             for(part in VoiceText.chunks(request.text,300)) {
-                val raw=client.execute(RemoteVoiceProtocol.request(connection.endpoint,connection.key,part,language,voice,connection.capabilities),connection.key,true)
+                val raw=client.execute(RemoteVoiceProtocol.request(connection.endpoint,connection.key,part,language,spokenVoice,connection.capabilities),connection.key,true)
                 val pcm=withContext(Dispatchers.Default){PcmWave.decode(raw)}
-                play(FloatArray(pcm.samples.size){pcm.samples[it]/32768f},pcm.sampleRate,choice.rate)
+                play(FloatArray(pcm.samples.size){pcm.samples[it]/32768f},pcm.sampleRate,choice.rate,request.volume)
             }
         }finally {client.close();network=null}
     }
-    private suspend fun play(samples: FloatArray,rate: Int,speed: Float=1f)=withContext(Dispatchers.IO) {
+    private suspend fun play(samples: FloatArray,rate: Int,speed: Float=1f,volume: Float=1f)=withContext(Dispatchers.IO) {
         require(samples.isNotEmpty() && samples.all(Float::isFinite)){"Voice returned empty or invalid audio"}
         val minimum=AudioTrack.getMinBufferSize(rate,AudioFormat.CHANNEL_OUT_MONO,AudioFormat.ENCODING_PCM_FLOAT)
         check(minimum>0){"Android cannot play $rate Hz voice audio: $minimum"}
         val player=AudioTrack.Builder().setAudioAttributes(audioAttributes).setAudioFormat(AudioFormat.Builder().setSampleRate(rate).setChannelMask(AudioFormat.CHANNEL_OUT_MONO).setEncoding(AudioFormat.ENCODING_PCM_FLOAT).build()).setTransferMode(AudioTrack.MODE_STREAM).setBufferSizeInBytes(maxOf(minimum,rate/10*4)).build()
         try {
             check(player.state==AudioTrack.STATE_INITIALIZED){"Voice audio output failed to initialize"}
-            track=player;if(speed!=1f)player.playbackParams=PlaybackParams().allowDefaults().setSpeed(speed)
+            track=player;player.setVolume(volume.coerceIn(0f,1f));if(speed!=1f)player.playbackParams=PlaybackParams().allowDefaults().setSpeed(speed)
             player.play();var offset=0
             while(offset<samples.size){currentCoroutineContext().ensureActive();val count=player.write(samples,offset,minOf(4096,samples.size-offset),AudioTrack.WRITE_BLOCKING);check(count>0){"Android voice audio write failed: $count"};offset+=count}
             withTimeout(120000){while((player.playbackHeadPosition.toLong() and 0xffffffffL)<samples.size){delay(20)}}

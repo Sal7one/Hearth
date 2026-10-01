@@ -952,4 +952,10 @@
     <string name="ui_tuning_reset_a903c">Reset to default</string>
     <string name="ui_tuning_default_badge_c6158">Default</string>
     <string name="ui_tuning_invalid_bounds_9d27a">Windows must be 1–15 s and silence 0.2–2 s, in 20 ms steps.</string>
+    <string name="ui_read_captions_aloud_title_e5b31">Read captions aloud (TTS layer)</string>
+    <string name="ui_speak_captions_setting_note_4c1a9">Speak each finalized line straight after recognition, in the caption language or the translation.</string>
+    <string name="ui_speaker_engine_label_7f2c6">Voice engine</string>
+    <string name="ui_speaker_gender_label_3d84e">Voice gender</string>
+    <string name="ui_speaker_gender_note_9a25c">On-device neural voices are gender-coded; cloud voices map to a matching voice; device voices apply it when Android exposes it.</string>
+    <string name="ui_speaker_volume_label_b31f0">Loudness · %1$d%%</string>
 </resources>

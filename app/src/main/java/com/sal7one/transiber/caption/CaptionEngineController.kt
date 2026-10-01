@@ -1177,7 +1177,7 @@ class CaptionEngineController(
                     ?: run {_state.update {it.copy(translationNotice="Read aloud needs a recognized language. Choose a spoken language supported by this model.")};return@launch}
             }
             Log.i(TAG, "Speaking line via ${choice.label} ($languageTag)")
-            current.speak(text, languageTag)
+            current.speak(text, languageTag, config.speakerGender, config.speakerVolume)
         }
     }
 

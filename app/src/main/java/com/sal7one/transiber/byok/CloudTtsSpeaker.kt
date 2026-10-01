@@ -2,6 +2,7 @@ package com.sal7one.transiber.byok
 
 import android.media.MediaPlayer
 import com.sal7one.transiber.caption.CaptionSpeaker
+import com.sal7one.transiber.caption.toVoiceGender
 import java.io.File
 import java.net.HttpURLConnection
 import java.net.URL
@@ -77,22 +78,31 @@ class OpenAiSpeechClient(
  * NETWORK CODE — play distribution only; see [ByokPolicy].
  */
 class CloudTtsSpeaker(
-    apiKey: String,
-    baseUrl: String = RemoteWhisperEngine.DEFAULT_BASE_URL,
-    model: String = "tts-1",
+    private val apiKey: String,
+    private val baseUrl: String = RemoteWhisperEngine.DEFAULT_BASE_URL,
+    private val model: String = "tts-1",
     voice: String = "alloy",
 ) : CaptionSpeaker {
 
-    private val client = OpenAiSpeechClient(apiKey, baseUrl, model, voice)
+    private val configuredVoice = voice
+    private var client = OpenAiSpeechClient(apiKey, baseUrl, model, voice)
     private val queue = ArrayDeque<String>()
     private var player: MediaPlayer? = null
     private var playing = false
+    @Volatile private var volume = 1f
 
     override fun speak(text: String, languageTag: String): Boolean {
         if (text.isBlank()) return false
         synchronized(queue) { queue.addLast(text) }
         drain()
         return true
+    }
+
+    override fun speak(text: String, languageTag: String, gender: com.sal7one.transiber.caption.SpeakerGender, volumePercent: Int): Boolean {
+        val cloudVoice = com.sal7one.transiber.voice.VoiceGenderMapping.cloudVoice(configuredVoice, gender.toVoiceGender())
+        client = OpenAiSpeechClient(apiKey, baseUrl, model, cloudVoice)
+        volume = volumePercent.coerceIn(0, 100) / 100f
+        return speak(text, languageTag)
     }
 
     private fun drain() {
@@ -125,6 +135,7 @@ class CloudTtsSpeaker(
             val latch = java.util.concurrent.CountDownLatch(1)
             val mp = MediaPlayer()
             mp.setDataSource(tmp.absolutePath)
+            mp.setVolume(volume, volume)
             mp.setOnCompletionListener {
                 it.release()
                 tmp.delete()

@@ -107,6 +107,11 @@ enum class CaptionSpeakerChoice(val label: String, val explanation: String) {
     CLOUD("Cloud · BYOK", "Provider TTS with your API key (play distribution only)."),
 }
 
+/** Preferred voice gender for read-aloud; engines apply it where supported. */
+enum class SpeakerGender(val label: String) {
+    ANY("Follow voice choice"), FEMALE("Female"), MALE("Male"),
+}
+
 enum class CaptionAnchor(val label: String) {
     TOP("Top"),
     CENTER("Center"),
@@ -176,6 +181,9 @@ data class CaptionOverlayConfig(
     // translate mode: the translation once it lands).
     val speakCaptions: Boolean = false,
     val speakerChoice: CaptionSpeakerChoice = CaptionSpeakerChoice.SYSTEM,
+    val speakerGender: SpeakerGender = SpeakerGender.ANY,
+    /** Read-aloud loudness 0..100 percent of the engine's normal output. */
+    val speakerVolume: Int = 100,
     // Note: paused is deliberately NOT persisted (see CaptionConfigStore): a
     // fresh overlay session always starts running; pausing is a live gesture.
     // Transient UI state (never persisted; survives via the in-memory flow)
@@ -213,6 +221,7 @@ data class CaptionOverlayConfig(
 
     fun withUiClamp() = copy(
         widthPercent = widthPercent.coerceIn(50, 100),
+        speakerVolume = speakerVolume.coerceIn(0, 100),
         maxHeightPercent = maxHeightPercent.coerceIn(20, 60),
         bubbleHeightDp = bubbleHeightDp?.coerceIn(144, 600),
         historyLines = historyLines.coerceIn(0, 8),
@@ -305,6 +314,8 @@ object CaptionConfigStore {
             speakerChoice = prefs[SpeakerChoice]
                 ?.let { enumOrDefault(it, CaptionSpeakerChoice.SYSTEM) }
                 ?: CaptionSpeakerChoice.SYSTEM,
+            speakerGender = prefs[SpeakerGenderKey]?.let { enumOrDefault(it, SpeakerGender.ANY) } ?: SpeakerGender.ANY,
+            speakerVolume = (prefs[SpeakerVolumeKey] ?: 100).coerceIn(0, 100),
         ).let { it.withCaptionMode(it.mode).withUiClamp() }
 
     internal fun writeInto(
@@ -336,6 +347,8 @@ object CaptionConfigStore {
         prefs.remove(TapThrough)
         prefs[SpeakCaptions] = config.speakCaptions
         prefs[SpeakerChoice] = config.speakerChoice.name
+        prefs[SpeakerGenderKey] = config.speakerGender.name
+        prefs[SpeakerVolumeKey] = config.speakerVolume
     }
 
     private inline fun <reified T : Enum<T>> enumOrDefault(name: String, fallback: T): T =
@@ -371,4 +384,6 @@ object CaptionConfigStore {
     private val TapThrough = booleanPreferencesKey("tap_through")
     private val SpeakCaptions = booleanPreferencesKey("speak_captions")
     private val SpeakerChoice = stringPreferencesKey("speaker_choice")
+    private val SpeakerGenderKey = stringPreferencesKey("speaker_gender_v1")
+    private val SpeakerVolumeKey = intPreferencesKey("speaker_volume_v1")
 }
