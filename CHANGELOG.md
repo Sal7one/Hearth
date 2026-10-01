@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.23.2 — 2026-10-01 · overlay audio controls
+
+- Open the overlay gear directly to Audio: read-aloud on/off, TTS loudness, male/female/default voice preference, engine selection and voice setup. Reuse Speech settings controls and allow preferences to be prepared while TTS is off.
+- Add a clearly labeled device media volume slider. It controls the device-wide media stream, not another app's private volume; TTS gain is separate but still subject to the output's base level. Respect fixed volume, hardware steps and output-route changes, surface errors, and never reapply a saved global volume.
+- Expand quick settings temporarily so controls are reachable, preserving the saved caption height when closed and fitting small/landscape windows.
+- Give cloud read aloud the same transient audio-focus/ducking behavior as local voices. Android/player policy determines whether and how much original media is lowered; no exact source/TTS mixing ratio is promised.
+- Check neural voice availability using the requested male/female style, consistently in quick settings and playback, while retaining checksum validation before loading.
+- Localize the controls in English, Arabic and Chinese. QA APKs use version code 75; real device mixing remains unverified in this host-only session.
+
 ## 0.23.1 — 2026-10-01 · optional read aloud and overlay controls
 
 - Add optional read-aloud settings after speech recognition, with engine, gender preference and volume controls; read aloud stays off by default. Fix Supertonic actually applying the requested voice and system voices falling back within the requested language when gender names are unavailable.

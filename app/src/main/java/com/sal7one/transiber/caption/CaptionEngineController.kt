@@ -1160,7 +1160,7 @@ class CaptionEngineController(
         scope.launch(Dispatchers.Main.immediate) {
             if (generation != sessionGeneration || !currentConfig.speakCaptions || currentConfig.paused || stopping) return@launch
             val choice = config.speakerChoice
-            if (!CaptionSpeakerFactory.isAvailable(context, choice)) {
+            if (!CaptionSpeakerFactory.isAvailable(context, choice, config.speakerGender)) {
                 _state.update {
                     it.copy(translationNotice = "Voice unavailable (${choice.label}) — pick another in settings")
                 }

@@ -78,8 +78,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.material3.LocalTextStyle
-import com.sal7one.transiber.byok.ApiKeyStore
-import com.sal7one.transiber.byok.ByokPolicy
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -89,6 +87,8 @@ import com.sal7one.transiber.caption.CaptionEngineController.State
 import com.sal7one.transiber.caption.CaptionEngineController.Status
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+
+private enum class CaptionSettingsPage { AUDIO, CAPTIONS, APPEARANCE }
 
 private data class OverlayPalette(
     val surface: Color,
@@ -165,8 +165,8 @@ fun CaptionOverlayWindow(
     // Keep settings navigation alive while the panel is replaced by live captions.
     val appearanceScrollState = rememberScrollState()
     val translationScrollState = rememberScrollState()
-    var appearanceSettings by remember { mutableStateOf(true) }
-    var showReadAloud by remember { mutableStateOf(false) }
+    val audioScrollState = rememberScrollState()
+    var settingsPage by remember { mutableStateOf(CaptionSettingsPage.AUDIO) }
     var held by remember { mutableStateOf<CaptionReadingSnapshot?>(null) }
     val clipboard = LocalClipboardManager.current
     val content = held ?: CaptionReading.snapshot(state, cfg.showPartial)
@@ -208,11 +208,13 @@ fun CaptionOverlayWindow(
             } else if (cfg.showSettings) {
                 SettingsPanel(
                     cfg = cfg, palette = palette, currentHeightDp = height,
-                    appearance = appearanceSettings,
-                    onAppearanceChange = { appearanceSettings = it },
-                    scrollState = if (appearanceSettings) appearanceScrollState else translationScrollState,
-                    showReadAloud = showReadAloud,
-                    onShowReadAloudChange = { showReadAloud = it },
+                    page = settingsPage,
+                    onPageChange = { settingsPage = it },
+                    scrollState = when (settingsPage) {
+                        CaptionSettingsPage.AUDIO -> audioScrollState
+                        CaptionSettingsPage.CAPTIONS -> translationScrollState
+                        CaptionSettingsPage.APPEARANCE -> appearanceScrollState
+                    },
                     onConfigChange = onConfigChange,
                     onClear = { held = null; onClear() },
                 )
@@ -454,11 +456,9 @@ private fun SettingsPanel(
     cfg: CaptionOverlayConfig,
     palette: OverlayPalette,
     currentHeightDp: Float,
-    appearance: Boolean,
-    onAppearanceChange: (Boolean) -> Unit,
+    page: CaptionSettingsPage,
+    onPageChange: (CaptionSettingsPage) -> Unit,
     scrollState: ScrollState,
-    showReadAloud: Boolean,
-    onShowReadAloudChange: (Boolean) -> Unit,
     onConfigChange: ((CaptionOverlayConfig) -> CaptionOverlayConfig) -> Unit,
     onClear: () -> Unit,
 ) {
@@ -480,13 +480,18 @@ private fun SettingsPanel(
     )) {
       Column(Modifier.fillMaxWidth()) {
         ChipRow(Modifier.padding(horizontal = 14.dp)) {
-            FilterChip(selected = appearance, onClick = { onAppearanceChange(true) }, label = { Text(uiText(UiR.string.ui_appearance_41def)) })
-            FilterChip(selected = !appearance, onClick = { onAppearanceChange(false) }, label = { Text(uiText(UiR.string.ui_cc_translation_508d4)) })
+            FilterChip(selected = page == CaptionSettingsPage.AUDIO, onClick = { onPageChange(CaptionSettingsPage.AUDIO) }, label = { Text(uiText(UiR.string.ui_overlay_audio_tab)) })
+            FilterChip(selected = page == CaptionSettingsPage.CAPTIONS, onClick = { onPageChange(CaptionSettingsPage.CAPTIONS) }, label = { Text(uiText(UiR.string.ui_cc_translation_508d4)) })
+            FilterChip(selected = page == CaptionSettingsPage.APPEARANCE, onClick = { onPageChange(CaptionSettingsPage.APPEARANCE) }, label = { Text(uiText(UiR.string.ui_appearance_41def)) })
         }
-        androidx.compose.runtime.key(appearance) {
+        androidx.compose.runtime.key(page) {
         Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(scrollState)
             .padding(horizontal = 14.dp, vertical = 4.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        if (appearance) {
+        if (page == CaptionSettingsPage.AUDIO) {
+            com.sal7one.transiber.settings.SettingsSpeechAloudUi(
+                cfg, onConfigChange, showDeviceMediaVolume = true, onOpenVoices = { openSetup(12) },
+            )
+        } else if (page == CaptionSettingsPage.APPEARANCE) {
             SliderRow(uiText(UiR.string.ui_height_3f608), (cfg.bubbleHeightDp?.toFloat() ?: currentHeightDp).coerceIn(144f, 600f),
                 144f..600f, palette) { value -> onConfigChange { it.copy(bubbleHeightDp = value.toInt()) } }
             ChipRow {
@@ -614,63 +619,6 @@ private fun SettingsPanel(
             TextButton(onClick = { openSetup(1) }) { Text(uiText(UiR.string.ui_choose_or_download_models_a1983)) }
             TextButton(onClick = { openSetup(3) }) { Text(uiText(UiR.string.ui_full_setup_cloud_settings_ac020)) }
             TextButton(onClick = onClear) { Text(uiText(UiR.string.ui_clear_transcript_05690)) }
-            TextButton(onClick = { onShowReadAloudChange(!showReadAloud) }) { Text(if (showReadAloud) uiText(UiR.string.ui_hide_read_aloud_options_c6763) else uiText(UiR.string.ui_read_aloud_options_dc13d)) }
-            if (showReadAloud) {
-        // ── Voice output (TTS) ────────────────────────────────────────────
-        // Device voice works everywhere (offline with installed voices);
-        // Neural needs an imported ONNX voice model; Cloud is NETWORK
-        // CODE (BYOK, play distribution only — byok/CloudTtsSpeaker).
-        ToggleRow(
-            label = uiText(UiR.string.ui_speak_captions_47294),
-            checked = cfg.speakCaptions,
-            palette = palette,
-        ) { checked -> onConfigChange { it.copy(speakCaptions = checked) } }
-        TextButton(onClick = { openSetup(12) }) { Text(uiText(UiR.string.ui_read_aloud_voices_downloads_7b18c)) }
-        if (cfg.speakCaptions) {
-            val speakerContext = LocalContext.current
-            val voiceReady = com.sal7one.transiber.voice.VoiceModels(java.io.File(speakerContext.filesDir, "voice-models")).ready(com.sal7one.transiber.voice.VoiceSettings.choice(speakerContext).voice)
-            ChipRow {
-                CaptionSpeakerChoice.entries
-                    .filter { it != CaptionSpeakerChoice.CLOUD || ByokPolicy.FEATURE_BYOK }
-                    .forEach { choice ->
-                        FilterChip(
-                            selected = cfg.speakerChoice == choice,
-                            onClick = { onConfigChange { it.copy(speakerChoice = choice) } },
-                            // Native speech requires the verified engine and selected voice.
-                            enabled = choice != CaptionSpeakerChoice.NATIVE || voiceReady,
-                            label = { Text(uiText.label(choice), fontSize = 11.sp) },
-                        )
-                    }
-            }
-            SettingsCaption(
-                if (cfg.speakerChoice == CaptionSpeakerChoice.NATIVE && !voiceReady) {
-                    uiText(UiR.string.ui_install_supertonic_3_and_a_voice_in_read_aloud_settings_8a8c5)
-                } else {
-                    uiText.explanation(cfg.speakerChoice)
-                },
-                palette,
-            )
-            ChipRow {
-                SpeakerGender.entries.forEach { gender ->
-                    FilterChip(
-                        selected = cfg.speakerGender == gender,
-                        onClick = { onConfigChange { it.copy(speakerGender = gender) } },
-                        label = { Text(uiText.label(gender), fontSize = 11.sp) },
-                    )
-                }
-            }
-            var overlayVolume by remember(cfg.speakerVolume) { mutableStateOf(cfg.speakerVolume.toFloat()) }
-            Text(uiText(UiR.string.ui_speaker_volume_label_b31f0, overlayVolume.toInt()), color = palette.onSurfaceMuted, fontSize = 11.sp)
-            Slider(
-                value = overlayVolume,
-                onValueChange = { overlayVolume = it },
-                onValueChangeFinished = { onConfigChange { it.copy(speakerVolume = overlayVolume.toInt().coerceIn(0, 100)) } },
-                valueRange = 0f..100f,
-                modifier = Modifier.fillMaxWidth(),
-            )
-        }
-
-            }
         }
         Spacer(Modifier.height(8.dp))
         }

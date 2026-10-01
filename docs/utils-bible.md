@@ -525,3 +525,17 @@ adapter utility, not a new native speech API.
 before applying a gender-name preference. It preserves an available saved voice
 when no matching gender is advertised, but still rejects a genuinely missing
 selection. `OfflineVoicePolicyTest` covers those failure and fallback cases.
+
+`MediaVolumeController` is the pure device-volume adapter used by the overlay's
+`DeviceMediaVolumeUi`. A small Android port reads/writes `STREAM_MUSIC`; the
+controller respects hardware steps, nonzero minimums, changed output routes and
+fixed-volume policies, returns the actual accepted level, and preserves platform
+errors. Only an explicit gesture writes volume. It never persists or restores a
+global level, and the UI refresh loop exists only in the visible Audio tab.
+`MediaVolumeControllerTest` covers those behaviors with a fake platform port.
+This is an Android app adapter, not DSP or a per-app source/TTS mixer.
+
+Neural voice readiness in `VoiceModels.ready` resolves the requested gender
+through `VoiceGenderMapping` before checking its style file, matching playback.
+`VoiceModelsTest` covers a male-only installation with a female saved voice;
+sparse readiness fixtures still fail the unchanged full checksum verifier.

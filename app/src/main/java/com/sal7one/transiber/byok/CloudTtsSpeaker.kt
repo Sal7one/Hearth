@@ -1,6 +1,9 @@
 package com.sal7one.transiber.byok
 
 import android.media.MediaPlayer
+import android.media.AudioManager
+import android.media.AudioFocusRequest
+import android.media.AudioAttributes
 import com.sal7one.transiber.caption.CaptionSpeaker
 import com.sal7one.transiber.caption.CaptionSpeechQueue
 import com.sal7one.transiber.caption.SpeakerGender
@@ -116,12 +119,21 @@ class CloudTtsSpeaker(
     private val voice: String = "alloy",
     private val onError: (String) -> Unit = {},
     private val cacheDirectory: File? = null,
+    private val audioManager: AudioManager? = null,
 ) : CaptionSpeaker {
     private data class Request(val text: String, val voice: String, val volume: Float)
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val queue = CaptionSpeechQueue<Request>(scope, onError, ::playOnce)
     @Volatile private var client: OpenAiSpeechClient? = null
     private var player: MediaPlayer? = null
+    private val audioAttributes = AudioAttributes.Builder()
+        .setUsage(AudioAttributes.USAGE_ASSISTANCE_NAVIGATION_GUIDANCE)
+        .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH).build()
+    private val focus = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK)
+        .setAudioAttributes(audioAttributes)
+        .setOnAudioFocusChangeListener { change ->
+            if (change == AudioManager.AUDIOFOCUS_LOSS || change == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT) stop()
+        }.build()
 
     override fun speak(text: String, languageTag: String): Boolean =
         speak(text, languageTag, SpeakerGender.ANY, 100)
@@ -150,13 +162,18 @@ class CloudTtsSpeaker(
                 }
             }
             var mp: MediaPlayer? = null
+            var focusGranted = false
             try {
                 currentCoroutineContext().ensureActive()
+                audioManager?.let {
+                    check(it.requestAudioFocus(focus) == AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
+                        "Android could not grant audio focus for read aloud"
+                    }
+                    focusGranted = true
+                }
                 val output = MediaPlayer().also { mp = it; player = it }
                 // Read-aloud audio must not enter our USAGE_MEDIA playback capture.
-                output.setAudioAttributes(android.media.AudioAttributes.Builder()
-                    .setUsage(android.media.AudioAttributes.USAGE_ASSISTANCE_NAVIGATION_GUIDANCE)
-                    .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SPEECH).build())
+                output.setAudioAttributes(audioAttributes)
                 output.setDataSource(tmp.absolutePath)
                 output.setVolume(request.volume, request.volume)
                 withTimeout(120_000) {
@@ -176,8 +193,15 @@ class CloudTtsSpeaker(
                 }
             } finally {
                 player = null
-                mp?.release()
-                withContext(Dispatchers.IO + NonCancellable) { tmp.delete() }
+                try {
+                    mp?.release()
+                } finally {
+                    try {
+                        if (focusGranted) audioManager?.abandonAudioFocusRequest(focus)
+                    } finally {
+                        withContext(Dispatchers.IO + NonCancellable) { tmp.delete() }
+                    }
+                }
             }
         } finally {
             if (client === requestClient) client = null

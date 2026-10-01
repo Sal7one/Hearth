@@ -86,6 +86,31 @@ expose it. Loudness (0–100%) scales the utterance volume on every backend.
 Both options also live in the overlay's settings sheet for live changes; the
 speaker applies them on the next spoken line.
 
+Since 0.23.2, the overlay gear opens **Audio** directly. Read-aloud on/off,
+TTS loudness, voice gender preference and engine choices use the same component
+as Speech settings, including when read aloud is off. CC/translation and
+appearance have separate tabs. The sheet grows temporarily for usable controls
+and restores the saved caption height when closed.
+
+The Audio tab also has **Device media volume**, which reads Android's current
+media stream and changes it only after a slider gesture. It is device-wide;
+it cannot set the private player gain of YouTube or another app independently.
+The TTS slider adds a per-utterance gain, and changing device media volume can
+also affect TTS's base level. This is not an isolated two-track mixer. Opening,
+closing or restarting Hearth does not save, reapply or restore media volume.
+Hardware/route changes refresh only while the Audio tab is visible; fixed-volume
+devices disable the slider and actual policy/service errors are shown.
+
+Local/system/self-hosted voice playback and cloud voice playback request
+`AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK`. Android can temporarily lower a compatible
+media app during voice output and restore it on focus release. Android chooses
+the attenuation; Hearth cannot promise an exact original/TTS ratio. Speech
+content, player policies, routes and OEM behavior can prevent ducking or pause
+the source instead. See [Android audio focus](https://developer.android.com/media/optimize/audio-focus)
+and [AudioManager volume controls](https://developer.android.com/reference/android/media/AudioManager#setStreamVolume(int,int,int)).
+Real device mixing, capture quality while ducked, headset routing and fixed-volume
+TV behavior remain owner device checks.
+
 Turning read aloud off, silencing it, or stopping captions cancels queued voice
 work. Cloud voice work is sequential and bounded to three waiting lines; each
 line retains its own voice and volume. Provider and playback errors are shown

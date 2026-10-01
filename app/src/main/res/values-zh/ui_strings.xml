@@ -957,7 +957,13 @@
     <string name="ui_speaker_engine_label_7f2c6">语音引擎</string>
     <string name="ui_speaker_gender_label_3d84e">声音性别</string>
     <string name="ui_speaker_gender_note_9a25c">端侧神经语音按性别编号；云端语音会映射到相应声音；系统语音在 Android 提供性别信息时生效。</string>
-    <string name="ui_speaker_volume_label_b31f0">音量 · %1$d%%</string>
+    <string name="ui_speaker_volume_label_b31f0">朗读音量 · %1$d%%</string>
+    <string name="ui_overlay_audio_tab">音频</string>
+    <string name="ui_device_media_volume">设备媒体音量 · %1$d%%</string>
+    <string name="ui_device_media_volume_note">调整整个设备的媒体音量，包括朗读的基础音量。这不是单个应用的独立音量控制。</string>
+    <string name="ui_media_volume_fixed">此设备的媒体音量固定，请使用输出设备的控制按钮。</string>
+    <string name="ui_media_volume_error">无法调整媒体音量：%1$s</string>
+    <string name="ui_speaker_live_settings_note">声音与朗读音量用于新的朗读行。兼容的媒体应用可能会在朗读期间降低音量。</string>
     <string name="service_silence_voice_7c1e9">静音语音</string>
     <string name="service_controls_f3d21">控制</string>
 </resources>

@@ -957,7 +957,13 @@
     <string name="ui_speaker_engine_label_7f2c6">Voice engine</string>
     <string name="ui_speaker_gender_label_3d84e">Voice gender</string>
     <string name="ui_speaker_gender_note_9a25c">On-device neural voices are gender-coded; cloud voices map to a matching voice; device voices apply it when Android exposes it.</string>
-    <string name="ui_speaker_volume_label_b31f0">Loudness · %1$d%%</string>
+    <string name="ui_speaker_volume_label_b31f0">TTS loudness · %1$d%%</string>
+    <string name="ui_overlay_audio_tab">Audio</string>
+    <string name="ui_device_media_volume">Device media volume · %1$d%%</string>
+    <string name="ui_device_media_volume_note">Changes media volume across this device, including the base TTS level. It is not a separate volume control for one app.</string>
+    <string name="ui_media_volume_fixed">Media volume is fixed on this device. Use its output controls.</string>
+    <string name="ui_media_volume_error">Could not change media volume: %1$s</string>
+    <string name="ui_speaker_live_settings_note">Voice and TTS loudness apply to new spoken lines. Compatible media apps may lower their audio while TTS speaks.</string>
     <string name="service_silence_voice_7c1e9">Silence voice</string>
     <string name="service_controls_f3d21">Controls</string>
 </resources>

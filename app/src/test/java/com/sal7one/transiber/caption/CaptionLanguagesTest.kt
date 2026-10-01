@@ -83,7 +83,9 @@ class CaptionLanguagesTest {
         val reading = CaptionOverlayConfig(bubbleHeightDp = 160)
         val picker = reading.copy(showSettings = true, languagePicker = CaptionLanguagePicker.SOURCE)
         assertEquals(880, overlayHeightPx(1600, 2f, picker))
-        assertEquals(320, overlayHeightPx(1600, 2f, picker.copy(languagePicker = null)))
+        assertEquals(1040, overlayHeightPx(1600, 2f, picker.copy(languagePicker = null)))
+        assertEquals(320, overlayHeightPx(1600, 2f,
+            picker.copy(showSettings = false, languagePicker = null)))
         assertEquals(240, overlayHeightPx(240, 2f, picker))
         val prefs = mutablePreferencesOf()
         CaptionConfigStore.writeInto(prefs, picker)

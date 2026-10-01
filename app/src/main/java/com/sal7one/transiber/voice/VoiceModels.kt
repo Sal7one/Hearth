@@ -15,7 +15,11 @@ import java.util.zip.ZipInputStream
 internal class VoiceModels(private val root: File) {
     fun file(asset: VoiceAsset) = File(root,asset.filename)
     fun installed(asset: VoiceAsset) = file(asset).let {it.isFile && it.length()==asset.bytes}
-    fun ready(voice: String) = VoiceCatalog.core.all(::installed) && voice in VoiceCatalog.voices && installed(VoiceCatalog.file("$voice.json"))
+    fun ready(voice: String, gender: VoiceGender = VoiceGender.ANY): Boolean {
+        val requested = VoiceGenderMapping.supertonicVoice(voice, gender)
+        return VoiceCatalog.core.all(::installed) && requested in VoiceCatalog.voices &&
+            installed(VoiceCatalog.file("$requested.json"))
+    }
     fun import(input: InputStream, expected: VoiceAsset?=null, cancelled: () -> Unit = {}): VoiceAsset {
         root.mkdirs(); val temporary=File.createTempFile("voice-", ".part",root)
         try {

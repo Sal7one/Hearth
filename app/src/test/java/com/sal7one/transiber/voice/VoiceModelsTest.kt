@@ -6,6 +6,21 @@ import java.util.zip.ZipOutputStream
 import org.junit.Assert.*
 import org.junit.Test
 class VoiceModelsTest {
+    @Test fun readinessChecksTheRequestedGenderStyleRatherThanTheSavedVoice() {
+        val dir = Files.createTempDirectory("voice-readiness-test").toFile()
+        try {
+            val models = VoiceModels(dir)
+            // Sparse fixtures test readiness only; checksum verification still rejects them.
+            (VoiceCatalog.core + VoiceCatalog.file("M3.json")).forEach { asset ->
+                java.io.RandomAccessFile(models.file(asset), "rw").use { it.setLength(asset.bytes) }
+            }
+            assertTrue(models.ready("F3", VoiceGender.MALE))
+            assertTrue(models.ready("M3"))
+            assertFalse(models.ready("F3", VoiceGender.FEMALE))
+            assertFalse(models.ready("F3"))
+            assertThrows(IllegalStateException::class.java) { models.verify("M3") }
+        } finally { dir.deleteRecursively() }
+    }
     @Test fun downloadsArePinnedAndEveryVoiceHasItsStyle() {
         assertEquals(16,VoiceCatalog.assets.size)
         assertEquals(VoiceCatalog.assets.size,VoiceCatalog.assets.map {it.id}.toSet().size)

@@ -14,14 +14,15 @@ interface CaptionSpeaker {
     fun release()
 }
 object CaptionSpeakerFactory {
-    fun isAvailable(context: Context, choice: CaptionSpeakerChoice): Boolean = when(choice) {
+    fun isAvailable(context: Context, choice: CaptionSpeakerChoice, gender: SpeakerGender = SpeakerGender.ANY): Boolean = when(choice) {
         CaptionSpeakerChoice.SYSTEM, CaptionSpeakerChoice.SHARED -> true
         CaptionSpeakerChoice.CUSTOM -> VoiceSettings.customBackend(context)!=null
-        CaptionSpeakerChoice.NATIVE -> VoiceModels(File(context.filesDir,"voice-models")).ready(VoiceSettings.choice(context).voice)
+        CaptionSpeakerChoice.NATIVE -> VoiceModels(File(context.filesDir,"voice-models")).ready(VoiceSettings.choice(context).voice, gender.toVoiceGender())
         CaptionSpeakerChoice.CLOUD -> ByokPolicy.FEATURE_BYOK && ApiKeyStore.hasOpenAiKey(context)
     }
     fun create(context: Context, choice: CaptionSpeakerChoice, onError: (String)->Unit = {}): CaptionSpeaker = when(choice) {
-        CaptionSpeakerChoice.CLOUD -> CloudTtsSpeaker(ApiKeyStore.getOpenAiKey(context),CloudConfigStore.baseUrl(context),CloudConfigStore.ttsModel(context),CloudConfigStore.ttsVoice(context),onError,context.cacheDir)
+        CaptionSpeakerChoice.CLOUD -> CloudTtsSpeaker(ApiKeyStore.getOpenAiKey(context),CloudConfigStore.baseUrl(context),CloudConfigStore.ttsModel(context),CloudConfigStore.ttsVoice(context),onError,context.cacheDir,
+            context.applicationContext.getSystemService(android.media.AudioManager::class.java))
         else -> SharedCaptionVoice(context,when(choice){CaptionSpeakerChoice.SYSTEM->"system";CaptionSpeakerChoice.NATIVE->"supertonic";else->null},onError,choice==CaptionSpeakerChoice.CUSTOM)
     }
 }

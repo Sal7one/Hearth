@@ -67,11 +67,15 @@ internal fun placeOverlay(
     )
 }
 
-/** Preserve old reading size until explicitly resized; all panels then share one height. */
+/** Settings expand temporarily for reachable controls; saved caption height stays intact. */
 internal fun overlayHeightPx(viewportHeight: Int, density: Float, config: CaptionOverlayConfig): Int {
     val legacy = minOf(viewportHeight * config.maxHeightPercent / 100f, 320f * density)
     val reading = config.bubbleHeightDp?.times(density) ?: legacy
-    val requested = if (config.showSettings && config.languagePicker != null) maxOf(reading, 440f * density) else reading
+    val requested = when {
+        config.showSettings && config.languagePicker != null -> maxOf(reading, 440f * density)
+        config.showSettings -> maxOf(reading, 520f * density)
+        else -> reading
+    }
     return requested.coerceAtLeast(144f * density).toInt().coerceIn(1, viewportHeight.coerceAtLeast(1))
 }
 
