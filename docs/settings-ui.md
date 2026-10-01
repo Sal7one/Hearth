@@ -84,3 +84,13 @@ best-effort on Android system voices, and ignored where a server does not
 expose it. Loudness (0–100%) scales the utterance volume on every backend.
 Both options also live in the overlay's settings sheet for live changes; the
 speaker applies them on the next spoken line.
+
+## Overlay geometry per orientation
+
+Every overlay (caption bubble, reading translation bubble, quick translate)
+remembers its geometry separately for portrait and landscape: width (40–100%),
+max height, explicit bubble height, anchor and manual drag offsets. Rotating
+the device swaps to the other set live; editing in one orientation never
+touches the other. Defaults: portrait 60% width / 40% height, landscape 40% /
+60%. Upgrades keep a user's previously stored values as the portrait set.
+Everything else (theme, engines, languages, TTS) remains shared.

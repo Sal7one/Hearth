@@ -1,5 +1,26 @@
 package com.sal7one.transiber.caption
 
+import android.content.res.Configuration
+
+/** Geometry is remembered per orientation: a bubble tuned for a fullscreen video is
+ *  not the bubble you want over a portrait feed, and vice versa. */
+internal enum class OverlayOrientation { PORTRAIT, LANDSCAPE;
+
+    companion object {
+        fun from(configurationOrientation: Int): OverlayOrientation =
+            if (configurationOrientation == Configuration.ORIENTATION_LANDSCAPE) LANDSCAPE else PORTRAIT
+    }
+}
+
+/** Orientation-specific bubble defaults; legacy installs keep their stored portrait values. */
+internal object OverlayGeometryDefaults {
+    val PORTRAIT = OverlayGeometry(60, 40)
+    val LANDSCAPE = OverlayGeometry(40, 60)
+
+    data class OverlayGeometry internal constructor(val widthPercent: Int, val maxHeightPercent: Int)
+    fun defaultsFor(orientation: OverlayOrientation) = if (orientation == OverlayOrientation.LANDSCAPE) LANDSCAPE else PORTRAIT
+}
+
 /** Physical display coordinates; every edge includes bars/cutouts and a grab margin. */
 internal data class OverlayViewport(val left: Int, val top: Int, val right: Int, val bottom: Int) {
     val width get() = (right - left).coerceAtLeast(1)

@@ -230,6 +230,7 @@ class CaptionCaptureService : Service() {
 
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
+        CaptionConfigStore.onOrientationChanged(newConfig.orientation)
         overlay.refreshBounds()
         if (active) updateNotification()
     }

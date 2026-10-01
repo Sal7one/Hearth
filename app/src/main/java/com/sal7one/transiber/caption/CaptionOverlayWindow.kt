@@ -538,7 +538,7 @@ private fun SettingsPanel(
         SliderRow(
             label = uiText(UiR.string.ui_width_1_s_f9552, cfg.widthPercent),
             value = cfg.widthPercent.toFloat(),
-            range = 50f..100f,
+            range = 40f..100f,
             palette = palette,
         ) { value -> onConfigChange { it.copy(widthPercent = value.toInt()) } }
 

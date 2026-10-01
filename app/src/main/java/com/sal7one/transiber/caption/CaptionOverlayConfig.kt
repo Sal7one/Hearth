@@ -157,9 +157,9 @@ data class CaptionOverlayConfig(
     val display: CaptionDisplay = CaptionDisplay.BOTH,
     // Layout
     val anchor: CaptionAnchor = CaptionAnchor.BOTTOM,
-    val widthPercent: Int = 90,          // 50..100 of screen width
+    val widthPercent: Int = OverlayGeometryDefaults.PORTRAIT.widthPercent,   // 40..100 of screen width
     val bubbleHeightDp: Int? = null,     // null preserves the pre-upgrade reading height
-    val maxHeightPercent: Int = 55,      // 20..60 of screen height; scroll beyond
+    val maxHeightPercent: Int = OverlayGeometryDefaults.PORTRAIT.maxHeightPercent,  // 20..60 of screen height; scroll beyond
     val xOffsetPx: Int = 0,              // manual drag offset from anchor
     val yOffsetPx: Int = 0,
     // Text
@@ -220,7 +220,7 @@ data class CaptionOverlayConfig(
     )
 
     fun withUiClamp() = copy(
-        widthPercent = widthPercent.coerceIn(50, 100),
+        widthPercent = widthPercent.coerceIn(40, 100),  // 40% is the landscape default
         speakerVolume = speakerVolume.coerceIn(0, 100),
         maxHeightPercent = maxHeightPercent.coerceIn(20, 60),
         bubbleHeightDp = bubbleHeightDp?.coerceIn(144, 600),
@@ -265,9 +265,23 @@ private val Context.captionDataStore by preferencesDataStore(name = "caption_ove
  */
 object CaptionConfigStore {
 
+    /**
+     * Rotation signal for collectors that outlive a configuration change (the
+     * overlay services). The caller's own resources stay authoritative: a
+     * freshly collected screen always reads its current orientation here, so
+     * a stale signal can never redirect someone's edits to the wrong set.
+     */
+    private val rotation = kotlinx.coroutines.flow.MutableStateFlow(Unit)
+    fun onOrientationChanged(@Suppress("UNUSED_PARAMETER") configurationOrientation: Int) {
+        rotation.value = Unit
+    }
+
     fun config(context: Context): Flow<CaptionOverlayConfig> =
-        context.applicationContext.captionDataStore.data.map { prefs ->
-            readFrom(prefs)
+        kotlinx.coroutines.flow.combine(
+            context.applicationContext.captionDataStore.data,
+            rotation,
+        ) { prefs, _ ->
+            readFrom(prefs, OverlayOrientation.from(context.resources.configuration.orientation))
         }
 
     suspend fun update(
@@ -275,14 +289,27 @@ object CaptionConfigStore {
         transform: (CaptionOverlayConfig) -> CaptionOverlayConfig,
     ) {
         context.applicationContext.captionDataStore.edit { prefs ->
-            val changed = transform(readFrom(prefs))
+            val active = OverlayOrientation.from(context.resources.configuration.orientation)
+            val changed = transform(readFrom(prefs, active))
             val next = changed.withCaptionMode(changed.mode).withUiClamp()
-            writeInto(prefs, next)
+            writeInto(prefs, next, active)
         }
     }
 
     internal fun readFrom(prefs: androidx.datastore.preferences.core.Preferences): CaptionOverlayConfig =
-        CaptionOverlayConfig(
+        readFrom(prefs, OverlayOrientation.PORTRAIT)
+
+    /**
+     * Geometry comes from this orientation's keys: portrait falls back to the
+     * pre-orientation stored value (the user's tuned bubble survives upgrade);
+     * landscape starts from its own default. Every other option stays global.
+     */
+    internal fun readFrom(prefs: androidx.datastore.preferences.core.Preferences, orientation: OverlayOrientation): CaptionOverlayConfig {
+        fun geometry(active: androidx.datastore.preferences.core.Preferences.Key<Int>, legacy: androidx.datastore.preferences.core.Preferences.Key<Int>?, default: Int): Int =
+            prefs[active] ?: legacy?.let { prefs[it] } ?: default
+        val portrait = orientation == OverlayOrientation.PORTRAIT
+        val defaults = OverlayGeometryDefaults.defaultsFor(orientation)
+        return CaptionOverlayConfig(
             mode = prefs[Mode]?.let { enumOrDefault(it, CaptionMode.CAPTIONS) } ?: CaptionMode.CAPTIONS,
             source = prefs[Source]?.let { enumOrDefault(it, CaptionSource.PLAYBACK_CAPTURE) }
                 ?: CaptionSource.PLAYBACK_CAPTURE,
@@ -297,12 +324,13 @@ object CaptionConfigStore {
                 ?: TranslationTarget.ENGLISH,
             streamLanguage = prefs[StreamLanguage] ?: "auto",
             display = prefs[Display]?.let { enumOrDefault(it, CaptionDisplay.BOTH) } ?: CaptionDisplay.BOTH,
-            anchor = prefs[Anchor]?.let { enumOrDefault(it, CaptionAnchor.BOTTOM) } ?: CaptionAnchor.BOTTOM,
-            widthPercent = prefs[WidthPercent] ?: 90,
-            maxHeightPercent = prefs[MaxHeightPercent] ?: 55,
-            bubbleHeightDp = prefs[BubbleHeightDp],
-            xOffsetPx = prefs[XOffset] ?: 0,
-            yOffsetPx = prefs[YOffset] ?: 0,
+            anchor = (prefs[if (portrait) AnchorPortrait else AnchorLandscape] ?: (if (portrait) prefs[Anchor] else null))
+                ?.let { enumOrDefault(it, CaptionAnchor.BOTTOM) } ?: CaptionAnchor.BOTTOM,
+            widthPercent = geometry(if (portrait) WidthPortrait else WidthLandscape, if (portrait) WidthPercent else null, defaults.widthPercent),
+            maxHeightPercent = geometry(if (portrait) HeightPortrait else HeightLandscape, if (portrait) MaxHeightPercent else null, defaults.maxHeightPercent),
+            bubbleHeightDp = (prefs[if (portrait) BubbleHeightPortrait else BubbleHeightLandscape] ?: (if (portrait) prefs[BubbleHeightDp] else null)),
+            xOffsetPx = geometry(if (portrait) XOffsetPortrait else XOffsetLandscape, if (portrait) XOffset else null, 0),
+            yOffsetPx = geometry(if (portrait) YOffsetPortrait else YOffsetLandscape, if (portrait) YOffset else null, 0),
             fontScale = prefs[FontScale]?.let { enumOrDefault(it, CaptionFontScale.NORMAL) }
                 ?: CaptionFontScale.NORMAL,
             historyLines = prefs[HistoryLines] ?: CaptionReading.DEFAULT_PREVIOUS_LINES,
@@ -317,11 +345,14 @@ object CaptionConfigStore {
             speakerGender = prefs[SpeakerGenderKey]?.let { enumOrDefault(it, SpeakerGender.ANY) } ?: SpeakerGender.ANY,
             speakerVolume = (prefs[SpeakerVolumeKey] ?: 100).coerceIn(0, 100),
         ).let { it.withCaptionMode(it.mode).withUiClamp() }
+    }
 
     internal fun writeInto(
         prefs: androidx.datastore.preferences.core.MutablePreferences,
         config: CaptionOverlayConfig,
+        orientation: OverlayOrientation = OverlayOrientation.PORTRAIT,
     ) {
+        val portrait = orientation == OverlayOrientation.PORTRAIT
         prefs[Mode] = config.mode.name
         prefs[Source] = config.source.name
         prefs[Engine] = config.engine.name
@@ -333,12 +364,13 @@ object CaptionConfigStore {
         prefs[Target] = config.target.name
         prefs[StreamLanguage] = config.streamLanguage
         prefs[Display] = config.display.name
-        prefs[Anchor] = config.anchor.name
-        prefs[WidthPercent] = config.widthPercent
-        prefs[MaxHeightPercent] = config.maxHeightPercent
-        config.bubbleHeightDp?.let { prefs[BubbleHeightDp] = it } ?: prefs.remove(BubbleHeightDp)
-        prefs[XOffset] = config.xOffsetPx
-        prefs[YOffset] = config.yOffsetPx
+        prefs[if (portrait) AnchorPortrait else AnchorLandscape] = config.anchor.name
+        prefs[if (portrait) WidthPortrait else WidthLandscape] = config.widthPercent
+        prefs[if (portrait) HeightPortrait else HeightLandscape] = config.maxHeightPercent
+        val bubbleKey = if (portrait) BubbleHeightPortrait else BubbleHeightLandscape
+        config.bubbleHeightDp?.let { prefs[bubbleKey] = it } ?: prefs.remove(bubbleKey)
+        prefs[if (portrait) XOffsetPortrait else XOffsetLandscape] = config.xOffsetPx
+        prefs[if (portrait) YOffsetPortrait else YOffsetLandscape] = config.yOffsetPx
         prefs[FontScale] = config.fontScale.name
         prefs[HistoryLines] = config.historyLines
         prefs[ShowPartial] = config.showPartial
@@ -366,6 +398,19 @@ object CaptionConfigStore {
     private val StreamLanguage = stringPreferencesKey("stream_language")
     private val Display = stringPreferencesKey("caption_display")
     private val Anchor = stringPreferencesKey("anchor")
+    // Geometry is per orientation; unsuffixed keys are legacy migration sources.
+    private val WidthPortrait = intPreferencesKey("width_percent_portrait_v1")
+    private val WidthLandscape = intPreferencesKey("width_percent_landscape_v1")
+    private val HeightPortrait = intPreferencesKey("max_height_percent_portrait_v1")
+    private val HeightLandscape = intPreferencesKey("max_height_percent_landscape_v1")
+    private val BubbleHeightPortrait = intPreferencesKey("bubble_height_portrait_v1")
+    private val BubbleHeightLandscape = intPreferencesKey("bubble_height_landscape_v1")
+    private val AnchorPortrait = stringPreferencesKey("anchor_portrait_v1")
+    private val AnchorLandscape = stringPreferencesKey("anchor_landscape_v1")
+    private val XOffsetPortrait = intPreferencesKey("x_offset_portrait_v1")
+    private val XOffsetLandscape = intPreferencesKey("x_offset_landscape_v1")
+    private val YOffsetPortrait = intPreferencesKey("y_offset_portrait_v1")
+    private val YOffsetLandscape = intPreferencesKey("y_offset_landscape_v1")
     private val WidthPercent = intPreferencesKey("width_percent")
     // v2 keys: the 2026-08 UX revision changed the shipped defaults
     // (taller bubble, larger text, history off) — fresh keys so devices

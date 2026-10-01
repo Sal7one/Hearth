@@ -489,6 +489,7 @@ class ReadingOverlayService : Service() {
     }
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
+        com.sal7one.transiber.caption.CaptionConfigStore.onOrientationChanged(newConfig.orientation)
         clearPage();val bounds=screenSize();region=null;motion.reset();generation++;controller.invalidate()
         layerParams.width=bounds.first;layerParams.height=bounds.second;pageView?.let {wm.updateViewLayout(it,layerParams)}
         if(Build.VERSION.SDK_INT<34)resize(bounds.first,bounds.second)
