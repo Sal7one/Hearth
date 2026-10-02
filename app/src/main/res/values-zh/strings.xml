@@ -28,4 +28,23 @@
     <string name="easy_setup_spoken_title">口语语言</string>
     <string name="easy_setup_download_size">约需下载 %1$d MiB；安装还需要额外空间。原始文件保存在下载文件夹中。</string>
     <string name="easy_setup_choose_different_languages">口语语言和翻译语言不能相同。</string>
+    <string name="caption_history_save">保存悬浮字幕历史</string>
+    <string name="caption_history_title">已保存的字幕</string>
+    <string name="caption_history_privacy">默认关闭。仅在此设备保存新确认的字幕和译文，不保存音频。关闭后保留已有记录。</string>
+    <string name="caption_history_limits">最多保存200个会话和64 MiB文本。存满后停止保存。清空悬浮字幕可开始新会话。</string>
+    <string name="caption_history_original">原始字幕</string>
+    <string name="caption_history_translation">译文</string>
+    <string name="caption_history_no_original">此语音模式未提供原始字幕</string>
+    <string name="caption_history_empty">暂无记录。可在启动语音前或会话期间开启保存。</string>
+    <string name="caption_history_rename">重命名会话</string>
+    <string name="caption_history_share">分享</string>
+    <string name="caption_history_save_text">保存TXT</string>
+    <string name="caption_history_save_json">保存JSON</string>
+    <string name="caption_history_exported">已保存到所选文件</string>
+    <string name="caption_history_delete_all">删除所有已保存字幕</string>
+    <string name="caption_history_delete_title">删除已保存字幕？</string>
+    <string name="caption_history_delete_detail">这将删除设备上的已保存文本，已导出的文件保留。已删除的当前会话不会重新出现；清空或重启悬浮窗即可保存新会话。</string>
+    <string name="caption_history_line_count">%1$d条字幕</string>
+    <string name="caption_history_error">历史保存已停止：%1$s</string>
+    <string name="caption_history_back">所有会话</string>
 </resources>

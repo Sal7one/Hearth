@@ -422,6 +422,9 @@ private fun CaptionBody(
         state.error?.takeIf { content.history.isNotEmpty() || content.partial.isNotBlank() }?.let {
             Text(it, color = palette.accent, fontSize = 12.sp)
         }
+        state.historyError?.let {
+            Text(uiText(UiR.string.caption_history_error, it), color = palette.accent, fontSize = 12.sp)
+        }
         state.translationNotice?.let {
             Text(it, color = palette.accent, fontSize = 12.sp)
         }
@@ -598,6 +601,8 @@ private fun SettingsPanel(
         ) { checked -> onConfigChange { it.copy(tapThrough = checked) } }
 
         } else {
+            com.sal7one.transiber.caption.history.CaptionHistoryOptions(cfg, onConfigChange, { openSetup(16) })
+            androidx.compose.material3.HorizontalDivider()
         SettingsLabel(uiText(UiR.string.ui_mode_a7b93), palette)
         ChipRow {
             CaptionMode.entries.forEach { mode ->

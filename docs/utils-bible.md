@@ -568,3 +568,22 @@ handoffs and removes temporary audio even after cancellation. The production
 consumer is `CloudTtsSpeaker`; `CloudVoiceFilesTest` covers normal/error/cancel
 cleanup. Native speech/TTS, handle registries and inference scheduling stay as
 before. See [cloud TTS research and pipeline](cloud-tts.md).
+
+
+## Optional caption text persistence (0.23.6)
+
+`CaptionHistoryCapture` is the pure, bounded identity/consent reducer used by
+`CaptionHistoryRecorder` in `CaptionCaptureService` only. It tracks finalized
+utterances and provider revisions, invalidates queued writes when saving is
+disabled, preserves original/translation patch semantics, and rejects old
+callbacks after Clear or deletion. Long sessions split after 5000 run identities.
+`CaptionHistoryRecorder` owns a 64-item text queue on IO; failures stop saving
+without stopping STT/TTS. `captionHistoryText` labels Whisper task/pivot and GPT
+translated-only output without inventing original CC. These are app adapters;
+no new JNI/NDK API or audio utility is introduced.
+
+`CaptionHistoryTest` exercises default-off persistence, consent changes, cloud
+partial/final correction, delayed translation after display eviction, Clear,
+long-session limits, delete-all epochs, routing, Unicode exports, drain, queue
+overflow, oversized inputs and storage failures. `AppNavigationTest` includes
+history return/restoration. See [ownership and storage contract](caption-history.md).

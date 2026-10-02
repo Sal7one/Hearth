@@ -77,3 +77,15 @@ with Stop invalidating generations and cancelling the active connection/player.
 Config/voice failures are reported through the overlay notice and do not escape
 the optional speaker into the STT session. Provider setup/preview never enables
 read-aloud automatically. [Cloud TTS evidence](cloud-tts.md).
+
+
+## Saved caption history (0.23.6)
+
+Only `CaptionCaptureService` installs a text-history recorder on its controller.
+Conversation/typed/OCR controllers do not acquire it. Final captions and
+translation patches are emitted after stable IDs are assigned; audio pushes and
+interim text do no persistence work. The separate IO queue drains accepted text
+on service destruction, with consent rechecked before transaction commit.
+Opening history or toggling saving does not restart recognition or voice output.
+History failures have their own error state and never turn an STT failure into
+success or suppress translation errors. See [the history contract](caption-history.md).

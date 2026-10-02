@@ -180,6 +180,7 @@ data class CaptionOverlayConfig(
     val paused: Boolean = false,         // discard captured audio; suspend speech processing
     // Speak finalized lines aloud (captions mode: the original text;
     // translate mode: the translation once it lands).
+    val saveCaptionHistory: Boolean = false, // Text only, explicit opt-in; never audio.
     val speakCaptions: Boolean = false,
     val speakerChoice: CaptionSpeakerChoice = CaptionSpeakerChoice.SYSTEM,
     val speakerGender: SpeakerGender = SpeakerGender.ANY,
@@ -339,6 +340,7 @@ object CaptionConfigStore {
             theme = prefs[Theme]?.let { enumOrDefault(it, CaptionTheme.DARK) } ?: CaptionTheme.DARK,
             backgroundOpacity = prefs[BackgroundOpacity] ?: 70,
             tapThrough = false, // Session-only opt-in, including upgrades with a saved true value.
+            saveCaptionHistory = prefs[SaveCaptionHistory] ?: false,
             speakCaptions = prefs[SpeakCaptions] ?: false,
             speakerChoice = prefs[SpeakerChoice]
                 ?.let { enumOrDefault(it, CaptionSpeakerChoice.SYSTEM) }
@@ -381,6 +383,7 @@ object CaptionConfigStore {
         prefs[Theme] = config.theme.name
         prefs[BackgroundOpacity] = config.backgroundOpacity
         prefs.remove(TapThrough)
+        prefs[SaveCaptionHistory] = config.saveCaptionHistory
         prefs[SpeakCaptions] = config.speakCaptions
         prefs[SpeakerChoice] = config.speakerChoice.name
         prefs[SpeakerGenderKey] = config.speakerGender.name
@@ -431,6 +434,7 @@ object CaptionConfigStore {
     private val Theme = stringPreferencesKey("theme")
     private val BackgroundOpacity = intPreferencesKey("background_opacity")
     private val TapThrough = booleanPreferencesKey("tap_through")
+    private val SaveCaptionHistory = booleanPreferencesKey("save_caption_history_v1")
     private val SpeakCaptions = booleanPreferencesKey("speak_captions")
     private val SpeakerChoice = stringPreferencesKey("speaker_choice")
     private val SpeakerGenderKey = stringPreferencesKey("speaker_gender_v1")

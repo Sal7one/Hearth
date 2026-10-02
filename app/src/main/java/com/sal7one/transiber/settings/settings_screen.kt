@@ -20,6 +20,7 @@ internal fun SettingsScreen(
     onBenchmark: () -> Unit,
     onAdvanced: () -> Unit,
     onHelp: () -> Unit,
+    onHistory: () -> Unit,
 ) {
     val uiText = rememberUiText()
 
@@ -34,6 +35,8 @@ internal fun SettingsScreen(
             SettingsLink(uiText(UiR.string.ui_downloads_imports_a2a3b), if (ByokPolicy.FEATURE_BYOK) uiText(UiR.string.ui_download_folder_progress_and_installed_files_d9ced) else uiText(UiR.string.ui_import_model_files_from_your_device_18597), onDownloads)
             SettingsLink(uiText(UiR.string.ui_local_benchmark_3acfe), uiText(UiR.string.ui_compare_installed_speech_and_translation_models_3e1af), onBenchmark)
         }
+        HorizontalDivider()
+        com.sal7one.transiber.caption.history.CaptionHistorySettings(onHistory)
         HorizontalDivider()
         SettingsAppPreferences(onAppearance, onShortcuts, onAdvanced, onHelp)
     }

@@ -41,6 +41,12 @@ class CaptionCaptureService : Service() {
     override fun onCreate() {
         super.onCreate()
         engine = CaptionEngineController(this)
+        val history = com.sal7one.transiber.caption.history.CaptionHistoryRepository.get(this)
+        val historyScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+        engine.historyRecorder = com.sal7one.transiber.caption.history.CaptionHistoryRecorder(historyScope,
+            history::record, { message -> history.reportSavingError(message); engine.reportHistoryError(message) },
+            com.sal7one.transiber.caption.history.CaptionHistoryCapture(deletions = { history.deletionVersion }))
+        engine.historyRecorder!!.job.invokeOnCompletion { historyScope.cancel() }
         overlay = CaptionOverlayController(this, engine)
         scope.launch { com.sal7one.transiber.i18n.AppLocale.revision.collect { if (active) updateNotification() } }
         scope.launch { com.sal7one.transiber.shortcuts.OverlaySetupVisibility.active.collect { overlay.suppressForSetup(it) } }
@@ -283,6 +289,7 @@ class CaptionCaptureService : Service() {
         releaseCapture()
         overlay.destroy()
         engine.shutdown()
+        engine.historyRecorder?.close() // Drain accepted text writes on its IO scope, outside service cancellation.
         val lease = runtimeLease.also { runtimeLease = null }
         CoroutineScope(Dispatchers.IO).launch { try { engine.awaitReleased() } finally { lease?.close() } }
         scope.cancel()

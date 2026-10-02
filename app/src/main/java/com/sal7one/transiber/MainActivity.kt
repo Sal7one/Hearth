@@ -63,7 +63,7 @@ class MainActivity : AppCompatActivity() {
  private val navigation=kotlinx.coroutines.flow.MutableStateFlow<Int?>(null)
  override fun onNewIntent(intent: android.content.Intent) {
   super.onNewIntent(intent);setIntent(intent);receiveShare(intent)
-  if(intent.hasExtra("page"))navigation.value=intent.getIntExtra("page",0).coerceIn(0,15)
+  if(intent.hasExtra("page"))navigation.value=intent.getIntExtra("page",0).coerceIn(0,16)
  }
  /**
   * Remote/TV keys: media play-pause toggles capture pause, media stop kills
@@ -198,9 +198,9 @@ class MainActivity : AppCompatActivity() {
       4 -> uiText(R.string.nav_speech_settings); 5 -> uiText(R.string.nav_advanced_captions)
       7 -> if (faceLayout) uiText(R.string.label_homeservice_face_title) else uiText(R.string.label_homeservice_conversation_title)
       8 -> uiText(R.string.ui_local_benchmark_3acfe); 9 -> uiText(R.string.label_settingsfeature_translation_label); 10 -> uiText(R.string.label_maintab_camera_title)
-      11 -> uiText(R.string.label_maintab_translate_title); 12 -> uiText(R.string.label_settingsfeature_voices_label); 13 -> uiText(R.string.ui_appearance_navigation_433af); 14 -> uiText(R.string.ui_phone_shortcuts_b969d); 15 -> uiText(R.string.ui_easy_setup_35fb5); else -> uiText(R.string.nav_help)
+      11 -> uiText(R.string.label_maintab_translate_title); 12 -> uiText(R.string.label_settingsfeature_voices_label); 13 -> uiText(R.string.ui_appearance_navigation_433af); 14 -> uiText(R.string.ui_phone_shortcuts_b969d); 15 -> uiText(R.string.ui_easy_setup_35fb5); 16 -> uiText(R.string.caption_history_title); else -> uiText(R.string.nav_help)
      }, style = MaterialTheme.typography.titleMedium) },
-      navigationIcon = { if (!atHome && (simple || !route.isRoot)) IconButton(onClick = { back() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, uiText(R.string.ui_back_b52b3)) } },
+      navigationIcon = { if (!atHome && (simple || !route.isRoot)) IconButton(onClick = { if (page == 16) onBackPressedDispatcher.onBackPressed() else back() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, uiText(R.string.ui_back_b52b3)) } },
       actions = {
        if (simple && !atHome) IconButton(onClick = { home() }) { Icon(Icons.Default.Home, uiText(R.string.nav_home)) }
        IconButton(onClick = { quickSettings = true }) { Icon(Icons.Default.Settings, uiText(R.string.nav_quick_settings)) }
@@ -237,11 +237,11 @@ class MainActivity : AppCompatActivity() {
         onCamera = { go(10) },
         onReading = { reading() },
        ) else when(page) {
-        0 -> CaptionHome(onModels = { go(1) }, onCloud = { speechSettings(SettingsLocation.CLOUD) })
+        0 -> CaptionHome(onModels = { go(1) }, onCloud = { speechSettings(SettingsLocation.CLOUD) }, onHistory = { go(16) })
         1 -> ModelsScreen(onDownloads = { go(2) }, onVoices = { voiceSettings(SettingsLocation.LOCAL) }, initialSection = modelsSection)
         2 -> DownloadsScreen(onBrowseModels = { go(1) })
         3 -> SettingsScreen(
-            onEasySetup = { go(15) },
+            onEasySetup = { go(15) }, onHistory = { go(16) },
             onAppearance = { go(13) }, onShortcuts = { go(14) },
             onFeature = ::settingsFeature,
             onDownloads = { go(2) }, onBenchmark = { go(8) }, onAdvanced = { go(5) }, onHelp = { go(6) },
@@ -249,12 +249,13 @@ class MainActivity : AppCompatActivity() {
         15 -> com.sal7one.transiber.setup.EasySetupScreen(step=setupStep,onStep={setupStep=it},onCaptions={go(0)},onHome={home()},onSettings={go(3)},onDownloads={go(2)})
         13 -> Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) { AppearanceSettings() }
         14 -> Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp)) { SettingsShortcutsUi() }
-        4 -> SettingsSpeechScreen(speechLocation, speechEntry)
+        4 -> SettingsSpeechScreen(speechLocation, speechEntry, onHistory = { go(16) })
         5 -> CaptionScreen(onBrowseModels = { go(1) })
         7 -> ConversationScreen(onModels = { go(1) }, onCloud = { speechSettings(SettingsLocation.CLOUD) }, onLayoutChanged = { faceLayout = it }, initialFaceToFace = faceLayout, onVoices={voiceSettings()})
         10 -> com.sal7one.transiber.ocr.CameraTranslateScreen(onModels = { localModels("Camera") }, onConnections = { translationSettings(SettingsLocation.CLOUD) }, onDownloads = { go(2) },onVoices={voiceSettings()},sharedImage=sharedImage,onShareConsumed={sharedImage=null},onReading={reading()})
         11 -> com.sal7one.transiber.translation.TypedTranslateScreen(onModels={localModels("Translation")},onConnections={translationSettings(SettingsLocation.CLOUD)},onVoices={voiceSettings()},sharedText=sharedText,translateSharedTextImmediately=translateSharedTextImmediately,onShareConsumed={sharedText=null;translateSharedTextImmediately=false})
         12 -> com.sal7one.transiber.voice.VoiceSetup(onDownloads={go(2)}, initialLocation=voiceLocation, entryRevision=voiceEntry)
+        16 -> com.sal7one.transiber.caption.history.CaptionHistoryScreen()
         8 -> LocalBenchmarkScreen(onModels = { localModels(it) }, onDownloads = { go(2) })
         9 -> com.sal7one.transiber.translation.TranslationHub(onModels = { localModels("Translation") }, initialLocation = translationLocation, entryRevision = translationEntry)
         else -> Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {

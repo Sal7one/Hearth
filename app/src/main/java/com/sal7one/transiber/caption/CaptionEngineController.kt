@@ -231,6 +231,7 @@ class CaptionEngineController(
         val partial: String = "",
         val partialTranslation: String? = null,
         val translationNotice: String? = null,
+        val historyError: String? = null,
         val error: String? = null,
         val modelName: String? = null,
         val engineLabel: String = "",
@@ -248,6 +249,9 @@ class CaptionEngineController(
         Dispatchers.Default.limitedParallelism(1)
     private val translationDispatcher: CoroutineDispatcher =
         Dispatchers.Default.limitedParallelism(1)
+
+    internal var historyRecorder: com.sal7one.transiber.caption.history.CaptionHistoryRecorder? = null
+    internal fun reportHistoryError(message: String) { _state.update { it.copy(historyError = message) } }
 
     private val cloudCaptionIds = linkedMapOf<Long, Pair<Long, Long>>()
     private var localTranslationBridge: com.sal7one.common_jni.translation.CaptionTranslationBridge? = null
@@ -362,6 +366,8 @@ class CaptionEngineController(
             clearJob?.cancel()
             clearingTranscript = false
             currentConfig = config
+            historyRecorder?.setEnabled(config.saveCaptionHistory)
+            historyRecorder?.boundary()
             stopping = false
             val generation = ++sessionGeneration
             lastActivityMs = System.currentTimeMillis()
@@ -370,7 +376,7 @@ class CaptionEngineController(
             audioChannel.close()
             audioChannel = Channel(capacity = 4, onBufferOverflow = BufferOverflow.DROP_OLDEST)
             cloudCaptionIds.clear()
-            _state.value = State(status = Status.LOADING_MODEL)
+            _state.value = State(status = Status.LOADING_MODEL, historyError = historyRecorder?.error)
             if (config.paused) return@launch
             loadMutex.withLock {
                 // Don't load another large model while the previous native inference is releasing.
@@ -424,6 +430,8 @@ class CaptionEngineController(
 
     /** Config mutations that do not need an engine restart apply live. */
     fun updateRuntimeConfig(config: CaptionOverlayConfig) {
+        historyRecorder?.setEnabled(config.saveCaptionHistory)
+        if (!config.saveCaptionHistory) _state.update { it.copy(historyError = null) }
         // A failed capture has released projection/recorder. Only a fresh
         // service start can reacquire them; styling must not restart STT alone.
         if (_state.value.status == Status.ERROR) return
@@ -491,6 +499,9 @@ class CaptionEngineController(
             },
             result = { id, text, latency ->
                 scope.launch {
+                    if (generation == translationGeneration && activeRoute == CaptionTranslationRoute.TEXT_TRANSLATOR) {
+                        historyRecorder?.translation(id, text, config.target.languageTag)
+                    }
                     if (generation == translationGeneration && activeRoute == CaptionTranslationRoute.TEXT_TRANSLATOR && _state.value.history.any { it.id == id }) {
                         lastActivityMs = System.currentTimeMillis()
                         _state.update { it.copy(history = attachTranslationById(it.history, id, text), localTranslationMetrics = "${snapshot.label} · ${latency} ms") }
@@ -936,6 +947,12 @@ class CaptionEngineController(
         }
     }
 
+    private fun recordHistoryText(id: Long, text: String, created: Long, detected: String? = null) {
+        historyRecorder?.observe(captionHistoryText(id, text, created, activeRoute, engineTranslatesToTarget,
+            currentConfig.target.languageTag, detected ?: resolvedSpokenLanguage,
+            _state.value.modelName ?: _state.value.engineLabel, currentConfig.source.name))
+    }
+
     private fun promotePartial() {
         val confirmed = lastPartial
         lastPartial = ""
@@ -965,6 +982,8 @@ class CaptionEngineController(
                 partialTranslation = null,
             )
         }
+
+        recordHistoryText(lineId, confirmed, promotedAtMs)
 
         // Speak the finalized line: in translate mode with a Marian-stage
         // target the TRANSLATION is the speakable output (it lands via
@@ -1007,11 +1026,17 @@ class CaptionEngineController(
         while (cloudCaptionIds.size > MAX_HISTORY) cloudCaptionIds.remove(cloudCaptionIds.keys.first())
         _state.update { state ->
             val old = state.history.firstOrNull { it.id == lineId }
-            val line = if (update.translated) CaptionLine(original = "", translation = update.text, id = lineId)
+            val line = if (update.translated) CaptionLine(original = old?.original.orEmpty(), translation = update.text, id = lineId)
                 else CaptionLine(original = update.text, translation = old?.translation, id = lineId)
             state.copy(history = if (old == null) (state.history + line).takeLast(MAX_HISTORY)
                 else state.history.map { if (it.id == lineId) line else it })
         }
+        historyRecorder?.observe(com.sal7one.transiber.caption.history.SavedCaption(
+            lineId, System.currentTimeMillis(), original = if (update.translated) "" else update.text,
+            translation = if (update.translated) update.text else "",
+            sourceLanguage = if (update.translated) null else knownCaptionHistoryLanguage(update.language ?: resolvedSpokenLanguage),
+            translationLanguage = if (update.translated) knownCaptionHistoryLanguage(update.language) ?: currentConfig.target.languageTag else null,
+            engine = _state.value.modelName ?: _state.value.engineLabel, source = currentConfig.source.name), update.complete)
         lastActivityMs = System.currentTimeMillis()
         if (update.complete) {
             if (!update.translated) enqueueLocalTranslation(lineId, update.text, update.language)
@@ -1033,6 +1058,7 @@ class CaptionEngineController(
                     .takeLast(MAX_HISTORY),
             )
         }
+        recordHistoryText(lineId, text, promotedAtMs, sourceLanguage)
         enqueueLocalTranslation(lineId, text, sourceLanguage)
         val marianPending = needsSecondStage(config) || activeRoute == CaptionTranslationRoute.TEXT_TRANSLATOR
         if (!marianPending) speakLine(config, text, sourceLanguage)
@@ -1092,6 +1118,7 @@ class CaptionEngineController(
         }
 
         if (promoted) {
+            recordHistoryText(effectiveHistory.last().id, confirmed, promotedAtMs)
             enqueueLocalTranslation(effectiveHistory.last().id, confirmed, null)
             val marianPending = needsSecondStage(config) || activeRoute == CaptionTranslationRoute.TEXT_TRANSLATOR
             if (!marianPending) speakLine(config, confirmed)
@@ -1132,6 +1159,7 @@ class CaptionEngineController(
     }
 
     private fun attachTranslation(lineId: Long, translated: String, promotedAtMs: Long) {
+        historyRecorder?.translation(lineId, translated, currentConfig.target.languageTag)
         if (_state.value.history.none { it.id == lineId }) return
         val elapsedMs = System.currentTimeMillis() - promotedAtMs
         Log.i(TAG, "Translation attached in ${elapsedMs} ms for line #$lineId")
@@ -1294,6 +1322,7 @@ class CaptionEngineController(
 
     fun clearTranscript() {
         if (clearingTranscript) return
+        historyRecorder?.boundary()
         displayedPartial = ""
         lastPartial = ""
         emptySinceMs = null

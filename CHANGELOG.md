@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.23.6 — 2026-10-03 · optional saved captions
+
+- Add Save overlay history in Settings, speech setup and the overlay CC/translation tab. Off by default; saves newly finalized text only, with no audio.
+- Keep original CC and translation separately when provided. Mark translated-only GPT/Whisper output honestly; keep unaligned provider runs separate.
+- View, rename, select/copy, share, export TXT/JSON and delete past sessions. History is app-private and excluded from backups.
+- Serialize bounded text writes on IO without restarting speech or TTS. Guard toggle-off, corrections, delayed translation, Clear/reconnect, queue/storage failure and deletion races. Stop at storage limits without silently removing older sessions.
+- Localize controls in English, Arabic and Chinese. QA version code 79.
+
 ## 0.23.5 — 2026-10-02 · cloud read-aloud providers
 
 - Add a dedicated cloud voice page for OpenAI, OpenRouter, Google Gemini, ElevenLabs and OpenAI-compatible servers. Keep self-hosted voice setup as a separate option.

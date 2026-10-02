@@ -28,4 +28,23 @@
     <string name="easy_setup_spoken_title">Spoken language</string>
     <string name="easy_setup_download_size">About %1$d MiB to download; installation needs additional space. Originals stay in your Downloads folder.</string>
     <string name="easy_setup_choose_different_languages">Choose different spoken and translated languages.</string>
+    <string name="caption_history_save">Save overlay history</string>
+    <string name="caption_history_title">Saved captions</string>
+    <string name="caption_history_privacy">Off by default. Saves new finalized CC and translations on this device. No audio. Turning off keeps past sessions.</string>
+    <string name="caption_history_limits">Up to 200 sessions and 64 MiB of text. Saving stops when full. Clear the live overlay to start a new saved session.</string>
+    <string name="caption_history_original">Original CC</string>
+    <string name="caption_history_translation">Translation</string>
+    <string name="caption_history_no_original">Original CC not provided by this speech mode</string>
+    <string name="caption_history_empty">No saved captions yet. Enable history before starting speech, or during a session.</string>
+    <string name="caption_history_rename">Rename session</string>
+    <string name="caption_history_share">Share</string>
+    <string name="caption_history_save_text">Save TXT</string>
+    <string name="caption_history_save_json">Save JSON</string>
+    <string name="caption_history_exported">Saved to your selected file</string>
+    <string name="caption_history_delete_all">Delete all saved captions</string>
+    <string name="caption_history_delete_title">Delete saved captions?</string>
+    <string name="caption_history_delete_detail">This deletes the saved text on this device. Exported copies stay where you saved them. A deleted live session stays deleted; Clear or restart the overlay to save a new one.</string>
+    <string name="caption_history_line_count">%1$d lines</string>
+    <string name="caption_history_error">History saving stopped: %1$s</string>
+    <string name="caption_history_back">All sessions</string>
 </resources>

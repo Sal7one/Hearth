@@ -28,4 +28,23 @@
     <string name="easy_setup_spoken_title">لغة الكلام</string>
     <string name="easy_setup_download_size">حوالي %1$d ميبيبايت للتنزيل؛ يحتاج التثبيت مساحة إضافية. تبقى الملفات الأصلية في مجلد التنزيلات.</string>
     <string name="easy_setup_choose_different_languages">اختر لغتين مختلفتين للكلام والترجمة.</string>
+    <string name="caption_history_save">حفظ سجل الترجمة الفورية</string>
+    <string name="caption_history_title">السجلات المحفوظة</string>
+    <string name="caption_history_privacy">معطّل افتراضيًا. يحفظ النصوص النهائية وترجماتها على هذا الجهاز، دون صوت. تعطيله لا يحذف السجلات السابقة.</string>
+    <string name="caption_history_limits">حتى 200 سجل و64 ميبيبايت من النصوص. يتوقف الحفظ عند الامتلاء. امسح النص في النافذة لبدء سجل جديد.</string>
+    <string name="caption_history_original">النص الأصلي</string>
+    <string name="caption_history_translation">الترجمة</string>
+    <string name="caption_history_no_original">وضع الكلام هذا لا يوفّر النص الأصلي</string>
+    <string name="caption_history_empty">لا توجد سجلات بعد. فعّل الحفظ قبل تشغيل الكلام أو أثناء الجلسة.</string>
+    <string name="caption_history_rename">تسمية السجل</string>
+    <string name="caption_history_share">مشاركة</string>
+    <string name="caption_history_save_text">حفظ TXT</string>
+    <string name="caption_history_save_json">حفظ JSON</string>
+    <string name="caption_history_exported">تم الحفظ في الملف الذي اخترته</string>
+    <string name="caption_history_delete_all">حذف كل السجلات</string>
+    <string name="caption_history_delete_title">حذف السجلات المحفوظة؟</string>
+    <string name="caption_history_delete_detail">يحذف النص المحفوظ على الجهاز. تبقى الملفات التي صدّرتها. لن يعود السجل الجاري المحذوف؛ امسح النص أو أعد تشغيل النافذة لحفظ سجل جديد.</string>
+    <string name="caption_history_line_count">%1$d مقطع</string>
+    <string name="caption_history_error">توقف حفظ السجل: %1$s</string>
+    <string name="caption_history_back">كل السجلات</string>
 </resources>

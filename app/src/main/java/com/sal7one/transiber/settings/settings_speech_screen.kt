@@ -13,7 +13,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
 @Composable
-internal fun SettingsSpeechScreen(initialLocation: SettingsLocation, entryRevision: Int = 0) {
+internal fun SettingsSpeechScreen(initialLocation: SettingsLocation, entryRevision: Int = 0, onHistory: () -> Unit = {}) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var config by remember { mutableStateOf<CaptionOverlayConfig?>(null) }
@@ -24,6 +24,8 @@ internal fun SettingsSpeechScreen(initialLocation: SettingsLocation, entryRevisi
         catch (e: Exception) { error = e.message ?: e.toString() }
     }
     SettingsTabs(initialLocation, entryRevision) { location ->
+        com.sal7one.transiber.caption.history.CaptionHistorySettings(onHistory)
+        androidx.compose.material3.HorizontalDivider()
         error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
         if (location == SettingsLocation.CLOUD) {
             SettingsSpeechCloudUi()

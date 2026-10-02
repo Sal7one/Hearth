@@ -32,6 +32,7 @@ import java.io.File
 fun CaptionHome(
     onModels: () -> Unit,
     onCloud: () -> Unit,
+    onHistory: () -> Unit,
 ) {
     val uiText = rememberUiText()
 
@@ -158,6 +159,8 @@ fun CaptionHome(
         }
     }
     if (options) FeatureOptionsSheet(uiText(UiR.string.ui_caption_settings_da0c8), { options = false }, optionsScroll) {
+        com.sal7one.transiber.caption.history.CaptionHistoryOptions(cfg, ::update, { options = false; onHistory() })
+        HorizontalDivider()
         val engines = CaptionEngineChoice.entries.filter { it != CaptionEngineChoice.CLOUD || ByokPolicy.FEATURE_BYOK }
         HomeChoice(uiText(UiR.string.ui_speech_engine_38c0a), uiText.label(cfg.effectiveEngine), engines.map { uiText.label(it) to it }, enabled = !running) { engine ->
             if (engine != cfg.effectiveEngine || engine == CaptionEngineChoice.CLOUD) {
