@@ -16,8 +16,21 @@ object WavEncoder {
      * [samples] are signed 16-bit values at [sampleRate] Hz.
      */
     fun encodePcm16(samples: ShortArray, sampleRate: Int): ByteArray {
-        val out = ByteArrayOutputStream(44 + samples.size * 2)
-        val dataSize = samples.size * 2
+        val buf = ByteArray(samples.size * 2)
+        for (i in samples.indices) {
+            val v = samples[i].toInt()
+            buf[i * 2] = (v and 0xFF).toByte()
+            buf[i * 2 + 1] = ((v shr 8) and 0xFF).toByte()
+        }
+        return wrapPcm16(buf, sampleRate)
+    }
+
+    /** Wrap provider PCM without an intermediate ShortArray or byte-order conversion. */
+    internal fun wrapPcm16(pcm: ByteArray, sampleRate: Int): ByteArray {
+        require(pcm.size % 2 == 0 && pcm.size <= Int.MAX_VALUE - 44) { "Invalid PCM16 byte count" }
+        require(sampleRate in 8000..192000) { "Invalid PCM sample rate" }
+        val out = ByteArrayOutputStream(44 + pcm.size)
+        val dataSize = pcm.size
         val byteRate = sampleRate * 2
 
         out.writeAscii("RIFF")
@@ -34,13 +47,7 @@ object WavEncoder {
         out.writeAscii("data")
         out.writeLeInt(dataSize)
 
-        val buf = ByteArray(samples.size * 2)
-        for (i in samples.indices) {
-            val v = samples[i].toInt()
-            buf[i * 2] = (v and 0xFF).toByte()
-            buf[i * 2 + 1] = ((v shr 8) and 0xFF).toByte()
-        }
-        out.write(buf)
+        out.write(pcm)
         return out.toByteArray()
     }
 

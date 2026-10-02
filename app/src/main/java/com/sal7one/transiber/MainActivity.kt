@@ -1,6 +1,7 @@
 package com.sal7one.transiber
 
 import com.sal7one.transiber.i18n.*
+import kotlinx.coroutines.flow.first
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.activity.compose.BackHandler
@@ -135,13 +136,15 @@ class MainActivity : AppCompatActivity() {
     }
     var speechLocation by rememberSaveable { mutableStateOf(if (intent.getIntExtra("page", 0) == 4) SettingsLocation.CLOUD else SettingsLocation.LOCAL) }
     var translationLocation by rememberSaveable { mutableStateOf(SettingsLocation.LOCAL) }
+    suspend fun captionVoiceLocation(): SettingsLocation = if (com.sal7one.transiber.caption.CaptionConfigStore.config(this@MainActivity).first().speakerChoice == com.sal7one.transiber.caption.CaptionSpeakerChoice.CLOUD) SettingsLocation.CLOUD else SettingsLocation.LOCAL
     var voiceLocation by rememberSaveable { mutableStateOf(SettingsLocation.LOCAL) }
     var speechEntry by rememberSaveable { mutableIntStateOf(0) }
     var translationEntry by rememberSaveable { mutableIntStateOf(0) }
     var voiceEntry by rememberSaveable { mutableIntStateOf(0) }
+    LaunchedEffect(Unit) { if (intent.getIntExtra("page", 0) == 12) { voiceLocation = captionVoiceLocation(); voiceEntry++ } }
     val requestedPage by navigation.collectAsState()
     LaunchedEffect(requestedPage) {
-     requestedPage?.let { if (it == 15) setupStep = EasySetupStep.CHOICE; if (it == 4) { speechLocation = SettingsLocation.CLOUD; speechEntry++ }; focus.clearFocus(); route = AppNavigation.initial(it); homeDestination = null; showHome = false; navigation.value = null }
+     requestedPage?.let { if (it == 15) setupStep = EasySetupStep.CHOICE; if (it == 4) { speechLocation = SettingsLocation.CLOUD; speechEntry++ }; if (it == 12) { voiceLocation = captionVoiceLocation(); voiceEntry++ }; focus.clearFocus(); route = AppNavigation.initial(it); homeDestination = null; showHome = false; navigation.value = null }
     }
     var faceLayout by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(page, atHome, faceLayout) {

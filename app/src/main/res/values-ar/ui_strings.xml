@@ -383,8 +383,8 @@
     <string name="ui_assemblyai_api_key_da25e" formatted="false">"مفتاح AssemblyAI API"</string>
     <string name="ui_paste_the_key_from_assemblyai_com_app_account_9d6b7" formatted="false">"ألصق المفتاح من assemblyai.com/app/account"</string>
     <string name="ui_hide_batch_voice_options_f3f31" formatted="false">"إخفاء خيارات المعالجة المجمّعة والصوت"</string>
-    <string name="ui_optional_batch_cloud_voice_settings_6eebe" formatted="false">"إعدادات اختيارية للمعالجة المجمّعة والصوت السحابي"</string>
-    <string name="ui_these_endpoint_and_model_settings_affect_batch_uploads_and_option_a4bba" formatted="false">"تؤثر إعدادات الواجهة والنموذج هذه على رفع المقاطع والصوت السحابي الاختياري. يستخدم البث المزوّد المحدد أعلاه."</string>
+    <string name="ui_optional_batch_cloud_voice_settings_6eebe" formatted="false">إعدادات الكلام بالدُفعات الاختيارية</string>
+    <string name="ui_these_endpoint_and_model_settings_affect_batch_uploads_and_option_a4bba" formatted="false">هذه الإعدادات تخص رفع الكلام بالدُفعات. البث يستخدم المزود المختار أعلاه.</string>
     <string name="ui_provider_7ceee" formatted="false">"المزوّد"</string>
     <string name="ui_base_url_1dbd6" formatted="false">"العنوان الأساسي"</string>
     <string name="ui_batch_stt_model_captions_3d989" formatted="false">"نموذج تحويل الكلام إلى نص بالمقاطع"</string>
@@ -956,7 +956,7 @@
     <string name="ui_speak_captions_setting_note_4c1a9">انطق كل سطر نهائي مباشرة بعد التعرف، بلغة التسمية أو بالترجمة.</string>
     <string name="ui_speaker_engine_label_7f2c6">محرك الصوت</string>
     <string name="ui_speaker_gender_label_3d84e">جنس الصوت</string>
-    <string name="ui_speaker_gender_note_9a25c">الأصوات العصبية على الجهاز مرمّزة بالجنس؛ وأصوات السحابة تُحوَّل إلى صوت مطابق؛ وأصوات النظام تُطبّقه عندما يكشفه أندرويد.</string>
+    <string name="ui_speaker_gender_note_9a25c">الأصوات العصبية محددة الجنس. الأصوات السحابية تستخدم معرّفاتك أو تعيينًا يدعمه المزود. أصوات الجهاز تستخدم بيانات Android المتاحة.</string>
     <string name="ui_speaker_volume_label_b31f0">صوت القراءة · %1$d%%</string>
     <string name="ui_overlay_audio_tab">الصوت</string>
     <string name="ui_reset_overlay_presentation">إعادة ضبط مظهر النافذة</string>

@@ -17,7 +17,7 @@ Android voice settings. Neither manual button changes the other default. When no
 custom engine is configured, the custom action opens setup. This includes traveler
 turns, face-to-face history, large-text presentation, camera and voice preview. Captions have
 an explicit **Custom default** choice and a **Shared voice settings** read-aloud choice, alongside Android,
-Supertonic and the existing separately configured OpenAI-compatible cloud voice.
+Supertonic and [cloud caption voices](cloud-tts.md) with independent OpenAI, OpenRouter, Google Gemini, ElevenLabs and compatible-server configuration.
 Automatic traveler speech remains optional. Starting microphone capture stops
 traveler playback. Camera speech is manual, for either original or translated text.
 

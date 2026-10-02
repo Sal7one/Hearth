@@ -61,7 +61,6 @@ fun SettingsSpeechCloudUi(onStoredChange: (Boolean) -> Unit = {}, onModeChange: 
     var currentProvider by remember { mutableStateOf(CloudConfigStore.provider(context)) }
     var baseUrlDraft by remember { mutableStateOf(CloudConfigStore.baseUrl(context)) }
     var sttModelDraft by remember { mutableStateOf(CloudConfigStore.sttModel(context)) }
-    var ttsModelDraft by remember { mutableStateOf(CloudConfigStore.ttsModel(context)) }
     var currentSttMode by remember { mutableStateOf(CloudConfigStore.sttMode(context)) }
     var deepgramStored by remember { mutableStateOf(ApiKeyStore.getDeepgramKey(context).isNotBlank()) }
     var sonioxStored by remember { mutableStateOf(ApiKeyStore.getSonioxKey(context).isNotBlank()) }
@@ -257,11 +256,9 @@ fun SettingsSpeechCloudUi(onStoredChange: (Boolean) -> Unit = {}, onModeChange: 
                     CloudConfigStore.setProvider(context, provider)
                     CloudConfigStore.setBaseUrl(context, provider.baseUrl)
                     CloudConfigStore.setSttModel(context, provider.sttModel)
-                    CloudConfigStore.setTtsModel(context, provider.ttsModel)
                     currentProvider = provider
                     baseUrlDraft = provider.baseUrl
                     sttModelDraft = provider.sttModel
-                    ttsModelDraft = provider.ttsModel
                 },
                 label = { Text(uiText.label(provider)) },
             )
@@ -362,17 +359,7 @@ fun SettingsSpeechCloudUi(onStoredChange: (Boolean) -> Unit = {}, onModeChange: 
             }
         }
     }
-    OutlinedTextField(
-        value = ttsModelDraft,
-        onValueChange = {
-            ttsModelDraft = it
-            CloudConfigStore.setTtsModel(context, it)
-        },
-        modifier = Modifier.fillMaxWidth(),
-        singleLine = true,
-        label = { Text(uiText(UiR.string.ui_tts_model_voice_54aa9)) },
-        placeholder = { Text("tts-1") },
-    )
+    Text(uiText(UiR.string.cloud_voice_separate), style = MaterialTheme.typography.bodySmall)
     Spacer(Modifier.height(6.dp))
     Text(
         text = keyStoreError ?: if (keyStored) {

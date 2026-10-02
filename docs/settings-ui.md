@@ -20,7 +20,7 @@ Each tab retains its own scroll position and saveable presentation state when
 switching tabs or returning from another setup page. Unsaved credentials are
 in-memory only and may be cleared when leaving their editor. Keys never enter
 Compose saved state. Existing encrypted stores, model locations and provider
-choices are retained; there is no configuration migration.
+choices are retained. Cloud caption voices in 0.23.5 snapshot the legacy voice configuration once into an independent store; see [cloud TTS](cloud-tts.md).
 
 ## Components
 
@@ -39,6 +39,7 @@ The `app/src/main/java/com/sal7one/transiber/settings/` directory contains:
 | `settings_ocr_local_ui.kt` | Local OCR models and imports |
 | `settings_voice_local_ui.kt` | Android and Supertonic settings |
 | `settings_voice_cloud_ui.kt` | Self-hosted voice connection and capabilities |
+| `CloudTtsSettingsUi.kt` | Independent caption cloud providers, keys, models, voices and explicit preview |
 | `settings_voice_model_card.kt` | Shared voice source/license card |
 | `settings_voice_picker_ui.kt` | Shared voice/language picker |
 | `SettingsDestination.kt` | Flavor-aware settings destinations |

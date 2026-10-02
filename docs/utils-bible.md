@@ -549,3 +549,22 @@ the draft. `OverlaySizePreviewTest` covers those interleavings and Reset during
 a resize. `OverlayHeightTest` keeps caption/settings/picker viewports bounded;
 `OverlayResetTest` verifies presentation recovery without changing pipelines,
 orientation separation and removal of an obsolete legacy height fallback.
+
+## Cloud voice adapters (0.23.5)
+
+`CloudVoiceConfig` and `CloudVoiceProtocol` are app-side, pure wire contracts used
+by `CloudVoiceClient`, the provider settings and `CloudTtsSpeaker`. Model/voice
+catalogs are modality-filtered; unsupported provider options are not forwarded.
+Keys are scoped by provider and canonical endpoint in `CloudVoiceStore` using the
+existing encrypted store. `CloudVoiceProtocolTest` covers schema, filtering,
+scoping, formats and errors; `CloudVoiceClientTest` covers the local transport,
+bounds, cancellation, redirects, redaction and offline gate. No native runtime
+or library dependency is added for HTTP.
+
+`WavEncoder.wrapPcm16` wraps Google's legacy mono PCM16 directly without a
+ShortArray conversion; tests compare exact bytes with the STT encoder and reject
+odd byte counts. `withCloudVoiceFile` retains a file owner across dispatcher
+handoffs and removes temporary audio even after cancellation. The production
+consumer is `CloudTtsSpeaker`; `CloudVoiceFilesTest` covers normal/error/cancel
+cleanup. Native speech/TTS, handle registries and inference scheduling stay as
+before. See [cloud TTS research and pipeline](cloud-tts.md).

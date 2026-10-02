@@ -53,6 +53,14 @@ object ApiKeyStore {
     fun getElevenLabsKey(context: Context): String = getProviderKey(context, "elevenlabs_key_v1")
     fun setElevenLabsKey(context: Context, key: String): Boolean = setProviderKey(context, "elevenlabs_key_v1", key)
 
+    internal fun getTtsKey(context: Context, scope: String): String = synchronized(this) {
+        getProviderKey(context, "tts_key_v1_$scope").also { lastFailure?.let { message -> error(message) } }
+    }
+    internal fun setTtsKey(context: Context, scope: String, key: String): Boolean = synchronized(this) {
+        check(setProviderKey(context, "tts_key_v1_$scope", key)) { lastFailure ?: "Could not save voice credential" }
+        true
+    }
+
     @Synchronized
     private fun getProviderKey(context: Context, field: String): String {
         lastFailure = null

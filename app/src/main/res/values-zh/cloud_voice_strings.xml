@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="cloud_voice_providers">服务商</string>
+    <string name="cloud_voice_self_hosted">自托管</string>
+    <string name="cloud_voice_offline">云端语音需要 Play 版本。仍可使用本地和设备语音。</string>
+    <string name="cloud_voice_openai_info">快速设置 · 富有表现力的朗读 · 可调风格</string>
+    <string name="cloud_voice_router_info">多个语音服务商 · 加载实时 TTS 目录 · 服务商语音 ID</string>
+    <string name="cloud_voice_google_info">多语言语音 · 阿拉伯语、英语和中文 · 3.8 支持风格控制</string>
+    <string name="cloud_voice_eleven_info">选择账户语音 · 加载模型 · 调整语速</string>
+    <string name="cloud_voice_custom_info">你的 HTTPS 服务器 · OpenAI 语音接口 · 自定义模型和语音 ID</string>
+    <string name="cloud_voice_get_key">获取 API 密钥</string>
+    <string name="cloud_voice_guide">语音和指南</string>
+    <string name="cloud_voice_api_key">语音 API 密钥</string>
+    <string name="cloud_voice_model">模型</string>
+    <string name="cloud_voice_voice">语音</string>
+    <string name="cloud_voice_no_models">服务商未返回 TTS 模型</string>
+    <string name="cloud_voice_model_count">已加载 %1$d 个语音模型</string>
+    <string name="cloud_voice_load_models">加载 TTS 模型</string>
+    <string name="cloud_voice_load_voices">加载我的语音</string>
+    <string name="cloud_voice_more_voices">加载更多语音</string>
+    <string name="cloud_voice_voice_count">已加载 %1$d 个语音</string>
+    <string name="cloud_voice_less">收起选项</string>
+    <string name="cloud_voice_advanced">高级选项</string>
+    <string name="cloud_voice_model_id">模型 ID</string>
+    <string name="cloud_voice_voice_id">语音 ID</string>
+    <string name="cloud_voice_gender_info">可为悬浮窗偏好指定女声或男声 ID。留空将保留所选语音；OpenAI 使用内置映射。</string>
+    <string name="cloud_voice_female">女声 ID（可选）</string>
+    <string name="cloud_voice_male">男声 ID（可选）</string>
+    <string name="cloud_voice_style">语音风格（可选）</string>
+    <string name="cloud_voice_save">保存语音设置</string>
+    <string name="cloud_voice_saved">语音设置已保存。语音识别设置未变更。</string>
+    <string name="cloud_voice_remove_key">移除此语音密钥</string>
+    <string name="cloud_voice_use_overlay">用于字幕悬浮窗</string>
+    <string name="cloud_voice_overlay_ready">已选择云端语音。需要时在悬浮窗的音频标签中开启朗读。</string>
+    <string name="cloud_voice_preview_notice">试听仅将此文本发送给所选服务商，可能产生费用。朗读发送已确认的字幕；本地 STT 保持本地运行。</string>
+    <string name="cloud_voice_save_first">试听或用于悬浮窗之前，请保存更改。</string>
+    <string name="cloud_voice_separate">朗读服务商、密钥和语音在设置 → 语音 → 云端中单独配置。</string>
+    <string name="cloud_voice_heading">云端朗读</string>
+    <string name="cloud_voice_subtitle">字幕悬浮窗的语音输出。语音识别和翻译独立配置。</string>
+    <string name="cloud_voice_provider_default">使用服务商默认语音（仅限支持此功能的模型）</string>
+</resources>

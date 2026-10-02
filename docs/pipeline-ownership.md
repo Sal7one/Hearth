@@ -65,3 +65,15 @@ feature's translator; stop/restart during local model initialization; clear type
 mid-translation then start a different feature; switch read-aloud pages; change
 camera/manga model and confirm the caption selection is retained. Paid cloud and
 full local model quality checks still require actual account/audio/model runs.
+
+## Independent cloud caption voice (0.23.5)
+
+Cloud read-aloud has its own provider/endpoint-scoped encrypted credentials and
+configuration; it does not reuse a changing STT connection. Requests retain the
+voice/configuration/loudness chosen when queued. Only finalized text crosses
+this boundary; native local STT and optional translation keep their existing
+owners. Caption speech is still one active request plus three pending entries,
+with Stop invalidating generations and cancelling the active connection/player.
+Config/voice failures are reported through the overlay notice and do not escape
+the optional speaker into the STT session. Provider setup/preview never enables
+read-aloud automatically. [Cloud TTS evidence](cloud-tts.md).

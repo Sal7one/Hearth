@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.23.5 — 2026-10-02 · cloud read-aloud providers
+
+- Add a dedicated cloud voice page for OpenAI, OpenRouter, Google Gemini, ElevenLabs and OpenAI-compatible servers. Keep self-hosted voice setup as a separate option.
+- Discover current OpenRouter speech models and ElevenLabs account models/voices; expose provider voice IDs, supported speed/style controls and optional female/male overrides. Localize controls in English, Arabic and Chinese.
+- Separate encrypted voice credentials and configuration from STT. Read-aloud remains optional; using a voice in the overlay does not switch local speech models or enable voice output automatically.
+- Preserve bounded caption speech, Stop, loudness and audio focus. Decode Google REST audio correctly, wrap legacy PCM once, reject malformed/empty audio, prevent credential redirects and clean up temporary audio across cancellation.
+- Include provider research and local fixture tests. Paid provider quality and Android playback remain owner checks. QA version code 78.
+
 ## 0.23.4 — 2026-10-02 · compact overlay controls
 
 - Show the settings-header Reset button only in portrait with an actual overlay height below 250 dp. Hide it at 250 dp or above and in landscape.

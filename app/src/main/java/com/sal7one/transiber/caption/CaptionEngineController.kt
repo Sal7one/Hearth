@@ -1160,27 +1160,30 @@ class CaptionEngineController(
         scope.launch(Dispatchers.Main.immediate) {
             if (generation != sessionGeneration || !currentConfig.speakCaptions || currentConfig.paused || stopping) return@launch
             val choice = config.speakerChoice
-            if (!CaptionSpeakerFactory.isAvailable(context, choice, config.speakerGender)) {
+            if (choice != CaptionSpeakerChoice.CLOUD && !CaptionSpeakerFactory.isAvailable(context, choice, config.speakerGender)) {
                 _state.update {
                     it.copy(translationNotice = "Voice unavailable (${choice.label}) — pick another in settings")
                 }
                 return@launch
             }
-            val current = speaker?.takeIf { speakerChoice == choice }
-                ?: CaptionSpeakerFactory.create(context, choice) {message -> _state.update {it.copy(translationNotice=message)}}.also {
-                    speaker?.release()
-                    speaker = it
-                    speakerChoice = choice
+            try {
+                val current = speaker?.takeIf { speakerChoice == choice }
+                    ?: CaptionSpeakerFactory.create(context, choice) {message -> _state.update {it.copy(translationNotice=message)}}.also {
+                        speaker?.release()
+                        speaker = it
+                        speakerChoice = choice
+                    }
+                val languageTag = if (config.mode == CaptionMode.TRANSLATE && activeRoute !in setOf(CaptionTranslationRoute.ORIGINAL, CaptionTranslationRoute.UNSUPPORTED)) {
+                    config.target.languageTag
+                } else {
+                    detectedLanguage?.takeUnless {it == "auto" || it.isBlank()}
+                        ?: CaptionLanguages.effectiveSource(config, com.sal7one.transiber.byok.CloudConfigStore.sttMode(context), captionLanguageModel(context,config)).takeUnless {it == "auto"}
+                        ?: if (choice == CaptionSpeakerChoice.CLOUD) "und" else run {_state.update {it.copy(translationNotice="Read aloud needs a recognized language. Choose a spoken language supported by this model.")};return@launch}
                 }
-            val languageTag = if (config.mode == CaptionMode.TRANSLATE && activeRoute !in setOf(CaptionTranslationRoute.ORIGINAL, CaptionTranslationRoute.UNSUPPORTED)) {
-                config.target.languageTag
-            } else {
-                detectedLanguage?.takeUnless {it == "auto" || it.isBlank()}
-                    ?: CaptionLanguages.effectiveSource(config, com.sal7one.transiber.byok.CloudConfigStore.sttMode(context), captionLanguageModel(context,config)).takeUnless {it == "auto"}
-                    ?: run {_state.update {it.copy(translationNotice="Read aloud needs a recognized language. Choose a spoken language supported by this model.")};return@launch}
-            }
-            Log.i(TAG, "Speaking line via ${choice.label} ($languageTag)")
-            current.speak(text, languageTag, config.speakerGender, config.speakerVolume)
+                Log.i(TAG, "Speaking line via ${choice.label} ($languageTag)")
+                current.speak(text, languageTag, config.speakerGender, config.speakerVolume)
+            } catch (e: CancellationException) { throw e }
+            catch (e: Exception) { _state.update { it.copy(translationNotice = e.message ?: e.toString()) } }
         }
     }
 

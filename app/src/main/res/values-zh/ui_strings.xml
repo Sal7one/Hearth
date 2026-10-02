@@ -383,8 +383,8 @@
     <string name="ui_assemblyai_api_key_da25e" formatted="false">"AssemblyAI API 密钥"</string>
     <string name="ui_paste_the_key_from_assemblyai_com_app_account_9d6b7" formatted="false">"粘贴 assemblyai.com/app/account 的密钥"</string>
     <string name="ui_hide_batch_voice_options_f3f31" formatted="false">"隐藏批处理与语音选项"</string>
-    <string name="ui_optional_batch_cloud_voice_settings_6eebe" formatted="false">"可选批处理与云端语音设置"</string>
-    <string name="ui_these_endpoint_and_model_settings_affect_batch_uploads_and_option_a4bba" formatted="false">"这些接口与模型设置影响批量上传和可选云端语音。流式处理使用上方所选服务商。"</string>
+    <string name="ui_optional_batch_cloud_voice_settings_6eebe" formatted="false">可选批量语音设置</string>
+    <string name="ui_these_endpoint_and_model_settings_affect_batch_uploads_and_option_a4bba" formatted="false">这些端点和模型设置用于批量语音上传。流式识别使用上方所选服务商。</string>
     <string name="ui_provider_7ceee" formatted="false">"服务商"</string>
     <string name="ui_base_url_1dbd6" formatted="false">"根地址"</string>
     <string name="ui_batch_stt_model_captions_3d989" formatted="false">"批量语音转写模型（字幕）"</string>
@@ -956,7 +956,7 @@
     <string name="ui_speak_captions_setting_note_4c1a9">识别完成后立即朗读每一行定稿，使用字幕语言或译文。</string>
     <string name="ui_speaker_engine_label_7f2c6">语音引擎</string>
     <string name="ui_speaker_gender_label_3d84e">声音性别</string>
-    <string name="ui_speaker_gender_note_9a25c">端侧神经语音按性别编号；云端语音会映射到相应声音；系统语音在 Android 提供性别信息时生效。</string>
+    <string name="ui_speaker_gender_note_9a25c">神经语音标有性别。云端语音使用你配置的 ID 或服务商支持的映射。设备语音使用可用的 Android 元数据。</string>
     <string name="ui_speaker_volume_label_b31f0">朗读音量 · %1$d%%</string>
     <string name="ui_overlay_audio_tab">音频</string>
     <string name="ui_reset_overlay_presentation">重置浮窗外观</string>

@@ -18,10 +18,10 @@ object CaptionSpeakerFactory {
         CaptionSpeakerChoice.SYSTEM, CaptionSpeakerChoice.SHARED -> true
         CaptionSpeakerChoice.CUSTOM -> VoiceSettings.customBackend(context)!=null
         CaptionSpeakerChoice.NATIVE -> VoiceModels(File(context.filesDir,"voice-models")).ready(VoiceSettings.choice(context).voice, gender.toVoiceGender())
-        CaptionSpeakerChoice.CLOUD -> ByokPolicy.FEATURE_BYOK && ApiKeyStore.hasOpenAiKey(context)
+        CaptionSpeakerChoice.CLOUD -> ByokPolicy.FEATURE_BYOK && runCatching { CloudVoiceStore.hasKey(context, CloudVoiceStore.config(context)) }.getOrDefault(false)
     }
     fun create(context: Context, choice: CaptionSpeakerChoice, onError: (String)->Unit = {}): CaptionSpeaker = when(choice) {
-        CaptionSpeakerChoice.CLOUD -> CloudTtsSpeaker(ApiKeyStore.getOpenAiKey(context),CloudConfigStore.baseUrl(context),CloudConfigStore.ttsModel(context),CloudConfigStore.ttsVoice(context),onError,context.cacheDir,
+        CaptionSpeakerChoice.CLOUD -> CloudTtsSpeaker({ CloudVoiceStore.config(context) }, { CloudVoiceStore.key(context, it) },onError,context.cacheDir,
             context.applicationContext.getSystemService(android.media.AudioManager::class.java))
         else -> SharedCaptionVoice(context,when(choice){CaptionSpeakerChoice.SYSTEM->"system";CaptionSpeakerChoice.NATIVE->"supertonic";else->null},onError,choice==CaptionSpeakerChoice.CUSTOM)
     }

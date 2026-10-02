@@ -383,8 +383,8 @@
     <string name="ui_assemblyai_api_key_da25e" formatted="false">"AssemblyAI API key"</string>
     <string name="ui_paste_the_key_from_assemblyai_com_app_account_9d6b7" formatted="false">"Paste the key from assemblyai.com/app/account"</string>
     <string name="ui_hide_batch_voice_options_f3f31" formatted="false">"Hide batch &amp; voice options"</string>
-    <string name="ui_optional_batch_cloud_voice_settings_6eebe" formatted="false">"Optional batch &amp; cloud voice settings"</string>
-    <string name="ui_these_endpoint_and_model_settings_affect_batch_uploads_and_option_a4bba" formatted="false">"These endpoint and model settings affect batch uploads and optional cloud voice. Streaming uses the provider selected above."</string>
+    <string name="ui_optional_batch_cloud_voice_settings_6eebe" formatted="false">Optional batch speech settings</string>
+    <string name="ui_these_endpoint_and_model_settings_affect_batch_uploads_and_option_a4bba" formatted="false">These endpoint and model settings affect batch speech uploads. Streaming uses the provider selected above.</string>
     <string name="ui_provider_7ceee" formatted="false">"Provider"</string>
     <string name="ui_base_url_1dbd6" formatted="false">"Base URL"</string>
     <string name="ui_batch_stt_model_captions_3d989" formatted="false">"Batch STT model (captions)"</string>
@@ -956,7 +956,7 @@
     <string name="ui_speak_captions_setting_note_4c1a9">Speak each finalized line straight after recognition, in the caption language or the translation.</string>
     <string name="ui_speaker_engine_label_7f2c6">Voice engine</string>
     <string name="ui_speaker_gender_label_3d84e">Voice gender</string>
-    <string name="ui_speaker_gender_note_9a25c">On-device neural voices are gender-coded; cloud voices map to a matching voice; device voices apply it when Android exposes it.</string>
+    <string name="ui_speaker_gender_note_9a25c">Neural voices are gender-coded. Cloud voices use your configured IDs or a supported provider mapping. Device voices use available Android metadata.</string>
     <string name="ui_speaker_volume_label_b31f0">TTS loudness · %1$d%%</string>
     <string name="ui_overlay_audio_tab">Audio</string>
     <string name="ui_reset_overlay_presentation">Reset overlay appearance</string>

@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="cloud_voice_providers">مزودو الخدمة</string>
+    <string name="cloud_voice_self_hosted">خادمك الخاص</string>
+    <string name="cloud_voice_offline">الأصوات السحابية تتطلب نسخة Play. الأصوات المحلية وأصوات الجهاز متاحة.</string>
+    <string name="cloud_voice_openai_info">إعداد سريع للصوت · قراءة معبرة · أسلوب قابل للتعديل</string>
+    <string name="cloud_voice_router_info">مزودون متعددون · تحميل قائمة تحويل النص إلى كلام الحالية · معرّفات أصوات المزود</string>
+    <string name="cloud_voice_google_info">أصوات متعددة اللغات · العربية والإنجليزية والصينية · ضبط الأسلوب في 3.8</string>
+    <string name="cloud_voice_eleven_info">اختر من أصوات حسابك · تحميل النماذج · سرعة قابلة للتعديل</string>
+    <string name="cloud_voice_custom_info">خادم HTTPS الخاص بك · واجهة OpenAI للصوت · معرّفات النموذج والصوت لديك</string>
+    <string name="cloud_voice_get_key">الحصول على مفتاح API</string>
+    <string name="cloud_voice_guide">الأصوات والدليل</string>
+    <string name="cloud_voice_api_key">مفتاح API للصوت</string>
+    <string name="cloud_voice_model">النموذج</string>
+    <string name="cloud_voice_voice">الصوت</string>
+    <string name="cloud_voice_no_models">لم يُرجع المزود أي نموذج لتحويل النص إلى كلام</string>
+    <string name="cloud_voice_model_count">تم تحميل %1$d نموذجًا للصوت</string>
+    <string name="cloud_voice_load_models">تحميل نماذج تحويل النص إلى كلام</string>
+    <string name="cloud_voice_load_voices">تحميل أصواتي</string>
+    <string name="cloud_voice_more_voices">تحميل المزيد من الأصوات</string>
+    <string name="cloud_voice_voice_count">تم تحميل %1$d صوتًا</string>
+    <string name="cloud_voice_less">خيارات أقل</string>
+    <string name="cloud_voice_advanced">خيارات متقدمة</string>
+    <string name="cloud_voice_model_id">معرّف النموذج</string>
+    <string name="cloud_voice_voice_id">معرّف الصوت</string>
+    <string name="cloud_voice_gender_info">معرّفات أصوات أنثى أو ذكر اختيارية لتفضيل النافذة. اتركها فارغة لاستخدام الصوت المختار؛ لدى OpenAI تعيين مدمج.</string>
+    <string name="cloud_voice_female">معرّف صوت أنثى (اختياري)</string>
+    <string name="cloud_voice_male">معرّف صوت ذكر (اختياري)</string>
+    <string name="cloud_voice_style">أسلوب الصوت (اختياري)</string>
+    <string name="cloud_voice_save">حفظ إعداد الصوت</string>
+    <string name="cloud_voice_saved">تم حفظ إعداد الصوت. لم تتغير إعدادات التعرف على الكلام.</string>
+    <string name="cloud_voice_remove_key">حذف مفتاح هذا الصوت</string>
+    <string name="cloud_voice_use_overlay">استخدامه في نافذة الترجمة</string>
+    <string name="cloud_voice_overlay_ready">تم اختيار الصوت السحابي. فعّل القراءة الصوتية من تبويب الصوت في النافذة عندما تحتاجها.</string>
+    <string name="cloud_voice_preview_notice">المعاينة ترسل هذا النص فقط إلى المزود المختار وقد تكون مدفوعة. القراءة الصوتية ترسل النصوص النهائية؛ التعرف المحلي على الكلام يبقى محليًا.</string>
+    <string name="cloud_voice_save_first">احفظ التغييرات قبل المعاينة أو استخدام هذا الإعداد في النافذة.</string>
+    <string name="cloud_voice_separate">يتم إعداد مزودي القراءة الصوتية ومفاتيحهم وأصواتهم بشكل مستقل في الإعدادات ← الأصوات ← السحابة.</string>
+    <string name="cloud_voice_heading">القراءة الصوتية السحابية</string>
+    <string name="cloud_voice_subtitle">الصوت لنافذة الترجمة. التعرف على الكلام والترجمة مستقلان.</string>
+    <string name="cloud_voice_provider_default">استخدام الصوت الافتراضي للمزود (إذا كان النموذج يدعمه)</string>
+</resources>

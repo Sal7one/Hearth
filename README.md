@@ -99,7 +99,7 @@ See the [changelog](CHANGELOG.md) and [pipeline audit](docs/pipeline-ownership.m
 | **Conversation / Face to face** | Speak or type in two languages, swap them quickly, keep originals and translations, and hear text aloud. Face to face rotates one half of the screen for the other person. |
 | **Type to translate** | Type above a live translation, copy either text and play it aloud. Select text in another Android app and choose **Hearth Translate** from the text menu, or use **Share → Hearth Translate** when that app omits third-party text actions. |
 | **Camera & OCR** | Recognize and translate camera or imported-photo text with local OCR and your chosen translator. |
-| **Read aloud** | Use Android voices, local Supertonic, or supported self-hosted TTS across Hearth. |
+| **Read aloud** | Use Android/local/self-hosted voices across Hearth; optional caption read-aloud also supports OpenAI, OpenRouter, Google Gemini and ElevenLabs. |
 
 Swipe the illustrated Home cards to open a feature; Hearth remembers your last
 choice. The interface supports **English, العربية and 简体中文**, with RTL for Arabic.
@@ -144,7 +144,7 @@ Android’s capture consent still applies; apps may block audio or screen captur
 | **Cloud speech** | Bring your own provider keys, including OpenAI, Soniox and ElevenLabs Scribe. Translation support depends on the connection. |
 | **Cloud text translation** | Shared translator choices include Google Cloud, Microsoft Azure, DeepL and LibreTranslate connections. |
 | **Local OCR** | PaddleOCR, Manga OCR and Meiki; choose a reader that supports your source language. |
-| **Read aloud** | Android voices, local Supertonic 3, or self-hosted Chatterbox, Qwen3-TTS and Fish Speech connections in the cloud-capable build. |
+| **Read aloud** | Android voices, local Supertonic 3, self-hosted Chatterbox/Qwen3-TTS/Fish, and [cloud caption voices](docs/cloud-tts.md) with separate provider keys in the Play build. |
 
 Local Qwen and Nemotron recognize speech; a separate translator handles translated
 captions. Whisper’s built-in translation targets English. Translator choices are

@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="cloud_voice_providers">Providers</string>
+    <string name="cloud_voice_self_hosted">Self-hosted</string>
+    <string name="cloud_voice_offline">Cloud voices need the Play build. Local and device voices remain available.</string>
+    <string name="cloud_voice_openai_info">Quick voice setup · expressive read-aloud · editable style</string>
+    <string name="cloud_voice_router_info">Many speech providers · load the live TTS catalog · provider voice IDs</string>
+    <string name="cloud_voice_google_info">Multilingual voices · Arabic, English and Chinese · style control on 3.8</string>
+    <string name="cloud_voice_eleven_info">Choose from your account voices · load models · adjustable speed</string>
+    <string name="cloud_voice_custom_info">Your HTTPS server · OpenAI speech API · your model and voice IDs</string>
+    <string name="cloud_voice_get_key">Get API key</string>
+    <string name="cloud_voice_guide">Voices &amp; guide</string>
+    <string name="cloud_voice_api_key">Voice API key</string>
+    <string name="cloud_voice_model">Model</string>
+    <string name="cloud_voice_voice">Voice</string>
+    <string name="cloud_voice_no_models">No TTS models returned by this provider</string>
+    <string name="cloud_voice_model_count">%1$d speech models loaded</string>
+    <string name="cloud_voice_load_models">Load TTS models</string>
+    <string name="cloud_voice_load_voices">Load my voices</string>
+    <string name="cloud_voice_more_voices">Load more voices</string>
+    <string name="cloud_voice_voice_count">%1$d voices loaded</string>
+    <string name="cloud_voice_less">Less options</string>
+    <string name="cloud_voice_advanced">Advanced options</string>
+    <string name="cloud_voice_model_id">Model ID</string>
+    <string name="cloud_voice_voice_id">Voice ID</string>
+    <string name="cloud_voice_gender_info">Optional female / male voice IDs for the overlay preference. Leave blank to keep the selected voice; OpenAI uses its built-in mapping.</string>
+    <string name="cloud_voice_female">Female voice ID (optional)</string>
+    <string name="cloud_voice_male">Male voice ID (optional)</string>
+    <string name="cloud_voice_style">Voice style (optional)</string>
+    <string name="cloud_voice_save">Save voice setup</string>
+    <string name="cloud_voice_saved">Voice setup saved. Speech recognition is unchanged.</string>
+    <string name="cloud_voice_remove_key">Remove this voice key</string>
+    <string name="cloud_voice_use_overlay">Use in caption overlay</string>
+    <string name="cloud_voice_overlay_ready">Cloud voice selected. Enable Read aloud in the overlay Audio tab when you want it.</string>
+    <string name="cloud_voice_preview_notice">Preview sends only this text to the selected provider and may incur charges. Read-aloud sends finalized captions; local STT stays local.</string>
+    <string name="cloud_voice_save_first">Save your changes before preview or using this setup in the overlay.</string>
+    <string name="cloud_voice_separate">Read-aloud providers, keys and voices are configured separately in Settings → Voices → Cloud.</string>
+    <string name="cloud_voice_heading">Cloud read-aloud</string>
+    <string name="cloud_voice_subtitle">Voice output for your caption overlay. Speech and translation are independent.</string>
+    <string name="cloud_voice_provider_default">Use provider default voice (only if this model supports it)</string>
+</resources>
