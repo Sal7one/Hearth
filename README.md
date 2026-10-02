@@ -172,6 +172,8 @@ downloader.
 Android 9+ (API 28); **arm64 only**. Playback capture requires Android 10+.
 Use JDK 17, Android SDK 36, NDK 27.0.12077973 and SDK CMake 3.22.1. Set ANDROID_HOME
 or create an ignored `local.properties` with `sdk.dir=/your/android/sdk`.
+Also install JDK 21 for app unit tests: the Android 16 Robolectric framework
+requires it. Gradle selects it for tests only; app compilation stays on JDK 17.
 The Gradle wrapper, required Whisper source subset, and speech runtime binaries are
 included. No Hearth checkout or local Maven repository is needed.
 

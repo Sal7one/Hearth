@@ -30,15 +30,26 @@ internal class CaptionHistoryRepository private constructor(context: Context) {
     val savingError = failure.asStateFlow()
     fun reportSavingError(message: String) { failure.value = message }
     fun clearSavingError() { failure.value = null }
-    private fun db(): SQLiteDatabase = database ?: SQLiteDatabase.openOrCreateDatabase(
-        File(directory, "caption-history.db"), null).apply {
-        execSQL("PRAGMA secure_delete=ON")
-        execSQL("CREATE TABLE IF NOT EXISTS sessions (id TEXT PRIMARY KEY, title TEXT NOT NULL, created INTEGER NOT NULL, updated INTEGER NOT NULL, deleted INTEGER NOT NULL DEFAULT 0)")
-        execSQL("CREATE TABLE IF NOT EXISTS lines (session TEXT NOT NULL, id INTEGER NOT NULL, created INTEGER NOT NULL, original TEXT NOT NULL, translation TEXT NOT NULL, source_lang TEXT, target_lang TEXT, engine TEXT NOT NULL, source TEXT NOT NULL, bytes INTEGER NOT NULL, PRIMARY KEY(session,id))")
-        execSQL("CREATE TABLE IF NOT EXISTS usage (id INTEGER PRIMARY KEY CHECK(id=1), count INTEGER NOT NULL, bytes INTEGER NOT NULL)")
-        execSQL("INSERT OR IGNORE INTO usage SELECT 1,COUNT(*),COALESCE(SUM(bytes),0) FROM lines")
-        execSQL("PRAGMA user_version=1")
-        database = this
+    private fun db(): SQLiteDatabase {
+        database?.let { return it }
+        val opened = SQLiteDatabase.openOrCreateDatabase(File(directory, "caption-history.db"), null)
+        try {
+            // Even this assignment returns a row; Android's execSQL rejects row-returning SQL.
+            opened.rawQuery("PRAGMA secure_delete=ON", null).use {
+                check(it.moveToFirst() && it.getInt(0) == 1) { "Unable to enable secure deletion for caption history" }
+            }
+            opened.execSQL("CREATE TABLE IF NOT EXISTS sessions (id TEXT PRIMARY KEY, title TEXT NOT NULL, created INTEGER NOT NULL, updated INTEGER NOT NULL, deleted INTEGER NOT NULL DEFAULT 0)")
+            opened.execSQL("CREATE TABLE IF NOT EXISTS lines (session TEXT NOT NULL, id INTEGER NOT NULL, created INTEGER NOT NULL, original TEXT NOT NULL, translation TEXT NOT NULL, source_lang TEXT, target_lang TEXT, engine TEXT NOT NULL, source TEXT NOT NULL, bytes INTEGER NOT NULL, PRIMARY KEY(session,id))")
+            opened.execSQL("CREATE TABLE IF NOT EXISTS usage (id INTEGER PRIMARY KEY CHECK(id=1), count INTEGER NOT NULL, bytes INTEGER NOT NULL)")
+            opened.execSQL("INSERT OR IGNORE INTO usage SELECT 1,COUNT(*),COALESCE(SUM(bytes),0) FROM lines")
+            opened.version = 1
+            database = opened
+            return opened
+        } catch (error: Throwable) {
+            // A failed initialization must not leak a connection or cache a half-open database.
+            try { opened.close() } catch (closeError: Throwable) { error.addSuppressed(closeError) }
+            throw error
+        }
     }
     private suspend fun <T> locked(block: (SQLiteDatabase) -> T): T = withContext(Dispatchers.IO) { mutex.withLock { block(db()) } }
 

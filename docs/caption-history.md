@@ -50,7 +50,11 @@ model directory, provider request or native handle enters this storage path.
 ## Storage and limits
 
 The SQLite database is `noBackupFilesDir/caption-history.db`, with secure-delete
-and transactional upserts. App backup/device-transfer are already disabled.
+and transactional upserts. Initialization consumes the row-returning
+`PRAGMA secure_delete=ON` with `rawQuery` and verifies it is enabled. `execSQL`
+cannot execute this pragma on Android. Failed initialization closes the uncached
+connection and propagates its actual error; it never resets existing data.
+App backup/device-transfer are already disabled.
 Text is stored in app-private plaintext; this is not a separate encryption claim.
 All SQL runs on serialized IO, outside the audio/NDK/recognition workers.
 Transactional usage counters avoid rescanning all text for every saved line.
@@ -75,11 +79,17 @@ External exported/recipient copies remain under the user's control.
 ## Validation boundary
 
 `CaptionHistoryTest` covers the pure routing, consent, identity, patch/export,
-queue and failure contract. Both app flavors compile and their JVM suites run.
-A host SQLite probe checks production schema/summary SQL, Unicode, rollback,
-usage counters and deletion tombstones; it does not exercise Android's SQLite
-binding, the document picker or FileProvider grants. No paid provider calls,
-adb, device UI or physical streaming tests were run for this change.
+queue and failure contract. `CaptionHistorySqliteTest` uses Robolectric 4.17's
+native SQLite through Android framework APIs on API 28 and 36. It covers empty
+history, CC plus translation patching, Unicode, reopening/rename, translated-only
+output, usage counters, deletion tombstones, consent rollback and initialization
+failure/retry. Test-only dependencies do not enter the APK. App unit tests use
+JDK 21 for the Android 16 framework; production compilation remains on JDK 17.
+The earlier desktop SQLite probe missed the Android-only initialization error;
+the Android API regression reproduced it before the fix. See
+[0.23.7 evidence](review-0.23.7.md). No paid provider calls, adb, device UI or
+physical streaming tests were run. Document picker and FileProvider grants
+still need owner verification.
 
 Owner checks: enable during a local CC/MT session; verify both fields, then
 turn off/on and Clear. Stop/reopen the app and check history survives. Rename,

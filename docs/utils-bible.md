@@ -587,3 +587,11 @@ partial/final correction, delayed translation after display eviction, Clear,
 long-session limits, delete-all epochs, routing, Unicode exports, drain, queue
 overflow, oversized inputs and storage failures. `AppNavigationTest` includes
 history return/restoration. See [ownership and storage contract](caption-history.md).
+
+The history database initializes its row-returning secure-delete pragma with
+Android `rawQuery`, checks the result and closes an uncached connection if any
+initialization step fails. `CaptionHistorySqliteTest` runs the production
+repository through Android's native SQLite framework on API 28 and 36, covering
+empty/read/write/reopen paths, translation patches, Unicode, counters, consent
+rollback and deletion ownership. The desktop SQL probe alone was insufficient
+to validate Android `execSQL` behavior. No public Kotlin/JNI API is added.

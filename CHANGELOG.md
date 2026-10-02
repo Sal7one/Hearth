@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.23.7 — 2026-10-03 · caption history SQLite fix
+
+- Fix the SQLite initialization error that prevented opening an empty caption history and saving the first caption. Consume the secure-delete pragma through a query and close failed initialization connections without resetting saved data.
+- Add Android native SQLite regression coverage for empty history, saving CC/translation, reopening, translated-only output, deletion and consent rollback on API 28 and 36. QA version code 80.
+
 ## 0.23.6 — 2026-10-03 · optional saved captions
 
 - Add Save overlay history in Settings, speech setup and the overlay CC/translation tab. Off by default; saves newly finalized text only, with no audio.

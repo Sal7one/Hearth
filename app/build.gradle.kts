@@ -11,8 +11,8 @@ android {
   applicationId = "com.sal7one.transiber"
   minSdk = 28
   targetSdk = 36
-  versionCode = 79
-  versionName = "0.23.6"
+  versionCode = 80
+  versionName = "0.23.7"
   ndk { abiFilters += "arm64-v8a" }
  }
  flavorDimensions += "distribution"
@@ -27,6 +27,24 @@ android {
  }
  compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
  buildFeatures { compose = true; buildConfig = true }
+ testOptions {
+  unitTests.isIncludeAndroidResources = true
+  unitTests.all {
+   // Android 16's host framework requires Java 21; production Kotlin/Java stays at 17.
+   it.javaLauncher.set(javaToolchains.launcherFor { languageVersion.set(JavaLanguageVersion.of(21)) })
+   it.jvmArgs(
+    "--add-opens=java.base/java.lang=ALL-UNNAMED",
+    "--add-opens=java.base/java.util=ALL-UNNAMED",
+    "--add-opens=java.base/java.io=ALL-UNNAMED",
+    "--add-opens=java.base/java.net=ALL-UNNAMED",
+    "--add-opens=java.base/java.security=ALL-UNNAMED",
+    "--add-opens=java.base/java.text=ALL-UNNAMED",
+    "--add-opens=java.base/jdk.internal.access=ALL-UNNAMED",
+    "--add-opens=java.desktop/java.awt.font=ALL-UNNAMED",
+    "--add-opens=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED",
+   )
+  }
+ }
  packaging { jniLibs.useLegacyPackaging = true; jniLibs.keepDebugSymbols += setOf("**/libonnxruntime.so", "**/libvosk.so", "**/libhearth_qwen.so", "**/libhearth_nemotron.so", "**/libtransiber_translation.so"); resources.excludes += "/META-INF/{AL2.0,LGPL2.1}" }
 }
 kotlin { jvmToolchain(17) }
@@ -56,6 +74,7 @@ dependencies {
  testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.1")
  testImplementation("org.json:json:20231013")
  testImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
+ testImplementation("org.robolectric:robolectric:4.17")
  debugImplementation(libs.androidx.ui.tooling)
 }
 androidComponents.onVariants { variant ->
