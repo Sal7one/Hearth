@@ -95,7 +95,9 @@ height as captions, with controls scrolling inside; text never expands the
 overlay over the video. Width and height preview live during a slider gesture
 and save when released. Shared controls inherit the overlay's text color.
 
-**Reset** is the first control in the settings header, outside the scroll area.
+Since 0.23.4, **Reset** appears in the settings header only in portrait when the
+actual overlay height is below 250 dp. It stays outside the scroll area for
+compact-panel recovery and is hidden at 250 dp or above and in landscape.
 It restores appearance and the active orientation's geometry, including a
 bounded default height. It keeps models, language choices, translation and TTS
 preferences, and the running/paused session. It does not change device volume.
@@ -132,7 +134,7 @@ Every overlay (caption bubble, reading translation bubble, quick translate)
 remembers its geometry separately for portrait and landscape: width (40–100%),
 max height, explicit bubble height, anchor and manual drag offsets. Rotating
 the device swaps to the other set live; editing in one orientation never
-touches the other. Defaults: portrait 60% width / 40% height, landscape 40% /
+touches the other. Defaults: portrait 85% width / 40% height, landscape 40% /
 60%. Upgrades keep a user's previously stored values as the portrait set.
 Everything else (theme, engines, languages, TTS) remains shared.
 

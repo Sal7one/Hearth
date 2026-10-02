@@ -24,7 +24,7 @@ class OverlayResetTest {
         )
         val reset = configured.resetOverlayPresentation(OverlayOrientation.PORTRAIT)
         assertEquals(configured.copy(
-            widthPercent = 60, maxHeightPercent = 40, bubbleHeightDp = null,
+            widthPercent = 85, maxHeightPercent = 40, bubbleHeightDp = null,
             anchor = CaptionAnchor.BOTTOM, xOffsetPx = 0, yOffsetPx = 0,
             fontScale = CaptionFontScale.NORMAL, historyLines = CaptionReading.DEFAULT_PREVIOUS_LINES,
             showPartial = true, theme = CaptionTheme.DARK, backgroundOpacity = 70,

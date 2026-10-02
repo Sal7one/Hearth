@@ -185,7 +185,8 @@ fun CaptionOverlayWindow(
     ) {
         if (cfg.tapThrough) Text(uiText(UiR.string.ui_tap_lock_to_restore_controls_drag_lock_to_move_20d73),
             Modifier.padding(horizontal = 12.dp, vertical = 8.dp), color = palette.onSurface, fontSize = 12.sp)
-        else ControlStrip(cfg, state, palette, true, onDrag, onDragFinished, onClose, { held = null; onClear() }, onConfigChange)
+        else ControlStrip(cfg, state, palette, true, onDrag, onDragFinished, onClose, { held = null; onClear() }, onConfigChange,
+            heightDp = height)
         Box(Modifier.weight(1f).fillMaxWidth()) {
             if (cfg.showSettings && cfg.languagePicker != null) {
                 val which = cfg.languagePicker
@@ -270,11 +271,13 @@ private fun ControlStrip(
     onClose: () -> Unit,
     onClear: () -> Unit,
     onConfigChange: ((CaptionOverlayConfig) -> CaptionOverlayConfig) -> Unit,
+    heightDp: Float,
 ) {
     val uiText = rememberUiText()
 
     val moveStep = with(LocalDensity.current) { 32.dp.roundToPx() }
     val orientation = OverlayOrientation.from(LocalConfiguration.current.orientation)
+    val showReset = cfg.showSettings && orientation == OverlayOrientation.PORTRAIT && heightDp < 250f
     val moveActions = listOf(
         CustomAccessibilityAction(uiText(UiR.string.ui_move_captions_up_d94cb)) { onDrag(0, -moveStep); onDragFinished(); true },
         CustomAccessibilityAction(uiText(UiR.string.ui_move_captions_down_f1f06)) { onDrag(0, moveStep); onDragFinished(); true },
@@ -304,8 +307,8 @@ private fun ControlStrip(
             .padding(horizontal = 4.dp, vertical = 2.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
-        // First control stays reachable even if the rest of the panel is clipped.
-        if (cfg.showSettings) TextButton(
+        // Compact portrait panels retain a recovery control outside their scroll area.
+        if (showReset) TextButton(
             onClick = { onConfigChange { it.resetOverlayPresentation(orientation) } },
             modifier = Modifier.height(controlSize).semantics {
                 contentDescription = uiText(UiR.string.ui_reset_overlay_presentation)

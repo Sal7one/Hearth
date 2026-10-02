@@ -54,7 +54,7 @@ internal enum class OverlayOrientation { PORTRAIT, LANDSCAPE;
 
 /** Orientation-specific bubble defaults; legacy installs keep their stored portrait values. */
 internal object OverlayGeometryDefaults {
-    val PORTRAIT = OverlayGeometry(60, 40)
+    val PORTRAIT = OverlayGeometry(85, 40)
     val LANDSCAPE = OverlayGeometry(40, 60)
 
     data class OverlayGeometry internal constructor(val widthPercent: Int, val maxHeightPercent: Int)

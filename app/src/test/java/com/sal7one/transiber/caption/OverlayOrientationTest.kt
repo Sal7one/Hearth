@@ -59,7 +59,7 @@ class OverlayOrientationTest {
     @Test fun freshInstallsGetOrientationSpecificGeometryDefaults() {
         val portrait = CaptionConfigStore.readFrom(prefs(), OverlayOrientation.PORTRAIT)
         val landscape = CaptionConfigStore.readFrom(prefs(), OverlayOrientation.LANDSCAPE)
-        assertEquals(60, portrait.widthPercent)
+        assertEquals(85, portrait.widthPercent)
         assertEquals(40, portrait.maxHeightPercent)
         assertEquals("landscape defaults differ from portrait", 40, landscape.widthPercent)
         assertEquals(60, landscape.maxHeightPercent)
@@ -90,7 +90,7 @@ class OverlayOrientationTest {
         assertEquals(75, landscape.widthPercent)
         assertEquals(35, landscape.maxHeightPercent)
         assertEquals(12, landscape.xOffsetPx)
-        assertEquals("portrait untouched by landscape edits", 60, portrait.widthPercent)
+        assertEquals("portrait untouched by landscape edits", 85, portrait.widthPercent)
         assertEquals(0, portrait.xOffsetPx)
 
         val portraitTuned = portrait.copy(widthPercent = 88)
@@ -106,7 +106,7 @@ class OverlayOrientationTest {
             .copy(theme = CaptionTheme.LIGHT, widthPercent = 50)
         CaptionConfigStore.writeInto(shared, changed, OverlayOrientation.LANDSCAPE)
         assertEquals(CaptionTheme.LIGHT, CaptionConfigStore.readFrom(shared, OverlayOrientation.PORTRAIT).theme)
-        assertEquals("portrait width still its own", 60, CaptionConfigStore.readFrom(shared, OverlayOrientation.PORTRAIT).widthPercent)
+        assertEquals("portrait width still its own", 85, CaptionConfigStore.readFrom(shared, OverlayOrientation.PORTRAIT).widthPercent)
     }
 
     @Test fun clampAcceptsTheLandscapeDefaultWidth() {

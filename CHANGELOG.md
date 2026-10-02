@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.23.4 — 2026-10-02 · compact overlay controls
+
+- Show the settings-header Reset button only in portrait with an actual overlay height below 250 dp. Hide it at 250 dp or above and in landscape.
+- Use 85% default width in portrait and 40% in landscape. Keep previously saved custom widths; Reset uses the new defaults.
+- Retain fixed height, scrolling captions and live resize previews. QA version code 77.
+
 ## 0.23.3 — 2026-10-02 · bounded overlay and quick settings
 
 - Keep captions, settings and language pickers within the chosen overlay height. Long text scrolls inside the bubble; opening settings does not expand it over the video.
