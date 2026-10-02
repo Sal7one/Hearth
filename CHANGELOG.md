@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.23.3 — 2026-10-02 · bounded overlay and quick settings
+
+- Keep captions, settings and language pickers within the chosen overlay height. Long text scrolls inside the bubble; opening settings does not expand it over the video.
+- Put Audio third after Appearance and CC/translation. Apply the overlay's text color to shared TTS controls so titles remain readable on dark themes.
+- Preview height and width live while dragging, committing once when the gesture ends. Size previews do not write settings or invoke the speech engine on each tick.
+- Keep Reset at the front of the settings header, reachable without scrolling. Restore overlay appearance and the active orientation's geometry while keeping selected models, languages, translation, TTS preferences and the live session.
+- Remove the legacy height fallback after a portrait save so Reset cannot restore an old tiny height. Localize labels in English, Arabic and Chinese; QA version code 76.
+
 ## 0.23.2 — 2026-10-01 · overlay audio controls
 
 - Open the overlay gear directly to Audio: read-aloud on/off, TTS loudness, male/female/default voice preference, engine selection and voice setup. Reuse Speech settings controls and allow preferences to be prepared while TTS is off.

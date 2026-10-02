@@ -78,6 +78,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.material3.LocalTextStyle
+import androidx.compose.material3.LocalContentColor
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -88,7 +90,7 @@ import com.sal7one.transiber.caption.CaptionEngineController.Status
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
-private enum class CaptionSettingsPage { AUDIO, CAPTIONS, APPEARANCE }
+private enum class CaptionSettingsPage { APPEARANCE, CAPTIONS, AUDIO }
 
 private data class OverlayPalette(
     val surface: Color,
@@ -155,6 +157,7 @@ fun CaptionOverlayWindow(
     onClose: () -> Unit,
     onClear: () -> Unit,
     availableHeightDp: Float = 240f,
+    onConfigPreview: ((CaptionOverlayConfig) -> CaptionOverlayConfig) -> Unit = onConfigChange,
 ) {
     val uiText = rememberUiText()
 
@@ -166,7 +169,7 @@ fun CaptionOverlayWindow(
     val appearanceScrollState = rememberScrollState()
     val translationScrollState = rememberScrollState()
     val audioScrollState = rememberScrollState()
-    var settingsPage by remember { mutableStateOf(CaptionSettingsPage.AUDIO) }
+    var settingsPage by remember { mutableStateOf(CaptionSettingsPage.APPEARANCE) }
     var held by remember { mutableStateOf<CaptionReadingSnapshot?>(null) }
     val clipboard = LocalClipboardManager.current
     val content = held ?: CaptionReading.snapshot(state, cfg.showPartial)
@@ -209,13 +212,14 @@ fun CaptionOverlayWindow(
                 SettingsPanel(
                     cfg = cfg, palette = palette, currentHeightDp = height,
                     page = settingsPage,
-                    onPageChange = { settingsPage = it },
+                    onPageChange = { page -> onConfigChange { it }; settingsPage = page },
                     scrollState = when (settingsPage) {
                         CaptionSettingsPage.AUDIO -> audioScrollState
                         CaptionSettingsPage.CAPTIONS -> translationScrollState
                         CaptionSettingsPage.APPEARANCE -> appearanceScrollState
                     },
                     onConfigChange = onConfigChange,
+                    onConfigPreview = onConfigPreview,
                     onClear = { held = null; onClear() },
                 )
             } else {
@@ -270,6 +274,7 @@ private fun ControlStrip(
     val uiText = rememberUiText()
 
     val moveStep = with(LocalDensity.current) { 32.dp.roundToPx() }
+    val orientation = OverlayOrientation.from(LocalConfiguration.current.orientation)
     val moveActions = listOf(
         CustomAccessibilityAction(uiText(UiR.string.ui_move_captions_up_d94cb)) { onDrag(0, -moveStep); onDragFinished(); true },
         CustomAccessibilityAction(uiText(UiR.string.ui_move_captions_down_f1f06)) { onDrag(0, moveStep); onDragFinished(); true },
@@ -299,6 +304,13 @@ private fun ControlStrip(
             .padding(horizontal = 4.dp, vertical = 2.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
+        // First control stays reachable even if the rest of the panel is clipped.
+        if (cfg.showSettings) TextButton(
+            onClick = { onConfigChange { it.resetOverlayPresentation(orientation) } },
+            modifier = Modifier.height(controlSize).semantics {
+                contentDescription = uiText(UiR.string.ui_reset_overlay_presentation)
+            },
+        ) { Text(uiText(UiR.string.ui_reset_44c57), color = palette.accent) }
         // Only this handle drags the window; scrolling and buttons own their gestures.
         Icon(
             Icons.Default.DragIndicator,
@@ -316,7 +328,7 @@ private fun ControlStrip(
                 tint = palette.onSurfaceFaded,
             )
         }
-        IconButton(onClick = onClear, modifier = Modifier.size(controlSize)) {
+        if (!cfg.showSettings) IconButton(onClick = onClear, modifier = Modifier.size(controlSize)) {
             Icon(Icons.Default.Delete, uiText(UiR.string.ui_clear_previous_text_and_pending_translations_4cbd5), tint = palette.onSurfaceFaded)
         }
         IconButton(onClick = { onConfigChange { it.copy(showSettings = !it.showSettings, languagePicker = null) } }, modifier = Modifier.size(controlSize)) {
@@ -460,6 +472,7 @@ private fun SettingsPanel(
     onPageChange: (CaptionSettingsPage) -> Unit,
     scrollState: ScrollState,
     onConfigChange: ((CaptionOverlayConfig) -> CaptionOverlayConfig) -> Unit,
+    onConfigPreview: ((CaptionOverlayConfig) -> CaptionOverlayConfig) -> Unit,
     onClear: () -> Unit,
 ) {
     val uiText = rememberUiText()
@@ -478,22 +491,25 @@ private fun SettingsPanel(
         surfaceVariant = palette.chip, onSurfaceVariant = palette.onSurfaceMuted,
         outline = palette.onSurfaceFaded.copy(alpha = 0.4f),
     )) {
-      Column(Modifier.fillMaxWidth()) {
+      CompositionLocalProvider(LocalContentColor provides palette.onSurface) {
+      Column(Modifier.fillMaxWidth().verticalScroll(scrollState)) {
         ChipRow(Modifier.padding(horizontal = 14.dp)) {
-            FilterChip(selected = page == CaptionSettingsPage.AUDIO, onClick = { onPageChange(CaptionSettingsPage.AUDIO) }, label = { Text(uiText(UiR.string.ui_overlay_audio_tab)) })
-            FilterChip(selected = page == CaptionSettingsPage.CAPTIONS, onClick = { onPageChange(CaptionSettingsPage.CAPTIONS) }, label = { Text(uiText(UiR.string.ui_cc_translation_508d4)) })
             FilterChip(selected = page == CaptionSettingsPage.APPEARANCE, onClick = { onPageChange(CaptionSettingsPage.APPEARANCE) }, label = { Text(uiText(UiR.string.ui_appearance_41def)) })
+            FilterChip(selected = page == CaptionSettingsPage.CAPTIONS, onClick = { onPageChange(CaptionSettingsPage.CAPTIONS) }, label = { Text(uiText(UiR.string.ui_cc_translation_508d4)) })
+            FilterChip(selected = page == CaptionSettingsPage.AUDIO, onClick = { onPageChange(CaptionSettingsPage.AUDIO) }, label = { Text(uiText(UiR.string.ui_overlay_audio_tab)) })
         }
         androidx.compose.runtime.key(page) {
-        Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(scrollState)
+        Column(Modifier.fillMaxWidth()
             .padding(horizontal = 14.dp, vertical = 4.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         if (page == CaptionSettingsPage.AUDIO) {
             com.sal7one.transiber.settings.SettingsSpeechAloudUi(
                 cfg, onConfigChange, showDeviceMediaVolume = true, onOpenVoices = { openSetup(12) },
             )
         } else if (page == CaptionSettingsPage.APPEARANCE) {
-            SliderRow(uiText(UiR.string.ui_height_3f608), (cfg.bubbleHeightDp?.toFloat() ?: currentHeightDp).coerceIn(144f, 600f),
-                144f..600f, palette) { value -> onConfigChange { it.copy(bubbleHeightDp = value.toInt()) } }
+            SliderRow(uiText(UiR.string.ui_height_dp, cfg.bubbleHeightDp ?: currentHeightDp.toInt()), (cfg.bubbleHeightDp?.toFloat() ?: currentHeightDp).coerceIn(144f, 600f),
+                144f..600f, palette,
+                onPreview = { value -> onConfigPreview { it.copy(bubbleHeightDp = value.toInt()) } },
+            ) { value -> onConfigChange { it.copy(bubbleHeightDp = value.toInt()) } }
             ChipRow {
                 listOf(uiText(UiR.string.ui_compact_1df39) to 160, uiText(UiR.string.ui_comfortable_23137) to 240, uiText(UiR.string.ui_large_738fd) to 320).forEach { (label, size) ->
                     FilterChip(selected = cfg.bubbleHeightDp == size,
@@ -545,6 +561,7 @@ private fun SettingsPanel(
             value = cfg.widthPercent.toFloat(),
             range = 40f..100f,
             palette = palette,
+            onPreview = { value -> onConfigPreview { it.copy(widthPercent = value.toInt()) } },
         ) { value -> onConfigChange { it.copy(widthPercent = value.toInt()) } }
 
         SliderRow(
@@ -623,6 +640,7 @@ private fun SettingsPanel(
         Spacer(Modifier.height(8.dp))
         }
         }
+      }
       }
     }
 }
@@ -715,16 +733,16 @@ private fun SliderRow(
     value: Float,
     range: ClosedFloatingPointRange<Float>,
     palette: OverlayPalette,
+    onPreview: ((Float) -> Unit)? = null,
     onChange: (Float) -> Unit,
 ) {
     Column {
         SettingsLabel(label, palette)
-        // Local drag state: committing per tick would write DataStore and
-        // re-emit the whole config flow ~60x/s for the whole drag.
+        // Resize previews update the window, while release commits once to disk.
         var local by remember(value) { mutableFloatStateOf(value) }
         Slider(
             value = local,
-            onValueChange = { local = it },
+            onValueChange = { local = it; onPreview?.invoke(it) },
             onValueChangeFinished = { onChange(local) },
             valueRange = range,
             colors = SliderDefaults.colors(

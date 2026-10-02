@@ -539,3 +539,13 @@ Neural voice readiness in `VoiceModels.ready` resolves the requested gender
 through `VoiceGenderMapping` before checking its style file, matching playback.
 `VoiceModelsTest` covers a male-only installation with a female saved voice;
 sparse readiness fixtures still fail the unchanged full checksum verifier.
+
+`OverlaySizePreview` is a Main-thread app adapter used by
+`CaptionOverlayController` to preview width/height without DataStore writes or
+speech-engine work on every slider tick. Older stored geometry cannot replace
+the current draft, while unrelated saved settings still apply. Commit revisions
+prevent an earlier write from clearing a newer gesture; close/rotation cancel
+the draft. `OverlaySizePreviewTest` covers those interleavings and Reset during
+a resize. `OverlayHeightTest` keeps caption/settings/picker viewports bounded;
+`OverlayResetTest` verifies presentation recovery without changing pipelines,
+orientation separation and removal of an obsolete legacy height fallback.

@@ -39,6 +39,7 @@ class CaptionOverlayController(
     private var destroyed = false
     private var sessionSource: CaptionSource? = null
     private var settingsJob: Job? = null
+    private val sizePreview = OverlaySizePreview()
 
     fun show(sourceForSession: CaptionSource? = null) {
         scope.launch {
@@ -63,6 +64,7 @@ class CaptionOverlayController(
                         onDrag = ::move, onDragFinished = ::persistCurrent,
                         onClose = ::stopSession, onClear = engineController::clearTranscript,
                         availableHeightDp = maxHeight,
+                        onConfigPreview = ::previewConfig,
                     )
                                     }
 }
@@ -75,7 +77,7 @@ class CaptionOverlayController(
                 settingsJob = scope.launch {
                     CaptionConfigStore.config(context).collect { stored ->
                         val live = _config.value
-                        val next = stored.withLiveOverlayState(live, sessionSource)
+                        val next = sizePreview.applyTo(stored.withLiveOverlayState(live, sessionSource))
                         if (next != live) {
                             _config.value = next
                             applyWindowChanges()
@@ -94,6 +96,7 @@ class CaptionOverlayController(
     fun hide() {
         scope.launch {
             settingsJob?.cancel(); settingsJob = null
+            sizePreview.cancel()
             removeRecoveryHandle()
             view?.let { runCatching { wm.removeViewImmediate(it) }; it.disposeComposition() }
             view = null
@@ -114,10 +117,21 @@ class CaptionOverlayController(
         scope.launch {
             val next = transform(_config.value).withUiClamp()
             _config.value = if (next.tapThrough) next.copy(showSettings = false, languagePicker = null) else next
+            val committed = _config.value
+            val revision = sizePreview.beginCommit(committed)
             applyWindowChanges()
             engineController.updateRuntimeConfig(_config.value)
-            CaptionConfigStore.update(context) { _config.value }
+            try { CaptionConfigStore.update(context) { committed } }
+            finally { sizePreview.finishCommit(revision) }
         }
+    }
+
+    /** Size-only UI updates: no disk writes or recognizer work for slider ticks. */
+    private fun previewConfig(transform: (CaptionOverlayConfig) -> CaptionOverlayConfig) {
+        val next = transform(_config.value).withUiClamp()
+        sizePreview.preview(next)
+        _config.value = next
+        applyWindowChanges()
     }
 
     private fun move(dx: Int, dy: Int) {
@@ -149,6 +163,7 @@ class CaptionOverlayController(
     }
 
     fun refreshBounds() { scope.launch {
+        sizePreview.cancel()
         val stored = CaptionConfigStore.config(context).first()
         _config.value = _config.value.withStoredGeometry(stored)
         applyWindowChanges(normalize = true)
@@ -183,7 +198,7 @@ class CaptionOverlayController(
                 yOffsetPx = if (c.anchor == CaptionAnchor.BOTTOM) origin.y - p.y else p.y - origin.y)
         }
         val flags = TvControls.overlayWindowFlags(c.tapThrough, c.showSettings, TvControls.isTvDevice(context))
-        return WindowManager.LayoutParams(p.width, WindowManager.LayoutParams.WRAP_CONTENT,
+        return WindowManager.LayoutParams(p.width, p.height,
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY, flags, PixelFormat.TRANSLUCENT).apply {
             gravity = Gravity.TOP or Gravity.LEFT
             x = p.x
@@ -206,7 +221,7 @@ class CaptionOverlayController(
             syncRecoveryHandle(next)
             v.visibility = if (hidden || setupSuppressed) android.view.View.INVISIBLE else android.view.View.VISIBLE
             val old = v.layoutParams as? WindowManager.LayoutParams
-            if (old == null || old.x != next.x || old.y != next.y || old.width != next.width || old.flags != next.flags || old.alpha != next.alpha) {
+            if (old == null || old.x != next.x || old.y != next.y || old.width != next.width || old.height != next.height || old.flags != next.flags || old.alpha != next.alpha) {
                 wm.updateViewLayout(v, next)
             }
         } catch (e: Exception) {

@@ -86,11 +86,19 @@ expose it. Loudness (0–100%) scales the utterance volume on every backend.
 Both options also live in the overlay's settings sheet for live changes; the
 speaker applies them on the next spoken line.
 
-Since 0.23.2, the overlay gear opens **Audio** directly. Read-aloud on/off,
+Since 0.23.3, the overlay gear opens **Appearance**, followed by
+**CC/translation** and **Audio** as the third tab. Read-aloud on/off,
 TTS loudness, voice gender preference and engine choices use the same component
 as Speech settings, including when read aloud is off. CC/translation and
-appearance have separate tabs. The sheet grows temporarily for usable controls
-and restores the saved caption height when closed.
+appearance have separate tabs. Settings and language pickers use the same fixed
+height as captions, with controls scrolling inside; text never expands the
+overlay over the video. Width and height preview live during a slider gesture
+and save when released. Shared controls inherit the overlay's text color.
+
+**Reset** is the first control in the settings header, outside the scroll area.
+It restores appearance and the active orientation's geometry, including a
+bounded default height. It keeps models, language choices, translation and TTS
+preferences, and the running/paused session. It does not change device volume.
 
 The Audio tab also has **Device media volume**, which reads Android's current
 media stream and changes it only after a slider gesture. It is device-wide;

@@ -370,6 +370,9 @@ object CaptionConfigStore {
         prefs[if (portrait) HeightPortrait else HeightLandscape] = config.maxHeightPercent
         val bubbleKey = if (portrait) BubbleHeightPortrait else BubbleHeightLandscape
         config.bubbleHeightDp?.let { prefs[bubbleKey] = it } ?: prefs.remove(bubbleKey)
+        // Once portrait is explicitly saved, the legacy value must not resurrect
+        // an old height when Reset removes the orientation-specific override.
+        if (portrait) prefs.remove(BubbleHeightDp)
         prefs[if (portrait) XOffsetPortrait else XOffsetLandscape] = config.xOffsetPx
         prefs[if (portrait) YOffsetPortrait else YOffsetLandscape] = config.yOffsetPx
         prefs[FontScale] = config.fontScale.name

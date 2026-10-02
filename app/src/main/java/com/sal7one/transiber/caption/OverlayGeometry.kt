@@ -15,6 +15,33 @@ internal fun CaptionOverlayConfig.withStoredGeometry(stored: CaptionOverlayConfi
     xOffsetPx = stored.xOffsetPx, yOffsetPx = stored.yOffsetPx,
 )
 
+/** Reset presentation only; selected engines, languages and the live session survive. */
+internal fun CaptionOverlayConfig.resetOverlayPresentation(orientation: OverlayOrientation): CaptionOverlayConfig {
+    val defaults = OverlayGeometryDefaults.defaultsFor(orientation)
+    return copy(widthPercent = defaults.widthPercent, maxHeightPercent = defaults.maxHeightPercent,
+        bubbleHeightDp = null, anchor = CaptionAnchor.BOTTOM, xOffsetPx = 0, yOffsetPx = 0,
+        fontScale = CaptionFontScale.NORMAL, historyLines = CaptionReading.DEFAULT_PREVIOUS_LINES,
+        showPartial = true, theme = CaptionTheme.DARK, backgroundOpacity = 70,
+        tapThrough = false, languagePicker = null)
+}
+
+/** Main-thread resize drafts protect live size from older DataStore emissions.
+ *  Only a completed gesture writes settings; a late commit cannot clear a newer draft. */
+internal class OverlaySizePreview {
+    private var draft: CaptionOverlayConfig? = null
+    private var revision = 0L
+    fun preview(config: CaptionOverlayConfig) { draft = config; revision++ }
+    fun applyTo(stored: CaptionOverlayConfig): CaptionOverlayConfig = draft?.let {
+        stored.copy(widthPercent = it.widthPercent, bubbleHeightDp = it.bubbleHeightDp)
+    } ?: stored
+    fun beginCommit(config: CaptionOverlayConfig): Long {
+        if (draft != null) draft = config
+        return ++revision
+    }
+    fun finishCommit(token: Long) { if (token == revision) draft = null }
+    fun cancel() { draft = null; revision++ }
+}
+
 /** Geometry is remembered per orientation: a bubble tuned for a fullscreen video is
  *  not the bubble you want over a portrait feed, and vice versa. */
 internal enum class OverlayOrientation { PORTRAIT, LANDSCAPE;
@@ -67,16 +94,11 @@ internal fun placeOverlay(
     )
 }
 
-/** Settings expand temporarily for reachable controls; saved caption height stays intact. */
+/** A fixed user-selected viewport: text and settings scroll inside it, never grow it. */
 internal fun overlayHeightPx(viewportHeight: Int, density: Float, config: CaptionOverlayConfig): Int {
     val legacy = minOf(viewportHeight * config.maxHeightPercent / 100f, 320f * density)
     val reading = config.bubbleHeightDp?.times(density) ?: legacy
-    val requested = when {
-        config.showSettings && config.languagePicker != null -> maxOf(reading, 440f * density)
-        config.showSettings -> maxOf(reading, 520f * density)
-        else -> reading
-    }
-    return requested.coerceAtLeast(144f * density).toInt().coerceIn(1, viewportHeight.coerceAtLeast(1))
+    return reading.coerceAtLeast(144f * density).toInt().coerceIn(1, viewportHeight.coerceAtLeast(1))
 }
 
 /** Prefer outside the captions; even a full-screen or dragged bubble must retain a reachable handle. */

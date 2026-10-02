@@ -5,13 +5,19 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class OverlayHeightTest {
-    @Test fun quickSettingsExpandWithoutOverwritingTheSavedCaptionHeight() {
+    @Test fun captionsAndSettingsKeepTheSelectedHeight() {
         val config = CaptionOverlayConfig(bubbleHeightDp = 160)
         val settings = config.copy(showSettings = true)
-        assertEquals(1040, overlayHeightPx(1800, 2f, settings))
+        assertEquals(320, overlayHeightPx(1800, 2f, settings))
         assertEquals(160, settings.bubbleHeightDp)
         assertEquals(320, overlayHeightPx(1800, 2f, settings.copy(showSettings = false)))
         assertEquals(300, overlayHeightPx(300, 2f, settings)) // Landscape stays in bounds.
+    }
+    @Test fun resizingAnOpenPanelChangesTheViewportImmediately() {
+        val settings = CaptionOverlayConfig(showSettings = true, bubbleHeightDp = 160)
+        assertEquals(320, overlayHeightPx(1800, 2f, settings))
+        assertEquals(480, overlayHeightPx(1800, 2f, settings.copy(bubbleHeightDp = 240)))
+        assertEquals(288, overlayHeightPx(1800, 2f, settings.copy(bubbleHeightDp = 144)))
     }
     @Test fun upgradeKeepsLegacySizeAndExplicitHeightIsIndependentOfOldPercent() {
         val old = CaptionOverlayConfig(maxHeightPercent = 55)
