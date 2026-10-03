@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.23.8 — 2026-10-03 · conversation turns and following
+
+- Remove the silent one-minute conversation cutoff. Record until Finish; keep bounded audio queues and preserve finalized text independently of the caption display tail.
+- Translate longer turns in bounded requests on one translator, show part progress and preserve the original if a part fails. Treat a native abort during coroutine cancellation as an interrupted turn, with no incomplete translation reported as success.
+- Show new conversation cards and follow their growing bottom. Let users scroll back to read older text without the app pulling them down; Latest messages resumes following.
+- Keep local/cloud speech and translation selections independent, with no model/runtime replacement. Localize progress in English, Arabic and Chinese. QA version code 81.
+
 ## 0.23.7 — 2026-10-03 · caption history SQLite fix
 
 - Fix the SQLite initialization error that prevented opening an empty caption history and saving the first caption. Consume the secure-delete pragma through a query and close failed initialization connections without resetting saved data.

@@ -9,6 +9,7 @@ import com.sal7one.common_jni.speech.TranslationDirection
 import com.sal7one.common_jni.translation.CancellableTextTranslator
 import com.sal7one.common_jni.translation.LocalTranslationSession
 import com.sal7one.common_jni.translation.TranslationCatalog
+import com.sal7one.common_jni.translation.TextTranslationChunks
 import com.sal7one.transiber.caption.*
 import com.sal7one.transiber.runtime.LocalWorkGate
 import com.sal7one.transiber.translation.*
@@ -29,6 +30,8 @@ internal data class ConversationState(
     val listening: Boolean = false,
     val error: String? = null,
     val saveHistory: Boolean = true,
+    val translatedParts: Int = 0,
+    val translationParts: Int = 0,
 )
 
 /** Screen-owned microphone sessions; never creates an overlay or changes caption preferences. */
@@ -121,7 +124,8 @@ internal class ConversationController(private val context: Context) : AutoClosea
         val turn = retry?.copy(status = TurnStatus.TRANSLATING, error = null, route = route) ?: ConversationTurn(speaker = speaker, source = source, target = target, route = route,
             original = typed.orEmpty(), status = if (typed == null) TurnStatus.LISTENING else TurnStatus.TRANSLATING)
         _state.update { it.copy(session = if (retry == null) it.session.copy(turns = it.session.turns + turn) else it.session.updateTurn(session.id, turn),
-            busy = true, activeSpeaker = speaker, status = ConversationStatus.PREPARING, error = null, partial = "") }
+            busy = true, activeSpeaker = speaker, status = ConversationStatus.PREPARING, error = null, partial = "",
+            translatedParts = 0, translationParts = 0) }
         persist()
         val gen = ++generation
         finish = CompletableDeferred()
@@ -132,6 +136,7 @@ internal class ConversationController(private val context: Context) : AutoClosea
             try {
                 lease = LocalWorkGate.acquire("Conversation")
                 if (typed == null) {
+                    val transcript = ConversationTranscript()
                     val controller = CaptionEngineController(context)
                     engine = controller
                     var recognitionError: String? = null
@@ -140,7 +145,12 @@ internal class ConversationController(private val context: Context) : AutoClosea
                             recognitionError = s.error ?: "Speech recognition failed"
                             finish.complete(Unit)
                         }
-                        val original = s.history.joinToString(" ") { it.original }.trim()
+                        val original = try { transcript.observe(s.history) }
+                            catch (e: IllegalStateException) {
+                                recognitionError = e.message
+                                finish.complete(Unit)
+                                transcript.text
+                            }
                         if (original != currentTurn.original) {
                             currentTurn = currentTurn.copy(original = original)
                             _state.update { it.copy(session = it.session.updateTurn(session.id, currentTurn)) }; persist()
@@ -154,14 +164,15 @@ internal class ConversationController(private val context: Context) : AutoClosea
                     coroutineContext.ensureActive()
                     startMicrophone(controller)
                     _state.update { it.copy(status = ConversationStatus.LISTENING, listening = true) }
-                    // Explicit bounded turns: avoid unbounded offline windows and encourage a natural handover.
-                    withTimeoutOrNull(60_000) { finish.await() }
+                    // ASR already uses bounded streaming windows/queues. The user ends the turn;
+                    // an unrelated one-minute timer must not interrupt an unfinished sentence.
+                    finish.await()
                     _state.update { it.copy(status = ConversationStatus.FINISHING, listening = false) }
                     stopMicrophone()
                     recognitionError?.let { error(it) }
                     suspendCancellableCoroutine { continuation -> controller.stop { if (continuation.isActive) continuation.resume(Unit) } }
                     observer.cancelAndJoin(); observer = null
-                    currentTurn = currentTurn.copy(original = controller.state.value.history.joinToString(" ") { it.original }.trim())
+                    currentTurn = currentTurn.copy(original = transcript.observe(controller.state.value.history))
                     _state.update { it.copy(session = it.session.updateTurn(session.id, currentTurn), partial = "") }; persist()
                     controller.shutdown(); controller.awaitReleased(); engine = null
                 }
@@ -171,7 +182,13 @@ internal class ConversationController(private val context: Context) : AutoClosea
                 val translated = withContext(Dispatchers.IO) {
                     val opened = translationRoute.open(context)
                     translator = opened
-                    try { ensureActive(); opened.translate(currentTurn.original, TranslationDirection(source, target)) }
+                    try {
+                        ensureActive()
+                        TextTranslationChunks.translate(opened, currentTurn.original, TranslationDirection(source, target),
+                            maximumCharacters = if (translationRoute.cloud == null) 320 else 4000) { completed, total ->
+                            _state.update { it.copy(translatedParts = completed, translationParts = total) }
+                        }
+                    }
                     finally { opened.close(); translator = null }
                 }
                 currentTurn = currentTurn.copy(translation = translated, status = TurnStatus.COMPLETE, error = null)
@@ -194,7 +211,7 @@ internal class ConversationController(private val context: Context) : AutoClosea
                     translator?.close(); translator = null
                     lease?.close()
                 }
-                if (generation == gen) _state.update { it.copy(status = ConversationStatus.READY, busy = false, activeSpeaker = null, listening = false, partial = "") }
+                if (generation == gen) _state.update { it.copy(status = ConversationStatus.READY, busy = false, activeSpeaker = null, listening = false, partial = "", translatedParts = 0, translationParts = 0) }
             }
         }
     }

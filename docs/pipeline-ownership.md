@@ -32,6 +32,15 @@ Connections and voice defaults remain shared libraries. A saved connection chang
 is used by future snapshots; an in-flight request keeps its original route/credentials.
 No feature cancels the whole shared HTTP client or calls CommonJni.cancelAll.
 
+Conversation records until explicit Finish, backgrounding or a visible text-limit
+failure; it no longer silently ends at one minute. Its transcript owns finalized
+IDs independently of the overlay display tail. After speech is drained/released,
+`TextTranslationChunks` performs bounded, ordered requests on one existing
+translator while retaining the same workload lease. Cancellation is checked
+between requests and after a JNI abort; native calls are still joined/closed
+before another workload is admitted. The helper never publishes a partial batch
+as a completed translation and never retries a paid provider automatically.
+
 ## Fixes and native review
 
 - Removed cross-feature writes to the caption translator from camera/reading and

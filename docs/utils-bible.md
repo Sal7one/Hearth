@@ -595,3 +595,17 @@ repository through Android's native SQLite framework on API 28 and 36, covering
 empty/read/write/reopen paths, translation patches, Unicode, counters, consent
 rollback and deletion ownership. The desktop SQL probe alone was insufficient
 to validate Android `execSQL` behavior. No public Kotlin/JNI API is added.
+
+## Bounded long-turn text translation
+
+`TextTranslationChunks` lives in common-jni's Kotlin translation library and is
+consumed by `ConversationController`. It splits up to 32000 characters into bounded
+requests, prefers sentence/word boundaries and never splits a UTF-16 surrogate
+pair. It reuses the caller-owned translator sequentially, reports completed/total
+parts, checks coroutine cancellation before/after every call and returns all text
+only after every part succeeds. Real native/provider errors retain their message
+and part number; there are no automatic retries or concealed incomplete results.
+`TextTranslationChunksTest` exercises multilingual and long unbroken input,
+Unicode, numeric punctuation, bounds, progress/order, blank/failing parts and a
+JNI-like abort arriving after cancellation. Existing native limits and interfaces
+are unchanged; this helper adds no Android context, storage, UI or network client.

@@ -4,6 +4,7 @@ import com.sal7one.transiber.R as UiR
 import com.sal7one.transiber.i18n.*
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.draw.clip
@@ -111,6 +112,11 @@ fun ConversationScreen(onModels: () -> Unit = {}, onCloud: () -> Unit = {}, onLa
     val scope = rememberCoroutineScope()
     val list = rememberLazyListState()
     var followLatest by remember { mutableStateOf(true) }
+    var appScrolls by remember { mutableIntStateOf(0) }
+    suspend fun scrollToLatest(block: suspend () -> Unit) {
+        appScrolls++
+        try { block() } finally { appScrolls-- }
+    }
     var autoPlayed by remember { mutableStateOf<String?>(null) }
     val openedAt = remember { System.currentTimeMillis() }
     var rename by rememberSaveable { mutableStateOf(false) }
@@ -144,13 +150,28 @@ fun ConversationScreen(onModels: () -> Unit = {}, onCloud: () -> Unit = {}, onLa
         onDispose { owner.lifecycle.removeObserver(observer); voice.close(); controller.close() }
     }
     LaunchedEffect(list) {
-        snapshotFlow { list.isScrollInProgress to list.canScrollForward }.collect { (scrolling, more) ->
-            if (scrolling) followLatest = !more
+        snapshotFlow { Triple(list.isScrollInProgress, list.canScrollForward, appScrolls > 0) }.collect { (scrolling, more, app) ->
+            followLatest = conversationFollowAfterScroll(followLatest, scrolling, more, app)
         }
     }
-    LaunchedEffect(state.session.id) { followLatest = true }
     LaunchedEffect(state.session.id, state.session.turns.size) {
-        if (state.session.turns.isNotEmpty() && followLatest) list.animateScrollToItem(state.session.turns.lastIndex)
+        // Speak is an explicit request to show the new turn, even after reading older cards.
+        followLatest = true
+        if (state.session.turns.isNotEmpty()) scrollToLatest { list.scrollToItem(state.session.turns.lastIndex) }
+    }
+    LaunchedEffect(list) {
+        snapshotFlow {
+            val layout = list.layoutInfo
+            val last = layout.visibleItemsInfo.lastOrNull()
+            conversationScroll(followLatest, list.isScrollInProgress, layout.totalItemsCount,
+                last?.index, last?.let { it.offset + it.size } ?: 0, layout.viewportEndOffset - layout.afterContentPadding)
+        }.collect { action ->
+            when (action) {
+                ConversationScroll.Stay -> Unit
+                is ConversationScroll.ShowLast -> scrollToLatest { list.scrollToItem(action.index) }
+                is ConversationScroll.RevealBottom -> scrollToLatest { list.scrollBy(action.pixels.toFloat()) }
+            }
+        }
     }
     LaunchedEffect(state.busy, state.session.turns.lastOrNull()?.status) {
         val last = state.session.turns.lastOrNull()
@@ -206,7 +227,13 @@ fun ConversationScreen(onModels: () -> Unit = {}, onCloud: () -> Unit = {}, onLa
                             if (turn.original.isNotBlank()) LanguageText(turn.original, turn.source, textSize - 2)
                             if (state.activeSpeaker == turn.speaker && turn.id == state.session.turns.last().id && state.partial.isNotBlank()) LanguageText(state.partial, turn.source, textSize - 2)
                             if (turn.translation.isNotBlank()) LanguageText(turn.translation, turn.target, textSize)
-                            else Text(when (turn.status) { TurnStatus.LISTENING -> uiText(UiR.string.ui_listening_6c19a); TurnStatus.TRANSLATING -> uiText(UiR.string.ui_translating_ae47b); else -> uiText(UiR.string.ui_translation_unavailable_162a7) }, style = MaterialTheme.typography.bodySmall)
+                            else Text(when (turn.status) {
+                                TurnStatus.LISTENING -> uiText(UiR.string.ui_listening_6c19a)
+                                TurnStatus.TRANSLATING -> if (state.translationParts > 1 && turn.id == state.session.turns.lastOrNull()?.id)
+                                    uiText(UiR.string.conversation_translation_parts, (state.translatedParts + 1).coerceAtMost(state.translationParts), state.translationParts)
+                                    else uiText(UiR.string.ui_translating_ae47b)
+                                else -> uiText(UiR.string.ui_translation_unavailable_162a7)
+                            }, style = MaterialTheme.typography.bodySmall)
                             turn.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
                             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 if (turn.translation.isNotBlank()) {
@@ -218,7 +245,10 @@ fun ConversationScreen(onModels: () -> Unit = {}, onCloud: () -> Unit = {}, onLa
                     }
                 }
             }
-            if (list.canScrollForward) TextButton(onClick = { followLatest = true; scope.launch { list.animateScrollToItem(state.session.turns.lastIndex) } }) { Text(uiText(UiR.string.ui_latest_messages_a7ea5)) }
+            if (list.canScrollForward) TextButton(onClick = {
+                followLatest = true
+                scope.launch { scrollToLatest { list.scrollToItem(state.session.turns.lastIndex) } }
+            }) { Text(uiText(UiR.string.ui_latest_messages_a7ea5)) }
         }
         (voiceError ?: state.error)?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {

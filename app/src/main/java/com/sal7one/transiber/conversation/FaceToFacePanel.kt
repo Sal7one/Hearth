@@ -62,7 +62,9 @@ internal fun FaceToFacePanel(
                     IconButton(onClick = onOptions, enabled = !state.busy, modifier = Modifier.size(48.dp)) {
                         Icon(Icons.Default.Tune, uiText(UiR.string.ui_face_to_face_options_1c07b))
                     }
-                    Text(uiText.label(state.status), Modifier.weight(1f).padding(horizontal = 8.dp).semantics {
+                    Text(if (state.status == ConversationStatus.TRANSLATING && state.translationParts > 1)
+                        uiText(UiR.string.conversation_translation_parts, (state.translatedParts + 1).coerceAtMost(state.translationParts), state.translationParts)
+                        else uiText.label(state.status), Modifier.weight(1f).padding(horizontal = 8.dp).semantics {
                         liveRegion = LiveRegionMode.Polite
                     }, style = MaterialTheme.typography.labelLarge, textAlign = TextAlign.Center)
                     if (state.busy) IconButton(onClick = onCancel, modifier = Modifier.size(48.dp)) {

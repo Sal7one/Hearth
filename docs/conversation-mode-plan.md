@@ -25,9 +25,12 @@ Keep screen awake is configurable. Dark/light/system styling follows the app the
 speaker buttons use the existing model capability resolver; language selections
 are kept separately from overlay preferences. The foreground screen owns mono
 16 kHz microphone capture. It requests only `RECORD_AUDIO`, stops when the app
-is backgrounded or the screen leaves composition, and caps each deliberate turn
-at 60 seconds. Leaving during work preserves finalized original text and marks
-the turn interrupted. There is no automatic recording restart.
+is backgrounded or the screen leaves composition. As of 0.23.8 it records until
+the user taps Finish; the earlier silent 60-second cutoff was removed. Streaming
+audio windows/queues remain bounded. Each turn retains up to 32000 text characters
+and 1024 finalized identities, with a visible error at the limit that preserves
+already accepted original text. Leaving during work preserves finalized original
+text and marks the turn interrupted. There is no automatic recording restart.
 
 Speech runs through `CaptionEngineController` in original-language CC mode, then
 the selected conversation translator runs on that turn: an installed ML Kit/GGUF
@@ -46,11 +49,22 @@ across turns is deferred until ownership and both-direction runtime support just
 `ConversationStore` saves stable turns transactionally in SQLite under
 `Context.noBackupFilesDir`: no automatic cloud backup, raw audio or credentials.
 Original text is saved as finals arrive; translation updates the same turn identity.
+The turn accumulates stable finalized IDs independently of the caption display's
+120-line tail, so a long turn does not lose its beginning. Corrections update their
+existing identity. Local translation uses ordered, sentence/word-aware requests
+of at most 320 characters on one translator handle; cloud requests are capped at
+4000 characters. Progress is visible in both layouts. A failed part preserves the
+original and reports the actual error; incomplete translation is never marked
+complete. Cancellation prevents another part starting and converts a JNI abort
+to interruption if the owning coroutine is cancelled. No automatic retry occurs.
 Interrupted pending rows remain interrupted on reopen, never automatically retried.
 History supports continue, delete, rename and explicit text sharing. Turning saving
 off starts a temporary session without deleting existing history. New conversation,
 Type instead, large-text presentation/flip, per-message playback, text size and
 automatic speech options are available. Message text does not expire.
+The list shows a new turn immediately and follows the measured bottom as its card
+grows. Reading older cards disables following until reaching the bottom or tapping
+Latest messages; app-initiated scrolling does not disable its own following.
 
 System playback accepts only installed offline voices in the actual target language.
 There is no default-language fallback. Playback occurs only outside microphone work,
@@ -59,7 +73,10 @@ another explicit Speak tap before recording resumes. Auto playback starts off.
 
 `ConversationDataTest` covers wrong-session/deleted-turn late results, interrupted
 restoration, preservation of completed pairs, and immutable historic directions
-after swapping languages. Device acceptance still needs a real two-person exchange,
+after swapping languages. `ConversationTranscriptTest` additionally checks tail
+eviction, corrections, limits, independent turns and scroll-follow policy;
+`TextTranslationChunksTest` checks Unicode boundaries, progress, order, real-error
+propagation and cancellation between parts. Device acceptance still needs a real two-person exchange,
 rotation/background interruption, process restart, RTL/large-font/TalkBack and
 offline voice availability checks. The fuller design below records intended behavior;
 it is not a claim that every future optimization or provider route has been shipped.

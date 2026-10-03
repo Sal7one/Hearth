@@ -47,4 +47,5 @@
     <string name="caption_history_line_count">%1$d条字幕</string>
     <string name="caption_history_error">历史保存已停止：%1$s</string>
     <string name="caption_history_back">所有会话</string>
+    <string name="conversation_translation_parts">翻译中 · %1$d/%2$d</string>
 </resources>
