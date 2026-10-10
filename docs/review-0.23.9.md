@@ -21,8 +21,11 @@ requests, physical-phone operations or model-weight changes.
   window shows bilingual fixture text, Appearance and Audio settings; selecting
   Male changes its configuration. Five visually inspected TV captures are in
   `docs/screenshots/tv/`. No inference or voice engine is started by the fixture.
-- Remaining x86/x86_64/ARMv7 execution evidence is being collected by the native ABI
-  emulator workflow. Pending execution is not reported as a pass.
+- Linux/KVM x86 and x86_64 API-28 guests and the ARMv7 API-30 native-bridge guest
+  pass split/universal installation for both flavors and native JNI loading.
+  The strengthened Vosk C-API probe passes on all three in
+  [run 38009152415](https://github.com/Sal7one/Hearth/actions/runs/38009152415).
+  ARMv7 native-bridge execution is compatibility evidence, not a hardware benchmark.
 - Strengthened the Vosk probe: its `hasVosk()` flag only reports compilation,
   so the test opens/destroys a JNI handle and expects `Model path empty` only
   after the real local C-API loader resolves every required symbol. This checks
@@ -101,6 +104,24 @@ automation's node cache between them. The final capture test passes, including
 the Male selection assertion. This is a fixture automation correction, not an
 ASR or runtime inference result.
 
+The broader Linux workflow exposed two host-test portability issues:
+
+```text
+FAIL 92: stt::JsonUtils::getBool(line, "truncated")
+SUMMARY: AddressSanitizer: 22981 byte(s) leaked in 496 allocation(s).
+```
+
+The pipe test's 2000-byte fixture exceeded macOS PIPE_BUF but not Linux's.
+Derive the test size from fpathconf so it actually tests truncation on either OS;
+the production writer is unchanged. The leak report's 76 allocation stack groups
+all begin at HotSpot's os::malloc (74) or os::strdup (2). Suppress only those
+VM-owned allocators for the real-JVM test process; all other utility programs
+keep their full sanitizer checks. A Linux-only native malloc leak negative control
+must still fail with a LeakSanitizer report under the same suppression. The Mac
+common/speech suites and required Gradle checks pass after these test changes.
+Linux validation of the scoped suppression/negative control is pending in the
+new independent Native host checks workflow; it is not yet counted as a pass.
+
 ## Cleanup and final execution record
 
 Removed the three Intel/native-bridge AVDs, their new system images, the unused
@@ -109,5 +130,8 @@ build directories. Free space rose from 63 GiB to 87 GiB before TV cleanup.
 The Android 14 TV AVD/system image is also removed after retaining the five
 screenshots and passing capture log; free space is now 97 GiB (about 34 GiB
 reclaimed since the pre-cleanup reading). No owned emulator remains running.
-Pending: record the final emulator job URLs/results.
+The accelerated emulator execution gates pass at 891b843. Their native-loading
+tests include the stronger Vosk check; the earlier ARM64 TV capture/installation
+used the preceding probe against the same ARM64 libraries. The final full-host
+workflow result is recorded after the scoped sanitizer fix is verified.
 Existing SDK/NDK, debug keystore, model folders and physical-device sessions are preserved.

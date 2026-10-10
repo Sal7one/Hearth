@@ -71,7 +71,19 @@ log "compiling jni_helper"
     -L"${JDK_HOME}/lib/server" -Wl,-rpath,"${JDK_HOME}/lib/server" -ljvm \
     -pthread -o "${BUILD_DIR}/jni_helper_test"
 log "running jni_helper"
-if "${BUILD_DIR}/jni_helper_test"; then
+JNI_LSAN_OPTIONS="${LSAN_OPTIONS:+${LSAN_OPTIONS}:}suppressions=${SCRIPT_DIR}/jni_helper_lsan.supp"
+if [ "${JNI_PLATFORM}" = linux ]; then
+    # The suppression is scoped to JVM allocations, not our own C++ leaks.
+    if LSAN_OPTIONS="${JNI_LSAN_OPTIONS}" "${BUILD_DIR}/jni_helper_test" --native-leak-probe >"${BUILD_DIR}/jni_leak_probe.log" 2>&1; then
+        die "JNI LSan suppression unexpectedly hid a native C++ leak"
+    fi
+    if ! grep -q 'LeakSanitizer: detected memory leaks' "${BUILD_DIR}/jni_leak_probe.log"; then
+        cat "${BUILD_DIR}/jni_leak_probe.log"
+        die "JNI native-leak negative control failed for an unexpected reason"
+    fi
+    log "PASS JNI native-leak negative control"
+fi
+if LSAN_OPTIONS="${JNI_LSAN_OPTIONS}" "${BUILD_DIR}/jni_helper_test"; then
     log "PASS jni_helper"
 else
     log "FAIL jni_helper"

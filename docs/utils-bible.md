@@ -623,3 +623,10 @@ runtimes for the others. Its host test checks ordering, renamed and changed sour
 `AbiRuntimeDeviceTest` additionally exercises real
 Android loading, JNI registration and versioned speech exports without model files
 or provider requests.
+
+The common host suite derives its pipe-truncation fixture from the OS's actual
+PIPE_BUF. Its real-JVM JNI helper check scopes LeakSanitizer suppressions to
+HotSpot's observed os::malloc/os::strdup allocation functions; it does not disable
+leak detection for Hearth C++. On Linux a deliberately leaked native allocation
+must still be reported under those same suppressions. macOS does not provide
+that LeakSanitizer negative control; its regular JNI and ASan/UBSan checks remain.
