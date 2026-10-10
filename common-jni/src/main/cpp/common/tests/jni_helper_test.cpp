@@ -1,4 +1,5 @@
 #include <iostream>
+#include <cstdlib>
 #include <stdexcept>
 #include <string>
 #include <thread>
@@ -34,7 +35,18 @@ static int throwFromMacro(JNIEnv* env) {
     JNI_TRY_CATCH_END(env, -1)
 }
 
-int main() {
+// Linux's negative control proves the JVM-only LSan suppression cannot hide
+// an allocation leaked by Hearth C++ code. The pointer leaves the live stack.
+__attribute__((noinline)) static void nativeLeakProbe() {
+    void* volatile allocation = std::malloc(32);
+    if (!allocation) std::abort();
+}
+
+int main(int argc, char** argv) {
+    if (argc == 2 && std::string(argv[1]) == "--native-leak-probe") {
+        nativeLeakProbe();
+        return 0;
+    }
     JavaVMOption option{const_cast<char*>("-Xcheck:jni"), nullptr};
     JavaVMInitArgs args{};
     args.version = JNI_VERSION_1_8;

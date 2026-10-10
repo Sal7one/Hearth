@@ -8,6 +8,9 @@ import sys
 from pathlib import Path
 
 lib_dir, tool_dir = map(Path, sys.argv[1:3])
+abi = sys.argv[3] if len(sys.argv) > 3 else "arm64-v8a"
+machine, elf_class = {"arm64-v8a": ("AArch64", "ELF64"), "armeabi-v7a": ("ARM", "ELF32"),
+                      "x86": ("Intel 80386", "ELF32"), "x86_64": ("Advanced Micro Devices X86-64", "ELF64")}[abi]
 allowed = {"libc++_shared.so", "libc.so", "libm.so", "libdl.so", "liblog.so", "libandroid.so"}
 records = []
 for filename in ("libhearth_qwen.so", "libhearth_nemotron.so"):
@@ -22,8 +25,8 @@ for filename in ("libhearth_qwen.so", "libhearth_nemotron.so"):
     if not alignments or min(alignments) < 16384:
         raise RuntimeError(f"{filename}: not 16KB aligned")
     header = read("-h")
-    if "AArch64" not in header:
-        raise RuntimeError(f"{filename}: expected arm64")
+    if machine not in header or elf_class not in header:
+        raise RuntimeError(f"{filename}: expected {abi} ({machine}, {elf_class})")
     dynamic = read("-d")
     needed = re.findall(r"\(NEEDED\).*?\[(.*?)\]", dynamic)
     if set(needed) - allowed:
@@ -35,7 +38,7 @@ for filename in ("libhearth_qwen.so", "libhearth_nemotron.so"):
     exported = [line.split()[-1] for line in symbols.splitlines() if line.split()]
     if sorted(exported) != (sorted(["hearth_speech_backend_v1", "hearth_moonshine_backend_v1", "hearth_omnilingual_backend_v1", "hearth_phonon_backend_v1"]) if "qwen" in filename else ["hearth_speech_backend_v1"]):
         raise RuntimeError(f"{filename}: unexpected exports: {exported[:20]}")
-    records.append({"file": filename, "bytes": file.stat().st_size, "sha256": hashlib.sha256(file.read_bytes()).hexdigest(), "minPageAlignment": min(alignments), "dependencies": needed})
+    records.append({"abi": abi, "file": filename, "bytes": file.stat().st_size, "sha256": hashlib.sha256(file.read_bytes()).hexdigest(), "minPageAlignment": min(alignments), "dependencies": needed})
 if not records:
     raise RuntimeError("No Android speech runtimes were built")
 output = lib_dir.parent / "runtime-artifacts.json"

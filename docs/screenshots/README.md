@@ -51,3 +51,19 @@ camera surroundings or notification text are published. Temporary typed input an
 OCR capture state were cleared; prior model/language selections were restored and
 existing keys/history retained. No paid API request was made. The separate
 [video preview](../demo/README.md) records the older 0.8.2 UI.
+
+## Android TV 0.23.9
+
+`tv/` contains 1920×1080 screenshots from a disposable Android 14 ARM64 TV
+emulator. `tv-home.png` is the QA app's actual home screen. The four overlay
+screenshots render the production `CaptionOverlayWindow` in a real Android
+overlay window through `TvOverlayScreenshotTest`. The background and status
+explicitly label the captions as UI demo fixtures. No ASR/translation accuracy,
+TTS playback, YouTube audio capture or physical Haier performance is claimed.
+
+The capture test clicks through Appearance → Audio, scrolls to the voice
+controls and verifies changing Female to Male updates the same configuration
+used by the overlay. It starts no recognition/translation/voice engine and makes
+no provider requests. UI fixture code lives only in `androidTest`.
+
+To reproduce, see [CPU/TV support](../android-abi-support.md#reproduce-tv-screenshots).

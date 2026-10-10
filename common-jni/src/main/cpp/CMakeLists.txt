@@ -16,6 +16,7 @@ project("common_jni" VERSION 1.0.0 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_C_STANDARD 11)
+add_compile_definitions(_FILE_OFFSET_BITS=64)
 
 # Options - configure what to include
 option(WITH_WHISPER "Enable Whisper.cpp STT engine" ON)
@@ -87,9 +88,11 @@ elseif(ANDROID_ABI STREQUAL "armeabi-v7a")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mfpu=neon -ftree-vectorize")
     add_compile_definitions(GGML_USE_CPU=1)
 elseif(ANDROID_ABI STREQUAL "x86_64")
-    # Enable SSE/AVX for x86_64 emulator testing
+    # Android's x86_64 ABI baseline; AVX is not universally available on TVs.
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -msse4.2")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse4.2")
+elseif(NOT ANDROID_ABI STREQUAL "x86")
+    message(FATAL_ERROR "Unsupported Android ABI: ${ANDROID_ABI}")
 endif()
 
 if(VERBOSE_LOGGING)
@@ -144,6 +147,11 @@ if(WITH_WHISPER)
         list(FILTER GGML_CPU_SOURCES EXCLUDE REGEX ".*/arch/avx/.*")
         list(FILTER GGML_CPU_SOURCES EXCLUDE REGEX ".*/spacemit/.*")
         list(FILTER GGML_CPU_SOURCES EXCLUDE REGEX ".*/kleidiai/.*")
+        # This optional kernel uses AArch64-only FP16 load intrinsics. The
+        # wrapper never enables GGML_USE_LLAMAFILE; ARMv7 uses portable GGML.
+        if(ANDROID_ABI STREQUAL "armeabi-v7a")
+            list(FILTER GGML_CPU_SOURCES EXCLUDE REGEX ".*/llamafile/.*")
+        endif()
         list(APPEND GGML_SOURCES ${GGML_CPU_SOURCES})
     endif()
 

@@ -11,9 +11,10 @@ android {
   applicationId = "com.sal7one.transiber"
   minSdk = 28
   targetSdk = 36
-  versionCode = 81
-  versionName = "0.23.8"
-  ndk { abiFilters += "arm64-v8a" }
+  versionCode = 82
+  versionName = "0.23.9"
+  testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+  ndk { abiFilters += listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64") }
  }
  flavorDimensions += "distribution"
  productFlavors {
@@ -27,6 +28,14 @@ android {
  }
  compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
  buildFeatures { compose = true; buildConfig = true }
+ splits {
+  abi {
+   isEnable = true
+   reset()
+   include("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
+   isUniversalApk = true
+  }
+ }
  testOptions {
   unitTests.isIncludeAndroidResources = true
   unitTests.all {
@@ -75,6 +84,9 @@ dependencies {
  testImplementation("org.json:json:20231013")
  testImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
  testImplementation("org.robolectric:robolectric:4.17")
+ androidTestImplementation("androidx.test:runner:1.6.2")
+ androidTestImplementation("androidx.test.ext:junit:1.2.1")
+ androidTestImplementation("androidx.test.uiautomator:uiautomator:2.3.0")
  debugImplementation(libs.androidx.ui.tooling)
 }
 androidComponents.onVariants { variant ->

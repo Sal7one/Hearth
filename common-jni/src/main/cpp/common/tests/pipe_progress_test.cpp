@@ -82,8 +82,10 @@ int main() {
     {
         int large[2];
         CHECK(::pipe(large) == 0);
+        const long pipeLimit = ::fpathconf(large[1], _PC_PIPE_BUF);
+        CHECK(pipeLimit > 0);
         PipeProgress progress(large[1]);
-        progress.reportFailed(std::string(2000, 'x') + "\xe4\xb8\xad");
+        progress.reportFailed(std::string(static_cast<size_t>(pipeLimit), 'x') + "\xe4\xb8\xad");
         const std::string line = readLine(large[0]);
         CHECK(line.size() + 1 <= static_cast<size_t>(::fpathconf(large[1], _PC_PIPE_BUF)));
         stt::JsonValue parsed;

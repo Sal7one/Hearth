@@ -1,0 +1,5 @@
+# HotSpot keeps VM-owned native allocations after DestroyJavaVM. Suppress only
+# its two observed allocation functions, only for the JNI helper subprocess.
+# Ordinary C++ malloc/new remains checked by the explicit native-leak probe.
+leak:os::malloc
+leak:os::strdup

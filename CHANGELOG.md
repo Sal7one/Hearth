@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.23.9 — 2026-10-10 · CPU architectures and Android TV
+
+- Build ARMv7, ARM64, x86 and x86_64 APKs for both cloud/local and offline flavors, plus a universal APK per flavor. Keep Android 9 as the minimum and the existing QA identity/signature.
+- Ship each architecture's pinned Vosk, ONNX, speech and translation runtimes. Check ELF identity, private exports, dependencies and package hashes for every APK. Use portable ARMv7 kernels and Android's x86 CPU baseline.
+- Add a TV launcher entry and banner so Hearth appears on the TV home screen. Keep camera, microphone and touchscreen optional.
+- Place home artwork beside its title/button on wide screens so TV and landscape users can reach the feature without scrolling past an oversized image.
+- Add an Android native-loading smoke test covering common JNI, Marian, local translation and all speech backend exports. QA version code 82. Execution evidence and firmware limits are recorded in the ABI support guide.
+
 ## 0.23.8 — 2026-10-03 · conversation turns and following
 
 - Remove the silent one-minute conversation cutoff. Record until Finish; keep bounded audio queues and preserve finalized text independently of the caption display tail.

@@ -73,21 +73,34 @@ Hearth 0.22.1 on Android 16. Conversation and OCR examples use synthetic text.
   </tr>
 </table>
 
+### Android TV
+
+Hearth 0.23.9 on an Android 14 TV emulator. These captures use the production
+overlay with clearly labeled sample text; no speech recognition or voice playback
+is implied. [All TV screenshots](docs/screenshots/tv) · [Reproduce the captures](docs/android-abi-support.md#reproduce-tv-screenshots).
+
+<a href="docs/screenshots/tv/tv-caption-overlay.png"><img src="docs/screenshots/tv/tv-caption-overlay.png" width="720" alt="Hearth English and Arabic caption overlay on Android TV with a labeled UI demo background" /></a>
+<a href="docs/screenshots/tv/tv-overlay-audio-voices.png"><img src="docs/screenshots/tv/tv-overlay-audio-voices.png" width="720" alt="Android TV overlay quick settings with voice gender and TTS engine controls" /></a>
+
 ## Download
 
-**[Hearth 0.22.3 — release notes and checksums](https://github.com/Sal7one/Hearth/releases/tag/v0.22.3)**
+**[Hearth 0.23.8 — release notes and checksums](https://github.com/Sal7one/Hearth/releases/tag/v0.23.8)**
 
 | Build | Download | Includes |
 | --- | --- | --- |
-| **Cloud + local** | [ARM64 APK](https://github.com/Sal7one/Hearth/releases/download/v0.22.3/hearth-0.22.3-cloud-qa-arm64.apk) | On-device models, optional cloud connections and model downloads. |
-| **Offline only** | [ARM64 APK](https://github.com/Sal7one/Hearth/releases/download/v0.22.3/hearth-0.22.3-offline-qa-arm64.apk) | Local models imported from files. **No network permission.** |
+| **Cloud + local** | [ARM64 APK](https://github.com/Sal7one/Hearth/releases/download/v0.23.8/hearth-0.23.8-play-qa.apk) | On-device models, optional cloud connections and model downloads. |
+| **Offline only** | [ARM64 APK](https://github.com/Sal7one/Hearth/releases/download/v0.23.8/hearth-0.23.8-foss-qa.apk) | Local models imported from files. **No network permission.** |
+
+The **0.23.9 all-CPU preview** is staged through GitHub draft releases for the
+owner. It provides ARMv7, ARM64, x86, x86_64 and universal APKs; choose universal
+when your TV's architecture is unknown. See [CPU/TV support](docs/android-abi-support.md).
 
 Android 9+; device-audio capture requires Android 10+. These are test-signed preview
 builds. Both flavors use the same app identity and replace each other. **Update
 without uninstalling** to keep your models, keys, settings and history.
 
-Version 0.22.3 fixes cloud translation selection, remembers separate translator
-choices across feature groups, and waits for model cleanup when switching overlays.
+Version 0.23.8 supports optional caption history/read aloud and bounded long
+conversation turns, with cards that follow speech until you scroll back.
 See the [changelog](CHANGELOG.md) and [pipeline audit](docs/pipeline-ownership.md).
 
 ## What you can do
@@ -169,7 +182,10 @@ downloader.
 
 ## Build
 
-Android 9+ (API 28); **arm64 only**. Playback capture requires Android 10+.
+Android 9+ (API 28); **ARMv7, ARM64, x86 and x86_64**. Playback capture requires Android 10+.
+The universal APK includes all four CPU architectures, including 32-bit Android TVs.
+Hearth appears in the TV launcher; device-specific capture and voice availability
+still depend on Android and the TV firmware. See [ABI support and testing](docs/android-abi-support.md).
 Use JDK 17, Android SDK 36, NDK 27.0.12077973 and SDK CMake 3.22.1. Set ANDROID_HOME
 or create an ignored `local.properties` with `sdk.dir=/your/android/sdk`.
 Also install JDK 21 for app unit tests: the Android 16 Robolectric framework
@@ -190,12 +206,13 @@ python3 scripts/speech/test_package.py
 python3 scripts/verify-release.py
 ```
 
-APKs: `app/build/outputs/apk/{play,foss}/qa/`. QA builds use the standard Android
+APKs: `app/build/outputs/apk/{play,foss}/qa/`: one per CPU architecture plus a universal
+APK for each flavor. QA builds use the standard Android
 **debug signing key** and application ID `com.sal7one.transiber.qa`. They are test
 artifacts, not a stable signing identity for store releases. For a production
 release, build the unsigned release variant and sign it with your own key outside
 Git; see the [release and signing guide](docs/releasing.md).
-Never commit keys or credentials. CI builds and uploads both QA APKs.
+Never commit keys or credentials. CI builds and uploads all ten QA APKs.
 See [changes](CHANGELOG.md), [security reporting](SECURITY.md), and the
 [publication audit](docs/publication-audit.md).
 

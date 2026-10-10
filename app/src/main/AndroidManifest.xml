@@ -17,8 +17,8 @@
   <service android:name="androidx.appcompat.app.AppLocalesMetadataHolderService" android:enabled="false" android:exported="false">
    <meta-data android:name="autoStoreLocales" android:value="true" />
   </service>
-  <activity android:name=".MainActivity" android:exported="true">
-   <intent-filter><action android:name="android.intent.action.MAIN" /><category android:name="android.intent.category.LAUNCHER" /></intent-filter>
+  <activity android:name=".MainActivity" android:exported="true" android:banner="@drawable/tv_banner">
+   <intent-filter><action android:name="android.intent.action.MAIN" /><category android:name="android.intent.category.LAUNCHER" /><category android:name="android.intent.category.LEANBACK_LAUNCHER" /></intent-filter>
    <intent-filter><action android:name="android.intent.action.SEND" /><category android:name="android.intent.category.DEFAULT" /><data android:mimeType="image/*" /></intent-filter>
   </activity>
   <activity android:name=".translation.TranslateSelectionActivity" android:label="@string/action_hearth_translate" android:icon="@drawable/ic_launcher" android:theme="@style/QuickTranslateTheme" android:excludeFromRecents="true" android:taskAffinity="" android:exported="true">

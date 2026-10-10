@@ -1,0 +1,69 @@
+name: Native ABI emulator smoke
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, 'codex/**']
+    paths:
+      - '.github/workflows/native-abi-smoke.yml'
+      - 'common-jni/**'
+      - 'app/build.gradle.kts'
+      - 'app/src/main/AndroidManifest.xml'
+      - 'scripts/test-android-abi.sh'
+permissions:
+  contents: read
+jobs:
+  emulator:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - abi: x86
+            arch: x86
+            api: 28
+            target: default
+          - abi: x86_64
+            arch: x86_64
+            api: 28
+            target: default
+          - abi: armeabi-v7a
+            arch: x86
+            api: 30
+            target: google_apis
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3
+        with:
+          distribution: temurin
+          java-version: |
+            17
+            21
+      - uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407
+        with:
+          packages: platform-tools
+      - run: sdkmanager "platforms;android-36" "build-tools;36.0.0" "ndk;27.0.12077973" "cmake;3.22.1"
+      - uses: gradle/actions/setup-gradle@0b6dd653ba04f4f93bf581ec31e66cbd7dcb644d
+      - name: Build the exact QA and library test APKs
+        run: ./gradlew :app:assemblePlayQa :app:assembleFossQa :common-jni:assembleDebugAndroidTest
+      - run: python3 scripts/verify-release.py --build-type qa
+      - name: Enable KVM in the disposable runner
+        run: sudo chmod 666 /dev/kvm
+      - name: Check selected ABI on Android
+        uses: ReactiveCircus/android-emulator-runner@4c44018e59b437e86cdfc41da381398f93ed8808
+        with:
+          api-level: ${{ matrix.api }}
+          arch: ${{ matrix.arch }}
+          target: ${{ matrix.target }}
+          emulator-options: -no-window -gpu swiftshader -noaudio -no-boot-anim -camera-back none -camera-front none -memory 2048 -cores 2
+          disable-animations: true
+          # Google API 30's x86 image advertises ARMv7 via its native bridge.
+          # The script checks the installed ABI AND the actual process width.
+          script: |
+            bash scripts/test-android-abi.sh emulator-5554 ${{ matrix.abi }} split > native-${{ matrix.abi }}.log 2>&1
+            bash scripts/test-android-abi.sh emulator-5554 ${{ matrix.abi }} universal >> native-${{ matrix.abi }}.log 2>&1
+      - name: Print actual installation and JNI results
+        if: always()
+        run: test ! -f native-${{ matrix.abi }}.log || cat native-${{ matrix.abi }}.log
