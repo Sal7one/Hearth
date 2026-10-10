@@ -1,11 +1,38 @@
 {
   "llama_revision": "64e9bceb2c3a856efed96feda784a50947049feb",
   "ndk": "27.0.12077973",
-  "abi": "arm64-v8a",
+  "architectures": [
+    "arm64-v8a",
+    "armeabi-v7a",
+    "x86",
+    "x86_64"
+  ],
   "inference": "CPU, two threads, isolated GGML symbols",
-  "binary": {
-    "name": "libtransiber_translation.so",
-    "sha256": "b9879045df734b793c94f62a05516905f9548a79a2535418398dcf689772724d"
+  "binaries": {
+    "arm64-v8a": {
+      "name": "libtransiber_translation.so",
+      "bytes": 3896112,
+      "sha256": "b6d554e4b4057a0dc90adab6ed4b4a0924ed1643ecd25235ad410c0ef926d4c7",
+      "sourceSetSha256": "da3c4fbc1acda42eae3b709e343fdd5f251a14377acb5ea6c64c68253dc10944"
+    },
+    "armeabi-v7a": {
+      "name": "libtransiber_translation.so",
+      "bytes": 2730952,
+      "sha256": "6ee72caad389d8805077e0fc1e7e1046c5c516a1516f50d79ae5bf45d129f0cc",
+      "sourceSetSha256": "da3c4fbc1acda42eae3b709e343fdd5f251a14377acb5ea6c64c68253dc10944"
+    },
+    "x86": {
+      "name": "libtransiber_translation.so",
+      "bytes": 5281408,
+      "sha256": "ae149df25f3c7b2abad3ba5e679f722a4b09b9e58947ec0081cd93da881d3f61",
+      "sourceSetSha256": "da3c4fbc1acda42eae3b709e343fdd5f251a14377acb5ea6c64c68253dc10944"
+    },
+    "x86_64": {
+      "name": "libtransiber_translation.so",
+      "bytes": 4311752,
+      "sha256": "b439a3191850dceb090fd65d848e8c5baf5d03f82f7d47355a0965840ae05ec2",
+      "sourceSetSha256": "da3c4fbc1acda42eae3b709e343fdd5f251a14377acb5ea6c64c68253dc10944"
+    }
   },
   "sources": {
     "common-jni/src/main/cpp/common/lease_registry.h": "555d0d227579c671a92f594de45ff7b7ee35eb646d4d68a4266758e00eec94bd",
@@ -14,6 +41,6 @@
     "common-jni/src/main/cpp/translation/translation_jni.cpp": "051c8e60302fcc74798007c6748ae472dd89d0de337db3bf3ef810922eecf2f5",
     "common-jni/src/main/cpp/translation/translation_smoke.cpp": "21f7925cbca47d4b6418eeb446487954ab78718971d9971d620616801da4a985",
     "scripts/translation/CMakeLists.txt": "a86803eba3e804dd97b3fb4c184a51afab17376a77afba635f5d700725d84bb1",
-    "scripts/translation/build-runtime.sh": "5b5644438832700f124155ad02b40c236807ce0b90261905487ce208fc40ba28"
+    "scripts/translation/build-runtime.sh": "38b0afade30281a92f54bb6f2a4cdd66d271813e18da1a4f321ba24f0a9ae397"
   }
 }

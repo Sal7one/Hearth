@@ -2,6 +2,7 @@
 """Check standalone APK contents, native dependencies and vendored runtime hashes."""
 from pathlib import Path
 import argparse, hashlib, json, os, re, subprocess, tempfile, zipfile
+from native_abis import ABIS, source_set_digest, verify_elf
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument("--build-type", choices=["qa", "release"], default="qa")
 build_type = parser.parse_args().build_type
@@ -23,7 +24,11 @@ sdk = Path(sdk)
 readelf = next((sdk/'ndk/27.0.12077973/toolchains/llvm/prebuilt').glob('*/bin/llvm-readelf'))
 aapt = sorted((sdk/'build-tools').glob('*/aapt2'))[-1]
 record = json.loads((root/'common-jni/src/main/assets/licenses/translation/runtime-build.json').read_text())
-assert record['binary']['sha256'] == hashlib.sha256((libroot/'arm64-v8a/libtransiber_translation.so').read_bytes()).hexdigest()
+assert set(record['binaries']) == set(ABIS), 'Missing translation ABI'
+for abi, binary in record['binaries'].items():
+    assert binary['sourceSetSha256'] == source_set_digest(record['sources']), f'Translation {abi} source snapshot is stale'
+    assert binary['bytes'] == (libroot/abi/binary['name']).stat().st_size, abi
+    assert binary['sha256'] == hashlib.sha256((libroot/abi/binary['name']).read_bytes()).hexdigest(), abi
 for name, digest in record['sources'].items():
     assert hashlib.sha256((root/name).read_bytes()).hexdigest() == digest, f'Translation runtime must be rebuilt: {name}'
 
@@ -32,9 +37,11 @@ for name, digest in speech['adapterSources'].items():
     assert hashlib.sha256((root/name).read_bytes()).hexdigest() == digest, f'Speech runtime must be rebuilt: {name}'
 pins = dict(re.findall(r'#define\s+(HEARTH_\w+_REVISION)\s+"([0-9a-f]+)"', (root/'common-jni/src/main/cpp/speech/backend_versions.h').read_text()))
 assert pins == speech['pins'], 'Speech runtime revision mismatch'
+assert {(r['abi'], r['file']) for r in speech['artifacts']} == {(a, f) for a in ABIS for f in ('libhearth_qwen.so', 'libhearth_nemotron.so')}, 'Missing speech ABI'
 for artifact in speech['artifacts']:
+    assert artifact['sourceSetSha256'] == source_set_digest(speech['adapterSources']), f"Speech {artifact['abi']} source snapshot is stale"
     name = artifact['file']
-    binary = libroot/'arm64-v8a'/name
+    binary = libroot/artifact['abi']/name
     assert binary.stat().st_size == artifact['bytes'], name
     assert hashlib.sha256(binary.read_bytes()).hexdigest() == artifact['sha256'], name
 
@@ -50,24 +57,30 @@ assert len(json.loads((ocr_assets/'manga.json').read_text())) == manga['classes'
 
 expected_libs = {'libtransiber_translation.so','libcommon_jni.so','libc++_shared.so','libvosk.so','libonnxruntime.so','libhearth_qwen.so','libhearth_nemotron.so','libandroidx.graphics.path.so','libdatastore_shared_counter.so','libimage_processing_util_jni.so'}
 platform = {'liblog.so','libandroid.so','libjnigraphics.so','libm.so','libdl.so','libc.so','libz.so'}
-for flavor in ['play','foss']:
+for flavor, architecture in [(f, a) for f in ('play','foss') for a in (*ABIS, 'universal')]:
     flavor_libs = expected_libs | ({"libtranslate_jni.so"} if flavor == "play" else set())
     suffix = '-unsigned' if build_type == 'release' else ''
-    apk = root/f'app/build/outputs/apk/{flavor}/{build_type}/app-{flavor}-{build_type}{suffix}.apk'
+    apk = root/f'app/build/outputs/apk/{flavor}/{build_type}/app-{flavor}-{architecture}-{build_type}{suffix}.apk'
     assert apk.is_file(), f'Build {flavor} {build_type} first'
     with zipfile.ZipFile(apk) as archive, tempfile.TemporaryDirectory() as tmp:
         native = [n for n in archive.namelist() if n.startswith('lib/') and n.endswith('.so')]
         assert {Path(n).name for n in native} == flavor_libs, native
-        assert all(n.startswith('lib/arm64-v8a/') for n in native)
+        packaged_abis = set(ABIS) if architecture == 'universal' else {architecture}
+        assert {n.split('/')[1] for n in native} == packaged_abis
+        assert all({Path(n).name for n in native if n.startswith('lib/' + abi + '/')} == flavor_libs for abi in packaged_abis)
         for name in native:
-            file = Path(tmp)/Path(name).name
+            abi = name.split('/')[1]
+            file = Path(tmp)/abi/Path(name).name
+            file.parent.mkdir(exist_ok=True)
             data = archive.read(name)
+            verify_elf(abi, data)
             if name in vendor_hashes:
                 assert hashlib.sha256(data).hexdigest() == vendor_hashes[name], f'Packaged vendor runtime changed: {name}'
             file.write_bytes(data)
             info = subprocess.check_output([readelf, '-lW', file], text=True)
             aligns = [int(line.split()[-1],16) for line in info.splitlines() if line.strip().startswith('LOAD ')]
-            assert aligns and min(aligns) >= 16384, f'{name}: page alignment {aligns}'
+            required_alignment = 16384 if abi in ('arm64-v8a', 'x86_64') else 4096
+            assert aligns and min(aligns) >= required_alignment, f'{name}: page alignment {aligns}'
             dynamic = subprocess.check_output([readelf, '-d', file], text=True)
             needed = set(re.findall(r'\(NEEDED\).*?\[(.*?)\]', dynamic))
             assert not needed - flavor_libs - platform, (name, needed)
@@ -103,6 +116,8 @@ for flavor in ['play','foss']:
     manifest = subprocess.check_output([aapt, 'dump', 'xmltree', apk, '--file', 'AndroidManifest.xml'], text=True)
     assert 'com.sal7one.transiber.translation.TranslateSelectionActivity' in manifest, f'{flavor}: text translation activity missing'
     assert 'android.intent.action.PROCESS_TEXT' in manifest and 'text/html' in manifest, f'{flavor}: selected-text or rich-text share action missing'
+    assert 'android.intent.category.LEANBACK_LAUNCHER' in manifest, 'TV launcher missing'
+    assert 'android:banner' in manifest, 'TV banner missing'
     for sensitive in ('android.permission.BIND_ACCESSIBILITY_SERVICE',
                       'android.accessibilityservice.AccessibilityService',
                       'android.permission.BIND_NOTIFICATION_LISTENER_SERVICE',
@@ -112,5 +127,5 @@ for flavor in ['play','foss']:
     badging = subprocess.check_output([aapt, 'dump', 'badging', apk], text=True)
     package = "com.sal7one.transiber.qa" if build_type == "qa" else "com.sal7one.transiber"
     assert f"name='{package}'" in badging
-    print(f'{flavor} {build_type}: {apk.stat().st_size} bytes; speech, translation and OCR libraries with AndroidX camera utilities; 16KB aligned; permissions PASS')
+    print(f'{flavor} {architecture} {build_type}: {apk.stat().st_size} bytes; speech, translation and OCR libraries; ABI/ELF, page alignment and permissions PASS')
 print('Standalone artifact verification PASS')

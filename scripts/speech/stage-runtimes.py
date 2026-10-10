@@ -9,15 +9,21 @@ import platform
 import re
 import shutil
 import subprocess
+import sys
 import urllib.request
 from pathlib import Path
 
 repo = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(repo / "scripts"))
+from native_abis import ABIS, source_set_digest, update_checksums, verify_elf
+abi = sys.argv[1] if len(sys.argv) > 1 else "arm64-v8a"
+if abi not in ABIS: raise SystemExit("Unsupported Android ABI")
+output = "android" if abi == "arm64-v8a" else f"android-{abi}"
 work = Path(os.environ.get("HEARTH_SPEECH_BUILD_DIR", repo / "build/speech-runtimes"))
 ndk = Path(os.environ.get("ANDROID_NDK_HOME", Path.home() / "Library/Android/sdk/ndk/27.0.12077973"))
 host = "darwin-x86_64" if platform.system() == "Darwin" else "linux-x86_64"
-subprocess.run(["python3", str(repo / "scripts/speech/verify-android-runtimes.py"), str(work / "android/lib"), str(ndk / "toolchains/llvm/prebuilt" / host / "bin")], check=True)
-records = json.loads((work / "android/runtime-artifacts.json").read_text())
+subprocess.run(["python3", str(repo / "scripts/speech/verify-android-runtimes.py"), str(work / output / "lib"), str(ndk / "toolchains/llvm/prebuilt" / host / "bin"), abi], check=True)
+records = json.loads((work / output / "runtime-artifacts.json").read_text())
 if len(records) != 2:
     raise RuntimeError("Build both speech runtimes before publishing")
 asset_dir = repo / "common-jni/src/main/assets/licenses/speech"
@@ -30,7 +36,7 @@ sources = {
     "ggml": work / "src/nemo/ggml",
     "sentencepiece": work / "src/sentencepiece",
 }
-for directory in (work / "android/qwen/_deps").glob("*-src"):
+for directory in (work / output / "qwen/_deps").glob("*-src"):
     sources[directory.name.removesuffix("-src")] = directory
 for name, directory in sources.items():
     candidates = set()
@@ -61,7 +67,13 @@ for name, sha in ort_notices.items():
 pins = dict(re.findall(r'#define (HEARTH_\w+_REVISION) "([a-f0-9]+)"', (repo / "common-jni/src/main/cpp/speech/backend_versions.h").read_text()))
 source_files = list((repo / "common-jni/src/main/cpp/speech/backends").glob("*")) + list((repo / "scripts/speech").glob("*.cmake")) + [repo / "scripts/speech/build-runtimes.sh", repo / "common-jni/src/main/cpp/speech/backend_abi.h", repo / "common-jni/src/main/cpp/speech/utterance_segmenter.h", repo / "common-jni/src/main/cpp/speech/qwen_language.h", repo / "common-jni/src/main/cpp/speech/endpoint_budget.h", repo / "common-jni/src/main/cpp/speech/source_language.h"]
 source_hashes = {str(p.relative_to(repo)): hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(source_files) if p.is_file()}
-(asset_dir / "runtime-build.json").write_text(json.dumps({"abi": 1, "platform": "android-28-arm64-v8a", "pins": pins, "artifacts": records, "adapterSources": source_hashes, "ndk": (ndk / "source.properties").read_text()}, indent=2) + "\n")
+for artifact in records:
+    artifact["sourceSetSha256"] = source_set_digest(source_hashes)
+record_path = asset_dir / "runtime-build.json"
+previous = json.loads(record_path.read_text()) if record_path.exists() else {}
+other_records = [dict(r, abi=r.get("abi", "arm64-v8a")) for r in previous.get("artifacts", []) if r.get("abi", "arm64-v8a") != abi]
+all_records = other_records + records
+record_path.write_text(json.dumps({"abi": 1, "platform": "android-28", "architectures": sorted({r["abi"] for r in all_records}), "pins": pins, "artifacts": all_records, "adapterSources": source_hashes, "ndk": (ndk / "source.properties").read_text()}, indent=2) + "\n")
 (asset_dir / "README.txt").write_text("Hearth optional speech runtimes. CPU-only, no model weights or network clients.\n"
     "Qwen: sherpa-onnx with private static ONNX Runtime 1.27.1.\n"
     "Nemotron: NeMo-Speech.cpp with private static GGML and SentencePiece.\n"
@@ -72,9 +84,10 @@ lib_root = repo / "common-jni/src/main/jniLibs"
 checksum_file = lib_root / "SHA256SUMS"
 lines = checksum_file.read_text().splitlines()
 for record in records:
-    relative = f"arm64-v8a/{record['file']}"
-    shutil.copyfile(work / "android/lib" / record["file"], lib_root / relative)
+    relative = f"{abi}/{record['file']}"
+    verify_elf(abi, (work / output / "lib" / record["file"]).read_bytes())
+    shutil.copyfile(work / output / "lib" / record["file"], lib_root / relative)
     lines = [line for line in lines if not line.endswith("  " + relative)]
     lines.append(f"{record['sha256']}  {relative}")
-checksum_file.write_text("\n".join(sorted(lines, key=lambda line: line.split()[-1])) + "\n")
+update_checksums(lib_root)
 print("Staged both runtimes, hashes and notices into common-jni")

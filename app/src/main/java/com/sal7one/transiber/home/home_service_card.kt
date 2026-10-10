@@ -19,8 +19,6 @@ import com.sal7one.transiber.R
 
 @Composable
 internal fun HomeServiceCard(service: HomeService, modifier: Modifier = Modifier, onOpen: () -> Unit) {
-    val uiText = rememberUiText()
-
     val artwork = when (service) {
         HomeService.CAPTIONS -> R.drawable.home_captions
         HomeService.CONVERSATION -> R.drawable.home_conversation
@@ -30,22 +28,39 @@ internal fun HomeServiceCard(service: HomeService, modifier: Modifier = Modifier
         HomeService.SCREEN -> R.drawable.home_screen
     }
     BoxWithConstraints(modifier.fillMaxWidth().padding(vertical = 18.dp)) {
+        val wideCard = maxWidth > maxHeight * 1.35f
         ElevatedCard(shape = RoundedCornerShape(32.dp),
             elevation = CardDefaults.elevatedCardElevation(defaultElevation = 9.dp),
             colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surface),
             modifier = Modifier.fillMaxWidth().heightIn(max = maxHeight)) {
-            Column(Modifier.verticalScroll(rememberScrollState())) {
-                Image(painterResource(artwork), contentDescription = null, contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxWidth().aspectRatio(1.08f))
-                Column(Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text(uiText.title(service), style = MaterialTheme.typography.headlineMedium, modifier = Modifier.semantics { heading() })
-                    Text(uiText.description(service), style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Spacer(Modifier.height(4.dp))
-                    Button(onClick = onOpen, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp), shape = RoundedCornerShape(18.dp)) {
-                        Text(uiText.action(service))
-                    }
+            if (wideCard) {
+                // A portrait-sized image otherwise hides every action on TVs/landscape.
+                Row(Modifier.fillMaxSize()) {
+                    Image(painterResource(artwork), contentDescription = null, contentScale = ContentScale.Crop,
+                        modifier = Modifier.weight(1f).fillMaxHeight())
+                    HomeServiceActions(service, Modifier.weight(1f).fillMaxHeight()
+                        .verticalScroll(rememberScrollState()), onOpen)
+                }
+            } else {
+                Column(Modifier.verticalScroll(rememberScrollState())) {
+                    Image(painterResource(artwork), contentDescription = null, contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxWidth().aspectRatio(1.08f))
+                    HomeServiceActions(service, Modifier, onOpen)
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun HomeServiceActions(service: HomeService, modifier: Modifier, onOpen: () -> Unit) {
+    val uiText = rememberUiText()
+    Column(modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Text(uiText.title(service), style = MaterialTheme.typography.headlineMedium, modifier = Modifier.semantics { heading() })
+        Text(uiText.description(service), style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Spacer(Modifier.height(4.dp))
+        Button(onClick = onOpen, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp), shape = RoundedCornerShape(18.dp)) {
+            Text(uiText.action(service))
         }
     }
 }

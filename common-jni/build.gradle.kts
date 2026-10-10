@@ -5,8 +5,10 @@ android {
  ndkVersion = "27.0.12077973"
  defaultConfig {
   minSdk = 28
+  // The self-instrumenting library test APK must also declare a modern target.
+  targetSdk = 36
   testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-  ndk { abiFilters += "arm64-v8a" }
+  ndk { abiFilters += listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64") }
   externalNativeBuild { cmake { arguments += listOf("-DANDROID_STL=c++_shared", "-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON") } }
   consumerProguardFiles("consumer-rules.pro")
  }

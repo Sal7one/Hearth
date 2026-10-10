@@ -609,3 +609,17 @@ and part number; there are no automatic retries or concealed incomplete results.
 Unicode, numeric punctuation, bounds, progress/order, blank/failing parts and a
 JNI-like abort arriving after cancellation. Existing native limits and interfaces
 are unchanged; this helper adds no Android context, storage, UI or network client.
+
+## Android native ABI verification
+
+`scripts/native_abis.py` provides the shared ELF-width/machine/endianness/shared-object
+checks consumed by vendor, speech and translation staging and APK verification.
+It rejects a valid library for the wrong architecture before that library can be
+packaged. `test_native_abis.py` checks every ABI pairing and malformed/truncated
+headers. SHA-256 pins remain separate from structural checks; matching an ELF header
+does not authenticate a download. A canonical source-set digest binds each ABI's
+runtime to its source snapshot so staging one new ABI cannot silently bless stale
+runtimes for the others. Its host test checks ordering, renamed and changed sources.
+`AbiRuntimeDeviceTest` additionally exercises real
+Android loading, JNI registration and versioned speech exports without model files
+or provider requests.
