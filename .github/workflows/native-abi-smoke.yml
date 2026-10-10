@@ -61,7 +61,9 @@ jobs:
           disable-animations: true
           # Google API 30's x86 image advertises ARMv7 via its native bridge.
           # The script checks the installed ABI AND the actual process width.
-          script: bash scripts/test-android-abi.sh emulator-5554 ${{ matrix.abi }} > native-${{ matrix.abi }}.log 2>&1
+          script: |
+            bash scripts/test-android-abi.sh emulator-5554 ${{ matrix.abi }} split > native-${{ matrix.abi }}.log 2>&1
+            bash scripts/test-android-abi.sh emulator-5554 ${{ matrix.abi }} universal >> native-${{ matrix.abi }}.log 2>&1
       - name: Print actual installation and JNI results
         if: always()
         run: test ! -f native-${{ matrix.abi }}.log || cat native-${{ matrix.abi }}.log

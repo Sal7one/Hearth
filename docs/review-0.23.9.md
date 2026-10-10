@@ -22,10 +22,13 @@ requests, physical-phone operations or model-weight changes.
   Male changes its configuration. Five visually inspected TV captures are in
   `docs/screenshots/tv/`. No inference or voice engine is started by the fixture.
 - Linux/KVM x86 and x86_64 API-28 guests and the ARMv7 API-30 native-bridge guest
-  pass split/universal installation for both flavors and native JNI loading.
+  pass CPU-specific installation for both flavors and native JNI loading.
   The strengthened Vosk C-API probe passes on all three in
   [run 38009152415](https://github.com/Sal7one/Hearth/actions/runs/38009152415).
   ARMv7 native-bridge execution is compatibility evidence, not a hardware benchmark.
+  Universal installation is already exercised on ARM64 TV; the workflow now
+  explicitly checks both package kinds on the three Linux/KVM profiles as well.
+  The added universal executions are pending and are not yet counted as passes.
 - Strengthened the Vosk probe: its `hasVosk()` flag only reports compilation,
   so the test opens/destroys a JNI handle and expects `Model path empty` only
   after the real local C-API loader resolves every required symbol. This checks
@@ -119,8 +122,13 @@ VM-owned allocators for the real-JVM test process; all other utility programs
 keep their full sanitizer checks. A Linux-only native malloc leak negative control
 must still fail with a LeakSanitizer report under the same suppression. The Mac
 common/speech suites and required Gradle checks pass after these test changes.
-Linux validation of the scoped suppression/negative control is pending in the
-new independent Native host checks workflow; it is not yet counted as a pass.
+Resolved (fd66a4d): the independent
+[Native host checks run 38010577791](https://github.com/Sal7one/Hearth/actions/runs/38010577791)
+passes the full common suite and the explicit JNI native-leak negative control
+on Linux, plus speech, OCR, Vosk, voice and Python host tests. The preceding
+[full Android run](https://github.com/Sal7one/Hearth/actions/runs/38009152416)
+passed Gradle tests, all four native builds and both QA/release builds, then
+failed at the two host-test issues above. Its rerun remains in progress.
 
 ## Cleanup and final execution record
 
@@ -132,6 +140,7 @@ screenshots and passing capture log; free space is now 97 GiB (about 34 GiB
 reclaimed since the pre-cleanup reading). No owned emulator remains running.
 The accelerated emulator execution gates pass at 891b843. Their native-loading
 tests include the stronger Vosk check; the earlier ARM64 TV capture/installation
-used the preceding probe against the same ARM64 libraries. The final full-host
-workflow result is recorded after the scoped sanitizer fix is verified.
+used the preceding probe against the same ARM64 libraries. The full independent
+native-host workflow also passes at fd66a4d. Universal-package executions on the
+three remaining CPU profiles are recorded after their expanded workflow completes.
 Existing SDK/NDK, debug keystore, model folders and physical-device sessions are preserved.
