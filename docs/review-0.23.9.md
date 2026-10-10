@@ -23,6 +23,10 @@ requests, physical-phone operations or model-weight changes.
   `docs/screenshots/tv/`. No inference or voice engine is started by the fixture.
 - Remaining x86/x86_64/ARMv7 execution evidence is being collected by the native ABI
   emulator workflow. Pending execution is not reported as a pass.
+- Strengthened the Vosk probe: its `hasVosk()` flag only reports compilation,
+  so the test opens/destroys a JNI handle and expects `Model path empty` only
+  after the real local C-API loader resolves every required symbol. This checks
+  the DSO without globally exposing its legacy C++ runtime or loading weights.
 
 No inference/accuracy, thermal or paid-provider benchmark is implied by loading
 a native library. Physical Haier MatrixTV EE testing remains with the owner.
@@ -102,6 +106,8 @@ ASR or runtime inference result.
 Removed the three Intel/native-bridge AVDs, their new system images, the unused
 ARM64 API-28 image, the downloaded Intel emulator and six new disposable ABI
 build directories. Free space rose from 63 GiB to 87 GiB before TV cleanup.
-Pending: record the final emulator job URLs/results and remove the remaining
-Android 14 TV AVD/system image after the verified screenshots are retained.
+The Android 14 TV AVD/system image is also removed after retaining the five
+screenshots and passing capture log; free space is now 97 GiB (about 34 GiB
+reclaimed since the pre-cleanup reading). No owned emulator remains running.
+Pending: record the final emulator job URLs/results.
 Existing SDK/NDK, debug keystore, model folders and physical-device sessions are preserved.
