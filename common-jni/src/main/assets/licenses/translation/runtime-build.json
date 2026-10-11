@@ -7,40 +7,47 @@
     "x86",
     "x86_64"
   ],
-  "inference": "CPU, two threads, isolated GGML symbols",
+  "inference": "CPU, two translation threads; configurable bounded vision threads; isolated GGML symbols; mtmd vision, no video/FFmpeg",
   "binaries": {
     "arm64-v8a": {
       "name": "libtransiber_translation.so",
-      "bytes": 3896112,
-      "sha256": "b6d554e4b4057a0dc90adab6ed4b4a0924ed1643ecd25235ad410c0ef926d4c7",
-      "sourceSetSha256": "da3c4fbc1acda42eae3b709e343fdd5f251a14377acb5ea6c64c68253dc10944"
+      "bytes": 4717968,
+      "sha256": "716984c17eed7a5f2626d132a42b9d4336bfacd63efdbe342620727463fbd0c8",
+      "sourceSetSha256": "1c7dff31db98cbdc9ff95bc75f01736d8fc35c5879a9076d2dbcc4353a7091c8"
     },
     "armeabi-v7a": {
       "name": "libtransiber_translation.so",
-      "bytes": 2730952,
-      "sha256": "6ee72caad389d8805077e0fc1e7e1046c5c516a1516f50d79ae5bf45d129f0cc",
-      "sourceSetSha256": "da3c4fbc1acda42eae3b709e343fdd5f251a14377acb5ea6c64c68253dc10944"
+      "bytes": 3149744,
+      "sha256": "09bcc59fabddc16c5bbdc1aae4cdd456cda2436f39429893b7c1249eb4f1b20c",
+      "sourceSetSha256": "1c7dff31db98cbdc9ff95bc75f01736d8fc35c5879a9076d2dbcc4353a7091c8"
     },
     "x86": {
       "name": "libtransiber_translation.so",
-      "bytes": 5281408,
-      "sha256": "ae149df25f3c7b2abad3ba5e679f722a4b09b9e58947ec0081cd93da881d3f61",
-      "sourceSetSha256": "da3c4fbc1acda42eae3b709e343fdd5f251a14377acb5ea6c64c68253dc10944"
+      "bytes": 6039248,
+      "sha256": "a0c1e5acac52934ac45ee0e01886a294f4975e999bdb6277d559d94952a499e6",
+      "sourceSetSha256": "1c7dff31db98cbdc9ff95bc75f01736d8fc35c5879a9076d2dbcc4353a7091c8"
     },
     "x86_64": {
       "name": "libtransiber_translation.so",
-      "bytes": 4311752,
-      "sha256": "b439a3191850dceb090fd65d848e8c5baf5d03f82f7d47355a0965840ae05ec2",
-      "sourceSetSha256": "da3c4fbc1acda42eae3b709e343fdd5f251a14377acb5ea6c64c68253dc10944"
+      "bytes": 5240168,
+      "sha256": "e1919e41c26f46cdbb11abc586c82c43b8f6dee181c5e53e8e15081428ad2736",
+      "sourceSetSha256": "1c7dff31db98cbdc9ff95bc75f01736d8fc35c5879a9076d2dbcc4353a7091c8"
     }
   },
   "sources": {
     "common-jni/src/main/cpp/common/lease_registry.h": "555d0d227579c671a92f594de45ff7b7ee35eb646d4d68a4266758e00eec94bd",
-    "common-jni/src/main/cpp/translation/exports.map": "01a3130f08b26ac1f00ff059093f9df6c761a73e48cc56a8b4572954f61f1f45",
-    "common-jni/src/main/cpp/translation/text_model.h": "a8c4f0d1c3478280228ec54032d1b54a381792c7306254f4099e71f1a4be8f3e",
-    "common-jni/src/main/cpp/translation/translation_jni.cpp": "051c8e60302fcc74798007c6748ae472dd89d0de337db3bf3ef810922eecf2f5",
+    "common-jni/src/main/cpp/common/utf8_utils.h": "b3340d9a9c999ab66b0d03fbe23b160db84e3d63a9a7ae640a8523d56d80ac14",
+    "common-jni/src/main/cpp/translation/exports.map": "fdaa900414787a1d72dfc31b2b66f198548883e69ae5efa293df9c3ae1d7b774",
+    "common-jni/src/main/cpp/translation/runtime_jni.h": "37d02ec4978202a9009359f41d4c18a126764296eea804c8266232044a319cf4",
+    "common-jni/src/main/cpp/translation/text_model.h": "798dee6070cd0982c45749982fe2137375a3af9460d1e8335c6d3b8f947f5550",
+    "common-jni/src/main/cpp/translation/translation_jni.cpp": "1d111be6819125081bb8757ccdb516c5b16fef6b4d4848109b8b8292071a61f1",
     "common-jni/src/main/cpp/translation/translation_smoke.cpp": "21f7925cbca47d4b6418eeb446487954ab78718971d9971d620616801da4a985",
-    "scripts/translation/CMakeLists.txt": "a86803eba3e804dd97b3fb4c184a51afab17376a77afba635f5d700725d84bb1",
-    "scripts/translation/build-runtime.sh": "38b0afade30281a92f54bb6f2a4cdd66d271813e18da1a4f321ba24f0a9ae397"
+    "common-jni/src/main/cpp/vision/vision_jni.cpp": "e003b8d65e82a7093f2e9bd009ffe15777fe44042751223fb3df30e667947bfa",
+    "common-jni/src/main/cpp/vision/vision_limits.h": "787717f22d22c13448bf8ee887566054f2ae3b098600ce8114ffe9873bc55b1c",
+    "common-jni/src/main/cpp/vision/vision_model.h": "265b7572b21061c4258ec3f9e50cba6d770856c4e1e686347e0f9fc9486a7cf0",
+    "common-jni/src/main/cpp/vision/vision_smoke.cpp": "8a6873e0e76b74d9cd05818a16d79411b5de9d0d7374b9679ffce4fd0cfbb058",
+    "scripts/translation/CMakeLists.txt": "f8bf2d35e7607372070c0bef5ceae2acc9d212ac6991e016c384fdc40c6b4e12",
+    "scripts/translation/build-runtime.sh": "38b0afade30281a92f54bb6f2a4cdd66d271813e18da1a4f321ba24f0a9ae397",
+    "scripts/translation/stage-runtime.py": "d10111ee00e3e290e874f95878e8e40a85b9a6f94b69ca964bfa627342103ca7"
   }
 }

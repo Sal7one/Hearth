@@ -14,41 +14,10 @@
   },
   "artifacts": [
     {
-      "abi": "armeabi-v7a",
-      "file": "libhearth_qwen.so",
-      "bytes": 13925908,
-      "sha256": "e0f15c62c5fd2e2388bd94039ee0f83e3ccdacd31752b2f0dca5420e7eb665b8",
-      "minPageAlignment": 16384,
-      "dependencies": [
-        "liblog.so",
-        "libandroid.so",
-        "libm.so",
-        "libdl.so",
-        "libc++_shared.so",
-        "libc.so"
-      ],
-      "sourceSetSha256": "6c9e0ca56ec27fb9c6aa594492d7957eb5b70ddbe780702e6a8b9be02b19521c"
-    },
-    {
-      "abi": "armeabi-v7a",
-      "file": "libhearth_nemotron.so",
-      "bytes": 1617280,
-      "sha256": "70b635d943d5f714d083a84b4d742b13a4a85f8fa182896c7945773ca8ed1fd2",
-      "minPageAlignment": 16384,
-      "dependencies": [
-        "liblog.so",
-        "libm.so",
-        "libdl.so",
-        "libc++_shared.so",
-        "libc.so"
-      ],
-      "sourceSetSha256": "6c9e0ca56ec27fb9c6aa594492d7957eb5b70ddbe780702e6a8b9be02b19521c"
-    },
-    {
       "abi": "arm64-v8a",
       "file": "libhearth_qwen.so",
-      "bytes": 20560352,
-      "sha256": "f6b6a008e61182246be0597211b3716b7988490cd31e0410da7e36132b63d1c3",
+      "bytes": 20563392,
+      "sha256": "b1b6ff2e31c2ad8344d1c055614d52fa1921772acfb89af30070f562a8a3776b",
       "minPageAlignment": 16384,
       "dependencies": [
         "liblog.so",
@@ -58,13 +27,13 @@
         "libc++_shared.so",
         "libc.so"
       ],
-      "sourceSetSha256": "6c9e0ca56ec27fb9c6aa594492d7957eb5b70ddbe780702e6a8b9be02b19521c"
+      "sourceSetSha256": "ccae71d6d9db105ae612a6dcbe7433671d6a44fcc89c082644235c83f6e853fe"
     },
     {
       "abi": "arm64-v8a",
       "file": "libhearth_nemotron.so",
       "bytes": 2267072,
-      "sha256": "270db4fb1dfb24a4623aa6981dddf4a383ae7b133bce64ba25bc09e443f6625b",
+      "sha256": "564b9247b6d446c12d25ebf5debc1e96a26310aa8ae87bc52fb5f253f515fbb4",
       "minPageAlignment": 16384,
       "dependencies": [
         "liblog.so",
@@ -73,13 +42,13 @@
         "libc++_shared.so",
         "libc.so"
       ],
-      "sourceSetSha256": "6c9e0ca56ec27fb9c6aa594492d7957eb5b70ddbe780702e6a8b9be02b19521c"
+      "sourceSetSha256": "ccae71d6d9db105ae612a6dcbe7433671d6a44fcc89c082644235c83f6e853fe"
     },
     {
-      "abi": "x86",
+      "abi": "armeabi-v7a",
       "file": "libhearth_qwen.so",
-      "bytes": 24235832,
-      "sha256": "bdf9d7b472c1583c8c00a0d671158c2aa5b0090a43f0fb1922c2a730c1e503a1",
+      "bytes": 13927724,
+      "sha256": "a15580a5b914224da3547667f22a10d80d9a0a28d7abc5aa91bb24eba30bbd1f",
       "minPageAlignment": 16384,
       "dependencies": [
         "liblog.so",
@@ -89,13 +58,44 @@
         "libc++_shared.so",
         "libc.so"
       ],
-      "sourceSetSha256": "6c9e0ca56ec27fb9c6aa594492d7957eb5b70ddbe780702e6a8b9be02b19521c"
+      "sourceSetSha256": "ccae71d6d9db105ae612a6dcbe7433671d6a44fcc89c082644235c83f6e853fe"
+    },
+    {
+      "abi": "armeabi-v7a",
+      "file": "libhearth_nemotron.so",
+      "bytes": 1617280,
+      "sha256": "d805e1a559721278d63e0bba42256a15f17e8d5401568055a4f103b9aa9f4b65",
+      "minPageAlignment": 16384,
+      "dependencies": [
+        "liblog.so",
+        "libm.so",
+        "libdl.so",
+        "libc++_shared.so",
+        "libc.so"
+      ],
+      "sourceSetSha256": "ccae71d6d9db105ae612a6dcbe7433671d6a44fcc89c082644235c83f6e853fe"
+    },
+    {
+      "abi": "x86",
+      "file": "libhearth_qwen.so",
+      "bytes": 24238448,
+      "sha256": "fc3e471ab3bf4838c705f3a8a1a944d695d37522f1ae3d37cb594a2ee55bfc32",
+      "minPageAlignment": 16384,
+      "dependencies": [
+        "liblog.so",
+        "libandroid.so",
+        "libm.so",
+        "libdl.so",
+        "libc++_shared.so",
+        "libc.so"
+      ],
+      "sourceSetSha256": "ccae71d6d9db105ae612a6dcbe7433671d6a44fcc89c082644235c83f6e853fe"
     },
     {
       "abi": "x86",
       "file": "libhearth_nemotron.so",
       "bytes": 3006940,
-      "sha256": "e3569060b96aae58d75e84ac10c5ec43b583dac5d8767cda50daeb6b297c3fcc",
+      "sha256": "42ef8b80a808fc91afb7bbda61db9c742c26984a809ca37b8781769b31f5463f",
       "minPageAlignment": 16384,
       "dependencies": [
         "liblog.so",
@@ -104,13 +104,13 @@
         "libc++_shared.so",
         "libc.so"
       ],
-      "sourceSetSha256": "6c9e0ca56ec27fb9c6aa594492d7957eb5b70ddbe780702e6a8b9be02b19521c"
+      "sourceSetSha256": "ccae71d6d9db105ae612a6dcbe7433671d6a44fcc89c082644235c83f6e853fe"
     },
     {
       "abi": "x86_64",
       "file": "libhearth_qwen.so",
-      "bytes": 23578512,
-      "sha256": "8a273f1cf5efaf4ff36fcc279a6730996a39e37f3b87465edf12e678901b702d",
+      "bytes": 23581264,
+      "sha256": "75682b81e7862065249e4e65bbe889d5fa83770f4bdadacafcb4cd7e5878a182",
       "minPageAlignment": 16384,
       "dependencies": [
         "liblog.so",
@@ -120,13 +120,13 @@
         "libc++_shared.so",
         "libc.so"
       ],
-      "sourceSetSha256": "6c9e0ca56ec27fb9c6aa594492d7957eb5b70ddbe780702e6a8b9be02b19521c"
+      "sourceSetSha256": "ccae71d6d9db105ae612a6dcbe7433671d6a44fcc89c082644235c83f6e853fe"
     },
     {
       "abi": "x86_64",
       "file": "libhearth_nemotron.so",
       "bytes": 2640672,
-      "sha256": "e11be72accc6a5e6590f20bffa849e2450cea05f22314cfa8b69c8ae4fb83977",
+      "sha256": "68f81a30ad9f79590e7b3f3922310f14ef0ee7bc4990a6cbc6228e1f5caede1d",
       "minPageAlignment": 16384,
       "dependencies": [
         "liblog.so",
@@ -135,7 +135,7 @@
         "libc++_shared.so",
         "libc.so"
       ],
-      "sourceSetSha256": "6c9e0ca56ec27fb9c6aa594492d7957eb5b70ddbe780702e6a8b9be02b19521c"
+      "sourceSetSha256": "ccae71d6d9db105ae612a6dcbe7433671d6a44fcc89c082644235c83f6e853fe"
     }
   ],
   "adapterSources": {
@@ -143,15 +143,15 @@
     "common-jni/src/main/cpp/speech/backends/backend_guard.h": "271f1d9d135b73835664614a67b3e0c676aa7aec992311986cb173a266172cbe",
     "common-jni/src/main/cpp/speech/backends/exports.map": "546cdb327cca1d7b93e99fbb82304445637236c2a70ccf1e714b5e094289c4b5",
     "common-jni/src/main/cpp/speech/backends/nemotron_backend.cpp": "149a6bf1ff090e6415f4c32680eac89b3f63d352b64c9c49e17b7b90c5f681bb",
-    "common-jni/src/main/cpp/speech/backends/qwen_backend.cpp": "2aa0b91888631bb99f5e92ed7f4d50568d946aa0bc7fa35dfefbda2b9da43761",
-    "common-jni/src/main/cpp/speech/backends/qwen_exports.map": "08631a07b5281380aae15cdd5ccec2c24e67e2bed745c0aa11dcb1487733b370",
+    "common-jni/src/main/cpp/speech/backends/qwen_backend.cpp": "7b863211d1710d410f042190db99fa28585bb1f2e27397fe1051c370b9686378",
+    "common-jni/src/main/cpp/speech/backends/qwen_exports.map": "6f3a6ab00e5a11c96f6149c002c61132b35016c5c17048046543436eea7cd242",
     "common-jni/src/main/cpp/speech/endpoint_budget.h": "08a23fa6da64c5d3aebf8afc92c9104a4ff53c67bd64b0a3f7e3cad6393f8201",
     "common-jni/src/main/cpp/speech/qwen_language.h": "1edb8df4c41adf9015227aa38c74652f9357dc6794c8ab58e37ae332dfd616b7",
-    "common-jni/src/main/cpp/speech/source_language.h": "087e2ee1c3b43d6cbcd14a38349a16143856441bd1c3d2b215a5c748dbb79579",
+    "common-jni/src/main/cpp/speech/source_language.h": "0a944fadb42fc1697a88b142c59355d6b602190ea7a5bef44a88f9c865d5c887",
     "common-jni/src/main/cpp/speech/utterance_segmenter.h": "12932ab567a45e46be5e0e6780f6b96342648421287447cd7a4db4df6fa8061a",
     "scripts/speech/build-runtimes.sh": "2d2556b6c43ce3ea648215525e2b7b46bc1a888469cd73d06346c1500b962764",
     "scripts/speech/nemo-inject.cmake": "9b02fa9deb1ff24a7b32ef262ae9e198770b9a807123616d43069b021002c5bd",
-    "scripts/speech/qwen.cmake": "f7a3d784f8d52b42429a7d882819c8d3bbc59f085c46883c6420472e1339e2dc"
+    "scripts/speech/qwen.cmake": "8b0479ea5e35bacf4cc317d553b3c806647148f44f913473d33758a3c960aa0c"
   },
   "ndk": "Pkg.Desc = Android NDK\nPkg.Revision = 27.0.12077973\nPkg.BaseRevision = 27.0.12077973\nPkg.ReleaseName = r27\n"
 }

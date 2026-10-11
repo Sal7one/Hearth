@@ -47,6 +47,18 @@ object CaptionLanguages {
         CaptionEngineChoice.MOONSHINE -> CaptionLanguageChoices(setOf("en"), UiMessage(UiR.string.capability_note_67daa0fec5, "Moonshine · This model recognizes English only. No automatic language detection or override is needed."))
         CaptionEngineChoice.PHONON -> CaptionLanguageChoices(setOf("en"), UiMessage(UiR.string.model_phonon_language_note,
             "Phonon 2 · This model recognizes English only. No automatic language detection or override is needed."))
+        CaptionEngineChoice.PARAKEET -> {
+            val capabilities = SpeechProfile.PARAKEET_TDT_0_6B_V3.capabilities
+            CaptionLanguageChoices(capabilities.sourceLanguages + "auto",
+                UiMessage(UiR.string.model_parakeet_language_note, "Parakeet recognizes 25 European languages. Selecting the source labels captions for translation; it does not force recognition. Auto may need an explicit source before translation."),
+                capabilities.languages)
+        }
+        CaptionEngineChoice.SENSE_VOICE -> {
+            val capabilities = SpeechProfile.SENSE_VOICE_SMALL_BASE_INT8.capabilities
+            CaptionLanguageChoices(capabilities.sourceLanguages + "auto",
+                UiMessage(UiR.string.model_sense_voice_language_note, "SenseVoice supports English, Chinese, Cantonese, Japanese and Korean. Choose Auto or an explicit source. Arabic and Russian require another speech model."),
+                capabilities.languages)
+        }
         CaptionEngineChoice.OMNILINGUAL -> {
             val capabilities = SpeechProfile.OMNILINGUAL_CTC_300M_V2.capabilities
             CaptionLanguageChoices(capabilities.sourceLanguages + "auto",

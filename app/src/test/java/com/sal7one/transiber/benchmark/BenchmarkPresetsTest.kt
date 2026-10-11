@@ -17,6 +17,14 @@ class BenchmarkPresetsTest {
         assertTrue(BenchmarkPresets.forPair("en", "en").all { it.translation == null })
     }
 
+    @Test fun expandedFamiliesAndCompactReverseTranslationsAreReachable() {
+        assertEquals("sensevoice-small-2024-int8", BenchmarkPresets.forPair("zh", "en").first().speech?.id)
+        assertEquals("sensevoice-small-2024-int8", BenchmarkPresets.forPair("yue", "en").first().speech?.id)
+        assertEquals("parakeet-tdt-0.6b-v3-int8", BenchmarkPresets.forPair("mt", "en").first().speech?.id)
+        assertEquals("marian-ar-en", BenchmarkPresets.forPair("ar", "en").first().translation?.id)
+        assertEquals("marian-en-es", BenchmarkPresets.forPair("en", "es").first().translation?.id)
+    }
+
     @Test fun comparisonsIgnoreDifferentInputDeviceErrorsAndEmptyOutput() {
         val runs = listOf(
             result("slow-good", 300.0, 0.1, 4),

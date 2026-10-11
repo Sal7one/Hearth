@@ -24,7 +24,7 @@ class AppNavigationTest {
     }
 
     @Test fun oldOverlayAndExternalLinksOpenCorrectPageWithSettingsReturn() {
-        for (page in 0..16) {
+        for (page in 0..19) {
             val nav = AppNavigation.initial(page)
             assertEquals(page, nav.page)
             if (MainTab.entries.none { it.page == page }) {

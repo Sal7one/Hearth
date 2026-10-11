@@ -83,6 +83,7 @@ class CloudTtsSpeaker(
     }
 
     private suspend fun playOnce(request: Request) {
+        com.sal7one.transiber.voice.VoicePlaybackOwner.claim(this, ::stop)
         val requestClient = CloudVoiceClient()
         client = requestClient
         onActivity(true)
@@ -145,5 +146,6 @@ class CloudTtsSpeaker(
         stop()
         queue.close()
         scope.cancel()
+        com.sal7one.transiber.voice.VoicePlaybackOwner.release(this)
     }
 }

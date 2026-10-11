@@ -14,6 +14,8 @@ internal val CaptionEngineChoice.speechBackend: SpeechBackend? get() = when (thi
     CaptionEngineChoice.QWEN -> SpeechBackend.QWEN3_ASR
     CaptionEngineChoice.OMNILINGUAL -> SpeechBackend.OMNILINGUAL_CTC
     CaptionEngineChoice.PHONON -> SpeechBackend.PHONON
+    CaptionEngineChoice.PARAKEET -> SpeechBackend.PARAKEET
+    CaptionEngineChoice.SENSE_VOICE -> SpeechBackend.SENSE_VOICE
     CaptionEngineChoice.NEMOTRON -> SpeechBackend.NEMOTRON_3_5
     else -> null
 }
@@ -22,6 +24,8 @@ internal val SpeechProfile.captionEngine: CaptionEngineChoice get() = when (back
     SpeechBackend.QWEN3_ASR -> CaptionEngineChoice.QWEN
     SpeechBackend.OMNILINGUAL_CTC -> CaptionEngineChoice.OMNILINGUAL
     SpeechBackend.PHONON -> CaptionEngineChoice.PHONON
+    SpeechBackend.PARAKEET -> CaptionEngineChoice.PARAKEET
+    SpeechBackend.SENSE_VOICE -> CaptionEngineChoice.SENSE_VOICE
     SpeechBackend.NEMOTRON_3_5 -> CaptionEngineChoice.NEMOTRON
 }
 internal val SpeechProfile.label: String get() = when (this) {
@@ -31,6 +35,10 @@ internal val SpeechProfile.label: String get() = when (this) {
     SpeechProfile.QWEN3_ASR_1_7B -> "Qwen3-ASR 1.7B (larger; phone performance unverified)"
     SpeechProfile.OMNILINGUAL_CTC_300M_V2 -> "Omnilingual CTC 300M v2 · experimental"
     SpeechProfile.PHONON_2 -> "Phonon 2 · English"
+    SpeechProfile.PARAKEET_TDT_0_6B_V3 -> "Parakeet TDT 0.6B v3 · INT8"
+    SpeechProfile.SENSE_VOICE_SMALL_BASE_INT8 -> "SenseVoice Small · INT8"
+    SpeechProfile.SENSE_VOICE_SMALL_INT8 -> "SenseVoice Small Yue · INT8"
+    SpeechProfile.SENSE_VOICE_SMALL_FP32 -> "SenseVoice Small Yue · FP32 (larger)"
     SpeechProfile.NEMOTRON_3_5_ASR_0_6B -> "Nemotron 3.5 ASR 0.6B"
 }
 internal data class LocalSpeechModel(val id: String, val profile: SpeechProfile, val root: File)

@@ -2,29 +2,32 @@
 #include "../backend_versions.h"
 #include "../utterance_segmenter.h"
 #include "../qwen_language.h"
+#include "../source_language.h"
 #include "sherpa-onnx/c-api/c-api.h"
 #include <deque>
 #include <memory>
 
 namespace stt::speech {
 namespace {
-struct Qwen {
+enum class SherpaModel { Qwen, Moonshine, Omnilingual, Phonon, Parakeet, SenseVoice };
+struct SherpaWindowed {
     const SherpaOnnxOfflineRecognizer* recognizer = nullptr;
     UtteranceSegmenter segmenter;
     struct Text { std::string text, language; int64_t end; };
     std::deque<Text> ready;
     Text current;
     std::string sourceCode, languageName;
-    explicit Qwen(const HearthSpeechConfig& c, bool moonshine = false, bool omnilingual = false, bool phonon = false)
+    SherpaModel model_;
+    explicit SherpaWindowed(const HearthSpeechConfig& c, SherpaModel model = SherpaModel::Qwen)
         : segmenter(c.max_utterance_ms, c.silence_ms, c.silence_threshold_db),
-          sourceCode(moonshine || phonon ? "en" : c.language),
-          languageName(moonshine || omnilingual || phonon ? "" : qwenLanguageName(sourceCode)) {
+          sourceCode(model == SherpaModel::Moonshine || model == SherpaModel::Phonon ? "en" : c.language),
+          languageName(model == SherpaModel::Qwen ? qwenLanguageName(sourceCode) : ""), model_(model) {
         SherpaOnnxOfflineRecognizerConfig cfg{};
         cfg.feat_config.sample_rate = 16000;
-        cfg.feat_config.feature_dim = omnilingual ? 80 : 128;
+        cfg.feat_config.feature_dim = model == SherpaModel::Omnilingual || model == SherpaModel::SenseVoice ? 80 : 128;
         cfg.model_config.num_threads = c.num_threads;
         cfg.model_config.provider = "cpu";
-        if (phonon) {
+        if (model == SherpaModel::Phonon || model == SherpaModel::Parakeet) {
             // Fermion Phonon-2 is a parakeet-tdt-0.6b-v3 derivative. Sherpa's
             // NeMo transducer adapter auto-detects the TDT head from the
             // export metadata and greedy-decodes (token, duration) pairs.
@@ -36,13 +39,20 @@ struct Qwen {
             cfg.model_config.transducer.decoder = c.decoder;
             cfg.model_config.transducer.joiner = c.conv_frontend;
             cfg.decoding_method = "greedy_search";
-        } else if (omnilingual) {
+        } else if (model == SherpaModel::SenseVoice) {
+            cfg.model_config.model_type = "sense_voice";
+            cfg.model_config.tokens = c.tokenizer;
+            cfg.model_config.sense_voice.model = c.model;
+            cfg.model_config.sense_voice.language = c.language;
+            cfg.model_config.sense_voice.use_itn = 1;
+            cfg.decoding_method = "greedy_search";
+        } else if (model == SherpaModel::Omnilingual) {
             // Upstream's CTC adapter has no language-conditioning input. The
             // caller's source code is a routing declaration, never a model hint.
             cfg.model_config.tokens = c.tokenizer;
             cfg.model_config.omnilingual.model = c.model;
             cfg.decoding_method = "greedy_search";
-        } else if (moonshine) {
+        } else if (model == SherpaModel::Moonshine) {
             cfg.model_config.tokens = c.model;
             cfg.model_config.moonshine.encoder = c.encoder;
             cfg.model_config.moonshine.merged_decoder = c.decoder;
@@ -57,7 +67,7 @@ struct Qwen {
         recognizer = SherpaOnnxCreateOfflineRecognizer(&cfg);
         if (!recognizer) throw std::runtime_error("SherpaOnnxCreateOfflineRecognizer returned null (upstream C API supplies no error string)");
     }
-    ~Qwen() { if (recognizer) SherpaOnnxDestroyOfflineRecognizer(recognizer); }
+    ~SherpaWindowed() { if (recognizer) SherpaOnnxDestroyOfflineRecognizer(recognizer); }
     void decode(const std::vector<float>& audio, int64_t end) {
         if (ready.size() >= 32) throw std::runtime_error("Sherpa result queue full; drain results after each push");
         auto stream = std::unique_ptr<const SherpaOnnxOfflineStream, decltype(&SherpaOnnxDestroyOfflineStream)>(
@@ -69,44 +79,59 @@ struct Qwen {
         auto result = std::unique_ptr<const SherpaOnnxOfflineRecognizerResult, decltype(&SherpaOnnxDestroyOfflineRecognizerResult)>(
             SherpaOnnxGetOfflineStreamResult(stream.get()), SherpaOnnxDestroyOfflineRecognizerResult);
         if (!result) throw std::runtime_error("SherpaOnnxGetOfflineStreamResult returned null");
-        ready.push_back({result->text ? result->text : "", sourceCode != "auto" ? sourceCode : (result->lang ? result->lang : ""), end});
+        const std::string detected = result->lang ? result->lang : "";
+        const auto language = sourceCode != "auto" ? sourceCode :
+            model_ == SherpaModel::SenseVoice ? senseVoiceLanguageCode(detected) : detected;
+        ready.push_back({result->text ? result->text : "", language, end});
     }
     auto consumer() { return [this](const std::vector<float>& audio, int64_t end) { decode(audio, end); }; }
 };
 int create(const HearthSpeechConfig* c, void** out) { return guarded([&] {
     if (!out) throw std::invalid_argument("Missing output handle");
-    *out = nullptr; requireConfig(c); *out = new Qwen(*c);
+    *out = nullptr; requireConfig(c); *out = new SherpaWindowed(*c);
 }); }
 int createMoonshine(const HearthSpeechConfig* c, void** out) { return guarded([&] {
     if (!out) throw std::invalid_argument("Missing output handle");
-    *out = nullptr; requireConfig(c); *out = new Qwen(*c, true);
+    *out = nullptr; requireConfig(c); *out = new SherpaWindowed(*c, SherpaModel::Moonshine);
 }); }
 int createOmnilingual(const HearthSpeechConfig* c, void** out) { return guarded([&] {
     if (!out) throw std::invalid_argument("Missing output handle");
-    *out = nullptr; requireConfig(c); *out = new Qwen(*c, false, true);
+    *out = nullptr; requireConfig(c); *out = new SherpaWindowed(*c, SherpaModel::Omnilingual);
 }); }
 int createPhonon(const HearthSpeechConfig* c, void** out) { return guarded([&] {
     if (!out) throw std::invalid_argument("Missing output handle");
-    *out = nullptr; requireConfig(c); *out = new Qwen(*c, false, false, true);
+    *out = nullptr; requireConfig(c); *out = new SherpaWindowed(*c, SherpaModel::Phonon);
 }); }
-void destroy(void* p) { delete static_cast<Qwen*>(p); }
+int createParakeet(const HearthSpeechConfig* c, void** out) { return guarded([&] {
+    if (!out) throw std::invalid_argument("Missing output handle");
+    *out = nullptr; requireConfig(c); *out = new SherpaWindowed(*c, SherpaModel::Parakeet);
+}); }
+int createSenseVoice(const HearthSpeechConfig* c, void** out) { return guarded([&] {
+    if (!out) throw std::invalid_argument("Missing output handle");
+    *out = nullptr; requireConfig(c); *out = new SherpaWindowed(*c, SherpaModel::SenseVoice);
+}); }
+void destroy(void* p) { delete static_cast<SherpaWindowed*>(p); }
 int push(void* p, const float* a, size_t n) { return guarded([&] {
-    auto& q = *static_cast<Qwen*>(p); q.segmenter.push(a, n, q.consumer());
+    auto& q = *static_cast<SherpaWindowed*>(p); q.segmenter.push(a, n, q.consumer());
 }); }
 int next(void* p, HearthSpeechResult* r, int* available) { return guarded([&] {
-    auto& q = *static_cast<Qwen*>(p); *available = !q.ready.empty();
+    auto& q = *static_cast<SherpaWindowed*>(p); *available = !q.ready.empty();
     if (!*available) return;
     q.current = std::move(q.ready.front()); q.ready.pop_front();
     *r = {sizeof(*r), q.current.text.c_str(), q.current.language.c_str(), 1, q.current.end};
 }); }
-int finish(void* p) { return guarded([&] { auto& q = *static_cast<Qwen*>(p); q.segmenter.finish(q.consumer()); }); }
-int reset(void* p) { return guarded([&] { auto& q = *static_cast<Qwen*>(p); q.segmenter.reset(); q.ready.clear(); q.current = {}; }); }
+int finish(void* p) { return guarded([&] { auto& q = *static_cast<SherpaWindowed*>(p); q.segmenter.finish(q.consumer()); }); }
+int reset(void* p) { return guarded([&] { auto& q = *static_cast<SherpaWindowed*>(p); q.segmenter.reset(); q.ready.clear(); q.current = {}; }); }
 const HearthSpeechBackend moonshineApi{HEARTH_SPEECH_ABI_VERSION, sizeof(HearthSpeechBackend), "moonshine", HEARTH_QWEN_REVISION,
     createMoonshine, destroy, push, next, finish, reset, lastError};
 const HearthSpeechBackend omnilingualApi{HEARTH_SPEECH_ABI_VERSION, sizeof(HearthSpeechBackend), "omnilingual_ctc", HEARTH_QWEN_REVISION,
     createOmnilingual, destroy, push, next, finish, reset, lastError};
 const HearthSpeechBackend phononApi{HEARTH_SPEECH_ABI_VERSION, sizeof(HearthSpeechBackend), "phonon", HEARTH_QWEN_REVISION,
     createPhonon, destroy, push, next, finish, reset, lastError};
+const HearthSpeechBackend parakeetApi{HEARTH_SPEECH_ABI_VERSION, sizeof(HearthSpeechBackend), "parakeet", HEARTH_QWEN_REVISION,
+    createParakeet, destroy, push, next, finish, reset, lastError};
+const HearthSpeechBackend senseVoiceApi{HEARTH_SPEECH_ABI_VERSION, sizeof(HearthSpeechBackend), "sense_voice", HEARTH_QWEN_REVISION,
+    createSenseVoice, destroy, push, next, finish, reset, lastError};
 const HearthSpeechBackend api{HEARTH_SPEECH_ABI_VERSION, sizeof(HearthSpeechBackend), "qwen3_asr", HEARTH_QWEN_REVISION,
     create, destroy, push, next, finish, reset, lastError};
 }
@@ -117,3 +142,6 @@ extern "C" __attribute__((visibility("default"))) const HearthSpeechBackend* hea
 extern "C" __attribute__((visibility("default"))) const HearthSpeechBackend* hearth_omnilingual_backend_v1() { return &stt::speech::omnilingualApi; }
 
 extern "C" __attribute__((visibility("default"))) const HearthSpeechBackend* hearth_phonon_backend_v1() { return &stt::speech::phononApi; }
+
+extern "C" __attribute__((visibility("default"))) const HearthSpeechBackend* hearth_parakeet_backend_v1() { return &stt::speech::parakeetApi; }
+extern "C" __attribute__((visibility("default"))) const HearthSpeechBackend* hearth_sense_voice_backend_v1() { return &stt::speech::senseVoiceApi; }

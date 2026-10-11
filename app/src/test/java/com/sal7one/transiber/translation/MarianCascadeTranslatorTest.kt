@@ -8,12 +8,52 @@ import org.junit.Test
 
 class MarianCascadeTranslatorTest {
     @Test fun advertisedDirectionsRequireBothPinnedPairs() {
-        assertEquals(setOf("ru", "zh"), MarianCascade.routes.map { it.source }.toSet())
+        // These are product-supported directions, independent of how routes are generated.
+        val expected = setOf(
+            TranslationDirection("ar", "ru"), TranslationDirection("ar", "zh"), TranslationDirection("ar", "es"),
+            TranslationDirection("ru", "ar"), TranslationDirection("ru", "zh"), TranslationDirection("ru", "es"),
+            TranslationDirection("zh", "ar"), TranslationDirection("zh", "ru"), TranslationDirection("zh", "es"),
+            TranslationDirection("es", "ar"), TranslationDirection("es", "ru"), TranslationDirection("es", "zh"),
+        )
+        assertEquals(expected, MarianCascade.routes.map { TranslationDirection(it.source, it.target) }.toSet())
+        assertEquals(expected.size, MarianCascade.routes.size)
+        assertEquals(expected.size, MarianCascade.routes.map { it.id }.toSet().size)
         MarianCascade.routes.forEach { route ->
+            assertSame(MarianPackage.find(route.first.id), route.first)
+            assertSame(MarianPackage.find(route.second.id), route.second)
+            assertEquals(route.source, route.first.source)
             assertEquals("en", route.first.target)
             assertEquals("en", route.second.source)
-            assertTrue(TranslationOptions.supports(route.id, route.source, "ar"))
-            assertFalse(TranslationOptions.supports(route.id, "en", "ar"))
+            assertEquals(route.target, route.second.target)
+            assertTrue(TranslationOptions.supports(route.id, route.source, route.target))
+            assertFalse(TranslationOptions.supports(route.id, route.target, route.source))
+            assertFalse(TranslationOptions.supports(route.id, "en", route.target))
+            assertFalse(TranslationOptions.supports(route.id, route.source, "en"))
+            assertFalse(TranslationOptions.supports(route.id, route.source, route.source))
+        }
+    }
+
+    @Test fun eitherMissingDirectionFailsBeforeStartingInference() = runBlocking {
+        val direction = TranslationDirection("ru", "es")
+        for (missingFirst in listOf(true, false)) {
+            val first = Fake("ru-en",
+                if (missingFirst) TranslationDirection("zh", "en") else TranslationDirection("ru", "en"),
+                "two tickets")
+            val second = Fake("en-es",
+                if (missingFirst) TranslationDirection("en", "es") else TranslationDirection("en", "ar"),
+                "dos billetes")
+            val cascade = MarianCascadeTranslator("ru-es", first, second, direction)
+            try {
+                cascade.translate("два билета", direction)
+                fail("Expected missing ${if (missingFirst) "first" else "second"} direction failure")
+            } catch (expected: IllegalStateException) {
+                assertTrue(expected.message!!.contains("missing one of its two installed language directions"))
+            } finally {
+                cascade.close()
+            }
+            assertNull(first.input)
+            assertNull(second.input)
+            assertTrue(first.closed && second.closed)
         }
     }
 

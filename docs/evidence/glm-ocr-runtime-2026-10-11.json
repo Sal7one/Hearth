@@ -1,0 +1,81 @@
+{
+  "llamaRevision": "64e9bceb2c3a856efed96feda784a50947049feb",
+  "ndkRevision": "27.0.12077973",
+  "sourceSetSha256": "1c7dff31db98cbdc9ff95bc75f01736d8fc35c5879a9076d2dbcc4353a7091c8",
+  "sourcesVerified": 14,
+  "binaries": {
+    "armeabi-v7a": {
+      "name": "libtransiber_translation.so",
+      "bytes": 3149744,
+      "sha256": "09bcc59fabddc16c5bbdc1aae4cdd456cda2436f39429893b7c1249eb4f1b20c",
+      "sourceSetSha256": "1c7dff31db98cbdc9ff95bc75f01736d8fc35c5879a9076d2dbcc4353a7091c8",
+      "minimumLoadAlignment": 16384,
+      "jniExportCount": 11,
+      "needed": [
+        "libc++_shared.so",
+        "libc.so",
+        "libdl.so",
+        "liblog.so",
+        "libm.so"
+      ]
+    },
+    "arm64-v8a": {
+      "name": "libtransiber_translation.so",
+      "bytes": 4717968,
+      "sha256": "716984c17eed7a5f2626d132a42b9d4336bfacd63efdbe342620727463fbd0c8",
+      "sourceSetSha256": "1c7dff31db98cbdc9ff95bc75f01736d8fc35c5879a9076d2dbcc4353a7091c8",
+      "minimumLoadAlignment": 16384,
+      "jniExportCount": 11,
+      "needed": [
+        "libc++_shared.so",
+        "libc.so",
+        "libdl.so",
+        "liblog.so",
+        "libm.so"
+      ]
+    },
+    "x86": {
+      "name": "libtransiber_translation.so",
+      "bytes": 6039248,
+      "sha256": "a0c1e5acac52934ac45ee0e01886a294f4975e999bdb6277d559d94952a499e6",
+      "sourceSetSha256": "1c7dff31db98cbdc9ff95bc75f01736d8fc35c5879a9076d2dbcc4353a7091c8",
+      "minimumLoadAlignment": 16384,
+      "jniExportCount": 11,
+      "needed": [
+        "libc++_shared.so",
+        "libc.so",
+        "libdl.so",
+        "liblog.so",
+        "libm.so"
+      ]
+    },
+    "x86_64": {
+      "name": "libtransiber_translation.so",
+      "bytes": 5240168,
+      "sha256": "e1919e41c26f46cdbb11abc586c82c43b8f6dee181c5e53e8e15081428ad2736",
+      "sourceSetSha256": "1c7dff31db98cbdc9ff95bc75f01736d8fc35c5879a9076d2dbcc4353a7091c8",
+      "minimumLoadAlignment": 16384,
+      "jniExportCount": 11,
+      "needed": [
+        "libc++_shared.so",
+        "libc.so",
+        "libdl.so",
+        "liblog.so",
+        "libm.so"
+      ]
+    }
+  },
+  "notices": {
+    "llama.cpp-LICENSE": "94f29bbed6a22c35b992c5c6ebf0e7c92f13b836b90f36f461c9cf2f0f1d010d",
+    "stb-image-LICENSE": "7587efcca32db8f95bf5860dea6dfa4be410ee723e1964db3689c8ddf2a2e4a9",
+    "miniaudio-LICENSE": "3a0fd41237bf8341d1e4cdd89a52ff4a96228c4fad26e272840ed0ee03efcaf7",
+    "xxhash-LICENSE": "6ffedbc0f7878612d2b23589f1ff2ab15633e1df7963a5d9fc750ec5500c7e7a",
+    "sha256-LICENSE": "b81d0022ca6367918c67b57e9647d3513ee58809fd4b0ef0b3492f1356bced25",
+    "sha1-LICENSE": "77bc62a94fcec83aed989da4ab0970816a8dd748a5500f2fb069cd109a73f42d",
+    "rotate-bits-LICENSE": "ca0b44aec101afb6b46f4c39b23369fa06a64fb9c0add37c2689d702156fee55"
+  },
+  "limitations": [
+    "ELF/source/exports packaging proof, not physical Android execution",
+    "GLM model execution explicitly requires a 64-bit process"
+  ]
+}

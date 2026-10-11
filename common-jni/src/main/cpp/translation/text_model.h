@@ -19,6 +19,10 @@ inline void captureLog(ggml_log_level level, const char* text, void*) {
 inline std::runtime_error failure(const std::string& operation) {
     return std::runtime_error(nativeError.empty() ? operation : operation + "\n" + nativeError);
 }
+inline void initializeRuntime() {
+    static std::once_flag init;
+    std::call_once(init, [] { llama_log_set(captureLog, nullptr); llama_backend_init(); });
+}
 
 class TextModel {
     std::unique_ptr<llama_model, decltype(&llama_model_free)> model{nullptr, llama_model_free};
@@ -34,8 +38,7 @@ public:
     std::mutex mutex;
     std::atomic<bool> cancelled{false};
     explicit TextModel(const std::string& path, int threads = 2, int gpuLayers = 0, bool useRawPrompt = false) : rawPrompt(useRawPrompt) {
-        static std::once_flag init;
-        std::call_once(init, [] { llama_log_set(captureLog, nullptr); llama_backend_init(); });
+        initializeRuntime();
         nativeError.clear();
         auto mp = llama_model_default_params();
         mp.n_gpu_layers = gpuLayers;

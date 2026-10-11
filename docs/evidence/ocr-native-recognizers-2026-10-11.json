@@ -1,0 +1,64 @@
+{
+  "sanitizers": [
+    "address",
+    "undefined"
+  ],
+  "recognizers": [
+    {
+      "id": "english",
+      "expected": "HELLO HEARTH",
+      "actual": "HELLO HEARTH",
+      "confidence": [
+        0.999805
+      ]
+    },
+    {
+      "id": "korean",
+      "expected": "HELLO HEARTH",
+      "actual": "HELLO HEARTH",
+      "confidence": [
+        0.995889
+      ]
+    },
+    {
+      "id": "greek",
+      "expected": "HELLO HEARTH",
+      "actual": "HELLO HEARTH",
+      "confidence": [
+        0.99919
+      ]
+    },
+    {
+      "id": "thai",
+      "expected": "HELLO HEARTH",
+      "actual": "HELLO HEARTH",
+      "confidence": [
+        0.993168
+      ]
+    },
+    {
+      "id": "devanagari",
+      "expected": "HELLO HEARTH",
+      "actual": "HELLO HEARTH",
+      "confidence": [
+        0.997741
+      ]
+    },
+    {
+      "id": "tamil",
+      "expected": "HELLO HEARTH",
+      "actual": "HELLO HEARTH",
+      "confidence": [
+        0.999619
+      ]
+    },
+    {
+      "id": "telugu",
+      "expected": "HELLO HEARTH",
+      "actual": "HELLO HEARTH",
+      "confidence": [
+        0.999332
+      ]
+    }
+  ]
+}

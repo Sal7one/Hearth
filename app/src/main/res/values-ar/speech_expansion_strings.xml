@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="label_captionenginechoice_parakeet_label">Parakeet TDT v3 · محلي</string>
+    <string name="label_captionenginechoice_parakeet_explanation">٢٥ لغة أوروبية في مقاطع قصيرة. نص أصلي مع ترجمة اختيارية.</string>
+    <string name="label_captionenginechoice_sense_voice_label">SenseVoice Small · محلي</string>
+    <string name="label_captionenginechoice_sense_voice_explanation">نموذج صغير للإنجليزية والصينية والكانتونية واليابانية والكورية.</string>
+    <string name="model_parakeet_language_note">يتعرف Parakeet على ٢٥ لغة أوروبية. تحديد لغة المصدر يعرّف النص للترجمة ولا يفرض لغة التعرف. قد يتطلب الوضع التلقائي تحديد المصدر للترجمة.</string>
+    <string name="model_sense_voice_language_note">يدعم SenseVoice الإنجليزية والصينية والكانتونية واليابانية والكورية. اختر الوضع التلقائي أو لغة المصدر. للعربية والروسية اختر نموذج كلام آخر.</string>
+</resources>

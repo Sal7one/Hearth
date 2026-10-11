@@ -63,7 +63,7 @@ class MainActivity : AppCompatActivity() {
  private val navigation=kotlinx.coroutines.flow.MutableStateFlow<Int?>(null)
  override fun onNewIntent(intent: android.content.Intent) {
   super.onNewIntent(intent);setIntent(intent);receiveShare(intent)
-  if(intent.hasExtra("page"))navigation.value=intent.getIntExtra("page",0).coerceIn(0,16)
+  if(intent.hasExtra("page"))navigation.value=intent.getIntExtra("page",0).coerceIn(0,19)
  }
  /**
   * Remote/TV keys: media play-pause toggles capture pause, media stop kills
@@ -198,7 +198,7 @@ class MainActivity : AppCompatActivity() {
       4 -> uiText(R.string.nav_speech_settings); 5 -> uiText(R.string.nav_advanced_captions)
       7 -> if (faceLayout) uiText(R.string.label_homeservice_face_title) else uiText(R.string.label_homeservice_conversation_title)
       8 -> uiText(R.string.ui_local_benchmark_3acfe); 9 -> uiText(R.string.label_settingsfeature_translation_label); 10 -> uiText(R.string.label_maintab_camera_title)
-      11 -> uiText(R.string.label_maintab_translate_title); 12 -> uiText(R.string.label_settingsfeature_voices_label); 13 -> uiText(R.string.ui_appearance_navigation_433af); 14 -> uiText(R.string.ui_phone_shortcuts_b969d); 15 -> uiText(R.string.ui_easy_setup_35fb5); 16 -> uiText(R.string.caption_history_title); else -> uiText(R.string.nav_help)
+      11 -> uiText(R.string.label_maintab_translate_title); 12 -> uiText(R.string.label_settingsfeature_voices_label); 13 -> uiText(R.string.ui_appearance_navigation_433af); 14 -> uiText(R.string.ui_phone_shortcuts_b969d); 15 -> uiText(R.string.ui_easy_setup_35fb5); 16 -> uiText(R.string.caption_history_title); 17 -> uiText(R.string.home_tts_title); 18 -> uiText(R.string.notes_title); 19 -> uiText(R.string.home_documents_title); else -> uiText(R.string.nav_help)
      }, style = MaterialTheme.typography.titleMedium) },
       navigationIcon = { if (!atHome && (simple || !route.isRoot)) IconButton(onClick = { if (page == 16) onBackPressedDispatcher.onBackPressed() else back() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, uiText(R.string.ui_back_b52b3)) } },
       actions = {
@@ -236,6 +236,7 @@ class MainActivity : AppCompatActivity() {
         onTranslate = { go(11) },
         onCamera = { go(10) },
         onReading = { reading() },
+        onTts = { go(17) }, onNotes = { go(18) }, onDocuments = { go(19) },
        ) else when(page) {
         0 -> CaptionHome(onModels = { go(1) }, onCloud = { speechSettings(SettingsLocation.CLOUD) }, onHistory = { go(16) })
         1 -> ModelsScreen(onDownloads = { go(2) }, onVoices = { voiceSettings(SettingsLocation.LOCAL) }, initialSection = modelsSection)
@@ -256,6 +257,9 @@ class MainActivity : AppCompatActivity() {
         11 -> com.sal7one.transiber.translation.TypedTranslateScreen(onModels={localModels("Translation")},onConnections={translationSettings(SettingsLocation.CLOUD)},onVoices={voiceSettings()},sharedText=sharedText,translateSharedTextImmediately=translateSharedTextImmediately,onShareConsumed={sharedText=null;translateSharedTextImmediately=false})
         12 -> com.sal7one.transiber.voice.VoiceSetup(onDownloads={go(2)}, initialLocation=voiceLocation, entryRevision=voiceEntry)
         16 -> com.sal7one.transiber.caption.history.CaptionHistoryScreen()
+        17 -> com.sal7one.transiber.voice.TtsScreen(onBack = { back() }, onVoiceSettings = { voiceSettings(SettingsLocation.LOCAL) }, onCloudSettings = { voiceSettings(SettingsLocation.CLOUD) }, onModels = { localModels("Voice") })
+        18 -> com.sal7one.transiber.notes.VoiceNotesScreen(onSpeechSettings = { speechSettings(SettingsLocation.LOCAL) }, onTranslationSettings = { translationSettings(SettingsLocation.LOCAL) })
+        19 -> com.sal7one.transiber.document.DocumentOcrScreen(onOcrModels = { localModels("Camera") }, onVoices = { voiceSettings() }, onTranslate = { extracted -> sharedText = extracted; translateSharedTextImmediately = false; go(11) })
         8 -> LocalBenchmarkScreen(onModels = { localModels(it) }, onDownloads = { go(2) })
         9 -> com.sal7one.transiber.translation.TranslationHub(onModels = { localModels("Translation") }, initialLocation = translationLocation, entryRevision = translationEntry)
         else -> Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {

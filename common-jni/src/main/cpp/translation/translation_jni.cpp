@@ -1,4 +1,5 @@
 #include "text_model.h"
+#include "runtime_jni.h"
 #include "../common/lease_registry.h"
 #include <jni.h>
 namespace {
@@ -12,7 +13,9 @@ std::string bytes(JNIEnv* env, jbyteArray value) {
     if (text.find('\0') != std::string::npos) throw std::invalid_argument("Embedded NUL in translation input");
     return text;
 }
-void fail(JNIEnv* env, const char* error) {
+}
+namespace transiber {
+void throwNativeError(JNIEnv* env, const char* error) {
     if (env->ExceptionCheck()) return;
     // Decode native UTF-8 using Java's UTF-8 constructor, never NewStringUTF.
     const std::string text(error);
@@ -44,8 +47,8 @@ extern "C" JNIEXPORT jint JNICALL Java_com_sal7one_common_1jni_translation_Local
 }
 extern "C" JNIEXPORT jlong JNICALL Java_com_sal7one_common_1jni_translation_LocalTranslationNative_create(JNIEnv* env, jobject, jbyteArray path, jboolean rawPrompt) {
     try { return models.insert(std::make_unique<transiber::TextModel>(bytes(env, path), 2, 0, rawPrompt == JNI_TRUE)); }
-    catch (const std::exception& e) { fail(env, e.what()); return 0; }
-    catch (...) { fail(env, "Unknown local translation initialization failure"); return 0; }
+    catch (const std::exception& e) { transiber::throwNativeError(env, e.what()); return 0; }
+    catch (...) { transiber::throwNativeError(env, "Unknown local translation initialization failure"); return 0; }
 }
 extern "C" JNIEXPORT jbyteArray JNICALL Java_com_sal7one_common_1jni_translation_LocalTranslationNative_translate(JNIEnv* env, jobject, jlong id, jbyteArray prompt) {
     try {
@@ -55,8 +58,8 @@ extern "C" JNIEXPORT jbyteArray JNICALL Java_com_sal7one_common_1jni_translation
         auto out = env->NewByteArray(result.size());
         if (out) env->SetByteArrayRegion(out, 0, result.size(), reinterpret_cast<const jbyte*>(result.data()));
         return out;
-    } catch (const std::exception& e) { fail(env, e.what()); return nullptr; }
-    catch (...) { fail(env, "Unknown local translation inference failure"); return nullptr; }
+    } catch (const std::exception& e) { transiber::throwNativeError(env, e.what()); return nullptr; }
+    catch (...) { transiber::throwNativeError(env, "Unknown local translation inference failure"); return nullptr; }
 }
 extern "C" JNIEXPORT void JNICALL Java_com_sal7one_common_1jni_translation_LocalTranslationNative_cancel(JNIEnv*, jobject, jlong id) {
     auto model = models.acquire(id); if (model) model->cancelled.store(true);

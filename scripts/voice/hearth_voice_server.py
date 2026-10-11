@@ -18,6 +18,22 @@ import wave
 QWEN_LANGUAGES = dict(en="English", zh="Chinese", ja="Japanese", ko="Korean", de="German",
                       fr="French", ru="Russian", pt="Portuguese", es="Spanish", it="Italian")
 MAX_AUDIO = 12 * 1024 * 1024
+KITTEN_REPO = "KittenML/kitten-tts-nano-0.8-int8"
+KITTEN_REVISION = "84781d74e29ee25217551556398b42f80593a813"
+KOKORO_REPO = "hexgrad/Kokoro-82M"
+KOKORO_REVISION = "f3ff3571791e39611d31c381e3a41a3af07b4987"
+# Native tokenizer codes and voice IDs from the pinned Kokoro model's VOICES.md.
+KOKORO_LANGUAGES = {
+    "en": ("a", "af_heart", "am_michael"),
+    "en-GB": ("b", "bf_emma", "bm_george"),
+    "es": ("e", "ef_dora", "em_alex"),
+    "fr": ("f", "ff_siwis", None),
+    "hi": ("h", "hf_alpha", "hm_omega"),
+    "it": ("i", "if_sara", "im_nicola"),
+    "pt-BR": ("p", "pf_dora", "pm_alex"),
+    "ja": ("j", "jf_alpha", "jm_kumo"),
+    "zh": ("z", "zf_xiaobei", "zm_yunjian"),
+}
 
 
 def validate_wav(raw):
@@ -81,6 +97,87 @@ class Chatterbox:
 
     def speech(self, text, language, voice):
         return encode_wav(self.engine.generate(text, language_id=language, audio_prompt_path=self.reference), self.engine.sr)
+
+
+class Kitten:
+    """The small English ONNX 0.8 family, not KittenTTS 2's different runtime/license."""
+    def __init__(self, args):
+        from huggingface_hub import hf_hub_download
+        from kittentts.onnx_model import KittenTTS_1_Onnx
+        def download(name):
+            return hf_hub_download(repo_id=KITTEN_REPO, revision=KITTEN_REVISION, filename=name)
+        config = json.loads(Path(download("config.json")).read_text(encoding="utf-8"))
+        if config.get("type") != "ONNX2":
+            raise ValueError("Pinned Kitten model must use the ONNX2 contract")
+        self.engine = KittenTTS_1_Onnx(model_path=download("kitten_tts_nano_v0_8.onnx"),
+            voices_path=download("voices.npz"), speed_priors=config.get("speed_priors", {}),
+            voice_aliases=config.get("voice_aliases", {}))
+        self.aliases = dict(config.get("voice_aliases", {}))
+        if not self.aliases or any(v not in self.engine.available_voices for v in self.aliases.values()):
+            raise ValueError("Kitten voice aliases do not match the loaded model")
+        self.model_id = KITTEN_REPO + "@" + KITTEN_REVISION
+        self.label = "Kitten TTS Nano 0.8 INT8 · English · server"
+        self.languages = ["en"]
+        self.voices = ["default", "female", "male", *self.aliases]
+
+    def speech(self, text, language, voice):
+        if language != "en":
+            raise ValueError("Kitten Nano 0.8 supports English only")
+        selected = {"default": "Bella", "female": "Bella", "male": "Jasper"}.get(voice, voice)
+        if selected not in self.aliases:
+            raise ValueError("Kitten voice is unavailable: " + selected)
+        return encode_wav(self.engine.generate(text, voice=selected, speed=1.0), 24000)
+
+
+class Kokoro:
+    """One shared model, initialized language tokenizers and revision-pinned voice tensors."""
+    def __init__(self, args):
+        import torch
+        from huggingface_hub import hf_hub_download
+        from kokoro import KModel, KPipeline
+        self.languages = list(dict.fromkeys(args.kokoro_languages.split(",")))
+        if not self.languages or any(x not in KOKORO_LANGUAGES for x in self.languages):
+            raise ValueError("Choose --kokoro-languages from " + ",".join(KOKORO_LANGUAGES))
+        def download(name):
+            return hf_hub_download(repo_id=KOKORO_REPO, revision=KOKORO_REVISION, filename=name)
+        model = KModel(repo_id=KOKORO_REPO, config=download("config.json"),
+            model=download("kokoro-v1_0.pth")).to(args.device).eval()
+        self.pipelines = {}
+        self.styles = {}
+        for language in self.languages:
+            code, female, male = KOKORO_LANGUAGES[language]
+            # A missing G2P dependency fails at startup, before advertising the language.
+            self.pipelines[language] = KPipeline(lang_code=code, repo_id=KOKORO_REPO, model=model, device=args.device)
+            for voice in (female, male):
+                if voice and voice not in self.styles:
+                    self.styles[voice] = torch.load(download("voices/" + voice + ".pt"),
+                        map_location="cpu", weights_only=True)
+        self.model_id = KOKORO_REPO + "@" + KOKORO_REVISION
+        self.label = "Kokoro 82M v1.0 · server"
+        self.voices = ["default", "female", "male", *self.styles]
+
+    def speech(self, text, language, voice):
+        import numpy as np
+        if language not in self.pipelines:
+            raise ValueError("Kokoro language was not enabled at startup: " + language)
+        _, female, male = KOKORO_LANGUAGES[language]
+        selected = {"default": female, "female": female, "male": male}.get(voice, voice)
+        if not selected or selected not in (female, male) or selected not in self.styles:
+            raise ValueError("Kokoro has no selected " + voice + " voice for " + language)
+        chunks = []
+        count = 0
+        for _, _, audio in self.pipelines[language](text, voice=self.styles[selected], speed=1.0):
+            if audio is None:
+                raise ValueError("Kokoro returned no audio for a text segment")
+            samples = audio.detach().cpu().numpy() if hasattr(audio, "detach") else np.asarray(audio)
+            samples = samples.reshape(-1)
+            count += samples.size
+            if not np.isfinite(samples).all() or count > 24000 * 120:
+                raise ValueError("Kokoro returned invalid or oversized audio")
+            chunks.append(samples)
+        if not chunks:
+            raise ValueError("Kokoro returned no audio")
+        return encode_wav(np.concatenate(chunks), 24000)
 
 
 class NoRedirect(urllib.request.HTTPRedirectHandler):
@@ -208,18 +305,19 @@ def handler(backend, token):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("backend", choices=["qwen", "chatterbox", "fish"])
+    parser.add_argument("backend", choices=["qwen", "chatterbox", "fish", "kitten", "kokoro"])
     parser.add_argument("--bind", default="127.0.0.1")
     parser.add_argument("--port", default=8787, type=int)
     parser.add_argument("--device", default="cpu")
     parser.add_argument("--reference"); parser.add_argument("--transcript")
     parser.add_argument("--fish-url", default="http://127.0.0.1:8080")
     parser.add_argument("--fish-model"); parser.add_argument("--fish-languages"); parser.add_argument("--fish-reference")
+    parser.add_argument("--kokoro-languages", default="en", help="Explicit startup-verified tokenizer set; comma-separated")
     args = parser.parse_args()
     token = os.environ.get("HEARTH_VOICE_API_KEY", "")
     if len(token) < 24 or not token.isascii() or any(c.isspace() for c in token):
         parser.error("Set HEARTH_VOICE_API_KEY to at least 24 non-whitespace ASCII characters")
-    backend = {"qwen": Qwen, "chatterbox": Chatterbox, "fish": Fish}[args.backend](args)
+    backend = {"qwen": Qwen, "chatterbox": Chatterbox, "fish": Fish, "kitten": Kitten, "kokoro": Kokoro}[args.backend](args)
     server = ThreadingHTTPServer((args.bind, args.port), handler(backend, token))
     server.daemon_threads = True
     print(f"Hearth voice bridge: {backend.model_id} on {args.bind}:{args.port}; put HTTPS in front for Android", flush=True)

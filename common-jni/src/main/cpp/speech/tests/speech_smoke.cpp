@@ -7,7 +7,8 @@
 
 int main(int argc, char** argv) {
     try {
-        if (argc != 4) throw std::invalid_argument("Usage: speech_smoke PACKAGE_DIR AUDIO.pcm SOURCE_LANGUAGE");
+        if (argc != 4 && argc != 5) throw std::invalid_argument("Usage: speech_smoke PACKAGE_DIR AUDIO.pcm SOURCE_LANGUAGE [MAX_UTTERANCE_MS]");
+        const int windowMs = argc == 5 ? std::stoi(argv[4]) : 4000;
         const std::string root = argv[1];
         std::ifstream manifest(root + "/hearth-speech.json");
         std::stringstream buffer; buffer << manifest.rdbuf();
@@ -17,13 +18,14 @@ int main(int argc, char** argv) {
         const auto* roles = j.find("roles");
         stt::JsonValue::Object cfg{{"backend", profile.find("qwen") == 0 ? "qwen3_asr" :
             profile.find("omnilingual") == 0 ? "omnilingual_ctc" : profile.find("phonon") == 0 ? "phonon" :
+            profile.find("parakeet") == 0 ? "parakeet" : profile.find("sensevoice") == 0 ? "sense_voice" :
             profile.find("moonshine") == 0 ? "moonshine" : "nemotron_3_5"}};
         for (const char* name : {"model", "frontend", "encoder", "decoder", "tokenizer"}) {
             std::string path;
             if (const auto* value = roles->find(name)) { value->asString(path); path = root + "/" + path; }
             cfg.emplace_back(name, path);
         }
-        cfg.insert(cfg.end(), {{"language", argv[3]}, {"numThreads", 4}, {"rightContext", 3}, {"maxUtteranceMs", 4000}, {"silenceMs", 600}, {"silenceThresholdDb", -45}});
+        cfg.insert(cfg.end(), {{"language", argv[3]}, {"numThreads", 4}, {"rightContext", 3}, {"maxUtteranceMs", windowMs}, {"silenceMs", 600}, {"silenceThresholdDb", -45}});
         stt::speech::SpeechConfig config(stt::JsonUtils::stringify(stt::JsonValue::object(cfg)));
         auto start = std::chrono::steady_clock::now();
         stt::speech::SpeechNativeSession session(stt::speech::loadBackend(config.backend), config.value);

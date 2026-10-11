@@ -31,7 +31,8 @@ class LocalizationResourcesTest {
     }
     @Test fun translatedFormatArgumentsArePreservedAndAllMessagesFormat() {
         val english = strings("values")
-        val placeholders = Regex("%([0-9]+)\\\$([sd])")
+        // Positional arguments can have width/zero-padding, e.g. the note timer's %2$02d.
+        val placeholders = Regex("%([0-9]+)\\\$[-#+ 0,(]*[0-9]*(?:\\.[0-9]+)?([sd])")
         for (folder in listOf("values", "values-ar", "values-zh")) {
             val locale = Locale.forLanguageTag(folder.substringAfter('-', "en"))
             strings(folder).forEach { (key, value) ->

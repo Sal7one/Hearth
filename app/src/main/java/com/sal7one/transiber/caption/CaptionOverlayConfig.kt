@@ -67,6 +67,14 @@ enum class CaptionEngineChoice(val label: String, val explanation: String) {
         "English-only parakeet-tdt transducer captions in utterance windows, from a converted Phonon 2 ONNX package. " +
             "Original-language CC; optional local translation bridge.",
     ),
+    PARAKEET(
+        "Parakeet TDT v3 (local)",
+        "25 European languages in utterance windows. Spoken-language selection declares the source for translation; it does not force recognition.",
+    ),
+    SENSE_VOICE(
+        "SenseVoice Small (local)",
+        "Compact English, Chinese, Cantonese, Japanese and Korean recognition in utterance windows. Optional local translation.",
+    ),
     NEMOTRON(
         "Nemotron 3.5 (local)",
         "Offline multilingual captions with streaming partials from a Nemotron GGUF package. " +
@@ -96,8 +104,8 @@ enum class CaptionTheme(val label: String) {
  *
  * SYSTEM — the device's offline TTS engine (works everywhere, language
  *   coverage depends on installed voices).
- * NATIVE — this app's on-device neural TTS (TtsKit: Kokoro/sherpa-onnx,
- *   needs an imported ONNX voice model; high quality, fully offline).
+ * NATIVE — this app's Supertonic 3 JNI/ORT path with its verified model/voice
+ *   package. External Android engines and self-hosted families are separate routes.
  * CLOUD — NETWORK CODE (BYOK, play distribution only — byok/CloudTtsSpeaker).
  */
 enum class CaptionSpeakerChoice(val label: String, val explanation: String) {

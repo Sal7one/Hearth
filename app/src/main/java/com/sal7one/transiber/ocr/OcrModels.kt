@@ -4,6 +4,8 @@ import android.content.Context
 import com.sal7one.common_jni.ocr.PaddleOcr
 import com.sal7one.common_jni.ocr.OcrEngine
 import com.sal7one.common_jni.ocr.JapaneseOcr
+import com.sal7one.common_jni.vision.VisionModelFile
+import com.sal7one.common_jni.vision.VisionOcrSession
 import org.json.JSONArray
 import java.io.File
 import java.io.InputStream
@@ -13,7 +15,8 @@ import java.security.MessageDigest
 
 internal data class OcrAsset(val id: String, val repository: String, val revision: String, val bytes: Long, val sha256: String, val owner: String = "PaddlePaddle", val remoteFile: String = "inference.onnx") {
     val url get() = "https://huggingface.co/$owner/$repository/resolve/$revision/$remoteFile"
-    val filename get() = if(owner == "PaddlePaddle") "$repository.onnx" else "$id.onnx"
+    val extension get() = remoteFile.substringAfterLast('.', "onnx")
+    val filename get() = if(owner == "PaddlePaddle") "$repository.onnx" else "$id.$extension"
 }
 internal data class OcrProfile(val id: String, val label: String, val languages: Set<String>, val asset: OcrAsset, val engine: String = "paddle", val extraAssets: List<OcrAsset> = emptyList(), val description: String = "Horizontal printed text · Apache-2.0") {
     val assets get() = if(engine == "paddle") listOf(OcrCatalog.detector,asset) else listOf(asset)+extraAssets
@@ -29,16 +32,32 @@ internal object OcrCatalog {
         OcrProfile("cjk","Chinese · English · Japanese",setOf("zh","en","ja"),OcrAsset("ocr-cjk","PP-OCRv5_mobile_rec_onnx","ed152b8b495f84de93cda5709d768548a9127622",16534782,"da72dc72ca4dc220df0dfde68c1dedc31c58d3e76a25871122e5056227d50092")),
         OcrProfile("arabic","Arabic script · Arabic, Persian, Urdu & more","ar fa ug ur ps ku sd bal en".split(' ').toSet(),OcrAsset("ocr-arabic","arabic_PP-OCRv5_mobile_rec_onnx","14aaedcd75825982689ecf5cd64ab33ee083215a",7998947,"799113ebf267fbe742deb99eb36e8d42c9ddc5291ceacf92add41b4d52a59110")),
         OcrProfile("cyrillic","Russian · Ukrainian · Belarusian",setOf("ru","uk","be","en"),OcrAsset("ocr-cyrillic","eslav_PP-OCRv5_mobile_rec_onnx","9a32171fc5718746875e1a261818884517975013",7887627,"b3018ef2b09a0250b6e0c8e871c927098363e5fd4df890cc68e8358eb0aaf1bd")),
+        OcrProfile("english","English · optimized reader",setOf("en"),OcrAsset("ocr-english","en_PP-OCRv5_mobile_rec_onnx","3fafbc3b5dcf93dd72add9f48368be8a3a2cd33b",7848423,"b5f833dfc5d0eb71da397b4efa06ebeee9b431b690a47d6af40d77d8eabc557f")),
+        OcrProfile("korean","Korean · English",setOf("ko", "en"),OcrAsset("ocr-korean","korean_PP-OCRv5_mobile_rec_onnx","5c6f574b8e2230adf4287b33e736d71b9fabd28e",13418787,"92f0b7785e64fc9090106a241cf4c1eb97472824558272751b88a2a4476d3a08")),
+        OcrProfile("greek","Greek · English",setOf("el", "en"),OcrAsset("ocr-greek","el_PP-OCRv5_mobile_rec_onnx","8152b89d2ee0e1d4c92decab75fe75e5e3d836b6",7808735,"2acf17fcaea2bc81b878e311e6263b8885f48bb03796f75f9f30ed3242bbaa6d")),
+        OcrProfile("thai","Thai · English",setOf("th", "en"),OcrAsset("ocr-thai","th_PP-OCRv5_mobile_rec_onnx","1d4adbbafb1034a2fd6618498575b81ea7b69f69",7891015,"27618be66018f8598ac0a526a593f9f1cebf794e7eded93428e8fb016e537f5f")),
+        OcrProfile("devanagari","Hindi · Marathi · Nepali · English",setOf("hi", "mr", "ne", "en"),OcrAsset("ocr-devanagari","devanagari_PP-OCRv5_mobile_rec_onnx","251aec19e36739540d35e2cc943f6aa7503b98e5",7912311,"cb789212ce96c69d3e74728ae4309d179281d68cb3945d0616b67cafab41c986")),
+        OcrProfile("tamil","Tamil · English",setOf("ta", "en"),OcrAsset("ocr-tamil","ta_PP-OCRv5_mobile_rec_onnx","0db89798af0d5218fad9ea7ace0557526e9077f1",7885691,"c6d2b682d2a0ea4cb1fccdba295976f93fd439964d16cdc666cadef531accbee")),
+        OcrProfile("telugu","Telugu · English",setOf("te", "en"),OcrAsset("ocr-telugu","te_PP-OCRv5_mobile_rec_onnx","f1197c83430241c58c64b0952b3a80366d04eeba",7898759,"8238bfc46d4cffe720ed6706e3842802467343497428693ff2bfb4e6b3caa36b")),
         OcrProfile("manga","Japanese · Manga bubble",setOf("ja"),OcrAsset("ocr-manga-encoder","manga-ocr-base-ONNX","f9023406bb2f6b17df67bc4a327c56ecd20611f0",86967805,"a73e7a9959f3412f4d0ab60c8cd0f71c29e7e29a2e52a1e184ad6f2be3b892e3","onnx-community","onnx/encoder_model_uint8.onnx"),"manga",listOf(OcrAsset("ocr-manga-decoder","manga-ocr-base-ONNX","f9023406bb2f6b17df67bc4a327c56ecd20611f0",29627936,"2e7177d2b0a59f1c612b694ed70c13971bee765cc2b2bc7bc9376e4753652f27","onnx-community","onnx/decoder_model_int8.onnx")),"Draw around one bubble. Vertical/horizontal Japanese and furigana · Experimental · Apache-2.0"),
         OcrProfile("meiki","Japanese · Meiki text lines",setOf("ja"),OcrAsset("ocr-meiki-detector","meiki.text.detect.v0","a9cffa4f60cbf72ddb87edf19c6f98a01cd042e6",14503825,"40b6a016667745cae7d3055929ae3b8b1e7716aac795f5904cd3c2c7c3b8404b","rtr46","meiki.text.detect.v0.1.960x544.onnx"),"meiki",listOf(OcrAsset("ocr-meiki-reader","meiki.txt.recognition.v0","a28cf5874dc2438ebb1c86336be26bcec51e3375",18593254,"3e96bc772fbee9717e536a6353032bb944c3382dd2f6960ef4890decda43b000","rtr46","meiki.text.rec.v0.960x32.onnx"),OcrAsset("ocr-meiki-vertical","meiki.txt.recognition.v0","a28cf5874dc2438ebb1c86336be26bcec51e3375",12872961,"2c2a83a23bc3b7e6c63962175f507ecc6c5e85cc174f17bdec37d9bbd0bf895a","rtr46","meiki.text.rec.v0.vertical.32x480.onnx")),"Japanese line detection and recognition. Vertical reader is beta · Experimental · LGPL-3.0 model weights"),
     )
-    val assets get() = profiles.flatMap { it.assets }.distinctBy { it.id }
+    // Document-only vision-language OCR: intentionally absent from live camera/screen profiles.
+    val glm = OcrProfile("glm-ocr", "GLM-OCR · Experimental document reader",
+        setOf("en", "zh", "fr", "es", "ru", "de", "ja", "ko"),
+        OcrAsset("ocr-glm-decoder", "GLM-OCR-GGUF", "65a42de1148dbed2297e922b5dbc7d9b70c36578", 950433408,
+            "45bc244a6446aff850521dc41f18bc8d7105ad5f0c2c8c28af04e7cc4f4d50b1", "ggml-org", "GLM-OCR-Q8_0.gguf"),
+        "glm", listOf(OcrAsset("ocr-glm-projector", "GLM-OCR-GGUF", "65a42de1148dbed2297e922b5dbc7d9b70c36578", 484403648,
+            "9c4b58e33e316ed142eb5dcb41abec3844d3e6e5dc361ffb782c3fa9d175141f", "ggml-org", "mmproj-GLM-OCR-Q8_0.gguf")),
+        "Experimental local document OCR. 1.34 GiB files; memory use is higher. Eight publisher languages; Arabic is not declared. MIT weights.")
+    val documentProfiles get() = profiles.filter { it.engine != "manga" } + glm
+    val assets get() = (profiles + glm).flatMap { it.assets }.distinctBy { it.id }
     fun find(id: String) = assets.firstOrNull { it.id == id }
-    fun profile(id: String) = profiles.firstOrNull { it.id == id } ?: error("Unknown OCR profile: $id")
+    fun profile(id: String) = (profiles + glm).firstOrNull { it.id == id } ?: error("Unknown OCR profile: $id")
 }
 /** Shared download/import sink: content identity, bounded staging, atomic publication. */
 internal class OcrModels(private val root: File) {
-    fun file(asset: OcrAsset) = File(root, "${asset.id}.onnx")
+    fun file(asset: OcrAsset) = File(root, "${asset.id}.${asset.extension}")
     fun installed(asset: OcrAsset) = file(asset).let { it.isFile && it.length() == asset.bytes }
     fun ready(profile: OcrProfile) = profile.assets.all(::installed)
     fun missing(profile: OcrProfile) = profile.assets.filterNot(::installed)
@@ -49,18 +68,22 @@ internal class OcrModels(private val root: File) {
             temp.outputStream().use { out ->
                 val buffer = ByteArray(65536)
                 while(true) { cancelled(); val count = input.read(buffer); if(count < 0) break
-                    total += count; require(total <= (expected?.bytes ?: 128L*1024*1024)) { "OCR file exceeds supported model size" }
+                    total += count; require(total <= (expected?.bytes ?: OcrCatalog.assets.maxOf { it.bytes })) { "OCR file exceeds supported model size" }
                     digest.update(buffer,0,count); out.write(buffer,0,count)
                 }
             }
             val sha = digest.digest().joinToString("") { "%02x".format(it) }
-            val asset = OcrCatalog.assets.firstOrNull { it.bytes == total && it.sha256 == sha } ?: error("OCR model checksum is not in the supported OCR catalog. Download the linked ONNX export.")
+            val asset = OcrCatalog.assets.firstOrNull { it.bytes == total && it.sha256 == sha } ?: error("OCR model checksum is not in the supported OCR catalog. Use the exact linked model file.")
             require(expected == null || expected.id == asset.id) { "Downloaded OCR model does not match the selected model" }
             cancelled(); Files.move(temp.toPath(),file(asset).toPath(),StandardCopyOption.ATOMIC_MOVE,StandardCopyOption.REPLACE_EXISTING)
             return asset
         } finally { temp.delete() }
     }
     fun open(context: Context, profile: OcrProfile): OcrEngine {
+        if (profile.engine == "glm") {
+            fun pinned(asset: OcrAsset) = VisionModelFile(file(asset), asset.bytes, asset.sha256)
+            return VisionOcrSession.open(pinned(profile.asset), pinned(profile.extraAssets.single()))
+        }
         for(asset in profile.assets) {
             val path = file(asset); check(installed(asset)) { "Download or import ${asset.filename} first" }
             val hash = path.inputStream().use { input -> val digest=MessageDigest.getInstance("SHA-256");val b=ByteArray(65536);while(true){val n=input.read(b);if(n<0)break;digest.update(b,0,n)};digest.digest().joinToString(""){"%02x".format(it)} }

@@ -10,6 +10,9 @@ internal fun UiText.title(value: com.sal7one.transiber.home.HomeService): String
     com.sal7one.transiber.home.HomeService.TEXT -> R.string.label_homeservice_text_title
     com.sal7one.transiber.home.HomeService.CAMERA -> R.string.label_homeservice_camera_title
     com.sal7one.transiber.home.HomeService.SCREEN -> R.string.label_homeservice_screen_title
+    com.sal7one.transiber.home.HomeService.TTS -> R.string.home_tts_title
+    com.sal7one.transiber.home.HomeService.NOTES -> R.string.notes_title
+    com.sal7one.transiber.home.HomeService.DOCUMENTS -> R.string.home_documents_title
 })
 
 internal fun UiText.description(value: com.sal7one.transiber.home.HomeService): String = this(when (value) {
@@ -19,6 +22,9 @@ internal fun UiText.description(value: com.sal7one.transiber.home.HomeService): 
     com.sal7one.transiber.home.HomeService.TEXT -> R.string.label_homeservice_text_description
     com.sal7one.transiber.home.HomeService.CAMERA -> R.string.label_homeservice_camera_description
     com.sal7one.transiber.home.HomeService.SCREEN -> R.string.label_homeservice_screen_description
+    com.sal7one.transiber.home.HomeService.TTS -> R.string.home_tts_description
+    com.sal7one.transiber.home.HomeService.NOTES -> R.string.notes_description
+    com.sal7one.transiber.home.HomeService.DOCUMENTS -> R.string.home_documents_description
 })
 
 internal fun UiText.action(value: com.sal7one.transiber.home.HomeService): String = this(when (value) {
@@ -28,6 +34,9 @@ internal fun UiText.action(value: com.sal7one.transiber.home.HomeService): Strin
     com.sal7one.transiber.home.HomeService.TEXT -> R.string.label_homeservice_text_action
     com.sal7one.transiber.home.HomeService.CAMERA -> R.string.label_homeservice_camera_action
     com.sal7one.transiber.home.HomeService.SCREEN -> R.string.label_homeservice_screen_action
+    com.sal7one.transiber.home.HomeService.TTS -> R.string.home_tts_action
+    com.sal7one.transiber.home.HomeService.NOTES -> R.string.notes_open
+    com.sal7one.transiber.home.HomeService.DOCUMENTS -> R.string.home_documents_action
 })
 
 internal fun UiText.label(value: com.sal7one.transiber.ui.MainTab): String = this(when (value) {
@@ -110,6 +119,8 @@ internal fun UiText.label(value: com.sal7one.transiber.caption.CaptionEngineChoi
     com.sal7one.transiber.caption.CaptionEngineChoice.MOONSHINE -> R.string.label_captionenginechoice_moonshine_label
     com.sal7one.transiber.caption.CaptionEngineChoice.QWEN -> R.string.label_captionenginechoice_qwen_label
     com.sal7one.transiber.caption.CaptionEngineChoice.OMNILINGUAL -> R.string.label_captionenginechoice_omnilingual_label
+    com.sal7one.transiber.caption.CaptionEngineChoice.PARAKEET -> R.string.label_captionenginechoice_parakeet_label
+    com.sal7one.transiber.caption.CaptionEngineChoice.SENSE_VOICE -> R.string.label_captionenginechoice_sense_voice_label
     com.sal7one.transiber.caption.CaptionEngineChoice.PHONON -> R.string.label_captionenginechoice_phonon_label
     com.sal7one.transiber.caption.CaptionEngineChoice.NEMOTRON -> R.string.label_captionenginechoice_nemotron_label
     com.sal7one.transiber.caption.CaptionEngineChoice.CLOUD -> R.string.label_captionenginechoice_cloud_label
@@ -121,6 +132,8 @@ internal fun UiText.explanation(value: com.sal7one.transiber.caption.CaptionEngi
     com.sal7one.transiber.caption.CaptionEngineChoice.MOONSHINE -> R.string.label_captionenginechoice_moonshine_explanation
     com.sal7one.transiber.caption.CaptionEngineChoice.QWEN -> R.string.label_captionenginechoice_qwen_explanation
     com.sal7one.transiber.caption.CaptionEngineChoice.OMNILINGUAL -> R.string.label_captionenginechoice_omnilingual_explanation
+    com.sal7one.transiber.caption.CaptionEngineChoice.PARAKEET -> R.string.label_captionenginechoice_parakeet_explanation
+    com.sal7one.transiber.caption.CaptionEngineChoice.SENSE_VOICE -> R.string.label_captionenginechoice_sense_voice_explanation
     com.sal7one.transiber.caption.CaptionEngineChoice.PHONON -> R.string.label_captionenginechoice_phonon_explanation
     com.sal7one.transiber.caption.CaptionEngineChoice.NEMOTRON -> R.string.label_captionenginechoice_nemotron_explanation
     com.sal7one.transiber.caption.CaptionEngineChoice.CLOUD -> R.string.label_captionenginechoice_cloud_explanation
@@ -224,18 +237,27 @@ internal fun UiText.languageLabel(option: com.sal7one.common_jni.language.Langua
 }
 
 internal fun UiText.label(profile: com.sal7one.transiber.ocr.OcrProfile): String = when(profile.id) {
+    "glm-ocr" -> this(R.string.vision_ocr_title)
     "latin" -> this(R.string.ocr_latin)
     "cjk" -> this(R.string.ocr_cjk)
     "arabic" -> this(R.string.ocr_arabic)
     "cyrillic" -> this(R.string.ocr_cyrillic)
+    "english" -> this(R.string.document_ocr_english)
+    "korean" -> this(R.string.document_ocr_korean)
+    "greek" -> this(R.string.document_ocr_greek)
+    "thai" -> this(R.string.document_ocr_thai)
+    "devanagari" -> this(R.string.document_ocr_devanagari)
+    "tamil" -> this(R.string.document_ocr_tamil)
+    "telugu" -> this(R.string.document_ocr_telugu)
     "manga" -> this(R.string.ocr_manga)
     "meiki" -> this(R.string.ocr_meiki)
     else -> profile.label
 }
 internal fun UiText.description(profile: com.sal7one.transiber.ocr.OcrProfile): String = when(profile.id) {
+    "glm-ocr" -> this(R.string.vision_ocr_warning)
     "manga" -> this(R.string.ocr_manga_details)
     "meiki" -> this(R.string.ocr_meiki_details)
-    "latin", "cjk", "arabic", "cyrillic" -> this(R.string.ocr_printed)
+    "latin", "cjk", "arabic", "cyrillic", "english", "korean", "greek", "thai", "devanagari", "tamil", "telugu" -> this(R.string.ocr_printed)
     else -> profile.description
 }
 internal fun UiText.installation(source: com.sal7one.transiber.models.ModelSource): String = when(source.id) {

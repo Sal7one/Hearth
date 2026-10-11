@@ -65,6 +65,17 @@ class PackageTest(unittest.TestCase):
             (root / "encoder.int8.onnx").unlink()
             with self.assertRaisesRegex(ValueError, "Missing assets"):
                 packager.create_manifest(root, "phonon-2", roles)
+    def test_parakeet_and_sensevoice_use_explicit_runtime_roles(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            for name in ("tokens.txt", "encoder.onnx", "decoder.onnx", "joiner.onnx", "model.onnx"):
+                (root / name).write_bytes(b"fixture")
+            transducer = {"model": "tokens.txt", "frontend": "joiner.onnx", "encoder": "encoder.onnx", "decoder": "decoder.onnx"}
+            self.assertEqual(packager.create_manifest(root, "parakeet-tdt-0.6b-v3-int8", transducer)["profile"], "parakeet-tdt-0.6b-v3-int8")
+            for profile in ("sensevoice-small-2024-int8", "sensevoice-small-2025-int8", "sensevoice-small-2025-fp32"):
+                self.assertEqual(packager.create_manifest(root, profile, {"model": "model.onnx", "tokenizer": "tokens.txt"})["profile"], profile)
+                with self.assertRaisesRegex(ValueError, "Required roles"):
+                    packager.create_manifest(root, profile, {"model": "model.onnx"})
     def test_unknown_model_is_rejected(self):
         with tempfile.TemporaryDirectory() as d:
             with self.assertRaisesRegex(ValueError, "Unsupported"):

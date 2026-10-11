@@ -1,4 +1,4 @@
-# Shared voices and typed translation — Hearth 0.10.1
+# Shared voices and typed translation
 
 The **Translate** tab gives an input field above its translation, explicit
 source/target languages, swap, copy, clear, Play original and Play translation.
@@ -20,6 +20,11 @@ an explicit **Custom default** choice and a **Shared voice settings** read-aloud
 Supertonic and [cloud caption voices](cloud-tts.md) with independent OpenAI, OpenRouter, Google Gemini, ElevenLabs and compatible-server configuration.
 Automatic traveler speech remains optional. Starting microphone capture stops
 traveler playback. Camera speech is manual, for either original or translated text.
+
+The standalone **Text to speech** Home feature adds independent text, voice, language,
+gender, speed and loudness controls, installed Android engine selection and text export.
+See [standalone TTS and new model families](tts-feature-and-models.md) for the Kitten/Kokoro
+server adapters and the distinction between embedded and external Android engines.
 
 ## Available paths
 

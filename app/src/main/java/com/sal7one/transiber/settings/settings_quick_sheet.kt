@@ -7,6 +7,9 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.VolumeUp
+import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.Description
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -34,6 +37,9 @@ internal fun SettingsQuickSheet(
             locations.forEach { option -> Tab(selected = option == location, onClick = { location = option }, text = { Text(uiText.label(option)) }) }
         }
         SettingsFeatureGrid(location) { onFeature(location, it) }
+        FeatureAction(uiText(UiR.string.home_tts_title), Icons.Default.VolumeUp, { onPage(17) })
+        FeatureAction(uiText(UiR.string.notes_title), Icons.Default.Mic, { onPage(18) })
+        FeatureAction(uiText(UiR.string.home_documents_title), Icons.Default.Description, { onPage(19) })
         FeatureAction(uiText(UiR.string.ui_appearance_41def), Icons.Default.Palette, { onPage(13) })
         FeatureAction(uiText(UiR.string.ui_downloads_imports_a2a3b), Icons.Default.Download, { onPage(2) })
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {

@@ -22,12 +22,29 @@ def sha(path): return hashlib.sha256(path.read_bytes()).hexdigest()
 licenses = root / 'common-jni/src/main/assets/licenses/translation'
 licenses.mkdir(parents=True, exist_ok=True)
 shutil.copy2(work/'llama.cpp/LICENSE', licenses/'llama.cpp-LICENSE')
+# mtmd is linked into the same runtime. Preserve its vendored notices alongside
+# llama's own license; copying only the top-level MIT notice loses these terms.
+vendor = work/'llama.cpp/vendor'
+for source, name in [('hash/xxhash/LICENSE', 'xxhash-LICENSE'),
+                     ('hash/sha256/LICENSE', 'sha256-LICENSE'),
+                     ('hash/rotate-bits/LICENSE.md', 'rotate-bits-LICENSE')]:
+    shutil.copy2(vendor/source, licenses/name)
+def preserve_comment(source, marker, name):
+    text = (vendor/source).read_text()
+    position = text.index(marker)
+    start = text.rfind('/*', 0, position + 1)
+    end = text.index('*/', position) + 2
+    if start < 0: raise RuntimeError(f'Missing pinned vendor license block: {source}')
+    (licenses/name).write_text(text[start:end] + '\n')
+preserve_comment('stb/stb_image.h', 'This software is available under 2 licenses', 'stb-image-LICENSE')
+preserve_comment('miniaudio/miniaudio.h', 'This software is available as a choice', 'miniaudio-LICENSE')
+preserve_comment('hash/sha1/sha1.c', '100% Public Domain', 'sha1-LICENSE')
 record_path = licenses/'runtime-build.json'
 previous = json.loads(record_path.read_text()) if record_path.exists() else {}
 binaries = previous.get('binaries', {'arm64-v8a': previous['binary']} if 'binary' in previous else {})
-sources = {str(p.relative_to(root)):sha(p) for p in sorted(list((root/'common-jni/src/main/cpp/translation').glob('*')) + [root/'scripts/translation/CMakeLists.txt', root/'scripts/translation/build-runtime.sh', root/'common-jni/src/main/cpp/common/lease_registry.h']) if p.is_file()}
+sources = {str(p.relative_to(root)):sha(p) for p in sorted(list((root/'common-jni/src/main/cpp/translation').glob('*')) + list((root/'common-jni/src/main/cpp/vision').glob('*')) + [root/'scripts/translation/CMakeLists.txt', root/'scripts/translation/build-runtime.sh', root/'scripts/translation/stage-runtime.py', root/'common-jni/src/main/cpp/common/lease_registry.h', root/'common-jni/src/main/cpp/common/utf8_utils.h']) if p.is_file()}
 binaries[abi] = {'name':target.name, 'bytes':target.stat().st_size, 'sha256':sha(target), 'sourceSetSha256':source_set_digest(sources)}
-record = {'llama_revision': subprocess.check_output(['git','-C',str(work/'llama.cpp'),'rev-parse','HEAD'],text=True).strip(), 'ndk':ndk_revision, 'architectures':sorted(binaries), 'inference':'CPU, two threads, isolated GGML symbols', 'binaries':binaries, 'sources':sources}
+record = {'llama_revision': subprocess.check_output(['git','-C',str(work/'llama.cpp'),'rev-parse','HEAD'],text=True).strip(), 'ndk':ndk_revision, 'architectures':sorted(binaries), 'inference':'CPU, two translation threads; configurable bounded vision threads; isolated GGML symbols; mtmd vision, no video/FFmpeg', 'binaries':binaries, 'sources':sources}
 (licenses/'runtime-build.json').write_text(json.dumps(record,indent=2)+'\n')
 libroot = root / 'common-jni/src/main/jniLibs'
 update_checksums(libroot)

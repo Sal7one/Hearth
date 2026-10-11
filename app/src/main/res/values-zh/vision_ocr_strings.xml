@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="vision_ocr_title">GLM-OCR · 实验性文档识别</string>
+    <string name="vision_ocr_warning">用于 64 位设备文档的实验性本地视觉 OCR。两个文件共 1.34 GiB，推理需要更多内存。发布者支持英语、中文、法语、西班牙语、俄语、德语、日语和韩语。阿拉伯语与手机性能尚未验证。安装两个文件后，在文档中选择。</string>
+    <string name="vision_ocr_import">导入模型文件</string>
+    <string name="vision_ocr_import_hint">选择引擎链接中的准确 ONNX 或 GGUF 文件。文件名可以改变；SHA-256 校验会识别并验证每个文件。</string>
+    <string name="vision_document_language">朗读文本语言</string>
+    <string name="vision_document_language_help">此选项仅控制朗读。PDF 和 DOCX 文本可以使用任何语言，与图像 OCR 引擎无关。语音支持取决于所选引擎。</string>
+</resources>

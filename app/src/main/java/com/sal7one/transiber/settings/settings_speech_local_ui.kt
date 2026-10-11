@@ -30,6 +30,8 @@ internal fun SettingsSpeechLocalUi(
             CaptionEngineChoice.QWEN to "Qwen3-ASR",
             CaptionEngineChoice.OMNILINGUAL to "Omnilingual CTC",
             CaptionEngineChoice.PHONON to "Phonon 2",
+            CaptionEngineChoice.PARAKEET to "Parakeet TDT v3",
+            CaptionEngineChoice.SENSE_VOICE to "SenseVoice Small",
             CaptionEngineChoice.MOONSHINE to "Moonshine",
             CaptionEngineChoice.WHISPER to "Whisper",
             CaptionEngineChoice.VOSK to "Vosk",

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="document_title">المستندات</string>
+    <string name="document_subtitle">افتح ملف PDF أو Word أو صورة واقرأه على هاتفك.</string>
+    <string name="document_open">فتح مستند</string>
+    <string name="document_embedded_images">قراءة الصور داخل ملفات Word</string>
+    <string name="document_models">نماذج قراءة النصوص</string>
+    <string name="document_local_policy">تبقى الملفات على هذا الجهاز. تُقرأ الصور بالنموذج المثبّت، ونصوص PDF مباشرة على Android 15 أو أحدث. صدّر النتائج للاحتفاظ بها.</string>
+    <string name="document_exported">تم تصدير النص</string>
+    <string name="document_progress">%1$d / %2$d صفحات</string>
+    <string name="document_preparing">جارٍ تجهيز المستند…</string>
+    <string name="document_cancel">إلغاء</string>
+    <string name="document_cancelled">تم الإلغاء مع الاحتفاظ بالصفحات المكتملة.</string>
+    <string name="document_export">تصدير النص</string>
+    <string name="document_copy">نسخ</string>
+    <string name="document_docx_text">نص Word</string>
+    <string name="document_page">صفحة / صورة %1$s</string>
+    <string name="document_ocr_time">قراءة محلية · %1$d مللي ثانية</string>
+    <string name="document_original_text">النص الأصلي للمستند</string>
+    <string name="document_empty_page">لا يوجد نص مقروء في هذه الصفحة.</string>
+    <string name="document_stop_voice">إيقاف الصوت</string>
+    <string name="document_translate_page">ترجمة الصفحة</string>
+    <string name="document_ocr_english">الإنجليزية · قارئ متخصص</string>
+    <string name="document_ocr_korean">الكورية · الإنجليزية</string>
+    <string name="document_ocr_greek">اليونانية · الإنجليزية</string>
+    <string name="document_ocr_thai">التايلاندية · الإنجليزية</string>
+    <string name="document_ocr_devanagari">الهندية · الماراثية · النيبالية · الإنجليزية</string>
+    <string name="document_ocr_tamil">التاميلية · الإنجليزية</string>
+    <string name="document_ocr_telugu">التيلوغوية · الإنجليزية</string>
+</resources>

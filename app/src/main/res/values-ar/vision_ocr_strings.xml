@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="vision_ocr_title">GLM-OCR · مستندات تجريبي</string>
+    <string name="vision_ocr_warning">قراءة مستندات محلية تجريبية بنموذج رؤية للأجهزة ذات 64 بت. ملفان بحجم 1.34 GiB ويحتاج التشغيل إلى ذاكرة إضافية. لغات الناشر: الإنجليزية والصينية والفرنسية والإسبانية والروسية والألمانية واليابانية والكورية. العربية وأداء الهاتف غير متحقق منهما. اختره من المستندات بعد تثبيت الملفين.</string>
+    <string name="vision_ocr_import">استيراد ملفات النموذج</string>
+    <string name="vision_ocr_import_hint">اختر ملفات ONNX أو GGUF المحددة في روابط المحرك. يمكن تغيير الأسماء؛ تحقق SHA-256 يحدد كل ملف ويتحقق منه.</string>
+    <string name="vision_document_language">لغة النص للاستماع</string>
+    <string name="vision_document_language_help">هذا الخيار للتحويل إلى صوت فقط. نص PDF وDOCX قد يكون بأي لغة بصرف النظر عن قارئ الصور. دعم الصوت يعتمد على المحرك المختار.</string>
+</resources>

@@ -138,6 +138,24 @@ class SpeechFoundationTest {
         File(root, SpeechModelPackage.MANIFEST).writeText(missingDecoder.toString())
         rejects("roles") { SpeechModelPackage.verify(root) }
     }
+    @Test fun newSpeechFamiliesHaveHonestLanguageAndStreamingContracts() {
+        val parakeet = SpeechProfile.PARAKEET_TDT_0_6B_V3.capabilities
+        assertEquals(25, parakeet.sourceLanguages.size)
+        assertTrue("ru" in parakeet.sourceLanguages)
+        assertFalse("ar" in parakeet.sourceLanguages)
+        assertFalse("zh" in parakeet.sourceLanguages)
+        assertTrue(parakeet.languages.none { it.canForce })
+        SpeechOptions(sourceLanguage = "ru").validate(SpeechProfile.PARAKEET_TDT_0_6B_V3)
+        rejects("source-language") { SpeechOptions(sourceLanguage = "ar").validate(SpeechProfile.PARAKEET_TDT_0_6B_V3) }
+        val sense = SpeechProfile.SENSE_VOICE_SMALL_BASE_INT8.capabilities
+        assertEquals(setOf("zh", "en", "ja", "ko", "yue"), sense.sourceLanguages)
+        assertTrue(sense.languages.all { it.canForce })
+        assertFalse(sense.partialResults)
+        assertEquals(SpeechStreamingKind.UTTERANCE_WINDOWED, sense.streaming)
+        SpeechOptions(sourceLanguage = "yue").validate(SpeechProfile.SENSE_VOICE_SMALL_INT8)
+        rejects("source-language") { SpeechOptions(sourceLanguage = "ar").validate(SpeechProfile.SENSE_VOICE_SMALL_BASE_INT8) }
+    }
+
     @Test fun rejectsFractionalSchemaAndAssetSizes() = withPackage { root ->
         val j = manifest(root).put("schemaVersion", 1.5)
         File(root, SpeechModelPackage.MANIFEST).writeText(j.toString())

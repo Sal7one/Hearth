@@ -51,6 +51,18 @@ SpeechConfig::SpeechConfig(const std::string& json) {
             throw std::invalid_argument("Phonon requires tokens, joiner, encoder and decoder paths");
         if (paths[5] != "auto" && paths[5] != "en")
             throw std::invalid_argument("Phonon is English-only and cannot declare source: " + paths[5]);
+    } else if (backend == "parakeet") {
+        for (int i = 0; i <= 3; ++i) if (paths[i].empty())
+            throw std::invalid_argument("Parakeet requires tokens, joiner, encoder and decoder paths");
+        const std::string supported = "|auto|bg|hr|cs|da|nl|en|et|fi|fr|de|el|hu|it|lv|lt|mt|pl|pt|ro|sk|sl|es|sv|ru|uk|";
+        if ((paths[5] != "auto" && paths[5].size() != 2) ||
+            supported.find("|" + paths[5] + "|") == std::string::npos)
+            throw std::invalid_argument("Unsupported Parakeet source declaration: " + paths[5]);
+    } else if (backend == "sense_voice") {
+        if (paths[0].empty() || paths[4].empty())
+            throw std::invalid_argument("SenseVoice requires ONNX model and tokens paths");
+        if (paths[5] != "auto" && paths[5] != "zh" && paths[5] != "en" && paths[5] != "ja" && paths[5] != "ko" && paths[5] != "yue")
+            throw std::invalid_argument("Unsupported SenseVoice source language: " + paths[5]);
     } else if (backend == "nemotron_3_5") {
         if (paths[0].empty() || paths[5].empty()) throw std::invalid_argument("Nemotron requires a model path and source language");
         const int r = value.right_context;
@@ -60,7 +72,7 @@ SpeechConfig::SpeechConfig(const std::string& json) {
 
 const HearthSpeechBackend& loadBackend(const std::string& id) {
     std::string name, revision;
-    if (id == "qwen3_asr" || id == "moonshine" || id == "omnilingual_ctc" || id == "phonon") { name = "libhearth_qwen"; revision = HEARTH_QWEN_REVISION; }
+    if (id == "qwen3_asr" || id == "moonshine" || id == "omnilingual_ctc" || id == "phonon" || id == "parakeet" || id == "sense_voice") { name = "libhearth_qwen"; revision = HEARTH_QWEN_REVISION; }
     else if (id == "nemotron_3_5") { name = "libhearth_nemotron"; revision = HEARTH_NEMO_REVISION; }
     else throw std::invalid_argument("Unknown speech backend: " + id);
 #ifdef __APPLE__
@@ -78,7 +90,9 @@ const HearthSpeechBackend& loadBackend(const std::string& id) {
     if (!library) { const char* e = dlerror(); throw std::runtime_error(e ? e : "dlopen failed without an error string"); }
     const char* symbol = id == "moonshine" ? "hearth_moonshine_backend_v1" :
         id == "omnilingual_ctc" ? "hearth_omnilingual_backend_v1" :
-        id == "phonon" ? "hearth_phonon_backend_v1" : "hearth_speech_backend_v1";
+        id == "phonon" ? "hearth_phonon_backend_v1" :
+        id == "parakeet" ? "hearth_parakeet_backend_v1" :
+        id == "sense_voice" ? "hearth_sense_voice_backend_v1" : "hearth_speech_backend_v1";
     auto entry = reinterpret_cast<HearthSpeechEntry>(dlsym(library, symbol));
     const auto* api = entry ? entry() : nullptr;
     if (!api || api->abi_version != HEARTH_SPEECH_ABI_VERSION || api->size != sizeof(HearthSpeechBackend) ||
