@@ -38,11 +38,11 @@ internal fun SettingsOcrLocalUi(onDownloads: () -> Unit = {}, selected: String? 
         Text(uiText(UiR.string.ui_ocr_camera_reading_12439),style=MaterialTheme.typography.titleLarge)
         Text(if(ByokPolicy.FEATURE_BYOK) uiText(UiR.string.ui_paddle_for_general_text_manga_for_japanese_bubbles_meiki_for_japa_76763) else uiText(UiR.string.ui_import_the_files_for_your_selected_ocr_engine_below_this_offline_7e9b3))
         FlowRow(horizontalArrangement=Arrangement.spacedBy(8.dp)) {
-            listOf("paddle" to "Paddle", "manga" to "Manga", "meiki" to "Meiki").forEach {(id,label)->
+            listOf("paddle" to "Paddle", "manga" to "Manga", "meiki" to "Meiki", "glm" to "GLM-OCR").forEach {(id,label)->
                 FilterChip(selected=family==id,onClick={family=id},label={Text(label)})
             }
         }
-        OcrCatalog.profiles.filter {it.engine==family}.forEach { profile ->
+        (OcrCatalog.profiles + OcrCatalog.glm).filter {it.engine==family}.forEach { profile ->
             var showFiles by remember(profile.id) {mutableStateOf(false)}
             val ready=remember(revision,profile.id){models.ready(profile)}
             val pending=remember(revision,profile.id) {
@@ -55,7 +55,7 @@ internal fun SettingsOcrLocalUi(onDownloads: () -> Unit = {}, selected: String? 
                 Text(uiText.description(profile))
                 Text(uiText(UiR.string.ui_1_s_mib_total_2_s_cee22, "%.1f".format(profile.assets.sumOf { it.bytes }/1048576.0), if(ready) uiText(UiR.string.model_installed) else uiText(UiR.string.model_needs_files, profile.assets.size)))
                 FlowRow(horizontalArrangement=Arrangement.spacedBy(8.dp)) {
-                    if(onSelect != null) FilterChip(selected=selected==profile.id,onClick={onSelect(profile.id)},label={Text(if(selected==profile.id) uiText(UiR.string.ui_selected_9a976) else uiText(UiR.string.ui_choose_78b7c))})
+                    if(onSelect != null && profile.engine != "glm") FilterChip(selected=selected==profile.id,onClick={onSelect(profile.id)},label={Text(if(selected==profile.id) uiText(UiR.string.ui_selected_9a976) else uiText(UiR.string.ui_choose_78b7c))})
                     if(pending.isNotEmpty()) OutlinedButton(onClick=onDownloads) { Text(uiText(UiR.string.ui_view_download_progress_fb5a1)) }
                     if(ByokPolicy.FEATURE_BYOK && !ready && pending.isEmpty()) Button(onClick={
                         try {
@@ -64,7 +64,7 @@ internal fun SettingsOcrLocalUi(onDownloads: () -> Unit = {}, selected: String? 
                                 if(downloads.list().none { it.active && it.title == asset.filename })downloads.enqueue(DownloadSpec(asset.url,asset.filename),modelPackage=true,installModelId=asset.id)
                             };error=null;revision++
                         } catch(e: Exception){error=e.message ?: e.toString()}
-                    },enabled=!importing) { Text(uiText(UiR.string.ui_download_install_7db0b)) }
+                    },enabled=!importing && (profile.engine != "glm" || android.os.Process.is64Bit())) { Text(uiText(UiR.string.ui_download_install_7db0b)) }
                 }
                 pending.forEach { Text("${it.title}: ${it.phase} · ${it.bytes/1048576} MiB",style=MaterialTheme.typography.bodySmall) }
                 TextButton(onClick={showFiles=!showFiles}) {Text(if(showFiles) uiText(UiR.string.ui_hide_file_links_216d2) else uiText(UiR.string.ui_files_import_links_72993))}
@@ -79,8 +79,8 @@ internal fun SettingsOcrLocalUi(onDownloads: () -> Unit = {}, selected: String? 
                 }
             } }
         }
-        OutlinedButton(onClick={importer.launch(arrayOf("*/*"))},enabled=!importing) { Text(if(importing) uiText(UiR.string.ui_verifying_model_fa771) else uiText(UiR.string.ui_import_downloaded_onnx_files_1f3bd)) }
-        Text(uiText(UiR.string.ui_select_all_onnx_files_for_the_selected_engine_together_file_names_c1ec6),style=MaterialTheme.typography.bodySmall)
+        OutlinedButton(onClick={importer.launch(arrayOf("*/*"))},enabled=!importing) { Text(if(importing) uiText(UiR.string.ui_verifying_model_fa771) else uiText(UiR.string.vision_ocr_import)) }
+        Text(uiText(UiR.string.vision_ocr_import_hint),style=MaterialTheme.typography.bodySmall)
         if(ByokPolicy.FEATURE_BYOK) TextButton(onClick=onDownloads) { Text(uiText(UiR.string.ui_downloads_folder_settings_668bd)) }
         error?.let { Text(it,color=MaterialTheme.colorScheme.error) }
     }

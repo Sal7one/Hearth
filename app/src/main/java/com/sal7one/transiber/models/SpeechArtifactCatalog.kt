@@ -36,6 +36,8 @@ internal data class SpeechArtifact(
             "qwen3-asr" -> CaptionEngineChoice.QWEN
             "omnilingual" -> CaptionEngineChoice.OMNILINGUAL
             "phonon" -> CaptionEngineChoice.PHONON
+            "parakeet" -> CaptionEngineChoice.PARAKEET
+            "sensevoice" -> CaptionEngineChoice.SENSE_VOICE
             "nemotron" -> CaptionEngineChoice.NEMOTRON
             else -> error("Unknown speech artifact family: $family")
         }
@@ -68,6 +70,8 @@ internal object SpeechArtifactCatalog {
             com.sal7one.common_jni.speech.SpeechBackend.QWEN3_ASR -> "qwen3-asr"
             com.sal7one.common_jni.speech.SpeechBackend.OMNILINGUAL_CTC -> "omnilingual"
             com.sal7one.common_jni.speech.SpeechBackend.PHONON -> "phonon"
+            com.sal7one.common_jni.speech.SpeechBackend.PARAKEET -> "parakeet"
+            com.sal7one.common_jni.speech.SpeechBackend.SENSE_VOICE -> "sensevoice"
             com.sal7one.common_jni.speech.SpeechBackend.NEMOTRON_3_5 -> "nemotron"
         }
         val info = when (profile) {
@@ -75,6 +79,10 @@ internal object SpeechArtifactCatalog {
             com.sal7one.common_jni.speech.SpeechProfile.MOONSHINE_BASE_EN -> ArtifactInfo("INT8", "sherpa-onnx/asr-models/2026-02-27", "2026-02-27", "MIT", "https://github.com/moonshine-ai/moonshine", "Moonshine Base · English · INT8")
             com.sal7one.common_jni.speech.SpeechProfile.QWEN3_ASR_0_6B -> ArtifactInfo("INT8", "sherpa-onnx/asr-models/2026-03-25", "2026-03-25", "Apache-2.0", "https://huggingface.co/Qwen/Qwen3-ASR-0.6B", "Qwen3-ASR 0.6B · INT8")
             com.sal7one.common_jni.speech.SpeechProfile.OMNILINGUAL_CTC_300M_V2 -> ArtifactInfo("INT8", "sherpa-onnx/asr-models/2026-02-05", "2026-02-05", "Apache-2.0", "https://huggingface.co/facebook/omniASR-CTC-300M", "Omnilingual CTC 300M v2 · INT8 · experimental")
+            com.sal7one.common_jni.speech.SpeechProfile.PARAKEET_TDT_0_6B_V3 -> ArtifactInfo("INT8", "sherpa-onnx/asr-models/sha256/5793d0fd397c5778d2cf2126994d58e9d56b1be7c04d13c7a15bb1b4eafb16bf", "2025-08-16", "CC-BY-4.0", "https://huggingface.co/nvidia/parakeet-tdt-0.6b-v3", "Parakeet TDT 0.6B v3 · INT8")
+            com.sal7one.common_jni.speech.SpeechProfile.SENSE_VOICE_SMALL_BASE_INT8 -> ArtifactInfo("INT8", "sherpa-onnx/asr-models/sha256/7d1efa2138a65b0b488df37f8b89e3d91a60676e416f515b952358d83dfd347e", "2025-09-01", "Apache-2.0", "https://huggingface.co/FunAudioLLM/SenseVoiceSmall", "SenseVoice Small · INT8 · 5 languages")
+            com.sal7one.common_jni.speech.SpeechProfile.SENSE_VOICE_SMALL_INT8 -> ArtifactInfo("INT8", "sherpa-onnx/asr-models/2025-09-09", "2025-09-09", "Apache-2.0", "https://huggingface.co/ASLP-lab/WSYue-ASR", "SenseVoice Small Yue · INT8 · Cantonese tuned")
+            com.sal7one.common_jni.speech.SpeechProfile.SENSE_VOICE_SMALL_FP32 -> ArtifactInfo("FP32", "sherpa-onnx/asr-models/2025-09-09", "2025-09-09", "Apache-2.0", "https://huggingface.co/ASLP-lab/WSYue-ASR", "SenseVoice Small Yue · FP32 · Cantonese tuned")
             com.sal7one.common_jni.speech.SpeechProfile.PHONON_2 -> ArtifactInfo("INT8", "FermionResearch/Phonon-2 bps sha256/98125795b6dda72f5c6eee9ba33d19815df65dcb18b50a357bf9f73c9935309e", "2026-09-25", "CC-BY-4.0", "https://huggingface.co/FermionResearch/Phonon-2", "Phonon 2 · English · INT8")
             com.sal7one.common_jni.speech.SpeechProfile.NEMOTRON_3_5_ASR_0_6B -> ArtifactInfo("Q8_0", "1c8deaecc64b91f034d73e08dd8b64625eb3395d", "2026-06-04", "OpenMDW-1.1", "https://huggingface.co/nvidia/nemotron-3.5-asr-streaming-0.6b", "Nemotron 3.5 ASR 0.6B · Q8_0")
             else -> error("No published artifact metadata for ${profile.id}")
@@ -83,6 +91,8 @@ internal object SpeechArtifactCatalog {
             url, bytes, sha256, info.revision,
             info.artifactDate.takeIf { profile == com.sal7one.common_jni.speech.SpeechProfile.NEMOTRON_3_5_ASR_0_6B }, info.artifactDate,
             profile.capabilities.sourceLanguages, info.license, info.publisherUrl,
+            advanced = profile in setOf(com.sal7one.common_jni.speech.SpeechProfile.SENSE_VOICE_SMALL_INT8,
+                com.sal7one.common_jni.speech.SpeechProfile.SENSE_VOICE_SMALL_FP32),
             installedBytes = if (archiveRoot == null) bytes else null, archiveRoot = archiveRoot, publisher = this)
     }
 }

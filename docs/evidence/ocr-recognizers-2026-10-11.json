@@ -1,0 +1,223 @@
+{
+  "onnxruntime": "1.20.1",
+  "provider": "CPUExecutionProvider",
+  "recognizers": [
+    {
+      "id": "english",
+      "revision": "3fafbc3b5dcf93dd72add9f48368be8a3a2cd33b",
+      "bytes": 7848423,
+      "sha256": "b5f833dfc5d0eb71da397b4efa06ebeee9b431b690a47d6af40d77d8eabc557f",
+      "classes": 438,
+      "input": [
+        "DynamicDimension.0",
+        3,
+        48,
+        "DynamicDimension.1"
+      ],
+      "output_shapes": [
+        [
+          1,
+          40,
+          438
+        ],
+        [
+          1,
+          80,
+          438
+        ],
+        [
+          1,
+          120,
+          438
+        ]
+      ],
+      "max_probability_sum_error": 1.6093254089355469e-06
+    },
+    {
+      "id": "korean",
+      "revision": "5c6f574b8e2230adf4287b33e736d71b9fabd28e",
+      "bytes": 13418787,
+      "sha256": "92f0b7785e64fc9090106a241cf4c1eb97472824558272751b88a2a4476d3a08",
+      "classes": 11947,
+      "input": [
+        "DynamicDimension.0",
+        3,
+        48,
+        "DynamicDimension.1"
+      ],
+      "output_shapes": [
+        [
+          1,
+          40,
+          11947
+        ],
+        [
+          1,
+          80,
+          11947
+        ],
+        [
+          1,
+          120,
+          11947
+        ]
+      ],
+      "max_probability_sum_error": 0.00011849403381347656
+    },
+    {
+      "id": "greek",
+      "revision": "8152b89d2ee0e1d4c92decab75fe75e5e3d836b6",
+      "bytes": 7808735,
+      "sha256": "2acf17fcaea2bc81b878e311e6263b8885f48bb03796f75f9f30ed3242bbaa6d",
+      "classes": 356,
+      "input": [
+        "DynamicDimension.0",
+        3,
+        48,
+        "DynamicDimension.1"
+      ],
+      "output_shapes": [
+        [
+          1,
+          40,
+          356
+        ],
+        [
+          1,
+          80,
+          356
+        ],
+        [
+          1,
+          120,
+          356
+        ]
+      ],
+      "max_probability_sum_error": 1.3113021850585938e-06
+    },
+    {
+      "id": "thai",
+      "revision": "1d4adbbafb1034a2fd6618498575b81ea7b69f69",
+      "bytes": 7891015,
+      "sha256": "27618be66018f8598ac0a526a593f9f1cebf794e7eded93428e8fb016e537f5f",
+      "classes": 526,
+      "input": [
+        "DynamicDimension.0",
+        3,
+        48,
+        "DynamicDimension.1"
+      ],
+      "output_shapes": [
+        [
+          1,
+          40,
+          526
+        ],
+        [
+          1,
+          80,
+          526
+        ],
+        [
+          1,
+          120,
+          526
+        ]
+      ],
+      "max_probability_sum_error": 1.0728836059570312e-06
+    },
+    {
+      "id": "devanagari",
+      "revision": "251aec19e36739540d35e2cc943f6aa7503b98e5",
+      "bytes": 7912311,
+      "sha256": "cb789212ce96c69d3e74728ae4309d179281d68cb3945d0616b67cafab41c986",
+      "classes": 570,
+      "input": [
+        "DynamicDimension.0",
+        3,
+        48,
+        "DynamicDimension.1"
+      ],
+      "output_shapes": [
+        [
+          1,
+          40,
+          570
+        ],
+        [
+          1,
+          80,
+          570
+        ],
+        [
+          1,
+          120,
+          570
+        ]
+      ],
+      "max_probability_sum_error": 2.6226043701171875e-06
+    },
+    {
+      "id": "tamil",
+      "revision": "0db89798af0d5218fad9ea7ace0557526e9077f1",
+      "bytes": 7885691,
+      "sha256": "c6d2b682d2a0ea4cb1fccdba295976f93fd439964d16cdc666cadef531accbee",
+      "classes": 515,
+      "input": [
+        "DynamicDimension.0",
+        3,
+        48,
+        "DynamicDimension.1"
+      ],
+      "output_shapes": [
+        [
+          1,
+          40,
+          515
+        ],
+        [
+          1,
+          80,
+          515
+        ],
+        [
+          1,
+          120,
+          515
+        ]
+      ],
+      "max_probability_sum_error": 2.0265579223632812e-06
+    },
+    {
+      "id": "telugu",
+      "revision": "f1197c83430241c58c64b0952b3a80366d04eeba",
+      "bytes": 7898759,
+      "sha256": "8238bfc46d4cffe720ed6706e3842802467343497428693ff2bfb4e6b3caa36b",
+      "classes": 542,
+      "input": [
+        "DynamicDimension.0",
+        3,
+        48,
+        "DynamicDimension.1"
+      ],
+      "output_shapes": [
+        [
+          1,
+          40,
+          542
+        ],
+        [
+          1,
+          80,
+          542
+        ],
+        [
+          1,
+          120,
+          542
+        ]
+      ],
+      "max_probability_sum_error": 2.2649765014648438e-06
+    }
+  ]
+}

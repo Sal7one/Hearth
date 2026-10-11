@@ -3,7 +3,7 @@
 This is a standalone speech/caption app extracted from Hearth. Keep scope to local
 speech models, cloud speech/translation, overlay, camera/image OCR translation,
 model import, direct downloads, typed translation and shared TTS. Camera OCR and
-TTS/typed translation are owner-approved scope expansions.
+TTS/typed translation, voice notes and local PDF/DOCX OCR are owner-approved scope expansions.
 Do not reintroduce the media editor, FFmpeg, sign recognition, books or yt-dlp.
 
 - `foss` has no network permissions. Gate clients AND system download delegation with

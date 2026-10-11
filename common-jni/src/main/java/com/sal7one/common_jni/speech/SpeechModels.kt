@@ -2,7 +2,7 @@ package com.sal7one.common_jni.speech
 
 /** Runtime identity is separate from model format: arbitrary ONNX/GGUF files are not ASR models. */
 enum class SpeechBackend(val id: String) {
-    MOONSHINE("moonshine"), QWEN3_ASR("qwen3_asr"), OMNILINGUAL_CTC("omnilingual_ctc"), PHONON("phonon"), NEMOTRON_3_5("nemotron_3_5")
+    MOONSHINE("moonshine"), QWEN3_ASR("qwen3_asr"), OMNILINGUAL_CTC("omnilingual_ctc"), PHONON("phonon"), PARAKEET("parakeet"), SENSE_VOICE("sense_voice"), NEMOTRON_3_5("nemotron_3_5")
 }
 enum class SpeechStreamingKind { UTTERANCE_WINDOWED, CACHE_AWARE }
 enum class SpeechProfile(val id: String, val backend: SpeechBackend) {
@@ -12,6 +12,10 @@ enum class SpeechProfile(val id: String, val backend: SpeechBackend) {
     QWEN3_ASR_1_7B("qwen3-asr-1.7b", SpeechBackend.QWEN3_ASR),
     OMNILINGUAL_CTC_300M_V2("omnilingual-ctc-300m-v2-int8", SpeechBackend.OMNILINGUAL_CTC),
     PHONON_2("phonon-2", SpeechBackend.PHONON),
+    PARAKEET_TDT_0_6B_V3("parakeet-tdt-0.6b-v3-int8", SpeechBackend.PARAKEET),
+    SENSE_VOICE_SMALL_BASE_INT8("sensevoice-small-2024-int8", SpeechBackend.SENSE_VOICE),
+    SENSE_VOICE_SMALL_INT8("sensevoice-small-2025-int8", SpeechBackend.SENSE_VOICE),
+    SENSE_VOICE_SMALL_FP32("sensevoice-small-2025-fp32", SpeechBackend.SENSE_VOICE),
     NEMOTRON_3_5_ASR_0_6B("nemotron-3.5-asr-0.6b", SpeechBackend.NEMOTRON_3_5);
 
     val capabilities: SpeechCapabilities get() = when (backend) {
@@ -31,6 +35,16 @@ enum class SpeechProfile(val id: String, val backend: SpeechBackend) {
             partialResults = false, sourceLanguages = setOf("en"), sourceLanguageHints = setOf("en"),
             configurableThreads = true,
         )
+        SpeechBackend.PARAKEET -> SpeechCapabilities(
+            streaming = SpeechStreamingKind.UTTERANCE_WINDOWED,
+            partialResults = false, sourceLanguages = PARAKEET_LANGUAGES, sourceLanguageHints = emptySet(),
+            configurableThreads = true,
+        )
+        SpeechBackend.SENSE_VOICE -> SpeechCapabilities(
+            streaming = SpeechStreamingKind.UTTERANCE_WINDOWED,
+            partialResults = false, sourceLanguages = SENSE_VOICE_LANGUAGES, sourceLanguageHints = SENSE_VOICE_LANGUAGES,
+            configurableThreads = true,
+        )
         SpeechBackend.NEMOTRON_3_5 -> SpeechCapabilities(
             streaming = SpeechStreamingKind.CACHE_AWARE,
             partialResults = true, sourceLanguages = NEMO_LANGUAGES, sourceLanguageHints = NEMO_LANGUAGES,
@@ -41,6 +55,8 @@ enum class SpeechProfile(val id: String, val backend: SpeechBackend) {
     companion object {
         fun fromId(id: String): SpeechProfile = entries.firstOrNull { it.id == id }
             ?: throw IllegalArgumentException("Unsupported speech model profile: $id")
+        private val PARAKEET_LANGUAGES = "bg hr cs da nl en et fi fr de el hu it lv lt mt pl pt ro sk sl es sv ru uk".split(' ').toSet()
+        private val SENSE_VOICE_LANGUAGES = setOf("zh", "en", "ja", "ko", "yue")
         private val QWEN_LANGUAGES = "zh en yue ar de fr es pt id it ko ru th vi ja tr hi ms nl sv da fi pl cs fil fa el hu mk ro".split(' ').toSet()
         // Excludes NVIDIA's adaptation-only languages, which need fine-tuning.
         private val NEMO_LANGUAGES = "en es fr it pt nl de tr ru ar hi ja ko vi uk pl sv cs nb da bg fi hr sk zh hu ro et".split(' ').toSet()
@@ -66,7 +82,7 @@ data class SpeechCapabilities(
 data class SpeechOptions(
     /** Spoken language, never the requested translation language. */
     val sourceLanguage: String = "auto",
-    /** Qwen only; null selects the backend default. NeMo's C ABI has no thread-count option. */
+    /** Sherpa-family models; null selects the backend default. NeMo has no thread-count option. */
     val numThreads: Int? = null,
     /** Nemotron lookahead: 0/1/3/6/13 frames, each 80ms. Not total caption latency. */
     val rightContext: Int = 3,

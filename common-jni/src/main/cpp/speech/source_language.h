@@ -17,6 +17,15 @@ inline std::string primaryLanguageCode(std::string_view code) {
     return primary;
 }
 
+// SenseVoice emits scaffold tags such as <|en|>, not an ISO language code.
+// Strip only known language tags; unknown event/emotion tags stay unknown.
+inline std::string senseVoiceLanguageCode(std::string_view value) {
+    if (value.size() >= 4 && value.substr(0, 2) == "<|" && value.substr(value.size() - 2) == "|>")
+        value = value.substr(2, value.size() - 4);
+    const std::string code(value);
+    return code == "en" || code == "zh" || code == "yue" || code == "ja" || code == "ko" ? code : "";
+}
+
 inline bool samePrimaryLanguage(std::string_view first, std::string_view second) {
     const auto primary = primaryLanguageCode(first);
     return !primary.empty() && primary == primaryLanguageCode(second);

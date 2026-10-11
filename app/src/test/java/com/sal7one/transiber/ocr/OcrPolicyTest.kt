@@ -29,7 +29,35 @@ class OcrPolicyTest {
         assertTrue("ru" in OcrCatalog.profile("cyrillic").languages)
         assertFalse("ar" in OcrCatalog.profile("cjk").languages)
         assertEquals(OcrCatalog.assets.size,OcrCatalog.assets.map{it.id}.distinct().size)
-        OcrCatalog.assets.forEach {assertTrue(it.revision.matches(Regex("[a-f0-9]{40}")));assertTrue(it.sha256.matches(Regex("[a-f0-9]{64}")));assertTrue(it.url.contains(it.revision));assertTrue(it.bytes in 1..128L*1024*1024)}
+        OcrCatalog.assets.forEach {assertTrue(it.revision.matches(Regex("[a-f0-9]{40}")));assertTrue(it.sha256.matches(Regex("[a-f0-9]{64}")));assertTrue(it.url.contains(it.revision));assertTrue(it.bytes in 1..1_000_000_000)}
+    }
+    @Test fun visionOcrIsDocumentOnlyAndBothGgufFilesArePinned() {
+        val profile = OcrCatalog.glm
+        assertFalse(OcrCatalog.profiles.any { it.id == profile.id })
+        assertTrue(OcrCatalog.documentProfiles.contains(profile))
+        assertFalse(profile.live)
+        assertFalse("ar" in profile.languages)
+        assertEquals(8, profile.languages.size)
+        assertEquals(2, profile.assets.size)
+        assertEquals(1_434_837_056L, profile.assets.sumOf { it.bytes })
+        val models = OcrModels(Files.createTempDirectory("vision-paths").toFile())
+        try { profile.assets.forEach { assertEquals("gguf", models.file(it).extension); assertEquals("gguf", it.extension) } }
+        finally { models.file(profile.asset).parentFile!!.deleteRecursively() }
+        assertEquals("onnx", models.file(OcrCatalog.detector).extension)
+    }
+    @Test fun additionalReadersAreSmallNativeCompatibleCatalogChoices() {
+        mapOf("english" to "en", "korean" to "ko", "greek" to "el", "thai" to "th",
+            "devanagari" to "hi", "tamil" to "ta", "telugu" to "te").forEach { (id, language) ->
+            val profile = OcrCatalog.profile(id)
+            assertTrue(language in profile.languages)
+            assertTrue("en" in profile.languages)
+            assertEquals("paddle", profile.engine)
+            assertEquals(2, profile.assets.size)
+            assertEquals(OcrCatalog.detector, profile.assets.first())
+            assertTrue(profile.asset.bytes in 7_000_000..14_000_000)
+        }
+        assertFalse("ar" in OcrCatalog.profile("korean").languages)
+        assertFalse("zh" in OcrCatalog.profile("english").languages)
     }
     @Test fun invalidImportCannotPublishOrOverwriteExistingModel() {
         val root=Files.createTempDirectory("ocr-import-test").toFile()

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="document_title">Documents</string>
+    <string name="document_subtitle">Open a PDF, Word document or image. Read it on your phone.</string>
+    <string name="document_open">Open document</string>
+    <string name="document_embedded_images">Read images inside Word files</string>
+    <string name="document_models">OCR models</string>
+    <string name="document_local_policy">Files stay on this device. Scans use your installed OCR model. PDF text is read directly on Android 15+. Export to keep the result.</string>
+    <string name="document_exported">Text exported</string>
+    <string name="document_progress">%1$d / %2$d pages</string>
+    <string name="document_preparing">Preparing document…</string>
+    <string name="document_cancel">Cancel</string>
+    <string name="document_cancelled">Cancelled. Completed pages are preserved.</string>
+    <string name="document_export">Export text</string>
+    <string name="document_copy">Copy</string>
+    <string name="document_docx_text">Word text</string>
+    <string name="document_page">Page / image %1$s</string>
+    <string name="document_ocr_time">Local OCR · %1$d ms</string>
+    <string name="document_original_text">Original document text</string>
+    <string name="document_empty_page">No readable text on this page.</string>
+    <string name="document_stop_voice">Stop voice</string>
+    <string name="document_translate_page">Translate page</string>
+    <string name="document_ocr_english">English · optimized reader</string>
+    <string name="document_ocr_korean">Korean · English</string>
+    <string name="document_ocr_greek">Greek · English</string>
+    <string name="document_ocr_thai">Thai · English</string>
+    <string name="document_ocr_devanagari">Hindi · Marathi · Nepali · English</string>
+    <string name="document_ocr_tamil">Tamil · English</string>
+    <string name="document_ocr_telugu">Telugu · English</string>
+</resources>

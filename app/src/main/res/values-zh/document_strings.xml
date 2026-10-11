@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="document_title">文档</string>
+    <string name="document_subtitle">打开 PDF、Word 文档或图片，在手机上读取。</string>
+    <string name="document_open">打开文档</string>
+    <string name="document_embedded_images">读取 Word 文件中的图片</string>
+    <string name="document_models">OCR 模型</string>
+    <string name="document_local_policy">文件保留在此设备上。扫描页使用已安装的 OCR 模型，Android 15 及以上直接读取 PDF 文本。导出以保存结果。</string>
+    <string name="document_exported">文本已导出</string>
+    <string name="document_progress">%1$d / %2$d 页</string>
+    <string name="document_preparing">正在准备文档…</string>
+    <string name="document_cancel">取消</string>
+    <string name="document_cancelled">已取消，已完成的页面仍然保留。</string>
+    <string name="document_export">导出文本</string>
+    <string name="document_copy">复制</string>
+    <string name="document_docx_text">Word 文本</string>
+    <string name="document_page">页面 / 图片 %1$s</string>
+    <string name="document_ocr_time">本地 OCR · %1$d 毫秒</string>
+    <string name="document_original_text">原始文档文本</string>
+    <string name="document_empty_page">此页没有可读文本。</string>
+    <string name="document_stop_voice">停止朗读</string>
+    <string name="document_translate_page">翻译页面</string>
+    <string name="document_ocr_english">英语 · 专用识别器</string>
+    <string name="document_ocr_korean">韩语 · 英语</string>
+    <string name="document_ocr_greek">希腊语 · 英语</string>
+    <string name="document_ocr_thai">泰语 · 英语</string>
+    <string name="document_ocr_devanagari">印地语 · 马拉地语 · 尼泊尔语 · 英语</string>
+    <string name="document_ocr_tamil">泰米尔语 · 英语</string>
+    <string name="document_ocr_telugu">泰卢固语 · 英语</string>
+</resources>

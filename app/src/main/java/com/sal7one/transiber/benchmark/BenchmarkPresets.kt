@@ -27,6 +27,7 @@ internal object BenchmarkPresets {
         val ids = when (preset) {
             BenchmarkPreset.SPEED -> when (source) {
                 "en" -> listOf("moonshine-tiny-en-v2", "nemotron-3.5-asr-0.6b")
+                "zh", "yue", "ja", "ko" -> listOf("sensevoice-small-2024-int8", "qwen3-asr-0.6b")
                 else -> listOf("omnilingual-ctc-300m-v2-int8", "nemotron-3.5-asr-0.6b")
             }
             BenchmarkPreset.BALANCED -> if (source == "ru") listOf("qwen3-asr-0.6b", "nemotron-3.5-asr-0.6b")
@@ -34,7 +35,7 @@ internal object BenchmarkPresets {
             BenchmarkPreset.QUALITY -> if (source == "ru") listOf("nemotron-3.5-asr-0.6b", "qwen3-asr-0.6b")
                 else listOf("qwen3-asr-0.6b", "nemotron-3.5-asr-0.6b", "phonon-2", "moonshine-base-en-v2")
         }
-        return ids.asSequence().mapNotNull(SpeechArtifactCatalog::find).firstOrNull { source in it.languages }
+        return (ids + listOf("parakeet-tdt-0.6b-v3-int8", "sensevoice-small-2024-int8")).asSequence().mapNotNull(SpeechArtifactCatalog::find).firstOrNull { source in it.languages }
             ?.let { SuggestedModel(it.id, it.label, it.bytes, "speech") }
     }
 

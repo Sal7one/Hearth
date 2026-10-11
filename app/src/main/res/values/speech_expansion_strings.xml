@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="label_captionenginechoice_parakeet_label">Parakeet TDT v3 · local</string>
+    <string name="label_captionenginechoice_parakeet_explanation">25 European languages in short utterance windows. Original captions with optional translation.</string>
+    <string name="label_captionenginechoice_sense_voice_label">SenseVoice Small · local</string>
+    <string name="label_captionenginechoice_sense_voice_explanation">Compact recognition for English, Chinese, Cantonese, Japanese and Korean.</string>
+    <string name="model_parakeet_language_note">Parakeet recognizes 25 European languages. Selecting the source labels captions for translation; it does not force recognition. Auto may need an explicit source before translation.</string>
+    <string name="model_sense_voice_language_note">SenseVoice supports English, Chinese, Cantonese, Japanese and Korean. Choose Auto or an explicit source. Arabic and Russian require another speech model.</string>
+</resources>

@@ -809,7 +809,7 @@ class CaptionEngineController(
                 delay(
                     when (config.effectiveEngine) {
                         CaptionEngineChoice.VOSK -> 500L
-                        CaptionEngineChoice.CLOUD, CaptionEngineChoice.MOONSHINE, CaptionEngineChoice.QWEN, CaptionEngineChoice.OMNILINGUAL, CaptionEngineChoice.PHONON, CaptionEngineChoice.NEMOTRON -> 100L
+                        CaptionEngineChoice.CLOUD, CaptionEngineChoice.MOONSHINE, CaptionEngineChoice.QWEN, CaptionEngineChoice.OMNILINGUAL, CaptionEngineChoice.PHONON, CaptionEngineChoice.PARAKEET, CaptionEngineChoice.SENSE_VOICE, CaptionEngineChoice.NEMOTRON -> 100L
                         CaptionEngineChoice.WHISPER -> 700L
                     },
                 )

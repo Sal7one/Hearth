@@ -146,4 +146,25 @@ class PublisherSpeechPackageTest {
         val bytes = "GGUFtest".toByteArray()
         rejected(bytes, spec(bytes).copy(profile = SpeechProfile.NEMOTRON_3_5_ASR_0_6B, bytes = 4, archiveRoot = null, roles = mapOf("model" to "model.gguf")))
     }
+
+    @Test fun newFamiliesInstallWithTheirOwnVerifiedRolesAndRejectRoleSubstitution() {
+        val profiles = listOf(SpeechProfile.PARAKEET_TDT_0_6B_V3,
+            SpeechProfile.SENSE_VOICE_SMALL_BASE_INT8, SpeechProfile.SENSE_VOICE_SMALL_INT8,
+            SpeechProfile.SENSE_VOICE_SMALL_FP32)
+        profiles.forEach { profile ->
+            val modelRoles = if (profile == SpeechProfile.PARAKEET_TDT_0_6B_V3)
+                mapOf("model" to "tokens.txt", "frontend" to "joiner.int8.onnx", "encoder" to "encoder.int8.onnx", "decoder" to "decoder.int8.onnx")
+            else mapOf("model" to if (profile == SpeechProfile.SENSE_VOICE_SMALL_FP32) "model.onnx" else "model.int8.onnx", "tokenizer" to "tokens.txt")
+            val bytes = archive(modelRoles.values.map { "fixture/$it" to "fixture-content".toByteArray() })
+            val source = spec(bytes).copy(profile = profile, roles = modelRoles)
+            val root = Files.createTempDirectory("publisher-expanded-family").toFile()
+            try {
+                val installed = PublisherSpeechPackage.stage(bytes.inputStream(), source, root)
+                assertEquals(profile, SpeechModelPackage.verify(installed).profile)
+                // Same bytes cannot become an encoder/decoder or tokens/model
+                // package simply by relabeling the role contract.
+                rejected(bytes, source.copy(roles = roles))
+            } finally { root.deleteRecursively() }
+        }
+    }
 }

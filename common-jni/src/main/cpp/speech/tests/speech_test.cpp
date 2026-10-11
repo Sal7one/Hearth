@@ -38,6 +38,13 @@ std::vector<Segment> segmented(const std::vector<float>& audio, size_t chunk) {
 }
 }
 int main() {
+    check(senseVoiceLanguageCode("<|en|>") == "en");
+    check(senseVoiceLanguageCode("<|yue|>") == "yue");
+    check(senseVoiceLanguageCode("zh") == "zh");
+    check(senseVoiceLanguageCode("<|ja|>") == "ja");
+    check(senseVoiceLanguageCode("<|ko|>") == "ko");
+    check(senseVoiceLanguageCode("<|NEUTRAL|>").empty());
+    check(senseVoiceLanguageCode("<|ar|>").empty());
     check(primaryLanguageCode("ru-RU") == "ru");
     check(samePrimaryLanguage("ru-RU", "RU"));
     check(!samePrimaryLanguage("ru-RU", "en-US"));
@@ -122,5 +129,22 @@ int main() {
     auto nonEnglish = phonon;
     nonEnglish.replace(nonEnglish.find("\"auto\""), 6, "\"ar\"");
     fails([&] { SpeechConfig c(nonEnglish); }, "Phonon is English-only");
+    auto parakeet = phonon;
+    parakeet.replace(parakeet.find("phonon"), 6, "parakeet");
+    parakeet.replace(parakeet.find("\"auto\""), 6, "\"ru\"");
+    check(SpeechConfig(parakeet).backend == "parakeet");
+    auto wrongParakeet = parakeet;
+    wrongParakeet.replace(wrongParakeet.find("\"ru\""), 4, "\"ar\"");
+    fails([&] { SpeechConfig c(wrongParakeet); }, "Unsupported Parakeet source declaration");
+    auto chainedParakeet = parakeet;
+    chainedParakeet.replace(chainedParakeet.find("\"ru\""), 4, "\"en|et\"");
+    fails([&] { SpeechConfig c(chainedParakeet); }, "Unsupported Parakeet source declaration");
+    auto sense = omni;
+    sense.replace(sense.find("omnilingual_ctc"), 15, "sense_voice");
+    sense.replace(sense.find("\"ar\""), 4, "\"yue\"");
+    check(SpeechConfig(sense).backend == "sense_voice");
+    auto wrongSense = sense;
+    wrongSense.replace(wrongSense.find("\"yue\""), 5, "\"ru\"");
+    fails([&] { SpeechConfig c(wrongSense); }, "Unsupported SenseVoice source language");
     std::cout << "speech_test: " << checks << " checks PASS\n";
 }

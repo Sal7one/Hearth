@@ -16,5 +16,8 @@ class HomeServiceTest {
         assertEquals(HomeService.FACE, HomeService.forPage(7, true))
         assertEquals(HomeService.TEXT, HomeService.forPage(11, false))
         assertEquals(HomeService.CAMERA, HomeService.forPage(10, false))
+        assertEquals(HomeService.TTS, HomeService.forPage(17, false))
+        assertEquals(HomeService.NOTES, HomeService.forPage(18, false))
+        assertEquals(HomeService.DOCUMENTS, HomeService.forPage(19, false))
     }
 }

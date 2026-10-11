@@ -630,3 +630,63 @@ HotSpot's observed os::malloc/os::strdup allocation functions; it does not disab
 leak detection for Hearth C++. On Linux a deliberately leaked native allocation
 must still be reported under those same suppressions. macOS does not provide
 that LeakSanitizer negative control; its regular JNI and ASan/UBSan checks remain.
+
+## Bounded reusable DOCX text extraction
+
+`common_jni.document.DocxTextExtractor` is consumed by the Documents feature.
+It streams ZIP entries, bounds expanded data/XML/images/text, rejects unsafe or
+repeated paths, directory payloads and DTD/entity XML, and keeps Unicode runs and paragraph order.
+Embedded image bytes reach one synchronous callback at a time; the reader owns
+neither an Android context nor an OCR runtime, destination directory or network
+client. Caller input ownership and cancellation are explicit. Its JVM host suite
+covers multilingual text, deleted/inserted runs, images, traversal, missing parts,
+DTD/limit rejection, directory-data bombs, malformed inputs and stream ownership. See
+[Documents contract and model research](document-ocr.md).
+
+## Streaming PCM16 WAV files
+
+`audio/Pcm16WaveWriter` is a single-owner, bounded, streaming mono PCM16 writer.
+Voice notes consume it directly on serialized IO; no recording-sized byte array
+or per-sample allocation is required. A successful close flushes samples, patches
+RIFF lengths and syncs the file. Recovery validates this writer's exact format,
+retains complete on-disk samples after interruption, and never invents buffered
+samples lost at process death. Kotlin host and API 28/36 storage tests cover
+chunk continuity, whole-chunk capacity rejection, idempotent close and recovery.
+
+## Scoped audible speech ownership
+
+`voice/VoicePlaybackOwner` is consumed by local/Android/server `VoicePlayer` and
+cloud `CloudTtsSpeaker`. Claiming the audible slot stops the previous TTS consumer
+without cancelling capture, recognition or translation. Identity-scoped release
+prevents a disposed old consumer from clearing the new owner; callbacks run outside
+the monitor. Its JVM policy tests cover repeated claims, cross-backend takeover,
+and reentrant old-owner cleanup. Standalone requests use `TtsPlaybackRequest` to
+snapshot controls independently of caption defaults; its host tests cover text and
+audio bounds, regional language tags, engine identities and the FOSS network gate.
+
+## Model language evidence normalization
+
+`speech/source_language.h::senseVoiceLanguageCode` is consumed by the production
+SenseVoice adapter. It converts only the five recognized model language tokens
+(or their ISO forms) to host source-language evidence. Emotion/event tokens,
+unsupported language names and malformed values remain unknown rather than being
+invented. Speech host tests cover recognized English/Chinese/Cantonese/Japanese/
+Korean tags and rejected tokens, preserving automatic-translation eligibility.
+
+## Bounded reusable vision OCR
+
+`vision/VisionModel` and the context-free Kotlin `VisionOcrSession` are consumed by
+Documents' experimental GLM reader. They reuse the existing pinned llama/GGML
+runtime and accept RGB/ARGB image data rather than a capture or storage subsystem.
+`vision_limits.h` validates exact pixel count and sides before allocation; JNI
+composites transparent pixels over white and releases its Java-array copy before
+inference. The common host `vision_input_test` covers zero/negative/oversized
+dimensions, count mismatch and opaque/transparent/partial-alpha composition.
+
+Output/context/image-token/time bounds are native contract limits. Cancellation
+is terminal, destroy retires handles before waiting for readers, and cancelled or
+truncated inference cannot become a successful page. Actual pinned GLM files pass
+the production CPU image/cancellation probe in `scripts/vision/prove-glm-ocr.py`.
+The adapter has no camera, Android Context, document-parser or network ownership;
+all four runtime ABIs build, while this large model explicitly requires a 64-bit
+process. See [Documents' native contract and proof](document-ocr.md).

@@ -5,6 +5,21 @@ import org.junit.Test
 import java.util.Locale
 
 class OfflineVoicePolicyTest {
+    @Test fun missingVoiceRequiresCompletedDiscoveryRatherThanAnEmptyPendingSnapshot() {
+        assertFalse(OfflineVoicePolicy.savedVoiceMissing(emptyList(), Locale.US, "saved", discoveryComplete = false))
+        assertTrue(OfflineVoicePolicy.savedVoiceMissing(emptyList(), Locale.US, "saved", discoveryComplete = true))
+        assertFalse(OfflineVoicePolicy.savedVoiceMissing(listOf(voice("saved", "en-US")), Locale.US,
+            "saved", discoveryComplete = true))
+    }
+
+    @Test fun matchingNameStillRequiresLocalVoiceInRequestedLanguage() {
+        assertTrue(OfflineVoicePolicy.savedVoiceMissing(listOf(voice("saved", "ar-SA")), Locale.US,
+            "saved", discoveryComplete = true))
+        assertTrue(OfflineVoicePolicy.savedVoiceMissing(listOf(voice("saved", "en-US", network = true)), Locale.US,
+            "saved", discoveryComplete = true))
+        assertFalse(OfflineVoicePolicy.savedVoiceMissing(emptyList(), Locale.US, null, discoveryComplete = true))
+    }
+
     @Test fun genderPreferenceOnlyConsidersTheRequestedLanguageAndFallsBackToSavedVoice() {
         val voices = listOf(voice("english-female", "en-US"), voice("arabic-local", "ar-SA"))
         assertEquals("arabic-local", OfflineVoicePolicy.selectForReadAloud(voices, Locale.forLanguageTag("ar"),

@@ -5,9 +5,15 @@ import java.util.Locale
 /** Select only installed, local voices matching the requested language. */
 internal object OfflineVoicePolicy {
     data class Candidate(val id: String, val locale: Locale, val networkRequired: Boolean, val quality: Int)
+    /** An empty in-flight/failed discovery is not evidence a persisted voice disappeared. */
+    fun savedVoiceMissing(voices: List<Candidate>, requested: Locale, saved: String?, discoveryComplete: Boolean): Boolean =
+        discoveryComplete && !saved.isNullOrBlank() && voices.none {
+            it.id == saved && !it.networkRequired && it.locale.language == requested.language
+        }
+
     fun selectForReadAloud(voices: List<Candidate>, requested: Locale, saved: String?, gender: VoiceGender): String? {
         val eligible = voices.filter { !it.networkRequired && it.locale.language == requested.language }
-        check(saved == null || eligible.any { it.id == saved }) {
+        check(!savedVoiceMissing(voices, requested, saved, discoveryComplete = true)) {
             "Selected Android ${requested.toLanguageTag()} voice is unavailable. Choose a voice in Voice settings"
         }
         val preferred = eligible.filter { VoiceGenderMapping.systemVoiceMatches(it.id, gender) }.ifEmpty { eligible }

@@ -30,5 +30,75 @@
     "publisher_config_sha256": "025039bac23eb4a308efcefa4d58eab3af440767815c6ba6938468bf6353ee5a",
     "dictionary_sha256": "f215ba1dd8e0af5699746689d3a49d3786ce82c3170b8830006b7344add34620",
     "classes": 519
+  },
+  {
+    "id": "english",
+    "source": "PaddlePaddle/en_PP-OCRv5_mobile_rec_onnx",
+    "revision": "3fafbc3b5dcf93dd72add9f48368be8a3a2cd33b",
+    "publisher_config_sha256": "27e91d0582f40168aa218303c76e184bc78fa7a5d105aad0cfbad8458b441067",
+    "dictionary_sha256": "ef84489f927fb92b64714c7f110404e5bfb83c4067bd609fe4c41d5f23e25659",
+    "classes": 438,
+    "model_bytes": 7848423,
+    "model_sha256": "b5f833dfc5d0eb71da397b4efa06ebeee9b431b690a47d6af40d77d8eabc557f"
+  },
+  {
+    "id": "korean",
+    "source": "PaddlePaddle/korean_PP-OCRv5_mobile_rec_onnx",
+    "revision": "5c6f574b8e2230adf4287b33e736d71b9fabd28e",
+    "publisher_config_sha256": "f757fa1c40e99edcf27e9cce879b93eb2a51fa46f5ef39095689b8c37dd75998",
+    "dictionary_sha256": "35166b999532e71592344afdfa7c9d7d45bb4b16f0f9546def65d064d9028ed0",
+    "classes": 11947,
+    "model_bytes": 13418787,
+    "model_sha256": "92f0b7785e64fc9090106a241cf4c1eb97472824558272751b88a2a4476d3a08"
+  },
+  {
+    "id": "greek",
+    "source": "PaddlePaddle/el_PP-OCRv5_mobile_rec_onnx",
+    "revision": "8152b89d2ee0e1d4c92decab75fe75e5e3d836b6",
+    "publisher_config_sha256": "17d85b2fe2d2f24cd4ab07bcbc33e0c126859b956ced36e281dc65e2d0c1f0bf",
+    "dictionary_sha256": "15850af476835cec1563115adc31856d829fd110afa869c0ded87da0238f98b4",
+    "classes": 356,
+    "model_bytes": 7808735,
+    "model_sha256": "2acf17fcaea2bc81b878e311e6263b8885f48bb03796f75f9f30ed3242bbaa6d"
+  },
+  {
+    "id": "thai",
+    "source": "PaddlePaddle/th_PP-OCRv5_mobile_rec_onnx",
+    "revision": "1d4adbbafb1034a2fd6618498575b81ea7b69f69",
+    "publisher_config_sha256": "f6ba7fefc38ca1ff398ddafa75d67d16e0b3757c4e6c833adffee98a981766c9",
+    "dictionary_sha256": "f43e30f9560bafc69a1aee155b833361d17e7b9bb4abf7c9e311bfeaf6b03cea",
+    "classes": 526,
+    "model_bytes": 7891015,
+    "model_sha256": "27618be66018f8598ac0a526a593f9f1cebf794e7eded93428e8fb016e537f5f"
+  },
+  {
+    "id": "devanagari",
+    "source": "PaddlePaddle/devanagari_PP-OCRv5_mobile_rec_onnx",
+    "revision": "251aec19e36739540d35e2cc943f6aa7503b98e5",
+    "publisher_config_sha256": "9bd172dd26440c8ce94d1cde5d5baea6aefdc7cf3c5c8492e0beedef656d4e54",
+    "dictionary_sha256": "65846a435e074086c27f790e0f7e645e5876bb12185ab4a26325e663dcdeaafb",
+    "classes": 570,
+    "model_bytes": 7912311,
+    "model_sha256": "cb789212ce96c69d3e74728ae4309d179281d68cb3945d0616b67cafab41c986"
+  },
+  {
+    "id": "tamil",
+    "source": "PaddlePaddle/ta_PP-OCRv5_mobile_rec_onnx",
+    "revision": "0db89798af0d5218fad9ea7ace0557526e9077f1",
+    "publisher_config_sha256": "88a28f5a1bb30cabe38a0985cb5e6619fa4f0c7c78e57a08274674228c5219a6",
+    "dictionary_sha256": "fc21ed7f60f38c7b08fa73de55a9ba03aa502de91fc687570604d7590580f1cc",
+    "classes": 515,
+    "model_bytes": 7885691,
+    "model_sha256": "c6d2b682d2a0ea4cb1fccdba295976f93fd439964d16cdc666cadef531accbee"
+  },
+  {
+    "id": "telugu",
+    "source": "PaddlePaddle/te_PP-OCRv5_mobile_rec_onnx",
+    "revision": "f1197c83430241c58c64b0952b3a80366d04eeba",
+    "publisher_config_sha256": "acebbe53f1831bf28ddfed75aedf58225d7aa5d09100c1d5a9140a2a53b137ce",
+    "dictionary_sha256": "6406436e7431bc66888f9778cce42721e81692eb7fb620527eeb6b18f13ab9bf",
+    "classes": 542,
+    "model_bytes": 7898759,
+    "model_sha256": "8238bfc46d4cffe720ed6706e3842802467343497428693ff2bfb4e6b3caa36b"
   }
 ]

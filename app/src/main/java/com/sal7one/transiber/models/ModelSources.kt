@@ -22,6 +22,20 @@ internal object ModelSources {
         CaptionEngineChoice.OMNILINGUAL -> listOf(ModelSource("omnilingual-ctc-300m-v2-int8", "Omnilingual CTC · 300M v2 INT8", "https://huggingface.co/facebook/omniASR-CTC-300M",
             "https://github.com/k2-fsa/sherpa-onnx/releases/tag/asr-models", packaging + " Experimental, short utterance windows. Recognition has no language-forcing input; the source selection labels its output for translation.",
             sherpa + "sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-v2-int8-2026-02-05.tar.bz2", 292313120))
+        CaptionEngineChoice.PARAKEET -> listOf(ModelSource("parakeet-tdt-0.6b-v3-int8", "Parakeet TDT v3 · 0.6B INT8", "https://huggingface.co/nvidia/parakeet-tdt-0.6b-v3",
+            "https://k2-fsa.github.io/sherpa/onnx/pretrained_models/offline-transducer/nemo-transducer-models.html",
+            packaging + " 25 European languages, including Russian; no Arabic or Chinese. Spoken-language selection declares the source for translation, not a recognition hint.",
+            sherpa + "sherpa-onnx-nemo-parakeet-tdt-0.6b-v3-int8.tar.bz2", 487170055))
+        CaptionEngineChoice.SENSE_VOICE -> listOf(
+            ModelSource("sensevoice-small-2024-int8", "SenseVoice Small · INT8", "https://huggingface.co/FunAudioLLM/SenseVoiceSmall", "https://github.com/k2-fsa/sherpa-onnx/releases/tag/asr-models",
+                packaging + " Original five-language checkpoint: English, Chinese, Cantonese, Japanese and Korean. No Arabic or Russian.",
+                sherpa + "sherpa-onnx-sense-voice-zh-en-ja-ko-yue-int8-2024-07-17.tar.bz2", 163002883),
+            ModelSource("sensevoice-small-2025-int8", "SenseVoice Small Yue · INT8", "https://huggingface.co/ASLP-lab/WSYue-ASR", "https://github.com/k2-fsa/sherpa-onnx/releases/tag/asr-models",
+                packaging + " Cantonese-tuned variant; also retains English, Chinese, Japanese and Korean. No Arabic or Russian. Short utterance windows, automatic or explicit source language.",
+                sherpa + "sherpa-onnx-sense-voice-zh-en-ja-ko-yue-int8-2025-09-09.tar.bz2", 165783878),
+            ModelSource("sensevoice-small-2025-fp32", "SenseVoice Small Yue · FP32 · advanced", "https://huggingface.co/ASLP-lab/WSYue-ASR", "https://github.com/k2-fsa/sherpa-onnx/releases/tag/asr-models",
+                packaging + " Cantonese-tuned variant with larger unquantized weights. Download size is not RAM use; compare on your device.",
+                sherpa + "sherpa-onnx-sense-voice-zh-en-ja-ko-yue-2025-09-09.tar.bz2", 886547748))
         CaptionEngineChoice.PHONON -> listOf(ModelSource("phonon-2", "Phonon 2 · English · INT8", "https://huggingface.co/FermionResearch/Phonon-2",
             "https://github.com/fermionresearch/phonon",
             packaging + " Fermion's five-value weights converted to sherpa transducer ONNX (int8); English utterance windows. The raw .bps archive is not importable.",

@@ -14,6 +14,20 @@ hard-of-hearing users.
 
 ## Download
 
+Work on the **0.24.0 draft** adds standalone read-aloud, voice notes, local
+PDF/DOCX OCR and more verified model choices. It is not in the stable APK below.
+[Draft scope and evidence](docs/draft-0.24.0.md).
+
+| Draft feature | What to try |
+| --- | --- |
+| **Read aloud card** | Paste text; choose an offline Android engine, local Supertonic, your server or an explicit cloud route. Voice, language, speed and loudness are independent of captions. |
+| **Voice notes card** | Record without a model; optionally add speech and translation. Listen, rename, delete or export WAV/TXT/JSON. Private local storage and optional Android device-credential access. |
+| **Documents card** | Import PDF, DOCX or images; extract existing text or run local OCR, then copy, listen, translate explicitly or export TXT. |
+| **More model choices** | Real Parakeet/SenseVoice adapters, five compact Marian directions and seven additional OCR readers. [Runtime evidence and research](docs/model-expansion-2026-10-11.md). |
+
+These changes are offered for draft testing. Phone accuracy/performance and account
+sync remain separate gates; model files are not bundled in the APK.
+
 **[Hearth 0.23.9 — release notes and SHA256SUMS](https://github.com/Sal7one/Hearth/releases/tag/v0.23.9)**
 
 Choose **Universal** if you do not know your phone or TV's CPU.

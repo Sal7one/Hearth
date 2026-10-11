@@ -26,6 +26,9 @@ internal fun HomeServiceCard(service: HomeService, modifier: Modifier = Modifier
         HomeService.TEXT -> R.drawable.home_text
         HomeService.CAMERA -> R.drawable.home_camera
         HomeService.SCREEN -> R.drawable.home_screen
+        HomeService.TTS -> R.drawable.home_tts
+        HomeService.NOTES -> R.drawable.home_notes
+        HomeService.DOCUMENTS -> R.drawable.home_documents
     }
     BoxWithConstraints(modifier.fillMaxWidth().padding(vertical = 18.dp)) {
         val wideCard = maxWidth > maxHeight * 1.35f

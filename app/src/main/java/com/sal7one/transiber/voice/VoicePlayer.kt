@@ -22,13 +22,16 @@ internal class VoicePlayer(context: Context,private val backendOverride: String?
     private val context=context.applicationContext
     private val scope=CoroutineScope(SupervisorJob()+Dispatchers.Main.immediate)
     private data class Request(val text: String,val language: String,val generation: Long,val requestedBackend: String?=null,
-                              val gender: VoiceGender = VoiceGender.ANY,val volume: Float = 1f)
+                              val gender: VoiceGender = VoiceGender.ANY,val volume: Float = 1f,
+                              val choice: VoiceChoice? = null, val systemEngine: String? = null,
+                              val systemVoice: String? = null, val remoteVoice: String? = null)
     private val queue=Channel<Request>(3)
     private var generation=0L
     private var operation: Job?=null
     private var systemPending: Pair<String,CompletableDeferred<Unit>>?=null
-    private val systemReady=CompletableDeferred<Unit>()
+    private var systemReady=CompletableDeferred<Unit>()
     private var system: TextToSpeech?=null
+    private var systemEngine: String? = null
     @Volatile private var model: SupertonicVoice?=null
     @Volatile private var track: AudioTrack?=null
     private var network: RemoteVoiceClient?=null
@@ -46,11 +49,12 @@ internal class VoicePlayer(context: Context,private val backendOverride: String?
                     try {
                         check(audioManager.requestAudioFocus(focus)==AudioManager.AUDIOFOCUS_REQUEST_GRANTED){"Android could not grant audio focus for read aloud"}
                         changed(true,null)
-                        val saved=VoiceSettings.choice(context)
+                        val saved=request.choice ?: VoiceSettings.choice(context)
                         val selectedBackend=request.requestedBackend ?: backendOverride
                         val choice=if(selectedBackend==null)saved else saved.copy(backend=selectedBackend)
                         when(choice.backend) {
-                            "system" -> systemSpeak(request.text,request.language,choice.rate,request.gender,request.volume)
+                            "system" -> systemSpeak(request.text,request.language,choice.rate,request.gender,request.volume,
+                                request.systemEngine,request.systemVoice)
                             "supertonic" -> local(request,choice)
                             "remote" -> remote(request,choice)
                             else -> error("Unknown voice backend: ${choice.backend}")
@@ -67,6 +71,17 @@ internal class VoicePlayer(context: Context,private val backendOverride: String?
     fun speak(text: String,language: String,mode: VoicePlaybackMode=VoicePlaybackMode.DEFAULT) {
         scope.launch {stopNow();queueSpeech(text,language,mode)}
     }
+    /** One-off playback snapshots its engine/voice controls without changing shared caption settings. */
+    fun speak(request: TtsPlaybackRequest) {
+        scope.launch {
+            stopNow()
+            try {
+                request.validated(com.sal7one.transiber.byok.ByokPolicy.FEATURE_BYOK)
+                enqueueNow(request.text,request.language,request.choice.backend,request.gender,request.volume,
+                    request.choice,request.systemEngine,request.systemVoice,request.remoteVoice)
+            } catch (e: Exception) { changed(false,e.message ?: e.toString()) }
+        }
+    }
     fun enqueue(text: String,language: String,mode: VoicePlaybackMode=VoicePlaybackMode.DEFAULT) {
         scope.launch {queueSpeech(text,language,mode)}
     }
@@ -80,17 +95,21 @@ internal class VoicePlayer(context: Context,private val backendOverride: String?
             enqueueNow(text,language,override,gender,volume)
         } catch(e: Exception) {changed(false,e.message ?: e.toString())}
     }
-    private fun enqueueNow(text: String,language: String,requestedBackend: String?=null,gender: VoiceGender=VoiceGender.ANY,volume: Float=1f) {
+    private fun enqueueNow(text: String,language: String,requestedBackend: String?=null,gender: VoiceGender=VoiceGender.ANY,volume: Float=1f,
+        choice: VoiceChoice? = null, systemEngine: String? = null, systemVoice: String? = null, remoteVoice: String? = null) {
         if(text.isBlank())return
         if(text.length>5000){changed(false,"Read aloud accepts at most 5000 characters");return}
-        val owner=audibleOwner
-        if(owner!==this){owner?.stop();audibleOwner=this}
-        if(!queue.trySend(Request(text,Locale.forLanguageTag(language).toLanguageTag(),generation,requestedBackend,gender,volume)).isSuccess)
+        VoicePlaybackOwner.claim(this, ::stop)
+        if(!queue.trySend(Request(text,Locale.forLanguageTag(language).toLanguageTag(),generation,requestedBackend,gender,volume,
+            choice,systemEngine,systemVoice,remoteVoice)).isSuccess)
             changed(true,"Speech queue is full. Skipped a new line to avoid falling behind.")
     }
-    private fun initSystem() {
-        if(system!=null)return
-        system=TextToSpeech(context){code ->if(code==TextToSpeech.SUCCESS)systemReady.complete(Unit) else systemReady.completeExceptionally(IllegalStateException("Android TTS initialization returned $code"))}.apply {
+    private fun initSystem(engine: String?) {
+        if(system!=null && systemEngine == engine)return
+        system?.shutdown()
+        systemEngine = engine
+        val ready = CompletableDeferred<Unit>(); systemReady = ready
+        system=TextToSpeech(context,{code ->if(code==TextToSpeech.SUCCESS)ready.complete(Unit) else ready.completeExceptionally(IllegalStateException("Android TTS initialization returned $code"))},engine).apply {
             setAudioAttributes(audioAttributes)
             setOnUtteranceProgressListener(object:UtteranceProgressListener(){
                 override fun onStart(id: String?)=Unit
@@ -102,12 +121,17 @@ internal class VoicePlayer(context: Context,private val backendOverride: String?
         }
     }
     private fun finish(id: String?,error: String?) {Handler(Looper.getMainLooper()).post {systemPending?.takeIf {it.first==id}?.second?.let {if(error==null)it.complete(Unit) else it.completeExceptionally(IllegalStateException(error))}}}
-    private suspend fun systemSpeak(text: String,language: String,rate: Float,gender: VoiceGender=VoiceGender.ANY,volume: Float=1f) {
-        initSystem();withTimeout(15000){systemReady.await()};val tts=checkNotNull(system)
+    private suspend fun systemSpeak(text: String,language: String,rate: Float,gender: VoiceGender=VoiceGender.ANY,volume: Float=1f,
+        engine: String? = null, requestedVoice: String? = null) {
+        if (engine != null) check(context.packageManager.queryIntentServices(
+            android.content.Intent(TextToSpeech.Engine.INTENT_ACTION_TTS_SERVICE).setPackage(engine), 0).isNotEmpty()) {
+            "Selected Android speech engine is no longer installed: $engine"
+        }
+        initSystem(engine);withTimeout(15000){systemReady.await()};val tts=checkNotNull(system)
         val baseLanguage=Locale.forLanguageTag(language).language
         // Gender is best-effort here: Android voice names rarely carry it.
         val candidates=tts.voices.orEmpty().filterNot {it.isNetworkConnectionRequired}
-        val saved=VoiceSettings.prefs(context).getString("system-voice-$baseLanguage",null)
+        val saved=requestedVoice ?: if (engine == null) VoiceSettings.prefs(context).getString("system-voice-$baseLanguage",null) else null
         val id=OfflineVoicePolicy.selectForReadAloud(
             candidates.map {OfflineVoicePolicy.Candidate(it.name,it.locale,false,it.quality)},
             Locale.forLanguageTag(language), saved, gender)
@@ -142,7 +166,8 @@ internal class VoicePlayer(context: Context,private val backendOverride: String?
         val language=connection.capabilities.languages.firstOrNull {it.equals(request.language,ignoreCase=true)}
             ?: Locale.forLanguageTag(request.language).language.takeIf {it in connection.capabilities.languages}
             ?: error("The selected voice server does not advertise ${request.language}")
-        val voice=VoiceSettings.prefs(context).getString("remote-voice",null)?.takeIf {it in connection.capabilities.voices} ?: connection.capabilities.voices.first()
+        check(request.remoteVoice == null || request.remoteVoice in connection.capabilities.voices) { "Selected server voice is no longer available: ${request.remoteVoice}" }
+        val voice=request.remoteVoice ?: VoiceSettings.prefs(context).getString("remote-voice",null)?.takeIf {it in connection.capabilities.voices} ?: connection.capabilities.voices.first()
         val spokenVoice=if(request.gender==VoiceGender.ANY) voice
             else connection.capabilities.voices.firstOrNull {VoiceGenderMapping.systemVoiceMatches(it,request.gender)} ?: voice
         val client=RemoteVoiceClient();network=client
@@ -173,10 +198,9 @@ internal class VoicePlayer(context: Context,private val backendOverride: String?
         model?.cancel();network?.close();operation?.cancel();systemPending?.second?.cancel();system?.stop()
         runCatching {track?.pause();track?.flush()};changed(false,null)
     }
-    override fun close(){scope.launch {stopNow();queue.close();scope.cancel();system?.shutdown();system=null;if(audibleOwner===this@VoicePlayer)audibleOwner=null}}
+    override fun close(){scope.launch {stopNow();queue.close();scope.cancel();system?.shutdown();system=null;VoicePlaybackOwner.release(this@VoicePlayer)}}
     companion object {
         private val nativeGate=Mutex()
-        private var audibleOwner: VoicePlayer?=null
         private val audioAttributes=AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_ASSISTANCE_NAVIGATION_GUIDANCE).setContentType(AudioAttributes.CONTENT_TYPE_SPEECH).build()
     }
 }

@@ -6,8 +6,8 @@ import java.security.MessageDigest
 
 class MarianPackageTest {
     @Test fun publisherFilesFormOnePinnedSafePackage() {
-        assertEquals(3, MarianPackage.pairs.size)
-        assertEquals(3, MarianPackage.pairs.map { it.id }.toSet().size)
+        assertEquals(8, MarianPackage.pairs.size)
+        assertEquals(8, MarianPackage.pairs.map { it.id }.toSet().size)
         MarianPackage.pairs.forEach { pair ->
             val parts = pair.parts
             assertEquals(4, parts.size)
@@ -30,6 +30,24 @@ class MarianPackageTest {
             assertEquals(pair.treeSha256, hash.digest().joinToString("") { "%02x".format(it.toInt() and 255) })
         }
         assertEquals(246951100L, MarianPackage.pairs[0].downloadBytes)
+    }
+
+    @Test fun expandedCompactPairsAndPivotsStayDirectional() {
+        assertNotNull(MarianPackage.find("marian-ar-en"))
+        assertNotNull(MarianPackage.find("marian-en-zh"))
+        assertNotNull(MarianPackage.find("marian-en-ru"))
+        assertNotNull(MarianPackage.find("marian-en-es"))
+        assertNotNull(MarianPackage.find("marian-es-en"))
+        assertEquals(12, MarianCascade.routes.size)
+        MarianCascade.routes.forEach { route ->
+            assertEquals("en", route.first.target)
+            assertEquals("en", route.second.source)
+            assertNotEquals(route.source, route.target)
+            assertTrue(TranslationOptions.supports(route.id, route.source, route.target))
+            assertFalse(TranslationOptions.supports(route.id, route.target, route.source))
+        }
+        assertTrue(TranslationOptions.supports("marian-ar-ru-via-en", "ar", "ru"))
+        assertTrue(TranslationOptions.supports("marian-es-ar-via-en", "es", "ar"))
     }
 
     @Test fun exactlyOnePublishedPairIsSelectable() {

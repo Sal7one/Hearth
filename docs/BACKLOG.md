@@ -535,3 +535,10 @@ by this permission reduction. See `docs/validation-v27.md` for current evidence.
 - [x] Reuse the bounded caption bridge for cloud text translation and legacy finals.
 - [x] Keep integrated cloud translation selectable and prevent double translation.
 - [x] Cover route precedence, cloud direction filtering and persistence with host tests.
+
+## 0.24.0 draft expansion (2026-10-11)
+
+Tracked scope and implementation evidence: [draft-0.24.0.md](draft-0.24.0.md).
+Keep account/sync integration open until an actual owner-selected backend exists.
+Keep GLM/new vision OCR, phone model benchmarks and document/voice-note device
+journeys explicit; supported artifacts and host smoke are not accuracy promises.

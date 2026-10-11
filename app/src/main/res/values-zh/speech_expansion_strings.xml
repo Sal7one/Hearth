@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="label_captionenginechoice_parakeet_label">Parakeet TDT v3 · 本地</string>
+    <string name="label_captionenginechoice_parakeet_explanation">以短语音片段识别25种欧洲语言。原文字幕及可选翻译。</string>
+    <string name="label_captionenginechoice_sense_voice_label">SenseVoice Small · 本地</string>
+    <string name="label_captionenginechoice_sense_voice_explanation">适用于英语、普通话、粤语、日语和韩语的小型识别模型。</string>
+    <string name="model_parakeet_language_note">Parakeet可识别25种欧洲语言。选择源语言用于字幕翻译，并不会强制识别语言。自动模式可能需要明确源语言才能翻译。</string>
+    <string name="model_sense_voice_language_note">SenseVoice支持英语、普通话、粤语、日语和韩语。请选择自动模式或指定源语言。阿拉伯语和俄语需使用其他语音模型。</string>
+</resources>

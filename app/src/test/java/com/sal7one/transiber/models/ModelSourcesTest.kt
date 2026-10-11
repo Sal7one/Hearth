@@ -48,4 +48,18 @@ class ModelSourcesTest {
         }
         assertTrue(artifacts.filter { it.checkpoint.endsWith(".en") }.all { it.languages == setOf("en") })
     }
+
+    @Test fun newFamiliesKeepRegionalAndLanguageRestrictionsVisible() {
+        val parakeet = SpeechArtifactCatalog.forEngine(CaptionEngineChoice.PARAKEET).single()
+        assertTrue("ru" in parakeet.languages)
+        assertFalse("ar" in parakeet.languages)
+        assertFalse("zh" in parakeet.languages)
+        assertEquals("CC-BY-4.0", parakeet.license)
+        val senseVoice = SpeechArtifactCatalog.forEngine(CaptionEngineChoice.SENSE_VOICE)
+        assertEquals(3, senseVoice.size)
+        assertEquals("sensevoice-small-2024-int8", senseVoice.single { !it.advanced }.id)
+        assertEquals(setOf("INT8", "FP32"), senseVoice.filter { it.advanced }.map { it.quant }.toSet())
+        assertTrue(senseVoice.all { "ar" !in it.languages && "ru" !in it.languages })
+        assertTrue(senseVoice.filter { it.advanced }.all { it.label.contains("Cantonese") })
+    }
 }

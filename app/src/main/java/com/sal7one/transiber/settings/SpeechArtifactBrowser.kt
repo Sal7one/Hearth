@@ -39,6 +39,8 @@ internal fun SpeechArtifactBrowser(config: CaptionOverlayConfig) {
         CaptionEngineChoice.QWEN -> "qwen3-asr"
         CaptionEngineChoice.OMNILINGUAL -> "omnilingual"
         CaptionEngineChoice.PHONON -> "phonon"
+        CaptionEngineChoice.PARAKEET -> "parakeet"
+        CaptionEngineChoice.SENSE_VOICE -> "sensevoice"
         CaptionEngineChoice.NEMOTRON -> "nemotron"
         else -> "whisper"
     }

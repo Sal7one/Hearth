@@ -60,5 +60,9 @@ internal fun SettingsVoiceCloudUi(language: String,onLanguage: (String)->Unit,on
     VoiceModelCard("Chatterbox Multilingual V3",uiText(UiR.string.ui_self_hosted_python_80a0e),uiText(UiR.string.ui_23_languages_including_arabic_default_or_reference_voice_turbo_na_b5a55),"MIT","https://github.com/resemble-ai/chatterbox",uiText(UiR.string.ui_source_models_setup_e17e2),onError)
     VoiceModelCard("Qwen3-TTS 0.6B Base",uiText(UiR.string.ui_self_hosted_python_80a0e),uiText(UiR.string.ui_10_languages_no_arabic_requires_your_reference_wav_and_matching_t_ffece),"Apache-2.0","https://huggingface.co/Qwen/Qwen3-TTS-12Hz-0.6B-Base",uiText(UiR.string.ui_model_card_files_setup_2f538),onError)
     VoiceModelCard("Fish Speech",uiText(UiR.string.ui_self_hosted_official_fish_server_8efdd),uiText(UiR.string.ui_languages_and_voice_ids_depend_on_the_deployed_checkpoint_and_ser_fc6d7),uiText(UiR.string.ui_fish_audio_research_license_separate_commercial_terms_14192),"https://github.com/fishaudio/fish-speech",uiText(UiR.string.ui_source_models_setup_e17e2),onError)
+    VoiceModelCard("Kitten Nano 0.8 INT8",uiText(UiR.string.ui_self_hosted_python_80a0e),uiText(UiR.string.tts_kitten_server_description),
+        "Apache-2.0", "https://huggingface.co/KittenML/kitten-tts-nano-0.8-int8",uiText(UiR.string.ui_model_card_files_setup_2f538),onError)
+    VoiceModelCard("Kokoro 82M",uiText(UiR.string.ui_self_hosted_python_80a0e),uiText(UiR.string.tts_kokoro_server_description),
+        "Apache-2.0", "https://huggingface.co/hexgrad/Kokoro-82M",uiText(UiR.string.ui_model_card_files_setup_2f538),onError)
     TextButton(enabled=!working,onClick={VoiceSettings.forget(context);capabilities=null;onError(null);onForgot()}){Text(uiText(UiR.string.ui_forget_voice_connection_cebb3))}
 }

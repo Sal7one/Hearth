@@ -324,6 +324,12 @@ class FileDownloads(private val context: Context) {
   OcrCatalog.find(modelId)?.let { asset ->
    require(item.installed) { "OCR model is not installed" }
    if(asset.id == OcrCatalog.detector.id)return
+   if (asset in OcrCatalog.glm.assets) {
+    check(android.os.Process.is64Bit()) { "GLM-OCR requires a 64-bit device process" }
+    check(OcrModels(File(context.filesDir, "ocr-models")).ready(OcrCatalog.glm)) { "Finish installing both GLM-OCR files before selecting it" }
+    context.getSharedPreferences("document_ocr", 0).edit().putString("profile_v1", OcrCatalog.glm.id).apply()
+    return
+   }
    OcrCatalog.profiles.firstOrNull { profile -> profile.assets.any { it.id == asset.id } }?.let { profile ->
     require(OcrModels(File(context.filesDir, "ocr-models")).ready(profile)) { "Finish installing all files for ${profile.label} first" }
     val settings = context.getSharedPreferences("camera-translate", 0)

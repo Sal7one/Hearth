@@ -1,0 +1,41 @@
+{
+  "llamaRevision": "64e9bceb2c3a856efed96feda784a50947049feb",
+  "modelRevision": "65a42de1148dbed2297e922b5dbc7d9b70c36578",
+  "files": {
+    "GLM-OCR-Q8_0.gguf": {
+      "bytes": 950433408,
+      "sha256": "45bc244a6446aff850521dc41f18bc8d7105ad5f0c2c8c28af04e7cc4f4d50b1"
+    },
+    "mmproj-GLM-OCR-Q8_0.gguf": {
+      "bytes": 484403648,
+      "sha256": "9c4b58e33e316ed142eb5dcb41abec3844d3e6e5dc361ffb782c3fa9d175141f"
+    }
+  },
+  "platform": "macOS-26.3.1-arm64-arm-64bit",
+  "machine": "arm64",
+  "backend": "CPU",
+  "threads": 4,
+  "fixture": {
+    "width": 640,
+    "height": 240,
+    "expected": "HELLO HEARTH\nLocal OCR 2026",
+    "actual": "HELLO HEARTH\nLocal OCR 2026"
+  },
+  "loadMs": 59612.1,
+  "inferenceMs": 117039.0,
+  "inFlightCancelMs": 1624.09,
+  "cancelledRequestPublishedText": false,
+  "elapsedSeconds": 181.7790011250181,
+  "limitations": [
+    "one synthetic English image",
+    "concurrent build workload",
+    "not physical Android performance or multilingual/document accuracy"
+  ],
+  "sources": {
+    "common-jni/src/main/cpp/vision/vision_jni.cpp": "e003b8d65e82a7093f2e9bd009ffe15777fe44042751223fb3df30e667947bfa",
+    "common-jni/src/main/cpp/vision/vision_limits.h": "787717f22d22c13448bf8ee887566054f2ae3b098600ce8114ffe9873bc55b1c",
+    "common-jni/src/main/cpp/vision/vision_model.h": "265b7572b21061c4258ec3f9e50cba6d770856c4e1e686347e0f9fc9486a7cf0",
+    "common-jni/src/main/cpp/vision/vision_smoke.cpp": "8a6873e0e76b74d9cd05818a16d79411b5de9d0d7374b9679ffce4fd0cfbb058"
+  },
+  "maxChildRssBytes": 911523840
+}
