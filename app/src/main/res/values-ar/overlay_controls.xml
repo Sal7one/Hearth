@@ -42,4 +42,8 @@
     <string name="overlay_preview_video">الفيديو الخاص بك</string>
     <string name="overlay_preview_previous">يظهر هنا سطر سابق من النص.</string>
     <string name="overlay_preview_sample">سيظهر النص المباشر في هذا المكان.</string>
+    <string name="tv_overlay_subtitles">ترجمة مصاحبة</string>
+    <string name="tv_overlay_panel">لوحة نصية</string>
+    <string name="tv_overlay_subtitles_help">توسّط الترجمة المصاحبة النص الحالي بلا خلفية أو إطار. اختر الموضع لوضعه أسفل الشاشة أو وسطها. تبقى الأزرار في التحكم بالتراكب والكلام.</string>
+    <string name="tv_overlay_height">الارتفاع: %1$d dp</string>
 </resources>

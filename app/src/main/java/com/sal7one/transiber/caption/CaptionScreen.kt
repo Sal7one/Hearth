@@ -96,7 +96,7 @@ fun CaptionScreen(
     }
 
     val update: ((CaptionOverlayConfig) -> CaptionOverlayConfig) -> Unit = { transform ->
-        val next = transform(config).withUiClamp()
+        val next = transform(config).withUiClamp(TvControls.isTvDevice(context))
         config = next
         scope.launch { CaptionConfigStore.update(context) { next } }
     }

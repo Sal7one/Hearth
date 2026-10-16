@@ -5,13 +5,7 @@ import android.content.Context
 import android.content.res.Configuration
 import android.view.WindowManager
 
-/**
- * Android TV / large-screen support. Remotes have no touch and usually only a
- * D-pad plus media keys, so control flows through three paths: the overlay's
- * own window becomes focusable while its settings sheet is open (D-pad),
- * the MediaSession/media notification row carries Pause / Silence / Stop, and
- * media keys work wherever Hearth is the active session.
- */
+/** TV overlays contain text only; remote actions live in the controls activity and media session. */
 object TvControls {
     @Suppress("DEPRECATION")
     fun isTvDevice(context: Context): Boolean = isTvEnvironment(
@@ -24,15 +18,11 @@ object TvControls {
     internal fun isTvEnvironment(mode: Int?, leanback: Boolean, television: Boolean): Boolean =
         mode == Configuration.UI_MODE_TYPE_TELEVISION || leanback || television
 
-    /**
-     * Pure window-flag decision (unit-testable): overlays stay non-focusable so
-     * they never steal keys from the underlying app, except on TV while the
-     * settings sheet is open — that is the one moment D-pad focus is wanted.
-     */
+    /** TV text must never consume remote keys or touches from the video app. */
+    @Suppress("UNUSED_PARAMETER")
     fun overlayWindowFlags(tapThrough: Boolean, settingsSheetOpen: Boolean, television: Boolean): Int {
         var flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN
-        if (tapThrough) flags = flags or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE
-        if (television && settingsSheetOpen) flags = flags and WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE.inv()
+        if (tapThrough || television) flags = flags or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE
         return flags
     }
 

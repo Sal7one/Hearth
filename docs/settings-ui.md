@@ -135,9 +135,10 @@ Every overlay (caption bubble, reading translation bubble, quick translate)
 remembers its geometry separately for portrait and landscape: width (40–100%),
 max height, explicit bubble height, anchor and manual drag offsets. Rotating
 the device swaps to the other set live; editing in one orientation never
-touches the other. Defaults: portrait 85% width / 40% height, landscape (TV and phones) 80% /
-30%. Both start at the bottom. Saved landscape sizes also survive updates; Reset
-uses the new defaults. Default height is bounded to 144–320 dp for readability.
+touches the other. Phone defaults: portrait 85% width / 40% height, landscape 80% /
+30%, with default height bounded to 144–320 dp. TV defaults to 80% width and 64 dp
+height, adjustable down to 32 dp in 8 dp steps. Both start at the bottom. Saved
+explicit sizes survive updates; Reset uses the current defaults.
 Upgrades keep a user's previously stored values as the portrait set.
 Everything else (theme, engines, languages, TTS) remains shared.
 
@@ -156,3 +157,17 @@ TV captions register a media session for remote commands; phone captions leave
 media-key ownership with the underlying video or music app. Compose supplies
 focus navigation, but controller traversal of every screen is still unverified
 on real TV hardware.
+
+### TV caption presentation
+
+TV overlays contain only text and do not accept touches or remote focus. All
+buttons, the drag handle, history actions and the translating/provider status bar
+stay outside the video overlay. Actual speech, translation and history errors
+remain visible as text and in the separate controls/session UI.
+
+In the TV editor, **Style → Subtitles** selects centered white text with a shadow,
+no panel or border, and a 64 dp height. It shows the current partial utterance or
+latest final, following Original/Translation/Both. **Position → Center** centers
+the window vertically; Bottom is still the default. **Text panel** retains the
+selected history and background/theme with no inline controls. Mobile keeps its
+existing bubble controls, inline settings and minimum size.

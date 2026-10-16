@@ -42,4 +42,8 @@
     <string name="overlay_preview_video">你的视频</string>
     <string name="overlay_preview_previous">上一条字幕显示在这里。</string>
     <string name="overlay_preview_sample">你的字幕会显示在这里。</string>
+    <string name="tv_overlay_subtitles">字幕模式</string>
+    <string name="tv_overlay_panel">文本面板</string>
+    <string name="tv_overlay_subtitles_help">字幕居中显示当前文本，不带背景或边框。使用位置选项放在底部或中间。操作按钮保留在 Hearth 控制界面中。</string>
+    <string name="tv_overlay_height">高度：%1$d dp</string>
 </resources>

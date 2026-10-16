@@ -163,6 +163,17 @@ fun CaptionOverlayWindow(
 
     val cfg by config.collectAsStateWithLifecycle()
     val state by engineState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    val television = remember(context) { TvControls.isTvDevice(context) }
+    if (television) {
+        val content = CaptionReading.snapshot(state, cfg.showPartial)
+        // Keep real errors visible, without rendering the phone's status/control chrome.
+        val message = state.error ?: state.historyError?.let { uiText(UiR.string.caption_history_error, it) }
+            ?: state.translationNotice ?: tvCaptionText(content, cfg)
+        TvOverlayText(message, cfg, Modifier.fillMaxWidth().height(availableHeightDp.coerceAtLeast(1f).dp))
+        return
+    }
+
     val palette = paletteFor(cfg.theme)
     val scrollState = rememberScrollState()
     // Keep settings navigation alive while the panel is replaced by live captions.

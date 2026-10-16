@@ -1,5 +1,11 @@
 # Changelog
 
+## TV branch · subtitle presentation
+
+- Make the TV caption overlay text-only, removing inline buttons, drag/history controls and the translating/provider bar. Keep phone controls and the separate TV controls activity.
+- Default TV subtitles to centered white text with a shadow and no panel/border. Keep a text-panel alternative, and show actual errors as text. Original/Translation/Both display selection remains respected.
+- Use a compact 64 dp TV height with a 32 dp minimum and 8 dp remote adjustments. Preserve saved explicit sizes and phone height limits; use Center/Bottom position choices independently.
+
 ## 0.23.10 — 2026-10-16 · TV dashboard, phone setup and remote controls
 
 - Replace the permanent TV setup cards with large Start Hearth and Stop Hearth actions. Put Speech, Language and Voice under a compact setup screen with a fixed Done footer; keep the full interface and every provider available.

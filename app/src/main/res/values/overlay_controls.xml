@@ -42,4 +42,8 @@
     <string name="overlay_preview_video">Your video</string>
     <string name="overlay_preview_previous">A previous caption appears here.</string>
     <string name="overlay_preview_sample">This is where your captions will appear.</string>
+    <string name="tv_overlay_subtitles">Subtitles</string>
+    <string name="tv_overlay_panel">Text panel</string>
+    <string name="tv_overlay_subtitles_help">Subtitles center the current caption without a background or border. Use Position to place it at the bottom or middle. Controls stay in Hearth controls.</string>
+    <string name="tv_overlay_height">Height: %1$d dp</string>
 </resources>

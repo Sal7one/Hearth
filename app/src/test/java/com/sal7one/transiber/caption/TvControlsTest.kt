@@ -14,19 +14,15 @@ class TvControlsTest {
         assertFalse(TvControls.isTvEnvironment(null, false, false))
     }
 
-    @Test fun overlayStaysNonFocusableExceptTvSettingsSheet() {
+    @Test fun tvTextNeverTakesFocusOrTouchesEvenWithLegacySettingsState() {
         val base = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN
-        assertEquals(base, TvControls.overlayWindowFlags(tapThrough = false, settingsSheetOpen = false, television = true))
-        assertEquals(base, TvControls.overlayWindowFlags(tapThrough = false, settingsSheetOpen = false, television = false))
-        assertEquals(base, TvControls.overlayWindowFlags(tapThrough = false, settingsSheetOpen = true, television = false))
-        // The one focusable moment: TV + settings sheet open.
-        val focused = TvControls.overlayWindowFlags(tapThrough = false, settingsSheetOpen = true, television = true)
-        assertEquals(0, focused and WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE)
-        assertEquals(WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN, focused and WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN)
-        // Tap-through keeps its not-touchable bit in every combination.
-        TvControls.overlayWindowFlags(tapThrough = true, settingsSheetOpen = true, television = true).let {
-            assertEquals(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE, it and WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE)
+        for (settings in listOf(false, true)) for (tapThrough in listOf(false, true)) {
+            assertEquals(base or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
+                TvControls.overlayWindowFlags(tapThrough, settings, television = true))
         }
+        assertEquals(base, TvControls.overlayWindowFlags(false, false, false))
+        assertEquals(base, TvControls.overlayWindowFlags(false, true, false))
+        assertEquals(base or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE, TvControls.overlayWindowFlags(true, false, false))
     }
 
     @Test fun remoteMediaKeysMapToServiceActions() {

@@ -27,6 +27,7 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.focusProperties
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
@@ -120,6 +121,7 @@ private enum class OverlayEditorCategory(val title: Int) {
 private fun OverlayControls(onReturn: () -> Unit, onStart: () -> Unit, onSpeechSetup: () -> Unit, onCloseApp: () -> Unit) {
     val text = rememberUiText()
     val context = androidx.compose.ui.platform.LocalContext.current
+    val television = remember(context) { TvControls.isTvDevice(context) }
     val scope = rememberCoroutineScope()
     val config by remember(context) { CaptionConfigStore.config(context) }
         .collectAsStateWithLifecycle(initialValue = null)
@@ -178,16 +180,16 @@ private fun OverlayControls(onReturn: () -> Unit, onStart: () -> Unit, onSpeechS
                                 Triple(R.string.overlay_move_up, 0, -step), Triple(R.string.overlay_move_down, 0, step),
                             ).forEach { (label, dx, dy) ->
                                 RemoteButton(text(label), modifier = Modifier.fillMaxWidth(),
-                                    onClick = { update { it.nudgeOverlay(viewport, density, dx, dy) } })
+                                    onClick = { update { it.nudgeOverlay(viewport, density, dx, dy, television) } })
                             }
                         }
                         OverlayEditorCategory.SIZE -> {
                             RemoteAdjustment(text(R.string.overlay_width, cfg.widthPercent), cfg.widthPercent > 40, cfg.widthPercent < 100,
                                 { update { it.copy(widthPercent = it.widthPercent - 5) } }, { update { it.copy(widthPercent = it.widthPercent + 5) } })
-                            val height = (overlayHeightPx(viewport.height, density, cfg) / density).toInt()
-                            RemoteAdjustment(text(R.string.overlay_height, height * 100 / (viewport.height / density).toInt().coerceAtLeast(1)),
-                                height > 144, height < minOf(600, (viewport.height / density).toInt()),
-                                { update { it.copy(bubbleHeightDp = height - 24) } }, { update { it.copy(bubbleHeightDp = height + 24) } })
+                            val height = (overlayHeightPx(viewport.height, density, cfg, television) / density).toInt()
+                            RemoteAdjustment(if (television) text(R.string.tv_overlay_height, height) else text(R.string.overlay_height, height * 100 / (viewport.height / density).toInt().coerceAtLeast(1)),
+                                height > minimumOverlayHeightDp(television), height < minOf(600, (viewport.height / density).toInt()),
+                                { update { it.copy(bubbleHeightDp = height - if (television) 8 else 24) } }, { update { it.copy(bubbleHeightDp = height + if (television) 8 else 24) } })
                         }
                         OverlayEditorCategory.TEXT -> {
                             CaptionFontScale.entries.forEach { size ->
@@ -198,6 +200,13 @@ private fun OverlayControls(onReturn: () -> Unit, onStart: () -> Unit, onSpeechS
                                 { update { it.copy(historyLines = it.historyLines - 1) } }, { update { it.copy(historyLines = it.historyLines + 1) } })
                         }
                         OverlayEditorCategory.STYLE -> {
+                            if (television) {
+                                RemoteButton(text(R.string.tv_overlay_subtitles), modifier = Modifier.fillMaxWidth(), selected = cfg.tvSubtitleMode,
+                                    onClick = { update { it.copy(tvSubtitleMode = true, bubbleHeightDp = TV_OVERLAY_DEFAULT_HEIGHT_DP) } })
+                                RemoteButton(text(R.string.tv_overlay_panel), modifier = Modifier.fillMaxWidth(), selected = !cfg.tvSubtitleMode,
+                                    onClick = { update { it.copy(tvSubtitleMode = false) } })
+                                Text(text(R.string.tv_overlay_subtitles_help), style = MaterialTheme.typography.bodySmall)
+                            }
                             CaptionTheme.entries.forEach { theme ->
                                 RemoteButton(text.label(theme), modifier = Modifier.fillMaxWidth(), selected = cfg.theme == theme,
                                     onClick = { update { it.copy(theme = theme) } })
@@ -205,7 +214,7 @@ private fun OverlayControls(onReturn: () -> Unit, onStart: () -> Unit, onSpeechS
                             RemoteAdjustment(text(R.string.overlay_opacity, cfg.backgroundOpacity), cfg.backgroundOpacity > 0, cfg.backgroundOpacity < 100,
                                 { update { it.copy(backgroundOpacity = it.backgroundOpacity - 10) } }, { update { it.copy(backgroundOpacity = it.backgroundOpacity + 10) } })
                             RemoteButton(text(R.string.overlay_reset), modifier = Modifier.fillMaxWidth(),
-                                onClick = { update { it.resetOverlayPresentation(OverlayOrientation.from(screen.orientation)) } })
+                                onClick = { update { it.resetOverlayPresentation(OverlayOrientation.from(screen.orientation), television) } })
                         }
                         OverlayEditorCategory.SESSION -> {
                             RemoteButton(text(if (session.running) {
@@ -334,8 +343,10 @@ internal fun RemoteButton(label: String, enabled: Boolean = true, selected: Bool
 @Composable
 private fun OverlayPositionPreview(config: CaptionOverlayConfig, viewport: OverlayViewport, density: Float) {
     val text = rememberUiText()
+    val context = LocalContext.current
+    val television = remember(context) { TvControls.isTvDevice(context) }
     val placement = placeOverlay(viewport, viewport.width * config.widthPercent / 100,
-        overlayHeightPx(viewport.height, density, config), config.anchor, config.xOffsetPx, config.yOffsetPx)
+        overlayHeightPx(viewport.height, density, config, television), config.anchor, config.xOffsetPx, config.yOffsetPx)
     val palette = paletteFor(config.theme)
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val ratio = viewport.width.toFloat() / viewport.height
@@ -348,9 +359,12 @@ private fun OverlayPositionPreview(config: CaptionOverlayConfig, viewport: Overl
         val textScale = maxWidth.value / (viewport.width / density)
         Image(painterResource(R.drawable.tv_preview_scene), contentDescription = null,
             contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
-        Box(Modifier.align(AbsoluteAlignment.TopLeft)
+        val captionModifier = Modifier.align(AbsoluteAlignment.TopLeft)
             .absoluteOffset(x = scale * (placement.x - viewport.left), y = scale * (placement.y - viewport.top))
             .size(scale * placement.width, scale * placement.height).clipToBounds()
+        if (television) {
+            TvOverlayText(text(R.string.overlay_preview_sample), config, captionModifier, textScale)
+        } else Box(captionModifier
             .background(palette.surface.copy(alpha = effectiveSurfaceAlpha(palette.surface.alpha, config.backgroundOpacity)), RoundedCornerShape(4.dp))
             .border(1.dp, palette.accent.copy(alpha = .6f), RoundedCornerShape(4.dp))) {
             Column(Modifier.padding((8 * textScale).dp), verticalArrangement = Arrangement.spacedBy((4 * textScale).dp)) {

@@ -16,9 +16,9 @@ internal fun CaptionOverlayConfig.withStoredGeometry(stored: CaptionOverlayConfi
 )
 
 /** Reset presentation only; selected engines, languages and the live session survive. */
-internal fun CaptionOverlayConfig.resetOverlayPresentation(orientation: OverlayOrientation): CaptionOverlayConfig {
+internal fun CaptionOverlayConfig.resetOverlayPresentation(orientation: OverlayOrientation, television: Boolean = false): CaptionOverlayConfig {
     val defaults = OverlayGeometryDefaults.defaultsFor(orientation)
-    return copy(widthPercent = defaults.widthPercent, maxHeightPercent = defaults.maxHeightPercent,
+    return copy(tvSubtitleMode = if (television) true else tvSubtitleMode, widthPercent = defaults.widthPercent, maxHeightPercent = defaults.maxHeightPercent,
         bubbleHeightDp = null, anchor = CaptionAnchor.BOTTOM, xOffsetPx = 0, yOffsetPx = 0,
         fontScale = CaptionFontScale.NORMAL, historyLines = CaptionReading.DEFAULT_PREVIOUS_LINES,
         showPartial = true, theme = CaptionTheme.DARK, backgroundOpacity = 70,
@@ -94,11 +94,16 @@ internal fun placeOverlay(
     )
 }
 
-/** A fixed user-selected viewport: text and settings scroll inside it, never grow it. */
-internal fun overlayHeightPx(viewportHeight: Int, density: Float, config: CaptionOverlayConfig): Int {
-    val legacy = minOf(viewportHeight * config.maxHeightPercent / 100f, 320f * density)
+/** TV has no inline controls, so one caption line can use a much smaller viewport. */
+internal fun minimumOverlayHeightDp(television: Boolean) = if (television) 32 else 144
+internal const val TV_OVERLAY_DEFAULT_HEIGHT_DP = 64
+
+/** A fixed user-selected viewport: long text scrolls inside it, never grows the window. */
+internal fun overlayHeightPx(viewportHeight: Int, density: Float, config: CaptionOverlayConfig, television: Boolean = false): Int {
+    val legacy = if (television) TV_OVERLAY_DEFAULT_HEIGHT_DP * density
+        else minOf(viewportHeight * config.maxHeightPercent / 100f, 320f * density)
     val reading = config.bubbleHeightDp?.times(density) ?: legacy
-    return reading.coerceAtLeast(144f * density).toInt().coerceIn(1, viewportHeight.coerceAtLeast(1))
+    return reading.coerceAtLeast(minimumOverlayHeightDp(television) * density).toInt().coerceIn(1, viewportHeight.coerceAtLeast(1))
 }
 
 /** Prefer outside the captions; even a full-screen or dragged bubble must retain a reachable handle. */
@@ -118,9 +123,9 @@ internal fun placeTapThroughHandle(viewport: OverlayViewport, bubble: OverlayPla
 
 /** Remote movement uses screen directions, including the bottom anchor's inverted offset. */
 internal fun CaptionOverlayConfig.nudgeOverlay(
-    viewport: OverlayViewport, density: Float, dx: Int, dy: Int,
+    viewport: OverlayViewport, density: Float, dx: Int, dy: Int, television: Boolean = false,
 ): CaptionOverlayConfig {
-    val height = overlayHeightPx(viewport.height, density, this)
+    val height = overlayHeightPx(viewport.height, density, this, television)
     val origin = placeOverlay(viewport, viewport.width * widthPercent / 100, height, anchor, 0, 0)
     val current = placeOverlay(viewport, origin.width, height, anchor, xOffsetPx, yOffsetPx)
     val x = (current.x.toLong() + dx).coerceIn(viewport.left.toLong(), (viewport.right - origin.width).toLong()).toInt()

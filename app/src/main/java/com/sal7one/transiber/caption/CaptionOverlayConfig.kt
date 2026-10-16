@@ -156,6 +156,8 @@ data class CaptionOverlayConfig(
     // Spoken-language preference; runtime capabilities decide whether it can be sent as a hint.
     val streamLanguage: String = "auto",
     val display: CaptionDisplay = CaptionDisplay.BOTH,
+    // TV presentation is independent of the phone bubble appearance.
+    val tvSubtitleMode: Boolean = true,
     // Layout
     val anchor: CaptionAnchor = CaptionAnchor.BOTTOM,
     val widthPercent: Int = OverlayGeometryDefaults.PORTRAIT.widthPercent,   // 40..100 of screen width
@@ -221,11 +223,11 @@ data class CaptionOverlayConfig(
             (localTranslationEnabled || (engine.speechBackend != null && localTranslationModelId.isNotBlank()) || textTranslationProviderId.isNotBlank()),
     )
 
-    fun withUiClamp() = copy(
+    fun withUiClamp(television: Boolean = false) = copy(
         widthPercent = widthPercent.coerceIn(40, 100),  // Keep compact user-selected layouts available.
         speakerVolume = speakerVolume.coerceIn(0, 100),
         maxHeightPercent = maxHeightPercent.coerceIn(20, 60),
-        bubbleHeightDp = bubbleHeightDp?.coerceIn(144, 600),
+        bubbleHeightDp = bubbleHeightDp?.coerceIn(minimumOverlayHeightDp(television), 600),
         historyLines = historyLines.coerceIn(0, 8),
         backgroundOpacity = backgroundOpacity.coerceIn(0, 100),
     )
@@ -283,7 +285,7 @@ object CaptionConfigStore {
             context.applicationContext.captionDataStore.data,
             rotation,
         ) { prefs, _ ->
-            readFrom(prefs, OverlayOrientation.from(context.resources.configuration.orientation))
+            readFrom(prefs, OverlayOrientation.from(context.resources.configuration.orientation), TvControls.isTvDevice(context))
         }
 
     suspend fun update(
@@ -292,8 +294,8 @@ object CaptionConfigStore {
     ) {
         context.applicationContext.captionDataStore.edit { prefs ->
             val active = OverlayOrientation.from(context.resources.configuration.orientation)
-            val changed = transform(readFrom(prefs, active))
-            val next = changed.withCaptionMode(changed.mode).withUiClamp()
+            val changed = transform(readFrom(prefs, active, TvControls.isTvDevice(context)))
+            val next = changed.withCaptionMode(changed.mode).withUiClamp(TvControls.isTvDevice(context))
             writeInto(prefs, next, active)
         }
     }
@@ -306,7 +308,7 @@ object CaptionConfigStore {
      * pre-orientation stored value (the user's tuned bubble survives upgrade);
      * landscape starts from its own default. Every other option stays global.
      */
-    internal fun readFrom(prefs: androidx.datastore.preferences.core.Preferences, orientation: OverlayOrientation): CaptionOverlayConfig {
+    internal fun readFrom(prefs: androidx.datastore.preferences.core.Preferences, orientation: OverlayOrientation, television: Boolean = false): CaptionOverlayConfig {
         fun geometry(active: androidx.datastore.preferences.core.Preferences.Key<Int>, legacy: androidx.datastore.preferences.core.Preferences.Key<Int>?, default: Int): Int =
             prefs[active] ?: legacy?.let { prefs[it] } ?: default
         val portrait = orientation == OverlayOrientation.PORTRAIT
@@ -326,6 +328,7 @@ object CaptionConfigStore {
                 ?: TranslationTarget.ENGLISH,
             streamLanguage = prefs[StreamLanguage] ?: "auto",
             display = prefs[Display]?.let { enumOrDefault(it, CaptionDisplay.BOTH) } ?: CaptionDisplay.BOTH,
+            tvSubtitleMode = prefs[TvSubtitleMode] ?: true,
             anchor = (prefs[if (portrait) AnchorPortrait else AnchorLandscape] ?: (if (portrait) prefs[Anchor] else null))
                 ?.let { enumOrDefault(it, CaptionAnchor.BOTTOM) } ?: CaptionAnchor.BOTTOM,
             widthPercent = geometry(if (portrait) WidthPortrait else WidthLandscape, if (portrait) WidthPercent else null, defaults.widthPercent),
@@ -347,7 +350,7 @@ object CaptionConfigStore {
                 ?: CaptionSpeakerChoice.SYSTEM,
             speakerGender = prefs[SpeakerGenderKey]?.let { enumOrDefault(it, SpeakerGender.ANY) } ?: SpeakerGender.ANY,
             speakerVolume = (prefs[SpeakerVolumeKey] ?: 100).coerceIn(0, 100),
-        ).let { it.withCaptionMode(it.mode).withUiClamp() }
+        ).let { it.withCaptionMode(it.mode).withUiClamp(television) }
     }
 
     internal fun writeInto(
@@ -356,6 +359,7 @@ object CaptionConfigStore {
         orientation: OverlayOrientation = OverlayOrientation.PORTRAIT,
     ) {
         val portrait = orientation == OverlayOrientation.PORTRAIT
+        prefs[TvSubtitleMode] = config.tvSubtitleMode
         prefs[Mode] = config.mode.name
         prefs[Source] = config.source.name
         prefs[Engine] = config.engine.name
@@ -393,6 +397,7 @@ object CaptionConfigStore {
     private inline fun <reified T : Enum<T>> enumOrDefault(name: String, fallback: T): T =
         runCatching { enumValueOf<T>(name) }.getOrDefault(fallback)
 
+    private val TvSubtitleMode = booleanPreferencesKey("tv_subtitle_mode_v1")
     private val TextTranslationProviderId = stringPreferencesKey("text_translation_provider_id")
     private val LocalTranslationEnabled = booleanPreferencesKey("local_translation_enabled")
     private val LocalTranslationModelId = stringPreferencesKey("local_translation_model_id")

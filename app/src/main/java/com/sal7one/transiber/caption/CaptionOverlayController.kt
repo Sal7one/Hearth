@@ -26,6 +26,7 @@ class CaptionOverlayController(
     private val context: Context,
     val engineController: CaptionEngineController,
 ) {
+    private val television = TvControls.isTvDevice(context)
     private val wm = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val _config = MutableStateFlow(CaptionOverlayConfig())
@@ -48,7 +49,7 @@ class CaptionOverlayController(
             _config.value = CaptionConfigStore.config(context).first().copy(
                 source = sourceForSession ?: engineController.currentConfig.source,
                 paused = engineController.currentConfig.paused,
-            ).withUiClamp()
+            ).withUiClamp(television)
             val owner = OverlayHost()
             owner.start()
             host = owner
@@ -115,7 +116,7 @@ class CaptionOverlayController(
 
     fun updateConfig(transform: (CaptionOverlayConfig) -> CaptionOverlayConfig) {
         scope.launch {
-            val next = transform(_config.value).withUiClamp()
+            val next = transform(_config.value).withUiClamp(television)
             _config.value = if (next.tapThrough) next.copy(showSettings = false, languagePicker = null) else next
             val committed = _config.value
             val revision = sizePreview.beginCommit(committed)
@@ -128,7 +129,7 @@ class CaptionOverlayController(
 
     /** Size-only UI updates: no disk writes or recognizer work for slider ticks. */
     private fun previewConfig(transform: (CaptionOverlayConfig) -> CaptionOverlayConfig) {
-        val next = transform(_config.value).withUiClamp()
+        val next = transform(_config.value).withUiClamp(television)
         sizePreview.preview(next)
         _config.value = next
         applyWindowChanges()
@@ -191,7 +192,7 @@ class CaptionOverlayController(
         val c = _config.value
         val vp = viewport()
         val density = context.resources.displayMetrics.density
-        val maxHeight = overlayHeightPx(vp.height, density, c)
+        val maxHeight = overlayHeightPx(vp.height, density, c, television)
         heightDp.value = maxHeight / density
         val p = placeOverlay(vp, vp.width * c.widthPercent / 100,
             maxHeight,
@@ -201,7 +202,7 @@ class CaptionOverlayController(
             _config.value = c.copy(xOffsetPx = p.x - origin.x,
                 yOffsetPx = if (c.anchor == CaptionAnchor.BOTTOM) origin.y - p.y else p.y - origin.y)
         }
-        val flags = TvControls.overlayWindowFlags(c.tapThrough, c.showSettings, TvControls.isTvDevice(context))
+        val flags = TvControls.overlayWindowFlags(c.tapThrough, c.showSettings, television)
         return WindowManager.LayoutParams(p.width, p.height,
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY, flags, PixelFormat.TRANSLUCENT).apply {
             gravity = Gravity.TOP or Gravity.LEFT
@@ -209,7 +210,7 @@ class CaptionOverlayController(
             y = p.y
             // Android 12+ checks WINDOW alpha for pass-through touches, not
             // the Compose background's paint alpha.
-            alpha = if (c.tapThrough && Build.VERSION.SDK_INT >= 31) {
+            alpha = if ((c.tapThrough || television) && Build.VERSION.SDK_INT >= 31) {
                 context.getSystemService(android.hardware.input.InputManager::class.java)
                     .maximumObscuringOpacityForTouch.coerceIn(0f, 1f)
             } else 1f
@@ -247,7 +248,7 @@ class CaptionOverlayController(
     }
 
     private fun syncRecoveryHandle(main: WindowManager.LayoutParams) {
-        if (setupSuppressed) { removeRecoveryHandle(); return }
+        if (television || setupSuppressed) { removeRecoveryHandle(); return }
         if (!_config.value.tapThrough || hidden) { removeRecoveryHandle(); return }
         val density = context.resources.displayMetrics.density
         val placement = placeTapThroughHandle(viewport(),

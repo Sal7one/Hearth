@@ -115,8 +115,16 @@ pause/resume, stop captions, move/resize the overlay, adjust its appearance, or
 **Stop & close Hearth**. The editor has side categories for Position, Size, Text,
 Style and Session, with a scrolling options pane and a large fixed preview.
 The preview uses sample captions and follows the real overlay geometry and theme.
-Bottom is the default position. New/reset landscape layouts (TV and phones) use
-80% width / 30% height; portrait uses 85% / 40%. Saved custom sizes take priority.
+
+On the TV branch, the live overlay contains **text only**: no inline buttons,
+drag handle, history controls or translating/provider bar. **Style → Subtitles**
+centers the current caption in white with a shadow, without a panel or border.
+**Position → Center** places it at screen center; Bottom remains the default.
+A text-panel style is also available, with controls kept in **Hearth controls**.
+New/reset TV overlays use 80% width and a **64 dp** height. Size adjusts down to
+**32 dp** in 8 dp steps. Saved explicit heights remain until changed; selecting
+Subtitles applies the compact 64 dp preset. Phone defaults stay 80% / 30% in
+landscape and 85% / 40% in portrait, with their existing 144 dp height minimum.
 Speech or provider errors preserve the saved layout.
 The overlay stays out of the way while controls are open and returns in its saved
 position when you leave. Hiding keeps speech and read-aloud running; Stop ends both.

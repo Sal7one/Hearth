@@ -122,7 +122,8 @@ on the Mac. Final evidence and any remaining gaps are in [review-0.23.9.md](revi
 
 An instrumentation-only fixture renders the production `CaptionOverlayWindow`
 in a real Android overlay window over a labeled demo background. It captures
-English/Arabic captions, Appearance settings, and Audio loudness/voice controls.
+English/Arabic subtitles, the text-panel alternative and an actual error state at
+32 dp. It asserts there are no inline TV buttons or translating/provider bar.
 The samples are UI fixtures, not ASR/translation accuracy or TTS playback evidence.
 The fixture starts no engines and is not packaged in distributed APKs.
 
