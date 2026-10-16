@@ -131,14 +131,14 @@ on/off. Long-press it to open controls. TV system quick-panel support varies by
 manufacturer; the **Hearth controls** launcher entry works independently of it.
 
 
-Hearth 0.23.10 on a disposable Android 14 TV emulator. Setup uses a fake test
-credential; the editor shows sample captions. No provider request or live speech
-is implied. [All TV screenshots](docs/screenshots/tv/README.md) ·
-[Phone portrait/landscape checks](docs/screenshots/mobile-layout/README.md).
+Captured directly on the owner's **TCL Smart TV Pro**, Android 14, running
+**Hearth 0.23.10** in Arabic. These are unedited device screenshots of the installed
+app. The illustrations and editor's sample-caption preview are built into Hearth.
+[Device and capture details](docs/screenshots/tv/README.md).
 
-<a href="docs/screenshots/tv/tv-dashboard-ready.png"><img src="docs/screenshots/tv/tv-dashboard-ready.png" width="720" alt="TV dashboard with a living-room background, large Start Hearth and Stop Hearth buttons, overlay editor and speech setup" /></a>
-<a href="docs/screenshots/tv/tv-setup-tabs.png"><img src="docs/screenshots/tv/tv-setup-tabs.png" width="720" alt="TV setup with phone artwork, Speech Language Voice tabs, phone QR entry and a fixed Done footer" /></a>
-<a href="docs/screenshots/tv/tv-editor-scene-ar.png"><img src="docs/screenshots/tv/tv-editor-scene-ar.png" width="720" alt="Arabic TV overlay editor with scrolling side controls and a large mountain-lake caption placement preview" /></a>
+<a href="docs/screenshots/tv/tv-home-tcl-0.23.10.png"><img src="docs/screenshots/tv/tv-home-tcl-0.23.10.png" width="720" alt="Actual TCL screenshot of Hearth's Arabic TV dashboard with Start and Stop buttons" /></a>
+<a href="docs/screenshots/tv/tv-setup-tcl-0.23.10.png"><img src="docs/screenshots/tv/tv-setup-tcl-0.23.10.png" width="720" alt="Actual TCL screenshot of Hearth's Speech, Language and Voice setup tabs" /></a>
+<a href="docs/screenshots/tv/tv-editor-tcl-0.23.10.png"><img src="docs/screenshots/tv/tv-editor-tcl-0.23.10.png" width="720" alt="Actual TCL screenshot of Hearth's overlay editor with scrolling controls and fixed caption placement preview" /></a>
 
 ## What you can do
 
