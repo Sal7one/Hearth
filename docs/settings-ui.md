@@ -135,8 +135,10 @@ Every overlay (caption bubble, reading translation bubble, quick translate)
 remembers its geometry separately for portrait and landscape: width (40–100%),
 max height, explicit bubble height, anchor and manual drag offsets. Rotating
 the device swaps to the other set live; editing in one orientation never
-touches the other. Defaults: portrait 85% width / 40% height, landscape 40% /
-60%. Upgrades keep a user's previously stored values as the portrait set.
+touches the other. Defaults: portrait 85% width / 40% height, landscape (TV and phones) 80% /
+30%. Both start at the bottom. Saved landscape sizes also survive updates; Reset
+uses the new defaults. Default height is bounded to 144–320 dp for readability.
+Upgrades keep a user's previously stored values as the portrait set.
 Everything else (theme, engines, languages, TTS) remains shared.
 
 ## Android TV and remotes

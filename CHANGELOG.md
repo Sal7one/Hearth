@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.23.10 — 2026-10-16 · TV dashboard, phone setup and remote controls
+
+- Replace the permanent TV setup cards with large Start Hearth and Stop Hearth actions. Put Speech, Language and Voice under a compact setup screen with a fixed Done footer; keep the full interface and every provider available.
+- Add locally bundled AI-generated TV/phone artwork and a cinematic overlay preview. Retain separate mobile home/tabs and orientation-specific settings, with Arabic RTL and light/dark layout checks.
+- Set new/reset landscape overlays to 80% width / 30% height on TV and phones; retain portrait 85% / 40%, saved custom geometry and bottom anchoring. Keep the existing readable height bounds.
+- Include QR phone-assisted OpenAI setup with encrypted transfer and physical TV approval, a remote overlay editor with fixed preview and scrolling categories, Hearth controls and emergency Stop Hearth launcher entries, and a capture toggle tile.
+- Preserve saved overlay placement across speech/provider failures and stop caption/reading sessions without launching idle engines. FOSS keeps offline model import and device voices with no network permissions. QA version code 83.
+
 ## 0.23.9 — 2026-10-10 · CPU architectures and Android TV
 
 - Build ARMv7, ARM64, x86 and x86_64 APKs for both cloud/local and offline flavors, plus a universal APK per flavor. Keep Android 9 as the minimum and the existing QA identity/signature.

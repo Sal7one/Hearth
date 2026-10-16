@@ -1,0 +1,14 @@
+[extend]
+useDefault = true
+
+# Public node-forge identifiers, reviewed for the offline phone-pairing bundle.
+# Restrict exceptions to the exact file and matched library syntax, not a key rule.
+[[allowlists]]
+description = "Public node-forge algorithm and TLS function identifiers"
+condition = "AND"
+paths = ['''(^|/)app/src/main/assets/phone-setup/forge\.min\.js$''']
+regexTarget = "match"
+regexes = [
+  '''^u\.handleClientKeyExchange,F=u\.handleCertificateVerify;$''',
+  '''^pbeWithSHAAnd3-KeyTripleDES-CBC","pbewithSHAAnd40BitRC2-CBC"?$''',
+]

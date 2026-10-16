@@ -55,10 +55,44 @@ offsets without changing the public Kotlin/JNI handle contract.
 
 ## TV integration
 
-The Main activity has a Leanback launcher entry and a 320 by 180 dp banner.
-Touchscreen, microphone and camera remain optional. Wide home cards place artwork
-beside their title and action so images do not hide the controls in landscape.
-Existing D-pad/media controls remain available.
+The Main activity and **Hearth controls** each have a Leanback launcher entry.
+Touchscreen, microphone and camera remain optional. TV detection recognizes the
+TV UI mode and Leanback/television platform features, including TV boxes that do
+not report the UI mode correctly.
+
+The TV home uses three large setup actions: **STT**, **Translate**, and **TTS**.
+The Play TV flow uses OpenAI; FOSS retains offline models and the device voice.
+Full settings and all other providers remain behind **Switch to full interface**.
+The separate controls screen exposes visibility, pause, stop, position, size and
+appearance without focusing the floating caption window.
+
+The required remote controls are Up/Down/Left/Right, center OK/Select, Back and
+Home. Focused buttons and TV language rows have a visible outline. No media keys,
+number pad, mouse, touch input, manufacturer Settings key or branded app shortcut
+is required. Existing media-key shortcuts remain optional. The Play STT screen
+includes a local QR phone setup page for iPhone/Android, with TV approval before
+saving, and an optional Google TV paired phone-keyboard help flow. Manual TV entry
+remains available. FOSS never opens the listener or acquires network permissions.
+
+The QR setup listener binds only to the TV's private Wi-Fi/Ethernet IPv4 address,
+uses a random port and 256-bit session token, expires after five minutes, and
+closes when the setup screen leaves the foreground. Settings are encrypted using
+an ephemeral RSA-OAEP SHA-256 key from the QR and AES-256-GCM; the provider key is
+never embedded in a URL, returned to a phone, logged, or sent to an external setup
+service. One submission waits for physical TV approval. Invalid hosts/origins,
+replayed envelopes and oversized input are rejected.
+
+Use a trusted home network: the local page itself is delivered over HTTP, so this
+flow does not authenticate its JavaScript against an active LAN attacker. For
+untrusted networks, use the TV's native paired phone keyboard. Guest/client
+isolation, VPNs and firewalls can block local setup; no router port forwarding
+is needed or supported. The bundled Forge 1.4.0 crypto has pinned integrity and
+license records under `assets/phone-setup/`.
+
+Host checks: `node scripts/test-phone-setup-crypto.cjs` and the app's
+`PhoneSetupServerTest` cover browser/JCA-compatible encryption, authenticated
+submission, physical approval, expiry, rejected/tampered input, replay and the
+FOSS network gate.
 
 Android 14 meets the OS minimum. Haier MatrixTV EE was reported by the owner,
 but its actual firmware/CPU and capture behavior have not been physically tested.

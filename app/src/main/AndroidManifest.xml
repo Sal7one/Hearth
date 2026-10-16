@@ -25,6 +25,13 @@
    <intent-filter android:label="@string/action_hearth_translate"><action android:name="android.intent.action.PROCESS_TEXT" /><category android:name="android.intent.category.DEFAULT" /><data android:mimeType="text/plain" /></intent-filter>
    <intent-filter android:label="@string/action_hearth_translate"><action android:name="android.intent.action.SEND" /><category android:name="android.intent.category.DEFAULT" /><data android:mimeType="text/plain" /><data android:mimeType="text/html" /></intent-filter>
   </activity>
+  <activity android:name=".caption.OverlayControlsActivity" android:exported="true" android:label="@string/overlay_launcher_title" android:banner="@drawable/tv_banner" android:launchMode="singleTop" android:taskAffinity="${applicationId}.controls">
+   <intent-filter><action android:name="android.intent.action.MAIN" /><category android:name="android.intent.category.LEANBACK_LAUNCHER" /></intent-filter>
+   <intent-filter><action android:name="android.service.quicksettings.action.QS_TILE_PREFERENCES" /><category android:name="android.intent.category.DEFAULT" /></intent-filter>
+  </activity>
+  <activity android:name=".caption.StopHearthActivity" android:exported="true" android:label="@string/overlay_stop_launcher_title" android:icon="@drawable/ic_stop_hearth" android:banner="@drawable/tv_stop_banner" android:theme="@android:style/Theme.NoDisplay" android:excludeFromRecents="true" android:taskAffinity="${applicationId}.stop">
+   <intent-filter><action android:name="android.intent.action.MAIN" /><category android:name="android.intent.category.LEANBACK_LAUNCHER" /></intent-filter>
+  </activity>
   <activity android:name=".caption.CaptionStartActivity" android:exported="false" />
   <service android:name=".caption.CaptionCaptureService" android:exported="false" android:foregroundServiceType="mediaProjection|microphone" />
   <activity android:name=".reading.ReadingStartActivity" android:exported="false" />
@@ -32,6 +39,7 @@
   <activity android:name=".shortcuts.OverlayLaunchActivity" android:exported="false" android:excludeFromRecents="true" android:launchMode="singleTop" android:taskAffinity="${applicationId}.quickstart" />
   <service android:name=".shortcuts.CaptionTileService" android:label="@string/tile_captions" android:icon="@drawable/ic_tile_captions" android:exported="true" android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
    <intent-filter><action android:name="android.service.quicksettings.action.QS_TILE" /></intent-filter>
+   <meta-data android:name="android.service.quicksettings.TOGGLEABLE_TILE" android:value="true" />
   </service>
   <service android:name=".shortcuts.ReadingTileService" android:label="@string/tile_reading" android:icon="@drawable/ic_tile_reading" android:exported="true" android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
    <intent-filter><action android:name="android.service.quicksettings.action.QS_TILE" /></intent-filter>

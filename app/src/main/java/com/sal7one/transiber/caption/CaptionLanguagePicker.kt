@@ -114,6 +114,7 @@ fun LanguagePickerContent(
     searchable: Boolean = true,
 ) {
     val uiText = rememberUiText()
+    val television = TvControls.isTvDevice(LocalContext.current)
 
     var query by rememberSaveable { mutableStateOf("") }
     val pickerCodes = choices.pickerCodes(selected)
@@ -149,7 +150,13 @@ fun LanguagePickerContent(
             }
             if (rows.isEmpty() && customCode == null) item(key = "empty") { Text(uiText(UiR.string.ui_no_matching_languages_e9531), Modifier.padding(16.dp).semantics { liveRegion = LiveRegionMode.Polite }) }
             items(rows, key = { it.code }) { language ->
-                Row(Modifier.fillMaxWidth().heightIn(min = 64.dp)
+                if (television) RemoteButton(
+                    label = if (language.nativeName == uiText.languageName(language.code)) language.nativeName
+                        else "${language.nativeName} · ${uiText.languageName(language.code)}",
+                    selected = language.code == selected,
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 64.dp).padding(horizontal = 16.dp, vertical = 4.dp),
+                    onClick = { onSelect(language.code) },
+                ) else Row(Modifier.fillMaxWidth().heightIn(min = 64.dp)
                     .selectable(selected = language.code == selected, role = Role.RadioButton, onClick = { onSelect(language.code) })
                     .padding(horizontal = 16.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
                     Text(language.flag, Modifier.padding(end = 16.dp).clearAndSetSemantics { })

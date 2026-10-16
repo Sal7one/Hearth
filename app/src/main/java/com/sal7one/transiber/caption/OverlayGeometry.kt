@@ -55,7 +55,7 @@ internal enum class OverlayOrientation { PORTRAIT, LANDSCAPE;
 /** Orientation-specific bubble defaults; legacy installs keep their stored portrait values. */
 internal object OverlayGeometryDefaults {
     val PORTRAIT = OverlayGeometry(85, 40)
-    val LANDSCAPE = OverlayGeometry(40, 60)
+    val LANDSCAPE = OverlayGeometry(80, 30)
 
     data class OverlayGeometry internal constructor(val widthPercent: Int, val maxHeightPercent: Int)
     fun defaultsFor(orientation: OverlayOrientation) = if (orientation == OverlayOrientation.LANDSCAPE) LANDSCAPE else PORTRAIT
@@ -114,4 +114,16 @@ internal fun placeTapThroughHandle(viewport: OverlayViewport, bubble: OverlayPla
         (bubble.x + bubble.width - w).coerceIn(viewport.left, viewport.right - w),
         y.coerceIn(viewport.top, viewport.bottom - h), w, h,
     )
+}
+
+/** Remote movement uses screen directions, including the bottom anchor's inverted offset. */
+internal fun CaptionOverlayConfig.nudgeOverlay(
+    viewport: OverlayViewport, density: Float, dx: Int, dy: Int,
+): CaptionOverlayConfig {
+    val height = overlayHeightPx(viewport.height, density, this)
+    val origin = placeOverlay(viewport, viewport.width * widthPercent / 100, height, anchor, 0, 0)
+    val current = placeOverlay(viewport, origin.width, height, anchor, xOffsetPx, yOffsetPx)
+    val x = (current.x.toLong() + dx).coerceIn(viewport.left.toLong(), (viewport.right - origin.width).toLong()).toInt()
+    val y = (current.y.toLong() + dy).coerceIn(viewport.top.toLong(), (viewport.bottom - height).toLong()).toInt()
+    return copy(xOffsetPx = x - origin.x, yOffsetPx = if (anchor == CaptionAnchor.BOTTOM) origin.y - y else y - origin.y)
 }

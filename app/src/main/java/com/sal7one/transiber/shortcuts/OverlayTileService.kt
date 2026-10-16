@@ -25,11 +25,17 @@ abstract class OverlayTileService : TileService() {
         listening?.cancel()
         listening = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate).also { scope ->
             scope.launch { running.collect { active ->
+                val title = uiText(if (shortcut == OverlayShortcut.CAPTIONS) UiR.string.tile_captions else UiR.string.tile_reading)
+                val actionLabel = uiText(when {
+                    !active -> UiR.string.service_tap_to_start_b11de
+                    shortcut == OverlayShortcut.CAPTIONS -> UiR.string.overlay_tap_to_stop
+                    else -> UiR.string.service_tap_to_show_578b6
+                })
                 qsTile?.apply {
-                    label = uiText(if (shortcut == OverlayShortcut.CAPTIONS) UiR.string.tile_captions else UiR.string.tile_reading)
+                    label = title
                     state = if (active) Tile.STATE_ACTIVE else Tile.STATE_INACTIVE
-                    contentDescription = "${uiText(if (shortcut == OverlayShortcut.CAPTIONS) UiR.string.tile_captions else UiR.string.tile_reading)} · ${if (active) uiText(UiR.string.service_tap_to_show_578b6) else uiText(UiR.string.service_tap_to_start_b11de)}"
-                    if (Build.VERSION.SDK_INT >= 29) subtitle = if (active) uiText(UiR.string.service_tap_to_show_578b6) else uiText(UiR.string.service_tap_to_start_b11de)
+                    contentDescription = "$title · $actionLabel"
+                    if (Build.VERSION.SDK_INT >= 29) subtitle = actionLabel
                     updateTile()
                 }
             } }
@@ -42,6 +48,10 @@ abstract class OverlayTileService : TileService() {
         if (isLocked) unlockAndRun { launch() } else launch()
     }
     private fun launch() {
+        if (shortcut == OverlayShortcut.CAPTIONS && CaptionCaptureService.running.value) {
+            CaptionCaptureService.stop(this)
+            return
+        }
         val intent = Intent(this, OverlayLaunchActivity::class.java)
             .putExtra(OverlayLaunchActivity.EXTRA, shortcut.name)
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)

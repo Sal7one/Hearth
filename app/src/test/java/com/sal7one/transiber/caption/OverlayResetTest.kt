@@ -6,6 +6,23 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class OverlayResetTest {
+    @Test fun newAndResetLayoutsDefaultToBottomInBothOrientations() {
+        assertEquals(CaptionAnchor.BOTTOM, CaptionOverlayConfig().anchor)
+        for (orientation in OverlayOrientation.entries) {
+            val defaults = CaptionConfigStore.readFrom(mutablePreferencesOf(), orientation)
+            assertEquals(CaptionAnchor.BOTTOM, defaults.anchor)
+            assertEquals(0, defaults.yOffsetPx)
+            val reset = defaults.copy(anchor = CaptionAnchor.CENTER, yOffsetPx = 200).resetOverlayPresentation(orientation)
+            assertEquals(CaptionAnchor.BOTTOM, reset.anchor)
+            assertEquals(0, reset.yOffsetPx)
+            val viewport = OverlayViewport(16, 16, 1904, 1064)
+            val height = overlayHeightPx(viewport.height, 2f, defaults)
+            val placement = placeOverlay(viewport, viewport.width * defaults.widthPercent / 100,
+                height, defaults.anchor, defaults.xOffsetPx, defaults.yOffsetPx)
+            assertEquals(viewport.bottom, placement.y + placement.height)
+        }
+    }
+
     @Test fun resetRecoversPresentationWithoutChangingThePipelineOrLiveSession() {
         val configured = CaptionOverlayConfig(
             mode = CaptionMode.TRANSLATE, source = CaptionSource.MIC,
@@ -40,8 +57,8 @@ class OverlayResetTest {
         val reset = portrait.resetOverlayPresentation(OverlayOrientation.LANDSCAPE)
         CaptionConfigStore.writeInto(prefs, reset, OverlayOrientation.LANDSCAPE)
         val savedLandscape = CaptionConfigStore.readFrom(prefs, OverlayOrientation.LANDSCAPE)
-        assertEquals(40, savedLandscape.widthPercent)
-        assertEquals(60, savedLandscape.maxHeightPercent)
+        assertEquals(80, savedLandscape.widthPercent)
+        assertEquals(30, savedLandscape.maxHeightPercent)
         assertNull(savedLandscape.bubbleHeightDp)
         val savedPortrait = CaptionConfigStore.readFrom(prefs, OverlayOrientation.PORTRAIT)
         assertEquals(90, savedPortrait.widthPercent)

@@ -92,7 +92,7 @@ import kotlinx.coroutines.launch
 
 private enum class CaptionSettingsPage { APPEARANCE, CAPTIONS, AUDIO }
 
-private data class OverlayPalette(
+internal data class OverlayPalette(
     val surface: Color,
     val onSurface: Color,
     val onSurfaceFaded: Color,
@@ -108,7 +108,7 @@ private data class OverlayPalette(
 internal fun effectiveSurfaceAlpha(baseAlpha: Float, opacityPercent: Int): Float =
     (baseAlpha * opacityPercent / 100f).coerceIn(0f, 1f)
 
-private fun paletteFor(theme: CaptionTheme): OverlayPalette = when (theme) {
+internal fun paletteFor(theme: CaptionTheme): OverlayPalette = when (theme) {
     CaptionTheme.DARK -> OverlayPalette(
         surface = Color(0xF01C1B1F),
         onSurface = Color(0xFFF4EFF4),

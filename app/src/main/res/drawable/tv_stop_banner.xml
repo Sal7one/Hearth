@@ -1,0 +1,5 @@
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="320dp" android:height="180dp">
+    <item android:width="320dp" android:height="180dp"><shape android:shape="rectangle"><solid android:color="#3C1018" /><corners android:radius="12dp" /></shape></item>
+    <item android:width="128dp" android:height="128dp" android:gravity="center" android:drawable="@drawable/ic_stop_hearth" />
+</layer-list>

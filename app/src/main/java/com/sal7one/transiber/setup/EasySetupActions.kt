@@ -10,6 +10,7 @@ import com.sal7one.transiber.reading.ReadingOverlayService
 import com.sal7one.transiber.runtime.LocalWorkGate
 import com.sal7one.transiber.shortcuts.checkSpeechAssetPresence
 import com.sal7one.transiber.translation.*
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -75,4 +76,43 @@ internal class EasySetupActions(context: Context) {
         CloudConfigStore.configureSpeech(context,provider,endpoint,model,mode)
         CaptionConfigStore.update(context) { EasySetupPreset.cloud(it,provider,target) }
     }
+    /** Only an explicitly selected official OpenAI connection can supply the TV's shared key. */
+    fun tvOpenAiKey(): String = synchronized(ApiKeyStore) {
+        check(ByokPolicy.FEATURE_BYOK) { "OpenAI is unavailable in the offline build." }
+        if (EasySetupPreset.canReuseKey(CloudConfigStore.Provider.OPENAI, CloudConfigStore.Provider.OPENAI.baseUrl,
+                CloudConfigStore.provider(context), CloudConfigStore.baseUrl(context))) {
+            val key = ApiKeyStore.getOpenAiKey(context)
+            ApiKeyStore.lastFailure?.let { error(it) }
+            if (key.isNotBlank()) return@synchronized key
+        }
+        val voice = CloudVoiceStore.forProvider(context, CloudVoiceProvider.OPENAI).validated()
+        val key = ApiKeyStore.getTtsKey(context, voice.credentialScope())
+        ApiKeyStore.lastFailure?.let { error(it) }
+        key
+    }
+
+    suspend fun applyTvOpenAi(replacementKey: String) {
+        check(ByokPolicy.FEATURE_BYOK) { "OpenAI is unavailable in the offline build." }; idle()
+        val previous = CaptionConfigStore.config(context).first()
+        val secret = replacementKey.trim().ifBlank { tvOpenAiKey() }
+        require(secret.isNotBlank()) { "Enter your OpenAI API key." }
+        val target = previous.target.languageTag.takeIf { CaptionLanguages.openAiTranslation.accepts(it) } ?: "en"
+        val voice = CloudVoiceConfig() // Official endpoint and TV defaults; no custom host can receive this key.
+        applyCloud(CloudConfigStore.Provider.OPENAI, CloudConfigStore.Provider.OPENAI.baseUrl,
+            CloudConfigStore.Provider.OPENAI.sttModel, secret, target)
+        withContext(Dispatchers.IO) { CloudVoiceStore.save(context, voice, secret) }
+        CaptionConfigStore.update(context) { it.copy(mode = previous.mode, speakerChoice = CaptionSpeakerChoice.CLOUD) }
+    }
+
+    suspend fun applyTvVoice(voice: String, enabled: Boolean, volume: Int) {
+        if (ByokPolicy.FEATURE_BYOK) {
+            val secret = tvOpenAiKey()
+            require(secret.isNotBlank()) { "Set up your OpenAI key in STT first." }
+            withContext(Dispatchers.IO) { CloudVoiceStore.save(context, CloudVoiceConfig(voice = voice), secret) }
+        }
+        CaptionConfigStore.update(context) { it.copy(speakCaptions = enabled, speakerVolume = volume,
+            speakerGender = SpeakerGender.ANY,
+            speakerChoice = if (ByokPolicy.FEATURE_BYOK) CaptionSpeakerChoice.CLOUD else CaptionSpeakerChoice.SYSTEM) }
+    }
+
 }

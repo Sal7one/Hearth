@@ -1,0 +1,30 @@
+#!/usr/bin/env node
+// Exercises the actual bundled browser encryption against Node/OpenSSL, without DOM mocks.
+const fs = require('node:fs');
+const vm = require('node:vm');
+const path = require('node:path');
+const crypto = require('node:crypto');
+const assert = require('node:assert/strict');
+const assets = path.resolve(__dirname, '../app/src/main/assets/phone-setup');
+const context = {crypto: crypto.webcrypto, setTimeout, clearTimeout, Uint8Array, ArrayBuffer};
+context.window = context; context.self = context;
+vm.createContext(context);
+vm.runInContext(fs.readFileSync(path.join(assets, 'forge.min.js'), 'utf8'), context);
+vm.runInContext(fs.readFileSync(path.join(assets, 'crypto.js'), 'utf8'), context);
+const keys = crypto.generateKeyPairSync('rsa', {modulusLength: 2048});
+const publicKey = keys.publicKey.export({format: 'der', type: 'spki'}).toString('base64url');
+const token = crypto.randomBytes(32).toString('base64url');
+const value = {key: 'unit-test-browser-key', source: 'MIC', mode: 'TRANSLATE', target: 'ar', voice: 'nova', readAloud: true, volume: 70};
+const envelope = context.HearthSetupCrypto.encrypt(value, publicKey, token);
+assert(!JSON.stringify(envelope).includes(value.key));
+const aes = crypto.privateDecrypt({key: keys.privateKey, oaepHash: 'sha256', padding: crypto.constants.RSA_PKCS1_OAEP_PADDING}, Buffer.from(envelope.wrappedKey, 'base64'));
+const encrypted = Buffer.from(envelope.ciphertext, 'base64');
+const decipher = crypto.createDecipheriv('aes-256-gcm', aes, Buffer.from(envelope.nonce, 'base64'));
+decipher.setAAD(Buffer.from(token)); decipher.setAuthTag(encrypted.subarray(-16));
+const plain = Buffer.concat([decipher.update(encrypted.subarray(0, -16)), decipher.final()]);
+assert.deepEqual(JSON.parse(plain.toString()), value);
+const tampered = crypto.createDecipheriv('aes-256-gcm', aes, Buffer.from(envelope.nonce, 'base64'));
+tampered.setAAD(Buffer.from(token + 'wrong')); tampered.setAuthTag(encrypted.subarray(-16));
+tampered.update(encrypted.subarray(0, -16)); assert.throws(() => tampered.final());
+aes.fill(0); plain.fill(0);
+console.log('Bundled phone RSA-OAEP / AES-GCM interoperability and tamper rejection PASS');
