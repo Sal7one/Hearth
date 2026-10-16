@@ -1,0 +1,21 @@
+<resources>
+    <string name="tv_pair_title">Set up from phone · QR</string>
+    <string name="tv_pair_intro">Paste your key and choose STT, translation and TTS on your phone. Approve the result here.</string>
+    <string name="tv_pair_no_network">Connect the TV to a private Wi-Fi or Ethernet network before opening phone setup. No private local address was found.</string>
+    <string name="tv_pair_qr_description">Scan this QR code with your phone camera to open this temporary TV setup session.</string>
+    <string name="tv_pair_code">Pairing code · %1$s</string>
+    <string name="tv_pair_steps">1. Connect your phone to the same home network.\n2. Scan the QR code with your phone camera.\n3. Match the pairing code and paste your OpenAI key.\n4. Send the setup, then approve it on this TV.</string>
+    <string name="tv_pair_trusted_network">Use a private home network. Guest Wi-Fi, VPNs and router device isolation can block setup. For shared networks, use your TV’s paired phone keyboard.</string>
+    <string name="tv_pair_expiry">This setup window lasts five minutes and closes when you leave. The QR code contains a temporary pairing token, never your API key.</string>
+    <string name="tv_pair_cancel">Cancel phone setup</string>
+    <string name="tv_pair_key_received">OpenAI key received · hidden</string>
+    <string name="tv_pair_key_reuse">Use the OpenAI key already saved on this TV</string>
+    <string name="tv_pair_approve">Approve &amp; save on TV</string>
+    <string name="tv_pair_reject">Reject</string>
+    <string name="tv_pair_saved">Setup saved. You can close the phone page and start captions.</string>
+    <string name="tv_pair_expired">This phone setup session has ended. Close this screen and open phone setup again for a new QR code.</string>
+    <string name="tv_phone_keyboard">Use a paired phone keyboard</string>
+    <string name="tv_keyboard_qr_description">Scan for Google TV phone remote instructions for iPhone and Android.</string>
+    <string name="tv_phone_keyboard_steps">On supported Android and Google TVs, the Google TV app on iPhone or Android can enter text on the TV.\n\nOpen the phone app, select this TV, and pair using the code shown by the TV. Then open the API key field in Hearth and paste the key using the phone keyboard.\n\nBoth devices must be reachable on the same network. Your TV must support the Android TV Remote Service. This QR opens the official setup instructions, not a Hearth pairing session.</string>
+    <string name="tv_enter_on_tv">Enter or paste a key in the TV field</string>
+</resources>

@@ -1,0 +1,32 @@
+<resources>
+    <string name="tv_home_title">Hearth للتلفزيون</string>
+    <string name="tv_home_intro">ثلاثة إعدادات فقط. استخدم أزرار الاتجاهات وزر موافق.</string>
+    <string name="tv_home_recovery">أثناء المشاهدة، اضغط زر الرئيسية وافتح عناصر تحكم Hearth لإخفاء التراكب أو تحريكه أو إيقافه مؤقتًا أو إنهائه.</string>
+    <string name="tv_setup_title">إعداد الكلام للتلفزيون</string>
+    <string name="tv_stt_title">STT · تحويل الكلام إلى نص</string>
+    <string name="tv_stt_detail">حوّل صوت الجهاز أو الميكروفون إلى نصوص.</string>
+    <string name="tv_stt_action">إعداد STT</string>
+    <string name="tv_translate_title">الترجمة</string>
+    <string name="tv_translate_detail">اختر اللغة التي تريد قراءتها.</string>
+    <string name="tv_translate_action">إعداد الترجمة</string>
+    <string name="tv_tts_title">TTS · القراءة الصوتية</string>
+    <string name="tv_tts_detail">اختر صوتًا واستمع إلى النصوص أو الترجمات.</string>
+    <string name="tv_tts_action">إعداد TTS</string>
+    <string name="tv_full_interface">الانتقال إلى الواجهة الكاملة</string>
+    <string name="tv_mode">وضع التلفزيون</string>
+    <string name="tv_all_three">STT · الترجمة · TTS</string>
+    <string name="tv_openai_intro">OpenAI للكلام والترجمة والأصوات. مفتاح واحد محفوظ على هذا التلفزيون.</string>
+    <string name="tv_offline_intro">هذا الإصدار يعمل دون اتصال. استورد نماذج الكلام والترجمة واستخدم صوت الجهاز.</string>
+    <string name="tv_key_help">أدخل مفتاح OpenAI مرة واحدة للكلام والترجمة والقراءة الصوتية. اترك الحقل فارغًا للاحتفاظ بمفتاح OpenAI المحفوظ. قد يفرض مزود الخدمة رسومًا على الاستخدام.</string>
+    <string name="tv_save_openai">حفظ إعداد OpenAI</string>
+    <string name="tv_saved">تم الحفظ. يتم فحص اتصال المزود عند البدء.</string>
+    <string name="tv_translation_help">اعرض النص الأصلي أو ترجمه إلى اللغة المختارة. أعد STT أولًا.</string>
+    <string name="tv_voice_on">تشغيل القراءة الصوتية</string>
+    <string name="tv_voice_off">إيقاف القراءة الصوتية</string>
+    <string name="tv_voice_help">تطبق تغييرات الصوت ومستوى الصوت على الأسطر الجديدة. تبقى القراءة الصوتية متوقفة حتى تشغلها.</string>
+    <string name="tv_setup_stt_first">احفظ إعداد OpenAI في STT أولًا.</string>
+    <string name="tv_local_title">الكلام على هذا التلفزيون</string>
+    <string name="tv_local_saved">نماذج الكلام والترجمة جاهزة على هذا التلفزيون.</string>
+    <string name="tv_step_overlay">ضبط تراكب النص</string>
+    <string name="tv_start_help">اضغط زر الرئيسية وافتح تطبيق الفيديو. يظهر النص فوقه ويختفي مؤقتًا أثناء استخدام Hearth.</string>
+</resources>

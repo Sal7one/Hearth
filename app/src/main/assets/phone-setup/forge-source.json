@@ -1,0 +1,10 @@
+{
+  "name": "node-forge",
+  "version": "1.4.0",
+  "url": "https://registry.npmjs.org/node-forge/-/node-forge-1.4.0.tgz",
+  "npmIntegrity": "sha512-LarFH0+6VfriEhqMMcLX2F7SwSXeWwnEAJEsYm5QKWchiVYVvJyV9v7UDvUv+w5HO23ZpQTXDv/GxdDdMyOuoQ==",
+  "files": {
+    "forge.min.js": "d9b9074e6861200d676e25dcfe97889db5e8f4150bb766d29c491ad709a51b58",
+    "FORGE-LICENSE.txt": "f63ff0e4e239244aa79280da2dd4811a0469e5e201caf5cbc0d97c3a1dff8e82"
+  }
+}

@@ -107,7 +107,7 @@ import java.io.File
         catch(e: Exception){error=e.message ?: e.toString()}
         finally {busy=false}
     }}
-    Text(uiText(UiR.string.ui_your_phone_your_words_8fa46),style=MaterialTheme.typography.headlineLarge)
+    Text(uiText(if (TvControls.isTvDevice(context)) UiR.string.tv_local_title else UiR.string.ui_your_phone_your_words_8fa46),style=MaterialTheme.typography.headlineLarge)
     Text(uiText(UiR.string.ui_speech_and_translation_stay_on_this_device_0bdc1))
     Text(uiText(UiR.string.easy_setup_choose_pair),style=MaterialTheme.typography.titleMedium)
     FlowRow(horizontalArrangement=Arrangement.spacedBy(8.dp),verticalArrangement=Arrangement.spacedBy(4.dp)) {

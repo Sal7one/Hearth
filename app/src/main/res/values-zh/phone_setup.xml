@@ -1,0 +1,21 @@
+<resources>
+    <string name="tv_pair_title">用手机设置 · 二维码</string>
+    <string name="tv_pair_intro">在手机上粘贴密钥并选择语音、翻译和朗读设置，然后在此电视上确认。</string>
+    <string name="tv_pair_no_network">请先将电视连接至家庭专用 Wi-Fi 或以太网。未找到专用本地地址。</string>
+    <string name="tv_pair_qr_description">用手机相机扫描此二维码，打开本次临时电视设置会话。</string>
+    <string name="tv_pair_code">配对码 · %1$s</string>
+    <string name="tv_pair_steps">1. 将手机连接到同一家庭网络。\n2. 用手机相机扫描二维码。\n3. 核对配对码并粘贴 OpenAI 密钥。\n4. 发送设置，然后在电视上批准。</string>
+    <string name="tv_pair_trusted_network">请使用家庭专用网络。访客 Wi-Fi、VPN 或路由器的设备隔离可能阻止连接。在共享网络上，请使用电视已配对的手机键盘。</string>
+    <string name="tv_pair_expiry">设置窗口有效期为五分钟，离开后自动关闭。二维码包含临时配对令牌，绝不包含 API 密钥。</string>
+    <string name="tv_pair_cancel">取消手机设置</string>
+    <string name="tv_pair_key_received">已收到 OpenAI 密钥 · 已隐藏</string>
+    <string name="tv_pair_key_reuse">使用此电视上已保存的 OpenAI 密钥</string>
+    <string name="tv_pair_approve">在电视上批准并保存</string>
+    <string name="tv_pair_reject">拒绝</string>
+    <string name="tv_pair_saved">设置已保存。您可以关闭手机页面并启动字幕。</string>
+    <string name="tv_pair_expired">本次手机设置会话已结束。关闭此页面并重新打开手机设置，以获取新二维码。</string>
+    <string name="tv_phone_keyboard">使用已配对的手机键盘</string>
+    <string name="tv_keyboard_qr_description">扫码查看 iPhone 和 Android 的 Google TV 手机遥控器官方说明。</string>
+    <string name="tv_phone_keyboard_steps">在支持的 Android TV 和 Google TV 上，可通过 iPhone 或 Android 版 Google TV 应用向电视输入文字。\n\n在手机上打开应用，选择此电视，并输入电视显示的配对码。然后打开 Hearth 的 API 密钥输入框，使用手机键盘粘贴密钥。\n\n两台设备必须在同一网络上互相可达。电视需要支持 Android TV Remote Service。此二维码打开官方说明，并非 Hearth 配对会话。</string>
+    <string name="tv_enter_on_tv">在电视输入框中输入或粘贴密钥</string>
+</resources>

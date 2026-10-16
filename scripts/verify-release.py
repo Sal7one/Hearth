@@ -8,6 +8,10 @@ parser.add_argument("--build-type", choices=["qa", "release"], default="qa")
 build_type = parser.parse_args().build_type
 root = Path(__file__).resolve().parents[1]
 libroot = root / 'common-jni/src/main/jniLibs'
+phone_assets = root / 'app/src/main/assets/phone-setup'
+phone_crypto = json.loads((phone_assets / 'forge-source.json').read_text())
+for name, digest in phone_crypto['files'].items():
+    assert hashlib.sha256((phone_assets / name).read_bytes()).hexdigest() == digest, f'Phone crypto bundle changed: {name}'
 vendor_hashes = {}
 for line in (libroot / 'SHA256SUMS').read_text().splitlines():
     expected, name = line.split(None, 1)
@@ -94,6 +98,9 @@ for flavor, architecture in [(f, a) for f in ('play','foss') for a in (*ABIS, 'u
                 assert 'libvosk.so' not in needed, 'Vosk must remain behind its local C API loader: its exported static libc++ conflicts with speech plugins'
                 assert 'libc++_shared.so' in needed
 
+        for item in phone_assets.iterdir():
+            if item.is_file():
+                assert archive.read('assets/phone-setup/' + item.name) == item.read_bytes(), item.name
         for family in ['speech', 'translation']:
             name = f'assets/licenses/{family}/runtime-build.json'
             assert archive.read(name) == (root/'common-jni/src/main'/name).read_bytes(), name
@@ -118,6 +125,10 @@ for flavor, architecture in [(f, a) for f in ('play','foss') for a in (*ABIS, 'u
     assert 'android.intent.action.PROCESS_TEXT' in manifest and 'text/html' in manifest, f'{flavor}: selected-text or rich-text share action missing'
     assert 'android.intent.category.LEANBACK_LAUNCHER' in manifest, 'TV launcher missing'
     assert 'android:banner' in manifest, 'TV banner missing'
+    assert 'com.sal7one.transiber.caption.OverlayControlsActivity' in manifest, 'Remote overlay controls missing'
+    assert 'com.sal7one.transiber.caption.StopHearthActivity' in manifest, 'Emergency TV stop launcher missing'
+    assert 'android.service.quicksettings.action.QS_TILE_PREFERENCES' in manifest, 'Tile controls shortcut missing'
+    assert 'android.service.quicksettings.TOGGLEABLE_TILE' in manifest, 'Caption tile toggle semantics missing'
     for sensitive in ('android.permission.BIND_ACCESSIBILITY_SERVICE',
                       'android.accessibilityservice.AccessibilityService',
                       'android.permission.BIND_NOTIFICATION_LISTENER_SERVICE',

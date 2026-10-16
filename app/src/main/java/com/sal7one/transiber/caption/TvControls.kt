@@ -13,8 +13,16 @@ import android.view.WindowManager
  * media keys work wherever Hearth is the active session.
  */
 object TvControls {
-    fun isTvDevice(context: Context): Boolean =
-        (context.getSystemService(Context.UI_MODE_SERVICE) as? UiModeManager)?.currentModeType == Configuration.UI_MODE_TYPE_TELEVISION
+    @Suppress("DEPRECATION")
+    fun isTvDevice(context: Context): Boolean = isTvEnvironment(
+        (context.getSystemService(Context.UI_MODE_SERVICE) as? UiModeManager)?.currentModeType,
+        context.packageManager.hasSystemFeature(android.content.pm.PackageManager.FEATURE_LEANBACK),
+        context.packageManager.hasSystemFeature(android.content.pm.PackageManager.FEATURE_TELEVISION),
+    )
+
+    /** Some TV boxes advertise their TV launcher without setting UiModeManager correctly. */
+    internal fun isTvEnvironment(mode: Int?, leanback: Boolean, television: Boolean): Boolean =
+        mode == Configuration.UI_MODE_TYPE_TELEVISION || leanback || television
 
     /**
      * Pure window-flag decision (unit-testable): overlays stay non-focusable so

@@ -20,12 +20,17 @@ import com.sal7one.transiber.ui.theme.glassPanel
 
 @Composable internal fun EasySetupScreen(step: EasySetupStep, onStep: (EasySetupStep) -> Unit, onCaptions: () -> Unit, onHome: () -> Unit, onSettings: () -> Unit, onDownloads: () -> Unit) {
     val uiText = rememberUiText()
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val television = com.sal7one.transiber.caption.TvControls.isTvDevice(context)
 
     key(step) {
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp),verticalArrangement=Arrangement.spacedBy(20.dp)) {
         if(step.finished) {
             Text(uiText(UiR.string.ui_setup_saved_8f224),style=MaterialTheme.typography.headlineLarge)
-            Text(if(step.local) uiText(UiR.string.ui_nemotron_translation_ready_on_this_phone_7864d) else uiText(UiR.string.ui_your_speech_connection_is_saved_it_connects_when_you_start_389c0))
+            Text(if(step.local) uiText(if (television) UiR.string.tv_local_saved else UiR.string.ui_nemotron_translation_ready_on_this_phone_7864d) else uiText(UiR.string.ui_your_speech_connection_is_saved_it_connects_when_you_start_389c0))
+            if (television) com.sal7one.transiber.caption.RemoteButton(uiText(UiR.string.tv_step_overlay), onClick = {
+                com.sal7one.transiber.caption.OverlayControlsActivity.open(context)
+            })
             Button(onClick=onCaptions,modifier=Modifier.fillMaxWidth().heightIn(min=60.dp)) {Text(uiText(UiR.string.ui_open_live_captions_d696b))}
             OutlinedButton(onClick=onHome,modifier=Modifier.fillMaxWidth().heightIn(min=56.dp)) {Text(uiText(UiR.string.ui_explore_hearth_19205))}
         } else if(step==EasySetupStep.CHOICE) {

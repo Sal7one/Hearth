@@ -2,6 +2,8 @@ package com.sal7one.transiber
 
 import com.sal7one.transiber.i18n.*
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
+import androidx.lifecycle.lifecycleScope
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.activity.compose.BackHandler
@@ -43,6 +45,20 @@ import com.sal7one.transiber.models.ModelsScreen
 import com.sal7one.transiber.downloads.DownloadsScreen
 
 class MainActivity : AppCompatActivity() {
+ private var tvOverlayVisibility: AutoCloseable? = null
+ override fun onStart() {
+  super.onStart()
+  if (TvControls.isTvDevice(this)) tvOverlayVisibility = com.sal7one.transiber.shortcuts.OverlaySetupVisibility.acquire()
+ }
+ override fun onStop() {
+  tvOverlayVisibility?.close(); tvOverlayVisibility = null
+  super.onStop()
+ }
+ override fun onDestroy() {
+  tvOverlayVisibility?.close(); tvOverlayVisibility = null
+  super.onDestroy()
+ }
+
  private var sharedImage by mutableStateOf<android.net.Uri?>(null)
  private var sharedText by mutableStateOf<String?>(null)
  private var translateSharedTextImmediately by mutableStateOf(false)
@@ -112,7 +128,10 @@ class MainActivity : AppCompatActivity() {
      save = { state: AppNavigation -> state.save() }, restore = { AppNavigation.restore(it) }
     )) { mutableStateOf(AppNavigation.initial(intent.getIntExtra("page", 0))) }
     val layout = rememberNavigationLayout()
-    val simple = layout == NavigationLayout.SIMPLE
+    val television = remember { TvControls.isTvDevice(this@MainActivity) }
+    var fullInterface by rememberSaveable { mutableStateOf(false) }
+    val tvUi = television && !fullInterface
+    val simple = tvUi || layout == NavigationLayout.SIMPLE
     var showHome by rememberSaveable { mutableStateOf(!intent.hasExtra("page")) }
     var homeDestination by rememberSaveable { mutableStateOf<Int?>(null) }
     var homeEntry by rememberSaveable { mutableIntStateOf(0) }
@@ -121,6 +140,7 @@ class MainActivity : AppCompatActivity() {
     val page = route.page
     val focus = LocalFocusManager.current
     val screenState = androidx.compose.runtime.saveable.rememberSaveableStateHolder()
+    var tvSetupFeature by rememberSaveable { mutableStateOf<com.sal7one.transiber.setup.TvSetupFeature?>(null) }
     var setupStep by rememberSaveable { mutableStateOf(EasySetupStep.CHOICE) }
     fun go(next: Int) {
      focus.clearFocus()
@@ -164,7 +184,8 @@ class MainActivity : AppCompatActivity() {
     fun back() {
      focus.clearFocus()
      if (intent.action == android.content.Intent.ACTION_PROCESS_TEXT && page == 11 && route.isRoot) { finish(); return }
-     if (page == 15 && setupStep.back() != null) {
+     if (page == 15 && tvUi && tvSetupFeature != null) { tvSetupFeature = null; return }
+     if (page == 15 && !tvUi && setupStep.back() != null) {
       setupStep = requireNotNull(setupStep.back())
       return
      }
@@ -184,7 +205,7 @@ class MainActivity : AppCompatActivity() {
      if (simple) { homeEntry++; home() }
      startActivity(android.content.Intent(this@MainActivity, com.sal7one.transiber.reading.ReadingStartActivity::class.java)) }
     BackHandler(enabled = !atHome && (simple || route.canGoBack)) { back() }
-    if (quickSettings) SettingsQuickSheet(
+    if (quickSettings && !tvUi) SettingsQuickSheet(
      onDismiss = { quickSettings = false },
      onFeature = { location, feature -> quickSettings = false; settingsFeature(location, feature) },
      onPage = { quickSettings = false; go(it) },
@@ -193,17 +214,18 @@ class MainActivity : AppCompatActivity() {
     FeatureBackdrop(artwork = when { atHome -> null; page == 0 -> R.drawable.home_captions; page == 7 -> R.drawable.home_conversation; page == 10 -> R.drawable.home_camera; page == 11 -> R.drawable.home_text; else -> R.drawable.home_face },
      tint = androidx.compose.ui.graphics.Color(when(page) { 7 -> 0xFFEAA077; 10 -> 0xFFEDA84C; 11 -> 0xFF9470F5; else -> 0xFF448EFF })) {
     Scaffold(containerColor = androidx.compose.ui.graphics.Color.Transparent, contentColor = MaterialTheme.colorScheme.onBackground, topBar = {
-     TopAppBar(colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface.copy(alpha = .55f)), title = { Text(if (atHome) "Hearth" else when(page) {
+     TopAppBar(colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface.copy(alpha = .55f)), title = { Text(if (atHome) "Hearth" else if (tvUi) uiText(R.string.tv_setup_title) else when(page) {
       0 -> uiText(R.string.label_maintab_captions_title); 1 -> uiText(R.string.ui_models_f3798); 2 -> uiText(R.string.nav_downloads); 3 -> uiText(R.string.label_maintab_settings_title)
       4 -> uiText(R.string.nav_speech_settings); 5 -> uiText(R.string.nav_advanced_captions)
       7 -> if (faceLayout) uiText(R.string.label_homeservice_face_title) else uiText(R.string.label_homeservice_conversation_title)
       8 -> uiText(R.string.ui_local_benchmark_3acfe); 9 -> uiText(R.string.label_settingsfeature_translation_label); 10 -> uiText(R.string.label_maintab_camera_title)
-      11 -> uiText(R.string.label_maintab_translate_title); 12 -> uiText(R.string.label_settingsfeature_voices_label); 13 -> uiText(R.string.ui_appearance_navigation_433af); 14 -> uiText(R.string.ui_phone_shortcuts_b969d); 15 -> uiText(R.string.ui_easy_setup_35fb5); 16 -> uiText(R.string.caption_history_title); else -> uiText(R.string.nav_help)
+      11 -> uiText(R.string.label_maintab_translate_title); 12 -> uiText(R.string.label_settingsfeature_voices_label); 13 -> uiText(R.string.ui_appearance_navigation_433af); 14 -> uiText(R.string.overlay_shortcuts_title); 15 -> uiText(R.string.ui_easy_setup_35fb5); 16 -> uiText(R.string.caption_history_title); else -> uiText(R.string.nav_help)
      }, style = MaterialTheme.typography.titleMedium) },
       navigationIcon = { if (!atHome && (simple || !route.isRoot)) IconButton(onClick = { if (page == 16) onBackPressedDispatcher.onBackPressed() else back() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, uiText(R.string.ui_back_b52b3)) } },
       actions = {
        if (simple && !atHome) IconButton(onClick = { home() }) { Icon(Icons.Default.Home, uiText(R.string.nav_home)) }
-       IconButton(onClick = { quickSettings = true }) { Icon(Icons.Default.Settings, uiText(R.string.nav_quick_settings)) }
+       if (television && fullInterface) TextButton(onClick = { fullInterface = false; home() }) { Text(uiText(R.string.tv_mode)) }
+       IconButton(onClick = { if (tvUi) { tvSetupFeature = null; go(15) } else quickSettings = true }) { Icon(Icons.Default.Settings, uiText(R.string.nav_quick_settings)) }
       })
     }, bottomBar = {
      if (!simple) NavigationBar {
@@ -228,7 +250,22 @@ class MainActivity : AppCompatActivity() {
       nativeFailure?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(16.dp)) }
       Box(Modifier.weight(1f)) {
        screenState.SaveableStateProvider(if (atHome) "simple-home" else page) {
-       if (atHome) HomeScreen(
+       if (tvUi && (atHome || page == 0)) com.sal7one.transiber.home.TvHomeScreen(
+        onFeature = { feature -> go(15); tvSetupFeature = feature },
+        onStart = {
+         lifecycleScope.launch {
+          val saved = CaptionConfigStore.config(this@MainActivity).first()
+          val openAi = saved.engine == CaptionEngineChoice.CLOUD && CloudConfigStore.sttMode(this@MainActivity) == CloudConfigStore.SttMode.STREAMING_OPENAI &&
+           com.sal7one.transiber.setup.EasySetupPreset.canReuseKey(CloudConfigStore.Provider.OPENAI, CloudConfigStore.Provider.OPENAI.baseUrl,
+            CloudConfigStore.provider(this@MainActivity), CloudConfigStore.baseUrl(this@MainActivity))
+          if (ByokPolicy.FEATURE_BYOK && !openAi) { go(15); tvSetupFeature = com.sal7one.transiber.setup.TvSetupFeature.STT }
+          else startActivity(android.content.Intent(this@MainActivity, com.sal7one.transiber.shortcuts.OverlayLaunchActivity::class.java))
+         }
+        },
+        onFullInterface = { fullInterface = true; home() },
+       ) else if (tvUi) com.sal7one.transiber.setup.TvSetupScreen(feature = tvSetupFeature,
+        onFeature = { tvSetupFeature = it }, onHome = { home() })
+       else if (atHome) HomeScreen(
         entryRevision = homeEntry,
         onSetup = { go(15) },
         onCaptions = { go(0) },

@@ -147,6 +147,8 @@ class CaptionOverlayController(
 
     fun suppressForSetup(suppressed: Boolean) {
         setupSuppressed = suppressed
+        // Returning from normal controls must hand keys back to the video app.
+        if (suppressed) _config.value = _config.value.copy(showSettings = false, languagePicker = null)
         applyWindowChanges()
     }
 
@@ -156,11 +158,13 @@ class CaptionOverlayController(
         updateConfig { it.copy(anchor = CaptionAnchor.CENTER, xOffsetPx = 0, yOffsetPx = 0, tapThrough = false, showSettings = showSettings, languagePicker = null) }
     }
 
-    fun toggleVisibility() {
-        hidden = !hidden
-        view?.visibility = if (hidden || setupSuppressed) android.view.View.INVISIBLE else android.view.View.VISIBLE
+    /** Showing captions must preserve the position and size chosen with a remote. */
+    fun setVisible(visible: Boolean) {
+        hidden = !visible
+        if (!visible) updateConfig { it.copy(showSettings = false, languagePicker = null) }
         applyWindowChanges()
     }
+
 
     fun refreshBounds() { scope.launch {
         sizePreview.cancel()

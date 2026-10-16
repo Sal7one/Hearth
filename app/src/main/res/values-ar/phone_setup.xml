@@ -1,0 +1,21 @@
+<resources>
+    <string name="tv_pair_title">الإعداد من الهاتف · QR</string>
+    <string name="tv_pair_intro">الصق المفتاح واختر الكلام والترجمة والقراءة الصوتية على الهاتف، ثم وافق على النتيجة هنا.</string>
+    <string name="tv_pair_no_network">صل التلفزيون بشبكة منزلية خاصة عبر Wi-Fi أو إيثرنت قبل فتح إعداد الهاتف. لم يتم العثور على عنوان محلي خاص.</string>
+    <string name="tv_pair_qr_description">امسح رمز QR بكاميرا الهاتف لفتح جلسة الإعداد المؤقتة هذه.</string>
+    <string name="tv_pair_code">رمز الاقتران · %1$s</string>
+    <string name="tv_pair_steps">1. صل الهاتف بالشبكة المنزلية نفسها.\n2. امسح رمز QR بكاميرا الهاتف.\n3. طابق رمز الاقتران والصق مفتاح OpenAI.\n4. أرسل الإعداد ثم وافق عليه على التلفزيون.</string>
+    <string name="tv_pair_trusted_network">استخدم شبكة منزلية خاصة. قد تمنع شبكة الضيوف أو VPN أو خاصية عزل الأجهزة الاتصال. للشبكات المشتركة استخدم لوحة مفاتيح الهاتف المقترنة بالتلفزيون.</string>
+    <string name="tv_pair_expiry">تبقى نافذة الإعداد مفتوحة لخمس دقائق وتغلق عند المغادرة. يحتوي رمز QR على رمز اقتران مؤقت ولا يحتوي على مفتاح API.</string>
+    <string name="tv_pair_cancel">إلغاء إعداد الهاتف</string>
+    <string name="tv_pair_key_received">تم استلام مفتاح OpenAI · مخفي</string>
+    <string name="tv_pair_key_reuse">استخدام مفتاح OpenAI المحفوظ على هذا التلفزيون</string>
+    <string name="tv_pair_approve">الموافقة والحفظ على التلفزيون</string>
+    <string name="tv_pair_reject">رفض</string>
+    <string name="tv_pair_saved">تم حفظ الإعداد. يمكنك إغلاق صفحة الهاتف وبدء النصوص.</string>
+    <string name="tv_pair_expired">انتهت جلسة إعداد الهاتف. أغلق هذه الشاشة وافتح إعداد الهاتف مجددًا للحصول على رمز QR جديد.</string>
+    <string name="tv_phone_keyboard">استخدام لوحة مفاتيح هاتف مقترن</string>
+    <string name="tv_keyboard_qr_description">امسح الرمز لعرض تعليمات جهاز تحكم Google TV للهاتف على iPhone وAndroid.</string>
+    <string name="tv_phone_keyboard_steps">في أجهزة Android TV وGoogle TV المدعومة، يمكن لتطبيق Google TV على iPhone أو Android إدخال النص على التلفزيون.\n\nافتح التطبيق على الهاتف واختر هذا التلفزيون واقترن بالرمز المعروض. ثم افتح حقل مفتاح API في Hearth والصق المفتاح بلوحة مفاتيح الهاتف.\n\nيجب أن يتمكن الجهازان من الاتصال على الشبكة نفسها. يجب أن يدعم التلفزيون خدمة Android TV Remote Service. يفتح هذا الرمز التعليمات الرسمية وليس جلسة اقتران Hearth.</string>
+    <string name="tv_enter_on_tv">إدخال مفتاح أو لصقه في حقل التلفزيون</string>
+</resources>

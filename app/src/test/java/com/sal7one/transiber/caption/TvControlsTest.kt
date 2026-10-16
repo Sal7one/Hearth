@@ -6,6 +6,14 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class TvControlsTest {
+    @Test fun tvModeWorksForTvLaunchersAndBoxesWithoutUiModeManager() {
+        assertTrue(TvControls.isTvEnvironment(android.content.res.Configuration.UI_MODE_TYPE_TELEVISION, false, false))
+        assertTrue(TvControls.isTvEnvironment(android.content.res.Configuration.UI_MODE_TYPE_NORMAL, true, false))
+        assertTrue(TvControls.isTvEnvironment(null, false, true))
+        assertFalse(TvControls.isTvEnvironment(android.content.res.Configuration.UI_MODE_TYPE_NORMAL, false, false))
+        assertFalse(TvControls.isTvEnvironment(null, false, false))
+    }
+
     @Test fun overlayStaysNonFocusableExceptTvSettingsSheet() {
         val base = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN
         assertEquals(base, TvControls.overlayWindowFlags(tapThrough = false, settingsSheetOpen = false, television = true))

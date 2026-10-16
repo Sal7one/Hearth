@@ -94,6 +94,36 @@ Phone captures from an earlier release. Conversation and OCR examples use synthe
 
 ### Android TV
 
+On a TV, the home screen centers on three large setup buttons: **STT**, **Translate**
+and **TTS**. The Play build uses OpenAI in this TV setup flow, with one key reused
+for its official speech and voice endpoints. FOSS keeps its offline model and
+device-voice setup. Other providers and full settings remain available through
+**Switch to full interface**; **TV mode** brings the TV home back. In STT, choose **Set up from phone · QR**,
+scan with iPhone or Android, paste the key and choose the three settings on the
+phone, then approve them on the TV. Both devices need the same private home
+network. The temporary listener closes after five minutes or when you leave.
+The paired Google TV phone keyboard is also available as a fallback on supported TVs.
+
+For remote-only control, open **Hearth controls** from the TV app list, or choose
+**Overlay & speech controls** inside Hearth. Use the D-pad and OK to hide/show,
+pause/resume, stop captions, move/resize the overlay, adjust its appearance, or
+**Stop & close Hearth**. The editor has side categories for Position, Size, Text,
+Style and Session, with a scrolling options pane and a large fixed preview.
+The preview uses sample captions and follows the real overlay geometry and theme.
+Bottom is the default position. Speech or provider errors preserve the saved layout.
+The overlay stays out of the way while controls are open and returns in its saved
+position when you leave. Hiding keeps speech and read-aloud running; Stop ends both.
+
+For an emergency exit, press Home and open **Stop Hearth** (the red stop icon) in
+the TV app list. It immediately stops caption and screen-reading capture,
+removes their overlays, ends their speech, and closes Hearth windows. It needs
+no shortcut buttons or setup and is safe to select repeatedly while stopped.
+
+On devices with custom Quick Settings tiles, **Live captions** now toggles capture
+on/off. Long-press it to open controls. TV system quick-panel support varies by
+manufacturer; the **Hearth controls** launcher entry works independently of it.
+
+
 Hearth 0.23.9 on an Android 14 TV emulator. These captures use the production
 overlay with clearly labeled sample text; no speech recognition or voice playback
 is implied. [All TV screenshots](docs/screenshots/tv) · [Reproduce the captures](docs/android-abi-support.md#reproduce-tv-screenshots).

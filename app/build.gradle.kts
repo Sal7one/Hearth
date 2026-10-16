@@ -61,6 +61,7 @@ dependencies {
  implementation(project(":common-jni"))
  for (module in listOf("camera-core", "camera-camera2", "camera-lifecycle", "camera-view")) implementation("androidx.camera:$module:1.4.0")
  "playImplementation"("com.google.mlkit:translate:17.0.3")
+ implementation(libs.zxing.core)
  implementation(libs.androidx.core.ktx)
  implementation(libs.androidx.appcompat)
  implementation("androidx.media:media:1.7.0")

@@ -14,6 +14,8 @@ APK assets under `licenses/`.
 | Nemotron speech adapter | nemo-speech ffa38cb2408f1e832a36d46fef5e3e1e80d07e6c | MIT; GGML, SentencePiece and other notices in `licenses/speech/` |
 | C++ shared runtime | Android NDK 27.0.12077973 | NDK NOTICE / NOTICE.toolchain in assets |
 | AndroidX / Compose / Material | Version catalog and app Gradle dependencies | Apache-2.0; `licenses/android/Apache-2.0.txt` |
+| ZXing core | com.google.zxing:core:3.5.3 | Apache-2.0; QR encoding only |
+| Forge | node-forge 1.4.0, npm integrity and SHA-256 in `assets/phone-setup/forge-source.json` | BSD-3-Clause; upstream license and bundled notices in `assets/phone-setup/FORGE-LICENSE.txt` |
 | Kotlin / coroutines | Kotlin 2.2.0, coroutines 1.8.1 | Apache-2.0 |
 | Apache Commons Compress / IO / Lang / Codec | Compress 1.28.0; IO 2.20.0; Lang 3.18.0; Codec 1.19.0 | Apache-2.0; upstream license and notice files in `licenses/downloads/` |
 | OkHttp / Okio | OkHttp 4.12.0 and resolved Okio dependency | Apache-2.0; OkHttp notice in `licenses/android/` |

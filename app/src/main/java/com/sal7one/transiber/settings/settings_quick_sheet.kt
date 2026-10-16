@@ -25,9 +25,14 @@ internal fun SettingsQuickSheet(
     onReading: () -> Unit,
 ) {
     val uiText = rememberUiText()
+    val context = androidx.compose.ui.platform.LocalContext.current
 
     var location by rememberSaveable { mutableStateOf(SettingsLocation.LOCAL) }
     FeatureOptionsSheet(uiText(UiR.string.ui_settings_c7f73), onDismiss) {
+        OutlinedButton(onClick = {
+            onDismiss()
+            com.sal7one.transiber.caption.OverlayControlsActivity.open(context)
+        }, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) { Text(uiText(UiR.string.overlay_controls_title)) }
         Button(onClick={onPage(15)},modifier=Modifier.fillMaxWidth().heightIn(min=52.dp)) {Text(uiText(UiR.string.ui_easy_setup_local_or_cloud_6c3e9))}
         val locations = settingsLocations(ByokPolicy.FEATURE_BYOK)
         if (locations.size > 1) TabRow(selectedTabIndex = locations.indexOf(location)) {

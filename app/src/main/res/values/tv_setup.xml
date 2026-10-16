@@ -1,0 +1,32 @@
+<resources>
+    <string name="tv_home_title">Hearth for TV</string>
+    <string name="tv_home_intro">Three things to set up. Use the direction buttons and OK.</string>
+    <string name="tv_home_recovery">While watching, press Home and open Hearth controls to hide, move, pause or stop the overlay.</string>
+    <string name="tv_setup_title">Set up speech for your TV</string>
+    <string name="tv_stt_title">STT · Speech to text</string>
+    <string name="tv_stt_detail">Turn device audio or microphone speech into captions.</string>
+    <string name="tv_stt_action">Set up STT</string>
+    <string name="tv_translate_title">Translate</string>
+    <string name="tv_translate_detail">Choose the language you want to read.</string>
+    <string name="tv_translate_action">Set up translation</string>
+    <string name="tv_tts_title">TTS · Read aloud</string>
+    <string name="tv_tts_detail">Choose a voice and hear captions or translations aloud.</string>
+    <string name="tv_tts_action">Set up TTS</string>
+    <string name="tv_full_interface">Switch to full interface</string>
+    <string name="tv_mode">TV mode</string>
+    <string name="tv_all_three">STT · Translate · TTS</string>
+    <string name="tv_openai_intro">OpenAI for speech, translation and voices. One key, saved on this TV.</string>
+    <string name="tv_offline_intro">This build stays offline. Import speech and translation models and use the device voice.</string>
+    <string name="tv_key_help">Enter your OpenAI key once for speech, translation and TTS. Leave blank to keep a saved OpenAI key. Your provider may charge for usage.</string>
+    <string name="tv_save_openai">Save OpenAI setup</string>
+    <string name="tv_saved">Saved. Provider connections are checked when you start.</string>
+    <string name="tv_translation_help">Use original captions or translate into your chosen language. Set up STT first.</string>
+    <string name="tv_voice_on">Read aloud on</string>
+    <string name="tv_voice_off">Read aloud off</string>
+    <string name="tv_voice_help">Voice and volume changes apply to new spoken lines. Read aloud stays off until you enable it.</string>
+    <string name="tv_setup_stt_first">Save your OpenAI setup in STT first.</string>
+    <string name="tv_local_title">Speech on this TV</string>
+    <string name="tv_local_saved">Speech and translation models are ready on this TV.</string>
+    <string name="tv_step_overlay">Adjust the caption overlay</string>
+    <string name="tv_start_help">Press Home and open your video app. Captions appear over it; they stay out of the way while you use Hearth.</string>
+</resources>

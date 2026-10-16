@@ -115,7 +115,10 @@ fun CaptionHome(
     Column(Modifier.fillMaxSize()) {
         Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            Text(if (running) uiText(UiR.string.ui_captions_are_running_open_the_bubble_for_live_controls_or_stop_to_12914)
+            OutlinedButton(onClick = { OverlayControlsActivity.open(context) }, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) {
+                Text(uiText(UiR.string.overlay_controls_title))
+            }
+            Text(if (running) uiText(UiR.string.overlay_running_help)
                 else uiText(UiR.string.ui_what_would_you_like_to_hear_dba27),
                 style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite })

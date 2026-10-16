@@ -1,0 +1,32 @@
+<resources>
+    <string name="tv_home_title">电视版 Hearth</string>
+    <string name="tv_home_intro">只需设置三项。使用方向键和确认键操作。</string>
+    <string name="tv_home_recovery">观看时，按主页键并打开 Hearth 控制，即可隐藏、移动、暂停或停止悬浮字幕。</string>
+    <string name="tv_setup_title">设置电视语音</string>
+    <string name="tv_stt_title">STT · 语音转文字</string>
+    <string name="tv_stt_detail">将设备音频或麦克风语音转换成字幕。</string>
+    <string name="tv_stt_action">设置 STT</string>
+    <string name="tv_translate_title">翻译</string>
+    <string name="tv_translate_detail">选择您想阅读的语言。</string>
+    <string name="tv_translate_action">设置翻译</string>
+    <string name="tv_tts_title">TTS · 朗读</string>
+    <string name="tv_tts_detail">选择语音，朗读字幕或译文。</string>
+    <string name="tv_tts_action">设置 TTS</string>
+    <string name="tv_full_interface">切换到完整界面</string>
+    <string name="tv_mode">电视模式</string>
+    <string name="tv_all_three">STT · 翻译 · TTS</string>
+    <string name="tv_openai_intro">语音、翻译和朗读均使用 OpenAI。一个密钥，保存在此电视上。</string>
+    <string name="tv_offline_intro">此版本保持离线。请导入语音和翻译模型，并使用设备语音。</string>
+    <string name="tv_key_help">输入一次 OpenAI 密钥，即可用于语音、翻译和 TTS。留空可保留已保存的 OpenAI 密钥。服务商可能按使用量收费。</string>
+    <string name="tv_save_openai">保存 OpenAI 设置</string>
+    <string name="tv_saved">已保存。启动时会检查服务商连接。</string>
+    <string name="tv_translation_help">显示原文字幕或翻译成所选语言。请先设置 STT。</string>
+    <string name="tv_voice_on">开启朗读</string>
+    <string name="tv_voice_off">关闭朗读</string>
+    <string name="tv_voice_help">语音和音量更改应用于之后朗读的内容。朗读在您主动开启前保持关闭。</string>
+    <string name="tv_setup_stt_first">请先在 STT 中保存 OpenAI 设置。</string>
+    <string name="tv_local_title">此电视上的语音</string>
+    <string name="tv_local_saved">此电视上的语音和翻译模型已就绪。</string>
+    <string name="tv_step_overlay">调整悬浮字幕</string>
+    <string name="tv_start_help">按主页键并打开视频应用，字幕会显示在其上方；使用 Hearth 时，字幕会暂时隐藏。</string>
+</resources>

@@ -18,6 +18,13 @@ import androidx.core.app.NotificationCompat
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.first
 
+data class CaptionSessionState(
+    val running: Boolean = false,
+    val paused: Boolean = false,
+    val overlayVisible: Boolean = false,
+    val error: String? = null,
+)
+
 /** Owns one consent, recorder, caption engine and overlay. Commands run on Main. */
 class CaptionCaptureService : Service() {
     private val uiText get() = this.localizedUiText()
@@ -96,6 +103,11 @@ class CaptionCaptureService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
             ACTION_STOP -> stopCaptioning()
+            ACTION_SHOW -> if (active) {
+                overlayVisible = true
+                overlay.setVisible(true)
+                updateNotification()
+            } else stopSelf(startId)
             ACTION_CENTER -> if (active) {
                 overlayVisible = true
                 overlay.centerOverlay()
@@ -115,11 +127,11 @@ class CaptionCaptureService : Service() {
             } else stopSelf(startId)
             ACTION_VISIBILITY -> if (active) {
                 overlayVisible = !overlayVisible
-                if (overlayVisible) overlay.centerOverlay() else overlay.toggleVisibility()
+                overlay.setVisible(overlayVisible)
                 updateNotification()
             } else stopSelf(startId)
             ACTION_START -> {
-                if (active) { overlay.centerOverlay(); return START_NOT_STICKY }
+                if (active) { overlayVisible = true; overlay.setVisible(true); updateNotification(); return START_NOT_STICKY }
                 try { runtimeLease = com.sal7one.transiber.runtime.LocalWorkGate.acquire("Captions") }
                 catch (e: Exception) {
                     android.widget.Toast.makeText(this, e.message ?: e.toString(), android.widget.Toast.LENGTH_LONG).show()
@@ -167,6 +179,7 @@ class CaptionCaptureService : Service() {
         if (Build.VERSION.SDK_INT >= 29) startForeground(NOTIFICATION_ID, notification(), type)
         else startForeground(NOTIFICATION_ID, notification())
         syncMediaSession(paused = false)
+        publishSessionState()
         true
     } catch (e: Exception) {
         failure = "Foreground service: ${e.message ?: e.javaClass.simpleName}"
@@ -261,12 +274,14 @@ class CaptionCaptureService : Service() {
         engine.pauseProcessing()
         engine.reportError(message)
         overlayVisible = true
-        overlay.centerOverlay()
+        // Errors must be visible without overwriting the user's saved placement.
+        overlay.setVisible(true)
         updateNotification()
     }
 
     private fun stopCaptioning() {
         active = false
+        sessionState.value = CaptionSessionState()
         releaseMediaSession()
         startup?.cancel()
         releaseCapture()
@@ -285,6 +300,7 @@ class CaptionCaptureService : Service() {
 
     override fun onDestroy() {
         active = false
+        sessionState.value = CaptionSessionState()
         releaseMediaSession()
         releaseCapture()
         overlay.destroy()
@@ -296,28 +312,35 @@ class CaptionCaptureService : Service() {
         super.onDestroy()
     }
 
+    private fun publishSessionState() {
+        sessionState.value = CaptionSessionState(active, overlay.config.value.paused, active && overlayVisible, failure)
+    }
+
     private fun updateNotification() {
-        syncMediaSession(paused = engine.currentConfig.paused)
+        publishSessionState()
+        syncMediaSession(paused = overlay.config.value.paused)
         (getSystemService(NOTIFICATION_SERVICE) as NotificationManager).notify(NOTIFICATION_ID, notification())
     }
 
     private fun notification(): Notification {
         val manager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
         manager.createNotificationChannel(NotificationChannel(CHANNEL_ID, uiText(UiR.string.service_live_captions_83fd1), NotificationManager.IMPORTANCE_LOW))
-        val paused = engine.currentConfig.paused
+        val paused = overlay.config.value.paused
         val tapThrough = overlay.config.value.tapThrough
         fun command(id: Int, action: String) = PendingIntent.getService(this, id,
             Intent(this, CaptionCaptureService::class.java).setAction(action),
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
+        val controls = PendingIntent.getActivity(this, 7, Intent(this, OverlayControlsActivity::class.java),
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_btn_speak_now)
             .setContentTitle(if (failure != null) uiText(UiR.string.service_live_captions_error_9f465) else if (paused) uiText(UiR.string.service_live_captions_paused_b59ce) else uiText(UiR.string.service_live_captions_83fd1))
             .setContentText(failure ?: if (tapThrough) uiText(UiR.string.service_tap_through_is_on_tap_the_lock_handle_to_restore_c_2e5ea) else if (paused) uiText(UiR.string.service_audio_is_not_sent_to_the_speech_engine_859aa) else "${uiText.label(source)} · ${uiText.label(engine.currentConfig.mode)}")
-            .setStyle(NotificationCompat.BigTextStyle().bigText(failure ?: uiText(UiR.string.service_1_s_tap_this_notification_to_recover_the_bubble_an_16fe0, uiText.label(source))))
-            .setContentIntent(command(2, ACTION_CENTER)).setOngoing(true).setOnlyAlertOnce(true)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(failure ?: uiText(UiR.string.overlay_notification_help)))
+            .setContentIntent(controls).setOngoing(true).setOnlyAlertOnce(true)
             .apply { mediaSession?.sessionToken?.let { token -> setStyle(androidx.media.app.NotificationCompat.MediaStyle().setMediaSession(token)) } }
             .apply { if (failure == null) addAction(0, if (paused) uiText(UiR.string.service_resume_b3bd0) else uiText(UiR.string.service_pause_78196), command(1, ACTION_PAUSE)) }
-            .apply { if (failure == null) addAction(0, uiText(UiR.string.service_controls_f3d21), command(6, ACTION_SETTINGS)) }
+            .apply { if (failure == null) addAction(0, uiText(UiR.string.service_controls_f3d21), controls) }
             .addAction(0, uiText(UiR.string.service_stop_9e253), command(3, ACTION_STOP))
             .apply { if (failure == null && engine.currentConfig.speakCaptions) addAction(0, uiText(UiR.string.service_silence_voice_7c1e9), command(5, ACTION_SILENCE)) }
             .apply {
@@ -328,13 +351,21 @@ class CaptionCaptureService : Service() {
     }
 
     companion object {
+        private val sessionState = kotlinx.coroutines.flow.MutableStateFlow(CaptionSessionState())
+        val session: kotlinx.coroutines.flow.StateFlow<CaptionSessionState> = sessionState
         private val runningState = kotlinx.coroutines.flow.MutableStateFlow(false)
         val running: kotlinx.coroutines.flow.StateFlow<Boolean> = runningState
         fun stopCaptions(context: Context) {
             context.startService(Intent(context, CaptionCaptureService::class.java).setAction(ACTION_STOP))
         }
         fun show(context: Context) {
-            context.startService(Intent(context, CaptionCaptureService::class.java).setAction(ACTION_CENTER))
+            context.startService(Intent(context, CaptionCaptureService::class.java).setAction(ACTION_SHOW))
+        }
+        fun toggleVisibility(context: Context) = command(context, ACTION_VISIBILITY)
+        fun togglePause(context: Context) = command(context, ACTION_PAUSE)
+        fun silence(context: Context) = command(context, ACTION_SILENCE)
+        private fun command(context: Context, action: String) {
+            if (running.value) context.startService(Intent(context, CaptionCaptureService::class.java).setAction(action))
         }
         private const val SAMPLE_RATE = 16_000
         private const val READ_SAMPLES = 800 // 50 ms capture cadence
@@ -342,6 +373,7 @@ class CaptionCaptureService : Service() {
         private const val NOTIFICATION_ID = 410
         private const val ACTION_START = "com.sal7one.transiber.caption.START"
         internal const val ACTION_STOP = "com.sal7one.transiber.caption.STOP"
+        private const val ACTION_SHOW = "com.sal7one.transiber.caption.SHOW"
         private const val ACTION_CENTER = "com.sal7one.transiber.caption.CENTER"
         internal const val ACTION_PAUSE = "com.sal7one.transiber.caption.PAUSE"
         internal const val ACTION_PAUSE_ONLY = "com.sal7one.transiber.caption.PAUSE_ONLY"
