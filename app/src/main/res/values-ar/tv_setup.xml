@@ -29,4 +29,21 @@
     <string name="tv_local_saved">نماذج الكلام والترجمة جاهزة على هذا التلفزيون.</string>
     <string name="tv_step_overlay">ضبط تراكب النص</string>
     <string name="tv_start_help">اضغط زر الرئيسية وافتح تطبيق الفيديو. يظهر النص فوقه ويختفي مؤقتًا أثناء استخدام Hearth.</string>
+    <string name="tv_setup_saved_status">تم حفظ الإعداد</string>
+    <string name="tv_welcome">مرحباً بك</string>
+    <string name="tv_ready_title">جاهز متى أردت</string>
+    <string name="tv_welcome_help">أكمل الإعداد مرة واحدة من هاتفك، ثم استخدم زري التشغيل والإيقاف مباشرة.</string>
+    <string name="tv_dashboard_help">شغّل Hearth ثم افتح تطبيق الفيديو. الإيقاف ينهي النص المباشر والقراءة الصوتية.</string>
+    <string name="tv_error_details">عرض تفاصيل الخطأ</string>
+    <string name="tv_start_hearth">تشغيل Hearth</string>
+    <string name="tv_overlay_editor">محرر التراكب</string>
+    <string name="tv_manage_setup">إعداد الكلام</string>
+    <string name="tv_setup_once">يمكن لهاتفك إعداد الخيارات الثلاثة دفعة واحدة.</string>
+    <string name="tv_tab_speech">الكلام</string>
+    <string name="tv_tab_language">اللغة</string>
+    <string name="tv_tab_voice">الصوت</string>
+    <string name="tv_done">تم</string>
+    <string name="tv_advanced_settings">الواجهة الكاملة</string>
+    <string name="tv_more_entry_options">طرق أخرى لإدخال المفتاح</string>
+    <string name="tv_change_key_phone">تحديث من الهاتف · QR</string>
 </resources>

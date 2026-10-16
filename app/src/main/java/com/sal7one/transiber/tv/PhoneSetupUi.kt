@@ -57,7 +57,7 @@ private fun qrBitmap(value: String): Bitmap {
 }
 
 @Composable
-internal fun PhoneSetupDialog(config: CaptionOverlayConfig, onDismiss: () -> Unit) {
+internal fun PhoneSetupDialog(config: CaptionOverlayConfig, onSaved: () -> Unit = {}, onDismiss: () -> Unit) {
     if (!ByokPolicy.FEATURE_BYOK) return
     val text = rememberUiText()
     val context = LocalContext.current
@@ -147,7 +147,7 @@ internal fun PhoneSetupDialog(config: CaptionOverlayConfig, onDismiss: () -> Uni
                         }
                         PairingPhase.COMPLETE -> {
                             Text(text(R.string.tv_pair_saved), style = MaterialTheme.typography.headlineSmall)
-                            RemoteButton(text(R.string.ui_back_b52b3), focus = actionFocus, onClick = onDismiss)
+                            RemoteButton(text(R.string.tv_done), focus = actionFocus, onClick = { onDismiss(); onSaved() })
                         }
                         PairingPhase.EXPIRED, PairingPhase.CLOSED -> {
                             Text(text(R.string.tv_pair_expired))

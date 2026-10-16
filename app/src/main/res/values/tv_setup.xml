@@ -29,4 +29,21 @@
     <string name="tv_local_saved">Speech and translation models are ready on this TV.</string>
     <string name="tv_step_overlay">Adjust the caption overlay</string>
     <string name="tv_start_help">Press Home and open your video app. Captions appear over it; they stay out of the way while you use Hearth.</string>
+    <string name="tv_setup_saved_status">Setup saved</string>
+    <string name="tv_welcome">Welcome</string>
+    <string name="tv_ready_title">Ready when you are</string>
+    <string name="tv_welcome_help">Set up once from your phone. Keep Start and Stop one press away.</string>
+    <string name="tv_dashboard_help">Start Hearth, then open your video app. Stop ends captions and read-aloud.</string>
+    <string name="tv_error_details">View error details</string>
+    <string name="tv_start_hearth">Start Hearth</string>
+    <string name="tv_overlay_editor">Overlay editor</string>
+    <string name="tv_manage_setup">Speech setup</string>
+    <string name="tv_setup_once">Your phone can set up all three in one go.</string>
+    <string name="tv_tab_speech">Speech</string>
+    <string name="tv_tab_language">Language</string>
+    <string name="tv_tab_voice">Voice</string>
+    <string name="tv_done">Done</string>
+    <string name="tv_advanced_settings">Full interface</string>
+    <string name="tv_more_entry_options">More ways to enter a key</string>
+    <string name="tv_change_key_phone">Update from phone · QR</string>
 </resources>

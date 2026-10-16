@@ -2,7 +2,8 @@
 
 The source is self-contained. Use the [README toolchain and gates](../README.md#build).
 The application ID remains `com.sal7one.transiber` for compatibility; Hearth is the
-visible name. Both flavors are arm64, Android 9+, with playback capture on Android 10+.
+visible name. Both flavors support ARM64, ARMv7, x86_64 and x86, Android 9+, with playback
+capture on Android 10+. Universal APKs include all four architectures.
 
 | Variant | Network | Translation/download differences |
 | --- | --- | --- |
@@ -73,3 +74,11 @@ upgrades and bump versionCode/versionName per release. APKs and a SHA-256 checks
 file belong in GitHub release assets, not committed source. Google Play publication
 additionally requires its current store declarations and signing workflow; a passing
 local build is not store approval.
+
+## Latest published QA build
+
+[0.23.10 · TV dashboard and remote setup](https://github.com/Sal7one/Hearth/releases/tag/v0.23.10)
+provides Play and FOSS APKs for all four CPUs plus universal APKs, SHA256SUMS and a
+source-only archive. These are release-optimized, debug-signed **QA** artifacts, not
+production-signed APKs. See the [release notes](releases/0.23.10.md) for validation
+and device-test limits.

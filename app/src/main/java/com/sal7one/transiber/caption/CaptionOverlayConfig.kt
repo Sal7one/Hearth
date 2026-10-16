@@ -222,7 +222,7 @@ data class CaptionOverlayConfig(
     )
 
     fun withUiClamp() = copy(
-        widthPercent = widthPercent.coerceIn(40, 100),  // 40% is the landscape default
+        widthPercent = widthPercent.coerceIn(40, 100),  // Keep compact user-selected layouts available.
         speakerVolume = speakerVolume.coerceIn(0, 100),
         maxHeightPercent = maxHeightPercent.coerceIn(20, 60),
         bubbleHeightDp = bubbleHeightDp?.coerceIn(144, 600),

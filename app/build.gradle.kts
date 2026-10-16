@@ -11,8 +11,8 @@ android {
   applicationId = "com.sal7one.transiber"
   minSdk = 28
   targetSdk = 36
-  versionCode = 82
-  versionName = "0.23.9"
+  versionCode = 83
+  versionName = "0.23.10"
   testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   ndk { abiFilters += listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64") }
  }

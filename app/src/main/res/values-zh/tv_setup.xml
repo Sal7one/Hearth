@@ -29,4 +29,21 @@
     <string name="tv_local_saved">此电视上的语音和翻译模型已就绪。</string>
     <string name="tv_step_overlay">调整悬浮字幕</string>
     <string name="tv_start_help">按主页键并打开视频应用，字幕会显示在其上方；使用 Hearth 时，字幕会暂时隐藏。</string>
+    <string name="tv_setup_saved_status">设置已保存</string>
+    <string name="tv_welcome">欢迎</string>
+    <string name="tv_ready_title">随时可以开始</string>
+    <string name="tv_welcome_help">用手机完成一次设置，然后直接使用启动和停止。</string>
+    <string name="tv_dashboard_help">启动 Hearth，然后打开视频应用。停止会结束字幕和朗读。</string>
+    <string name="tv_error_details">查看错误详情</string>
+    <string name="tv_start_hearth">启动 Hearth</string>
+    <string name="tv_overlay_editor">字幕布局</string>
+    <string name="tv_manage_setup">语音设置</string>
+    <string name="tv_setup_once">手机可一次完成这三项设置。</string>
+    <string name="tv_tab_speech">语音</string>
+    <string name="tv_tab_language">语言</string>
+    <string name="tv_tab_voice">朗读</string>
+    <string name="tv_done">完成</string>
+    <string name="tv_advanced_settings">完整界面</string>
+    <string name="tv_more_entry_options">其他密钥输入方式</string>
+    <string name="tv_change_key_phone">用手机更新 · 二维码</string>
 </resources>

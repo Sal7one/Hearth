@@ -1,5 +1,26 @@
 # Hearth on Android TV
 
+## Current 0.23.10 layouts
+
+Captured on a disposable Android 14 TV emulator. The setup fixture uses a fake
+credential and makes no provider or speech requests. The editor contains labeled
+sample captions. All images are bundled app artwork, not remote video content.
+The editor fixture resets landscape geometry to 80% width / 30% height at the bottom.
+
+![Everyday Start/Stop dashboard](tv-dashboard-ready.png)
+![Setup with tabs and fixed footer](tv-setup-tabs.png)
+![Arabic overlay editor with fixed scenic preview](tv-editor-scene-ar.png)
+
+[First-run welcome](tv-dashboard-welcome.png) · [Light theme](tv-dashboard-light.png) ·
+[Arabic dashboard](tv-dashboard-ar.png) · [Mobile layouts](../mobile-layout/README.md) ·
+[Artwork prompts](../../tv-artwork.md)
+
+The UI-only fixture is `MobileTvLayoutTest`: it refuses real hardware, checks the
+TV/mobile surface before mutating fixtures, and verifies rendered screenshots.
+It does not validate paid provider responses or audio-capture firmware behavior.
+
+## Earlier captures retained for reference
+
 Captured on an Android 14 TV emulator using Hearth's real overlay UI.
 Captions are labeled sample text; these screenshots do not demonstrate recognition,
 translation accuracy or voice playback. [Capture instructions](../../android-abi-support.md#reproduce-tv-screenshots).

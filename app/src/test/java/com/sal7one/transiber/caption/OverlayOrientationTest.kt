@@ -27,8 +27,8 @@ class OverlayOrientationTest {
             speakCaptions = true, speakerVolume = 25, xOffsetPx = 99)
         val landscape = CaptionConfigStore.readFrom(prefs(), OverlayOrientation.LANDSCAPE)
         val rotated = live.withStoredGeometry(landscape)
-        assertEquals(40, rotated.widthPercent)
-        assertEquals(60, rotated.maxHeightPercent)
+        assertEquals(80, rotated.widthPercent)
+        assertEquals(30, rotated.maxHeightPercent)
         assertEquals(0, rotated.xOffsetPx)
         assertTrue(rotated.paused && rotated.showSettings && rotated.tapThrough && rotated.speakCaptions)
         assertEquals(25, rotated.speakerVolume)
@@ -61,8 +61,8 @@ class OverlayOrientationTest {
         val landscape = CaptionConfigStore.readFrom(prefs(), OverlayOrientation.LANDSCAPE)
         assertEquals(85, portrait.widthPercent)
         assertEquals(40, portrait.maxHeightPercent)
-        assertEquals("landscape defaults differ from portrait", 40, landscape.widthPercent)
-        assertEquals(60, landscape.maxHeightPercent)
+        assertEquals("landscape defaults differ from portrait", 80, landscape.widthPercent)
+        assertEquals(30, landscape.maxHeightPercent)
         assertEquals(CaptionAnchor.BOTTOM, portrait.anchor)
     }
 
@@ -76,7 +76,7 @@ class OverlayOrientationTest {
         assertEquals(CaptionAnchor.TOP, portrait.anchor)
         assertEquals(30, portrait.xOffsetPx)
         assertEquals("landscape ignores portrait-only legacy values", 0, landscape.xOffsetPx)
-        assertEquals(40, landscape.widthPercent)
+        assertEquals(80, landscape.widthPercent)
     }
 
     @Test fun writesLandsInTheActiveOrientationOnlyAndBothAreRemembered() {
@@ -111,7 +111,7 @@ class OverlayOrientationTest {
 
     @Test fun clampAcceptsTheLandscapeDefaultWidth() {
         val clamped = CaptionConfigStore.readFrom(prefs(), OverlayOrientation.LANDSCAPE).withUiClamp()
-        assertEquals(40, clamped.widthPercent)
+        assertEquals(80, clamped.widthPercent)
         assertEquals(49, 49.coerceIn(40, 100))
     }
 }

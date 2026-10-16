@@ -14,6 +14,9 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -29,7 +32,6 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.draw.clipToBounds
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -247,11 +249,13 @@ private fun OverlayControls(onReturn: () -> Unit, onStart: () -> Unit, onSpeechS
         }
     }
     @Composable fun Preview(modifier: Modifier) {
-        Column(modifier.testTag("overlay_editor_preview_pane"), verticalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterVertically)) {
+        Column(modifier.testTag("overlay_editor_preview_pane"), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(text(R.string.overlay_preview), style = MaterialTheme.typography.titleLarge)
             val cfg = config
-            if (cfg != null) OverlayPositionPreview(cfg, viewport, density)
-            Text(text(R.string.overlay_preview_help), style = MaterialTheme.typography.bodySmall)
+            Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
+                if (cfg != null) OverlayPositionPreview(cfg, viewport, density)
+            }
+            if (screen.screenWidthDp >= 720) Text(text(R.string.overlay_preview_help), style = MaterialTheme.typography.bodySmall)
         }
     }
     Surface(Modifier.fillMaxSize()) {
@@ -276,7 +280,7 @@ private fun OverlayControls(onReturn: () -> Unit, onStart: () -> Unit, onSpeechS
                 }
             } else {
                 // Compact displays retain every action with a pinned preview above the scrolling options.
-                Preview(Modifier.fillMaxWidth().heightIn(max = 200.dp))
+                Preview(Modifier.fillMaxWidth().height((screen.screenHeightDp * .25f).coerceIn(100f, 200f).dp))
                 androidx.compose.foundation.lazy.LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     items(OverlayEditorCategory.entries.size) { index ->
                         val item = OverlayEditorCategory.entries[index]
@@ -333,16 +337,17 @@ private fun OverlayPositionPreview(config: CaptionOverlayConfig, viewport: Overl
     val placement = placeOverlay(viewport, viewport.width * config.widthPercent / 100,
         overlayHeightPx(viewport.height, density, config), config.anchor, config.xOffsetPx, config.yOffsetPx)
     val palette = paletteFor(config.theme)
-    BoxWithConstraints(Modifier.fillMaxWidth().aspectRatio(viewport.width.toFloat() / viewport.height)
+    BoxWithConstraints(Modifier.fillMaxSize()) {
+        val ratio = viewport.width.toFloat() / viewport.height
+        val fittedWidth = minOf(maxWidth, maxHeight * ratio)
+        BoxWithConstraints(Modifier.align(Alignment.Center).width(fittedWidth).aspectRatio(ratio)
         .clipToBounds().testTag("overlay_editor_preview")
-        .background(Brush.linearGradient(listOf(Color(0xFF1C3952), Color(0xFF17202F), Color(0xFF314440))))
+        .background(Color(0xFF17202F))
         .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(4.dp))) {
         val scale = maxWidth / viewport.width
         val textScale = maxWidth.value / (viewport.width / density)
-        Column(Modifier.align(Alignment.Center), horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("▷", color = Color.White.copy(alpha = .6f), fontSize = 40.sp)
-            Text(text(R.string.overlay_preview_video), color = Color.White.copy(alpha = .7f), style = MaterialTheme.typography.bodySmall)
-        }
+        Image(painterResource(R.drawable.tv_preview_scene), contentDescription = null,
+            contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
         Box(Modifier.align(AbsoluteAlignment.TopLeft)
             .absoluteOffset(x = scale * (placement.x - viewport.left), y = scale * (placement.y - viewport.top))
             .size(scale * placement.width, scale * placement.height).clipToBounds()
@@ -359,4 +364,5 @@ private fun OverlayPositionPreview(config: CaptionOverlayConfig, viewport: Overl
             }
         }
     }
+}
 }
