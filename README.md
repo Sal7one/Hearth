@@ -14,17 +14,17 @@ hard-of-hearing users.
 
 ## Download
 
-**[Hearth 0.23.9 — release notes and SHA256SUMS](https://github.com/Sal7one/Hearth/releases/tag/v0.23.9)**
+**[Hearth 0.23.10 — release notes and SHA256SUMS](https://github.com/Sal7one/Hearth/releases/tag/v0.23.10)**
 
 Choose **Universal** if you do not know your phone or TV's CPU.
 
 | CPU | Cloud + local | Offline only |
 | --- | --- | --- |
-| **Universal · recommended** | [Download APK](https://github.com/Sal7one/Hearth/releases/download/v0.23.9/hearth-0.23.9-play-qa-universal.apk) | [Download APK](https://github.com/Sal7one/Hearth/releases/download/v0.23.9/hearth-0.23.9-foss-qa-universal.apk) |
-| ARM64 | [Download APK](https://github.com/Sal7one/Hearth/releases/download/v0.23.9/hearth-0.23.9-play-qa-arm64-v8a.apk) | [Download APK](https://github.com/Sal7one/Hearth/releases/download/v0.23.9/hearth-0.23.9-foss-qa-arm64-v8a.apk) |
-| ARMv7 · 32-bit | [Download APK](https://github.com/Sal7one/Hearth/releases/download/v0.23.9/hearth-0.23.9-play-qa-armeabi-v7a.apk) | [Download APK](https://github.com/Sal7one/Hearth/releases/download/v0.23.9/hearth-0.23.9-foss-qa-armeabi-v7a.apk) |
-| x86_64 | [Download APK](https://github.com/Sal7one/Hearth/releases/download/v0.23.9/hearth-0.23.9-play-qa-x86_64.apk) | [Download APK](https://github.com/Sal7one/Hearth/releases/download/v0.23.9/hearth-0.23.9-foss-qa-x86_64.apk) |
-| x86 · 32-bit | [Download APK](https://github.com/Sal7one/Hearth/releases/download/v0.23.9/hearth-0.23.9-play-qa-x86.apk) | [Download APK](https://github.com/Sal7one/Hearth/releases/download/v0.23.9/hearth-0.23.9-foss-qa-x86.apk) |
+| **Universal · recommended** | [Download APK](https://github.com/Sal7one/Hearth/releases/download/v0.23.10/hearth-0.23.10-play-qa-universal.apk) | [Download APK](https://github.com/Sal7one/Hearth/releases/download/v0.23.10/hearth-0.23.10-foss-qa-universal.apk) |
+| ARM64 | [Download APK](https://github.com/Sal7one/Hearth/releases/download/v0.23.10/hearth-0.23.10-play-qa-arm64-v8a.apk) | [Download APK](https://github.com/Sal7one/Hearth/releases/download/v0.23.10/hearth-0.23.10-foss-qa-arm64-v8a.apk) |
+| ARMv7 · 32-bit | [Download APK](https://github.com/Sal7one/Hearth/releases/download/v0.23.10/hearth-0.23.10-play-qa-armeabi-v7a.apk) | [Download APK](https://github.com/Sal7one/Hearth/releases/download/v0.23.10/hearth-0.23.10-foss-qa-armeabi-v7a.apk) |
+| x86_64 | [Download APK](https://github.com/Sal7one/Hearth/releases/download/v0.23.10/hearth-0.23.10-play-qa-x86_64.apk) | [Download APK](https://github.com/Sal7one/Hearth/releases/download/v0.23.10/hearth-0.23.10-foss-qa-x86_64.apk) |
+| x86 · 32-bit | [Download APK](https://github.com/Sal7one/Hearth/releases/download/v0.23.10/hearth-0.23.10-play-qa-x86.apk) | [Download APK](https://github.com/Sal7one/Hearth/releases/download/v0.23.10/hearth-0.23.10-foss-qa-x86.apk) |
 
 Android 9+; device-audio capture requires Android 10+. Cloud + local includes
 optional provider connections and model downloads. Offline only has **no network
@@ -94,12 +94,51 @@ Phone captures from an earlier release. Conversation and OCR examples use synthe
 
 ### Android TV
 
-Hearth 0.23.9 on an Android 14 TV emulator. These captures use the production
-overlay with clearly labeled sample text; no speech recognition or voice playback
-is implied. [All TV screenshots](docs/screenshots/tv) · [Reproduce the captures](docs/android-abi-support.md#reproduce-tv-screenshots).
+On a TV, the home screen centers on large **Start Hearth** and **Stop Hearth**
+buttons over local artwork. **Speech setup** opens compact **Speech**, **Language**
+and **Voice** tabs; setup cards do not remain on the everyday dashboard. Saved
+configuration is read from the current settings, including after phone pairing.
+The Play build uses OpenAI in this TV setup flow, with one key reused
+for its official speech and voice endpoints. FOSS keeps its offline model and
+device-voice setup. Other providers and full settings remain available through
+**Full interface** in setup; **TV mode** brings the TV home back. In Speech, choose **Set up from phone · QR**,
+scan with iPhone or Android, paste the key and choose the three settings on the
+phone, then approve them on the TV. Both devices need the same private home
+network. The temporary listener closes after five minutes or when you leave.
+The paired Google TV phone keyboard is also available as a fallback on supported TVs.
+The background and preview images are bundled offline; [artwork prompts](docs/tv-artwork.md).
+Phone layouts keep their existing home and tabs, including in landscape.
 
-<a href="docs/screenshots/tv/tv-caption-overlay.png"><img src="docs/screenshots/tv/tv-caption-overlay.png" width="720" alt="Hearth English and Arabic caption overlay on Android TV with a labeled UI demo background" /></a>
-<a href="docs/screenshots/tv/tv-overlay-audio-voices.png"><img src="docs/screenshots/tv/tv-overlay-audio-voices.png" width="720" alt="Android TV overlay quick settings with voice gender and TTS engine controls" /></a>
+For remote-only control, open **Hearth controls** from the TV app list, or choose
+**Overlay & speech controls** inside Hearth. Use the D-pad and OK to hide/show,
+pause/resume, stop captions, move/resize the overlay, adjust its appearance, or
+**Stop & close Hearth**. The editor has side categories for Position, Size, Text,
+Style and Session, with a scrolling options pane and a large fixed preview.
+The preview uses sample captions and follows the real overlay geometry and theme.
+Bottom is the default position. New/reset landscape layouts (TV and phones) use
+80% width / 30% height; portrait uses 85% / 40%. Saved custom sizes take priority.
+Speech or provider errors preserve the saved layout.
+The overlay stays out of the way while controls are open and returns in its saved
+position when you leave. Hiding keeps speech and read-aloud running; Stop ends both.
+
+For an emergency exit, press Home and open **Stop Hearth** (the red stop icon) in
+the TV app list. It immediately stops caption and screen-reading capture,
+removes their overlays, ends their speech, and closes Hearth windows. It needs
+no shortcut buttons or setup and is safe to select repeatedly while stopped.
+
+On devices with custom Quick Settings tiles, **Live captions** now toggles capture
+on/off. Long-press it to open controls. TV system quick-panel support varies by
+manufacturer; the **Hearth controls** launcher entry works independently of it.
+
+
+Captured directly on the owner's **TCL Smart TV Pro**, Android 14, running
+**Hearth 0.23.10** in Arabic. These are unedited device screenshots of the installed
+app. The illustrations and editor's sample-caption preview are built into Hearth.
+[Device and capture details](docs/screenshots/tv/README.md).
+
+<a href="docs/screenshots/tv/tv-home-tcl-0.23.10.png"><img src="docs/screenshots/tv/tv-home-tcl-0.23.10.png" width="720" alt="Actual TCL screenshot of Hearth's Arabic TV dashboard with Start and Stop buttons" /></a>
+<a href="docs/screenshots/tv/tv-setup-tcl-0.23.10.png"><img src="docs/screenshots/tv/tv-setup-tcl-0.23.10.png" width="720" alt="Actual TCL screenshot of Hearth's Speech, Language and Voice setup tabs" /></a>
+<a href="docs/screenshots/tv/tv-editor-tcl-0.23.10.png"><img src="docs/screenshots/tv/tv-editor-tcl-0.23.10.png" width="720" alt="Actual TCL screenshot of Hearth's overlay editor with scrolling controls and fixed caption placement preview" /></a>
 
 ## What you can do
 
