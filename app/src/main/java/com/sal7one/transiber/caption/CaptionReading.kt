@@ -5,6 +5,7 @@ internal data class CaptionReadingSnapshot(
     val history: List<CaptionLine>,
     val partial: String,
     val partialTranslation: String?,
+    val partialRole: CaptionTextRole = CaptionTextRole.SOURCE,
 )
 
 internal object CaptionReading {
@@ -15,6 +16,7 @@ internal object CaptionReading {
         state.history.takeLast(MAX_HISTORY).toList(),
         if (showPartial) state.partial else "",
         if (showPartial) state.partialTranslation else null,
+        if (showPartial) state.partialRole else CaptionTextRole.SOURCE,
     )
 
     // The latest final remains visible while the next partial starts, even at zero history.

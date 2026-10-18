@@ -246,16 +246,7 @@ fun CaptionOverlayWindow(
                         }
                         if (held != null) {
                             TextButton(onClick = {
-                                val text = buildString {
-                                    content.history.forEach { line ->
-                                        if (cfg.display != CaptionDisplay.TRANSLATED || line.translation == null) appendLine(line.original)
-                                        if (cfg.display != CaptionDisplay.ORIGINAL) line.translation?.let { appendLine(it) }
-                                    }
-                                    if (content.partial.isNotBlank()) {
-                                        if (cfg.display != CaptionDisplay.TRANSLATED || content.partialTranslation == null) appendLine(content.partial)
-                                        if (cfg.display != CaptionDisplay.ORIGINAL) content.partialTranslation?.let { appendLine(it) }
-                                    }
-                                }.trim()
+                                val text = CaptionPresentation.copyText(content, cfg)
                                 clipboard.setText(AnnotatedString(text))
                             }) { Text(uiText(UiR.string.ui_copy_text_06a76), color = palette.accent) }
                         }
@@ -399,7 +390,9 @@ private fun CaptionBody(
 
     // A final remains the current caption even when previous-history is disabled.
     // One bounded scrolling viewport; no content-height feedback or whole-card drag.
-    val lines = CaptionReading.visibleFinals(content, cfg.historyLines, reading)
+    val lines = CaptionPresentation.finals(content, cfg, reading)
+    val partial = CaptionPresentation.partial(content, cfg)
+    val hasVisibleCaptions = lines.isNotEmpty() || !partial.empty
     LaunchedEffect(content, reading, scrollState.maxValue) {
         if (!reading && !scrollState.isScrollInProgress) scrollState.scrollTo(scrollState.maxValue)
     }
@@ -410,12 +403,16 @@ private fun CaptionBody(
         if (cfg.paused) {
             Text(uiText(UiR.string.ui_paused_resume_from_the_bubble_or_notification_58a85), color = palette.accent, fontSize = 13.sp)
         }
-        if (content.history.isEmpty() && content.partial.isBlank()) {
+        if (!hasVisibleCaptions) {
             Text(when (state.status) {
                 Status.LOADING_MODEL -> uiText(UiR.string.ui_connecting_loading_44380)
                 Status.ERROR -> state.error ?: uiText(UiR.string.ui_caption_engine_failed_fa936)
                 Status.CAPTURE_SILENT -> uiText(UiR.string.ui_no_capturable_audio_play_a_stream_if_it_stays_silent_the_app_may_fdefa)
-                else -> uiText(UiR.string.ui_listening_6c19a)
+                else -> uiText(when (CaptionPresentation.emptyText(content, cfg)) {
+                    CaptionEmptyText.WAITING_TRANSLATION -> UiR.string.caption_waiting_translation
+                    CaptionEmptyText.ORIGINAL_UNAVAILABLE -> UiR.string.caption_original_unavailable
+                    CaptionEmptyText.LISTENING -> UiR.string.ui_listening_6c19a
+                })
             }, color = palette.onSurface, fontSize = 14.sp)
         }
         // Keep diagnostic counters above the text: live scrolling must land on captions.
@@ -426,13 +423,13 @@ private fun CaptionBody(
             Text(it, color = palette.onSurfaceMuted, fontSize = 11.sp)
         }
         lines.forEachIndexed { index, line ->
-            LinePair(line.original, line.translation, cfg, palette,
-                faded = content.partial.isNotBlank() || index < lines.lastIndex)
+            LinePair(CaptionPresentation.line(line, cfg), cfg, palette,
+                faded = !partial.empty || index < lines.lastIndex)
         }
-        if (content.partial.isNotBlank()) {
-            LinePair(content.partial, content.partialTranslation, cfg, palette, false)
+        if (!partial.empty) {
+            LinePair(partial, cfg, palette, false)
         }
-        state.error?.takeIf { content.history.isNotEmpty() || content.partial.isNotBlank() }?.let {
+        state.error?.takeIf { hasVisibleCaptions }?.let {
             Text(it, color = palette.accent, fontSize = 12.sp)
         }
         state.historyError?.let {
@@ -451,16 +448,12 @@ private fun CaptionBody(
  */
 @Composable
 private fun LinePair(
-    original: String,
-    translation: String?,
+    pair: CaptionVisiblePair,
     cfg: CaptionOverlayConfig,
     palette: OverlayPalette,
     faded: Boolean,
 ) {
-    val showOriginal = original.isNotBlank() && (cfg.display != CaptionDisplay.TRANSLATED || translation == null)
-    val showTranslation = cfg.display != CaptionDisplay.ORIGINAL && translation != null
-
-    if (showOriginal) {
+    pair.original?.let { original ->
         Text(
             text = original,
             color = if (faded) palette.onSurfaceFaded else palette.onSurface,
@@ -469,7 +462,7 @@ private fun LinePair(
             textAlign = if (cfg.translationRtl) TextAlign.Start else null,
         )
     }
-    if (showTranslation && translation != null) {
+    pair.translation?.let { translation ->
         Text(
             text = translation,
             color = if (faded) palette.onSurfaceFaded else palette.accent,

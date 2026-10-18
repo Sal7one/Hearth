@@ -47,6 +47,8 @@ data class CaptionLine(
     val translation: String? = null,
     /** Stable identity so a queued translation attaches to the exact line. */
     val id: Long = 0L,
+    /** What the speech engine's primary text represents; the raw text stays intact. */
+    val primaryRole: CaptionTextRole = CaptionTextRole.SOURCE,
 )
 
 /** Grace after a Whisper voice-end (partial cleared) before promoting. */
@@ -237,6 +239,7 @@ class CaptionEngineController(
         // All valid imported models of the running engine type (for the
         // picker: Arabic vs English Vosk, tiny vs base Whisper, ...).
         val availableModels: List<ModelOption> = emptyList(),
+        val partialRole: CaptionTextRole = CaptionTextRole.SOURCE,
     )
 
     private val scope = externalScope ?: CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
@@ -322,6 +325,8 @@ class CaptionEngineController(
 
     @Volatile private var resolvedSpokenLanguage = "auto"
     @Volatile private var activeRoute = CaptionTranslationRoute.ORIGINAL
+
+    private fun primaryTextRole() = captionPrimaryRole(activeRoute, engineTranslatesToTarget)
 
     private fun needsSecondStage(config: CaptionOverlayConfig): Boolean =
         config.mode == CaptionMode.TRANSLATE && activeRoute.secondStage
@@ -472,7 +477,7 @@ class CaptionEngineController(
         _state.update { it.copy(translationNotice = null, localTranslationMetrics = null) }
         if (activeRoute != CaptionTranslationRoute.TEXT_TRANSLATOR) return
         if (config.localTranslationModelId.isBlank() && config.textTranslationProviderId in setOf("", "local")) {
-            _state.update { it.copy(translationNotice = "Import and select a local translation model in Models. Original CC continues.") }
+            _state.update { it.copy(translationNotice = "Import and select a local translation model in Models to translate captions.") }
             return
         }
         val pendingCleanup = translationCleanup
@@ -528,7 +533,7 @@ class CaptionEngineController(
     }
 
     private fun translationNoticeFor(config: CaptionOverlayConfig): String? = when (activeRoute) {
-        CaptionTranslationRoute.UNSUPPORTED -> "Original CC is running. Enable the local translation bridge and select a translation model to translate this speech."
+        CaptionTranslationRoute.UNSUPPORTED -> "Translation is unavailable for this setup. Enable text translation and select a translation model to translate this speech."
         CaptionTranslationRoute.ENGLISH_PIVOT, CaptionTranslationRoute.ENGLISH_TEXT ->
             if (translationLayer.isAvailable(config.target)) null else translationLayer.unavailabilityReason(config.target) +
                 " For live cloud translation without a local model, choose Live Arabic on the setup screen."
@@ -826,6 +831,7 @@ class CaptionEngineController(
                         local.pendingSamples / 16000.0,
                         local.realTimeFactor?.let { String.format(java.util.Locale.ROOT, "%.2f×", it) } ?: "measuring…")
                     _state.update { it.copy(partial = if (config.showPartial) text else "", partialTranslation = null,
+                        partialRole = primaryTextRole(),
                         localSpeechMetrics = metrics) }
                     continue
                 }
@@ -877,6 +883,7 @@ class CaptionEngineController(
                         current.copy(
                             partial = if (config.showPartial && !config.paused) partial else "",
                             partialTranslation = snapshot?.translation?.takeIf { it.isNotBlank() && config.showPartial },
+                            partialRole = primaryTextRole(),
                         )
                     }
                     continue
@@ -975,10 +982,11 @@ class CaptionEngineController(
 
         _state.update { current ->
             current.copy(
-                history = (current.history + CaptionLine(original = confirmed, id = lineId))
+                history = (current.history + CaptionLine(original = confirmed, id = lineId, primaryRole = primaryTextRole()))
                     .takeLast(MAX_HISTORY),
                 partial = "",
                 partialTranslation = null,
+                partialRole = CaptionTextRole.SOURCE,
             )
         }
 
@@ -1025,8 +1033,9 @@ class CaptionEngineController(
         while (cloudCaptionIds.size > MAX_HISTORY) cloudCaptionIds.remove(cloudCaptionIds.keys.first())
         _state.update { state ->
             val old = state.history.firstOrNull { it.id == lineId }
-            val line = if (update.translated) CaptionLine(original = old?.original.orEmpty(), translation = update.text, id = lineId)
-                else CaptionLine(original = update.text, translation = old?.translation, id = lineId)
+            val line = if (update.translated) CaptionLine(original = old?.original.orEmpty(), translation = update.text, id = lineId,
+                primaryRole = old?.primaryRole ?: CaptionTextRole.SOURCE)
+                else CaptionLine(original = update.text, translation = old?.translation, id = lineId, primaryRole = CaptionTextRole.SOURCE)
             state.copy(history = if (old == null) (state.history + line).takeLast(MAX_HISTORY)
                 else state.history.map { if (it.id == lineId) line else it })
         }
@@ -1053,7 +1062,7 @@ class CaptionEngineController(
         val promotedAtMs = System.currentTimeMillis()
         _state.update { current ->
             current.copy(
-                history = (current.history + CaptionLine(original = text, id = lineId))
+                history = (current.history + CaptionLine(original = text, id = lineId, primaryRole = primaryTextRole()))
                     .takeLast(MAX_HISTORY),
             )
         }
@@ -1089,6 +1098,7 @@ class CaptionEngineController(
             (_state.value.history + CaptionLine(
                 original = confirmed,
                 id = nextLineId.getAndIncrement(),
+                primaryRole = primaryTextRole(),
             )).takeLast(MAX_HISTORY)
         }
         val promoted = confirmed != lastLine
@@ -1113,6 +1123,7 @@ class CaptionEngineController(
                 history = effectiveHistory,
                 partial = if (config.showPartial && !config.paused) display else "",
                 partialTranslation = null,
+                partialRole = primaryTextRole(),
             )
         }
 
@@ -1244,7 +1255,7 @@ class CaptionEngineController(
                 return
             }
             displayedPartial = display
-            _state.update { it.copy(partial = display, partialTranslation = null) }
+            _state.update { it.copy(partial = display, partialTranslation = null, partialRole = primaryTextRole()) }
         }
     }
 
@@ -1334,7 +1345,8 @@ class CaptionEngineController(
         partialSinceMs = null
         resetOpportunistic()
         releaseSpeaker()
-        _state.update { it.copy(history = emptyList(), partial = "", partialTranslation = null, translationNotice = null, localTranslationMetrics = null) }
+        _state.update { it.copy(history = emptyList(), partial = "", partialTranslation = null,
+            partialRole = CaptionTextRole.SOURCE, translationNotice = null, localTranslationMetrics = null) }
         // Cloud reset() only clears its UI queue: old server audio can still return.
         // A new connection/request worker is the reliable boundary between videos.
         if (!currentConfig.paused && !stopping && _state.value.status != Status.ERROR &&

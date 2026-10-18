@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="caption_waiting_translation">正在等待翻译…</string>
+    <string name="caption_original_unavailable">此翻译路径不提供原文字幕。</string>
+</resources>

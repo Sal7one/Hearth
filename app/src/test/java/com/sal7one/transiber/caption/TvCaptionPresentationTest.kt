@@ -5,7 +5,7 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class TvCaptionPresentationTest {
-    private val config = CaptionOverlayConfig(tvSubtitleMode = true)
+    private val config = CaptionOverlayConfig(tvSubtitleMode = true, mode = CaptionMode.TRANSLATE)
     private val content = CaptionReadingSnapshot(
         listOf(CaptionLine("Earlier", "سابق"), CaptionLine("Current", "حالي")), "", null)
 
@@ -14,9 +14,20 @@ class TvCaptionPresentationTest {
         assertEquals("Current", tvCaptionText(content, config.copy(display = CaptionDisplay.ORIGINAL)))
         assertEquals("حالي", tvCaptionText(content, config.copy(display = CaptionDisplay.TRANSLATED)))
         assertEquals("Partial\nجارٍ", tvCaptionText(content.copy(partial = "Partial", partialTranslation = "جارٍ"), config))
-        assertEquals("Partial", tvCaptionText(content.copy(partial = "Partial", partialTranslation = ""),
+        assertEquals("حالي", tvCaptionText(content.copy(partial = "Partial", partialTranslation = ""),
             config.copy(display = CaptionDisplay.TRANSLATED)))
         assertEquals("", tvCaptionText(CaptionReadingSnapshot(emptyList(), "", null), config))
+    }
+
+    @Test fun translationOnlyNeverShowsPendingSourceAndAcceptsTranslationOnlyPartials() {
+        val translated = config.copy(display = CaptionDisplay.TRANSLATED)
+        val pending = CaptionReadingSnapshot(listOf(CaptionLine("Do not show original")), "Nor source interim", null)
+        assertEquals("", tvCaptionText(pending, translated))
+        assertEquals("", tvCaptionText(pending, translated.copy(tvSubtitleMode = false)))
+        assertEquals("ترجمة", tvCaptionText(pending.copy(partial = "", partialTranslation = "ترجمة"), translated))
+        val direct = CaptionReadingSnapshot(listOf(CaptionLine("Target output", primaryRole = CaptionTextRole.TARGET)), "", null)
+        assertEquals("Target output", tvCaptionText(direct, translated))
+        assertEquals("Current", tvCaptionText(content, translated.copy(mode = CaptionMode.CAPTIONS)))
     }
 
     @Test fun textPanelRetainsSelectedHistoryWithoutStatusOrControlText() {

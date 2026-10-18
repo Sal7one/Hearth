@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="caption_waiting_translation">Waiting for translation…</string>
+    <string name="caption_original_unavailable">This translation route does not provide original captions.</string>
+</resources>

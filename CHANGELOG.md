@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.25.2 draft — 2026-10-19 · Honor translation-only captions
+
+- Keep source captions hidden in Translation only on phones, TVs, held history and copied text, including while translation is pending, blank or unavailable. Preserve the last translated TV subtitle while the next utterance waits; show real errors and a neutral waiting message.
+- Carry explicit source/target/intermediate provenance with each published caption. Integrated translations remain visible; an English pivot cannot masquerade as the requested translation. Keep captions-only mode usable without overwriting the saved translation display preference.
+- Preserve raw engine text, final IDs, bounded queues, independent STT/translation/TTS choices and native runtimes. Add presentation and actual controller-publication regression coverage.
+- Deliver signed, release-optimized QA APKs with version code 86 through the GitHub draft. The package and signing certificate match the earlier published QA versions for in-place updates.
+
 ## 0.25.1 draft — 2026-10-19 · Searchable model explorer and audited sources
 
 - Refine speech, translation, OCR and voice cards while preserving Basic bundles and Advanced controls. Add multilingual, multiword search, precise installed/precision filters, compact tuning, useful empty states and selectable offline source addresses.

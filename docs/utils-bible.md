@@ -1,5 +1,16 @@
 # Utilities and consumers
 
+`CaptionPresentation` is consumed by phone captions, TV subtitles and held-history
+copying. It strictly selects source/translation text using immutable published
+provenance, filters visible finals before applying history limits, and never
+falls back to source text in Translation only. `CaptionPresentationTest` covers
+pending/blank translations, direct target output, English intermediates,
+translation-only partials, held copy and captions-only preference compatibility.
+`TvCaptionPresentationTest` covers stable translated subtitles while the next
+source utterance waits. `CaptionControllerProvenanceTest` exercises real final,
+partial and atomic publication methods across every route without loading models
+or making network requests; raw strings and independent provider runs remain intact.
+
 `scripts/apk_delivery.py` is consumed by the release artifact verifier. Its host
 tests reject unsigned or damaged signatures, stale versions, wrong package IDs
 and malformed manifest identities; only the explicit internal signing-preparation

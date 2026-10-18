@@ -40,8 +40,8 @@ enum class CaptionDisplay(val label: String) {
  *
  * Implementations must be safe to call from any thread and must fail closed:
  * an unavailable backend returns a descriptive [TranslationResult.Unavailable]
- * instead of throwing, so the caption pipeline can keep rendering original
- * text while surfacing the reason.
+ * instead of throwing. The caption pipeline keeps capturing source text and
+ * surfaces the reason; the selected display mode controls what is rendered.
  */
 interface Translator {
     /** True when this backend can currently serve [target]. */
@@ -63,7 +63,8 @@ sealed interface TranslationResult {
 
     /**
      * The backend cannot serve this request right now. [reason] is shown to
-     * the user; original text continues to be displayed.
+     * the user. Captured source text remains available in the original or
+     * combined display modes, without substituting it for a translation.
      */
     data class Unavailable(val reason: String) : TranslationResult
 }

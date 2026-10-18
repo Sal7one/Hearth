@@ -1,16 +1,17 @@
-# Installing Hearth 0.25.1
+# Installing Hearth 0.25.2
 
-The initial `release-*-unsigned.apk` files cannot install on Android. They have
-been replaced in the GitHub draft. Download a fresh **`qa`** APK.
+Download a signed **`qa`** APK from the 0.25.2 GitHub draft. It contains the
+translation-only overlay fix and uses the existing QA signing identity.
 
-- **Galaxy S25 Ultra / S22 Ultra:** `hearth-0.25.1-play-qa-arm64-v8a.apk`.
-- **TV or unknown architecture:** `hearth-0.25.1-play-qa-universal.apk`.
+- **Galaxy S25 Ultra / S22 Ultra:** `hearth-0.25.2-play-qa-arm64-v8a.apk`.
+- **TV or unknown architecture:** `hearth-0.25.2-play-qa-universal.apk`.
 - **Offline build:** choose the corresponding `foss-qa` APK. Play and FOSS replace
   one another within the QA package; they do not install side by side.
 
 Keep your existing app installed. These APKs use package
-`com.sal7one.transiber.qa`, version 0.25.1/code 85, and the same certificate as
-the published 0.23.10 QA APK (code 83). Android can update that installation
+`com.sal7one.transiber.qa`, version 0.25.2/code 86, and the same certificate as
+the published 0.23.10 QA APK (code 83) and corrected 0.25.1 QA draft (code 85).
+Android can update those installations
 without deleting app-private settings, history or models. An installation from
 a different signing key or package is a different case; do not uninstall to
 work around a conflict before preserving its data.
@@ -24,7 +25,6 @@ Verified signing certificate SHA-256:
 
 `7a9256582e2627e5b715ef2648373e52d62c512127f40b2aff3ccbcc787d5792`
 
-SHA256SUMS verifies the exact downloadable files. The application source/tag
-is unchanged by this packaging correction. The original source archive may
-mention the superseded unsigned preparation; use these installation instructions
-and the updated GitHub draft notes for the files to install.
+SHA256SUMS verifies the exact downloadable files. The source archive matches the
+0.25.2 tag. This draft offers no unsigned APKs; those were the cause of the
+initial 0.25.1 installation failure and have been removed from that draft.

@@ -21,20 +21,14 @@ import androidx.compose.ui.unit.sp
 
 /** A current subtitle replaces the previous utterance; panel mode retains selected history. */
 internal fun tvCaptionText(content: CaptionReadingSnapshot, config: CaptionOverlayConfig): String {
-    fun pair(original: String, translated: String?): String {
-        val translation = translated?.takeIf { it.isNotBlank() }
-        return buildList {
-            if (original.isNotBlank() && (config.display != CaptionDisplay.TRANSLATED || translation == null)) add(original)
-            if (config.display != CaptionDisplay.ORIGINAL && translation != null) add(translation)
-        }.joinToString("\n")
-    }
+    val partial = CaptionPresentation.partial(content, config).text
+    val finals = CaptionPresentation.finals(content, config, reading = false)
     if (config.tvSubtitleMode) {
-        return if (content.partial.isNotBlank()) pair(content.partial, content.partialTranslation)
-        else content.history.lastOrNull()?.let { pair(it.original, it.translation) }.orEmpty()
+        return partial.ifBlank { finals.lastOrNull()?.let { CaptionPresentation.line(it, config).text }.orEmpty() }
     }
     return buildList {
-        CaptionReading.visibleFinals(content, config.historyLines, reading = false).forEach { add(pair(it.original, it.translation)) }
-        if (content.partial.isNotBlank()) add(pair(content.partial, content.partialTranslation))
+        finals.forEach { add(CaptionPresentation.line(it, config).text) }
+        if (partial.isNotBlank()) add(partial)
     }.filter { it.isNotBlank() }.joinToString("\n")
 }
 
