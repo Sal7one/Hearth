@@ -1,5 +1,11 @@
 # Utilities and consumers
 
+`scripts/apk_delivery.py` is consumed by the release artifact verifier. Its host
+tests reject unsigned or damaged signatures, stale versions, wrong package IDs
+and malformed manifest identities; only the explicit internal signing-preparation
+path accepts an unsigned input. Actual QA artifacts also pass Android `apksigner`
+verification before delivery.
+
 `ModelSearch` is consumed by the speech, translation, OCR and voice explorers and
 their compact option pickers. Search requires every query word, accepts native,
 English and all three app UI language names plus common language aliases, and folds accents

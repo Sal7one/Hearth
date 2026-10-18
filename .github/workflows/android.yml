@@ -48,8 +48,11 @@ jobs:
       - run: python3 scripts/speech/test_package.py
       - run: python3 -m unittest discover -s scripts -p 'test_native_abis.py'
       - run: python3 -m unittest discover -s scripts -p 'test_audit_model_catalog.py'
+      - run: python3 -m unittest discover -s scripts -p 'test_apk_delivery.py'
       - run: python3 scripts/verify-release.py
-      - run: python3 scripts/verify-release.py --build-type release
+      # Release is intentionally unsigned without maintainer signing secrets.
+      # This checks internal inputs only; uploaded, installable artifacts are QA.
+      - run: python3 scripts/verify-release.py --build-type release --allow-unsigned-for-signing
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: hearth-qa-apks

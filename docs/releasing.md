@@ -20,7 +20,9 @@ upgrade each other. Debug builds use `.debug`; release uses the base ID.
 
 1. Run tests, native host suites, package tests, both QA builds and
    `python3 scripts/verify-release.py`. The verifier checks permissions, native
-   dependency closure, 16 KB page alignment, packaged vendor hashes and provenance.
+   dependency closure, 16 KB page alignment, packaged vendor hashes and provenance,
+   plus `apksigner` verification and the current package ID/version. All delivery
+   APKs must use the same signer. An unsigned APK must never be offered for installation.
 2. Scan all Git history with Gitleaks, including tags/branches:
    `gitleaks git --log-opts='--all' --redact=100 .`. CI pins Gitleaks and its checksum.
    Also scan the final source archive with `gitleaks dir --redact=100` after extraction.
@@ -55,6 +57,24 @@ All address/undefined-behavior sanitizers and test assertions remain enabled.
 This CI toolchain choice does not establish GCC support or change any native
 source, vendored runtime binary or provenance record.
 
+## Installable QA downloads
+
+Until a production signing key is configured, use the release-optimized,
+debug-signed QA variant for GitHub installation downloads:
+
+```sh
+./gradlew :app:assemblePlayQa :app:assembleFossQa
+python3 -m unittest discover -s scripts -p 'test_apk_delivery.py'
+python3 scripts/verify-release.py
+```
+
+Upload `app/build/outputs/apk/{play|foss}/qa/*.apk` with names containing `qa`
+and describe them as debug-signed test builds. ARM64 is appropriate for the
+Galaxy S25 Ultra and S22 Ultra; universal supports all four bundled CPUs.
+QA uses `com.sal7one.transiber.qa` and installs alongside the base-ID Release
+app. Keep the existing QA signing key for updates; never advise uninstalling as
+a routine fix because that removes app-private history, keys and models.
+
 ## Production signing
 
 Release builds deliberately have **no signing configuration**. These commands produce
@@ -62,8 +82,12 @@ unsigned APKs for both flavors:
 
 ```sh
 ./gradlew :app:assemblePlayRelease :app:assembleFossRelease
-python3 scripts/verify-release.py --build-type release
+python3 scripts/verify-release.py --build-type release --allow-unsigned-for-signing
 ```
+
+The explicit option permits internal checks before signing and prints **NOT
+INSTALLABLE**. Without it, the verifier rejects unsigned APKs. Do not upload
+these inputs as app downloads.
 
 Create and securely back up a release keystore outside this repository using Android
 Studio's **Generate Signed Bundle / APK** flow, or use an existing release key. With
@@ -71,16 +95,20 @@ Android build-tools 36.0.0 installed, the command-line signing flow is:
 
 ```sh
 "$ANDROID_HOME/build-tools/36.0.0/zipalign" -P 16 -f 4 \
-  app/build/outputs/apk/play/release/app-play-release-unsigned.apk /tmp/hearth-play-aligned.apk
+  app/build/outputs/apk/play/release/app-play-arm64-v8a-release-unsigned.apk /tmp/hearth-play-aligned.apk
 "$ANDROID_HOME/build-tools/36.0.0/apksigner" sign \
   --ks /absolute/private/path/hearth-release.jks --ks-key-alias hearth \
-  --out /tmp/hearth-play-release.apk /tmp/hearth-play-aligned.apk
-"$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs /tmp/hearth-play-release.apk
-"$ANDROID_HOME/build-tools/36.0.0/zipalign" -c -P 16 -v 4 /tmp/hearth-play-release.apk
+  --out app/build/outputs/apk/play/release/app-play-arm64-v8a-release.apk /tmp/hearth-play-aligned.apk
+"$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs \
+  app/build/outputs/apk/play/release/app-play-arm64-v8a-release.apk
+"$ANDROID_HOME/build-tools/36.0.0/zipalign" -c -P 16 -v 4 \
+  app/build/outputs/apk/play/release/app-play-arm64-v8a-release.apk
 ```
 
 The signing tool prompts for passwords; do not put them in shell arguments or Git.
-Repeat for foss using its unsigned APK. Keep the same key for future release
+Repeat for both flavors and every ABI/universal APK, then run
+`python3 scripts/verify-release.py --build-type release` without the unsigned
+option. The verifier prefers the signed output filenames shown above. Keep the same key for future release
 upgrades and bump versionCode/versionName per release. APKs and a SHA-256 checksum
 file belong in GitHub release assets, not committed source. Google Play publication
 additionally requires its current store declarations and signing workflow; a passing
@@ -100,7 +128,7 @@ The draft assets are ten APKs named
 `arm64-v8a`, `armeabi-v7a`, `x86`, `x86_64` or `universal`, plus `SHA256SUMS`,
 `hearth-0.25.0-source.zip` and the two importable JSON examples from
 `docs/examples/`. Build and verify both QA flavors as required above, then both
-Release flavors with `python3 scripts/verify-release.py --build-type release`.
+Release flavors with `python3 scripts/verify-release.py --build-type release --allow-unsigned-for-signing`.
 Archive only the tagged source commit and scan it before upload. A draft is not
 a public release and does not change the latest published download links. Keep
 the older, unrelated `v0.24.0` models/notes/documents draft intact.

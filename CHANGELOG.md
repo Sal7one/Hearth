@@ -6,7 +6,7 @@
 - Show original model cards, pinned artifact pages and actual licenses. Audit the real installer catalog with bounded, unauthenticated publisher metadata and HTTP probes; retain existing artifact integrity pins. Keep model-source clicks separate from verified downloads.
 - Require verified bytes or trusted installer receipts for catalog installation badges. Isolate damaged packages so a healthy selected model remains usable; keep actual errors visible. Move OCR/voice queue and file work off the main thread.
 - Search cloud voices using verified positive language inventories, so a description saying “no Arabic” cannot advertise Arabic support. Keep STT, translation and TTS selections independent, and preserve FOSS network restrictions.
-- Prepare a new `v0.25.1` GitHub draft with code 85; preserve the existing `v0.25.0` tag. Release APKs remain unsigned pending the owner's signing key. See [release notes](docs/releases/0.25.1.md).
+- Prepare a new `v0.25.1` GitHub draft with code 85; preserve the existing `v0.25.0` tag. Correct its initial non-installable unsigned uploads with signed, release-optimized QA APKs using the same package/certificate as 0.23.10. See [release notes](docs/releases/0.25.1.md).
 
 ## 0.25.0 draft — 2026-10-19 · Bundles, portable setups and optional GPU engines
 

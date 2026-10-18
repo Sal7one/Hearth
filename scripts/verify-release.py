@@ -1,12 +1,19 @@
 #!/usr/bin/env python3
-"""Check standalone APK contents, native dependencies and vendored runtime hashes."""
+"""Check installable APK signatures/identity, contents and native runtime integrity."""
 from pathlib import Path
 import argparse, hashlib, json, os, re, subprocess, tempfile, zipfile
 from native_abis import ABIS, source_set_digest, verify_elf
+from apk_delivery import configured_identity, verify_delivery
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument("--build-type", choices=["qa", "release"], default="qa")
-build_type = parser.parse_args().build_type
+parser.add_argument("--allow-unsigned-for-signing", action="store_true",
+                    help="Release-only internal pre-sign checks; unsigned APKs are NOT installable delivery artifacts")
+args = parser.parse_args()
+build_type = args.build_type
+if args.allow_unsigned_for_signing and build_type != "release":
+    parser.error("--allow-unsigned-for-signing applies only to internal Release signing preparation")
 root = Path(__file__).resolve().parents[1]
+expected_identity = configured_identity((root/'app/build.gradle.kts').read_text(), build_type)
 libroot = root / 'common-jni/src/main/jniLibs'
 phone_assets = root / 'app/src/main/assets/phone-setup'
 phone_crypto = json.loads((phone_assets / 'forge-source.json').read_text())
@@ -27,6 +34,8 @@ if not sdk:
 sdk = Path(sdk)
 readelf = next((sdk/'ndk/27.0.12077973/toolchains/llvm/prebuilt').glob('*/bin/llvm-readelf'))
 aapt = sorted((sdk/'build-tools').glob('*/aapt2'))[-1]
+apksigner = aapt.with_name('apksigner')
+assert apksigner.is_file(), f'Android build-tools apksigner missing: {apksigner}'
 record = json.loads((root/'common-jni/src/main/assets/licenses/translation/runtime-build.json').read_text())
 assert record['llama_revision'] == '64e9bceb2c3a856efed96feda784a50947049feb', 'Translation source pin changed'
 assert set(record['binaries']) == set(ABIS), 'Missing translation ABI'
@@ -107,11 +116,24 @@ assert len(json.loads((ocr_assets/'manga.json').read_text())) == manga['classes'
 
 expected_libs = {'libtransiber_translation.so','libcommon_jni.so','libc++_shared.so','libvosk.so','libonnxruntime.so','libhearth_qwen.so','libhearth_nemotron.so','libhearth_transcribepsy.so','libandroidx.graphics.path.so','libdatastore_shared_counter.so','libimage_processing_util_jni.so'}
 platform = {'liblog.so','libandroid.so','libjnigraphics.so','libm.so','libdl.so','libc.so','libz.so'}
+delivery_signers = None
+unsigned_inputs = 0
 for flavor, architecture in [(f, a) for f in ('play','foss') for a in (*ABIS, 'universal')]:
     flavor_libs = expected_libs | ({"libtranslate_jni.so"} if flavor == "play" else set())
-    suffix = '-unsigned' if build_type == 'release' else ''
-    apk = root/f'app/build/outputs/apk/{flavor}/{build_type}/app-{flavor}-{architecture}-{build_type}{suffix}.apk'
+    apk = root/f'app/build/outputs/apk/{flavor}/{build_type}/app-{flavor}-{architecture}-{build_type}.apk'
+    if build_type == 'release' and not apk.is_file():
+        apk = apk.with_name(apk.stem + '-unsigned.apk')
     assert apk.is_file(), f'Build {flavor} {build_type} first'
+    try:
+        signers = verify_delivery(apk, aapt, apksigner, expected_identity, args.allow_unsigned_for_signing)
+    except ValueError as error:
+        raise SystemExit(f'{apk.name}: {error}') from error
+    if signers is None:
+        unsigned_inputs += 1
+    elif delivery_signers is None:
+        delivery_signers = signers
+    else:
+        assert signers == delivery_signers, f'{apk.name}: signer differs from the other delivery APKs; upgrades would fail'
     with zipfile.ZipFile(apk) as archive, tempfile.TemporaryDirectory() as tmp:
         native = [n for n in archive.namelist() if n.startswith('lib/') and n.endswith('.so')]
         packaged_abis = set(ABIS) if architecture == 'universal' else {architecture}
@@ -209,8 +231,9 @@ for flavor, architecture in [(f, a) for f in ('play','foss') for a in (*ABIS, 'u
                       'android.permission.READ_SMS', 'android.permission.RECEIVE_SMS',
                       'android.permission.REQUEST_INSTALL_PACKAGES'):
         assert sensitive not in manifest, f'{flavor}: unexpected sensitive access: {sensitive}'
-    badging = subprocess.check_output([aapt, 'dump', 'badging', apk], text=True)
-    package = "com.sal7one.transiber.qa" if build_type == "qa" else "com.sal7one.transiber"
-    assert f"name='{package}'" in badging
-    print(f'{flavor} {architecture} {build_type}: {apk.stat().st_size} bytes; speech, translation and OCR libraries; ABI/ELF, page alignment and permissions PASS')
-print('Standalone artifact verification PASS')
+    signature_status = 'UNSIGNED: signing preparation only, NOT INSTALLABLE' if signers is None else 'signature and current package/version verified'
+    print(f'{flavor} {architecture} {build_type}: {apk.stat().st_size} bytes; {signature_status}; ABI/ELF, page alignment and permissions PASS')
+if unsigned_inputs:
+    print(f'Internal pre-sign content verification PASS ({unsigned_inputs} unsigned APKs). NOT valid for installable delivery.')
+else:
+    print('Standalone installable artifact verification PASS (signatures, current package/version and contents)')
