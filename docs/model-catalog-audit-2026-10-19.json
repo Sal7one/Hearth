@@ -1,0 +1,3790 @@
+{
+  "schemaVersion": 1,
+  "checkedAt": "2026-10-18T21:52:39.936775+00:00",
+  "catalogSha256": "d3375c2e72789d6796f72a671dd79a923054150fb59a1f15bad41e24f5a0a998",
+  "method": "Public publisher metadata and bounded HTTP probes; no model weights downloaded",
+  "summary": {
+    "artifacts": {
+      "verified": 128,
+      "reachable_size_only": 7
+    },
+    "sources": {
+      "reachable": 119
+    },
+    "categories": {
+      "speech": 49,
+      "translation": 60,
+      "ocr": 10,
+      "voice": 16
+    }
+  },
+  "artifacts": [
+    {
+      "id": "moonshine-tiny-en-v2",
+      "category": "speech",
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-moonshine-tiny-en-quantized-2026-02-27.tar.bz2",
+      "bytes": 29858559,
+      "sha256": "9ec31b342d8fa3240c3b81b8f82e1cf7e3ac467c93ca5a999b741d5887164f8d",
+      "license": "MIT",
+      "metadata_url": "https://api.github.com/repos/k2-fsa/sherpa-onnx/releases/tags/asr-models",
+      "http_status": 200,
+      "remote_bytes": 29858559,
+      "remote_sha256": "9ec31b342d8fa3240c3b81b8f82e1cf7e3ac467c93ca5a999b741d5887164f8d",
+      "hash_evidence": "publisher_asset_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 29858559
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "moonshine-base-en-v2",
+      "category": "speech",
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-moonshine-base-en-quantized-2026-02-27.tar.bz2",
+      "bytes": 111266225,
+      "sha256": "43232c1d13013d37317163baec3135bd771a186a4356f28c889bab453bb0e891",
+      "license": "MIT",
+      "metadata_url": "https://api.github.com/repos/k2-fsa/sherpa-onnx/releases/tags/asr-models",
+      "http_status": 200,
+      "remote_bytes": 111266225,
+      "remote_sha256": "43232c1d13013d37317163baec3135bd771a186a4356f28c889bab453bb0e891",
+      "hash_evidence": "publisher_asset_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 111266225
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "moonshine-base-ar-v2",
+      "category": "speech",
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-moonshine-base-ar-quantized-2026-02-27.tar.bz2",
+      "bytes": 119143068,
+      "sha256": "4d3f16fe354d8536d3323d3eaf4c12fafb1976b5dc0a12862ab25934da94285b",
+      "license": "Moonshine Community License",
+      "metadata_url": "https://api.github.com/repos/k2-fsa/sherpa-onnx/releases/tags/asr-models",
+      "http_status": 200,
+      "remote_bytes": 119143068,
+      "remote_sha256": "4d3f16fe354d8536d3323d3eaf4c12fafb1976b5dc0a12862ab25934da94285b",
+      "hash_evidence": "publisher_asset_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 119143068
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "moonshine-base-es-v2",
+      "category": "speech",
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-moonshine-base-es-quantized-2026-02-27.tar.bz2",
+      "bytes": 50846902,
+      "sha256": "850c3dcc5dfccc8b1feb10bb221b11d6039b6f5c626241729f46863771016383",
+      "license": "Moonshine Community License",
+      "metadata_url": "https://api.github.com/repos/k2-fsa/sherpa-onnx/releases/tags/asr-models",
+      "http_status": 200,
+      "remote_bytes": 50846902,
+      "remote_sha256": "850c3dcc5dfccc8b1feb10bb221b11d6039b6f5c626241729f46863771016383",
+      "hash_evidence": "publisher_asset_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 50846902
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "moonshine-tiny-ja-v2",
+      "category": "speech",
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-moonshine-tiny-ja-quantized-2026-02-27.tar.bz2",
+      "bytes": 47889565,
+      "sha256": "880305c9a6c33572ab269ff9731977ea42ca34c8cffcdd5d99558a9ea2b47cc2",
+      "license": "Moonshine Community License",
+      "metadata_url": "https://api.github.com/repos/k2-fsa/sherpa-onnx/releases/tags/asr-models",
+      "http_status": 200,
+      "remote_bytes": 47889565,
+      "remote_sha256": "880305c9a6c33572ab269ff9731977ea42ca34c8cffcdd5d99558a9ea2b47cc2",
+      "hash_evidence": "publisher_asset_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 47889565
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "moonshine-tiny-ko-v2",
+      "category": "speech",
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-moonshine-tiny-ko-quantized-2026-02-27.tar.bz2",
+      "bytes": 49153415,
+      "sha256": "d3b6c5390a7859c9ef20ff4f20b0766fcbad1dc06c0f509fe4840a3a302112dc",
+      "license": "Moonshine Community License",
+      "metadata_url": "https://api.github.com/repos/k2-fsa/sherpa-onnx/releases/tags/asr-models",
+      "http_status": 200,
+      "remote_bytes": 49153415,
+      "remote_sha256": "d3b6c5390a7859c9ef20ff4f20b0766fcbad1dc06c0f509fe4840a3a302112dc",
+      "hash_evidence": "publisher_asset_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 49153415
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "moonshine-base-ja-v2",
+      "category": "speech",
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-moonshine-base-ja-quantized-2026-02-27.tar.bz2",
+      "bytes": 104162109,
+      "sha256": "c66eb87d229a52d43bbe3b7c52a1d23f6208c0fd7c2e81802ecbda83b192798a",
+      "license": "Moonshine Community License",
+      "metadata_url": "https://api.github.com/repos/k2-fsa/sherpa-onnx/releases/tags/asr-models",
+      "http_status": 200,
+      "remote_bytes": 104162109,
+      "remote_sha256": "c66eb87d229a52d43bbe3b7c52a1d23f6208c0fd7c2e81802ecbda83b192798a",
+      "hash_evidence": "publisher_asset_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 104162109
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "moonshine-base-uk-v2",
+      "category": "speech",
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-moonshine-base-uk-quantized-2026-02-27.tar.bz2",
+      "bytes": 111037143,
+      "sha256": "d8489b159afabf4cfb734002ae8a5361781ff8a381fa18d284d32d1eeb1c0376",
+      "license": "Moonshine Community License",
+      "metadata_url": "https://api.github.com/repos/k2-fsa/sherpa-onnx/releases/tags/asr-models",
+      "http_status": 200,
+      "remote_bytes": 111037143,
+      "remote_sha256": "d8489b159afabf4cfb734002ae8a5361781ff8a381fa18d284d32d1eeb1c0376",
+      "hash_evidence": "publisher_asset_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 111037143
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "moonshine-base-vi-v2",
+      "category": "speech",
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-moonshine-base-vi-quantized-2026-02-27.tar.bz2",
+      "bytes": 106719129,
+      "sha256": "97b53f5fb75a2a9dd6327440a34f45fc06c927ed2fa7217e5ebe54058e269416",
+      "license": "Moonshine Community License",
+      "metadata_url": "https://api.github.com/repos/k2-fsa/sherpa-onnx/releases/tags/asr-models",
+      "http_status": 200,
+      "remote_bytes": 106719129,
+      "remote_sha256": "97b53f5fb75a2a9dd6327440a34f45fc06c927ed2fa7217e5ebe54058e269416",
+      "hash_evidence": "publisher_asset_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 106719129
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "moonshine-base-zh-v2",
+      "category": "speech",
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-moonshine-base-zh-quantized-2026-02-27.tar.bz2",
+      "bytes": 99905420,
+      "sha256": "6495d4240f66bcdd2bbbbfefaa687c463150d467854001270934e88940b733c1",
+      "license": "Moonshine Community License",
+      "metadata_url": "https://api.github.com/repos/k2-fsa/sherpa-onnx/releases/tags/asr-models",
+      "http_status": 200,
+      "remote_bytes": 99905420,
+      "remote_sha256": "6495d4240f66bcdd2bbbbfefaa687c463150d467854001270934e88940b733c1",
+      "hash_evidence": "publisher_asset_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 99905420
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "qwen3-asr-0.6b",
+      "category": "speech",
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-qwen3-asr-0.6B-int8-2026-03-25.tar.bz2",
+      "bytes": 878702423,
+      "sha256": "393f8a14e2f5fb96746aaab342997a40641001fbd5bf9592a080a8329178ee96",
+      "license": "Apache-2.0",
+      "metadata_url": "https://api.github.com/repos/k2-fsa/sherpa-onnx/releases/tags/asr-models",
+      "http_status": 200,
+      "remote_bytes": 878702423,
+      "remote_sha256": "393f8a14e2f5fb96746aaab342997a40641001fbd5bf9592a080a8329178ee96",
+      "hash_evidence": "publisher_asset_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 878702423
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "omnilingual-ctc-300m-v2-int8",
+      "category": "speech",
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-v2-int8-2026-02-05.tar.bz2",
+      "bytes": 292313120,
+      "sha256": "951b32409aade32bd525310bb39e9666773ba3fc611a39e817f620936d76c631",
+      "license": "Apache-2.0",
+      "metadata_url": "https://api.github.com/repos/k2-fsa/sherpa-onnx/releases/tags/asr-models",
+      "http_status": 200,
+      "remote_bytes": 292313120,
+      "remote_sha256": "951b32409aade32bd525310bb39e9666773ba3fc611a39e817f620936d76c631",
+      "hash_evidence": "publisher_asset_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 292313120
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "phonon-2",
+      "category": "speech",
+      "url": "https://github.com/Sal7one/Hearth/releases/download/v0.23.0/phonon-2-hearth-int8.tar.bz2",
+      "bytes": 339918748,
+      "sha256": "6b6cd464a3271f25f0bcbde0c12839516cd1e9b49f8292368da6a1931a2fa805",
+      "license": "CC-BY-4.0",
+      "metadata_url": "https://api.github.com/repos/Sal7one/Hearth/releases/tags/v0.23.0",
+      "http_status": 200,
+      "remote_bytes": 339918748,
+      "remote_sha256": "6b6cd464a3271f25f0bcbde0c12839516cd1e9b49f8292368da6a1931a2fa805",
+      "hash_evidence": "publisher_asset_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 339918748
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "transcribepsy-250m-eu-sub-q8",
+      "category": "speech",
+      "url": "https://huggingface.co/qvac/TranscribePsy-250M-EU-sub-gguf/resolve/92460e0a8e7dc20f2fb126198bdd9eebb9ba2dc7/transcribepsy-250m-eu-sub.gguf",
+      "bytes": 304879584,
+      "sha256": "a93ef324d38e410b5e49389db95d06364eddbb890b74a69f311e482d2fda6f4b",
+      "license": "Apache-2.0",
+      "metadata_url": "https://huggingface.co/api/models/qvac/TranscribePsy-250M-EU-sub-gguf/revision/92460e0a8e7dc20f2fb126198bdd9eebb9ba2dc7?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 304879584,
+      "remote_sha256": "a93ef324d38e410b5e49389db95d06364eddbb890b74a69f311e482d2fda6f4b",
+      "hash_evidence": "publisher_lfs_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 304879584
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "nemotron-3.5-asr-0.6b",
+      "category": "speech",
+      "url": "https://huggingface.co/nvidia/nemotron-3.5-asr-streaming-0.6b/resolve/1c8deaecc64b91f034d73e08dd8b64625eb3395d/nemotron-3.5-asr-streaming-0.6b.q8_0.gguf",
+      "bytes": 741548352,
+      "sha256": "a5c435f294eea8f88ce68dd27b8c3bfea7f777cb2fbba04fcd30eaa555f429ae",
+      "license": "OpenMDW-1.1",
+      "metadata_url": "https://huggingface.co/api/models/nvidia/nemotron-3.5-asr-streaming-0.6b/revision/1c8deaecc64b91f034d73e08dd8b64625eb3395d?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 741548352,
+      "remote_sha256": "a5c435f294eea8f88ce68dd27b8c3bfea7f777cb2fbba04fcd30eaa555f429ae",
+      "hash_evidence": "publisher_lfs_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 741548352
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "whisper-tiny-q5_1",
+      "category": "speech",
+      "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-tiny-q5_1.bin",
+      "bytes": 32152673,
+      "sha256": "818710568da3ca15689e31a743197b520007872ff9576237bda97bd1b469c3d7",
+      "license": "MIT",
+      "metadata_url": "https://huggingface.co/api/models/ggerganov/whisper.cpp/revision/5359861c739e955e79d9a303bcbc70fb988958b1?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 32152673,
+      "remote_sha256": "818710568da3ca15689e31a743197b520007872ff9576237bda97bd1b469c3d7",
+      "hash_evidence": "publisher_lfs_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 32152673
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "whisper-tiny-q8_0",
+      "category": "speech",
+      "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-tiny-q8_0.bin",
+      "bytes": 43537433,
+      "sha256": "c2085835d3f50733e2ff6e4b41ae8a2b8d8110461e18821b09a15c40c42d1cca",
+      "license": "MIT",
+      "metadata_url": "https://huggingface.co/api/models/ggerganov/whisper.cpp/revision/5359861c739e955e79d9a303bcbc70fb988958b1?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 43537433,
+      "remote_sha256": "c2085835d3f50733e2ff6e4b41ae8a2b8d8110461e18821b09a15c40c42d1cca",
+      "hash_evidence": "publisher_lfs_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 43537433
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "whisper-tiny-f16",
+      "category": "speech",
+      "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-tiny.bin",
+      "bytes": 77691713,
+      "sha256": "be07e048e1e599ad46341c8d2a135645097a538221678b7acdd1b1919c6e1b21",
+      "license": "MIT",
+      "metadata_url": "https://huggingface.co/api/models/ggerganov/whisper.cpp/revision/5359861c739e955e79d9a303bcbc70fb988958b1?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 77691713,
+      "remote_sha256": "be07e048e1e599ad46341c8d2a135645097a538221678b7acdd1b1919c6e1b21",
+      "hash_evidence": "publisher_lfs_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 77691713
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "whisper-tiny.en-q5_1",
+      "category": "speech",
+      "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-tiny.en-q5_1.bin",
+      "bytes": 32166155,
+      "sha256": "c77c5766f1cef09b6b7d47f21b546cbddd4157886b3b5d6d4f709e91e66c7c2b",
+      "license": "MIT",
+      "metadata_url": "https://huggingface.co/api/models/ggerganov/whisper.cpp/revision/5359861c739e955e79d9a303bcbc70fb988958b1?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 32166155,
+      "remote_sha256": "c77c5766f1cef09b6b7d47f21b546cbddd4157886b3b5d6d4f709e91e66c7c2b",
+      "hash_evidence": "publisher_lfs_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 32166155
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "whisper-tiny.en-q8_0",
+      "category": "speech",
+      "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-tiny.en-q8_0.bin",
+      "bytes": 43550795,
+      "sha256": "5bc2b3860aa151a4c6e7bb095e1fcce7cf12c7b020ca08dcec0c6d018bb7dd94",
+      "license": "MIT",
+      "metadata_url": "https://huggingface.co/api/models/ggerganov/whisper.cpp/revision/5359861c739e955e79d9a303bcbc70fb988958b1?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 43550795,
+      "remote_sha256": "5bc2b3860aa151a4c6e7bb095e1fcce7cf12c7b020ca08dcec0c6d018bb7dd94",
+      "hash_evidence": "publisher_lfs_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 43550795
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "whisper-tiny.en-f16",
+      "category": "speech",
+      "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-tiny.en.bin",
+      "bytes": 77704715,
+      "sha256": "921e4cf8686fdd993dcd081a5da5b6c365bfde1162e72b08d75ac75289920b1f",
+      "license": "MIT",
+      "metadata_url": "https://huggingface.co/api/models/ggerganov/whisper.cpp/revision/5359861c739e955e79d9a303bcbc70fb988958b1?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 77704715,
+      "remote_sha256": "921e4cf8686fdd993dcd081a5da5b6c365bfde1162e72b08d75ac75289920b1f",
+      "hash_evidence": "publisher_lfs_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 77704715
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "whisper-base-q5_1",
+      "category": "speech",
+      "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-base-q5_1.bin",
+      "bytes": 59707625,
+      "sha256": "422f1ae452ade6f30a004d7e5c6a43195e4433bc370bf23fac9cc591f01a8898",
+      "license": "MIT",
+      "metadata_url": "https://huggingface.co/api/models/ggerganov/whisper.cpp/revision/5359861c739e955e79d9a303bcbc70fb988958b1?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 59707625,
+      "remote_sha256": "422f1ae452ade6f30a004d7e5c6a43195e4433bc370bf23fac9cc591f01a8898",
+      "hash_evidence": "publisher_lfs_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 59707625
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "whisper-base-q8_0",
+      "category": "speech",
+      "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-base-q8_0.bin",
+      "bytes": 81768585,
+      "sha256": "c577b9a86e7e048a0b7eada054f4dd79a56bbfa911fbdacf900ac5b567cbb7d9",
+      "license": "MIT",
+      "metadata_url": "https://huggingface.co/api/models/ggerganov/whisper.cpp/revision/5359861c739e955e79d9a303bcbc70fb988958b1?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 81768585,
+      "remote_sha256": "c577b9a86e7e048a0b7eada054f4dd79a56bbfa911fbdacf900ac5b567cbb7d9",
+      "hash_evidence": "publisher_lfs_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 81768585
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "whisper-base-f16",
+      "category": "speech",
+      "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-base.bin",
+      "bytes": 147951465,
+      "sha256": "60ed5bc3dd14eea856493d334349b405782ddcaf0028d4b5df4088345fba2efe",
+      "license": "MIT",
+      "metadata_url": "https://huggingface.co/api/models/ggerganov/whisper.cpp/revision/5359861c739e955e79d9a303bcbc70fb988958b1?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 147951465,
+      "remote_sha256": "60ed5bc3dd14eea856493d334349b405782ddcaf0028d4b5df4088345fba2efe",
+      "hash_evidence": "publisher_lfs_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 147951465
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "whisper-base.en-q5_1",
+      "category": "speech",
+      "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-base.en-q5_1.bin",
+      "bytes": 59721011,
+      "sha256": "4baf70dd0d7c4247ba2b81fafd9c01005ac77c2f9ef064e00dcf195d0e2fdd2f",
+      "license": "MIT",
+      "metadata_url": "https://huggingface.co/api/models/ggerganov/whisper.cpp/revision/5359861c739e955e79d9a303bcbc70fb988958b1?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 59721011,
+      "remote_sha256": "4baf70dd0d7c4247ba2b81fafd9c01005ac77c2f9ef064e00dcf195d0e2fdd2f",
+      "hash_evidence": "publisher_lfs_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 59721011
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "whisper-base.en-q8_0",
+      "category": "speech",
+      "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-base.en-q8_0.bin",
+      "bytes": 81781811,
+      "sha256": "a4d4a0768075e13cfd7e19df3ae2dbc4a68d37d36a7dad45e8410c9a34f8c87e",
+      "license": "MIT",
+      "metadata_url": "https://huggingface.co/api/models/ggerganov/whisper.cpp/revision/5359861c739e955e79d9a303bcbc70fb988958b1?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 81781811,
+      "remote_sha256": "a4d4a0768075e13cfd7e19df3ae2dbc4a68d37d36a7dad45e8410c9a34f8c87e",
+      "hash_evidence": "publisher_lfs_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 81781811
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "whisper-base.en-f16",
+      "category": "speech",
+      "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-base.en.bin",
+      "bytes": 147964211,
+      "sha256": "a03779c86df3323075f5e796cb2ce5029f00ec8869eee3fdfb897afe36c6d002",
+      "license": "MIT",
+      "metadata_url": "https://huggingface.co/api/models/ggerganov/whisper.cpp/revision/5359861c739e955e79d9a303bcbc70fb988958b1?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 147964211,
+      "remote_sha256": "a03779c86df3323075f5e796cb2ce5029f00ec8869eee3fdfb897afe36c6d002",
+      "hash_evidence": "publisher_lfs_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 147964211
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "whisper-small-q5_1",
+      "category": "speech",
+      "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-small-q5_1.bin",
+      "bytes": 190085487,
+      "sha256": "ae85e4a935d7a567bd102fe55afc16bb595bdb618e11b2fc7591bc08120411bb",
+      "license": "MIT",
+      "metadata_url": "https://huggingface.co/api/models/ggerganov/whisper.cpp/revision/5359861c739e955e79d9a303bcbc70fb988958b1?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 190085487,
+      "remote_sha256": "ae85e4a935d7a567bd102fe55afc16bb595bdb618e11b2fc7591bc08120411bb",
+      "hash_evidence": "publisher_lfs_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 190085487
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "whisper-small-q8_0",
+      "category": "speech",
+      "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-small-q8_0.bin",
+      "bytes": 264464607,
+      "sha256": "49c8fb02b65e6049d5fa6c04f81f53b867b5ec9540406812c643f177317f779f",
+      "license": "MIT",
+      "metadata_url": "https://huggingface.co/api/models/ggerganov/whisper.cpp/revision/5359861c739e955e79d9a303bcbc70fb988958b1?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 264464607,
+      "remote_sha256": "49c8fb02b65e6049d5fa6c04f81f53b867b5ec9540406812c643f177317f779f",
+      "hash_evidence": "publisher_lfs_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 264464607
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "whisper-small-f16",
+      "category": "speech",
+      "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-small.bin",
+      "bytes": 487601967,
+      "sha256": "1be3a9b2063867b937e64e2ec7483364a79917e157fa98c5d94b5c1fffea987b",
+      "license": "MIT",
+      "metadata_url": "https://huggingface.co/api/models/ggerganov/whisper.cpp/revision/5359861c739e955e79d9a303bcbc70fb988958b1?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 487601967,
+      "remote_sha256": "1be3a9b2063867b937e64e2ec7483364a79917e157fa98c5d94b5c1fffea987b",
+      "hash_evidence": "publisher_lfs_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 487601967
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "whisper-small.en-q5_1",
+      "category": "speech",
+      "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-small.en-q5_1.bin",
+      "bytes": 190098681,
+      "sha256": "bfdff4894dcb76bbf647d56263ea2a96645423f1669176f4844a1bf8e478ad30",
+      "license": "MIT",
+      "metadata_url": "https://huggingface.co/api/models/ggerganov/whisper.cpp/revision/5359861c739e955e79d9a303bcbc70fb988958b1?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 190098681,
+      "remote_sha256": "bfdff4894dcb76bbf647d56263ea2a96645423f1669176f4844a1bf8e478ad30",
+      "hash_evidence": "publisher_lfs_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 190098681
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "whisper-small.en-q8_0",
+      "category": "speech",
+      "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-small.en-q8_0.bin",
+      "bytes": 264477561,
+      "sha256": "67a179f608ea6114bd3fdb9060e762b588a3fb3bd00c4387971be4d177958067",
+      "license": "MIT",
+      "metadata_url": "https://huggingface.co/api/models/ggerganov/whisper.cpp/revision/5359861c739e955e79d9a303bcbc70fb988958b1?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 264477561,
+      "remote_sha256": "67a179f608ea6114bd3fdb9060e762b588a3fb3bd00c4387971be4d177958067",
+      "hash_evidence": "publisher_lfs_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 264477561
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "whisper-small.en-f16",
+      "category": "speech",
+      "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-small.en.bin",
+      "bytes": 487614201,
+      "sha256": "c6138d6d58ecc8322097e0f987c32f1be8bb0a18532a3f88f734d1bbf9c41e5d",
+      "license": "MIT",
+      "metadata_url": "https://huggingface.co/api/models/ggerganov/whisper.cpp/revision/5359861c739e955e79d9a303bcbc70fb988958b1?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 487614201,
+      "remote_sha256": "c6138d6d58ecc8322097e0f987c32f1be8bb0a18532a3f88f734d1bbf9c41e5d",
+      "hash_evidence": "publisher_lfs_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 487614201
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "whisper-medium-q5_0",
+      "category": "speech",
+      "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-medium-q5_0.bin",
+      "bytes": 539212467,
+      "sha256": "19fea4b380c3a618ec4723c3eef2eb785ffba0d0538cf43f8f235e7b3b34220f",
+      "license": "MIT",
+      "metadata_url": "https://huggingface.co/api/models/ggerganov/whisper.cpp/revision/5359861c739e955e79d9a303bcbc70fb988958b1?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 539212467,
+      "remote_sha256": "19fea4b380c3a618ec4723c3eef2eb785ffba0d0538cf43f8f235e7b3b34220f",
+      "hash_evidence": "publisher_lfs_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 539212467
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "whisper-medium-q8_0",
+      "category": "speech",
+      "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-medium-q8_0.bin",
+      "bytes": 823369779,
+      "sha256": "42a1ffcbe4167d224232443396968db4d02d4e8e87e213d3ee2e03095dea6502",
+      "license": "MIT",
+      "metadata_url": "https://huggingface.co/api/models/ggerganov/whisper.cpp/revision/5359861c739e955e79d9a303bcbc70fb988958b1?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 823369779,
+      "remote_sha256": "42a1ffcbe4167d224232443396968db4d02d4e8e87e213d3ee2e03095dea6502",
+      "hash_evidence": "publisher_lfs_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 823369779
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "whisper-medium-f16",
+      "category": "speech",
+      "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-medium.bin",
+      "bytes": 1533763059,
+      "sha256": "6c14d5adee5f86394037b4e4e8b59f1673b6cee10e3cf0b11bbdbee79c156208",
+      "license": "MIT",
+      "metadata_url": "https://huggingface.co/api/models/ggerganov/whisper.cpp/revision/5359861c739e955e79d9a303bcbc70fb988958b1?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 1533763059,
+      "remote_sha256": "6c14d5adee5f86394037b4e4e8b59f1673b6cee10e3cf0b11bbdbee79c156208",
+      "hash_evidence": "publisher_lfs_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 1533763059
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "whisper-medium.en-q5_0",
+      "category": "speech",
+      "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-medium.en-q5_0.bin",
+      "bytes": 539225533,
+      "sha256": "76733e26ad8fe1c7a5bf7531a9d41917b2adc0f20f2e4f5531688a8c6cd88eb0",
+      "license": "MIT",
+      "metadata_url": "https://huggingface.co/api/models/ggerganov/whisper.cpp/revision/5359861c739e955e79d9a303bcbc70fb988958b1?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 539225533,
+      "remote_sha256": "76733e26ad8fe1c7a5bf7531a9d41917b2adc0f20f2e4f5531688a8c6cd88eb0",
+      "hash_evidence": "publisher_lfs_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 539225533
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "whisper-medium.en-q8_0",
+      "category": "speech",
+      "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-medium.en-q8_0.bin",
+      "bytes": 823382461,
+      "sha256": "43fa2cd084de5a04399a896a9a7a786064e221365c01700cea4666005218f11c",
+      "license": "MIT",
+      "metadata_url": "https://huggingface.co/api/models/ggerganov/whisper.cpp/revision/5359861c739e955e79d9a303bcbc70fb988958b1?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 823382461,
+      "remote_sha256": "43fa2cd084de5a04399a896a9a7a786064e221365c01700cea4666005218f11c",
+      "hash_evidence": "publisher_lfs_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 823382461
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "whisper-medium.en-f16",
+      "category": "speech",
+      "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-medium.en.bin",
+      "bytes": 1533774781,
+      "sha256": "cc37e93478338ec7700281a7ac30a10128929eb8f427dda2e865faa8f6da4356",
+      "license": "MIT",
+      "metadata_url": "https://huggingface.co/api/models/ggerganov/whisper.cpp/revision/5359861c739e955e79d9a303bcbc70fb988958b1?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 1533774781,
+      "remote_sha256": "cc37e93478338ec7700281a7ac30a10128929eb8f427dda2e865faa8f6da4356",
+      "hash_evidence": "publisher_lfs_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 1533774781
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "whisper-large-v3-turbo-q5_0",
+      "category": "speech",
+      "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-large-v3-turbo-q5_0.bin",
+      "bytes": 574041195,
+      "sha256": "394221709cd5ad1f40c46e6031ca61bce88931e6e088c188294c6d5a55ffa7e2",
+      "license": "MIT",
+      "metadata_url": "https://huggingface.co/api/models/ggerganov/whisper.cpp/revision/5359861c739e955e79d9a303bcbc70fb988958b1?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 574041195,
+      "remote_sha256": "394221709cd5ad1f40c46e6031ca61bce88931e6e088c188294c6d5a55ffa7e2",
+      "hash_evidence": "publisher_lfs_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 574041195
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "whisper-large-v3-turbo-q8_0",
+      "category": "speech",
+      "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-large-v3-turbo-q8_0.bin",
+      "bytes": 874188075,
+      "sha256": "317eb69c11673c9de1e1f0d459b253999804ec71ac4c23c17ecf5fbe24e259a1",
+      "license": "MIT",
+      "metadata_url": "https://huggingface.co/api/models/ggerganov/whisper.cpp/revision/5359861c739e955e79d9a303bcbc70fb988958b1?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 874188075,
+      "remote_sha256": "317eb69c11673c9de1e1f0d459b253999804ec71ac4c23c17ecf5fbe24e259a1",
+      "hash_evidence": "publisher_lfs_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 874188075
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "whisper-large-v3-turbo-f16",
+      "category": "speech",
+      "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-large-v3-turbo.bin",
+      "bytes": 1624555275,
+      "sha256": "1fc70f774d38eb169993ac391eea357ef47c88757ef72ee5943879b7e8e2bc69",
+      "license": "MIT",
+      "metadata_url": "https://huggingface.co/api/models/ggerganov/whisper.cpp/revision/5359861c739e955e79d9a303bcbc70fb988958b1?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 1624555275,
+      "remote_sha256": "1fc70f774d38eb169993ac391eea357ef47c88757ef72ee5943879b7e8e2bc69",
+      "hash_evidence": "publisher_lfs_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 1624555275
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "vosk-small-en-us-0.15",
+      "category": "speech",
+      "url": "https://alphacephei.com/vosk/models/vosk-model-small-en-us-0.15.zip",
+      "bytes": 41205931,
+      "sha256": "30f26242c4eb449f948e42cb302dd7a686cb29a3423a8367f99ff41780942498",
+      "license": "Apache-2.0",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 41205931
+      },
+      "remote_bytes": 41205931,
+      "remote_sha256": null,
+      "hash_evidence": "not_published",
+      "status": "reachable_size_only",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "vosk-small-es-0.42",
+      "category": "speech",
+      "url": "https://alphacephei.com/vosk/models/vosk-model-small-es-0.42.zip",
+      "bytes": 39817833,
+      "sha256": "09b239888f633ef2f0b4e09736e3d9936acfd810bc65d53fad45261762c6511f",
+      "license": "Apache-2.0",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 39817833
+      },
+      "remote_bytes": 39817833,
+      "remote_sha256": null,
+      "hash_evidence": "not_published",
+      "status": "reachable_size_only",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "vosk-small-fr-0.22",
+      "category": "speech",
+      "url": "https://alphacephei.com/vosk/models/vosk-model-small-fr-0.22.zip",
+      "bytes": 42233323,
+      "sha256": "cabf6180e177eb9b3a9a9d43a437bd5e549f3a7d09525e5d69a3fed787be12ad",
+      "license": "Apache-2.0",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 42233323
+      },
+      "remote_bytes": 42233323,
+      "remote_sha256": null,
+      "hash_evidence": "not_published",
+      "status": "reachable_size_only",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "vosk-small-de-0.15",
+      "category": "speech",
+      "url": "https://alphacephei.com/vosk/models/vosk-model-small-de-0.15.zip",
+      "bytes": 46499967,
+      "sha256": "b7e53c90b1f0a38456f4cd62b366ecd58803cd97cd42b06438e2c131713d5e43",
+      "license": "Apache-2.0",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 46499967
+      },
+      "remote_bytes": 46499967,
+      "remote_sha256": null,
+      "hash_evidence": "not_published",
+      "status": "reachable_size_only",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "vosk-small-ru-0.22",
+      "category": "speech",
+      "url": "https://alphacephei.com/vosk/models/vosk-model-small-ru-0.22.zip",
+      "bytes": 46236750,
+      "sha256": "961d5ff98a17f4aa6de69864d0aa71fa5bac682301d2b5d17a3f24c5c99a46d4",
+      "license": "Apache-2.0",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 46236750
+      },
+      "remote_bytes": 46236750,
+      "remote_sha256": null,
+      "hash_evidence": "not_published",
+      "status": "reachable_size_only",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "vosk-small-cn-0.22",
+      "category": "speech",
+      "url": "https://alphacephei.com/vosk/models/vosk-model-small-cn-0.22.zip",
+      "bytes": 43898754,
+      "sha256": "3af8b0e7e0f835ae9d414ce5df580237a3cfb08d586c9fbbb0f7ff29ad5b14ba",
+      "license": "Apache-2.0",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 43898754
+      },
+      "remote_bytes": 43898754,
+      "remote_sha256": null,
+      "hash_evidence": "not_published",
+      "status": "reachable_size_only",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "vosk-ar-mgb2-0.4",
+      "category": "speech",
+      "url": "https://alphacephei.com/vosk/models/vosk-model-ar-mgb2-0.4.zip",
+      "bytes": 333241610,
+      "sha256": "357469ae1bb4d7a3810c9cd6b86d33bc135898dfc134e6df8bc2ddd28c5fe77a",
+      "license": "Apache-2.0",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 333241610
+      },
+      "remote_bytes": 333241610,
+      "remote_sha256": null,
+      "hash_evidence": "not_published",
+      "status": "reachable_size_only",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "translategemma-4b-q4",
+      "category": "translation",
+      "url": "https://huggingface.co/mradermacher/translategemma-4b-it-GGUF/resolve/35a7486e128b19642cdc72d7b91b21ba388aaf42/translategemma-4b-it.Q4_K_M.gguf",
+      "bytes": 2489909760,
+      "sha256": "81200d03e843d2ec1ece6eeafe7d13cb6e5211e1fcd336ade55790b683a08330",
+      "license": "Gemma terms",
+      "metadata_url": "https://huggingface.co/api/models/mradermacher/translategemma-4b-it-GGUF/revision/35a7486e128b19642cdc72d7b91b21ba388aaf42?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 2489909760,
+      "remote_sha256": "81200d03e843d2ec1ece6eeafe7d13cb6e5211e1fcd336ade55790b683a08330",
+      "hash_evidence": "publisher_lfs_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 2489909760
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "hy-mt15-q4",
+      "category": "translation",
+      "url": "https://huggingface.co/tencent/HY-MT1.5-1.8B-GGUF/resolve/265b2e615a7dc9b06c435dc878829ad99a512ba2/HY-MT1.5-1.8B-Q4_K_M.gguf",
+      "bytes": 1133080512,
+      "sha256": "4383ac0c3c8e476de98ff979c2a3f069f8c4fb385e7860cf2d28da896cc477c7",
+      "license": "Tencent Hunyuan community license",
+      "metadata_url": "https://huggingface.co/api/models/tencent/HY-MT1.5-1.8B-GGUF/revision/265b2e615a7dc9b06c435dc878829ad99a512ba2?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 1133080512,
+      "remote_sha256": "4383ac0c3c8e476de98ff979c2a3f069f8c4fb385e7860cf2d28da896cc477c7",
+      "hash_evidence": "publisher_lfs_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 1133080512
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "hy-mt15-q6",
+      "category": "translation",
+      "url": "https://huggingface.co/tencent/HY-MT1.5-1.8B-GGUF/resolve/265b2e615a7dc9b06c435dc878829ad99a512ba2/HY-MT1.5-1.8B-Q6_K.gguf",
+      "bytes": 1474785216,
+      "sha256": "c3819200ab9a79cb29b9a05ce8920e2eb01ae7ce520094fc5b57356494f3c641",
+      "license": "Tencent Hunyuan community license",
+      "metadata_url": "https://huggingface.co/api/models/tencent/HY-MT1.5-1.8B-GGUF/revision/265b2e615a7dc9b06c435dc878829ad99a512ba2?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 1474785216,
+      "remote_sha256": "c3819200ab9a79cb29b9a05ce8920e2eb01ae7ce520094fc5b57356494f3c641",
+      "hash_evidence": "publisher_lfs_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 1474785216
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "hy-mt15-q8",
+      "category": "translation",
+      "url": "https://huggingface.co/tencent/HY-MT1.5-1.8B-GGUF/resolve/265b2e615a7dc9b06c435dc878829ad99a512ba2/HY-MT1.5-1.8B-Q8_0.gguf",
+      "bytes": 1908528288,
+      "sha256": "6789b06d0902f2f5312c0e1703d56ccbddfcfb6c653d22519b7c720f7db9a98e",
+      "license": "Tencent Hunyuan community license",
+      "metadata_url": "https://huggingface.co/api/models/tencent/HY-MT1.5-1.8B-GGUF/revision/265b2e615a7dc9b06c435dc878829ad99a512ba2?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 1908528288,
+      "remote_sha256": "6789b06d0902f2f5312c0e1703d56ccbddfcfb6c653d22519b7c720f7db9a98e",
+      "hash_evidence": "publisher_lfs_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 1908528288
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "hy-mt2-q4",
+      "category": "translation",
+      "url": "https://huggingface.co/tencent/Hy-MT2-1.8B-GGUF/resolve/a0c709d9fac510f2c807aa3af52872340dc37a4a/Hy-MT2-1.8B-Q4_K_M.gguf",
+      "bytes": 1133080448,
+      "sha256": "dc5f44fcf1fa496ee7ad725982c0c8c553a4de00259b53af84c4b89fb0c06699",
+      "license": "Apache-2.0",
+      "metadata_url": "https://huggingface.co/api/models/tencent/Hy-MT2-1.8B-GGUF/revision/a0c709d9fac510f2c807aa3af52872340dc37a4a?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 1133080448,
+      "remote_sha256": "dc5f44fcf1fa496ee7ad725982c0c8c553a4de00259b53af84c4b89fb0c06699",
+      "hash_evidence": "publisher_lfs_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 1133080448
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "hy-mt2-q2",
+      "category": "translation",
+      "url": "https://huggingface.co/mradermacher/Hy-MT2-1.8B-GGUF/resolve/d760e9708bbded7cee9aa135b4f1dedb42ed2fc4/Hy-MT2-1.8B.Q2_K.gguf",
+      "bytes": 777483008,
+      "sha256": "dced2d16784aaf339cab86a469ec3a6963111b200d863ed345a2380842b88ce7",
+      "license": "Apache-2.0",
+      "metadata_url": "https://huggingface.co/api/models/mradermacher/Hy-MT2-1.8B-GGUF/revision/d760e9708bbded7cee9aa135b4f1dedb42ed2fc4?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 777483008,
+      "remote_sha256": "dced2d16784aaf339cab86a469ec3a6963111b200d863ed345a2380842b88ce7",
+      "hash_evidence": "publisher_lfs_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 777483008
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "hy-mt2-q3km",
+      "category": "translation",
+      "url": "https://huggingface.co/mradermacher/Hy-MT2-1.8B-GGUF/resolve/d760e9708bbded7cee9aa135b4f1dedb42ed2fc4/Hy-MT2-1.8B.Q3_K_M.gguf",
+      "bytes": 951022336,
+      "sha256": "11a4e50e70bdb876d4cdf158b47a895fd1bc8173d6ba63d4d6c8261d7cc63756",
+      "license": "Apache-2.0",
+      "metadata_url": "https://huggingface.co/api/models/mradermacher/Hy-MT2-1.8B-GGUF/revision/d760e9708bbded7cee9aa135b4f1dedb42ed2fc4?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 951022336,
+      "remote_sha256": "11a4e50e70bdb876d4cdf158b47a895fd1bc8173d6ba63d4d6c8261d7cc63756",
+      "hash_evidence": "publisher_lfs_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 951022336
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "hy-mt2-q6",
+      "category": "translation",
+      "url": "https://huggingface.co/tencent/Hy-MT2-1.8B-GGUF/resolve/a0c709d9fac510f2c807aa3af52872340dc37a4a/Hy-MT2-1.8B-Q6_K.gguf",
+      "bytes": 1474785120,
+      "sha256": "d98fe604dec1f28f58f80d7d560f7177e584d3b8e5835862687660e5ff97cb40",
+      "license": "Apache-2.0",
+      "metadata_url": "https://huggingface.co/api/models/tencent/Hy-MT2-1.8B-GGUF/revision/a0c709d9fac510f2c807aa3af52872340dc37a4a?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 1474785120,
+      "remote_sha256": "d98fe604dec1f28f58f80d7d560f7177e584d3b8e5835862687660e5ff97cb40",
+      "hash_evidence": "publisher_lfs_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 1474785120
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "hy-mt2-q8",
+      "category": "translation",
+      "url": "https://huggingface.co/tencent/Hy-MT2-1.8B-GGUF/resolve/a0c709d9fac510f2c807aa3af52872340dc37a4a/Hy-MT2-1.8B-Q8_0.gguf",
+      "bytes": 1908528192,
+      "sha256": "5c3fe0b1408a5ceb0143184ef247b11b579c525f4b02b060e6c851bb76fef1a4",
+      "license": "Apache-2.0",
+      "metadata_url": "https://huggingface.co/api/models/tencent/Hy-MT2-1.8B-GGUF/revision/a0c709d9fac510f2c807aa3af52872340dc37a4a?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 1908528192,
+      "remote_sha256": "5c3fe0b1408a5ceb0143184ef247b11b579c525f4b02b060e6c851bb76fef1a4",
+      "hash_evidence": "publisher_lfs_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 1908528192
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "milmmt-46-1b-q4",
+      "category": "translation",
+      "url": "https://huggingface.co/mradermacher/MiLMMT-46-1B-v1.0-GGUF/resolve/34df5efbe6592773ec168cc7b307728c08623472/MiLMMT-46-1B-v1.0.Q4_K_M.gguf",
+      "bytes": 806057408,
+      "sha256": "74d38ba75108d455326e9deeaf9ab01bb266dfa665eae9c4aa84e84485d4fdf9",
+      "license": "Gemma terms",
+      "metadata_url": "https://huggingface.co/api/models/mradermacher/MiLMMT-46-1B-v1.0-GGUF/revision/34df5efbe6592773ec168cc7b307728c08623472?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 806057408,
+      "remote_sha256": "74d38ba75108d455326e9deeaf9ab01bb266dfa665eae9c4aa84e84485d4fdf9",
+      "hash_evidence": "publisher_lfs_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 806057408
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "milmmt-46-1b-q5",
+      "category": "translation",
+      "url": "https://huggingface.co/mradermacher/MiLMMT-46-1B-v1.0-GGUF/resolve/34df5efbe6592773ec168cc7b307728c08623472/MiLMMT-46-1B-v1.0.Q5_K_M.gguf",
+      "bytes": 851344832,
+      "sha256": "3ae19dabf326ce42eca36d52a9dbd769ed34ffab744f18b4f45822117681e50b",
+      "license": "Gemma terms",
+      "metadata_url": "https://huggingface.co/api/models/mradermacher/MiLMMT-46-1B-v1.0-GGUF/revision/34df5efbe6592773ec168cc7b307728c08623472?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 851344832,
+      "remote_sha256": "3ae19dabf326ce42eca36d52a9dbd769ed34ffab744f18b4f45822117681e50b",
+      "hash_evidence": "publisher_lfs_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 851344832
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "index-translate-2b-q4",
+      "category": "translation",
+      "url": "https://huggingface.co/IndexTeam/Index-Translate-2B-GGUF/resolve/3a0eca6ce931d88d00614d427ab3ed8ff0743902/Index-Translate-2B.Q4_K_M.gguf",
+      "bytes": 1312164352,
+      "sha256": "044b313d29342bd3b2c77cbb64023ca0d209bd9b3247763f9d162767ef2d746a",
+      "license": "Apache-2.0",
+      "metadata_url": "https://huggingface.co/api/models/IndexTeam/Index-Translate-2B-GGUF/revision/3a0eca6ce931d88d00614d427ab3ed8ff0743902?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 1312164352,
+      "remote_sha256": "044b313d29342bd3b2c77cbb64023ca0d209bd9b3247763f9d162767ef2d746a",
+      "hash_evidence": "publisher_lfs_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 1312164352
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "marian-en-ar-spm",
+      "category": "translation",
+      "url": "https://huggingface.co/onnx-community/opus-mt-en-ar/resolve/d0118f36228ba00fb7ec2306ab5824fcd81e5c03/source.spm",
+      "bytes": 801074,
+      "sha256": "81ac8f4d4ee271f4109eac67560a31f9c2d555463ba5eb95c32c6deee8ae819d",
+      "license": "CC-BY-4.0 (ONNX conversion); Apache-2.0 (original Helsinki-NLP model)",
+      "metadata_url": "https://huggingface.co/api/models/onnx-community/opus-mt-en-ar/revision/d0118f36228ba00fb7ec2306ab5824fcd81e5c03?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 801074,
+      "remote_sha256": "81ac8f4d4ee271f4109eac67560a31f9c2d555463ba5eb95c32c6deee8ae819d",
+      "hash_evidence": "publisher_lfs_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 801074
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "marian-en-ar-tokenizer",
+      "category": "translation",
+      "url": "https://huggingface.co/onnx-community/opus-mt-en-ar/resolve/d0118f36228ba00fb7ec2306ab5824fcd81e5c03/tokenizer.json",
+      "bytes": 6748848,
+      "sha256": "109bb62e1c598287f5960616c869e15be54785a3c2906903dafe044241d50b61",
+      "license": "CC-BY-4.0 (ONNX conversion); Apache-2.0 (original Helsinki-NLP model)",
+      "metadata_url": "https://huggingface.co/api/models/onnx-community/opus-mt-en-ar/revision/d0118f36228ba00fb7ec2306ab5824fcd81e5c03?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 6748848,
+      "remote_sha256": "109bb62e1c598287f5960616c869e15be54785a3c2906903dafe044241d50b61",
+      "hash_evidence": "bounded_small_file_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 6748848
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "marian-en-ar-encoder",
+      "category": "translation",
+      "url": "https://huggingface.co/onnx-community/opus-mt-en-ar/resolve/d0118f36228ba00fb7ec2306ab5824fcd81e5c03/onnx/encoder_model_quantized.onnx",
+      "bytes": 51749190,
+      "sha256": "ebce26ed64f2d6efd09098f5752f283ae7bdf593114d8e2add769f51a395d91b",
+      "license": "CC-BY-4.0 (ONNX conversion); Apache-2.0 (original Helsinki-NLP model)",
+      "metadata_url": "https://huggingface.co/api/models/onnx-community/opus-mt-en-ar/revision/d0118f36228ba00fb7ec2306ab5824fcd81e5c03?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 51749190,
+      "remote_sha256": "ebce26ed64f2d6efd09098f5752f283ae7bdf593114d8e2add769f51a395d91b",
+      "hash_evidence": "publisher_lfs_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 51749190
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "marian-en-ar-decoder",
+      "category": "translation",
+      "url": "https://huggingface.co/onnx-community/opus-mt-en-ar/resolve/d0118f36228ba00fb7ec2306ab5824fcd81e5c03/onnx/decoder_model_merged_quantized.onnx",
+      "bytes": 187651988,
+      "sha256": "ae11f1426d824134ad3788bc44f09c7c8c42876c386bd7474cd181b262f82c89",
+      "license": "CC-BY-4.0 (ONNX conversion); Apache-2.0 (original Helsinki-NLP model)",
+      "metadata_url": "https://huggingface.co/api/models/onnx-community/opus-mt-en-ar/revision/d0118f36228ba00fb7ec2306ab5824fcd81e5c03?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 187651988,
+      "remote_sha256": "ae11f1426d824134ad3788bc44f09c7c8c42876c386bd7474cd181b262f82c89",
+      "hash_evidence": "publisher_lfs_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 187651988
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "marian-ru-en-spm",
+      "category": "translation",
+      "url": "https://huggingface.co/onnx-community/opus-mt-ru-en/resolve/92ef0d550ca96ebd9cd5d13aab6ad41854d99a3d/source.spm",
+      "bytes": 1080169,
+      "sha256": "745998e51ba5b058e38b7ac7765c25c43ed5c1c39cc92b27163b9b2e323c9d7c",
+      "license": "CC-BY-4.0 (ONNX conversion); Apache-2.0 (original Helsinki-NLP model)",
+      "metadata_url": "https://huggingface.co/api/models/onnx-community/opus-mt-ru-en/revision/92ef0d550ca96ebd9cd5d13aab6ad41854d99a3d?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 1080169,
+      "remote_sha256": "745998e51ba5b058e38b7ac7765c25c43ed5c1c39cc92b27163b9b2e323c9d7c",
+      "hash_evidence": "publisher_lfs_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 1080169
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "marian-ru-en-tokenizer",
+      "category": "translation",
+      "url": "https://huggingface.co/onnx-community/opus-mt-ru-en/resolve/92ef0d550ca96ebd9cd5d13aab6ad41854d99a3d/tokenizer.json",
+      "bytes": 7205388,
+      "sha256": "981cd3d9fef6bb4dda8082afda716b65deb6717cb3ef35ac0b57002c09dec2bb",
+      "license": "CC-BY-4.0 (ONNX conversion); Apache-2.0 (original Helsinki-NLP model)",
+      "metadata_url": "https://huggingface.co/api/models/onnx-community/opus-mt-ru-en/revision/92ef0d550ca96ebd9cd5d13aab6ad41854d99a3d?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 7205388,
+      "remote_sha256": "981cd3d9fef6bb4dda8082afda716b65deb6717cb3ef35ac0b57002c09dec2bb",
+      "hash_evidence": "bounded_small_file_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 7205388
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "marian-ru-en-encoder",
+      "category": "translation",
+      "url": "https://huggingface.co/onnx-community/opus-mt-ru-en/resolve/92ef0d550ca96ebd9cd5d13aab6ad41854d99a3d/onnx/encoder_model_quantized.onnx",
+      "bytes": 51603782,
+      "sha256": "fdd4d1de9cb02feaae8bc892e0e21b1bfd1741fa43a2895d471ee5f53ae260c4",
+      "license": "CC-BY-4.0 (ONNX conversion); Apache-2.0 (original Helsinki-NLP model)",
+      "metadata_url": "https://huggingface.co/api/models/onnx-community/opus-mt-ru-en/revision/92ef0d550ca96ebd9cd5d13aab6ad41854d99a3d?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 51603782,
+      "remote_sha256": "fdd4d1de9cb02feaae8bc892e0e21b1bfd1741fa43a2895d471ee5f53ae260c4",
+      "hash_evidence": "publisher_lfs_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 51603782
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "marian-ru-en-decoder",
+      "category": "translation",
+      "url": "https://huggingface.co/onnx-community/opus-mt-ru-en/resolve/92ef0d550ca96ebd9cd5d13aab6ad41854d99a3d/onnx/decoder_model_merged_quantized.onnx",
+      "bytes": 186923812,
+      "sha256": "0fef11505dc0564d0d6d54e37529d7ba949826fe19fd7193052610989fccbf28",
+      "license": "CC-BY-4.0 (ONNX conversion); Apache-2.0 (original Helsinki-NLP model)",
+      "metadata_url": "https://huggingface.co/api/models/onnx-community/opus-mt-ru-en/revision/92ef0d550ca96ebd9cd5d13aab6ad41854d99a3d?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 186923812,
+      "remote_sha256": "0fef11505dc0564d0d6d54e37529d7ba949826fe19fd7193052610989fccbf28",
+      "hash_evidence": "publisher_lfs_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 186923812
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "marian-zh-en-spm",
+      "category": "translation",
+      "url": "https://huggingface.co/onnx-community/opus-mt-zh-en/resolve/8e3032ebeebbacda779fe95efa64c03b962f83f3/source.spm",
+      "bytes": 804677,
+      "sha256": "e27a3a1b539f4959ec72ea60e453f49156289f95d4e6000b29332efc45616203",
+      "license": "CC-BY-4.0 (ONNX conversion); Apache-2.0 (original Helsinki-NLP model)",
+      "metadata_url": "https://huggingface.co/api/models/onnx-community/opus-mt-zh-en/revision/8e3032ebeebbacda779fe95efa64c03b962f83f3?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 804677,
+      "remote_sha256": "e27a3a1b539f4959ec72ea60e453f49156289f95d4e6000b29332efc45616203",
+      "hash_evidence": "publisher_lfs_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 804677
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "marian-zh-en-tokenizer",
+      "category": "translation",
+      "url": "https://huggingface.co/onnx-community/opus-mt-zh-en/resolve/8e3032ebeebbacda779fe95efa64c03b962f83f3/tokenizer.json",
+      "bytes": 6381339,
+      "sha256": "b306d0301cf280bfd647d7067b5ade2a97b987e6d678df110703c002433643ff",
+      "license": "CC-BY-4.0 (ONNX conversion); Apache-2.0 (original Helsinki-NLP model)",
+      "metadata_url": "https://huggingface.co/api/models/onnx-community/opus-mt-zh-en/revision/8e3032ebeebbacda779fe95efa64c03b962f83f3?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 6381339,
+      "remote_sha256": "b306d0301cf280bfd647d7067b5ade2a97b987e6d678df110703c002433643ff",
+      "hash_evidence": "bounded_small_file_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 6381339
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "marian-zh-en-encoder",
+      "category": "translation",
+      "url": "https://huggingface.co/onnx-community/opus-mt-zh-en/resolve/8e3032ebeebbacda779fe95efa64c03b962f83f3/onnx/encoder_model_quantized.onnx",
+      "bytes": 52875078,
+      "sha256": "86b0dc5a1d5d8062583800654864aae1311fce2172bba80910d02020d3693577",
+      "license": "CC-BY-4.0 (ONNX conversion); Apache-2.0 (original Helsinki-NLP model)",
+      "metadata_url": "https://huggingface.co/api/models/onnx-community/opus-mt-zh-en/revision/8e3032ebeebbacda779fe95efa64c03b962f83f3?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 52875078,
+      "remote_sha256": "86b0dc5a1d5d8062583800654864aae1311fce2172bba80910d02020d3693577",
+      "hash_evidence": "publisher_lfs_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 52875078
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "marian-zh-en-decoder",
+      "category": "translation",
+      "url": "https://huggingface.co/onnx-community/opus-mt-zh-en/resolve/8e3032ebeebbacda779fe95efa64c03b962f83f3/onnx/decoder_model_merged_quantized.onnx",
+      "bytes": 193290224,
+      "sha256": "714881fafd326c8cb56bc6e3e542d1d106a5acf90e6abb71e20423ebf1b47875",
+      "license": "CC-BY-4.0 (ONNX conversion); Apache-2.0 (original Helsinki-NLP model)",
+      "metadata_url": "https://huggingface.co/api/models/onnx-community/opus-mt-zh-en/revision/8e3032ebeebbacda779fe95efa64c03b962f83f3?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 193290224,
+      "remote_sha256": "714881fafd326c8cb56bc6e3e542d1d106a5acf90e6abb71e20423ebf1b47875",
+      "hash_evidence": "publisher_lfs_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 193290224
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "marian-ar-en-spm",
+      "category": "translation",
+      "url": "https://huggingface.co/onnx-community/opus-mt-ar-en/resolve/3302f1bd7f2c38f272c73a2b82345fae3bea35ce/source.spm",
+      "bytes": 917407,
+      "sha256": "484f7210e5f4466f7e5b99b660717c6ef2a6f90746196daba507795b69dc02a2",
+      "license": "CC-BY-4.0 (ONNX conversion); Apache-2.0 (original Helsinki-NLP model)",
+      "metadata_url": "https://huggingface.co/api/models/onnx-community/opus-mt-ar-en/revision/3302f1bd7f2c38f272c73a2b82345fae3bea35ce?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 917407,
+      "remote_sha256": "484f7210e5f4466f7e5b99b660717c6ef2a6f90746196daba507795b69dc02a2",
+      "hash_evidence": "publisher_lfs_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 917407
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "marian-ar-en-tokenizer",
+      "category": "translation",
+      "url": "https://huggingface.co/onnx-community/opus-mt-ar-en/resolve/3302f1bd7f2c38f272c73a2b82345fae3bea35ce/tokenizer.json",
+      "bytes": 6734647,
+      "sha256": "86c78b55d2428e4479e21ce4c27266f7c5e1d52bcabcadff29bfda77f6ad3200",
+      "license": "CC-BY-4.0 (ONNX conversion); Apache-2.0 (original Helsinki-NLP model)",
+      "metadata_url": "https://huggingface.co/api/models/onnx-community/opus-mt-ar-en/revision/3302f1bd7f2c38f272c73a2b82345fae3bea35ce?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 6734647,
+      "remote_sha256": "86c78b55d2428e4479e21ce4c27266f7c5e1d52bcabcadff29bfda77f6ad3200",
+      "hash_evidence": "bounded_small_file_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 6734647
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "marian-ar-en-encoder",
+      "category": "translation",
+      "url": "https://huggingface.co/onnx-community/opus-mt-ar-en/resolve/3302f1bd7f2c38f272c73a2b82345fae3bea35ce/onnx/encoder_model_quantized.onnx",
+      "bytes": 51765574,
+      "sha256": "7b8e80e9293d3debe958f16db24183b1f33ba442aae6fa7c9b0a595d7b6d8f72",
+      "license": "CC-BY-4.0 (ONNX conversion); Apache-2.0 (original Helsinki-NLP model)",
+      "metadata_url": "https://huggingface.co/api/models/onnx-community/opus-mt-ar-en/revision/3302f1bd7f2c38f272c73a2b82345fae3bea35ce?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 51765574,
+      "remote_sha256": "7b8e80e9293d3debe958f16db24183b1f33ba442aae6fa7c9b0a595d7b6d8f72",
+      "hash_evidence": "publisher_lfs_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 51765574
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "marian-ar-en-decoder",
+      "category": "translation",
+      "url": "https://huggingface.co/onnx-community/opus-mt-ar-en/resolve/3302f1bd7f2c38f272c73a2b82345fae3bea35ce/onnx/decoder_model_merged_quantized.onnx",
+      "bytes": 187734036,
+      "sha256": "b7639a1150df9e7a48eb5e04ea8ad4d7100d8e97c72d547d9a175f7d6e7d4aed",
+      "license": "CC-BY-4.0 (ONNX conversion); Apache-2.0 (original Helsinki-NLP model)",
+      "metadata_url": "https://huggingface.co/api/models/onnx-community/opus-mt-ar-en/revision/3302f1bd7f2c38f272c73a2b82345fae3bea35ce?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 187734036,
+      "remote_sha256": "b7639a1150df9e7a48eb5e04ea8ad4d7100d8e97c72d547d9a175f7d6e7d4aed",
+      "hash_evidence": "publisher_lfs_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 187734036
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "marian-en-ru-spm",
+      "category": "translation",
+      "url": "https://huggingface.co/onnx-community/opus-mt-en-ru/resolve/c6967b328d292f9f3d14bab6e9de40f9bd367114/source.spm",
+      "bytes": 802781,
+      "sha256": "16bebef1389a0b8ab452772c4e35b9e605e5713f8ac7baa71ca701394eaa086d",
+      "license": "CC-BY-4.0 (ONNX conversion); Apache-2.0 (original Helsinki-NLP model)",
+      "metadata_url": "https://huggingface.co/api/models/onnx-community/opus-mt-en-ru/revision/c6967b328d292f9f3d14bab6e9de40f9bd367114?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 802781,
+      "remote_sha256": "16bebef1389a0b8ab452772c4e35b9e605e5713f8ac7baa71ca701394eaa086d",
+      "hash_evidence": "publisher_lfs_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 802781
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "marian-en-ru-tokenizer",
+      "category": "translation",
+      "url": "https://huggingface.co/onnx-community/opus-mt-en-ru/resolve/c6967b328d292f9f3d14bab6e9de40f9bd367114/tokenizer.json",
+      "bytes": 7205388,
+      "sha256": "981cd3d9fef6bb4dda8082afda716b65deb6717cb3ef35ac0b57002c09dec2bb",
+      "license": "CC-BY-4.0 (ONNX conversion); Apache-2.0 (original Helsinki-NLP model)",
+      "metadata_url": "https://huggingface.co/api/models/onnx-community/opus-mt-en-ru/revision/c6967b328d292f9f3d14bab6e9de40f9bd367114?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 7205388,
+      "remote_sha256": "981cd3d9fef6bb4dda8082afda716b65deb6717cb3ef35ac0b57002c09dec2bb",
+      "hash_evidence": "bounded_small_file_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 7205388
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "marian-en-ru-encoder",
+      "category": "translation",
+      "url": "https://huggingface.co/onnx-community/opus-mt-en-ru/resolve/c6967b328d292f9f3d14bab6e9de40f9bd367114/onnx/encoder_model_quantized.onnx",
+      "bytes": 51603782,
+      "sha256": "b8b4f72528c0da92e579af8a739f97fa2f792d73527ba2fee786fa7286c4055b",
+      "license": "CC-BY-4.0 (ONNX conversion); Apache-2.0 (original Helsinki-NLP model)",
+      "metadata_url": "https://huggingface.co/api/models/onnx-community/opus-mt-en-ru/revision/c6967b328d292f9f3d14bab6e9de40f9bd367114?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 51603782,
+      "remote_sha256": "b8b4f72528c0da92e579af8a739f97fa2f792d73527ba2fee786fa7286c4055b",
+      "hash_evidence": "publisher_lfs_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 51603782
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "marian-en-ru-decoder",
+      "category": "translation",
+      "url": "https://huggingface.co/onnx-community/opus-mt-en-ru/resolve/c6967b328d292f9f3d14bab6e9de40f9bd367114/onnx/decoder_model_merged_quantized.onnx",
+      "bytes": 186923812,
+      "sha256": "5d15c48566e60dcaa5af7422bcceca24ccc8f3eaa8f1b3aedc5d6170e6c232f3",
+      "license": "CC-BY-4.0 (ONNX conversion); Apache-2.0 (original Helsinki-NLP model)",
+      "metadata_url": "https://huggingface.co/api/models/onnx-community/opus-mt-en-ru/revision/c6967b328d292f9f3d14bab6e9de40f9bd367114?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 186923812,
+      "remote_sha256": "5d15c48566e60dcaa5af7422bcceca24ccc8f3eaa8f1b3aedc5d6170e6c232f3",
+      "hash_evidence": "publisher_lfs_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 186923812
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "marian-en-zh-spm",
+      "category": "translation",
+      "url": "https://huggingface.co/onnx-community/opus-mt-en-zh/resolve/4dc37afc6deb160f4c9048260d48019ee497658e/source.spm",
+      "bytes": 806435,
+      "sha256": "5775ddc9e3ff2fae91554da56468ad35ff56edaba870fea74447bc7234bfdaa8",
+      "license": "CC-BY-4.0 (ONNX conversion); Apache-2.0 (original Helsinki-NLP model)",
+      "metadata_url": "https://huggingface.co/api/models/onnx-community/opus-mt-en-zh/revision/4dc37afc6deb160f4c9048260d48019ee497658e?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 806435,
+      "remote_sha256": "5775ddc9e3ff2fae91554da56468ad35ff56edaba870fea74447bc7234bfdaa8",
+      "hash_evidence": "publisher_lfs_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 806435
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "marian-en-zh-tokenizer",
+      "category": "translation",
+      "url": "https://huggingface.co/onnx-community/opus-mt-en-zh/resolve/4dc37afc6deb160f4c9048260d48019ee497658e/tokenizer.json",
+      "bytes": 6380952,
+      "sha256": "d0c7da27056e8f42adce9e76d8e792e5daa64e15f5acd2e7aabf0121877dd4c1",
+      "license": "CC-BY-4.0 (ONNX conversion); Apache-2.0 (original Helsinki-NLP model)",
+      "metadata_url": "https://huggingface.co/api/models/onnx-community/opus-mt-en-zh/revision/4dc37afc6deb160f4c9048260d48019ee497658e?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 6380952,
+      "remote_sha256": "d0c7da27056e8f42adce9e76d8e792e5daa64e15f5acd2e7aabf0121877dd4c1",
+      "hash_evidence": "bounded_small_file_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 6380952
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "marian-en-zh-encoder",
+      "category": "translation",
+      "url": "https://huggingface.co/onnx-community/opus-mt-en-zh/resolve/4dc37afc6deb160f4c9048260d48019ee497658e/onnx/encoder_model_quantized.onnx",
+      "bytes": 52875078,
+      "sha256": "cb02c542d2ab3010766031f3ce04e9041ffb6bd2df15caa7c41f3aead7cfe6dc",
+      "license": "CC-BY-4.0 (ONNX conversion); Apache-2.0 (original Helsinki-NLP model)",
+      "metadata_url": "https://huggingface.co/api/models/onnx-community/opus-mt-en-zh/revision/4dc37afc6deb160f4c9048260d48019ee497658e?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 52875078,
+      "remote_sha256": "cb02c542d2ab3010766031f3ce04e9041ffb6bd2df15caa7c41f3aead7cfe6dc",
+      "hash_evidence": "publisher_lfs_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 52875078
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "marian-en-zh-decoder",
+      "category": "translation",
+      "url": "https://huggingface.co/onnx-community/opus-mt-en-zh/resolve/4dc37afc6deb160f4c9048260d48019ee497658e/onnx/decoder_model_merged_quantized.onnx",
+      "bytes": 193290224,
+      "sha256": "c6fe901b5bae6235237f07ac0dfb421bf2a14aaaa02d4024bd1965be5b1d215e",
+      "license": "CC-BY-4.0 (ONNX conversion); Apache-2.0 (original Helsinki-NLP model)",
+      "metadata_url": "https://huggingface.co/api/models/onnx-community/opus-mt-en-zh/revision/4dc37afc6deb160f4c9048260d48019ee497658e?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 193290224,
+      "remote_sha256": "c6fe901b5bae6235237f07ac0dfb421bf2a14aaaa02d4024bd1965be5b1d215e",
+      "hash_evidence": "publisher_lfs_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 193290224
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "marian-en-fr-spm",
+      "category": "translation",
+      "url": "https://huggingface.co/onnx-community/opus-mt-en-fr/resolve/060ab253b6aae185f277c1e048fb0cf61a02c6c0/source.spm",
+      "bytes": 778395,
+      "sha256": "173e9f493a668fe396d599e28d414a201193094e6ffd7a4678e5aab0f6d3d838",
+      "license": "CC-BY-4.0 (ONNX conversion); Apache-2.0 (original Helsinki-NLP model)",
+      "metadata_url": "https://huggingface.co/api/models/onnx-community/opus-mt-en-fr/revision/060ab253b6aae185f277c1e048fb0cf61a02c6c0?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 778395,
+      "remote_sha256": "173e9f493a668fe396d599e28d414a201193094e6ffd7a4678e5aab0f6d3d838",
+      "hash_evidence": "publisher_lfs_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 778395
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "marian-en-fr-tokenizer",
+      "category": "translation",
+      "url": "https://huggingface.co/onnx-community/opus-mt-en-fr/resolve/060ab253b6aae185f277c1e048fb0cf61a02c6c0/tokenizer.json",
+      "bytes": 5637839,
+      "sha256": "8391785c1a2139e7af4678571ccd8dc654ecbb72e4be186940f65d7c604f0246",
+      "license": "CC-BY-4.0 (ONNX conversion); Apache-2.0 (original Helsinki-NLP model)",
+      "metadata_url": "https://huggingface.co/api/models/onnx-community/opus-mt-en-fr/revision/060ab253b6aae185f277c1e048fb0cf61a02c6c0?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 5637839,
+      "remote_sha256": "8391785c1a2139e7af4678571ccd8dc654ecbb72e4be186940f65d7c604f0246",
+      "hash_evidence": "bounded_small_file_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 5637839
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "marian-en-fr-encoder",
+      "category": "translation",
+      "url": "https://huggingface.co/onnx-community/opus-mt-en-fr/resolve/060ab253b6aae185f277c1e048fb0cf61a02c6c0/onnx/encoder_model_quantized.onnx",
+      "bytes": 50065734,
+      "sha256": "b6190be92972c9674abb94561dcffc12d89463269748be0db459974037319b79",
+      "license": "CC-BY-4.0 (ONNX conversion); Apache-2.0 (original Helsinki-NLP model)",
+      "metadata_url": "https://huggingface.co/api/models/onnx-community/opus-mt-en-fr/revision/060ab253b6aae185f277c1e048fb0cf61a02c6c0?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 50065734,
+      "remote_sha256": "b6190be92972c9674abb94561dcffc12d89463269748be0db459974037319b79",
+      "hash_evidence": "publisher_lfs_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 50065734
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "marian-en-fr-decoder",
+      "category": "translation",
+      "url": "https://huggingface.co/onnx-community/opus-mt-en-fr/resolve/060ab253b6aae185f277c1e048fb0cf61a02c6c0/onnx/decoder_model_merged_quantized.onnx",
+      "bytes": 179221556,
+      "sha256": "6e95be4cb0e4243202a6ab6ad77db65a419eea13cfda7b05735c3cf1306de2f8",
+      "license": "CC-BY-4.0 (ONNX conversion); Apache-2.0 (original Helsinki-NLP model)",
+      "metadata_url": "https://huggingface.co/api/models/onnx-community/opus-mt-en-fr/revision/060ab253b6aae185f277c1e048fb0cf61a02c6c0?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 179221556,
+      "remote_sha256": "6e95be4cb0e4243202a6ab6ad77db65a419eea13cfda7b05735c3cf1306de2f8",
+      "hash_evidence": "publisher_lfs_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 179221556
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "marian-fr-en-spm",
+      "category": "translation",
+      "url": "https://huggingface.co/onnx-community/opus-mt-fr-en/resolve/f7e3c392bacfe300a66b0ddbd20de1d2dfc3b77e/source.spm",
+      "bytes": 802397,
+      "sha256": "78d0e717c77053f1c4b856d8661d9cb87c64f083a35418c087b9146300e4f585",
+      "license": "CC-BY-4.0 (ONNX conversion); Apache-2.0 (original Helsinki-NLP model)",
+      "metadata_url": "https://huggingface.co/api/models/onnx-community/opus-mt-fr-en/revision/f7e3c392bacfe300a66b0ddbd20de1d2dfc3b77e?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 802397,
+      "remote_sha256": "78d0e717c77053f1c4b856d8661d9cb87c64f083a35418c087b9146300e4f585",
+      "hash_evidence": "publisher_lfs_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 802397
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "marian-fr-en-tokenizer",
+      "category": "translation",
+      "url": "https://huggingface.co/onnx-community/opus-mt-fr-en/resolve/f7e3c392bacfe300a66b0ddbd20de1d2dfc3b77e/tokenizer.json",
+      "bytes": 5637839,
+      "sha256": "8391785c1a2139e7af4678571ccd8dc654ecbb72e4be186940f65d7c604f0246",
+      "license": "CC-BY-4.0 (ONNX conversion); Apache-2.0 (original Helsinki-NLP model)",
+      "metadata_url": "https://huggingface.co/api/models/onnx-community/opus-mt-fr-en/revision/f7e3c392bacfe300a66b0ddbd20de1d2dfc3b77e?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 5637839,
+      "remote_sha256": "8391785c1a2139e7af4678571ccd8dc654ecbb72e4be186940f65d7c604f0246",
+      "hash_evidence": "bounded_small_file_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 5637839
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "marian-fr-en-encoder",
+      "category": "translation",
+      "url": "https://huggingface.co/onnx-community/opus-mt-fr-en/resolve/f7e3c392bacfe300a66b0ddbd20de1d2dfc3b77e/onnx/encoder_model_quantized.onnx",
+      "bytes": 50065734,
+      "sha256": "df4c59dc69e422f504ccb7bf1895f656f20e16542135c1da1d7092b80b17e095",
+      "license": "CC-BY-4.0 (ONNX conversion); Apache-2.0 (original Helsinki-NLP model)",
+      "metadata_url": "https://huggingface.co/api/models/onnx-community/opus-mt-fr-en/revision/f7e3c392bacfe300a66b0ddbd20de1d2dfc3b77e?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 50065734,
+      "remote_sha256": "df4c59dc69e422f504ccb7bf1895f656f20e16542135c1da1d7092b80b17e095",
+      "hash_evidence": "publisher_lfs_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 50065734
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "marian-fr-en-decoder",
+      "category": "translation",
+      "url": "https://huggingface.co/onnx-community/opus-mt-fr-en/resolve/f7e3c392bacfe300a66b0ddbd20de1d2dfc3b77e/onnx/decoder_model_merged_quantized.onnx",
+      "bytes": 179221556,
+      "sha256": "03eed490ede7098a0ca2f6ef578904d2e16fc6893dbe2ac4b787677a905d2046",
+      "license": "CC-BY-4.0 (ONNX conversion); Apache-2.0 (original Helsinki-NLP model)",
+      "metadata_url": "https://huggingface.co/api/models/onnx-community/opus-mt-fr-en/revision/f7e3c392bacfe300a66b0ddbd20de1d2dfc3b77e?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 179221556,
+      "remote_sha256": "03eed490ede7098a0ca2f6ef578904d2e16fc6893dbe2ac4b787677a905d2046",
+      "hash_evidence": "publisher_lfs_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 179221556
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "marian-en-de-spm",
+      "category": "translation",
+      "url": "https://huggingface.co/onnx-community/opus-mt-en-de/resolve/b4306231768977e5956c21c26c3ae14d6b2713c4/source.spm",
+      "bytes": 768489,
+      "sha256": "678f2a1177d8389f67b66299762dcc4fc567e89b07e212ba91b0c56daecf47ce",
+      "license": "CC-BY-4.0 (ONNX conversion); CC-BY-4.0 (original Helsinki-NLP model)",
+      "metadata_url": "https://huggingface.co/api/models/onnx-community/opus-mt-en-de/revision/b4306231768977e5956c21c26c3ae14d6b2713c4?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 768489,
+      "remote_sha256": "678f2a1177d8389f67b66299762dcc4fc567e89b07e212ba91b0c56daecf47ce",
+      "hash_evidence": "publisher_lfs_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 768489
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "marian-en-de-tokenizer",
+      "category": "translation",
+      "url": "https://huggingface.co/onnx-community/opus-mt-en-de/resolve/b4306231768977e5956c21c26c3ae14d6b2713c4/tokenizer.json",
+      "bytes": 5498450,
+      "sha256": "8e0fcf45621ea87fa680c7f9969c37a7f819c1f4c7658a2e6e0879b866a14b17",
+      "license": "CC-BY-4.0 (ONNX conversion); CC-BY-4.0 (original Helsinki-NLP model)",
+      "metadata_url": "https://huggingface.co/api/models/onnx-community/opus-mt-en-de/revision/b4306231768977e5956c21c26c3ae14d6b2713c4?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 5498450,
+      "remote_sha256": "8e0fcf45621ea87fa680c7f9969c37a7f819c1f4c7658a2e6e0879b866a14b17",
+      "hash_evidence": "bounded_small_file_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 5498450
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "marian-en-de-encoder",
+      "category": "translation",
+      "url": "https://huggingface.co/onnx-community/opus-mt-en-de/resolve/b4306231768977e5956c21c26c3ae14d6b2713c4/onnx/encoder_model_quantized.onnx",
+      "bytes": 49342278,
+      "sha256": "94ae6a9149aca29ef31a58bb8ccc1c3df3720840caef890ccc6cde73c94cb0f4",
+      "license": "CC-BY-4.0 (ONNX conversion); CC-BY-4.0 (original Helsinki-NLP model)",
+      "metadata_url": "https://huggingface.co/api/models/onnx-community/opus-mt-en-de/revision/b4306231768977e5956c21c26c3ae14d6b2713c4?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 49342278,
+      "remote_sha256": "94ae6a9149aca29ef31a58bb8ccc1c3df3720840caef890ccc6cde73c94cb0f4",
+      "hash_evidence": "publisher_lfs_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 49342278
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "marian-en-de-decoder",
+      "category": "translation",
+      "url": "https://huggingface.co/onnx-community/opus-mt-en-de/resolve/b4306231768977e5956c21c26c3ae14d6b2713c4/onnx/decoder_model_merged_quantized.onnx",
+      "bytes": 175598624,
+      "sha256": "492004d70327f4552fbddba033f8d8ce946edb87b66cbf8f9a7b41d14fe683cc",
+      "license": "CC-BY-4.0 (ONNX conversion); CC-BY-4.0 (original Helsinki-NLP model)",
+      "metadata_url": "https://huggingface.co/api/models/onnx-community/opus-mt-en-de/revision/b4306231768977e5956c21c26c3ae14d6b2713c4?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 175598624,
+      "remote_sha256": "492004d70327f4552fbddba033f8d8ce946edb87b66cbf8f9a7b41d14fe683cc",
+      "hash_evidence": "publisher_lfs_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 175598624
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "marian-de-en-spm",
+      "category": "translation",
+      "url": "https://huggingface.co/onnx-community/opus-mt-de-en/resolve/85f2f23c5f1863b741db8b9128cfbe7a5cbc0653/source.spm",
+      "bytes": 796845,
+      "sha256": "bbd1f495eea99c8e21ae086d9146e0fa7b096c3dfdd9ba07ab8b631889df5c9b",
+      "license": "CC-BY-4.0 (ONNX conversion); Apache-2.0 (original Helsinki-NLP model)",
+      "metadata_url": "https://huggingface.co/api/models/onnx-community/opus-mt-de-en/revision/85f2f23c5f1863b741db8b9128cfbe7a5cbc0653?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 796845,
+      "remote_sha256": "bbd1f495eea99c8e21ae086d9146e0fa7b096c3dfdd9ba07ab8b631889df5c9b",
+      "hash_evidence": "publisher_lfs_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 796845
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "marian-de-en-tokenizer",
+      "category": "translation",
+      "url": "https://huggingface.co/onnx-community/opus-mt-de-en/resolve/85f2f23c5f1863b741db8b9128cfbe7a5cbc0653/tokenizer.json",
+      "bytes": 5498450,
+      "sha256": "8e0fcf45621ea87fa680c7f9969c37a7f819c1f4c7658a2e6e0879b866a14b17",
+      "license": "CC-BY-4.0 (ONNX conversion); Apache-2.0 (original Helsinki-NLP model)",
+      "metadata_url": "https://huggingface.co/api/models/onnx-community/opus-mt-de-en/revision/85f2f23c5f1863b741db8b9128cfbe7a5cbc0653?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 5498450,
+      "remote_sha256": "8e0fcf45621ea87fa680c7f9969c37a7f819c1f4c7658a2e6e0879b866a14b17",
+      "hash_evidence": "bounded_small_file_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 5498450
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "marian-de-en-encoder",
+      "category": "translation",
+      "url": "https://huggingface.co/onnx-community/opus-mt-de-en/resolve/85f2f23c5f1863b741db8b9128cfbe7a5cbc0653/onnx/encoder_model_quantized.onnx",
+      "bytes": 49342278,
+      "sha256": "3e7b95246cf1885b5c6c123a36818a417c3ef6f500d4c17e030fef427fff7a74",
+      "license": "CC-BY-4.0 (ONNX conversion); Apache-2.0 (original Helsinki-NLP model)",
+      "metadata_url": "https://huggingface.co/api/models/onnx-community/opus-mt-de-en/revision/85f2f23c5f1863b741db8b9128cfbe7a5cbc0653?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 49342278,
+      "remote_sha256": "3e7b95246cf1885b5c6c123a36818a417c3ef6f500d4c17e030fef427fff7a74",
+      "hash_evidence": "publisher_lfs_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 49342278
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "marian-de-en-decoder",
+      "category": "translation",
+      "url": "https://huggingface.co/onnx-community/opus-mt-de-en/resolve/85f2f23c5f1863b741db8b9128cfbe7a5cbc0653/onnx/decoder_model_merged_quantized.onnx",
+      "bytes": 175598624,
+      "sha256": "d789d6a132d540fa40d6fa5901c3ba1e6209c69bf201ffef54f73833fa9b5a6c",
+      "license": "CC-BY-4.0 (ONNX conversion); Apache-2.0 (original Helsinki-NLP model)",
+      "metadata_url": "https://huggingface.co/api/models/onnx-community/opus-mt-de-en/revision/85f2f23c5f1863b741db8b9128cfbe7a5cbc0653?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 175598624,
+      "remote_sha256": "d789d6a132d540fa40d6fa5901c3ba1e6209c69bf201ffef54f73833fa9b5a6c",
+      "hash_evidence": "publisher_lfs_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 175598624
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "marian-en-es-spm",
+      "category": "translation",
+      "url": "https://huggingface.co/onnx-community/opus-mt-en-es/resolve/b5eba94a023a1954c90401b43537f479f962981d/source.spm",
+      "bytes": 801636,
+      "sha256": "4dd547c24816a335e7b0b2e63376a8f1b3cbfc671eda5ab808dd44fdadaa8791",
+      "license": "CC-BY-4.0 (ONNX conversion); Apache-2.0 (original Helsinki-NLP model)",
+      "metadata_url": "https://huggingface.co/api/models/onnx-community/opus-mt-en-es/revision/b5eba94a023a1954c90401b43537f479f962981d?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 801636,
+      "remote_sha256": "4dd547c24816a335e7b0b2e63376a8f1b3cbfc671eda5ab808dd44fdadaa8791",
+      "hash_evidence": "publisher_lfs_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 801636
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "marian-en-es-tokenizer",
+      "category": "translation",
+      "url": "https://huggingface.co/onnx-community/opus-mt-en-es/resolve/b5eba94a023a1954c90401b43537f479f962981d/tokenizer.json",
+      "bytes": 6262682,
+      "sha256": "285eb29e7155ee48851a77960797813f86a125f70d2c1a124f613f1fbd2b19c3",
+      "license": "CC-BY-4.0 (ONNX conversion); Apache-2.0 (original Helsinki-NLP model)",
+      "metadata_url": "https://huggingface.co/api/models/onnx-community/opus-mt-en-es/revision/b5eba94a023a1954c90401b43537f479f962981d?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 6262682,
+      "remote_sha256": "285eb29e7155ee48851a77960797813f86a125f70d2c1a124f613f1fbd2b19c3",
+      "hash_evidence": "bounded_small_file_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 6262682
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "marian-en-es-encoder",
+      "category": "translation",
+      "url": "https://huggingface.co/onnx-community/opus-mt-en-es/resolve/b5eba94a023a1954c90401b43537f479f962981d/onnx/encoder_model_quantized.onnx",
+      "bytes": 52875078,
+      "sha256": "13ec84a3afebfe97cae004a5f39881ea38541308514ec26c18a0b807476d6fba",
+      "license": "CC-BY-4.0 (ONNX conversion); Apache-2.0 (original Helsinki-NLP model)",
+      "metadata_url": "https://huggingface.co/api/models/onnx-community/opus-mt-en-es/revision/b5eba94a023a1954c90401b43537f479f962981d?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 52875078,
+      "remote_sha256": "13ec84a3afebfe97cae004a5f39881ea38541308514ec26c18a0b807476d6fba",
+      "hash_evidence": "publisher_lfs_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 52875078
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "marian-en-es-decoder",
+      "category": "translation",
+      "url": "https://huggingface.co/onnx-community/opus-mt-en-es/resolve/b5eba94a023a1954c90401b43537f479f962981d/onnx/decoder_model_merged_quantized.onnx",
+      "bytes": 193290224,
+      "sha256": "832c4e0c1630a401f3115f0fcb08922f473b7f4996a5371d02ff880dc55f9399",
+      "license": "CC-BY-4.0 (ONNX conversion); Apache-2.0 (original Helsinki-NLP model)",
+      "metadata_url": "https://huggingface.co/api/models/onnx-community/opus-mt-en-es/revision/b5eba94a023a1954c90401b43537f479f962981d?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 193290224,
+      "remote_sha256": "832c4e0c1630a401f3115f0fcb08922f473b7f4996a5371d02ff880dc55f9399",
+      "hash_evidence": "publisher_lfs_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 193290224
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "marian-es-en-spm",
+      "category": "translation",
+      "url": "https://huggingface.co/onnx-community/opus-mt-es-en/resolve/0ca6ea53b39356aece8a15bd92eaf7bb40035ea6/source.spm",
+      "bytes": 825924,
+      "sha256": "e236ee6d866b635c0142114f8647f39831f9d92534aa2aad75c942f6a78ad0e3",
+      "license": "CC-BY-4.0 (ONNX conversion); Apache-2.0 (original Helsinki-NLP model)",
+      "metadata_url": "https://huggingface.co/api/models/onnx-community/opus-mt-es-en/revision/0ca6ea53b39356aece8a15bd92eaf7bb40035ea6?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 825924,
+      "remote_sha256": "e236ee6d866b635c0142114f8647f39831f9d92534aa2aad75c942f6a78ad0e3",
+      "hash_evidence": "publisher_lfs_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 825924
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "marian-es-en-tokenizer",
+      "category": "translation",
+      "url": "https://huggingface.co/onnx-community/opus-mt-es-en/resolve/0ca6ea53b39356aece8a15bd92eaf7bb40035ea6/tokenizer.json",
+      "bytes": 6262682,
+      "sha256": "285eb29e7155ee48851a77960797813f86a125f70d2c1a124f613f1fbd2b19c3",
+      "license": "CC-BY-4.0 (ONNX conversion); Apache-2.0 (original Helsinki-NLP model)",
+      "metadata_url": "https://huggingface.co/api/models/onnx-community/opus-mt-es-en/revision/0ca6ea53b39356aece8a15bd92eaf7bb40035ea6?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 6262682,
+      "remote_sha256": "285eb29e7155ee48851a77960797813f86a125f70d2c1a124f613f1fbd2b19c3",
+      "hash_evidence": "bounded_small_file_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 6262682
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "marian-es-en-encoder",
+      "category": "translation",
+      "url": "https://huggingface.co/onnx-community/opus-mt-es-en/resolve/0ca6ea53b39356aece8a15bd92eaf7bb40035ea6/onnx/encoder_model_quantized.onnx",
+      "bytes": 52875078,
+      "sha256": "b888df16d3a7708182beb241f1ad50d2b4cf20a7133a2888bb95cb8dcbff9c98",
+      "license": "CC-BY-4.0 (ONNX conversion); Apache-2.0 (original Helsinki-NLP model)",
+      "metadata_url": "https://huggingface.co/api/models/onnx-community/opus-mt-es-en/revision/0ca6ea53b39356aece8a15bd92eaf7bb40035ea6?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 52875078,
+      "remote_sha256": "b888df16d3a7708182beb241f1ad50d2b4cf20a7133a2888bb95cb8dcbff9c98",
+      "hash_evidence": "publisher_lfs_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 52875078
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "marian-es-en-decoder",
+      "category": "translation",
+      "url": "https://huggingface.co/onnx-community/opus-mt-es-en/resolve/0ca6ea53b39356aece8a15bd92eaf7bb40035ea6/onnx/decoder_model_merged_quantized.onnx",
+      "bytes": 193290224,
+      "sha256": "5ddb433bf02cb87f48dc4ff2c0cf4c96ed4b4c154ba5089027f90031f3564efc",
+      "license": "CC-BY-4.0 (ONNX conversion); Apache-2.0 (original Helsinki-NLP model)",
+      "metadata_url": "https://huggingface.co/api/models/onnx-community/opus-mt-es-en/revision/0ca6ea53b39356aece8a15bd92eaf7bb40035ea6?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 193290224,
+      "remote_sha256": "5ddb433bf02cb87f48dc4ff2c0cf4c96ed4b4c154ba5089027f90031f3564efc",
+      "hash_evidence": "publisher_lfs_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 193290224
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "ocr-detector",
+      "category": "ocr",
+      "url": "https://huggingface.co/PaddlePaddle/PP-OCRv5_mobile_det_onnx/resolve/e6f4fa85f00e168c862bc462aebca69eef9b3d3d/inference.onnx",
+      "bytes": 4826518,
+      "sha256": "a431985659dc921974177a95adcfbb90fd9e51989a5e04d70d0b75f597b6e61d",
+      "license": "Apache-2.0",
+      "metadata_url": "https://huggingface.co/api/models/PaddlePaddle/PP-OCRv5_mobile_det_onnx/revision/e6f4fa85f00e168c862bc462aebca69eef9b3d3d?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 4826518,
+      "remote_sha256": "a431985659dc921974177a95adcfbb90fd9e51989a5e04d70d0b75f597b6e61d",
+      "hash_evidence": "publisher_lfs_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 4826518
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "ocr-latin",
+      "category": "ocr",
+      "url": "https://huggingface.co/PaddlePaddle/latin_PP-OCRv5_mobile_rec_onnx/resolve/89d3a50e2c27e2e7cceeab0e944c25c807d5db4f/inference.onnx",
+      "bytes": 8042023,
+      "sha256": "7888113072263cb471b93f66dd5e2ad70548dc526fa1ace760d0d973dd121498",
+      "license": "Apache-2.0",
+      "metadata_url": "https://huggingface.co/api/models/PaddlePaddle/latin_PP-OCRv5_mobile_rec_onnx/revision/89d3a50e2c27e2e7cceeab0e944c25c807d5db4f?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 8042023,
+      "remote_sha256": "7888113072263cb471b93f66dd5e2ad70548dc526fa1ace760d0d973dd121498",
+      "hash_evidence": "publisher_lfs_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 8042023
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "ocr-cjk",
+      "category": "ocr",
+      "url": "https://huggingface.co/PaddlePaddle/PP-OCRv5_mobile_rec_onnx/resolve/ed152b8b495f84de93cda5709d768548a9127622/inference.onnx",
+      "bytes": 16534782,
+      "sha256": "da72dc72ca4dc220df0dfde68c1dedc31c58d3e76a25871122e5056227d50092",
+      "license": "Apache-2.0",
+      "metadata_url": "https://huggingface.co/api/models/PaddlePaddle/PP-OCRv5_mobile_rec_onnx/revision/ed152b8b495f84de93cda5709d768548a9127622?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 16534782,
+      "remote_sha256": "da72dc72ca4dc220df0dfde68c1dedc31c58d3e76a25871122e5056227d50092",
+      "hash_evidence": "publisher_lfs_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 16534782
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "ocr-arabic",
+      "category": "ocr",
+      "url": "https://huggingface.co/PaddlePaddle/arabic_PP-OCRv5_mobile_rec_onnx/resolve/14aaedcd75825982689ecf5cd64ab33ee083215a/inference.onnx",
+      "bytes": 7998947,
+      "sha256": "799113ebf267fbe742deb99eb36e8d42c9ddc5291ceacf92add41b4d52a59110",
+      "license": "Apache-2.0",
+      "metadata_url": "https://huggingface.co/api/models/PaddlePaddle/arabic_PP-OCRv5_mobile_rec_onnx/revision/14aaedcd75825982689ecf5cd64ab33ee083215a?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 7998947,
+      "remote_sha256": "799113ebf267fbe742deb99eb36e8d42c9ddc5291ceacf92add41b4d52a59110",
+      "hash_evidence": "publisher_lfs_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 7998947
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "ocr-cyrillic",
+      "category": "ocr",
+      "url": "https://huggingface.co/PaddlePaddle/eslav_PP-OCRv5_mobile_rec_onnx/resolve/9a32171fc5718746875e1a261818884517975013/inference.onnx",
+      "bytes": 7887627,
+      "sha256": "b3018ef2b09a0250b6e0c8e871c927098363e5fd4df890cc68e8358eb0aaf1bd",
+      "license": "Apache-2.0",
+      "metadata_url": "https://huggingface.co/api/models/PaddlePaddle/eslav_PP-OCRv5_mobile_rec_onnx/revision/9a32171fc5718746875e1a261818884517975013?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 7887627,
+      "remote_sha256": "b3018ef2b09a0250b6e0c8e871c927098363e5fd4df890cc68e8358eb0aaf1bd",
+      "hash_evidence": "publisher_lfs_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 7887627
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "ocr-manga-encoder",
+      "category": "ocr",
+      "url": "https://huggingface.co/onnx-community/manga-ocr-base-ONNX/resolve/f9023406bb2f6b17df67bc4a327c56ecd20611f0/onnx/encoder_model_uint8.onnx",
+      "bytes": 86967805,
+      "sha256": "a73e7a9959f3412f4d0ab60c8cd0f71c29e7e29a2e52a1e184ad6f2be3b892e3",
+      "license": "Apache-2.0",
+      "metadata_url": "https://huggingface.co/api/models/onnx-community/manga-ocr-base-ONNX/revision/f9023406bb2f6b17df67bc4a327c56ecd20611f0?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 86967805,
+      "remote_sha256": "a73e7a9959f3412f4d0ab60c8cd0f71c29e7e29a2e52a1e184ad6f2be3b892e3",
+      "hash_evidence": "publisher_lfs_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 86967805
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "ocr-manga-decoder",
+      "category": "ocr",
+      "url": "https://huggingface.co/onnx-community/manga-ocr-base-ONNX/resolve/f9023406bb2f6b17df67bc4a327c56ecd20611f0/onnx/decoder_model_int8.onnx",
+      "bytes": 29627936,
+      "sha256": "2e7177d2b0a59f1c612b694ed70c13971bee765cc2b2bc7bc9376e4753652f27",
+      "license": "Apache-2.0",
+      "metadata_url": "https://huggingface.co/api/models/onnx-community/manga-ocr-base-ONNX/revision/f9023406bb2f6b17df67bc4a327c56ecd20611f0?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 29627936,
+      "remote_sha256": "2e7177d2b0a59f1c612b694ed70c13971bee765cc2b2bc7bc9376e4753652f27",
+      "hash_evidence": "publisher_lfs_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 29627936
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "ocr-meiki-detector",
+      "category": "ocr",
+      "url": "https://huggingface.co/rtr46/meiki.text.detect.v0/resolve/a9cffa4f60cbf72ddb87edf19c6f98a01cd042e6/meiki.text.detect.v0.1.960x544.onnx",
+      "bytes": 14503825,
+      "sha256": "40b6a016667745cae7d3055929ae3b8b1e7716aac795f5904cd3c2c7c3b8404b",
+      "license": "LGPL-3.0",
+      "metadata_url": "https://huggingface.co/api/models/rtr46/meiki.text.detect.v0/revision/a9cffa4f60cbf72ddb87edf19c6f98a01cd042e6?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 14503825,
+      "remote_sha256": "40b6a016667745cae7d3055929ae3b8b1e7716aac795f5904cd3c2c7c3b8404b",
+      "hash_evidence": "publisher_lfs_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 14503825
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "ocr-meiki-reader",
+      "category": "ocr",
+      "url": "https://huggingface.co/rtr46/meiki.txt.recognition.v0/resolve/a28cf5874dc2438ebb1c86336be26bcec51e3375/meiki.text.rec.v0.960x32.onnx",
+      "bytes": 18593254,
+      "sha256": "3e96bc772fbee9717e536a6353032bb944c3382dd2f6960ef4890decda43b000",
+      "license": "LGPL-3.0",
+      "metadata_url": "https://huggingface.co/api/models/rtr46/meiki.txt.recognition.v0/revision/a28cf5874dc2438ebb1c86336be26bcec51e3375?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 18593254,
+      "remote_sha256": "3e96bc772fbee9717e536a6353032bb944c3382dd2f6960ef4890decda43b000",
+      "hash_evidence": "publisher_lfs_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 18593254
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "ocr-meiki-vertical",
+      "category": "ocr",
+      "url": "https://huggingface.co/rtr46/meiki.txt.recognition.v0/resolve/a28cf5874dc2438ebb1c86336be26bcec51e3375/meiki.text.rec.v0.vertical.32x480.onnx",
+      "bytes": 12872961,
+      "sha256": "2c2a83a23bc3b7e6c63962175f507ecc6c5e85cc174f17bdec37d9bbd0bf895a",
+      "license": "LGPL-3.0",
+      "metadata_url": "https://huggingface.co/api/models/rtr46/meiki.txt.recognition.v0/revision/a28cf5874dc2438ebb1c86336be26bcec51e3375?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 12872961,
+      "remote_sha256": "2c2a83a23bc3b7e6c63962175f507ecc6c5e85cc174f17bdec37d9bbd0bf895a",
+      "hash_evidence": "publisher_lfs_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 12872961
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "voice-supertonic3-duration_predictor-onnx",
+      "category": "voice",
+      "url": "https://huggingface.co/Supertone/supertonic-3/resolve/3cadd1ee6394adea1bd021217a0e650ede09a323/onnx/duration_predictor.onnx",
+      "bytes": 3700147,
+      "sha256": "c3eb91414d5ff8a7a239b7fe9e34e7e2bf8a8140d8375ffb14718b1c639325db",
+      "license": "OpenRAIL-M (model weights); MIT (runtime code)",
+      "metadata_url": "https://huggingface.co/api/models/Supertone/supertonic-3/revision/3cadd1ee6394adea1bd021217a0e650ede09a323?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 3700147,
+      "remote_sha256": "c3eb91414d5ff8a7a239b7fe9e34e7e2bf8a8140d8375ffb14718b1c639325db",
+      "hash_evidence": "publisher_lfs_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 3700147
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "voice-supertonic3-text_encoder-onnx",
+      "category": "voice",
+      "url": "https://huggingface.co/Supertone/supertonic-3/resolve/3cadd1ee6394adea1bd021217a0e650ede09a323/onnx/text_encoder.onnx",
+      "bytes": 36416150,
+      "sha256": "c7befd5ea8c3119769e8a6c1486c4edc6a3bc8365c67621c881bbb774b9902ff",
+      "license": "OpenRAIL-M (model weights); MIT (runtime code)",
+      "metadata_url": "https://huggingface.co/api/models/Supertone/supertonic-3/revision/3cadd1ee6394adea1bd021217a0e650ede09a323?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 36416150,
+      "remote_sha256": "c7befd5ea8c3119769e8a6c1486c4edc6a3bc8365c67621c881bbb774b9902ff",
+      "hash_evidence": "publisher_lfs_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 36416150
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "voice-supertonic3-tts-json",
+      "category": "voice",
+      "url": "https://huggingface.co/Supertone/supertonic-3/resolve/3cadd1ee6394adea1bd021217a0e650ede09a323/onnx/tts.json",
+      "bytes": 8253,
+      "sha256": "42078d3aef1cd43ab43021f3c54f47d2d75ceb4e75f627f118890128b06a0d09",
+      "license": "OpenRAIL-M (model weights); MIT (runtime code)",
+      "metadata_url": "https://huggingface.co/api/models/Supertone/supertonic-3/revision/3cadd1ee6394adea1bd021217a0e650ede09a323?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 8253,
+      "remote_sha256": "42078d3aef1cd43ab43021f3c54f47d2d75ceb4e75f627f118890128b06a0d09",
+      "hash_evidence": "bounded_small_file_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 8253
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "voice-supertonic3-unicode_indexer-json",
+      "category": "voice",
+      "url": "https://huggingface.co/Supertone/supertonic-3/resolve/3cadd1ee6394adea1bd021217a0e650ede09a323/onnx/unicode_indexer.json",
+      "bytes": 277676,
+      "sha256": "9bf7346e43883a81f8645c81224f786d43c5b57f3641f6e7671a7d6c493cb24f",
+      "license": "OpenRAIL-M (model weights); MIT (runtime code)",
+      "metadata_url": "https://huggingface.co/api/models/Supertone/supertonic-3/revision/3cadd1ee6394adea1bd021217a0e650ede09a323?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 277676,
+      "remote_sha256": "9bf7346e43883a81f8645c81224f786d43c5b57f3641f6e7671a7d6c493cb24f",
+      "hash_evidence": "bounded_small_file_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 277676
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "voice-supertonic3-vector_estimator-onnx",
+      "category": "voice",
+      "url": "https://huggingface.co/Supertone/supertonic-3/resolve/3cadd1ee6394adea1bd021217a0e650ede09a323/onnx/vector_estimator.onnx",
+      "bytes": 256534781,
+      "sha256": "883ac868ea0275ef0e991524dc64f16b3c0376efd7c320af6b53f5b780d7c61c",
+      "license": "OpenRAIL-M (model weights); MIT (runtime code)",
+      "metadata_url": "https://huggingface.co/api/models/Supertone/supertonic-3/revision/3cadd1ee6394adea1bd021217a0e650ede09a323?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 256534781,
+      "remote_sha256": "883ac868ea0275ef0e991524dc64f16b3c0376efd7c320af6b53f5b780d7c61c",
+      "hash_evidence": "publisher_lfs_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 256534781
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "voice-supertonic3-vocoder-onnx",
+      "category": "voice",
+      "url": "https://huggingface.co/Supertone/supertonic-3/resolve/3cadd1ee6394adea1bd021217a0e650ede09a323/onnx/vocoder.onnx",
+      "bytes": 101424195,
+      "sha256": "085de76dd8e8d5836d6ca66826601f615939218f90e519f70ee8a36ed2a4c4ba",
+      "license": "OpenRAIL-M (model weights); MIT (runtime code)",
+      "metadata_url": "https://huggingface.co/api/models/Supertone/supertonic-3/revision/3cadd1ee6394adea1bd021217a0e650ede09a323?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 101424195,
+      "remote_sha256": "085de76dd8e8d5836d6ca66826601f615939218f90e519f70ee8a36ed2a4c4ba",
+      "hash_evidence": "publisher_lfs_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 101424195
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "voice-supertonic3-F1-json",
+      "category": "voice",
+      "url": "https://huggingface.co/Supertone/supertonic-3/resolve/3cadd1ee6394adea1bd021217a0e650ede09a323/voice_styles/F1.json",
+      "bytes": 292046,
+      "sha256": "bbdec6ee00231c2c742ad05483df5334cab3b52fda3ba38e6a07059c4563dbc2",
+      "license": "OpenRAIL-M (model weights); MIT (runtime code)",
+      "metadata_url": "https://huggingface.co/api/models/Supertone/supertonic-3/revision/3cadd1ee6394adea1bd021217a0e650ede09a323?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 292046,
+      "remote_sha256": "bbdec6ee00231c2c742ad05483df5334cab3b52fda3ba38e6a07059c4563dbc2",
+      "hash_evidence": "bounded_small_file_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 292046
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "voice-supertonic3-F2-json",
+      "category": "voice",
+      "url": "https://huggingface.co/Supertone/supertonic-3/resolve/3cadd1ee6394adea1bd021217a0e650ede09a323/voice_styles/F2.json",
+      "bytes": 292423,
+      "sha256": "7c722c6a72707b1a77f035d67f0d1351ba187738e06f7683e8c72b1df3477fc6",
+      "license": "OpenRAIL-M (model weights); MIT (runtime code)",
+      "metadata_url": "https://huggingface.co/api/models/Supertone/supertonic-3/revision/3cadd1ee6394adea1bd021217a0e650ede09a323?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 292423,
+      "remote_sha256": "7c722c6a72707b1a77f035d67f0d1351ba187738e06f7683e8c72b1df3477fc6",
+      "hash_evidence": "bounded_small_file_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 292423
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "voice-supertonic3-F3-json",
+      "category": "voice",
+      "url": "https://huggingface.co/Supertone/supertonic-3/resolve/3cadd1ee6394adea1bd021217a0e650ede09a323/voice_styles/F3.json",
+      "bytes": 290794,
+      "sha256": "12f6ef2573baa2defa1128069cb59f203e3ab67c92af77b42df8a0e3a2f7c6ab",
+      "license": "OpenRAIL-M (model weights); MIT (runtime code)",
+      "metadata_url": "https://huggingface.co/api/models/Supertone/supertonic-3/revision/3cadd1ee6394adea1bd021217a0e650ede09a323?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 290794,
+      "remote_sha256": "12f6ef2573baa2defa1128069cb59f203e3ab67c92af77b42df8a0e3a2f7c6ab",
+      "hash_evidence": "bounded_small_file_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 290794
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "voice-supertonic3-F4-json",
+      "category": "voice",
+      "url": "https://huggingface.co/Supertone/supertonic-3/resolve/3cadd1ee6394adea1bd021217a0e650ede09a323/voice_styles/F4.json",
+      "bytes": 291808,
+      "sha256": "c2fa764c1225a76dfc3e2c73e8aa4f70d9ee48793860eb34c295fff01c2e032b",
+      "license": "OpenRAIL-M (model weights); MIT (runtime code)",
+      "metadata_url": "https://huggingface.co/api/models/Supertone/supertonic-3/revision/3cadd1ee6394adea1bd021217a0e650ede09a323?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 291808,
+      "remote_sha256": "c2fa764c1225a76dfc3e2c73e8aa4f70d9ee48793860eb34c295fff01c2e032b",
+      "hash_evidence": "bounded_small_file_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 291808
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "voice-supertonic3-F5-json",
+      "category": "voice",
+      "url": "https://huggingface.co/Supertone/supertonic-3/resolve/3cadd1ee6394adea1bd021217a0e650ede09a323/voice_styles/F5.json",
+      "bytes": 291479,
+      "sha256": "45966e73316415626cf41a7d1c6f3b4c70dbc1ba2bee5c1978ef0ce33244fc8d",
+      "license": "OpenRAIL-M (model weights); MIT (runtime code)",
+      "metadata_url": "https://huggingface.co/api/models/Supertone/supertonic-3/revision/3cadd1ee6394adea1bd021217a0e650ede09a323?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 291479,
+      "remote_sha256": "45966e73316415626cf41a7d1c6f3b4c70dbc1ba2bee5c1978ef0ce33244fc8d",
+      "hash_evidence": "bounded_small_file_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 291479
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "voice-supertonic3-M1-json",
+      "category": "voice",
+      "url": "https://huggingface.co/Supertone/supertonic-3/resolve/3cadd1ee6394adea1bd021217a0e650ede09a323/voice_styles/M1.json",
+      "bytes": 291748,
+      "sha256": "e35604687f5d23694b8e91593a93eec0e4eca6c0b02bb8ed69139ab2ea6b0a5b",
+      "license": "OpenRAIL-M (model weights); MIT (runtime code)",
+      "metadata_url": "https://huggingface.co/api/models/Supertone/supertonic-3/revision/3cadd1ee6394adea1bd021217a0e650ede09a323?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 291748,
+      "remote_sha256": "e35604687f5d23694b8e91593a93eec0e4eca6c0b02bb8ed69139ab2ea6b0a5b",
+      "hash_evidence": "bounded_small_file_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 291748
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "voice-supertonic3-M2-json",
+      "category": "voice",
+      "url": "https://huggingface.co/Supertone/supertonic-3/resolve/3cadd1ee6394adea1bd021217a0e650ede09a323/voice_styles/M2.json",
+      "bytes": 292055,
+      "sha256": "b76cbf62bac707c710cf0ae5aba5e31eea1a6339a9734bfae33ab98499534a50",
+      "license": "OpenRAIL-M (model weights); MIT (runtime code)",
+      "metadata_url": "https://huggingface.co/api/models/Supertone/supertonic-3/revision/3cadd1ee6394adea1bd021217a0e650ede09a323?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 292055,
+      "remote_sha256": "b76cbf62bac707c710cf0ae5aba5e31eea1a6339a9734bfae33ab98499534a50",
+      "hash_evidence": "bounded_small_file_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 292055
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "voice-supertonic3-M3-json",
+      "category": "voice",
+      "url": "https://huggingface.co/Supertone/supertonic-3/resolve/3cadd1ee6394adea1bd021217a0e650ede09a323/voice_styles/M3.json",
+      "bytes": 290198,
+      "sha256": "ea1ac35ccb91b0d7ecad533a2fbd0eec10c91513d8951e3b25fbba99954e159b",
+      "license": "OpenRAIL-M (model weights); MIT (runtime code)",
+      "metadata_url": "https://huggingface.co/api/models/Supertone/supertonic-3/revision/3cadd1ee6394adea1bd021217a0e650ede09a323?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 290198,
+      "remote_sha256": "ea1ac35ccb91b0d7ecad533a2fbd0eec10c91513d8951e3b25fbba99954e159b",
+      "hash_evidence": "bounded_small_file_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 290198
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "voice-supertonic3-M4-json",
+      "category": "voice",
+      "url": "https://huggingface.co/Supertone/supertonic-3/resolve/3cadd1ee6394adea1bd021217a0e650ede09a323/voice_styles/M4.json",
+      "bytes": 291522,
+      "sha256": "ca8eefad4fcd989c9379032ff3e50738adc547eeb5e221b82593a6d7b3bac303",
+      "license": "OpenRAIL-M (model weights); MIT (runtime code)",
+      "metadata_url": "https://huggingface.co/api/models/Supertone/supertonic-3/revision/3cadd1ee6394adea1bd021217a0e650ede09a323?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 291522,
+      "remote_sha256": "ca8eefad4fcd989c9379032ff3e50738adc547eeb5e221b82593a6d7b3bac303",
+      "hash_evidence": "bounded_small_file_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 291522
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "id": "voice-supertonic3-M5-json",
+      "category": "voice",
+      "url": "https://huggingface.co/Supertone/supertonic-3/resolve/3cadd1ee6394adea1bd021217a0e650ede09a323/voice_styles/M5.json",
+      "bytes": 291469,
+      "sha256": "dd22b92740314321f8ae11c5e87f8dd60d060f15dd3a632b5adf77f471f77af2",
+      "license": "OpenRAIL-M (model weights); MIT (runtime code)",
+      "metadata_url": "https://huggingface.co/api/models/Supertone/supertonic-3/revision/3cadd1ee6394adea1bd021217a0e650ede09a323?blobs=true",
+      "http_status": 200,
+      "remote_bytes": 291469,
+      "remote_sha256": "dd22b92740314321f8ae11c5e87f8dd60d060f15dd3a632b5adf77f471f77af2",
+      "hash_evidence": "bounded_small_file_sha256",
+      "download_probe": {
+        "status": "reachable",
+        "http_status": 200,
+        "remote_bytes": 291469
+      },
+      "status": "verified",
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    }
+  ],
+  "sources": [
+    {
+      "url": "https://alphacephei.com/vosk/models",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 43888,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://developers.google.com/ml-kit/terms",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 87017,
+      "checkedAt": "2026-10-18T21:52:39.590614+00:00"
+    },
+    {
+      "url": "https://github.com/PaddlePaddle/PaddleOCR",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": null,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://github.com/Sal7one/Hearth/releases/tag/v0.23.0",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": null,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://github.com/fishaudio/fish-speech",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": null,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/tag/asr-models",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": null,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://github.com/moonshine-ai/moonshine",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": null,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://github.com/moonshine-ai/moonshine-v2",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": null,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://github.com/moonshine-ai/moonshine-v2#license",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": null,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://github.com/moonshine-ai/moonshine/blob/main/LICENSE",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": null,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://github.com/resemble-ai/chatterbox",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": null,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://github.com/supertone-inc/supertonic",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": null,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://huggingface.co/FermionResearch/Phonon-2",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 157603,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://huggingface.co/Helsinki-NLP/opus-mt-ar-en",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 179750,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://huggingface.co/Helsinki-NLP/opus-mt-de-en",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 177986,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://huggingface.co/Helsinki-NLP/opus-mt-en-ar",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 183209,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://huggingface.co/Helsinki-NLP/opus-mt-en-de",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 205219,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://huggingface.co/Helsinki-NLP/opus-mt-en-es",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 181830,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://huggingface.co/Helsinki-NLP/opus-mt-en-fr",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 176398,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://huggingface.co/Helsinki-NLP/opus-mt-en-ru",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 177159,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://huggingface.co/Helsinki-NLP/opus-mt-en-zh",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 183645,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://huggingface.co/Helsinki-NLP/opus-mt-es-en",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 177828,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://huggingface.co/Helsinki-NLP/opus-mt-fr-en",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 187597,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://huggingface.co/Helsinki-NLP/opus-mt-ru-en",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 204332,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://huggingface.co/Helsinki-NLP/opus-mt-zh-en",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 208706,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://huggingface.co/IndexTeam/Index-Translate-2B",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 229597,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://huggingface.co/IndexTeam/Index-Translate-2B-GGUF",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 253061,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://huggingface.co/IndexTeam/Index-Translate-2B-GGUF/tree/3a0eca6ce931d88d00614d427ab3ed8ff0743902",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 296875,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://huggingface.co/PaddlePaddle/PP-OCRv5_mobile_det_onnx",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 132444,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://huggingface.co/PaddlePaddle/PP-OCRv5_mobile_det_onnx/blob/e6f4fa85f00e168c862bc462aebca69eef9b3d3d/README.md",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 119771,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://huggingface.co/PaddlePaddle/PP-OCRv5_mobile_det_onnx/tree/e6f4fa85f00e168c862bc462aebca69eef9b3d3d",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 128621,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://huggingface.co/PaddlePaddle/PP-OCRv5_mobile_rec_onnx",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 132528,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://huggingface.co/PaddlePaddle/PP-OCRv5_mobile_rec_onnx/blob/ed152b8b495f84de93cda5709d768548a9127622/README.md",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 119712,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://huggingface.co/PaddlePaddle/PP-OCRv5_mobile_rec_onnx/tree/ed152b8b495f84de93cda5709d768548a9127622",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 128644,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://huggingface.co/PaddlePaddle/arabic_PP-OCRv5_mobile_rec_onnx",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 93830,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://huggingface.co/PaddlePaddle/arabic_PP-OCRv5_mobile_rec_onnx/blob/14aaedcd75825982689ecf5cd64ab33ee083215a/README.md",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 91377,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://huggingface.co/PaddlePaddle/arabic_PP-OCRv5_mobile_rec_onnx/tree/14aaedcd75825982689ecf5cd64ab33ee083215a",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 108528,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://huggingface.co/PaddlePaddle/eslav_PP-OCRv5_mobile_rec_onnx",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 90392,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://huggingface.co/PaddlePaddle/eslav_PP-OCRv5_mobile_rec_onnx/blob/9a32171fc5718746875e1a261818884517975013/README.md",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 91345,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://huggingface.co/PaddlePaddle/eslav_PP-OCRv5_mobile_rec_onnx/tree/9a32171fc5718746875e1a261818884517975013",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 108489,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://huggingface.co/PaddlePaddle/latin_PP-OCRv5_mobile_rec_onnx",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 94211,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://huggingface.co/PaddlePaddle/latin_PP-OCRv5_mobile_rec_onnx/blob/89d3a50e2c27e2e7cceeab0e944c25c807d5db4f/README.md",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 91716,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://huggingface.co/PaddlePaddle/latin_PP-OCRv5_mobile_rec_onnx/tree/89d3a50e2c27e2e7cceeab0e944c25c807d5db4f",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 108923,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://huggingface.co/Qwen/Qwen3-ASR-0.6B",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 344393,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://huggingface.co/Qwen/Qwen3-ASR-1.7B",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 362503,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://huggingface.co/Qwen/Qwen3-ASR-1.7B/tree/main",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 206585,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://huggingface.co/Qwen/Qwen3-TTS-12Hz-0.6B-Base",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 176115,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://huggingface.co/Supertone/supertonic-3",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 176505,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://huggingface.co/Supertone/supertonic-3/blob/3cadd1ee6394adea1bd021217a0e650ede09a323/LICENSE",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 256124,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://huggingface.co/Supertone/supertonic-3/tree/3cadd1ee6394adea1bd021217a0e650ede09a323",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 145495,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://huggingface.co/facebook/omniASR-CTC-300M",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 136425,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://huggingface.co/ggerganov/whisper.cpp",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 121109,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://huggingface.co/ggerganov/whisper.cpp/tree/5359861c739e955e79d9a303bcbc70fb988958b1",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 571478,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://huggingface.co/google/translategemma-4b-it",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 399417,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://huggingface.co/kha-white/manga-ocr-base",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 145344,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://huggingface.co/mradermacher/Hy-MT2-1.8B-GGUF",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 219256,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://huggingface.co/mradermacher/Hy-MT2-1.8B-GGUF/tree/d760e9708bbded7cee9aa135b4f1dedb42ed2fc4",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 261978,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://huggingface.co/mradermacher/MiLMMT-46-1B-v1.0-GGUF",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 202553,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://huggingface.co/mradermacher/MiLMMT-46-1B-v1.0-GGUF/tree/34df5efbe6592773ec168cc7b307728c08623472",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 253063,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://huggingface.co/mradermacher/translategemma-4b-it-GGUF",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 327955,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://huggingface.co/mradermacher/translategemma-4b-it-GGUF/tree/35a7486e128b19642cdc72d7b91b21ba388aaf42",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 330612,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://huggingface.co/nvidia/nemotron-3.5-asr-streaming-0.6b",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 427619,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://huggingface.co/nvidia/nemotron-3.5-asr-streaming-0.6b/tree/1c8deaecc64b91f034d73e08dd8b64625eb3395d",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 324389,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://huggingface.co/onnx-community/manga-ocr-base-ONNX",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 131069,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://huggingface.co/onnx-community/manga-ocr-base-ONNX/blob/f9023406bb2f6b17df67bc4a327c56ecd20611f0/README.md",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 115624,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://huggingface.co/onnx-community/manga-ocr-base-ONNX/tree/f9023406bb2f6b17df67bc4a327c56ecd20611f0",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 136091,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://huggingface.co/onnx-community/opus-mt-ar-en",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 118204,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://huggingface.co/onnx-community/opus-mt-ar-en/blob/3302f1bd7f2c38f272c73a2b82345fae3bea35ce/README.md",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 106173,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://huggingface.co/onnx-community/opus-mt-ar-en/tree/3302f1bd7f2c38f272c73a2b82345fae3bea35ce",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 167794,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://huggingface.co/onnx-community/opus-mt-de-en",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 117841,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://huggingface.co/onnx-community/opus-mt-de-en/blob/85f2f23c5f1863b741db8b9128cfbe7a5cbc0653/README.md",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 105803,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://huggingface.co/onnx-community/opus-mt-de-en/tree/85f2f23c5f1863b741db8b9128cfbe7a5cbc0653",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 167741,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://huggingface.co/onnx-community/opus-mt-en-ar",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 118204,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://huggingface.co/onnx-community/opus-mt-en-ar/blob/d0118f36228ba00fb7ec2306ab5824fcd81e5c03/README.md",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 106173,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://huggingface.co/onnx-community/opus-mt-en-ar/tree/d0118f36228ba00fb7ec2306ab5824fcd81e5c03",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 167885,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://huggingface.co/onnx-community/opus-mt-en-de",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 118190,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://huggingface.co/onnx-community/opus-mt-en-de/blob/b4306231768977e5956c21c26c3ae14d6b2713c4/README.md",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 106174,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://huggingface.co/onnx-community/opus-mt-en-de/tree/b4306231768977e5956c21c26c3ae14d6b2713c4",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 168112,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://huggingface.co/onnx-community/opus-mt-en-es",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 117842,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://huggingface.co/onnx-community/opus-mt-en-es/blob/b5eba94a023a1954c90401b43537f479f962981d/README.md",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 105803,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://huggingface.co/onnx-community/opus-mt-en-es/tree/b5eba94a023a1954c90401b43537f479f962981d",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 167968,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://huggingface.co/onnx-community/opus-mt-en-fr",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 117819,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://huggingface.co/onnx-community/opus-mt-en-fr/blob/060ab253b6aae185f277c1e048fb0cf61a02c6c0/README.md",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 105803,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://huggingface.co/onnx-community/opus-mt-en-fr/tree/060ab253b6aae185f277c1e048fb0cf61a02c6c0",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 167651,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://huggingface.co/onnx-community/opus-mt-en-ru",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 117817,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://huggingface.co/onnx-community/opus-mt-en-ru/blob/c6967b328d292f9f3d14bab6e9de40f9bd367114/README.md",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 105803,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://huggingface.co/onnx-community/opus-mt-en-ru/tree/c6967b328d292f9f3d14bab6e9de40f9bd367114",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 167972,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://huggingface.co/onnx-community/opus-mt-en-zh",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 117818,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://huggingface.co/onnx-community/opus-mt-en-zh/blob/4dc37afc6deb160f4c9048260d48019ee497658e/README.md",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 105804,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://huggingface.co/onnx-community/opus-mt-en-zh/tree/4dc37afc6deb160f4c9048260d48019ee497658e",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 167745,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://huggingface.co/onnx-community/opus-mt-es-en",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 117827,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://huggingface.co/onnx-community/opus-mt-es-en/blob/0ca6ea53b39356aece8a15bd92eaf7bb40035ea6/README.md",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 105803,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://huggingface.co/onnx-community/opus-mt-es-en/tree/0ca6ea53b39356aece8a15bd92eaf7bb40035ea6",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 167877,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://huggingface.co/onnx-community/opus-mt-fr-en",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 117813,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://huggingface.co/onnx-community/opus-mt-fr-en/blob/f7e3c392bacfe300a66b0ddbd20de1d2dfc3b77e/README.md",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 105802,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://huggingface.co/onnx-community/opus-mt-fr-en/tree/f7e3c392bacfe300a66b0ddbd20de1d2dfc3b77e",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 167740,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://huggingface.co/onnx-community/opus-mt-ru-en",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 117845,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://huggingface.co/onnx-community/opus-mt-ru-en/blob/92ef0d550ca96ebd9cd5d13aab6ad41854d99a3d/README.md",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 105802,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://huggingface.co/onnx-community/opus-mt-ru-en/tree/92ef0d550ca96ebd9cd5d13aab6ad41854d99a3d",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 167970,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://huggingface.co/onnx-community/opus-mt-zh-en",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 118205,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://huggingface.co/onnx-community/opus-mt-zh-en/blob/8e3032ebeebbacda779fe95efa64c03b962f83f3/README.md",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 106175,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://huggingface.co/onnx-community/opus-mt-zh-en/tree/8e3032ebeebbacda779fe95efa64c03b962f83f3",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 168568,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://huggingface.co/qvac/TranscribePsy-250M-EU-sub-gguf",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 175694,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://huggingface.co/qvac/TranscribePsy-250M-EU-sub-gguf/tree/92460e0a8e7dc20f2fb126198bdd9eebb9ba2dc7",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 133096,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://huggingface.co/rtr46/meiki.text.detect.v0",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 137067,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://huggingface.co/rtr46/meiki.text.detect.v0/blob/a9cffa4f60cbf72ddb87edf19c6f98a01cd042e6/README.md",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 119911,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://huggingface.co/rtr46/meiki.text.detect.v0/tree/a9cffa4f60cbf72ddb87edf19c6f98a01cd042e6",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 166681,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://huggingface.co/rtr46/meiki.txt.recognition.v0",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 156551,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://huggingface.co/rtr46/meiki.txt.recognition.v0/blob/a28cf5874dc2438ebb1c86336be26bcec51e3375/README.md",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 141428,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://huggingface.co/rtr46/meiki.txt.recognition.v0/tree/a28cf5874dc2438ebb1c86336be26bcec51e3375",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 141973,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://huggingface.co/tencent/HY-MT1.5-1.8B",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 213001,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://huggingface.co/tencent/HY-MT1.5-1.8B-GGUF",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 232764,
+      "checkedAt": "2026-10-18T21:49:19.244949+00:00",
+      "reusedRecentCheck": true
+    },
+    {
+      "url": "https://huggingface.co/tencent/HY-MT1.5-1.8B-GGUF/blob/265b2e615a7dc9b06c435dc878829ad99a512ba2/License.txt",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 214459,
+      "checkedAt": "2026-10-18T21:52:39.372178+00:00"
+    },
+    {
+      "url": "https://huggingface.co/tencent/HY-MT1.5-1.8B-GGUF/tree/265b2e615a7dc9b06c435dc878829ad99a512ba2",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 193385,
+      "checkedAt": "2026-10-18T21:52:39.465399+00:00"
+    },
+    {
+      "url": "https://huggingface.co/tencent/Hy-MT2-1.8B",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 226766,
+      "checkedAt": "2026-10-18T21:52:39.294219+00:00"
+    },
+    {
+      "url": "https://huggingface.co/tencent/Hy-MT2-1.8B-GGUF",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 229452,
+      "checkedAt": "2026-10-18T21:52:39.555653+00:00"
+    },
+    {
+      "url": "https://huggingface.co/tencent/Hy-MT2-1.8B-GGUF/blob/a0c709d9fac510f2c807aa3af52872340dc37a4a/LICENSE.txt",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 238213,
+      "checkedAt": "2026-10-18T21:52:39.706168+00:00"
+    },
+    {
+      "url": "https://huggingface.co/tencent/Hy-MT2-1.8B-GGUF/tree/a0c709d9fac510f2c807aa3af52872340dc37a4a",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 180663,
+      "checkedAt": "2026-10-18T21:52:39.936319+00:00"
+    },
+    {
+      "url": "https://huggingface.co/xiaomi-research/MiLMMT-46-1B-v1.0",
+      "status": "reachable",
+      "http_status": 200,
+      "remote_bytes": 186897,
+      "checkedAt": "2026-10-18T21:52:39.835037+00:00"
+    }
+  ]
+}

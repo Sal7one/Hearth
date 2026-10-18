@@ -71,4 +71,23 @@ class TranslationBrowserPresentationTest {
         assertEquals("hy-mt2-q6", preferredTranslationVariant(variants, installed, "hy-mt2-q6").id)
         assertTrue(translationBrowserItems().first { it.variants.any { model -> model.family == "hy-mt2" } }.installed(installed))
     }
+    @Test fun precisionAndPublisherQueriesSelectOnlyMatchingArtifacts() {
+        val item = translationBrowserItems().first { it.variants.any { spec -> spec.family == "hy-mt2" } }
+        assertTrue(item.matches("Arabic Q6", "any", "any", "text"))
+        assertEquals(listOf("hy-mt2-q6"), item.matchingVariants("Arabic Q6").map { it.id })
+        assertEquals(listOf("hy-mt2-q8"), item.matchingVariants("Q8_0 Apache").map { it.id })
+        assertTrue(item.matchingVariants("العَرَبِيَّة").isNotEmpty())
+        assertTrue(item.matchingVariants("does-not-exist").isEmpty())
+        assertTrue(item.matchingVariants("Q8", setOf("hy-mt2-q4")).isEmpty())
+        assertEquals(listOf("hy-mt2-q8"), item.matchingVariants("Q8", setOf("hy-mt2-q4", "hy-mt2-q8")).map { it.id })
+    }
+
+    @Test fun directAndPivotQueriesPreserveExactDirectionsAndPinnedConversionSources() {
+        val items = translationBrowserItems()
+        val direct = items.filter { it.matches("Marian direct Arabic", "en", "ar", "compact") }
+        assertEquals(1, direct.size)
+        assertNotNull(direct.single().pair)
+        assertTrue(items.filter { it.matches("English pivot Arabic French", "ar", "fr", "compact") }.all { it.throughEnglish })
+        assertTrue(items.any { it.matches("onnx-community", "en", "ar", "compact") })
+    }
 }

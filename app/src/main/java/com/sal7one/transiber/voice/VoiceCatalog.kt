@@ -6,6 +6,11 @@ internal data class VoiceAsset(val id: String, val filename: String, val path: S
     val url get() = "https://huggingface.co/Supertone/supertonic-3/resolve/${VoiceCatalog.revision}/$path"
 }
 internal object VoiceCatalog {
+    const val modelCard = "https://huggingface.co/Supertone/supertonic-3"
+    const val projectUrl = "https://github.com/supertone-inc/supertonic"
+    const val license = "OpenRAIL-M (model weights); MIT (runtime code)"
+    val filesUrl get() = "$modelCard/tree/$revision"
+    val licenseUrl get() = "$modelCard/blob/$revision/LICENSE"
     const val revision = "3cadd1ee6394adea1bd021217a0e650ede09a323"
     val languages = VoiceText.supertonicLanguages
     val voices = listOf("F1","F2","F3","F4","F5","M1","M2","M3","M4","M5")

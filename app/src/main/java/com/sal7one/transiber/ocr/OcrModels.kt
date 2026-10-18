@@ -14,6 +14,15 @@ import java.security.MessageDigest
 internal data class OcrAsset(val id: String, val repository: String, val revision: String, val bytes: Long, val sha256: String, val owner: String = "PaddlePaddle", val remoteFile: String = "inference.onnx") {
     val url get() = "https://huggingface.co/$owner/$repository/resolve/$revision/$remoteFile"
     val filename get() = if(owner == "PaddlePaddle") "$repository.onnx" else "$id.onnx"
+    val modelCard get() = "https://huggingface.co/$owner/$repository"
+    val filesUrl get() = "$modelCard/tree/$revision"
+    val license get() = if (owner == "rtr46") "LGPL-3.0" else "Apache-2.0"
+    val licenseUrl get() = "$modelCard/blob/$revision/README.md"
+    val originalModelCard get() = when (owner) {
+        "PaddlePaddle" -> "https://github.com/PaddlePaddle/PaddleOCR"
+        "onnx-community" -> "https://huggingface.co/kha-white/manga-ocr-base"
+        else -> modelCard
+    }
 }
 internal data class OcrProfile(val id: String, val label: String, val languages: Set<String>, val asset: OcrAsset, val engine: String = "paddle", val extraAssets: List<OcrAsset> = emptyList(), val description: String = "Horizontal printed text · Apache-2.0") {
     val assets get() = if(engine == "paddle") listOf(OcrCatalog.detector,asset) else listOf(asset)+extraAssets

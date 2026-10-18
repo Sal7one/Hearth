@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="explorer_translation_engine_options">المحرك والتسريع</string>
+    <string name="explorer_clear_filters">مسح عوامل التصفية</string>
+    <string name="explorer_translation_direct">مدمج · ترجمة مباشرة بين لغتين</string>
+    <string name="explorer_translation_pivot">مدمج · خطوتان عبر الإنجليزية</string>
+    <string name="explorer_translation_multilingual">متعدد اللغات · ترجمة النصوص</string>
+    <string name="explorer_voice_coverage">%1$d لغة · %2$d أصوات · %3$d ميبيبايت للمحرك والصوت المحدد</string>
+    <string name="explorer_voice_license">النموذج: %1$s · بيئة التشغيل: MIT</string>
+    <string name="explorer_voice_tuning">جودة الصوت وتفاصيل المحرك</string>
+</resources>

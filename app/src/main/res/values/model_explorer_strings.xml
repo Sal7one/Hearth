@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="model_explorer_title">Model explorer</string>
+    <string name="model_explorer_choose_model">Choose a model</string>
+    <string name="model_explorer_hint">Find models for speech, translation, camera text and voices.</string>
+    <string name="model_explorer_speech_title">Explore speech models</string>
+    <string name="model_explorer_clear_search">Clear search</string>
+    <string name="model_explorer_reset_filters">Reset filters</string>
+    <string name="model_explorer_no_results_title">No models found</string>
+    <string name="model_explorer_model_card">Model card</string>
+    <string name="model_explorer_pinned_files">Pinned files</string>
+    <string name="model_explorer_license">License</string>
+    <string name="model_explorer_source_offline">Source: %1$s</string>
+    <string name="model_explorer_source_details">Source files and license</string>
+    <string name="model_explorer_hide_source_details">Hide source details</string>
+    <string name="model_explorer_invalid_source">This source link is invalid. Only public HTTPS sources are supported.</string>
+    <string name="model_explorer_search_hint">Search by name, language or precision. Installed models appear first.</string>
+    <string name="model_explorer_english_only">English only</string>
+    <string name="model_explorer_variants">%1$d precision options</string>
+    <string name="model_explorer_verification_issue">Installed model needs attention</string>
+</resources>

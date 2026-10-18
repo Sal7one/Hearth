@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="model_explorer_title">模型浏览器</string>
+    <string name="model_explorer_choose_model">选择模型</string>
+    <string name="model_explorer_hint">查找语音、翻译、相机文字和语音输出模型。</string>
+    <string name="model_explorer_speech_title">探索语音模型</string>
+    <string name="model_explorer_clear_search">清除搜索</string>
+    <string name="model_explorer_reset_filters">重置筛选</string>
+    <string name="model_explorer_no_results_title">未找到模型</string>
+    <string name="model_explorer_model_card">模型卡</string>
+    <string name="model_explorer_pinned_files">固定版本文件</string>
+    <string name="model_explorer_license">许可证</string>
+    <string name="model_explorer_source_offline">来源：%1$s</string>
+    <string name="model_explorer_source_details">来源文件与许可证</string>
+    <string name="model_explorer_hide_source_details">隐藏来源详情</string>
+    <string name="model_explorer_invalid_source">来源链接无效。仅支持公开 HTTPS 来源。</string>
+    <string name="model_explorer_search_hint">按名称、语言或精度搜索。已安装模型优先显示。</string>
+    <string name="model_explorer_english_only">仅英语</string>
+    <string name="model_explorer_variants">%1$d 个精度选项</string>
+    <string name="model_explorer_verification_issue">已安装模型需要检查</string>
+</resources>

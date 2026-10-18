@@ -57,6 +57,20 @@ data class TranslationModelSpec(
     }
     val url get() = "https://huggingface.co/$repo/resolve/$revision/$fileName"
     val modelCard get() = "https://huggingface.co/$repo"
+    val filesUrl get() = "$modelCard/tree/$revision"
+    /** Attribute both the checkpoint author and the distributor of the selected quantization. */
+    val originalModelCard get() = "https://huggingface.co/" + when (family) {
+        "translategemma" -> "google/translategemma-4b-it"
+        "milmmt-46" -> "xiaomi-research/MiLMMT-46-1B-v1.0"
+        "index-translate" -> "IndexTeam/Index-Translate-2B"
+        "hy-mt2" -> "tencent/Hy-MT2-1.8B"
+        else -> "tencent/HY-MT1.5-1.8B"
+    }
+    val licenseUrl get() = when {
+        family == "hy-mt1.5" -> "$modelCard/blob/$revision/License.txt"
+        family == "hy-mt2" && repo == "tencent/Hy-MT2-1.8B-GGUF" -> "$modelCard/blob/$revision/LICENSE.txt"
+        else -> originalModelCard
+    }
     fun supports(source: String, target: String): Boolean {
         val from = TranslationLanguages.normalize(source)
         val to = TranslationLanguages.normalize(target)

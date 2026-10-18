@@ -9,10 +9,11 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.unit.dp
 import com.sal7one.transiber.byok.ByokPolicy
 import com.sal7one.transiber.downloads.*
+import com.sal7one.transiber.ui.components.ModelFilterPicker
+import com.sal7one.transiber.ui.components.ModelSourceLinks
 import kotlinx.coroutines.*
 
 /** Used by both the model library and advanced setup. Network delegation stays play-only. */
@@ -22,10 +23,10 @@ internal fun ModelSourcePanel(sources: List<ModelSource>) {
 
     if (sources.isEmpty()) return
     val context = LocalContext.current
-    val uri = LocalUriHandler.current
     val scope = rememberCoroutineScope()
     var selected by rememberSaveable(sources) { mutableIntStateOf(0) }
     var message by remember(sources) { mutableStateOf<String?>(null) }
+    var error by remember(sources) { mutableStateOf<String?>(null) }
     var busy by remember { mutableStateOf(false) }
     var records by remember { mutableStateOf<List<FileDownload>>(emptyList()) }
     val downloads = remember { FileDownloads(context.applicationContext) }
@@ -33,37 +34,37 @@ internal fun ModelSourcePanel(sources: List<ModelSource>) {
         if (ByokPolicy.FEATURE_BYOK) while (isActive) {
             try { records = withContext(Dispatchers.IO) { downloads.list() } }
             catch (e: CancellationException) { throw e }
-            catch (e: Exception) { message = e.message ?: e.toString() }
+            catch (e: Exception) { error = e.message ?: e.toString() }
             delay(1500)
         }
     }
     val source = sources[selected]
-    val artifact = SpeechDownloads.find(source.id)
-    val record = records.firstOrNull { it.title == artifact?.fileName }
+    val artifact = SpeechArtifactCatalog.find(source.id)
+    val record = records.firstOrNull { artifact != null && it.modelId == artifact.id }
 
     OutlinedCard(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(uiText(UiR.string.ui_get_model_e95d4), style = MaterialTheme.typography.titleSmall)
-            if (sources.size > 1) FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                sources.forEachIndexed { index, item ->
-                    FilterChip(selected = selected == index, onClick = { selected = index; message = null }, label = { Text(item.label) })
-                }
-
-
-            } else Text(source.label, style = MaterialTheme.typography.bodyMedium)
+            if (sources.size > 1) ModelFilterPicker(uiText(UiR.string.model_explorer_choose_model), selected.toString(),
+                sources.mapIndexed { index, item -> index.toString() to item.label },
+                { selected = it.toInt(); message = null; error = null })
+            else Text(source.label, style = MaterialTheme.typography.bodyMedium)
             Text(uiText.installation(source), style = MaterialTheme.typography.bodySmall)
             if (ByokPolicy.FEATURE_BYOK) {
                 artifact?.let { model ->
                     OutlinedButton(enabled = !busy && record?.active != true, onClick = { scope.launch {
                         busy = true
+                        error = null; message = null
                         try {
-                            if (record?.failed == true && record.id < 0) downloads.retry(record.id)
-                            else if (record?.installed == true) downloads.selectInstalled(record)
-                            else withContext(Dispatchers.IO) { downloads.enqueue(DownloadSpec.parse(model.url, model.fileName), modelPackage = true, installModelId = model.profile.id) }
-                            records = withContext(Dispatchers.IO) { downloads.list() }
+                            records = withContext(Dispatchers.IO) {
+                                if (record?.failed == true && record.id < 0) downloads.retry(record.id)
+                                else if (record?.installed == true) downloads.selectInstalled(record)
+                                else downloads.enqueue(DownloadSpec.parse(model.url, model.fileName), modelPackage = true, installModelId = model.id)
+                                downloads.list()
+                            }
                             message = if (record?.installed == true) uiText(UiR.string.ui_selected_1_s_7c44d, source.label) else null
                         } catch (e: CancellationException) { throw e }
-                        catch (e: Exception) { message = e.message ?: e.toString() }
+                        catch (e: Exception) { error = e.message ?: e.toString() }
                         finally { busy = false }
                     } }) { Text(when {
                         record?.installed == true -> uiText(UiR.string.ui_use_1_s_5cc45, source.label)
@@ -77,13 +78,12 @@ internal fun ModelSourcePanel(sources: List<ModelSource>) {
                     Text(uiText(UiR.string.ui_download_folder_1_s_models_850ef, downloads.locationLabel), style = MaterialTheme.typography.bodySmall)
                 }
 
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    TextButton(onClick = { try { uri.openUri(source.publisher) } catch (e: Exception) { message = e.message ?: e.toString() } }) { Text(uiText(UiR.string.ui_source_license_397e9)) }
-                    if (artifact == null) TextButton(onClick = { try { uri.openUri(source.files) } catch (e: Exception) { message = e.message ?: e.toString() } }) { Text(uiText(UiR.string.ui_browse_publisher_files_e0abe)) }
-                }
-            } else Text(uiText(UiR.string.ui_offline_build_obtain_files_on_another_device_then_import_locally_cd62f, source.publisher), style = MaterialTheme.typography.bodySmall)
+            }
+            if (ByokPolicy.FEATURE_BYOK) ModelSourceLinks(source.publisher, source.files, onError = { error = it })
+            else Text(uiText(UiR.string.ui_offline_build_obtain_files_on_another_device_then_import_locally_cd62f, source.publisher), style = MaterialTheme.typography.bodySmall)
             if (busy) LinearProgressIndicator(Modifier.fillMaxWidth())
             message?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
+            error?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error) }
         }
     }
 }

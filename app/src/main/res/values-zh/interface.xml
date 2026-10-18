@@ -47,7 +47,7 @@
     <string name="install_moonshine" formatted="false">"自动下载安装，原件保留在所选文件夹。英语短语段识别，包日期为 2026 年 2 月 27 日。此适配器并非 Moonshine 较新的流式运行时。"</string>
     <string name="install_whisper" formatted="false">"下载 whisper.cpp GGML .bin 后导入。Tiny/Base 占用更少内存。.en.bin 仅支持英语；多语言模型可指定口语语言。此适配器不接受 Safetensors 或 GGUF。"</string>
     <string name="install_vosk" formatted="false">"在发布方页面选择口语语言，下载并解压 ZIP，再导入解压后的 Vosk 模型文件夹。每个模型语言固定，不自动切换。"</string>
-    <string name="install_marian" formatted="false">"旧版英语 → 阿拉伯语。导入包含 ONNX 转换中的 source.spm、tokenizer.json、encoder_model.onnx 和 decoder_model_merged.onnx 的文件夹。不是 GGUF 或语音 ZIP。其他 ONNX 变体未经验证，新语音引擎使用上方翻译模型。"</string>
+    <string name="install_marian" formatted="false">"旧版英语到阿拉伯语文件夹导入。经过验证的下载和其他支持的语言对请使用翻译模型浏览器。自定义文件夹必须包含来自同一兼容 ONNX 转换的 source.spm、tokenizer.json、encoder_model.onnx 和 decoder_model_merged.onnx。不支持原始检查点、GGUF 或语音 ZIP。"</string>
     <string name="preset_bottom" formatted="false">"底部字幕条"</string>
     <string name="preset_top" formatted="false">"顶部字幕条"</string>
     <string name="preset_center" formatted="false">"居中显示"</string>

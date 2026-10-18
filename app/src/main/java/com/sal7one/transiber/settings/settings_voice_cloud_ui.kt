@@ -13,6 +13,8 @@ import androidx.compose.ui.unit.dp
 import com.sal7one.common_jni.language.LanguageCatalog
 import com.sal7one.transiber.byok.ByokPolicy
 import com.sal7one.transiber.voice.*
+import com.sal7one.transiber.ui.components.ModelSearchField
+import androidx.compose.runtime.saveable.rememberSaveable
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
@@ -57,8 +59,23 @@ internal fun SettingsVoiceCloudUi(language: String,onLanguage: (String)->Unit,on
     }
     Text(uiText(UiR.string.ui_supported_server_models_1b8a8),style=MaterialTheme.typography.titleMedium)
     Text(uiText(UiR.string.ui_these_run_on_your_server_set_up_the_included_hearth_voice_bridge_f6248),style=MaterialTheme.typography.bodySmall)
-    VoiceModelCard("Chatterbox Multilingual V3",uiText(UiR.string.ui_self_hosted_python_80a0e),uiText(UiR.string.ui_23_languages_including_arabic_default_or_reference_voice_turbo_na_b5a55),"MIT","https://github.com/resemble-ai/chatterbox",uiText(UiR.string.ui_source_models_setup_e17e2),onError)
-    VoiceModelCard("Qwen3-TTS 0.6B Base",uiText(UiR.string.ui_self_hosted_python_80a0e),uiText(UiR.string.ui_10_languages_no_arabic_requires_your_reference_wav_and_matching_t_ffece),"Apache-2.0","https://huggingface.co/Qwen/Qwen3-TTS-12Hz-0.6B-Base",uiText(UiR.string.ui_model_card_files_setup_2f538),onError)
-    VoiceModelCard("Fish Speech",uiText(UiR.string.ui_self_hosted_official_fish_server_8efdd),uiText(UiR.string.ui_languages_and_voice_ids_depend_on_the_deployed_checkpoint_and_ser_fc6d7),uiText(UiR.string.ui_fish_audio_research_license_separate_commercial_terms_14192),"https://github.com/fishaudio/fish-speech",uiText(UiR.string.ui_source_models_setup_e17e2),onError)
+    var modelQuery by rememberSaveable { mutableStateOf("") }
+    ModelSearchField(modelQuery, { modelQuery = it })
+    val serverModels = listOf(
+        VoiceBrowserCard("Chatterbox Multilingual V3", uiText(UiR.string.ui_self_hosted_python_80a0e),
+            uiText(UiR.string.ui_23_languages_including_arabic_default_or_reference_voice_turbo_na_b5a55), "MIT", "https://github.com/resemble-ai/chatterbox", VoiceBrowserLanguages.chatterboxMultilingualV3),
+        VoiceBrowserCard("Qwen3-TTS 0.6B Base", uiText(UiR.string.ui_self_hosted_python_80a0e),
+            uiText(UiR.string.ui_10_languages_no_arabic_requires_your_reference_wav_and_matching_t_ffece), "Apache-2.0", "https://huggingface.co/Qwen/Qwen3-TTS-12Hz-0.6B-Base", VoiceBrowserLanguages.qwen3TtsBase),
+        VoiceBrowserCard("Fish Speech", uiText(UiR.string.ui_self_hosted_official_fish_server_8efdd),
+            uiText(UiR.string.ui_languages_and_voice_ids_depend_on_the_deployed_checkpoint_and_ser_fc6d7),
+            uiText(UiR.string.ui_fish_audio_research_license_separate_commercial_terms_14192), "https://github.com/fishaudio/fish-speech",
+            // The generic Fish server entry has no fixed checkpoint; use checked server capabilities above.
+            emptySet()),
+    )
+    val matchingModels = serverModels.filter { it.matches(modelQuery) }
+    if (matchingModels.isEmpty()) Text(uiText(UiR.string.model_picker_no_matches), style = MaterialTheme.typography.bodySmall)
+    matchingModels.forEach { model ->
+        VoiceModelCard(model.title, model.runtime, model.coverage, model.license, model.url, onError)
+    }
     TextButton(enabled=!working,onClick={VoiceSettings.forget(context);capabilities=null;onError(null);onForgot()}){Text(uiText(UiR.string.ui_forget_voice_connection_cebb3))}
 }

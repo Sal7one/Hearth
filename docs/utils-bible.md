@@ -1,5 +1,19 @@
 # Utilities and consumers
 
+`ModelSearch` is consumed by the speech, translation, OCR and voice explorers and
+their compact option pickers. Search requires every query word, accepts native,
+English and all three app UI language names plus common language aliases, and folds accents
+and Arabic vowel marks. Short language codes match complete words so `ar` does
+not match an unrelated `large` model. `ModelSearchTest` exercises multi-field
+queries, accents, native scripts, aliases and short-code collisions;
+`SpeechBrowserPresentationTest` verifies precision queries preserve all options
+on one checkpoint card while Installed requires the matching precision to exist.
+`ModelSourceUrls` is consumed by the shared model-source buttons. Its host tests
+reject non-HTTPS URLs and embedded credentials and confirm pinned Hugging Face
+download URLs open readable artifact pages. Browser delegation remains Play-only;
+FOSS displays selectable source attribution and expandable, selectable pinned-file
+and license URLs without opening a network application.
+
 `SttPcmInput` is the caption controller's capability-driven PCM adapter. Optional
 `DirectPcmSttEngine` and `CancellableSttEngine` contracts separate input memory and
 per-instance cancellation from model identity without changing JNI signatures.
@@ -838,3 +852,16 @@ tests cover external setup updates, preserving the latest counterpart language,
 persistent automatic mode, temporary shared-input behavior and CPU-retry
 ordering. `TypedInputOrigin` keeps an incoming share's manual/immediate choice
 scoped to that input without replacing the user's automatic preference.
+
+`SpeechCatalogInstallations` is consumed by the speech explorer and portable
+setup publisher resolution. A matching engine profile alone cannot label a
+catalog download as installed: archive packages require the installer-owned
+receipt bound to the pinned archive and verified manifest; single-file GGUF
+packages require the actual model role's size and SHA-256. Registry models must
+also retain their catalog digest and pass cached file verification. Six host
+cases in `SpeechCatalogInstallationsTest` cover same-profile custom imports,
+receipt pin/manifest changes, corrupt candidates beside healthy installs,
+actual GGUF bytes, changed/deleted registered files, and malformed manifests
+that remain visible as errors without hiding other browser entries.
+`LocalSpeechModels.inspect` supplies this tolerant browser snapshot; runtime
+selection retains its strict package listing and full startup verification.

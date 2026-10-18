@@ -21,6 +21,8 @@ class ModelSourcesTest {
                 assertFalse(source.installation.contains("hearth-speech.json"))
                 val artifact = SpeechDownloads.find(source.id)!!
                 assertEquals(url, artifact.url)
+                assertEquals(artifact.bytes, source.downloadBytes)
+                assertEquals(SpeechArtifactCatalog.find(source.id)!!.filesUrl, source.files)
                 assertTrue(artifact.bytes > 0)
                 assertTrue(artifact.sha256.matches(Regex("[0-9a-f]{64}")))
             }

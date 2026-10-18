@@ -47,7 +47,7 @@
     <string name="install_moonshine" formatted="false">"تنزيل وتثبيت تلقائيان مع إبقاء الأصل في مجلدك. الإنجليزية بمقاطع قصيرة. الحزمة: 27 فبراير 2026. ليس هذا محرك Moonshine المتدفق الأحدث."</string>
     <string name="install_whisper" formatted="false">"نزّل ملف whisper.cpp GGML بامتداد .bin ثم استورده. يستهلك Tiny وBase ذاكرة أقل. ملفات .en.bin للإنجليزية فقط، ومتعددة اللغات تسمح باختيار لغة الكلام. لا يقبل هذا المحوّل Safetensors أو GGUF."</string>
     <string name="install_vosk" formatted="false">"اختر لغة الكلام من صفحة الناشر. نزّل ZIP وفكّه ثم استورد مجلد النموذج المستخرج نفسه. يحدد كل نموذج لغة ثابتة، دون تبديل تلقائي."</string>
-    <string name="install_marian" formatted="false">"مسار قديم من الإنجليزية إلى العربية. استورد مجلدًا يحتوي source.spm وtokenizer.json وencoder_model.onnx وdecoder_model_merged.onnx من تحويل ONNX. ليس GGUF أو ZIP كلام. المتغيرات الأخرى غير موثقة؛ تستخدم المحركات الجديدة المترجمين أعلاه."</string>
+    <string name="install_marian" formatted="false">"استيراد المجلد القديم من الإنجليزية إلى العربية. للتنزيلات الموثقة وأزواج اللغات الأخرى المدعومة، استخدم مستكشف الترجمة. يجب أن يحتوي المجلد المخصص على source.spm وtokenizer.json وencoder_model.onnx وdecoder_model_merged.onnx من تحويل ONNX متوافق واحد. لا تُدعم الأوزان الأصلية أو ملفات GGUF أو أرشيفات ZIP للكلام."</string>
     <string name="preset_bottom" formatted="false">"شريط سفلي"</string>
     <string name="preset_top" formatted="false">"شريط علوي"</string>
     <string name="preset_center" formatted="false">"تركيز وسطي"</string>

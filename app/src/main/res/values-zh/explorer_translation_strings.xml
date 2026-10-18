@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="explorer_translation_engine_options">引擎与加速</string>
+    <string name="explorer_clear_filters">清除筛选</string>
+    <string name="explorer_translation_direct">轻量 · 直接语言对</string>
+    <string name="explorer_translation_pivot">轻量 · 通过英语分两步翻译</string>
+    <string name="explorer_translation_multilingual">多语言 · 文本翻译</string>
+    <string name="explorer_voice_coverage">%1$d 种语言 · %2$d 个声音 · 此引擎与声音共需 %3$d MiB</string>
+    <string name="explorer_voice_license">模型：%1$s · 运行时：MIT</string>
+    <string name="explorer_voice_tuning">声音质量与引擎详情</string>
+</resources>

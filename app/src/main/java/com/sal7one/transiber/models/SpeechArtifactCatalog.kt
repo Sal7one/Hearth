@@ -28,6 +28,21 @@ internal data class SpeechArtifact(
     val publisher: SpeechDownload? = null,
 ) {
     val fileName: String get() = url.substringAfterLast('/')
+    /** Browsable artifact provenance, never a multi-gigabyte raw download. */
+    val filesUrl: String get() = when {
+        url.startsWith("https://huggingface.co/") -> url.substringBefore("/resolve/") +
+            "/tree/" + url.substringAfter("/resolve/").substringBefore('/')
+        url.startsWith("https://github.com/") && "/releases/download/" in url ->
+            url.substringBefore("/releases/download/") + "/releases/tag/" +
+                url.substringAfter("/releases/download/").substringBefore('/')
+        else -> publisherUrl
+    }
+    /** The upstream model card explains the model license, distinct from runtime licenses. */
+    val licenseUrl: String get() = when {
+        publisherUrl == "https://github.com/moonshine-ai/moonshine" -> "$publisherUrl/blob/main/LICENSE"
+        publisherUrl.startsWith("https://github.com/") -> "$publisherUrl#license"
+        else -> publisherUrl
+    }
     val engine: CaptionEngineChoice get() = when (kind) {
         SpeechArtifactKind.WHISPER -> CaptionEngineChoice.WHISPER
         SpeechArtifactKind.VOSK -> CaptionEngineChoice.VOSK

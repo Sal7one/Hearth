@@ -16,7 +16,6 @@ import com.sal7one.transiber.voice.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
-import org.json.JSONObject
 import java.io.File
 import com.sal7one.transiber.preferences.UserPreferences
 import kotlinx.coroutines.CancellationException
@@ -39,6 +38,7 @@ internal class PortableSetupActions(context: Context) {
     private val registry get() = ModelRegistry.getInstance(context)
     private val speechStore get() = LocalSpeechModels(File(context.filesDir, "speech-models"))
     private val verifier = SetupModelVerifier()
+    private val catalogInstallations = SpeechCatalogInstallations(File(context.filesDir, "speech-models"), verifier)
 
     suspend fun preview(setup: PortableSetup, fullIntegrity: Boolean = false): PortableSetupPreview = withContext(Dispatchers.IO) {
         val issues = mutableListOf<String>(); val notes = mutableListOf<String>()
@@ -167,18 +167,11 @@ internal class PortableSetupActions(context: Context) {
                 }?.id
         }
         SpeechArtifactKind.PUBLISHER -> {
-            val source = checkNotNull(artifact.publisher)
-            val lineage = if (ByokPolicy.FEATURE_BYOK) FileDownloads(context).list().filter { it.installed && it.modelId == artifact.id }.map { it.installedId }.toSet() else emptySet()
-            speechStore.list().filter { it.profile == source.profile }.firstOrNull { model ->
-                val verified = verifier.speech(model.root, fullIntegrity)
-                if (source.archiveRoot != null && model.id !in lineage && !PublisherSpeechReceipts(File(context.filesDir, "speech-models"))
-                        .matches(model.id, source, verified.manifestSha256)) return@firstOrNull false
-                if (source.archiveRoot == null) {
-                    val manifest = JSONObject(File(model.root, SpeechModelPackage.MANIFEST).readText())
-                    val file = File(model.root, manifest.getJSONObject("roles").getString("model"))
-                    file.length() == source.bytes && verifier.inspect(file, force = fullIntegrity).digest.hex == source.sha256
-                } else true
-            }?.id
+            val snapshot = catalogInstallations.scan(listOf(artifact), emptyList(), speechStore.inspect().models,
+                fullIntegrity = fullIntegrity)
+            snapshot.publisher[artifact.id]?.id.also {
+                if (it == null && snapshot.issues.isNotEmpty()) error(snapshot.issues.joinToString("\n"))
+            }
         }
     }
     private fun resolveCustomSpeech(ref: PortableModelRef, engine: CaptionEngineChoice, fullIntegrity: Boolean): String? {
@@ -187,10 +180,16 @@ internal class PortableSetupActions(context: Context) {
                 verifier.inspect(File(it.path), ref.sha256, fullIntegrity)
             }?.id
         check(ref.digestKind == "tree" && ref.profile != null) { "Custom speech packages need a profile and tree SHA-256." }
-        return speechStore.list().filter { it.profile.id == ref.profile }.firstOrNull {
-            verifier.speech(it.root, fullIntegrity)
-            verifier.inspect(it.root, force = fullIntegrity).digest.hex == ref.sha256
-        }?.id
+        val issues = mutableListOf<String>()
+        val matched = speechStore.inspect().models.filter { it.profile.id == ref.profile }.firstOrNull { model ->
+            try {
+                verifier.speech(model.root, fullIntegrity)
+                verifier.inspect(model.root, force = fullIntegrity).digest.hex == ref.sha256
+            } catch (e: CancellationException) { throw e }
+            catch (e: Exception) { issues += "${model.id}: ${e.message ?: e.toString()}"; false }
+        }
+        if (matched == null && issues.isNotEmpty()) error(issues.joinToString("\n"))
+        return matched?.id
     }
     suspend fun downloadMissing(setup: PortableSetup) = withContext(Dispatchers.IO) {
         check(ByokPolicy.FEATURE_BYOK) { "Import models in the offline build." }; idle()

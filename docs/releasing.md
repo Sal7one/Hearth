@@ -44,6 +44,17 @@ artifacts. It does not publish releases or contain production signing secrets.
 Creating the GitHub repository, pushing and publishing a release are explicit
 maintainer actions. No repository URL is assumed in these instructions.
 
+The speech host suite in both Android and native-host CI explicitly uses
+`CXX=clang++`, matching the compiler family used by Android's NDK. Its private
+Whisper function table currently uses declarations that GCC rejects even though
+Clang builds the production adapters. The workflow prints the selected compiler
+version; [GitHub's Ubuntu runner software list](https://github.com/actions/runner-images/blob/main/images/ubuntu/Ubuntu2404-Readme.md)
+includes Clang. Local runs can select an installed LLVM compiler with
+`CXX=/path/to/clang++ bash common-jni/src/main/cpp/speech/tests/run_speech_tests.sh`.
+All address/undefined-behavior sanitizers and test assertions remain enabled.
+This CI toolchain choice does not establish GCC support or change any native
+source, vendored runtime binary or provenance record.
+
 ## Production signing
 
 Release builds deliberately have **no signing configuration**. These commands produce

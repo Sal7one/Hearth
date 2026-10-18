@@ -3,6 +3,7 @@ package com.sal7one.transiber.settings
 import com.sal7one.common_jni.translation.TranslationCatalog
 import com.sal7one.common_jni.translation.TranslationLanguages
 import com.sal7one.common_jni.translation.TranslationModelSpec
+import com.sal7one.transiber.models.ModelSearch
 import com.sal7one.transiber.translation.MarianCascade
 import com.sal7one.transiber.translation.MarianPackage
 import com.sal7one.transiber.downloads.*
@@ -29,13 +30,21 @@ internal data class TranslationBrowserItem(
         if (source != "any" && source !in sourceLanguages) return false
         if (target != "any" && target !in targetLanguages) return false
         if (source != "any" && source == target) return false
-        val searchable = buildString {
-            append(title); append(' '); append(id)
-            (sourceLanguages + targetLanguages).forEach { append(' '); append(it); append(' '); append(TranslationLanguages.label(it)) }
-        }
-        return query.trim().split(Regex("\\s+")).filter { it.isNotEmpty() }
-            .all { searchable.contains(it, ignoreCase = true) }
+        return if (variants.isNotEmpty()) variants.any { variantMatches(query, it) }
+        else ModelSearch.matches(query, title, id, "Marian OPUS-MT ONNX compact",
+            ModelSearch.languageTerms(sourceLanguages + targetLanguages),
+            if (throughEnglish) "English pivot route two models" else "direct",
+            pair?.license.orEmpty(), pair?.repository.orEmpty(),
+            route?.let { "${it.first.repository} ${it.second.repository} ${it.first.license} ${it.second.license}" }.orEmpty())
     }
+
+    fun matchingVariants(query: String, installedIds: Set<String>? = null): List<TranslationModelSpec> =
+        variants.filter { variantMatches(query, it) && (installedIds == null || it.id in installedIds) }
+
+    private fun variantMatches(query: String, variant: TranslationModelSpec): Boolean = ModelSearch.matches(
+        query, title, id, variant.id, variant.family, variant.quantization, variant.license,
+        variant.repo, variant.fileName, "GGUF multilingual text", ModelSearch.languageTerms(sourceLanguages + targetLanguages),
+    )
 }
 
 internal fun translationBrowserItems(): List<TranslationBrowserItem> {

@@ -8,7 +8,6 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.unit.dp
 import com.sal7one.common_jni.translation.*
 import com.sal7one.common_jni.model.ModelIntegrity
@@ -45,7 +44,6 @@ internal fun SettingsTranslateLocalUi(
         return
     }
     val context = LocalContext.current
-    val uriHandler = LocalUriHandler.current
     val scope = rememberCoroutineScope()
     val downloads = remember { FileDownloads(context.applicationContext) }
     val store = remember { LocalTranslationModels(File(context.filesDir, "translation-models")) }
@@ -155,7 +153,8 @@ internal fun SettingsTranslateLocalUi(
     val languages = remember(catalog) { catalog.flatMap { it.sourceLanguages + it.targetLanguages }.distinct().sortedBy(TranslationLanguages::label) }
     val options = listOf("any" to uiText(UiR.string.model_browser_all_languages)) + languages.map { it to TranslationLanguages.label(it) }
     val shown = catalog.filter { item ->
-        item.matches(query, source, target, kind) && (!installedOnly || item.installed(installed)) &&
+        item.matches(query, source, target, kind) && (!installedOnly ||
+            if (item.compact) item.installed(installed) else item.matchingVariants(query, installed).isNotEmpty()) &&
             (!item.throughEnglish || showPivots)
     }
 
@@ -165,14 +164,21 @@ internal fun SettingsTranslateLocalUi(
                 mode = if (enabled) CaptionMode.TRANSLATE else CaptionMode.CAPTIONS) } })
             Text(uiText(if (config.localTranslationEnabled) UiR.string.ui_translation_enabled_8b961 else UiR.string.ui_disabled_cc_only_9fa78))
         }
-        Text(uiText(UiR.string.ui_active_translator_1_s_dfd1a, TranslationOptions.label(config.localTranslationModelId)), style = MaterialTheme.typography.labelLarge)
-        TranslationAccelerationSetup()
+        Surface(color = MaterialTheme.colorScheme.secondaryContainer, shape = MaterialTheme.shapes.large) {
+            Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(uiText(UiR.string.model_browser_selected), style = MaterialTheme.typography.labelMedium)
+                Text(TranslationOptions.label(config.localTranslationModelId), style = MaterialTheme.typography.titleSmall)
+            }
+        }
+        var engineOptions by rememberSaveable { mutableStateOf(false) }
+        TextButton(onClick = { engineOptions = !engineOptions }) { Text(uiText(UiR.string.explorer_translation_engine_options)) }
+        if (engineOptions) TranslationAccelerationSetup()
         Text(uiText(UiR.string.translation_browser_hint), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         TabRow(if (installedOnly) 1 else 0) {
             Tab(!installedOnly, onClick = { installedOnly = false }, text = { Text(uiText(UiR.string.model_browser_browse)) })
             Tab(installedOnly, onClick = { installedOnly = true }, text = { Text(uiText(UiR.string.model_browser_manage)) })
         }
-        OutlinedTextField(query, { query = it }, label = { Text(uiText(UiR.string.model_browser_search)) }, singleLine = true, modifier = Modifier.fillMaxWidth())
+        ModelSearchField(query, { query = it })
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             ModelFilterPicker(uiText(UiR.string.model_translation_source), source, options, { source = it }, Modifier.weight(1f))
             ModelFilterPicker(uiText(UiR.string.translation_browser_target), target, options, { target = it }, Modifier.weight(1f))
@@ -188,12 +194,20 @@ internal fun SettingsTranslateLocalUi(
         if (busy) LinearProgressIndicator(Modifier.fillMaxWidth())
         message?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
         error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-        Text(uiText(UiR.string.model_browser_results, shown.size), style = MaterialTheme.typography.labelMedium)
-        if (shown.isEmpty()) Text(uiText(UiR.string.translation_browser_empty))
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+            Text(uiText(UiR.string.model_browser_results, shown.size), style = MaterialTheme.typography.labelMedium)
+            if (source != "any" || target != "any" || kind != "any" || showPivots) TextButton(onClick = {
+                source = "any"; target = "any"; kind = "any"; showPivots = false
+            }) { Text(uiText(UiR.string.explorer_clear_filters)) }
+        }
+        if (shown.isEmpty()) ModelBrowserEmptyState(onReset = {
+            query = ""; source = "any"; target = "any"; kind = "any"; installedOnly = false; showPivots = false
+        })
         shown.forEach { item -> key(item.id) {
             var variantId by rememberSaveable { mutableStateOf("") }
             var details by rememberSaveable { mutableStateOf(false) }
-            val variants = item.variants.filter { !installedOnly || it.id in installed }
+            val variants = item.matchingVariants(query, installed.takeIf { installedOnly })
             val spec = variants.firstOrNull { it.id == variantId } ?: variants.takeIf { it.isNotEmpty() }
                 ?.let { preferredTranslationVariant(it, installed, config.localTranslationModelId) }
             val id = spec?.id ?: item.id
@@ -212,13 +226,18 @@ internal fun SettingsTranslateLocalUi(
             val license = spec?.license ?: pair?.license ?: checkNotNull(route).let { listOf(it.first.license, it.second.license).distinct().joinToString("; ") }
             val fixedSource = pair?.source ?: route?.source
             val fixedTarget = pair?.target ?: route?.target
-            OutlinedCard(Modifier.fillMaxWidth()) {
+            OutlinedCard(Modifier.fillMaxWidth(), colors = CardDefaults.outlinedCardColors(
+                containerColor = if (selected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+                    else MaterialTheme.colorScheme.surfaceContainerLow)) {
                 Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(item.title, style = MaterialTheme.typography.titleMedium)
+                    Text(uiText(if (item.compact) {
+                        if (item.throughEnglish) UiR.string.explorer_translation_pivot else UiR.string.explorer_translation_direct
+                    } else UiR.string.explorer_translation_multilingual), style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.primary)
                     Text(if (spec != null) uiText(UiR.string.translation_browser_multilingual_size, spec.sourceLanguages.size, bytes / 1_048_576)
                         else uiText(UiR.string.translation_browser_pair_size, TranslationLanguages.label(checkNotNull(fixedSource)),
                             TranslationLanguages.label(checkNotNull(fixedTarget)), bytes / 1_048_576), style = MaterialTheme.typography.bodyMedium)
-                    if (spec?.family == "index-translate") Text(uiText(UiR.string.translation_browser_index_new), style = MaterialTheme.typography.bodySmall)
                     if (route != null) Text(uiText(UiR.string.model_marian_via_english_warning), style = MaterialTheme.typography.bodySmall)
                     if (spec?.family == "milmmt-46" || spec?.family == "index-translate" || spec?.quantization == "Q2_K")
                         Text(uiText(UiR.string.translation_browser_experimental), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -286,6 +305,13 @@ internal fun SettingsTranslateLocalUi(
                         progress.completed > 0 -> uiText(UiR.string.translation_browser_download_remaining)
                         else -> uiText(UiR.string.model_browser_download_install)
                     }) }
+                    if (spec != null) ModelSourceLinks(spec.originalModelCard, spec.filesUrl, spec.licenseUrl, onError = { error = it })
+                    else (listOfNotNull(pair) + listOfNotNull(route?.first, route?.second)).distinctBy { it.id }.forEach { component ->
+                        if (route != null) Text(
+                            "${TranslationLanguages.label(component.source)} → ${TranslationLanguages.label(component.target)}",
+                            style = MaterialTheme.typography.labelMedium)
+                        ModelSourceLinks(component.originalModelCard, component.filesUrl, component.licenseUrl, onError = { error = it })
+                    }
                     TextButton(onClick = { details = !details }, contentPadding = PaddingValues(0.dp)) {
                         Text(uiText(if (details) UiR.string.model_browser_hide_details else UiR.string.model_browser_details))
                     }
@@ -295,6 +321,7 @@ internal fun SettingsTranslateLocalUi(
                         else if (spec != null) Text(uiText(UiR.string.model_browser_format, spec.quantization), style = MaterialTheme.typography.bodySmall)
                         Text(uiText(UiR.string.ui_1_s_imported_files_must_match_the_selected_artifact_8b0a8, license), style = MaterialTheme.typography.bodySmall)
                         if (spec != null) {
+                            if (spec.family == "index-translate") Text(uiText(UiR.string.translation_browser_index_new), style = MaterialTheme.typography.bodySmall)
                             val budget = DownloadBudget.estimate(spec.bytes, spec.bytes, record?.bytes?.coerceIn(0, spec.bytes) ?: 0)
                             if (!ready) Text(uiText(UiR.string.model_browser_disk, budget.sameVolumeRequired / 1_048_576), style = MaterialTheme.typography.bodySmall)
                             Text(uiText(UiR.string.translation_browser_memory_note), style = MaterialTheme.typography.bodySmall)
@@ -311,13 +338,6 @@ internal fun SettingsTranslateLocalUi(
                                 Text(uiText(UiR.string.model_browser_disk_hint), style = MaterialTheme.typography.bodySmall)
                             }
                             Text(uiText(UiR.string.model_browser_revision, pair?.revision ?: checkNotNull(route).let { it.first.revision + " / " + it.second.revision }), style = MaterialTheme.typography.bodySmall)
-                        }
-                        if (ByokPolicy.FEATURE_BYOK) {
-                            val links = spec?.let { listOf(it.modelCard) } ?: pair?.let { listOf(it.modelCard) }
-                                ?: checkNotNull(route).let { listOf(it.first.modelCard, it.second.modelCard) }
-                            links.forEach { link -> TextButton(onClick = {
-                                try { uriHandler.openUri(link) } catch (e: Exception) { error = e.message ?: e.toString() }
-                            }) { Text(uiText(UiR.string.ui_source_files_license_50a30)) } }
                         }
                     }
                 }

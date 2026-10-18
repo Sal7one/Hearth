@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.25.1 draft — 2026-10-19 · Searchable model explorer and audited sources
+
+- Refine speech, translation, OCR and voice cards while preserving Basic bundles and Advanced controls. Add multilingual, multiword search, precise installed/precision filters, compact tuning, useful empty states and selectable offline source addresses.
+- Show original model cards, pinned artifact pages and actual licenses. Audit the real installer catalog with bounded, unauthenticated publisher metadata and HTTP probes; retain existing artifact integrity pins. Keep model-source clicks separate from verified downloads.
+- Require verified bytes or trusted installer receipts for catalog installation badges. Isolate damaged packages so a healthy selected model remains usable; keep actual errors visible. Move OCR/voice queue and file work off the main thread.
+- Search cloud voices using verified positive language inventories, so a description saying “no Arabic” cannot advertise Arabic support. Keep STT, translation and TTS selections independent, and preserve FOSS network restrictions.
+- Prepare a new `v0.25.1` GitHub draft with code 85; preserve the existing `v0.25.0` tag. Release APKs remain unsigned pending the owner's signing key. See [release notes](docs/releases/0.25.1.md).
+
 ## 0.25.0 draft — 2026-10-19 · Bundles, portable setups and optional GPU engines
 
 - Preserve Hearth's appearance while making Basic mode a compact bundle gallery. Keep full catalogs, model precision choices, custom imports, GPU settings and tuning in Advanced. Speech recognition, optional translation and optional TTS remain independent.

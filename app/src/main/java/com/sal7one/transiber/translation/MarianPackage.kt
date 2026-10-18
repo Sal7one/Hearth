@@ -31,6 +31,9 @@ internal object MarianPackage {
     ) {
         val downloadBytes get() = parts.sumOf { it.bytes }
         val modelCard get() = "https://huggingface.co/$repository"
+        val filesUrl get() = "$modelCard/tree/$revision"
+        val originalModelCard get() = "https://huggingface.co/Helsinki-NLP/opus-mt-$source-$target"
+        val licenseUrl get() = "$modelCard/blob/$revision/README.md"
         val license get() = "CC-BY-4.0 (ONNX conversion); $originalLicense (original Helsinki-NLP model)"
     }
 

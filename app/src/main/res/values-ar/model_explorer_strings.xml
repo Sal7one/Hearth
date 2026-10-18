@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="model_explorer_title">مستكشف النماذج</string>
+    <string name="model_explorer_choose_model">اختر نموذجًا</string>
+    <string name="model_explorer_hint">ابحث عن نماذج للكلام والترجمة ونص الكاميرا والأصوات.</string>
+    <string name="model_explorer_speech_title">استكشف نماذج الكلام</string>
+    <string name="model_explorer_clear_search">مسح البحث</string>
+    <string name="model_explorer_reset_filters">إعادة ضبط المرشحات</string>
+    <string name="model_explorer_no_results_title">لم يُعثر على نماذج</string>
+    <string name="model_explorer_model_card">بطاقة النموذج</string>
+    <string name="model_explorer_pinned_files">ملفات النسخة المحددة</string>
+    <string name="model_explorer_license">الترخيص</string>
+    <string name="model_explorer_source_offline">المصدر: %1$s</string>
+    <string name="model_explorer_source_details">ملفات المصدر والترخيص</string>
+    <string name="model_explorer_hide_source_details">إخفاء تفاصيل المصدر</string>
+    <string name="model_explorer_invalid_source">رابط المصدر غير صالح. تُدعم مصادر HTTPS العامة فقط.</string>
+    <string name="model_explorer_search_hint">ابحث بالاسم أو اللغة أو الدقة. تظهر النماذج المثبتة أولًا.</string>
+    <string name="model_explorer_english_only">الإنجليزية فقط</string>
+    <string name="model_explorer_variants">%1$d خيارات للدقة</string>
+    <string name="model_explorer_verification_issue">نموذج مثبت يحتاج إلى مراجعة</string>
+</resources>

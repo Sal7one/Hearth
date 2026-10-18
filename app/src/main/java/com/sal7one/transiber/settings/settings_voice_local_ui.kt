@@ -16,6 +16,11 @@ import com.sal7one.common_jni.language.LanguageCatalog
 import com.sal7one.transiber.byok.ByokPolicy
 import com.sal7one.transiber.downloads.*
 import com.sal7one.transiber.voice.*
+import com.sal7one.transiber.preferences.SetupMode
+import com.sal7one.transiber.preferences.rememberSetupMode
+import com.sal7one.transiber.ui.components.*
+import kotlinx.coroutines.*
+import androidx.compose.runtime.saveable.rememberSaveable
 
 @Composable
 internal fun SettingsVoiceLocalUi(
@@ -36,6 +41,8 @@ internal fun SettingsVoiceLocalUi(
     val uiText = rememberUiText()
 
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var queuing by remember { mutableStateOf(false) }
     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         listOf("system" to uiText(UiR.string.ui_android_voices_60cb9), "supertonic" to "Supertonic 3").forEach { (id, label) ->
             FilterChip(selected = localBackend == id, onClick = { save(choice.copy(backend = id)) }, label = { Text(label) })
@@ -54,20 +61,61 @@ internal fun SettingsVoiceLocalUi(
                 OutlinedButton(onClick={try{context.startActivity(Intent("com.android.settings.TTS_SETTINGS"))}catch(e: Exception){onError(e.message)}}){Text(uiText(UiR.string.ui_install_or_manage_android_voices_0f03f))}
             }
             "supertonic" -> {
-                val ready=remember(revision,choice.voice){models.ready(choice.voice)}
-                LaunchedEffect(Unit){if(language !in VoiceCatalog.languages)onLanguage("en")}
-                VoiceModelCard("Supertonic 3", uiText(UiR.string.ui_on_device_onnx_runtime_cpu_5b8ad), uiText(UiR.string.ui_31_languages_including_arabic_10_voices_about_383_mib_for_all_fil_cb874), "Model: OpenRAIL-M · runtime code: MIT", "https://huggingface.co/Supertone/supertonic-3", uiText(UiR.string.ui_model_card_files_license_45e0e), onError)
-                VoiceMenu(uiText(UiR.string.ui_voice_3091c),choice.voice,VoiceCatalog.voices.map {it to it}){save(choice.copy(voice=it))}
-                Text(uiText(UiR.string.ui_quality_steps_1_s_8db63, choice.steps))
-                Slider(choice.steps.toFloat(),{save(choice.copy(steps=it.toInt()))},valueRange=2f..12f,steps=9,modifier=Modifier.semantics {contentDescription=uiText(UiR.string.ui_supertonic_quality_steps_80187)})
-                Text(uiText(UiR.string.ui_more_steps_can_improve_quality_and_take_longer_language_support_i_96b86),style=MaterialTheme.typography.bodySmall)
-                Text(if(ready)uiText(UiR.string.ui_selected_engine_and_voice_installed_f2921) else uiText(UiR.string.ui_download_or_import_the_engine_and_selected_voice_f9222))
-                if(ByokPolicy.FEATURE_BYOK) {
-                    val active=remember(revision){FileDownloads(context).list().filter {it.active && VoiceCatalog.assets.any {a->a.filename==it.title}}}
-                    if(active.isNotEmpty())OutlinedButton(onClick=onDownloads){Text(uiText(UiR.string.ui_download_progress_1_s_files_cdb9d, active.size))}
-                    else if(!ready)Button(onClick={try {val dl=FileDownloads(context);(VoiceCatalog.core+VoiceCatalog.file("${choice.voice}.json")).filterNot(models::installed).forEach {dl.enqueue(DownloadSpec(it.url,it.filename),true,it.id)};onRevision()}catch(e: Exception){onError(e.message)}}){Text(uiText(UiR.string.ui_download_engine_voice_c767f))}
+                var ready by remember { mutableStateOf(false) }
+                var records by remember { mutableStateOf<List<FileDownload>>(emptyList()) }
+                var tuning by rememberSaveable { mutableStateOf(false) }
+                LaunchedEffect(revision, choice.voice) {
+                    try {
+                        val snapshot = withContext(Dispatchers.IO) {
+                            models.ready(choice.voice) to if (ByokPolicy.FEATURE_BYOK) FileDownloads(context).list() else emptyList()
+                        }
+                        ready = snapshot.first; records = snapshot.second
+                    } catch (e: CancellationException) { throw e }
+                    catch (e: Exception) { onError(e.message ?: e.toString()) }
                 }
-                OutlinedButton(onClick={onImport()},enabled=!busy){Text(if(busy)uiText(UiR.string.ui_verifying_691f4) else uiText(UiR.string.ui_import_voice_files_or_zip_068a7))}
+                LaunchedEffect(Unit) { if (language !in VoiceCatalog.languages) onLanguage("en") }
+                val required = VoiceCatalog.core + VoiceCatalog.file("${choice.voice}.json")
+                VoiceModelCard("Supertonic 3", uiText(UiR.string.ui_on_device_onnx_runtime_cpu_5b8ad),
+                    uiText(UiR.string.explorer_voice_coverage, VoiceCatalog.languages.size, VoiceCatalog.voices.size,
+                        required.sumOf { it.bytes } / 1_048_576),
+                    uiText(UiR.string.explorer_voice_license, VoiceCatalog.license), VoiceCatalog.modelCard, onError,
+                    filesUrl = VoiceCatalog.filesUrl, licenseUrl = VoiceCatalog.licenseUrl)
+                VoiceMenu(uiText(UiR.string.ui_voice_3091c), choice.voice, VoiceCatalog.voices.map { it to it }) { save(choice.copy(voice = it)) }
+                if (ready) ModelStatusLabel(uiText(UiR.string.ui_selected_engine_and_voice_installed_f2921))
+                else Text(uiText(UiR.string.ui_download_or_import_the_engine_and_selected_voice_f9222), style = MaterialTheme.typography.bodySmall)
+                if (rememberSetupMode() == SetupMode.ADVANCED) {
+                    TextButton(onClick = { tuning = !tuning }) { Text(uiText(UiR.string.explorer_voice_tuning)) }
+                    if (tuning) {
+                        Text(uiText(UiR.string.ui_quality_steps_1_s_8db63, choice.steps))
+                        Slider(choice.steps.toFloat(), { save(choice.copy(steps = it.toInt())) }, valueRange = 2f..12f, steps = 9,
+                            modifier = Modifier.semantics { contentDescription = uiText(UiR.string.ui_supertonic_quality_steps_80187) })
+                        Text(uiText(UiR.string.ui_more_steps_can_improve_quality_and_take_longer_language_support_i_96b86), style = MaterialTheme.typography.bodySmall)
+                        Text(uiText(UiR.string.model_browser_revision, VoiceCatalog.revision), style = MaterialTheme.typography.bodySmall)
+                    }
+                }
+                if (ByokPolicy.FEATURE_BYOK) {
+                    val relevant = records.filter { row -> required.any { it.id == row.modelId || it.filename == row.title } }
+                    val active = relevant.filter { it.active }
+                    val failure = relevant.firstOrNull { it.failed && relevant.none { other -> other.modelId == it.modelId && (other.active || other.complete) } }
+                    if (!ready) failure?.let { Text(it.error.ifBlank {
+                        uiText(UiR.string.ui_download_failed_reason_1_s_8bb99, it.reason)
+                    }, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
+                    if (active.isNotEmpty()) OutlinedButton(onClick = onDownloads) { Text(uiText(UiR.string.ui_download_progress_1_s_files_cdb9d, active.size)) }
+                    else if (!ready) Button(enabled = !busy && !queuing, onClick = {
+                        scope.launch {
+                            queuing = true; onError(null)
+                            try {
+                                withContext(Dispatchers.IO) {
+                                    val dl = FileDownloads(context)
+                                    required.filterNot(models::installed).forEach { dl.enqueue(DownloadSpec(it.url, it.filename), true, it.id) }
+                                }
+                            } catch (e: CancellationException) { throw e }
+                            catch (e: Exception) { onError(e.message ?: e.toString()) }
+                            finally { queuing = false; onRevision() }
+                        }
+                    }) { Text(uiText(if (failure != null) UiR.string.ui_retry_download_install_e5444 else UiR.string.ui_download_engine_voice_c767f)) }
+                }
+                OutlinedButton(onClick={onImport()},enabled=!busy && !queuing){Text(if(busy)uiText(UiR.string.ui_verifying_691f4) else uiText(UiR.string.ui_import_voice_files_or_zip_068a7))}
                 Text(uiText(UiR.string.ui_select_the_onnx_engine_files_its_json_files_and_one_or_more_voice_36da5),style=MaterialTheme.typography.bodySmall)
                 VoiceMenu(uiText(UiR.string.ui_preview_language_fe73d),language,VoiceCatalog.languages.sorted().map {it to LanguageCatalog.option(it).nativeName}){onLanguage(it)}
             }

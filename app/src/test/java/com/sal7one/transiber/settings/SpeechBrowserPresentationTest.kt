@@ -23,12 +23,12 @@ class SpeechBrowserPresentationTest {
             "https://example.com/$id.bin", bytes, "a".repeat(64), "fixed", release, artifactDate,
             languages, "MIT", "https://example.com", installedBytes = bytes)
 
-    @Test fun precisionVariantsShareOneCardAndRemainAvailableWhenInstalledFilterIsUsed() {
+    @Test fun precisionVariantsShareOneCardAndInstalledFilterContainsOnlyInstalledPrecisions() {
         val models = listOf(artifact("tiny-q5"), artifact("tiny-q8", bytes = 200), artifact("english", "tiny.en", languages = setOf("en")))
         assertEquals(2, speechCheckpointGroups(models, "", "", "", false, emptySet()).size)
         val groups = speechCheckpointGroups(models, "whisper", "ar", "tiny", true, setOf("tiny-q8"))
         assertEquals(1, groups.size)
-        assertEquals(setOf("tiny-q5", "tiny-q8"), groups.single().map { it.id }.toSet())
+        assertEquals(setOf("tiny-q8"), groups.single().map { it.id }.toSet())
         assertTrue(speechCheckpointGroups(models, "vosk", "", "", false, emptySet()).isEmpty())
     }
 
@@ -48,5 +48,22 @@ class SpeechBrowserPresentationTest {
         assertEquals("recent", speechCheckpointGroups(listOf(old, recent), "", "", "", false, emptySet()).first().single().id)
         assertEquals("old", speechCheckpointGroups(listOf(old, recent), "", "", "", false, setOf("old")).first().single().id)
         assertEquals("Whisper Tiny", speechCheckpointTitle(artifact("test", "tiny.en")))
+    }
+
+    @Test fun multiwordLanguageAndPrecisionSearchKeepsEveryPrecisionOnTheMatchingCard() {
+        val small = artifact("tiny-q5", bytes = 100)
+        val larger = small.copy(id = "tiny-q8", quant = "Q8_0", bytes = 200)
+        val english = artifact("english", checkpoint = "tiny.en", languages = setOf("en"))
+        val groups = speechCheckpointGroups(listOf(small, larger, english), "", "", "Arabic whisper q8", false, emptySet())
+        assertEquals(listOf(listOf(small, larger)), groups)
+        assertEquals(larger, preferredSpeechVariant(groups.single(), emptySet(), "", "q8"))
+        assertEquals(1, speechCheckpointGroups(listOf(small, english), "", "", "English only", false, emptySet()).size)
+        assertTrue(speechCheckpointGroups(listOf(english), "", "", "العربية", false, emptySet()).isEmpty())
+        assertTrue(speechCheckpointGroups(listOf(small, larger), "", "", "q8", true, setOf(small.id)).isEmpty())
+        assertEquals(1, speechCheckpointGroups(listOf(small, larger), "", "", "q8", true, setOf(larger.id)).size)
+        assertFalse(speechArtifactMatches(small, "q8"))
+        val installedGroup = speechCheckpointGroups(listOf(small, larger), "", "", "", true, setOf(small.id)).single()
+        assertFalse(installedGroup.any { it.id == larger.id })
+        assertEquals(small, preferredSpeechVariant(installedGroup, setOf(small.id), ""))
     }
 }

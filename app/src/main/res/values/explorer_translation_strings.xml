@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="explorer_translation_engine_options">Engine and acceleration</string>
+    <string name="explorer_clear_filters">Clear filters</string>
+    <string name="explorer_translation_direct">Compact · direct language pair</string>
+    <string name="explorer_translation_pivot">Compact · two steps through English</string>
+    <string name="explorer_translation_multilingual">Multilingual · text translation</string>
+    <string name="explorer_voice_coverage">%1$d languages · %2$d voices · %3$d MiB for this engine and voice</string>
+    <string name="explorer_voice_license">Model: %1$s · runtime: MIT</string>
+    <string name="explorer_voice_tuning">Voice quality and engine details</string>
+</resources>

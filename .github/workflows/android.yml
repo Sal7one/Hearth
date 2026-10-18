@@ -34,12 +34,20 @@ jobs:
       - run: ./gradlew test :app:compilePlayQaKotlin :app:compileFossQaKotlin :common-jni:externalNativeBuildDebug :app:assemblePlayQa :app:assembleFossQa :app:assemblePlayRelease :app:assembleFossRelease
       - run: bash common-jni/src/main/cpp/ocr/tests/run_ocr_tests.sh
       - run: bash common-jni/src/main/cpp/common/tests/run_common_utils_tests.sh
-      - run: bash common-jni/src/main/cpp/speech/tests/run_speech_tests.sh
+      - name: Speech host checks with Clang
+        # Android's NDK builds these adapters with Clang. Keep the host suite on
+        # the same compiler family; its private Whisper API is not GCC portable.
+        env:
+          CXX: clang++
+        run: |
+          "$CXX" --version
+          bash common-jni/src/main/cpp/speech/tests/run_speech_tests.sh
       - run: bash common-jni/src/main/cpp/vosk/tests/run_vosk_api_tests.sh
       - run: bash common-jni/src/main/cpp/voice/tests/run_voice_tests.sh
       - run: python3 -m unittest discover -s scripts/voice -p 'test_*.py'
       - run: python3 scripts/speech/test_package.py
       - run: python3 -m unittest discover -s scripts -p 'test_native_abis.py'
+      - run: python3 -m unittest discover -s scripts -p 'test_audit_model_catalog.py'
       - run: python3 scripts/verify-release.py
       - run: python3 scripts/verify-release.py --build-type release
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4

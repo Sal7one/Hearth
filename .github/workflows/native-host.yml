@@ -25,7 +25,13 @@ jobs:
           distribution: temurin
           java-version: 21
       - run: bash common-jni/src/main/cpp/common/tests/run_common_utils_tests.sh
-      - run: bash common-jni/src/main/cpp/speech/tests/run_speech_tests.sh
+      - name: Speech host checks with Clang
+        # Match the production NDK compiler family for the private Whisper API.
+        env:
+          CXX: clang++
+        run: |
+          "$CXX" --version
+          bash common-jni/src/main/cpp/speech/tests/run_speech_tests.sh
       - run: bash common-jni/src/main/cpp/ocr/tests/run_ocr_tests.sh
       - run: bash common-jni/src/main/cpp/vosk/tests/run_vosk_api_tests.sh
       - run: bash common-jni/src/main/cpp/voice/tests/run_voice_tests.sh

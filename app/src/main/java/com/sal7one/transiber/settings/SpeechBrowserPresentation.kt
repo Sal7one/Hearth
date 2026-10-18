@@ -2,6 +2,7 @@ package com.sal7one.transiber.settings
 
 import com.sal7one.transiber.models.SpeechArtifact
 import com.sal7one.transiber.models.SpeechArtifactKind
+import com.sal7one.transiber.models.ModelSearch
 import com.sal7one.common_jni.speech.SpeechStreamingKind
 
 internal enum class SpeechDecodeMode { STREAMING_PARTIALS, WINDOWED_PARTIALS, UTTERANCE_FINALS }
@@ -37,18 +38,27 @@ internal fun speechCheckpointTitle(item: SpeechArtifact): String = when (item.fa
     else -> item.label.substringBefore(" · INT8").substringBefore(" · Q8_0").substringBefore(" · F16")
 }
 
-internal fun preferredSpeechVariant(variants: List<SpeechArtifact>, installedIds: Set<String>, currentId: String): SpeechArtifact =
-    variants.firstOrNull { it.id == currentId }
-        ?: variants.firstOrNull { it.id in installedIds }
-        ?: variants.minBy { it.bytes }
+internal fun preferredSpeechVariant(variants: List<SpeechArtifact>, installedIds: Set<String>, currentId: String,
+    query: String = ""): SpeechArtifact {
+    val matching = variants.filter { speechArtifactMatches(it, query) }.ifEmpty { variants }
+    return matching.firstOrNull { it.id == currentId }
+        ?: matching.firstOrNull { it.id in installedIds }
+        ?: matching.minBy { it.bytes }
+}
+
+internal fun speechArtifactMatches(item: SpeechArtifact, query: String): Boolean = ModelSearch.matches(query,
+    item.label, item.family, speechFamilyTitle(item.family), item.checkpoint, item.quant, item.license,
+    speechDecodeMode(item).name, ModelSearch.languageTerms(item.languages),
+    if (item.languages == setOf("en")) "English only" else "")
 
 internal fun speechCheckpointGroups(artifacts: List<SpeechArtifact>, family: String, language: String,
     query: String, installedOnly: Boolean, installedIds: Set<String>): List<List<SpeechArtifact>> = artifacts.asSequence()
     .filter { family.isBlank() || it.family == family }
     .filter { language.isBlank() || language in it.languages }
-    .filter { query.isBlank() || (it.label + " " + it.family + " " + it.checkpoint).contains(query.trim(), ignoreCase = true) }
     .groupBy { it.family to it.checkpoint }.values
-    .filter { !installedOnly || it.any { variant -> variant.id in installedIds } }
+    .map { group -> if (installedOnly) group.filter { it.id in installedIds } else group }
+    .filter { it.isNotEmpty() }
+    .filter { group -> group.any { speechArtifactMatches(it, query) } }
     .sortedWith(compareByDescending<List<SpeechArtifact>> { group -> group.any { it.id in installedIds } }
         .thenByDescending { group -> group.mapNotNull { it.modelReleaseDate ?: it.artifactDate }.maxOrNull().orEmpty() }
         .thenBy { group -> group.minOf { it.bytes } })

@@ -8,6 +8,7 @@ import java.io.InputStream
 import java.nio.file.Files
 import java.util.UUID
 import java.util.zip.ZipInputStream
+import kotlinx.coroutines.CancellationException
 
 internal val CaptionEngineChoice.speechBackend: SpeechBackend? get() = when (this) {
     CaptionEngineChoice.MOONSHINE -> SpeechBackend.MOONSHINE
@@ -45,24 +46,47 @@ internal val SpeechProfile.label: String get() = when (this) {
     SpeechProfile.TRANSCRIBEPSY_250M_EU_SUB -> "TranscribePsy 250M · European languages"
 }
 internal data class LocalSpeechModel(val id: String, val profile: SpeechProfile, val root: File)
+internal data class LocalSpeechModelSnapshot(val models: List<LocalSpeechModel>, val issues: List<String>)
 
 /** Owns immutable app-private installs; all filesystem work belongs on an IO dispatcher. */
 internal class LocalSpeechModels(private val root: File) {
-    fun list(): List<LocalSpeechModel> = root.listFiles().orEmpty()
+    private fun directories(): List<File> = root.listFiles().orEmpty()
         .filter { it.isDirectory && validId(it.name) }
-        .sortedBy { it.name }.map { directory ->
-            val manifest = File(directory, SpeechModelPackage.MANIFEST)
-            require(manifest.length() in 1..65536) { "Missing or oversized ${manifest.path}" }
-            val profile = SpeechProfile.fromId(JSONObject(manifest.readText()).getString("profile"))
-            LocalSpeechModel(directory.name, profile, directory)
+        .sortedBy { it.name }
+
+    private fun read(directory: File): LocalSpeechModel {
+        val manifest = File(directory, SpeechModelPackage.MANIFEST)
+        require(manifest.length() in 1..65536) { "Missing or oversized ${manifest.path}" }
+        val profile = SpeechProfile.fromId(JSONObject(manifest.readText()).getString("profile"))
+        return LocalSpeechModel(directory.name, profile, directory)
+    }
+
+    fun list(): List<LocalSpeechModel> = directories().map(::read)
+
+    /** Browsers retain healthy installs while surfacing each damaged package's real error. */
+    fun inspect(): LocalSpeechModelSnapshot {
+        val models = mutableListOf<LocalSpeechModel>()
+        val issues = mutableListOf<String>()
+        directories().forEach { directory ->
+            try { models += read(directory) }
+            catch (e: CancellationException) { throw e }
+            catch (e: Exception) { issues += "${directory.name}: ${e.message ?: e.toString()}" }
         }
+        return LocalSpeechModelSnapshot(models, issues)
+    }
 
     fun select(engine: CaptionEngineChoice, id: String): LocalSpeechModel {
+        if (id.isNotBlank()) {
+            check(validId(id)) { "Invalid speech model identity: $id" }
+            val directory = File(root, id)
+            check(directory.isDirectory) { "Selected ${engine.label} package is missing: $id. Select an imported model again." }
+            return read(directory).also { model ->
+                check(model.profile.backend == engine.speechBackend) { "Selected speech package belongs to a different engine: $id" }
+            }
+        }
         val candidates = list().filter { it.profile.backend == engine.speechBackend }
-        return if (id.isBlank()) candidates.firstOrNull()
+        return candidates.firstOrNull()
             ?: error("No ${engine.label} model installed. Open Models to download or import it.")
-        else candidates.firstOrNull { it.id == id }
-            ?: error("Selected ${engine.label} package is missing: $id. Select an imported model again.")
     }
 
     /** ZIP contents must have hearth-speech.json at the root. No temporary extracted tree is selectable. */

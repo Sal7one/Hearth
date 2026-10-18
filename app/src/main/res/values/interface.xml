@@ -47,7 +47,7 @@
     <string name="install_moonshine" formatted="false">"Downloads and installs automatically; originals stay in your folder. English, short segments. Package: 27 February 2026. This adapter is not Moonshine’s newer streaming runtime."</string>
     <string name="install_whisper" formatted="false">"Download a whisper.cpp GGML .bin file, then Import Whisper file. Tiny/Base use less memory. .en.bin models are English-only; multilingual models allow a spoken language. Safetensors and GGUF are not accepted by this adapter."</string>
     <string name="install_vosk" formatted="false">"Choose the spoken language on the publisher page. Download and extract its ZIP, then import the extracted Vosk model folder. Each model fixes the language; there is no automatic language switching."</string>
-    <string name="install_marian" formatted="false">"Legacy English → Arabic. Import a folder containing source.spm, tokenizer.json, encoder_model.onnx and decoder_model_merged.onnx from the ONNX conversion. Not GGUF or a speech ZIP. Other ONNX variants are unverified; new speech engines use the translators above."</string>
+    <string name="install_marian" formatted="false">"Legacy English → Arabic folder import. For verified downloads and other supported language pairs, use the Translation explorer. A custom folder must contain source.spm, tokenizer.json, encoder_model.onnx and decoder_model_merged.onnx from the same compatible ONNX conversion. Raw checkpoints, GGUF and speech ZIPs are unsupported."</string>
     <string name="preset_bottom" formatted="false">"Bottom strip"</string>
     <string name="preset_top" formatted="false">"Top ticker"</string>
     <string name="preset_center" formatted="false">"Center focus"</string>
