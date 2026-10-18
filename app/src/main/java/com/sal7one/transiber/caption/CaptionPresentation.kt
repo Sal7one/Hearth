@@ -51,7 +51,11 @@ internal object CaptionPresentation {
             content.partial.isNotBlank() || !content.partialTranslation.isNullOrBlank()
         return when {
             !hasText -> CaptionEmptyText.LISTENING
-            display(config) == CaptionDisplay.ORIGINAL -> CaptionEmptyText.ORIGINAL_UNAVAILABLE
+            display(config) == CaptionDisplay.ORIGINAL -> {
+                val targetOnly = content.history.any { it.primaryRole != CaptionTextRole.SOURCE && it.original.isNotBlank() } ||
+                    (content.partialRole != CaptionTextRole.SOURCE && content.partial.isNotBlank())
+                if (targetOnly) CaptionEmptyText.ORIGINAL_UNAVAILABLE else CaptionEmptyText.LISTENING
+            }
             else -> CaptionEmptyText.WAITING_TRANSLATION
         }
     }

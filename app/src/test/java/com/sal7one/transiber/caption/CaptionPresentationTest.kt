@@ -51,6 +51,14 @@ class CaptionPresentationTest {
         assertEquals("الترجمة الجزئية", CaptionPresentation.copyText(content, config))
     }
 
+    @Test fun providerTranslationArrivingBeforeItsSourceDoesNotClaimOriginalCaptionsAreUnsupported() {
+        val sourceDisplay = config.copy(display = CaptionDisplay.ORIGINAL)
+        val content = empty.copy(history = listOf(CaptionLine("", "Target run")), partialTranslation = "Target interim")
+        assertTrue(CaptionPresentation.partial(content, sourceDisplay).empty)
+        assertEquals(CaptionEmptyText.LISTENING, CaptionPresentation.emptyText(content, sourceDisplay))
+        assertEquals("Source interim", CaptionPresentation.partial(content.copy(partial = "Source interim"), sourceDisplay).text)
+    }
+
     @Test fun untranslatedLatestUtteranceDoesNotDisplaceTheLastVisibleTranslation() {
         val translated = CaptionLine("Old source", "آخر ترجمة", id = 1)
         val pending = CaptionLine("New source waiting for MT", id = 2)
