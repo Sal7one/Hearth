@@ -91,7 +91,7 @@ fun ConversationScreen(onModels: () -> Unit = {}, onCloud: () -> Unit = {}, onLa
     var typedSpeaker by rememberSaveable { mutableIntStateOf(0) }
     var presentation by remember { mutableStateOf<ConversationTurn?>(null) }
     var flipped by rememberSaveable { mutableStateOf(false) }
-    val prefs = remember { context.getSharedPreferences("conversation-options", 0) }
+    val prefs = remember { com.sal7one.transiber.preferences.UserPreferences.store(context, "conversation-options") }
     var showOriginal by rememberSaveable { mutableStateOf(prefs.getBoolean("face_original", false)) }
     var keepAwake by rememberSaveable { mutableStateOf(prefs.getBoolean("keep_awake", true)) }
     val view = LocalView.current

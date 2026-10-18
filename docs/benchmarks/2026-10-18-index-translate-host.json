@@ -1,0 +1,155 @@
+{
+  "runtime": "llama.cpp64e9bceb2c3a856efed96feda784a50947049feb",
+  "cpuThreads": 2,
+  "gpuLayers": 0,
+  "ready": {
+    "event": "ready",
+    "loadMs": 1743.65
+  },
+  "results": [
+    {
+      "id": "en-ar-negation",
+      "source": "en",
+      "target": "ar",
+      "input": "Do not cancel my reservation.",
+      "promptTarget": "阿拉伯语",
+      "elapsedMs": 485.726,
+      "text": "لا تلغِ حجزي."
+    },
+    {
+      "id": "en-ar-time",
+      "source": "en",
+      "target": "ar",
+      "input": "The train leaves at 7:30 from platform 4.",
+      "promptTarget": "阿拉伯语",
+      "elapsedMs": 673.271,
+      "text": "يسافر القطار في الساعة 7:30 من المنصة 4."
+    },
+    {
+      "id": "en-ar-price",
+      "source": "en",
+      "target": "ar",
+      "input": "The price is $5, not $50.",
+      "promptTarget": "阿拉伯语",
+      "elapsedMs": 602.196,
+      "text": "السعر هو 5 دولارات، وليس 50 دولارًا."
+    },
+    {
+      "id": "ru-ar-tickets",
+      "source": "ru",
+      "target": "ar",
+      "input": "Мне нужны два билета в аэропорт.",
+      "promptTarget": "阿拉伯语",
+      "elapsedMs": 478.77,
+      "text": "أحتاج إلى تذكرتين إلى المطار."
+    },
+    {
+      "id": "zh-ar-negation",
+      "source": "zh",
+      "target": "ar",
+      "input": "请不要取消我的预订。",
+      "promptTarget": "阿拉伯语",
+      "elapsedMs": 453.91,
+      "text": "من فضلك لا ألغي حجزي."
+    },
+    {
+      "id": "ar-en-negation",
+      "source": "ar",
+      "target": "en",
+      "input": "لا تلغِ حجزي. أحتاج إلى تذكرتين فقط.",
+      "promptTarget": "英语",
+      "elapsedMs": 545.312,
+      "text": "Don't cancel my reservations. I only need two tickets."
+    },
+    {
+      "id": "en-ru-time",
+      "source": "en",
+      "target": "ru",
+      "input": "See you tomorrow at 3 PM. Please do not be late.",
+      "promptTarget": "俄语",
+      "elapsedMs": 745.703,
+      "text": "Увидимся завтра в 15:00. Пожалуйста, не опаздывайте."
+    },
+    {
+      "id": "en-zh-count",
+      "source": "en",
+      "target": "zh",
+      "input": "I need two train tickets, not three.",
+      "promptTarget": "中文",
+      "elapsedMs": 443.941,
+      "text": "我需要两张火车票，不是三张。"
+    },
+    {
+      "id": "en-sr-latn",
+      "source": "en",
+      "target": "sr-Latn",
+      "input": "I need two tickets to the airport.",
+      "promptTarget": "Serbian (Latin)",
+      "elapsedMs": 504.142,
+      "text": "Treba mi dve karte za aerodrom."
+    },
+    {
+      "id": "en-ar-original",
+      "source": "en",
+      "target": "ar",
+      "input": "I need two tickets to the airport.",
+      "promptTarget": "阿拉伯语",
+      "elapsedMs": 449.741,
+      "text": "أحتاج إلى تذكرتين إلى المطار."
+    },
+    {
+      "id": "en-ar-different",
+      "source": "en",
+      "target": "ar",
+      "input": "The hotel has no rooms available tonight.",
+      "promptTarget": "阿拉伯语",
+      "elapsedMs": 469.488,
+      "text": "لا توجد غرف متاحة في الفندق الليلة."
+    },
+    {
+      "id": "en-ar-repeat",
+      "source": "en",
+      "target": "ar",
+      "input": "I need two tickets to the airport.",
+      "promptTarget": "阿拉伯语",
+      "elapsedMs": 449.104,
+      "text": "أحتاج إلى تذكرتين إلى المطار."
+    }
+  ],
+  "date": "2026-10-18",
+  "scope": "Small text-only CPU compatibility smoke; not a controlled benchmark or Android measurement",
+  "host": {
+    "cpu": "Apple M4 Pro",
+    "os": "macOS26.5",
+    "cpuThreads": 2,
+    "gpuLayers": 0,
+    "peakResidentBytes": 2637135872,
+    "peakMemoryFootprintBytes": 1410074952
+  },
+  "model": {
+    "repo": "IndexTeam/Index-Translate-2B-GGUF",
+    "revision": "3a0eca6ce931d88d00614d427ab3ed8ff0743902",
+    "file": "Index-Translate-2B.Q4_K_M.gguf",
+    "bytes": 1312164352,
+    "sha256": "044b313d29342bd3b2c77cbb64023ca0d209bd9b3247763f9d162767ef2d746a"
+  },
+  "adapterSha256": "1adfc64cacd4ce721713f688eeab6b000e037e4cd379327d1ba2e80d95b78e78",
+  "sourceRepository": {
+    "url": "https://github.com/bilibili/Index-Translate",
+    "revision": "9aff74ca50c60873916f99269b10cd0d79237b4a"
+  },
+  "summary": {
+    "completedRequests": 12,
+    "medianMs": 482.248,
+    "minMs": 443.941,
+    "maxMs": 745.703,
+    "repeatedCaptionExactOutputParity": true
+  },
+  "limitations": [
+    "No Android/device measurement or representative quality benchmark.",
+    "Unknown source remains CC when multiple supported languages share its script.",
+    "Chinese→Arabic request kept negation but used an incorrect first-person Arabic verb.",
+    "The 150-language inventory is publisher-declared coverage, not 150 validated language directions.",
+    "Some Gradle host test work overlapped this smoke; timings are compatibility observations only."
+  ]
+}

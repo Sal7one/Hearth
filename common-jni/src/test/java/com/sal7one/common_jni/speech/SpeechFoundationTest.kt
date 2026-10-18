@@ -79,6 +79,111 @@ class SpeechFoundationTest {
         SpeechOptions(sourceLanguage = "en").validate(SpeechProfile.MOONSHINE_TINY_EN)
         rejects("source-language") { SpeechOptions(sourceLanguage = "ru").validate(SpeechProfile.MOONSHINE_TINY_EN) }
     }
+    @Test fun monolingualMoonshineProfilesResolveAutoBeforeNativeAndRejectWrongSource() = withPackage { root ->
+        val expected = mapOf(
+            "moonshine-tiny-en-v2" to "en", "moonshine-base-en-v2" to "en",
+            "moonshine-base-ar-v2" to "ar", "moonshine-base-es-v2" to "es",
+            "moonshine-tiny-ja-v2" to "ja", "moonshine-tiny-ko-v2" to "ko",
+            "moonshine-base-ja-v2" to "ja", "moonshine-base-uk-v2" to "uk",
+            "moonshine-base-vi-v2" to "vi", "moonshine-base-zh-v2" to "zh",
+        )
+        expected.forEach { (id, source) ->
+            val j = manifest(root).put("profile", id).put("roles", JSONObject()
+                .put("model", "model.gguf").put("encoder", "model.gguf").put("decoder", "model.gguf"))
+            File(root, SpeechModelPackage.MANIFEST).writeText(j.toString())
+            val profile = SpeechModelPackage.verify(root).profile
+            assertEquals(source, profile.fixedSourceLanguage)
+            assertEquals(setOf(source), profile.capabilities.sourceLanguages)
+            assertTrue(profile.capabilities.sourceLanguageHints.isEmpty())
+            assertTrue(profile.capabilities.languages.all { !it.canForce })
+            assertEquals(SpeechStreamingKind.UTTERANCE_WINDOWED, profile.capabilities.streaming)
+            assertFalse(profile.capabilities.partialResults)
+            val wrongSource = if (source == "en") "ar" else "en"
+            rejects("source-language") { SpeechOptions(sourceLanguage = wrongSource).validate(profile) }
+            val driver = FakeDriver()
+            runBlocking {
+                val session = SpeechRuntime { driver }.open(root)
+                try {
+                    assertEquals("moonshine", driver.config!!.getString("backend"))
+                    assertEquals(source, driver.config!!.getString("language"))
+                    assertEquals(File(root, "model.gguf").absolutePath, driver.config!!.getString("decoder"))
+                } finally { session.close() }
+            }
+            assertEquals(1, driver.destroyed.get())
+        }
+    }
+
+    @Test fun transcribePsyKeepsRoutingDeclarationsSeparateFromLanguageDetection() = withPackage { root ->
+        val j = manifest(root).put("profile", "transcribepsy-250m-eu-sub-q8")
+        File(root, SpeechModelPackage.MANIFEST).writeText(j.toString())
+        val profile = SpeechModelPackage.verify(root).profile
+        assertEquals(SpeechProfile.TRANSCRIBEPSY_250M_EU_SUB, profile)
+        assertEquals(setOf("en", "nl", "fr", "de", "it", "pl", "pt", "es"), profile.capabilities.sourceLanguages)
+        assertEquals(SpeechStreamingKind.UTTERANCE_WINDOWED, profile.capabilities.streaming)
+        assertFalse(profile.capabilities.partialResults)
+        assertTrue(profile.capabilities.configurableThreads)
+        assertTrue(profile.capabilities.languages.all { !it.canForce })
+        assertEquals("auto", profile.runtimeSourceLanguage("auto"))
+        assertNull(profile.fixedSourceLanguage)
+        SpeechOptions(sourceLanguage = "fr", numThreads = 2).validate(profile)
+        rejects("source-language") { SpeechOptions(sourceLanguage = "ar").validate(profile) }
+        val driver = FakeDriver()
+        runBlocking {
+            val session = SpeechRuntime { driver }.open(root, SpeechOptions(sourceLanguage = "fr", numThreads = 2))
+            try {
+                assertEquals("transcribepsy", driver.config!!.getString("backend"))
+                assertEquals("fr", driver.config!!.getString("language"))
+                assertEquals(2, driver.config!!.getInt("numThreads"))
+            } finally { session.close() }
+        }
+        assertEquals(1, driver.destroyed.get())
+    }
+    @Test fun transcribePsyRejectsAHashedFileThatIsNotGguf() = withPackage { root ->
+        File(root, "model.gguf").writeText("ONNX-fixture")
+        val j = manifest(root).put("profile", "transcribepsy-250m-eu-sub-q8")
+        File(root, SpeechModelPackage.MANIFEST).writeText(j.toString())
+        rejects("requires a GGUF") { SpeechModelPackage.verify(root) }
+    }
+    @Test fun speechGpuSelectionIsExplicitAndPreservesResolvedExecutionInformation() = withPackage { root ->
+        File(root, SpeechModelPackage.MANIFEST).writeText(manifest(root).put("profile", "transcribepsy-250m-eu-sub-q8").toString())
+        assertEquals(SpeechAcceleration.CPU, SpeechOptions().acceleration)
+        SpeechProfile.entries.filter { it.backend != SpeechBackend.TRANSCRIBEPSY }.forEach { profile ->
+            rejects("only by TranscribePsy") { SpeechOptions(acceleration = SpeechAcceleration.VULKAN).validate(profile) }
+        }
+        runBlocking {
+            val driver = FakeDriver().apply { execution = "TranscribePsy · mel: CPU · encoder: Vulkan0 · decoder: Vulkan0" }
+            val session = SpeechRuntime { driver }.open(root, SpeechOptions(acceleration = SpeechAcceleration.VULKAN))
+            try {
+                assertEquals("vulkan", driver.config!!.getString("acceleration"))
+                assertEquals(driver.execution, session.executionInfo)
+                assertEquals("", driver.config!!.getString("gpuCacheDirectory"))
+            } finally { session.close() }
+            assertEquals(1, driver.destroyed.get())
+            val openCl = FakeDriver()
+            val cache = File(root.parentFile, root.name + "-gpu-cache")
+            try {
+                SpeechRuntime { openCl }.open(root, SpeechOptions(acceleration = SpeechAcceleration.OPENCL,
+                    gpuCacheDirectory = cache)).close()
+                assertTrue(cache.isDirectory)
+                assertEquals(cache.canonicalPath, openCl.config!!.getString("gpuCacheDirectory"))
+            } finally { cache.deleteRecursively() }
+        }
+    }
+    @Test fun executionInfoFailuresReleaseTheAllocatedSpeechHandleExactlyOnce() = withPackage { root ->
+        runBlocking {
+            for (empty in listOf(false, true)) {
+                val driver = FakeDriver().apply {
+                    if (empty) execution = "" else infoFailure = IllegalStateException("GPU driver diagnostics failed")
+                }
+                try { SpeechRuntime { driver }.open(root); fail("Expected diagnostic failure") }
+                catch (e: IllegalStateException) {
+                    assertTrue(e.message.orEmpty().contains(if (empty) "empty execution" else "GPU driver"))
+                }
+                assertEquals(1, driver.destroyed.get())
+            }
+        }
+    }
+
     @Test fun qwenRequiresEveryTokenizerAsset() = withPackage { root ->
         val j = manifest(root).put("profile", "qwen3-asr-0.6b")
             .put("roles", JSONObject().put("frontend", "model.gguf").put("encoder", "model.gguf").put("decoder", "model.gguf").put("tokenizer", "tokenizer"))
@@ -201,6 +306,8 @@ class SpeechFoundationTest {
         var onCreate: (() -> Unit)? = null
         var onPush: (() -> Unit)? = null
         var failPush: Throwable? = null
+        var infoFailure: Throwable? = null
+        var execution = "CPU · fixture"
         var offset = 0L
         var id = 0
         var config: JSONObject? = null
@@ -221,6 +328,7 @@ class SpeechFoundationTest {
         override fun finish(handle: Long) = update("tail")
         override fun reset(handle: Long) { offset = 0 }
         override fun destroy(handle: Long) { destroyed.incrementAndGet() }
+        override fun executionInfo(handle: Long): String { infoFailure?.let { throw it }; return execution }
     }
     @Test fun missingRuntimePreservesLoaderReason() {
         val availability = SpeechRuntime { FakeDriver() }.availability(SpeechBackend.NEMOTRON_3_5)

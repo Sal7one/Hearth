@@ -17,7 +17,9 @@ struct Qwen {
     std::string sourceCode, languageName;
     explicit Qwen(const HearthSpeechConfig& c, bool moonshine = false, bool omnilingual = false, bool phonon = false)
         : segmenter(c.max_utterance_ms, c.silence_ms, c.silence_threshold_db),
-          sourceCode(moonshine || phonon ? "en" : c.language),
+          // The verified Moonshine profile resolves Auto to its sole language in
+          // Kotlin. Keep English for legacy native callers that still pass Auto.
+          sourceCode(phonon || (moonshine && std::string(c.language) == "auto") ? "en" : c.language),
           languageName(moonshine || omnilingual || phonon ? "" : qwenLanguageName(sourceCode)) {
         SherpaOnnxOfflineRecognizerConfig cfg{};
         cfg.feat_config.sample_rate = 16000;
@@ -102,13 +104,13 @@ int next(void* p, HearthSpeechResult* r, int* available) { return guarded([&] {
 int finish(void* p) { return guarded([&] { auto& q = *static_cast<Qwen*>(p); q.segmenter.finish(q.consumer()); }); }
 int reset(void* p) { return guarded([&] { auto& q = *static_cast<Qwen*>(p); q.segmenter.reset(); q.ready.clear(); q.current = {}; }); }
 const HearthSpeechBackend moonshineApi{HEARTH_SPEECH_ABI_VERSION, sizeof(HearthSpeechBackend), "moonshine", HEARTH_QWEN_REVISION,
-    createMoonshine, destroy, push, next, finish, reset, lastError};
+    createMoonshine, destroy, push, next, finish, reset, lastError, [](void*) { return "CPU · ONNX Runtime"; }};
 const HearthSpeechBackend omnilingualApi{HEARTH_SPEECH_ABI_VERSION, sizeof(HearthSpeechBackend), "omnilingual_ctc", HEARTH_QWEN_REVISION,
-    createOmnilingual, destroy, push, next, finish, reset, lastError};
+    createOmnilingual, destroy, push, next, finish, reset, lastError, [](void*) { return "CPU · ONNX Runtime"; }};
 const HearthSpeechBackend phononApi{HEARTH_SPEECH_ABI_VERSION, sizeof(HearthSpeechBackend), "phonon", HEARTH_QWEN_REVISION,
-    createPhonon, destroy, push, next, finish, reset, lastError};
+    createPhonon, destroy, push, next, finish, reset, lastError, [](void*) { return "CPU · ONNX Runtime"; }};
 const HearthSpeechBackend api{HEARTH_SPEECH_ABI_VERSION, sizeof(HearthSpeechBackend), "qwen3_asr", HEARTH_QWEN_REVISION,
-    create, destroy, push, next, finish, reset, lastError};
+    create, destroy, push, next, finish, reset, lastError, [](void*) { return "CPU · ONNX Runtime"; }};
 }
 }
 extern "C" __attribute__((visibility("default"))) const HearthSpeechBackend* hearth_speech_backend_v1() { return &stt::speech::api; }

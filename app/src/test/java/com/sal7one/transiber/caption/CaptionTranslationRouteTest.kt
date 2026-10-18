@@ -51,8 +51,9 @@ class CaptionTranslationRouteTest {
         val legacy = c.copy(engine = CaptionEngineChoice.WHISPER)
         assertEquals(setOf("en", "ar"), CaptionLanguages.target(legacy, SttMode.BATCH).codes)
     }
-    @Test fun moonshineAlwaysUsesFixedEnglishRegardlessOfRememberedLanguage() {
-        val c = CaptionOverlayConfig(engine = CaptionEngineChoice.MOONSHINE, streamLanguage = "ru")
+    @Test fun verifiedEnglishMoonshineIgnoresAnOldRememberedLanguage() {
+        val c = CaptionOverlayConfig(engine = CaptionEngineChoice.MOONSHINE, streamLanguage = "ru",
+            modelId = com.sal7one.common_jni.speech.SpeechProfile.MOONSHINE_TINY_EN.id)
         assertEquals(setOf("en"), CaptionLanguages.source(c, SttMode.BATCH).codes)
         assertEquals("en", CaptionLanguages.effectiveSource(c, SttMode.BATCH))
     }

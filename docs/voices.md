@@ -21,6 +21,14 @@ Supertonic and [cloud caption voices](cloud-tts.md) with independent OpenAI, Ope
 Automatic traveler speech remains optional. Starting microphone capture stops
 traveler playback. Camera speech is manual, for either original or translated text.
 
+Read-aloud splits longer text within each engine's existing request limit. It
+prefers sentences and clauses, protects common abbreviations, decimal numbers
+and website dots, and keeps closing punctuation with speech where possible.
+Arabic and Japanese/Chinese punctuation are recognized independently of the
+selected engine's language support. Whole requests still accept at most 5,000
+characters. [VoiceStudio research and regression checks](voicestudio-research.md)
+describe the change and remaining limits.
+
 ## Available paths
 
 | Engine | Where it runs | Languages / voice selection | Distribution |

@@ -24,6 +24,7 @@ internal fun LocalSpeechSetup(
     update: ((CaptionOverlayConfig) -> CaptionOverlayConfig) -> Unit,
     includeTranslation: Boolean = true,
     onTuningApplied: () -> Unit = {},
+    showDownloadSources: Boolean = true,
     onModelsChanged: (List<LocalSpeechModel>) -> Unit,
 ) {
     val uiText = rememberUiText()
@@ -75,6 +76,7 @@ internal fun LocalSpeechSetup(
                         }
                     } ?: error(uiText(UiR.string.ui_cannot_open_selected_model_zip_ea4d3))
                 }
+                com.sal7one.transiber.preferences.ModelSourceBindings.recordImported(context, imported.id, uri, listOf(imported.root))
                 models = withContext(Dispatchers.IO) { store.list() }
                 onModelsChanged(models)
                 update { it.copy(engine = imported.profile.captionEngine, modelId = imported.id,
@@ -105,14 +107,17 @@ internal fun LocalSpeechSetup(
                 onClick = { update { it.copy(modelId = model.id) } },
                 label = { Text(model.profile.label + " · " + model.id.takeLast(6)) })
         }
-        com.sal7one.transiber.models.ModelSourcePanel(com.sal7one.transiber.models.ModelSources.speech(config.effectiveEngine))
+        if (showDownloadSources) com.sal7one.transiber.models.ModelSourcePanel(com.sal7one.transiber.models.ModelSources.speech(config.effectiveEngine))
         var expandedLanguages by remember { mutableStateOf(false) }
-        val profile = when (backend) {
+        val profile = models.firstOrNull { it.id == config.modelId && it.profile.backend == backend }?.profile
+            ?: models.firstOrNull { config.modelId.isBlank() && it.profile.backend == backend }?.profile
+            ?: when (backend) {
             com.sal7one.common_jni.speech.SpeechBackend.MOONSHINE -> com.sal7one.common_jni.speech.SpeechProfile.MOONSHINE_TINY_EN
             com.sal7one.common_jni.speech.SpeechBackend.QWEN3_ASR -> com.sal7one.common_jni.speech.SpeechProfile.QWEN3_ASR_0_6B
             com.sal7one.common_jni.speech.SpeechBackend.OMNILINGUAL_CTC -> com.sal7one.common_jni.speech.SpeechProfile.OMNILINGUAL_CTC_300M_V2
             com.sal7one.common_jni.speech.SpeechBackend.PHONON -> com.sal7one.common_jni.speech.SpeechProfile.PHONON_2
             com.sal7one.common_jni.speech.SpeechBackend.NEMOTRON_3_5 -> com.sal7one.common_jni.speech.SpeechProfile.NEMOTRON_3_5_ASR_0_6B
+            com.sal7one.common_jni.speech.SpeechBackend.TRANSCRIBEPSY -> com.sal7one.common_jni.speech.SpeechProfile.TRANSCRIBEPSY_250M_EU_SUB
         }
         val ccLanguages = profile.capabilities.sourceLanguages
         TextButton(onClick = { expandedLanguages = !expandedLanguages }) { Text(uiText(UiR.string.ui_cc_language_support_1_s_languages_26530, ccLanguages.size)) }
@@ -120,10 +125,11 @@ internal fun LocalSpeechSetup(
             Text(ccLanguages.sortedBy(com.sal7one.common_jni.translation.TranslationLanguages::label).joinToString(", ") {
                 com.sal7one.common_jni.translation.TranslationLanguages.label(it)
             })
-            Text(if (backend == com.sal7one.common_jni.speech.SpeechBackend.MOONSHINE) uiText(UiR.string.ui_english_only_short_utterance_decoding_translation_requires_a_sepa_35325) else if (backend == com.sal7one.common_jni.speech.SpeechBackend.QWEN3_ASR)
+            Text(if (backend == com.sal7one.common_jni.speech.SpeechBackend.MOONSHINE) uiText(UiR.string.model_moonshine_utterance_note) else if (backend == com.sal7one.common_jni.speech.SpeechBackend.QWEN3_ASR)
                 uiText(UiR.string.ui_publisher_coverage_30_languages_plus_chinese_dialects_auto_or_an_529f3)
             else if (backend == com.sal7one.common_jni.speech.SpeechBackend.OMNILINGUAL_CTC) uiText(UiR.string.model_omnilingual_language_note)
             else if (backend == com.sal7one.common_jni.speech.SpeechBackend.PHONON) uiText(UiR.string.model_phonon_language_note)
+            else if (backend == com.sal7one.common_jni.speech.SpeechBackend.TRANSCRIBEPSY) uiText(UiR.string.model_transcribepsy_language_note)
             else uiText(UiR.string.ui_publisher_coverage_28_languages_32_locales_usable_without_fine_tu_a58d7))
         }
         if (profile.capabilities.streaming == com.sal7one.common_jni.speech.SpeechStreamingKind.UTTERANCE_WINDOWED) {

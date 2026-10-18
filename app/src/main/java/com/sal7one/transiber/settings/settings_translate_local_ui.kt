@@ -1,10 +1,5 @@
 package com.sal7one.transiber.settings
 
-import com.sal7one.transiber.R as UiR
-import com.sal7one.transiber.i18n.rememberUiText
-
-import com.sal7one.transiber.translation.*
-
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
@@ -16,10 +11,20 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.unit.dp
 import com.sal7one.common_jni.translation.*
+import com.sal7one.common_jni.model.ModelIntegrity
+import com.sal7one.transiber.R as UiR
 import com.sal7one.transiber.byok.ByokPolicy
+import com.sal7one.transiber.byok.CloudConfigStore
 import com.sal7one.transiber.caption.*
+import com.sal7one.transiber.preferences.*
+import com.sal7one.transiber.setup.*
 import com.sal7one.transiber.downloads.*
+import com.sal7one.transiber.i18n.rememberUiText
+import com.sal7one.transiber.models.LegacyModelSetup
+import com.sal7one.transiber.models.ModelEngineType
 import com.sal7one.transiber.models.ModelRegistry
+import com.sal7one.transiber.translation.*
+import com.sal7one.transiber.ui.components.*
 import kotlinx.coroutines.*
 import java.io.File
 
@@ -29,218 +34,320 @@ internal fun SettingsTranslateLocalUi(
     update: ((CaptionOverlayConfig) -> CaptionOverlayConfig) -> Unit,
     includeLegacy: Boolean = false,
     showCaptionControls: Boolean = true,
+    repairRevision: Int = 0, repairModelId: String? = null,
 ) {
     val uiText = rememberUiText()
-
+    if (rememberSetupMode() == SetupMode.BASIC) {
+        Text(uiText(UiR.string.setup_basic_selected_translation, TranslationOptions.label(config.localTranslationModelId)),
+            style = MaterialTheme.typography.labelLarge)
+        LocalBundleUi(config, translationOnly = true)
+        AdvancedSetupLink()
+        return
+    }
     val context = LocalContext.current
     val uriHandler = LocalUriHandler.current
     val scope = rememberCoroutineScope()
     val downloads = remember { FileDownloads(context.applicationContext) }
-    var records by remember { mutableStateOf<List<FileDownload>>(emptyList()) }
     val store = remember { LocalTranslationModels(File(context.filesDir, "translation-models")) }
-    var installed by remember { mutableStateOf<List<TranslationModelSpec>>(emptyList()) }
-    var selected by rememberSaveable { mutableStateOf(config.localTranslationModelId.takeIf { id -> TranslationCatalog.models.any { it.id == id } } ?: "hy-mt15-q4") }
-    var message by remember { mutableStateOf<String?>(null) }
+    val registry = remember { ModelRegistry.getInstance(context) }
+    val registryModels by registry.registeredModels.collectAsState()
+    val catalog = remember { translationBrowserItems() }
+    val languageModel = rememberCaptionLanguageModel(config)
+    val spoken = CaptionLanguages.effectiveSource(config, CloudConfigStore.sttMode(context), languageModel)
+    var source by rememberSaveable { mutableStateOf(spoken.takeIf { it in catalog.flatMap { model -> model.sourceLanguages } } ?: "any") }
+    var target by rememberSaveable { mutableStateOf(config.target.languageTag) }
+    var query by rememberSaveable { mutableStateOf("") }
+    var kind by rememberSaveable { mutableStateOf("any") }
+    var installedOnly by rememberSaveable { mutableStateOf(false) }
+    var showPivots by rememberSaveable { mutableStateOf(MarianCascade.find(config.localTranslationModelId) != null) }
+    var platformDetails by rememberSaveable { mutableStateOf(config.localTranslationModelId == TranslationOptions.ML_KIT) }
+    var records by remember { mutableStateOf<List<FileDownload>>(emptyList()) }
+    var installed by remember { mutableStateOf<Set<String>>(emptySet()) }
+    var invalidInstalls by remember { mutableStateOf<Set<String>>(emptySet()) }
+    var repairingInstalls by remember { mutableStateOf<Set<String>>(emptySet()) }
+    var importingId by rememberSaveable { mutableStateOf("") }
     var busy by remember { mutableStateOf(false) }
-    var showGguf by rememberSaveable { mutableStateOf(config.localTranslationModelId != TranslationOptions.ML_KIT) }
-    var showLegacy by rememberSaveable { mutableStateOf(
-        MarianPackage.find(config.localTranslationModelId) != null || MarianCascade.find(config.localTranslationModelId) != null) }
-    var selectedMarianId by rememberSaveable { mutableStateOf(
-        config.localTranslationModelId.takeIf { MarianPackage.find(it) != null || MarianCascade.find(it) != null } ?: TranslationOptions.MARIAN_EN_AR) }
-    val registryModels by remember(context) { ModelRegistry.getInstance(context).registeredModels }.collectAsState()
-    var showCoverage by remember { mutableStateOf(false) }
-    LaunchedEffect(Unit) {
-        val browse = context.getSharedPreferences("translation-browser",0)
-        browse.getString("model",null)?.let { id ->
-            if (TranslationCatalog.models.any { it.id == id }) { selected = id; showGguf = true; showLegacy = false }
-            else if (MarianPackage.find(id) != null || MarianCascade.find(id) != null) { selectedMarianId = id; showGguf = false; showLegacy = true }
+    var message by remember { mutableStateOf<String?>(null) }
+    var error by remember { mutableStateOf<String?>(null) }
+
+    suspend fun refresh() {
+        val latestRecords = withContext(Dispatchers.IO) { if (ByokPolicy.FEATURE_BYOK) downloads.list() else emptyList() }
+        val repairCandidates = repairingInstalls
+        val repaired = withContext(Dispatchers.IO) { repairCandidates.filterTo(mutableSetOf()) { id ->
+            val related = latestRecords.filter { it.modelId == id || MarianPackage.part(it.modelId)?.pairId == id }
+            if (related.none { it.installed } || related.any { it.active }) false
+            else try {
+                val spec = TranslationCatalog.models.firstOrNull { it.id == id }
+                if (spec != null) ModelIntegrity.inspect(store.file(spec), spec.sha256)
+                else MarianPackage.modelDirectory(context, checkNotNull(MarianPackage.find(id)))
+                true
+            } catch (e: CancellationException) { throw e }
+            catch (_: Exception) { false }
+        } }
+        invalidInstalls = invalidInstalls - repaired
+        repairingInstalls = repairingInstalls - repaired
+        val snapshot = withContext(Dispatchers.IO) {
+            val gguf = store.installed().map { it.id }.toSet() - invalidInstalls
+            val pairs = MarianPackage.pairs.filter { pair -> pair.id !in invalidInstalls &&
+                MarianPackage.installed(context, pair)?.let { it.isValid && translationFilesPresent(pair, File(it.path)) } == true
+            }.map { it.id }.toSet()
+            val routes = MarianCascade.routes.filter { it.first.id in pairs && it.second.id in pairs }.map { it.id }.toSet()
+            (gguf + pairs + routes) to latestRecords
+        }
+        installed = snapshot.first
+        records = snapshot.second
+    }
+    LaunchedEffect(registryModels) {
+        do {
+            try { refresh() }
+            catch (e: CancellationException) { throw e }
+            catch (e: Exception) { error = e.message ?: e.toString() }
+            if (!ByokPolicy.FEATURE_BYOK) break
+            delay(1500)
+        } while (isActive)
+    }
+    LaunchedEffect(repairRevision) {
+        val browse = UserPreferences.store(context, "translation-browser")
+        (repairModelId.takeIf { repairRevision > 0 } ?: browse.getString("model", null))?.let { id ->
+            TranslationCatalog.models.firstOrNull { it.id == id }?.let { query = it.label.substringBefore(" · "); kind = "text" }
+            val pair = MarianPackage.find(id)
+            val route = MarianCascade.find(id)
+            if (pair != null || route != null) {
+                source = pair?.source ?: checkNotNull(route).source
+                target = pair?.target ?: checkNotNull(route).target
+                kind = "compact"; showPivots = route != null
+            }
+            installedOnly = false
             browse.edit().remove("model").apply()
         }
     }
-    val spec = TranslationCatalog.find(selected)
-    LaunchedEffect(Unit) { installed = withContext(Dispatchers.IO) { store.installed() } }
-    LaunchedEffect(Unit) {
-        if (ByokPolicy.FEATURE_BYOK) while (isActive) {
-            try {
-                records = withContext(Dispatchers.IO) { downloads.list() }
-                installed = withContext(Dispatchers.IO) { store.installed() }
-            }
-            catch (e: CancellationException) { throw e }
-            catch (e: Exception) { message = e.message ?: e.toString() }
-            delay(1500)
+    fun select(id: String, fixedTarget: String? = null) {
+        update { current ->
+            val requestedTarget = fixedTarget ?: target.takeIf { it != "any" && it in TranslationOptions.targetLanguages(id, source) }
+            val next = current.copy(localTranslationModelId = id, textTranslationProviderId = "local",
+                target = requestedTarget?.let(TranslationTarget::of) ?: current.target)
+            if (showCaptionControls) next.copy(localTranslationEnabled = true, mode = CaptionMode.TRANSLATE) else next
         }
     }
     val importer = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        if (uri != null) scope.launch {
-            val importing = spec
-            busy = true; message = uiText(UiR.string.ui_copying_and_verifying_1_s_6575d, importing.label)
+        val spec = TranslationCatalog.models.firstOrNull { it.id == importingId }
+        importingId = ""
+        if (uri != null && spec != null) scope.launch {
+            busy = true; error = null
+            message = uiText(UiR.string.ui_copying_and_verifying_1_s_6575d, spec.label)
             try {
                 withContext(Dispatchers.IO) {
                     val job = currentCoroutineContext()
-                    context.contentResolver.openInputStream(uri)?.use { store.import(it, importing) { job.ensureActive() } }
+                    context.contentResolver.openInputStream(uri)?.use { input ->
+                        val imported = store.import(input, spec) { job.ensureActive() }
+                        ModelSourceBindings.recordImported(context, spec.id, uri, listOf(imported))
+                    }
                         ?: error(uiText(UiR.string.ui_cannot_open_selected_translation_gguf_cae88))
                 }
-                installed = withContext(Dispatchers.IO) { store.installed() }
-                update { it.copy(localTranslationModelId = importing.id) }
-                message = uiText(UiR.string.ui_1_s_imported_and_selected_as_the_local_model_849c7, importing.label)
+                invalidInstalls = invalidInstalls - spec.id
+                refresh(); select(spec.id)
+                message = uiText(UiR.string.ui_1_s_imported_and_selected_as_the_local_model_849c7, spec.label)
             } catch (e: CancellationException) { throw e }
-            catch (e: Exception) { message = generateSequence<Throwable>(e) { it.cause }.joinToString("\n") { it.message ?: it.toString() } }
+            catch (e: Exception) { error = generateSequence<Throwable>(e) { it.cause }.joinToString("\n") { it.message ?: it.toString() } }
             finally { busy = false }
         }
     }
-    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    val languages = remember(catalog) { catalog.flatMap { it.sourceLanguages + it.targetLanguages }.distinct().sortedBy(TranslationLanguages::label) }
+    val options = listOf("any" to uiText(UiR.string.model_browser_all_languages)) + languages.map { it to TranslationLanguages.label(it) }
+    val shown = catalog.filter { item ->
+        item.matches(query, source, target, kind) && (!installedOnly || item.installed(installed)) &&
+            (!item.throughEnglish || showPivots)
+    }
+
+    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         if (showCaptionControls) Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            Switch(checked = config.localTranslationEnabled, onCheckedChange = { enabled ->
-                update { it.copy(localTranslationEnabled = enabled, mode = if (enabled) CaptionMode.TRANSLATE else CaptionMode.CAPTIONS) }
-            })
-            Text(if (config.localTranslationEnabled) uiText(UiR.string.ui_translation_enabled_8b961) else uiText(UiR.string.ui_disabled_cc_only_9fa78))
+            Switch(config.localTranslationEnabled, { enabled -> update { it.copy(localTranslationEnabled = enabled,
+                mode = if (enabled) CaptionMode.TRANSLATE else CaptionMode.CAPTIONS) } })
+            Text(uiText(if (config.localTranslationEnabled) UiR.string.ui_translation_enabled_8b961 else UiR.string.ui_disabled_cc_only_9fa78))
         }
         Text(uiText(UiR.string.ui_active_translator_1_s_dfd1a, TranslationOptions.label(config.localTranslationModelId)), style = MaterialTheme.typography.labelLarge)
-        Text(uiText(UiR.string.ui_browse_translators_f9d97), style = MaterialTheme.typography.titleSmall)
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            if (PlatformTranslation.available) FilterChip(
-                selected = !showLegacy && !showGguf, enabled = !busy,
-                onClick = { showLegacy = false; showGguf = false }, label = { Text("ML Kit") })
-            FilterChip(selected = showLegacy, enabled = !busy,
-                onClick = { showLegacy = true; showGguf = false }, label = { Text(uiText(UiR.string.model_marian_title)) })
-            listOf("milmmt-46" to "MiLMMT-46", "hy-mt1.5" to "HY-MT1.5", "hy-mt2" to "Hy-MT2", "translategemma" to "TranslateGemma").forEach { (family, label) ->
-                FilterChip(selected = !showLegacy && showGguf && spec.family == family, enabled = !busy,
-                    onClick = {
-                        if (spec.family != family) {
-                            selected = TranslationCatalog.models.firstOrNull { it.family == family && it.id == config.localTranslationModelId }?.id
-                                ?: TranslationCatalog.models.first { it.family == family && it.quantization == "Q4_K_M" }.id
-                        }
-                        showLegacy = false; showGguf = true
-                    }, label = { Text(label) })
-            }
+        TranslationAccelerationSetup()
+        Text(uiText(UiR.string.translation_browser_hint), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        TabRow(if (installedOnly) 1 else 0) {
+            Tab(!installedOnly, onClick = { installedOnly = false }, text = { Text(uiText(UiR.string.model_browser_browse)) })
+            Tab(installedOnly, onClick = { installedOnly = true }, text = { Text(uiText(UiR.string.model_browser_manage)) })
         }
-        if (showLegacy) {
-            val pair = MarianPackage.find(selectedMarianId)
-            val cascade = MarianCascade.find(selectedMarianId)
-            check(pair != null || cascade != null) { "Unknown Marian route: $selectedMarianId" }
-            val source = pair?.source ?: checkNotNull(cascade).source
-            val target = pair?.target ?: checkNotNull(cascade).target
-            val sizeMiB = (pair?.downloadBytes ?: checkNotNull(cascade).downloadBytes) / 1_048_576
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                MarianPackage.pairs.forEach { option ->
-                    FilterChip(selected = selectedMarianId == option.id, enabled = !busy,
-                        onClick = { selectedMarianId = option.id },
-                        label = { Text("${TranslationLanguages.label(option.source)} → ${TranslationLanguages.label(option.target)}") })
-                }
-                MarianCascade.routes.forEach { option ->
-                    FilterChip(selected = selectedMarianId == option.id, enabled = !busy,
-                        onClick = { selectedMarianId = option.id },
-                        label = { Text("${TranslationLanguages.label(option.source)} → English → ${TranslationLanguages.label(option.target)}") })
-                }
-            }
-            val directModel = pair?.let { direct -> registryModels.firstOrNull {
-                it.engineType == com.sal7one.transiber.models.ModelEngineType.TRANSLATE &&
-                    it.isValid && it.isDirectory && it.digest?.hex == direct.treeSha256
-            } }
-            val ready = if (cascade != null) TranslationOptions.installed(context, cascade.id) else directModel != null
-            val routeParts = pair?.parts ?: checkNotNull(cascade).let { it.first.parts + it.second.parts }
-            val parts = routeParts.map { part -> records.firstOrNull { it.modelId == part.id } }
-            val completed = parts.count { it?.complete == true }
-            Text(uiText(UiR.string.model_marian_description, sizeMiB, MarianPackage.license),
-                style = MaterialTheme.typography.bodySmall)
-            if (cascade != null) Text(uiText(UiR.string.model_marian_via_english_warning), style = MaterialTheme.typography.bodySmall)
-            Text(if (ready) uiText(UiR.string.model_installed_verified)
-                else uiText(UiR.string.model_files_downloaded, completed, parts.size),
-                style = MaterialTheme.typography.bodyMedium)
-            if (ready) Button(enabled = !busy, onClick = { update {
-                if (showCaptionControls) it.copy(localTranslationModelId = selectedMarianId,
-                    textTranslationProviderId = "local", localTranslationEnabled = true,
-                    mode = CaptionMode.TRANSLATE, target = TranslationTarget.of(target))
-                else it.copy(localTranslationModelId = selectedMarianId, textTranslationProviderId = "local")
-            } }) { Text(if (config.localTranslationModelId == selectedMarianId) uiText(UiR.string.ui_selected_translator_ee2cb)
-                else uiText(UiR.string.model_use_marian, TranslationLanguages.label(source),
-                    TranslationLanguages.label(target))) }
-            if (ByokPolicy.FEATURE_BYOK && !ready) OutlinedButton(enabled = !busy, onClick = { scope.launch {
-                busy = true
-                try {
-                    withContext(Dispatchers.IO) {
-                        if (cascade != null) MarianCascade.enqueue(context, downloads, cascade)
-                        else MarianPackage.enqueue(context, downloads, checkNotNull(pair))
-                    }
-                    records = withContext(Dispatchers.IO) { downloads.list() }
-                    message = uiText(UiR.string.model_marian_download_notice, downloads.locationLabel)
-                } catch (e: CancellationException) { throw e }
-                catch (e: Exception) { message = e.message ?: e.toString() }
-                finally { busy = false }
-            } }) { Text(if (completed > 0) uiText(UiR.string.model_continue_marian)
-                else uiText(UiR.string.model_download_marian, TranslationLanguages.label(source),
-                    TranslationLanguages.label(target), sizeMiB)) }
-            parts.filterNotNull().firstOrNull { it.failed }?.let { Text(it.error, color = MaterialTheme.colorScheme.error) }
-            if (ByokPolicy.FEATURE_BYOK && pair != null) TextButton(onClick = { uriHandler.openUri(pair.modelCard) }) { Text(uiText(UiR.string.model_marian_card)) }
-            if (ByokPolicy.FEATURE_BYOK && cascade != null) {
-                TextButton(onClick = { uriHandler.openUri(cascade.first.modelCard) }) { Text(uiText(UiR.string.model_marian_card) + " · ${TranslationLanguages.label(source)} → English") }
-                TextButton(onClick = { uriHandler.openUri(cascade.second.modelCard) }) { Text(uiText(UiR.string.model_marian_card) + " · English → ${TranslationLanguages.label(target)}") }
-            }
-            if (includeLegacy && pair?.id == TranslationOptions.MARIAN_EN_AR) com.sal7one.transiber.models.LegacyModelSetup(
-                com.sal7one.transiber.models.ModelEngineType.TRANSLATE, config, update)
-            if (busy) LinearProgressIndicator(Modifier.fillMaxWidth())
-            message?.let { Text(it) }
-            return@Column
+        OutlinedTextField(query, { query = it }, label = { Text(uiText(UiR.string.model_browser_search)) }, singleLine = true, modifier = Modifier.fillMaxWidth())
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            ModelFilterPicker(uiText(UiR.string.model_translation_source), source, options, { source = it }, Modifier.weight(1f))
+            ModelFilterPicker(uiText(UiR.string.translation_browser_target), target, options, { target = it }, Modifier.weight(1f))
         }
-        if (!showGguf && PlatformTranslation.available) MlKitSetup(config, update = update)
-        if (showGguf) {
-        Text(uiText(UiR.string.ui_size_precision_49488), style = MaterialTheme.typography.labelLarge)
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            TranslationCatalog.models.filter { it.family == spec.family }.sortedBy { it.bytes }.forEach { model ->
-                FilterChip(selected = selected == model.id, enabled = !busy,
-                    onClick = { selected = model.id }, label = { Text("${model.quantization} · ${model.bytes / 1_048_576} MiB") })
-            }
-        }
-        Text("${spec.label} · ${if (installed.any { it.id == spec.id }) uiText(UiR.string.model_installed) else uiText(UiR.string.model_not_installed)}")
-        if (installed.any { it.id == spec.id }) Button(enabled = !busy, onClick = { update { if (showCaptionControls) it.copy(localTranslationModelId = spec.id, localTranslationEnabled = true, mode = CaptionMode.TRANSLATE) else it.copy(localTranslationModelId = spec.id) } }) {
-            Text(if (config.localTranslationModelId == spec.id) uiText(UiR.string.ui_selected_translator_ee2cb) else uiText(UiR.string.ui_use_1_s_5cc45, spec.label))
-        }
-        Text(if (spec.family == "milmmt-46") uiText(UiR.string.model_milmmt_description, spec.bytes / 1_048_576)
-            else uiText(UiR.string.ui_q4_uses_less_storage_and_memory_q6_q8_are_larger_only_the_active_56fac), style = MaterialTheme.typography.bodySmall)
-        OutlinedButton(enabled = !busy, onClick = { importer.launch(arrayOf("*/*")) }) { Text(uiText(UiR.string.ui_import_1_s_gguf_f7da3, spec.label)) }
-        if (ByokPolicy.FEATURE_BYOK) {
-            val record = records.firstOrNull { it.modelId == spec.id }
-            OutlinedButton(enabled = !busy && record?.active != true, onClick = { scope.launch {
-                busy = true
-                try {
-                    if (record?.failed == true && record.id < 0) downloads.retry(record.id)
-                    else withContext(Dispatchers.IO) { downloads.enqueue(DownloadSpec.parse(spec.url, spec.fileName), modelPackage = true, installModelId = spec.id) }
-                    records = withContext(Dispatchers.IO) { downloads.list() }
-                    message = null
-                } catch (e: CancellationException) { throw e }
-                catch (e: Exception) { message = e.message ?: e.toString() }
-                finally { busy = false }
-            } }) { Text(when {
-                record?.installing == true -> uiText(UiR.string.ui_installing_8d278)
-                record?.active == true -> uiText(UiR.string.ui_downloading_1_s_mib_e010b, record.bytes / 1_048_576)
-                record?.failed == true -> uiText(UiR.string.ui_retry_download_install_e5444)
-                else -> uiText(UiR.string.ui_download_install_1_s_mib_0e3f4, spec.bytes / 1_048_576)
-            }) }
-            if (record?.failed == true) Text(record.error.ifBlank { uiText(UiR.string.ui_download_failed_reason_1_s_8bb99, record.reason) }, color = MaterialTheme.colorScheme.error)
-            Text(uiText(UiR.string.ui_download_folder_1_s_models_the_original_file_stays_here_after_ins_5b003, downloads.locationLabel), style = MaterialTheme.typography.bodySmall)
-            TextButton(onClick = { uriHandler.openUri(spec.modelCard) }) { Text(uiText(UiR.string.ui_source_files_license_50a30)) }
-            if (spec.family == "milmmt-46") TextButton(onClick = { uriHandler.openUri("https://huggingface.co/xiaomi-research/MiLMMT-46-1B-v1.0") }) { Text(uiText(UiR.string.model_milmmt_original_card)) }
-            if (spec.family == "translategemma") TextButton(onClick = { uriHandler.openUri("https://huggingface.co/google/translategemma-4b-it") }) { Text(uiText(UiR.string.ui_original_google_model_card_251ef)) }
-        }
-        Text(uiText(UiR.string.ui_1_s_imported_files_must_match_the_selected_artifact_8b0a8, spec.license))
-        if (spec.family == "translategemma") Text(uiText(UiR.string.ui_larger_quality_alternative_2_49_gb_download_community_gguf_conver_0c942))
-        TextButton(onClick = { showCoverage = !showCoverage }) { Text(if (showCoverage) uiText(UiR.string.ui_hide_language_coverage_88f4d) else uiText(UiR.string.ui_show_supported_source_target_languages_87984)) }
-        if (showCoverage) Text(uiText(UiR.string.ui_any_of_these_source_languages_any_other_listed_target_70952) + spec.sourceLanguages.sortedBy(TranslationLanguages::label).joinToString(", ") { TranslationLanguages.label(it) })
-        }
-        if (showCaptionControls) {
-        com.sal7one.transiber.caption.CaptionLanguageFields(config, update, showSource = false,
-            targetChoices = com.sal7one.transiber.caption.CaptionLanguageChoices(TranslationOptions.targetLanguages(config.localTranslationModelId, config.streamLanguage), uiText(UiR.string.ui_output_languages_supported_by_the_active_translator_a2090)))
-        val active = installed.firstOrNull { it.id == config.localTranslationModelId }
-        Text(when {
-            !config.localTranslationEnabled -> uiText(UiR.string.ui_original_language_cc_translation_model_stays_unloaded_4bd7f)
-            config.localTranslationModelId == TranslationOptions.ML_KIT -> uiText(UiR.string.ui_ml_kit_selected_download_spoken_and_target_packs_above_translatio_7b045)
-            active == null -> uiText(UiR.string.ui_import_a_translation_model_to_use_the_bridge_cc_can_run_now_5f78e)
-            config.streamLanguage == "auto" -> uiText(UiR.string.ui_automatic_routing_uses_the_language_reported_by_asr_unknown_or_mi_6098f)
-            active.supports(config.streamLanguage, config.target.languageTag) -> uiText(UiR.string.ui_supported_1_s_2_s_4844b, TranslationLanguages.label(config.streamLanguage), config.target.label)
-            else -> uiText(UiR.string.ui_unsupported_pair_1_s_2_s_cc_continues_b821c, config.streamLanguage, config.target.languageTag)
-        })
+        ModelFilterPicker(uiText(UiR.string.translation_browser_type), kind, listOf(
+            "any" to uiText(UiR.string.translation_browser_type_all),
+            "compact" to uiText(UiR.string.translation_browser_type_compact),
+            "text" to uiText(UiR.string.translation_browser_type_text)), { kind = it })
+        if (kind != "text") Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Checkbox(showPivots, { showPivots = it })
+            Text(uiText(UiR.string.translation_browser_pivots), style = MaterialTheme.typography.bodyMedium)
         }
         if (busy) LinearProgressIndicator(Modifier.fillMaxWidth())
-        message?.let { Text(it) }
+        message?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
+        error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+        Text(uiText(UiR.string.model_browser_results, shown.size), style = MaterialTheme.typography.labelMedium)
+        if (shown.isEmpty()) Text(uiText(UiR.string.translation_browser_empty))
+        shown.forEach { item -> key(item.id) {
+            var variantId by rememberSaveable { mutableStateOf("") }
+            var details by rememberSaveable { mutableStateOf(false) }
+            val variants = item.variants.filter { !installedOnly || it.id in installed }
+            val spec = variants.firstOrNull { it.id == variantId } ?: variants.takeIf { it.isNotEmpty() }
+                ?.let { preferredTranslationVariant(it, installed, config.localTranslationModelId) }
+            val id = spec?.id ?: item.id
+            val ready = id in installed
+            val selected = ready && id == config.localTranslationModelId
+            val pair = item.pair
+            val route = item.route
+            val parts = pair?.parts ?: route?.let { it.first.parts + it.second.parts }.orEmpty()
+            val progress = translationDownloadState(if (spec != null) setOf(id) else parts.map { it.id }.toSet(), records,
+                parts.filter { it.pairId in installed }.map { it.id }.toSet())
+            val active = !ready && progress.active
+            val record = progress.record
+            val failed = progress.failure
+            val stage = progress.stage
+            val bytes = spec?.bytes ?: pair?.downloadBytes ?: checkNotNull(route).downloadBytes
+            val license = spec?.license ?: pair?.license ?: checkNotNull(route).let { listOf(it.first.license, it.second.license).distinct().joinToString("; ") }
+            val fixedSource = pair?.source ?: route?.source
+            val fixedTarget = pair?.target ?: route?.target
+            OutlinedCard(Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(item.title, style = MaterialTheme.typography.titleMedium)
+                    Text(if (spec != null) uiText(UiR.string.translation_browser_multilingual_size, spec.sourceLanguages.size, bytes / 1_048_576)
+                        else uiText(UiR.string.translation_browser_pair_size, TranslationLanguages.label(checkNotNull(fixedSource)),
+                            TranslationLanguages.label(checkNotNull(fixedTarget)), bytes / 1_048_576), style = MaterialTheme.typography.bodyMedium)
+                    if (spec?.family == "index-translate") Text(uiText(UiR.string.translation_browser_index_new), style = MaterialTheme.typography.bodySmall)
+                    if (route != null) Text(uiText(UiR.string.model_marian_via_english_warning), style = MaterialTheme.typography.bodySmall)
+                    if (spec?.family == "milmmt-46" || spec?.family == "index-translate" || spec?.quantization == "Q2_K")
+                        Text(uiText(UiR.string.translation_browser_experimental), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    if (selected || ready || stage != null || progress.completed > 0) ModelStatusLabel(when {
+                        selected -> uiText(UiR.string.model_browser_selected)
+                        ready -> uiText(UiR.string.model_download_installed)
+                        stage != null -> uiText.downloadStage(stage)
+                        else -> uiText(UiR.string.translation_browser_partial)
+                    }, selected)
+                    if (!ready && parts.isNotEmpty() && progress.completed > 0)
+                        Text(uiText(UiR.string.model_files_downloaded, progress.completed, progress.total), style = MaterialTheme.typography.bodySmall)
+                    if (active) {
+                        val fraction = if (spec != null) record?.transferFraction() else null
+                        if (fraction != null) LinearProgressIndicator(progress = { fraction }, modifier = Modifier.fillMaxWidth())
+                        else LinearProgressIndicator(Modifier.fillMaxWidth())
+                        if (stage in setOf(DownloadStage.VERIFYING, DownloadStage.INSTALLING)) Text(uiText(UiR.string.model_download_processing_hint), style = MaterialTheme.typography.bodySmall)
+                    }
+                    failed?.let { Text(it.error.ifBlank { uiText(UiR.string.ui_download_failed_reason_1_s_8bb99, it.reason) }, color = MaterialTheme.colorScheme.error) }
+                    Button(modifier = Modifier.fillMaxWidth(), enabled = !busy && !active && !selected, onClick = {
+                        if (!ready && !ByokPolicy.FEATURE_BYOK) {
+                            if (spec != null) { importingId = spec.id; importer.launch(arrayOf("*/*")) }
+                            else { installedOnly = true; message = uiText(UiR.string.translation_browser_import_pair_hint) }
+                        } else if (ready) scope.launch {
+                            busy = true; error = null
+                            try {
+                                withContext(Dispatchers.IO) {
+                                    if (spec != null) ModelIntegrity.inspect(store.file(spec), spec.sha256)
+                                    else (listOfNotNull(pair) + listOfNotNull(route?.first, route?.second)).forEach { component ->
+                                        try { MarianPackage.modelDirectory(context, component) }
+                                        catch (e: Exception) { withContext(Dispatchers.Main) { invalidInstalls = invalidInstalls + component.id }; throw e }
+                                    }
+                                }
+                                select(id, fixedTarget)
+                                refresh()
+                            } catch (e: CancellationException) { throw e }
+                            catch (e: Exception) {
+                                if (spec != null) invalidInstalls = invalidInstalls + spec.id
+                                installed = installed - invalidInstalls - id
+                                error = e.message ?: e.toString()
+                            }
+                            finally { busy = false }
+                        }
+                        else scope.launch {
+                            busy = true; error = null; message = null
+                            try {
+                                withContext(Dispatchers.IO) {
+                                    if (spec != null) downloads.enqueue(DownloadSpec.parse(spec.url, spec.fileName), true, spec.id)
+                                    else if (pair != null) MarianPackage.enqueue(context, downloads, pair)
+                                    else MarianCascade.enqueue(context, downloads, checkNotNull(route))
+                                }
+                                repairingInstalls = repairingInstalls + (setOf(id) + parts.map { it.pairId }).intersect(invalidInstalls)
+                                refresh()
+                            } catch (e: CancellationException) { throw e }
+                            catch (e: Exception) { error = e.message ?: e.toString() }
+                            finally { busy = false }
+                        }
+                    }) { Text(when {
+                        selected -> uiText(UiR.string.model_browser_selected)
+                        active -> uiText.downloadStage(checkNotNull(stage))
+                        ready -> uiText(UiR.string.translation_browser_use)
+                        !ByokPolicy.FEATURE_BYOK -> uiText(UiR.string.translation_browser_import)
+                        stage == DownloadStage.PAUSED -> uiText(UiR.string.ui_resume_download)
+                        failed != null -> uiText(UiR.string.ui_retry_download_install_e5444)
+                        stage == DownloadStage.READY -> uiText(UiR.string.ui_install_downloaded_model_d458c)
+                        progress.completed > 0 -> uiText(UiR.string.translation_browser_download_remaining)
+                        else -> uiText(UiR.string.model_browser_download_install)
+                    }) }
+                    TextButton(onClick = { details = !details }, contentPadding = PaddingValues(0.dp)) {
+                        Text(uiText(if (details) UiR.string.model_browser_hide_details else UiR.string.model_browser_details))
+                    }
+                    if (details) {
+                        if (variants.size > 1) ModelFilterPicker(uiText(UiR.string.model_browser_precision), id,
+                            variants.map { it.id to "${it.quantization} · ${it.bytes / 1_048_576} MiB" }, { variantId = it })
+                        else if (spec != null) Text(uiText(UiR.string.model_browser_format, spec.quantization), style = MaterialTheme.typography.bodySmall)
+                        Text(uiText(UiR.string.ui_1_s_imported_files_must_match_the_selected_artifact_8b0a8, license), style = MaterialTheme.typography.bodySmall)
+                        if (spec != null) {
+                            val budget = DownloadBudget.estimate(spec.bytes, spec.bytes, record?.bytes?.coerceIn(0, spec.bytes) ?: 0)
+                            if (!ready) Text(uiText(UiR.string.model_browser_disk, budget.sameVolumeRequired / 1_048_576), style = MaterialTheme.typography.bodySmall)
+                            Text(uiText(UiR.string.translation_browser_memory_note), style = MaterialTheme.typography.bodySmall)
+                            Text(uiText(UiR.string.model_browser_revision, spec.revision), style = MaterialTheme.typography.bodySmall)
+                            Text(uiText(UiR.string.model_browser_integrity, spec.sha256), style = MaterialTheme.typography.bodySmall)
+                            Text(spec.sourceLanguages.sortedBy(TranslationLanguages::label).joinToString(", ") { TranslationLanguages.label(it) }, style = MaterialTheme.typography.bodySmall)
+                            OutlinedButton(enabled = !busy, onClick = { importingId = spec.id; importer.launch(arrayOf("*/*")) }) { Text(uiText(UiR.string.translation_browser_import)) }
+                        } else {
+                            Text(uiText(UiR.string.translation_browser_file_count, parts.size), style = MaterialTheme.typography.bodySmall)
+                            if (!ready) {
+                                val remaining = parts.sumOf { part -> part.bytes - (records.firstOrNull { it.modelId == part.id }?.bytes ?: 0).coerceIn(0, part.bytes) }
+                                val budget = DownloadBudget(remaining, translationInstallationBytes(parts))
+                                Text(uiText(UiR.string.model_browser_disk, budget.sameVolumeRequired / 1_048_576), style = MaterialTheme.typography.bodySmall)
+                                Text(uiText(UiR.string.model_browser_disk_hint), style = MaterialTheme.typography.bodySmall)
+                            }
+                            Text(uiText(UiR.string.model_browser_revision, pair?.revision ?: checkNotNull(route).let { it.first.revision + " / " + it.second.revision }), style = MaterialTheme.typography.bodySmall)
+                        }
+                        if (ByokPolicy.FEATURE_BYOK) {
+                            val links = spec?.let { listOf(it.modelCard) } ?: pair?.let { listOf(it.modelCard) }
+                                ?: checkNotNull(route).let { listOf(it.first.modelCard, it.second.modelCard) }
+                            links.forEach { link -> TextButton(onClick = {
+                                try { uriHandler.openUri(link) } catch (e: Exception) { error = e.message ?: e.toString() }
+                            }) { Text(uiText(UiR.string.ui_source_files_license_50a30)) } }
+                        }
+                    }
+                }
+            }
+        } }
+        if (installedOnly && includeLegacy) {
+            HorizontalDivider()
+            Text(uiText(UiR.string.translation_browser_folder_import), style = MaterialTheme.typography.titleSmall)
+            Text(uiText(UiR.string.translation_browser_import_pair_hint), style = MaterialTheme.typography.bodySmall)
+            LegacyModelSetup(ModelEngineType.TRANSLATE, config, update, showDownloadSources = false)
+            ModelFilterPicker(uiText(UiR.string.translation_browser_gguf_import), importingId.ifBlank { "choose" },
+                listOf("choose" to uiText(UiR.string.translation_browser_choose_artifact)) + TranslationCatalog.models.map { it.id to it.label }, { id ->
+                    TranslationCatalog.models.firstOrNull { it.id == id }?.let { importingId = it.id; importer.launch(arrayOf("*/*")) }
+                })
+        }
+        if (PlatformTranslation.available) {
+            HorizontalDivider()
+            TextButton(onClick = { platformDetails = !platformDetails }) { Text(uiText(UiR.string.translation_browser_platform)) }
+            if (platformDetails) MlKitSetup(config, update)
+        }
+        if (showCaptionControls) {
+            HorizontalDivider()
+            CaptionLanguageFields(config, update, showSource = false,
+                targetChoices = captionTranslationChoices(config, CloudConfigStore.sttMode(context)))
+            Text(when {
+                !config.localTranslationEnabled -> uiText(UiR.string.ui_original_language_cc_translation_model_stays_unloaded_4bd7f)
+                spoken == "auto" -> uiText(UiR.string.ui_automatic_routing_uses_the_language_reported_by_asr_unknown_or_mi_6098f)
+                TranslationOptions.supports(config.localTranslationModelId, spoken, config.target.languageTag) -> uiText(UiR.string.ui_supported_1_s_2_s_4844b, TranslationLanguages.label(spoken), config.target.label)
+                else -> uiText(UiR.string.ui_unsupported_pair_1_s_2_s_cc_continues_b821c, spoken, config.target.languageTag)
+            }, style = MaterialTheme.typography.bodySmall)
+        }
     }
 }

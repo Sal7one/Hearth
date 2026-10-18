@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="translation_browser_hint">"Choose a direction, then compare compact language pairs and multilingual models. Selecting a translator keeps speech recognition and voices independent."</string>
+    <string name="translation_browser_target">"Translate to"</string>
+    <string name="translation_browser_type">"Model type"</string>
+    <string name="translation_browser_type_all">"All model types"</string>
+    <string name="translation_browser_type_compact">"Compact language pairs"</string>
+    <string name="translation_browser_type_text">"Multilingual text models"</string>
+    <string name="translation_browser_pivots">"Include two-model routes through English"</string>
+    <string name="translation_browser_empty">"No matching models. Try another direction or model type, or open Browse models to install one."</string>
+    <string name="translation_browser_multilingual_size">"%1$d languages · %2$d MiB download"</string>
+    <string name="translation_browser_pair_size">"%1$s → %2$s · %3$d MiB download"</string>
+    <string name="translation_browser_index_new">"Released September 30, 2026 · official GGUF October 3"</string>
+    <string name="translation_browser_experimental">"Experimental on phones. Device speed and translation quality still need testing. Very low precisions may lose meaning."</string>
+    <string name="translation_browser_import_pair_hint">"Import a prepared Marian folder. Verified pinned pairs appear above after import; unrecognized folders are listed below and are not guessed into a language pair."</string>
+    <string name="translation_browser_use">"Use this translator"</string>
+    <string name="translation_browser_import">"Import verified model"</string>
+    <string name="translation_browser_memory_note">"Download size is not working memory. Higher precisions need more storage and RAM; only the selected model loads."</string>
+    <string name="translation_browser_file_count">"%1$d verified files; installation starts after every required file passes integrity checks."</string>
+    <string name="translation_browser_folder_import">"Import a translation folder"</string>
+    <string name="translation_browser_gguf_import">"Import a GGUF model"</string>
+    <string name="translation_browser_choose_artifact">"Choose the exact model and precision"</string>
+    <string name="translation_browser_platform">"ML Kit language packs"</string>
+    <string name="model_library_title">"Models"</string>
+    <string name="translation_browser_partial">"Partially downloaded"</string>
+    <string name="translation_browser_download_remaining">"Download remaining files"</string>
+</resources>

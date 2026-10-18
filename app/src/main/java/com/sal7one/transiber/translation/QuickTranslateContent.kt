@@ -64,11 +64,12 @@ internal fun QuickTranslateContent(
     onReplace: (String) -> Unit,
     onOpenFull: () -> Unit,
 ) {
+    val advanced = com.sal7one.transiber.preferences.rememberSetupMode() == com.sal7one.transiber.preferences.SetupMode.ADVANCED
     val context = LocalContext.current
     val uiText = rememberUiText()
-    val prefs = remember(context) { context.getSharedPreferences("typed-translation", 0) }
-    var source by remember { mutableStateOf(prefs.getString("source", "en") ?: "en") }
-    var target by remember { mutableStateOf(prefs.getString("target", "ar") ?: "ar") }
+    val preferences = rememberTypedTranslationPreferences()
+    val source = preferences.source
+    val target = preferences.target
     var picking by remember { mutableStateOf<String?>(null) }
     var retry by remember { mutableIntStateOf(0) }
     var resumed by remember { mutableIntStateOf(0) }
@@ -116,7 +117,6 @@ internal fun QuickTranslateContent(
         }
     }
     LaunchedEffect(selectedText, source, target, connectionRevision, localModelId, retry, resumed) {
-        prefs.edit().putString("source", source).putString("target", target).apply()
         try {
             controller.update(
                 selectedText,
@@ -162,7 +162,7 @@ internal fun QuickTranslateContent(
                                 LanguageCatalog.option(source).label
                         })
                 }
-                IconButton(onClick = { val old = source; source = target; target = old }) {
+                IconButton(onClick = { TypedTranslationSettings.swap(context) }) {
                     Icon(Icons.AutoMirrored.Filled.CompareArrows, uiText(R.string.ui_swap_languages_efa6c))
                 }
                 OutlinedButton(onClick = { picking = "target" }, modifier = Modifier.weight(1f),
@@ -192,10 +192,17 @@ internal fun QuickTranslateContent(
                 Text(state.output, style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite })
             }
+            if (advanced) state.executionInfo?.let { Text(it, style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant) }
             state.error?.let { error ->
                 Text(error, color = MaterialTheme.colorScheme.error,
                     modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite })
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (state.canRetryOnCpu) TextButton(onClick = {
+                        try { ConversationTranslationSettings.setAcceleration(context,
+                            com.sal7one.common_jni.translation.TranslationAcceleration.CPU); retry++ }
+                        catch (e: Exception) { controller.error(e) }
+                    }) { Text(uiText(R.string.translation_acceleration_retry_cpu)) }
                     TextButton(onClick = { retry++ }) { Text(uiText(R.string.ui_retry_9f5cd)) }
                     TextButton(onClick = onOpenFull) {
                         Text(uiText(R.string.action_hearth_translate_open_full))
@@ -220,7 +227,7 @@ internal fun QuickTranslateContent(
             selected = if (which == "source") source else target,
             codes = if (which == "source") sourceChoices else targetChoices,
             onSelect = { code ->
-                if (which == "source") source = code else target = code
+                if (which == "source") TypedTranslationSettings.source(context, code) else TypedTranslationSettings.target(context, code)
                 picking = null
             },
             onDismiss = { picking = null },

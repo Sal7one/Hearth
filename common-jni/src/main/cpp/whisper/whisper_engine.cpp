@@ -23,10 +23,12 @@
 #include <cmath>
 #include <algorithm>
 #include <limits>
+#include <stdexcept>
 
 // Only include whisper headers if enabled via CMake
 #if defined(WHISPER_AVAILABLE) && WHISPER_AVAILABLE
 #include "whisper.h"
+#include "whisper_runtime.h"
 #endif
 
 namespace stt {
@@ -59,9 +61,15 @@ namespace stt {
 
     struct WhisperEngine::Impl {
         whisper_context* ctx = nullptr;
+        const HearthWhisperApi* api = &WhisperRuntime::cpu();
+        std::string runtimeDescription;
         EngineConfig config;
         std::atomic<bool> initialized{false};
         std::string lastError;
+        // Async decode failures belong to this stream, not the worker's
+        // thread-local error store. Keep them until an explicit reset so a
+        // failed decode can never be mistaken for a legitimate silent window.
+        std::string inferenceFailure;
         mutable std::mutex errorMutex;
 
         // The lifecycle gate owns admission and draining; the operation mutex
@@ -140,6 +148,7 @@ namespace stt {
         std::vector<float> streamResampleScratch;
         int streamInputRate = 0;
         std::condition_variable streamCv;
+        uint64_t streamRevision = 0; // streamMutex; accepted input wakes the worker
 
         std::mutex partialMutex;             // publishedPartial + language cache
         std::string publishedPartial;
@@ -148,8 +157,7 @@ namespace stt {
         std::chrono::steady_clock::time_point lastVoiceAt{};
         std::chrono::steady_clock::time_point lastPartialAt{};
         std::chrono::steady_clock::time_point lastPromoteAt{};
-        size_t pendingAtLastPartial = 0;   // buffer size when the last partial decoded
-        int64_t droppedSamples = 0;
+        int64_t samplesAtLastPartial = 0; // source clock; independent of ring discards
 
         // Effective streaming geometry (samples at 16 kHz).
         int partialMinSamples = WHISPER_RATE;         // 1.0 s before partials
@@ -182,7 +190,28 @@ namespace stt {
 
         std::string getError() const {
             std::lock_guard<std::mutex> lock(errorMutex);
-            return lastError;
+            return inferenceFailure.empty() ? lastError : inferenceFailure;
+        }
+
+        void failInference(const std::string& error) {
+            {
+                std::lock_guard<std::mutex> lock(errorMutex);
+                if (!inferenceFailure.empty()) return;
+                inferenceFailure = error;
+                lastError = error;
+            }
+            SET_ERROR(error);
+            progress.reportFailed(error);
+        }
+
+        std::string getInferenceFailure() const {
+            std::lock_guard<std::mutex> lock(errorMutex);
+            return inferenceFailure;
+        }
+
+        void clearInferenceFailure() {
+            std::lock_guard<std::mutex> lock(errorMutex);
+            inferenceFailure.clear();
         }
 
         // Instrumentation: record a completed pushAudioFloat call duration.
@@ -262,8 +291,10 @@ namespace stt {
 
         void clearResources() {
             stopWorker();
+            clearInferenceFailure();
+            cancelToken.reset();
             if (ctx) {
-                whisper_free(ctx);
+                api->whisper_free(ctx);
                 ctx = nullptr;
             }
             std::lock_guard<std::mutex> lock(streamMutex);
@@ -276,11 +307,12 @@ namespace stt {
             initialized = false;
             totalSamples = 0;
             silentFramesSkipped = 0;
-            droppedSamples = 0;
             audioGate.reset();
             streamResampler.reset();
             streamResampleScratch.clear();
             streamInputRate = 0;
+            streamRevision = 0;
+            samplesAtLastPartial = 0;
             {
                 std::lock_guard<std::mutex> plock(partialMutex);
                 publishedPartial.clear();
@@ -315,6 +347,8 @@ namespace stt {
         }
 
         void resetState() {
+            clearInferenceFailure();
+            cancelToken.reset();
             {
                 std::lock_guard<std::mutex> lock(streamMutex);
                 buffer.clear();
@@ -322,10 +356,11 @@ namespace stt {
                 streamedBaseSamples = 0;
                 totalSamples = 0;
                 silentFramesSkipped = 0;
-                droppedSamples = 0;
                 lastVoiceAt = {};
                 lastPartialAt = {};
                 lastPromoteAt = {};
+                streamRevision = 0;
+                samplesAtLastPartial = 0;
                 audioGate.reset();
                 streamResampler.reset();
                 streamResampleScratch.clear();
@@ -397,15 +432,19 @@ namespace stt {
 
         void workerLoop() {
             LOG_I(TAG_WHISPER, "Streaming worker started");
+            uint64_t observedRevision = 0;
             while (true) {
                 {
                     std::unique_lock<std::mutex> lock(streamMutex);
-                    streamCv.wait_for(lock, std::chrono::milliseconds(200), [this]() {
-                        return workerStop.load() || lifecycle.isClosing();
+                    streamCv.wait_for(lock, std::chrono::milliseconds(200), [this, &observedRevision]() {
+                        return workerStop.load() || lifecycle.isClosing() ||
+                            streamRevision != observedRevision;
                     });
+                    observedRevision = streamRevision;
                 }
                 if (workerStop.load() || lifecycle.isClosing()) break;
                 if (!initialized.load()) continue;
+                if (!getInferenceFailure().empty()) break;
 
                 bool doPromote = false;
                 bool doPartial = false;
@@ -447,8 +486,7 @@ namespace stt {
                         count = static_cast<size_t>(promoteSamples);
                     } else if (pending >= static_cast<size_t>(partialMinSamples) &&
                                cadenceOk &&
-                               pending > pendingAtLastPartial +
-                                   static_cast<size_t>(partialMinSamples)) {
+                               totalSamples - samplesAtLastPartial >= partialMinSamples) {
                         // A partial may only re-decode when NEW audio arrived
                         // since the last one. Without this, whisper's
                         // context-carryover re-decodes the same 6 s tail
@@ -471,9 +509,10 @@ namespace stt {
                     if (count == 0) continue;
                     scratch.resize(count);
                     if (doPartial) {
-                        // 'New audio since the last partial' is measured as
-                        // buffer growth at decode time.
-                        pendingAtLastPartial = pending;
+                        // The input clock survives rolling promotes and idle
+                        // discards. Ring size does not: using it here stalls
+                        // partials after a large previous window or reset.
+                        samplesAtLastPartial = totalSamples;
                         const size_t start = pending - count;
                         for (size_t i = 0; i < count; ++i) {
                             scratch[i] = buffer[start + i];
@@ -494,9 +533,15 @@ namespace stt {
                     runInference(scratch.data(), static_cast<int>(scratch.size()),
                                  /*partial=*/true, &captured,
                                  /*streamingParams=*/true);
+                // Leave the failed audio timeline intact. Poll/push/finalize
+                // surface the same error; only reset starts a fresh stream.
+                if (!getInferenceFailure().empty()) break;
 
                 {
                     std::lock_guard<std::mutex> lock(streamMutex);
+                    // A push may fail the stream while decode is in flight,
+                    // including between the check above and this lock.
+                    if (!getInferenceFailure().empty()) break;
                     if (doPromote) {
                         const int64_t offsetMs =
                             streamedBaseSamples * 1000 / WHISPER_RATE;
@@ -551,7 +596,7 @@ namespace stt {
 
         whisper_full_params makeParams(bool isStreaming) {
             // Use GREEDY for speed on Android
-            whisper_full_params p = whisper_full_default_params(WHISPER_SAMPLING_GREEDY);
+            whisper_full_params p = api->whisper_full_default_params(WHISPER_SAMPLING_GREEDY);
             p.print_realtime = false;
             p.print_progress = false;
             // Decode progress → the attached pipe (inert until a consumer
@@ -562,11 +607,9 @@ namespace stt {
             p.progress_callback_user_data = this;
             p.print_timestamps = false;
             p.print_special = false;
-            // The encoder is the dominant cost (every call pads its mel to
-            // 30 s). Modern octa-core phones scale it well beyond 4 threads;
-            // keep at least the configured count and allow up to 8 so live
-            // partials finish faster while the worker thread stays free.
-            p.n_threads = std::min(std::max(config.numThreads, 4), 8);
+            // Respect the caller's CPU budget: STT may run alongside local
+            // translation/TTS, and forcing >=4 threads defeats that budget.
+            p.n_threads = std::clamp(config.numThreads, 1, 8);
 
             // --- LANGUAGE CONFIGURATION ---
             if (config.language == "auto" || config.language.empty()) {
@@ -581,7 +624,11 @@ namespace stt {
                     p.detect_language = false;
                 } else {
                     p.language = nullptr;
-                    p.detect_language = true;
+                    // nullptr asks whisper_full to detect then transcribe.
+                    // detect_language=true instead returns after detection:
+                    // it guarantees an empty first partial and forces batch
+                    // callers to repeat the mel/encoder work to get any text.
+                    p.detect_language = false;
                 }
             } else {
                 p.language = config.language.c_str();
@@ -643,11 +690,11 @@ namespace stt {
         }
 
         float calculateSegmentConfidence(whisper_context* ctx, int segmentIndex) {
-            int n_tokens = whisper_full_n_tokens(ctx, segmentIndex);
+            int n_tokens = api->whisper_full_n_tokens(ctx, segmentIndex);
             if (n_tokens == 0) return 0.0f;
             float totalProb = 0.0f;
             for (int i = 0; i < n_tokens; ++i) {
-                whisper_token_data token = whisper_full_get_token_data(ctx, segmentIndex, i);
+                whisper_token_data token = api->whisper_full_get_token_data(ctx, segmentIndex, i);
                 if (token.p > 0) totalProb += token.p;
             }
             return totalProb / n_tokens;
@@ -755,10 +802,13 @@ namespace stt {
                 // cuts the dominant encoder pass by up to ~6x for the short
                 // windows live captions use. Batch transcription keeps the
                 // full 30 s context (audio_ctx = 0).
-                const int windowFrames = (count + 160 - 1) / 160;
+                // audio_ctx is AFTER Whisper's stride-2 convolution: one
+                // encoder step covers 320 samples (20ms), not one 160-sample
+                // mel frame. The old count/160 encoded twice the needed span.
+                const int windowFrames = (count + 320 - 1) / 320;
                 p.audio_ctx = std::min(1500, std::max(224, windowFrames + 16));
             }
-            int res = whisper_full(ctx, p, audioData, count);
+            int res = api->whisper_full(ctx, p, audioData, count);
 
             if (res != 0) {
                 if (checkCancelled(streamingParams)) {
@@ -766,50 +816,33 @@ namespace stt {
                     progress.reportCancelled();
                     return "";
                 }
-                setError("whisper_full (pass#1) failed: " + std::to_string(res));
-                progress.reportFailed("whisper_full failed: " + std::to_string(res));
+                failInference("whisper_full (pass#1) failed: " + std::to_string(res));
                 return "";
             }
 
-            int n = whisper_full_n_segments(ctx);
+            int n = api->whisper_full_n_segments(ctx);
 
             // Cache the detected language after the first auto-detection so
             // later calls skip the extra encoder pass.
             if (isAutoLang) {
-                int lid = whisper_full_lang_id(ctx);
+                int lid = api->whisper_full_lang_id(ctx);
                 if (lid >= 0) {
                     std::lock_guard<std::mutex> lock(partialMutex);
                     if (languageCache.empty()) {
-                        languageCache = whisper_lang_str(lid);
+                        languageCache = api->whisper_lang_str(lid);
                         LOG_I(TAG_WHISPER, "Language cached: %s", languageCache.c_str());
                     }
                 }
             }
 
-            // --- RETRY LOGIC ---
-            // If auto-detect found a language but returned NO text, force that language and retry.
-            if (!partial && isAutoLang && n == 0 && !checkCancelled()) {
-                int lid = whisper_full_lang_id(ctx);
-                if (lid >= 0) {
-                    const char* lang = whisper_lang_str(lid);
-                    LOG_W(TAG_WHISPER, "Auto-detected '%s' but 0 segments. Retrying forced.", lang);
-
-                    whisper_full_params p2 = makeParams(streamingParams);
-                    p2.detect_language = false;
-                    p2.language = lang;
-                    p2.no_speech_thold = 1.0f; // Force speech
-                    p2.entropy_thold = 3.0f;
-                    p2.suppress_blank = false;
-
-                    whisper_full(ctx, p2, audioData, count);
-                    n = whisper_full_n_segments(ctx);
-                }
-            }
+            // Empty output is a valid silence decision. Do not retry it with
+            // no_speech_thold=1: that repeats inference and forces text from
+            // noise. Auto language now decodes in its initial call above.
 
             // Language detection update
             if (isAutoLang && n > 0) {
-                int lid = whisper_full_lang_id(ctx);
-                if (lid >= 0) detectedLang = whisper_lang_str(lid);
+                int lid = api->whisper_full_lang_id(ctx);
+                if (lid >= 0) detectedLang = api->whisper_lang_str(lid);
             } else {
                 detectedLang = config.language;
             }
@@ -827,14 +860,14 @@ namespace stt {
                     break;
                 }
 
-                const char* t = whisper_full_get_segment_text(ctx, i);
+                const char* t = api->whisper_full_get_segment_text(ctx, i);
                 std::string cleanText = sanitizeTranscript(t);
                 if (cleanText.empty()) continue;
 
                 TranscriptSegment seg;
                 seg.text = cleanText;
-                seg.startMs = whisper_full_get_segment_t0(ctx, i) * 10;
-                seg.endMs = whisper_full_get_segment_t1(ctx, i) * 10;
+                seg.startMs = api->whisper_full_get_segment_t0(ctx, i) * 10;
+                seg.endMs = api->whisper_full_get_segment_t1(ctx, i) * 10;
                 seg.confidence = calculateSegmentConfidence(ctx, i);
 
                 if (!partial) {
@@ -879,6 +912,16 @@ namespace stt {
         };
 
         impl_->config = config;
+        impl_->runtimeDescription.clear();
+        if (config.whisperAcceleration != "cpu" && config.whisperAcceleration != "vulkan")
+            return failInitialization("Unknown Whisper acceleration: " + config.whisperAcceleration);
+        try {
+            impl_->api = config.whisperAcceleration == "vulkan"
+                ? &WhisperRuntime::vulkan() : &WhisperRuntime::cpu();
+            impl_->runtimeDescription = impl_->api->deviceDescription();
+        } catch (const std::exception& e) {
+            return failInitialization(e.what());
+        }
 
         if (config.modelPath.empty()) return failInitialization("Model path empty");
         // Defense-in-depth for the vendored whisper.cpp: an unknown language
@@ -886,7 +929,7 @@ namespace stt {
         // read. Our UI only offers valid codes, but the config JSON is a
         // public boundary — reject here with a clear error instead.
         if (!config.language.empty() && config.language != "auto" &&
-            whisper_lang_id(config.language.c_str()) < 0) {
+            impl_->api->whisper_lang_id(config.language.c_str()) < 0) {
             return failInitialization(
                 "Unknown language code: " + config.language +
                 " (use ISO-639-1 like en, ar, zh, or auto)");
@@ -906,12 +949,15 @@ namespace stt {
             return failInitialization("Engine shutdown requested after model verification");
         }
 
-        whisper_log_set(whisper_log_callback, nullptr);
+        impl_->api->whisper_log_set(whisper_log_callback, nullptr);
         LOG_I(TAG_WHISPER, "Loading model: %s", config.modelPath.c_str());
 
-        whisper_context_params cp = whisper_context_default_params();
-        cp.use_gpu = false;
-        cp.flash_attn = false;
+        whisper_context_params cp = impl_->api->whisper_context_default_params();
+        cp.use_gpu = config.whisperAcceleration == "vulkan";
+        // The pinned Vulkan non-flash path dropped leading words in real
+        // tiny.en Q5/F16 fixtures (including negation). Flash attention restores
+        // CPU-equivalent text; retain the established CPU path unchanged.
+        cp.flash_attn = cp.use_gpu;
 
         auto start = std::chrono::steady_clock::now();
         whisper_model_loader loader{};
@@ -919,19 +965,26 @@ namespace stt {
         loader.read = &VerifiedModelFile::readCallback;
         loader.eof = &VerifiedModelFile::eofCallback;
         loader.close = &VerifiedModelFile::closeCallback;
-        whisper_context* newContext = whisper_init_with_params(&loader, cp);
+        whisper_context* newContext = nullptr;
+        try {
+            newContext = impl_->api->whisper_init_with_params(&loader, cp);
+        } catch (const std::exception& e) {
+            return failInitialization(std::string("Whisper model initialization failed: ") + e.what());
+        }
         auto end = std::chrono::steady_clock::now();
 
         if (!verifiedModel.healthy()) {
-            if (newContext) whisper_free(newContext);
+            if (newContext) impl_->api->whisper_free(newContext);
             return failInitialization(
                 std::string("Verified model changed or ended during parsing: ") +
                 VerifiedModelFile::errorMessage(verifiedModel.lastError())
             );
         }
-        if (!newContext) return failInitialization("Failed to load model");
+        if (!newContext) return failInitialization(cp.use_gpu
+            ? "Whisper Vulkan could not load the model or allocate GPU buffers. Choose CPU to retry."
+            : "Failed to load model");
         if (isShuttingDown()) {
-            whisper_free(newContext);
+            impl_->api->whisper_free(newContext);
             return failInitialization("Engine shutdown requested while loading model");
         }
         impl_->ctx = newContext;
@@ -957,6 +1010,7 @@ namespace stt {
     }
 
     int WhisperEngine::pushAudio(const int16_t* samples, int count, int sampleRate) {
+        if (!impl_->getInferenceFailure().empty()) return -1;
         if (!samples || count <= 0 || sampleRate <= 0) {
             impl_->setError("Invalid PCM16 streaming input");
             return -1;
@@ -971,6 +1025,7 @@ namespace stt {
 
     int WhisperEngine::pushAudioFloat(const float* samples, int count, int sampleRate) {
         const auto pushStart = std::chrono::steady_clock::now();
+        if (!impl_->getInferenceFailure().empty()) return -1;
 
         // A reset pauses the lifecycle gate before clearing the ring buffer.
         // Count pushes as operations so an in-flight push cannot append old
@@ -1013,6 +1068,7 @@ namespace stt {
         // be blocked by a slow partial.
         {
             std::lock_guard<std::mutex> lock(impl_->streamMutex);
+            if (!impl_->getInferenceFailure().empty()) return -1;
             if (sampleRate != impl_->streamInputRate) {
                 impl_->streamInputRate = sampleRate;
                 if (sampleRate != WHISPER_RATE &&
@@ -1040,6 +1096,17 @@ namespace stt {
                 dataCount = static_cast<int>(impl_->streamResampleScratch.size());
             }
 
+            // Reject the entire frame before changing buffered audio or its
+            // timeline. An async decoder can fall behind while pushes remain
+            // cheap; silently removing accepted speech would hide that failure.
+            const auto pending = static_cast<int64_t>(impl_->buffer.size());
+            if (dataCount > Impl::kMaxPendingSamples - pending) {
+                impl_->failInference("Whisper streaming cannot keep up: " +
+                    std::to_string(pending) + " samples pending; queue limit " +
+                    std::to_string(Impl::kMaxPendingSamples));
+                return -1;
+            }
+
             bool active = true;
             if (impl_->vadEnabled && impl_->config.enableVad) {
                 auto vadResult = impl_->audioGate.analyzeFloat(data, static_cast<size_t>(dataCount));
@@ -1058,20 +1125,8 @@ namespace stt {
                 impl_->lastVoiceAt = std::chrono::steady_clock::now();
             }
 
-            // Hard safety cap: drop the OLDEST audio rather than growing
-            // without bound. The worker's rolling promote keeps the buffer
-            // far below this in normal operation.
-            const auto pending = static_cast<int64_t>(impl_->buffer.size());
-            if (pending > Impl::kMaxPendingSamples) {
-                const auto drop = static_cast<size_t>(pending - Impl::kMaxPendingSamples);
-                impl_->buffer.discard_front(drop);
-                impl_->streamedBaseSamples += static_cast<int64_t>(drop);
-                impl_->droppedSamples += static_cast<int64_t>(drop);
-                LOG_W(TAG_WHISPER,
-                      "Streaming worker saturated; dropped %zu samples (%lld total)",
-                      drop, static_cast<long long>(impl_->droppedSamples));
-            }
             impl_->totalSamples += dataCount;
+            ++impl_->streamRevision;
         }
         const auto pushUs = std::chrono::duration_cast<std::chrono::microseconds>(
             std::chrono::steady_clock::now() - pushStart).count();
@@ -1081,6 +1136,8 @@ namespace stt {
     }
 
     std::string WhisperEngine::getPartial() {
+        const auto failure = impl_->getInferenceFailure();
+        if (!failure.empty()) throw std::runtime_error(failure);
         if (impl_->lifecycle.isClosing()) return "";
         if (impl_->checkCancelled()) return R"({"partial":"","cancelled":true})";
         // Non-blocking: returns the last worker-published partial. No model
@@ -1099,6 +1156,7 @@ namespace stt {
             return "";
         }
         if (impl_->checkCancelled()) return R"({"cancelled": true, "text": ""})";
+        if (!impl_->getInferenceFailure().empty()) return "";
 
         auto start = std::chrono::steady_clock::now();
 
@@ -1123,6 +1181,7 @@ namespace stt {
                 impl_->finalizeScratch.data(),
                 static_cast<int>(impl_->finalizeScratch.size()), false,
                 nullptr, /*streamingParams=*/false);
+            if (!impl_->getInferenceFailure().empty()) return "";
             if (impl_->checkCancelled()) {
                 return R"({"cancelled": true, "text": ""})";
             }
@@ -1213,6 +1272,7 @@ namespace stt {
         }
 
         std::string text = impl_->runInference(processBuffer.data(), static_cast<int>(processBuffer.size()), false, nullptr, /*streamingParams=*/false);
+        if (!impl_->getInferenceFailure().empty()) return "";
         if (impl_->checkCancelled()) {
             return R"({"cancelled": true, "text": ""})";
         }
@@ -1230,6 +1290,11 @@ namespace stt {
                 impl_->detectedLang.empty() ? impl_->config.language : impl_->detectedLang, ms);
     }
 
+std::string WhisperEngine::getRuntimeDescription() const {
+    auto guard = impl_->lifecycle.tryAcquire();
+    return guard && impl_->initialized ? impl_->runtimeDescription : "";
+}
+
 bool WhisperEngine::isInitialized() const { return impl_->initialized; }
 bool WhisperEngine::isProcessing() const { return impl_->isProcessing(); }
 std::string WhisperEngine::getLastError() const { return impl_->getError(); }
@@ -1239,7 +1304,7 @@ void WhisperEngine::onCancellationRequested() { impl_->cancelToken.request(); }
 void WhisperEngine::setProgressFd(int fd) { impl_->progress.reattach(fd); }
 int WhisperEngine::getModelType() const {
     Impl::ProcessingGuard guard(impl_.get());
-    return guard.acquired() && impl_->ctx ? whisper_model_type(impl_->ctx) : -1;
+    return guard.acquired() && impl_->ctx ? impl_->api->whisper_model_type(impl_->ctx) : -1;
 }
 
 std::string WhisperEngine::getVersion() { return "whisper.cpp"; }
@@ -1302,7 +1367,7 @@ std::string WhisperEngine::detectLanguageOnly(const int16_t* samples, int count,
 
     // Run mel spectrogram
     // NOTE: This modifies ctx internal state - must be serialized with other whisper_* calls
-    if (whisper_pcm_to_mel(impl_->ctx, audioData, audioCount, impl_->config.numThreads) != 0) {
+    if (impl_->api->whisper_pcm_to_mel(impl_->ctx, audioData, audioCount, impl_->config.numThreads) != 0) {
         impl_->setError("Failed to compute mel spectrogram");
         return "";
     }
@@ -1313,15 +1378,15 @@ std::string WhisperEngine::detectLanguageOnly(const int16_t* samples, int count,
     }
 
     // Use whisper_lang_auto_detect for LID-only (no full transcription)
-    std::vector<float> langProbs(whisper_lang_max_id() + 1, 0.0f);
-    int langId = whisper_lang_auto_detect(impl_->ctx, 0, impl_->config.numThreads, langProbs.data());
+    std::vector<float> langProbs(impl_->api->whisper_lang_max_id() + 1, 0.0f);
+    int langId = impl_->api->whisper_lang_auto_detect(impl_->ctx, 0, impl_->config.numThreads, langProbs.data());
 
     if (langId < 0) {
         impl_->setError("Language detection failed");
         return "";
     }
 
-    const char* langStr = whisper_lang_str(langId);
+    const char* langStr = impl_->api->whisper_lang_str(langId);
     if (!langStr) {
         impl_->setError("Unknown language ID");
         return "";
@@ -1365,6 +1430,7 @@ std::vector<std::string> WhisperEngine::getSupportedLanguages() const {
 WhisperEngine::WhisperEngine() : impl_(std::make_unique<Impl>()) {}
 WhisperEngine::~WhisperEngine() = default;
 bool WhisperEngine::initialize(const EngineConfig&) { SET_ERROR(impl_->lastError); return false; }
+std::string WhisperEngine::getRuntimeDescription() const { return ""; }
 int WhisperEngine::pushAudio(const int16_t*, int, int) { return -1; }
 int WhisperEngine::pushAudioFloat(const float*, int) { return -1; }
 std::string WhisperEngine::getPartial() { return ""; }
@@ -1374,6 +1440,11 @@ bool WhisperEngine::resetChecked() { return false; }
 void WhisperEngine::release() {}
 std::string WhisperEngine::transcribeBatch(const int16_t*, int, int) { return ""; }
 std::string WhisperEngine::transcribeBatchFloat(const float*, int, int) { return ""; }
+std::string WhisperEngine::getRuntimeDescription() const {
+    auto guard = impl_->lifecycle.tryAcquire();
+    return guard && impl_->initialized ? impl_->runtimeDescription : "";
+}
+
 bool WhisperEngine::isInitialized() const { return false; }
 bool WhisperEngine::isProcessing() const { return false; }
 std::string WhisperEngine::getLastError() const { return impl_->lastError; }

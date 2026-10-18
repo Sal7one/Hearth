@@ -1,5 +1,6 @@
 package com.sal7one.transiber.translation
 import com.sal7one.common_jni.translation.CancellableTextTranslator
+import com.sal7one.common_jni.translation.TranslationAcceleration
 import com.sal7one.common_jni.speech.TranslationDirection
 import kotlinx.coroutines.*
 import kotlinx.coroutines.test.*
@@ -9,6 +10,7 @@ import org.junit.Test
 class TypedTranslationControllerTest {
     private class Engine: CancellableTextTranslator {
         override val id="test"
+        override val executionInfo="CPU · test runtime"
         override val directions=setOf(TranslationDirection("en","ar"))
         val inputs=mutableListOf<String>();var closed=0;var cancelled=0
         val pending=mutableListOf<CompletableDeferred<String>>()
@@ -83,4 +85,24 @@ class TypedTranslationControllerTest {
         assertEquals("hello",c.state.value.output);assertEquals(0,held);assertEquals(1,engine.closed)
         c.close();runCurrent()
     }
+    @Test fun gpuFailureOffersManualCpuRetryAndRouteChangeReopensTheEngine()=runTest {
+        listOf(TranslationAcceleration.VULKAN, TranslationAcceleration.OPENCL).forEach { backend ->
+            val dispatcher=StandardTestDispatcher(testScheduler);val requests=mutableListOf<ConversationTranslatorSnapshot>()
+            val engine=Engine();var held=0
+            val c=TypedTranslationController({route->requests+=route
+                if(route.acceleration!=TranslationAcceleration.CPU)throw IllegalStateException("${backend.id} driver allocation failed")
+                engine},{held++;AutoCloseable {held--}},dispatcher,dispatcher)
+            val route=ConversationTranslatorSnapshot("test",acceleration=backend)
+            c.update("hello","en","ar",route,true);runCurrent()
+            assertEquals("${backend.id} driver allocation failed",c.state.value.error)
+            assertTrue(c.state.value.canRetryOnCpu);assertEquals(0,held)
+            assertEquals(listOf(route),requests) // No implicit CPU retry.
+            c.update("hello","en","ar",route.copy(acceleration=TranslationAcceleration.CPU),true);runCurrent()
+            engine.pending.single().complete("translated");runCurrent()
+            assertEquals("translated",c.state.value.output);assertFalse(c.state.value.canRetryOnCpu)
+            assertEquals("CPU · test runtime",c.state.value.executionInfo)
+            c.close();runCurrent();assertEquals(0,held)
+        }
+    }
+
 }

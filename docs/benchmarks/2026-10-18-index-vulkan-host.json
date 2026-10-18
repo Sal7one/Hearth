@@ -1,0 +1,171 @@
+{
+  "host": "macOS-26.5-arm64-arm-64bit-Mach-O",
+  "chip": "Apple M4 Pro",
+  "modelBytes": 1312164352,
+  "modelSha256": "044b313d29342bd3b2c77cbb64023ca0d209bd9b3247763f9d162767ef2d746a",
+  "runtime": "Exact production VulkanTextModel + pinned llama Vulkan through MoltenVK 1.4.2; not Android",
+  "exitCode": 0,
+  "elapsedSeconds": 4.889957207997213,
+  "cases": [
+    {
+      "id": "en-ar-negation",
+      "source": "en",
+      "target": "ar",
+      "text": "Do not cancel my reservation.",
+      "publisherTargetName": "阿拉伯语",
+      "result": {
+        "elapsedMs": 1145.78,
+        "text": "لا تلغِ حجزي."
+      }
+    },
+    {
+      "id": "en-ar-time",
+      "source": "en",
+      "target": "ar",
+      "text": "The train leaves at 7:30 from platform 4.",
+      "publisherTargetName": "阿拉伯语",
+      "result": {
+        "elapsedMs": 274.345,
+        "text": "يسافر القطار في الساعة 7:30 من المنصة 4."
+      }
+    },
+    {
+      "id": "en-ar-price",
+      "source": "en",
+      "target": "ar",
+      "text": "The price is $5, not $50.",
+      "publisherTargetName": "阿拉伯语",
+      "result": {
+        "elapsedMs": 255.226,
+        "text": "السعر هو 5 دولارات، وليس 50 دولارًا."
+      }
+    },
+    {
+      "id": "ru-ar-tickets",
+      "source": "ru",
+      "target": "ar",
+      "text": "Мне нужны два билета в аэропорт.",
+      "publisherTargetName": "阿拉伯语",
+      "result": {
+        "elapsedMs": 169.805,
+        "text": "أحتاج إلى تذكرتين إلى المطار."
+      }
+    },
+    {
+      "id": "zh-ar-negation",
+      "source": "zh",
+      "target": "ar",
+      "text": "请不要取消我的预订。",
+      "publisherTargetName": "阿拉伯语",
+      "result": {
+        "elapsedMs": 181.831,
+        "text": "من فضلك لا ألغي حجزي."
+      }
+    },
+    {
+      "id": "ar-en-negation",
+      "source": "ar",
+      "target": "en",
+      "text": "لا تلغِ حجزي. أحتاج إلى تذكرتين فقط.",
+      "publisherTargetName": "英语",
+      "result": {
+        "elapsedMs": 217.769,
+        "text": "Don't cancel my reservations. I only need two tickets."
+      }
+    },
+    {
+      "id": "en-ru-time",
+      "source": "en",
+      "target": "ru",
+      "text": "See you tomorrow at 3 PM. Please do not be late.",
+      "publisherTargetName": "俄语",
+      "result": {
+        "elapsedMs": 333.839,
+        "text": "Увидимся завтра в 15:00. Пожалуйста, не опаздывайте."
+      }
+    },
+    {
+      "id": "en-zh-count",
+      "source": "en",
+      "target": "zh",
+      "text": "I need two train tickets, not three.",
+      "publisherTargetName": "中文",
+      "result": {
+        "elapsedMs": 168.427,
+        "text": "我需要两张火车票，不是三张。"
+      }
+    },
+    {
+      "id": "en-sr-latn",
+      "source": "en",
+      "target": "sr-Latn",
+      "text": "I need two tickets to the airport.",
+      "publisherTargetName": "Serbian (Latin)",
+      "result": {
+        "elapsedMs": 202.265,
+        "text": "Treba mi dve karte za aerodrom."
+      }
+    },
+    {
+      "id": "en-ar-original",
+      "source": "en",
+      "target": "ar",
+      "text": "I need two tickets to the airport.",
+      "publisherTargetName": "阿拉伯语",
+      "result": {
+        "elapsedMs": 169.478,
+        "text": "أحتاج إلى تذكرتين إلى المطار."
+      }
+    },
+    {
+      "id": "en-ar-different",
+      "source": "en",
+      "target": "ar",
+      "text": "The hotel has no rooms available tonight.",
+      "publisherTargetName": "阿拉伯语",
+      "result": {
+        "elapsedMs": 180.069,
+        "text": "لا توجد غرف متاحة في الفندق الليلة."
+      }
+    },
+    {
+      "id": "en-ar-repeat",
+      "source": "en",
+      "target": "ar",
+      "text": "I need two tickets to the airport.",
+      "publisherTargetName": "阿拉伯语",
+      "result": {
+        "elapsedMs": 168.373,
+        "text": "أحتاج إلى تذكرتين إلى المطار."
+      }
+    }
+  ],
+  "executionInfo": "Vulkan · Apple M4 Pro · loader assigned 26/26 layers; GPU model buffers 1204.91 MiB. Unsupported operations may use CPU.",
+  "llamaRevision": "64e9bceb2c3a856efed96feda784a50947049feb",
+  "shaderCompilerVersion": "shaderc v2026.4 unknown hash, 2026-09-11\nspirv-tools v2026.4 v2022.4-1347-gef96ed76\nglslang 11.1.0-1566-ge1b562a8\n\nTarget: SPIR-V 1.0",
+  "shaderCompilerSha256": "73f9f514345e732bee65d4b92043af384b34f26af3ed797e0afbfb4e1449f8ce",
+  "moltenvk": {
+    "release": "v1.4.2",
+    "source": "https://github.com/KhronosGroup/MoltenVK/releases/tag/v1.4.2",
+    "archiveBytes": 59563008,
+    "sha256": "f95765a6229cb7b915990a2890ce12ebe36a730b021545d3d52ae69ce4c4024e"
+  },
+  "hostLibraryCxxFlags": "-O1 -DNDEBUG; strict harness -O2",
+  "timingCaveat": "Compatibility smoke on Mac GPU with concurrent Gradle work; no controlled CPU comparison or Android speed claim. First request includes shader/pipeline preparation.",
+  "requestsPassed": 12,
+  "repeatedInputParity": true,
+  "loadMs": 671.61,
+  "medianInferenceMs": 192.048,
+  "wrapperSourceSha256": {
+    "common-jni/src/main/cpp/common/lease_registry.h": "555d0d227579c671a92f594de45ff7b7ee35eb646d4d68a4266758e00eec94bd",
+    "common-jni/src/main/cpp/translation/exports.map": "01a3130f08b26ac1f00ff059093f9df6c761a73e48cc56a8b4572954f61f1f45",
+    "common-jni/src/main/cpp/translation/text_model.h": "62e1bd3a3919c2fe409c7d3ab3e703451e9f53f3e26b241e0293c523034fa69f",
+    "common-jni/src/main/cpp/translation/translation_jni.cpp": "7816d1c5c3c9fca9bdb40708377eeccfc225c944389ec931c7645e2595fbcd98",
+    "common-jni/src/main/cpp/translation/translation_smoke.cpp": "21f7925cbca47d4b6418eeb446487954ab78718971d9971d620616801da4a985",
+    "common-jni/src/main/cpp/translation/vulkan_exports.map": "286ebb9c6cace46c6830df73f9e95097065ff127abe073b3433c6fe51d2b9cb4",
+    "common-jni/src/main/cpp/translation/vulkan_policy.h": "c94850e6ea5688375d72fbe064a70e4ea8758f2573c39724de350ac4bdb7a119",
+    "common-jni/src/main/cpp/translation/vulkan_text_model.h": "4cf020bf8b666317b560ed2905a313b2d2dcb6f73f67669aa5033116a919e175",
+    "scripts/translation/CMakeLists.txt": "2840ca8c66b18b8afd345a10be7fe8d1c8a6a937c54536a22e85041c27c0c924",
+    "scripts/translation/build-runtime.sh": "9a95c6a1a53a592c06b6fd1fa6521761eec4b81f66d13d2975007dd2bec34f28"
+  }
+}

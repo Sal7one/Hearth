@@ -89,7 +89,7 @@ int reset(void* p) { return guarded([&] {
     n.start();
 }); }
 const HearthSpeechBackend api{HEARTH_SPEECH_ABI_VERSION, sizeof(HearthSpeechBackend), "nemotron_3_5", HEARTH_NEMO_REVISION,
-    create, destroy, push, next, finish, reset, lastError};
+    create, destroy, push, next, finish, reset, lastError, [](void*) { return "CPU · NeMo GGML"; }};
 }
 }
 extern "C" __attribute__((visibility("default"))) const HearthSpeechBackend* hearth_speech_backend_v1() { return &stt::speech::api; }

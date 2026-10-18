@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="translation_browser_hint">"先选择翻译方向，再比较小型语言对与多语言模型。选择翻译模型不影响语音识别和语音输出。"</string>
+    <string name="translation_browser_target">"目标语言"</string>
+    <string name="translation_browser_type">"模型类型"</string>
+    <string name="translation_browser_type_all">"所有模型类型"</string>
+    <string name="translation_browser_type_compact">"小型语言对"</string>
+    <string name="translation_browser_type_text">"多语言文本模型"</string>
+    <string name="translation_browser_pivots">"包含经英语中转的双模型路线"</string>
+    <string name="translation_browser_empty">"没有匹配的模型。请尝试其他方向或模型类型，或在浏览模型中安装。"</string>
+    <string name="translation_browser_multilingual_size">"%1$d 种语言 · 下载 %2$d MiB"</string>
+    <string name="translation_browser_pair_size">"%1$s → %2$s · 下载 %3$d MiB"</string>
+    <string name="translation_browser_index_new">"2026 年 9 月 30 日发布 · 10 月 3 日发布官方 GGUF"</string>
+    <string name="translation_browser_experimental">"手机支持仍属实验性。设备速度和翻译质量仍需测试。过低精度可能损失语义。"</string>
+    <string name="translation_browser_import_pair_hint">"导入已准备好的 Marian 文件夹。通过验证的固定语言对将在上方显示；未知文件夹会列于下方，不会猜测其语言对。"</string>
+    <string name="translation_browser_use">"使用此翻译模型"</string>
+    <string name="translation_browser_import">"导入并验证模型"</string>
+    <string name="translation_browser_memory_note">"下载大小不等于运行内存。更高精度需要更多存储和内存；仅加载所选模型。"</string>
+    <string name="translation_browser_file_count">"共 %1$d 个文件；所有所需文件通过完整性检查后开始安装。"</string>
+    <string name="translation_browser_folder_import">"导入翻译文件夹"</string>
+    <string name="translation_browser_gguf_import">"导入 GGUF 模型"</string>
+    <string name="translation_browser_choose_artifact">"选择准确的模型与精度"</string>
+    <string name="translation_browser_platform">"ML Kit 语言包"</string>
+    <string name="model_library_title">"模型"</string>
+    <string name="translation_browser_partial">"已部分下载"</string>
+    <string name="translation_browser_download_remaining">"下载其余文件"</string>
+</resources>

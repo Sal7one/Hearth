@@ -27,7 +27,8 @@ int next(void* p, HearthSpeechResult* out, int* available) {
 int finish(void* p) { static_cast<Fake*>(p)->pending = 1; return 0; }
 int reset(void* p) { *static_cast<Fake*>(p) = {}; return 0; }
 const char* error() { return "原因: invalid graph 🧪"; }
-HearthSpeechBackend api{1, sizeof(HearthSpeechBackend), "fake", "test", create, destroy, push, next, finish, reset, error};
+HearthSpeechBackend api{HEARTH_SPEECH_ABI_VERSION, sizeof(HearthSpeechBackend), "fake", "test", create, destroy, push, next, finish, reset, error,
+    [](void*) { return "CPU · fixture"; }};
 using Segment = std::pair<std::vector<float>, int64_t>;
 std::vector<Segment> segmented(const std::vector<float>& audio, size_t chunk) {
     UtteranceSegmenter s(1000, 200, -45);
@@ -70,6 +71,42 @@ int main() {
     check(continuous.size() == 3);
     check(continuous[0].second == 16000 && continuous[2].second == 48000);
     check(continuous[0].first.size() + continuous[1].first.size() + continuous[2].first.size() == 48000);
+    // A wrapped pre-roll ring must retain exactly the latest 200ms, in order.
+    // Confirmed endpoint silence keeps 200ms decoder context but still moves
+    // the event to its original input-clock endpoint (no timestamp shortening).
+    std::vector<float> phrase(4800 + 8000 + 9600, 0);
+    for (size_t i = 0; i < 4800; ++i) phrase[i] = static_cast<float>(i % 101) / 1000000;
+    std::fill(phrase.begin() + 4800, phrase.begin() + 12800, 0.1f);
+    std::vector<float> expected(phrase.begin() + 1600, phrase.begin() + 16000);
+    for (size_t chunk : {size_t(1), size_t(173), size_t(320), size_t(16000)}) {
+        UtteranceSegmenter s(4000, 600, -45);
+        std::vector<Segment> out;
+        auto emit = [&](const std::vector<float>& a, int64_t e) { out.emplace_back(a, e); };
+        for (size_t i = 0; i < phrase.size(); i += chunk)
+            s.push(phrase.data() + i, std::min(chunk, phrase.size() - i), emit);
+        s.finish(emit); s.finish(emit);
+        check(out.size() == 1);
+        check(out[0].first == expected);
+        check(out[0].second == static_cast<int64_t>(phrase.size()));
+    }
+    // An inter-word pause is not endpoint padding: retain it in full when
+    // speech resumes, and trim only silence following the last active frame.
+    {
+        UtteranceSegmenter s(4000, 600, -45);
+        std::vector<float> paused(25600, 0);
+        std::fill(paused.begin(), paused.begin() + 6400, 0.1f);
+        std::fill(paused.begin() + 12800, paused.begin() + 16000, 0.2f);
+        std::vector<Segment> out;
+        auto emit = [&](const std::vector<float>& a, int64_t e) { out.emplace_back(a, e); };
+        s.push(paused.data(), paused.size(), emit);
+        check(out.size() == 1 && out[0].second == 25600);
+        check(out[0].first == std::vector<float>(paused.begin(), paused.begin() + 19200));
+        s.push(paused.data(), 173, emit); // discard a sub-frame tail on reset
+        s.reset(); out.clear();
+        s.push(paused.data(), 320, emit); s.finish(emit);
+        check(out.size() == 1 && out[0].first.size() == 320 && out[0].second == 320);
+        fails([&] { s.push(nullptr, 1, emit); }, "Missing utterance audio");
+    }
     fails([] { UtteranceSegmenter s(0, 200, -45); }, "limits");
     fails([] { UtteranceSegmenter s(1000, 200, std::numeric_limits<float>::quiet_NaN()); }, "threshold");
     HearthSpeechConfig config{}; config.size = sizeof(config);
@@ -114,6 +151,19 @@ int main() {
     auto unsupportedSource = omni;
     unsupportedSource.replace(unsupportedSource.find("\"ar\""), 4, "\"he\"");
     fails([&] { SpeechConfig c(unsupportedSource); }, "Unsupported Omnilingual source declaration");
+    const std::string moonshine = R"({"backend":"moonshine","model":"tokens.txt","frontend":"","encoder":"encoder_model.ort","decoder":"decoder_model_merged.ort","tokenizer":"","language":"auto","numThreads":2,"rightContext":0,"maxUtteranceMs":4000,"silenceMs":600,"silenceThresholdDb":-45})";
+    for (const char* language : {"auto", "en", "ar", "es", "ja", "ko", "uk", "vi", "zh"}) {
+        auto localized = moonshine;
+        localized.replace(localized.find("\"auto\""), 6, std::string("\"") + language + "\"");
+        SpeechConfig c(localized);
+        check(c.backend == "moonshine" && std::string(c.value.language) == language);
+    }
+    auto missingMoonshineDecoder = moonshine;
+    missingMoonshineDecoder.replace(missingMoonshineDecoder.find("decoder_model_merged.ort"), std::strlen("decoder_model_merged.ort"), "");
+    fails([&] { SpeechConfig c(missingMoonshineDecoder); }, "requires tokens, encoder and merged decoder");
+    auto unsupportedMoonshineLanguage = moonshine;
+    unsupportedMoonshineLanguage.replace(unsupportedMoonshineLanguage.find("\"auto\""), 6, "\"de\"");
+    fails([&] { SpeechConfig c(unsupportedMoonshineLanguage); }, "Unsupported Moonshine source declaration");
     const std::string phonon = R"({"backend":"phonon","model":"tokens.txt","frontend":"joiner.int8.onnx","encoder":"encoder.int8.onnx","decoder":"decoder.int8.onnx","tokenizer":"","language":"auto","numThreads":4,"rightContext":3,"maxUtteranceMs":4000,"silenceMs":600,"silenceThresholdDb":-45})";
     check(SpeechConfig(phonon).backend == "phonon");
     auto missingJoiner = phonon;
@@ -122,5 +172,18 @@ int main() {
     auto nonEnglish = phonon;
     nonEnglish.replace(nonEnglish.find("\"auto\""), 6, "\"ar\"");
     fails([&] { SpeechConfig c(nonEnglish); }, "Phonon is English-only");
+    const std::string psy = R"({"backend":"transcribepsy","model":"model.gguf","frontend":"","encoder":"","decoder":"","tokenizer":"","language":"auto","numThreads":2,"rightContext":3,"maxUtteranceMs":4000,"silenceMs":600,"silenceThresholdDb":-45})";
+    for (const char* language : {"auto", "en", "nl", "fr", "de", "it", "pl", "pt", "es"}) {
+        auto localized = psy;
+        localized.replace(localized.find("\"auto\""), 6, std::string("\"") + language + "\"");
+        SpeechConfig c(localized);
+        check(c.backend == "transcribepsy" && std::string(c.value.language) == language);
+    }
+    auto unsupportedPsy = psy;
+    unsupportedPsy.replace(unsupportedPsy.find("\"auto\""), 6, "\"ar\"");
+    fails([&] { SpeechConfig c(unsupportedPsy); }, "Unsupported TranscribePsy source declaration");
+    auto missingPsy = psy;
+    missingPsy.replace(missingPsy.find("model.gguf"), std::strlen("model.gguf"), "");
+    fails([&] { SpeechConfig c(missingPsy); }, "requires a GGUF model path");
     std::cout << "speech_test: " << checks << " checks PASS\n";
 }

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="speech_acceleration_title">语音加速</string>
+    <string name="speech_acceleration_note">实验性 ARM64 运行时。请先在基准测试中比较速度和转写准确率。OpenCL 面向 Adreno；Vulkan 取决于显卡驱动。重启字幕后生效。错误会显示，需手动切回 CPU。</string>
+    <string name="translation_acceleration_opencl">OpenCL GPU · 实验性</string>
+    <string name="translation_acceleration_opencl_note">Adreno OpenCL 运行时。加载后会显示实际驱动和 GPU 模型缓冲区信息。部分运算仍使用 CPU。选择前请比较速度和输出质量。</string>
+    <string name="benchmark_compare_acceleration">比较 CPU 和 GPU 后端</string>
+    <string name="benchmark_compare_acceleration_hint">使用相同的已安装模型和输入测试各个受支持的后端。驱动不可用会记录为错误，同时比较准确率和速度，不改变已保存的设置。</string>
+</resources>

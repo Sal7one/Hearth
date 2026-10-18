@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "name": "French to English text",
+  "translation": {
+    "modelId": "marian-fr-en",
+    "sourceLanguage": "fr",
+    "targetLanguage": "en",
+    "enabled": true
+  }
+}

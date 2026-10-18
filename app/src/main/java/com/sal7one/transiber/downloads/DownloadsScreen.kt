@@ -7,10 +7,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.ViewModule
+import com.sal7one.transiber.ui.components.ModelFilterPicker
+import com.sal7one.transiber.ui.components.ModelStatusLabel
+import com.sal7one.transiber.ui.components.downloadStage
 import com.sal7one.transiber.ui.components.FeatureAction
 import com.sal7one.transiber.ui.components.FeatureOptionsSheet
-import com.sal7one.transiber.ui.theme.glassPanel
-import androidx.compose.ui.graphics.Color
 import android.app.DownloadManager
 import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -59,6 +60,7 @@ fun DownloadsScreen(onBrowseModels: () -> Unit = {}) {
  val directScroll = rememberScrollState()
  var url by rememberSaveable { mutableStateOf("") }
  var directDownload by rememberSaveable { mutableStateOf(false) }
+ var queueFilter by rememberSaveable { mutableStateOf("all") }
  var filename by rememberSaveable { mutableStateOf("") }
  var records by remember { mutableStateOf(emptyList<FileDownload>()) }
  var error by remember { mutableStateOf<String?>(null) }
@@ -114,75 +116,99 @@ fun DownloadsScreen(onBrowseModels: () -> Unit = {}) {
   if (busy) LinearProgressIndicator(Modifier.fillMaxWidth())
   error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
   message?.let { Text(it) }
-  if (records.isEmpty()) Text(uiText(UiR.string.ui_your_downloads_will_appear_here_1bc2a), Modifier.padding(vertical=24.dp))
-  records.forEach { item ->
-   Card(Modifier.fillMaxWidth().glassPanel(),colors=CardDefaults.cardColors(containerColor=Color.Transparent,contentColor=MaterialTheme.colorScheme.onSurface)) { Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-    Text(item.title, style = MaterialTheme.typography.titleMedium)
-    Text(item.phase.ifBlank { when(item.status) {
-     DownloadManager.STATUS_SUCCESSFUL -> uiText(UiR.string.ui_downloaded_c6197)
-     DownloadManager.STATUS_FAILED -> uiText(UiR.string.ui_downloadmanager_failed_reason_1_s_54785, item.reason)
-     DownloadManager.STATUS_PAUSED -> uiText(UiR.string.ui_paused_downloadmanager_reason_1_s_ea493, item.reason)
-     DownloadManager.STATUS_PENDING -> uiText(UiR.string.ui_waiting_33d30)
-     else -> uiText(UiR.string.ui_downloading_9b459)
-    } })
-    if (item.location.isNotBlank()) Text(item.location, style = MaterialTheme.typography.bodySmall)
-    Text("${item.bytes / 1_048_576} MiB" + if(item.total > 0) " / ${item.total / 1_048_576} MiB" else "")
-    if (item.error.isNotBlank()) Text(item.error, color = MaterialTheme.colorScheme.error)
-    if(item.active) {
-     if (item.installing || item.total <= 0) LinearProgressIndicator(Modifier.fillMaxWidth())
-     else LinearProgressIndicator(progress = { (item.bytes.toFloat() / item.total).coerceIn(0f,1f) }, modifier = Modifier.fillMaxWidth())
+  Text(uiText(UiR.string.model_download_queue), style = MaterialTheme.typography.titleLarge)
+  Text(uiText(UiR.string.model_download_summary, records.count { it.queuePriority() == 0 }, records.count { it.queuePriority() == 1 }), style = MaterialTheme.typography.bodySmall)
+  ModelFilterPicker(uiText(UiR.string.model_download_filter), queueFilter, listOf(
+   "all" to uiText(UiR.string.model_download_all), "active" to uiText(UiR.string.model_download_active),
+   "attention" to uiText(UiR.string.model_download_attention), "finished" to uiText(UiR.string.model_download_finished)), { queueFilter = it })
+  val visible = records.filter { when (queueFilter) { "active" -> it.queuePriority() == 0; "attention" -> it.queuePriority() == 1; "finished" -> it.queuePriority() >= 2; else -> true } }
+   .sortedWith(compareBy<FileDownload> { it.queuePriority() }.thenBy { it.id })
+  if (records.isEmpty()) Text(uiText(UiR.string.ui_your_downloads_will_appear_here_1bc2a), Modifier.padding(vertical = 24.dp))
+  else if (visible.isEmpty()) Text(uiText(UiR.string.model_download_no_filter_results), Modifier.padding(vertical = 24.dp))
+  visible.forEach { item -> key(item.id) {
+   var details by rememberSaveable { mutableStateOf(false) }
+   val stage = item.displayStage()
+   val title = com.sal7one.transiber.models.SpeechArtifactCatalog.find(item.modelId)?.label
+    ?: downloads.translationModel(item)?.label ?: item.title
+   val installableModel = item.modelId.takeIf { it.isNotBlank() }
+    ?: if (item.id > 0) SpeechDownloads.all.firstOrNull { it.fileName == item.title }?.profile?.id
+      ?: downloads.translationModel(item)?.id else null
+   OutlinedCard(Modifier.fillMaxWidth()) { Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Text(title, style = MaterialTheme.typography.titleMedium)
+    ModelStatusLabel(uiText.downloadStage(stage))
+    if (stage in setOf(DownloadStage.WAITING, DownloadStage.TRANSFERRING, DownloadStage.PAUSED, DownloadStage.FAILED))
+     Text("${formatDownloadMiB(item.bytes, uiText.locale)} MiB" + if (item.total > 0) " / ${formatDownloadMiB(item.total, uiText.locale)} MiB" else "", style = MaterialTheme.typography.bodyMedium)
+    if (item.active) {
+     val progress = item.transferFraction()
+     if (progress != null) LinearProgressIndicator(progress = { progress }, modifier = Modifier.fillMaxWidth()) else LinearProgressIndicator(Modifier.fillMaxWidth())
+     if (stage in setOf(DownloadStage.VERIFYING, DownloadStage.INSTALLING)) Text(uiText(UiR.string.model_download_processing_hint), style = MaterialTheme.typography.bodySmall)
     }
-    val installableModel = item.modelId.takeIf { it.isNotBlank() }
-      ?: if (item.id > 0) SpeechDownloads.all.firstOrNull { it.fileName == item.title }?.profile?.id
-        ?: downloads.translationModel(item)?.id else null
-    if (item.complete && !item.installed && installableModel != null && MarianPackage.part(item.modelId) == null) Button(enabled = !busy, onClick = { scope.launch {
-     busy = true; error = null; message = uiText(UiR.string.ui_installing_1_s_b55a5, item.title)
-     try {
-      val inspection = downloads.inspect(item.id)
-      check(inspection.original == DownloadHealth.VERIFIED) { "Downloaded original failed integrity validation. Restart or download another copy first." }
-      downloads.installModel(item.id, installableModel); message = uiText(UiR.string.ui_installed_select_the_model_in_models_06092)
-     }
-     catch (e: CancellationException) { throw e }
-     catch (e: Exception) { message = null; error = e.message ?: e.toString() }
-     finally { busy = false }
-    } }) { Text(uiText(UiR.string.ui_install_downloaded_model_d458c)) }
-    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-     if (item.id < 0 && item.active) TextButton(enabled = !busy, onClick = { try { downloads.pause(item.id) } catch (e: Exception) { error = e.message ?: e.toString() } }) { Text(uiText(UiR.string.ui_pause_download)) }
-     if (item.id < 0 && item.paused) TextButton(enabled = !busy, onClick = { try { downloads.retry(item.id) } catch (e: Exception) { error = e.message ?: e.toString() } }) { Text(uiText(UiR.string.ui_resume_download)) }
-     if (item.id < 0 && (item.paused || item.failed)) TextButton(enabled = !busy, onClick = {
-      try {
-       val saved = downloads.record(item.id) ?: error("Download record no longer exists")
-       consider(DownloadSpec.parse(saved.getString("url"), saved.getString("title")), item.modelId,
-        saved.optBoolean("modelsFolder"))
-      } catch (e: Exception) { error = e.message ?: e.toString() }
-     }) { Text(uiText(UiR.string.ui_restart_download)) }
-     if (item.installed) TextButton(enabled = !busy, onClick = { scope.launch {
-      busy = true
+    if (item.error.isNotBlank()) Text(item.error, color = MaterialTheme.colorScheme.error)
+    else if (item.reason != 0 && stage in setOf(DownloadStage.FAILED, DownloadStage.PAUSED)) Text(
+     uiText(if (stage == DownloadStage.FAILED) UiR.string.ui_downloadmanager_failed_reason_1_s_54785 else UiR.string.ui_paused_downloadmanager_reason_1_s_ea493, item.reason), color = MaterialTheme.colorScheme.error)
+    when {
+     item.installed -> Button(enabled = !busy, modifier = Modifier.fillMaxWidth(), onClick = { scope.launch {
+      busy = true; error = null; message = null
       try {
        val inspection = downloads.inspect(item.id)
        check(inspection.installed == DownloadHealth.VERIFIED) { "Installed model failed integrity validation. Reinstall it from the downloaded file." }
        downloads.selectInstalled(item); message = uiText(UiR.string.ui_model_selected_8d93b)
-      }
-      catch (e: CancellationException) { throw e }
+      } catch (e: CancellationException) { throw e }
       catch (e: Exception) { error = e.message ?: e.toString() }
       finally { busy = false }
      } }) { Text(uiText(UiR.string.ui_use_model_8d558)) }
-     if (item.id < 0) TextButton(enabled = !busy, onClick = {
+     item.complete && installableModel != null && MarianPackage.part(item.modelId) == null -> Button(enabled = !busy, modifier = Modifier.fillMaxWidth(), onClick = { scope.launch {
+      busy = true; error = null; message = null
       try {
-       val saved = downloads.record(item.id) ?: error("Download record no longer exists")
-       consider(DownloadSpec.parse(saved.getString("url"), saved.getString("title")), item.modelId,
-        saved.optBoolean("modelsFolder"))
-      } catch (e: Exception) { error = e.message ?: e.toString() }
-     }) { Text(uiText(UiR.string.ui_check_download)) }
-     if (item.failed && item.id < 0) TextButton(enabled = !busy, onClick = { try { downloads.retry(item.id) } catch(e: Exception) { error = e.message ?: e.toString() } }) { Text(uiText(UiR.string.ui_retry_9f5cd)) }
-     if(item.complete) TextButton(onClick = {
+       if (item.id < 0 && item.modelId.isNotBlank()) withContext(Dispatchers.IO) { downloads.reinstall(item.id) }
+       else {
+        val inspection = downloads.inspect(item.id)
+        check(inspection.original == DownloadHealth.VERIFIED) { uiText(UiR.string.model_download_invalid_original) }
+        downloads.installModel(item.id, installableModel); message = uiText(UiR.string.ui_installed_select_the_model_in_models_06092)
+       }
+       records = withContext(Dispatchers.IO) { downloads.list() }
+      } catch (e: CancellationException) { throw e }
+      catch (e: Exception) { error = e.message ?: e.toString() }
+      finally { busy = false }
+     } }) { Text(uiText(UiR.string.ui_install_downloaded_model_d458c)) }
+     item.id < 0 && (item.paused || item.failed) -> Button(enabled = !busy, modifier = Modifier.fillMaxWidth(), onClick = { scope.launch {
+      try { withContext(Dispatchers.IO) { downloads.retry(item.id) }; error = null; records = withContext(Dispatchers.IO) { downloads.list() } }
+      catch (e: CancellationException) { throw e }
+      catch (e: Exception) { error = e.message ?: e.toString() }
+     } }) { Text(uiText(if (item.paused) UiR.string.ui_resume_download else UiR.string.ui_retry_download_install_e5444)) }
+     item.id < 0 && item.active -> OutlinedButton(enabled = !busy, modifier = Modifier.fillMaxWidth(), onClick = { scope.launch {
+      try { withContext(Dispatchers.IO) { downloads.pause(item.id) }; records = withContext(Dispatchers.IO) { downloads.list() } }
+      catch (e: CancellationException) { throw e }
+      catch (e: Exception) { error = e.message ?: e.toString() }
+     } }) { Text(uiText(UiR.string.ui_pause_download)) }
+     item.complete -> OutlinedButton(modifier = Modifier.fillMaxWidth(), onClick = {
       try { context.startActivity(Intent(Intent.ACTION_VIEW).setDataAndType(downloads.uri(item.id), "application/octet-stream").addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)) }
-      catch(e: Exception) { error = e.message ?: e.toString() }
+      catch (e: Exception) { error = e.message ?: e.toString() }
      }) { Text(uiText(UiR.string.ui_open_file_f11b8)) }
-     TextButton(enabled = !busy, onClick = { removing = item }) { Text(if(item.active) uiText(UiR.string.ui_cancel_77dfd) else uiText(UiR.string.ui_delete_download_d41b5)) }
+    }
+    TextButton(onClick = { details = !details }, contentPadding = PaddingValues(0.dp)) {
+     Text(uiText(if (details) UiR.string.model_download_hide_options else UiR.string.model_download_options))
+    }
+    if (details) {
+     if (title != item.title) Text(item.title, style = MaterialTheme.typography.bodySmall)
+     if (item.location.isNotBlank()) Text(item.location, style = MaterialTheme.typography.bodySmall)
+     Text("${formatDownloadMiB(item.bytes, uiText.locale)} MiB" + if (item.total > 0) " / ${formatDownloadMiB(item.total, uiText.locale)} MiB" else "", style = MaterialTheme.typography.bodySmall)
+     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+      if (item.id < 0 && !item.active) TextButton(enabled = !busy, onClick = {
+       try {
+        val saved = downloads.record(item.id) ?: error("Download record no longer exists")
+        consider(DownloadSpec.parse(saved.getString("url"), saved.getString("title")), item.modelId, saved.optBoolean("modelsFolder"))
+       } catch (e: Exception) { error = e.message ?: e.toString() }
+      }) { Text(uiText(UiR.string.ui_check_download)) }
+      if (item.complete && (item.installed || installableModel != null)) TextButton(onClick = {
+       try { context.startActivity(Intent(Intent.ACTION_VIEW).setDataAndType(downloads.uri(item.id), "application/octet-stream").addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)) }
+       catch (e: Exception) { error = e.message ?: e.toString() }
+      }) { Text(uiText(UiR.string.ui_open_file_f11b8)) }
+      TextButton(enabled = !busy, onClick = { removing = item }) { Text(uiText(if (item.active) UiR.string.ui_cancel_77dfd else UiR.string.ui_delete_download_d41b5)) }
+     }
     }
    } }
-  }
+  } }
   Text(uiText(UiR.string.ui_downloads_may_use_mobile_data_installed_models_keep_a_verified_ap_da870), style = MaterialTheme.typography.bodySmall)
  }
  if(folderSettings && ByokPolicy.FEATURE_BYOK) FeatureOptionsSheet(uiText(UiR.string.ui_download_folder_59317),{folderSettings=false},folderScroll) {
@@ -259,3 +285,5 @@ fun DownloadsScreen(onBrowseModels: () -> Unit = {}) {
    } })
  }
 }
+
+private fun formatDownloadMiB(bytes: Long, locale: java.util.Locale): String = String.format(locale, "%,.1f", bytes.coerceAtLeast(0) / 1_048_576.0)

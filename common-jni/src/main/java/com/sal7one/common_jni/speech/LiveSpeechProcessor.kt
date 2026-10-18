@@ -4,6 +4,7 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.first
 
 sealed interface SpeechProcessorState {
     data object Running : SpeechProcessorState
@@ -29,6 +30,7 @@ class LiveSpeechProcessor(
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val mutableState = MutableStateFlow<SpeechProcessorState>(SpeechProcessorState.Running)
     val state: StateFlow<SpeechProcessorState> = mutableState
+    private val changes = MutableStateFlow(0L)
     private var queued = 0
     private var submitted = 0L
     private var finishing = false
@@ -46,7 +48,7 @@ class LiveSpeechProcessor(
                 if (frame.reset != null) {
                     try {
                         session.reset()
-                        synchronized(lock) { resetting = false }
+                        synchronized(lock) { resetting = false; signal() }
                         frame.reset.complete(Unit)
                     } catch (e: Throwable) { frame.reset.completeExceptionally(e); throw e }
                     continue
@@ -60,11 +62,11 @@ class LiveSpeechProcessor(
             synchronized(lock) { check(finishing) { "Speech queue closed without finish" } }
             val final = session.finish()
             synchronized(lock) {
-                if (mutableState.value == SpeechProcessorState.Running) { publish(final); mutableState.value = SpeechProcessorState.Finished }
+                if (mutableState.value == SpeechProcessorState.Running) { publish(final); mutableState.value = SpeechProcessorState.Finished; signal() }
             }
         } catch (e: CancellationException) {
             synchronized(lock) {
-                if (mutableState.value == SpeechProcessorState.Running) mutableState.value = SpeechProcessorState.Closed
+                if (mutableState.value == SpeechProcessorState.Running) { mutableState.value = SpeechProcessorState.Closed; signal() }
             }
         } catch (e: Throwable) { fail(e) }
         finally { session.close(); queue.cancel(); synchronized(lock) { queued = 0 }; scope.cancel() }
@@ -96,6 +98,7 @@ class LiveSpeechProcessor(
             while (queue.tryReceive().isSuccess) { }
             queued = 0; submitted = 0; processedSamples = 0; inferenceNanos = 0
             partial = null; finals.clear()
+            signal()
             check(queue.trySend(Frame(shortArrayOf(), 0, generation, done)).isSuccess)
         }
         val completion = worker.invokeOnCompletion { cause ->
@@ -111,14 +114,20 @@ class LiveSpeechProcessor(
 
     /** Removes only delivered finals. Current partial is a replaceable snapshot. */
     fun snapshot(): SpeechProcessorSnapshot = synchronized(lock) {
-        SpeechProcessorSnapshot(finals.toList(), partial, submitted, processedSamples, queued, inferenceNanos, mutableState.value)
+        SpeechProcessorSnapshot(finals.toList(), partial, submitted, processedSamples, queued, inferenceNanos, mutableState.value, changes.value)
             .also { finals.clear() }
+    }
+
+    /** Conflated notification, lossless final queue: no polling delay between inference and its consumer. */
+    suspend fun awaitChange(afterRevision: Long) {
+        changes.first { it != afterRevision }
     }
 
     /** Abort, discard queued audio, suppress late native results, and wait for safe cleanup. */
     suspend fun close() {
         synchronized(lock) {
             mutableState.value = SpeechProcessorState.Closed; partial = null; finals.clear()
+            signal()
             queue.cancel(); worker.cancel()
         }
         withContext(NonCancellable) { worker.join() }
@@ -135,10 +144,14 @@ class LiveSpeechProcessor(
                 finals.addLast(text)
             } else partial = text
         }
+        if (update.transcripts.isNotEmpty()) signal()
     }
+    /** Called under lock so the notification and snapshot refer to one consistent timeline. */
+    private fun signal() { changes.value += 1 }
     private fun fail(error: Throwable) = synchronized(lock) {
         if (mutableState.value == SpeechProcessorState.Running) {
             mutableState.value = SpeechProcessorState.Failed(error); partial = null
+            signal()
             queue.cancel(); scope.cancel()
         }
     }
@@ -148,6 +161,7 @@ data class SpeechProcessorSnapshot(
     val finals: List<SpeechTranscript>, val partial: SpeechTranscript?,
     val submittedSamples: Long, val processedSamples: Long, val pendingSamples: Int,
     val inferenceNanos: Long, val state: SpeechProcessorState,
+    val revision: Long = 0L,
 ) {
     /** >1 means inference costs more time than the audio duration; queue growth then becomes likely. */
     val realTimeFactor: Double? get() = if (processedSamples == 0L) null else inferenceNanos / 1e9 / (processedSamples / 16000.0)

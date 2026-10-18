@@ -59,7 +59,7 @@ internal fun rememberTvSetupStatus(config: CaptionOverlayConfig?): TvSetupStatus
     var status by remember { mutableStateOf(TvSetupStatus()) }
     DisposableEffect(context, lifecycle) {
         val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, _ -> revision++ }
-        val stores = if (ByokPolicy.FEATURE_BYOK) listOf("byok_keys", "byok_cloud_config").map { context.getSharedPreferences(it, 0) } else emptyList()
+        val stores = if (ByokPolicy.FEATURE_BYOK) listOf("byok_keys", "byok_cloud_config").map { com.sal7one.transiber.preferences.UserPreferences.store(context, it) } else emptyList()
         stores.forEach { it.registerOnSharedPreferenceChangeListener(listener) }
         val observer = LifecycleEventObserver { _, event -> if (event == Lifecycle.Event.ON_RESUME) revision++ }
         lifecycle.addObserver(observer)

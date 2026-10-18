@@ -10,13 +10,13 @@ import json
 import os
 from pathlib import Path
 
-PROFILES = {"moonshine-tiny-en-v2", "moonshine-base-en-v2", "qwen3-asr-0.6b", "qwen3-asr-1.7b", "omnilingual-ctc-300m-v2-int8", "phonon-2", "nemotron-3.5-asr-0.6b"}
+PROFILES = {"moonshine-tiny-en-v2", "moonshine-base-en-v2", "moonshine-base-ar-v2", "moonshine-base-es-v2", "moonshine-tiny-ja-v2", "moonshine-tiny-ko-v2", "moonshine-base-ja-v2", "moonshine-base-uk-v2", "moonshine-base-vi-v2", "moonshine-base-zh-v2", "qwen3-asr-0.6b", "qwen3-asr-1.7b", "omnilingual-ctc-300m-v2-int8", "phonon-2", "nemotron-3.5-asr-0.6b", "transcribepsy-250m-eu-sub-q8"}
 MANIFEST = "hearth-speech.json"
 
 def create_manifest(root, profile, roles):
     if profile not in PROFILES:
         raise ValueError("Unsupported profile")
-    expected = {"model", "encoder", "decoder"} if profile.startswith("moonshine") else {"model", "frontend", "encoder", "decoder"} if profile.startswith("phonon") else {"model"} if profile.startswith("nemotron") else {"model", "tokenizer"} if profile.startswith("omnilingual") else {"frontend", "encoder", "decoder", "tokenizer"}
+    expected = {"model", "encoder", "decoder"} if profile.startswith("moonshine") else {"model", "frontend", "encoder", "decoder"} if profile.startswith("phonon") else {"model"} if profile.startswith(("nemotron", "transcribepsy")) else {"model", "tokenizer"} if profile.startswith("omnilingual") else {"frontend", "encoder", "decoder", "tokenizer"}
     if set(roles) != expected:
         raise ValueError(f"Required roles: {sorted(expected)}")
     if not root.is_dir() or root.is_symlink():

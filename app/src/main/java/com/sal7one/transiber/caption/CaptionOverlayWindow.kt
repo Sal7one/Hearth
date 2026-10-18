@@ -205,11 +205,13 @@ fun CaptionOverlayWindow(
                 MaterialTheme(colorScheme = if (cfg.theme == CaptionTheme.LIGHT) androidx.compose.material3.lightColorScheme()
                     else androidx.compose.material3.darkColorScheme()) {
                     Surface(Modifier.fillMaxSize()) {
+                        val languageModel = rememberCaptionLanguageModel(cfg)
+                        val sourceChoices = CaptionLanguages.source(cfg, cloudMode, languageModel)
                         LanguagePickerContent(
                             title = if (which == CaptionLanguagePicker.SOURCE) uiText(UiR.string.ui_spoken_language_cc_c652a) else uiText(UiR.string.ui_translate_to_a1ba6),
-                            choices = if (which == CaptionLanguagePicker.SOURCE) CaptionLanguages.source(cfg, cloudMode, rememberCaptionLanguageModel(cfg)) else com.sal7one.transiber.translation.captionTranslationChoices(cfg, cloudMode),
+                            choices = if (which == CaptionLanguagePicker.SOURCE) sourceChoices else com.sal7one.transiber.translation.captionTranslationChoices(cfg, cloudMode),
                             selected = if (which == CaptionLanguagePicker.SOURCE) {
-                                if (cfg.engine == CaptionEngineChoice.VOSK) "model" else CaptionLanguages.effectiveSource(cfg, cloudMode, rememberCaptionLanguageModel(cfg))
+                                if (sourceChoices.codes == setOf("model")) "model" else CaptionLanguages.effectiveSource(cfg, cloudMode, languageModel)
                             } else cfg.target.languageTag,
                             onSelect = { code -> onConfigChange {
                                 if (which == CaptionLanguagePicker.SOURCE) it.copy(streamLanguage = if (code == "model") "auto" else code, languagePicker = null)

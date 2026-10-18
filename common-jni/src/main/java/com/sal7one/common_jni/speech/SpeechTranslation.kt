@@ -1,9 +1,11 @@
 package com.sal7one.common_jni.speech
 
+import com.sal7one.common_jni.translation.TranslationLanguages
+
 /** A source/target pair is explicit. Supporting Arabic output does not imply every source language. */
 data class TranslationDirection(val source: String, val target: String) {
     init {
-        require(source.matches(Regex("[a-z]{2,3}")) && target.matches(Regex("[a-z]{2,3}")) && source != target)
+        require(TranslationLanguages.isExplicitCode(source) && TranslationLanguages.isExplicitCode(target) && source != target)
     }
 }
 interface SpeechTextTranslator {
@@ -26,10 +28,10 @@ class SpeechCaptionTranslator(private val translators: List<SpeechTextTranslator
     suspend fun caption(final: SpeechTranscript, targetLanguage: String? = null): CaptionText {
         require(final.isFinal) { "Translate completed utterances; partial revisions are replaceable" }
         if (targetLanguage == null) return CaptionText(final, null, null)
-        val source = final.sourceLanguage?.let(SpeechLanguage::normalize)
+        val source = final.sourceLanguage?.let(TranslationLanguages::normalize)
             ?: throw IllegalStateException("Speech recognizer did not identify the source language")
-        val target = SpeechLanguage.normalize(targetLanguage)
-        require(source.matches(Regex("[a-z]{2,3}")) && target.matches(Regex("[a-z]{2,3}"))) { "Translation requires explicit supported language codes" }
+        val target = TranslationLanguages.normalize(targetLanguage)
+        require(TranslationLanguages.isExplicitCode(source) && TranslationLanguages.isExplicitCode(target)) { "Translation requires explicit supported language codes" }
         if (source == target) return CaptionText(final, null, null)
         val route = route(source, target)
         var text = final.text
@@ -42,8 +44,8 @@ class SpeechCaptionTranslator(private val translators: List<SpeechTextTranslator
         return CaptionText(final, text, target)
     }
     fun canTranslate(source: String, target: String): Boolean = try {
-        val from = SpeechLanguage.normalize(source); val to = SpeechLanguage.normalize(target)
-        if (from == to && from.matches(Regex("[a-z]{2,3}"))) true else { route(from, to); true }
+        val from = TranslationLanguages.normalize(source); val to = TranslationLanguages.normalize(target)
+        if (from == to && TranslationLanguages.isExplicitCode(from)) true else { route(from, to); true }
     } catch (_: IllegalArgumentException) { false }
 
     private fun route(source: String, target: String): List<Pair<SpeechTextTranslator, TranslationDirection>> {

@@ -91,9 +91,12 @@ public references, but never the custom audio bytes.
 - **First pass** is the first complete pass over all selected samples;
   **warm pass median** is the median of two more complete passes with weights retained.
 - **Compute time** is accelerated replay, not microphone-to-caption latency.
-  Starting with benchmark timing protocol 2, speech feeds the same 50 ms frame
-  size as the overlay capture path and excludes between-clip `reset()` from
-  measured inference. Earlier saved results remain readable but never rank
+  Starting with benchmark timing protocol 2, `SpeechSession` profiles feed the
+  same 50 ms frame size as the overlay capture path and exclude between-clip
+  `reset()` from measured inference. Legacy Whisper/Vosk candidates use their
+  full-clip batch API, as identified by their route. Their first-text time is
+  batch completion, not a streaming partial measurement. A fast batch result
+  cannot establish lower live overlay latency. Earlier saved results remain readable but never rank
   against the new timing protocol. Silence clips remain in the throughput
   workload but are excluded from the average time-to-first-text calculation.
   For speech the real-time factor divides the warm corpus compute time by total
@@ -201,3 +204,14 @@ inputs. Benchmark history is capped at 200 results. **Stop comparison**, leaving
 the screen, or backgrounding the activity cancels cooperatively; a current
 native operation may need to finish before model resources close. Native crashes
 and process-level OOM cannot be converted into managed benchmark results.
+
+### Comparing CPU and GPU backends
+
+In Advanced mode, enable **Compare CPU and GPU backends** before a benchmark.
+Whisper compares CPU/Vulkan; TranscribePsy and GGUF translators compare
+CPU/Vulkan/OpenCL. Other engines run once on their CPU path. All variants reuse
+the same model and normalized input; they are separate history rows. The runner
+closes one session before opening the next and never changes saved acceleration
+choices. A missing driver is a failed row, not a substituted CPU result. Compare
+output quality alongside warm compute and first-load costs. These speech runs
+use accelerated replay/batch input and do not measure capture-to-overlay latency.

@@ -6,8 +6,8 @@ import com.sal7one.common_jni.audio.MicRecorder
 import com.sal7one.common_jni.audio.OneShotPcm16Probe
 import com.sal7one.common_jni.audio.PooledAudioChunk
 import com.sal7one.common_jni.engine.SttEngine
-import com.sal7one.common_jni.engine.vosk.VoskEngine
-import com.sal7one.common_jni.engine.whisper.WhisperEngine
+import com.sal7one.common_jni.engine.DirectPcmSttEngine
+import com.sal7one.common_jni.engine.CancellableSttEngine
 import com.sal7one.common_jni.model.AudioChunk
 import com.sal7one.common_jni.model.PartialTranscript
 import com.sal7one.common_jni.model.SttConfig
@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicReference
 
 /**
  * Real-time STT session that combines microphone recording with streaming transcription.
@@ -89,9 +90,9 @@ class RealtimeSttSession(
     private val audioProbe = OneShotPcm16Probe()
     
     // Internal
-    // Enable zero-copy direct-buffer mic path when the engine supports it (Whisper / Vosk).
-    // Other engines fall back to the legacy ShortArray capture path.
-    private val useDirectPath: Boolean = engine is WhisperEngine || engine is VoskEngine
+    // Input support is independent of model identity. Other engines receive ShortArrays.
+    private val directEngine = engine as? DirectPcmSttEngine
+    private val useDirectPath: Boolean = directEngine != null
 
     private val micRecorder = MicRecorder(
         sampleRate = config.sampleRate,
@@ -115,6 +116,9 @@ class RealtimeSttSession(
     private var partialJob: Job? = null
     private var captureErrorJob: Job? = null
     private val isActive = AtomicBoolean(false)
+    // Rejected audio invalidates the whole timeline. Stop must not flush that
+    // incomplete stream as success, even after its capture worker has ended.
+    private val processingFailure = AtomicReference<Throwable?>(null)
     
     // Mutex for initialize() to prevent double-init races
     private val initMutex = Mutex()
@@ -152,7 +156,8 @@ class RealtimeSttSession(
                     _state.value = RealtimeSessionState.ERROR
                 }
             }
-        } catch (e: Exception) {
+        } catch (e: CancellationException) { throw e }
+        catch (e: Exception) {
             _state.value = RealtimeSessionState.ERROR
             Result.failure(e)
         }
@@ -177,15 +182,18 @@ class RealtimeSttSession(
         
         _state.value = RealtimeSessionState.STARTING
         
-        // Reset engine state SYNCHRONOUSLY before starting anything else
-        // This avoids race between reset() and pushAudioChunk()
-        withContext(sttScope.coroutineContext) {
-            engine.reset()
-        }
-        
-        // Start microphone
         try {
+            // A failed reset must not start capture on a stale recognition timeline.
+            joinCaptureWorkers()
+            withContext(sttScope.coroutineContext) { engine.reset().getOrThrow() }
+            processingFailure.set(null)
+            lastPartialText = ""
+            lastPartialEmitMs = 0L
             micRecorder.start()
+        } catch (e: CancellationException) {
+            isActive.set(false)
+            _state.value = RealtimeSessionState.ERROR
+            throw e
         } catch (e: Exception) {
             isActive.set(false)
             _state.value = RealtimeSessionState.ERROR
@@ -193,9 +201,14 @@ class RealtimeSttSession(
             throw e
         }
         
-        // Start processing pipeline on IO (audio collection)
-        processingJob = audioScope.launch {
-            processAudioStream()
+        // Publish listening before dispatch: an immediately rejected first frame
+        // must not have its ERROR state overwritten by start().
+        _state.value = RealtimeSessionState.LISTENING
+        processingJob = audioScope.launch(start = CoroutineStart.LAZY) {
+            try { processAudioStream() }
+            catch (e: CancellationException) { throw e }
+            catch (e: LinkageError) { failProcessing(e) }
+            catch (e: Exception) { failProcessing(e) }
         }
 
         // Partials are now emitted event-driven from the audio loop
@@ -203,18 +216,16 @@ class RealtimeSttSession(
         // null so the lifecycle code below still works unchanged.
         partialJob = null
         
-        _state.value = RealtimeSessionState.LISTENING
         // Observe capture failure outside the single inference lane: a slow
         // native push must not delay the microphone error reaching callers.
-        captureErrorJob = pipelineScope.launch(Dispatchers.Default) {
+        captureErrorJob = pipelineScope.launch(Dispatchers.Default, start = CoroutineStart.LAZY) {
             val code = micRecorder.readErrorCode.filterNotNull().first()
-            if (this@RealtimeSttSession.isActive.getAndSet(false)) {
-                _state.value = RealtimeSessionState.ERROR
-                _error.tryEmit("Microphone capture failed: AudioRecord.read returned $code")
-                audioProbe.cancel()
-                processingJob?.cancel()
-            }
+            if (this@RealtimeSttSession.isActive.get())
+                failProcessing(IllegalStateException("Microphone capture failed: AudioRecord.read returned $code"))
         }
+        // Both handles exist before either worker can fail/cancel the other.
+        captureErrorJob?.start()
+        processingJob?.start()
         Log.i(TAG, "Real-time session started")
     }
     
@@ -222,7 +233,7 @@ class RealtimeSttSession(
      * Stop recording and get final transcript.
      */
     suspend fun stop(): Result<TranscriptResult> {
-        if (!isActive.getAndSet(false)) {
+        if (!isActive.getAndSet(false) && processingFailure.get() == null) {
             val readCode = micRecorder.readErrorCode.value
             val message = if (readCode != null) {
                 "Microphone capture failed: AudioRecord.read returned $readCode"
@@ -232,28 +243,34 @@ class RealtimeSttSession(
             return Result.failure(IllegalStateException(message))
         }
         
-        _state.value = RealtimeSessionState.PROCESSING
+        if (processingFailure.get() == null) _state.value = RealtimeSessionState.PROCESSING
         
         // Stop microphone first
         micRecorder.stop()
         audioProbe.cancel()
         
         // Cancel processing jobs and wait for them
-        processingJob?.cancelAndJoin()
-        partialJob?.cancelAndJoin()
-        captureErrorJob?.cancelAndJoin()
-        processingJob = null
-        partialJob = null
-        captureErrorJob = null
+        joinCaptureWorkers()
+        // The recorder can fail just before Stop cancels its error observer.
+        // Its persisted read code remains authoritative after the workers join.
+        micRecorder.readErrorCode.value?.let { code ->
+            if (processingFailure.get() == null)
+                failProcessing(IllegalStateException("Microphone capture failed: AudioRecord.read returned $code"))
+        }
+        processingFailure.get()?.let {
+            _state.value = RealtimeSessionState.ERROR
+            return Result.failure(it)
+        }
         
         // Get final result
         return try {
             val result = withContext(sttScope.coroutineContext) {
                 engine.finalize()
             }
-            _state.value = RealtimeSessionState.READY
+            _state.value = if (result.isSuccess) RealtimeSessionState.READY else RealtimeSessionState.ERROR
             result
-        } catch (e: Exception) {
+        } catch (e: CancellationException) { throw e }
+        catch (e: Exception) {
             _state.value = RealtimeSessionState.ERROR
             Result.failure(e)
         }
@@ -267,18 +284,12 @@ class RealtimeSttSession(
         
         micRecorder.stop()
         audioProbe.cancel()
-        processingJob?.cancelAndJoin()
-        partialJob?.cancelAndJoin()
-        captureErrorJob?.cancelAndJoin()
-        processingJob = null
-        partialJob = null
-        captureErrorJob = null
+        (engine as? CancellableSttEngine)?.cancel()
+        joinCaptureWorkers()
         
-        withContext(sttScope.coroutineContext) {
-            engine.reset()
-        }
-        
-        _state.value = RealtimeSessionState.READY
+        val reset = withContext(sttScope.coroutineContext) { engine.reset() }
+        _state.value = if (reset.isSuccess) RealtimeSessionState.READY else RealtimeSessionState.ERROR
+        reset.getOrThrow()
         Log.i(TAG, "Session cancelled")
     }
     
@@ -287,26 +298,49 @@ class RealtimeSttSession(
      * BLOCKING: Waits for engine.release() to complete before cancelling scopes.
      */
     suspend fun release() {
-        // First cancel any active session
-        if (isActive.get()) {
-            cancel()
+        try {
+            if (isActive.get()) cancel()
+        } finally {
+            // Reset/caller cancellation must not skip native cleanup or recorder release.
+            try {
+                withContext(NonCancellable) {
+                    micRecorder.stop()
+                    joinCaptureWorkers()
+                    withContext(pipelineDispatcher) { engine.release() }
+                }
+            } finally {
+                micRecorder.release()
+                audioProbe.cancel()
+                pipelineScope.cancel()
+                initialized = false
+                _state.value = RealtimeSessionState.IDLE
+                Log.i(TAG, "Session released")
+            }
         }
-        
-        // Release engine BEFORE cancelling scopes (so it actually runs)
-        withContext(sttScope.coroutineContext) {
-            engine.release()
-        }
-        
-        micRecorder.release()
+    }
+
+    private suspend fun joinCaptureWorkers() {
+        val jobs = listOfNotNull(processingJob, partialJob, captureErrorJob)
+        processingJob = null
+        partialJob = null
+        captureErrorJob = null
+        jobs.forEach { it.cancel() }
+        jobs.forEach { it.join() }
+    }
+
+    /** Retain the first actual failure; cancellation/cleanup never manufactures a successful tail. */
+    private fun failProcessing(error: Throwable) {
+        if (!processingFailure.compareAndSet(null, error)) return
+        isActive.set(false)
+        _state.value = RealtimeSessionState.ERROR
+        micRecorder.stop()
         audioProbe.cancel()
-        
-        // Now safe to cancel scopes
-        audioScope.cancel()
-        sttScope.cancel()
-        
-        initialized = false
-        _state.value = RealtimeSessionState.IDLE
-        Log.i(TAG, "Session released")
+        processingJob?.cancel()
+        partialJob?.cancel()
+        captureErrorJob?.cancel()
+        (engine as? CancellableSttEngine)?.cancel()
+        Log.e(TAG, "Realtime processing failed", error)
+        _error.tryEmit(error.message ?: error.toString())
     }
     
     private var lastPartialEmitMs: Long = 0L
@@ -320,13 +354,9 @@ class RealtimeSttSession(
     private suspend fun maybeEmitPartial() {
         val now = System.currentTimeMillis()
         if (now - lastPartialEmitMs < PARTIAL_MIN_INTERVAL_MS) return
-        val partial = try {
-            val timed = PerfMetrics.measureValue { engine.getPartialTranscript() }
-            getPartialStats.record(timed.elapsedMs)
-            timed.value
-        } catch (e: Exception) {
-            Log.e(TAG, "Error getting partial transcript", e); null
-        } ?: return
+        val timed = PerfMetrics.measureValue { engine.getPartialTranscript() }
+        getPartialStats.record(timed.elapsedMs)
+        val partial = timed.value ?: return
         if (partial.text.isBlank() || partial.text == lastPartialText) return
         lastPartialEmitMs = now
         lastPartialText = partial.text
@@ -359,45 +389,21 @@ class RealtimeSttSession(
                 chunk.release(); return@collect
             }
 
-            // This copies only while a bounded one-shot probe is pending.
-            audioProbe.append(chunk.buffer, chunk.byteOffset, chunk.byteCount)
-
-            // Native NEON RMS — no JVM loop, no allocation.
-            _audioLevel.value = CommonJni.audioLevel(chunk.buffer, chunk.byteOffset, chunk.byteCount)
-
             try {
-                val (result, pushElapsedMs) = when (engine) {
-                    is WhisperEngine -> {
-                        val timed = PerfMetrics.measureValue {
-                            engine.pushAudioDirect(
-                                chunk.buffer, chunk.byteOffset, chunk.byteCount, chunk.sampleRate
-                            )
-                        }
-                        timed.value to timed.elapsedMs
-                    }
-                    is VoskEngine -> {
-                        val timed = PerfMetrics.measureValue {
-                            engine.pushAudioDirect(
-                                chunk.buffer, chunk.byteOffset, chunk.byteCount, chunk.sampleRate
-                            )
-                        }
-                        timed.value to timed.elapsedMs
-                    }
-                    else -> Result.success(Unit) to 0.0
+                // Probe/RMS failures must still return this borrowed chunk to its pool.
+                audioProbe.append(chunk.buffer, chunk.byteOffset, chunk.byteCount)
+                _audioLevel.value = CommonJni.audioLevel(chunk.buffer, chunk.byteOffset, chunk.byteCount)
+                val timed = PerfMetrics.measureValue {
+                    checkNotNull(directEngine).pushAudioDirect(
+                        chunk.buffer, chunk.byteOffset, chunk.byteCount, chunk.sampleRate
+                    ).getOrThrow()
                 }
-                pushDirectStats.record(pushElapsedMs)
+                pushDirectStats.record(timed.elapsedMs)
                 pushCount++
                 if (pushCount % 50L == 0L) {
                     Log.d(TAG, "push stats after ${pushCount} pushes: push=${pushDirectStats.format()}; partial=${getPartialStats.format()}")
                 }
-                result.onFailure { e ->
-                    Log.e(TAG, "Error pushing direct audio chunk", e)
-                    _error.tryEmit("Processing error: ${e.message}")
-                }
                 maybeEmitPartial()
-            } catch (e: Exception) {
-                Log.e(TAG, "Error pushing direct audio chunk", e)
-                _error.tryEmit("Processing error: ${e.message}")
             } finally {
                 chunk.release()
             }
@@ -428,14 +434,9 @@ class RealtimeSttSession(
                 durationMs = chunk.durationMs
             )
 
-            try {
-                // Same dispatcher — no context switch, just a direct call
-                engine.pushAudioChunk(audioChunk)
-                maybeEmitPartial()
-            } catch (e: Exception) {
-                Log.e(TAG, "Error pushing audio chunk", e)
-                _error.tryEmit("Processing error: ${e.message}")
-            }
+            // Failure exits the collector; its owner records and retires this timeline.
+            engine.pushAudioChunk(audioChunk).getOrThrow()
+            maybeEmitPartial()
         }
     }
     

@@ -135,5 +135,5 @@ object ApiKeyStore {
         check(file.length() == 32L) { "Existing basic encryption key is invalid; it was preserved" }
         return SecretKeySpec(file.readBytes(), "AES")
     }
-    private fun prefs(context: Context) = context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+    private fun prefs(context: Context) = com.sal7one.transiber.preferences.UserPreferences.store(context, PREFS)
 }

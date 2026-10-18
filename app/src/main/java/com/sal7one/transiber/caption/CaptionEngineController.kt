@@ -3,7 +3,7 @@ package com.sal7one.transiber.caption
 import android.content.Context
 import android.util.Log
 import com.sal7one.common_jni.engine.SttEngine
-import com.sal7one.common_jni.model.AudioChunk
+import com.sal7one.common_jni.engine.SttPcmInput
 import com.sal7one.transiber.byok.ApiKeyStore
 import com.sal7one.transiber.byok.ByokPolicy
 import com.sal7one.transiber.byok.RemoteWhisperEngine
@@ -21,7 +21,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -33,12 +32,10 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
-import java.nio.ByteBuffer
-import java.nio.ByteOrder
+import kotlinx.coroutines.withTimeoutOrNull
 import java.util.concurrent.atomic.AtomicLong
 
 /**
@@ -329,13 +326,9 @@ class CaptionEngineController(
     private fun needsSecondStage(config: CaptionOverlayConfig): Boolean =
         config.mode == CaptionMode.TRANSLATE && activeRoute.secondStage
 
-    // Zero-copy direct-buffer push is declared on the concrete engine classes,
-    // not the SttEngine interface; captured here at load time.
-    private var pushDirect: (suspend (ByteBuffer, Int) -> Unit)? = null
-
     private var pollJob: Job? = null
     private var audioJob: Job? = null
-    @Volatile private var audioChannel = Channel<ShortArray>(capacity = 4, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+    @Volatile private var audioQueue = CaptionAudioQueue()
 
     private var lastPartial: String = ""
     /** Text currently shown as the live line (stable-display anchor). */
@@ -373,8 +366,8 @@ class CaptionEngineController(
             lastActivityMs = System.currentTimeMillis()
             stopInternal(promotePending = false)
             translationScope = CoroutineScope(SupervisorJob() + translationDispatcher)
-            audioChannel.close()
-            audioChannel = Channel(capacity = 4, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+            audioQueue.cancel()
+            audioQueue = CaptionAudioQueue()
             cloudCaptionIds.clear()
             _state.value = State(status = Status.LOADING_MODEL, historyError = historyRecorder?.error)
             if (config.paused) return@launch
@@ -424,7 +417,7 @@ class CaptionEngineController(
     fun pauseProcessing() {
         ++sessionGeneration
         stopping = true
-        audioChannel.close()
+        audioQueue.cancel()
         stopInternal(promotePending = false)
     }
 
@@ -490,12 +483,15 @@ class CaptionEngineController(
         } catch (e: Exception) {
             _state.update { it.copy(translationNotice = e.message ?: e.toString()) }; return
         }
+        fun translationLabel() = snapshot.label
         localTranslationBridge = com.sal7one.common_jni.translation.CaptionTranslationBridge(
             scope = scope, target = config.target.languageTag,
             open = {
                 pendingCleanup?.join()
                 CaptionDiagnostics.record(context, "${snapshot.label}: preparing text translation")
-                snapshot.open(context)
+                snapshot.open(context).also { opened ->
+                    opened.executionInfo?.let { CaptionDiagnostics.record(context, "${snapshot.label}: $it") }
+                }
             },
             result = { id, text, latency ->
                 scope.launch {
@@ -504,7 +500,7 @@ class CaptionEngineController(
                     }
                     if (generation == translationGeneration && activeRoute == CaptionTranslationRoute.TEXT_TRANSLATOR && _state.value.history.any { it.id == id }) {
                         lastActivityMs = System.currentTimeMillis()
-                        _state.update { it.copy(history = attachTranslationById(it.history, id, text), localTranslationMetrics = "${snapshot.label} · ${latency} ms") }
+                        _state.update { it.copy(history = attachTranslationById(it.history, id, text), localTranslationMetrics = "${translationLabel()} · ${latency} ms") }
                         speakLine(currentConfig, text)
                     }
                 }
@@ -512,7 +508,7 @@ class CaptionEngineController(
             timing = { id, stages -> scope.launch {
                 if (generation == translationGeneration && _state.value.history.any { it.id == id }) {
                     _state.update { it.copy(localTranslationMetrics =
-                        "${snapshot.label} · load ${stages.preparationMs} ms · queue ${stages.queueMs} ms · infer ${stages.inferenceMs} ms") }
+                        "${translationLabel()} · load ${stages.preparationMs} ms · queue ${stages.queueMs} ms · infer ${stages.inferenceMs} ms") }
                 }
             } },
             progress = { message -> scope.launch {
@@ -555,23 +551,28 @@ class CaptionEngineController(
             val availability = runtime.availability(model.profile.backend)
             check(availability.available) { availability.error ?: "${model.profile.label} runtime unavailable" }
             val tuning = SpeechTuningStore.current(context, model.profile.id)
+            val acceleration = SpeechAccelerationStore.current(context, config.effectiveEngine)
             val session = runtime.open(
                 model.root,
                 com.sal7one.common_jni.speech.SpeechOptions(
                     sourceLanguage = spokenLanguage,
                     maxUtteranceMs = tuning.maxUtteranceMs,
                     silenceMs = tuning.silenceMs,
+                    acceleration = com.sal7one.common_jni.speech.SpeechAcceleration.entries.first {
+                        it.id == acceleration
+                    },
+                    gpuCacheDirectory = java.io.File(context.cacheDir, "speech-opencl"),
                 ),
                 onStage = { stage -> CaptionDiagnostics.record(context, "${model.profile.label}: $stage") },
             )
+            CaptionDiagnostics.record(context, "${model.profile.label}: ${session.executionInfo}")
             val processor = try {
                 check(session.profile == model.profile) { "Speech package profile changed during load" }
                 com.sal7one.common_jni.speech.LiveSpeechProcessor(session, maxQueuedSamples = 48000)
             } catch (e: Throwable) { session.close(); throw e }
-            pushDirect = null
             _state.update { it.copy(
                 modelName = model.profile.label,
-                engineLabel = model.profile.label,
+                engineLabel = model.profile.label + when (acceleration) { "vulkan" -> " · Vulkan"; "opencl" -> " · OpenCL"; else -> "" },
                 availableModels = modelOptions,
             ) }
             return@withContext LoadedCaptionEngine(speech = processor)
@@ -657,7 +658,6 @@ class CaptionEngineController(
                     providerLabel = providerLabel,
                 )
                 streaming.initialize("", SttConfig.forStreaming()).getOrThrow()
-                pushDirect = null
                 _state.value = _state.value.copy(
                     modelName = "stream:" + providerLabel,
                     engineLabel = providerLabel,
@@ -685,7 +685,6 @@ class CaptionEngineController(
                     translateToEnglish = activeRoute.sttToEnglish,
                 ),
             ).getOrThrow()
-            pushDirect = null
             _state.value = _state.value.copy(
                 modelName = "cloud:" + cloudStore.sttModel(context),
                 engineLabel = "Cloud Whisper",
@@ -738,6 +737,9 @@ class CaptionEngineController(
             // Arabic's local Marian model accepts English: Whisper supplies
             // the English pivot even when the source is Russian or Chinese.
             translateToEnglish = activeRoute.sttToEnglish,
+            whisperAcceleration = if (isWhisper && SpeechAccelerationStore.current(context, CaptionEngineChoice.WHISPER) == "vulkan")
+                com.sal7one.common_jni.engine.whisper.WhisperAcceleration.VULKAN
+            else com.sal7one.common_jni.engine.whisper.WhisperAcceleration.CPU,
         )
 
         val created: SttEngine = if (isWhisper) WhisperEngine() else VoskEngine()
@@ -746,16 +748,11 @@ class CaptionEngineController(
             created.release()
             initialization.getOrThrow()
         }
-        pushDirect = if (isWhisper) {
-            val whisper = created as WhisperEngine
-            { buf, bytes -> whisper.pushAudioDirect(buf, 0, bytes, SAMPLE_RATE).getOrThrow() }
-        } else {
-            val vosk = created as VoskEngine
-            { buf, bytes -> vosk.pushAudioDirect(buf, 0, bytes, SAMPLE_RATE).getOrThrow() }
-        }
+        val executionInfo = (created as? WhisperEngine)?.runtimeDescription ?: created.engineType.displayName
+        CaptionDiagnostics.record(context, "${model.name}: $executionInfo")
         _state.value = _state.value.copy(
             modelName = model.name,
-            engineLabel = created.engineType.displayName,
+            engineLabel = created.engineType.displayName + if (isWhisper && sttConfig.whisperAcceleration.id == "vulkan") " · Vulkan" else "",
             availableModels = candidates.map { ModelOption(it.id, it.name) },
         )
         LoadedCaptionEngine(legacy = created)
@@ -767,26 +764,16 @@ class CaptionEngineController(
      */
     private fun startAudioConsumer() {
         audioJob?.cancel()
-        val channel = audioChannel
+        val queue = audioQueue
         val activeEngine = engine ?: return
-        val direct = pushDirect
+        val input = SttPcmInput(activeEngine, SAMPLE_RATE)
         val generation = sessionGeneration
         audioJob = scope.launch(audioDispatcher) {
             try {
-                var nativePcm = ByteBuffer.allocateDirect(0).order(ByteOrder.nativeOrder())
-                for (samples in channel) {
-                    if (generation != sessionGeneration || currentConfig.paused) break
-                    if (direct != null) {
-                        val bytes = samples.size * 2
-                        if (nativePcm.capacity() < bytes) nativePcm = ByteBuffer.allocateDirect(bytes).order(ByteOrder.nativeOrder())
-                        nativePcm.clear()
-                        nativePcm.asShortBuffer().put(samples)
-                        nativePcm.limit(bytes)
-                        direct(nativePcm, bytes)
-                    } else {
-                        activeEngine.pushAudioChunk(AudioChunk(samples, SAMPLE_RATE, 0L,
-                            samples.size * 1000L / SAMPLE_RATE)).getOrThrow()
-                    }
+                queue.consume { samples ->
+                    if (generation != sessionGeneration || currentConfig.paused)
+                        throw CancellationException("Caption audio generation ended")
+                    input.push(samples).getOrThrow()
                 }
             } catch (e: CancellationException) { throw e }
             catch (e: Exception) {
@@ -804,23 +791,35 @@ class CaptionEngineController(
         partialSinceMs = null
         resetOpportunistic()
         pollJob = scope.launch {
+            var localRevision = -1L
             while (isActive) {
                 val config = currentConfig
-                delay(
+                val speech = localSpeech
+                // Model events wake immediately. The timeout only refreshes queue/compute metrics.
+                val local = if (speech != null) {
+                    withTimeoutOrNull(100L) { speech.awaitChange(localRevision) }
+                    // Drain outside the timeout: cancellation must never discard a delivered final.
+                    speech.snapshot()
+                } else {
+                    delay(
                     when (config.effectiveEngine) {
                         CaptionEngineChoice.VOSK -> 500L
-                        CaptionEngineChoice.CLOUD, CaptionEngineChoice.MOONSHINE, CaptionEngineChoice.QWEN, CaptionEngineChoice.OMNILINGUAL, CaptionEngineChoice.PHONON, CaptionEngineChoice.NEMOTRON -> 100L
-                        CaptionEngineChoice.WHISPER -> 700L
+                        CaptionEngineChoice.CLOUD, CaptionEngineChoice.MOONSHINE, CaptionEngineChoice.QWEN, CaptionEngineChoice.OMNILINGUAL, CaptionEngineChoice.PHONON, CaptionEngineChoice.NEMOTRON, CaptionEngineChoice.TRANSCRIBEPSY -> 100L
+                        // Reads the native worker's published text; it does not run another decode.
+                        CaptionEngineChoice.WHISPER -> 100L
                     },
-                )
-                val local = localSpeech?.snapshot()
+                    )
+                    null
+                }
                 if (local != null) {
+                    localRevision = local.revision
+                    // Earlier completed utterances survive a later terminal engine failure.
+                    local.finals.forEach { promoteFinal(it.text, it.sourceLanguage) }
                     val failure = local.state as? com.sal7one.common_jni.speech.SpeechProcessorState.Failed
                     if (failure != null) {
                         reportError(failure.error.message ?: failure.error.toString())
                         break
                     }
-                    local.finals.forEach { promoteFinal(it.text, it.sourceLanguage) }
                     val text = local.partial?.text.orEmpty()
                     if (text.isNotBlank() || local.finals.isNotEmpty()) lastActivityMs = System.currentTimeMillis()
                     val metrics = String.format(java.util.Locale.ROOT, "Audio queue %.1fs · compute/audio %s",
@@ -1292,18 +1291,24 @@ class CaptionEngineController(
 
     /**
      * Stage captured PCM for the ordered consumer. Called from the capture
-     * thread; never blocks on inference. Backpressure: if the consumer falls
-     * behind, the chunk is dropped so latency stays live (captions must not
-     * lag behind the video).
+     * thread; never blocks on inference. Every accepted sample stays ordered;
+     * overload fails visibly rather than omitting words or accumulating lag.
      */
     fun pushAudio(pcm: ShortArray, sampleCount: Int) {
-        if (sampleCount <= 0 || sampleCount > pcm.size || stopping || clearingTranscript || currentConfig.paused) return
+        if (sampleCount <= 0 || sampleCount > pcm.size || stopping || clearingTranscript || currentConfig.paused ||
+            _state.value.status == Status.ERROR) return
         val speech = localSpeech
         if (speech != null) {
-            // Bypass the legacy DROP_OLDEST channel: preserve every accepted sample.
-            // LiveSpeechProcessor owns a bounded queue and the poller reports overload.
+            // The native speech worker owns its own bounded, sample-counted queue.
             speech.tryAccept(if (sampleCount == pcm.size) pcm else pcm.copyOf(sampleCount))
-        } else if (engine != null) audioChannel.trySend(pcm.copyOf(sampleCount))
+        } else if (engine != null) {
+            val queue = audioQueue
+            val generation = sessionGeneration
+            if (!queue.tryAccept(pcm, sampleCount)) queue.failure?.let { failure ->
+                if (generation == sessionGeneration && queue === audioQueue)
+                    reportError(failure.message ?: failure.toString())
+            }
+        }
     }
 
     fun markCaptureSilent(silent: Boolean) {
@@ -1355,14 +1360,14 @@ class CaptionEngineController(
         clearingTranscript = true
         val oldPoll = pollJob.also { it?.cancel() }
         val oldAudio = audioJob.also { it?.cancel() }
-        audioChannel.close()
+        audioQueue.cancel()
         _state.update { it.copy(status = Status.LOADING_MODEL) }
         clearJob = scope.launch {
             try {
                 oldPoll?.join(); oldAudio?.join()
                 if (speech != null) speech.reset() else legacy?.reset()?.getOrThrow()
                 if (generation != sessionGeneration) return@launch
-                audioChannel = Channel(capacity = 4, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+                audioQueue = CaptionAudioQueue()
                 _state.update { it.copy(status = Status.RUNNING) }
                 startAudioConsumer()
                 startPolling()
@@ -1385,7 +1390,7 @@ class CaptionEngineController(
         // tear down once arrivals go quiet (or the hard cap hits).
         val gen = sessionGeneration
         val engineAtStop = engine
-        audioChannel.close()
+        audioQueue.finish()
         scope.launch {
             // Deliver the already captured tail before closing the recognizer input.
             audioJob?.join()
@@ -1401,7 +1406,7 @@ class CaptionEngineController(
             }
             if (gen != sessionGeneration) return@launch  // a new session took over
             stopInternal(promotePending = true)
-            _state.value = _state.value.copy(status = Status.STOPPED)
+            _state.update { if (it.status == Status.ERROR) it else it.copy(status = Status.STOPPED) }
             onDrained?.invoke()
         }
     }
@@ -1420,6 +1425,7 @@ class CaptionEngineController(
         pollJob = null
         audioJob?.cancel()
         audioJob = null
+        audioQueue.cancel()
         val stale = engine
         val staleSpeech = localSpeech
         engine = null
@@ -1440,7 +1446,7 @@ class CaptionEngineController(
         shutDown = true
         ++sessionGeneration
         stopInternal(promotePending = false)
-        audioChannel.close()
+        audioQueue.cancel()
         cleanupScope.launch { onnxTranslator.release() }
         if (externalScope == null) scope.cancel()
     }

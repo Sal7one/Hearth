@@ -10,12 +10,14 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-#define HEARTH_SPEECH_ABI_VERSION 1
+#define HEARTH_SPEECH_ABI_VERSION 2
 struct HearthSpeechConfig {
     uint32_t size;
     const char *model, *conv_frontend, *encoder, *decoder, *tokenizer, *language;
     int32_t num_threads, right_context, max_utterance_ms, silence_ms;
     float silence_threshold_db;
+    const char *acceleration; // cpu, vulkan, or opencl; never an implicit fallback request
+    const char *gpu_cache_directory; // app-private OpenCL program cache; empty disables disk caching
 };
 struct HearthSpeechResult {
     uint32_t size;
@@ -33,6 +35,7 @@ struct HearthSpeechBackend {
     int (*finish)(void *);
     int (*reset)(void *);
     const char *(*last_error)(void);
+    const char *(*execution_info)(void *); // borrowed until reset/destroy; resolved after model load
 };
 typedef const struct HearthSpeechBackend *(*HearthSpeechEntry)(void);
 #ifdef __cplusplus

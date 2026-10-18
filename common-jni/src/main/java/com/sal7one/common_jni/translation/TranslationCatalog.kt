@@ -6,14 +6,17 @@ import java.util.Locale
 
 /** Publisher-declared coverage, distinct from accuracy measured on a particular device. */
 object TranslationLanguages {
-    fun normalize(code: String): String = when (val value = SpeechLanguage.normalize(code)) {
+    private val explicitCode = Regex("[a-z]{2,3}(?:-[A-Z][a-z]{3})?")
+    /** Syntax only. The chosen translator still decides whether a direction exists. */
+    fun isExplicitCode(code: String): Boolean = explicitCode.matches(code) && code !in setOf("und", "mul", "zxx")
+    fun normalize(code: String): String = IndexTranslationLanguages.knownCode(code) ?: when (val value = SpeechLanguage.normalize(code)) {
         "tl" -> "fil"
         "auto", "mul", "und", "" -> value
         else -> value
     }
     fun label(code: String): String = when(code) {
         "zh" -> "Chinese"; "yue" -> "Cantonese"; "fil" -> "Filipino"
-        else -> Locale.forLanguageTag(code).getDisplayLanguage(Locale.ENGLISH).ifBlank { code }
+        else -> IndexTranslationLanguages.names[code] ?: Locale.forLanguageTag(code).getDisplayLanguage(Locale.ENGLISH).ifBlank { code }
     }
     // Initial supported adapter coverage; not a claim of an exhaustive model quality matrix.
     val gemmaLanguages = "ar zh en fr de es pt ru ja ko hi it nl pl tr uk vi id th sv da fi cs ro el hu he fa bg hr sk sl et lv lt".split(' ').toSet()
@@ -42,11 +45,16 @@ data class TranslationModelSpec(
     val sourceLanguages get() = when (family) {
         "translategemma" -> TranslationLanguages.gemmaLanguages
         "milmmt-46" -> TranslationLanguages.milmmtNames.keys
+        "index-translate" -> IndexTranslationLanguages.names.keys
         else -> TranslationLanguages.hyLanguages
     }
     val targetLanguages get() = sourceLanguages
-    val license get() = when (family) { "translategemma", "milmmt-46" -> "Gemma terms"; "hy-mt2" -> "Apache-2.0"; else -> "Tencent Hunyuan community license" }
-    val directions: Set<TranslationDirection> get() = sourceLanguages.flatMap { a -> targetLanguages.filter { it != a }.map { TranslationDirection(a, it) } }.toSet()
+    val license get() = when (family) { "translategemma", "milmmt-46" -> "Gemma terms"; "hy-mt2", "index-translate" -> "Apache-2.0"; else -> "Tencent Hunyuan community license" }
+    // Broad multilingual inventories can contain tens of thousands of edges.
+    // Keep the immutable set once instead of rebuilding it for every caption.
+    val directions: Set<TranslationDirection> by lazy {
+        sourceLanguages.flatMap { a -> targetLanguages.filter { it != a }.map { TranslationDirection(a, it) } }.toSet()
+    }
     val url get() = "https://huggingface.co/$repo/resolve/$revision/$fileName"
     val modelCard get() = "https://huggingface.co/$repo"
     fun supports(source: String, target: String): Boolean {
@@ -58,6 +66,10 @@ data class TranslationModelSpec(
         require(text.isNotBlank() && text.length <= 2000) { "Local translation accepts 1–2000 caption characters per line" }
         require(supports(source, target)) { "$label does not support $source → $target" }
         val to = TranslationLanguages.label(TranslationLanguages.normalize(target))
+        if (family == "index-translate") {
+            val targetName = IndexTranslationLanguages.promptName(TranslationLanguages.normalize(target))
+            return "请将以下文本翻译为$targetName，直接输出翻译结果，不要进行任何解释。\n\n${text.trim()}"
+        }
         if (family == "milmmt-46") {
             val fromName = checkNotNull(TranslationLanguages.milmmtNames[TranslationLanguages.normalize(source)])
             val toName = checkNotNull(TranslationLanguages.milmmtNames[TranslationLanguages.normalize(target)])
@@ -102,6 +114,8 @@ object TranslationCatalog {
             "74d38ba75108d455326e9deeaf9ab01bb266dfa665eae9c4aa84e84485d4fdf9", "mradermacher/MiLMMT-46-1B-v1.0-GGUF", "34df5efbe6592773ec168cc7b307728c08623472", "MiLMMT-46-1B-v1.0.Q4_K_M.gguf"),
         TranslationModelSpec("milmmt-46-1b-q5", "MiLMMT-46 1B · Q5_K_M · experimental", "milmmt-46", "Q5_K_M", 851344832L,
             "3ae19dabf326ce42eca36d52a9dbd769ed34ffab744f18b4f45822117681e50b", "mradermacher/MiLMMT-46-1B-v1.0-GGUF", "34df5efbe6592773ec168cc7b307728c08623472", "MiLMMT-46-1B-v1.0.Q5_K_M.gguf"),
+        TranslationModelSpec("index-translate-2b-q4", "Index-Translate 2B · Q4_K_M · experimental", "index-translate", "Q4_K_M", 1312164352L,
+            "044b313d29342bd3b2c77cbb64023ca0d209bd9b3247763f9d162767ef2d746a", "IndexTeam/Index-Translate-2B-GGUF", "3a0eca6ce931d88d00614d427ab3ed8ff0743902", "Index-Translate-2B.Q4_K_M.gguf"),
     )
     fun find(id: String): TranslationModelSpec = models.firstOrNull { it.id == id } ?: error("Select an installed local translation model")
 }

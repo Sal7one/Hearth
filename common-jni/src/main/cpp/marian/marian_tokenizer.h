@@ -78,6 +78,12 @@ private:
         float score = 0.0f;
     };
 
+    struct Segment {
+        int32_t pieceIndex;
+        size_t begin;
+        size_t end;
+    };
+
     // Charsmap (SentencePiece Darts double array).
     // Blob layout: <uint32 LE trie byte size><units><NUL-delimited
     // replacement strings>. See sentencepiece normalizer.cc.
@@ -111,9 +117,10 @@ private:
     bool normalize(const std::string& input, std::string& out) const;
 
     // SentencePiece EncodeOptimized (see sentencepiece unigram_model.cc):
-    // byte-position Viterbi with score maximization. Returns spPieces_ indices.
+    // byte-position Viterbi with score maximization. Byte spans retain unknown
+    // surfaces, which Marian maps through its joint vocabulary as strings.
     bool segment(const std::string& normalized,
-                 std::vector<int32_t>& pieceIndices) const;
+                 std::vector<Segment>& segments) const;
 };
 
 } // namespace marian

@@ -39,8 +39,9 @@ int main() {
     const fs::path spm = root / "source.spm";
     const fs::path json = root / "tokenizer.json";
     const std::string model = modelPiece("<unk>", '\x02') +
-        modelPiece("\xe2\x96\x81" "a", '\x01');
-    const std::string vocab = R"({"model":{"vocab":[["<unk>",0],["</s>",0],["<pad>",0],["▁a",0]]},"added_tokens":[{"content":"<unk>","id":0},{"content":"</s>","id":1},{"content":"<pad>","id":2}]})";
+        modelPiece("\xe2\x96\x81" "a", '\x01') +
+        modelPiece("\xe2\x96\x81", '\x01');
+    const std::string vocab = R"({"model":{"vocab":[["<unk>",0],["</s>",0],["<pad>",0],["▁a",0],["▁",0],["€",0],["€€",0]]},"added_tokens":[{"content":"<unk>","id":0},{"content":"</s>","id":1},{"content":"<pad>","id":2}]})";
     writeFile(spm, model);
     writeFile(json, vocab);
     MarianTokenizer tokenizer;
@@ -50,6 +51,14 @@ int main() {
     const auto encoded = tokenizer.encode("a");
     CHECK(encoded.ok);
     CHECK(encoded.ids == std::vector<int64_t>({3, 1}));
+
+    // Marian maps SentencePiece's surface strings through the joint vocab:
+    // an unknown source-SPM character is not automatically a joint-vocab unk.
+    CHECK(tokenizer.encode("€").ids == std::vector<int64_t>({4, 5, 1}));
+    CHECK(tokenizer.encode("€€").ids == std::vector<int64_t>({4, 6, 1}));
+    CHECK(tokenizer.encode("€💰").ids == std::vector<int64_t>({4, 0, 1}));
+    CHECK(tokenizer.encode("€ a €").ids == std::vector<int64_t>({4, 5, 3, 4, 5, 1}));
+    CHECK(!tokenizer.encode(std::string("\xff", 1)).ok);
 
     writeFile(json, R"({"model":{"vocab":[["<unk>",0],["</s>",0],["<pad>",0],["▁a",0]]},"added_tokens":[{"content":"<unk>","id":1e300}]})");
     CHECK(!MarianTokenizer::load(spm.string(), json.string(), tokenizer, &error));

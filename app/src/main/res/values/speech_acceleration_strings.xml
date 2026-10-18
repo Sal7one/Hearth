@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="speech_acceleration_title">Speech acceleration</string>
+    <string name="speech_acceleration_note">Experimental ARM64 runtimes. Compare speed and transcript accuracy in Benchmarks first. OpenCL targets Adreno; Vulkan depends on the graphics driver. Restart captions to apply. Errors remain visible; switching back to CPU is explicit.</string>
+    <string name="translation_acceleration_opencl">OpenCL GPU · experimental</string>
+    <string name="translation_acceleration_opencl_note">Adreno OpenCL runtime. Actual driver and GPU model buffers are reported after loading. Some operations remain on CPU. Compare speed and output quality before choosing this backend.</string>
+    <string name="benchmark_compare_acceleration">Compare CPU and GPU backends</string>
+    <string name="benchmark_compare_acceleration_hint">Runs the same installed models and inputs on each supported backend. Records unavailable drivers as errors and compares accuracy as well as speed. Does not change your saved settings.</string>
+</resources>

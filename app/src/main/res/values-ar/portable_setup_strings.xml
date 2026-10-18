@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="portable_setup_title">إعدادات قابلة للنقل</string>
+    <string name="portable_setup_description">احفظ أو استورد اختيارات الكلام والترجمة والصوت. تُثبَّت النماذج بشكل منفصل؛ تبقى المفاتيح ومواقع الملفات على هذا الجهاز.</string>
+    <string name="portable_setup_import">استيراد إعداد</string>
+    <string name="portable_setup_current">حفظ الإعداد الحالي</string>
+    <string name="portable_setup_include">تضمين هذه المراحل</string>
+    <string name="portable_setup_speech">الكلام</string>
+    <string name="portable_setup_translation">الترجمة</string>
+    <string name="portable_setup_voice">الصوت</string>
+    <string name="portable_setup_name">اسم الإعداد</string>
+    <string name="portable_setup_off">متوقف</string>
+    <string name="portable_setup_source">لغة الكلام / المصدر</string>
+    <string name="portable_setup_target">لغة الترجمة</string>
+    <string name="portable_setup_auto">تلقائي</string>
+    <string name="portable_setup_ready">جاهز للتطبيق</string>
+    <string name="portable_setup_needs_models">يلزم المراجعة</string>
+    <string name="portable_setup_missing">غير موجود: %1$s</string>
+    <string name="portable_setup_apply">تطبيق هذا الإعداد</string>
+    <string name="portable_setup_download">تنزيل النماذج الناقصة</string>
+    <string name="portable_setup_offline">استورد النماذج الناقصة عبر شاشات النماذج أدناه.</string>
+    <string name="portable_setup_export">تصدير JSON</string>
+    <string name="portable_setup_recheck">تحقق مجددًا</string>
+    <string name="portable_setup_manage_speech">نماذج الكلام / تحديد ملف مستورد</string>
+    <string name="portable_setup_manage_translation">نماذج الترجمة / الاتصالات</string>
+    <string name="portable_setup_manage_voice">نماذج الصوت / الاتصالات</string>
+    <string name="portable_setup_saved">حُفظ ملف الإعداد.</string>
+    <string name="portable_setup_applied">طُبّق الإعداد.</string>
+    <string name="portable_setup_queued">أُضيفت التنزيلات. تحقق مجددًا بعد التثبيت ثم طبّق الإعداد بنفسك.</string>
+    <string name="portable_setup_details">تفاصيل النموذج</string>
+    <string name="portable_setup_cancel">إلغاء</string>
+    <string name="portable_setup_prepare">تجهيز الملف</string>
+</resources>

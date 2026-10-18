@@ -62,8 +62,8 @@
     <string name="label_captionenginechoice_vosk_explanation" formatted="false">"Instant partial captions in the model\'s language. Best responsiveness; one model per language."</string>
     <string name="label_captionenginechoice_whisper_label" formatted="false">"Whisper (accurate)"</string>
     <string name="label_captionenginechoice_whisper_explanation" formatted="false">"Multilingual with live language detection; slower partials. Includes built-in English translation."</string>
-    <string name="label_captionenginechoice_moonshine_label" formatted="false">"Moonshine · English"</string>
-    <string name="label_captionenginechoice_moonshine_explanation" formatted="false">"Small English-only recognition in short utterance windows. Optional local translation."</string>
+    <string name="label_captionenginechoice_moonshine_label" formatted="false">"Moonshine (local)"</string>
+    <string name="label_captionenginechoice_moonshine_explanation" formatted="false">"Small language-specific recognition in short utterance windows. Optional local translation."</string>
     <string name="label_captionenginechoice_qwen_label" formatted="false">"Qwen3-ASR (local)"</string>
     <string name="label_captionenginechoice_omnilingual_label" formatted="false">"Omnilingual CTC 300M (local)"</string>
     <string name="label_captionenginechoice_omnilingual_explanation" formatted="false">"Experimental compact multilingual captions in short utterance windows. The model cannot force a spoken language; your selected language labels output for translation."</string>

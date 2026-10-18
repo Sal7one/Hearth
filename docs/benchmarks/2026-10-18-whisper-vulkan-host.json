@@ -1,0 +1,647 @@
+{
+  "host": "Apple M4 Pro macOS, CPU 2 threads; Vulkan through MoltenVK 1.4.2",
+  "androidMeasurements": false,
+  "modelRevision": "5359861c739e955e79d9a303bcbc70fb988958b1",
+  "models": {
+    "ggml-tiny.en-q5_1.bin": "c77c5766f1cef09b6b7d47f21b546cbddd4157886b3b5d6d4f709e91e66c7c2b",
+    "ggml-tiny.en.bin": "921e4cf8686fdd993dcd081a5da5b6c365bfde1162e72b08d75ac75289920b1f"
+  },
+  "fixtureSha256": {
+    "build/whisper-runtime/negation.wav": "6fab8e9717aa89980a908b58e12caed05490ee8e1bcf528d3ff7430d5952b666",
+    "build/speech-runtimes/src/nemo/test_files/asr/wav/test/jfk.wav": "59dfb9a4acb36fe2a2affc14bacbee2920ff435cb13cc314a08c13f66ba7860e"
+  },
+  "logs": {
+    "hearth-whisper-vulkan-smoke-cpu.log": "e44630871259479879e46b195dab5af1213f24a9f12a81353c4657bc9e950b50",
+    "hearth-whisper-vulkan-smoke-f16-model-cpu.log": "d5325b750d6b83f31ec8bfe64c12a3c586f1ba960f4b89ed462f76dafee4280e",
+    "hearth-whisper-vulkan-smoke-f16-model-flash.log": "32a2bc72525539b58d19851433f3d7a196ae0fce2c2aa64ba324fcfc14b57fb7",
+    "hearth-whisper-vulkan-smoke-flash.log": "fa443e2f300755fd41ab338778ac04aaa8d10552dec49c62bf830f0826e107b5",
+    "hearth-whisper-vulkan-smoke-gpu.log": "6c63cd28b282aa09d15f65aad5a6e2a5a6a74dd4324ad8cd769b17e5ee5fcdcc",
+    "hearth-whisper-vulkan-smoke-negation-cpu.log": "59933f37f5442faf7f7f89b220b1c651ef0d481a762533dd3500d068ba0d4b6a",
+    "hearth-whisper-vulkan-smoke-negation-gpu-flash.log": "57b04e25a8f1c30384d77d9c9c65b95761add0a5e8c9ae925ffaf2ee52033a58"
+  },
+  "negativeControl": "Without flash attention the Vulkan output drops opening words including ask not and Do not send. With flash attention 24 batch/final texts equal CPU across 3 cases.",
+  "cases": [
+    {
+      "name": "q5-jfk",
+      "cpu": [
+        {
+          "runtime": "CPU",
+          "loadMs": 143.291
+        },
+        {
+          "batchMs": 474.849,
+          "result": {
+            "text": "And so my fellow Americans ask not what your country can do for you ask what you can do for your country.",
+            "language": "en",
+            "processingTimeMs": 474,
+            "segments": [
+              {
+                "text": "And so my fellow Americans ask not what your country can do for you",
+                "startMs": 0,
+                "endMs": 7740,
+                "confidence": 0.7899569869041443
+              },
+              {
+                "text": "ask what you can do for your country.",
+                "startMs": 7740,
+                "endMs": 10580,
+                "confidence": 0.8359783291816711
+              }
+            ]
+          }
+        },
+        {
+          "batchMs": 472.924,
+          "result": {
+            "text": "And so my fellow Americans ask not what your country can do for you ask what you can do for your country.",
+            "language": "en",
+            "processingTimeMs": 472,
+            "segments": [
+              {
+                "text": "And so my fellow Americans ask not what your country can do for you",
+                "startMs": 0,
+                "endMs": 7740,
+                "confidence": 0.7899569869041443
+              },
+              {
+                "text": "ask what you can do for your country.",
+                "startMs": 7740,
+                "endMs": 10580,
+                "confidence": 0.8359783291816711
+              }
+            ]
+          }
+        },
+        {
+          "batchMs": 477.461,
+          "result": {
+            "text": "And so my fellow Americans ask not what your country can do for you ask what you can do for your country.",
+            "language": "en",
+            "processingTimeMs": 477,
+            "segments": [
+              {
+                "text": "And so my fellow Americans ask not what your country can do for you",
+                "startMs": 0,
+                "endMs": 7740,
+                "confidence": 0.7899569869041443
+              },
+              {
+                "text": "ask what you can do for your country.",
+                "startMs": 7740,
+                "endMs": 10580,
+                "confidence": 0.8359783291816711
+              }
+            ]
+          }
+        },
+        {
+          "streamFinal": {
+            "text": "And so my fellow Americans ask not what your country can do for you ask what you can do for your country.",
+            "language": "en",
+            "processingTimeMs": 474,
+            "segments": [
+              {
+                "text": "And so my fellow Americans ask not what your country can do for you",
+                "startMs": 0,
+                "endMs": 7740,
+                "confidence": 0.7899569869041443
+              },
+              {
+                "text": "ask what you can do for your country.",
+                "startMs": 7740,
+                "endMs": 10580,
+                "confidence": 0.8359783291816711
+              }
+            ]
+          }
+        }
+      ],
+      "gpu": [
+        {
+          "runtime": "Vulkan GPU: Apple M4 Pro + CPU",
+          "loadMs": 211.413
+        },
+        {
+          "batchMs": 448.112,
+          "result": {
+            "text": "And so my fellow Americans ask not what your country can do for you ask what you can do for your country.",
+            "language": "en",
+            "processingTimeMs": 447,
+            "segments": [
+              {
+                "text": "And so my fellow Americans ask not what your country can do for you",
+                "startMs": 0,
+                "endMs": 7740,
+                "confidence": 0.7918738126754761
+              },
+              {
+                "text": "ask what you can do for your country.",
+                "startMs": 7740,
+                "endMs": 10580,
+                "confidence": 0.8371728658676147
+              }
+            ]
+          }
+        },
+        {
+          "batchMs": 91.2938,
+          "result": {
+            "text": "And so my fellow Americans ask not what your country can do for you ask what you can do for your country.",
+            "language": "en",
+            "processingTimeMs": 91,
+            "segments": [
+              {
+                "text": "And so my fellow Americans ask not what your country can do for you",
+                "startMs": 0,
+                "endMs": 7740,
+                "confidence": 0.7918738126754761
+              },
+              {
+                "text": "ask what you can do for your country.",
+                "startMs": 7740,
+                "endMs": 10580,
+                "confidence": 0.8371728658676147
+              }
+            ]
+          }
+        },
+        {
+          "batchMs": 95.7245,
+          "result": {
+            "text": "And so my fellow Americans ask not what your country can do for you ask what you can do for your country.",
+            "language": "en",
+            "processingTimeMs": 95,
+            "segments": [
+              {
+                "text": "And so my fellow Americans ask not what your country can do for you",
+                "startMs": 0,
+                "endMs": 7740,
+                "confidence": 0.7918738126754761
+              },
+              {
+                "text": "ask what you can do for your country.",
+                "startMs": 7740,
+                "endMs": 10580,
+                "confidence": 0.8371728658676147
+              }
+            ]
+          }
+        },
+        {
+          "streamFinal": {
+            "text": "And so my fellow Americans ask not what your country can do for you ask what you can do for your country.",
+            "language": "en",
+            "processingTimeMs": 92,
+            "segments": [
+              {
+                "text": "And so my fellow Americans ask not what your country can do for you",
+                "startMs": 0,
+                "endMs": 7740,
+                "confidence": 0.7918738126754761
+              },
+              {
+                "text": "ask what you can do for your country.",
+                "startMs": 7740,
+                "endMs": 10580,
+                "confidence": 0.8371728658676147
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "q5-negation",
+      "cpu": [
+        {
+          "runtime": "CPU",
+          "loadMs": 140.189
+        },
+        {
+          "batchMs": 476.588,
+          "result": {
+            "text": "Do not send the payment today. The total is $42. Keep the door closed.",
+            "language": "en",
+            "processingTimeMs": 476,
+            "segments": [
+              {
+                "text": "Do not send the payment today.",
+                "startMs": 0,
+                "endMs": 1720,
+                "confidence": 0.7981264591217041
+              },
+              {
+                "text": "The total is $42.",
+                "startMs": 1720,
+                "endMs": 3720,
+                "confidence": 0.8457655906677246
+              },
+              {
+                "text": "Keep the door closed.",
+                "startMs": 3720,
+                "endMs": 4880,
+                "confidence": 0.8440212607383728
+              }
+            ]
+          }
+        },
+        {
+          "batchMs": 473.646,
+          "result": {
+            "text": "Do not send the payment today. The total is $42. Keep the door closed.",
+            "language": "en",
+            "processingTimeMs": 473,
+            "segments": [
+              {
+                "text": "Do not send the payment today.",
+                "startMs": 0,
+                "endMs": 1720,
+                "confidence": 0.7981264591217041
+              },
+              {
+                "text": "The total is $42.",
+                "startMs": 1720,
+                "endMs": 3720,
+                "confidence": 0.8457655906677246
+              },
+              {
+                "text": "Keep the door closed.",
+                "startMs": 3720,
+                "endMs": 4880,
+                "confidence": 0.8440212607383728
+              }
+            ]
+          }
+        },
+        {
+          "batchMs": 479.355,
+          "result": {
+            "text": "Do not send the payment today. The total is $42. Keep the door closed.",
+            "language": "en",
+            "processingTimeMs": 479,
+            "segments": [
+              {
+                "text": "Do not send the payment today.",
+                "startMs": 0,
+                "endMs": 1720,
+                "confidence": 0.7981264591217041
+              },
+              {
+                "text": "The total is $42.",
+                "startMs": 1720,
+                "endMs": 3720,
+                "confidence": 0.8457655906677246
+              },
+              {
+                "text": "Keep the door closed.",
+                "startMs": 3720,
+                "endMs": 4880,
+                "confidence": 0.8440212607383728
+              }
+            ]
+          }
+        },
+        {
+          "streamFinal": {
+            "text": "Do not send the payment today. The total is $42. Keep the door closed.",
+            "language": "en",
+            "processingTimeMs": 473,
+            "segments": [
+              {
+                "text": "Do not send the payment today.",
+                "startMs": 0,
+                "endMs": 1720,
+                "confidence": 0.7981264591217041
+              },
+              {
+                "text": "The total is $42.",
+                "startMs": 1720,
+                "endMs": 3720,
+                "confidence": 0.8457655906677246
+              },
+              {
+                "text": "Keep the door closed.",
+                "startMs": 3720,
+                "endMs": 4880,
+                "confidence": 0.8440212607383728
+              }
+            ]
+          }
+        }
+      ],
+      "gpu": [
+        {
+          "runtime": "Vulkan GPU: Apple M4 Pro + CPU",
+          "loadMs": 208.614
+        },
+        {
+          "batchMs": 97.5664,
+          "result": {
+            "text": "Do not send the payment today. The total is $42. Keep the door closed.",
+            "language": "en",
+            "processingTimeMs": 97,
+            "segments": [
+              {
+                "text": "Do not send the payment today.",
+                "startMs": 0,
+                "endMs": 1680,
+                "confidence": 0.7953312397003174
+              },
+              {
+                "text": "The total is $42.",
+                "startMs": 1680,
+                "endMs": 3720,
+                "confidence": 0.846667468547821
+              },
+              {
+                "text": "Keep the door closed.",
+                "startMs": 3720,
+                "endMs": 4920,
+                "confidence": 0.8469499945640564
+              }
+            ]
+          }
+        },
+        {
+          "batchMs": 76.8164,
+          "result": {
+            "text": "Do not send the payment today. The total is $42. Keep the door closed.",
+            "language": "en",
+            "processingTimeMs": 76,
+            "segments": [
+              {
+                "text": "Do not send the payment today.",
+                "startMs": 0,
+                "endMs": 1680,
+                "confidence": 0.7953312397003174
+              },
+              {
+                "text": "The total is $42.",
+                "startMs": 1680,
+                "endMs": 3720,
+                "confidence": 0.846667468547821
+              },
+              {
+                "text": "Keep the door closed.",
+                "startMs": 3720,
+                "endMs": 4920,
+                "confidence": 0.8469499945640564
+              }
+            ]
+          }
+        },
+        {
+          "batchMs": 79.9875,
+          "result": {
+            "text": "Do not send the payment today. The total is $42. Keep the door closed.",
+            "language": "en",
+            "processingTimeMs": 79,
+            "segments": [
+              {
+                "text": "Do not send the payment today.",
+                "startMs": 0,
+                "endMs": 1680,
+                "confidence": 0.7953312397003174
+              },
+              {
+                "text": "The total is $42.",
+                "startMs": 1680,
+                "endMs": 3720,
+                "confidence": 0.846667468547821
+              },
+              {
+                "text": "Keep the door closed.",
+                "startMs": 3720,
+                "endMs": 4920,
+                "confidence": 0.8469499945640564
+              }
+            ]
+          }
+        },
+        {
+          "streamFinal": {
+            "text": "Do not send the payment today. The total is $42. Keep the door closed.",
+            "language": "en",
+            "processingTimeMs": 82,
+            "segments": [
+              {
+                "text": "Do not send the payment today.",
+                "startMs": 0,
+                "endMs": 1680,
+                "confidence": 0.7953312397003174
+              },
+              {
+                "text": "The total is $42.",
+                "startMs": 1680,
+                "endMs": 3720,
+                "confidence": 0.846667468547821
+              },
+              {
+                "text": "Keep the door closed.",
+                "startMs": 3720,
+                "endMs": 4920,
+                "confidence": 0.8469499945640564
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "f16-jfk",
+      "cpu": [
+        {
+          "runtime": "CPU",
+          "loadMs": 262.396
+        },
+        {
+          "batchMs": 428.194,
+          "result": {
+            "text": "And so my fellow Americans ask not what your country can do for you ask what you can do for your country.",
+            "language": "en",
+            "processingTimeMs": 428,
+            "segments": [
+              {
+                "text": "And so my fellow Americans ask not what your country can do for you",
+                "startMs": 0,
+                "endMs": 8000,
+                "confidence": 0.8005381226539612
+              },
+              {
+                "text": "ask what you can do for your country.",
+                "startMs": 8000,
+                "endMs": 11000,
+                "confidence": 0.8651917576789856
+              }
+            ]
+          }
+        },
+        {
+          "batchMs": 423.291,
+          "result": {
+            "text": "And so my fellow Americans ask not what your country can do for you ask what you can do for your country.",
+            "language": "en",
+            "processingTimeMs": 423,
+            "segments": [
+              {
+                "text": "And so my fellow Americans ask not what your country can do for you",
+                "startMs": 0,
+                "endMs": 8000,
+                "confidence": 0.8005381226539612
+              },
+              {
+                "text": "ask what you can do for your country.",
+                "startMs": 8000,
+                "endMs": 11000,
+                "confidence": 0.8651917576789856
+              }
+            ]
+          }
+        },
+        {
+          "batchMs": 427.445,
+          "result": {
+            "text": "And so my fellow Americans ask not what your country can do for you ask what you can do for your country.",
+            "language": "en",
+            "processingTimeMs": 427,
+            "segments": [
+              {
+                "text": "And so my fellow Americans ask not what your country can do for you",
+                "startMs": 0,
+                "endMs": 8000,
+                "confidence": 0.8005381226539612
+              },
+              {
+                "text": "ask what you can do for your country.",
+                "startMs": 8000,
+                "endMs": 11000,
+                "confidence": 0.8651917576789856
+              }
+            ]
+          }
+        },
+        {
+          "streamFinal": {
+            "text": "And so my fellow Americans ask not what your country can do for you ask what you can do for your country.",
+            "language": "en",
+            "processingTimeMs": 422,
+            "segments": [
+              {
+                "text": "And so my fellow Americans ask not what your country can do for you",
+                "startMs": 0,
+                "endMs": 8000,
+                "confidence": 0.8005381226539612
+              },
+              {
+                "text": "ask what you can do for your country.",
+                "startMs": 8000,
+                "endMs": 11000,
+                "confidence": 0.8651917576789856
+              }
+            ]
+          }
+        }
+      ],
+      "gpu": [
+        {
+          "runtime": "Vulkan GPU: Apple M4 Pro + CPU",
+          "loadMs": 350.205
+        },
+        {
+          "batchMs": 215.653,
+          "result": {
+            "text": "And so my fellow Americans ask not what your country can do for you ask what you can do for your country.",
+            "language": "en",
+            "processingTimeMs": 215,
+            "segments": [
+              {
+                "text": "And so my fellow Americans ask not what your country can do for you",
+                "startMs": 0,
+                "endMs": 8000,
+                "confidence": 0.8022778630256653
+              },
+              {
+                "text": "ask what you can do for your country.",
+                "startMs": 8000,
+                "endMs": 11000,
+                "confidence": 0.8644992113113403
+              }
+            ]
+          }
+        },
+        {
+          "batchMs": 88.1778,
+          "result": {
+            "text": "And so my fellow Americans ask not what your country can do for you ask what you can do for your country.",
+            "language": "en",
+            "processingTimeMs": 88,
+            "segments": [
+              {
+                "text": "And so my fellow Americans ask not what your country can do for you",
+                "startMs": 0,
+                "endMs": 8000,
+                "confidence": 0.8022778630256653
+              },
+              {
+                "text": "ask what you can do for your country.",
+                "startMs": 8000,
+                "endMs": 11000,
+                "confidence": 0.8644992113113403
+              }
+            ]
+          }
+        },
+        {
+          "batchMs": 91.3503,
+          "result": {
+            "text": "And so my fellow Americans ask not what your country can do for you ask what you can do for your country.",
+            "language": "en",
+            "processingTimeMs": 91,
+            "segments": [
+              {
+                "text": "And so my fellow Americans ask not what your country can do for you",
+                "startMs": 0,
+                "endMs": 8000,
+                "confidence": 0.8022778630256653
+              },
+              {
+                "text": "ask what you can do for your country.",
+                "startMs": 8000,
+                "endMs": 11000,
+                "confidence": 0.8644992113113403
+              }
+            ]
+          }
+        },
+        {
+          "streamFinal": {
+            "text": "And so my fellow Americans ask not what your country can do for you ask what you can do for your country.",
+            "language": "en",
+            "processingTimeMs": 89,
+            "segments": [
+              {
+                "text": "And so my fellow Americans ask not what your country can do for you",
+                "startMs": 0,
+                "endMs": 8000,
+                "confidence": 0.8022778630256653
+              },
+              {
+                "text": "ask what you can do for your country.",
+                "startMs": 8000,
+                "endMs": 11000,
+                "confidence": 0.8644992113113403
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "caveats": [
+    "Host validation only, not Android/Adreno/Mali measurements.",
+    "Two audio fixtures and two tiny.en precisions are smoke coverage, not a general accuracy benchmark.",
+    "First batch includes shader warmup; later batches reuse the loaded model.",
+    "Warm CPU/GPU text matches exactly, timestamps and confidence may differ.",
+    "GPU non-flash attention lost leading words; shipping GPU path explicitly enables flash attention."
+  ]
+}

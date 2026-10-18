@@ -5,12 +5,14 @@ is a separate text model; it never changes the ASR model's language capabilities
 
 ## Use
 
-1. Import/select Qwen or Nemotron in Models. Expand **CC language support** to
+1. Import/select a speech model in Models. Expand **CC language support** to
    see the speech model's supported languages.
 2. Under **Local translation bridge**, choose ML Kit language packs (play only),
    a small Marian language pair, Hy-MT2, HY-MT1.5, or TranslateGemma. Marian
-   offers English→Arabic, Russian→English, and Chinese→English only. It does
-   not claim Russian/Chinese→Arabic or arbitrary language pairs. Hy-MT2 offers Q2_K (about
+   offers 12 direct pairs: English ↔ Arabic, Russian, Chinese, French, German
+   and Spanish. Each direction uses its own 220–242 MiB package. Explicit
+   two-model routes connect those six non-English languages through English;
+   both packages must be installed. Hy-MT2 offers experimental Q2_K (about
    741 MiB), Q3_K_M (about 907 MiB), Q4_K_M (1080 MiB), Q6_K (1406 MiB), and
    Q8_0 (1820 MiB). Smaller quants save storage; they are not presumed to improve
    speed or translation quality. TranslateGemma Q4_K_M is 2.49 GB.
@@ -35,22 +37,56 @@ is a separate text model; it never changes the ASR model's language capabilities
 Automatic routing uses the language reported by ASR. Unknown/mixed language shows
 an actionable notice and retains CC. A user-selected spoken language overrides
 that metadata for routing; it must be the language heard, not the target. Qwen and Nemotron also forward the selected supported language to their native
-recognizers, bypassing automatic language selection. Moonshine fixes English.
+recognizers, bypassing automatic language selection. Moonshine uses its selected
+checkpoint's fixed language.
 Scribe and Deepgram can use the same bridge; choose the spoken language explicitly
 when the cloud callback has no detected-language metadata. OpenAI and Soniox
 integrated translation take priority over a remembered local bridge preference.
 
 ## Models and coverage
 
-The current runtime also supports three pinned Marian ONNX language pairs,
-each about 235–242 MiB on disk. See the [phone smoke](marian-phone-smoke-2026-09-23.md)
-for the measured short-pass speed and a meaning-changing English→Arabic error.
-Do not choose a pair based on speed alone.
+The Marian ONNX catalog contains 12 pinned direct language pairs: English ↔
+Arabic, Russian, Chinese, French, German and Spanish. A direct pair needs one
+220–242 MiB package. These fixed-direction encoder/decoder models are the
+smaller alternative to the multilingual GGUF translators. Weight size does not
+include live memory or the concurrently loaded speech model.
+
+Thirty explicit two-model routes connect any two different non-English
+languages in that set through English. A Russian→French route, for example,
+requires Russian→English and English→French. A route loads both sessions,
+runs the stages in order, and surfaces either stage's failure. The existing
+Russian→Arabic and Chinese→Arabic route IDs are preserved. This adds language
+choices at the cost of two-model memory and two inference passes; it does not
+make a single Marian package multilingual.
+
+All nine added pairs match the current Marian decoder's six layers, eight
+attention heads and 512-wide hidden state. Their source SentencePiece models and
+joint tokenizers passed 29 reference cases against the production C++ tokenizer.
+That comparison exposed and fixed a tokenizer bug: unknown source-SPM text such
+as Spanish `€` can still have a valid joint-vocabulary token. The adapter now
+preserves the unknown surface, including contiguous runs, before looking it up.
+
+The production C++ engine with ONNX Runtime 1.20.1, two CPU threads and
+AddressSanitizer/UndefinedBehaviorSanitizer loaded all nine added packages after
+their four files passed exact size and SHA-256 verification. Each model completed
+three requests, for 27 full-model requests covering tickets, negation and
+currency/number contrasts. No native runtime or sanitizer failures occurred.
+These are compatibility smokes, not Android speed or accuracy results. Arabic
+`السعر هو خمسة دولارات اليوم.` became “The price is $5 a day,” changing
+“today” into a daily rate. French→English preserved a price contrast but produced
+the awkward “The total is € 5, no € 50.” The pairs remain optional choices. The original
+three pairs' [phone smoke](marian-phone-smoke-2026-09-23.md) also includes a
+meaning-changing English→Arabic error; choose with bilingual review, not timing
+alone. All ONNX conversions use CC-BY-4.0; the original English→German model also
+uses CC-BY-4.0, while the other originals use Apache-2.0. The chooser shows the
+selected pair's terms.
 
 The GGUF runtime supports the publisher's HY-MT1.5 1.8B GGUFs in Q4_K_M,
 Q6_K and Q8_0, and Hy-MT2 1.8B in Q2_K, Q3_K_M, Q4_K_M, Q6_K and Q8_0. The
 Q2/Q3 files are ordinary GGUF conversions pinned by exact revision and hash;
-they use the same supported Hunyuan adapter. Both families are translation-specialized models. Their
+they use the same supported Hunyuan adapter. Loader compatibility does not
+establish successful translation or quality for every prompt/quantization.
+Both families are translation-specialized models. Their
 catalogues publish mutual translation across 33 languages plus variants; the UI
 lists the supported normalized language set. Chinese script variants share the
 zh route here; there is no separate Traditional Chinese output selector.
@@ -85,12 +121,19 @@ redistribution. The APK contains no model weights.
   advertises exactly one source→target direction. The legacy English→Arabic
   Whisper fallback selects only the pinned English→Arabic package, never an
   arbitrary installed Russian or Chinese model.
+- `MarianCascadeTranslator`: owns two independently verified Marian sessions
+  for an explicit source→English→target route. It validates both directions,
+  keeps intermediate text within the request, and cancels/releases both engines.
 - `CaptionTranslationBridge`: independent serial worker, final utterances only,
   three queued lines plus one in flight. Each result is attached by line ID and
   bridge generation. Late results from a stopped/replaced bridge cannot attach.
 - Native runtime: pinned llama.cpp, CPU/two threads, 2048-token context,
-  384-token output cap, 20-second decode deadline. Context is cleared per line;
-  user caption content cannot inject native special tokens into the chat envelope.
+  384-token output cap, 20-second decode deadline. One resident worker pool sleeps
+  between jobs. Models without sliding-window attention can reuse matching prompt
+  tokens; previous generated output and changed prompt tokens are removed before
+  the next request. This adds no conversation history. Sliding-window models keep
+  full prefill, and failures invalidate reusable state. User caption content cannot
+  inject native special tokens into the chat envelope.
 - Queue age cap: 20 seconds after preparation; caption cap: 2000 characters. Overflow, stale work,
   unsupported languages, load failures, empty or incomplete output are visible
   notices. Original CC continues; source text is never presented as translation.
@@ -105,6 +148,46 @@ redistribution. The APK contains no model weights.
 To add a different model family, implement its prompt/runtime adapter and validate
 its weights and language directions. Do not advertise untested architectures as
 compatible. The queue consumes the common `SpeechTextTranslator` interface.
+
+## Native performance follow-up — 2026-10-18
+
+The GGUF wrapper now keeps one two-thread CPU pool with idle polling disabled,
+instead of creating workers for each decode graph. Fixed prompt markers are
+tokenized once. Safe prefix reuse skips repeated instruction processing on
+non-sliding-window models, while re-decoding the final prompt token for fresh
+logits. TranslateGemma's sliding-window path retains full prefill.
+
+An exact-model CPU check also found why experimental Hy-MT2 Q2_K could appear
+to run indefinitely: its metadata labels an ordinary `$` token as EOS, so the
+old generic stop check ignored the actual Hunyuan assistant-end control token.
+It kept generating until the 384-token cap instead of returning the completed
+answer. The Hunyuan adapter now validates and recognizes that exact control
+token and ignores ordinary tokens mislabelled as EOS. Literal caption text
+cannot trigger it. A valid control EOS/EOT still works when the named marker
+is unavailable; a Hunyuan model with no safe terminator fails setup. Gemma's
+stop handling is unchanged. See the
+[diagnostic evidence](native-performance-research-2026-10-18.md#real-model-diagnosis-a-missed-hunyuan-end-token).
+All four fixed-Q2 host smoke requests completed, including `$5` preserved in
+English output. Its Arabic greeting remained malformed, so Q2 stays experimental;
+completed output is not evidence of correct translation.
+
+Marian now passes owned decoder cache tensors directly between token steps and
+reuses invariant tensor views and its logits output within a caption. Padding
+masking, greedy decoding, language directions, cancellation and output limits
+are unchanged. This removes wrapper-side copies and allocations; it does not
+eliminate ORT's graph allocations or the model's encoder/decoder work.
+
+Both changes reduce avoidable CPU work while preserving independent STT,
+translation and TTS choices. Accuracy and Android speed still need measured
+comparison. Final speech and translation plugins are rebuilt/staged for all four
+ABIs. The full Gradle test/QA Kotlin gate, native Debug build and both QA APK
+variants passed after the Hunyuan fix; release verification passed all 10 APKs.
+In the controlled two-thread M4 Pro CPU test, official Q4 warm-request median
+fell from 445 ms to 270 ms (39% less time; 10 observations per wrapper from
+three unique captions). Prefix reuse changed one faithful wording choice;
+four further distinct validation cases matched exactly. These results do not
+establish Android speed or general translation quality.
+See [source evidence and validation](native-performance-research-2026-10-18.md).
 
 ## Rebuild
 
@@ -155,7 +238,7 @@ that failure says nothing about the existing working HY quantizations.
 Hy-MT2's separate [1.25-bit artifact](https://huggingface.co/tencent/Hy-MT2-1.8B-1.25Bit-GGUF)
 is a different format from that older HY-MT1.5 SEQ package. Its publisher requires
 the STQ kernel in [llama.cpp PR #22836](https://github.com/ggml-org/llama.cpp/pull/22836),
-which remained open and unmerged when checked on 2026-09-13. Hearth's pinned
+which remained open and unmerged when checked on 2026-10-18. Hearth's pinned
 runtime does not include that kernel. The advertised 440 MB footprint is a
 publisher claim for this special artifact, not the size of our Q4 model or a
 measured Android performance result. It is an integration candidate, not an
@@ -166,6 +249,8 @@ Hy-MT2 Q2_K and Q3_K_M are catalogued from the pinned
 Their hashes and lengths were verified against the model repository. Smaller
 artifacts may trade translation quality for storage; use the in-app quick
 reference set and review each output before choosing one for live captions.
+Q2_K remains experimental; repairing its termination metadata does not validate
+translation quality across the model's advertised languages.
 
 Nemotron now requests an endpoint after four seconds of decoded speech with a
 nonempty transcript, in addition to natural endpoints. This gives the final-only

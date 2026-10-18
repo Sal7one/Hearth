@@ -15,9 +15,10 @@ internal object MarianCascade {
         init { require(first.target == second.source && source != target) }
     }
 
-    val routes: List<Route> = listOf("ru", "zh").map { source ->
-        Route("marian-$source-ar-via-en", checkNotNull(MarianPackage.find("marian-$source-en")),
-            checkNotNull(MarianPackage.find(TranslationOptions.MARIAN_EN_AR)))
+    val routes: List<Route> = MarianPackage.pairs.filter { it.target == "en" }.flatMap { first ->
+        MarianPackage.pairs.filter { it.source == "en" && it.target != first.source }.map { second ->
+            Route("marian-${first.source}-${second.target}-via-en", first, second)
+        }
     }
     fun find(id: String): Route? = routes.firstOrNull { it.id == id }
     fun installed(context: Context, route: Route): Boolean =

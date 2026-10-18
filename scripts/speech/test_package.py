@@ -43,6 +43,17 @@ class PackageTest(unittest.TestCase):
             (root / "decoder.ort").unlink()
             with self.assertRaisesRegex(ValueError, "Missing assets"):
                 packager.create_manifest(root, "moonshine-tiny-en-v2", roles)
+    def test_non_english_moonshine_profiles_keep_same_verified_roles(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            for name in ("tokens.txt", "encoder_model.ort", "decoder_model_merged.ort"):
+                (root / name).write_bytes(b"fixture")
+            roles = {"model": "tokens.txt", "encoder": "encoder_model.ort", "decoder": "decoder_model_merged.ort"}
+            for stem in ("base-ar", "base-es", "tiny-ja", "tiny-ko", "base-ja", "base-uk", "base-vi", "base-zh"):
+                profile = "moonshine-" + stem + "-v2"
+                result = packager.create_manifest(root, profile, roles)
+                self.assertEqual(result["profile"], profile)
+                self.assertEqual({entry["path"] for entry in result["files"]}, set(roles.values()))
     def test_omnilingual_requires_model_and_tokens(self):
         with tempfile.TemporaryDirectory() as d:
             root = Path(d)
@@ -65,6 +76,15 @@ class PackageTest(unittest.TestCase):
             (root / "encoder.int8.onnx").unlink()
             with self.assertRaisesRegex(ValueError, "Missing assets"):
                 packager.create_manifest(root, "phonon-2", roles)
+    def test_transcribepsy_uses_one_gguf_role(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            (root / "model.gguf").write_bytes(b"GGUF-fixture")
+            result = packager.create_manifest(root, "transcribepsy-250m-eu-sub-q8", {"model": "model.gguf"})
+            self.assertEqual(result["profile"], "transcribepsy-250m-eu-sub-q8")
+            self.assertEqual(result["roles"], {"model": "model.gguf"})
+            with self.assertRaisesRegex(ValueError, "Required roles"):
+                packager.create_manifest(root, "transcribepsy-250m-eu-sub-q8", {"encoder": "model.gguf"})
     def test_unknown_model_is_rejected(self):
         with tempfile.TemporaryDirectory() as d:
             with self.assertRaisesRegex(ValueError, "Unsupported"):

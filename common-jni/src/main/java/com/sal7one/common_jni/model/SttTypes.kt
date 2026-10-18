@@ -94,7 +94,9 @@ data class SttConfig(
     val streamingChunkDurationMs: Int = 200,  // Chunk duration for streaming mode (milliseconds) - reduced for faster updates
     val streamingContextDurationMs: Int = 0,  // Context retained between native inference chunks
     /** Pinned or TOFU SHA-256 for the app-private model snapshot. */
-    val modelSha256: String? = null
+    val modelSha256: String? = null,
+    val whisperAcceleration: com.sal7one.common_jni.engine.whisper.WhisperAcceleration =
+        com.sal7one.common_jni.engine.whisper.WhisperAcceleration.CPU
 ) {
     companion object {
         const val SAMPLE_RATE_16K = 16000
@@ -154,6 +156,7 @@ data class SttConfig(
             .put("suppressNonSpeechTokens", suppressNonSpeechTokens)
             .put("debugForceEnglish", debugForceEnglish)
             .put("debugLogging", debugLogging)
+            .put("whisperAcceleration", whisperAcceleration.id)
             .put("audioProcessingMode", audioProcessingMode.name.lowercase())
             .put("streamingChunkDurationMs", streamingChunkDurationMs)
             .put("streamingContextDurationMs", streamingContextDurationMs)

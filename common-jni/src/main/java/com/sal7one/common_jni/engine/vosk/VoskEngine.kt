@@ -1,7 +1,8 @@
 package com.sal7one.common_jni.engine.vosk
 
 import com.sal7one.common_jni.CommonJni
-import com.sal7one.common_jni.engine.SttEngine
+import com.sal7one.common_jni.engine.DirectPcmSttEngine
+import com.sal7one.common_jni.engine.CancellableSttEngine
 import com.sal7one.common_jni.engine.SttError
 import com.sal7one.common_jni.json.JsonInterop
 import com.sal7one.common_jni.model.*
@@ -24,7 +25,7 @@ import kotlin.jvm.Throws
  * - Removed redundant mutex
  * - Added capability reporting
  */
-class VoskEngine : SttEngine {
+class VoskEngine : DirectPcmSttEngine, CancellableSttEngine {
 
     private var nativeHandle: Long = 0L
     private var _isInitialized = false
@@ -93,7 +94,7 @@ class VoskEngine : SttEngine {
      * Request cancellation of current operation.
      * Thread-safe - can be called from any thread.
      */
-    fun cancel() {
+    override fun cancel() {
         if (nativeHandle != 0L) {
             nativeCancelVosk(nativeHandle)
         }
@@ -214,7 +215,7 @@ class VoskEngine : SttEngine {
      * Zero-copy push from a Direct ByteBuffer containing native-endian int16 PCM.
      * See [com.sal7one.common_jni.engine.whisper.WhisperEngine.pushAudioDirect] for rationale.
      */
-    suspend fun pushAudioDirect(
+    override suspend fun pushAudioDirect(
         buffer: java.nio.ByteBuffer,
         byteOffset: Int,
         byteCount: Int,
@@ -251,8 +252,9 @@ class VoskEngine : SttEngine {
                     val text = parseVoskPartialJson(json)
                     PartialTranscript(text.trim(), System.currentTimeMillis(), false)
                 }
-            } catch (e: Exception) {
-                null
+            } catch (e: kotlinx.coroutines.CancellationException) { throw e }
+            catch (e: Exception) {
+                throw SttError.ProcessingFailed(e.message ?: "Vosk partial failed")
             }
         }
 

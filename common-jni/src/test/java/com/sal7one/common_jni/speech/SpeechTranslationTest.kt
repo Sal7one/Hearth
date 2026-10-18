@@ -52,4 +52,15 @@ class SpeechTranslationTest {
         try { p.caption(final(null), "ar"); fail() } catch (_: IllegalStateException) {}
         try { p.caption(final("ru").copy(isFinal = false), "en"); fail() } catch (_: IllegalArgumentException) {}
     }
+    @Test fun scriptTargetsRemainDistinctThroughComposition() = runBlocking {
+        val engine = Translator("scripts", setOf(TranslationDirection("en", "sr"), TranslationDirection("en", "sr-Latn")))
+        val captions = SpeechCaptionTranslator(listOf(engine))
+        assertEquals("source:sr-Latn", captions.caption(final("en-US"), "srp_Latn").translatedText)
+        assertEquals(TranslationDirection("en", "sr-Latn"), engine.calls.single().second)
+        assertTrue(captions.canTranslate("en", "sr-Latn"))
+        assertFalse(captions.canTranslate("en", "ur-Latn"))
+        for (invalid in listOf("auto", "und", "mul", "zxx", "sr--Latn", "sr-latn", "<ar>")) {
+            assertThrows(IllegalArgumentException::class.java) { TranslationDirection("en", invalid) }
+        }
+    }
 }

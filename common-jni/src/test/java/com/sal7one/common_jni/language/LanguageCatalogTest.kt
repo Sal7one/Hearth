@@ -36,4 +36,14 @@ class LanguageCatalogTest {
             assertEquals("hi", LanguageCatalog.choices(setOf("hi", "en"), "HINDI").single().code)
         } finally { Locale.setDefault(previous) }
     }
+    @Test fun indexScriptAndDialectNamesRemainDistinctAndSearchable() {
+        val codes = com.sal7one.common_jni.translation.IndexTranslationLanguages.names.keys
+        assertEquals("sr-Latn", LanguageCatalog.choices(codes, "Serbian (Latin)").single().code)
+        assertEquals("ars", LanguageCatalog.choices(codes, "Najdi Arabic").single().code)
+        assertEquals("Uzbek (Cyrillic)", LanguageCatalog.option("uz-Cyrl").englishName)
+        assertTrue(LanguageCatalog.option("ars").rtl)
+        assertTrue(LanguageCatalog.option("ur").rtl)
+        assertFalse(LanguageCatalog.option("ur-Latn").rtl)
+        assertFalse(LanguageCatalog.option("sr-Latn").rtl)
+    }
 }

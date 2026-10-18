@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="portable_setup_title">可迁移配置</string>
+    <string name="portable_setup_description">保存或导入语音识别、翻译和朗读选择。模型单独安装；密钥和文件位置保留在本机。</string>
+    <string name="portable_setup_import">导入配置</string>
+    <string name="portable_setup_current">保存当前配置</string>
+    <string name="portable_setup_include">包含以下阶段</string>
+    <string name="portable_setup_speech">识别</string>
+    <string name="portable_setup_translation">翻译</string>
+    <string name="portable_setup_voice">朗读</string>
+    <string name="portable_setup_name">配置名称</string>
+    <string name="portable_setup_off">关闭</string>
+    <string name="portable_setup_source">语音／源语言</string>
+    <string name="portable_setup_target">翻译语言</string>
+    <string name="portable_setup_auto">自动</string>
+    <string name="portable_setup_ready">可应用</string>
+    <string name="portable_setup_needs_models">需要检查</string>
+    <string name="portable_setup_missing">缺少：%1$s</string>
+    <string name="portable_setup_apply">应用此配置</string>
+    <string name="portable_setup_download">下载缺少的模型</string>
+    <string name="portable_setup_offline">请在下方的模型页面导入缺少的模型。</string>
+    <string name="portable_setup_export">导出 JSON</string>
+    <string name="portable_setup_recheck">重新检查</string>
+    <string name="portable_setup_manage_speech">识别模型／定位导入</string>
+    <string name="portable_setup_manage_translation">翻译模型／连接</string>
+    <string name="portable_setup_manage_voice">朗读模型／连接</string>
+    <string name="portable_setup_saved">配置文件已保存。</string>
+    <string name="portable_setup_applied">配置已应用。</string>
+    <string name="portable_setup_queued">下载已加入队列。安装后重新检查，再手动应用。</string>
+    <string name="portable_setup_details">模型详情</string>
+    <string name="portable_setup_cancel">取消</string>
+    <string name="portable_setup_prepare">准备文件</string>
+</resources>

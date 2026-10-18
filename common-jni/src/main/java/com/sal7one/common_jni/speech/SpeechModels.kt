@@ -2,20 +2,49 @@ package com.sal7one.common_jni.speech
 
 /** Runtime identity is separate from model format: arbitrary ONNX/GGUF files are not ASR models. */
 enum class SpeechBackend(val id: String) {
-    MOONSHINE("moonshine"), QWEN3_ASR("qwen3_asr"), OMNILINGUAL_CTC("omnilingual_ctc"), PHONON("phonon"), NEMOTRON_3_5("nemotron_3_5")
+    MOONSHINE("moonshine"), QWEN3_ASR("qwen3_asr"), OMNILINGUAL_CTC("omnilingual_ctc"), PHONON("phonon"), TRANSCRIBEPSY("transcribepsy"), NEMOTRON_3_5("nemotron_3_5")
 }
 enum class SpeechStreamingKind { UTTERANCE_WINDOWED, CACHE_AWARE }
+enum class SpeechAcceleration(val id: String) { CPU("cpu"), VULKAN("vulkan"), OPENCL("opencl") }
 enum class SpeechProfile(val id: String, val backend: SpeechBackend) {
     MOONSHINE_TINY_EN("moonshine-tiny-en-v2", SpeechBackend.MOONSHINE),
     MOONSHINE_BASE_EN("moonshine-base-en-v2", SpeechBackend.MOONSHINE),
+    MOONSHINE_BASE_AR("moonshine-base-ar-v2", SpeechBackend.MOONSHINE),
+    MOONSHINE_BASE_ES("moonshine-base-es-v2", SpeechBackend.MOONSHINE),
+    MOONSHINE_TINY_JA("moonshine-tiny-ja-v2", SpeechBackend.MOONSHINE),
+    MOONSHINE_TINY_KO("moonshine-tiny-ko-v2", SpeechBackend.MOONSHINE),
+    MOONSHINE_BASE_JA("moonshine-base-ja-v2", SpeechBackend.MOONSHINE),
+    MOONSHINE_BASE_UK("moonshine-base-uk-v2", SpeechBackend.MOONSHINE),
+    MOONSHINE_BASE_VI("moonshine-base-vi-v2", SpeechBackend.MOONSHINE),
+    MOONSHINE_BASE_ZH("moonshine-base-zh-v2", SpeechBackend.MOONSHINE),
     QWEN3_ASR_0_6B("qwen3-asr-0.6b", SpeechBackend.QWEN3_ASR),
     QWEN3_ASR_1_7B("qwen3-asr-1.7b", SpeechBackend.QWEN3_ASR),
     OMNILINGUAL_CTC_300M_V2("omnilingual-ctc-300m-v2-int8", SpeechBackend.OMNILINGUAL_CTC),
     PHONON_2("phonon-2", SpeechBackend.PHONON),
+    TRANSCRIBEPSY_250M_EU_SUB("transcribepsy-250m-eu-sub-q8", SpeechBackend.TRANSCRIBEPSY),
     NEMOTRON_3_5_ASR_0_6B("nemotron-3.5-asr-0.6b", SpeechBackend.NEMOTRON_3_5);
 
+    /** Monolingual checkpoints carry their source identity even when the caller chooses Auto. */
+    val fixedSourceLanguage: String? get() = when (this) {
+        MOONSHINE_TINY_EN, MOONSHINE_BASE_EN -> "en"
+        MOONSHINE_BASE_AR -> "ar"
+        MOONSHINE_BASE_ES -> "es"
+        MOONSHINE_TINY_JA, MOONSHINE_BASE_JA -> "ja"
+        MOONSHINE_TINY_KO -> "ko"
+        MOONSHINE_BASE_UK -> "uk"
+        MOONSHINE_BASE_VI -> "vi"
+        MOONSHINE_BASE_ZH -> "zh"
+        else -> null
+    }
+
+    /** A fixed-language model declares its language; this does not add a decoder language hint. */
+    internal fun runtimeSourceLanguage(selection: String): String {
+        val source = SpeechLanguage.normalize(selection)
+        return if (source == "auto") fixedSourceLanguage ?: source else source
+    }
+
     val capabilities: SpeechCapabilities get() = when (backend) {
-        SpeechBackend.MOONSHINE -> SpeechCapabilities(SpeechStreamingKind.UTTERANCE_WINDOWED, false, setOf("en"), setOf("en"), true)
+        SpeechBackend.MOONSHINE -> SpeechCapabilities(SpeechStreamingKind.UTTERANCE_WINDOWED, false, setOf(requireNotNull(fixedSourceLanguage)), emptySet(), true)
         SpeechBackend.QWEN3_ASR -> SpeechCapabilities(
             streaming = SpeechStreamingKind.UTTERANCE_WINDOWED,
             partialResults = false, sourceLanguages = QWEN_LANGUAGES, sourceLanguageHints = QWEN_LANGUAGES,
@@ -30,6 +59,11 @@ enum class SpeechProfile(val id: String, val backend: SpeechBackend) {
             streaming = SpeechStreamingKind.UTTERANCE_WINDOWED,
             partialResults = false, sourceLanguages = setOf("en"), sourceLanguageHints = setOf("en"),
             configurableThreads = true,
+        )
+        SpeechBackend.TRANSCRIBEPSY -> SpeechCapabilities(
+            streaming = SpeechStreamingKind.UTTERANCE_WINDOWED,
+            partialResults = false, sourceLanguages = setOf("en", "nl", "fr", "de", "it", "pl", "pt", "es"),
+            sourceLanguageHints = emptySet(), configurableThreads = true,
         )
         SpeechBackend.NEMOTRON_3_5 -> SpeechCapabilities(
             streaming = SpeechStreamingKind.CACHE_AWARE,
@@ -66,7 +100,7 @@ data class SpeechCapabilities(
 data class SpeechOptions(
     /** Spoken language, never the requested translation language. */
     val sourceLanguage: String = "auto",
-    /** Qwen only; null selects the backend default. NeMo's C ABI has no thread-count option. */
+    /** Per-session CPU budget; null selects the backend default. NeMo exposes no thread-count option. */
     val numThreads: Int? = null,
     /** Nemotron lookahead: 0/1/3/6/13 frames, each 80ms. Not total caption latency. */
     val rightContext: Int = 3,
@@ -74,6 +108,10 @@ data class SpeechOptions(
     val maxUtteranceMs: Int = 4000,
     val silenceMs: Int = 600,
     val silenceThresholdDb: Float = -45f,
+    /** Optional GPU engines are loaded only after explicit selection, never by CPU availability probes. */
+    val acceleration: SpeechAcceleration = SpeechAcceleration.CPU,
+    /** Writable app-private cache for compiled Adreno kernels. Only used by the explicit OpenCL runtime. */
+    val gpuCacheDirectory: java.io.File? = null,
 ) {
     internal fun validate(profile: SpeechProfile) {
         require(numThreads == null || numThreads in 1..8) { "numThreads must be in 1..8" }
@@ -82,6 +120,9 @@ data class SpeechOptions(
         require(maxUtteranceMs in 1000..15000 && maxUtteranceMs % 20 == 0) { "maxUtteranceMs must be 1000..15000 in 20ms frames" }
         require(silenceMs in 200..2000 && silenceMs % 20 == 0) { "silenceMs must be 200..2000 in 20ms frames" }
         require(silenceThresholdDb.isFinite() && silenceThresholdDb in -100f..-10f) { "Invalid silenceThresholdDb" }
+        require(acceleration == SpeechAcceleration.CPU || profile.backend == SpeechBackend.TRANSCRIBEPSY) {
+            "GPU speech acceleration is supported only by TranscribePsy"
+        }
         val source = SpeechLanguage.normalize(sourceLanguage)
         require(source == "auto" || source in profile.capabilities.sourceLanguages) {
             "${profile.id} does not support this source-language selection: $sourceLanguage"

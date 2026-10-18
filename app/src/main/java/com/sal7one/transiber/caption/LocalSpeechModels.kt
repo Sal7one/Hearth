@@ -15,6 +15,7 @@ internal val CaptionEngineChoice.speechBackend: SpeechBackend? get() = when (thi
     CaptionEngineChoice.OMNILINGUAL -> SpeechBackend.OMNILINGUAL_CTC
     CaptionEngineChoice.PHONON -> SpeechBackend.PHONON
     CaptionEngineChoice.NEMOTRON -> SpeechBackend.NEMOTRON_3_5
+    CaptionEngineChoice.TRANSCRIBEPSY -> SpeechBackend.TRANSCRIBEPSY
     else -> null
 }
 internal val SpeechProfile.captionEngine: CaptionEngineChoice get() = when (backend) {
@@ -23,15 +24,25 @@ internal val SpeechProfile.captionEngine: CaptionEngineChoice get() = when (back
     SpeechBackend.OMNILINGUAL_CTC -> CaptionEngineChoice.OMNILINGUAL
     SpeechBackend.PHONON -> CaptionEngineChoice.PHONON
     SpeechBackend.NEMOTRON_3_5 -> CaptionEngineChoice.NEMOTRON
+    SpeechBackend.TRANSCRIBEPSY -> CaptionEngineChoice.TRANSCRIBEPSY
 }
 internal val SpeechProfile.label: String get() = when (this) {
     SpeechProfile.MOONSHINE_TINY_EN -> "Moonshine Tiny · English"
     SpeechProfile.MOONSHINE_BASE_EN -> "Moonshine Base · English"
+    SpeechProfile.MOONSHINE_BASE_AR -> "Moonshine Base · Arabic"
+    SpeechProfile.MOONSHINE_BASE_ES -> "Moonshine Base · Spanish"
+    SpeechProfile.MOONSHINE_TINY_JA -> "Moonshine Tiny · Japanese"
+    SpeechProfile.MOONSHINE_TINY_KO -> "Moonshine Tiny · Korean"
+    SpeechProfile.MOONSHINE_BASE_JA -> "Moonshine Base · Japanese"
+    SpeechProfile.MOONSHINE_BASE_UK -> "Moonshine Base · Ukrainian"
+    SpeechProfile.MOONSHINE_BASE_VI -> "Moonshine Base · Vietnamese"
+    SpeechProfile.MOONSHINE_BASE_ZH -> "Moonshine Base · Chinese"
     SpeechProfile.QWEN3_ASR_0_6B -> "Qwen3-ASR 0.6B"
     SpeechProfile.QWEN3_ASR_1_7B -> "Qwen3-ASR 1.7B (larger; phone performance unverified)"
     SpeechProfile.OMNILINGUAL_CTC_300M_V2 -> "Omnilingual CTC 300M v2 · experimental"
     SpeechProfile.PHONON_2 -> "Phonon 2 · English"
     SpeechProfile.NEMOTRON_3_5_ASR_0_6B -> "Nemotron 3.5 ASR 0.6B"
+    SpeechProfile.TRANSCRIBEPSY_250M_EU_SUB -> "TranscribePsy 250M · European languages"
 }
 internal data class LocalSpeechModel(val id: String, val profile: SpeechProfile, val root: File)
 
@@ -90,11 +101,12 @@ internal class LocalSpeechModels(private val root: File) {
         checkActive: () -> Unit = {}): LocalSpeechModel {
         val id = "speech-${UUID.nameUUIDFromBytes("download-$downloadId".toByteArray())}"
         val destination = File(root, id)
+        val receipts = com.sal7one.transiber.models.PublisherSpeechReceipts(root)
         if (destination.isDirectory) {
             val verified = runCatching { SpeechModelPackage.verify(destination) }.getOrNull()
             if (verified != null) {
                 require(verified.profile == source.profile) { "Installed download profile differs" }
-                return LocalSpeechModel(id, verified.profile, destination)
+                if (receipts.matches(id, source, verified.manifestSha256)) return LocalSpeechModel(id, verified.profile, destination)
             }
         }
         // Reuse the job's staging path so a killed process cannot leave a second
@@ -113,6 +125,7 @@ internal class LocalSpeechModels(private val root: File) {
                 throw e
             }
             damaged.deleteRecursively()
+            receipts.record(id, source, ModelIntegrity.inspect(File(destination, SpeechModelPackage.MANIFEST)).digest.hex)
             return LocalSpeechModel(id, source.profile, destination)
         } finally { work.deleteRecursively() }
     }

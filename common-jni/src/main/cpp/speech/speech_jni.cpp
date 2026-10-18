@@ -42,7 +42,7 @@ JNIEXPORT jlong JNICALL Java_com_sal7one_common_1jni_speech_SpeechNative_create(
     jni::JStringGuard text(env, config);
     if (!text.valid()) return 0;
     stt::speech::SpeechConfig c(text.str());
-    auto session = std::make_unique<stt::speech::SpeechNativeSession>(stt::speech::loadBackend(c.backend), c.value);
+    auto session = std::make_unique<stt::speech::SpeechNativeSession>(stt::speech::loadBackend(c.backend, c.acceleration), c.value);
     const auto handle = sessions.insert(std::move(session));
     if (!handle) throw std::runtime_error("Speech handle registry exhausted");
     return handle;
@@ -69,6 +69,15 @@ JNIEXPORT jstring JNICALL Java_com_sal7one_common_1jni_speech_SpeechNative_push(
     }
     std::lock_guard<std::mutex> lock(lease->mutex);
     return jni::utf8ToJString(env, lease->push(samples.data(), samples.size(), sampleOffset));
+    } catch (const std::exception& e) { throwSpeechError(env, e.what()); return nullptr; }
+    catch (...) { throwSpeechError(env, "Unknown speech native exception"); return nullptr; }
+}
+JNIEXPORT jstring JNICALL Java_com_sal7one_common_1jni_speech_SpeechNative_executionInfo(JNIEnv* env, jobject, jlong handle) {
+    JNI_TRY_CATCH_BEGIN
+    auto lease = sessions.acquire(handle);
+    if (!lease) throw std::invalid_argument("Speech session is closed or invalid");
+    std::lock_guard<std::mutex> lock(lease->mutex);
+    return jni::utf8ToJString(env, lease->executionInfo());
     } catch (const std::exception& e) { throwSpeechError(env, e.what()); return nullptr; }
     catch (...) { throwSpeechError(env, "Unknown speech native exception"); return nullptr; }
 }

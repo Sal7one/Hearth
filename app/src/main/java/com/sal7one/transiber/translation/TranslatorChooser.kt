@@ -117,7 +117,7 @@ internal fun TranslatorChooser(
                         actionLabel = if (marianReady) null else uiText(UiR.string.ui_set_up_a5041)) {
                         if (marianReady) { onSelect("local", marian.id); expanded = location != null }
                         else {
-                            context.getSharedPreferences("translation-browser",0).edit()
+                            com.sal7one.transiber.preferences.UserPreferences.store(context, "translation-browser").edit()
                                 .putString("model", marian.id).putBoolean("open",true).apply()
                             onModels()
                         }
@@ -132,7 +132,7 @@ internal fun TranslatorChooser(
                         actionLabel = if (ready) null else uiText(UiR.string.ui_set_up_a5041)) {
                         if (ready) { onSelect("local", route.id); expanded = location != null }
                         else {
-                            context.getSharedPreferences("translation-browser",0).edit()
+                            com.sal7one.transiber.preferences.UserPreferences.store(context, "translation-browser").edit()
                                 .putString("model", route.id).putBoolean("open",true).apply()
                             onModels()
                         }
@@ -145,12 +145,12 @@ internal fun TranslatorChooser(
                         providerId == "local" && localId == model.id, enabled,
                         actionLabel = if (ready) null else uiText(UiR.string.ui_set_up_a5041)) {
                         if (ready) { onSelect("local", model.id); expanded = location != null } else {
-                            context.getSharedPreferences("translation-browser",0).edit().putString("model",model.id).putBoolean("open",true).apply(); onModels()
+                            com.sal7one.transiber.preferences.UserPreferences.store(context, "translation-browser").edit().putString("model",model.id).putBoolean("open",true).apply(); onModels()
                         }
                     }
                 }
             }
-            TextButton(onClick = { context.getSharedPreferences("translation-browser",0).edit().putBoolean("open",true).apply(); onModels() }, enabled = enabled) { Text(uiText(UiR.string.ui_model_downloads_imports_language_packs_1638e)) }
+            TextButton(onClick = { com.sal7one.transiber.preferences.UserPreferences.store(context, "translation-browser").edit().putBoolean("open",true).apply(); onModels() }, enabled = enabled) { Text(uiText(UiR.string.ui_model_downloads_imports_language_packs_1638e)) }
             }
             if (ByokPolicy.FEATURE_BYOK && showCloud) {
                 Text(uiText(UiR.string.ui_cloud_self_hosted_2df1c), style = MaterialTheme.typography.titleMedium)

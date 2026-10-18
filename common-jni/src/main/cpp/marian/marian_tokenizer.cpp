@@ -634,9 +634,9 @@ bool MarianTokenizer::buildTrie(std::string* error) {
 }
 
 bool MarianTokenizer::segment(const std::string& normalized,
-                              std::vector<int32_t>& pieceIndices) const {
+                              std::vector<Segment>& segments) const {
     const size_t n = normalized.size();
-    pieceIndices.clear();
+    segments.clear();
     if (n == 0) return true;
 
     struct BestPathNode {
@@ -691,10 +691,11 @@ bool MarianTokenizer::segment(const std::string& normalized,
             node.startsAt >= endsAt) {
             return false;
         }
-        pieceIndices.push_back(node.index);
+        segments.push_back(Segment{node.index, static_cast<size_t>(node.startsAt),
+                                   static_cast<size_t>(endsAt)});
         endsAt = node.startsAt;
     }
-    std::reverse(pieceIndices.begin(), pieceIndices.end());
+    std::reverse(segments.begin(), segments.end());
     return true;
 }
 
@@ -716,16 +717,26 @@ MarianTokenizer::EncodeResult MarianTokenizer::encode(
         return result;
     }
 
-    std::vector<int32_t> indices;
-    if (!segment(normalized, indices)) {
+    std::vector<Segment> segments;
+    if (!segment(normalized, segments)) {
         result.error = "vocabulary segmentation failed";
         return result;
     }
 
-    result.ids.reserve(indices.size() + 1);
-    for (const int32_t index : indices) {
+    result.ids.reserve(segments.size() + 1);
+    for (size_t i = 0; i < segments.size(); ++i) {
+        const int32_t index = segments[i].pieceIndex;
         if (index == -2) {
-            result.ids.push_back(hfUnkId_);
+            // SentencePiece emits the original surface of a contiguous unknown
+            // run. A source-SPM unknown can still exist in Marian's joint
+            // vocabulary (for example € in the Spanish→English package).
+            const size_t begin = segments[i].begin;
+            size_t end = segments[i].end;
+            while (i + 1 < segments.size() && segments[i + 1].pieceIndex == -2) {
+                end = segments[++i].end;
+            }
+            const auto found = hfIdByPiece_.find(normalized.substr(begin, end - begin));
+            result.ids.push_back(found == hfIdByPiece_.end() ? hfUnkId_ : found->second);
             continue;
         }
         if (index < 0 || static_cast<size_t>(index) >= spPieces_.size()) {

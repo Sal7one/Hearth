@@ -8,12 +8,18 @@ import org.junit.Test
 
 class MarianCascadeTranslatorTest {
     @Test fun advertisedDirectionsRequireBothPinnedPairs() {
-        assertEquals(setOf("ru", "zh"), MarianCascade.routes.map { it.source }.toSet())
+        assertEquals(setOf("ar", "ru", "zh", "fr", "de", "es"), MarianCascade.routes.map { it.source }.toSet())
+        assertEquals(30, MarianCascade.routes.size)
+        assertEquals(30, MarianCascade.routes.map { it.id }.toSet().size)
+        assertNotNull(MarianCascade.find(TranslationOptions.MARIAN_RU_AR_VIA_EN))
+        assertNotNull(MarianCascade.find(TranslationOptions.MARIAN_ZH_AR_VIA_EN))
         MarianCascade.routes.forEach { route ->
             assertEquals("en", route.first.target)
             assertEquals("en", route.second.source)
-            assertTrue(TranslationOptions.supports(route.id, route.source, "ar"))
-            assertFalse(TranslationOptions.supports(route.id, "en", "ar"))
+            assertTrue(TranslationOptions.supports(route.id, route.source, route.target))
+            assertFalse(TranslationOptions.supports(route.id, "en", route.target))
+            assertFalse(TranslationOptions.supports(route.id, route.source, route.source))
+            assertFalse(MarianPackage.pairs.any { it.source == route.source && it.target == route.target })
         }
     }
 

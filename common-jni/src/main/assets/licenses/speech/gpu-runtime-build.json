@@ -1,0 +1,81 @@
+{
+  "abi": 2,
+  "architectures": [
+    "arm64-v8a"
+  ],
+  "adapterSources": {
+    "common-jni/src/main/cpp/common/opencl_loader.h": "4d137be9b471f1953127ab0bef3b295eca2fb26a88bce4aca747fbc0e52d34d1",
+    "common-jni/src/main/cpp/speech/backend_abi.h": "1abbaf5e7530ea8b1a5e5e89b471c51bdd5e9618d71c7a419ac8d42e1faed788",
+    "common-jni/src/main/cpp/speech/backend_versions.h": "8fe03eb13fd17c5aff10e975aa955770fa669434854fda2ad2da4485d7733dec",
+    "common-jni/src/main/cpp/speech/backends/backend_guard.h": "271f1d9d135b73835664614a67b3e0c676aa7aec992311986cb173a266172cbe",
+    "common-jni/src/main/cpp/speech/backends/exports.map": "546cdb327cca1d7b93e99fbb82304445637236c2a70ccf1e714b5e094289c4b5",
+    "common-jni/src/main/cpp/speech/backends/nemotron_backend.cpp": "072fbd0d138f387ee90a39c36949a0124f99a5b8e22898ecb13a7ce00cff8636",
+    "common-jni/src/main/cpp/speech/backends/qwen_backend.cpp": "f641da08c89f447a6d68e6943229b62a7b9dbcae51f3cb0f4db22b635ab8a601",
+    "common-jni/src/main/cpp/speech/backends/qwen_exports.map": "08631a07b5281380aae15cdd5ccec2c24e67e2bed745c0aa11dcb1487733b370",
+    "common-jni/src/main/cpp/speech/backends/transcribepsy_backend.cpp": "836c534e3bc33c30429bdeef9e81fc52b5d73dd84b8e7bed3c02823b7861293c",
+    "common-jni/src/main/cpp/speech/endpoint_budget.h": "08a23fa6da64c5d3aebf8afc92c9104a4ff53c67bd64b0a3f7e3cad6393f8201",
+    "common-jni/src/main/cpp/speech/qwen_language.h": "1edb8df4c41adf9015227aa38c74652f9357dc6794c8ab58e37ae332dfd616b7",
+    "common-jni/src/main/cpp/speech/source_language.h": "087e2ee1c3b43d6cbcd14a38349a16143856441bd1c3d2b215a5c748dbb79579",
+    "common-jni/src/main/cpp/speech/utterance_segmenter.h": "c7f9985392fc7a1ad7d59925ac69aa0b5832d3d2e65ec4cff87d47620b7bbdd3",
+    "scripts/speech/build-runtimes.sh": "5d4b8649138e232f17d82c847203c4feb697c20fd299dc9060962cc77f47d859",
+    "scripts/speech/nemo-inject.cmake": "9b02fa9deb1ff24a7b32ef262ae9e198770b9a807123616d43069b021002c5bd",
+    "scripts/speech/qwen.cmake": "f7a3d784f8d52b42429a7d882819c8d3bbc59f085c46883c6420472e1339e2dc",
+    "scripts/speech/runtime-sources.py": "a23762faea93778b7c621dd73aec6679e902ff9c4e5784d8d4d7c63854f1535c",
+    "scripts/speech/transcribepsy.cmake": "cef51e395d9c650938f08beefe04bc44ca21b266997526c7fb640bdb7c99a8a2",
+    "scripts/translation/generate-opencl-shim.py": "ccf1a205370a48aab3956b6dae1767ab473f14c231197bf85758a9cc02d783a5",
+    "scripts/translation/patch-opencl-backend.py": "521da9dec320649bab0f8bcf90c96d47a224920964ab4b1dacf6713119e2df37"
+  },
+  "pins": {
+    "HEARTH_QWEN_REVISION": "210f340bcfdfd5b9ad6b24245e77a934d6c28f1b",
+    "HEARTH_NEMO_REVISION": "ffa38cb2408f1e832a36d46fef5e3e1e80d07e6c",
+    "HEARTH_SENTENCEPIECE_REVISION": "17d7580d6407802f85855d2cc9190634e2c95624",
+    "HEARTH_TRANSCRIBEPSY_REVISION": "364ec36130dc87d2cd46e596598268a6e3313751"
+  },
+  "artifacts": [
+    {
+      "abi": "arm64-v8a",
+      "file": "libhearth_transcribepsy_opencl.so",
+      "bytes": 3618424,
+      "sha256": "c5e9ac6be275e090a97f98132664d249f2df7577772781a5d82d10be7e36d0c6",
+      "minPageAlignment": 16384,
+      "dependencies": [
+        "liblog.so",
+        "libandroid.so",
+        "libm.so",
+        "libdl.so",
+        "libc++_shared.so",
+        "libc.so"
+      ],
+      "acceleration": "opencl",
+      "sourceSetSha256": "c957f3cf66c6425f79756cc037a4a358d73fcb1d70bb0c631c21ce62884d7b42"
+    },
+    {
+      "abi": "arm64-v8a",
+      "file": "libhearth_transcribepsy_vulkan.so",
+      "bytes": 44076016,
+      "sha256": "7a2e1e40a7b1a3ea8d981b0c3bc877264c41e84bf626a6eca2083649b30d40f3",
+      "minPageAlignment": 16384,
+      "dependencies": [
+        "liblog.so",
+        "libandroid.so",
+        "libm.so",
+        "libdl.so",
+        "libvulkan.so",
+        "libc++_shared.so",
+        "libc.so"
+      ],
+      "acceleration": "vulkan",
+      "sourceSetSha256": "c957f3cf66c6425f79756cc037a4a358d73fcb1d70bb0c631c21ce62884d7b42"
+    }
+  ],
+  "dependencies": {
+    "Vulkan-Headers": "19725e4d48082fe78e26622b15d3080ccd54112b",
+    "SPIRV-Headers": "01e0577914a75a2569c846778c2f93aa8e6feddd",
+    "OpenCL-Headers": "30bc20a8e90468e231d7c639805ae61ad1fefa4f"
+  },
+  "selection": "Explicit opt-in; CPU default does not load GPU plugins; reject CPU fallback; mel remains CPU",
+  "shaderCompiler": {
+    "sha256": "73f9f514345e732bee65d4b92043af384b34f26af3ed797e0afbfb4e1449f8ce",
+    "version": "shaderc v2026.4 unknown hash, 2026-09-11\nspirv-tools v2026.4 v2022.4-1347-gef96ed76\nglslang 11.1.0-1566-ge1b562a8\n\nTarget: SPIR-V 1.0"
+  }
+}

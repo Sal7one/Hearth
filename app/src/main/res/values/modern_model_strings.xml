@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="label_captionenginechoice_transcribepsy_label">TranscribePsy (local)</string>
+    <string name="label_captionenginechoice_transcribepsy_explanation">On-device recognition in eight European languages from a TranscribePsy GGUF model. Final captions arrive after short utterances. Translation uses a separate model.</string>
+    <string name="model_transcribepsy_language_note">TranscribePsy · Eight European languages, with final text after short utterances. Choose a known source for translation; this does not force recognition. Auto keeps the source unknown and provides original captions only.</string>
+</resources>

@@ -20,6 +20,7 @@ internal interface SpeechDriver {
     fun finish(handle: Long): String
     fun reset(handle: Long)
     fun destroy(handle: Long)
+    fun executionInfo(handle: Long): String = "CPU"
 }
 internal object SpeechNative : SpeechDriver {
     init { System.loadLibrary("common_jni") }
@@ -29,6 +30,7 @@ internal object SpeechNative : SpeechDriver {
     external override fun finish(handle: Long): String
     external override fun reset(handle: Long)
     external override fun destroy(handle: Long)
+    external override fun executionInfo(handle: Long): String
 }
 
 /** Local-only entry point. UI and downloaders supply a verified, app-private package directory. */
@@ -50,10 +52,15 @@ class SpeechRuntime internal constructor(private val driver: () -> SpeechDriver)
                 val model = SpeechModelPackage.verify(packageDirectory)
                 currentCoroutineContext().ensureActive()
                 options.validate(model.profile)
+                val gpuCache = if (options.acceleration == SpeechAcceleration.OPENCL) options.gpuCacheDirectory?.let {
+                    require(it.isDirectory || it.mkdirs()) { "Cannot create the speech GPU cache directory" }
+                    it.canonicalPath
+                }.orEmpty() else ""
                 native = driver()
-                val c = JSONObject().put("backend", model.profile.backend.id)
+                val c = JSONObject().put("backend", model.profile.backend.id).put("acceleration", options.acceleration.id)
+                    .put("gpuCacheDirectory", gpuCache)
                 listOf("model", "frontend", "encoder", "decoder", "tokenizer").forEach { c.put(it, model.path(it)) }
-                c.put("language", if (model.profile.backend == SpeechBackend.NEMOTRON_3_5) SpeechLanguage.nemoLocale(options.sourceLanguage) else SpeechLanguage.normalize(options.sourceLanguage))
+                c.put("language", if (model.profile.backend == SpeechBackend.NEMOTRON_3_5) SpeechLanguage.nemoLocale(options.sourceLanguage) else model.profile.runtimeSourceLanguage(options.sourceLanguage))
                     .put("numThreads", options.numThreads ?: 4).put("rightContext", options.rightContext)
                     .put("maxUtteranceMs", options.maxUtteranceMs).put("silenceMs", options.silenceMs)
                     .put("silenceThresholdDb", options.silenceThresholdDb)
@@ -61,7 +68,8 @@ class SpeechRuntime internal constructor(private val driver: () -> SpeechDriver)
                 handle = native!!.create(c.toString())
                 check(handle != 0L) { "Speech backend returned an invalid handle" }
                 onStage("native recognizer created")
-                SpeechSession(native!!, handle, model.profile)
+                val executionInfo = native!!.executionInfo(handle).also { check(it.isNotBlank()) { "Speech backend returned empty execution information" } }
+                SpeechSession(native!!, handle, model.profile, executionInfo)
             }
         } catch (e: Throwable) {
             // Includes cancellation on the IO -> caller dispatcher boundary after native allocation.
@@ -81,6 +89,7 @@ class SpeechSession internal constructor(
     private val driver: SpeechDriver,
     private var handle: Long,
     val profile: SpeechProfile,
+    val executionInfo: String = "CPU",
 ) {
     private val mutex = Mutex()
     private val closing = AtomicBoolean(false)
@@ -94,7 +103,7 @@ class SpeechSession internal constructor(
         require(sampleOffset == accepted) { "Speech audio discontinuity: expected sample $accepted, received $sampleOffset" }
         check(!finished) { "Speech input is already finished" }
         pcm.clear()
-        samples.forEach { pcm.putShort(it) }
+        pcm.asShortBuffer().put(samples)
         val expected = accepted + samples.size
         val start = System.nanoTime()
         val update = parse(driver.push(handle, pcm, 0, samples.size * 2, sampleOffset), System.nanoTime() - start)

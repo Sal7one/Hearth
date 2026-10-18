@@ -118,7 +118,7 @@ bool parseConfig(const std::string& json, EngineConfig& config, std::string* err
         return false;
     }
     static const std::vector<std::string> allowedKeys = {
-        "modelPath", "modelSha256", "sampleRate", "language", "enableTimestamps", "numThreads",
+        "modelPath", "modelSha256", "whisperAcceleration", "sampleRate", "language", "enableTimestamps", "numThreads",
         "translate", "noSpeechThreshold", "suppressBlank", "suppressNonSpeechTokens",
         "debugForceEnglish", "debugLogging", "audioProcessingMode",
         "streamingChunkDurationMs", "streamingContextDurationMs",
@@ -131,6 +131,7 @@ bool parseConfig(const std::string& json, EngineConfig& config, std::string* err
         !readString(root, "modelSha256", candidate.modelSha256, 64, error) ||
         !readInt(root, "sampleRate", candidate.sampleRate, 8000, 192000, error) ||
         !readString(root, "language", candidate.language, 64, error) ||
+        !readString(root, "whisperAcceleration", candidate.whisperAcceleration, 16, error) ||
         !readBool(root, "enableTimestamps", candidate.enableTimestamps, error) ||
         !readInt(root, "numThreads", candidate.numThreads, 1, 8, error) ||
         !readBool(root, "translate", candidate.translateToEnglish, error) ||
@@ -194,6 +195,8 @@ bool parseConfig(const std::string& json, EngineConfig& config, std::string* err
         return false;
     }
 
+    if (candidate.whisperAcceleration != "cpu" && candidate.whisperAcceleration != "vulkan")
+        return fieldError("whisperAcceleration", "cpu or vulkan", error);
     config = std::move(candidate);
     if (error) error->clear();
     return true;

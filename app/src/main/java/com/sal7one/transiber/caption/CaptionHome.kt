@@ -23,6 +23,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.sal7one.transiber.byok.*
 import com.sal7one.transiber.models.*
+import com.sal7one.transiber.preferences.*
+import com.sal7one.transiber.setup.AdvancedSetupLink
 import kotlinx.coroutines.*
 import java.io.File
 
@@ -37,6 +39,7 @@ fun CaptionHome(
     val uiText = rememberUiText()
 
     val context = LocalContext.current
+    val basic = rememberSetupMode() == SetupMode.BASIC
     val scope = rememberCoroutineScope()
     var options by rememberSaveable { mutableStateOf(false) }
     val optionsScroll = rememberScrollState()
@@ -71,6 +74,7 @@ fun CaptionHome(
     }
     val cfg = config
     if (cfg == null) { LinearProgressIndicator(Modifier.fillMaxWidth()); return }
+    val languageModel = rememberCaptionLanguageModel(cfg)
     fun update(transform: (CaptionOverlayConfig) -> CaptionOverlayConfig) {
         config = transform(cfg)
         saveFailed = false
@@ -101,9 +105,9 @@ fun CaptionHome(
     val needsTranslator = when (captionTranslationRoute(cfg, CloudConfigStore.sttMode(context))) {
         CaptionTranslationRoute.TEXT_TRANSLATOR -> if (cfg.textTranslationProviderId !in setOf("", "local")) !com.sal7one.transiber.translation.captionCloudTranslatorReady(cfg) else if (cfg.localTranslationModelId == com.sal7one.transiber.translation.TranslationOptions.ML_KIT)
             !com.sal7one.transiber.translation.PlatformTranslation.available else {
-            val from = CaptionLanguages.effectiveSource(cfg, CloudConfigStore.sttMode(context), captionLanguageModel(context, cfg))
+            val from = CaptionLanguages.effectiveSource(cfg, CloudConfigStore.sttMode(context), languageModel)
             cfg.localTranslationModelId !in translations ||
-                cfg.target.languageTag !in com.sal7one.transiber.translation.TranslationOptions.targetLanguages(cfg.localTranslationModelId, cfg.streamLanguage) ||
+                cfg.target.languageTag !in com.sal7one.transiber.translation.TranslationOptions.targetLanguages(cfg.localTranslationModelId, from) ||
                 (from !in setOf("auto", "model", "und", "mul", "") &&
                     !com.sal7one.transiber.translation.TranslationOptions.supports(cfg.localTranslationModelId, from, cfg.target.languageTag))
         }
@@ -135,9 +139,9 @@ fun CaptionHome(
             Column(Modifier.fillMaxWidth().glassPanel().padding(20.dp)) {
                 CaptionLanguageFields(cfg, ::update, enabled = !running, compact = true)
             }
-            FeatureAction(uiText(UiR.string.ui_speech_translation_8002b), Icons.Default.Tune, { options = true }, detail = if (isCloud) uiText(UiR.string.ui_1_s_audio_sent_to_your_provider_db1f9, uiText.label(cfg.effectiveEngine)) else uiText(UiR.string.ui_1_s_on_this_phone_0832f, uiText.label(cfg.effectiveEngine)))
+            FeatureAction(uiText(if (basic) UiR.string.setup_basic_manage else UiR.string.ui_speech_translation_8002b), Icons.Default.Tune, { if (basic) onModels() else options = true }, detail = if (isCloud) uiText(UiR.string.ui_1_s_audio_sent_to_your_provider_db1f9, uiText.label(cfg.effectiveEngine)) else uiText(UiR.string.ui_1_s_on_this_phone_0832f, uiText.label(cfg.effectiveEngine)))
             if (!engineReady) Text(if (isCloud) uiText(UiR.string.ui_connect_your_cloud_provider_to_start_14c5d) else uiText(UiR.string.ui_choose_a_speech_model_to_start_53e5a))
-            if (needsTranslator) TextButton(onClick = { options = true }) { Text(uiText(UiR.string.ui_set_up_translation_1d214)) }
+            if (needsTranslator) TextButton(onClick = { if (basic) onModels() else options = true }) { Text(uiText(UiR.string.ui_set_up_translation_1d214)) }
             error?.let { Text(it, color = MaterialTheme.colorScheme.error,
                 modifier = Modifier.semantics { liveRegion = LiveRegionMode.Assertive }) }
 
@@ -148,7 +152,7 @@ fun CaptionHome(
                     when {
                         running -> CaptionCaptureService.show(context)
                         !engineReady -> if (isCloud) onCloud() else onModels()
-                        needsTranslator -> options = true
+                        needsTranslator -> if (basic) onModels() else options = true
                         else -> scope.launch {
                             pendingWrite?.join()
                             if (!saveFailed) CaptionStartActivity.start(context, config!!.source)
@@ -164,6 +168,13 @@ fun CaptionHome(
     if (options) FeatureOptionsSheet(uiText(UiR.string.ui_caption_settings_da0c8), { options = false }, optionsScroll) {
         com.sal7one.transiber.caption.history.CaptionHistoryOptions(cfg, ::update, { options = false; onHistory() })
         HorizontalDivider()
+        if (basic) {
+            OutlinedButton(onClick = { options = false; onModels() }, modifier = Modifier.fillMaxWidth()) {
+                Text(uiText(UiR.string.setup_basic_manage))
+            }
+            AdvancedSetupLink()
+            return@FeatureOptionsSheet
+        }
         val engines = CaptionEngineChoice.entries.filter { it != CaptionEngineChoice.CLOUD || ByokPolicy.FEATURE_BYOK }
         HomeChoice(uiText(UiR.string.ui_speech_engine_38c0a), uiText.label(cfg.effectiveEngine), engines.map { uiText.label(it) to it }, enabled = !running) { engine ->
             if (engine != cfg.effectiveEngine || engine == CaptionEngineChoice.CLOUD) {

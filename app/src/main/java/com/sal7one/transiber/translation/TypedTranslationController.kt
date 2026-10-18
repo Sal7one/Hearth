@@ -3,13 +3,15 @@ package com.sal7one.transiber.translation
 import android.content.Context
 import com.sal7one.common_jni.speech.TranslationDirection
 import com.sal7one.common_jni.translation.CancellableTextTranslator
+import com.sal7one.common_jni.translation.TranslationAcceleration
 import com.sal7one.transiber.runtime.LocalWorkGate
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
-internal data class TypedTranslationState(val output: String="",val busy: Boolean=false,val error: String?=null)
+internal data class TypedTranslationState(val output: String="",val busy: Boolean=false,val error: String?=null,
+    val executionInfo: String?=null, val canRetryOnCpu: Boolean=false)
 /** One resident translator, one latest pending request, and immediate stale-result invalidation. */
 internal class TypedTranslationController(
     private val open: (ConversationTranslatorSnapshot) -> CancellableTextTranslator,
@@ -48,10 +50,12 @@ internal class TypedTranslationController(
                     val engine=checkNotNull(translator);val direction=TranslationDirection(request.source,request.target)
                     check(direction in engine.directions){"${requestedRoute.label} does not support ${request.source} → ${request.target}"}
                     val translated=withContext(io){engine.translate(request.text,direction)}
-                    if(request.revision==revision)mutable.value=TypedTranslationState(translated)
+                    if(request.revision==revision)mutable.value=TypedTranslationState(translated, executionInfo=engine.executionInfo)
                 }catch(e: CancellationException){if(!scope.isActive)throw e;release()}
-                catch(e: Exception){if(request.revision==revision)mutable.value=TypedTranslationState(error=e.message ?: e.toString());release()}
-                catch(e: LinkageError){if(request.revision==revision)mutable.value=TypedTranslationState(error=e.message ?: e.toString());release()}
+                catch(e: Exception){if(request.revision==revision)mutable.value=TypedTranslationState(error=e.message ?: e.toString(),
+                    canRetryOnCpu=request.route?.acceleration.let { it != null && it != TranslationAcceleration.CPU });release()}
+                catch(e: LinkageError){if(request.revision==revision)mutable.value=TypedTranslationState(error=e.message ?: e.toString(),
+                    canRetryOnCpu=request.route?.acceleration.let { it != null && it != TranslationAcceleration.CPU });release()}
             }
         }finally {release()}
     }}

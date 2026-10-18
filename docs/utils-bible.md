@@ -1,5 +1,25 @@
 # Utilities and consumers
 
+`SttPcmInput` is the caption controller's capability-driven PCM adapter. Optional
+`DirectPcmSttEngine` and `CancellableSttEngine` contracts separate input memory and
+per-instance cancellation from model identity without changing JNI signatures.
+Its host tests use same-identity fake engines to exercise direct/fallback routes,
+sample/endian/metadata preservation, buffer reuse and unmodified error outcomes.
+`CaptionAudioQueue` is the legacy/cloud caption ingress consumer's bounded,
+sample-counted queue; its host tests block inference to verify that in-flight
+audio stays within budget, overload is visible, and source-end drain differs
+from cancellation. See [pipeline ownership](pipeline-ownership.md#capability-driven-pcm-and-native-failures)
+and the [engine comparison](voicestudio-engine-comparison.md).
+
+`VoiceText.chunks` is consumed by `VoicePlayer` for Android, native Supertonic and
+self-hosted read-aloud. It prefers sentence/clause boundaries, guards common
+abbreviations and numeric/domain dots, and rebalances short punctuation tails
+without exceeding the existing 180/300-character engine limits. `VoiceTextTest`
+reproduces the old decimal, Arabic-clause and quote-tail failures and checks
+mixed-script content preservation and surrogate boundaries across several
+limits. This is Kotlin input preparation; no native/public binding or model
+format changes. See [VoiceStudio research](voicestudio-research.md).
+
 ## Hearth 0.12.0 reading additions
 
 - `OcrEngine` is consumed by CameraOcrController with Paddle and Japanese native implementations.
@@ -449,9 +469,14 @@ The Marian tokenizer consumes the pinned `source.spm` and `tokenizer.json`
 files during local translation setup. It checks each file's length before
 reading and rejects an out-of-range added-token ID before integer conversion.
 `marian/tests/run_marian_tokenizer_tests.sh` exercises a tiny valid fixture,
-token IDs, oversized sparse files and a 1e300 token ID under ASan/UBSan.
-Malformed precompiled charsmaps and publisher-tokenizer golden vectors remain
-tracked separately in `lib_overview.md` U23.
+token IDs, oversized sparse files and a 1e300 token ID under ASan/UBSan. The
+model expansion compared nine added publisher tokenizers against 29 reference
+cases. That exposed a source-SPM unknown-surface bug: the original text can
+still have a joint-vocabulary token. The production tokenizer now preserves
+contiguous unknown surfaces before joint lookup; sanitizer fixtures cover a
+valid joint token, a run, and a truly unknown run. This is narrow parity
+evidence, not exhaustive tokenizer coverage. Malformed precompiled charsmaps
+remain tracked separately in `lib_overview.md` U23.
 
 `marian_session_config.h` is consumed by `MarianEngine` during local model
 setup. It disables ONNX Runtime intra-op worker spinning by default so the
@@ -610,6 +635,66 @@ Unicode, numeric punctuation, bounds, progress/order, blank/failing parts and a
 JNI-like abort arriving after cancellation. Existing native limits and interfaces
 are unchanged; this helper adds no Android context, storage, UI or network client.
 
+## Native inference work and result delivery — 2026-10-18
+
+`UtteranceSegmenter` is consumed by the Sherpa-backed Qwen, Moonshine,
+Omnilingual and Phonon adapters. Whole 20 ms frames bypass sample-by-sample
+staging, fixed storage retains chronological 200 ms pre-roll, and the utterance
+buffer keeps its reservation. Decode input retains 200 ms after the last
+active frame while timestamps include the whole endpoint wait. The native
+`speech_test.cpp` checks exact waveform/pre-roll order across chunk sizes,
+internal pauses, tail trimming, sample positions, continuous splits and reset.
+This is energy endpointing; quiet-ending quality remains a device check.
+
+`marian/marian_decoder.h` is the production `MarianEngine::decodeLoop` helper.
+`OrtValues` owns outputs directly: decoder caches transfer to the next Run,
+initial encoder caches persist, and cached-branch encoder dummies are discarded.
+Fixed input views and logits are reused within the caption, with no wrapper-side
+KV/logits copies. `marian_decoder_test.cpp` checks cache identity over 128 Runs,
+greedy pad/EOS behavior, setup failures, partially allocated failed Run outputs,
+cancellation, token limits and exact-once release under ASan/UBSan. These checks
+do not claim that ORT graph execution is allocation-free.
+
+`translation/text_model.h` is consumed by the local GGUF JNI adapter and host
+smoke runner. Its owned two-thread, `poll=0` pool persists across requests and
+outlives the attached context. Non-sliding-window prompt reuse removes the
+previous output/changed suffix and refreshes final-token logits; invalid state
+falls back to full prefill, and failures clear reusable state. Sliding-window
+models keep full prefill. Real Q4 checks observed one changed, faithful wording
+choice with prefix reuse; cache-state tests do not promise byte-identical model
+output across different prefill batches. `text_model_test.cpp` exercises the production wrapper
+against pinned llama/GGML headers: matching/identical/shorter prompts, trim/decode
+failures, literal caption text, SWA exclusion, cancellation, pool setup and
+context-before-pool cleanup. Its final 1,785 ASan/UBSan checks establish ownership and
+state behavior without model weights or conversation-history reuse.
+
+The Hunyuan adapter also resolves its publisher assistant-end marker once and
+requires an exact, single control-token match before using that ID as a stop.
+An experimental Q2_K model trace exposed ordinary `$` metadata incorrectly
+labelled as EOS and an ignored real end marker. Hunyuan stops now exclude
+ordinary metadata tokens; literal caption text and Gemma's EOG handling retain
+their existing semantics. Host fixtures also cover marker absence/splitting,
+wrong token type/text, valid control EOS fallback, clear setup failure without
+a safe terminator, ordinary dollar output, literal marker injection, empty
+completion, output limits and cache recovery after failure.
+
+`LiveSpeechProcessor.awaitChange` is consumed by `CaptionEngineController` for
+modern local speech. Its conflated revision is separate from the final queue;
+the consumer drains outside its 100 ms metric-refresh timeout. Six
+`SpeechDeliveryTest` cases cover immediate wake, cancelled waits, conflation with
+repeated finals, empty updates, completion/close/failure and a completed final
+queued before a later failure. `SpeechSession` uses bulk `ShortBuffer.put` into
+its reusable direct PCM16 buffer; `SpeechFoundationTest` covers signed/silent
+samples, byte counts, source offsets and repeated finals through that driver.
+
+Whisper's native input revision and absolute partial-sample clock are consumed
+by its streaming worker. `whisper_failure_test.cpp` uses the actual engine with
+a stub C API to check initial automatic-language transcription, no forced-speech
+retry, 20 ms encoder-context sizing, thread budgets, reset and immediate input
+wake in addition to failures/cancellation/cleanup. Restoring the old wait
+predicate fails its dispatch regression. These are host scheduling/state checks,
+not Android model-speed or language-quality measurements.
+
 ## Android native ABI verification
 
 `scripts/native_abis.py` provides the shared ELF-width/machine/endianness/shared-object
@@ -630,3 +715,126 @@ HotSpot's observed os::malloc/os::strdup allocation functions; it does not disab
 leak detection for Hearth C++. On Linux a deliberately leaked native allocation
 must still be reported under those same suppressions. macOS does not provide
 that LeakSanitizer negative control; its regular JNI and ASan/UBSan checks remain.
+
+## Pinned Vosk publisher installation
+
+`VoskPublisherPackage.populate` is consumed by `FileDownloads.installModel`.
+It stages and verifies the complete publisher ZIP with `ModelIntegrity.stageFile`,
+then inspects central-directory entry types with Commons and reads only
+STORE/DEFLATE data through the platform ZIP reader. Names, methods, types,
+sizes, CRCs and entry counts must agree between the two readers. Extraction
+uses the existing bounded `DirectorySink`. Entry counts, exact roots, paths, duplicates, special
+types, expanded sizes and CRCs are checked before `registerPinnedDirectory`
+can publish a tree matching the independent catalog digest. The temporary ZIP
+is removed on success, rejection or cancellation; its space is included in
+`VoskDownloads`' installation budget.
+
+`VoskPublisherPackageTest` exercises the production helper with synthetic pinned
+archives, including wrong archive/tree pins, damaged/truncated data, traversal,
+foreign roots, invalid separators, duplicates, symlinks/FIFOs, CRC corruption,
+missing runtime assets, STORE success, unsupported compression rejection with
+matching pins and cancellation cleanup. Its opt-in
+`HEARTH_VOSK_ARCHIVES` integration case passed with all seven official archives.
+`VoskDownloadsTest` checks fixed language identities and matching transport IDs,
+URLs, byte counts, SHA-256 values and complete installation reserves. These are
+host packaging checks; no model-speed or recognition-quality result is inferred.
+
+`scripts/speech/runtime-sources.py` is consumed by `build-runtimes.sh` to capture
+an exact snapshot before and after all three plugin builds. Staging checks that
+saved snapshot against the current files before attesting to compiled artifacts;
+it does not invent source provenance at publication time. Its host fixture in
+`test_runtime_sources.py` confirms that adapter, recipe and revision changes alter
+the snapshot while generated model/build files are excluded.
+
+The TranscribePsy adapter consumes the existing bounded `UtteranceSegmenter` and
+native session owner. `transcribepsy_backend_test.cpp` fakes only QVAC's model API
+and exercises the production adapter/session under ASan and UBSan: failed load,
+wrong architecture, failed inference, sticky failure/reset, distinct identical
+finals, discarded reset tails, CPU thread budget and honest source declarations.
+
+## Explicit translation acceleration and native ownership
+
+`TranslationAcceleration` and the internal `TranslationRuntime` adapter are
+consumed by `LocalTranslationSession.open`. CPU remains the default; an explicit
+Vulkan choice resolves a separately loaded JNI object and retains its original
+initialization errors. The session retires a just-created native handle exactly
+once if execution metadata retrieval fails. `LocalTranslationAccelerationTest`
+checks selection, missing libraries, GPU failures without CPU retry, metadata
+failure cleanup and nonempty results. `ConversationTranslationSettings` stores
+the shared choice and captures it in immutable translator snapshots; production
+consumers include typed text, captions, conversation, camera and benchmarks.
+Settings/snapshot and `TypedTranslationControllerTest` regressions verify
+persistence, CPU defaults, retry eligibility and actual backend reporting.
+
+`TypedTranslationRequestPolicy` is consumed by `TypedTranslateScreen` to order an
+explicit CPU retry after the saved preference's revision reaches the UI. It
+prevents the ordinary manual-mode settings effect from clearing that retry and
+does not enable automatic translation. Its three host regressions cover delayed
+revision delivery, exactly-once immediate work and coalesced retry requests.
+
+The production `VulkanTextModel` consumes `vulkanExecutionInfo`, which validates
+the pinned loader's layer-assignment report and a positive Vulkan device model
+buffer allocation. The count alone is derived from the request and cannot prove
+GPU tensor residency. Native host tests exercise missing/integrated GPUs, unsupported or zero
+offload, successful translation and cleanup after failed initialization. The
+default CPU model does not probe Vulkan. See
+[Android GPU acceleration](android-gpu-acceleration-2026-10-18.md) for architecture
+isolation, source/tool pins and device-testing limits.
+
+`BenchmarkAccelerationPlan` is consumed by `LocalBenchmarkRunner` to compare the
+same artifact across its supported CPU/GPU backends. Tests preserve the model
+identity for loading, distinct history identities per backend, CPU-only engine
+constraints and the 12-model input bound. It never mutates saved preferences.
+`SpeechAccelerationStore` supplies independent DataStore choices to captions and
+benchmarks; its persistence test rejects GPU choices for unsupported engines and
+checks that changing one engine leaves another unchanged.
+
+`PortableSetup` is consumed by `PortableSetupUi`, `PortableSetupActions` and
+the Basic model bundles. It accepts only a versioned, data-only three-stage
+schema: bounded UTF-8/JSON, declared fields, catalog references or SHA-256
+file/tree references, and independent speech/translation/voice selections.
+`PortableSetupCatalog` validates family/profile/language compatibility before
+filesystem resolution; `PortableSetupPlan` applies the preview's actual local
+model identity. `PortableSetupTest` covers round trips, byte/depth bounds,
+malformed UTF-8, trailing content, unknown/credential/path fields, mismatched
+families and profiles, captions-only disabling translation, and translation-only
+preserving STT and voice settings. Portable JSON imports require an explicit
+Apply action; Basic bundles can complete an explicitly requested Download and
+use action for the selected bundle.
+
+`SetupModelVerifier` is consumed by setup previews to reuse verification only
+while the files' metadata stays unchanged. Applying a setup forces full model
+hashing again; native startup retains its existing pinned verification.
+`SetupModelVerifierTest` covers cache reuse, changed/deleted files, symlink
+invalidation and corruption with restored metadata that the mandatory full
+verification still rejects.
+
+`PublisherSpeechReceipts` is consumed by `LocalSpeechModels.installPublisher`
+and portable setup resolution. After the existing publisher archive/size/hash
+checks pass, it stores the archive pin plus the generated manifest hash outside
+the user-importable model tree. Thus a FOSS import of the original publisher
+archive can satisfy a catalog reference without a download-manager record.
+`PublisherSpeechReceiptTest` installs a pinned TAR/BZip2 fixture without Android
+or networking, verifies the receipt, rejects a different archive pin or changed
+manifest, and verifies repair by rereading the original pinned archive.
+
+`UserPreferenceData` is the ordered DataStore writer consumed by the
+`UserPreferences` compatibility adapter and its production settings stores.
+`UserPreferenceDataTest` checks typed/idempotent migration, exact encrypted-string
+preservation, durable commit failure/retry, concurrent edits and coalescing of
+2,000 slider drafts. Existing store tests exercise the migrated adapter.
+`ModelPathSnapshots` is consumed by `ModelSourceBindings` for bounded, app-private
+metadata checks; five host cases cover missing/changed files, nested models,
+symlink/traversal rejection and actual size-error preservation. Native full
+integrity checks remain authoritative before loading. `StartupAuditJob` is
+consumed by the process-wide `StartupModelAudit` from `HearthApplication` and
+MainActivity; three tests cover one shared job across concurrent entries, explicit
+retry of failures and model errors that leave the application usable.
+
+`TypedTranslationPreferences` and `TypedTranslationSettings` are consumed by
+TypedTranslateScreen and QuickTranslateContent. Both render the reactive saved
+language pair; only explicit picker/swap gestures write it. Five regression
+tests cover external setup updates, preserving the latest counterpart language,
+persistent automatic mode, temporary shared-input behavior and CPU-retry
+ordering. `TypedInputOrigin` keeps an incoming share's manual/immediate choice
+scoped to that input without replacing the user's automatic preference.

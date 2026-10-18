@@ -22,6 +22,10 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Home
 import com.sal7one.transiber.home.HomeScreen
 import com.sal7one.transiber.setup.EasySetupStep
+import com.sal7one.transiber.setup.SetupModePicker
+import com.sal7one.transiber.preferences.UserPreferences
+import com.sal7one.transiber.preferences.StartupModelAudit
+import com.sal7one.transiber.setup.ModelBindingRepairNotice
 import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.semantics.contentDescription
@@ -115,8 +119,43 @@ class MainActivity : AppCompatActivity() {
    catch(e: Exception) { e.message ?: e.toString() }
   enableEdgeToEdge()
   setContent {
+   var preferencesReady by remember { mutableStateOf(false) }
+   var preferencesError by remember { mutableStateOf<String?>(null) }
+   var initializationAttempt by remember { mutableIntStateOf(0) }
+   LaunchedEffect(initializationAttempt) {
+    preferencesError = null
+    try {
+     kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { UserPreferences.initialize(applicationContext) }
+     preferencesReady = true
+    } catch (e: kotlinx.coroutines.CancellationException) { throw e }
+    catch (e: Exception) { preferencesError = e.message ?: e.toString() }
+   }
+   if (!preferencesReady) {
+    MaterialTheme {
+     Surface(Modifier.fillMaxSize()) {
+      Column(Modifier.fillMaxSize().padding(24.dp), verticalArrangement = Arrangement.Center) {
+       Text(getString(if (preferencesError == null) R.string.setup_preferences_loading else R.string.setup_preferences_failed))
+       preferencesError?.let { failure ->
+        Text(failure, color = MaterialTheme.colorScheme.error)
+        Button(onClick = { initializationAttempt++ }) { Text(getString(R.string.setup_preferences_retry)) }
+       } ?: LinearProgressIndicator(Modifier.fillMaxWidth())
+      }
+     }
+    }
+    return@setContent
+   }
    HearthTheme {
     val uiText = rememberUiText()
+    val preferencesFailure by UserPreferences.failures.collectAsState()
+    var modelCheckError by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(Unit) {
+     try {
+      val audit = StartupModelAudit.await(applicationContext, retry = true)
+      modelCheckError = audit.modelError ?: audit.preferencesError
+     }
+     catch (e: kotlinx.coroutines.CancellationException) { throw e }
+     catch (e: Exception) { modelCheckError = e.message ?: e.toString() }
+    }
     val lightBars = MaterialTheme.colorScheme.background.luminance() > 0.5f
     SideEffect {
      WindowCompat.getInsetsController(window, window.decorView).apply {
@@ -226,6 +265,7 @@ class MainActivity : AppCompatActivity() {
       actions = {
        if (simple && !atHome && !tvUi) IconButton(onClick = { home() }) { Icon(Icons.Default.Home, uiText(R.string.nav_home)) }
        if (television && fullInterface) TextButton(onClick = { fullInterface = false; home() }) { Text(uiText(R.string.tv_mode)) }
+       if (!tvUi) SetupModePicker()
        if (!tvUi) IconButton(onClick = { quickSettings = true }) { Icon(Icons.Default.Settings, uiText(R.string.nav_quick_settings)) }
       })
     }, bottomBar = {
@@ -249,6 +289,8 @@ class MainActivity : AppCompatActivity() {
     }) { padding ->
      Column(Modifier.fillMaxSize().padding(padding)) {
       nativeFailure?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(16.dp)) }
+      preferencesFailure?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(16.dp)) }
+      ModelBindingRepairNotice(onRepair = { localModels("Speech") }, launchError = modelCheckError)
       Box(Modifier.weight(1f)) {
        screenState.SaveableStateProvider(com.sal7one.transiber.ui.navigationStateKey(tvUi, atHome, page)) {
        if (tvHome) com.sal7one.transiber.home.TvHomeScreen(

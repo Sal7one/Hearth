@@ -32,6 +32,8 @@ public:
     EngineCapability getCapabilities() const override;
     std::vector<std::string> getSupportedLanguages() const override;
 
+    std::string getRuntimeDescription() const;
+
     // Whisper-specific
     static std::string getVersion();
     static bool isAvailable();

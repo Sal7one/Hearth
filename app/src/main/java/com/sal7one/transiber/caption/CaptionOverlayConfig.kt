@@ -52,7 +52,7 @@ enum class CaptionEngineChoice(val label: String, val explanation: String) {
         "Multilingual with live language detection; slower partials. " +
             "Includes built-in English translation.",
     ),
-    MOONSHINE("Moonshine · English", "Small English-only recognition in short utterance windows. Optional local translation."),
+    MOONSHINE("Moonshine (local)", "Small language-specific recognition in short utterance windows. Optional local translation."),
     QWEN(
         "Qwen3-ASR (local)",
         "Offline multilingual captions from a Qwen model package. Final text arrives in utterance windows; " +
@@ -71,6 +71,11 @@ enum class CaptionEngineChoice(val label: String, val explanation: String) {
         "Nemotron 3.5 (local)",
         "Offline multilingual captions with streaming partials from a Nemotron GGUF package. " +
             "Original-language CC; optional local translation bridge. Phone speed depends on the device.",
+    ),
+    TRANSCRIBEPSY(
+        "TranscribePsy (local)",
+        "On-device recognition in eight European languages from a TranscribePsy GGUF model. " +
+            "Final captions arrive after short utterances. Translation uses a separate model.",
     ),
     /**
      * NETWORK CODE (BYOK) — play distribution only; hidden in the FOSS

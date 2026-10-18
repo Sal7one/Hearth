@@ -1,0 +1,1 @@
+{ global: hearth_whisper_vulkan_api_v1; local: *; };

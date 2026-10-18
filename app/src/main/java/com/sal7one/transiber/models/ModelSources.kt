@@ -11,6 +11,12 @@ internal object ModelSources {
     private const val sherpa = "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/"
     private const val packaging = "Downloads and installs automatically on this phone. The original file stays in your download folder."
     fun speech(engine: CaptionEngineChoice): List<ModelSource> = when (engine) {
+        CaptionEngineChoice.TRANSCRIBEPSY -> SpeechArtifactCatalog.forEngine(engine).map { artifact ->
+            ModelSource(artifact.id, artifact.label, artifact.publisherUrl,
+                "https://github.com/tether-ai-research/qvac-transcribepsy", packaging +
+                    " Released October 14, 2026. Eight European languages in short utterance windows; no partials or language hints. Translation uses a separate model. ${artifact.license}.",
+                artifact.url, artifact.bytes)
+        }
         CaptionEngineChoice.NEMOTRON -> listOf(ModelSource("nemotron-3.5-asr-0.6b", "Nemotron 3.5 · 0.6B Q8", "https://huggingface.co/nvidia/nemotron-3.5-asr-streaming-0.6b",
             "https://huggingface.co/nvidia/nemotron-3.5-asr-streaming-0.6b/tree/1c8deaecc64b91f034d73e08dd8b64625eb3395d", packaging + " Multilingual streaming captions; translation uses a separate model.",
             "https://huggingface.co/nvidia/nemotron-3.5-asr-streaming-0.6b/resolve/1c8deaecc64b91f034d73e08dd8b64625eb3395d/nemotron-3.5-asr-streaming-0.6b.q8_0.gguf"))
@@ -26,15 +32,18 @@ internal object ModelSources {
             "https://github.com/fermionresearch/phonon",
             packaging + " Fermion's five-value weights converted to sherpa transducer ONNX (int8); English utterance windows. The raw .bps archive is not importable.",
             "https://github.com/Sal7one/Hearth/releases/download/v0.23.0/phonon-2-hearth-int8.tar.bz2", 339918748))
-        CaptionEngineChoice.MOONSHINE -> listOf("tiny" to 29858559L, "base" to 111266225L).map { (size, bytes) ->
-            ModelSource("moonshine-$size-en-v2", "Moonshine · ${size.replaceFirstChar { it.uppercase() }} · English", "https://github.com/moonshine-ai/moonshine", "https://github.com/k2-fsa/sherpa-onnx/releases/tag/asr-models",
-                packaging + " English only, short audio segments. Runtime package: 27 February 2026. This adapter is not Moonshine’s newer streaming runtime.",
-                sherpa + "sherpa-onnx-moonshine-$size-en-quantized-2026-02-27.tar.bz2", bytes)
+        CaptionEngineChoice.MOONSHINE -> SpeechArtifactCatalog.forEngine(engine).map { artifact ->
+            ModelSource(artifact.id, artifact.label, artifact.publisherUrl, "https://github.com/k2-fsa/sherpa-onnx/releases/tag/asr-models",
+                packaging + " Language-specific captions in short audio segments. License: ${artifact.license}. This adapter does not provide Moonshine streaming decoding.",
+                artifact.url, artifact.bytes)
         }
         CaptionEngineChoice.WHISPER -> listOf(ModelSource("whisper", "Whisper · whisper.cpp models", "https://huggingface.co/ggerganov/whisper.cpp", "https://huggingface.co/ggerganov/whisper.cpp/tree/main",
             "Download a whisper.cpp GGML .bin file, then Import Whisper file. Tiny/Base use less memory. Files ending in .en.bin recognize English only; multilingual files offer explicit spoken languages. Safetensors and GGUF files are not this adapter’s input."))
-        CaptionEngineChoice.VOSK -> listOf(ModelSource("vosk", "Vosk · language-specific models", "https://alphacephei.com/vosk/models", "https://alphacephei.com/vosk/models",
-            "Choose your spoken language on the publisher page. Download and extract its ZIP, then Import Vosk folder. Select the extracted model folder itself. Each model fixes its spoken language; there is no automatic language switching."))
+        CaptionEngineChoice.VOSK -> VoskDownloads.all.map { artifact ->
+            ModelSource(artifact.id, artifact.label, artifact.publisherUrl, artifact.publisherUrl,
+                packaging + " Streaming recognition in the model's fixed language. ${artifact.license}.", artifact.url, artifact.bytes)
+        } + ModelSource("vosk", "Vosk · import another language", "https://alphacephei.com/vosk/models", "https://alphacephei.com/vosk/models",
+            "Other compatible Vosk models can still be imported as extracted folders. An unrecognized import keeps its language unspecified; the app does not guess it from the folder name.")
         CaptionEngineChoice.CLOUD -> emptyList()
     }
     val marian = ModelSource("marian-en-ar", "Marian / OPUS-MT · English → Arabic", "https://huggingface.co/Helsinki-NLP/opus-mt-en-ar", "https://huggingface.co/onnx-community/opus-mt-en-ar/tree/main",

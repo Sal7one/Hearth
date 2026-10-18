@@ -4,9 +4,14 @@ import com.sal7one.transiber.R as UiR
 import com.sal7one.transiber.i18n.rememberUiText
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import com.sal7one.transiber.preferences.*
+import com.sal7one.transiber.setup.AdvancedSetupLink
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.sal7one.transiber.byok.ByokPolicy
 
@@ -23,6 +28,22 @@ internal fun SettingsScreen(
     onHistory: () -> Unit,
 ) {
     val uiText = rememberUiText()
+    val context = LocalContext.current
+    if (rememberSetupMode() == SetupMode.BASIC) {
+        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text(uiText(UiR.string.setup_basic_settings_detail), style = MaterialTheme.typography.bodyMedium)
+            SettingsLink(uiText(UiR.string.ui_easy_setup_35fb5), uiText(UiR.string.ui_local_or_cloud_in_two_steps_183c9), onEasySetup)
+            SettingsLink(uiText(UiR.string.ui_appearance_navigation_433af), uiText(UiR.string.ui_themes_light_or_dark_simple_home_or_classic_tabs_24bee), onAppearance)
+            com.sal7one.transiber.i18n.AppLanguageSettings()
+            SettingsLink(uiText(UiR.string.setup_basic_permissions), uiText(UiR.string.ui_audio_languages_appearance_and_accessibility_04684)) { com.sal7one.transiber.caption.OverlayControlsActivity.open(context) }
+            SettingsLink(uiText(UiR.string.overlay_shortcuts_title), uiText(UiR.string.overlay_shortcuts_detail), onShortcuts)
+            SettingsLink(uiText(UiR.string.caption_history_title), uiText(UiR.string.caption_history_title), onHistory)
+            SettingsLink(uiText(UiR.string.ui_help_diagnostics_68022), uiText(UiR.string.ui_setup_guidance_and_actual_engine_errors_30852), onHelp)
+            AdvancedSetupLink()
+        }
+        return
+    }
 
     SettingsTabs { location ->
         val local = location == SettingsLocation.LOCAL

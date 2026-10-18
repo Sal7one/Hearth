@@ -2,6 +2,7 @@ package com.sal7one.common_jni.engine
 
 import com.sal7one.common_jni.model.*
 import kotlinx.coroutines.flow.Flow
+import java.nio.ByteBuffer
 
 /**
  * Core STT engine interface.
@@ -82,6 +83,26 @@ interface SttEngine {
     // Backward compatible overload without progress
     suspend fun transcribeBatch(samples: ShortArray, sampleRate: Int): Result<TranscriptResult> =
         transcribeBatch(samples, sampleRate, null)
+}
+
+/**
+ * Optional PCM16 input path. Support is independent of the engine/model identity.
+ * The caller lends native-endian, mono PCM memory for this call only: the engine
+ * must finish reading it before returning and must not retain the buffer.
+ * Offsets/counts are bytes, not samples; the caller owns/recycles the buffer.
+ */
+interface DirectPcmSttEngine : SttEngine {
+    suspend fun pushAudioDirect(
+        buffer: ByteBuffer,
+        byteOffset: Int,
+        byteCount: Int,
+        sampleRate: Int,
+    ): Result<Unit>
+}
+
+/** Per-instance inference cancellation. The owner must still join/release the engine. */
+interface CancellableSttEngine : SttEngine {
+    fun cancel()
 }
 
 /**

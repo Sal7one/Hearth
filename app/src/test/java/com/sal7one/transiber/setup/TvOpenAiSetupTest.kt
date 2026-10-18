@@ -23,8 +23,8 @@ class TvOpenAiSetupTest {
             assertThrows(IllegalStateException::class.java) { actions.tvOpenAiKey() }
             try { actions.applyTvOpenAi("unit-test-key"); fail("Offline TV setup accepted a cloud credential") }
             catch (_: IllegalStateException) { }
-            assertTrue(context.getSharedPreferences("byok_keys", 0).all.isEmpty())
-            assertTrue(context.getSharedPreferences("cloud_voice_v1", 0).all.isEmpty())
+            assertTrue(com.sal7one.transiber.preferences.UserPreferences.store(context, "byok_keys").all.isEmpty())
+            assertTrue(com.sal7one.transiber.preferences.UserPreferences.store(context, "cloud_voice_v1").all.isEmpty())
             return@runBlocking
         }
         // A key belonging to an arbitrary compatible server must not become an OpenAI key.
@@ -57,7 +57,7 @@ class TvOpenAiSetupTest {
         assertEquals(60, CaptionConfigStore.config(context).first().speakerVolume)
 
         // An unreadable official key must surface its error, even if a voice key is available.
-        context.getSharedPreferences("byok_keys", 0).edit().putString("openai_api_key_v1", "invalid-envelope").commit()
+        com.sal7one.transiber.preferences.UserPreferences.store(context, "byok_keys").edit().putString("openai_api_key_v1", "invalid-envelope").commit()
         val failure = assertThrows(IllegalStateException::class.java) { actions.tvOpenAiKey() }
         assertTrue(failure.message.orEmpty().contains("could not be decrypted"))
     }

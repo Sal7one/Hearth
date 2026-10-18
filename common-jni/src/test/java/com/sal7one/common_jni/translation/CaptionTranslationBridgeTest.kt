@@ -59,6 +59,31 @@ class CaptionTranslationBridgeTest {
             assertEquals(1, fake.calls)
         } finally { bridge.close(); bridge.awaitClosed() }
     }
+    @Test fun broadModelKeepsUnknownSharedScriptsCcAndPreservesExplicitScriptTarget() = runBlocking {
+        val calls = CopyOnWriteArrayList<TranslationDirection>()
+        val unknown = CompletableDeferred<String>()
+        val output = CompletableDeferred<Long>()
+        val engine = object : CancellableTextTranslator {
+            override val id = "index-translate-2b-q4"
+            override val directions = TranslationCatalog.find(id).directions
+            override suspend fun translate(text: String, direction: TranslationDirection): String {
+                calls.add(direction)
+                return "translated"
+            }
+            override fun cancel() {}
+            override fun close() {}
+        }
+        val bridge = CaptionTranslationBridge(this, "sr-Latn", { engine },
+            { id, _, _ -> output.complete(id) }, { if (it != null) unknown.complete(it) })
+        try {
+            bridge.offer(1, "هذه جملة عربية", null)
+            assertTrue(withTimeout(3000) { unknown.await() }.contains("unknown or mixed"))
+            assertTrue(calls.isEmpty())
+            bridge.offer(2, "هذه جملة عربية", "ar-SA")
+            assertEquals(2L, withTimeout(3000) { output.await() })
+            assertEquals(listOf(TranslationDirection("ar", "sr-Latn")), calls.toList())
+        } finally { bridge.close(); bridge.awaitClosed() }
+    }
     @Test fun staleInferenceDoesNotPublish() = runBlocking {
         val fake = Fake(); var now = 0L; val noticed = CompletableDeferred<String>()
         val bridge = CaptionTranslationBridge(this, "ar", { fake }, { _, _, _ -> fail("Stale result") }, { if(it != null) noticed.complete(it) }, clock = { now }, maxAgeMs = 100)

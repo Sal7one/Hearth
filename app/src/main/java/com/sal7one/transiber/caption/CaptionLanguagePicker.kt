@@ -49,7 +49,7 @@ fun CaptionLanguageFields(
     fun open(which: CaptionLanguagePicker) { if (onOpenOverlay != null) onOpenOverlay(which) else picker = which }
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         if (showSource) {
-            val sourceCode = if (config.engine == CaptionEngineChoice.VOSK) "model" else CaptionLanguages.effectiveSource(config, cloudMode, model)
+            val sourceCode = if (source.codes == setOf("model")) "model" else CaptionLanguages.effectiveSource(config, cloudMode, model)
             LanguageField(uiText(UiR.string.ui_spoken_language_cc_c652a), sourceCode, enabled && source.allowsSelection) { open(CaptionLanguagePicker.SOURCE) }
             Text(if (compact && config.engine == CaptionEngineChoice.CLOUD && cloudMode != CloudConfigStore.SttMode.BATCH) uiText.label(cloudMode) else if (compact) model.label else uiText.note(source), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             if (config.streamLanguage != sourceCode && config.streamLanguage != "auto") Text(
@@ -68,7 +68,7 @@ fun CaptionLanguageFields(
                     title = if (which == CaptionLanguagePicker.SOURCE) uiText(UiR.string.ui_spoken_language_cc_c652a) else uiText(UiR.string.ui_translate_to_a1ba6),
                     choices = if (which == CaptionLanguagePicker.SOURCE) source else target,
                     selected = if (which == CaptionLanguagePicker.SOURCE) {
-                        if (config.engine == CaptionEngineChoice.VOSK) "model" else CaptionLanguages.effectiveSource(config, cloudMode, model)
+                        if (source.codes == setOf("model")) "model" else CaptionLanguages.effectiveSource(config, cloudMode, model)
                     } else config.target.languageTag,
                     onSelect = { code ->
                         onChange { if (which == CaptionLanguagePicker.SOURCE) it.copy(streamLanguage = if (code == "model") "auto" else code)

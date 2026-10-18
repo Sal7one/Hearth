@@ -19,13 +19,6 @@ internal object TranslationSourceEvidence {
         return candidates.singleOrNull()
     }
 
-    private fun matches(language: String, script: Character.UnicodeScript): Boolean = when (language) {
-        "ru", "uk", "bg", "mk" -> script == Character.UnicodeScript.CYRILLIC
-        "ar" -> script == Character.UnicodeScript.ARABIC
-        "hi" -> script == Character.UnicodeScript.DEVANAGARI
-        "zh" -> script == Character.UnicodeScript.HAN
-        "ja" -> script == Character.UnicodeScript.HIRAGANA || script == Character.UnicodeScript.KATAKANA
-        "ko" -> script == Character.UnicodeScript.HANGUL
-        else -> false // Latin text cannot distinguish English, French, Swedish, etc.
-    }
+    private fun matches(language: String, script: Character.UnicodeScript): Boolean =
+        IndexTranslationLanguages.matchesScript(language, script)
 }

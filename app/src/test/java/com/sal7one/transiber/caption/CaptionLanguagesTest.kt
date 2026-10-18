@@ -10,6 +10,59 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class CaptionLanguagesTest {
+    @Test fun transcribepsyRequiresKnownSourceForTranslationAndDoesNotInventLanguageHints() {
+        val config = CaptionOverlayConfig(engine = CaptionEngineChoice.TRANSCRIBEPSY, streamLanguage = "auto")
+        val choices = CaptionLanguages.source(config, SttMode.BATCH)
+        assertEquals(setOf("auto", "en", "nl", "fr", "de", "it", "pl", "pt", "es"), choices.codes)
+        assertTrue(choices.languages.none { it.canForce })
+        assertEquals("auto", CaptionLanguages.effectiveSource(config, SttMode.BATCH))
+        assertEquals("fr", CaptionLanguages.effectiveSource(config.copy(streamLanguage = "fr-FR"), SttMode.BATCH))
+        assertEquals("auto", CaptionLanguages.effectiveSource(config.copy(streamLanguage = "ar"), SttMode.BATCH))
+        val translated = config.copy(mode = CaptionMode.TRANSLATE, localTranslationEnabled = true, localTranslationModelId = "index-translate-2b-q4")
+        assertEquals(CaptionTranslationRoute.TEXT_TRANSLATOR, captionTranslationRoute(translated, SttMode.BATCH))
+        assertEquals(SpeechProfile.TRANSCRIBEPSY_250M_EU_SUB.backend, CaptionEngineChoice.TRANSCRIBEPSY.speechBackend)
+    }
+    @Test fun moonshineUsesTheVerifiedProfilesFixedLanguageRatherThanAnOldHint() {
+        val config = CaptionOverlayConfig(engine = CaptionEngineChoice.MOONSHINE, streamLanguage = "en")
+        SpeechProfile.entries.filter { it.backend == com.sal7one.common_jni.speech.SpeechBackend.MOONSHINE }.forEach { profile ->
+            val model = CaptionLanguageModel(profile.id, profile.id)
+            val choices = CaptionLanguages.source(config, SttMode.BATCH, model)
+            assertEquals(setOf(profile.fixedSourceLanguage), choices.codes)
+            assertFalse(choices.allowsSelection)
+            assertFalse(choices.languages.single().canForce)
+            assertEquals(profile.fixedSourceLanguage, CaptionLanguages.effectiveSource(config, SttMode.BATCH, model))
+        }
+        assertEquals(setOf("auto"), CaptionLanguages.source(config, SttMode.BATCH, CaptionLanguageModel("unknown")).codes)
+    }
+
+    @Test fun pinnedVoskLanguageRoutesTranslationWithoutGuessingUnrecognizedImports() {
+        val config = CaptionOverlayConfig(engine = CaptionEngineChoice.VOSK, streamLanguage = "en")
+        com.sal7one.transiber.models.VoskDownloads.packages.forEach { source ->
+            val model = CaptionLanguageModel("private-install", "Renamed model", fixedSourceLanguage = source.language)
+            val choices = CaptionLanguages.source(config, SttMode.BATCH, model)
+            assertEquals(setOf(source.language), choices.codes)
+            assertFalse(choices.allowsSelection)
+            assertEquals(source.language, CaptionLanguages.effectiveSource(config, SttMode.BATCH, model))
+            assertEquals(source, com.sal7one.transiber.models.VoskDownloads.findByTreeSha256(source.treeSha256))
+        }
+        val unknown = CaptionLanguageModel("user-import", "Arabic in its name proves nothing")
+        assertEquals(setOf("model"), CaptionLanguages.source(config, SttMode.BATCH, unknown).codes)
+        assertEquals("auto", CaptionLanguages.effectiveSource(config, SttMode.BATCH, unknown))
+    }
+
+    @Test fun fixedArabicSourceControlsTranslationTargetsDespiteAnOldEnglishHint() {
+        val config = CaptionOverlayConfig(engine = CaptionEngineChoice.MOONSHINE, streamLanguage = "en",
+            localTranslationEnabled = true, textTranslationProviderId = "local", localTranslationModelId = "marian-ar-en")
+        val model = CaptionLanguageModel(SpeechProfile.MOONSHINE_BASE_AR.id)
+        assertEquals(setOf("en"), CaptionLanguages.target(config, SttMode.BATCH, model = model).codes)
+        assertTrue(CaptionLanguages.target(config.copy(localTranslationModelId = "marian-en-fr"), SttMode.BATCH, model = model).codes.isEmpty())
+        assertTrue(CaptionLanguages.target(config.copy(textTranslationProviderId = "", localTranslationModelId = "marian-en-fr"), SttMode.BATCH, model = model).codes.isEmpty())
+        assertEquals(setOf("en"), CaptionLanguages.target(config.copy(textTranslationProviderId = ""), SttMode.BATCH, model = model).codes)
+        assertEquals(setOf("fr"), CaptionLanguages.target(config.copy(localTranslationModelId = "marian-ar-fr-via-en"), SttMode.BATCH, model = model).codes)
+        val vosk = CaptionLanguageModel("verified-vosk-install", fixedSourceLanguage = "ar")
+        assertEquals(setOf("en"), CaptionLanguages.target(config.copy(engine = CaptionEngineChoice.VOSK), SttMode.BATCH, model = vosk).codes)
+    }
+
     @Test fun nemoPickerOnlyOffersNativeHintsAndAuto() {
         val config = CaptionOverlayConfig(engine = CaptionEngineChoice.NEMOTRON)
         val choices = CaptionLanguages.source(config, SttMode.BATCH)

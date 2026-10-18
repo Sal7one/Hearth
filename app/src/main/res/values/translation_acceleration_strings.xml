@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="translation_acceleration_title">GGUF translation acceleration</string>
+    <string name="translation_acceleration_cpu">CPU</string>
+    <string name="translation_acceleration_vulkan">Vulkan GPU · experimental</string>
+    <string name="translation_acceleration_cpu_note">CPU is the default. Compare CPU, Vulkan or Adreno OpenCL results in Benchmarks on your phone.</string>
+    <string name="translation_acceleration_gpu_note">Requests GPU offload on a compatible driver. Some operations can remain on CPU. Memory use and heat can increase; speed depends on the model and phone. Errors stay visible; CPU requires an explicit switch.</string>
+    <string name="translation_acceleration_arm64_only">Optional GPU runtimes are available in the ARM64 build. Choose CPU on this device.</string>
+    <string name="translation_acceleration_scope">Applies to the next GGUF translator opened by typed text, captions, conversation or camera. Restart an active caption session to apply. Marian, platform language packs, speech recognition and voices use their own engines.</string>
+    <string name="translation_acceleration_retry_cpu">Switch to CPU and retry</string>
+    <string name="translation_acceleration_use_cpu">Use CPU</string>
+    <string name="translation_acceleration_change">Change</string>
+    <string name="translation_acceleration_hide">Hide</string>
+</resources>

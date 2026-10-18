@@ -39,7 +39,7 @@ internal class ConversationController(private val context: Context) : AutoClosea
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val disk = CoroutineScope(SupervisorJob() + Dispatchers.IO.limitedParallelism(1))
     private val store = ConversationStore(context)
-    private val prefs = context.getSharedPreferences("conversation-options", Context.MODE_PRIVATE)
+    private val prefs = com.sal7one.transiber.preferences.UserPreferences.store(context, "conversation-options")
     private val _state = MutableStateFlow(ConversationState(saveHistory = prefs.getBoolean("save", true)))
     val state: StateFlow<ConversationState> = _state.asStateFlow()
     private var engine: CaptionEngineController? = null

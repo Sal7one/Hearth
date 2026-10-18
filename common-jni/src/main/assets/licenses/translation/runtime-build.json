@@ -7,40 +7,81 @@
     "x86",
     "x86_64"
   ],
-  "inference": "CPU, two threads, isolated GGML symbols",
+  "inference": "CPU default, two threads, isolated GGML symbols; separately loaded optional ARM64 Vulkan or Adreno OpenCL",
   "binaries": {
     "arm64-v8a": {
       "name": "libtransiber_translation.so",
-      "bytes": 3896112,
-      "sha256": "b6d554e4b4057a0dc90adab6ed4b4a0924ed1643ecd25235ad410c0ef926d4c7",
-      "sourceSetSha256": "da3c4fbc1acda42eae3b709e343fdd5f251a14377acb5ea6c64c68253dc10944"
+      "bytes": 3902408,
+      "sha256": "a1c51ebd67db9787ce2c2ac37b3ab0db6f7d545f4fe9f92f97c7b741e8da442b",
+      "sourceSetSha256": "536eb3ba1ac60d255cfd72172c26270b4b740fb6adbba1b7c2b8148fa55b9d4a"
     },
     "armeabi-v7a": {
       "name": "libtransiber_translation.so",
-      "bytes": 2730952,
-      "sha256": "6ee72caad389d8805077e0fc1e7e1046c5c516a1516f50d79ae5bf45d129f0cc",
-      "sourceSetSha256": "da3c4fbc1acda42eae3b709e343fdd5f251a14377acb5ea6c64c68253dc10944"
+      "bytes": 2735376,
+      "sha256": "e07f4baea82f722206dfc8d7f416c70a1f92d45a6455008c0abea9f20766b985",
+      "sourceSetSha256": "536eb3ba1ac60d255cfd72172c26270b4b740fb6adbba1b7c2b8148fa55b9d4a"
     },
     "x86": {
       "name": "libtransiber_translation.so",
-      "bytes": 5281408,
-      "sha256": "ae149df25f3c7b2abad3ba5e679f722a4b09b9e58947ec0081cd93da881d3f61",
-      "sourceSetSha256": "da3c4fbc1acda42eae3b709e343fdd5f251a14377acb5ea6c64c68253dc10944"
+      "bytes": 5288600,
+      "sha256": "3a994c5950a7d287e106dad2c9cd01870bca7d33dc448589cc49231d9871820c",
+      "sourceSetSha256": "536eb3ba1ac60d255cfd72172c26270b4b740fb6adbba1b7c2b8148fa55b9d4a"
     },
     "x86_64": {
       "name": "libtransiber_translation.so",
-      "bytes": 4311752,
-      "sha256": "b439a3191850dceb090fd65d848e8c5baf5d03f82f7d47355a0965840ae05ec2",
-      "sourceSetSha256": "da3c4fbc1acda42eae3b709e343fdd5f251a14377acb5ea6c64c68253dc10944"
+      "bytes": 4318424,
+      "sha256": "7daaf05232955d31b0ded7950b48ebcf1bfbf2c9670d76fd962e346d6b892e7c",
+      "sourceSetSha256": "536eb3ba1ac60d255cfd72172c26270b4b740fb6adbba1b7c2b8148fa55b9d4a"
     }
   },
   "sources": {
     "common-jni/src/main/cpp/common/lease_registry.h": "555d0d227579c671a92f594de45ff7b7ee35eb646d4d68a4266758e00eec94bd",
+    "common-jni/src/main/cpp/common/opencl_loader.h": "4d137be9b471f1953127ab0bef3b295eca2fb26a88bce4aca747fbc0e52d34d1",
     "common-jni/src/main/cpp/translation/exports.map": "01a3130f08b26ac1f00ff059093f9df6c761a73e48cc56a8b4572954f61f1f45",
-    "common-jni/src/main/cpp/translation/text_model.h": "a8c4f0d1c3478280228ec54032d1b54a381792c7306254f4099e71f1a4be8f3e",
-    "common-jni/src/main/cpp/translation/translation_jni.cpp": "051c8e60302fcc74798007c6748ae472dd89d0de337db3bf3ef810922eecf2f5",
+    "common-jni/src/main/cpp/translation/opencl_exports.map": "69d25087bceb0a47f68fb4e587f591eef7f31839b111a2b99ef8af8bec3841ba",
+    "common-jni/src/main/cpp/translation/opencl_policy.h": "31f51e4f99ed485b0989c505936c527fe787763799eb5adf0d69518c363a166f",
+    "common-jni/src/main/cpp/translation/opencl_text_model.h": "4d57fd394f258d6298d9a1ec3ee6f917350b0636320056c9246d5a73f6d051a6",
+    "common-jni/src/main/cpp/translation/text_model.h": "62e1bd3a3919c2fe409c7d3ab3e703451e9f53f3e26b241e0293c523034fa69f",
+    "common-jni/src/main/cpp/translation/translation_jni.cpp": "cc612e95edbe5dc938ed959280212d83ffe5cf6cc779156caa5ab24843d53756",
     "common-jni/src/main/cpp/translation/translation_smoke.cpp": "21f7925cbca47d4b6418eeb446487954ab78718971d9971d620616801da4a985",
-    "scripts/translation/CMakeLists.txt": "a86803eba3e804dd97b3fb4c184a51afab17376a77afba635f5d700725d84bb1",
-    "scripts/translation/build-runtime.sh": "38b0afade30281a92f54bb6f2a4cdd66d271813e18da1a4f321ba24f0a9ae397"
+    "common-jni/src/main/cpp/translation/vulkan_exports.map": "286ebb9c6cace46c6830df73f9e95097065ff127abe073b3433c6fe51d2b9cb4",
+    "common-jni/src/main/cpp/translation/vulkan_policy.h": "c94850e6ea5688375d72fbe064a70e4ea8758f2573c39724de350ac4bdb7a119",
+    "common-jni/src/main/cpp/translation/vulkan_text_model.h": "4cf020bf8b666317b560ed2905a313b2d2dcb6f73f67669aa5033116a919e175",
+    "scripts/translation/CMakeLists.txt": "b0edce38713bc88be277808ab848e456a0cda401e82fdaeca2b8da2756d4ddbc",
+    "scripts/translation/build-runtime.sh": "8f34fbd4acd0a1bb9a3b057002616d2821522d04122801d9c469d9a94dd3c948",
+    "scripts/translation/generate-opencl-shim.py": "ccf1a205370a48aab3956b6dae1767ab473f14c231197bf85758a9cc02d783a5",
+    "scripts/translation/patch-opencl-backend.py": "521da9dec320649bab0f8bcf90c96d47a224920964ab4b1dacf6713119e2df37"
+  },
+  "vulkan": {
+    "abi": "arm64-v8a",
+    "binary": {
+      "name": "libtransiber_translation_vulkan.so",
+      "bytes": 29806560,
+      "sha256": "b981ddb542f48b730ec0ef040b4efb271d032bcae2955c58e9579899342d31dc",
+      "sourceSetSha256": "536eb3ba1ac60d255cfd72172c26270b4b740fb6adbba1b7c2b8148fa55b9d4a"
+    },
+    "dependencies": {
+      "Vulkan-Headers": "19725e4d48082fe78e26622b15d3080ccd54112b",
+      "SPIRV-Headers": "01e0577914a75a2569c846778c2f93aa8e6feddd"
+    },
+    "shaderCompilerSha256": "8f00047f9343034a116838056ee950893055769399a0019b1648f2e01ce4930c",
+    "shaderCompilerVersion": "shaderc v2022.3 ndk-r27-rc1\nspirv-tools v2022.4 ndk-r27-rc1\nglslang ndk-r27-rc1\n\nTarget: SPIR-V 1.0",
+    "selection": "Explicit opt-in only; fail on missing GPU, allocation or model errors; no automatic CPU fallback"
+  },
+  "opencl": {
+    "abi": "arm64-v8a",
+    "binary": {
+      "name": "libtransiber_translation_opencl.so",
+      "bytes": 8493064,
+      "sha256": "07cf27c12374f253ab6d251bdcf64d1880646f064f3708c787165fc49289e4ab",
+      "sourceSetSha256": "536eb3ba1ac60d255cfd72172c26270b4b740fb6adbba1b7c2b8148fa55b9d4a"
+    },
+    "dependencies": {
+      "OpenCL-Headers": "30bc20a8e90468e231d7c639805ae61ad1fefa4f"
+    },
+    "loader": "Typed API forwarding shim; dlopen libOpenCL.so only; no vendor paths or bundled driver; no OpenCL DT_NEEDED dependency",
+    "kernels": "Pinned llama Adreno kernels embedded as source; JIT by actual device driver; proprietary precompiled binary kernels disabled",
+    "errorHandling": "Pinned GGML CLI exit/CL_CHECK assertions rewritten to exceptions in a generated build copy; kernels unchanged",
+    "selection": "Explicit opt-in only; require accessible Adreno GPU, compiler, FP16, model layer assignment and actual GPU model buffers; no automatic CPU fallback"
   }
 }

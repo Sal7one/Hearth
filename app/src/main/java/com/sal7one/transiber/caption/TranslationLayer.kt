@@ -18,7 +18,7 @@ data class TranslationTarget private constructor(val languageTag: String) {
         val ARABIC = TranslationTarget("ar")
         val CHINESE = TranslationTarget("zh")
         fun of(code: String): TranslationTarget {
-            require(code.matches(Regex("[a-z]{2,3}")) && code !in setOf("auto", "und", "mul")) { "Invalid translation language: $code" }
+            require(com.sal7one.common_jni.translation.TranslationLanguages.isExplicitCode(code)) { "Invalid translation language: $code" }
             return TranslationTarget(code)
         }
         fun fromStored(value: String): TranslationTarget = when(value) {

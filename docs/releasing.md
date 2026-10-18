@@ -75,6 +75,25 @@ file belong in GitHub release assets, not committed source. Google Play publicat
 additionally requires its current store declarations and signing workflow; a passing
 local build is not store approval.
 
+## 0.25.0 draft preparation
+
+The [0.25.0 draft notes](releases/0.25.0.md) describe the bundles, portable JSON
+setups, model expansion and optional GPU engines. This draft uses version code
+84 and the base application ID `com.sal7one.transiber`. Its Release APKs are
+**unsigned** because this repository has no production signing configuration;
+they require the maintainer's signing key before installation. Do not substitute
+the QA debug key or another application's production key.
+
+The draft assets are ten APKs named
+`hearth-0.25.0-{play|foss}-release-{abi}-unsigned.apk`, where `abi` is
+`arm64-v8a`, `armeabi-v7a`, `x86`, `x86_64` or `universal`, plus `SHA256SUMS`,
+`hearth-0.25.0-source.zip` and the two importable JSON examples from
+`docs/examples/`. Build and verify both QA flavors as required above, then both
+Release flavors with `python3 scripts/verify-release.py --build-type release`.
+Archive only the tagged source commit and scan it before upload. A draft is not
+a public release and does not change the latest published download links. Keep
+the older, unrelated `v0.24.0` models/notes/documents draft intact.
+
 ## Latest published QA build
 
 [0.23.10 · TV dashboard and remote setup](https://github.com/Sal7one/Hearth/releases/tag/v0.23.10)

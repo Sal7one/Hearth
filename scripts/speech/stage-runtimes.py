@@ -24,8 +24,8 @@ ndk = Path(os.environ.get("ANDROID_NDK_HOME", Path.home() / "Library/Android/sdk
 host = "darwin-x86_64" if platform.system() == "Darwin" else "linux-x86_64"
 subprocess.run(["python3", str(repo / "scripts/speech/verify-android-runtimes.py"), str(work / output / "lib"), str(ndk / "toolchains/llvm/prebuilt" / host / "bin"), abi], check=True)
 records = json.loads((work / output / "runtime-artifacts.json").read_text())
-if len(records) != 2:
-    raise RuntimeError("Build both speech runtimes before publishing")
+if len(records) != 3:
+    raise RuntimeError("Build all three speech runtimes before publishing")
 asset_dir = repo / "common-jni/src/main/assets/licenses/speech"
 asset_dir.mkdir(parents=True, exist_ok=True)
 
@@ -35,6 +35,8 @@ sources = {
     "nemo-speech": work / "src/nemo",
     "ggml": work / "src/nemo/ggml",
     "sentencepiece": work / "src/sentencepiece",
+    "transcribepsy": work / "src/transcribepsy",
+    "transcribepsy-ggml": work / "src/transcribepsy/ggml",
 }
 for directory in (work / output / "qwen/_deps").glob("*-src"):
     sources[directory.name.removesuffix("-src")] = directory
@@ -65,18 +67,25 @@ for name, sha in ort_notices.items():
     target.write_bytes(data)
 
 pins = dict(re.findall(r'#define (HEARTH_\w+_REVISION) "([a-f0-9]+)"', (repo / "common-jni/src/main/cpp/speech/backend_versions.h").read_text()))
-source_files = list((repo / "common-jni/src/main/cpp/speech/backends").glob("*")) + list((repo / "scripts/speech").glob("*.cmake")) + [repo / "scripts/speech/build-runtimes.sh", repo / "common-jni/src/main/cpp/speech/backend_abi.h", repo / "common-jni/src/main/cpp/speech/utterance_segmenter.h", repo / "common-jni/src/main/cpp/speech/qwen_language.h", repo / "common-jni/src/main/cpp/speech/endpoint_budget.h", repo / "common-jni/src/main/cpp/speech/source_language.h"]
-source_hashes = {str(p.relative_to(repo)): hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(source_files) if p.is_file()}
+# Use the snapshot captured by the actual all-backend build. Never stamp
+# an old .so with source hashes calculated only at publication time.
+source_hashes = json.loads((work / output / "build-sources.json").read_text())
+for name, expected in source_hashes.items():
+    if hashlib.sha256((repo / name).read_bytes()).hexdigest() != expected:
+        raise RuntimeError(f"Speech source changed after compilation: {name}")
 for artifact in records:
     artifact["sourceSetSha256"] = source_set_digest(source_hashes)
 record_path = asset_dir / "runtime-build.json"
 previous = json.loads(record_path.read_text()) if record_path.exists() else {}
 other_records = [dict(r, abi=r.get("abi", "arm64-v8a")) for r in previous.get("artifacts", []) if r.get("abi", "arm64-v8a") != abi]
 all_records = other_records + records
-record_path.write_text(json.dumps({"abi": 1, "platform": "android-28", "architectures": sorted({r["abi"] for r in all_records}), "pins": pins, "artifacts": all_records, "adapterSources": source_hashes, "ndk": (ndk / "source.properties").read_text()}, indent=2) + "\n")
-(asset_dir / "README.txt").write_text("Hearth optional speech runtimes. CPU-only, no model weights or network clients.\n"
+record_path.write_text(json.dumps({"abi": 2, "platform": "android-28", "architectures": sorted({r["abi"] for r in all_records}), "pins": pins, "artifacts": all_records, "adapterSources": source_hashes, "ndk": (ndk / "source.properties").read_text()}, indent=2) + "\n")
+(asset_dir / "README.txt").write_text("Hearth speech runtimes. CPU defaults on all ABIs; no model weights or network clients.\n"
     "Qwen: sherpa-onnx with private static ONNX Runtime 1.27.1.\n"
     "Nemotron: NeMo-Speech.cpp with private static GGML and SentencePiece.\n"
+    "TranscribePsy: QVAC TranscribePsy with private static GGML; utterance-based CPU decoding.\n"
+    "Optional ARM64 TranscribePsy Vulkan/OpenCL plugins are loaded only by explicit selection. GPU encoder and decoder with CPU mel; resolved backend is checked after model load.\n"
+    "OpenCL uses an optional public vendor driver via a private typed loader; no vendor driver is bundled. GPU evidence: gpu-runtime-build.json.\n"
     "Runtime source pins and local adapter/patch recipe hashes: runtime-build.json.\n"
     "Build recipe: scripts/speech/build-runtimes.sh. Upstream source notices follow in subdirectories; some cover optional components not enabled in this build.\n"
     "Hearth modifies sherpa CPU-provider guards and retains Qwen language metadata; NeMo C++ internals are statically embedded behind one private ABI.\n")
@@ -90,4 +99,4 @@ for record in records:
     lines = [line for line in lines if not line.endswith("  " + relative)]
     lines.append(f"{record['sha256']}  {relative}")
 update_checksums(lib_root)
-print("Staged both runtimes, hashes and notices into common-jni")
+print("Staged all three runtimes, hashes and notices into common-jni")

@@ -2,11 +2,13 @@ package com.sal7one.common_jni.language
 
 import java.text.Normalizer
 import java.util.Locale
+import com.sal7one.common_jni.translation.IndexTranslationLanguages
 
 /** Presentation metadata only. Engine/model capabilities decide which codes are selectable. */
 data class LanguageOption(val code: String, val nativeName: String, val englishName: String, val flag: String) {
     val label: String get() = if (nativeName == englishName) nativeName else "$nativeName · $englishName"
-    val rtl: Boolean get() = code in setOf("ar", "fa", "he", "ur", "ps", "sd", "ug", "yi")
+    val rtl: Boolean get() = !code.endsWith("-Latn") &&
+        (code in setOf("ar", "fa", "he", "ur", "ps", "sd", "ug", "yi") || code in IndexTranslationLanguages.rightToLeftCodes)
 }
 
 object LanguageCatalog {
@@ -19,9 +21,10 @@ object LanguageCatalog {
         if (code == "auto") return LanguageOption(code, "Auto-detect", "Auto-detect", "🌐")
         if (code == "model") return LanguageOption(code, "Model language", "Model language", "🌐")
         val locale = Locale.forLanguageTag(code)
-        val english = when(code) { "yue" -> "Cantonese"; "fil" -> "Filipino"; else -> locale.getDisplayLanguage(Locale.ENGLISH).ifBlank { code } }
-        val native = nativeOverrides[code] ?: locale.getDisplayLanguage(locale).ifBlank { english }
-        val flag = regions[code]?.map { String(Character.toChars(0x1F1E6 + it.code - 'A'.code)) }?.joinToString("") ?: "🌐"
+        val english = IndexTranslationLanguages.names[code] ?: when(code) { "yue" -> "Cantonese"; "fil" -> "Filipino"; else -> locale.getDisplayLanguage(Locale.ENGLISH).ifBlank { code } }
+        val native = nativeOverrides[code] ?: (if (locale.script.isNotBlank()) locale.getDisplayName(locale) else locale.getDisplayLanguage(locale))
+            .takeUnless { it.isBlank() || it == code } ?: english
+        val flag = regions[code.substringBefore('-')]?.map { String(Character.toChars(0x1F1E6 + it.code - 'A'.code)) }?.joinToString("") ?: "🌐"
         return LanguageOption(code, native, english, flag)
     }
     private fun searchable(value: String) = Normalizer.normalize(value, Normalizer.Form.NFD)

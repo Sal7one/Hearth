@@ -20,6 +20,8 @@ import com.sal7one.transiber.models.SpeechArtifactCatalog
 import com.sal7one.transiber.models.SpeechArtifactKind
 import com.sal7one.transiber.models.ModelRegistry
 import com.sal7one.transiber.models.ModelEngineType
+import com.sal7one.transiber.models.VoskDownloads
+import com.sal7one.transiber.models.VoskPublisherPackage
 import com.sal7one.transiber.translation.LocalTranslationModels
 import com.sal7one.transiber.translation.MarianPackage
 import kotlinx.coroutines.*
@@ -55,25 +57,26 @@ internal fun reusableDownload(records: List<JSONObject>, url: String, modelId: S
 class FileDownloads(private val context: Context) {
  private val manager = context.getSystemService(DownloadManager::class.java)
  private val prefs = context.getSharedPreferences("file_downloads", Context.MODE_PRIVATE)
+ private val locationPrefs = com.sal7one.transiber.preferences.UserPreferences.store(context, "download-location")
  // Only the former app-default selection is migrated; deliberate custom folders remain selected.
  init {
-  if (Build.VERSION.SDK_INT >= 29 && prefs.getString("folder_uri", null) ==
+  if (Build.VERSION.SDK_INT >= 29 && locationPrefs.getString("folder_uri", null) ==
    "content://com.android.externalstorage.documents/tree/primary%3ADownload%2FReal%20time%20transiber") {
-   synchronized(lock) { check(prefs.edit().remove("folder_uri").remove("folder_label").commit()) }
+   synchronized(lock) { check(locationPrefs.edit().remove("folder_uri").remove("folder_label").commit()) }
   }
  }
- val folderUri: Uri? get() = prefs.getString("folder_uri", null)?.let(Uri::parse)
- val locationLabel: String get() = prefs.getString("folder_label", null) ?: "Downloads/Hearth"
+ val folderUri: Uri? get() = locationPrefs.getString("folder_uri", null)?.let(Uri::parse)
+ val locationLabel: String get() = locationPrefs.getString("folder_label", null) ?: "Downloads/Hearth"
  fun chooseFolder(uri: Uri) {
   check(ByokPolicy.FEATURE_BYOK)
   val flags = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
   context.contentResolver.takePersistableUriPermission(uri, flags)
   val folder = DocumentFile.fromTreeUri(context, uri) ?: error("Cannot open selected folder")
   check(folder.isDirectory && folder.canWrite()) { "Selected folder is not writable" }
-  synchronized(lock) { check(prefs.edit().putString("folder_uri", uri.toString())
+  synchronized(lock) { check(locationPrefs.edit().putString("folder_uri", uri.toString())
    .putString("folder_label", android.provider.DocumentsContract.getTreeDocumentId(uri).replace("primary:", "Device/")).commit()) }
  }
- fun useDefaultFolder() { synchronized(lock) { check(prefs.edit().remove("folder_uri").remove("folder_label").commit()) } }
+ fun useDefaultFolder() { synchronized(lock) { check(locationPrefs.edit().remove("folder_uri").remove("folder_label").commit()) } }
  fun openFolderIntent() = Intent(Intent.ACTION_VIEW).setDataAndType(folderUri?.let { android.provider.DocumentsContract.buildDocumentUriUsingTree(it, android.provider.DocumentsContract.getTreeDocumentId(it)) } ?: Uri.parse("content://com.android.externalstorage.documents/document/primary%3ADownload%2FHearth"), "vnd.android.document/directory")
   .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
 
@@ -287,6 +290,27 @@ class FileDownloads(private val context: Context) {
    model.id
   } else {
    val artifact = SpeechArtifactCatalog.find(modelId)
+   if (artifact?.kind == SpeechArtifactKind.VOSK) {
+    val source = checkNotNull(VoskDownloads.find(modelId)) { "Unknown pinned Vosk package" }
+    val registry = ModelRegistry.getInstance(context)
+    registry.getModelsForEngine(ModelEngineType.VOSK).filter { it.digest?.hex == source.treeSha256 }.forEach { existing ->
+     if (runCatching { registry.getProvider(existing.id)?.getModelPath() ?: error("Installed model is missing") }.isFailure)
+      registry.unregisterModel(existing.id, deleteFiles = true)
+    }
+    val job = currentCoroutineContext()
+    val work = File(context.cacheDir, "vosk-publisher-$id")
+    check(!work.exists() || work.deleteRecursively()) { "Cannot clear interrupted Vosk installation" }
+    check(work.mkdirs()) { "Cannot create Vosk installation staging directory" }
+    try {
+     val imported = registry.registerPinnedDirectory(checkNotNull(artifact.archiveRoot), source.treeSha256) { sink ->
+      context.contentResolver.openInputStream(uri(id))?.use { input ->
+       VoskPublisherPackage.populate(input, source, work, sink) { job.ensureActive() }
+      } ?: error("Cannot open downloaded Vosk archive")
+     }
+     require(imported.engineType == ModelEngineType.VOSK && imported.isValid) { "Downloaded package is not a supported Vosk model" }
+     return@withContext imported.id
+    } finally { work.deleteRecursively() }
+   }
    if (artifact?.kind == SpeechArtifactKind.WHISPER) {
     val expected = artifact.sha256
     val registry = ModelRegistry.getInstance(context)
@@ -318,7 +342,7 @@ class FileDownloads(private val context: Context) {
    require(item.installed) { "Voice model is not installed" }
    val voice=asset.filename.removeSuffix(".json").takeIf {it in VoiceCatalog.voices} ?: "F1"
    require(VoiceModels(File(context.filesDir,"voice-models")).ready(voice)) { "Finish downloading the voice engine before selecting it" }
-   context.getSharedPreferences("voice-output",0).edit().putString("backend","supertonic").putString("voice",voice).apply()
+   com.sal7one.transiber.preferences.UserPreferences.store(context, "voice-output").edit().putString("backend","supertonic").putString("voice",voice).apply()
    return
   }
   OcrCatalog.find(modelId)?.let { asset ->
@@ -326,7 +350,7 @@ class FileDownloads(private val context: Context) {
    if(asset.id == OcrCatalog.detector.id)return
    OcrCatalog.profiles.firstOrNull { profile -> profile.assets.any { it.id == asset.id } }?.let { profile ->
     require(OcrModels(File(context.filesDir, "ocr-models")).ready(profile)) { "Finish installing all files for ${profile.label} first" }
-    val settings = context.getSharedPreferences("camera-translate", 0)
+    val settings = com.sal7one.transiber.preferences.UserPreferences.store(context, "camera-translate")
     val source = settings.getString("source", "en")
     settings.edit().putString("profile", profile.id).putString("source", source?.takeIf { it in profile.languages } ?: profile.languages.first()).apply()
    }
@@ -334,6 +358,17 @@ class FileDownloads(private val context: Context) {
   }
   val speech = SpeechDownloads.find(modelId)
   val artifact = SpeechArtifactCatalog.find(modelId)
+  if (artifact?.kind == SpeechArtifactKind.VOSK) {
+   require(item.installed && item.installedId.isNotBlank()) { "Vosk model is not installed" }
+   val model = ModelRegistry.getInstance(context).getModel(item.installedId)
+   val source = checkNotNull(VoskDownloads.find(modelId))
+   require(model?.isValid == true && model.engineType == ModelEngineType.VOSK && model.digest?.hex == source.treeSha256) {
+    "Installed Vosk model is unavailable"
+   }
+   CaptionConfigStore.update(context) { it.copy(engine = com.sal7one.transiber.caption.CaptionEngineChoice.VOSK,
+    modelId = item.installedId, streamLanguage = source.language) }
+   return
+  }
   if (artifact?.kind == SpeechArtifactKind.WHISPER) {
    require(item.installed && item.installedId.isNotBlank()) { "Whisper model is not installed" }
    val model = ModelRegistry.getInstance(context).getModel(item.installedId)

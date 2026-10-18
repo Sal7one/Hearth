@@ -19,7 +19,7 @@ class TvSetupStatusTest {
         val config = CaptionOverlayConfig(engine = CaptionEngineChoice.CLOUD)
         assertFalse(readTvSetupStatus(context, config).configured)
         if (!ByokPolicy.FEATURE_BYOK) {
-            assertTrue(context.getSharedPreferences("byok_keys", 0).all.isEmpty())
+            assertTrue(com.sal7one.transiber.preferences.UserPreferences.store(context, "byok_keys").all.isEmpty())
             return@runBlocking
         }
         CloudConfigStore.configureSpeech(context, CloudConfigStore.Provider.OPENAI,
@@ -30,7 +30,7 @@ class TvSetupStatusTest {
         assertTrue(readTvSetupStatus(context, config.copy(mode = CaptionMode.CAPTIONS, speakCaptions = false)).configured)
         assertTrue(ApiKeyStore.setOpenAiKey(context, ""))
         assertFalse(readTvSetupStatus(context, config).configured)
-        context.getSharedPreferences("byok_keys", 0).edit().putString("openai_api_key_v1", "invalid-envelope").commit()
+        com.sal7one.transiber.preferences.UserPreferences.store(context, "byok_keys").edit().putString("openai_api_key_v1", "invalid-envelope").commit()
         val broken = readTvSetupStatus(context, config)
         assertFalse(broken.configured)
         assertTrue(broken.error.orEmpty().contains("could not be decrypted"))

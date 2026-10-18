@@ -63,7 +63,7 @@ class ReadingStartActivity : AppCompatActivity() {
     val uiText = rememberUiText()
 
         val currentSetup = setupRevision
-        val prefs=remember {getSharedPreferences("reading-overlay",0)}
+        val prefs=remember {com.sal7one.transiber.preferences.UserPreferences.store(this, "reading-overlay")}
         val (selection,selectionStore)=rememberOcrPreferences()
         val scope=rememberCoroutineScope()
         var options by rememberSaveable {mutableStateOf(false)}
@@ -162,7 +162,7 @@ class ReadingStartActivity : AppCompatActivity() {
         }
         if(options)FeatureOptionsSheet(uiText(UiR.string.ui_reading_settings_8195d), {options=false}, optionsScroll) {
             TranslatorChooser(provider,localModelId,"Used by Camera and the reading overlay.",selection.source,selection.target,
-                onModels={getSharedPreferences("translation-browser",0).edit().putBoolean("open",true).apply();startActivity(Intent(this@ReadingStartActivity,com.sal7one.transiber.MainActivity::class.java).putExtra("page",1).putExtra("returnToReading",true))},
+                onModels={com.sal7one.transiber.preferences.UserPreferences.store(this@ReadingStartActivity, "translation-browser").edit().putBoolean("open",true).apply();startActivity(Intent(this@ReadingStartActivity,com.sal7one.transiber.MainActivity::class.java).putExtra("page",1).putExtra("returnToReading",true))},
                 onSelect={id,model->scope.launch {try {
                     selectionStore.update {it.copy(providerId=id,localModelId=model)};error=null
                 } catch(e: kotlinx.coroutines.CancellationException){throw e}

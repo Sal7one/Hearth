@@ -65,7 +65,13 @@ class SpeechModelPackage private constructor(
             require(actual == declared + MANIFEST) { "Speech package contains undeclared files: ${actual - declared - MANIFEST}" }
             val roleJson = json.getJSONObject("roles")
             val roles = roleJson.keys().asSequence().associateWith { safeRelative(roleJson.getString(it)) }
-            val expected = if (profile.backend == SpeechBackend.MOONSHINE) setOf("model", "encoder", "decoder") else if (profile.backend == SpeechBackend.QWEN3_ASR) setOf("frontend", "encoder", "decoder", "tokenizer") else if (profile.backend == SpeechBackend.OMNILINGUAL_CTC) setOf("model", "tokenizer") else if (profile.backend == SpeechBackend.PHONON) setOf("model", "frontend", "encoder", "decoder") else setOf("model")
+            val expected = when (profile.backend) {
+                SpeechBackend.MOONSHINE -> setOf("model", "encoder", "decoder")
+                SpeechBackend.QWEN3_ASR -> setOf("frontend", "encoder", "decoder", "tokenizer")
+                SpeechBackend.OMNILINGUAL_CTC -> setOf("model", "tokenizer")
+                SpeechBackend.PHONON -> setOf("model", "frontend", "encoder", "decoder")
+                SpeechBackend.NEMOTRON_3_5, SpeechBackend.TRANSCRIBEPSY -> setOf("model")
+            }
             require(roles.keys == expected) { "${profile.id} requires roles: $expected" }
             roles.forEach { (role, path) ->
                 if (role == "tokenizer" && profile.backend == SpeechBackend.QWEN3_ASR) {
@@ -74,9 +80,9 @@ class SpeechModelPackage private constructor(
                     }
                 } else require(path in declared) { "Role $role references undeclared asset: $path" }
             }
-            if (profile.backend == SpeechBackend.NEMOTRON_3_5) {
+            if (profile.backend == SpeechBackend.NEMOTRON_3_5 || profile.backend == SpeechBackend.TRANSCRIBEPSY) {
                 val magic = ByteArray(4)
-                File(root, roles.getValue("model")).inputStream().use { require(it.read(magic) == 4 && magic.contentEquals("GGUF".toByteArray())) { "Nemotron requires a GGUF model" } }
+                File(root, roles.getValue("model")).inputStream().use { require(it.read(magic) == 4 && magic.contentEquals("GGUF".toByteArray())) { "${profile.id} requires a GGUF model" } }
             }
             return SpeechModelPackage(root.absoluteFile, profile, total, manifestInspection.digest.hex, roles)
         }

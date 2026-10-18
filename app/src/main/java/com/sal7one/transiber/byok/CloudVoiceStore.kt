@@ -4,7 +4,7 @@ import android.content.Context
 
 /** Separate voice preferences and encrypted, endpoint-scoped keys. No STT setting is written. */
 internal object CloudVoiceStore {
-    private fun prefs(context: Context) = context.applicationContext.getSharedPreferences("cloud_voice_v1", Context.MODE_PRIVATE)
+    private fun prefs(context: Context) = com.sal7one.transiber.preferences.UserPreferences.store(context, "cloud_voice_v1")
 
     @Synchronized
     fun config(context: Context): CloudVoiceConfig {

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="speech_acceleration_title">تسريع التعرّف على الكلام</string>
+    <string name="speech_acceleration_note">محركات ARM64 تجريبية. قارن السرعة ودقة النص في الاختبارات أولاً. يستهدف OpenCL معالجات Adreno ويعتمد Vulkan على تعريف الرسوميات. أعد تشغيل الترجمة النصية للتطبيق. تظهر الأخطاء ويتطلب الرجوع إلى CPU اختياراً صريحاً.</string>
+    <string name="translation_acceleration_opencl">OpenCL GPU · تجريبي</string>
+    <string name="translation_acceleration_opencl_note">محرك Adreno OpenCL. تظهر معلومات التعريف وذاكرة النموذج على GPU بعد التحميل. تبقى بعض العمليات على CPU. قارن السرعة وجودة النص قبل اختيار هذا المحرك.</string>
+    <string name="benchmark_compare_acceleration">مقارنة CPU وGPU</string>
+    <string name="benchmark_compare_acceleration_hint">يشغّل النماذج والمدخلات نفسها على كل محرك مدعوم. يسجّل التعريفات غير المتاحة كأخطاء ويقارن الدقة والسرعة. لا يغيّر إعداداتك المحفوظة.</string>
+</resources>

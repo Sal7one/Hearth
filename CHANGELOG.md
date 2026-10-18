@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.25.0 draft — 2026-10-19 · Bundles, portable setups and optional GPU engines
+
+- Preserve Hearth's appearance while making Basic mode a compact bundle gallery. Keep full catalogs, model precision choices, custom imports, GPU settings and tuning in Advanced. Speech recognition, optional translation and optional TTS remain independent.
+- Import/export bounded, versioned JSON setups with model readiness previews, pinned catalog references and portable custom model digests. Omit credentials, endpoints, weights and device-local paths; resolve missing models through verified download/import.
+- Migrate remaining user preferences and encrypted credential envelopes to DataStore, preserving Keystore encryption and existing values. Audit model copies and source grants asynchronously on each process launch; show repair actions and retain full integrity checks before inference.
+- Expand downloadable speech artifacts from 33 to 49, including language-specific Moonshine v2, pinned Vosk packages and October's TranscribePsy 250M. Add Index-Translate 2B, 12 direct Marian directions and 30 explicit two-model English pivots. Group model/download details and expose actual installation states.
+- Reduce native translation worker/prompt overhead and Marian decoder copies, disable idle speech worker spinning, and fix Whisper first-call/context work. Add optional ARM64 Vulkan Whisper and Vulkan/Adreno OpenCL TranscribePsy and GGUF translation engines, strict runtime reporting and same-input CPU/GPU comparison. Keep CPU defaults and all four CPU architectures for TVs and phones; host compatibility results do not establish Android speed or quality.
+- Prepare ten unsigned Release APKs with base application ID `com.sal7one.transiber`, code 84, SHA256SUMS, source archive and JSON examples for a new GitHub draft. Signing is required before installation. Preserve the unrelated older `v0.24.0` draft. See [release notes](docs/releases/0.25.0.md) for evidence and remaining owner checks.
+
 ## TV branch · subtitle presentation
 
 - Make the TV caption overlay text-only, removing inline buttons, drag/history controls and the translating/provider bar. Keep phone controls and the separate TV controls activity.

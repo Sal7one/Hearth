@@ -22,7 +22,7 @@ internal data class OverlayPreflight(val config: CaptionOverlayConfig, val signa
 /** No downloads, remote requests or recognizer allocation. Runtime still verifies weights when opening. */
 internal suspend fun overlayPreflight(context: Context, shortcut: OverlayShortcut): OverlayPreflight = withContext(Dispatchers.IO) {
     val config = CaptionConfigStore.config(context).first()
-    val camera = context.getSharedPreferences("camera-translate", 0)
+    val camera = com.sal7one.transiber.preferences.UserPreferences.store(context, "camera-translate")
     val readingModel = OcrPreferences(context).read().translationModel(config.localTranslationModelId)
     val profileId = camera.getString("profile", "latin")!!
     val source = camera.getString("source", "en")!!

@@ -1,6 +1,6 @@
 package com.sal7one.common_jni.engine.onnx
 
-import com.sal7one.common_jni.engine.SttEngine
+import com.sal7one.common_jni.engine.CancellableSttEngine
 import com.sal7one.common_jni.engine.SttError
 import com.sal7one.common_jni.model.*
 import kotlinx.coroutines.Dispatchers
@@ -23,7 +23,7 @@ import kotlin.jvm.Throws
  * - Added @Throws annotations
  * - Fixed duplicate transcribeBatch method
  */
-class OnnxEngine : SttEngine {
+class OnnxEngine : CancellableSttEngine {
 
     private var nativeHandle: Long = 0L
     private var _isInitialized = false
@@ -86,7 +86,7 @@ class OnnxEngine : SttEngine {
      * Request cancellation of current operation.
      * Thread-safe - can be called from any thread.
      */
-    fun cancel() {
+    override fun cancel() {
         if (nativeHandle != 0L) {
             nativeCancelOnnx(nativeHandle)
         }
@@ -178,8 +178,9 @@ class OnnxEngine : SttEngine {
                 nativeGetPartialOnnx(nativeHandle)?.takeIf { it.isNotBlank() }?.let {
                     PartialTranscript(it.trim(), System.currentTimeMillis(), false)
                 }
-            } catch (e: Exception) {
-                null
+            } catch (e: kotlinx.coroutines.CancellationException) { throw e }
+            catch (e: Exception) {
+                throw SttError.ProcessingFailed(e.message ?: "ONNX partial failed")
             }
         }
 

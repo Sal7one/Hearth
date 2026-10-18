@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="portable_setup_title">Portable setups</string>
+    <string name="portable_setup_description">Save or import your speech, translation and voice choices. Models install separately; keys and file locations stay on this device.</string>
+    <string name="portable_setup_import">Import setup</string>
+    <string name="portable_setup_current">Save current setup</string>
+    <string name="portable_setup_include">Include these stages</string>
+    <string name="portable_setup_speech">Speech</string>
+    <string name="portable_setup_translation">Translation</string>
+    <string name="portable_setup_voice">Voice</string>
+    <string name="portable_setup_name">Setup name</string>
+    <string name="portable_setup_off">Off</string>
+    <string name="portable_setup_source">Spoken / source language</string>
+    <string name="portable_setup_target">Translation language</string>
+    <string name="portable_setup_auto">Automatic</string>
+    <string name="portable_setup_ready">Ready to apply</string>
+    <string name="portable_setup_needs_models">Review required</string>
+    <string name="portable_setup_missing">Missing: %1$s</string>
+    <string name="portable_setup_apply">Apply this setup</string>
+    <string name="portable_setup_download">Download missing models</string>
+    <string name="portable_setup_offline">Import the missing models using the model screens below.</string>
+    <string name="portable_setup_export">Export JSON</string>
+    <string name="portable_setup_recheck">Check again</string>
+    <string name="portable_setup_manage_speech">Speech models / locate import</string>
+    <string name="portable_setup_manage_translation">Translation models / connections</string>
+    <string name="portable_setup_manage_voice">Voice models / connections</string>
+    <string name="portable_setup_saved">Setup file saved.</string>
+    <string name="portable_setup_applied">Setup applied.</string>
+    <string name="portable_setup_queued">Downloads queued. Check again after installation, then apply explicitly.</string>
+    <string name="portable_setup_details">Model details</string>
+    <string name="portable_setup_cancel">Cancel</string>
+    <string name="portable_setup_prepare">Prepare file</string>
+</resources>

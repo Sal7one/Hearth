@@ -35,7 +35,9 @@ internal fun captionLanguageModel(context: Context, config: CaptionOverlayConfig
     val vocab = if (type == ModelEngineType.WHISPER) runCatching {
         java.io.File(model.path).inputStream().use(::whisperVocabulary)
     }.getOrNull() else null
-    return CaptionLanguageModel(model.id, model.name, vocab)
+    val fixedLanguage = if (type == ModelEngineType.VOSK)
+        com.sal7one.transiber.models.VoskDownloads.findByTreeSha256(model.digest?.hex)?.language else null
+    return CaptionLanguageModel(model.id, model.name, vocab, fixedLanguage)
 }
 
 /** File headers/manifests are read off Main; returning from model setup refreshes the capability view. */

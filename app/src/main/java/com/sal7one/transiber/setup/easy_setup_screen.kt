@@ -27,7 +27,7 @@ import com.sal7one.transiber.ui.theme.glassPanel
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp),verticalArrangement=Arrangement.spacedBy(20.dp)) {
         if(step.finished) {
             Text(uiText(UiR.string.ui_setup_saved_8f224),style=MaterialTheme.typography.headlineLarge)
-            Text(if(step.local) uiText(if (television) UiR.string.tv_local_saved else UiR.string.ui_nemotron_translation_ready_on_this_phone_7864d) else uiText(UiR.string.ui_your_speech_connection_is_saved_it_connects_when_you_start_389c0))
+            Text(if(step.local) uiText(UiR.string.setup_bundle_complete) else uiText(UiR.string.ui_your_speech_connection_is_saved_it_connects_when_you_start_389c0))
             if (television) com.sal7one.transiber.caption.RemoteButton(uiText(UiR.string.tv_step_overlay), onClick = {
                 com.sal7one.transiber.caption.OverlayControlsActivity.open(context)
             })
@@ -36,7 +36,7 @@ import com.sal7one.transiber.ui.theme.glassPanel
         } else if(step==EasySetupStep.CHOICE) {
             Text(uiText(UiR.string.ui_how_would_you_like_to_start_f8dd2),style=MaterialTheme.typography.headlineLarge)
             Text(uiText(UiR.string.ui_easy_setup_for_live_captions_caac2),style=MaterialTheme.typography.titleMedium)
-            SetupChoice(uiText(UiR.string.ui_on_this_phone_03f49),uiText(UiR.string.ui_nemotron_local_translation_fd186),R.drawable.home_captions,Color(0xFF568DDC),true) {onStep(EasySetupStep.LOCAL)}
+            SetupChoice(uiText(UiR.string.ui_on_this_phone_03f49),uiText(UiR.string.setup_bundle_choices),R.drawable.home_captions,Color(0xFF568DDC),true) {onStep(EasySetupStep.LOCAL)}
             SetupChoice(uiText(UiR.string.ui_cloud_b2efe),if(ByokPolicy.FEATURE_BYOK) uiText(UiR.string.ui_openai_openrouter_local_server_6a1cc) else uiText(UiR.string.ui_unavailable_in_this_offline_build_89320),R.drawable.home_text,Color(0xFFB183EA),ByokPolicy.FEATURE_BYOK) {onStep(EasySetupStep.CLOUD)}
         } else {
             TextButton(onClick={onStep(EasySetupStep.CHOICE)}) {Text(uiText(UiR.string.ui_choose_another_setup_fbf26))}

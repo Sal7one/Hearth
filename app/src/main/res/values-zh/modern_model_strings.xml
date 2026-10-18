@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="label_captionenginechoice_transcribepsy_label">TranscribePsy（本地）</string>
+    <string name="label_captionenginechoice_transcribepsy_explanation">使用 TranscribePsy GGUF 模型在设备上识别八种欧洲语言。短句结束后显示最终字幕。翻译使用独立模型。</string>
+    <string name="model_transcribepsy_language_note">TranscribePsy · 支持八种欧洲语言，在短句结束后输出最终文字。请选择已知的源语言以进行翻译；此设置不会强制识别语言。自动模式保留未知源语言，仅显示原文字幕。</string>
+</resources>

@@ -30,8 +30,22 @@ class ModelSourcesTest {
         assertNull(ModelSources.speech(CaptionEngineChoice.QWEN).single { it.id == "qwen3-asr-1.7b" }.download)
         assertTrue(ModelSources.speech(CaptionEngineChoice.CLOUD).isEmpty())
         assertTrue(ModelSources.speech(CaptionEngineChoice.WHISPER).single().installation.contains(".bin"))
-        assertTrue(ModelSources.speech(CaptionEngineChoice.VOSK).single().installation.contains("extract"))
         assertTrue(ModelSources.marian.installation.contains("English → Arabic"))
+    }
+
+    @Test fun voskSourcesSeparatePinnedAutomaticInstallsFromCustomFolderImports() {
+        val sources = ModelSources.speech(CaptionEngineChoice.VOSK)
+        val downloadable = sources.filter { it.download != null }
+        assertEquals(VoskDownloads.all.map { it.id }.toSet(), downloadable.map { it.id }.toSet())
+        downloadable.forEach { source ->
+            val artifact = checkNotNull(VoskDownloads.find(source.id)).artifact
+            assertEquals(artifact.url, source.download)
+            assertEquals(artifact.bytes, source.downloadBytes)
+            assertTrue(source.installation.contains("automatically"))
+        }
+        val custom = sources.single { it.id == "vosk" }
+        assertNull(custom.download)
+        assertTrue(custom.installation.contains("extracted folders"))
     }
 
     @Test fun whisperArtifactsArePinnedAndGroupedByCheckpointAndQuant() {

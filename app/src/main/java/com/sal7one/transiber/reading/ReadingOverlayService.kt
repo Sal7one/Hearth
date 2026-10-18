@@ -40,7 +40,7 @@ class ReadingOverlayService : Service() {
     private val scope=CoroutineScope(SupervisorJob()+Dispatchers.Main.immediate)
     private val handler=Handler(Looper.getMainLooper())
     private val wm by lazy {getSystemService(WindowManager::class.java)}
-    private val prefs by lazy {getSharedPreferences("reading-overlay",0)}
+    private val prefs by lazy {com.sal7one.transiber.preferences.UserPreferences.store(this, "reading-overlay")}
     private lateinit var controller: CameraOcrController
     private lateinit var voice: VoicePlayer
     private lateinit var profile: OcrProfile

@@ -14,6 +14,10 @@ hard-of-hearing users.
 
 ## Download
 
+The **0.25.0 draft** adds setup bundles, portable JSON recipes, modern local
+models and optional GPU backends. [Draft build notes](docs/releases/0.25.0.md).
+The public installable downloads below remain the current published QA release.
+
 **[Hearth 0.23.10 — release notes and SHA256SUMS](https://github.com/Sal7one/Hearth/releases/tag/v0.23.10)**
 
 Choose **Universal** if you do not know your phone or TV's CPU.
@@ -116,7 +120,7 @@ pause/resume, stop captions, move/resize the overlay, adjust its appearance, or
 Style and Session, with a scrolling options pane and a large fixed preview.
 The preview uses sample captions and follows the real overlay geometry and theme.
 
-On the TV branch, the live overlay contains **text only**: no inline buttons,
+The live TV overlay contains **text only**: no inline buttons,
 drag handle, history controls or translating/provider bar. **Style → Subtitles**
 centers the current caption in white with a shadow, without a panel or border.
 **Position → Center** places it at screen center; Bottom remains the default.

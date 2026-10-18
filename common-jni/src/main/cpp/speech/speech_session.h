@@ -11,13 +11,14 @@
 namespace stt::speech {
 struct SpeechConfig {
     std::string backend;
+    std::string acceleration;
     std::array<std::string, 7> paths; // model, frontend, encoder, decoder, tokenizer, language, reserved
     HearthSpeechConfig value{};
     explicit SpeechConfig(const std::string& json);
     SpeechConfig(const SpeechConfig&) = delete;
     SpeechConfig& operator=(const SpeechConfig&) = delete;
 };
-const HearthSpeechBackend& loadBackend(const std::string& id);
+const HearthSpeechBackend& loadBackend(const std::string& id, const std::string& acceleration = "cpu");
 
 class SpeechNativeSession {
 public:
@@ -26,6 +27,7 @@ public:
     std::string push(const float* samples, size_t count, int64_t offset);
     std::string finish();
     void reset();
+    std::string executionInfo() const;
     std::mutex mutex; // JNI calls hold both a lifetime lease and this operation lock.
 private:
     void check(int code);

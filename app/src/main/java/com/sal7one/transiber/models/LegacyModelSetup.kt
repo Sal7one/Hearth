@@ -17,7 +17,7 @@ import kotlinx.coroutines.*
 
 @Composable
 internal fun LegacyModelSetup(type: ModelEngineType, config: CaptionOverlayConfig,
-    update: ((CaptionOverlayConfig) -> CaptionOverlayConfig) -> Unit) {
+    update: ((CaptionOverlayConfig) -> CaptionOverlayConfig) -> Unit, showDownloadSources: Boolean = true) {
     val uiText = rememberUiText()
 
     val context = LocalContext.current
@@ -57,6 +57,6 @@ internal fun LegacyModelSetup(type: ModelEngineType, config: CaptionOverlayConfi
         }
         if (busy) LinearProgressIndicator(Modifier.fillMaxWidth())
         message?.let { Text(it) }
-        ModelSourcePanel(if (type == ModelEngineType.TRANSLATE) listOf(ModelSources.marian) else ModelSources.speech(if (type == ModelEngineType.WHISPER) CaptionEngineChoice.WHISPER else CaptionEngineChoice.VOSK))
+        if (showDownloadSources) ModelSourcePanel(if (type == ModelEngineType.TRANSLATE) listOf(ModelSources.marian) else ModelSources.speech(if (type == ModelEngineType.WHISPER) CaptionEngineChoice.WHISPER else CaptionEngineChoice.VOSK))
     }
 }

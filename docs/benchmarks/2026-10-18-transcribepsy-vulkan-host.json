@@ -1,0 +1,302 @@
+{
+  "date": "2026-10-18",
+  "host": "Apple M4 Pro",
+  "os": "macOS-26.5-arm64-arm-64bit-Mach-O",
+  "runtimeRevision": "364ec36130dc87d2cd46e596598268a6e3313751",
+  "model": {
+    "profile": "transcribepsy-250m-eu-sub-q8",
+    "sha256": "a93ef324d38e410b5e49389db95d06364eddbb890b74a69f311e482d2fda6f4b",
+    "bytes": 304879584
+  },
+  "fixtureFormat": "macOS system speech synthetic mono16kHz PCM16; one train-arrival sentence perlanguage, no accuracy benchmark",
+  "fixtures": {
+    "en": {
+      "sha256": "09a5ef9bc0167c4a6d1cee475b50cc8a1578945c59d5afd020a624fa354cb46e",
+      "bytes": 65032
+    },
+    "nl": {
+      "sha256": "e1a9b757b7b03dd3fd1dcafcfd7ceb672640e3e4344b8ade712f7c4dbe9ad91d",
+      "bytes": 71238
+    },
+    "fr": {
+      "sha256": "b53b79942cc0205293e31c51517e857c4d961aec150a38f6370269f4afdce105",
+      "bytes": 71250
+    },
+    "de": {
+      "sha256": "306282ff3f2d8e77c8839e11261149c5cf484db2b64368f6df193f7dcf3611f4",
+      "bytes": 74210
+    },
+    "it": {
+      "sha256": "6eda4b177116e4945cbc97bb5c03a92fcd69a74323acf1e61a60d894a01a703e",
+      "bytes": 76438
+    },
+    "pl": {
+      "sha256": "a48fbdbc02fcd74c3b4e8be1144882e00ad641a1f967b3daf1060a7e5f38a1d9",
+      "bytes": 86082
+    },
+    "pt": {
+      "sha256": "50ddde8c36e39cf3a3a79ffe9f5e7915c4ac1af85ba2b466d2a909e02307c632",
+      "bytes": 100242
+    },
+    "es": {
+      "sha256": "8981d87ae46ed309edcad8afa6f4fde957d1c384a8de47ca3f021e9c1036c859",
+      "bytes": 87154
+    }
+  },
+  "execution": {
+    "cpu": "TranscribePsy · mel: CPU · encoder: CPU · decoder: CPU",
+    "vulkan": "TranscribePsy · mel: CPU · encoder: Vulkan0 · decoder: Vulkan0; Apple M4 Pro through MoltenVK"
+  },
+  "method": "Separate process per utterance; four CPU threads; same production utterance segmenter; load timing separate; each backend compiled from exact runtime pin; OpenCL not run on Adreno hardware",
+  "caveats": [
+    "Vulkan inference was slower than CPU on this M4 Pro for these short utterances; do not infer Android acceleration.",
+    "All eight transcripts match CPU exactly, including existing recognition mistakes in German, Portuguese and Spanish.",
+    "One clip per language does not establish WER or device compatibility.",
+    "GPU encoder and decoder; mel extraction remains CPU.",
+    "First ever Vulkan inference English: 0.952921 seconds; subsequently warmed driver/cache measured below."
+  ],
+  "allEightCpuGpuTranscriptsIdentical": true,
+  "allRunsExactlyOneFinalUnknownSource": true,
+  "runs": [
+    {
+      "backend": "cpu",
+      "fixture": "en",
+      "events": [
+        {
+          "text": "The next train arrives in five minutes.",
+          "language": "",
+          "final": true,
+          "utteranceId": 1,
+          "revision": 1,
+          "audioEndSamples": 32516
+        }
+      ],
+      "timing": "0.267538 inference_seconds=0.0370961 audio_seconds=2.03225"
+    },
+    {
+      "backend": "cpu",
+      "fixture": "nl",
+      "events": [
+        {
+          "text": "De volgende trein komt over vijf minuten.",
+          "language": "",
+          "final": true,
+          "utteranceId": 1,
+          "revision": 1,
+          "audioEndSamples": 35619
+        }
+      ],
+      "timing": "0.229166 inference_seconds=0.0372409 audio_seconds=2.22619"
+    },
+    {
+      "backend": "cpu",
+      "fixture": "fr",
+      "events": [
+        {
+          "text": "Le prochain train arrive dans 5 minutes.",
+          "language": "",
+          "final": true,
+          "utteranceId": 1,
+          "revision": 1,
+          "audioEndSamples": 35625
+        }
+      ],
+      "timing": "0.235642 inference_seconds=0.0422199 audio_seconds=2.22656"
+    },
+    {
+      "backend": "cpu",
+      "fixture": "de",
+      "events": [
+        {
+          "text": "Der nächste zukommt in fünf Minuten.",
+          "language": "",
+          "final": true,
+          "utteranceId": 1,
+          "revision": 1,
+          "audioEndSamples": 37105
+        }
+      ],
+      "timing": "0.232752 inference_seconds=0.0399593 audio_seconds=2.31906"
+    },
+    {
+      "backend": "cpu",
+      "fixture": "it",
+      "events": [
+        {
+          "text": "Il prossimo treno arriva tra 5 minuti.",
+          "language": "",
+          "final": true,
+          "utteranceId": 1,
+          "revision": 1,
+          "audioEndSamples": 38219
+        }
+      ],
+      "timing": "0.231502 inference_seconds=0.0410113 audio_seconds=2.38869"
+    },
+    {
+      "backend": "cpu",
+      "fixture": "pl",
+      "events": [
+        {
+          "text": "Następny pociąg przyjedzie za 5 minut.",
+          "language": "",
+          "final": true,
+          "utteranceId": 1,
+          "revision": 1,
+          "audioEndSamples": 43041
+        }
+      ],
+      "timing": "0.229495 inference_seconds=0.0436287 audio_seconds=2.69006"
+    },
+    {
+      "backend": "cpu",
+      "fixture": "pt",
+      "events": [
+        {
+          "text": "O próximo combalho chega dentro de cinco minutos.",
+          "language": "",
+          "final": true,
+          "utteranceId": 1,
+          "revision": 1,
+          "audioEndSamples": 50121
+        }
+      ],
+      "timing": "0.232914 inference_seconds=0.0519114 audio_seconds=3.13256"
+    },
+    {
+      "backend": "cpu",
+      "fixture": "es",
+      "events": [
+        {
+          "text": "El próximo trenco minutos.",
+          "language": "",
+          "final": true,
+          "utteranceId": 1,
+          "revision": 1,
+          "audioEndSamples": 43577
+        }
+      ],
+      "timing": "0.22864 inference_seconds=0.044934 audio_seconds=2.72356"
+    },
+    {
+      "backend": "vulkan",
+      "fixture": "en",
+      "events": [
+        {
+          "text": "The next train arrives in five minutes.",
+          "language": "",
+          "final": true,
+          "utteranceId": 1,
+          "revision": 1,
+          "audioEndSamples": 32516
+        }
+      ],
+      "timing": "0.516319 inference_seconds=0.0954148 audio_seconds=2.03225"
+    },
+    {
+      "backend": "vulkan",
+      "fixture": "nl",
+      "events": [
+        {
+          "text": "De volgende trein komt over vijf minuten.",
+          "language": "",
+          "final": true,
+          "utteranceId": 1,
+          "revision": 1,
+          "audioEndSamples": 35619
+        }
+      ],
+      "timing": "0.098945 inference_seconds=0.082903 audio_seconds=2.22619"
+    },
+    {
+      "backend": "vulkan",
+      "fixture": "fr",
+      "events": [
+        {
+          "text": "Le prochain train arrive dans 5 minutes.",
+          "language": "",
+          "final": true,
+          "utteranceId": 1,
+          "revision": 1,
+          "audioEndSamples": 35625
+        }
+      ],
+      "timing": "0.0987851 inference_seconds=0.0846216 audio_seconds=2.22656"
+    },
+    {
+      "backend": "vulkan",
+      "fixture": "de",
+      "events": [
+        {
+          "text": "Der nächste zukommt in fünf Minuten.",
+          "language": "",
+          "final": true,
+          "utteranceId": 1,
+          "revision": 1,
+          "audioEndSamples": 37105
+        }
+      ],
+      "timing": "0.0979047 inference_seconds=0.0889101 audio_seconds=2.31906"
+    },
+    {
+      "backend": "vulkan",
+      "fixture": "it",
+      "events": [
+        {
+          "text": "Il prossimo treno arriva tra 5 minuti.",
+          "language": "",
+          "final": true,
+          "utteranceId": 1,
+          "revision": 1,
+          "audioEndSamples": 38219
+        }
+      ],
+      "timing": "0.0990738 inference_seconds=0.0887363 audio_seconds=2.38869"
+    },
+    {
+      "backend": "vulkan",
+      "fixture": "pl",
+      "events": [
+        {
+          "text": "Następny pociąg przyjedzie za 5 minut.",
+          "language": "",
+          "final": true,
+          "utteranceId": 1,
+          "revision": 1,
+          "audioEndSamples": 43041
+        }
+      ],
+      "timing": "0.0985416 inference_seconds=0.0959902 audio_seconds=2.69006"
+    },
+    {
+      "backend": "vulkan",
+      "fixture": "pt",
+      "events": [
+        {
+          "text": "O próximo combalho chega dentro de cinco minutos.",
+          "language": "",
+          "final": true,
+          "utteranceId": 1,
+          "revision": 1,
+          "audioEndSamples": 50121
+        }
+      ],
+      "timing": "0.098795 inference_seconds=0.100754 audio_seconds=3.13256"
+    },
+    {
+      "backend": "vulkan",
+      "fixture": "es",
+      "events": [
+        {
+          "text": "El próximo trenco minutos.",
+          "language": "",
+          "final": true,
+          "utteranceId": 1,
+          "revision": 1,
+          "audioEndSamples": 43577
+        }
+      ],
+      "timing": "0.098108 inference_seconds=0.0942584 audio_seconds=2.72356"
+    }
+  ]
+}

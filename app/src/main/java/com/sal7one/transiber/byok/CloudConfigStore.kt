@@ -110,5 +110,5 @@ object CloudConfigStore {
     }
 
     private fun prefs(context: Context) =
-        context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        com.sal7one.transiber.preferences.UserPreferences.store(context, PREFS)
 }

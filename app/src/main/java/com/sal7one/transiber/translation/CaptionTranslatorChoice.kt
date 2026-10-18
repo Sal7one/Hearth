@@ -14,11 +14,12 @@ import com.sal7one.transiber.caption.*
 internal fun captionTranslationChoices(config: CaptionOverlayConfig, mode: CloudConfigStore.SttMode): CaptionLanguageChoices {
     val context = LocalContext.current
     val revision by ConversationTranslationSettings.revision.collectAsState()
-    return remember(config, mode, revision) {
+    val model = rememberCaptionLanguageModel(config)
+    return remember(config, mode, revision, model) {
         val provider = ConversationTranslationSettings.provider(config.textTranslationProviderId)
         CaptionLanguages.target(config, mode, provider?.let {
             if (ByokPolicy.FEATURE_BYOK) ConversationTranslationSettings.capabilities(context,it) else null
-        })
+        }, model)
     }
 }
 
@@ -42,10 +43,13 @@ internal fun CaptionTranslatorChooser(config: CaptionOverlayConfig,
 
     val cloudMode = CloudConfigStore.sttMode(LocalContext.current)
     val integrated = integratedCaptionProvider(config.engine, cloudMode)
-    if(config.engine==CaptionEngineChoice.VOSK) androidx.compose.material3.Text(uiText(UiR.string.ui_vosk_imports_do_not_provide_source_language_metadata_to_the_trans_168ba))
+    val model = rememberCaptionLanguageModel(config)
+    val spokenLanguage = CaptionLanguages.effectiveSource(config, cloudMode, model)
+    if(config.engine==CaptionEngineChoice.VOSK && model.fixedSourceLanguage == null)
+        androidx.compose.material3.Text(uiText(UiR.string.ui_vosk_imports_do_not_provide_source_language_metadata_to_the_trans_168ba))
     TranslatorChooser(config.textTranslationProviderId, config.localTranslationModelId,
         if (integrated != null) uiText(UiR.string.integrated_translation_detail, integrated) else uiText(UiR.string.ui_used_by_live_audio_captions_original_speech_text_is_translated_af_7413f),
-        source=config.streamLanguage, target=config.target.languageTag, enabled=enabled,
+        source=spokenLanguage, target=config.target.languageTag, enabled=enabled,
         automaticLabel=if (integrated != null) uiText(UiR.string.integrated_translation_provider, integrated) else if (config.textTranslationProviderId.isBlank() && captionTranslationRoute(config.copy(mode=CaptionMode.TRANSLATE), com.sal7one.transiber.byok.CloudConfigStore.sttMode(androidx.compose.ui.platform.LocalContext.current)) == CaptionTranslationRoute.TEXT_TRANSLATOR) uiText(UiR.string.ui_1_s_existing_route_97965, TranslationOptions.label(config.localTranslationModelId)) else uiText(UiR.string.ui_speech_provider_existing_route_39ee3), onModels=onModels,
         onSelect={ provider, model -> update { it.copy(textTranslationProviderId=provider,
             localTranslationModelId=model, localTranslationEnabled=provider.isNotBlank() || it.effectiveEngine.speechBackend != null, mode=CaptionMode.TRANSLATE) } })

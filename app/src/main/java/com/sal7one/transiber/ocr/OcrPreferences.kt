@@ -8,7 +8,7 @@ import com.sal7one.transiber.byok.ByokPolicy
 
 /** One observable choice shared by Camera, reading setup and the reading service. */
 internal class OcrPreferences(context: Context) {
-    private val prefs = context.applicationContext.getSharedPreferences("camera-translate",0)
+    private val prefs = com.sal7one.transiber.preferences.UserPreferences.store(context, "camera-translate")
     fun read(): OcrSelection = OcrSelection(
         profileId=prefs.getString("profile","latin")!!,
         source=prefs.getString("source","en")!!, target=prefs.getString("target","ar")!!,

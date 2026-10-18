@@ -29,6 +29,20 @@ import java.io.File
 
 @Composable internal fun EasySetupLocalUi(onDone: () -> Unit, onDownloads: () -> Unit) {
     val uiText = rememberUiText()
+    if (com.sal7one.transiber.preferences.rememberSetupMode() == com.sal7one.transiber.preferences.SetupMode.BASIC) {
+        val context = LocalContext.current
+        var current by remember { mutableStateOf<CaptionOverlayConfig?>(null) }
+        var loadingError by remember { mutableStateOf<String?>(null) }
+        LaunchedEffect(Unit) {
+            try { CaptionConfigStore.config(context).collect { current = it } }
+            catch (e: CancellationException) { throw e }
+            catch (e: Exception) { loadingError = e.message ?: e.toString() }
+        }
+        current?.let { LocalBundleUi(it, onDone, onDownloads) }
+            ?: if (loadingError == null) LinearProgressIndicator(Modifier.fillMaxWidth()) else Text(loadingError.orEmpty(), color = MaterialTheme.colorScheme.error)
+        AdvancedSetupLink()
+        return
+    }
 
     val context=LocalContext.current;val scope=rememberCoroutineScope();val links=LocalUriHandler.current
     val actions=remember {EasySetupActions(context)}

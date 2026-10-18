@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="translation_acceleration_title">تسريع ترجمة GGUF</string>
+    <string name="translation_acceleration_cpu">المعالج CPU</string>
+    <string name="translation_acceleration_vulkan">رسوميات Vulkan · تجريبي</string>
+    <string name="translation_acceleration_cpu_note">المعالج هو الخيار الافتراضي. جرّب Vulkan وقارن النتائج في اختبارات الأداء على هاتفك.</string>
+    <string name="translation_acceleration_gpu_note">يطلب تنفيذ العمليات على الرسوميات إذا كان برنامج التشغيل متوافقًا. قد تبقى بعض العمليات على المعالج. قد يرتفع استهلاك الذاكرة والحرارة؛ وتعتمد السرعة على النموذج والهاتف. تظهر الأخطاء؛ والعودة إلى المعالج تتطلب اختيارًا صريحًا.</string>
+    <string name="translation_acceleration_arm64_only">يتوفر محرك Vulkan الاختياري في نسخة ARM64. اختر المعالج لهذا الجهاز.</string>
+    <string name="translation_acceleration_scope">يسري على مترجم GGUF التالي للنصوص أو التعليقات أو المحادثة أو الكاميرا. أعد تشغيل جلسة التعليقات النشطة لتطبيقه. تستخدم Marian وحزم اللغات والتعرف على الكلام والأصوات محركاتها الخاصة.</string>
+    <string name="translation_acceleration_retry_cpu">التبديل إلى المعالج وإعادة المحاولة</string>
+    <string name="translation_acceleration_use_cpu">استخدام المعالج</string>
+    <string name="translation_acceleration_change">تغيير</string>
+    <string name="translation_acceleration_hide">إخفاء</string>
+</resources>

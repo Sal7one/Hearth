@@ -18,9 +18,9 @@ internal object DownloadAssets {
             return DownloadAsset(id, it.url, it.bytes, it.sha256, it.bytes)
         }
         SpeechDownloads.find(id)?.let {
-            return DownloadAsset(id, it.url, it.bytes, it.sha256, if (it.archiveRoot == null) it.bytes else null)
+            return DownloadAsset(id, it.url, it.bytes, it.sha256, it.installationBytes)
         }
-        SpeechArtifactCatalog.find(id)?.takeIf { it.kind == com.sal7one.transiber.models.SpeechArtifactKind.WHISPER }?.let {
+        SpeechArtifactCatalog.find(id)?.let {
             return DownloadAsset(id, it.url, it.bytes, it.sha256, it.installedBytes)
         }
         OcrCatalog.find(id)?.let { return DownloadAsset(id, it.url, it.bytes, it.sha256, it.bytes) }

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="translation_browser_hint">"اختر اتجاه الترجمة ثم قارن حزم اللغات الصغيرة والنماذج متعددة اللغات. يبقى التعرّف على الكلام والأصوات مستقلين عن اختيار المترجم."</string>
+    <string name="translation_browser_target">"الترجمة إلى"</string>
+    <string name="translation_browser_type">"نوع النموذج"</string>
+    <string name="translation_browser_type_all">"كل أنواع النماذج"</string>
+    <string name="translation_browser_type_compact">"حزم لغات صغيرة"</string>
+    <string name="translation_browser_type_text">"نماذج نصية متعددة اللغات"</string>
+    <string name="translation_browser_pivots">"تضمين المسارات بنموذجين عبر الإنجليزية"</string>
+    <string name="translation_browser_empty">"لا توجد نماذج مطابقة. جرّب اتجاهًا أو نوعًا آخر، أو افتح استعراض النماذج لتثبيت نموذج."</string>
+    <string name="translation_browser_multilingual_size">"%1$d لغة · حجم التنزيل %2$d MiB"</string>
+    <string name="translation_browser_pair_size">"%1$s ← %2$s · حجم التنزيل %3$d MiB"</string>
+    <string name="translation_browser_index_new">"صدر في 30 سبتمبر 2026 · ملف GGUF الرسمي في 3 أكتوبر"</string>
+    <string name="translation_browser_experimental">"تجريبي على الهواتف. ما زالت سرعة الجهاز وجودة الترجمة بحاجة للاختبار. قد تفقد الدقة المنخفضة جدًا بعض المعنى."</string>
+    <string name="translation_browser_import_pair_hint">"استورد مجلد Marian مجهزًا. تظهر الحزم المعروفة والمتحقق منها أعلاه بعد الاستيراد؛ تُدرج المجلدات غير المعروفة أدناه ولا تُخمن لغاتها."</string>
+    <string name="translation_browser_use">"استخدام هذا المترجم"</string>
+    <string name="translation_browser_import">"استيراد نموذج للتحقق منه"</string>
+    <string name="translation_browser_memory_note">"حجم التنزيل لا يساوي الذاكرة المطلوبة للتشغيل. تتطلب الدقة الأعلى تخزينًا وذاكرة أكبر؛ يُحمّل النموذج المحدد فقط."</string>
+    <string name="translation_browser_file_count">"%1$d ملفات للتحقق؛ يبدأ التثبيت بعد اجتياز كل الملفات المطلوبة فحص السلامة."</string>
+    <string name="translation_browser_folder_import">"استيراد مجلد ترجمة"</string>
+    <string name="translation_browser_gguf_import">"استيراد نموذج GGUF"</string>
+    <string name="translation_browser_choose_artifact">"اختر النموذج والدقة المطابقين"</string>
+    <string name="translation_browser_platform">"حزم لغات ML Kit"</string>
+    <string name="model_library_title">"النماذج"</string>
+    <string name="translation_browser_partial">"تنزيل جزئي"</string>
+    <string name="translation_browser_download_remaining">"تنزيل الملفات المتبقية"</string>
+</resources>

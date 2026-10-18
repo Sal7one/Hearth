@@ -13,7 +13,7 @@ import javax.crypto.spec.GCMParameterSpec
 
 internal data class VoiceChoice(val backend: String="system",val voice: String="F1",val rate: Float=1f,val steps: Int=5)
 internal object VoiceSettings {
-    fun prefs(context: Context)=context.getSharedPreferences("voice-output",0)
+    fun prefs(context: Context)=com.sal7one.transiber.preferences.UserPreferences.store(context, "voice-output")
     fun choice(context: Context): VoiceChoice = prefs(context).let {p ->VoiceChoice(
         p.getString("backend","system").orEmpty().let {if(it=="remote" && !ByokPolicy.FEATURE_BYOK)"system" else it},
         p.getString("voice","F1").orEmpty(),p.getFloat("rate",1f).coerceIn(.5f,2f),p.getInt("steps",5).coerceIn(2,12))}

@@ -81,6 +81,7 @@ fun LocalBenchmarkScreen(onModels: (String) -> Unit = {}, onDownloads: () -> Uni
     var useSaudiSet by rememberSaveable { mutableStateOf(true) }
     var recordingStop by remember { mutableStateOf<AtomicBoolean?>(null) }
     var saudiPrompt by rememberSaveable { mutableIntStateOf(0) }
+    var compareAcceleration by rememberSaveable { mutableStateOf(false) }
     var extendedSpeech by rememberSaveable { mutableStateOf(false) }
     var historyForPair by rememberSaveable { mutableStateOf(false) }
     var tableSort by rememberSaveable { mutableStateOf(BenchmarkTableSort.WARM) }
@@ -195,7 +196,7 @@ fun LocalBenchmarkScreen(onModels: (String) -> Unit = {}, onDownloads: () -> Uni
                                 if (sample.speech) inputSuite.audio(context, sample) else null, sample.silenceMs > 0)
                         }
                     }
-                    runner.run(listOf(candidate), null, "", null, route.source, route.target,
+                    runner.run(listOf(candidate), null, "", null, route.source, route.target, compareAcceleration = compareAcceleration,
                         benchmarkInputs = inputs,
                         progress = { step -> status = "${index + 1}/${routes.size} · $step" },
                         onResult = { result ->
@@ -293,6 +294,13 @@ fun LocalBenchmarkScreen(onModels: (String) -> Unit = {}, onDownloads: () -> Uni
             Text(if (mode == "Speech") uiText(UiR.string.ui_forced_language_is_used_where_supported_vosk_always_uses_its_mode_86f53)
                 else uiText(UiR.string.ui_compare_the_same_corrected_source_text_separately_from_recognitio_7e2d4), style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier.padding(top = 4.dp))
+        }
+        item {
+            Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                Checkbox(compareAcceleration, { compareAcceleration = it }, enabled = !running && !busy)
+                Text(uiText(UiR.string.benchmark_compare_acceleration), style = MaterialTheme.typography.bodyMedium)
+            }
+            if (compareAcceleration) Text(uiText(UiR.string.benchmark_compare_acceleration_hint), style = MaterialTheme.typography.bodySmall)
         }
         item {
             BenchmarkResultsTable(leaders, source, if (mode == "Speech") "" else target,
@@ -408,13 +416,13 @@ fun LocalBenchmarkScreen(onModels: (String) -> Unit = {}, onDownloads: () -> Uni
                                             clip = if (sample.speech) from.audio(context, sample) else null,
                                             silence = sample.silenceMs > 0) }
                                     }
-                                    runner.run(listOf(speechModel), null, "", null, source, target,
+                                    runner.run(listOf(speechModel), null, "", null, source, target, compareAcceleration = compareAcceleration,
                                         benchmarkInputs = inputs(speechSamples, checkNotNull(activeSpeechSuite)), progress = { status = it },
                                         onResult = {
                                             results = (listOf(it) + results).take(BenchmarkResults.MAX_HISTORY)
                                             it.error?.let { cause -> failures += "${it.model}: $cause" }
                                         })
-                                    runner.run(listOf(translationModel), null, "", null, source, target,
+                                    runner.run(listOf(translationModel), null, "", null, source, target, compareAcceleration = compareAcceleration,
                                         benchmarkInputs = inputs(translationSamples, activeSuite), progress = { status = it },
                                         onResult = {
                                             results = (listOf(it) + results).take(BenchmarkResults.MAX_HISTORY)
@@ -646,7 +654,7 @@ fun LocalBenchmarkScreen(onModels: (String) -> Unit = {}, onDownloads: () -> Uni
                             }
                         } else emptyList()
                         runner.run(chosen, clip, text, referenceText.takeIf(String::isNotBlank), source, target,
-                            benchmarkInputs = inputs, progress = { status = it }, onResult = { result ->
+                            compareAcceleration = compareAcceleration, benchmarkInputs = inputs, progress = { status = it }, onResult = { result ->
                             results = (listOf(result) + results).take(BenchmarkResults.MAX_HISTORY)
                             result.error?.let { cause -> failures += "${result.model}: $cause" }
                         })

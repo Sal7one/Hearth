@@ -7,6 +7,7 @@ import android.util.Base64
 import com.sal7one.common_jni.translation.CancellableTextTranslator
 import com.sal7one.common_jni.translation.LocalTranslationSession
 import com.sal7one.common_jni.translation.TranslationCatalog
+import com.sal7one.common_jni.translation.TranslationAcceleration
 import com.sal7one.common_jni.marian.MarianTranslationSession
 import com.sal7one.common_jni.speech.TranslationDirection
 import com.sal7one.transiber.byok.ByokPolicy
@@ -26,10 +27,15 @@ internal object ConversationTranslationSettings {
     const val LOCAL = "local"
     private val changes = MutableStateFlow(0L)
     val revision = changes.asStateFlow()
-    private fun prefs(context: Context) = context.applicationContext.getSharedPreferences("conversation-translators", Context.MODE_PRIVATE)
+    private fun prefs(context: Context) = com.sal7one.transiber.preferences.UserPreferences.store(context, "conversation-translators")
     fun selected(context: Context): String = if (ByokPolicy.FEATURE_BYOK) prefs(context).getString("selected", LOCAL) ?: LOCAL else LOCAL
     fun provider(id: String): TextTranslationProvider? = TextTranslationProvider.entries.firstOrNull { it.id == id }
     fun localModel(context: Context, fallback: String): String = prefs(context).getString("local-model", null) ?: fallback
+    fun acceleration(context: Context): TranslationAcceleration = TranslationAcceleration.fromId(prefs(context).getString("gguf-acceleration", null))
+    fun setAcceleration(context: Context, acceleration: TranslationAcceleration) {
+        check(prefs(context).edit().putString("gguf-acceleration", acceleration.id).commit()) { "Could not save translation acceleration" }
+        changed()
+    }
     fun select(context: Context, id: String, localId: String? = null) {
         require(id == LOCAL || (ByokPolicy.FEATURE_BYOK && provider(id) != null)) { "Cloud translation is unavailable in the offline build." }
         prefs(context).edit().putString("selected", id).apply {
@@ -41,7 +47,7 @@ internal object ConversationTranslationSettings {
         require(providerId == LOCAL || (ByokPolicy.FEATURE_BYOK && provider(providerId) != null)) { "Cloud translation is unavailable in the offline build." }
         com.sal7one.transiber.caption.CaptionConfigStore.update(context) { it.copy(
             localTranslationModelId=localId, textTranslationProviderId=providerId, localTranslationEnabled=true) }
-        check(context.getSharedPreferences("camera-translate",0).edit().putString("provider",providerId).putString("local-model",localId).commit()) { "Could not save camera translator" }
+        check(com.sal7one.transiber.preferences.UserPreferences.store(context, "camera-translate").edit().putString("provider",providerId).putString("local-model",localId).commit()) { "Could not save camera translator" }
         select(context,providerId,localId)
     }
     fun endpoint(context: Context, provider: TextTranslationProvider): String = prefs(context).getString("${provider.id}.endpoint", provider.defaultEndpoint) ?: provider.defaultEndpoint
@@ -111,7 +117,8 @@ internal object ConversationTranslationSettings {
     fun snapshot(context: Context, localId: String, providerId: String = selected(context)): ConversationTranslatorSnapshot {
         check(ByokPolicy.FEATURE_BYOK || providerId == LOCAL || providerId.isBlank()) { "Cloud translation is unavailable in the offline build." }
         check(providerId == LOCAL || providerId.isBlank() || provider(providerId) != null) { "Unknown translation provider: $providerId" }
-        val provider = provider(providerId) ?: return ConversationTranslatorSnapshot(localId)
+        val provider = provider(providerId) ?: return ConversationTranslatorSnapshot(localId,
+            acceleration = if (TranslationCatalog.models.any { it.id == localId }) acceleration(context) else TranslationAcceleration.CPU)
         return ConversationTranslatorSnapshot(localId, connection(context, provider), checkNotNull(capabilities(context, provider)) { "Check ${provider.label} languages in Translation settings first." })
     }
     private fun readKey(context: Context, provider: TextTranslationProvider): String {
@@ -137,6 +144,7 @@ internal data class ConversationTranslatorSnapshot(
     val localId: String,
     val cloud: CloudTranslationConnection? = null,
     val languages: CloudTranslationLanguages? = null,
+    val acceleration: TranslationAcceleration = TranslationAcceleration.CPU,
 ) {
     val label get() = cloud?.provider?.label ?: TranslationOptions.label(localId)
     fun open(context: Context): CancellableTextTranslator = cloud?.let { CloudTextTranslator(it, checkNotNull(languages)) }
@@ -146,5 +154,5 @@ internal data class ConversationTranslatorSnapshot(
                 TranslationDirection(pair.source, pair.target), TranslationOptions.label(pair.id))
         }
         else if (MarianCascade.find(localId) != null) MarianCascade.open(context, checkNotNull(MarianCascade.find(localId)))
-        else TranslationCatalog.find(localId).let { spec -> LocalTranslationSession.open(LocalTranslationModels(File(context.filesDir, "translation-models")).file(spec), spec) }
+        else TranslationCatalog.find(localId).let { spec -> LocalTranslationSession.open(LocalTranslationModels(File(context.filesDir, "translation-models")).file(spec), spec, acceleration, File(context.cacheDir, "translation-opencl")) }
 }

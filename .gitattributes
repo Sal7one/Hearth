@@ -1,0 +1,2 @@
+# Preserve the exact upstream license bytes, including their whitespace.
+common-jni/src/main/assets/licenses/**/SPIRV-Headers/** whitespace=-blank-at-eol,-blank-at-eof

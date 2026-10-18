@@ -40,7 +40,7 @@ enum class NavigationLayout(val label: String) {
 @Composable
 private fun rememberAppearanceValue(key: String): String? {
     val context = LocalContext.current.applicationContext
-    val prefs = remember(context) { context.getSharedPreferences(APPEARANCE_PREFS, Context.MODE_PRIVATE) }
+    val prefs = remember(context) { com.sal7one.transiber.preferences.UserPreferences.store(context, APPEARANCE_PREFS) }
     var value by remember(prefs, key) { mutableStateOf(prefs.getString(key, null)) }
     DisposableEffect(prefs, key) {
         val listener = SharedPreferences.OnSharedPreferenceChangeListener { p, changed ->
@@ -78,7 +78,7 @@ fun AppearanceSettings(modifier: Modifier = Modifier) {
     val accent = rememberAccentPreset()
     val layout = rememberNavigationLayout()
     val colorful = rememberColorfulUi()
-    val prefs = remember(context) { context.getSharedPreferences(APPEARANCE_PREFS, Context.MODE_PRIVATE) }
+    val prefs = remember(context) { com.sal7one.transiber.preferences.UserPreferences.store(context, APPEARANCE_PREFS) }
     Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         com.sal7one.transiber.i18n.AppLanguageSettings()
         Text(uiText(UiR.string.ui_cards_background_7cc95), style = MaterialTheme.typography.titleMedium, modifier = Modifier.semantics { heading() })
@@ -93,7 +93,7 @@ fun AppearanceSettings(modifier: Modifier = Modifier) {
                 FilterChip(
                     selected = mode == option,
                     onClick = {
-                        context.getSharedPreferences(APPEARANCE_PREFS, Context.MODE_PRIVATE)
+                        com.sal7one.transiber.preferences.UserPreferences.store(context, APPEARANCE_PREFS)
                             .edit().putString(THEME_KEY, option.name).apply()
                     },
                     label = { Text(uiText.label(option)) },

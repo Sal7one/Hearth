@@ -4,7 +4,7 @@ import android.content.Context
 
 /** Home presentation preferences only; never provider settings, text or credentials. */
 internal object HomeServiceStore {
-    private fun prefs(context: Context) = context.applicationContext.getSharedPreferences("hearth-home", Context.MODE_PRIVATE)
+    private fun prefs(context: Context) = com.sal7one.transiber.preferences.UserPreferences.store(context, "hearth-home")
     fun easySetupCollapsed(context: Context): Boolean = prefs(context).getBoolean("easy-setup-collapsed", false)
     fun setEasySetupCollapsed(context: Context, collapsed: Boolean) {
         prefs(context).edit().putBoolean("easy-setup-collapsed", collapsed).apply()

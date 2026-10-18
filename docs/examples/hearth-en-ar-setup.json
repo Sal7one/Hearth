@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "name": "English to Arabic captions",
+  "speech": {
+    "model": { "family": "whisper", "catalogId": "whisper-base-q5_1" },
+    "sourceLanguage": "en"
+  },
+  "translation": {
+    "modelId": "marian-en-ar",
+    "sourceLanguage": "en",
+    "targetLanguage": "ar",
+    "enabled": true
+  },
+  "voice": {
+    "enabled": false,
+    "choice": "SYSTEM",
+    "gender": "ANY",
+    "volume": 100
+  }
+}

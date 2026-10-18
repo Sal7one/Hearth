@@ -95,6 +95,9 @@ struct EngineConfig {
     int sampleRate = 16000;            // Expected input sample rate
     int numThreads = 4;                // Number of inference threads
     
+    // Explicit optional runtime; CPU never probes Vulkan on TVs/older devices.
+    std::string whisperAcceleration = "cpu";
+
     // Whisper-specific (ignored by other engines)
     bool enableTimestamps = true;
     bool suppressBlank = true;

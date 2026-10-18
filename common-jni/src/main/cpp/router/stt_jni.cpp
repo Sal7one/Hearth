@@ -379,7 +379,7 @@ Java_com_sal7one_common_1jni_engine_whisper_WhisperEngine_nativeTranscribeBatchW
         return nullptr;
     }
 
-    LOG_I("JNI", "TranscribeBatch: handle=%ld, samples=%d, sampleRate=%d", handle, count, sampleRate);
+    LOG_I("JNI", "TranscribeBatch: handle=%lld, samples=%d, sampleRate=%d", static_cast<long long>(handle), count, sampleRate);
 
     // Copy out of the critical section before batch inference: whisper_full
     // can run for minutes and must not pin the GC for that long.
@@ -458,13 +458,33 @@ Java_com_sal7one_common_1jni_engine_whisper_WhisperEngine_nativeGetModelTypeWhis
 }
 
 // NEW: Cancellation support (P0 from FFmpeg-Kit analysis)
+JNIEXPORT jstring JNICALL
+Java_com_sal7one_common_1jni_engine_whisper_WhisperEngine_nativeGetRuntimeDescriptionWhisper(
+    JNIEnv* env, jobject, jlong handle
+) {
+#if WITH_WHISPER
+    JNI_TRY_CATCH_BEGIN
+    auto lease = EngineRouter::getInstance().getEngine(handle, EngineType::WHISPER);
+    auto* engine = lease ? dynamic_cast<stt::WhisperEngine*>(lease.operator->()) : nullptr;
+    if (!engine) {
+        jni::throwIllegalStateException(env, "Invalid Whisper handle");
+        return nullptr;
+    }
+    return jni::utf8ToJString(env, engine->getRuntimeDescription());
+    JNI_TRY_CATCH_END(env, nullptr)
+#else
+    (void)handle;
+    return env->NewStringUTF("");
+#endif
+}
+
 JNIEXPORT void JNICALL
 Java_com_sal7one_common_1jni_engine_whisper_WhisperEngine_nativeCancelWhisper(
     JNIEnv*, jobject, jlong handle
 ) {
     auto engine = EngineRouter::getInstance().getEngine(handle, EngineType::WHISPER);
     if (engine) {
-        LOG_I("JNI", "Cancellation requested for handle %ld", handle);
+        LOG_I("JNI", "Cancellation requested for handle %lld", static_cast<long long>(handle));
         engine->cancel();
     }
 }
@@ -487,14 +507,14 @@ Java_com_sal7one_common_1jni_engine_whisper_WhisperEngine_nativeDetectLanguage(
     // Validate handle - we know this is a Whisper handle from the JNI method name
     auto engine = EngineRouter::getInstance().getEngine(handle, EngineType::WHISPER);
     if (!engine) {
-        LOG_E("JNI", "nativeDetectLanguage: invalid handle %ld", handle);
+        LOG_E("JNI", "nativeDetectLanguage: invalid handle %lld", static_cast<long long>(handle));
         return nullptr;  // null = error (vs empty string = no detection)
     }
     
     // Type check - should always succeed for Whisper handle
     auto* whisperEngine = dynamic_cast<stt::WhisperEngine*>(engine.operator->());
     if (!whisperEngine) {
-        LOG_E("JNI", "nativeDetectLanguage: handle %ld is not a WhisperEngine", handle);
+        LOG_E("JNI", "nativeDetectLanguage: handle %lld is not a WhisperEngine", static_cast<long long>(handle));
         return nullptr;
     }
     
@@ -749,7 +769,7 @@ Java_com_sal7one_common_1jni_engine_vosk_VoskEngine_nativeCancelVosk(
 ) {
     auto engine = EngineRouter::getInstance().getEngine(handle, EngineType::VOSK);
     if (engine) {
-        LOG_I("JNI", "Vosk cancellation requested for handle %ld", handle);
+        LOG_I("JNI", "Vosk cancellation requested for handle %lld", static_cast<long long>(handle));
         engine->cancel();
     }
 }
@@ -932,7 +952,7 @@ Java_com_sal7one_common_1jni_engine_onnx_OnnxEngine_nativeCancelOnnx(
 ) {
     auto engine = EngineRouter::getInstance().getEngine(handle, EngineType::ONNX);
     if (engine) {
-        LOG_I("JNI", "ONNX cancellation requested for handle %ld", handle);
+        LOG_I("JNI", "ONNX cancellation requested for handle %lld", static_cast<long long>(handle));
         engine->cancel();
     }
 }

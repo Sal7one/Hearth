@@ -29,7 +29,9 @@ data class CaptionLanguageChoices(
 }
 
 /** The actual selected model, resolved identically before start and in both settings surfaces. */
-data class CaptionLanguageModel(val id: String, val label: String = id, val whisperVocabulary: Int? = null)
+data class CaptionLanguageModel(val id: String, val label: String = id, val whisperVocabulary: Int? = null,
+    /** Present only for a verified language-specific package. Never inferred from its filename. */
+    val fixedSourceLanguage: String? = null)
 
 object CaptionLanguages {
     val openAiTranslation: CaptionLanguageChoices get() = CaptionLanguageChoices(
@@ -44,7 +46,16 @@ object CaptionLanguages {
 
     fun source(config: CaptionOverlayConfig, cloudMode: SttMode,
         model: CaptionLanguageModel = CaptionLanguageModel(config.modelId)): CaptionLanguageChoices = when (config.engine) {
-        CaptionEngineChoice.MOONSHINE -> CaptionLanguageChoices(setOf("en"), UiMessage(UiR.string.capability_note_67daa0fec5, "Moonshine · This model recognizes English only. No automatic language detection or override is needed."))
+        CaptionEngineChoice.MOONSHINE -> {
+            val profile = SpeechProfile.entries.firstOrNull { it.id == model.id && it.backend == com.sal7one.common_jni.speech.SpeechBackend.MOONSHINE }
+            val language = profile?.fixedSourceLanguage ?: model.fixedSourceLanguage
+            if (language == null) automatic(model.label, UiMessage(UiR.string.model_fixed_language_unknown,
+                "Import or select a verified model to see its spoken language."))
+            else CaptionLanguageChoices(setOf(language), UiMessage(UiR.string.model_fixed_language_note,
+                "%1\$s recognizes %2\$s only. Change the model to change the spoken language.",
+                listOf(model.label, com.sal7one.common_jni.translation.TranslationLanguages.label(language))),
+                listOf(com.sal7one.common_jni.speech.SpeechSourceLanguage(language, false)))
+        }
         CaptionEngineChoice.PHONON -> CaptionLanguageChoices(setOf("en"), UiMessage(UiR.string.model_phonon_language_note,
             "Phonon 2 · This model recognizes English only. No automatic language detection or override is needed."))
         CaptionEngineChoice.OMNILINGUAL -> {
@@ -54,6 +65,13 @@ object CaptionLanguages {
                     "Omnilingual CTC · The model cannot force a spoken language. Choose a known source to label captions for translation; recognition still detects automatically. Auto is CC-only when the source is unknown."),
                 capabilities.languages)
         }
+        CaptionEngineChoice.TRANSCRIBEPSY -> {
+            val capabilities = SpeechProfile.TRANSCRIBEPSY_250M_EU_SUB.capabilities
+            CaptionLanguageChoices(capabilities.sourceLanguages + "auto",
+                UiMessage(UiR.string.model_transcribepsy_language_note,
+                    "TranscribePsy · Eight European languages, with final text after short utterances. Choose a known source for translation; this does not force recognition. Auto keeps the source unknown and provides original captions only."),
+                capabilities.languages)
+        }
         CaptionEngineChoice.NEMOTRON, CaptionEngineChoice.QWEN -> {
             val profile = if (config.engine == CaptionEngineChoice.NEMOTRON) SpeechProfile.NEMOTRON_3_5_ASR_0_6B
                 else if (model.id == SpeechProfile.QWEN3_ASR_1_7B.id) SpeechProfile.QWEN3_ASR_1_7B else SpeechProfile.QWEN3_ASR_0_6B
@@ -61,7 +79,12 @@ object CaptionLanguages {
             CaptionLanguageChoices(capabilities.languages.filter { it.canForce }.map { it.code }.toSet() + "auto",
                 UiMessage(UiR.string.capability_note_492861ff93, "%1\$s · Choose a language to bypass automatic language selection, or choose Auto. Only languages supported by this model and runtime are listed.", listOf(profile.label)), capabilities.languages)
         }
-        CaptionEngineChoice.VOSK -> CaptionLanguageChoices(setOf("model"),
+        CaptionEngineChoice.VOSK -> if (model.fixedSourceLanguage != null) CaptionLanguageChoices(setOf(model.fixedSourceLanguage),
+            UiMessage(UiR.string.model_fixed_language_note,
+                "%1\$s recognizes %2\$s only. Change the model to change the spoken language.",
+                listOf(model.label, com.sal7one.common_jni.translation.TranslationLanguages.label(model.fixedSourceLanguage))),
+            listOf(com.sal7one.common_jni.speech.SpeechSourceLanguage(model.fixedSourceLanguage, false)))
+        else CaptionLanguageChoices(setOf("model"),
             UiMessage(UiR.string.capability_note_8b97049ba5, "%1\$s · The installed model fixes the spoken language. Change the model to change language; automatic detection and language overrides are unavailable.", listOf(model.label.ifBlank { "Vosk" })))
         CaptionEngineChoice.WHISPER -> when (model.whisperVocabulary) {
             51864 -> CaptionLanguageChoices(setOf("en"), UiMessage(UiR.string.capability_note_302c201b8d, "%1\$s · English-only model. Spoken language is fixed to English; no detection is needed.", listOf(model.label)),
@@ -88,7 +111,16 @@ object CaptionLanguages {
     }
 
     fun target(config: CaptionOverlayConfig, cloudMode: SttMode,
-               textLanguages: com.sal7one.transiber.translation.CloudTranslationLanguages? = null): CaptionLanguageChoices = when {
+               textLanguages: com.sal7one.transiber.translation.CloudTranslationLanguages? = null,
+               model: CaptionLanguageModel = CaptionLanguageModel(config.modelId)): CaptionLanguageChoices {
+        // A verified fixed-language model overrides a saved hint. Other paths
+        // retain explicit invalid selections so translation cannot advertise them as Auto.
+        val fixed = source(config, cloudMode, model).codes.singleOrNull()?.takeUnless { it in setOf("auto", "model") }
+        return targetForSource(if (fixed == null) config else config.copy(streamLanguage = fixed), cloudMode, textLanguages)
+    }
+
+    private fun targetForSource(config: CaptionOverlayConfig, cloudMode: SttMode,
+               textLanguages: com.sal7one.transiber.translation.CloudTranslationLanguages?): CaptionLanguageChoices = when {
         config.textTranslationProviderId.isNotBlank() -> {
             val from = config.streamLanguage
             val known = from !in setOf("auto", "model", "und", "mul", "")
@@ -107,7 +139,9 @@ object CaptionLanguages {
             CaptionLanguageChoices(com.sal7one.transiber.translation.TranslationOptions.mlKitCodes, UiMessage(UiR.string.capability_note_b410e7fbf2, "ML Kit · download spoken and target language packs in Models. Non-English pairs translate through English."))
         config.engine.speechBackend != null || captionTranslationRoute(config.copy(mode = CaptionMode.TRANSLATE), cloudMode) == CaptionTranslationRoute.TEXT_TRANSLATOR -> {
             val spec = TranslationCatalog.models.firstOrNull { it.id == config.localTranslationModelId }
+            val known = config.streamLanguage !in setOf("auto", "model", "und", "mul", "")
             val targets = com.sal7one.transiber.translation.TranslationOptions.targetLanguages(config.localTranslationModelId, config.streamLanguage)
+                .filter { !known || com.sal7one.transiber.translation.TranslationOptions.supports(config.localTranslationModelId, config.streamLanguage, it) }.toSet()
             CaptionLanguageChoices(targets,
                 if (targets.isEmpty()) UiMessage(UiR.string.capability_note_0434e0f540, "Choose a known local translation model in Setup to load its languages.")
                 else UiMessage(UiR.string.capability_note_38000e13f0, "%1\$s: %2\$s output languages. The spoken language must also be supported by this translation model.",
@@ -122,7 +156,7 @@ object CaptionLanguages {
     fun effectiveSource(config: CaptionOverlayConfig, cloudMode: SttMode, model: CaptionLanguageModel = CaptionLanguageModel(config.modelId)): String {
         val selected = com.sal7one.common_jni.speech.SpeechLanguage.normalize(config.streamLanguage)
         val choices = source(config, cloudMode, model)
-        if (choices.codes == setOf("en")) return "en"
+        choices.codes.singleOrNull()?.takeIf { it !in setOf("auto", "model") }?.let { return it }
         return if (selected in choices.codes && selected != "model") selected else "auto"
     }
 }

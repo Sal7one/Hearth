@@ -88,7 +88,7 @@ class PublisherSpeechPackageTest {
         val bytes = archive(); val root = Files.createTempDirectory("publisher-retry").toFile()
         try {
             val interrupted = root.resolve(".staging/publisher-7/package/partial")
-            interrupted.parentFile.mkdirs(); interrupted.writeText("incomplete")
+            checkNotNull(interrupted.parentFile).mkdirs(); interrupted.writeText("incomplete")
             val store = com.sal7one.transiber.caption.LocalSpeechModels(root)
             val installed = store.installPublisher(bytes.inputStream(), spec(bytes), 7)
             assertFalse(root.resolve(".staging/publisher-7").exists())
@@ -107,6 +107,16 @@ class PublisherSpeechPackageTest {
             val source = spec(bytes).copy(profile = SpeechProfile.NEMOTRON_3_5_ASR_0_6B, archiveRoot = null, roles = mapOf("model" to "model.gguf"))
             val result = PublisherSpeechPackage.stage(bytes.inputStream(), source, root)
             assertEquals(source.profile, SpeechModelPackage.verify(result).profile)
+        } finally { root.deleteRecursively() }
+    }
+    @Test fun rawTranscribePsyDownloadKeepsItsIndependentModelIdentity() {
+        val bytes = "GGUFtest".toByteArray(); val root = Files.createTempDirectory("publisher-transcribepsy").toFile()
+        try {
+            val source = spec(bytes).copy(profile = SpeechProfile.TRANSCRIBEPSY_250M_EU_SUB, archiveRoot = null,
+                roles = mapOf("model" to "transcribepsy.gguf"))
+            val result = PublisherSpeechPackage.stage(bytes.inputStream(), source, root)
+            assertEquals(SpeechProfile.TRANSCRIBEPSY_250M_EU_SUB, SpeechModelPackage.verify(result).profile)
+            assertArrayEquals(bytes, result.resolve("transcribepsy.gguf").readBytes())
         } finally { root.deleteRecursively() }
     }
     @Test fun omnilingualArchiveIsInstalledAsTwoVerifiedNativeAssets() {

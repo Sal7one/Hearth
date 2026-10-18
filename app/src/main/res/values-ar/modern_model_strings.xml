@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="label_captionenginechoice_transcribepsy_label">TranscribePsy (محلي)</string>
+    <string name="label_captionenginechoice_transcribepsy_explanation">تعرّف محلي على الكلام بثماني لغات أوروبية من نموذج TranscribePsy بصيغة GGUF. تظهر الترجمة النصية بعد مقاطع كلام قصيرة. تستخدم الترجمة اللغوية نموذجًا منفصلًا.</string>
+    <string name="model_transcribepsy_language_note">TranscribePsy · ثماني لغات أوروبية ونص نهائي بعد مقاطع قصيرة. اختر لغة مصدر معروفة للترجمة؛ لا يفرض ذلك لغة التعرّف. يبقي الوضع التلقائي المصدر غير معروف ويعرض النص الأصلي فقط.</string>
+</resources>

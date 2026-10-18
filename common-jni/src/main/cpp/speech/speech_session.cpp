@@ -25,20 +25,29 @@ int intField(const JsonValue& j, const char* key, int lo, int hi) {
 SpeechConfig::SpeechConfig(const std::string& json) {
     JsonValue j; std::string error;
     if (!JsonUtils::parse(json, j, &error) || !j.isObject()) throw std::invalid_argument("Speech config: " + error);
-    if (!JsonUtils::validateObjectKeys(j, {"backend", "model", "frontend", "encoder", "decoder", "tokenizer", "language", "numThreads", "rightContext", "maxUtteranceMs", "silenceMs", "silenceThresholdDb"}, &error)) throw std::invalid_argument(error);
+    if (!JsonUtils::validateObjectKeys(j, {"backend", "acceleration", "gpuCacheDirectory", "model", "frontend", "encoder", "decoder", "tokenizer", "language", "numThreads", "rightContext", "maxUtteranceMs", "silenceMs", "silenceThresholdDb"}, &error)) throw std::invalid_argument(error);
     backend = stringField(j, "backend");
+    acceleration = j.find("acceleration") ? stringField(j, "acceleration") : "cpu";
+    if (acceleration != "cpu" && acceleration != "vulkan" && acceleration != "opencl")
+        throw std::invalid_argument("Unsupported speech acceleration: " + acceleration);
+    if (acceleration != "cpu" && backend != "transcribepsy")
+        throw std::invalid_argument("GPU speech acceleration is supported only by TranscribePsy");
     const char* names[] = {"model", "frontend", "encoder", "decoder", "tokenizer", "language"};
     for (size_t i = 0; i < 6; ++i) paths[i] = stringField(j, names[i]);
+    paths[6] = stringField(j, "gpuCacheDirectory", false);
     value = {sizeof(value), paths[0].c_str(), paths[1].c_str(), paths[2].c_str(), paths[3].c_str(), paths[4].c_str(), paths[5].c_str(),
         intField(j, "numThreads", 1, 8), intField(j, "rightContext", 0, 13),
-        intField(j, "maxUtteranceMs", 1000, 15000), intField(j, "silenceMs", 200, 2000), -45};
+        intField(j, "maxUtteranceMs", 1000, 15000), intField(j, "silenceMs", 200, 2000), -45, acceleration.c_str(), paths[6].c_str()};
     if (value.max_utterance_ms % 20 || value.silence_ms % 20) throw std::invalid_argument("Speech segmentation must use 20ms frames");
     double db = 0; const auto* threshold = j.find("silenceThresholdDb");
     if (!threshold || !threshold->asDouble(db) || !std::isfinite(db) || db < -100 || db > -10) throw std::invalid_argument("Invalid speech silenceThresholdDb");
     value.silence_threshold_db = static_cast<float>(db);
     if (backend == "moonshine") {
-        if (paths[0].empty() || paths[2].empty() || paths[3].empty() || (paths[5] != "auto" && paths[5] != "en"))
-            throw std::invalid_argument("Moonshine requires tokens, encoder, merged decoder and English source");
+        if (paths[0].empty() || paths[2].empty() || paths[3].empty())
+            throw std::invalid_argument("Moonshine requires tokens, encoder and merged decoder paths");
+        if (paths[5] != "auto" && paths[5] != "en" && paths[5] != "ar" && paths[5] != "es" &&
+            paths[5] != "ja" && paths[5] != "ko" && paths[5] != "uk" && paths[5] != "vi" && paths[5] != "zh")
+            throw std::invalid_argument("Unsupported Moonshine source declaration: " + paths[5]);
     } else if (backend == "qwen3_asr") {
         for (int i = 1; i <= 4; ++i) if (paths[i].empty()) throw std::invalid_argument("Qwen requires frontend, encoder, decoder and tokenizer paths");
         qwenLanguageName(paths[5]); // Validate before loading the backend.
@@ -51,6 +60,11 @@ SpeechConfig::SpeechConfig(const std::string& json) {
             throw std::invalid_argument("Phonon requires tokens, joiner, encoder and decoder paths");
         if (paths[5] != "auto" && paths[5] != "en")
             throw std::invalid_argument("Phonon is English-only and cannot declare source: " + paths[5]);
+    } else if (backend == "transcribepsy") {
+        if (paths[0].empty()) throw std::invalid_argument("TranscribePsy requires a GGUF model path");
+        if (paths[5] != "auto" && paths[5] != "en" && paths[5] != "nl" && paths[5] != "fr" &&
+            paths[5] != "de" && paths[5] != "it" && paths[5] != "pl" && paths[5] != "pt" && paths[5] != "es")
+            throw std::invalid_argument("Unsupported TranscribePsy source declaration: " + paths[5]);
     } else if (backend == "nemotron_3_5") {
         if (paths[0].empty() || paths[5].empty()) throw std::invalid_argument("Nemotron requires a model path and source language");
         const int r = value.right_context;
@@ -58,11 +72,17 @@ SpeechConfig::SpeechConfig(const std::string& json) {
     } else throw std::invalid_argument("Unknown speech backend: " + backend);
 }
 
-const HearthSpeechBackend& loadBackend(const std::string& id) {
+const HearthSpeechBackend& loadBackend(const std::string& id, const std::string& acceleration) {
+    if (acceleration != "cpu" && acceleration != "vulkan" && acceleration != "opencl")
+        throw std::invalid_argument("Unsupported speech acceleration: " + acceleration);
+    if (acceleration != "cpu" && id != "transcribepsy")
+        throw std::invalid_argument("GPU speech acceleration is supported only by TranscribePsy");
     std::string name, revision;
     if (id == "qwen3_asr" || id == "moonshine" || id == "omnilingual_ctc" || id == "phonon") { name = "libhearth_qwen"; revision = HEARTH_QWEN_REVISION; }
+    else if (id == "transcribepsy") { name = "libhearth_transcribepsy"; revision = HEARTH_TRANSCRIBEPSY_REVISION; }
     else if (id == "nemotron_3_5") { name = "libhearth_nemotron"; revision = HEARTH_NEMO_REVISION; }
     else throw std::invalid_argument("Unknown speech backend: " + id);
+    if (acceleration != "cpu") name += "_" + acceleration;
 #ifdef __APPLE__
     name += ".dylib";
 #else
@@ -73,7 +93,8 @@ const HearthSpeechBackend& loadBackend(const std::string& id) {
     // Avoid unloading ORT/GGML while their thread-local destructors still exist.
     static std::map<std::string, const HearthSpeechBackend*> loaded;
     std::lock_guard<std::mutex> lock(gate);
-    if (auto it = loaded.find(id); it != loaded.end()) return *it->second;
+    const auto key = id + ":" + acceleration;
+    if (auto it = loaded.find(key); it != loaded.end()) return *it->second;
     void* library = dlopen(name.c_str(), RTLD_NOW | RTLD_LOCAL);
     if (!library) { const char* e = dlerror(); throw std::runtime_error(e ? e : "dlopen failed without an error string"); }
     const char* symbol = id == "moonshine" ? "hearth_moonshine_backend_v1" :
@@ -83,10 +104,10 @@ const HearthSpeechBackend& loadBackend(const std::string& id) {
     const auto* api = entry ? entry() : nullptr;
     if (!api || api->abi_version != HEARTH_SPEECH_ABI_VERSION || api->size != sizeof(HearthSpeechBackend) ||
         !api->id || id != api->id || !api->revision || revision != api->revision || !api->create || !api->destroy ||
-        !api->push || !api->next || !api->finish || !api->reset || !api->last_error) {
+        !api->push || !api->next || !api->finish || !api->reset || !api->last_error || !api->execution_info) {
         dlclose(library); throw std::runtime_error("Speech backend ABI/revision mismatch: " + id);
     }
-    loaded.emplace(id, api);
+    loaded.emplace(key, api);
     return *api;
 }
 SpeechNativeSession::SpeechNativeSession(const HearthSpeechBackend& api, const HearthSpeechConfig& config) : api_(api) {
@@ -99,6 +120,11 @@ SpeechNativeSession::SpeechNativeSession(const HearthSpeechBackend& api, const H
     }
 }
 SpeechNativeSession::~SpeechNativeSession() { if (instance_) api_.destroy(instance_); }
+std::string SpeechNativeSession::executionInfo() const {
+    const char* info = api_.execution_info(instance_);
+    if (!info || !*info || std::strlen(info) > 4096) throw std::runtime_error("Speech backend returned invalid execution information");
+    return info;
+}
 void SpeechNativeSession::check(int code) {
     if (code) {
         failure_ = api_.last_error();

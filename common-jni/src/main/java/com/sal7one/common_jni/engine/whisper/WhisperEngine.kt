@@ -1,11 +1,15 @@
 package com.sal7one.common_jni.engine.whisper
 
-import com.sal7one.common_jni.engine.SttEngine
+import com.sal7one.common_jni.engine.DirectPcmSttEngine
+import com.sal7one.common_jni.engine.CancellableSttEngine
 import com.sal7one.common_jni.engine.SttError
 import com.sal7one.common_jni.model.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
+
+/** Optional runtime choice. CPU supports every shipped ABI; Vulkan is opt-in ARM64. */
+enum class WhisperAcceleration(val id: String) { CPU("cpu"), VULKAN("vulkan") }
 
 /**
  * Whisper.cpp STT engine implementation.
@@ -22,13 +26,15 @@ import java.io.File
  * - Removed expensive debug allocations
  * - Added capability reporting
  */
-class WhisperEngine : SttEngine {
+class WhisperEngine : DirectPcmSttEngine, CancellableSttEngine {
 
     private var nativeHandle: Long = 0L
     private var _isInitialized = false
     private var _currentModel: ModelInfo? = null
     private var _currentConfig: SttConfig? = null
     private var accumulatedAudioMs = 0L
+    @Volatile private var _runtimeDescription = ""
+    val runtimeDescription: String get() = _runtimeDescription
     
     // Use Default dispatcher for CPU-bound inference work
     // Limited to 1 to prevent concurrent inference (Whisper is not thread-safe per context)
@@ -89,6 +95,7 @@ class WhisperEngine : SttEngine {
     private external fun nativeGetLastErrorWhisper(handle: Long): String?
     private external fun nativeIsProcessingWhisper(handle: Long): Boolean
     private external fun nativeGetModelTypeWhisper(handle: Long): Int
+    private external fun nativeGetRuntimeDescriptionWhisper(handle: Long): String
     private external fun nativeCancelWhisper(handle: Long)
     private external fun nativeIsCancelledWhisper(handle: Long): Boolean
     private external fun nativeDetectLanguage(handle: Long, samples: ShortArray, count: Int, sampleRate: Int): String?
@@ -147,6 +154,7 @@ class WhisperEngine : SttEngine {
                     return@withContext Result.failure(SttError.InitializationFailed(error))
                 }
 
+                _runtimeDescription = nativeGetRuntimeDescriptionWhisper(nativeHandle)
                 _isInitialized = true
                 _currentConfig = verifiedConfig
                 _currentModel = ModelInfo(
@@ -202,7 +210,7 @@ class WhisperEngine : SttEngine {
      * @param sampleRate Input sample rate. The native engine keeps resampling
      *                   phase across streaming chunks when this is not 16 kHz.
      */
-    suspend fun pushAudioDirect(
+    override suspend fun pushAudioDirect(
         buffer: java.nio.ByteBuffer,
         byteOffset: Int,
         byteCount: Int,
@@ -239,7 +247,8 @@ class WhisperEngine : SttEngine {
                 nativeGetPartialWhisper(nativeHandle)?.takeIf { it.isNotBlank() }?.let {
                     PartialTranscript(it.trim(), System.currentTimeMillis(), false)
                 }
-            } catch (e: Exception) {
+            } catch (e: kotlinx.coroutines.CancellationException) { throw e }
+            catch (e: Exception) {
                 throw SttError.ProcessingFailed(e.message ?: "Whisper partial failed")
             }
         }
@@ -287,6 +296,7 @@ class WhisperEngine : SttEngine {
             nativeHandle = 0L
         }
         _isInitialized = false
+        _runtimeDescription = ""
         _currentModel = null
         _currentConfig = null
         accumulatedAudioMs = 0L
@@ -340,7 +350,7 @@ class WhisperEngine : SttEngine {
      * This is thread-safe and can be called from any thread.
      * The engine will stop at the next safe point and return partial results.
      */
-    fun cancel() {
+    override fun cancel() {
         if (nativeHandle != 0L) {
             nativeCancelWhisper(nativeHandle)
         }

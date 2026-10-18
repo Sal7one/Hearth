@@ -148,10 +148,6 @@ private:
     std::vector<int64_t> encIds_;
     std::vector<int64_t> attention_;
     std::vector<float> hidden_;
-    std::vector<int64_t> decInput_;
-    std::vector<float> logits_;
-    std::vector<float> decoderPast_[kLayers][2];   // [layer][key|value]
-    std::vector<float> encoderPast_[kLayers][2];
     std::vector<std::string> nameStorage_;
     std::vector<char*> inputNames_;
     std::vector<char*> outputNames_;

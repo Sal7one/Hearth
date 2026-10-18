@@ -862,6 +862,12 @@
     <string name="model_marian_via_english_warning">يستخدم نموذجين للترجمة عبر الإنجليزية. قد يتغير المعنى؛ قارن النص العربي النهائي بمترجمات أخرى قبل استخدامه للتعليقات المباشرة.</string>
     <string name="model_omnilingual_language_note">يتعرف Omnilingual CTC على اللغة تلقائياً. اختيار لغة الكلام يحدد لغة النص للترجمة ولا يجبر النموذج عليها. يبقى الوضع التلقائي للترجمة النصية فقط عندما يكون المصدر مجهولاً.</string>
     <string name="model_phonon_language_note">يتعرف Phonon 2 على الإنجليزية فقط. لا حاجة إلى كشف اللغة التلقائي أو تجاوز يدوي.</string>
+    <string name="model_fixed_language_unknown">استورد نموذجًا موثّقًا أو اختره لمعرفة لغة الكلام التي يدعمها.</string>
+    <string name="model_fixed_language_note">يتعرف %1$s على %2$s فقط. غيّر النموذج لتغيير لغة الكلام.</string>
+    <string name="model_moonshine_utterance_note">يتعرف كل نموذج Moonshine على لغة واحدة. تظهر الترجمة النصية بعد عبارة قصيرة أو مقطع صوتي قصير. تستخدم الترجمة اللغوية مترجمًا منفصلًا.</string>
+    <string name="model_translation_source">لغة المصدر</string>
+    <string name="model_translation_direct">ترجمة مباشرة</string>
+    <string name="model_translation_pivot">عبر الإنجليزية · نموذجان</string>
     <string name="benchmark_presets_title">جرّب زوج نماذج</string>
     <string name="benchmark_picker_hint">لغات النماذج المثبتة والقابلة للتنزيل. قد تحتاج إلى تنزيل النموذج؛ لا يمكن اختبار الاختيارات غير المتوافقة.</string>
     <string name="benchmark_presets_hint">السرعة والتوازن والجودة نقاط بداية وليست نتائج مؤكدة. اختبر المرحلتين على هاتفك لهذا الزوج اللغوي.</string>

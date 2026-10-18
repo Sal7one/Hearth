@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="translation_acceleration_title">GGUF 翻译加速</string>
+    <string name="translation_acceleration_cpu">CPU</string>
+    <string name="translation_acceleration_vulkan">Vulkan GPU · 实验性</string>
+    <string name="translation_acceleration_cpu_note">默认使用 CPU。可尝试 Vulkan，并在手机的基准测试中比较结果。</string>
+    <string name="translation_acceleration_gpu_note">请求在兼容驱动上使用 GPU。部分运算仍可能使用 CPU。内存占用与发热可能增加；速度取决于模型和手机。错误会明确显示，需手动切换回 CPU。</string>
+    <string name="translation_acceleration_arm64_only">可选 Vulkan 引擎仅随 ARM64 版本提供。请在此设备上选择 CPU。</string>
+    <string name="translation_acceleration_scope">适用于下次为文字、字幕、对话或相机打开的 GGUF 翻译器。请重启正在运行的字幕会话以应用更改。Marian、平台语言包、语音识别与朗读使用各自的引擎。</string>
+    <string name="translation_acceleration_retry_cpu">切换至 CPU 并重试</string>
+    <string name="translation_acceleration_use_cpu">使用 CPU</string>
+    <string name="translation_acceleration_change">更改</string>
+    <string name="translation_acceleration_hide">收起</string>
+</resources>

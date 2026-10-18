@@ -7,3 +7,6 @@ trap 'rm -rf "$BUILD"' EXIT
   "$MARIAN/tests/marian_tokenizer_test.cpp" "$MARIAN/marian_tokenizer.cpp" \
   -o "$BUILD/marian_tokenizer_test"
 "$BUILD/marian_tokenizer_test"
+"${CXX:-c++}" -std=c++17 -O1 -g -Wall -Wextra -Wpedantic -Werror -fsanitize=address,undefined \
+  "$MARIAN/tests/marian_decoder_test.cpp" -o "$BUILD/marian_decoder_test"
+"$BUILD/marian_decoder_test"

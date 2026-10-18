@@ -4,6 +4,7 @@ import android.content.Context
 import android.os.Build
 import com.sal7one.transiber.BuildConfig
 import com.sal7one.common_jni.engine.SttEngine
+import com.sal7one.common_jni.engine.CancellableSttEngine
 import com.sal7one.common_jni.engine.vosk.VoskEngine
 import com.sal7one.common_jni.engine.whisper.WhisperEngine
 import com.sal7one.common_jni.language.LanguageCatalog
@@ -11,6 +12,9 @@ import com.sal7one.common_jni.model.LanguageConfig
 import com.sal7one.common_jni.model.SttConfig
 import com.sal7one.common_jni.speech.*
 import com.sal7one.common_jni.translation.*
+import com.sal7one.transiber.caption.SpeechAccelerationStore
+import com.sal7one.transiber.caption.CaptionEngineChoice
+import com.sal7one.common_jni.engine.whisper.WhisperAcceleration
 import com.sal7one.transiber.caption.LocalSpeechModels
 import com.sal7one.transiber.caption.label
 import com.sal7one.transiber.models.ModelEngineType
@@ -21,6 +25,7 @@ import com.sal7one.transiber.translation.PlatformTranslation
 import com.sal7one.transiber.translation.TranslationOptions
 import com.sal7one.transiber.translation.MarianPackage
 import com.sal7one.transiber.translation.MarianCascade
+import com.sal7one.transiber.translation.ConversationTranslationSettings
 import com.sal7one.common_jni.marian.MarianTranslationSession
 import kotlinx.coroutines.*
 import org.json.JSONArray
@@ -33,6 +38,7 @@ internal data class BenchmarkCandidate(
     val id: String, val label: String, val route: String,
     val sourceCodes: Set<String>, val targetCodes: Set<String> = emptySet(),
     val file: File? = null, val profile: SpeechProfile? = null, val translation: TranslationModelSpec? = null,
+    val acceleration: String? = null,
 )
 internal data class BenchmarkInput(
     val id: String,
@@ -168,10 +174,12 @@ internal class LocalBenchmarkRunner(private val context: Context) {
     suspend fun run(
         selected: List<BenchmarkCandidate>, clip: BenchmarkAudio.Clip?, text: String, referenceText: String?,
         source: String, target: String, benchmarkInputs: List<BenchmarkInput> = emptyList(),
+        compareAcceleration: Boolean = false,
         progress: (String) -> Unit, onResult: (BenchmarkResult) -> Unit,
     ) = withContext(Dispatchers.Default) {
         suspend fun reportProgress(message: String) = withContext(Dispatchers.Main.immediate) { progress(message) }
         require(selected.isNotEmpty() && selected.size <= 12) { "Choose between 1 and 12 installed models" }
+        val planned = BenchmarkAccelerationPlan.expand(selected, compareAcceleration)
         val translating = selected.first().targetCodes.isNotEmpty()
         require(selected.all { it.targetCodes.isNotEmpty() == translating }) { "Compare speech and translation separately" }
         if (benchmarkInputs.isNotEmpty()) {
@@ -195,13 +203,14 @@ internal class LocalBenchmarkRunner(private val context: Context) {
             else MessageDigest.getInstance("SHA-256")
                 .digest("$source\u0000$target\u0000${clip?.takeUnless { translating }?.sha256.orEmpty()}\u0000$text\u0000${referenceText.orEmpty()}".toByteArray())
                 .joinToString("") { "%02x".format(it.toInt() and 255) }
-            for (candidate in selected) {
+            for (candidate in planned) {
                 currentCoroutineContext().ensureActive()
                 reportProgress("${candidate.label}: loading and verifying")
                 var load = 0.0; var runtime = "Bundled app runtime"
                 val elapsed = mutableListOf<Double>(); val texts = mutableListOf<String>(); val first = mutableListOf<Double>()
                 var speech: SpeechSession? = null; var legacy: SttEngine? = null; var translator: CancellableTextTranslator? = null
                 var failure: String? = null
+                var executedAcceleration: String? = candidate.acceleration
                 val samples = mutableListOf<BenchmarkSampleResult>()
                 val rawInputs = benchmarkInputs.ifEmpty {
                     listOf(BenchmarkInput("custom", text, referenceText, clip = clip.takeUnless { translating }))
@@ -233,14 +242,25 @@ internal class LocalBenchmarkRunner(private val context: Context) {
                                 MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it.toInt() and 255) }
                             }
                             runtime += "; ${candidate.profile.id}; package manifest SHA-256 $manifestHash; defaults: threads 4 where supported, right context 3, utterance 4000 ms"
-                            speech = backend.open(checkNotNull(candidate.file), SpeechOptions(sourceLanguage = source))
+                            val acceleration = candidate.acceleration ?: if (candidate.profile.backend == SpeechBackend.TRANSCRIBEPSY)
+                                SpeechAccelerationStore.current(context, CaptionEngineChoice.TRANSCRIBEPSY) else "cpu"
+                            executedAcceleration = acceleration
+                            runtime += "; requested $acceleration; initialization did not complete"
+                            speech = backend.open(checkNotNull(candidate.file), SpeechOptions(sourceLanguage = source,
+                                acceleration = SpeechAcceleration.entries.first { it.id == acceleration },
+                                gpuCacheDirectory = File(context.cacheDir, "speech-opencl")))
+                            runtime += "; ${speech?.executionInfo}"
                         }
                         candidate.translation != null -> {
                             require(candidate.translation.supports(source, target)) { "${candidate.label} does not support $source → $target" }
                             // Assign inside IO: cancellation at dispatch return must not leak the created handle.
-                            withContext(Dispatchers.IO) { translator = LocalTranslationSession.open(checkNotNull(candidate.file), candidate.translation) }
+                            val acceleration = candidate.acceleration?.let(TranslationAcceleration::fromId)
+                                ?: ConversationTranslationSettings.acceleration(context)
+                            executedAcceleration = acceleration.id
+                            runtime = "Pinned GGUF ${candidate.translation.revision}; SHA-256 ${candidate.translation.sha256}; requested ${acceleration.id}; initialization did not complete"
+                            withContext(Dispatchers.IO) { translator = LocalTranslationSession.open(checkNotNull(candidate.file), candidate.translation, acceleration, File(context.cacheDir, "translation-opencl")) }
                             cancelNative = { translator?.cancel() }
-                            runtime = "Pinned GGUF ${candidate.translation.revision}; SHA-256 ${candidate.translation.sha256}"
+                            runtime = "Pinned GGUF ${candidate.translation.revision}; SHA-256 ${candidate.translation.sha256}; requested ${acceleration.id}; ${translator?.executionInfo}"
                         }
                         MarianPackage.find(candidate.id) != null -> {
                             val pair = checkNotNull(MarianPackage.find(candidate.id))
@@ -267,17 +287,24 @@ internal class LocalBenchmarkRunner(private val context: Context) {
                             val model = checkNotNull(registry.getModel(candidate.id)) { "Model registration is missing" }
                             val engine: SttEngine = if (model.engineType == ModelEngineType.WHISPER) WhisperEngine() else VoskEngine()
                             legacy = engine
-                            cancelNative = { when (engine) { is WhisperEngine -> engine.cancel(); is VoskEngine -> engine.cancel() } }
+                            cancelNative = { (engine as? CancellableSttEngine)?.cancel() }
                             val provider = checkNotNull(registry.getProvider(candidate.id))
+                            val acceleration = if (engine is WhisperEngine) candidate.acceleration
+                                ?: SpeechAccelerationStore.current(context, CaptionEngineChoice.WHISPER) else "cpu"
+                            executedAcceleration = acceleration
+                            runtime = "Requested $acceleration; initialization did not complete"
                             withContext(Dispatchers.IO) {
                                 val path = provider.getModelPath()
                                 engine.initialize(path, SttConfig.forBatch().copy(
                                     numThreads = if (engine is WhisperEngine) 8 else 2,
                                     language = if (source in setOf("auto", "model")) LanguageConfig.Auto else LanguageConfig.Specific(source),
                                     modelSha256 = checkNotNull(provider.getModelDigest()).hex,
+                                    whisperAcceleration = if (engine is WhisperEngine &&
+                                        acceleration == "vulkan")
+                                        WhisperAcceleration.VULKAN else WhisperAcceleration.CPU,
                                 )).getOrThrow()
                             }
-                            runtime = "Model SHA-256 ${model.digest?.hex}; ${if (engine is WhisperEngine) 8 else 2} threads"
+                            runtime = "Model SHA-256 ${model.digest?.hex}; ${if (engine is WhisperEngine) 8 else 2} threads; ${(engine as? WhisperEngine)?.runtimeDescription.orEmpty()}"
                         }
                     }
                     load = (System.nanoTime() - loading) / 1e6
@@ -347,7 +374,10 @@ internal class LocalBenchmarkRunner(private val context: Context) {
                     }
                 }
                 if (!translating) runtime += "; benchmark audio: ${BenchmarkAudio.NORMALIZATION}"
-                val result = BenchmarkResult(runId, System.currentTimeMillis(), candidate.label, candidate.id, candidate.route,
+                val actualCandidate = candidate.copy(acceleration = executedAcceleration)
+                val resultLabel = candidate.label + if (candidate.acceleration == null && executedAcceleration != null)
+                    " · ${executedAcceleration.uppercase(java.util.Locale.ROOT)}" else ""
+                val result = BenchmarkResult(runId, System.currentTimeMillis(), resultLabel, BenchmarkAccelerationPlan.identity(actualCandidate), candidate.route,
                     hash, source, if (translating) target else "", totalAudioMs,
                     load, elapsed, texts, runtime, first,
                     "${Build.MANUFACTURER} ${Build.MODEL}; Android ${Build.VERSION.RELEASE}; API ${Build.VERSION.SDK_INT}; app ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})", failure,

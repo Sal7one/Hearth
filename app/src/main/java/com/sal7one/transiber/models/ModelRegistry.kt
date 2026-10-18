@@ -205,7 +205,9 @@ class ModelRegistry private constructor(private val context: Context) {
         val staged = context.contentResolver.openInputStream(uri)?.use { input ->
             ModelIntegrity.stageFile(input, modelsDir, name, expectedSha256)
         } ?: throw ModelIntegrityException("Cannot open model URI")
-        registerStagedModelInternal(staged, deleteIfRejected = true)
+        registerStagedModelInternal(staged, deleteIfRejected = true)?.also { model ->
+            com.sal7one.transiber.preferences.ModelSourceBindings.recordImported(context, model.id, uri, listOf(File(model.path)))
+        }
     }
 
     suspend fun importModelDirectory(
@@ -229,7 +231,9 @@ class ModelRegistry private constructor(private val context: Context) {
         if (manifest.exists()) {
             verifyBundleManifest(manifest, stagedDir)
         }
-        registerStagedModelInternal(staged, deleteIfRejected = true)
+        registerStagedModelInternal(staged, deleteIfRejected = true)?.also { model ->
+            com.sal7one.transiber.preferences.ModelSourceBindings.recordImported(context, model.id, uri, listOf(File(model.path)))
+        }
     }
 
     /**
@@ -370,6 +374,7 @@ class ModelRegistry private constructor(private val context: Context) {
         }
         
         removeModel(modelId)
+        com.sal7one.transiber.preferences.ModelSourceBindings.forget(context, modelId)
     }
     
     // =============================================================================

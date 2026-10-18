@@ -13,7 +13,7 @@ machine, elf_class = {"arm64-v8a": ("AArch64", "ELF64"), "armeabi-v7a": ("ARM", 
                       "x86": ("Intel 80386", "ELF32"), "x86_64": ("Advanced Micro Devices X86-64", "ELF64")}[abi]
 allowed = {"libc++_shared.so", "libc.so", "libm.so", "libdl.so", "liblog.so", "libandroid.so"}
 records = []
-for filename in ("libhearth_qwen.so", "libhearth_nemotron.so"):
+for filename in ("libhearth_qwen.so", "libhearth_nemotron.so", "libhearth_transcribepsy.so", "libhearth_transcribepsy_vulkan.so", "libhearth_transcribepsy_opencl.so"):
     file = lib_dir / filename
     if not file.is_file():
         continue
@@ -29,7 +29,7 @@ for filename in ("libhearth_qwen.so", "libhearth_nemotron.so"):
         raise RuntimeError(f"{filename}: expected {abi} ({machine}, {elf_class})")
     dynamic = read("-d")
     needed = re.findall(r"\(NEEDED\).*?\[(.*?)\]", dynamic)
-    if set(needed) - allowed:
+    if set(needed) - (allowed | ({"libvulkan.so"} if filename.endswith("_vulkan.so") else set())):
         raise RuntimeError(f"{filename}: unexpected dynamic dependencies: {needed}")
     soname = re.findall(r"\(SONAME\).*?\[(.*?)\]", dynamic)
     if soname != [filename]:

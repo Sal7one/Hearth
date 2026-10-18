@@ -62,8 +62,8 @@
     <string name="label_captionenginechoice_vosk_explanation" formatted="false">"即时生成模型语言的临时字幕，响应迅速，每种语言单独使用模型。"</string>
     <string name="label_captionenginechoice_whisper_label" formatted="false">"Whisper（准确）"</string>
     <string name="label_captionenginechoice_whisper_explanation" formatted="false">"多语言与实时语言检测，临时字幕较慢。内置英语翻译。"</string>
-    <string name="label_captionenginechoice_moonshine_label" formatted="false">"Moonshine · 英语"</string>
-    <string name="label_captionenginechoice_moonshine_explanation" formatted="false">"轻量英语识别，按短句分段处理，可选本地翻译。"</string>
+    <string name="label_captionenginechoice_moonshine_label" formatted="false">"Moonshine（本地）"</string>
+    <string name="label_captionenginechoice_moonshine_explanation" formatted="false">"轻量的单语言模型识别，按短句分段处理，可选本地翻译。"</string>
     <string name="label_captionenginechoice_qwen_label" formatted="false">"Qwen3-ASR（本地）"</string>
     <string name="label_captionenginechoice_omnilingual_label" formatted="false">"Omnilingual CTC 300M（本地）"</string>
     <string name="label_captionenginechoice_omnilingual_explanation" formatted="false">"实验性轻量多语言字幕，按短语分段输出。此模型不能强制识别语言；你选择的语言用于标记字幕并路由翻译。"</string>
