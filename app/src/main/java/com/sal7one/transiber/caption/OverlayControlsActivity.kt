@@ -15,6 +15,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.material3.*
@@ -36,6 +37,7 @@ import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
@@ -192,6 +194,20 @@ private fun OverlayControls(onReturn: () -> Unit, onStart: () -> Unit, onSpeechS
                                 { update { it.copy(bubbleHeightDp = height - if (television) 8 else 24) } }, { update { it.copy(bubbleHeightDp = height + if (television) 8 else 24) } })
                         }
                         OverlayEditorCategory.TEXT -> {
+                            if (cfg.mode == CaptionMode.TRANSLATE) {
+                                Text(text(R.string.ui_show_d97d1), style = MaterialTheme.typography.titleMedium)
+                                CaptionDisplay.entries.forEach { display ->
+                                    RemoteButton(text.label(display), modifier = Modifier.fillMaxWidth(), selected = cfg.display == display,
+                                        onClick = { update { it.copy(display = display) } })
+                                }
+                                if (cfg.display == CaptionDisplay.TRANSLATED) {
+                                    RemoteToggle(text(R.string.caption_show_original_while_translating), cfg.showOriginalWhileTranslating) { checked ->
+                                        update { it.copy(showOriginalWhileTranslating = checked) }
+                                    }
+                                    Text(text(R.string.caption_show_original_while_translating_help), style = MaterialTheme.typography.bodySmall)
+                                }
+                                HorizontalDivider()
+                            }
                             CaptionFontScale.entries.forEach { size ->
                                 RemoteButton(text.label(size), modifier = Modifier.fillMaxWidth(), selected = cfg.fontScale == size,
                                     onClick = { update { it.copy(fontScale = size) } })
@@ -321,6 +337,27 @@ private fun RemoteAdjustment(label: String, canDecrease: Boolean, canIncrease: B
             RemoteButton(text(R.string.overlay_increase), modifier = Modifier.weight(1f), enabled = canIncrease,
                 description = "$label · ${text(R.string.overlay_increase)}", onClick = onIncrease)
         }
+    }
+}
+
+/** The whole switch row has one remote focus target and an explicit checked state. */
+@Composable
+private fun RemoteToggle(label: String, checked: Boolean, onChange: (Boolean) -> Unit) {
+    var focused by remember { mutableStateOf(false) }
+    val shape = RoundedCornerShape(12.dp)
+    Row(
+        Modifier.fillMaxWidth().heightIn(min = 52.dp)
+            .onFocusChanged { focused = it.isFocused }
+            .background(if (focused) MaterialTheme.colorScheme.primaryContainer else Color.Transparent, shape)
+            .border(if (focused) 3.dp else 1.dp,
+                if (focused) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline, shape)
+            .toggleable(value = checked, role = Role.Switch, onValueChange = onChange)
+            .padding(horizontal = 12.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Text(label, Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
+        Switch(checked = checked, onCheckedChange = null)
     }
 }
 

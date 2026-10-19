@@ -212,8 +212,9 @@ the bundled runtime and do not download llama.cpp or weights.
 
 Expand **ML Kit**, select it, and download the spoken and target packs on Wi-Fi.
 English needs no separate pack. Download/remove actions are explicit; inference
-never starts a download. Missing packs report which languages are required while
-original captions continue. Packs stay in ML Kit-managed app storage, not the
+never starts a download. Missing packs report which languages are required.
+Original captions follow the selected display mode and the optional **Show original
+while translating** choice. Packs stay in ML Kit-managed app storage, not the
 public GGUF download folder. The foss build excludes this SDK and option.
 
 Translation uses Google Translate on-device models. Non-English pairs pivot through
@@ -255,5 +256,7 @@ translation quality across the model's advertised languages.
 Nemotron now requests an endpoint after four seconds of decoded speech with a
 nonempty transcript, in addition to natural endpoints. This gives the final-only
 translator bounded phrases during continuous audio. It does not guarantee four
-seconds of wall-clock latency under load. Original captions remain visible when
-translation is unsupported, slow or fails.
+seconds of wall-clock latency under load. Original captions remain visible in
+Original/Both. Translation only hides them unless **Show original while translating**
+is enabled; this shows available source text until a translation arrives. Actual
+translation errors remain visible with either choice.

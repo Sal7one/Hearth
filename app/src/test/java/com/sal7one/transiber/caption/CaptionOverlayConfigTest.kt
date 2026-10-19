@@ -8,6 +8,50 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class CaptionOverlayConfigTest {
+    @Test fun pendingOriginalCaptionsAreOptInIncludingSavedUpgrades() {
+        assertFalse(CaptionOverlayConfig().showOriginalWhileTranslating)
+        val saved = mutablePreferencesOf()
+        CaptionConfigStore.writeInto(saved, CaptionOverlayConfig(mode = CaptionMode.TRANSLATE, display = CaptionDisplay.TRANSLATED))
+        saved.remove(androidx.datastore.preferences.core.booleanPreferencesKey("show_original_while_translating_v1"))
+        assertFalse(CaptionConfigStore.readFrom(saved).showOriginalWhileTranslating)
+    }
+
+    @Test fun storeRoundTripsBothPendingOriginalChoices() {
+        val prefs = mutablePreferencesOf()
+        listOf(true, false).forEach { enabled ->
+            CaptionConfigStore.writeInto(prefs, CaptionOverlayConfig(
+                mode = CaptionMode.TRANSLATE,
+                display = CaptionDisplay.TRANSLATED,
+                showOriginalWhileTranslating = enabled,
+            ))
+            assertEquals(enabled, CaptionConfigStore.readFrom(prefs).showOriginalWhileTranslating)
+        }
+    }
+
+    @Test fun pendingOriginalChoiceIsGlobalAcrossOrientationAndTv() {
+        val prefs = mutablePreferencesOf()
+        CaptionConfigStore.writeInto(prefs, CaptionOverlayConfig(showOriginalWhileTranslating = true), OverlayOrientation.PORTRAIT)
+        val landscape = CaptionConfigStore.readFrom(prefs, OverlayOrientation.LANDSCAPE, television = true)
+        assertTrue(landscape.showOriginalWhileTranslating)
+        CaptionConfigStore.writeInto(prefs, landscape.copy(widthPercent = 65), OverlayOrientation.LANDSCAPE)
+        assertTrue(CaptionConfigStore.readFrom(prefs, OverlayOrientation.PORTRAIT).showOriginalWhileTranslating)
+        assertEquals(65, CaptionConfigStore.readFrom(prefs, OverlayOrientation.LANDSCAPE).widthPercent)
+    }
+
+    @Test fun presetsAndModeChangesKeepThePendingOriginalChoice() {
+        val prefs = mutablePreferencesOf()
+        val user = CaptionOverlayConfig(mode = CaptionMode.TRANSLATE, display = CaptionDisplay.TRANSLATED,
+            showOriginalWhileTranslating = true)
+        CaptionPresets.ALL.forEach { preset ->
+            val changed = preset.applyTo(user).withCaptionMode(CaptionMode.CAPTIONS)
+                .copy(display = CaptionDisplay.BOTH).withUiClamp()
+            CaptionConfigStore.writeInto(prefs, changed)
+            val restored = CaptionConfigStore.readFrom(prefs).withCaptionMode(CaptionMode.TRANSLATE)
+                .copy(display = CaptionDisplay.TRANSLATED)
+            assertTrue(restored.showOriginalWhileTranslating)
+        }
+    }
+
     @Test fun tapThroughIsOptInForEveryNewSessionIncludingSavedUpgrades() {
         assertFalse(CaptionOverlayConfig().tapThrough)
         val key = androidx.datastore.preferences.core.booleanPreferencesKey("tap_through")

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.25.4 draft — 2026-10-19 · Optional captions while translating
+
+- Add a saved **Show original while translating** switch beside Translation only on phone and TV. Keep it off by default; enable it to show available source captions until that line's translation arrives, then replace them with translated text.
+- Apply the choice consistently to live captions, held history and copying. Preserve hidden-partial preferences, direct translated output and source/target provenance; intermediate English is never presented as original captions.
+- Apply the preference without restarting speech, translation or TTS. Keep actual errors visible and retain independent pipeline choices. Deliver signed QA updates with version code 88 and the existing package/certificate.
+- Include a primary-source model-family survey: 35 STT entries (32 counted families), 48 translation checkpoints (30 broader lineages) and 41 TTS families/model lines. Record parameter evidence, exact selected artifact bytes, required components, dates, licenses and current Hearth support; provide searchable offline HTML and structured JSON. Quantizations do not inflate counts.
+
 ## 0.25.3 draft — 2026-10-19 · Honor translation-only captions
 
 - Keep source captions hidden in Translation only on phones, TVs, held history and copied text, including while translation is pending, blank or unavailable. Preserve the last translated TV subtitle while the next utterance waits; show real errors and a neutral waiting message.

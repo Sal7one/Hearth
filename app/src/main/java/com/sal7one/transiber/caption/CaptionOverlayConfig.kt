@@ -161,6 +161,8 @@ data class CaptionOverlayConfig(
     // Spoken-language preference; runtime capabilities decide whether it can be sent as a hint.
     val streamLanguage: String = "auto",
     val display: CaptionDisplay = CaptionDisplay.BOTH,
+    // Translation-only can temporarily show source CC until target text arrives.
+    val showOriginalWhileTranslating: Boolean = false,
     // TV presentation is independent of the phone bubble appearance.
     val tvSubtitleMode: Boolean = true,
     // Layout
@@ -333,6 +335,7 @@ object CaptionConfigStore {
                 ?: TranslationTarget.ENGLISH,
             streamLanguage = prefs[StreamLanguage] ?: "auto",
             display = prefs[Display]?.let { enumOrDefault(it, CaptionDisplay.BOTH) } ?: CaptionDisplay.BOTH,
+            showOriginalWhileTranslating = prefs[ShowOriginalWhileTranslating] ?: false,
             tvSubtitleMode = prefs[TvSubtitleMode] ?: true,
             anchor = (prefs[if (portrait) AnchorPortrait else AnchorLandscape] ?: (if (portrait) prefs[Anchor] else null))
                 ?.let { enumOrDefault(it, CaptionAnchor.BOTTOM) } ?: CaptionAnchor.BOTTOM,
@@ -376,6 +379,7 @@ object CaptionConfigStore {
         prefs[Target] = config.target.name
         prefs[StreamLanguage] = config.streamLanguage
         prefs[Display] = config.display.name
+        prefs[ShowOriginalWhileTranslating] = config.showOriginalWhileTranslating
         prefs[if (portrait) AnchorPortrait else AnchorLandscape] = config.anchor.name
         prefs[if (portrait) WidthPortrait else WidthLandscape] = config.widthPercent
         prefs[if (portrait) HeightPortrait else HeightLandscape] = config.maxHeightPercent
@@ -414,6 +418,7 @@ object CaptionConfigStore {
     private val Target = stringPreferencesKey("translation_target")
     private val StreamLanguage = stringPreferencesKey("stream_language")
     private val Display = stringPreferencesKey("caption_display")
+    private val ShowOriginalWhileTranslating = booleanPreferencesKey("show_original_while_translating_v1")
     private val Anchor = stringPreferencesKey("anchor")
     // Geometry is per orientation; unsuffixed keys are legacy migration sources.
     private val WidthPortrait = intPreferencesKey("width_percent_portrait_v1")

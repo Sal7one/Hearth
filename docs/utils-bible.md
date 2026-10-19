@@ -2,12 +2,15 @@
 
 `CaptionPresentation` is consumed by phone captions, TV subtitles and held-history
 copying. It strictly selects source/translation text using immutable published
-provenance, filters visible finals before applying history limits, and never
-falls back to source text in Translation only. `CaptionPresentationTest` covers
-pending/blank translations, direct target output, English intermediates,
-translation-only partials, held copy and captions-only preference compatibility.
-`TvCaptionPresentationTest` covers stable translated subtitles while the next
-source utterance waits. `CaptionControllerProvenanceTest` exercises real final,
+provenance and filters visible finals before applying history limits. Translation
+only hides source text by default; the saved **Show original while translating**
+choice temporarily shows actual source text until that line has a translation.
+`CaptionPresentationTest` covers opt-in/off behavior, pending/blank translations,
+replacement on arrival, direct target output, hidden English intermediates,
+partial visibility, independent provider runs, held copy and captions-only
+preference compatibility. `TvCaptionPresentationTest` covers stable translated
+subtitles by default and temporary source replacement when enabled.
+`CaptionControllerProvenanceTest` exercises real final,
 partial and atomic publication methods across every route without loading models
 or making network requests; raw strings and independent provider runs remain intact.
 

@@ -2,4 +2,6 @@
 <resources>
     <string name="caption_waiting_translation">正在等待翻译…</string>
     <string name="caption_original_unavailable">此翻译路径不提供原文字幕。</string>
+    <string name="caption_show_original_while_translating">翻译时显示原文</string>
+    <string name="caption_show_original_while_translating_help">在译文可用之前显示原文字幕。</string>
 </resources>

@@ -16,26 +16,28 @@ internal data class CaptionVisiblePair(val original: String? = null, val transla
 
 internal enum class CaptionEmptyText { LISTENING, WAITING_TRANSLATION, ORIGINAL_UNAVAILABLE }
 
-/** Phone, TV and clipboard use the same strict choice; missing translation never exposes source text. */
+/** Phone, TV and clipboard share the display choice and optional temporary source captions. */
 internal object CaptionPresentation {
     fun display(config: CaptionOverlayConfig): CaptionDisplay =
         if (config.mode == CaptionMode.CAPTIONS) CaptionDisplay.ORIGINAL else config.display
 
-    fun pair(original: String, translation: String?, role: CaptionTextRole, display: CaptionDisplay): CaptionVisiblePair {
+    fun pair(original: String, translation: String?, role: CaptionTextRole, display: CaptionDisplay,
+             showOriginalWhileTranslating: Boolean = false): CaptionVisiblePair {
         val source = original.takeIf { role == CaptionTextRole.SOURCE && it.isNotBlank() }
         val target = translation?.takeIf { it.isNotBlank() }
             ?: original.takeIf { role == CaptionTextRole.TARGET && it.isNotBlank() }
         return CaptionVisiblePair(
-            original = source.takeUnless { display == CaptionDisplay.TRANSLATED },
+            original = source.takeIf { display != CaptionDisplay.TRANSLATED ||
+                (showOriginalWhileTranslating && target == null) },
             translation = target.takeUnless { display == CaptionDisplay.ORIGINAL },
         )
     }
 
     fun line(line: CaptionLine, config: CaptionOverlayConfig): CaptionVisiblePair =
-        pair(line.original, line.translation, line.primaryRole, display(config))
+        pair(line.original, line.translation, line.primaryRole, display(config), config.showOriginalWhileTranslating)
 
     fun partial(content: CaptionReadingSnapshot, config: CaptionOverlayConfig): CaptionVisiblePair =
-        pair(content.partial, content.partialTranslation, content.partialRole, display(config))
+        pair(content.partial, content.partialTranslation, content.partialRole, display(config), config.showOriginalWhileTranslating)
 
     fun finals(content: CaptionReadingSnapshot, config: CaptionOverlayConfig, reading: Boolean): List<CaptionLine> =
         CaptionReading.visibleFinals(content.copy(history = content.history.filter { !line(it, config).empty }),

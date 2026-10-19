@@ -2,4 +2,6 @@
 <resources>
     <string name="caption_waiting_translation">Waiting for translation…</string>
     <string name="caption_original_unavailable">This translation route does not provide original captions.</string>
+    <string name="caption_show_original_while_translating">Show original while translating</string>
+    <string name="caption_show_original_while_translating_help">Show original captions until a translation is available.</string>
 </resources>

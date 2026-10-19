@@ -2,4 +2,6 @@
 <resources>
     <string name="caption_waiting_translation">في انتظار الترجمة…</string>
     <string name="caption_original_unavailable">مسار الترجمة هذا لا يوفر النص الأصلي للكلام.</string>
+    <string name="caption_show_original_while_translating">إظهار النص الأصلي أثناء الترجمة</string>
+    <string name="caption_show_original_while_translating_help">إظهار النص الأصلي للكلام حتى تتوفر الترجمة.</string>
 </resources>

@@ -642,7 +642,14 @@ private fun SettingsPanel(
                     )
                 }
             }
-
+            if (cfg.display == CaptionDisplay.TRANSLATED) {
+                ToggleRow(
+                    label = uiText(UiR.string.caption_show_original_while_translating),
+                    checked = cfg.showOriginalWhileTranslating,
+                    palette = palette,
+                ) { checked -> onConfigChange { it.copy(showOriginalWhileTranslating = checked) } }
+                SettingsCaption(uiText(UiR.string.caption_show_original_while_translating_help), palette)
+            }
         }
 
             SettingsLabel(uiText(UiR.string.ui_current_speech_model_29c90), palette)

@@ -35,6 +35,27 @@ class TvCaptionPresentationTest {
         assertEquals("Current\nحالي", tvCaptionText(content, config.copy(tvSubtitleMode = false, historyLines = 0)))
     }
 
+    @Test fun temporaryOriginalChoiceAppliesToTvSubtitlesAndPanelAndReplacesItOnArrival() {
+        val translated = config.copy(display = CaptionDisplay.TRANSLATED, historyLines = 0)
+        val enabled = translated.copy(showOriginalWhileTranslating = true)
+        val previous = CaptionLine("Old source", "Old translation", id = 1)
+        val pending = CaptionLine("New source", id = 2)
+        val waiting = CaptionReadingSnapshot(listOf(previous, pending), "", null)
+        for (subtitles in listOf(true, false)) {
+            val selected = enabled.copy(tvSubtitleMode = subtitles)
+            assertEquals("Old translation", tvCaptionText(waiting, translated.copy(tvSubtitleMode = subtitles)))
+            assertEquals("New source", tvCaptionText(waiting, selected))
+            val completed = waiting.copy(history = listOf(previous, pending.copy(translation = "New translation")))
+            assertEquals("New translation", tvCaptionText(completed, selected))
+            val retainedFinal = if (subtitles) "" else "New translation\n"
+            assertEquals(retainedFinal + "Source interim", tvCaptionText(completed.copy(partial = "Source interim"), selected))
+            assertEquals(retainedFinal + "Target interim", tvCaptionText(completed.copy(partial = "Source interim",
+                partialTranslation = "Target interim"), selected))
+        }
+        val pivot = CaptionReadingSnapshot(listOf(CaptionLine("Intermediate", primaryRole = CaptionTextRole.INTERMEDIATE)), "", null)
+        assertEquals("", tvCaptionText(pivot, enabled))
+    }
+
     @Test fun compactTvHeightSurvivesPersistenceWhilePhoneKeepsItsMinimum() {
         val prefs = mutablePreferencesOf()
         CaptionConfigStore.writeInto(prefs, config.copy(bubbleHeightDp = 32, tvSubtitleMode = false), OverlayOrientation.LANDSCAPE)
