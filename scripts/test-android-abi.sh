@@ -28,7 +28,7 @@ for FLAVOR in play foss; do
 done
 TEST_APK="$REPO/common-jni/build/outputs/apk/androidTest/debug/common-jni-debug-androidTest.apk"
 "$ADB" -s "$SERIAL" install --abi "$ABI" -t -r "$TEST_APK"
-RESULT="$($ADB -s "$SERIAL" shell am instrument -w -r -e class com.sal7one.common_jni.runtime.AbiRuntimeDeviceTest -e expectedBits "$BITS" com.sal7one.common_jni.test/androidx.test.runner.AndroidJUnitRunner)"
+RESULT="$($ADB -s "$SERIAL" shell am instrument -w -r -e class com.sal7one.common_jni.runtime.AbiRuntimeDeviceTest -e expectedAbi "$ABI" -e expectedBits "$BITS" com.sal7one.common_jni.test/androidx.test.runner.AndroidJUnitRunner)"
 echo "$RESULT"
 [[ "$RESULT" == *"OK (1 test)"* ]] || exit 1
 "$ADB" -s "$SERIAL" logcat -d -s HearthAbiSmoke:I '*:S'
