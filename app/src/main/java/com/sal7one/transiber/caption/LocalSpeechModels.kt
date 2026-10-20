@@ -20,6 +20,8 @@ internal val CaptionEngineChoice.speechBackend: SpeechBackend? get() = when (thi
     CaptionEngineChoice.COHERE -> SpeechBackend.COHERE
     CaptionEngineChoice.FUNASR_MLT -> SpeechBackend.FUNASR_MLT
     CaptionEngineChoice.VOXTRAL -> SpeechBackend.VOXTRAL_REALTIME
+    CaptionEngineChoice.AUDAR -> SpeechBackend.AUDAR
+    CaptionEngineChoice.OWSM -> SpeechBackend.OWSM
     else -> null
 }
 internal val SpeechProfile.captionEngine: CaptionEngineChoice get() = when (backend) {
@@ -32,9 +34,13 @@ internal val SpeechProfile.captionEngine: CaptionEngineChoice get() = when (back
     SpeechBackend.COHERE -> CaptionEngineChoice.COHERE
     SpeechBackend.FUNASR_MLT -> CaptionEngineChoice.FUNASR_MLT
     SpeechBackend.VOXTRAL_REALTIME -> CaptionEngineChoice.VOXTRAL
+    SpeechBackend.AUDAR -> CaptionEngineChoice.AUDAR
+    SpeechBackend.OWSM -> CaptionEngineChoice.OWSM
 }
 internal val SpeechProfile.label: String get() = when (this) {
     SpeechProfile.COHERE_ARABIC_07_2026 -> "Cohere Transcribe Arabic · Q4_K_M"
+    SpeechProfile.AUDAR_ASR_V1_FLASH -> "Audar-ASR V1 Flash"
+    SpeechProfile.OWSM_V4_BASE_102M -> "OWSM v4 Base 102M"
     SpeechProfile.FUNASR_MLT_NANO_2512 -> "Fun-ASR MLT Nano · Q8_0"
     SpeechProfile.VOXTRAL_MINI_REALTIME_2602 -> "Voxtral Mini Realtime · Q4_K_M"
     SpeechProfile.MOONSHINE_TINY_EN -> "Moonshine Tiny · English"
@@ -162,6 +168,34 @@ internal class LocalSpeechModels(private val root: File) {
             }
             damaged.deleteRecursively()
             receipts.record(id, source, ModelIntegrity.inspect(File(destination, SpeechModelPackage.MANIFEST)).digest.hex)
+            return LocalSpeechModel(id, source.profile, destination)
+        } finally { work.deleteRecursively() }
+    }
+
+    /** Stable package identity plus atomic replacement; a decoder alone is never selectable. */
+    fun installComponents(source: com.sal7one.transiber.models.SpeechComponentGroup,
+        open: (com.sal7one.transiber.models.SpeechComponent) -> InputStream,
+        checkActive: () -> Unit = {}): LocalSpeechModel {
+        SpeechAbiPolicy.requireSupported(source.profile)
+        val id = "speech-${UUID.nameUUIDFromBytes("components-${source.id}".toByteArray())}"
+        val destination = File(root, id)
+        val scanner = com.sal7one.transiber.models.SpeechCatalogInstallations(root)
+        if (destination.isDirectory && runCatching { scanner.matchesComponents(read(destination), source, true) }.getOrDefault(false))
+            return read(destination).also { checkActive() }
+        val work = File(root, ".staging/components-${source.id}")
+        check(!work.exists() || work.deleteRecursively()) { "Cannot clear interrupted speech component installation" }
+        check(work.mkdirs()) { "Cannot create speech component staging directory" }
+        try {
+            val staged = com.sal7one.transiber.models.SpeechComponentPackage.stage(source, work, open, checkActive)
+            checkActive()
+            val damaged = File(root, ".damaged-${UUID.randomUUID()}")
+            if (destination.exists()) Files.move(destination.toPath(), damaged.toPath())
+            try { Files.move(staged.toPath(), destination.toPath(), java.nio.file.StandardCopyOption.ATOMIC_MOVE) }
+            catch (e: Exception) {
+                if (damaged.exists()) Files.move(damaged.toPath(), destination.toPath())
+                throw e
+            }
+            damaged.deleteRecursively()
             return LocalSpeechModel(id, source.profile, destination)
         } finally { work.deleteRecursively() }
     }

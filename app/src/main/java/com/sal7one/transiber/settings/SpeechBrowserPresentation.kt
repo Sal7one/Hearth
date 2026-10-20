@@ -11,7 +11,7 @@ internal enum class SpeechDecodeMode { STREAMING_PARTIALS, WINDOWED_PARTIALS, UT
 internal fun speechDecodeMode(item: SpeechArtifact): SpeechDecodeMode = when (item.kind) {
     SpeechArtifactKind.WHISPER -> SpeechDecodeMode.WINDOWED_PARTIALS
     SpeechArtifactKind.VOSK -> SpeechDecodeMode.STREAMING_PARTIALS
-    SpeechArtifactKind.PUBLISHER -> checkNotNull(item.publisher).profile.capabilities.let { capabilities ->
+    SpeechArtifactKind.PUBLISHER, SpeechArtifactKind.COMPONENTS -> checkNotNull(item.profile).capabilities.let { capabilities ->
         when {
             capabilities.partialResults && capabilities.streaming == SpeechStreamingKind.CACHE_AWARE -> SpeechDecodeMode.STREAMING_PARTIALS
             capabilities.partialResults -> SpeechDecodeMode.WINDOWED_PARTIALS
@@ -21,6 +21,8 @@ internal fun speechDecodeMode(item: SpeechArtifact): SpeechDecodeMode = when (it
 }
 
 internal fun speechFamilyTitle(id: String): String = when (id) {
+    "audar" -> "Audar-ASR Flash"
+    "owsm" -> "OWSM v4"
     "cohere" -> "Cohere Transcribe Arabic"
     "funasr-mlt" -> "Fun-ASR MLT Nano"
     "voxtral-realtime" -> "Voxtral Realtime"

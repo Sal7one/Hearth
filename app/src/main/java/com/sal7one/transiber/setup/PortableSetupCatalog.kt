@@ -19,8 +19,8 @@ internal object PortableSetupCatalog {
             ?: error("Unknown speech model family: ${ref.family}")
         if (artifact != null) {
             require(artifact.family == ref.family) { "Speech family does not match the catalog reference." }
-            require(ref.profile == null || artifact.publisher?.profile?.id == ref.profile) { "Speech profile does not match the catalog reference." }
-            require(artifact.publisher?.profile?.acceptsSource(stage.sourceLanguage) ?: (stage.sourceLanguage == "auto" || stage.sourceLanguage in artifact.languages)) { "The speech model does not support the spoken language." }
+            require(ref.profile == null || artifact.profile?.id == ref.profile) { "Speech profile does not match the catalog reference." }
+            require(artifact.profile?.acceptsSource(stage.sourceLanguage) ?: (stage.sourceLanguage == "auto" || stage.sourceLanguage in artifact.languages)) { "The speech model does not support the spoken language." }
         } else if (engine.speechBackend != null) {
             require(ref.digestKind == "tree" && ref.profile != null) { "Custom speech packages need a profile and tree SHA-256." }
             val profile = SpeechProfile.fromId(checkNotNull(ref.profile))

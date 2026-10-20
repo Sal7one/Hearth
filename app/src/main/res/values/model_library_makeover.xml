@@ -1,0 +1,26 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="library_recommended">"Recommended bundles"</string>
+    <string name="library_all_models">"Browse all"</string>
+    <string name="library_tools">"Library tools"</string>
+    <string name="library_portable">"Import or export setup"</string>
+    <string name="library_integrity">"Files and integrity"</string>
+    <string name="library_import">"Import model"</string>
+    <string name="library_model_options">"Model options"</string>
+    <string name="library_details">"Details, precision and sources"</string>
+    <string name="library_advanced">"Engine tuning"</string>
+    <string name="library_download_options">"Download options"</string>
+    <string name="library_download_location">"Save to %1$s"</string>
+    <string name="library_files">"%1$d files"</string>
+    <string name="library_file_actions">"Files and recovery"</string>
+    <string name="library_pause">"Pause"</string>
+    <string name="library_partial_download">"%1$d of %2$d files downloaded"</string>
+    <string name="library_use_translator">"Use translator"</string>
+    <string name="library_queue_hint">"Downloads install after verification. Use an installed model when you are ready."</string>
+    <string name="library_empty_queue">"No downloads yet"</string>
+    <string name="library_browse_models">"Find a model"</string>
+    <string name="library_open_voices">Open Voices</string>
+    <string name="library_voice_ready">Voice files are ready. Choose this engine and voice in Voices to activate it.</string>
+    <string name="library_voice_setup_remaining">Download files are installed. Open Voices to finish setup or repair missing components.</string>
+    <string name="library_imported_choose_model">%1$s imported. Choose the installed model to use it.</string>
+</resources>

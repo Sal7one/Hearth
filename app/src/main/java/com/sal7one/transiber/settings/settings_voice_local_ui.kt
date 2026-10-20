@@ -42,13 +42,21 @@ internal fun SettingsVoiceLocalUi(
 
     val context = LocalContext.current
     val localModelsAllowed = com.sal7one.transiber.runtime.LocalModelPolicy.allowed(context)
+    val advanced = rememberSetupMode() == SetupMode.ADVANCED
+    var showMoreEngines by rememberSaveable { mutableStateOf(false) }
+    val visibleFamilies = LocalVoiceFamilies.ids.filter { advanced || showMoreEngines || it == choice.family || it in setOf("supertonic", "magpie") }
     val scope = rememberCoroutineScope()
     var queuing by remember { mutableStateOf(false) }
-    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        (listOf("system" to uiText(UiR.string.ui_android_voices_60cb9)) +
-            if (localModelsAllowed) listOf("supertonic" to uiText(UiR.string.voice_downloaded_models)) else emptyList()).forEach { (id, label) ->
-            FilterChip(selected = localBackend == id, onClick = { save(choice.copy(backend = id)) }, label = { Text(label) })
-        }
+    VoiceMenu(uiText(UiR.string.ui_speaker_engine_label_7f2c6),
+        if (localBackend == "system") "system" else choice.family,
+        listOf("system" to uiText(UiR.string.ui_android_voices_60cb9)) +
+            if (localModelsAllowed) visibleFamilies.map { it to LocalVoiceFamilies.label(it) } else emptyList()) { id ->
+        if (id == "system") save(choice.copy(backend = "system"))
+        else save(choice.copy(backend = "supertonic", family = id,
+            voice = if (choice.family == id) choice.voice else VoiceSettings.familyVoice(context, id)))
+    }
+    if (!advanced && localModelsAllowed) TextButton(onClick = { showMoreEngines = !showMoreEngines }) {
+        Text(uiText(if (showMoreEngines) UiR.string.voice_recommended_engines else UiR.string.voice_more_engines))
     }
         when(localBackend) {
             "system" -> {
@@ -64,7 +72,22 @@ internal fun SettingsVoiceLocalUi(
             }
             "supertonic" -> {
                 if (!localModelsAllowed) { LocalModelPolicyNotice(); return }
-                VoiceMenu(uiText(UiR.string.voice_model_family),choice.family,listOf("supertonic" to "Supertonic 3","magpie" to "MagpieTTS v2607")){ family -> save(choice.copy(family=family,voice=VoiceSettings.familyVoice(context,family))) }
+                if(choice.family=="omnivoice") {
+                    SettingsVoiceOmniVoiceUi(choice,save,language,onLanguage,onError,onImport,onDownloads,revision,onRevision)
+                    return
+                }
+                if(choice.family=="chatterbox-v3") {
+                    SettingsVoiceChatterboxUi(choice,save,language,onLanguage,onError,onImport,onDownloads,revision,onRevision)
+                    return
+                }
+                if(choice.family=="oute") {
+                    SettingsVoiceOuteUi(choice,save,language,onLanguage,onError,onImport,onDownloads,revision,onRevision)
+                    return
+                }
+                if(choice.family=="moss-nano") {
+                    SettingsVoiceMossUi(choice,save,language,onLanguage,onError,onImport,onDownloads,revision,onRevision)
+                    return
+                }
                 if(choice.family=="magpie") {
                     SettingsVoiceMagpieUi(choice,save,language,onLanguage,onError,onImport,onDownloads,revision,onRevision)
                     return

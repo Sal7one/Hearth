@@ -1,5 +1,13 @@
 # Utilities and consumers
 
+`SettingsStagePolicy` is consumed by the settings pipeline cards to choose valid
+direct destinations. Its tests cover cloud-only TV speech/translation, device
+voices, unavailable TV OCR and FOSS settings restored from a cloud choice.
+`TranslatorChoiceVisibility` is consumed by the shared feature/overlay translator
+picker. Host tests ensure the default view keeps installed and missing-current
+choices repairable, hides uninstalled alternatives until requested, and combines
+language/name search without bypassing that availability policy.
+
 ## Model expansion and reusable article speech foundation
 
 `hearth-tts` exposes the network-free `SpeechEngine` contract, strict
@@ -905,3 +913,23 @@ actual GGUF bytes, changed/deleted registered files, and malformed manifests
 that remain visible as errors without hiding other browser entries.
 `LocalSpeechModels.inspect` supplies this tolerant browser snapshot; runtime
 selection retains its strict package listing and full startup verification.
+
+`OuteModels` is the optional Oute SDK/app provider's pinned component sink. Its
+host unit tests reject partial imports without replacing a previous component,
+remove temporary output and keep strict unknown-gender requests honest. The
+production Oute sampler calls `filter_probabilities` from
+`scripts/voice/oute/oute_sampling.h`; sanitized offline tests check min-p/top-p
+retention, preserved relative weights (no second softmax), numerical stability
+and invalid logits. `run-oute-jni-contract-test.sh` drives the production bridge
+against an isolated fake C ABI for exact callback exceptions, UTF-8 errors,
+non-finite/oversized/empty PCM, reentrant close and concurrent cancellation/retire.
+The fake runtime is never staged or packaged. Real model proof is separate in
+`docs/research/oute-native-smoke-2026-10-20.json`.
+
+`ModelBrowseState` queues DataStore writes in the input gesture, using the existing
+writer's coalescing; leaving the page before a delayed composition cannot drop a
+search/filter edit. Two host cases cover immediate exit and repeated/untouched
+values. `voiceImportSources` is consumed by VoiceSetup's SAF import recording;
+it maps authenticated Magpie range imports to their final tokenizer members and
+ordinary optional-family imports to their own catalog paths. Two host cases
+prevent recording the deleted range staging file or another family's directory.

@@ -10,6 +10,7 @@ import android.net.Uri
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.contentDescription
@@ -29,6 +30,7 @@ import kotlinx.coroutines.withContext
 @Composable
 internal fun SettingsTranslateCloudUi(initialProvider: String? = null, allowSelection: Boolean = true) {
     val uiText = rememberUiText()
+    val advanced = com.sal7one.transiber.preferences.rememberSetupMode() == com.sal7one.transiber.preferences.SetupMode.ADVANCED
 
     if (!ByokPolicy.FEATURE_BYOK) return
     val context = LocalContext.current
@@ -46,28 +48,29 @@ internal fun SettingsTranslateCloudUi(initialProvider: String? = null, allowSele
         Text(uiText(UiR.string.ui_translation_connections_4a282), style = MaterialTheme.typography.titleLarge)
         Text(uiText(UiR.string.ui_one_connection_library_for_captions_typed_text_conversations_came_a2ee8), style = MaterialTheme.typography.bodySmall)
         if (allowSelection) Text(uiText(UiR.string.ui_conversation_typed_text_use_1_s_dc9f7, ConversationTranslationSettings.label(context, ConversationTranslationSettings.localModel(context, config.localTranslationModelId))), style = MaterialTheme.typography.titleSmall)
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            if (ByokPolicy.FEATURE_BYOK) TextTranslationProvider.entries.forEach { provider ->
-                FilterChip(selected = editing == provider, enabled = !working, onClick = { editing = provider; status = null }, label = { Text(provider.label) })
-            }
-        }
+        com.sal7one.transiber.ui.components.ModelFilterPicker(uiText(UiR.string.ui_provider_7ceee), editing.id,
+            TextTranslationProvider.entries.map { it.id to it.label },
+            { id -> editing = TextTranslationProvider.entries.first { it.id == id }; status = null }, enabled = !working)
         val provider = editing
         key(provider) {
             var endpoint by remember { mutableStateOf(ConversationTranslationSettings.endpoint(context, provider)) }
             var region by remember { mutableStateOf(ConversationTranslationSettings.region(context, provider)) }
             var secret by remember { mutableStateOf("") }
+            var details by rememberSaveable { mutableStateOf(false) }
             val savedKey = remember(revision) { ConversationTranslationSettings.hasKey(context, provider) }
             val sameEndpoint = CloudTranslationProtocol.sameEndpoint(provider, endpoint, ConversationTranslationSettings.endpoint(context, provider))
             val capabilities = remember(revision) { ConversationTranslationSettings.capabilities(context, provider) }
             val dirty = secret.isNotBlank() || endpoint.trim() != ConversationTranslationSettings.endpoint(context, provider) || region.trim() != ConversationTranslationSettings.region(context, provider)
-            Text(when (provider) {
+            if (advanced || details) Text(when (provider) {
                 TextTranslationProvider.GOOGLE -> uiText(UiR.string.ui_google_cloud_translation_basic_v2_requires_your_google_cloud_api_5f73d)
                 TextTranslationProvider.AZURE -> uiText(UiR.string.ui_microsoft_azure_translator_the_official_microsoft_translation_api_b8ead)
                 TextTranslationProvider.DEEPL -> uiText(UiR.string.ui_deepl_api_free_or_pro_key_use_api_free_deepl_com_v2_for_free_or_a_62829)
                 TextTranslationProvider.LIBRETRANSLATE -> uiText(UiR.string.ui_open_source_libretranslate_choose_your_own_https_server_a_key_is_1b625)
             }, style = MaterialTheme.typography.bodyMedium)
             Text(uiText(UiR.string.ui_finalized_text_is_sent_to_this_provider_audio_is_handled_separate_d490d), style = MaterialTheme.typography.bodySmall)
-            OutlinedTextField(endpoint, { endpoint = it }, enabled = !working, label = { Text(uiText(UiR.string.ui_api_base_url_https_43d49)) }, modifier = Modifier.fillMaxWidth().padding(top = 2.dp), singleLine = true, textStyle = MaterialTheme.typography.bodyLarge.copy(textDirection = androidx.compose.ui.text.style.TextDirection.Ltr))
+            TextButton(onClick = { details = !details }) { Text(uiText(UiR.string.settings_flow_connection_options)) }
+            if (advanced || details || provider == TextTranslationProvider.LIBRETRANSLATE)
+                OutlinedTextField(endpoint, { endpoint = it }, enabled = !working, label = { Text(uiText(UiR.string.ui_api_base_url_https_43d49)) }, modifier = Modifier.fillMaxWidth().padding(top = 2.dp), singleLine = true, textStyle = MaterialTheme.typography.bodyLarge.copy(textDirection = androidx.compose.ui.text.style.TextDirection.Ltr))
             if (provider == TextTranslationProvider.AZURE) OutlinedTextField(region, { region = it }, enabled = !working, label = { Text(uiText(UiR.string.ui_resource_region_blank_for_global_64f7b)) }, modifier = Modifier.fillMaxWidth().padding(top = 2.dp), singleLine = true, textStyle = MaterialTheme.typography.bodyLarge.copy(textDirection = androidx.compose.ui.text.style.TextDirection.Ltr))
             OutlinedTextField(secret, { secret = it }, enabled = !working, label = { Text(if (savedKey && sameEndpoint) uiText(UiR.string.ui_replace_saved_api_key_c2dc3) else if (provider == TextTranslationProvider.LIBRETRANSLATE) uiText(UiR.string.ui_api_key_if_required_49a3c) else uiText(UiR.string.ui_api_key_cf678)) }, visualTransformation = PasswordVisualTransformation(), modifier = Modifier.fillMaxWidth().padding(top = 2.dp), singleLine = true, textStyle = MaterialTheme.typography.bodyLarge.copy(textDirection = androidx.compose.ui.text.style.TextDirection.Ltr))
             if (savedKey && sameEndpoint) Text(uiText(UiR.string.ui_a_key_is_encrypted_on_this_device_leave_the_field_empty_to_keep_i_2c064), style = MaterialTheme.typography.bodySmall)
@@ -96,7 +99,10 @@ internal fun SettingsTranslateCloudUi(initialProvider: String? = null, allowSele
                     }
                 }) { Text(if (working) uiText(UiR.string.ui_checking_820d6) else uiText(UiR.string.ui_save_check_languages_7cd32)) }
                 if (working) TextButton(onClick = { transport?.close() }) { Text(uiText(UiR.string.ui_cancel_check_82097)) }
-                else TextButton(onClick = { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(provider.sourceUrl))) }) { Text(uiText(UiR.string.ui_key_api_help_3e3bb)) }
+                else TextButton(onClick = {
+                    try { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(provider.sourceUrl))) }
+                    catch (e: Exception) { failure = true; status = e.message ?: e.toString() }
+                }) { Text(uiText(UiR.string.ui_key_api_help_3e3bb)) }
             }
             if (capabilities != null && !dirty) {
                 Text(uiText(UiR.string.ui_1_s_source_2_s_target_languages_the_picker_uses_this_server_s_sup_04d3b, capabilities.sourceLanguages.size, capabilities.targetLanguages.size), style = MaterialTheme.typography.bodySmall)

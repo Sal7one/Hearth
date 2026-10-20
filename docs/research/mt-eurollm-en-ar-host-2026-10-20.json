@@ -1,0 +1,106 @@
+[
+  {
+    "runId": "b487c2f9-01d9-4de3-ba4c-4e022ac0c148",
+    "timestamp": 1792511431372,
+    "model": "EuroLLM-1.7B-Instruct.Q4_K_M.gguf",
+    "identity": "f22ab4b628f6e3cd12ec2e5aa6d1e460be2fa83f25cb6a8f5dd6d4d77b285b66",
+    "route": "Translation / llama.cpp host",
+    "inputHash": "45b8d44ca6d1d8abd1d26b212a5b8ec650b2aa496b2b177edbcb52d9ef1abeb0",
+    "source": "en",
+    "target": "ar",
+    "audioMs": 0,
+    "loadMs": 15492.44166599263,
+    "computeMs": [
+      3459.953
+    ],
+    "texts": [
+      "لا حاجة إلى القول، إذا كنت تعرف لغة رومانسية، فسيكون من الأسهل عليك تعلم البرتغالية. كما هاجمت أي شيء يدخل الماء، حتى إن كان ديناصورًا ضخمًا مثل T. rex لن يكون له مقاومة. في الشمال، تحد المنطقة منطقة الساحل، وفي الجنوب والغرب من المحيط الأطلسي. اليوم، لا يمكن لفراشات والرخويات أن تلتف ذيولها. كما تقدّم زملاؤها المصارعون تقديرهم لـ لونا. تتميز المدينة عن بقية مدن البلاد باحتوائها على مزيد من الطابع العربي أكثر من الطابع الأفريقي."
+    ],
+    "runtime": "llama.cpp 64e9bceb2c3a856efed96feda784a50947049feb; CPU; threads=2; gpuLayers=0; context=2048; outputCap=384; deadline=20s",
+    "firstTextMs": [
+      576.6588333333333
+    ],
+    "device": "Apple M4 Pro; macOS 26.5; Python host harness",
+    "error": null,
+    "referenceText": "غني عن البيان، أن معرفتك بلغة رومانسيّة ستسهّل عليك تعلّم اللغة البرتغاليّة. كما قامت بالهجوم على كل ما يدخل المياه؛ حتى ديناصور عملاق مثل تي ريكس لم يضاهيها. من الشمال، يحد الساحل الإفريقي المنطقة، ويحدّها المحيط الأطلسي من الجنوب والغرب. الحشرات الوحيدة التي لا يُمكنها طي أجنحتها اليوم هي اليعسوب وذبابة مايو. كما أثنى الزملاء المصارعون على لونا. تتناقض المدينة بشكل صارخ مع بقية مدن الدولة، لأنها تتميز بطابع عربي أكثر منه إفريقي.",
+    "wordErrorRate": 0.9178082191780822,
+    "characterErrorRate": 0.6267806267806267,
+    "scoringNormalization": "nfc-lower-punctuation-space-v1; sentence-macro chrF++ beta=2, char-n=1..6, word-n=1..2",
+    "translationChrf": 0.32929875324471025,
+    "samples": [
+      {
+        "id": "fleurs-en-ar-1994",
+        "text": "لا حاجة إلى القول، إذا كنت تعرف لغة رومانسية، فسيكون من الأسهل عليك تعلم البرتغالية.",
+        "reference": "غني عن البيان، أن معرفتك بلغة رومانسيّة ستسهّل عليك تعلّم اللغة البرتغاليّة.",
+        "computeMs": 1011.86,
+        "firstTextMs": 1011.86,
+        "audioMs": 0,
+        "silence": false,
+        "sourceText": "Needless to say, if you know a Romance language, it will be easier for you to learn Portuguese.",
+        "error": null
+      },
+      {
+        "id": "fleurs-en-ar-1738",
+        "text": "كما هاجمت أي شيء يدخل الماء، حتى إن كان ديناصورًا ضخمًا مثل T. rex لن يكون له مقاومة.",
+        "reference": "كما قامت بالهجوم على كل ما يدخل المياه؛ حتى ديناصور عملاق مثل تي ريكس لم يضاهيها.",
+        "computeMs": 613.105,
+        "firstTextMs": 613.105,
+        "audioMs": 0,
+        "silence": false,
+        "sourceText": "It also attacked anything that entered the water; even a giant dinosaur such as T. rex would be no match for it.",
+        "error": null
+      },
+      {
+        "id": "fleurs-en-ar-1897",
+        "text": "في الشمال، تحد المنطقة منطقة الساحل، وفي الجنوب والغرب من المحيط الأطلسي.",
+        "reference": "من الشمال، يحد الساحل الإفريقي المنطقة، ويحدّها المحيط الأطلسي من الجنوب والغرب.",
+        "computeMs": 452.186,
+        "firstTextMs": 452.186,
+        "audioMs": 0,
+        "silence": false,
+        "sourceText": "In the north the region is bounded by the Sahel, and in the south and west by the Atlantic Ocean.",
+        "error": null
+      },
+      {
+        "id": "fleurs-en-ar-1677",
+        "text": "اليوم، لا يمكن لفراشات والرخويات أن تلتف ذيولها.",
+        "reference": "الحشرات الوحيدة التي لا يُمكنها طي أجنحتها اليوم هي اليعسوب وذبابة مايو.",
+        "computeMs": 427.896,
+        "firstTextMs": 427.896,
+        "audioMs": 0,
+        "silence": false,
+        "sourceText": "Today, the only insects that cannot fold back their wings are dragon flies and mayflies.",
+        "error": null
+      },
+      {
+        "id": "fleurs-en-ar-1747",
+        "text": "كما تقدّم زملاؤها المصارعون تقديرهم لـ لونا.",
+        "reference": "كما أثنى الزملاء المصارعون على لونا.",
+        "computeMs": 368.066,
+        "firstTextMs": 368.066,
+        "audioMs": 0,
+        "silence": false,
+        "sourceText": "Fellow wrestlers also paid tribute to Luna.",
+        "error": null
+      },
+      {
+        "id": "fleurs-en-ar-1958",
+        "text": "تتميز المدينة عن بقية مدن البلاد باحتوائها على مزيد من الطابع العربي أكثر من الطابع الأفريقي.",
+        "reference": "تتناقض المدينة بشكل صارخ مع بقية مدن الدولة، لأنها تتميز بطابع عربي أكثر منه إفريقي.",
+        "computeMs": 586.84,
+        "firstTextMs": 586.84,
+        "audioMs": 0,
+        "silence": false,
+        "sourceText": "The city is in stark contrast to the rest of the country's cities, because it has more of an Arabic flair than of an African.",
+        "error": null
+      }
+    ],
+    "benchmarkSuite": {
+      "id": "hearth-fleurs-1",
+      "revision": "70bb2e84b976b7e960aa89f1c648e09c59f894dd",
+      "license": "CC-BY-4.0",
+      "quickSamples": 6
+    },
+    "hostPeakRssBytes": 2049916928
+  }
+]

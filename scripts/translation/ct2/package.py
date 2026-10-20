@@ -4,7 +4,8 @@ from pathlib import Path
 import argparse,hashlib,json,re,zipfile
 root=Path(__file__).resolve().parents[3]
 parser=argparse.ArgumentParser(description=__doc__)
-parser.add_argument('model_id',choices=['ct2-quickmt-en-ar','ct2-quickmt-ar-en','ct2-small100-int8'])
+parser.add_argument('model_id',choices=['ct2-quickmt-en-ar','ct2-quickmt-ar-en','ct2-small100-int8',
+    'ct2-jisr-50m-en-ar','ct2-jisr-50m-ar-en','ct2-jisr-50m-en-ar-int8','ct2-jisr-50m-ar-en-int8'])
 parser.add_argument('directory',type=Path)
 parser.add_argument('output',type=Path)
 args=parser.parse_args()
@@ -14,6 +15,9 @@ if args.model_id.startswith('ct2-quickmt-'):
     selected=next(m for m in data['models'] if m['family']=='quickmt')
     prefix=args.model_id.removeprefix('ct2-quickmt-')+'/'
     components=[dict(c,filename=c['filename'].removeprefix(prefix)) for c in selected['components'] if c['filename'].startswith(prefix)]
+elif args.model_id.startswith('ct2-jisr-'):
+    selected=next(m for m in data['models'] if m['family']=='jisr-mt')
+    components=next(p['components'] for p in selected['conversionProfiles'] if p['modelId']==args.model_id)
 else:
     components=next(m for m in data['models'] if m['family']=='small100')['components']
 for component in components:

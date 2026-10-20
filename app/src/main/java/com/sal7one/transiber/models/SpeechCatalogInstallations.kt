@@ -33,7 +33,12 @@ internal class SpeechCatalogInstallations(
         val preferredRegistry = registered.sortedBy { it.id != selectedId }
         val preferredPublisher = publisher.sortedBy { it.id != selectedId }
         catalog.forEach { artifact ->
-            if (artifact.kind == SpeechArtifactKind.PUBLISHER) {
+            if (artifact.kind == SpeechArtifactKind.COMPONENTS) {
+                val source = checkNotNull(artifact.components)
+                preferredPublisher.filter { it.profile == source.profile }.firstOrNull { model ->
+                    checked(model.id, issues) { matchesComponents(model, source, fullIntegrity) }
+                }?.let { publisherMatches[artifact.id] = it }
+            } else if (artifact.kind == SpeechArtifactKind.PUBLISHER) {
                 val source = checkNotNull(artifact.publisher)
                 preferredPublisher.filter { it.profile == source.profile }.firstOrNull { model ->
                     checked(model.id, issues) { matchesPublisher(model, source, fullIntegrity) }
@@ -63,6 +68,18 @@ internal class SpeechCatalogInstallations(
         val manifest = JSONObject(File(model.root, SpeechModelPackage.MANIFEST).readText())
         val file = File(model.root, manifest.getJSONObject("roles").getString("model"))
         return file.length() == source.bytes && verifier.inspect(file, force = fullIntegrity).digest.hex == source.sha256
+    }
+
+    /** Match every role's actual bytes, including imports; a decoder hash cannot identify the complete model. */
+    fun matchesComponents(model: LocalSpeechModel, source: SpeechComponentGroup, fullIntegrity: Boolean = false): Boolean {
+        if (model.profile != source.profile) return false
+        val verified = verifier.speech(model.root, fullIntegrity)
+        if (verified.profile != source.profile) return false
+        val roles = JSONObject(File(model.root, SpeechModelPackage.MANIFEST).readText()).getJSONObject("roles")
+        return source.parts.all { part ->
+            val file = File(model.root, roles.getString(part.role))
+            file.length() == part.bytes && verifier.inspect(file, force = fullIntegrity).digest.hex == part.sha256
+        }
     }
 
     private inline fun checked(name: String, issues: MutableSet<String>, operation: () -> Boolean): Boolean = try {

@@ -185,5 +185,19 @@ int main() {
     auto missingPsy = psy;
     missingPsy.replace(missingPsy.find("model.gguf"), std::strlen("model.gguf"), "");
     fails([&] { SpeechConfig c(missingPsy); }, "requires a GGUF model path");
+    for (const std::string backend : {"owsm", "audar_mtmd"}) {
+        auto modern = psy;
+        modern.replace(modern.find("transcribepsy"), std::strlen("transcribepsy"), backend);
+        if (backend == "audar_mtmd") modern.replace(modern.find("\"encoder\":\"\""), std::strlen("\"encoder\":\"\""), "\"encoder\":\"encoder.gguf\"");
+        check(SpeechConfig(modern).backend == backend);
+        auto unsupported = modern;
+        unsupported.replace(unsupported.find("\"auto\""), 6, "\"de\"");
+        fails([&] { SpeechConfig c(unsupported); }, "Auto, Arabic or English");
+        fails([&] { loadBackend(backend, "vulkan"); }, "Unsupported speech backend acceleration");
+        if (backend == "audar_mtmd") {
+            modern.replace(modern.find("encoder.gguf"), std::strlen("encoder.gguf"), "");
+            fails([&] { SpeechConfig c(modern); }, "complete GGUF package");
+        }
+    }
     std::cout << "speech_test: " << checks << " checks PASS\n";
 }

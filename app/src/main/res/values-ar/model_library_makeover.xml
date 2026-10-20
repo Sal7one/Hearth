@@ -1,0 +1,26 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="library_recommended">"الحزم المقترحة"</string>
+    <string name="library_all_models">"تصفح الكل"</string>
+    <string name="library_tools">"أدوات المكتبة"</string>
+    <string name="library_portable">"استيراد الإعداد أو تصديره"</string>
+    <string name="library_integrity">"الملفات وسلامتها"</string>
+    <string name="library_import">"استيراد نموذج"</string>
+    <string name="library_model_options">"خيارات النموذج"</string>
+    <string name="library_details">"التفاصيل والدقة والمصادر"</string>
+    <string name="library_advanced">"ضبط المحرك"</string>
+    <string name="library_download_options">"خيارات التنزيل"</string>
+    <string name="library_download_location">"الحفظ في %1$s"</string>
+    <string name="library_files">"%1$d ملفات"</string>
+    <string name="library_file_actions">"الملفات والاسترداد"</string>
+    <string name="library_pause">"إيقاف مؤقت"</string>
+    <string name="library_partial_download">"تم تنزيل %1$d من %2$d ملفات"</string>
+    <string name="library_use_translator">"استخدام المترجم"</string>
+    <string name="library_queue_hint">"تُثبّت التنزيلات بعد التحقق. استخدم النموذج المثبت عندما تكون مستعدًا."</string>
+    <string name="library_empty_queue">"لا توجد تنزيلات بعد"</string>
+    <string name="library_browse_models">"العثور على نموذج"</string>
+    <string name="library_open_voices">فتح الأصوات</string>
+    <string name="library_voice_ready">ملفات الصوت جاهزة. اختر المحرك والصوت في صفحة الأصوات لتفعيله.</string>
+    <string name="library_voice_setup_remaining">تم تثبيت ملفات التنزيل. افتح الأصوات لإكمال الإعداد أو إصلاح المكونات المفقودة.</string>
+    <string name="library_imported_choose_model">تم استيراد %1$s. اختر النموذج المثبّت لاستخدامه.</string>
+</resources>

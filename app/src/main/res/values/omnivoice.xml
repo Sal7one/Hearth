@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="local_voice_gender_unverified">%1$s has no verified speaker genders. Choose “Follow voice choice” and preview a voice in Read aloud settings.</string>
+    <string name="local_voice_custom_default">Custom default: %1$s · %2$s</string>
+    <string name="omnivoice_runtime">Native GGML · CPU arm64 · streaming PCM</string>
+    <string name="omnivoice_coverage">Arabic (Standard) + English · 945 MB download · experimental</string>
+    <string name="omnivoice_no_runtime">The OmniVoice native runtime is unavailable for this app process ABI.</string>
+    <string name="omnivoice_voice_note">Voice design requests a characteristic; it is not a fixed speaker identity or verified gender. Each text part may vary. Pretrained model: noncommercial. Higgs codec: Boson Community + Llama 3 terms.</string>
+    <string name="omnivoice_design_female">Female design (unverified)</string>
+    <string name="omnivoice_design_male">Male design (unverified)</string>
+    <string name="omnivoice_design_auto">Automatic design</string>
+    <string name="omnivoice_ready">OmniVoice generator and codec are installed.</string>
+    <string name="omnivoice_install_note">Install both pinned GGUF files. Weights are separate from the app.</string>
+    <string name="omnivoice_download">Download OmniVoice engine + codec</string>
+    <string name="omnivoice_import">Import pinned OmniVoice GGUF files</string>
+    <string name="local_voice_use_for_captions">Use selected voice for captions</string>
+    <string name="voice_file_options">File and import options</string>
+</resources>

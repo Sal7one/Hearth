@@ -32,13 +32,13 @@ internal fun ModelBindingRepairNotice(onRepair: () -> Unit, launchError: String?
 }
 
 @Composable
-internal fun ManagedModelSourcesUi(onImport: (String) -> Unit) {
+internal fun ManagedModelSourcesUi(initialExpanded: Boolean = false, onImport: (String) -> Unit) {
     if (!com.sal7one.transiber.runtime.LocalModelPolicy.allowed(LocalContext.current)) return
     val text = rememberUiText()
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val checks by ModelSourceBindings.checks.collectAsState()
-    var expanded by remember { mutableStateOf(false) }
+    var expanded by remember { mutableStateOf(initialExpanded) }
     var busy by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
     var sourceResults by remember { mutableStateOf<Map<String, ModelSourceCheck>>(emptyMap()) }

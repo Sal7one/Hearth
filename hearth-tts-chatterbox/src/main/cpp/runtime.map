@@ -1,0 +1,1 @@
+{ global: hearth_chatterbox_*; local: *; };

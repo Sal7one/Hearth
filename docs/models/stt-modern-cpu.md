@@ -1,0 +1,25 @@
+# Audar Flash and OWSM v4 Base — 20 October 2026
+
+Hearth now has separate native speech ABI v2 adapters for Audar-ASR V1 Flash and OWSM v4 Base 102M. Both use CPU execution on ARM64 phones and bounded utterance finals. Neither supplies incremental partial captions. Translation and speech output remain independent stages; selecting or downloading an STT model never selects a translator or enables readout. Local inference remains unavailable on Android TV, and FOSS retains document imports without network or delegated downloads.
+
+Audar uses [llama.cpp/mtmd at 64e9bceb](https://github.com/ggml-org/llama.cpp/tree/64e9bceb2c3a856efed96feda784a50947049feb), separate from Hearth's text translation runtime. The pinned Q4_K_M decoder and matching publisher BF16 projector total 775,275,936 bytes. The publisher projector actually contains 110 BF16 and 188 F32 tensors plus four F16 frontend weights: `a.conv2d.1.weight`, `a.conv2d.2.weight`, `a.conv2d.3.weight`, and `a.conv_out.weight`. The adapter accepts that mixed publisher layout and rejects general F16 or quantized audio encoders. It clears decoder memory between utterances, supplies the Qwen ASR template, enforces a 256-token completion bound and reports errors instead of incomplete success. The explicit `language None<asr_text>` verdict is valid no-speech only when no transcript follows. Arabic, English and Auto are exposed; other actual detected languages stay unknown rather than receiving an invented source label.
+
+Audar is one catalog model with two real transport IDs. `SpeechComponents` downloads each pinned component and `SpeechComponentPackage` verifies both lengths and hashes while staging. A root speech manifest declares both roles and all bytes pass the existing strict speech verifier before atomic publication. The aggregate model ID cannot resolve to a `DownloadAsset`, and its inventory hash is labelled as a component inventory, not a nonexistent archive checksum. Imported packages match the catalog only after the actual decoder and encoder role files both match their pins; no user-supplied receipt substitutes for content verification. Source bindings capture the whole immutable private package, including both files. Background installation does not activate it.
+
+OWSM uses only the OWSM model target from [audio.cpp at 673ade45](https://github.com/0xShug0/audio.cpp/tree/673ade451c9cba9c893fb0e606872d9dc44f21e3), without its server, model manager or network clients. The Q8_0 GGUF is 118,204,672 bytes. Three counted build-time patches restrict model dimensions to Base 102M, turn greedy token-budget exhaustion into an explicit error, and place embedded tokenizer/config caches under the app-private speech-model root rather than Android's unwritable global temporary directory or the immutable model package. The decoder uses one greedy beam, no prior-utterance text and at most 374 output tokens. Arabic and English hints map to the engine's actual `ara`/`eng` identifiers. Auto results outside those exposed language codes keep an unknown source.
+
+Both payloads were downloaded, independently SHA-256 verified and exercised through the production `SpeechNativeSession` owner on macOS ARM64 CPU with four threads. Arabic, English, Auto Arabic and silence runs are recorded in [the real smoke receipt](../research/stt-modern-cpu-smoke-2026-10-20.json). OWSM's Arabic fixture contained substantial errors, so it remains an experimental compact option. These short fixtures establish runtime functionality and final-result ownership; they do not establish WER, selected-quant parity, sustained realtime performance or phone battery/latency. The owner still needs to test the S25 Ultra. Smoke payloads were removed after saving evidence.
+
+Build and stage the independent CPU libraries:
+
+```sh
+bash scripts/speech/modern_cpu/build.sh owsm android
+bash scripts/speech/modern_cpu/build.sh audar android
+python3 scripts/speech/modern_cpu/stage.py
+CXX=clang++ bash common-jni/src/main/cpp/speech/tests/run_speech_tests.sh
+python3 scripts/speech/test_package.py
+```
+
+Staging checks source snapshots, exact source revisions, clean upstream trees, single public entrypoints, isolated SONAMEs, system-only dependencies and 16 KB page alignment. The recorded DSOs are approximately 3.73 MB OWSM and 4.66 MB Audar, ARM64 only. `scripts/verify-release.py` checks the same metadata, exported symbols and packaged licenses. Prepared offline ZIPs retain the ordinary root `hearth-speech.json` manifest; generate one with `scripts/speech/make-package.py` using profile `audar-asr-v1-flash` and roles `model` + `encoder`, or profile `owsm-v4-base-102m` and role `model`.
+
+OWSM model weights are CC-BY-4.0 with attribution to Yifan Peng/ESPnet; its audio.cpp runtime is Apache-2.0. Audar model weights use the [AudarAI Open License v1.0](https://www.audarai.com/license/audarai-open-license-v1.0/); llama.cpp is MIT. Model licenses and runtime licenses are kept distinct. Model-free runtime notices and exact build records live in `common-jni/src/main/assets/licenses/speech-modern-cpu/`.

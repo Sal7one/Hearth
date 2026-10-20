@@ -3,7 +3,7 @@ package com.sal7one.transiber.models
 import com.sal7one.transiber.caption.CaptionEngineChoice
 
 /** Runtime compatibility and downloadable identity are separate: a quant is not a new backend. */
-internal enum class SpeechArtifactKind { PUBLISHER, WHISPER, VOSK }
+internal enum class SpeechArtifactKind { PUBLISHER, COMPONENTS, WHISPER, VOSK }
 
 internal data class SpeechArtifact(
     val id: String,
@@ -26,12 +26,15 @@ internal data class SpeechArtifact(
     val advanced: Boolean = false,
     val archiveRoot: String? = null,
     val publisher: SpeechDownload? = null,
+    val components: SpeechComponentGroup? = null,
     /** New native runtimes are published only for ARM64 phones. */
     val supportedAbis: Set<String> = setOf("arm64-v8a", "armeabi-v7a", "x86", "x86_64"),
 ) {
+    val profile get() = publisher?.profile ?: components?.profile
     val fileName: String get() = url.substringAfterLast('/')
     /** Browsable artifact provenance, never a multi-gigabyte raw download. */
     val filesUrl: String get() = when {
+        components != null -> "$publisherUrl/tree/$sourceRevision"
         url.startsWith("https://huggingface.co/") -> url.substringBefore("/resolve/") +
             "/tree/" + url.substringAfter("/resolve/").substringBefore('/')
         url.startsWith("https://github.com/") && "/releases/download/" in url ->
@@ -41,6 +44,7 @@ internal data class SpeechArtifact(
     }
     /** The upstream model card explains the model license, distinct from runtime licenses. */
     val licenseUrl: String get() = when {
+        family == "audar" -> "https://www.audarai.com/license/audarai-open-license-v1.0/"
         family == "funasr-mlt" -> url.substringBefore("/resolve/") + "/blob/" + sourceRevision + "/LICENSE"
         publisherUrl == "https://github.com/moonshine-ai/moonshine" -> "$publisherUrl/blob/main/LICENSE"
         publisherUrl.startsWith("https://github.com/") -> "$publisherUrl#license"
@@ -49,7 +53,9 @@ internal data class SpeechArtifact(
     val engine: CaptionEngineChoice get() = when (kind) {
         SpeechArtifactKind.WHISPER -> CaptionEngineChoice.WHISPER
         SpeechArtifactKind.VOSK -> CaptionEngineChoice.VOSK
-        SpeechArtifactKind.PUBLISHER -> when (family) {
+        SpeechArtifactKind.PUBLISHER, SpeechArtifactKind.COMPONENTS -> when (family) {
+            "audar" -> CaptionEngineChoice.AUDAR
+            "owsm" -> CaptionEngineChoice.OWSM
             "cohere" -> CaptionEngineChoice.COHERE
             "funasr-mlt" -> CaptionEngineChoice.FUNASR_MLT
             "voxtral-realtime" -> CaptionEngineChoice.VOXTRAL
@@ -68,6 +74,8 @@ internal data class SpeechArtifact(
         require(sourceRevision.isNotBlank() && languages.isNotEmpty()) { "Missing speech artifact provenance/capabilities" }
         require(installedBytes == null || installedBytes > 0)
         require((kind == SpeechArtifactKind.PUBLISHER) == (publisher != null))
+        require((kind == SpeechArtifactKind.COMPONENTS) == (components != null))
+        require(components == null || (id == components.id && bytes == components.bytes && sha256 == components.componentSetSha256))
         require(kind != SpeechArtifactKind.VOSK || !archiveRoot.isNullOrBlank())
     }
 }
@@ -79,12 +87,20 @@ internal object SpeechArtifactCatalog {
         val license: String, val publisherUrl: String, val label: String,
     )
     // Publisher archives are pinned before exposing direct installation; arbitrary imports stay separate.
-    val all: List<SpeechArtifact> = SpeechDownloads.all.map { it.artifact() } + WhisperDownloads.all + VoskDownloads.all
+    val all: List<SpeechArtifact> = SpeechDownloads.all.map { it.artifact() } + SpeechComponents.groups.map { group ->
+        SpeechArtifact(group.id, "audar", group.profile.id, "Q4_K_M + BF16 encoder", "Audar-ASR V1 Flash · phone test pending",
+            SpeechArtifactKind.COMPONENTS, "https://huggingface.co/audarai/Audar-ASR-V1-Flash", group.bytes,
+            group.componentSetSha256, group.revision, null, null, setOf("ar", "en"),
+            "AudarAI Open License v1.0", "https://huggingface.co/audarai/Audar-ASR-V1-Flash",
+            installedBytes = group.bytes, advanced = true, components = group, supportedAbis = setOf("arm64-v8a"))
+    } + WhisperDownloads.all + VoskDownloads.all
     fun find(id: String): SpeechArtifact? = all.firstOrNull { it.id == id }
     fun forEngine(engine: CaptionEngineChoice): List<SpeechArtifact> = all.filter { it.engine == engine }
 
     private fun SpeechDownload.artifact(): SpeechArtifact {
         val family = when (profile.backend) {
+            com.sal7one.common_jni.speech.SpeechBackend.AUDAR -> "audar"
+            com.sal7one.common_jni.speech.SpeechBackend.OWSM -> "owsm"
             com.sal7one.common_jni.speech.SpeechBackend.COHERE -> "cohere"
             com.sal7one.common_jni.speech.SpeechBackend.FUNASR_MLT -> "funasr-mlt"
             com.sal7one.common_jni.speech.SpeechBackend.VOXTRAL_REALTIME -> "voxtral-realtime"
@@ -96,6 +112,7 @@ internal object SpeechArtifactCatalog {
             com.sal7one.common_jni.speech.SpeechBackend.TRANSCRIBEPSY -> "transcribepsy"
         }
         val info = when (profile) {
+            com.sal7one.common_jni.speech.SpeechProfile.OWSM_V4_BASE_102M -> ArtifactInfo("Q8_0", "661a224e9d9adbd49c01626f85e426f5f425d771", null, "CC-BY-4.0", "https://huggingface.co/espnet/owsm_v4_base_102M", "OWSM v4 Base 102M · Q8_0 · experimental")
             com.sal7one.common_jni.speech.SpeechProfile.COHERE_ARABIC_07_2026 -> ArtifactInfo("Q4_K_M", "11a54d6895f94cce78d0ece142b8e552e7822539", null, "Apache-2.0", "https://huggingface.co/CohereLabs/cohere-transcribe-arabic-07-2026", "Cohere Transcribe Arabic 07-2026 \u00b7 Q4_K_M \u00b7 phone test pending")
             com.sal7one.common_jni.speech.SpeechProfile.VOXTRAL_MINI_REALTIME_2602 -> ArtifactInfo("Q4_K_M", "7fd3d424fc558edca2c53808578b0541ef52a81a", null, "Apache-2.0", "https://huggingface.co/mistralai/Voxtral-Mini-4B-Realtime-2602", "Voxtral Mini Realtime 2602 \u00b7 Q4_K_M \u00b7 phone test pending")
             com.sal7one.common_jni.speech.SpeechProfile.FUNASR_MLT_NANO_2512 -> ArtifactInfo("Q8_0", "5db7c5bcebbc70d6c372e825399c3019f6089af7", null, "FunASR Model Open Source License Agreement v1.1 (selected GGUF); upstream HF metadata currently says Apache-2.0", "https://huggingface.co/FunAudioLLM/Fun-ASR-MLT-Nano-2512", "Fun-ASR MLT Nano 2512 \u00b7 Q8_0 \u00b7 phone test pending")
@@ -125,7 +142,7 @@ internal object SpeechArtifactCatalog {
             }, info.artifactDate,
             profile.capabilities.sourceLanguages, info.license, info.publisherUrl,
             installedBytes = installationBytes, archiveRoot = archiveRoot, publisher = this,
-            advanced = family in setOf("cohere", "funasr-mlt", "voxtral-realtime"),
-            supportedAbis = if (family in setOf("cohere", "funasr-mlt", "voxtral-realtime")) setOf("arm64-v8a") else setOf("arm64-v8a", "armeabi-v7a", "x86", "x86_64"))
+            advanced = family in setOf("cohere", "funasr-mlt", "voxtral-realtime", "owsm"),
+            supportedAbis = if (family in setOf("cohere", "funasr-mlt", "voxtral-realtime", "owsm")) setOf("arm64-v8a") else setOf("arm64-v8a", "armeabi-v7a", "x86", "x86_64"))
     }
 }

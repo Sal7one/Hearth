@@ -16,7 +16,7 @@ The host was macOS 26.5 ARM64. These are separate-process wall times including m
 | SMaLL AR→EN | سأعود إلى المنزل بعد انتهاء العمل. | I will return home after the work is over. | 0.2409 |
 | SMaLL AR→EN | قَرَأَ أَحْمَدُ ٢٥ كِتابًا في الرياض. | I read 25 books in Riyadh. | 0.2576 |
 
-The last sample loses Ahmed and changes third person to first person. SMaLL's Sarah/number output also shows grammar/name weaknesses. Successful execution is separate from translation quality. Both families remain experimental; no corpus score, official Python output parity, S25 quality, concurrent STT/TTS behavior or memory/thermal result is claimed. QuickMT Arabic→English weights were not run.
+The last sample loses Ahmed and changes third person to first person. SMaLL's Sarah/number output also shows grammar/name weaknesses. Successful execution is separate from translation quality. Both families remain experimental; no corpus score, official Python output parity, S25 quality, concurrent STT/TTS behavior or memory/thermal result is claimed. A later same-day [reverse-direction receipt](../research/mt-quickmt-cpu-smoke-2026-10-20.json) records all six pinned QuickMT AR→EN files verified and six FLEURS text cases plus empty-input rejection. It preserves official source SentencePiece pieces and exactly one source EOS.
 
 Both models rejected empty input with exit code 1, no stdout, and `CT2 input must contain 1–12000 UTF-8 bytes` on stderr. This run did not deliberately force the 20-second deadline or cancel an active native call; focused session tests cover propagation of deadline errors, suppression of late cancelled output and exact-once close. The upstream native Arabic fixture also passed FLOAT32 and INT8_FLOAT32 again; existing translation host CTest passed 3/3.
 

@@ -21,26 +21,22 @@ import com.sal7one.transiber.ui.components.FeatureOptionsSheet
 internal fun SettingsQuickSheet(
     onDismiss: () -> Unit,
     onFeature: (SettingsLocation, SettingsFeature) -> Unit,
+    onTranslationModels: () -> Unit,
     onPage: (Int) -> Unit,
     onReading: () -> Unit,
 ) {
     val uiText = rememberUiText()
     val context = androidx.compose.ui.platform.LocalContext.current
 
-    var location by rememberSaveable { mutableStateOf(SettingsLocation.LOCAL) }
     FeatureOptionsSheet(uiText(UiR.string.ui_settings_c7f73), onDismiss) {
         OutlinedButton(onClick = {
             onDismiss()
             com.sal7one.transiber.caption.OverlayControlsActivity.open(context)
         }, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) { Text(uiText(UiR.string.overlay_controls_title)) }
-        Button(onClick={onPage(15)},modifier=Modifier.fillMaxWidth().heightIn(min=52.dp)) {Text(uiText(UiR.string.ui_easy_setup_local_or_cloud_6c3e9))}
-        val locations = settingsLocations(ByokPolicy.FEATURE_BYOK)
-        if (locations.size > 1) TabRow(selectedTabIndex = locations.indexOf(location)) {
-            locations.forEach { option -> Tab(selected = option == location, onClick = { location = option }, text = { Text(uiText.label(option)) }) }
-        }
-        SettingsFeatureGrid(location) { onFeature(location, it) }
+        SettingsPipelineUi(onFeature, onTranslationModels)
         FeatureAction(uiText(UiR.string.ui_appearance_41def), Icons.Default.Palette, { onPage(13) })
-        FeatureAction(uiText(UiR.string.ui_downloads_imports_a2a3b), Icons.Default.Download, { onPage(2) })
+        if (com.sal7one.transiber.runtime.LocalModelPolicy.allowed(context))
+            FeatureAction(uiText(UiR.string.ui_downloads_imports_a2a3b), Icons.Default.Download, { onPage(2) })
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             TextButton(onClick = { onPage(5) }) { Text(uiText(UiR.string.ui_caption_overlay_a4c78)) }
             TextButton(onClick = onReading) { Text(uiText(UiR.string.ui_screen_overlay_773a6)) }

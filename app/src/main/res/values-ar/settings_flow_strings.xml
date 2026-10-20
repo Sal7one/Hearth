@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_flow_pipeline">إعداد الترجمة المصاحبة</string>
+    <string name="settings_flow_independent">يعمل الكلام والترجمة والصوت معًا. تحتفظ كل مرحلة بمحركها وتفضيلاتها.</string>
+    <string name="settings_flow_speech">1 · التعرّف على الكلام</string>
+    <string name="settings_flow_translation">2 · ترجمة النص المصاحب</string>
+    <string name="settings_flow_voice">3 · قراءة النص بصوت عالٍ</string>
+    <string name="settings_flow_edit">تعديل إعداد %1$s</string>
+    <string name="settings_flow_other">اختيار %1$s</string>
+    <string name="settings_flow_unavailable">النماذج المنزّلة غير متاحة على هذا التلفاز. تتطلب الخدمات السحابية النسخة المتصلة.</string>
+    <string name="settings_flow_bundles">الحزم المقترحة</string>
+    <string name="settings_flow_tools">السجل والأدوات</string>
+    <string name="settings_flow_history_detail">راجع النصوص والترجمات المحفوظة.</string>
+    <string name="settings_flow_history_options">خيارات السجل والتسجيل</string>
+    <string name="settings_flow_voice_options">تفضيلات الصوت</string>
+    <string name="settings_flow_model_info">تفاصيل النموذج والمصادر</string>
+    <string name="settings_flow_show_unavailable">إظهار نماذج للتنزيل</string>
+    <string name="settings_flow_installed_choices">النماذج المثبتة والمحددة</string>
+    <string name="settings_flow_no_installed">نزّل حزمة أو استورد نموذجًا لإضافة مترجم محلي.</string>
+    <string name="settings_flow_translation_scope">تطبيق على الميزات الأخرى</string>
+    <string name="settings_flow_caption_translation_scope">اختر مترجم النص المصاحب. تحتفظ الميزات الأخرى باختياراتها.</string>
+    <string name="settings_flow_integrated_translation">ترجمة محرك الكلام، أو اختر مترجم نص</string>
+    <string name="settings_flow_connection_options">تفاصيل الاتصال والمصادر</string>
+    <string name="settings_flow_saved_key">مفتاح API محفوظ على هذا الجهاز</string>
+    <string name="settings_flow_key_needed">أضف مفتاحًا أدناه لاستخدام هذه الخدمة.</string>
+</resources>

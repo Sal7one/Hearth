@@ -79,9 +79,7 @@ internal fun LocalSpeechSetup(
                 com.sal7one.transiber.preferences.ModelSourceBindings.recordImported(context, imported.id, uri, listOf(imported.root))
                 models = withContext(Dispatchers.IO) { store.list() }
                 onModelsChanged(models)
-                update { it.copy(engine = imported.profile.captionEngine, modelId = imported.id,
-                    mode = CaptionMode.CAPTIONS, streamLanguage = if (imported.profile.capabilities.automaticSourceLanguage) "auto" else "ar") }
-                notice = uiText(UiR.string.ui_imported_1_s_original_language_captions_selected_f9ef8, imported.profile.label)
+                notice = uiText(UiR.string.library_imported_choose_model, imported.profile.label)
             } catch (e: CancellationException) { throw e }
             catch (e: Exception) {
                 notice = null
@@ -102,9 +100,9 @@ internal fun LocalSpeechSetup(
         }
         if (busy) LinearProgressIndicator(Modifier.fillMaxWidth())
         models.filter { it.profile.backend == backend }.forEach { model ->
-            FilterChip(selected = config.modelId == model.id || (config.modelId.isBlank() && model == models.firstOrNull { it.profile.backend == backend }),
+            FilterChip(selected = config.modelId == model.id,
                 enabled = !busy,
-                onClick = { update { it.copy(modelId = model.id, streamLanguage = if (!model.profile.capabilities.automaticSourceLanguage && !model.profile.acceptsSource(it.streamLanguage)) "ar" else it.streamLanguage) } },
+                onClick = { update { activateSpeechModel(it, model.profile, model.id) } },
                 label = { Text(model.profile.label + " · " + model.id.takeLast(6)) })
         }
         if (showDownloadSources) com.sal7one.transiber.models.ModelSourcePanel(com.sal7one.transiber.models.ModelSources.speech(config.effectiveEngine))
@@ -117,6 +115,8 @@ internal fun LocalSpeechSetup(
             com.sal7one.common_jni.speech.SpeechBackend.OMNILINGUAL_CTC -> com.sal7one.common_jni.speech.SpeechProfile.OMNILINGUAL_CTC_300M_V2
             com.sal7one.common_jni.speech.SpeechBackend.PHONON -> com.sal7one.common_jni.speech.SpeechProfile.PHONON_2
             com.sal7one.common_jni.speech.SpeechBackend.NEMOTRON_3_5 -> com.sal7one.common_jni.speech.SpeechProfile.NEMOTRON_3_5_ASR_0_6B
+            com.sal7one.common_jni.speech.SpeechBackend.AUDAR -> com.sal7one.common_jni.speech.SpeechProfile.AUDAR_ASR_V1_FLASH
+            com.sal7one.common_jni.speech.SpeechBackend.OWSM -> com.sal7one.common_jni.speech.SpeechProfile.OWSM_V4_BASE_102M
             com.sal7one.common_jni.speech.SpeechBackend.COHERE -> com.sal7one.common_jni.speech.SpeechProfile.COHERE_ARABIC_07_2026
             com.sal7one.common_jni.speech.SpeechBackend.FUNASR_MLT -> com.sal7one.common_jni.speech.SpeechProfile.FUNASR_MLT_NANO_2512
             com.sal7one.common_jni.speech.SpeechBackend.VOXTRAL_REALTIME -> com.sal7one.common_jni.speech.SpeechProfile.VOXTRAL_MINI_REALTIME_2602
@@ -133,6 +133,8 @@ internal fun LocalSpeechSetup(
             else if (backend == com.sal7one.common_jni.speech.SpeechBackend.OMNILINGUAL_CTC) uiText(UiR.string.model_omnilingual_language_note)
             else if (backend == com.sal7one.common_jni.speech.SpeechBackend.PHONON) uiText(UiR.string.model_phonon_language_note)
             else if (backend == com.sal7one.common_jni.speech.SpeechBackend.TRANSCRIBEPSY) uiText(UiR.string.model_transcribepsy_language_note)
+            else if (backend == com.sal7one.common_jni.speech.SpeechBackend.AUDAR) uiText(UiR.string.speech_audar_note)
+            else if (backend == com.sal7one.common_jni.speech.SpeechBackend.OWSM) uiText(UiR.string.speech_owsm_note)
             else if (backend == com.sal7one.common_jni.speech.SpeechBackend.COHERE) uiText(UiR.string.speech_cohere_note)
             else if (backend == com.sal7one.common_jni.speech.SpeechBackend.FUNASR_MLT) uiText(UiR.string.speech_funasr_note)
             else if (backend == com.sal7one.common_jni.speech.SpeechBackend.VOXTRAL_REALTIME) uiText(UiR.string.speech_voxtral_note)

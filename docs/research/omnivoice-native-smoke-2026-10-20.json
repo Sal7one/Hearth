@@ -1,0 +1,64 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-20",
+  "scope": "Host CPU C ABI/JNI functionality, not owner device quality/performance",
+  "runtime": {
+    "revision": "1a468d8b9d65b3544ca1004d2d7c05dfc65d1f3e",
+    "ggmlRevision": "cc5df49a6b878db2b68b9a7b45976e279594627d",
+    "abi": "arm64-v8a",
+    "backend": "CPU",
+    "bytes": 1373672,
+    "sha256": "7a5042f47892b548d7079f86eb351189e519e366bf72aa5c8a0c2112a81b349b"
+  },
+  "modelComponents": [
+    {
+      "filename": "omnivoice-base-Q8_0.gguf",
+      "repo": "Serveurperso/OmniVoice-GGUF",
+      "revision": "017094167b5c9ed565a5076ac9b3b93c5ecf5c73",
+      "url": "https://huggingface.co/Serveurperso/OmniVoice-GGUF/resolve/017094167b5c9ed565a5076ac9b3b93c5ecf5c73/omnivoice-base-Q8_0.gguf",
+      "bytes": 656395008,
+      "sha256": "2882d887921798aea13d45236556bdf8012842ab6f8cd2690943eead6289f298",
+      "role": "generator",
+      "required": true
+    },
+    {
+      "filename": "omnivoice-tokenizer-Q8_0.gguf",
+      "repo": "Serveurperso/OmniVoice-GGUF",
+      "revision": "017094167b5c9ed565a5076ac9b3b93c5ecf5c73",
+      "url": "https://huggingface.co/Serveurperso/OmniVoice-GGUF/resolve/017094167b5c9ed565a5076ac9b3b93c5ecf5c73/omnivoice-tokenizer-Q8_0.gguf",
+      "bytes": 288889600,
+      "sha256": "75204fa566a8e30984e7a1066da6557184c9fd099c8f1bc0cb5b9415edfec255",
+      "role": "audio-codec",
+      "required": true
+    }
+  ],
+  "checks": {
+    "CAbiArabicEnglishAbort": true,
+    "JniArabicSamples": 22320,
+    "JniEnglishSamples": 44160,
+    "JniSampleRate": 24000,
+    "JniBoundedFinitePcm": true,
+    "JniExactCallbackException": true,
+    "JniCancelRetireDestroy": true,
+    "OfflineUtf8MalformedPcmFixture": true
+  },
+  "logs": {
+    "omnivoice-real-smoke.log": {
+      "sha256": "f5feca8e90a964530dc5cad74ebdc7c23a7db6f73bee063517f76115c1aa942a",
+      "resultLines": [
+        "SMOKE language=arb design=auto status=0 samples=23520 chunks=5",
+        "SMOKE language=en design=female status=0 samples=44160 chunks=7",
+        "SMOKE language=en design=auto status=-5 samples=2400 chunks=1",
+        "OMNIVOICE REAL MODEL SMOKE PASS"
+      ]
+    },
+    "omnivoice-real-jni-smoke.log": {
+      "sha256": "a0400e2d7d63efcd50188c860ed09613734cea8996ceb0e2106983ca354e335e",
+      "resultLines": [
+        "REAL JNI PCM Arabic samples=22320",
+        "REAL JNI PCM English samples=44160",
+        "OMNIVOICE REAL JNI SMOKE PASS"
+      ]
+    }
+  }
+}

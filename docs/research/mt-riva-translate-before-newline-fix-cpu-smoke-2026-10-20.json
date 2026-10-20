@@ -1,0 +1,117 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-20",
+  "family": "riva-translate",
+  "scope": "Functional host CPU fixture checks; no S25 quality, sustained latency, WER or default-setting claim",
+  "ownerDeviceTested": false,
+  "components": [
+    {
+      "file": "Riva-Translate-4B-Instruct-v2-Q4_K_M.gguf",
+      "repository": "liodon-ai/Riva-Translate-4B-Instruct-v2-imatrix-GGUF",
+      "revision": "aa8cc2e72e2f97e07b021e4afbc612cff3bf9ae9",
+      "url": "https://huggingface.co/liodon-ai/Riva-Translate-4B-Instruct-v2-imatrix-GGUF/resolve/aa8cc2e72e2f97e07b021e4afbc612cff3bf9ae9/Riva-Translate-4B-Instruct-v2-Q4_K_M.gguf",
+      "bytes": 2759302720,
+      "sha256": "90c2f48ff5549b770d9aaecb7eea603548bcca035a970a800d9c17781991804d",
+      "payloadIndependentlyVerified": true
+    }
+  ],
+  "runs": [
+    {
+      "source": "en",
+      "target": "ar",
+      "command": [
+        "/opt/homebrew/opt/python@3.14/bin/python3.14",
+        "scripts/benchmark/run_macos_translation.py",
+        "--model",
+        "build/remaining-mt-smoke/riva-translate/Riva-Translate-4B-Instruct-v2-Q4_K_M.gguf",
+        "--family",
+        "riva-translate",
+        "--source",
+        "en",
+        "--target",
+        "ar",
+        "--threads",
+        "2",
+        "--gpu-layers",
+        "0",
+        "--passes",
+        "1",
+        "--output",
+        "docs/research/mt-riva-translate-en-ar-host-2026-10-20.json",
+        "--runtime",
+        "build/translation-runtime/host/translation_smoke"
+      ],
+      "exitCode": 0,
+      "wallSeconds": 12.649415666994173,
+      "stdout": "{\n  \"output\": \"docs/research/mt-riva-translate-en-ar-host-2026-10-20.json\",\n  \"model\": \"Riva-Translate-4B-Instruct-v2-Q4_K_M.gguf\",\n  \"loadMs\": 3709.5011250123102,\n  \"warmMedianMs\": null,\n  \"chrF++\": 0.363243318914105,\n  \"WER\": 0.8904109589041096,\n  \"CER\": 0.6324786324786325,\n  \"error\": null\n}\n",
+      "stderr": "",
+      "result": "docs/research/mt-riva-translate-en-ar-before-newline-fix-host-2026-10-20.json",
+      "resultSha256": "aca55a675503e9cf827281a04b87ad38fbee7598c4610d16d7298fca71ffd2d2",
+      "error": null,
+      "attemptedCases": 6,
+      "accepted": true
+    },
+    {
+      "source": "ar",
+      "target": "en",
+      "command": [
+        "/opt/homebrew/opt/python@3.14/bin/python3.14",
+        "scripts/benchmark/run_macos_translation.py",
+        "--model",
+        "build/remaining-mt-smoke/riva-translate/Riva-Translate-4B-Instruct-v2-Q4_K_M.gguf",
+        "--family",
+        "riva-translate",
+        "--source",
+        "ar",
+        "--target",
+        "en",
+        "--threads",
+        "2",
+        "--gpu-layers",
+        "0",
+        "--passes",
+        "1",
+        "--output",
+        "docs/research/mt-riva-translate-ar-en-host-2026-10-20.json",
+        "--runtime",
+        "build/translation-runtime/host/translation_smoke"
+      ],
+      "exitCode": 0,
+      "wallSeconds": 11.085038707999047,
+      "stdout": "{\n  \"output\": \"docs/research/mt-riva-translate-ar-en-host-2026-10-20.json\",\n  \"model\": \"Riva-Translate-4B-Instruct-v2-Q4_K_M.gguf\",\n  \"loadMs\": 2974.579625005759,\n  \"warmMedianMs\": null,\n  \"chrF++\": 0.5298239404182523,\n  \"WER\": 0.5370370370370371,\n  \"CER\": 0.41123595505617977,\n  \"error\": null\n}\n",
+      "stderr": "",
+      "result": "docs/research/mt-riva-translate-ar-en-before-newline-fix-host-2026-10-20.json",
+      "resultSha256": "bef65bbec785172c4ff9560b532329eed558c1ad6f0b83ce3de7f2b927dbf378",
+      "error": null,
+      "attemptedCases": 6,
+      "accepted": true
+    }
+  ],
+  "publisherPrompt": {
+    "instruction": "You are an expert at translating text from {sourceName} to {targetName}.",
+    "wireToNative": "{instruction}\n\n{trimmedText}",
+    "envelope": "<s>System\\n{instruction}</s>\\n<s>User\\n{trimmedText}</s>\\n<s>Assistant\\n",
+    "separatorWarning": "The pinned tokenizer Jinja emits literal backslash+n characters. Do not replace them with newline characters without changing revision and validating real-weight parity.",
+    "specialTokens": "Only fixed envelope tokens parsed; user and instruction content literal."
+  },
+  "publisherSources": [
+    "https://huggingface.co/nvidia/Riva-Translate-4B-Instruct-v2/blob/040d958b128018ff0bed2542a7b51005e9ea563c/tokenizer_config.json",
+    "https://huggingface.co/nvidia/Riva-Translate-4B-Instruct-v2",
+    "https://huggingface.co/liodon-ai/Riva-Translate-4B-Instruct-v2-imatrix-GGUF/tree/aa8cc2e72e2f97e07b021e4afbc612cff3bf9ae9"
+  ],
+  "modelLicense": {
+    "name": "NVIDIA Open Model License",
+    "url": "https://www.nvidia.com/en-us/agreements/enterprise-software/nvidia-open-model-license/"
+  },
+  "runnerSha256": "83b56d3bc08594a3d16f280bd9a75fa4a57811eb0030582157b9fef312ae1777",
+  "catalogId": "riva-translate-4b-v2-q4",
+  "runtime": "build/translation-runtime/host/translation_smoke",
+  "runtimeSha256": "713eb364f7d3a5d77ee23b88018269e586a1aa60406ea521706939b79326b201",
+  "nativePromptMode": 3,
+  "threads": 2,
+  "gpuLayers": 0,
+  "passes": 1,
+  "nativeSourceSha256": "42ab549bf79ac176eb723469debd9ed519f2f2d93336ad8bdd0cbbc7d947f7b0",
+  "llamaRevision": "64e9bceb2c3a856efed96feda784a50947049feb",
+  "interpretation": "BEFORE FIX: native envelope used literal backslash-n, which differs from actual publisher Jinja rendering. Functional acceptance only; first EN→AR case echoed the English source. Kept as before-fix evidence, not a validated Riva prompt/quality result."
+}

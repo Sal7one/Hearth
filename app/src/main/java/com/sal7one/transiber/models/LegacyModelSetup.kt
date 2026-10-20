@@ -33,9 +33,7 @@ internal fun LegacyModelSetup(type: ModelEngineType, config: CaptionOverlayConfi
             val model = (if (folder) registry.importModelDirectory(uri) else registry.importModel(uri))
                 ?: error(uiText(UiR.string.ui_unsupported_model_structure_check_the_installation_steps_below_f7c2f))
             check(model.engineType == type && model.isValid) { uiText(UiR.string.ui_imported_1_s_choose_it_in_its_matching_model_group_8afb9, model.engineType.displayName) }
-            if (type != ModelEngineType.TRANSLATE) update { it.copy(engine = if (type == ModelEngineType.WHISPER) CaptionEngineChoice.WHISPER else CaptionEngineChoice.VOSK,
-                modelId = model.id, mode = CaptionMode.CAPTIONS, streamLanguage = "auto") }
-            message = uiText(UiR.string.ui_1_s_imported_2_s_ef91e, model.name, if (type != ModelEngineType.TRANSLATE) uiText(UiR.string.import_selected_cc) else "")
+            message = uiText(UiR.string.library_imported_choose_model, model.name)
         } catch (e: CancellationException) { throw e }
         catch (e: Exception) { message = e.message ?: e.toString() }
         finally { busy = false }

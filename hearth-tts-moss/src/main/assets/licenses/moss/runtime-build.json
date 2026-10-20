@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "source": {
+    "repo": "https://github.com/OpenMOSS/MOSS-TTS-Nano",
+    "revision": "8b7bcc9341b3b4ef3a3a58ba1338a7d85ff133eb",
+    "sentencepieceRevision": "17d7580d6407802f85855d2cc9190634e2c95624",
+    "jsonVersion": "3.11.2",
+    "jsonSourceRevision": "8c8cab2a954810216a45d65c1b8d56839c846e5b"
+  },
+  "runtime": {
+    "abi": "arm64-v8a",
+    "backend": "ONNX Runtime CPU",
+    "file": "libhearth_moss.so",
+    "bytes": 574144,
+    "sha256": "b7afd56c7d4a9a989f2a995cd984012f8eeec620ed87bf48d98d22864e918f38"
+  },
+  "build": {
+    "ndk": "27.0.12077973",
+    "api": 28,
+    "cmake": "4.4.2"
+  },
+  "sources": {
+    "common-jni/src/main/cpp/onnx/include/onnxruntime/onnxruntime_c_api.h": "573a117ae6b83ead7f53da6cedaa0d7b7d9cdb45c0ba4726bac9081e67696a82",
+    "hearth-tts-moss/src/main/cpp/moss.cpp": "9378e2b318e85d48297a31d6f43375a47e5538ca24d8b78d526973d554cf89f7",
+    "hearth-tts-moss/src/main/cpp/pcm_bounds.h": "d279535db037bf9bc0efd61e493a9d9a4e85346fd1dde0c55716cc312ea290f3",
+    "hearth-tts-moss/src/main/cpp/runtime.map": "b0839a283f4095d8f34b974b27919f638d82f65b2dc95ce46ba73b23869912a8",
+    "hearth-tts-moss/src/main/cpp/vendor/json.hpp": "665fa14b8af3837966949e8eb0052d583e2ac105d3438baba9951785512cf921",
+    "hearth-tts-moss/src/main/cpp/vendor/moss.h": "9ae86d9842527d22332f316e7ef89d1783c15cccffb82f22ca63236369482d9e",
+    "scripts/voice/build-moss-runtime.sh": "53292e94beb1b5ab9e377c986dbc23c3013712e3b87a9212a2ef387bd69ef5c2",
+    "scripts/voice/moss-runtime-sources.py": "28480044b8979868ca0e4b3c4ddf7714c261eac2d032d4e370c145fa765204e1",
+    "scripts/voice/moss/CMakeLists.txt": "cdc3f12f04c4a7a09366be5618bdb5e35ea6f39b5009f885e280310340928ac6"
+  },
+  "sourceSetSha256": "37d416249ec9a5b2ae7943c85769a4a6effcdbf183620d4b496808428d9c05eb",
+  "limitations": [
+    "CPU ARM64 only",
+    "48 kHz stereo codec output explicitly averaged to mono",
+    "Raw SentencePiece input; no WeText number expansion",
+    "Published fixed reference codes; no user-reference encoder",
+    "375 frames / 30 seconds maximum per text part; bound reached without EOS is an error",
+    "Owner listening and device performance not measured"
+  ]
+}

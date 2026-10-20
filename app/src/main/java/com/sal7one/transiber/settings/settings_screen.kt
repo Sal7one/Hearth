@@ -14,6 +14,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.sal7one.transiber.byok.ByokPolicy
+import androidx.compose.runtime.saveable.rememberSaveable
+import com.sal7one.transiber.runtime.LocalModelPolicy
 
 @Composable
 internal fun SettingsScreen(
@@ -21,6 +23,7 @@ internal fun SettingsScreen(
     onAppearance: () -> Unit,
     onShortcuts: () -> Unit,
     onFeature: (SettingsLocation, SettingsFeature) -> Unit,
+    onTranslationModels: () -> Unit,
     onDownloads: () -> Unit,
     onBenchmark: () -> Unit,
     onAdvanced: () -> Unit,
@@ -29,36 +32,28 @@ internal fun SettingsScreen(
 ) {
     val uiText = rememberUiText()
     val context = LocalContext.current
-    if (rememberSetupMode() == SetupMode.BASIC) {
-        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text(uiText(UiR.string.setup_basic_settings_detail), style = MaterialTheme.typography.bodyMedium)
-            SettingsLink(uiText(UiR.string.ui_easy_setup_35fb5), uiText(UiR.string.ui_local_or_cloud_in_two_steps_183c9), onEasySetup)
-            SettingsLink(uiText(UiR.string.ui_appearance_navigation_433af), uiText(UiR.string.ui_themes_light_or_dark_simple_home_or_classic_tabs_24bee), onAppearance)
-            com.sal7one.transiber.i18n.AppLanguageSettings()
-            SettingsLink(uiText(UiR.string.setup_basic_permissions), uiText(UiR.string.ui_audio_languages_appearance_and_accessibility_04684)) { com.sal7one.transiber.caption.OverlayControlsActivity.open(context) }
-            SettingsLink(uiText(UiR.string.overlay_shortcuts_title), uiText(UiR.string.overlay_shortcuts_detail), onShortcuts)
-            SettingsLink(uiText(UiR.string.caption_history_title), uiText(UiR.string.caption_history_title), onHistory)
-            SettingsLink(uiText(UiR.string.ui_help_diagnostics_68022), uiText(UiR.string.ui_setup_guidance_and_actual_engine_errors_30852), onHelp)
-            AdvancedSetupLink()
+    val advanced = rememberSetupMode() == SetupMode.ADVANCED
+    val localAllowed = LocalModelPolicy.allowed(context)
+    var tools by rememberSaveable { mutableStateOf(false) }
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        SettingsPipelineUi(onFeature, onTranslationModels)
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            if (localAllowed) OutlinedButton(onClick = onEasySetup) { Text(uiText(UiR.string.settings_flow_bundles)) }
+            else if (ByokPolicy.FEATURE_BYOK) OutlinedButton(onClick = onEasySetup) { Text(uiText(UiR.string.ui_easy_setup_35fb5)) }
+            if (localAllowed) OutlinedButton(onClick = onDownloads) { Text(uiText(UiR.string.ui_downloads_imports_a2a3b)) }
+            if (localAllowed) TextButton(onClick = { onFeature(SettingsLocation.LOCAL, SettingsFeature.CAMERA) }) {
+                Text(uiText(UiR.string.ui_camera_ocr_c1207))
+            }
         }
-        return
-    }
-
-    SettingsTabs { location ->
-        val local = location == SettingsLocation.LOCAL
-        SettingsLink(uiText(UiR.string.ui_easy_setup_35fb5), uiText(UiR.string.ui_local_or_cloud_in_two_steps_183c9), onEasySetup)
-        SettingsHeading(if (local) uiText(UiR.string.ui_on_your_device_9f8fd) else uiText(UiR.string.ui_connected_services_35c48),
-            if (local) uiText(UiR.string.ui_download_or_import_models_for_offline_use_693d9)
-            else uiText(UiR.string.ui_providers_and_saved_keys_audio_or_text_goes_to_your_chosen_servic_11f7d))
-        SettingsFeatureGrid(location) { onFeature(location, it) }
-        if (local) {
-            SettingsLink(uiText(UiR.string.ui_downloads_imports_a2a3b), if (ByokPolicy.FEATURE_BYOK) uiText(UiR.string.ui_download_folder_progress_and_installed_files_d9ced) else uiText(UiR.string.ui_import_model_files_from_your_device_18597), onDownloads)
-            SettingsLink(uiText(UiR.string.ui_local_benchmark_3acfe), uiText(UiR.string.ui_compare_installed_speech_and_translation_models_3e1af), onBenchmark)
-        }
-        HorizontalDivider()
-        com.sal7one.transiber.caption.history.CaptionHistorySettings(onHistory)
         HorizontalDivider()
         SettingsAppPreferences(onAppearance, onShortcuts, onAdvanced, onHelp)
+        TextButton(onClick = { tools = !tools }) { Text(uiText(UiR.string.settings_flow_tools)) }
+        if (tools) {
+            if (advanced) com.sal7one.transiber.caption.history.CaptionHistorySettings(onHistory)
+            else SettingsLink(uiText(UiR.string.caption_history_title), uiText(UiR.string.settings_flow_history_detail), onHistory)
+            if (advanced && localAllowed) SettingsLink(uiText(UiR.string.ui_local_benchmark_3acfe), uiText(UiR.string.ui_compare_installed_speech_and_translation_models_3e1af), onBenchmark)
+        }
+        if (!advanced) AdvancedSetupLink()
     }
 }

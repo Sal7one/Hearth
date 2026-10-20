@@ -9,8 +9,10 @@ data class Ct2File(val name: String, val bytes: Long, val sha256: String, val re
     val url get() = "https://huggingface.co/$repo/resolve/$revision/$name"
 }
 data class Ct2ModelSpec(val id: String, val label: String, val tokenizerMode: Int,
-    val sources: Set<String>, val targets: Set<String>, val files: List<Ct2File>, val license: String, val modelCard: String) {
+    val sources: Set<String>, val targets: Set<String>, val files: List<Ct2File>, val license: String, val modelCard: String,
+    val downloadEnabled: Boolean = true, val groupId: String = id, val precisionLabel: String = "") {
     val bytes get() = files.sumOf { it.bytes }
+    val selectionLabel get() = label + precisionLabel.takeIf { it.isNotBlank() }?.let { " · $it" }.orEmpty()
     fun supports(source: String, target: String): Boolean {
         val from=TranslationLanguages.normalize(source);val to=TranslationLanguages.normalize(target)
         return from!=to && from in sources && to in targets
@@ -48,6 +50,38 @@ object Ct2Catalog {
             Ct2File("sentencepiece.bpe.model", 2423393L, "d8f7c76ed2a5e0822be39f0a4f95a55eb19c78f4593ce609e2edbc2aea4d380a", "solavr/small100-ctranslate2-int8", "3c5af8e17d5c4f35bda849b7ffceaa1dfc62eb84"),
             Ct2File("shared_vocabulary.json", 2924622L, "18916ac68f9ac8fbd5250ca603dcb3861aac8672924d93a8dadc82eb3147f941", "solavr/small100-ctranslate2-int8", "3c5af8e17d5c4f35bda849b7ffceaa1dfc62eb84"),
         ), "MIT", "https://huggingface.co/alirezamsh/small100"),
+        Ct2ModelSpec("ct2-jisr-50m-en-ar", "Jisr 50M · English → Arabic dialects", 4, setOf("en"), setOf("ar"), listOf(
+            Ct2File("config.json", 226L, "99fa08f9ae4fe585ace28258a3420d4d19d59e2b99d3e8dd2bc7dff70aa408cf", "oddadmix/Jisr-MT-50M-AllDialects", "8803d9d4e3b53e96783968237aa32425eb83922e"),
+            Ct2File("model.bin", 194430755L, "5b0124527a4a9763d819d8087c08ed289df0ce02d926737313aac5492056353c", "oddadmix/Jisr-MT-50M-AllDialects", "8803d9d4e3b53e96783968237aa32425eb83922e"),
+            Ct2File("shared_vocabulary.json", 1318566L, "12b45628eae6d2949aa85e430d6a2c7f033400f894f9ec2e521466aa82006e5a", "oddadmix/Jisr-MT-50M-AllDialects", "8803d9d4e3b53e96783968237aa32425eb83922e"),
+            Ct2File("tokenizer.json", 2670172L, "6f45717637add9564d0bd905209208d1aafa55a2e4ec3b8a817309e0384cb307", "oddadmix/Jisr-MT-50M-AllDialects", "8803d9d4e3b53e96783968237aa32425eb83922e"),
+            Ct2File("LICENSE", 11358L, "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30", "oddadmix/Jisr-MT-50M-AllDialects", "8803d9d4e3b53e96783968237aa32425eb83922e"),
+            Ct2File("NOTICE", 562L, "bce7092fadb678426aaba270129f02b3a3633df9962ee3f438c781e6eccf6372", "oddadmix/Jisr-MT-50M-AllDialects", "8803d9d4e3b53e96783968237aa32425eb83922e"),
+        ), "Apache-2.0", "https://huggingface.co/oddadmix/Jisr-MT-50M-AllDialects", downloadEnabled = false, groupId = "ct2-jisr-50m-en-ar", precisionLabel = "FP32"),
+        Ct2ModelSpec("ct2-jisr-50m-en-ar-int8", "Jisr 50M · English → Arabic dialects", 2, setOf("en"), setOf("ar"), listOf(
+            Ct2File("config.json", 226L, "99fa08f9ae4fe585ace28258a3420d4d19d59e2b99d3e8dd2bc7dff70aa408cf", "oddadmix/Jisr-MT-50M-AllDialects", "8803d9d4e3b53e96783968237aa32425eb83922e"),
+            Ct2File("model.bin", 50619043L, "6b8b5286c7edc7eb711a17c0b9c644314e41740d1e4e7d93f799980771791375", "oddadmix/Jisr-MT-50M-AllDialects", "8803d9d4e3b53e96783968237aa32425eb83922e"),
+            Ct2File("shared_vocabulary.json", 1318566L, "12b45628eae6d2949aa85e430d6a2c7f033400f894f9ec2e521466aa82006e5a", "oddadmix/Jisr-MT-50M-AllDialects", "8803d9d4e3b53e96783968237aa32425eb83922e"),
+            Ct2File("tokenizer.json", 2670172L, "6f45717637add9564d0bd905209208d1aafa55a2e4ec3b8a817309e0384cb307", "oddadmix/Jisr-MT-50M-AllDialects", "8803d9d4e3b53e96783968237aa32425eb83922e"),
+            Ct2File("LICENSE", 11358L, "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30", "oddadmix/Jisr-MT-50M-AllDialects", "8803d9d4e3b53e96783968237aa32425eb83922e"),
+            Ct2File("NOTICE", 559L, "d83d54c3ffa0eba669e616af1a0ab8fa775059a6d916206b51b00b7372f88d38", "oddadmix/Jisr-MT-50M-AllDialects", "8803d9d4e3b53e96783968237aa32425eb83922e"),
+        ), "Apache-2.0", "https://huggingface.co/oddadmix/Jisr-MT-50M-AllDialects", downloadEnabled = false, groupId = "ct2-jisr-50m-en-ar", precisionLabel = "INT8"),
+        Ct2ModelSpec("ct2-jisr-50m-ar-en", "Jisr 50M · Arabic dialects → English", 5, setOf("ar"), setOf("en"), listOf(
+            Ct2File("config.json", 226L, "99fa08f9ae4fe585ace28258a3420d4d19d59e2b99d3e8dd2bc7dff70aa408cf", "oddadmix/Jisr-MT-50M-Dialects2En", "2cfe89dcfaba280c81bc0b9da34e9dc096795405"),
+            Ct2File("model.bin", 194407459L, "ca3cb2edaff87fddf715db8fcdea9258b47a926624f662aab01e31decd753805", "oddadmix/Jisr-MT-50M-Dialects2En", "2cfe89dcfaba280c81bc0b9da34e9dc096795405"),
+            Ct2File("shared_vocabulary.json", 1318394L, "38b7aaf9fd81d8e6b2cae4603966e768813377b628ba86ae9b1dab28c3929e53", "oddadmix/Jisr-MT-50M-Dialects2En", "2cfe89dcfaba280c81bc0b9da34e9dc096795405"),
+            Ct2File("tokenizer.json", 2667790L, "7ab7a5ec74e7c2a1671c051fe91aaa3d92e3657a75f6867cd584d3b4307dcc9b", "oddadmix/Jisr-MT-50M-Dialects2En", "2cfe89dcfaba280c81bc0b9da34e9dc096795405"),
+            Ct2File("LICENSE", 11358L, "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30", "oddadmix/Jisr-MT-50M-Dialects2En", "2cfe89dcfaba280c81bc0b9da34e9dc096795405"),
+            Ct2File("NOTICE", 562L, "42b536894f16165d948f83792e502e14ff01aa59a237544b912b16b678ffb282", "oddadmix/Jisr-MT-50M-Dialects2En", "2cfe89dcfaba280c81bc0b9da34e9dc096795405"),
+        ), "Apache-2.0", "https://huggingface.co/oddadmix/Jisr-MT-50M-Dialects2En", downloadEnabled = false, groupId = "ct2-jisr-50m-ar-en", precisionLabel = "FP32"),
+        Ct2ModelSpec("ct2-jisr-50m-ar-en-int8", "Jisr 50M · Arabic dialects → English", 3, setOf("ar"), setOf("en"), listOf(
+            Ct2File("config.json", 226L, "99fa08f9ae4fe585ace28258a3420d4d19d59e2b99d3e8dd2bc7dff70aa408cf", "oddadmix/Jisr-MT-50M-Dialects2En", "2cfe89dcfaba280c81bc0b9da34e9dc096795405"),
+            Ct2File("model.bin", 50613167L, "fe73eb55916e327c47b9d346f6b2d1f734d3d34533e3a97c55dd74ba4b0e1b19", "oddadmix/Jisr-MT-50M-Dialects2En", "2cfe89dcfaba280c81bc0b9da34e9dc096795405"),
+            Ct2File("shared_vocabulary.json", 1318394L, "38b7aaf9fd81d8e6b2cae4603966e768813377b628ba86ae9b1dab28c3929e53", "oddadmix/Jisr-MT-50M-Dialects2En", "2cfe89dcfaba280c81bc0b9da34e9dc096795405"),
+            Ct2File("tokenizer.json", 2667790L, "7ab7a5ec74e7c2a1671c051fe91aaa3d92e3657a75f6867cd584d3b4307dcc9b", "oddadmix/Jisr-MT-50M-Dialects2En", "2cfe89dcfaba280c81bc0b9da34e9dc096795405"),
+            Ct2File("LICENSE", 11358L, "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30", "oddadmix/Jisr-MT-50M-Dialects2En", "2cfe89dcfaba280c81bc0b9da34e9dc096795405"),
+            Ct2File("NOTICE", 559L, "02665d596142b410fc5f4a2b239ab453619125286e18784fbd7ec630ae94db52", "oddadmix/Jisr-MT-50M-Dialects2En", "2cfe89dcfaba280c81bc0b9da34e9dc096795405"),
+        ), "Apache-2.0", "https://huggingface.co/oddadmix/Jisr-MT-50M-Dialects2En", downloadEnabled = false, groupId = "ct2-jisr-50m-ar-en", precisionLabel = "INT8"),
     )
     fun find(id: String): Ct2ModelSpec? = models.firstOrNull { it.id == id }
 }

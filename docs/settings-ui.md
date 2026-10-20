@@ -1,15 +1,27 @@
 # Local and Cloud settings
 
-Hearth 0.16.0 groups setup by where inference runs. Settings starts with Local and
-Cloud tabs; the offline flavor exposes only Local. Browsing a tab does not select
-an engine, upload content, or start a download.
+Settings now starts with the saved caption pipeline: **Recognize speech → Translate
+captions → Read captions aloud**. Each stage shows its current choice and opens its
+matching editor directly. Translation and read-aloud switches are available on the
+directory and toolbar sheet; preparing an engine does not start capture or playback.
+Caption translation can be changed inline without changing conversation, typed-text
+or camera defaults. Its switch uses the existing caption-mode policy, preserving
+integrated cloud/Whisper routes as well as independent text translators.
+
+Focused editors keep Local/Cloud tabs when both are available. The offline flavor
+offers no cloud destinations or delegation. On TV, speech and translation editors
+open Cloud directly; Android device voices remain available without downloaded
+models. Browsing an editor never selects an engine, uploads content or starts a
+download.
 
 - **Local:** speech, translation, voices, camera/screen OCR, downloads/imports,
   and the installed-model benchmark.
 - **Cloud:** speech providers, text translation connections, and self-hosted voices.
 - **App preferences:** appearance, advanced caption controls, and help are shared.
   Since 0.18.0 they are direct directory links, also reachable from the toolbar
-  settings sheet; appearance and phone shortcuts have their own pages.
+  settings sheet; appearance and phone shortcuts have their own pages. App
+  preferences appear once below the pipeline. History/recording and benchmark
+  tools are secondary disclosures instead of preceding the engine choices.
 
 Speech, translation and voice setup use the same Local/Cloud tab layout. Settings links
 open the matching tab. Model management contains only local categories. A model
@@ -54,6 +66,15 @@ The local model library no longer toggles caption CC/translation mode when selec
 or importing a text model. Caption-specific bridge controls remain in caption setup.
 Voice-server setup requires an explicit “Use voice server as custom default” action;
 browsing Cloud alone cannot change playback or send preview text.
+
+Local translator pickers show installed and currently selected models first, with
+search by model/language. A missing current choice remains visible for repair.
+One direct model-library action opens downloads/imports; “Show models to download”
+reveals the wider catalog. Applying a translator to other features remains an
+explicit secondary action. Provider connection details, voice gender and technical
+descriptions remain available through disclosures; Advanced mode exposes the
+corresponding tuning controls. Keys stay in memory while editing, never in saved
+Compose state.
 
 Keep runtime/provider/network code in feature packages. Add a focused UI file under
 settings and register the destination rather than duplicating stores or pipelines.

@@ -4,60 +4,331 @@
   "title": "Hearth implementation model inventory",
   "description": "Research and implementation evidence only. This is not a runtime package manifest or an installation authorization.",
   "type": "object",
-  "required": ["schemaVersion", "asOf", "category", "models"],
+  "required": [
+    "schemaVersion",
+    "asOf",
+    "category",
+    "models"
+  ],
   "properties": {
-    "schemaVersion": {"const": 1},
-    "asOf": {"type": "string", "format": "date"},
-    "category": {"enum": ["stt", "translation", "tts"]},
+    "schemaVersion": {
+      "const": 1
+    },
+    "asOf": {
+      "type": "string",
+      "format": "date"
+    },
+    "category": {
+      "enum": [
+        "stt",
+        "translation",
+        "tts"
+      ]
+    },
     "models": {
-      "type": "array", "minItems": 5, "maxItems": 5,
-      "items": {"$ref": "#/$defs/model"}
+      "type": "array",
+      "minItems": 5,
+      "maxItems": 5,
+      "items": {
+        "$ref": "#/$defs/model"
+      }
     }
   },
   "$defs": {
     "component": {
       "type": "object",
-      "required": ["filename", "repo", "revision", "url", "bytes", "sha256", "role", "required"],
+      "required": [
+        "filename",
+        "repo",
+        "revision",
+        "url",
+        "bytes",
+        "sha256",
+        "role",
+        "required"
+      ],
       "properties": {
-        "filename": {"type": "string", "minLength": 1},
-        "repo": {"type": "string", "pattern": "^[^/]+/[^/]+$"},
-        "revision": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
-        "url": {"type": "string", "pattern": "^https://huggingface\\.co/[^/]+/[^/]+/resolve/[0-9a-f]{40}/.+$"},
-        "bytes": {"type": "integer", "minimum": 1},
-        "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
-        "role": {"type": "string", "minLength": 1},
-        "required": {"type": "boolean"}
+        "filename": {
+          "type": "string",
+          "minLength": 1
+        },
+        "repo": {
+          "type": "string",
+          "pattern": "^[^/]+/[^/]+$"
+        },
+        "revision": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "url": {
+          "type": "string",
+          "anyOf": [
+            {
+              "pattern": "^https://huggingface\\.co/[^/]+/[^/]+/resolve/[0-9a-f]{40}/.+$"
+            },
+            {
+              "pattern": "^https://raw\\.githubusercontent\\.com/[^/]+/[^/]+/[0-9a-f]{40}/.+$"
+            },
+            {
+              "pattern": "^https://modelscope\\.cn/api/v1/models/[^/]+/[^/]+/repo\\?Revision=[0-9a-f]{40}&FilePath=.+$"
+            }
+          ]
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "role": {
+          "type": "string",
+          "minLength": 1
+        },
+        "required": {
+          "type": "boolean"
+        }
       }
     },
     "model": {
       "type": "object",
-      "required": ["id", "label", "family", "parameters", "languages", "components", "runtime", "license", "sources"],
+      "required": [
+        "id",
+        "label",
+        "family",
+        "parameters",
+        "languages",
+        "components",
+        "runtime",
+        "license",
+        "sources"
+      ],
       "properties": {
-        "id": {"type": "string", "minLength": 1},
-        "label": {"type": "string", "minLength": 1},
-        "family": {"type": "string", "minLength": 1},
-        "parameters": {"type": ["string", "object"]},
-        "languages": {"type": "array", "items": {"type": "string"}, "uniqueItems": true, "minItems": 2},
-        "components": {"type": "array", "items": {"$ref": "#/$defs/component"}, "minItems": 1},
-        "downloadBytes": {"type": "integer", "minimum": 1},
-        "requiredSourceBytes": {"type": "integer", "minimum": 1},
-        "selectedWeightsBytes": {"type": "integer", "minimum": 1},
-        "installEnabled": {"const": false},
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1
+        },
+        "family": {
+          "type": "string",
+          "minLength": 1
+        },
+        "parameters": {
+          "type": [
+            "string",
+            "object"
+          ]
+        },
+        "languages": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "minItems": 2
+        },
+        "components": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/component"
+          },
+          "minItems": 1
+        },
+        "downloadBytes": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "requiredSourceBytes": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "selectedWeightsBytes": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "installEnabled": {
+          "const": false
+        },
         "runtime": {
           "type": "object",
-          "required": ["status", "targetBackend", "streaming", "blockers"],
+          "required": [
+            "status",
+            "targetBackend",
+            "streaming",
+            "blockers"
+          ],
           "properties": {
-            "status": {"type": "string", "minLength": 1},
-            "targetBackend": {"type": "string", "minLength": 1},
-            "streaming": {"type": ["string", "object", "boolean"]},
-            "blockers": {"type": "array", "items": {"type": "string"}, "minItems": 1}
+            "status": {
+              "type": "string",
+              "minLength": 1
+            },
+            "targetBackend": {
+              "type": "string",
+              "minLength": 1
+            },
+            "streaming": {
+              "type": [
+                "string",
+                "object",
+                "boolean"
+              ]
+            },
+            "blockers": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "minItems": 1
+            }
           }
         },
         "license": {
-          "type": "object", "required": ["name", "url"],
-          "properties": {"name": {"type": "string"}, "url": {"type": "string", "format": "uri"}}
+          "type": "object",
+          "required": [
+            "name",
+            "url"
+          ],
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "url": {
+              "type": "string",
+              "format": "uri"
+            }
+          }
         },
-        "sources": {"type": "array", "minItems": 1, "items": {"type": "string", "format": "uri"}}
+        "sources": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "format": "uri"
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "family": {
+                "const": "jisr-mt"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "conversionProfiles",
+              "liveCatalogIds"
+            ],
+            "properties": {
+              "liveCatalogIds": {
+                "type": "array",
+                "uniqueItems": true,
+                "minItems": 1,
+                "items": {
+                  "type": "string"
+                }
+              },
+              "conversionProfiles": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "$ref": "#/$defs/jisrProfile"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "jisrProfile": {
+      "type": "object",
+      "required": [
+        "modelId",
+        "precision",
+        "sourceDirection",
+        "requiredBytes",
+        "components",
+        "importManifest",
+        "downloadEnabled"
+      ],
+      "properties": {
+        "modelId": {
+          "type": "string"
+        },
+        "precision": {
+          "enum": [
+            "float32",
+            "int8"
+          ]
+        },
+        "sourceDirection": {
+          "enum": [
+            "en-ar",
+            "ar-en"
+          ]
+        },
+        "requiredBytes": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "downloadEnabled": {
+          "const": false
+        },
+        "components": {
+          "type": "array",
+          "minItems": 6,
+          "maxItems": 6,
+          "items": {
+            "type": "object",
+            "required": [
+              "filename",
+              "bytes",
+              "sha256"
+            ],
+            "properties": {
+              "filename": {
+                "enum": [
+                  "model.bin",
+                  "config.json",
+                  "shared_vocabulary.json",
+                  "tokenizer.json",
+                  "LICENSE",
+                  "NOTICE"
+                ]
+              },
+              "bytes": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              }
+            }
+          }
+        },
+        "importManifest": {
+          "type": "object",
+          "required": [
+            "schemaVersion",
+            "modelId"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "schemaVersion": {
+              "const": 1
+            },
+            "modelId": {
+              "type": "string"
+            }
+          }
+        }
       }
     }
   }

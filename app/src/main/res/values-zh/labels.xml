@@ -85,8 +85,8 @@
     <string name="label_captionspeakerchoice_system_explanation" formatted="false">"即时离线朗读，支持设备已安装声音的语言。"</string>
     <string name="label_captionspeakerchoice_custom_label" formatted="false">"默认自定义"</string>
     <string name="label_captionspeakerchoice_custom_explanation" formatted="false">"使用已保存的 Supertonic 或自托管声音，在声音与朗读中设置。"</string>
-    <string name="label_captionspeakerchoice_native_label" formatted="false">"Supertonic 3"</string>
-    <string name="label_captionspeakerchoice_native_explanation" formatted="false">"设备端支持 31 种语言；在声音设置中安装模型与声音。"</string>
+    <string name="label_captionspeakerchoice_native_label" formatted="false">"已下载语音"</string>
+    <string name="label_captionspeakerchoice_native_explanation" formatted="false">"使用语音设置中选定的已下载模型系列和声音。"</string>
     <string name="label_captionspeakerchoice_shared_label" formatted="false">"共用声音设置"</string>
     <string name="label_captionspeakerchoice_shared_explanation" formatted="false">"使用 Hearth 声音设置中选择的 Android、本地或自托管声音。"</string>
     <string name="label_captionspeakerchoice_cloud_label" formatted="false">"云端 · 自带密钥"</string>

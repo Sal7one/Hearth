@@ -1,0 +1,36 @@
+{
+  "host": "macOS ARM64 CPU",
+  "perthRevision": "ff1c8ac55a976971245cdd53c18d6131ca00d993",
+  "reference": "Original source Encoder/Decoder with torch STFT/ISTFT using matching torchaudio configuration; no resampling",
+  "limitations": [
+    "Synthetic short PCM only",
+    "No phone, perceptual or resampling-quality claim"
+  ],
+  "torch": "2.12.0",
+  "cases": [
+    {
+      "fixture": "harmonic_chirp",
+      "sampleRate": 32000,
+      "samples": 10240,
+      "maxAbsoluteError": 1.6391277313232422e-06,
+      "rmse": 4.2844916947615275e-07,
+      "referenceBefore": 0.8619207143783569,
+      "referenceAfter": 0.9957895278930664,
+      "before": 0.8618959785,
+      "after": 0.9957895279,
+      "applySeconds": 0.06903025
+    },
+    {
+      "fixture": "silence",
+      "sampleRate": 32000,
+      "samples": 10240,
+      "maxAbsoluteError": 0.0,
+      "rmse": 0.0,
+      "referenceBefore": null,
+      "referenceAfter": null,
+      "before": null,
+      "after": null,
+      "applySeconds": 0.066375917
+    }
+  ]
+}

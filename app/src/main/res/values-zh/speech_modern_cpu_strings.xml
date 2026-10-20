@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="speech_audar_note">Audar Flash · 自动或阿拉伯语/英语。短语音段结束后显示最终字幕。必须同时安装 Q4 解码器及配套 BF16 音频编码器。仅限 CPU；手机上的质量与速度尚未验证。</string>
+    <string name="speech_owsm_note">OWSM v4 Base · 实验性小型模型。自动或阿拉伯语/英语；短语音段最终结果。主机阿拉伯语示例出现较多错误。仅限 CPU；手机上的质量与速度尚未验证。</string>
+    <string name="speech_component_set_digest">组件清单 SHA-256：%1$s</string>
+    <string name="speech_audar_label">Audar-ASR V1 Flash</string>
+    <string name="speech_owsm_label">OWSM v4 Base 102M</string>
+</resources>

@@ -1,0 +1,114 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-20",
+  "family": "eurollm",
+  "scope": "Functional host CPU fixture checks; no S25 quality, sustained latency, WER or default-setting claim",
+  "ownerDeviceTested": false,
+  "components": [
+    {
+      "file": "EuroLLM-1.7B-Instruct.Q4_K_M.gguf",
+      "repository": "QuantFactory/EuroLLM-1.7B-Instruct-GGUF",
+      "revision": "4126f034ddfe7fd39ca3378ae58d3b1d74065315",
+      "url": "https://huggingface.co/QuantFactory/EuroLLM-1.7B-Instruct-GGUF/resolve/4126f034ddfe7fd39ca3378ae58d3b1d74065315/EuroLLM-1.7B-Instruct.Q4_K_M.gguf",
+      "bytes": 1045156992,
+      "sha256": "f22ab4b628f6e3cd12ec2e5aa6d1e460be2fa83f25cb6a8f5dd6d4d77b285b66",
+      "payloadIndependentlyVerified": true
+    }
+  ],
+  "runs": [
+    {
+      "source": "en",
+      "target": "ar",
+      "command": [
+        "/opt/homebrew/opt/python@3.14/bin/python3.14",
+        "scripts/benchmark/run_macos_translation.py",
+        "--model",
+        "build/remaining-mt-smoke/eurollm/EuroLLM-1.7B-Instruct.Q4_K_M.gguf",
+        "--family",
+        "eurollm",
+        "--source",
+        "en",
+        "--target",
+        "ar",
+        "--threads",
+        "2",
+        "--gpu-layers",
+        "0",
+        "--passes",
+        "1",
+        "--output",
+        "docs/research/mt-eurollm-en-ar-host-2026-10-20.json",
+        "--runtime",
+        "build/translation-runtime/host/translation_smoke"
+      ],
+      "exitCode": 0,
+      "wallSeconds": 19.585585416993126,
+      "stdout": "{\n  \"output\": \"docs/research/mt-eurollm-en-ar-host-2026-10-20.json\",\n  \"model\": \"EuroLLM-1.7B-Instruct.Q4_K_M.gguf\",\n  \"loadMs\": 15492.44166599263,\n  \"warmMedianMs\": null,\n  \"chrF++\": 0.32929875324471025,\n  \"WER\": 0.9178082191780822,\n  \"CER\": 0.6267806267806267,\n  \"error\": null\n}\n",
+      "stderr": "",
+      "result": "docs/research/mt-eurollm-en-ar-host-2026-10-20.json",
+      "resultSha256": "207ac81b030e94fdfd65fa2d9897da45d7a1b9983b9931d79b48e8a0a1b4b758",
+      "error": null,
+      "attemptedCases": 6,
+      "accepted": true
+    },
+    {
+      "source": "ar",
+      "target": "en",
+      "command": [
+        "/opt/homebrew/opt/python@3.14/bin/python3.14",
+        "scripts/benchmark/run_macos_translation.py",
+        "--model",
+        "build/remaining-mt-smoke/eurollm/EuroLLM-1.7B-Instruct.Q4_K_M.gguf",
+        "--family",
+        "eurollm",
+        "--source",
+        "ar",
+        "--target",
+        "en",
+        "--threads",
+        "2",
+        "--gpu-layers",
+        "0",
+        "--passes",
+        "1",
+        "--output",
+        "docs/research/mt-eurollm-ar-en-host-2026-10-20.json",
+        "--runtime",
+        "build/translation-runtime/host/translation_smoke"
+      ],
+      "exitCode": 0,
+      "wallSeconds": 4.030554083001334,
+      "stdout": "{\n  \"output\": \"docs/research/mt-eurollm-ar-en-host-2026-10-20.json\",\n  \"model\": \"EuroLLM-1.7B-Instruct.Q4_K_M.gguf\",\n  \"loadMs\": 1045.7467499998957,\n  \"warmMedianMs\": null,\n  \"chrF++\": 0.499944723575842,\n  \"WER\": 0.5740740740740741,\n  \"CER\": 0.4898876404494382,\n  \"error\": null\n}\n",
+      "stderr": "",
+      "result": "docs/research/mt-eurollm-ar-en-host-2026-10-20.json",
+      "resultSha256": "57fd73a1ce9979002d40f59726dee73a40490fa0de1c2959c387db7ff658734a",
+      "error": null,
+      "attemptedCases": 6,
+      "accepted": true
+    }
+  ],
+  "publisherPrompt": {
+    "instruction": "Translate the following {sourceName} source text to {targetName}:\n{sourceName}: {trimmedText}\n{targetName}:",
+    "envelope": "<|im_start|>system\n<|im_end|>\n<|im_start|>user\n{instruction}<|im_end|>\n<|im_start|>assistant\n",
+    "specialTokens": "Only fixed envelope tokens parsed. Source/instruction content tokenized literally."
+  },
+  "publisherSources": [
+    "https://huggingface.co/utter-project/EuroLLM-1.7B-Instruct/blob/a25c7fa65fc2a644e6270b8940dbe295b51da681/README.md",
+    "https://huggingface.co/QuantFactory/EuroLLM-1.7B-Instruct-GGUF/tree/4126f034ddfe7fd39ca3378ae58d3b1d74065315"
+  ],
+  "modelLicense": {
+    "name": "Apache-2.0",
+    "url": "https://huggingface.co/utter-project/EuroLLM-1.7B-Instruct"
+  },
+  "runnerSha256": "83b56d3bc08594a3d16f280bd9a75fa4a57811eb0030582157b9fef312ae1777",
+  "catalogId": "eurollm-17b-q4",
+  "runtime": "build/translation-runtime/host/translation_smoke",
+  "runtimeSha256": "713eb364f7d3a5d77ee23b88018269e586a1aa60406ea521706939b79326b201",
+  "nativePromptMode": 2,
+  "threads": 2,
+  "gpuLayers": 0,
+  "passes": 1,
+  "nativeSourceSha256": "42ab549bf79ac176eb723469debd9ed519f2f2d93336ad8bdd0cbbc7d947f7b0",
+  "llamaRevision": "64e9bceb2c3a856efed96feda784a50947049feb",
+  "interpretation": "Six pinned FLEURS sentences per direction, one pass each. Any raw chrF/WER fields are diagnostic fixture outputs, not corpus quality or phone benchmarks."
+}

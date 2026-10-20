@@ -29,6 +29,8 @@ internal object ModelSources {
 
     private fun artifactSource(artifact: SpeechArtifact): ModelSource {
         val guidance = when (artifact.engine) {
+            CaptionEngineChoice.AUDAR -> " Arabic/English short utterance finals. CPU only; decoder and the matching BF16 audio encoder are both required. Phone performance unverified."
+            CaptionEngineChoice.OWSM -> " Experimental 102M Arabic/English utterance finals. CPU only; Arabic accuracy was uneven in host smoke tests. No partials or phone speed claim."
             CaptionEngineChoice.COHERE -> " Arabic/English utterance finals; choose the spoken language explicitly. CPU or explicit ARM64 Vulkan; phone speed unverified."
             CaptionEngineChoice.FUNASR_MLT -> " Multilingual utterance finals including Arabic/English, with ITN enabled. CPU or explicit ARM64 Vulkan; phone speed unverified."
             CaptionEngineChoice.VOXTRAL -> " No recognition language hint; a chosen source labels text for translation. Auto keeps the source unknown. Bounded windowed partials in this adapter; the native partial path reprocesses accumulated audio. CPU or explicit ARM64 Vulkan; phone speed and Arabic quant parity unverified."
@@ -42,7 +44,7 @@ internal object ModelSources {
             else -> error("Unsupported automatic speech source: ${artifact.id}")
         }
         return ModelSource(artifact.id, artifact.label, artifact.publisherUrl, artifact.filesUrl,
-            "$packaging$guidance ${artifact.license}.", artifact.url, artifact.bytes)
+            "$packaging$guidance ${artifact.license}.", artifact.url.takeIf { artifact.components == null }, artifact.bytes.takeIf { artifact.components == null })
     }
 
     // The legacy custom-folder adapter remains English→Arabic. Automatic packages for

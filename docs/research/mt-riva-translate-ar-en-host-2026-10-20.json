@@ -1,0 +1,106 @@
+[
+  {
+    "runId": "ed0baa5f-933e-4982-a8e6-ae4e1bb3a764",
+    "timestamp": 1792512168897,
+    "model": "Riva-Translate-4B-Instruct-v2-Q4_K_M.gguf",
+    "identity": "90c2f48ff5549b770d9aaecb7eea603548bcca035a970a800d9c17781991804d",
+    "route": "Translation / llama.cpp host",
+    "inputHash": "4399a5fab9cb18dfd593d84ded8dadf7d6b7569bb05fa00b7bf5f33a4d874d51",
+    "source": "ar",
+    "target": "en",
+    "audioMs": 0,
+    "loadMs": 3355.613125001425,
+    "computeMs": [
+      9053.36
+    ],
+    "texts": [
+      "Needless to say, your knowledge of a Romance language will make it easier for you to learn Portuguese. It attacked everything that entered the water; even a giant dinosaur like T. rex couldn't match it. To the north, the African coast borders the region, and to the south and west, it is bordered by the Atlantic Ocean. The only insects that cannot fold their wings today are the beetles and the Mayflies. The fellow wrestlers also praised Lona. The city is in stark contrast to the rest of the country, as it has a more Arab than African character."
+    ],
+    "runtime": "llama.cpp 64e9bceb2c3a856efed96feda784a50947049feb; CPU; threads=2; gpuLayers=0; context=2048; outputCap=384; deadline=20s",
+    "firstTextMs": [
+      1508.8933333333334
+    ],
+    "device": "Apple M4 Pro; macOS 26.5; Python host harness",
+    "error": null,
+    "referenceText": "Needless to say, if you know a Romance language, it will be easier for you to learn Portuguese. It also attacked anything that entered the water; even a giant dinosaur such as T. rex would be no match for it. In the north the region is bounded by the Sahel, and in the south and west by the Atlantic Ocean. Today, the only insects that cannot fold back their wings are dragon flies and mayflies. Fellow wrestlers also paid tribute to Luna. The city is in stark contrast to the rest of the country's cities, because it has more of an Arabic flair than of an African.",
+    "wordErrorRate": 0.42592592592592593,
+    "characterErrorRate": 0.32808988764044944,
+    "scoringNormalization": "nfc-lower-punctuation-space-v1; sentence-macro chrF++ beta=2, char-n=1..6, word-n=1..2",
+    "translationChrf": 0.6048796253295231,
+    "samples": [
+      {
+        "id": "fleurs-ar-en-1994",
+        "text": "Needless to say, your knowledge of a Romance language will make it easier for you to learn Portuguese.",
+        "reference": "Needless to say, if you know a Romance language, it will be easier for you to learn Portuguese.",
+        "computeMs": 2346.42,
+        "firstTextMs": 2346.42,
+        "audioMs": 0,
+        "silence": false,
+        "sourceText": "غني عن البيان، أن معرفتك بلغة رومانسيّة ستسهّل عليك تعلّم اللغة البرتغاليّة.",
+        "error": null
+      },
+      {
+        "id": "fleurs-ar-en-1738",
+        "text": "It attacked everything that entered the water; even a giant dinosaur like T. rex couldn't match it.",
+        "reference": "It also attacked anything that entered the water; even a giant dinosaur such as T. rex would be no match for it.",
+        "computeMs": 1528.92,
+        "firstTextMs": 1528.92,
+        "audioMs": 0,
+        "silence": false,
+        "sourceText": "كما قامت بالهجوم على كل ما يدخل المياه؛ حتى ديناصور عملاق مثل تي ريكس لم يضاهيها.",
+        "error": null
+      },
+      {
+        "id": "fleurs-ar-en-1897",
+        "text": "To the north, the African coast borders the region, and to the south and west, it is bordered by the Atlantic Ocean.",
+        "reference": "In the north the region is bounded by the Sahel, and in the south and west by the Atlantic Ocean.",
+        "computeMs": 1539.69,
+        "firstTextMs": 1539.69,
+        "audioMs": 0,
+        "silence": false,
+        "sourceText": "من الشمال، يحد الساحل الإفريقي المنطقة، ويحدّها المحيط الأطلسي من الجنوب والغرب.",
+        "error": null
+      },
+      {
+        "id": "fleurs-ar-en-1677",
+        "text": "The only insects that cannot fold their wings today are the beetles and the Mayflies.",
+        "reference": "Today, the only insects that cannot fold back their wings are dragon flies and mayflies.",
+        "computeMs": 1348.03,
+        "firstTextMs": 1348.03,
+        "audioMs": 0,
+        "silence": false,
+        "sourceText": "الحشرات الوحيدة التي لا يُمكنها طي أجنحتها اليوم هي اليعسوب وذبابة مايو.",
+        "error": null
+      },
+      {
+        "id": "fleurs-ar-en-1747",
+        "text": "The fellow wrestlers also praised Lona.",
+        "reference": "Fellow wrestlers also paid tribute to Luna.",
+        "computeMs": 778.47,
+        "firstTextMs": 778.47,
+        "audioMs": 0,
+        "silence": false,
+        "sourceText": "كما أثنى الزملاء المصارعون على لونا.",
+        "error": null
+      },
+      {
+        "id": "fleurs-ar-en-1958",
+        "text": "The city is in stark contrast to the rest of the country, as it has a more Arab than African character.",
+        "reference": "The city is in stark contrast to the rest of the country's cities, because it has more of an Arabic flair than of an African.",
+        "computeMs": 1511.83,
+        "firstTextMs": 1511.83,
+        "audioMs": 0,
+        "silence": false,
+        "sourceText": "تتناقض المدينة بشكل صارخ مع بقية مدن الدولة، لأنها تتميز بطابع عربي أكثر منه إفريقي.",
+        "error": null
+      }
+    ],
+    "benchmarkSuite": {
+      "id": "hearth-fleurs-1",
+      "revision": "70bb2e84b976b7e960aa89f1c648e09c59f894dd",
+      "license": "CC-BY-4.0",
+      "quickSamples": 6
+    },
+    "hostPeakRssBytes": 5445697536
+  }
+]

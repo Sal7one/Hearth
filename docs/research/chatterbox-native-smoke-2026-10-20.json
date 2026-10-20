@@ -1,0 +1,255 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-20",
+  "scope": "Actual pinned V3 Q4 Arabic/English CPU synthesis with mandatory native Perth. Finite audio is not owner listening/phone performance validation.",
+  "host": {
+    "machine": "arm64",
+    "system": "Darwin",
+    "threads": 2
+  },
+  "model": {
+    "repo": "Masterx/chatterbox-multilingual-v3-ONNX",
+    "revision": "19b94afe41de738624b2f3afc75b4cd56221fbeb",
+    "rawStackBytes": 1556285252,
+    "watermarkSourceBytes": 37429684
+  },
+  "runtime": {
+    "abi": "arm64-v8a",
+    "backend": "ONNX Runtime CPU",
+    "file": "libhearth_chatterbox.so",
+    "bytes": 3255296,
+    "sha256": "b73b4cd053148b93a22cb0f61fbe69481e027a9035182ea7311ce0b93ce3b1c0"
+  },
+  "graphPreparation": {
+    "sourceBytes": 228633,
+    "sourceSha256": "91846c24706116f87b39aac5b13aa1a67243b6f973bc433327d143b8eff9fde6",
+    "outputBytes": 228453,
+    "outputSha256": "60f1451649fcef2014208084f546328f3a4e32c635d57983da7dcf75e9e3dbe8",
+    "operation": "Remove only three omitted optional inputs from each of 30 GroupQueryAttention nodes; all other bytes preserved"
+  },
+  "sameRuntimeParity": {
+    "runtime": "Official ONNX Runtime1.24.3 host",
+    "rawGraphAgainstDerivedGraph": true,
+    "decoderNoise": "Test-only identical seed1234 for all three ONNX RandomNormalLike/RandomUniformLike nodes; production decoder retains publisher graph",
+    "speechTokens": [
+      {
+        "language": "ar",
+        "count": 41,
+        "ids": [
+          1735,
+          2049,
+          4314,
+          662,
+          5509,
+          3070,
+          5833,
+          5832,
+          6075,
+          6077,
+          459,
+          2172,
+          218,
+          2192,
+          910,
+          4075,
+          1932,
+          2348,
+          4858,
+          1140,
+          243,
+          405,
+          2831,
+          2897,
+          671,
+          4315,
+          3991,
+          3993,
+          4218,
+          4137,
+          1950,
+          3894,
+          1707,
+          6405,
+          6405,
+          6405,
+          6324,
+          6324,
+          6324,
+          6324,
+          6081
+        ]
+      },
+      {
+        "language": "en",
+        "count": 29,
+        "ids": [
+          1776,
+          65,
+          380,
+          5095,
+          5097,
+          6453,
+          6534,
+          4087,
+          4079,
+          2124,
+          2128,
+          5592,
+          5601,
+          5675,
+          5752,
+          3836,
+          1676,
+          1679,
+          152,
+          2193,
+          4137,
+          4218,
+          4137,
+          4137,
+          4137,
+          6324,
+          6324,
+          4137,
+          3894
+        ]
+      },
+      {
+        "language": "en",
+        "count": 29,
+        "ids": [
+          1776,
+          65,
+          380,
+          5095,
+          5097,
+          6453,
+          6534,
+          4087,
+          4079,
+          2124,
+          2128,
+          5592,
+          5601,
+          5675,
+          5752,
+          3836,
+          1676,
+          1679,
+          152,
+          2193,
+          4137,
+          4218,
+          4137,
+          4137,
+          4137,
+          6324,
+          6324,
+          4137,
+          3894
+        ]
+      }
+    ],
+    "watermarkedPcm": [
+      {
+        "file": "ar-0.f32",
+        "samples": 38400,
+        "bytes": 153600,
+        "sha256": "fc81324a6fe3f23008dd9ea41ca954c6921ec7c5c9bc40b47e0e66fff0fbfecf",
+        "maxAbsError": 0.0,
+        "rmsError": 0.0,
+        "bitIdentical": true
+      },
+      {
+        "file": "en-1.f32",
+        "samples": 26880,
+        "bytes": 107520,
+        "sha256": "aec40708379082acdaaef07da85a507a68667331aa613557dccb273d7bccb557",
+        "maxAbsError": 0.0,
+        "rmsError": 0.0,
+        "bitIdentical": true
+      },
+      {
+        "file": "en-2.f32",
+        "samples": 26880,
+        "bytes": 107520,
+        "sha256": "f9f5dc8cafa2852f662f46119e93edfd7c9dbc715c65c1b04a63495a2c31efe7",
+        "maxAbsError": 0.0,
+        "rmsError": 0.0,
+        "bitIdentical": true
+      }
+    ]
+  },
+  "crossRuntimeObservation": {
+    "older": "Official host ORT1.20.1, same API20/schema as Android1.20.0",
+    "newer": "Official host ORT1.24.3",
+    "olderTokenCounts": [
+      {
+        "language": "ar",
+        "tokens": 41
+      },
+      {
+        "language": "en",
+        "tokens": 30
+      },
+      {
+        "language": "en",
+        "tokens": 30
+      }
+    ],
+    "newerTokenCounts": [
+      {
+        "language": "ar",
+        "tokens": 41
+      },
+      {
+        "language": "en",
+        "tokens": 29
+      },
+      {
+        "language": "en",
+        "tokens": 29
+      }
+    ],
+    "arabicTokensEqual": true,
+    "englishTokensEqual": false,
+    "claim": "Do not claim bit parity across runtime versions; greedy Q4 is numerically sensitive."
+  },
+  "cApi": {
+    "actualModel": true,
+    "androidBuild": "NDK27 ARM64 compilation/link/export checks; no owner-device inference claim",
+    "hostRuntime": "ORT1.20.1",
+    "arabic": {
+      "text": "مرحبا بكم.",
+      "samples": 38400,
+      "sampleRate": 24000,
+      "chunks": 2
+    },
+    "english": {
+      "text": "Hello from Hearth.",
+      "samples": 27840,
+      "sampleRate": 24000,
+      "chunks": 2
+    },
+    "callbackAbortStatus": 1,
+    "rawVocoderFallback": false
+  },
+  "jni": {
+    "actualModel": true,
+    "arabicEnglishFiniteBoundedPcm": true,
+    "javaCallbackExceptionSameInstance": true,
+    "cancellationException": true,
+    "retiredHandleRejected": true,
+    "duplicateDestroySafe": true,
+    "offlineSameAndForeignThreadCallbackClose": true,
+    "dynamicUtf8ErrorPreserved": true
+  },
+  "perthParityReceipt": "docs/research/perth-watermark-parity-2026-10-20.json",
+  "acceptanceGaps": [
+    "Owner Arabic/English listening and speaker preference",
+    "S25 Ultra/S22 cold/warm latency, realtime factor, peak memory and thermal measurements",
+    "No GPU provider enabled",
+    "No custom reference import or verified gender profiles",
+    "Only Arabic/English frontend advertised initially"
+  ]
+}

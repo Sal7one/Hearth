@@ -17,6 +17,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.first
 import java.io.File
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -25,10 +26,12 @@ internal fun VoiceSetup(onDownloads: () -> Unit, initialLocation: SettingsLocati
     val uiText = rememberUiText()
 
     val context=LocalContext.current;val scope=rememberCoroutineScope()
+    val advanced = com.sal7one.transiber.preferences.rememberSetupMode() == com.sal7one.transiber.preferences.SetupMode.ADVANCED
+    var playbackOptions by rememberSaveable { mutableStateOf(false) }
     var choice by remember {mutableStateOf(VoiceSettings.choice(context))}
     var error by remember {mutableStateOf<String?>(null)};var busy by remember {mutableStateOf(false)}
     var revision by remember {mutableIntStateOf(0)}
-    val models=remember {VoiceModels(File(context.filesDir,"voice-models")){MagpiePolicy.requireAllowed(context,"Magpie model import")}}
+    val models=remember {VoiceModels(File(context.filesDir,"voice-models"),permitFamily={LocalVoiceFamilies.requireAllowed(context,it,"speech model import")},permitOmniVoice={LocalVoiceFamilies.requireAllowed(context,"omnivoice","OmniVoice model import")}){MagpiePolicy.requireAllowed(context,"Magpie model import")}}
     var language by rememberSaveable {mutableStateOf("en")}
     var systemVoices by remember {mutableStateOf(emptyList<android.speech.tts.Voice>())}
     var speaking by remember {mutableStateOf(false)}
@@ -47,7 +50,36 @@ internal fun VoiceSetup(onDownloads: () -> Unit, initialLocation: SettingsLocati
     fun save(value: VoiceChoice){choice=value;VoiceSettings.save(context,value);player.stop();error=null}
     val importer=rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()){uris ->if(uris.isNotEmpty())scope.launch {
         busy=true;error=null
-        try {withContext(Dispatchers.IO){com.sal7one.transiber.runtime.LocalModelPolicy.requireAllowed(context, "downloaded speech voice import");if(choice.family=="magpie")MagpiePolicy.requireAllowed(context,"Magpie model import");val job=currentCoroutineContext();for(uri in uris){context.contentResolver.openInputStream(uri)?.buffered()?.use {input ->input.mark(4);val a=input.read();val b=input.read();input.reset();if(a==0x50 && b==0x4b)models.importZip(input){job.ensureActive()} else models.import(input){job.ensureActive()}} ?: error(uiText(UiR.string.ui_cannot_open_voice_model_b4ec5))}};revision++}
+        try {
+            withContext(Dispatchers.IO) {
+                com.sal7one.transiber.runtime.LocalModelPolicy.requireAllowed(context,"downloaded speech voice import")
+                LocalVoiceFamilies.requireAllowed(context,choice.family,"speech model import")
+                val job=currentCoroutineContext()
+                for(uri in uris) {
+                    val imported=mutableListOf<VoiceAsset>()
+                    var importFailure: Throwable?=null
+                    try {
+                        context.contentResolver.openInputStream(uri)?.buffered()?.use { input ->
+                            input.mark(4);val a=input.read();val b=input.read();input.reset()
+                            if(a==0x50&&b==0x4b)models.importZip(input,onImported={imported+=it}){job.ensureActive()}
+                            else imported+=models.import(input){job.ensureActive()}
+                        } ?: error(uiText(UiR.string.ui_cannot_open_voice_model_b4ec5))
+                    } catch(failure: Throwable) { importFailure=failure;throw failure } finally {
+                        // A later invalid ZIP member does not erase the provenance of earlier verified imports.
+                        withContext(NonCancellable) {
+                            try {
+                                for(asset in imported) for((id,file) in voiceImportSources(models,asset))
+                                    com.sal7one.transiber.preferences.ModelSourceBindings.recordImported(context,id,uri,listOf(file))
+                            }catch(sourceError: Exception) {
+                                val original=importFailure
+                                if(original!=null)original.addSuppressed(sourceError) else throw sourceError
+                            }
+                        }
+                    }
+                }
+            }
+            revision++
+        }
         catch(e: CancellationException){throw e}catch(e: Exception){error=e.message ?: e.toString()}finally{busy=false}
     }}
     var selfHosted by rememberSaveable { mutableStateOf(false) }
@@ -61,20 +93,21 @@ internal fun VoiceSetup(onDownloads: () -> Unit, initialLocation: SettingsLocati
                 FilterChip(selfHosted, { selfHosted = true; player.stop() }, label = { Text(uiText(UiR.string.cloud_voice_self_hosted)) })
             }
         }
-        if (location == SettingsLocation.LOCAL || selfHosted) {
-        Text(when(VoiceSettings.customBackend(context)) {
-            "supertonic" -> if(choice.family=="magpie")uiText(UiR.string.magpie_custom_default,choice.voice) else uiText(UiR.string.ui_custom_default_supertonic_3_1_s_2f603, choice.voice)
-            "remote" -> uiText(UiR.string.ui_custom_default_your_configured_voice_server_c38eb)
-            else -> uiText(UiR.string.ui_choose_supertonic_or_self_hosted_to_set_your_custom_default_c52b6)
-        },style=MaterialTheme.typography.bodySmall)
-        Text(uiText(UiR.string.ui_android_playback_is_always_separate_and_does_not_change_your_cust_56d2f),style=MaterialTheme.typography.bodySmall)
-        Text(uiText(UiR.string.ui_speed_1_s_7d1e1, "%.2f".format(choice.rate)))
-        Slider(choice.rate,{save(choice.copy(rate=it))},valueRange=.5f..2f,modifier=Modifier.semantics {contentDescription=uiText(UiR.string.ui_speech_speed_3f322)})
-        }
         if (location == SettingsLocation.LOCAL) {
             val localBackend = choice.backend.takeUnless { it == "remote" } ?: "system"
             SettingsVoiceLocalUi(choice, localBackend, ::save, language, { language = it }, systemVoices,
                 models, revision, { revision++ }, busy, { importer.launch(arrayOf("*/*")) }, onDownloads, { error = it })
+            OutlinedButton(enabled=choice.backend=="system" || VoiceSettings.localReady(context),onClick={scope.launch {
+                try {
+                    val current=com.sal7one.transiber.caption.CaptionConfigStore.config(context).first()
+                    if(choice.backend=="supertonic") {
+                        val gender=VoiceGender.valueOf(current.speakerGender.name)
+                        check(VoiceSettings.localReady(context,gender)) { if(choice.family=="magpie")uiText(UiR.string.magpie_gender_unverified) else uiText(UiR.string.local_voice_gender_unverified,LocalVoiceFamilies.label(choice.family)) }
+                    }
+                    com.sal7one.transiber.caption.CaptionConfigStore.update(context) { it.copy(speakerChoice=com.sal7one.transiber.caption.CaptionSpeakerChoice.SHARED) }
+                    error=null
+                }catch(e: CancellationException){throw e}catch(e: Exception){error=e.message ?: e.toString()}
+            }}) { Text(uiText(UiR.string.local_voice_use_for_captions)) }
         } else if (selfHosted) {
             SettingsVoiceCloudUi(language, { language = it }, { error = it }, { save(choice.copy(backend = "system")) })
             OutlinedButton(onClick = {
@@ -86,12 +119,26 @@ internal fun VoiceSetup(onDownloads: () -> Unit, initialLocation: SettingsLocati
         var preview by rememberSaveable { mutableStateOf("Hello. Where is the nearest train station?") }
         OutlinedTextField(preview, { preview = it.take(5000) }, label = { Text(uiText(UiR.string.ui_text_to_preview_32ed3)) }, modifier = Modifier.fillMaxWidth().padding(top = 2.dp))
         val activeHere = if (location == SettingsLocation.CLOUD) choice.backend == "remote" else choice.backend != "remote"
-        Button(enabled = preview.isNotBlank() && activeHere, onClick = { error = null; player.speak(preview, language) }) {
-            Text(uiText(UiR.string.ui_preview_selected_voice_abd2c))
+        Button(enabled = speaking || (preview.isNotBlank() && activeHere), onClick = {
+            if (speaking) player.stop() else { error = null; player.speak(preview, language) }
+        }) {
+            Text(uiText(if (speaking) UiR.string.ui_stop_9e253 else UiR.string.ui_preview_selected_voice_abd2c))
         }
         if (!activeHere) Text(uiText(UiR.string.ui_select_a_voice_in_this_tab_to_preview_it_8e4c3), style = MaterialTheme.typography.bodySmall)
-        OutlinedButton(onClick=player::stop){Text(uiText(UiR.string.ui_stop_9e253))}
         if(speaking)Text(uiText(UiR.string.ui_preparing_or_playing_voice_4e5bc))
+        }
+        if (location == SettingsLocation.LOCAL || selfHosted) {
+            if (!advanced) TextButton(onClick = { playbackOptions = !playbackOptions }) { Text(uiText(UiR.string.settings_flow_voice_options)) }
+        if (advanced || playbackOptions) {
+        Text(when(VoiceSettings.customBackend(context)) {
+            "supertonic" -> uiText(UiR.string.local_voice_custom_default,LocalVoiceFamilies.label(choice.family),choice.voice)
+            "remote" -> uiText(UiR.string.ui_custom_default_your_configured_voice_server_c38eb)
+            else -> uiText(UiR.string.ui_choose_supertonic_or_self_hosted_to_set_your_custom_default_c52b6)
+        },style=MaterialTheme.typography.bodySmall)
+        Text(uiText(UiR.string.ui_android_playback_is_always_separate_and_does_not_change_your_cust_56d2f),style=MaterialTheme.typography.bodySmall)
+        Text(uiText(UiR.string.ui_speed_1_s_7d1e1, "%.2f".format(choice.rate)))
+        Slider(choice.rate,{save(choice.copy(rate=it))},valueRange=.5f..2f,modifier=Modifier.semantics {contentDescription=uiText(UiR.string.ui_speech_speed_3f322)})
+        }
         }
         if(busy)LinearProgressIndicator(Modifier.fillMaxWidth())
         error?.let {Text(it,color=MaterialTheme.colorScheme.error)}

@@ -75,6 +75,10 @@ object CaptionLanguages {
         CaptionEngineChoice.COHERE -> CaptionLanguageChoices(setOf("ar", "en"),
             UiMessage(UiR.string.speech_cohere_note, "Cohere Arabic · Choose Arabic or English. Automatic language detection is unavailable."),
             SpeechProfile.COHERE_ARABIC_07_2026.capabilities.languages)
+        CaptionEngineChoice.AUDAR -> hinted("Audar Flash", setOf("ar", "en"),
+            UiMessage(UiR.string.speech_audar_note, "Audar Flash · Auto or explicit Arabic/English; final captions after bounded utterances. Requires decoder and BF16 audio encoder. Phone quality and speed are unverified."))
+        CaptionEngineChoice.OWSM -> hinted("OWSM v4 Base", setOf("ar", "en"),
+            UiMessage(UiR.string.speech_owsm_note, "OWSM v4 Base · Experimental compact model. Auto or explicit Arabic/English; utterance finals. Host Arabic examples contain substantial errors; phone quality and speed are unverified."))
         CaptionEngineChoice.FUNASR_MLT -> hinted("Fun-ASR MLT Nano", SpeechProfile.FUNASR_MLT_NANO_2512.capabilities.sourceLanguageHints,
             UiMessage(UiR.string.speech_funasr_note, "Fun-ASR MLT Nano · Multilingual utterance captions, including Arabic and English. Auto or an explicit spoken language."))
         CaptionEngineChoice.VOXTRAL -> CaptionLanguageChoices(SpeechProfile.VOXTRAL_MINI_REALTIME_2602.capabilities.sourceLanguages + "auto",

@@ -248,6 +248,7 @@ class MainActivity : AppCompatActivity() {
     if (quickSettings && !tvUi) SettingsQuickSheet(
      onDismiss = { quickSettings = false },
      onFeature = { location, feature -> quickSettings = false; settingsFeature(location, feature) },
+     onTranslationModels = { quickSettings = false; localModels("Translation") },
      onPage = { quickSettings = false; go(it) },
      onReading = { quickSettings = false; reading() },
     )
@@ -318,11 +319,12 @@ class MainActivity : AppCompatActivity() {
        ) else when(page) {
         0 -> CaptionHome(onModels = { go(1) }, onCloud = { speechSettings(SettingsLocation.CLOUD) }, onHistory = { go(16) })
         1 -> ModelsScreen(onDownloads = { go(2) }, onVoices = { voiceSettings(SettingsLocation.LOCAL) }, initialSection = modelsSection)
-        2 -> DownloadsScreen(onBrowseModels = { go(1) })
+        2 -> DownloadsScreen(onBrowseModels = { go(1) }, onVoices = { voiceSettings(SettingsLocation.LOCAL) })
         3 -> SettingsScreen(
             onEasySetup = { go(15) }, onHistory = { go(16) },
             onAppearance = { go(13) }, onShortcuts = { go(14) },
             onFeature = ::settingsFeature,
+            onTranslationModels = { localModels("Translation") },
             onDownloads = { go(2) }, onBenchmark = { go(8) }, onAdvanced = { go(5) }, onHelp = { go(6) },
         )
         15 -> com.sal7one.transiber.setup.EasySetupScreen(step=setupStep,onStep={setupStep=it},onCaptions={go(0)},onHome={home()},onSettings={go(3)},onDownloads={go(2)})

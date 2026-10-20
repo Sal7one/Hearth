@@ -78,7 +78,7 @@ struct ActiveSynthesis {
     ~ActiveSynthesis() { active_id = previous_id; active_voice = previous_voice; }
 };
 struct Callback {
-    JavaVM* vm; jobject target; jmethodID method; Voice* voice; int rate;
+    JavaVM* vm; jobject target; jmethodID method; Voice* voice; int rate; jlong id=0;
     std::mutex mutex; jthrowable exception = nullptr; std::string failure;
 };
 bool pcm(const uint8_t* samples, size_t count, void* opaque) {
@@ -96,6 +96,7 @@ bool pcm(const uint8_t* samples, size_t count, void* opaque) {
         if (attached_status != JNI_OK) { callback.failure = "Magpie PCM callback could not attach to the JVM"; return false; }
         attached = true;
     }
+    ActiveSynthesis callback_active(callback.id, callback.voice);
     bool keep = true;
     for (size_t offset = 0; offset < count && keep; ) {
         const size_t length = std::min<size_t>(callback.rate, (count - offset) / 2);
@@ -151,7 +152,7 @@ extern "C" JNIEXPORT void JNICALL Java_com_sal7one_common_1jni_voice_MagpieNativ
         auto input = bytes(env, text, 16000), lang = bytes(env, language, 32), name = bytes(env, speaker, 128);
         if (!target) throw std::invalid_argument("Missing Magpie PCM callback");
         const int rate = api().sample_rate(voice->handle); if (rate < 8000 || rate > 96000) throw std::runtime_error("Invalid Magpie sample rate");
-        Callback callback{}; env->GetJavaVM(&callback.vm); callback.target = env->NewGlobalRef(target); callback.voice = voice.get(); callback.rate = rate;
+        Callback callback{}; env->GetJavaVM(&callback.vm); callback.target = env->NewGlobalRef(target); callback.voice = voice.get(); callback.rate = rate; callback.id=id;
         auto cls = env->GetObjectClass(target); callback.method = env->GetMethodID(cls, "onPcm", "([SI)Z"); env->DeleteLocalRef(cls);
         if (!callback.target || !callback.method) { if (callback.target) env->DeleteGlobalRef(callback.target); return; }
         auto options = api().synthesis_options_default(); options.language_code = lang.c_str(); options.voice_name = name.c_str(); options.speaker = -1;
@@ -167,5 +168,8 @@ extern "C" JNIEXPORT void JNICALL Java_com_sal7one_common_1jni_voice_MagpieNativ
 }
 extern "C" JNIEXPORT void JNICALL Java_com_sal7one_common_1jni_voice_MagpieNative_cancel(JNIEnv*, jobject, jlong id) { if (active_id == id && active_voice) { active_voice->cancel(); return; } auto voice = voices.acquire(id); if (voice) voice->cancel(); }
 extern "C" JNIEXPORT void JNICALL Java_com_sal7one_common_1jni_voice_MagpieNative_destroy(JNIEnv*, jobject, jlong id) {
-    auto retired = voices.retire(id); if (auto* voice = retired.signalTarget()) voice->cancel(); auto owner = std::move(retired).lockExclusive();
+    auto retired = voices.retire(id); if (auto* voice = retired.signalTarget()) voice->cancel();
+    // A callback may close its own engine. Its existing lease owns teardown after callback return.
+    if (active_id == id && active_voice) return;
+    auto owner = std::move(retired).lockExclusive();
 }

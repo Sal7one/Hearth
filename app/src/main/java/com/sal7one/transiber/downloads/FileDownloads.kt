@@ -88,7 +88,7 @@ class FileDownloads(private val context: Context) {
  fun enqueue(spec: DownloadSpec, modelPackage: Boolean = false, installModelId: String = "", duplicate: Boolean = false): Long {
   com.sal7one.transiber.caption.SpeechAbiPolicy.requireCatalogModel(installModelId)
   check(ByokPolicy.FEATURE_BYOK) { "Downloads are unavailable in the offline build" }
-  if (installModelId.startsWith("voice-magpie-")) com.sal7one.transiber.voice.MagpiePolicy.requireAllowed(context)
+  VoiceCatalog.find(installModelId)?.let { com.sal7one.transiber.voice.LocalVoiceFamilies.requireAllowed(context,it.family,"speech model download") }
   if (com.sal7one.transiber.translation.Ct2Package.part(installModelId) != null) com.sal7one.transiber.translation.Ct2Package.requireRuntime(context)
   if (modelPackage || installModelId.isNotBlank()) com.sal7one.transiber.runtime.LocalModelPolicy.requireAllowed(context, "model downloads")
   val checked = DownloadSpec.parse(spec.url, spec.fileName)
@@ -175,7 +175,7 @@ class FileDownloads(private val context: Context) {
  fun retry(id: Long) {
   com.sal7one.transiber.caption.SpeechAbiPolicy.requireCatalogModel(record(id)?.optString("model").orEmpty())
   check(ByokPolicy.FEATURE_BYOK)
-  if (record(id)?.optString("model").orEmpty().startsWith("voice-magpie-")) com.sal7one.transiber.voice.MagpiePolicy.requireAllowed(context)
+  VoiceCatalog.find(record(id)?.optString("model").orEmpty())?.let { com.sal7one.transiber.voice.LocalVoiceFamilies.requireAllowed(context,it.family,"speech model download retry") }
   if (com.sal7one.transiber.translation.Ct2Package.part(record(id)?.optString("model").orEmpty()) != null)
    com.sal7one.transiber.translation.Ct2Package.requireRuntime(context)
   record(id)?.let { if (it.optBoolean("modelsFolder") || it.optString("model").isNotBlank())
@@ -217,6 +217,12 @@ class FileDownloads(private val context: Context) {
     }
     com.sal7one.transiber.translation.MarianPackage.part(modelId) != null ->
      ModelRegistry.getInstance(context).getProvider(installedId)?.getModelPath() ?: error("Installed model folder is missing")
+    com.sal7one.transiber.models.SpeechComponents.forPart(modelId) != null -> {
+     val group = checkNotNull(com.sal7one.transiber.models.SpeechComponents.forPart(modelId))
+     val root = File(context.filesDir, "speech-models")
+     val model = LocalSpeechModels(root).select(group.profile.captionEngine, installedId)
+     check(com.sal7one.transiber.models.SpeechCatalogInstallations(root).matchesComponents(model, group, true)) { "Installed speech components have changed" }
+    }
     SpeechDownloads.find(modelId) != null ->
      com.sal7one.common_jni.speech.SpeechModelPackage.verify(File(context.filesDir, "speech-models/$installedId"))
     TranslationCatalog.models.any { it.id == modelId } -> {
@@ -230,8 +236,7 @@ class FileDownloads(private val context: Context) {
     }
     VoiceCatalog.find(modelId) != null -> {
      val part = checkNotNull(VoiceCatalog.find(modelId))
-     val file = VoiceModels(File(context.filesDir, "voice-models")).file(part)
-     check(file.inputStream().use { DownloadIntegrity.matches(it, checkNotNull(asset)) }) { "Installed voice checksum failed" }
+     VoiceModels(File(context.filesDir, "voice-models")).verifyAsset(part)
     }
     else -> ModelRegistry.getInstance(context).getProvider(installedId)?.getModelPath() ?: error("Installed model is missing")
    }
@@ -282,17 +287,20 @@ class FileDownloads(private val context: Context) {
  internal suspend fun installModel(id: Long, modelId: String): String = withContext(Dispatchers.IO) {
   com.sal7one.transiber.caption.SpeechAbiPolicy.requireCatalogModel(modelId)
   com.sal7one.transiber.runtime.LocalModelPolicy.requireAllowed(context, "model installation")
-  if (modelId.startsWith("voice-magpie-")) com.sal7one.transiber.voice.MagpiePolicy.requireAllowed(context)
+  VoiceCatalog.find(modelId)?.let { com.sal7one.transiber.voice.LocalVoiceFamilies.requireAllowed(context,it.family,"speech model install") }
   com.sal7one.transiber.translation.Ct2Package.part(modelId)?.let { part ->
    return@withContext com.sal7one.transiber.translation.Ct2Package.install(context, this@FileDownloads, part.spec).orEmpty()
   }
   MarianPackage.pairForPart(modelId)?.let { pair ->
    return@withContext MarianPackage.install(context, this@FileDownloads, pair).orEmpty()
   }
+  com.sal7one.transiber.models.SpeechComponents.forPart(modelId)?.let { group ->
+   return@withContext com.sal7one.transiber.models.SpeechComponents.install(context, this@FileDownloads, group)?.id.orEmpty()
+  }
   VoiceCatalog.find(modelId)?.let { asset ->
    val job = currentCoroutineContext()
    val installed = context.contentResolver.openInputStream(uri(id))?.use { input ->
-    VoiceModels(File(context.filesDir,"voice-models")){com.sal7one.transiber.voice.MagpiePolicy.requireAllowed(context,"Magpie model installation")}.import(input,asset) {job.ensureActive()}
+    VoiceModels(File(context.filesDir,"voice-models"),permitFamily={com.sal7one.transiber.voice.LocalVoiceFamilies.requireAllowed(context,it,"speech model installation")},permitOmniVoice={com.sal7one.transiber.voice.LocalVoiceFamilies.requireAllowed(context,"omnivoice","OmniVoice model installation")}){com.sal7one.transiber.voice.MagpiePolicy.requireAllowed(context,"Magpie model installation")}.import(input,asset) {job.ensureActive()}
    } ?: error("Cannot open downloaded voice model")
    return@withContext installed.id
   }
@@ -372,13 +380,14 @@ class FileDownloads(private val context: Context) {
   }
   VoiceCatalog.find(modelId)?.let { asset ->
    require(item.installed) { "Voice model is not installed" }
-   if (asset.id.startsWith("voice-magpie-")) {
-    com.sal7one.transiber.voice.MagpiePolicy.requireAllowed(context)
-    val models = com.sal7one.hearth.tts.magpie.MagpieModels(File(context.filesDir,"voice-models/magpie"))
-    require(models.ready()) { "Install Magpie weights, codec and tokenizer before selecting it" }
-    val job = currentCoroutineContext()
-    withContext(Dispatchers.IO) { models.verify { job.ensureActive() } }
-    com.sal7one.transiber.voice.VoiceSettings.save(context,com.sal7one.transiber.voice.VoiceSettings.choice(context).copy(backend="supertonic",family="magpie",voice=com.sal7one.transiber.voice.VoiceSettings.familyVoice(context,"magpie")))
+   if (asset.family != "supertonic") {
+    val family=asset.family
+    com.sal7one.transiber.voice.LocalVoiceFamilies.requireAllowed(context,family)
+    val selected=com.sal7one.transiber.voice.VoiceSettings.choice(context).copy(backend="supertonic",family=family,voice=com.sal7one.transiber.voice.VoiceSettings.familyVoice(context,family))
+    require(com.sal7one.transiber.voice.LocalVoiceFamilies.ready(context,selected)) { "Install every ${com.sal7one.transiber.voice.LocalVoiceFamilies.label(family)} component before selecting it" }
+    val job=currentCoroutineContext()
+    withContext(Dispatchers.IO) { com.sal7one.transiber.voice.LocalVoiceFamilies.verify(context,selected) { job.ensureActive() } }
+    com.sal7one.transiber.voice.VoiceSettings.save(context,selected)
     return
    }
    val voice=asset.filename.removeSuffix(".json").takeIf {it in VoiceCatalog.voices} ?: "F1"
@@ -395,6 +404,18 @@ class FileDownloads(private val context: Context) {
     val source = settings.getString("source", "en")
     settings.edit().putString("profile", profile.id).putString("source", source?.takeIf { it in profile.languages } ?: profile.languages.first()).apply()
    }
+   return
+  }
+  com.sal7one.transiber.models.SpeechComponents.forPart(modelId)?.let { group ->
+   require(item.installed && item.installedId.isNotBlank()) { "Speech model is not installed" }
+   val job = currentCoroutineContext()
+   withContext(Dispatchers.IO) {
+    val root = File(context.filesDir, "speech-models")
+    val model = LocalSpeechModels(root).select(group.profile.captionEngine, item.installedId)
+    job.ensureActive()
+    check(com.sal7one.transiber.models.SpeechCatalogInstallations(root).matchesComponents(model, group, true)) { "Installed speech component checksum failed" }
+   }
+   CaptionConfigStore.update(context) { it.copy(engine = group.profile.captionEngine, modelId = item.installedId, streamLanguage = "auto") }
    return
   }
   val speech = SpeechDownloads.find(modelId)

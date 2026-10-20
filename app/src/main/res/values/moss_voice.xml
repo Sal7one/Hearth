@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="moss_nano_runtime">Native SentencePiece + ONNX · CPU arm64 · streaming codec</string>
+    <string name="moss_nano_coverage">Arabic + English and published multilingual coverage · 718 MB download · experimental</string>
+    <string name="moss_nano_no_runtime">The MOSS native runtime is unavailable for this app process ABI.</string>
+    <string name="moss_nano_voice_note">Reference voice genders are unverified. Preview voices first; Arabic pronunciation with non-Arabic references needs listening tests. Outputs are explicitly downmixed from 48 kHz stereo. Number expansion and custom reference encoding are not implemented.</string>
+    <string name="moss_nano_ready">MOSS generator, text tokenizer, codec and reference codes are installed.</string>
+    <string name="moss_nano_install_note">Install all pinned ONNX graphs, external data and metadata. No weights are bundled.</string>
+    <string name="moss_nano_download">Download MOSS engine + codec + voices</string>
+    <string name="moss_nano_import">Import pinned MOSS component files</string>
+</resources>

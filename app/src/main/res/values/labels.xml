@@ -85,8 +85,8 @@
     <string name="label_captionspeakerchoice_system_explanation" formatted="false">"Instant, offline, any language the device has a voice for."</string>
     <string name="label_captionspeakerchoice_custom_label" formatted="false">"Custom default"</string>
     <string name="label_captionspeakerchoice_custom_explanation" formatted="false">"Use your saved Supertonic or self-hosted voice. Set it in Voices &amp; read aloud."</string>
-    <string name="label_captionspeakerchoice_native_label" formatted="false">"Supertonic 3"</string>
-    <string name="label_captionspeakerchoice_native_explanation" formatted="false">"On-device speech in 31 languages; install its model and a voice in Voice settings."</string>
+    <string name="label_captionspeakerchoice_native_label" formatted="false">"Downloaded voice"</string>
+    <string name="label_captionspeakerchoice_native_explanation" formatted="false">"Use the downloaded voice family and voice selected in Voice settings."</string>
     <string name="label_captionspeakerchoice_shared_label" formatted="false">"Shared voice settings"</string>
     <string name="label_captionspeakerchoice_shared_explanation" formatted="false">"Use the Android, on-device or self-hosted voice selected in Hearth Voice settings."</string>
     <string name="label_captionspeakerchoice_cloud_label" formatted="false">"Cloud · BYOK"</string>

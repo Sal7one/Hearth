@@ -91,14 +91,16 @@
         }
       ],
       "runtime": {
-        "status": "upstream_runtime_available_hearth_adapter_missing",
-        "targetBackend": "cohere_asr",
-        "streaming": "utterance_finals",
+        "status": "implemented-arm64-cpu-vulkan-host-cpu-smoked",
+        "targetBackend": "Isolated pinned transcribe.cpp SpeechBackend ABI v2; ARM64 CPU plus explicit Vulkan with primary-backend validation",
+        "streaming": {
+          "hearth": false,
+          "input": "Bounded live utterances; complete final output, no partials",
+          "sourceLanguage": "Explicit ar or en; Auto is rejected"
+        },
         "blockers": [
-          "Implement pinned transcribe.cpp HearthSpeechBackend adapter and architecture/variant checks.",
-          "Build and attest CPU runtime; build separate optional arm64 Vulkan runtime with explicit backend validation.",
-          "Cohere requires a spoken-language selection; do not accept Auto and silently select Arabic.",
-          "Real Arabic/English parity and S25 latency/RAM tests pending."
+          "Owner S25/S22 Arabic/Gulf quality, sustained latency, thermal and peak-memory acceptance remain.",
+          "Real host CPU fixtures do not establish Android Vulkan execution/parity or quantized corpus WER."
         ],
         "sourceRepo": "https://github.com/handy-computer/transcribe.cpp",
         "sourceRevision": "1dc22facfc931e2f8adb43924b0e38b9c46f83c7",
@@ -118,7 +120,8 @@
           "metal",
           "cuda"
         ],
-        "hearthGpu": []
+        "hearthGpu": [],
+        "implementationComplete": true
       },
       "license": {
         "name": "Apache-2.0",
@@ -157,7 +160,16 @@
       "installEnabled": false,
       "alreadyInHearth": false,
       "phoneBenchmark": "not_measured",
-      "recommendedDevice": "Samsung Galaxy S25 Ultra; Android TVs excluded from all local inference"
+      "recommendedDevice": "Samsung Galaxy S25 Ultra; Android TVs excluded from all local inference",
+      "liveCatalogIds": [
+        "cohere-transcribe-arabic-07-2026"
+      ],
+      "validation": {
+        "host": "Production HearthSpeechBackend ABI v2 + SpeechNativeSession; full pinned payload SHA256; Arabic/English real CPU final text",
+        "android": "CPU/Vulkan cross-build and ELF/provenance checked; owner device tests pending",
+        "evidence": "docs/research/stt-cohere-voxtral-smoke-2026-10-20.json",
+        "runtimeMetadata": "common-jni/src/main/assets/licenses/speech-expansion/runtime-build.json"
+      }
     },
     {
       "id": "planned-audar-asr-v1-flash",
@@ -193,7 +205,7 @@
           "sha256": "8b0008ada2f47aaf7c82c10a115f6f964a70ebad71062d491db8c2f6ec8054ed",
           "role": "model",
           "required": true,
-          "verification": "publisher_lfs_metadata_verified; payload_not_downloaded_in_this_handoff",
+          "verification": "payload_size_and_sha256_independently_verified_2026-10-20; real_Hearth_host_CPU_smoke_recorded; temporary_weight_deleted_after_evidence",
           "sourcePath": "Audar-ASR-V1-Flash-Q4_K_M.gguf"
         },
         {
@@ -205,7 +217,7 @@
           "sha256": "73f06fc82a009b4a9d6c825782a3676cb553402b3a5ecc27ae77a92caa6b7fa9",
           "role": "encoder",
           "required": true,
-          "verification": "publisher_lfs_metadata_verified; payload_not_downloaded_in_this_handoff",
+          "verification": "payload_size_and_sha256_independently_verified_2026-10-20; real_Hearth_host_CPU_smoke_recorded; temporary_weight_deleted_after_evidence",
           "sourcePath": "mmproj-Audar-ASR-V1-Flash.gguf"
         }
       ],
@@ -244,23 +256,20 @@
         }
       ],
       "runtime": {
-        "status": "upstream_multimodal_path_available_hearth_adapter_missing",
+        "status": "implemented_native_cpu_arm64_host_smoked_owner_device_pending",
         "targetBackend": "audar_mtmd",
-        "streaming": "utterance_finals_first; local_agreement_windowed_partials_later",
+        "streaming": "bounded_utterance_finals; no partials",
         "blockers": [
-          "Audar GGUF is a decoder plus separate BF16 mmproj; current sherpa QWEN3_ASR ONNX adapter cannot load either file.",
-          "Implement dedicated mtmd ASR adapter and two-file transactional installer.",
-          "Do not quantize the required BF16 audio encoder.",
-          "Implement Qwen ASR scaffold parsing and genuine language None no-speech semantics.",
-          "Validate Q4/Q8 Arabic and English against publisher BF16 protocol; no selected-quant WER is published.",
-          "LocalAgreement redecoding is not cache-aware acoustic streaming."
+          "Owner S25 Ultra CPU quality, sustained latency, memory and thermal acceptance remains pending.",
+          "Selected-quant corpus parity against publisher reference precision has not been established.",
+          "Only the verified Q4_K_M decoder plus matching publisher BF16 projector has a direct catalog download; Q8_0 remains a compatible prepared import without real-weight parity in this session."
         ],
         "sourceRepo": "https://github.com/ggml-org/llama.cpp",
         "sourceRevision": "64e9bceb2c3a856efed96feda784a50947049feb",
-        "hearthIntegration": "not_implemented",
+        "hearthIntegration": "implemented",
         "proposedAbi": "HearthSpeechBackend v2",
         "proposedAbiScope": "arm64-v8a CPU first; Vulkan optional after real placement and parity checks",
-        "builtForAndroid": false,
+        "builtForAndroid": true,
         "ownerDeviceTested": false,
         "roles": {
           "model": "Audar-ASR-V1-Flash-Q4_K_M.gguf",
@@ -273,7 +282,21 @@
         ],
         "hearthGpu": [],
         "sourcePinReason": "Existing Hearth translation pin contains tools/mtmd/models/qwen3a.cpp. Source presence is verified; Audar model execution on that pin is not yet tested.",
-        "maxModelAudioMs": 30000
+        "maxModelAudioMs": 30000,
+        "actualAbi": "HearthSpeechBackend v2",
+        "architectures": [
+          "arm64-v8a"
+        ],
+        "acceleration": [
+          "cpu"
+        ],
+        "buildRecords": "common-jni/src/main/assets/licenses/speech-modern-cpu/runtime-build.json",
+        "smokeReceipt": "docs/research/stt-modern-cpu-smoke-2026-10-20.json",
+        "packageNotes": "docs/models/stt-modern-cpu.md",
+        "catalogId": "audar-asr-v1-flash-q4_k_m",
+        "transactionalInstaller": "SpeechComponents transport IDs model+encoder; all pinned bytes verified while staging; strict root manifest verification and atomic publication; aggregate ID never resolves as one download.",
+        "encoderPrecisionNote": "Publisher projector contains 110 BF16 + 188 F32 tensors and four F16 frontend weights (a.conv2d.1.weight,a.conv2d.2.weight,a.conv2d.3.weight,a.conv_out.weight); adapter permits only these F16 exceptions and rejects generic F16/quantized encoders.",
+        "protocol": "Qwen ASR ChatML; explicit Arabic/English or Auto; language None<asr_text> is valid no-speech only with no trailing transcript; clear KV per utterance; 256 token bound, actual errors on incomplete completion."
       },
       "license": {
         "name": "AudarAI Open License v1.0",
@@ -308,7 +331,13 @@
       "installEnabled": false,
       "alreadyInHearth": false,
       "phoneBenchmark": "not_measured",
-      "recommendedDevice": "Samsung Galaxy S25 Ultra; Android TVs excluded from all local inference"
+      "recommendedDevice": "Samsung Galaxy S25 Ultra; Android TVs excluded from all local inference",
+      "currentAppIntegration": {
+        "catalogId": "audar-asr-v1-flash-q4_k_m",
+        "experimental": true,
+        "phoneTested": false,
+        "smokeReceipt": "docs/research/stt-modern-cpu-smoke-2026-10-20.json"
+      }
     },
     {
       "id": "planned-voxtral-mini-4b-realtime-2602",
@@ -355,15 +384,18 @@
       "quantization": "Q4_K_M",
       "variants": [],
       "runtime": {
-        "status": "upstream_stream_api_available_hearth_adapter_missing",
-        "targetBackend": "voxtral_realtime",
-        "streaming": "windowed_partials_in_current_upstream_adapter; model_architecture_is_streaming",
+        "status": "implemented-arm64-cpu-vulkan-host-cpu-smoked",
+        "targetBackend": "Isolated pinned transcribe.cpp SpeechBackend ABI v2; ARM64 CPU plus explicit Vulkan with primary-backend validation",
+        "streaming": {
+          "hearth": "Bounded windowed partials with monotonic revisions and exactly one final",
+          "cacheAware": false,
+          "upstream": "Reprocesses accumulated audio inside the bounded window",
+          "sourceLanguage": "No native forced hint; Auto source stays unknown; user declaration may route independent MT"
+        },
         "blockers": [
-          "Implement transcribe.cpp stream adapter and hard bounded utterance resets.",
-          "Current pinned public extension says tentative partials reprocess accumulated audio; do not label cache-aware constant-memory streaming.",
-          "Stream is Auto-language only; do not advertise forced Arabic/English support.",
-          "Honor transcribe_was_truncated even if stream_finalize status is OK; never turn truncated output into successful complete final.",
-          "Arabic Q4 parity, S25 memory and thermal performance pending."
+          "Owner S25/S22 latency, sustained-memory/thermal and selected-Q4 Arabic/Gulf quality acceptance remain.",
+          "No true incremental acoustic/KV streaming claim; observed host redecoding cost is included in the receipt.",
+          "Android Vulkan build/placement checks do not replace device execution/parity measurements."
         ],
         "sourceRepo": "https://github.com/handy-computer/transcribe.cpp",
         "sourceRevision": "1dc22facfc931e2f8adb43924b0e38b9c46f83c7",
@@ -404,7 +436,8 @@
           15,
           30
         ],
-        "minDecodeIntervalMsProposed": 500
+        "minDecodeIntervalMsProposed": 500,
+        "implementationComplete": true
       },
       "license": {
         "name": "Apache-2.0",
@@ -443,7 +476,16 @@
       "installEnabled": false,
       "alreadyInHearth": false,
       "phoneBenchmark": "not_measured",
-      "recommendedDevice": "Samsung Galaxy S25 Ultra; Android TVs excluded from all local inference"
+      "recommendedDevice": "Samsung Galaxy S25 Ultra; Android TVs excluded from all local inference",
+      "liveCatalogIds": [
+        "voxtral-mini-4b-realtime-2602"
+      ],
+      "validation": {
+        "host": "Production HearthSpeechBackend ABI v2 + SpeechNativeSession; full pinned payload SHA256; Arabic/English real CPU final text",
+        "android": "CPU/Vulkan cross-build and ELF/provenance checked; owner device tests pending",
+        "evidence": "docs/research/stt-cohere-voxtral-smoke-2026-10-20.json",
+        "runtimeMetadata": "common-jni/src/main/assets/licenses/speech-expansion/runtime-build.json"
+      }
     },
     {
       "id": "planned-fun-asr-mlt-nano-2512",
@@ -558,15 +600,17 @@
         }
       ],
       "runtime": {
-        "status": "upstream_runtime_available_hearth_adapter_missing",
-        "targetBackend": "funasr_mlt_nano",
-        "streaming": "utterance_finals",
+        "status": "implemented-arm64-cpu-vulkan-host-cpu-smoked",
+        "targetBackend": "Isolated pinned transcribe.cpp SpeechBackend ABI v2; distinct MLT variant checks; ARM64 CPU plus explicit Vulkan",
+        "streaming": {
+          "hearth": false,
+          "input": "Bounded live utterances; complete final output",
+          "sourceLanguage": "Actual hints/Auto; ITN enabled"
+        },
         "blockers": [
-          "Implement pinned transcribe.cpp adapter; require MLT variant, not Chinese/English/Japanese-only Nano sibling.",
-          "Build/stage CPU and optional Vulkan runtimes with matching ABI and source notices.",
-          "Keep ITN on for parity with the pinned quant benchmark.",
-          "Resolve license mismatch between current upstream HF metadata and the GGUF conversion LICENSE before enabling redistribution/download.",
-          "S25 speed, memory, Gulf quality and Q4 Arabic parity pending."
+          "Owner S25/S22 Arabic/Gulf listening, sustained speed, memory and heat acceptance remain.",
+          "Selected Q8 host smoke is functional evidence, not a measured corpus WER or Android Vulkan parity score.",
+          "Retain selected export FunASR Model Open Source License Agreement v1.1; current upstream HF metadata has a different label."
         ],
         "sourceRepo": "https://github.com/handy-computer/transcribe.cpp",
         "sourceRevision": "1dc22facfc931e2f8adb43924b0e38b9c46f83c7",
@@ -586,7 +630,8 @@
           "metal",
           "cuda"
         ],
-        "hearthGpu": []
+        "hearthGpu": [],
+        "implementationComplete": true
       },
       "license": {
         "name": "FunASR Model Open Source License Agreement v1.1 (selected GGUF); upstream HF metadata currently says Apache-2.0",
@@ -625,7 +670,16 @@
       "installEnabled": false,
       "alreadyInHearth": false,
       "phoneBenchmark": "not_measured",
-      "recommendedDevice": "Samsung Galaxy S25 Ultra; Android TVs excluded from all local inference"
+      "recommendedDevice": "Samsung Galaxy S25 Ultra; Android TVs excluded from all local inference",
+      "liveCatalogIds": [
+        "fun-asr-mlt-nano-2512"
+      ],
+      "validation": {
+        "host": "Production HearthSpeechBackend ABI v2 + SpeechNativeSession; full pinned payload SHA256; Arabic/English real CPU final text",
+        "android": "CPU/Vulkan cross-build and ELF/provenance checked; owner device tests pending",
+        "evidence": "docs/models/stt-native-smoke-2026-10-20.json",
+        "runtimeMetadata": "common-jni/src/main/assets/licenses/speech-expansion/runtime-build.json"
+      }
     },
     {
       "id": "planned-owsm-v4-base-102m",
@@ -656,7 +710,7 @@
           "sha256": "7d4efb7188ca85f3bc85c8411cd97d1d667adb22fbb8084142eeb812e83461bc",
           "role": "model",
           "required": true,
-          "verification": "publisher_lfs_metadata_verified; payload_not_downloaded_in_this_handoff",
+          "verification": "payload_size_and_sha256_independently_verified_2026-10-20; real_Hearth_host_CPU_smoke_recorded; temporary_weight_deleted_after_evidence",
           "sourcePath": "OWSM-GGUF/owsm-v4-base-102m-q8_0.gguf"
         }
       ],
@@ -664,22 +718,20 @@
       "quantization": "Q8_0",
       "variants": [],
       "runtime": {
-        "status": "upstream_runtime_available_android_adapter_missing",
+        "status": "implemented_native_cpu_arm64_host_smoked_owner_device_pending",
         "targetBackend": "owsm",
-        "streaming": "utterance_finals",
+        "streaming": "bounded_utterance_finals; no partials",
         "blockers": [
-          "Implement narrow audio.cpp OWSM-only build and HearthSpeechBackend adapter; upstream framework default includes unrelated models and services.",
-          "Disable native model manager/network clients, server, CLI/media helpers, examples, tests from shipping DSO.",
-          "Map ar/en to ara/eng only at adapter boundary and retain ISO-639-1 output for MT routing.",
-          "Use complete bounded utterance input: audio.cpp streaming mode emits tokens from a complete file, not incremental microphone audio.",
-          "Validate Arabic Q8 quality, Android toolchain and GPU operation coverage before enabling GPU."
+          "Owner S25 Ultra CPU quality, sustained latency, memory and thermal acceptance remains pending.",
+          "Selected-quant corpus parity against publisher reference precision has not been established.",
+          "Arabic host fixture produced substantial errors; the compact model remains explicitly experimental rather than a quality recommendation."
         ],
         "sourceRepo": "https://github.com/0xShug0/audio.cpp",
         "sourceRevision": "673ade451c9cba9c893fb0e606872d9dc44f21e3",
-        "hearthIntegration": "not_implemented",
+        "hearthIntegration": "implemented",
         "proposedAbi": "HearthSpeechBackend v2",
         "proposedAbiScope": "arm64-v8a CPU first; Vulkan optional after real placement and parity checks",
-        "builtForAndroid": false,
+        "builtForAndroid": true,
         "ownerDeviceTested": false,
         "roles": {
           "model": "owsm-v4-base-102m-q8_0.gguf"
@@ -691,7 +743,23 @@
           "cuda"
         ],
         "hearthGpu": [],
-        "maxModelAudioMs": 30000
+        "maxModelAudioMs": 30000,
+        "actualAbi": "HearthSpeechBackend v2",
+        "architectures": [
+          "arm64-v8a"
+        ],
+        "acceleration": [
+          "cpu"
+        ],
+        "buildRecords": "common-jni/src/main/assets/licenses/speech-modern-cpu/runtime-build.json",
+        "smokeReceipt": "docs/research/stt-modern-cpu-smoke-2026-10-20.json",
+        "packageNotes": "docs/models/stt-modern-cpu.md",
+        "catalogId": "owsm-v4-base-102m",
+        "runtimePatches": [
+          "Accept Base 102M dimensions only",
+          "Throw on greedy 374 token exhaustion rather than publishing incomplete success",
+          "Materialize embedded assets in app-private sibling .owsm-cache outside immutable package"
+        ]
       },
       "license": {
         "name": "CC-BY-4.0 (model weights); Apache-2.0 audio.cpp runtime is a separate license",
@@ -723,7 +791,13 @@
       "installEnabled": false,
       "alreadyInHearth": false,
       "phoneBenchmark": "not_measured",
-      "recommendedDevice": "Samsung Galaxy S25 Ultra; Android TVs excluded from all local inference"
+      "recommendedDevice": "Samsung Galaxy S25 Ultra; Android TVs excluded from all local inference",
+      "currentAppIntegration": {
+        "catalogId": "owsm-v4-base-102m",
+        "experimental": true,
+        "phoneTested": false,
+        "smokeReceipt": "docs/research/stt-modern-cpu-smoke-2026-10-20.json"
+      }
     }
   ]
 }

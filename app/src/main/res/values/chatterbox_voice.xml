@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="chatterbox_runtime">Experimental · CPU ARM64 · bounded article playback</string>
+    <string name="chatterbox_coverage">Arabic and English · 1.59 GB download · MIT</string>
+    <string name="chatterbox_no_runtime">This app process cannot run the packaged Chatterbox ARM64 runtime.</string>
+    <string name="chatterbox_reference">One pinned reference voice. Gender and native Arabic pronunciation are unverified. Audio is watermarked with Perth.</string>
+    <string name="chatterbox_ready">V3 model and required watermark installed</string>
+    <string name="chatterbox_install">Install all model components and the Perth checkpoint. Hearth verifies and prepares the graph and watermark locally.</string>
+    <string name="chatterbox_download">Download Chatterbox V3 package</string>
+    <string name="chatterbox_import">Import pinned V3 component</string>
+</resources>

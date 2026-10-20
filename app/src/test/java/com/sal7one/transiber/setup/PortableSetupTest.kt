@@ -7,6 +7,16 @@ import org.junit.Test
 import java.io.ByteArrayInputStream
 
 class PortableSetupTest {
+    @Test fun jisrDialectRoundTripsWithoutChangingUnrelatedStagesOrAcceptingForeignFields() {
+        for (id in listOf("ct2-jisr-50m-en-ar","ct2-jisr-50m-en-ar-int8")) {
+            val recipe=PortableSetup("Saudi captions",translation=PortableTranslationStage(id,"en","ar",arabicDialect="ars"))
+            assertEquals(recipe,PortableSetup.parse(recipe.toJson()))
+            assertNull(recipe.speech);assertNull(recipe.voice)
+        }
+        rejects { PortableTranslationStage("ct2-quickmt-en-ar","en","ar",arabicDialect="ars") }
+        rejects { PortableTranslationStage("ct2-jisr-50m-en-ar","en","ar",arabicDialect="ar-SA") }
+        rejects { PortableTranslationStage("ct2-jisr-50m-ar-en","ar","en",arabicDialect="ars") }
+    }
     private val speech = PortableSpeechStage(PortableModelRef("whisper", "whisper-tiny-q5_1"), "en")
     private fun rejects(block: () -> Unit) { try { block(); fail("Expected rejection") } catch (e: Exception) { assertTrue(e.message.orEmpty().isNotBlank()) } }
     @Test fun roundTripPreservesIndependentStagesWithoutPathsOrCredentials() {

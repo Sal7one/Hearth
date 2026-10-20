@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
-  "asOf": "2026-10-19",
+  "asOf": "2026-10-20",
   "category": "tts",
-  "purpose": "Implementation staging evidence only; not an import/download manifest and not an executable support claim.",
+  "purpose": "Pinned provider evidence; each runtime status distinguishes executable adapters from researched candidates. This file is not an import manifest.",
   "sizeUnits": "Exact bytes; decimal MB/GB in prose. Peak RAM additionally includes sessions, KV/cache, activations, PCM and Android.",
-  "validation": "LFS SHA256/size from public HF metadata; ordinary small files fetched and SHA256 calculated. No model weights downloaded or executed.",
+  "validation": "Component bytes/SHA256 come from pinned public metadata and full local verification where a model entry supplies a real-model smoke receipt. See each runtime status; research-only entries are not executable support claims.",
   "models": [
     {
       "id": "magpie-v2607",
@@ -179,10 +179,25 @@
         "en"
       ],
       "voices": {
-        "kind": "voice-design-or-user-reference",
-        "items": [],
-        "genderEvidence": null,
-        "notes": "No verified stable named male/female preset inventory. Gender prompting does not establish speaker metadata. Arabic/English reference profiles require separate provenance and installation."
+        "kind": "generated-voice-design",
+        "items": [
+          {
+            "id": "auto",
+            "label": "Automatic design",
+            "gender": "unknown"
+          },
+          {
+            "id": "design-female",
+            "label": "Female design attribute (unverified)",
+            "gender": "unknown"
+          },
+          {
+            "id": "design-male",
+            "label": "Male design attribute (unverified)",
+            "gender": "unknown"
+          }
+        ],
+        "notes": "Attributes request gender but are not verified fixed speakers. Strict gender matching must fail. No reference profile is bundled."
       },
       "components": [
         {
@@ -207,38 +222,46 @@
         }
       ],
       "runtime": {
-        "status": "planned-not-executable",
-        "targetBackend": "omnivoice.cpp isolated GGML backend; CPU then optional Vulkan",
+        "status": "integrated-experimental-cpu-arm64",
+        "targetBackend": "Isolated pinned omnivoice.cpp C ABI v4 CPU arm64 provider",
         "streaming": {
-          "upstream": "Diffusion-style generation; verify chunk semantics, do not assume autoregressive token streaming",
-          "hearth": false
+          "upstream": "Postprocessed codec chunks; diffusion generation is not autoregressive token streaming",
+          "hearth": true,
+          "nativeOutput": "24000Hz mono"
         },
         "blockers": [
-          "No Hearth adapter.",
-          "Noncommercial model must not enter commercial Arabic SDK default bundles.",
-          "Codec terms need resolution before redistribution.",
-          "Q8 main and codec Arabic parity and voice stability unverified.",
-          "No pinned male/female Arabic reference profile supplied."
+          "Owner S25 Arabic/English listening, memory, latency and thermal validation remain.",
+          "CPU only; Vulkan is not supplied or claimed.",
+          "Pretrained generator noncommercial; Higgs codec uses Boson Community and incorporated Llama 3 terms.",
+          "Generated design attributes are not fixed speaker identities or verified genders. Text parts may vary.",
+          "Arabic frontend maps generic ar to trained Standard Arabic arb; Gulf dialect quality unmeasured.",
+          "Cooperative cancellation polls between synthesis chunks; first output/initialization can delay stop."
         ]
       },
       "license": {
-        "name": "CC-BY-NC-4.0 weights; codec upstream terms require independent audit; runtime MIT",
+        "name": "CC-BY-NC pretrained generator; Boson Higgs Audio 2 Community License with incorporated Meta Llama 3 terms for codec; MIT runtime",
         "url": "https://huggingface.co/k2-fsa/OmniVoice#license",
-        "redistributionBlocker": "Community conversion card calls codec Apache-2.0, while original tokenizer metadata uses other/custom terms. Verify original license text before bundling."
+        "redistributionBlocker": "Do not infer Apache-2.0 codec terms from the community conversion card; original codec LICENSE applies. Weights are user downloads, excluded from SDK/app artifacts.",
+        "codecUrl": "https://huggingface.co/bosonai/higgs-audio-v2-tokenizer/blob/main/LICENSE"
       },
       "sources": [
         "https://huggingface.co/k2-fsa/OmniVoice",
         "https://huggingface.co/Serveurperso/OmniVoice-GGUF",
-        "https://github.com/ServeurpersoCom/omnivoice.cpp"
+        "https://github.com/ServeurpersoCom/omnivoice.cpp",
+        "https://huggingface.co/bosonai/higgs-audio-v2-tokenizer/blob/main/LICENSE"
       ],
       "requiredSourceBytes": 945284608,
       "selectedWeightsBytes": 945284608,
       "quality": {
-        "ArabicWER": 1.392,
-        "EnglishWER": 1.56,
-        "dataset": "MiniMax-Multilingual-24",
-        "scope": "Original model, not this Q8 conversion",
-        "source": "https://arxiv.org/html/2604.00688v1#S4.T3"
+        "scope": "Real native C ABI and JNI generated finite nonempty Arabic/English PCM using exact pinned Q8 models. Functional smoke is not a pronunciation or quality score; S25 quality/performance unmeasured."
+      },
+      "nativeRuntime": {
+        "revision": "1a468d8b9d65b3544ca1004d2d7c05dfc65d1f3e",
+        "ggmlRevision": "cc5df49a6b878db2b68b9a7b45976e279594627d",
+        "abi": "arm64-v8a",
+        "backend": "CPU",
+        "bytes": 1373672,
+        "sha256": "7a5042f47892b548d7079f86eb351189e519e366bf72aa5c8a0c2112a81b349b"
       }
     },
     {
@@ -254,10 +277,136 @@
         "en"
       ],
       "voices": {
-        "kind": "user-reference-or-unconditioned",
-        "items": [],
-        "genderEvidence": null,
-        "notes": "No packaged verified male/female Arabic/English styles. Need authored reference recordings/profiles and QA."
+        "kind": "pinned-reference-audio-codes",
+        "items": [
+          {
+            "id": "Junhao",
+            "label": "CN 欢迎关注模思智能",
+            "gender": "unknown",
+            "referenceFrames": 98,
+            "publisherGroup": "Chinese Male"
+          },
+          {
+            "id": "Zhiming",
+            "label": "CN 京味胡同闲聊",
+            "gender": "unknown",
+            "referenceFrames": 98,
+            "publisherGroup": "Chinese Male"
+          },
+          {
+            "id": "Weiguo",
+            "label": "CN 说书",
+            "gender": "unknown",
+            "referenceFrames": 140,
+            "publisherGroup": "Chinese Male"
+          },
+          {
+            "id": "Xiaoyu",
+            "label": "CN 明星",
+            "gender": "unknown",
+            "referenceFrames": 180,
+            "publisherGroup": "Chinese Female"
+          },
+          {
+            "id": "Yuewen",
+            "label": "CN 机车",
+            "gender": "unknown",
+            "referenceFrames": 102,
+            "publisherGroup": "Chinese Female"
+          },
+          {
+            "id": "Lingyu",
+            "label": "CN 深夜电台",
+            "gender": "unknown",
+            "referenceFrames": 218,
+            "publisherGroup": "Chinese Female"
+          },
+          {
+            "id": "Trump",
+            "label": "EN Trump",
+            "gender": "unknown",
+            "referenceFrames": 97,
+            "publisherGroup": "English Male"
+          },
+          {
+            "id": "Ava",
+            "label": "EN The Bitter Lesson",
+            "gender": "unknown",
+            "referenceFrames": 98,
+            "publisherGroup": "English Female"
+          },
+          {
+            "id": "Bella",
+            "label": "EN A Gentle Reminder",
+            "gender": "unknown",
+            "referenceFrames": 59,
+            "publisherGroup": "English Female"
+          },
+          {
+            "id": "Adam",
+            "label": "EN English News",
+            "gender": "unknown",
+            "referenceFrames": 59,
+            "publisherGroup": "English Male"
+          },
+          {
+            "id": "Nathan",
+            "label": "EN The Quiet Motion of the World",
+            "gender": "unknown",
+            "referenceFrames": 168,
+            "publisherGroup": "English Male"
+          },
+          {
+            "id": "Soyo",
+            "label": "JP Soyo",
+            "gender": "unknown",
+            "referenceFrames": 125,
+            "publisherGroup": "Japanese Female"
+          },
+          {
+            "id": "Saki",
+            "label": "JP Saki",
+            "gender": "unknown",
+            "referenceFrames": 32,
+            "publisherGroup": "Japanese Female"
+          },
+          {
+            "id": "Mortis",
+            "label": "JP Mortis",
+            "gender": "unknown",
+            "referenceFrames": 60,
+            "publisherGroup": "Japanese Female"
+          },
+          {
+            "id": "Umiri",
+            "label": "JP Umiri",
+            "gender": "unknown",
+            "referenceFrames": 77,
+            "publisherGroup": "Japanese Female"
+          },
+          {
+            "id": "Mei",
+            "label": "JP Togawa",
+            "gender": "unknown",
+            "referenceFrames": 49,
+            "publisherGroup": "Japanese Female"
+          },
+          {
+            "id": "Anon",
+            "label": "JP Anon",
+            "gender": "unknown",
+            "referenceFrames": 47,
+            "publisherGroup": "Japanese Female"
+          },
+          {
+            "id": "Arisa",
+            "label": "JP Arisa",
+            "gender": "unknown",
+            "referenceFrames": 85,
+            "publisherGroup": "Japanese Female"
+          }
+        ],
+        "notes": "18 actual voice code profiles are pinned within browser_poc_manifest.json. Names/groups do not establish gender or native Arabic pronunciation. No user reference encoding is bundled."
       },
       "components": [
         {
@@ -422,19 +571,19 @@
         }
       ],
       "runtime": {
-        "status": "planned-not-executable",
-        "targetBackend": "ONNX Runtime CPU; native SentencePiece/text frontend and cached multi-graph decoder",
+        "status": "integrated-experimental-cpu-arm64",
+        "targetBackend": "Isolated SentencePiece frontend + shared ONNX Runtime 1.20.0 CPU generator and incremental codec",
         "streaming": {
-          "upstream": "KV-cached global/local decoding plus stateful codec",
-          "hearth": false,
-          "nativeOutput": "48000Hz stereo; Hearth SDK currently accepts mono, requiring explicit tested downmix or an API extension"
+          "upstream": "KV-cached autoregressive code generation and stateful incremental waveform codec",
+          "hearth": true,
+          "nativeOutput": "48000Hz stereo, explicitly averaged L/R into mono float PCM chunks <=1s"
         },
         "blockers": [
-          "No Hearth adapter; upstream Android smoke example consumes pretokenized prompts.",
-          "Implement SentencePiece and exact special tokens/prompt grammar.",
-          "Implement KV ownership, local generation sampler, decode-step termination and stereo-to-mono conversion.",
-          "No verified Nano-specific Arabic quality score.",
-          "Official ONNX assets are much larger than the 100M parameter headline; do not claim PyTorch size as Android download."
+          "Owner listening and S25 latency, memory, thermal validation remain.",
+          "Reference voice genders are unknown; cross-language Arabic quality requires listening.",
+          "No WeText number expansion or user-reference encoder yet.",
+          "375 frames / 30s maximum per article part; reaching the bound without EOS is surfaced as error.",
+          "CPU ARM64 only; no ORT GPU provider claimed."
         ]
       },
       "license": {
@@ -446,7 +595,17 @@
         "https://huggingface.co/OpenMOSS-Team/MOSS-TTS-Nano-100M-ONNX",
         "https://huggingface.co/OpenMOSS-Team/MOSS-Audio-Tokenizer-Nano-ONNX"
       ],
-      "requiredSourceBytes": 717868602
+      "requiredSourceBytes": 717868602,
+      "nativeRuntime": {
+        "abi": "arm64-v8a",
+        "backend": "ONNX Runtime CPU",
+        "file": "libhearth_moss.so",
+        "bytes": 574144,
+        "sha256": "b7afd56c7d4a9a989f2a995cd984012f8eeec620ed87bf48d98d22864e918f38"
+      },
+      "quality": {
+        "scope": "Functional real-model C ABI and JNI Arabic/English PCM smoke only. Not a listening quality score or S25 performance result."
+      }
     },
     {
       "id": "chatterbox-multilingual-v3",
@@ -482,7 +641,7 @@
         "zh"
       ],
       "voices": {
-        "kind": "default-reference-or-user-reference",
+        "kind": "pinned-default-reference",
         "items": [
           {
             "id": "default",
@@ -491,7 +650,7 @@
             "genderEvidence": null
           }
         ],
-        "notes": "Default reference gender is unverified. Pin user/imported male/female reference metadata separately."
+        "notes": "Hearth exposes only pinned default_voice.wav with UNKNOWN gender. No custom-reference import/voice cloning UI and no male/female default is claimed."
       },
       "components": [
         {
@@ -542,7 +701,13 @@
           "bytes": 228633,
           "sha256": "91846c24706116f87b39aac5b13aa1a67243b6f973bc433327d143b8eff9fde6",
           "role": "onnx-model",
-          "required": true
+          "required": true,
+          "installed": {
+            "filename": "onnx/language_model_q4.ort20.onnx",
+            "bytes": 228453,
+            "sha256": "60f1451649fcef2014208084f546328f3a4e32c635d57983da7dcf75e9e3dbe8"
+          },
+          "preparation": "Remove only three empty trailing optional GroupQueryAttention inputs in exactly30nodes, preserving attributes/weights/all other protobuf fields. Bounded Kotlin converter checks exact source/output SHA. Exact tokens/PCM parity under same ORT1.24.3; ORT-version numerical differences separately recorded."
         },
         {
           "filename": "onnx/language_model_q4.onnx_data",
@@ -593,24 +758,61 @@
           "sha256": "3ebc531cdaba358a327099c1c4f0448026719957bcf4d8e9868767f227e02f4e",
           "role": "reference-audio",
           "required": true
+        },
+        {
+          "filename": "perth_net_250000.pth.tar",
+          "repo": "resemble-ai/Perth",
+          "revision": "ff1c8ac55a976971245cdd53c18d6131ca00d993",
+          "url": "https://raw.githubusercontent.com/resemble-ai/Perth/ff1c8ac55a976971245cdd53c18d6131ca00d993/src/perth/perth_net/pretrained/implicit/perth_net_250000.pth.tar",
+          "bytes": 37429684,
+          "sha256": "a15bce457ebc53ce5e6c9c3f11df78cf7ee2bf9cdab0a798902135b4c4027670",
+          "role": "watermark-checkpoint-source",
+          "required": true,
+          "installed": {
+            "filename": "perth-encoder.bin",
+            "bytes": 37387276,
+            "sha256": "02101c6f48e5f928ef25169f04d7d60373fd22028faf58b105c4d7a6e010916f"
+          },
+          "preparation": "Bounded exact-ZIP tensor storage converter; no pickle interpretation/execution. Full raw SHA, exact ZIP inventory, per-tensor SHA and final output SHA required."
         }
       ],
       "runtime": {
-        "status": "planned-not-executable",
-        "targetBackend": "ONNX Runtime CPU with com.microsoft contrib ops and MatMulNBits support",
+        "status": "integrated-experimental",
+        "targetBackend": "Isolated hearth-tts-chatterbox ARM64 CPU C ABI + shared ONNX Runtime1.20.0 Android; host1.20.1 tested",
+        "advertisedLanguages": [
+          "ar",
+          "en"
+        ],
+        "upstreamRuntime": {
+          "repo": "https://github.com/birdup000/chatterboxcpp",
+          "revision": "1a9a4fc00a6caa8c8bb9bee533225f40661e4220",
+          "tokenizersVersion": "0.22.2",
+          "perthRevision": "ff1c8ac55a976971245cdd53c18d6131ca00d993",
+          "jsonVersion": "3.11.2",
+          "jsonSourceRevision": "8c8cab2a954810216a45d65c1b8d56839c846e5b"
+        },
+        "packagedBinary": {
+          "abi": "arm64-v8a",
+          "backend": "ONNX Runtime CPU",
+          "file": "libhearth_chatterbox.so",
+          "bytes": 3255296,
+          "sha256": "b73b4cd053148b93a22cb0f61fbe69481e027a9035182ea7311ce0b93ce3b1c0"
+        },
         "streaming": {
-          "upstream": "KV-cached LM then conditional waveform decoder; exact streaming behavior to validate",
-          "hearth": false,
+          "upstream": "KV-cached LM followed by whole conditional waveform decoder; not incremental audio streaming",
+          "hearth": "Article parts <=120 UTF-16characters; model completion+native Perth before bounded <=1second PCM frames; 500speech tokens/20second part limit fails without STOP",
           "nativeOutput": "24000Hz mono"
         },
+        "modelIntegrity": "Every raw component fully hashed before install; graph and Perth derived outputs fully hashed before use. No downloaded native code.",
+        "cancellation": "Atomic cancellation + ORT RunOptionsTerminate; native Perth checks each STFT frame and convolution outputchannel/time; JNI preserves callback failures and handle leases. Initialization may still delay cancellation.",
         "blockers": [
-          "No Hearth V3 adapter.",
-          "Use NFKD full-case tokenizer; do not lowercase.",
-          "Trim reference to6s; maintain16-head/64dim caches; drop final960audio samples per upstream V3 contract.",
-          "Export omits Perth watermarking used upstream; integration needs explicit output provenance/watermark decision and upstream policy check.",
-          "Chinese/Japanese frontends missing in this export; metadata language coverage is upstream and does not mean all native text frontends are implemented.",
-          "Q4 Arabic parity, live latency and gender inventory unverified."
-        ]
+          "Owner Arabic/English listening and speaker preference not measured.",
+          "S25/S22 cold/warm latency, realtimefactor, peak memory and thermal behavior not measured; no Android-device inference claim.",
+          "No GPU backend enabled.",
+          "No custom reference import and no verified speaker-gender metadata; strict gender requests fail.",
+          "Only Arabic/English exposed by native adapter initially; upstream CJK/Russian frontends and Hebrew quality remain outside its advertised scope."
+        ],
+        "evidence": "docs/research/chatterbox-native-smoke-2026-10-20.json"
       },
       "license": {
         "name": "MIT model/export; upstream watermarking policy and reference rights must be preserved",
@@ -618,16 +820,25 @@
       },
       "sources": [
         "https://github.com/resemble-ai/chatterbox",
-        "https://huggingface.co/Masterx/chatterbox-multilingual-v3-ONNX"
+        "https://huggingface.co/Masterx/chatterbox-multilingual-v3-ONNX",
+        "https://github.com/birdup000/chatterboxcpp/tree/1a9a4fc00a6caa8c8bb9bee533225f40661e4220",
+        "https://github.com/resemble-ai/Perth/tree/ff1c8ac55a976971245cdd53c18d6131ca00d993",
+        "https://github.com/microsoft/onnxruntime/blob/v1.20.0/onnxruntime/core/graph/contrib_ops/bert_defs.cc",
+        "https://github.com/microsoft/onnxruntime/blob/v1.24.3/onnxruntime/core/graph/contrib_ops/bert_defs.cc"
       ],
-      "requiredSourceBytes": 1556285252,
+      "requiredSourceBytes": 1593714936,
       "quality": {
-        "scope": "Export parity tested on limited non-Arabic examples; do not label as Arabic quality verified."
-      }
+        "scope": "Real Arabic/English finite PCM and exact graph-transform parity exercised; no Hearth Arabic intelligibility/CER or owner listening score. Original export reports English2.5%WER on10sentences, not a S25/Q4 Arabic score.",
+        "source": "https://huggingface.co/Masterx/chatterbox-multilingual-v3-ONNX/blob/19b94afe41de738624b2f3afc75b4cd56221fbeb/README.md",
+        "graphTransformParity": "Same ORT1.24.3: raw/derived Arabic41 and English29speech tokens identical; seeded decoder +Perth PCM bit-identical. ORT1.20.1 separately yielded30English tokens; cross-version bit parity is explicitly not claimed.",
+        "watermark": "Mandatory native Perth. Original Torch vs native32k waveform maxerror1.64e-6; detector harmonic test .9957895, silence undefined/NaN preserved. See separate pinned parity receipt."
+      },
+      "installedBytes": 1593672348,
+      "sourceArchiveDownloadWarning": "Final installed model footprint: 1,593,672,348 bytes. The pinned source download is 1,593,714,936 bytes: the LM graph is transformed without changing weights, and the raw Perth ZIP is converted to the verified native encoder. Only Arabic/English are exposed by Hearth; the language list above describes the upstream family."
     },
     {
       "id": "outetts-1.0-1b",
-      "label": "OuteTTS1.0 1B",
+      "label": "OuteTTS 1.0 1B",
       "family": "OuteTTS",
       "parameters": {
         "headline": 1000000000,
@@ -639,79 +850,89 @@
         "en"
       ],
       "voices": {
-        "kind": "default-or-user-speaker-profiles",
+        "kind": "pinned-english-reference",
         "items": [
           {
             "id": "EN-FEMALE-1-NEUTRAL",
-            "label": "English female neutral (upstream example)",
-            "gender": "female",
-            "genderEvidence": "Official Oute model usage names this profile explicitly; profile bytes and cross-lingual Arabic QA not pinned here."
+            "label": "English reference 1 neutral",
+            "gender": "unknown",
+            "genderEvidence": "Official profile name is female, but Hearth has not verified cross-lingual gender matching."
           }
         ],
-        "notes": "No verified male or native Arabic reference profile currently bundled. Do not expose a missing profile as installed."
+        "notes": "One pinned English reference; Arabic is cross-lingual and may retain its accent. No bundled male/native Arabic reference."
       },
       "components": [
         {
-          "filename": "Llama-OuteTTS-1.0-1B-Q4_K_M.gguf",
-          "repo": "OuteAI/Llama-OuteTTS-1.0-1B-GGUF",
-          "revision": "f0a131bce9ca77922d38da5af18db11d29b6b768",
-          "url": "https://huggingface.co/OuteAI/Llama-OuteTTS-1.0-1B-GGUF/resolve/f0a131bce9ca77922d38da5af18db11d29b6b768/Llama-OuteTTS-1.0-1B-Q4_K_M.gguf",
-          "bytes": 818168800,
-          "sha256": "4713e9f50ec53500bb6cff56a95940d944ad5e637f6abc8a4780f07e2a71d41f",
-          "role": "generator",
+          "filename": "oute-tts-1b.bin",
+          "repo": "judd2024/chatllm_quantized_oute-tts",
+          "revision": "a1b7a4fc64949c9d6a3206422830df41009f1ad7",
+          "url": "https://modelscope.cn/api/v1/models/judd2024/chatllm_quantized_oute-tts/repo?Revision=a1b7a4fc64949c9d6a3206422830df41009f1ad7&FilePath=oute-tts-1b.bin",
+          "bytes": 1438416240,
+          "sha256": "e4e14b573459a8a4958e32e39678d2f0ac61cf73ccadb6dbda1f8fde1f8ade83",
+          "role": "combined-Q8-generator-and-IBM-DAC-v1.0",
           "required": true
         },
         {
-          "filename": "weights_24khz_1.5kbps_v1.0.pth",
-          "repo": "ibm-research/DAC.speech.v1.0",
-          "revision": "1ea7f64cd0678415e2d8c32d67b190722cb9b149",
-          "url": "https://huggingface.co/ibm-research/DAC.speech.v1.0/resolve/1ea7f64cd0678415e2d8c32d67b190722cb9b149/weights_24khz_1.5kbps_v1.0.pth",
-          "bytes": 295731578,
-          "sha256": "d77ca0b04df942ec64e6a7a162bcac093b1127700acdaec0079f40d32c4405fb",
-          "role": "codec-source-weights",
-          "required": true,
-          "installAction": "Convert to an Android executable codec graph/native runtime. This PyTorch file is not supported by Hearth."
-        },
-        {
-          "filename": "config.json",
-          "repo": "ibm-research/DAC.speech.v1.0",
-          "revision": "1ea7f64cd0678415e2d8c32d67b190722cb9b149",
-          "url": "https://huggingface.co/ibm-research/DAC.speech.v1.0/resolve/1ea7f64cd0678415e2d8c32d67b190722cb9b149/config.json",
-          "bytes": 601,
-          "sha256": "0c70fd77a5f698061e323c0adb483ffeeb622f27f7a11f1301fa0c3b9b41df76",
-          "role": "codec-metadata",
+          "filename": "en-female-1-neutral.json",
+          "repo": "edwko/OuteTTS",
+          "revision": "f5eac6e70d792844c6a6959d900a47af2c061a5b",
+          "url": "https://raw.githubusercontent.com/edwko/OuteTTS/f5eac6e70d792844c6a6959d900a47af2c061a5b/outetts/version/v3/default_speakers/json/en-female-1-neutral.json",
+          "bytes": 25295,
+          "sha256": "6bb6bacca60c9759741d849c2baf2af3f6263a51b759d67826ef39e1efc4436c",
+          "role": "reference-speaker-profile",
           "required": true
         }
       ],
       "runtime": {
-        "status": "planned-not-executable",
-        "targetBackend": "Isolated llama.cpp generator plus separately converted IBM DAC2-codebook waveform decoder",
+        "status": "implemented-host-smoke-verified-android-build",
+        "targetBackend": "Isolated ChatLLM.cpp/GGML ARM64 CPU with combined Oute1.0 generator and DAC1.0 decoder",
+        "sourceRevision": "74b8237a4c1796f76bb0ed7f483b8e52e7d4d5c7",
         "streaming": {
-          "upstream": "Chunked speech generation; reference profile occupies context",
+          "upstream": "Autoregressive speech tokens then full waveform decoding",
           "hearth": false,
-          "nativeOutput": "24000Hz mono"
+          "nativeOutput": "24000Hz mono; bounded4096sample callbacks after complete utterance generation"
         },
         "blockers": [
-          "No Hearth adapter.",
-          "Source codec weights need executable Android conversion with pinned outputs and parity tests.",
-          "Native port must implement1.0 prompt timing/energy/pitch metadata; do not use0.3 WavTokenizer.",
-          "Pin and verify speaker-profile bytes and provenance; reference uses context, reducing available generation duration.",
-          "Noncommercial/share-alike/Llama terms exclude this from an unrestricted commercial default SDK bundle.",
-          "No verified Arabic Q4 quality or S25 benchmark."
-        ]
+          "Owner phone listening and Arabic intelligibility/gender verification remain acceptance gates.",
+          "S25/S22 latency, heat, peak memory and sustained playback measurements remain untested.",
+          "Noncommercial/share-alike and Llama terms prevent an unrestricted commercial SDK default."
+        ],
+        "limitations": [
+          "Slow experimental option; no Basic default promotion.",
+          "Noncommercial/share-alike/Llama model terms.",
+          "English reference used cross-lingually; no Arabic intelligibility or device benchmark claim.",
+          "Maximum180Unicodecodepoints per article chunk; token/context limits fail instead of returning truncated speech."
+        ],
+        "implementationComplete": true
       },
       "license": {
-        "name": "CC-BY-NC-SA-4.0 continued training/components; Llama3.2 Community License; DAC CDLA-Permissive2.0",
+        "name": "CC-BY-NC-SA-4.0 continued training/components; Llama3.2 Community License; DAC CDLA-Permissive2.0; reference profile Apache-2.0",
         "url": "https://huggingface.co/OuteAI/Llama-OuteTTS-1.0-1B#license-information"
       },
       "sources": [
         "https://huggingface.co/OuteAI/Llama-OuteTTS-1.0-1B",
         "https://huggingface.co/OuteAI/Llama-OuteTTS-1.0-1B-GGUF",
         "https://huggingface.co/ibm-research/DAC.speech.v1.0",
-        "https://github.com/edwko/OuteTTS"
+        "https://github.com/edwko/OuteTTS",
+        "https://github.com/foldl/chatllm.cpp",
+        "https://modelscope.cn/models/judd2024/chatllm_quantized_oute-tts"
       ],
-      "requiredSourceBytes": 1113900979,
-      "selectedWeightsBytes": 1113900378
+      "requiredSourceBytes": 1438441535,
+      "selectedWeightsBytes": 1438416240,
+      "validation": {
+        "method": "Full bytes/SHA256 verified; real native model inference for Arabic and English with pinned reference",
+        "hostOnly": true,
+        "evidence": "docs/research/oute-native-smoke-2026-10-20.json"
+      },
+      "publisherLanguages": {
+        "source": "https://huggingface.co/OuteAI/Llama-OuteTTS-1.0-1B#5-multilingual-capabilities",
+        "claimedCount": 23,
+        "hearthExposedAndSmokeTested": [
+          "ar",
+          "en"
+        ],
+        "note": "SDK deliberately limits exposed language coverage to the two real-model paths exercised here."
+      }
     }
   ]
 }

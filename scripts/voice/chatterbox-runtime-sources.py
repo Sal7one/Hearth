@@ -1,0 +1,7 @@
+#!/usr/bin/env python3
+"""Attest owned V3 orchestration, public C ABI and Rust tokenizer sources before/after native build."""
+import hashlib,json
+from pathlib import Path
+root=Path(__file__).resolve().parents[2]
+files=['hearth-tts-chatterbox/src/main/java/com/sal7one/hearth/tts/chatterbox/ChatterboxGraph.kt','hearth-tts-chatterbox/src/main/java/com/sal7one/hearth/tts/chatterbox/ChatterboxPerth.kt','hearth-tts-chatterbox/src/main/java/com/sal7one/hearth/tts/chatterbox/ChatterboxPerthRecipe.kt','hearth-tts-chatterbox/src/main/assets/licenses/chatterbox/perth-conversion.json','scripts/voice/build-chatterbox-runtime.sh','scripts/voice/chatterbox-runtime-sources.py','scripts/voice/chatterbox/CMakeLists.txt','scripts/voice/chatterbox/prepare-watermark.py','hearth-tts-chatterbox/src/main/cpp/chatterbox.cpp','hearth-tts-chatterbox/src/main/cpp/ort_values.h','hearth-tts-chatterbox/src/main/cpp/frontend.h','hearth-tts-chatterbox/src/main/cpp/vendor/chatterbox.h','hearth-tts-chatterbox/src/main/cpp/vendor/json.hpp','hearth-tts-chatterbox/src/main/cpp/runtime.map','common-jni/src/main/cpp/onnx/include/onnxruntime/onnxruntime_c_api.h','common-jni/src/main/cpp/translation/bpe-rust/Cargo.lock','common-jni/src/main/cpp/translation/bpe-rust/Cargo.toml','common-jni/src/main/cpp/translation/bpe-rust/src/lib.rs']
+print(json.dumps({n:hashlib.sha256((root/n).read_bytes()).hexdigest() for n in files},sort_keys=True,indent=2))

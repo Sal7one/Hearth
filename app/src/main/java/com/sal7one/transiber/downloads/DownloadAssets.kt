@@ -14,6 +14,7 @@ internal data class DownloadAsset(val id: String, val url: String, val bytes: Lo
 
 internal object DownloadAssets {
     fun find(id: String): DownloadAsset? {
+        com.sal7one.transiber.models.SpeechComponents.part(id)?.let { return it.asset() }
         Ct2Package.part(id)?.let { return it.asset() }
         MarianPackage.part(id)?.let { return it.asset() }
         TranslationCatalog.models.firstOrNull { it.id == id }?.let {
@@ -22,7 +23,7 @@ internal object DownloadAssets {
         SpeechDownloads.find(id)?.let {
             return DownloadAsset(id, it.url, it.bytes, it.sha256, it.installationBytes)
         }
-        SpeechArtifactCatalog.find(id)?.let {
+        SpeechArtifactCatalog.find(id)?.takeUnless { it.components != null }?.let {
             return DownloadAsset(id, it.url, it.bytes, it.sha256, it.installedBytes)
         }
         OcrCatalog.find(id)?.let { return DownloadAsset(id, it.url, it.bytes, it.sha256, it.bytes) }

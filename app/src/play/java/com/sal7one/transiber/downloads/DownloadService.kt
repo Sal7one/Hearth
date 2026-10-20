@@ -70,7 +70,7 @@ class DownloadService : Service() {
             com.sal7one.transiber.runtime.LocalModelPolicy.requireAllowed(this, "model downloads")
         if (com.sal7one.transiber.translation.Ct2Package.part(modelId) != null)
             com.sal7one.transiber.translation.Ct2Package.requireRuntime(this)
-        if (modelId.startsWith("voice-magpie-")) com.sal7one.transiber.voice.MagpiePolicy.requireAllowed(this)
+        com.sal7one.transiber.voice.VoiceCatalog.find(modelId)?.let { com.sal7one.transiber.voice.LocalVoiceFamilies.requireAllowed(this,it.family,"speech model download") }
         val asset = DownloadAssets.find(modelId)
         var complete = record.optBoolean("downloadComplete")
         if (complete) {

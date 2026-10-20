@@ -40,7 +40,7 @@ void fail(JNIEnv* env, const char* error) {
     if (instance) env->Throw(instance);
 }
 }
-extern "C" JNIEXPORT jint JNICALL Java_com_sal7one_common_1jni_translation_Ct2Native_protocolVersion(JNIEnv*, jobject) { return 1; }
+extern "C" JNIEXPORT jint JNICALL Java_com_sal7one_common_1jni_translation_Ct2Native_protocolVersion(JNIEnv*, jobject) { return 2; }
 extern "C" JNIEXPORT jlong JNICALL Java_com_sal7one_common_1jni_translation_Ct2Native_create(JNIEnv* env, jobject, jbyteArray path, jint mode) {
  try { return models.insert(std::make_unique<hearth::Ct2Model>(bytes(env,path), mode)); }
  catch (const std::exception& e) { fail(env,e.what()); return 0; }

@@ -1,6 +1,7 @@
 #include "speech_session.h"
 #include "backend_versions.h"
 #include "expansion/versions.h"
+#include "modern_cpu/versions.h"
 #include "qwen_language.h"
 #include <cmath>
 #include <cstring>
@@ -79,6 +80,11 @@ SpeechConfig::SpeechConfig(const std::string& json) {
             const std::string supported = " auto ar en zh yue ja ko vi id th ms fil hi bg hr cs da nl et fi el hu ga lv lt mt pl pt ro sk sl sv ";
             if (supported.find(" " + paths[5] + " ") == std::string::npos) throw std::invalid_argument("Unsupported Fun-ASR MLT source language");
         }
+    } else if (backend == "owsm" || backend == "audar_mtmd") {
+        if (paths[0].empty() || (backend == "audar_mtmd" && paths[2].empty()))
+            throw std::invalid_argument("OWSM/Audar requires its complete GGUF package");
+        if (paths[5] != "auto" && paths[5] != "ar" && paths[5] != "en")
+            throw std::invalid_argument("OWSM/Audar source language must be Auto, Arabic or English");
     } else if (backend == "nemotron_3_5") {
         if (paths[0].empty() || paths[5].empty()) throw std::invalid_argument("Nemotron requires a model path and source language");
         const int r = value.right_context;
@@ -96,6 +102,8 @@ const HearthSpeechBackend& loadBackend(const std::string& id, const std::string&
     if (id == "qwen3_asr" || id == "moonshine" || id == "omnilingual_ctc" || id == "phonon") { name = "libhearth_qwen"; revision = HEARTH_QWEN_REVISION; }
     else if (id == "transcribepsy") { name = "libhearth_transcribepsy"; revision = HEARTH_TRANSCRIBEPSY_REVISION; }
     else if (id == "cohere_asr" || id == "funasr_mlt_nano" || id == "voxtral_realtime") { name = "libhearth_transcribe_cpp"; revision = HEARTH_TRANSCRIBE_CPP_REVISION; }
+    else if (id == "owsm") { name = "libhearth_owsm"; revision = HEARTH_OWSM_REVISION; }
+    else if (id == "audar_mtmd") { name = "libhearth_audar"; revision = HEARTH_AUDAR_REVISION; }
     else if (id == "nemotron_3_5") { name = "libhearth_nemotron"; revision = HEARTH_NEMO_REVISION; }
     else throw std::invalid_argument("Unknown speech backend: " + id);
     if (acceleration != "cpu") name += "_" + acceleration;
@@ -118,6 +126,8 @@ const HearthSpeechBackend& loadBackend(const std::string& id, const std::string&
         id == "phonon" ? "hearth_phonon_backend_v1" :
         id == "cohere_asr" ? "hearth_cohere_backend_v1" :
         id == "funasr_mlt_nano" ? "hearth_funasr_backend_v1" :
+        id == "owsm" ? "hearth_owsm_backend_v1" :
+        id == "audar_mtmd" ? "hearth_audar_backend_v1" :
         id == "voxtral_realtime" ? "hearth_voxtral_backend_v1" : "hearth_speech_backend_v1";
     auto entry = reinterpret_cast<HearthSpeechEntry>(dlsym(library, symbol));
     const auto* api = entry ? entry() : nullptr;

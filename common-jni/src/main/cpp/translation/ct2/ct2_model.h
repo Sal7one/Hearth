@@ -1,6 +1,7 @@
 #pragma once
 #include <ctranslate2/translator.h>
 #include <sentencepiece_processor.h>
+#include "byte_bpe.h"
 #include <atomic>
 #include <chrono>
 #include <mutex>
@@ -11,6 +12,8 @@
 namespace hearth {
 class Ct2Model {
     bool small;
+    int mode;
+    std::unique_ptr<ByteBpe> bpe;
     sentencepiece::SentencePieceProcessor source, target;
     ctranslate2::Translator translator;
     std::mutex mutex;
@@ -22,11 +25,15 @@ class Ct2Model {
     }
 public:
     std::atomic<bool> cancelled{false};
-    Ct2Model(const std::string& directory, int mode) : small(mode == 1),
+    Ct2Model(const std::string& directory, int mode) : small(mode == 1), mode(mode),
         translator(directory, ctranslate2::Device::CPU,
-                   mode == 1 ? ctranslate2::ComputeType::INT8_FLOAT32 : ctranslate2::ComputeType::FLOAT32,
+                   mode >= 1 && mode <= 3 ? ctranslate2::ComputeType::INT8_FLOAT32 : ctranslate2::ComputeType::FLOAT32,
                    {0}, false, pool()) {
-        if (mode != 0 && mode != 1) throw std::invalid_argument("Unsupported CT2 tokenizer mode");
+        if (mode < 0 || mode > 5) throw std::invalid_argument("Unsupported CT2 tokenizer mode");
+        if (mode >= 2) {
+            bpe = std::make_unique<ByteBpe>(directory + "/tokenizer.json");
+            return;
+        }
         auto status = source.Load(directory + (small ? "/sentencepiece.bpe.model" : "/src.spm.model"));
         if (!status.ok()) throw std::runtime_error("CT2 source tokenizer: " + status.ToString());
         status = target.Load(directory + (small ? "/sentencepiece.bpe.model" : "/tgt.spm.model"));
@@ -37,8 +44,22 @@ public:
         if (cancelled.load()) throw std::runtime_error("CT2 translation cancelled");
         if (text.empty() || text.size() > 12000) throw std::invalid_argument("CT2 input must contain 1–12000 UTF-8 bytes");
         std::vector<std::string> pieces;
-        auto status = source.Encode(text, &pieces);
-        if (!status.ok()) throw std::runtime_error("CT2 encode failed: " + status.ToString());
+        if (bpe) {
+            static const std::vector<std::pair<std::string, std::string>> tags = {
+                {"ar", "ara"}, {"arz", "arz"}, {"ary", "ary"}, {"arq", "arq"},
+                {"aeb", "aeb"}, {"ayl", "ayl"}, {"apc", "apc"}, {"ajp", "ajp"},
+                {"ajp-ps", "ajp-ps"}, {"ars", "ars"}, {"afb", "afb"},
+                {"apd", "apd"}, {"acq", "acq"}, {"acm", "acm"}
+            };
+            std::string tag;
+            if ((mode == 3 || mode == 5) && language == "en") tag = "eng";
+            if (mode == 2 || mode == 4) for (const auto& entry : tags) if (entry.first == language) tag = entry.second;
+            if (tag.empty()) throw std::invalid_argument("Unsupported Jisr target language or dialect");
+            pieces = bpe->encode(">>" + tag + "<< " + text);
+        } else {
+            const auto status = source.Encode(text, &pieces);
+            if (!status.ok()) throw std::runtime_error("CT2 encode failed: " + status.ToString());
+        }
         if (pieces.empty() || pieces.size() > 1022) throw std::invalid_argument("CT2 input exceeds 1022 tokens; split the text first");
         if (small) {
             if (language.size() < 2 || language.size() > 3 || language.find_first_not_of("abcdefghijklmnopqrstuvwxyz") != std::string::npos)
@@ -47,13 +68,16 @@ public:
         }
         // Both publisher tokenizers append EOS themselves; add_source_eos=false
         // in QuickMT's CT2 config means the runtime must not append a second EOS.
-        pieces.push_back("</s>");
+        if (!bpe) pieces.push_back("</s>");
         const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(20);
         ctranslate2::TranslationOptions options;
         options.beam_size = 1;
         options.max_input_length = 0;
-        options.max_decoding_length = 384;
-        options.disable_unk = !small;
+        options.max_decoding_length = bpe ? 255 : 384;
+        options.disable_unk = !small && !bpe;
+        if (bpe) {
+            options.no_repeat_ngram_size = 3;
+        }
         options.callback = [this, deadline](ctranslate2::GenerationStepResult) {
             return cancelled.load() || std::chrono::steady_clock::now() >= deadline;
         };
@@ -64,10 +88,13 @@ public:
             throw std::runtime_error("CT2 returned no translation");
         // A length-limited hypothesis is not a complete translation.
         if (result[0].hypotheses[0].size() >= options.max_decoding_length)
-            throw std::runtime_error("CT2 translation exceeded 384 output tokens; incomplete text was not published");
+            throw std::runtime_error("CT2 translation exceeded its output token limit; incomplete text was not published");
         std::string output;
-        status = target.Decode(result[0].hypotheses[0], &output);
-        if (!status.ok()) throw std::runtime_error("CT2 decode failed: " + status.ToString());
+        if (bpe) output = bpe->decode(result[0].hypotheses[0]);
+        else {
+            const auto status = target.Decode(result[0].hypotheses[0], &output);
+            if (!status.ok()) throw std::runtime_error("CT2 decode failed: " + status.ToString());
+        }
         if (output.find_first_not_of(" \r\n\t") == std::string::npos) throw std::runtime_error("CT2 returned empty text");
         return output;
     }

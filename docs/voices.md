@@ -196,3 +196,22 @@ and adapter contract tests. Kotlin tests exercise import safety, capabilities,
 HTTP cancellation/redaction/bounds, WAV parsing and the real typing controller with
 a controlled translator. The native voice bounds suite runs with ASan/UBSan.
 See [v22 validation](validation-v22.md) for actual phone checks and limitations.
+
+## More local engines
+
+The local voice page has one engine picker. Basic starts with recommended engines;
+**More engines** reveals experimental choices without changing the global setup
+mode. A previously selected experimental engine remains visible. Advanced shows
+all executable families. Download/import changes model files; the separate
+**Use selected voice for captions** action changes only the voice choice and
+preserves STT, translation and the caption read-aloud toggle.
+
+OuteTTS 1.0 is an optional ARM64 CPU adapter with one pinned English reference for
+English and cross-lingual Arabic. The combined generator/DAC1.0 model and reference
+are a 1.34 GiB download. It generates an entire short utterance before playback,
+and host measurements were slower than real time; it is not a live-caption speed
+recommendation. Its model terms are noncommercial/share-alike plus Llama 3.2;
+strict gender matching and Arabic quality are unverified. Import the exact two
+files in Foss or use the pinned download in Play. License/source links remain
+under Model information, and imports/queue controls under Import and downloads.
+See [SDK integration and measured limits](tts-sdk.md#outetts-10-experimental-provider).

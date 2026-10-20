@@ -4,7 +4,7 @@ import argparse
 import json
 import re
 from pathlib import Path
-from urllib.parse import quote, unquote, urlsplit
+from urllib.parse import quote, unquote, urlsplit, parse_qsl
 
 ROOT = Path(__file__).resolve().parents[1]
 CARDS = ROOT / "docs/handoff/models"
@@ -35,12 +35,59 @@ def validate_component(component, label):
     require(isinstance(digest, str) and bool(HEX64.fullmatch(digest)) and len(set(digest)) > 1,
             f"{label}: missing or invalid content SHA256")
     parsed = urlsplit(component["url"])
-    require(parsed.scheme == "https" and parsed.hostname == "huggingface.co" and not parsed.username
-            and not parsed.password and not parsed.query and not parsed.fragment,
+    require(parsed.scheme == "https" and parsed.hostname in {"huggingface.co", "raw.githubusercontent.com", "modelscope.cn"}
+            and parsed.netloc == parsed.hostname and not parsed.username and not parsed.password and not parsed.fragment,
             f"{label}: expected a credential-free pinned HTTPS artifact URL")
-    prefix = f'/{component["repo"]}/resolve/{component["revision"]}/'
+    require(bool(re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+",component["repo"])), f"{label}: invalid source repository")
     path = unquote(parsed.path)
-    require(path.startswith(prefix) and safe_path(path[len(prefix):]), f"{label}: URL and source pin disagree")
+    if parsed.hostname == "modelscope.cn":
+        entries = parse_qsl(parsed.query,keep_blank_values=True,strict_parsing=True)
+        query = dict(entries)
+        require(len(entries) == 2 and set(query) == {"Revision", "FilePath"}
+                and query["Revision"] == component["revision"]
+                and path == f'/api/v1/models/{component["repo"]}/repo' and safe_path(query["FilePath"]),
+                f"{label}: URL and source pin disagree")
+    else:
+        require(not parsed.query, f"{label}: expected a credential-free pinned HTTPS artifact URL")
+        middle = "resolve/" if parsed.hostname == "huggingface.co" else ""
+        prefix = f'/{component["repo"]}/{middle}{component["revision"]}/'
+        require(path.startswith(prefix) and safe_path(path[len(prefix):]), f"{label}: URL and source pin disagree")
+
+
+def validate_jisr_profiles(model,label):
+    profiles=model.get("conversionProfiles")
+    require(isinstance(profiles,list) and bool(profiles),f"{label}: missing Jisr conversion profiles")
+    live=model.get("liveCatalogIds")
+    require(isinstance(live,list) and len(live)==len(set(live)) and bool(live),f"{label}: invalid Jisr live catalog IDs")
+    expected={"model.bin","config.json","shared_vocabulary.json","tokenizer.json","LICENSE","NOTICE"}
+    seen=set()
+    for profile in profiles:
+        identity=profile.get("modelId")
+        require(identity in live and identity not in seen,f"{label}: conversion modelId must uniquely match liveCatalogIds")
+        seen.add(identity)
+        require(profile.get("precision") in {"float32","int8"},f"{label}: invalid Jisr precision")
+        direction=profile.get("sourceDirection")
+        require(direction in {"en-ar","ar-en"},f"{label}: invalid Jisr direction")
+        suffix="-int8" if profile["precision"]=="int8" else ""
+        require(identity==f"ct2-jisr-50m-{direction}{suffix}",f"{label}: Jisr identity, direction and precision disagree")
+        parts=profile.get("components")
+        require(isinstance(parts,list),f"{label}: missing converted file list")
+        names=[];total=0
+        for part in parts:
+            name=part.get("filename")
+            require(safe_path(name) and "/" not in name,f"{label}: Jisr files must be at the package root")
+            names.append(name)
+            require(type(part.get("bytes")) is int and part["bytes"]>0,f"{label}: invalid converted size")
+            sha=part.get("sha256")
+            require(isinstance(sha,str) and bool(HEX64.fullmatch(sha)) and len(set(sha))>1,f"{label}: invalid converted SHA256")
+            total+=part["bytes"]
+        require(len(names)==len(set(names)) and set(names)==expected,f"{label}: Jisr conversion requires exactly six unique runtime files")
+        require(type(profile.get("requiredBytes")) is int and profile["requiredBytes"]==total,f"{label}: converted requiredBytes omits or double-counts files")
+        manifest=profile.get("importManifest")
+        require(isinstance(manifest,dict) and manifest.get("schemaVersion")==1 and manifest.get("modelId")==identity
+                and set(manifest)=={"schemaVersion","modelId"},f"{label}: root import manifest identity mismatch")
+        require(profile.get("downloadEnabled") is False,f"{label}: converted packages have no published direct download")
+    require(seen==set(live),f"{label}: a live Jisr conversion profile is missing")
 
 
 def validate_inventory(data, expected_category):
@@ -78,6 +125,8 @@ def validate_inventory(data, expected_category):
             if "downloadBytes" in variant:
                 require(variant["downloadBytes"] == sum(c["bytes"] for c in variant["components"] if c["required"]),
                         f"{label}: alternate quant has incorrect package total")
+        if model["family"] == "jisr-mt":
+            validate_jisr_profiles(model,label)
         if expected_category == "translation":
             require(bool(model.get("directions")), f"{label}: direction evidence is required")
         if expected_category == "tts":
@@ -89,6 +138,17 @@ def compact(value):
     if isinstance(value, str):
         return value
     return json.dumps(value, ensure_ascii=False, separators=(", ", ": "))
+
+
+def component_link(part):
+    parsed=urlsplit(part["url"])
+    if parsed.hostname=="modelscope.cn":
+        return f'https://modelscope.cn/api/v1/models/{part["repo"]}/repo/files?Revision={part["revision"]}&Recursive=true', "Pinned metadata"
+    middle="resolve/" if parsed.hostname=="huggingface.co" else ""
+    prefix=f'/{part["repo"]}/{middle}{part["revision"]}/'
+    file=quote(unquote(parsed.path)[len(prefix):],safe="/")
+    host="https://huggingface.co/" if parsed.hostname=="huggingface.co" else "https://github.com/"
+    return host+part["repo"]+"/blob/"+part["revision"]+"/"+file, "Pinned file"
 
 
 def render(inventories):
@@ -118,8 +178,16 @@ def render(inventories):
             lines += [f"- {blocker}" for blocker in model["runtime"]["blockers"]]
             lines += ["", "| Component | Role | Bytes | Required | Source |", "| --- | --- | ---: | --- | --- |"]
             for part in model["components"]:
-                source = "https://huggingface.co/" + part["repo"] + "/blob/" + part["revision"] + "/" + quote(unquote(urlsplit(part["url"]).path.split("/resolve/", 1)[1].split("/", 1)[1]), safe="/")
-                lines.append(f'| `{part["filename"]}` | {part["role"]} | {part["bytes"]:,} | {part["required"]} | [Pinned file]({source}) |')
+                source,source_label=component_link(part)
+                lines.append(f'| `{part["filename"]}` | {part["role"]} | {part["bytes"]:,} | {part["required"]} | [{source_label}]({source}) |')
+            if model["family"]=="jisr-mt" and model.get("conversionProfiles"):
+                lines += ["", "Converted runtime packages (generated locally; no direct download):", "",
+                          "| Model ID | Precision | Direction | Required bytes | Root files |",
+                          "| --- | --- | --- | ---: | --- |"]
+                for profile in model["conversionProfiles"]:
+                    names=", ".join(f'`{part["filename"]}`' for part in profile["components"])
+                    lines.append(f'| `{profile["modelId"]}` | {profile["precision"]} | {profile["sourceDirection"]} | {profile["requiredBytes"]:,} | {names} |')
+                lines += ["", "Each ZIP also places `hearth-translation.json` at its root, with schemaVersion 1 and that row’s modelId. The six runtime files above have exact hashes in JSON; source checkpoint totals are separate from converted package totals."]
             lines += ["", "Checksums and complete variant information are in the corresponding JSON inventory.", ""]
             if model.get("quality"):
                 lines += ["Evaluation evidence:", "", "```json", json.dumps(model["quality"], ensure_ascii=False, indent=2), "```", ""]

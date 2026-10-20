@@ -46,4 +46,15 @@ class BenchmarkDownloadProgressTest {
         assertEquals(listOf("HTTP 503"), progress.errors)
         assertEquals(0.35f, progress.fraction!!, 0.001f)
     }
+    @Test fun audarRequiresBothDecoderAndEncoderRatherThanAnAggregateTransfer() {
+        val group = requireNotNull(com.sal7one.transiber.models.SpeechComponents.find("audar-asr-v1-flash-q4_k_m"))
+        val model = SuggestedModel(group.id, "Audar", group.parts.sumOf { it.bytes }, "speech")
+        val first = row(-1, group.parts.first().id, "Installed", 100)
+        val partial = requireNotNull(BenchmarkDownloadProgress.forModel(model, listOf(first)))
+        assertEquals(2, partial.expectedFiles)
+        assertFalse(partial.complete)
+        val complete = requireNotNull(BenchmarkDownloadProgress.forModel(model,
+            listOf(first, row(-2,group.parts.last().id,"Installed",100))))
+        assertTrue(complete.complete)
+    }
 }

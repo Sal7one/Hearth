@@ -16,18 +16,16 @@ Languages: ar, en.
 
 Required source components: **1558.163 MB** (1,558,162,848 bytes).
 
-Readiness: **upstream_runtime_available_hearth_adapter_missing**. Target: cohere_asr.
+Readiness: **implemented-arm64-cpu-vulkan-host-cpu-smoked**. Target: Isolated pinned transcribe.cpp SpeechBackend ABI v2; ARM64 CPU plus explicit Vulkan with primary-backend validation.
 
-Streaming: utterance_finals.
+Streaming: {"hearth": false, "input": "Bounded live utterances; complete final output, no partials", "sourceLanguage": "Explicit ar or en; Auto is rejected"}.
 
 License: [Apache-2.0](https://huggingface.co/CohereLabs/cohere-transcribe-arabic-07-2026/blob/c3e911b42149bf7a1e53d5cef9878aee87515a23/README.md).
 
 Required work:
 
-- Implement pinned transcribe.cpp HearthSpeechBackend adapter and architecture/variant checks.
-- Build and attest CPU runtime; build separate optional arm64 Vulkan runtime with explicit backend validation.
-- Cohere requires a spoken-language selection; do not accept Auto and silently select Arabic.
-- Real Arabic/English parity and S25 latency/RAM tests pending.
+- Owner S25/S22 Arabic/Gulf quality, sustained latency, thermal and peak-memory acceptance remain.
+- Real host CPU fixtures do not establish Android Vulkan execution/parity or quantized corpus WER.
 
 | Component | Role | Bytes | Required | Source |
 | --- | --- | ---: | --- | --- |
@@ -80,20 +78,17 @@ Languages: ar, en.
 
 Required source components: **775.276 MB** (775,275,936 bytes).
 
-Readiness: **upstream_multimodal_path_available_hearth_adapter_missing**. Target: audar_mtmd.
+Readiness: **implemented_native_cpu_arm64_host_smoked_owner_device_pending**. Target: audar_mtmd.
 
-Streaming: utterance_finals_first; local_agreement_windowed_partials_later.
+Streaming: bounded_utterance_finals; no partials.
 
 License: [AudarAI Open License v1.0](https://www.audarai.com/license/audarai-open-license-v1.0/).
 
 Required work:
 
-- Audar GGUF is a decoder plus separate BF16 mmproj; current sherpa QWEN3_ASR ONNX adapter cannot load either file.
-- Implement dedicated mtmd ASR adapter and two-file transactional installer.
-- Do not quantize the required BF16 audio encoder.
-- Implement Qwen ASR scaffold parsing and genuine language None no-speech semantics.
-- Validate Q4/Q8 Arabic and English against publisher BF16 protocol; no selected-quant WER is published.
-- LocalAgreement redecoding is not cache-aware acoustic streaming.
+- Owner S25 Ultra CPU quality, sustained latency, memory and thermal acceptance remains pending.
+- Selected-quant corpus parity against publisher reference precision has not been established.
+- Only the verified Q4_K_M decoder plus matching publisher BF16 projector has a direct catalog download; Q8_0 remains a compatible prepared import without real-weight parity in this session.
 
 | Component | Role | Bytes | Required | Source |
 | --- | --- | ---: | --- | --- |
@@ -143,19 +138,17 @@ Languages: ar, en, fr, es, de, ru, zh, ja, it, pt, nl, hi, ko.
 
 Required source components: **2830.494 MB** (2,830,493,984 bytes).
 
-Readiness: **upstream_stream_api_available_hearth_adapter_missing**. Target: voxtral_realtime.
+Readiness: **implemented-arm64-cpu-vulkan-host-cpu-smoked**. Target: Isolated pinned transcribe.cpp SpeechBackend ABI v2; ARM64 CPU plus explicit Vulkan with primary-backend validation.
 
-Streaming: windowed_partials_in_current_upstream_adapter; model_architecture_is_streaming.
+Streaming: {"hearth": "Bounded windowed partials with monotonic revisions and exactly one final", "cacheAware": false, "upstream": "Reprocesses accumulated audio inside the bounded window", "sourceLanguage": "No native forced hint; Auto source stays unknown; user declaration may route independent MT"}.
 
 License: [Apache-2.0](https://huggingface.co/mistralai/Voxtral-Mini-4B-Realtime-2602/blob/2769294da9567371363522aac9bbcfdd19447add/README.md).
 
 Required work:
 
-- Implement transcribe.cpp stream adapter and hard bounded utterance resets.
-- Current pinned public extension says tentative partials reprocess accumulated audio; do not label cache-aware constant-memory streaming.
-- Stream is Auto-language only; do not advertise forced Arabic/English support.
-- Honor transcribe_was_truncated even if stream_finalize status is OK; never turn truncated output into successful complete final.
-- Arabic Q4 parity, S25 memory and thermal performance pending.
+- Owner S25/S22 latency, sustained-memory/thermal and selected-Q4 Arabic/Gulf quality acceptance remain.
+- No true incremental acoustic/KV streaming claim; observed host redecoding cost is included in the receipt.
+- Android Vulkan build/placement checks do not replace device execution/parity measurements.
 
 | Component | Role | Bytes | Required | Source |
 | --- | --- | ---: | --- | --- |
@@ -208,19 +201,17 @@ Languages: ar, en, zh, yue, ja, ko, vi, id, th, ms, fil, hi, bg, hr, cs, da, nl,
 
 Required source components: **891.271 MB** (891,271,232 bytes).
 
-Readiness: **upstream_runtime_available_hearth_adapter_missing**. Target: funasr_mlt_nano.
+Readiness: **implemented-arm64-cpu-vulkan-host-cpu-smoked**. Target: Isolated pinned transcribe.cpp SpeechBackend ABI v2; distinct MLT variant checks; ARM64 CPU plus explicit Vulkan.
 
-Streaming: utterance_finals.
+Streaming: {"hearth": false, "input": "Bounded live utterances; complete final output", "sourceLanguage": "Actual hints/Auto; ITN enabled"}.
 
 License: [FunASR Model Open Source License Agreement v1.1 (selected GGUF); upstream HF metadata currently says Apache-2.0](https://huggingface.co/handy-computer/Fun-ASR-MLT-Nano-2512-gguf/blob/5db7c5bcebbc70d6c372e825399c3019f6089af7/LICENSE).
 
 Required work:
 
-- Implement pinned transcribe.cpp adapter; require MLT variant, not Chinese/English/Japanese-only Nano sibling.
-- Build/stage CPU and optional Vulkan runtimes with matching ABI and source notices.
-- Keep ITN on for parity with the pinned quant benchmark.
-- Resolve license mismatch between current upstream HF metadata and the GGUF conversion LICENSE before enabling redistribution/download.
-- S25 speed, memory, Gulf quality and Q4 Arabic parity pending.
+- Owner S25/S22 Arabic/Gulf listening, sustained speed, memory and heat acceptance remain.
+- Selected Q8 host smoke is functional evidence, not a measured corpus WER or Android Vulkan parity score.
+- Retain selected export FunASR Model Open Source License Agreement v1.1; current upstream HF metadata has a different label.
 
 | Component | Role | Bytes | Required | Source |
 | --- | --- | ---: | --- | --- |
@@ -271,19 +262,17 @@ Languages: ar, en.
 
 Required source components: **118.205 MB** (118,204,672 bytes).
 
-Readiness: **upstream_runtime_available_android_adapter_missing**. Target: owsm.
+Readiness: **implemented_native_cpu_arm64_host_smoked_owner_device_pending**. Target: owsm.
 
-Streaming: utterance_finals.
+Streaming: bounded_utterance_finals; no partials.
 
 License: [CC-BY-4.0 (model weights); Apache-2.0 audio.cpp runtime is a separate license](https://huggingface.co/espnet/owsm_v4_base_102M/blob/1529407e6b49ffa6c335cbcff0926c72e16b2b63/README.md).
 
 Required work:
 
-- Implement narrow audio.cpp OWSM-only build and HearthSpeechBackend adapter; upstream framework default includes unrelated models and services.
-- Disable native model manager/network clients, server, CLI/media helpers, examples, tests from shipping DSO.
-- Map ar/en to ara/eng only at adapter boundary and retain ISO-639-1 output for MT routing.
-- Use complete bounded utterance input: audio.cpp streaming mode emits tokens from a complete file, not incremental microphone audio.
-- Validate Arabic Q8 quality, Android toolchain and GPU operation coverage before enabling GPU.
+- Owner S25 Ultra CPU quality, sustained latency, memory and thermal acceptance remains pending.
+- Selected-quant corpus parity against publisher reference precision has not been established.
+- Arabic host fixture produced substantial errors; the compact model remains explicitly experimental rather than a quality recommendation.
 
 | Component | Role | Bytes | Required | Source |
 | --- | --- | ---: | --- | --- |
@@ -329,7 +318,7 @@ Languages: en, ar.
 
 Required source components: **773.708 MB** (773,707,570 bytes).
 
-Readiness: **integrated-unverified**. Target: CTranslate2 4.8.3 CPU Ruy; ARM64 Android; 2 threads; bounded greedy decoder.
+Readiness: **implemented-arm64-cpu-host-smoked**. Target: CTranslate2 4.8.3 CPU Ruy; ARM64 Android; 2 threads; bounded greedy decoder.
 
 Streaming: Committed text segments; one complete result per input.
 
@@ -339,7 +328,7 @@ License: [CC-BY-4.0](https://huggingface.co/quickmt/quickmt-en-ar).
 
 Required work:
 
-- QuickMT AR→EN production weights and official Python output parity have not run; owner S25 sustained quality/latency/memory testing pending
+- Official Python output parity and owner S25 sustained quality/latency/memory testing pending
 - ARM64 only; 32-bit/other ABI activation and transfers rejected
 
 | Component | Role | Bytes | Required | Source |
@@ -396,7 +385,7 @@ Languages: bg, hr, cs, da, nl, en, et, fi, fr, de, el, hu, ga, it, lv, lt, mt, p
 
 Required source components: **1045.157 MB** (1,045,156,992 bytes).
 
-Readiness: **integrated-unverified**. Target: Existing llama.cpp CPU; explicit ARM64 Vulkan or Adreno OpenCL.
+Readiness: **implemented-host-cpu-smoked**. Target: Existing llama.cpp CPU; explicit ARM64 Vulkan or Adreno OpenCL.
 
 Streaming: Committed text segment in; complete translation out.
 
@@ -406,8 +395,9 @@ License: [Apache-2.0](https://huggingface.co/utter-project/EuroLLM-1.7B-Instruct
 
 Required work:
 
-- Real-weight English/Arabic parity and owner S25 benchmarks pending
-- Per-model GPU placement is checked at load; speed is not established
+- Official reference-output parity and owner S25 quality/latency/memory/thermal testing pending
+- Host sample output includes meaning and terminology errors; successful execution does not establish translation quality
+- Per-model GPU placement is checked at load; real-weight GPU speed is not established
 
 | Component | Role | Bytes | Required | Source |
 | --- | --- | ---: | --- | --- |
@@ -441,7 +431,7 @@ Languages: en, ar, arz, ary, arq, aeb, ayl, apc, ajp, ajp-ps, ars, afb, apd, acq
 
 Required source components: **390.802 MB** (390,802,192 bytes).
 
-Readiness: **not-implemented**. Target: Exported ONNX/Marian adaptation or tested CTranslate2 converter + ByteLevel BPE tokenizer.
+Readiness: **implemented-arm64-cpu-host-validated**. Target: CTranslate2 CPU + Hugging Face tokenizers 0.22.2 ByteLevel BPE (protocol 2).
 
 Streaming: Committed text segments only.
 
@@ -451,11 +441,9 @@ License: [Apache-2.0](https://huggingface.co/oddadmix/Jisr-MT-50M-AllDialects).
 
 Required work:
 
-- Original safetensors cannot be run by the existing OPUS ONNX adapter
-- No verified exported inference package or its pins yet
-- Hearth current Marian tokenizer does not implement this ByteLevel BPE pipeline
-- Dialect labels must retain publisher mappings, not collapse Arabic codes
-- MSA reverse-direction quality is degraded; broad Arabic quality claim prohibited
+- Owner S25 quality, latency, heat and memory measurements remain
+- Import-only converted runtime packages; original safetensors are not directly executable
+- INT8 changes some translations; no publisher score applies to the conversion
 
 | Component | Role | Bytes | Required | Source |
 | --- | --- | ---: | --- | --- |
@@ -469,6 +457,17 @@ Required work:
 | `ar-en/generation_config.json` | configuration | 989 | True | [Pinned file](https://huggingface.co/oddadmix/Jisr-MT-50M-Dialects2En/blob/2cfe89dcfaba280c81bc0b9da34e9dc096795405/generation_config.json) |
 | `ar-en/tokenizer.json` | tokenizer | 2,667,790 | True | [Pinned file](https://huggingface.co/oddadmix/Jisr-MT-50M-Dialects2En/blob/2cfe89dcfaba280c81bc0b9da34e9dc096795405/tokenizer.json) |
 | `ar-en/tokenizer_config.json` | tokenizer | 423 | True | [Pinned file](https://huggingface.co/oddadmix/Jisr-MT-50M-Dialects2En/blob/2cfe89dcfaba280c81bc0b9da34e9dc096795405/tokenizer_config.json) |
+
+Converted runtime packages (generated locally; no direct download):
+
+| Model ID | Precision | Direction | Required bytes | Root files |
+| --- | --- | --- | ---: | --- |
+| `ct2-jisr-50m-en-ar` | float32 | en-ar | 198,431,639 | `LICENSE`, `NOTICE`, `config.json`, `model.bin`, `shared_vocabulary.json`, `tokenizer.json` |
+| `ct2-jisr-50m-ar-en` | float32 | ar-en | 198,405,789 | `LICENSE`, `NOTICE`, `config.json`, `model.bin`, `shared_vocabulary.json`, `tokenizer.json` |
+| `ct2-jisr-50m-en-ar-int8` | int8 | en-ar | 54,619,924 | `LICENSE`, `NOTICE`, `config.json`, `model.bin`, `shared_vocabulary.json`, `tokenizer.json` |
+| `ct2-jisr-50m-ar-en-int8` | int8 | ar-en | 54,611,494 | `LICENSE`, `NOTICE`, `config.json`, `model.bin`, `shared_vocabulary.json`, `tokenizer.json` |
+
+Each ZIP also places `hearth-translation.json` at its root, with schemaVersion 1 and that row’s modelId. The six runtime files above have exact hashes in JSON; source checkpoint totals are separate from converted package totals.
 
 Checksums and complete variant information are in the corresponding JSON inventory.
 
@@ -486,7 +485,16 @@ Evaluation evidence:
   "cautions": [
     "Reverse MSA loses 6.17 BLEU versus base",
     "Algerian, Bahraini, Iraqi lack external validation"
-  ]
+  ],
+  "hearthChecks": {
+    "float32ExactReference": 21,
+    "float32Cases": 21,
+    "int8ExactFloat32": 15,
+    "int8Cases": 21,
+    "tokenizerExactVectors": 20,
+    "scope": "macOS ARM64 CPU source/native parity; not phone measurements or a translation-quality benchmark",
+    "evidence": "docs/research/jisr-native-parity-2026-10-20.json"
+  }
 }
 ```
 
@@ -554,7 +562,7 @@ Languages: en, cs, da, de, el, es, fi, fr, hu, it, lt, lv, nl, no, pl, pt, ro, r
 
 Required source components: **2759.303 MB** (2,759,302,720 bytes).
 
-Readiness: **integrated-unverified**. Target: Existing llama.cpp CPU; explicit ARM64 Vulkan or Adreno OpenCL.
+Readiness: **implemented-host-cpu-smoked**. Target: Existing llama.cpp CPU; explicit ARM64 Vulkan or Adreno OpenCL.
 
 Streaming: Committed text segment in; complete translation out.
 
@@ -564,9 +572,10 @@ License: [NVIDIA Open Model License](https://www.nvidia.com/en-us/agreements/ent
 
 Required work:
 
-- Real-weight prompt/Arabic Q4 parity and owner S25 benchmarks pending
+- Official reference-output/quantization parity and owner S25 quality/latency/memory/thermal testing pending
+- Host sample output still has factual and terminology errors; this prompt correction does not establish general quality improvement
 - No non-English↔non-English direct direction claimed
-- Larger concurrent STT/MT/TTS memory and sustained thermal use require owner test
+- Larger concurrent STT/MT/TTS memory and sustained thermal use require owner test; no new real-weight GPU benchmark
 
 | Component | Role | Bytes | Required | Source |
 | --- | --- | ---: | --- | --- |
@@ -666,23 +675,24 @@ Languages: ar, en.
 
 Required source components: **945.285 MB** (945,284,608 bytes).
 
-Readiness: **planned-not-executable**. Target: omnivoice.cpp isolated GGML backend; CPU then optional Vulkan.
+Readiness: **integrated-experimental-cpu-arm64**. Target: Isolated pinned omnivoice.cpp C ABI v4 CPU arm64 provider.
 
-Streaming: {"upstream": "Diffusion-style generation; verify chunk semantics, do not assume autoregressive token streaming", "hearth": false}.
+Streaming: {"upstream": "Postprocessed codec chunks; diffusion generation is not autoregressive token streaming", "hearth": true, "nativeOutput": "24000Hz mono"}.
 
 Selected model and codec weights: **945.285 MB**. Required frontend/source inputs and installed footprint are separate.
 
-Voice evidence: {"kind": "voice-design-or-user-reference", "items": [], "genderEvidence": null, "notes": "No verified stable named male/female preset inventory. Gender prompting does not establish speaker metadata. Arabic/English reference profiles require separate provenance and installation."}.
+Voice evidence: {"kind": "generated-voice-design", "items": [{"id": "auto", "label": "Automatic design", "gender": "unknown"}, {"id": "design-female", "label": "Female design attribute (unverified)", "gender": "unknown"}, {"id": "design-male", "label": "Male design attribute (unverified)", "gender": "unknown"}], "notes": "Attributes request gender but are not verified fixed speakers. Strict gender matching must fail. No reference profile is bundled."}.
 
-License: [CC-BY-NC-4.0 weights; codec upstream terms require independent audit; runtime MIT](https://huggingface.co/k2-fsa/OmniVoice#license).
+License: [CC-BY-NC pretrained generator; Boson Higgs Audio 2 Community License with incorporated Meta Llama 3 terms for codec; MIT runtime](https://huggingface.co/k2-fsa/OmniVoice#license).
 
 Required work:
 
-- No Hearth adapter.
-- Noncommercial model must not enter commercial Arabic SDK default bundles.
-- Codec terms need resolution before redistribution.
-- Q8 main and codec Arabic parity and voice stability unverified.
-- No pinned male/female Arabic reference profile supplied.
+- Owner S25 Arabic/English listening, memory, latency and thermal validation remain.
+- CPU only; Vulkan is not supplied or claimed.
+- Pretrained generator noncommercial; Higgs codec uses Boson Community and incorporated Llama 3 terms.
+- Generated design attributes are not fixed speaker identities or verified genders. Text parts may vary.
+- Arabic frontend maps generic ar to trained Standard Arabic arb; Gulf dialect quality unmeasured.
+- Cooperative cancellation polls between synthesis chunks; first output/initialization can delay stop.
 
 | Component | Role | Bytes | Required | Source |
 | --- | --- | ---: | --- | --- |
@@ -695,11 +705,7 @@ Evaluation evidence:
 
 ```json
 {
-  "ArabicWER": 1.392,
-  "EnglishWER": 1.56,
-  "dataset": "MiniMax-Multilingual-24",
-  "scope": "Original model, not this Q8 conversion",
-  "source": "https://arxiv.org/html/2604.00688v1#S4.T3"
+  "scope": "Real native C ABI and JNI generated finite nonempty Arabic/English PCM using exact pinned Q8 models. Functional smoke is not a pronunciation or quality score; S25 quality/performance unmeasured."
 }
 ```
 
@@ -708,6 +714,7 @@ Sources:
 - [Source 1](https://huggingface.co/k2-fsa/OmniVoice)
 - [Source 2](https://huggingface.co/Serveurperso/OmniVoice-GGUF)
 - [Source 3](https://github.com/ServeurpersoCom/omnivoice.cpp)
+- [Source 4](https://huggingface.co/bosonai/higgs-audio-v2-tokenizer/blob/main/LICENSE)
 
 ### MOSS-TTS Nano 100M
 
@@ -719,21 +726,21 @@ Languages: ar, en.
 
 Required source components: **717.869 MB** (717,868,602 bytes).
 
-Readiness: **planned-not-executable**. Target: ONNX Runtime CPU; native SentencePiece/text frontend and cached multi-graph decoder.
+Readiness: **integrated-experimental-cpu-arm64**. Target: Isolated SentencePiece frontend + shared ONNX Runtime 1.20.0 CPU generator and incremental codec.
 
-Streaming: {"upstream": "KV-cached global/local decoding plus stateful codec", "hearth": false, "nativeOutput": "48000Hz stereo; Hearth SDK currently accepts mono, requiring explicit tested downmix or an API extension"}.
+Streaming: {"upstream": "KV-cached autoregressive code generation and stateful incremental waveform codec", "hearth": true, "nativeOutput": "48000Hz stereo, explicitly averaged L/R into mono float PCM chunks <=1s"}.
 
-Voice evidence: {"kind": "user-reference-or-unconditioned", "items": [], "genderEvidence": null, "notes": "No packaged verified male/female Arabic/English styles. Need authored reference recordings/profiles and QA."}.
+Voice evidence: {"kind": "pinned-reference-audio-codes", "items": [{"id": "Junhao", "label": "CN 欢迎关注模思智能", "gender": "unknown", "referenceFrames": 98, "publisherGroup": "Chinese Male"}, {"id": "Zhiming", "label": "CN 京味胡同闲聊", "gender": "unknown", "referenceFrames": 98, "publisherGroup": "Chinese Male"}, {"id": "Weiguo", "label": "CN 说书", "gender": "unknown", "referenceFrames": 140, "publisherGroup": "Chinese Male"}, {"id": "Xiaoyu", "label": "CN 明星", "gender": "unknown", "referenceFrames": 180, "publisherGroup": "Chinese Female"}, {"id": "Yuewen", "label": "CN 机车", "gender": "unknown", "referenceFrames": 102, "publisherGroup": "Chinese Female"}, {"id": "Lingyu", "label": "CN 深夜电台", "gender": "unknown", "referenceFrames": 218, "publisherGroup": "Chinese Female"}, {"id": "Trump", "label": "EN Trump", "gender": "unknown", "referenceFrames": 97, "publisherGroup": "English Male"}, {"id": "Ava", "label": "EN The Bitter Lesson", "gender": "unknown", "referenceFrames": 98, "publisherGroup": "English Female"}, {"id": "Bella", "label": "EN A Gentle Reminder", "gender": "unknown", "referenceFrames": 59, "publisherGroup": "English Female"}, {"id": "Adam", "label": "EN English News", "gender": "unknown", "referenceFrames": 59, "publisherGroup": "English Male"}, {"id": "Nathan", "label": "EN The Quiet Motion of the World", "gender": "unknown", "referenceFrames": 168, "publisherGroup": "English Male"}, {"id": "Soyo", "label": "JP Soyo", "gender": "unknown", "referenceFrames": 125, "publisherGroup": "Japanese Female"}, {"id": "Saki", "label": "JP Saki", "gender": "unknown", "referenceFrames": 32, "publisherGroup": "Japanese Female"}, {"id": "Mortis", "label": "JP Mortis", "gender": "unknown", "referenceFrames": 60, "publisherGroup": "Japanese Female"}, {"id": "Umiri", "label": "JP Umiri", "gender": "unknown", "referenceFrames": 77, "publisherGroup": "Japanese Female"}, {"id": "Mei", "label": "JP Togawa", "gender": "unknown", "referenceFrames": 49, "publisherGroup": "Japanese Female"}, {"id": "Anon", "label": "JP Anon", "gender": "unknown", "referenceFrames": 47, "publisherGroup": "Japanese Female"}, {"id": "Arisa", "label": "JP Arisa", "gender": "unknown", "referenceFrames": 85, "publisherGroup": "Japanese Female"}], "notes": "18 actual voice code profiles are pinned within browser_poc_manifest.json. Names/groups do not establish gender or native Arabic pronunciation. No user reference encoding is bundled."}.
 
 License: [Apache-2.0; verify all codec and reference-profile terms](https://huggingface.co/OpenMOSS-Team/MOSS-TTS-Nano-100M-ONNX).
 
 Required work:
 
-- No Hearth adapter; upstream Android smoke example consumes pretokenized prompts.
-- Implement SentencePiece and exact special tokens/prompt grammar.
-- Implement KV ownership, local generation sampler, decode-step termination and stereo-to-mono conversion.
-- No verified Nano-specific Arabic quality score.
-- Official ONNX assets are much larger than the 100M parameter headline; do not claim PyTorch size as Android download.
+- Owner listening and S25 latency, memory, thermal validation remain.
+- Reference voice genders are unknown; cross-language Arabic quality requires listening.
+- No WeText number expansion or user-reference encoder yet.
+- 375 frames / 30s maximum per article part; reaching the bound without EOS is surfaced as error.
+- CPU ARM64 only; no ORT GPU provider claimed.
 
 | Component | Role | Bytes | Required | Source |
 | --- | --- | ---: | --- | --- |
@@ -756,7 +763,13 @@ Required work:
 
 Checksums and complete variant information are in the corresponding JSON inventory.
 
-Exact selected-package Arabic quality is not established in this record. Verify it before making quality claims.
+Evaluation evidence:
+
+```json
+{
+  "scope": "Functional real-model C ABI and JNI Arabic/English PCM smoke only. Not a listening quality score or S25 performance result."
+}
+```
 
 Sources:
 
@@ -772,24 +785,25 @@ Parameters: {"backbone": 500000000, "total": "Additional speech encoder and cond
 
 Languages: en, ar, da, de, el, es, fi, fr, he, hi, it, ko, ms, nl, no, pl, pt, ru, sv, sw, tr, ja, zh.
 
-Required source components: **1556.285 MB** (1,556,285,252 bytes).
+Required source components: **1593.715 MB** (1,593,714,936 bytes).
 
-Readiness: **planned-not-executable**. Target: ONNX Runtime CPU with com.microsoft contrib ops and MatMulNBits support.
+Readiness: **integrated-experimental**. Target: Isolated hearth-tts-chatterbox ARM64 CPU C ABI + shared ONNX Runtime1.20.0 Android; host1.20.1 tested.
 
-Streaming: {"upstream": "KV-cached LM then conditional waveform decoder; exact streaming behavior to validate", "hearth": false, "nativeOutput": "24000Hz mono"}.
+Streaming: {"upstream": "KV-cached LM followed by whole conditional waveform decoder; not incremental audio streaming", "hearth": "Article parts <=120 UTF-16characters; model completion+native Perth before bounded <=1second PCM frames; 500speech tokens/20second part limit fails without STOP", "nativeOutput": "24000Hz mono"}.
 
-Voice evidence: {"kind": "default-reference-or-user-reference", "items": [{"id": "default", "label": "Bundled default reference", "gender": "unknown", "genderEvidence": null}], "notes": "Default reference gender is unverified. Pin user/imported male/female reference metadata separately."}.
+Final installed model footprint: 1,593,672,348 bytes. The pinned source download is 1,593,714,936 bytes: the LM graph is transformed without changing weights, and the raw Perth ZIP is converted to the verified native encoder. Only Arabic/English are exposed by Hearth; the language list above describes the upstream family.
+
+Voice evidence: {"kind": "pinned-default-reference", "items": [{"id": "default", "label": "Bundled default reference", "gender": "unknown", "genderEvidence": null}], "notes": "Hearth exposes only pinned default_voice.wav with UNKNOWN gender. No custom-reference import/voice cloning UI and no male/female default is claimed."}.
 
 License: [MIT model/export; upstream watermarking policy and reference rights must be preserved](https://huggingface.co/Masterx/chatterbox-multilingual-v3-ONNX/blob/19b94afe41de738624b2f3afc75b4cd56221fbeb/LICENSE).
 
 Required work:
 
-- No Hearth V3 adapter.
-- Use NFKD full-case tokenizer; do not lowercase.
-- Trim reference to6s; maintain16-head/64dim caches; drop final960audio samples per upstream V3 contract.
-- Export omits Perth watermarking used upstream; integration needs explicit output provenance/watermark decision and upstream policy check.
-- Chinese/Japanese frontends missing in this export; metadata language coverage is upstream and does not mean all native text frontends are implemented.
-- Q4 Arabic parity, live latency and gender inventory unverified.
+- Owner Arabic/English listening and speaker preference not measured.
+- S25/S22 cold/warm latency, realtimefactor, peak memory and thermal behavior not measured; no Android-device inference claim.
+- No GPU backend enabled.
+- No custom reference import and no verified speaker-gender metadata; strict gender requests fail.
+- Only Arabic/English exposed by native adapter initially; upstream CJK/Russian frontends and Hebrew quality remain outside its advertised scope.
 
 | Component | Role | Bytes | Required | Source |
 | --- | --- | ---: | --- | --- |
@@ -803,6 +817,7 @@ Required work:
 | `onnx/conditional_decoder.onnx_data` | onnx-model | 533,970,816 | True | [Pinned file](https://huggingface.co/Masterx/chatterbox-multilingual-v3-ONNX/blob/19b94afe41de738624b2f3afc75b4cd56221fbeb/onnx/conditional_decoder.onnx_data) |
 | `tokenizer.json` | text-tokenizer | 72,765 | True | [Pinned file](https://huggingface.co/Masterx/chatterbox-multilingual-v3-ONNX/blob/19b94afe41de738624b2f3afc75b4cd56221fbeb/tokenizer.json) |
 | `default_voice.wav` | reference-audio | 714,320 | True | [Pinned file](https://huggingface.co/Masterx/chatterbox-multilingual-v3-ONNX/blob/19b94afe41de738624b2f3afc75b4cd56221fbeb/default_voice.wav) |
+| `perth_net_250000.pth.tar` | watermark-checkpoint-source | 37,429,684 | True | [Pinned file](https://github.com/resemble-ai/Perth/blob/ff1c8ac55a976971245cdd53c18d6131ca00d993/src/perth/perth_net/pretrained/implicit/perth_net_250000.pth.tar) |
 
 Checksums and complete variant information are in the corresponding JSON inventory.
 
@@ -810,7 +825,10 @@ Evaluation evidence:
 
 ```json
 {
-  "scope": "Export parity tested on limited non-Arabic examples; do not label as Arabic quality verified."
+  "scope": "Real Arabic/English finite PCM and exact graph-transform parity exercised; no Hearth Arabic intelligibility/CER or owner listening score. Original export reports English2.5%WER on10sentences, not a S25/Q4 Arabic score.",
+  "source": "https://huggingface.co/Masterx/chatterbox-multilingual-v3-ONNX/blob/19b94afe41de738624b2f3afc75b4cd56221fbeb/README.md",
+  "graphTransformParity": "Same ORT1.24.3: raw/derived Arabic41 and English29speech tokens identical; seeded decoder +Perth PCM bit-identical. ORT1.20.1 separately yielded30English tokens; cross-version bit parity is explicitly not claimed.",
+  "watermark": "Mandatory native Perth. Original Torch vs native32k waveform maxerror1.64e-6; detector harmonic test .9957895, silence undefined/NaN preserved. See separate pinned parity receipt."
 }
 ```
 
@@ -818,8 +836,12 @@ Sources:
 
 - [Source 1](https://github.com/resemble-ai/chatterbox)
 - [Source 2](https://huggingface.co/Masterx/chatterbox-multilingual-v3-ONNX)
+- [Source 3](https://github.com/birdup000/chatterboxcpp/tree/1a9a4fc00a6caa8c8bb9bee533225f40661e4220)
+- [Source 4](https://github.com/resemble-ai/Perth/tree/ff1c8ac55a976971245cdd53c18d6131ca00d993)
+- [Source 5](https://github.com/microsoft/onnxruntime/blob/v1.20.0/onnxruntime/core/graph/contrib_ops/bert_defs.cc)
+- [Source 6](https://github.com/microsoft/onnxruntime/blob/v1.24.3/onnxruntime/core/graph/contrib_ops/bert_defs.cc)
 
-### OuteTTS1.0 1B
+### OuteTTS 1.0 1B
 
 ID: `outetts-1.0-1b`. Family: OuteTTS.
 
@@ -827,32 +849,28 @@ Parameters: {"headline": 1000000000, "storedGeneratorApprox": 1248000000, "codec
 
 Languages: ar, en.
 
-Required source components: **1113.901 MB** (1,113,900,979 bytes).
+Required source components: **1438.442 MB** (1,438,441,535 bytes).
 
-Readiness: **planned-not-executable**. Target: Isolated llama.cpp generator plus separately converted IBM DAC2-codebook waveform decoder.
+Readiness: **implemented-host-smoke-verified-android-build**. Target: Isolated ChatLLM.cpp/GGML ARM64 CPU with combined Oute1.0 generator and DAC1.0 decoder.
 
-Streaming: {"upstream": "Chunked speech generation; reference profile occupies context", "hearth": false, "nativeOutput": "24000Hz mono"}.
+Streaming: {"upstream": "Autoregressive speech tokens then full waveform decoding", "hearth": false, "nativeOutput": "24000Hz mono; bounded4096sample callbacks after complete utterance generation"}.
 
-Selected model and codec weights: **1113.900 MB**. Required frontend/source inputs and installed footprint are separate.
+Selected model and codec weights: **1438.416 MB**. Required frontend/source inputs and installed footprint are separate.
 
-Voice evidence: {"kind": "default-or-user-speaker-profiles", "items": [{"id": "EN-FEMALE-1-NEUTRAL", "label": "English female neutral (upstream example)", "gender": "female", "genderEvidence": "Official Oute model usage names this profile explicitly; profile bytes and cross-lingual Arabic QA not pinned here."}], "notes": "No verified male or native Arabic reference profile currently bundled. Do not expose a missing profile as installed."}.
+Voice evidence: {"kind": "pinned-english-reference", "items": [{"id": "EN-FEMALE-1-NEUTRAL", "label": "English reference 1 neutral", "gender": "unknown", "genderEvidence": "Official profile name is female, but Hearth has not verified cross-lingual gender matching."}], "notes": "One pinned English reference; Arabic is cross-lingual and may retain its accent. No bundled male/native Arabic reference."}.
 
-License: [CC-BY-NC-SA-4.0 continued training/components; Llama3.2 Community License; DAC CDLA-Permissive2.0](https://huggingface.co/OuteAI/Llama-OuteTTS-1.0-1B#license-information).
+License: [CC-BY-NC-SA-4.0 continued training/components; Llama3.2 Community License; DAC CDLA-Permissive2.0; reference profile Apache-2.0](https://huggingface.co/OuteAI/Llama-OuteTTS-1.0-1B#license-information).
 
 Required work:
 
-- No Hearth adapter.
-- Source codec weights need executable Android conversion with pinned outputs and parity tests.
-- Native port must implement1.0 prompt timing/energy/pitch metadata; do not use0.3 WavTokenizer.
-- Pin and verify speaker-profile bytes and provenance; reference uses context, reducing available generation duration.
-- Noncommercial/share-alike/Llama terms exclude this from an unrestricted commercial default SDK bundle.
-- No verified Arabic Q4 quality or S25 benchmark.
+- Owner phone listening and Arabic intelligibility/gender verification remain acceptance gates.
+- S25/S22 latency, heat, peak memory and sustained playback measurements remain untested.
+- Noncommercial/share-alike and Llama terms prevent an unrestricted commercial SDK default.
 
 | Component | Role | Bytes | Required | Source |
 | --- | --- | ---: | --- | --- |
-| `Llama-OuteTTS-1.0-1B-Q4_K_M.gguf` | generator | 818,168,800 | True | [Pinned file](https://huggingface.co/OuteAI/Llama-OuteTTS-1.0-1B-GGUF/blob/f0a131bce9ca77922d38da5af18db11d29b6b768/Llama-OuteTTS-1.0-1B-Q4_K_M.gguf) |
-| `weights_24khz_1.5kbps_v1.0.pth` | codec-source-weights | 295,731,578 | True | [Pinned file](https://huggingface.co/ibm-research/DAC.speech.v1.0/blob/1ea7f64cd0678415e2d8c32d67b190722cb9b149/weights_24khz_1.5kbps_v1.0.pth) |
-| `config.json` | codec-metadata | 601 | True | [Pinned file](https://huggingface.co/ibm-research/DAC.speech.v1.0/blob/1ea7f64cd0678415e2d8c32d67b190722cb9b149/config.json) |
+| `oute-tts-1b.bin` | combined-Q8-generator-and-IBM-DAC-v1.0 | 1,438,416,240 | True | [Pinned metadata](https://modelscope.cn/api/v1/models/judd2024/chatllm_quantized_oute-tts/repo/files?Revision=a1b7a4fc64949c9d6a3206422830df41009f1ad7&Recursive=true) |
+| `en-female-1-neutral.json` | reference-speaker-profile | 25,295 | True | [Pinned file](https://github.com/edwko/OuteTTS/blob/f5eac6e70d792844c6a6959d900a47af2c061a5b/outetts/version/v3/default_speakers/json/en-female-1-neutral.json) |
 
 Checksums and complete variant information are in the corresponding JSON inventory.
 
@@ -864,3 +882,5 @@ Sources:
 - [Source 2](https://huggingface.co/OuteAI/Llama-OuteTTS-1.0-1B-GGUF)
 - [Source 3](https://huggingface.co/ibm-research/DAC.speech.v1.0)
 - [Source 4](https://github.com/edwko/OuteTTS)
+- [Source 5](https://github.com/foldl/chatllm.cpp)
+- [Source 6](https://modelscope.cn/models/judd2024/chatllm_quantized_oute-tts)

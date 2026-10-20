@@ -140,7 +140,9 @@ fun LocalBenchmarkScreen(onModels: (String) -> Unit = {}, onDownloads: () -> Uni
     val visible = candidates.filter { it.targetCodes.isNotEmpty() == (mode == "Translation") }
     val plan = remember(source, target, preset) { BenchmarkPresets.forPair(source, target).first { it.preset == preset } }
     fun installed(model: SuggestedModel?): BenchmarkCandidate? = when (model?.kind) {
-        "speech" -> candidates.firstOrNull { it.profile?.id == model.id && source in it.sourceCodes }
+        "speech" -> candidates.firstOrNull {
+            it.profile?.id == (SpeechArtifactCatalog.find(model.id)?.profile?.id ?: model.id) && source in it.sourceCodes
+        }
         else -> candidates.firstOrNull { it.id == model?.id && source in it.sourceCodes && target in it.targetCodes &&
             (it.translation?.supports(source, target) ?: true) }
     }
@@ -155,7 +157,8 @@ fun LocalBenchmarkScreen(onModels: (String) -> Unit = {}, onDownloads: () -> Uni
                         downloads.retry(existing.records.single().id)
                     } else when (model.kind) {
                         "speech" -> checkNotNull(SpeechArtifactCatalog.find(model.id)).let {
-                            downloads.enqueue(DownloadSpec.parse(it.url, it.fileName), true, it.id)
+                            it.components?.let { group -> com.sal7one.transiber.models.SpeechComponents.enqueue(context,downloads,group) }
+                                ?: downloads.enqueue(DownloadSpec.parse(it.url, it.fileName), true, it.id)
                         }
                         "gguf" -> checkNotNull(TranslationCatalog.models.firstOrNull { it.id == model.id }).let {
                             downloads.enqueue(DownloadSpec.parse(it.url, it.fileName), true, it.id)

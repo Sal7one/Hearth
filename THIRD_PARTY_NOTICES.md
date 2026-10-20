@@ -21,7 +21,7 @@ APK assets under `licenses/`.
 | OkHttp / Okio | OkHttp 4.12.0 and resolved Okio dependency | Apache-2.0; OkHttp notice in `licenses/android/` |
 
 Exact prebuilt library hashes and original Maven artifact URLs are in
-`scripts/supply-chain-artifacts.tsv` and `common-jni/src/main/jniLibs/SHA256SUMS`.
+`scripts/supply-chain-artifacts.tsv`, `common-jni/src/main/jniLibs/SHA256SUMS`, and `hearth-onnx-runtime/src/main/jniLibs/SHA256SUMS`.
 The Qwen/Nemotron build provenance and adapter hashes are in
 `common-jni/src/main/assets/licenses/speech/runtime-build.json`.
 
@@ -100,3 +100,33 @@ and packaged in `assets/licenses/ocr/NOTICE.txt`.
   distributes first-party server adapters and pinned metadata; Ming model code,
   weights, reference voices and server dependencies are not included in the APK
   or SDK AARs. See [Ming sources and sizes](docs/ming-3.0.md).
+
+
+The shared ONNX Runtime 1.20.0 prebuilts and their notices now reside in the
+model-free `:hearth-onnx-runtime` module. `:common-jni` and
+`:hearth-tts-supertonic` consume that single package; the Supertonic adapter has
+no STT or translation binary dependency. Its unchanged native implementation
+and `com.sal7one.common_jni.voice` API reside in `hearth-tts-supertonic/`.
+
+The optional OmniVoice runtime is built from MIT-licensed omnivoice.cpp
+1a468d8b9d65b3544ca1004d2d7c05dfc65d1f3e and GGML
+cc5df49a6b878db2b68b9a7b45976e279594627d. Code notices and the exact build
+snapshot are in `assets/licenses/omnivoice/`. Pretrained model weights are
+separate noncommercial user downloads. The Higgs Audio v2 codec uses the
+original Boson Community and incorporated Meta Llama 3 terms; the community
+conversion card must not be interpreted as replacing those terms. See
+https://huggingface.co/bosonai/higgs-audio-v2-tokenizer/blob/main/LICENSE.
+
+The independent OWSM and Audar CPU speech plugins retain audio.cpp
+673ade451c9cba9c893fb0e606872d9dc44f21e3 (Apache-2.0) and llama.cpp
+64e9bceb2c3a856efed96feda784a50947049feb (MIT), with included dependency
+notices and exact build records under `assets/licenses/speech-modern-cpu/`.
+OWSM model weights are separate CC-BY-4.0 downloads attributed to Yifan
+Peng/ESPnet. Audar model weights are separate downloads under the
+[AudarAI Open License v1.0](https://www.audarai.com/license/audarai-open-license-v1.0/).
+Runtime licenses do not replace these model licenses. See
+[the native adapter and package notes](docs/models/stt-modern-cpu.md).
+
+## Standalone MOSS Nano and Chatterbox V3 TTS providers
+
+`hearth-tts-moss` contains the Apache-2.0 MOSS orchestration and privately linked SentencePiece (including its original third-party notices), plus MIT JSON. Model/codec weights are separately downloaded under their exact pinned Apache-2.0 model terms. `hearth-tts-chatterbox` uses MIT chatterboxcpp audio/Perth code, real Hugging Face tokenizers0.22.2 with locked dependency notices, and MIT JSON. The native Perth converter operates only on the separately downloaded official MIT checkpoint; no pickle execution or checkpoint redistribution is included. Chatterbox V3 model/export is MIT, and the adapter always applies native Perth before publishing audio. Both optional providers share the single official ONNX Runtime AAR; neither links the broad STT/translation `common-jni` binary. Full source/binary provenance and dependency notices ship under each module's `assets/licenses/` folder.

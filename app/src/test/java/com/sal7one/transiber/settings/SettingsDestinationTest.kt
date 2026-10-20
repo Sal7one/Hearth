@@ -34,4 +34,10 @@ class SettingsDestinationTest {
         assertEquals(SettingsTabState(SettingsLocation.LOCAL, 4), state.enter(SettingsLocation.CLOUD, 4, false))
         assertEquals(SettingsTabState(SettingsLocation.LOCAL, 5), state.enter(SettingsLocation.CLOUD, 5, false))
     }
+    @Test fun tvSpeechTabsClampOldLocalEntriesToCloudWithoutChangingSavedEngines() {
+        val state = SettingsTabState(SettingsLocation.LOCAL, 4)
+        assertEquals(listOf(SettingsLocation.CLOUD), settingsLocations(true, false))
+        assertEquals(SettingsTabState(SettingsLocation.CLOUD, 4), state.enter(SettingsLocation.LOCAL, 4, true, false))
+        assertEquals(listOf(SettingsLocation.LOCAL), settingsLocations(false, false))
+    }
 }

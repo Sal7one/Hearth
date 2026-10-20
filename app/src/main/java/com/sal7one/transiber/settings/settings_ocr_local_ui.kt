@@ -36,9 +36,9 @@ internal fun SettingsOcrLocalUi(onDownloads: () -> Unit = {}, selected: String? 
     var importing by remember { mutableStateOf(false) }
     var queuing by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
-    var family by rememberSaveable { mutableStateOf(OcrCatalog.profiles.firstOrNull { it.id == selected }?.engine ?: "any") }
-    var query by rememberSaveable { mutableStateOf("") }
-    var installedOnly by rememberSaveable { mutableStateOf(false) }
+    var family by com.sal7one.transiber.models.rememberModelBrowseString("ocr-family", OcrCatalog.profiles.firstOrNull { it.id == selected }?.engine ?: "any")
+    var query by com.sal7one.transiber.models.rememberModelBrowseString("ocr-query", "")
+    var installedOnly by com.sal7one.transiber.models.rememberModelBrowseBoolean("ocr-installed")
     var installed by remember { mutableStateOf<Set<String>>(emptySet()) }
     var records by remember { mutableStateOf<List<FileDownload>>(emptyList()) }
     val importer = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
@@ -135,7 +135,6 @@ internal fun SettingsOcrLocalUi(onDownloads: () -> Unit = {}, selected: String? 
                             }
                         }) { Text(uiText(if (failed != null) UiR.string.ui_retry_download_install_e5444 else UiR.string.ui_download_install_7db0b)) }
                     }
-                    ModelSourceLinks(profile.asset.originalModelCard, profile.asset.filesUrl, profile.asset.licenseUrl, onError = { error = it })
                     TextButton(onClick = { showFiles = !showFiles }) {
                         Text(uiText(if (showFiles) UiR.string.ui_hide_file_links_216d2 else UiR.string.ui_files_import_links_72993))
                     }

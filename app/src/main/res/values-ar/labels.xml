@@ -85,8 +85,8 @@
     <string name="label_captionspeakerchoice_system_explanation" formatted="false">"فوري ودون اتصال لأي لغة لها صوت مثبت على الجهاز."</string>
     <string name="label_captionspeakerchoice_custom_label" formatted="false">"المخصص الافتراضي"</string>
     <string name="label_captionspeakerchoice_custom_explanation" formatted="false">"استخدم صوت Supertonic أو خادمك المحفوظ. أعدّه في الأصوات والقراءة الصوتية."</string>
-    <string name="label_captionspeakerchoice_native_label" formatted="false">"Supertonic 3"</string>
-    <string name="label_captionspeakerchoice_native_explanation" formatted="false">"كلام محلي في 31 لغة؛ ثبّت النموذج وصوتًا من إعدادات الصوت."</string>
+    <string name="label_captionspeakerchoice_native_label" formatted="false">"صوت منزّل"</string>
+    <string name="label_captionspeakerchoice_native_explanation" formatted="false">"استخدم عائلة النموذج والصوت المنزّلين والمحددين في إعدادات الصوت."</string>
     <string name="label_captionspeakerchoice_shared_label" formatted="false">"إعدادات الصوت المشتركة"</string>
     <string name="label_captionspeakerchoice_shared_explanation" formatted="false">"استخدم صوت Android أو الصوت المحلي أو المستضاف المحدد في إعدادات Hearth."</string>
     <string name="label_captionspeakerchoice_cloud_label" formatted="false">"سحابي · بمفتاحك"</string>

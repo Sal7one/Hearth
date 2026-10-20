@@ -20,6 +20,8 @@ import com.sal7one.common_jni.translation.TranslationCatalog
 import com.sal7one.transiber.byok.ByokPolicy
 import com.sal7one.transiber.models.ModelRegistry
 import com.sal7one.transiber.models.ModelEngineType
+import com.sal7one.transiber.models.ModelSearch
+import com.sal7one.transiber.ui.components.ModelSearchField
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Dispatchers
@@ -45,6 +47,7 @@ internal fun TranslatorChooser(
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     val localAllowed = com.sal7one.transiber.runtime.LocalModelPolicy.allowed(context)
+    val advanced = com.sal7one.transiber.preferences.rememberSetupMode() == com.sal7one.transiber.preferences.SetupMode.ADVANCED
     val revision by ConversationTranslationSettings.revision.collectAsState()
     var expanded by rememberSaveable { mutableStateOf(location != null) }
     var cloudTab by rememberSaveable { mutableStateOf(providerId !in setOf("", "local")) }
@@ -55,6 +58,9 @@ internal fun TranslatorChooser(
     var applying by remember { mutableStateOf(false) }
     var applied by remember { mutableStateOf(false) }
     var failure by remember { mutableStateOf<String?>(null) }
+    var query by rememberSaveable { mutableStateOf("") }
+    var showUnavailable by rememberSaveable { mutableStateOf(false) }
+    var scopeOptions by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(providerId,localId) { applied=false }
     LaunchedEffect(expanded) { if(expanded && location == null)cloudTab=providerId !in setOf("", "local") }
     LaunchedEffect(expanded, localId) {
@@ -79,19 +85,6 @@ internal fun TranslatorChooser(
         }
         if (expanded) {
             Text(scopeLabel, style = MaterialTheme.typography.bodySmall)
-            Text(uiText(UiR.string.ui_local_model_and_saved_connections_are_shared_22351), style = MaterialTheme.typography.bodySmall)
-            if (providerId.isNotBlank() && (localAllowed || providerId != "local") && (location == null || (providerId == "local") == (location == SettingsLocation.LOCAL))) {
-                OutlinedButton(enabled=enabled && !applying, onClick={
-                    applying=true;failure=null
-                    scope.launch { try {
-                        ConversationTranslationSettings.useEverywhere(context,providerId,localId);applied=true
-                    } catch(e: CancellationException){throw e}
-                    catch(e: Exception){failure=e.message ?: e.toString()}
-                    finally {applying=false} }
-                }) { Text(if(applying)uiText(UiR.string.ui_saving_56a22) else uiText(UiR.string.ui_use_this_translator_across_hearth_456c5)) }
-                Text(uiText(UiR.string.ui_applies_to_every_feature_restart_active_camera_reading_sessions_t_1fdea),style=MaterialTheme.typography.bodySmall)
-                if(applied)Text(uiText(UiR.string.ui_translator_saved_for_all_features_59239),style=MaterialTheme.typography.bodySmall)
-            }
             if (automaticLabel != null) TranslatorRow(automaticLabel, uiText(UiR.string.ui_keep_the_speech_engine_s_integrated_or_legacy_translation_route_31ea8), providerId.isBlank(), enabled) {
                 onSelect("", localId); expanded = location != null
             }
@@ -102,9 +95,15 @@ internal fun TranslatorChooser(
             if (!localAllowed) com.sal7one.transiber.ui.components.LocalModelPolicyNotice()
             if(localAllowed && (!showCloud || !ByokPolicy.FEATURE_BYOK)) {
             Text(uiText(UiR.string.ui_on_device_72a3f), style = MaterialTheme.typography.titleMedium)
-            Text(uiText(UiR.string.ui_original_text_stays_on_your_phone_2fbea), style = MaterialTheme.typography.bodySmall)
+            ModelSearchField(query, { query = it })
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Checkbox(showUnavailable, { showUnavailable = it }, enabled = enabled)
+                Text(uiText(UiR.string.settings_flow_show_unavailable), style = MaterialTheme.typography.bodySmall)
+            }
+            if (!showUnavailable && installed.isEmpty() && registered.none { it.engineType == ModelEngineType.TRANSLATE && it.isValid })
+                Text(uiText(UiR.string.settings_flow_no_installed), style = MaterialTheme.typography.bodySmall)
             Column(Modifier.selectableGroup()) {
-                if (PlatformTranslation.available) TranslatorRow(TranslationOptions.label(TranslationOptions.ML_KIT),
+                if (PlatformTranslation.available && ModelSearch.matches(query, TranslationOptions.label(TranslationOptions.ML_KIT), "Android language packs", ModelSearch.languageTerms(TranslationOptions.mlKitCodes))) TranslatorRow(TranslationOptions.label(TranslationOptions.ML_KIT),
                     uiText(UiR.string.ui_language_packs_required_manage_download_in_models_de735) + pair { a,b -> a in TranslationOptions.mlKitCodes && b in TranslationOptions.mlKitCodes },
                     providerId == "local" && localId == TranslationOptions.ML_KIT, enabled) {
                     onSelect("local", TranslationOptions.ML_KIT); expanded = location != null
@@ -112,6 +111,8 @@ internal fun TranslatorChooser(
                 MarianPackage.pairs.forEach { marian ->
                     val marianReady = registered.any { it.engineType == ModelEngineType.TRANSLATE &&
                         it.isValid && it.isDirectory && it.digest?.hex == marian.treeSha256 }
+                    if (!localTranslatorVisible(marianReady, localId == marian.id, showUnavailable, query,
+                        TranslationOptions.label(marian.id), "Marian OPUS", ModelSearch.languageTerms(setOf(marian.source, marian.target)))) return@forEach
                     TranslatorRow(TranslationOptions.label(marian.id),
                         (if (marianReady) uiText(UiR.string.model_installed_verified) else uiText(UiR.string.model_marian_setup)) +
                             pair { a,b -> TranslationOptions.supports(marian.id,a,b) },
@@ -127,6 +128,8 @@ internal fun TranslatorChooser(
                 }
                 MarianCascade.routes.forEach { route ->
                     val ready = TranslationOptions.installed(context, route.id)
+                    if (!localTranslatorVisible(ready, localId == route.id, showUnavailable, query,
+                        TranslationOptions.label(route.id), "Marian English pivot", ModelSearch.languageTerms(setOf(route.source, route.target)))) return@forEach
                     TranslatorRow(TranslationOptions.label(route.id),
                         (if (ready) uiText(UiR.string.model_installed_verified) else uiText(UiR.string.model_marian_setup)) +
                             pair { a,b -> TranslationOptions.supports(route.id,a,b) },
@@ -142,6 +145,8 @@ internal fun TranslatorChooser(
                 }
                 com.sal7one.common_jni.translation.Ct2Catalog.models.forEach { model ->
                     val ready=com.sal7one.transiber.translation.Ct2Package.installed(context,model)
+                    if (!localTranslatorVisible(ready, localId == model.id, showUnavailable, query,
+                        model.label, model.id, ModelSearch.languageTerms(model.sources + model.targets))) return@forEach
                     TranslatorRow(model.label, "${model.bytes/1_048_576} MiB · CPU" + pair(model::supports),
                         providerId=="local" && localId==model.id, enabled && com.sal7one.transiber.translation.Ct2Package.runtimeSupported(), actionLabel=if(ready)null else "Set up") {
                         if(ready) { onSelect("local",model.id);expanded=location!=null } else onModels()
@@ -149,6 +154,8 @@ internal fun TranslatorChooser(
                 }
                 TranslationCatalog.models.sortedWith(compareByDescending<com.sal7one.common_jni.translation.TranslationModelSpec> { providerId=="local" && it.id==localId }.thenByDescending { it.id in installed }).forEach { model ->
                     val ready = model.id in installed
+                    if (!localTranslatorVisible(ready, localId == model.id, showUnavailable, query,
+                        model.label, model.id, model.quantization, ModelSearch.languageTerms(model.sourceLanguages + model.targetLanguages))) return@forEach
                     TranslatorRow(model.label,
                         uiText(UiR.string.ui_1_s_2_s_mib_3_s_languages_01ef0, if (ready) uiText(UiR.string.model_installed) else uiText(UiR.string.model_download_import), model.bytes / 1_048_576, model.sourceLanguages.size) + pair(model::supports),
                         providerId == "local" && localId == model.id, enabled,
@@ -177,6 +184,23 @@ internal fun TranslatorChooser(
                         if (ready) TextButton(onClick = { editing = provider }, enabled = enabled) { Text(uiText(UiR.string.ui_manage_1_s_126c2, provider.label)) }
                     }
                 }
+            }
+            if (advanced && providerId.isNotBlank()) TextButton(onClick = { scopeOptions = !scopeOptions }, enabled = enabled) {
+                Text(uiText(UiR.string.settings_flow_translation_scope))
+            }
+            if (advanced && scopeOptions) {
+            if (providerId.isNotBlank() && (localAllowed || providerId != "local") && (location == null || (providerId == "local") == (location == SettingsLocation.LOCAL))) {
+                OutlinedButton(enabled=enabled && !applying, onClick={
+                    applying=true;failure=null
+                    scope.launch { try {
+                        ConversationTranslationSettings.useEverywhere(context,providerId,localId);applied=true
+                    } catch(e: CancellationException){throw e}
+                    catch(e: Exception){failure=e.message ?: e.toString()}
+                    finally {applying=false} }
+                }) { Text(if(applying)uiText(UiR.string.ui_saving_56a22) else uiText(UiR.string.ui_use_this_translator_across_hearth_456c5)) }
+                Text(uiText(UiR.string.ui_applies_to_every_feature_restart_active_camera_reading_sessions_t_1fdea),style=MaterialTheme.typography.bodySmall)
+                if(applied)Text(uiText(UiR.string.ui_translator_saved_for_all_features_59239),style=MaterialTheme.typography.bodySmall)
+            }
             }
             failure?.let { Text(it, color = MaterialTheme.colorScheme.error) }
             editing?.let { provider ->

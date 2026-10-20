@@ -6,16 +6,20 @@ internal enum class SettingsFeature(val label: String) {
     SPEECH("Speech recognition"), TRANSLATION("Translation"), VOICES("Voices & read aloud"), CAMERA("Camera & screen reading")
 }
 
-internal fun settingsLocations(cloudAvailable: Boolean): List<SettingsLocation> =
-    if (cloudAvailable) SettingsLocation.entries else listOf(SettingsLocation.LOCAL)
+internal fun settingsLocations(cloudAvailable: Boolean, localAvailable: Boolean = true): List<SettingsLocation> = when {
+    !localAvailable && cloudAvailable -> listOf(SettingsLocation.CLOUD)
+    cloudAvailable -> SettingsLocation.entries
+    else -> listOf(SettingsLocation.LOCAL)
+}
 
 internal fun settingsFeatures(location: SettingsLocation): List<SettingsFeature> =
     SettingsFeature.entries.filter { location == SettingsLocation.LOCAL || it != SettingsFeature.CAMERA }
 
 /** A new directory entry overrides the tab; returning from model setup preserves it. */
 internal data class SettingsTabState(val selected: SettingsLocation, val entry: Int) {
-    fun enter(requested: SettingsLocation, revision: Int, cloudAvailable: Boolean): SettingsTabState {
+    fun enter(requested: SettingsLocation, revision: Int, cloudAvailable: Boolean, localAvailable: Boolean = true): SettingsTabState {
         val next = if (revision == entry) selected else requested
-        return SettingsTabState(next.takeIf { it in settingsLocations(cloudAvailable) } ?: SettingsLocation.LOCAL, revision)
+        val allowed = settingsLocations(cloudAvailable, localAvailable)
+        return SettingsTabState(next.takeIf { it in allowed } ?: allowed.first(), revision)
     }
 }

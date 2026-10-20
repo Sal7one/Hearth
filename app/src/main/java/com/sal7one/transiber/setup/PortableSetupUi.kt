@@ -109,6 +109,9 @@ internal fun PortableSetupUi(onSpeechModels: () -> Unit, onTranslationModels: ()
                     val targets = TranslationOptions.targetLanguages(stage.modelId, stage.sourceLanguage) + stage.targetLanguage
                     ModelFilterPicker(text(R.string.portable_setup_target), stage.targetLanguage, targets.sorted().map { it to TranslationLanguages.label(it) },
                         { target -> setup = current.copy(translation = stage.copy(targetLanguage = target)) }, enabled = !busy)
+                    if (stage.modelId in setOf("ct2-jisr-50m-en-ar", "ct2-jisr-50m-en-ar-int8")) com.sal7one.transiber.settings.JisrDialectPicker(stage.arabicDialect ?: "ar", !busy) {
+                        setup = current.copy(translation = stage.copy(arabicDialect = it))
+                    }
                 }
                 if (preview == null) LinearProgressIndicator(Modifier.fillMaxWidth())
                 preview?.let { state ->

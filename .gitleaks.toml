@@ -28,3 +28,11 @@ condition = "AND"
 paths = ['''(^|/)hearth-tts-magpie/src/main/java/com/sal7one/hearth/tts/magpie/MagpieCatalog\.kt$''']
 regexTarget = "line"
 regexes = ['''^\s*const val tokenizerSegmentsSha256 = "169144a64f6d775178696914e5aad8282db44820e73341d5f9a4e7865fac1f26"$''']
+
+# Exact digest of the public ONNX Runtime C header, not an API credential.
+[[allowlists]]
+description = "Pinned public ONNX Runtime C API header SHA-256"
+condition = "AND"
+paths = ['''(^|/)hearth-tts-(chatterbox|moss)/src/main/assets/licenses/(chatterbox|moss)/runtime-build\.json$''']
+regexTarget = "line"
+regexes = ['''^\s*"common-jni/src/main/cpp/onnx/include/onnxruntime/onnxruntime_c_api\.h": "573a117ae6b83ead7f53da6cedaa0d7b7d9cdb45c0ba4726bac9081e67696a82",$''']

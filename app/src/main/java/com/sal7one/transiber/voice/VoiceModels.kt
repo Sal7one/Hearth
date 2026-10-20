@@ -8,9 +8,15 @@ import java.security.MessageDigest
 import java.util.zip.ZipInputStream
 
 /** Both public downloads and document imports use this verified installation sink. */
-internal class VoiceModels(private val root: File, private val permitMagpie: () -> Unit = {}) {
-    fun file(asset: VoiceAsset) = File(root,if(asset.id.startsWith("voice-magpie-"))"magpie/${asset.filename}" else asset.filename)
-    fun installed(asset: VoiceAsset) = file(asset).let {it.isFile && it.length()==asset.bytes}
+internal class VoiceModels(private val root: File, private val permitFamily: (String) -> Unit = {}, private val permitOmniVoice: () -> Unit = {}, private val permitMagpie: () -> Unit = {}) {
+    fun file(asset: VoiceAsset) = File(root,if(asset.family != "supertonic")"${asset.family}/${asset.installedPath}" else asset.filename)
+    fun installed(asset: VoiceAsset) = file(asset).let {it.isFile && it.length()==asset.installedBytes}
+    fun verifyAsset(asset: VoiceAsset, cancelled: () -> Unit = {}) {
+        check(installed(asset)) { "Installed voice component is missing: ${asset.filename}" }
+        val digest=MessageDigest.getInstance("SHA-256")
+        file(asset).inputStream().use { input -> val buffer=ByteArray(65536);while(true){cancelled();val n=input.read(buffer);if(n<0)break;digest.update(buffer,0,n)} }
+        check(digest.digest().joinToString(""){"%02x".format(it)}==asset.installedSha256) { "Installed voice checksum failed: ${asset.filename}" }
+    }
     fun ready(voice: String, gender: VoiceGender = VoiceGender.ANY): Boolean {
         val requested = VoiceGenderMapping.supertonicVoice(voice, gender)
         return VoiceCatalog.core.all(::installed) && requested in VoiceCatalog.voices &&
@@ -31,6 +37,7 @@ internal class VoiceModels(private val root: File, private val permitMagpie: () 
             val hash=digest.digest().joinToString(""){"%02x".format(it)}
             if(size==com.sal7one.hearth.tts.magpie.MagpieCatalog.tokenizerSegmentsBytes && hash==com.sal7one.hearth.tts.magpie.MagpieCatalog.tokenizerSegmentsSha256) {
                 require(expected==null){"Expected a different voice component"}
+                permitFamily("magpie")
                 permitMagpie()
                 com.sal7one.hearth.tts.magpie.MagpieModels(File(root,"magpie")).installTokenizerSegments(temporary,cancelled)
                 return VoiceAsset("voice-magpie-tokenizer","tokenizer.ranges","tokenizer.ranges",size,hash,com.sal7one.hearth.tts.magpie.MagpieCatalog.source)
@@ -38,12 +45,22 @@ internal class VoiceModels(private val root: File, private val permitMagpie: () 
             val asset=VoiceCatalog.assets.firstOrNull {it.bytes==size && it.sha256==hash}
                 ?: error("Voice file does not match a pinned Hearth speech voice component")
             require(expected==null || expected==asset){"Downloaded voice file does not match the selected asset"}
+            permitFamily(asset.family)
             if(asset.id.startsWith("voice-magpie-"))permitMagpie()
+            if(asset.family == "omnivoice")permitOmniVoice()
+            if(asset.family == "chatterbox-v3" && asset.path == com.sal7one.hearth.tts.chatterbox.ChatterboxGraph.SOURCE_FILENAME) {
+                com.sal7one.hearth.tts.chatterbox.ChatterboxGraph.install(temporary,File(root,"chatterbox-v3"),cancelled)
+                return asset
+            }
+            if(asset.id == "voice-chatterbox-v3-perth") {
+                com.sal7one.hearth.tts.chatterbox.ChatterboxPerth.install(temporary,File(root,"chatterbox-v3"),cancelled)
+                return asset
+            }
             cancelled();file(asset).parentFile?.mkdirs();Files.move(temporary.toPath(),file(asset).toPath(),StandardCopyOption.ATOMIC_MOVE,StandardCopyOption.REPLACE_EXISTING)
             return asset
         }finally {temporary.delete()}
     }
-    fun importZip(input: InputStream, cancelled: () -> Unit = {}): Int {
+    fun importZip(input: InputStream, onImported: (VoiceAsset) -> Unit = {}, cancelled: () -> Unit = {}): Int {
         var count=0;var entries=0;var total=0L;val seen=mutableSetOf<String>()
         ZipInputStream(input).use {zip ->
             while(true) {
@@ -56,7 +73,7 @@ internal class VoiceModels(private val root: File, private val permitMagpie: () 
                 require(seen.add(name)){"Duplicate voice file: $name"}
                 val expected=VoiceCatalog.supertonicAssets.firstOrNull {it.filename==name} ?: error("Unsupported voice ZIP entry: $name")
                 total+=expected.bytes;require(total<=410_000_000){"Voice ZIP exceeds installation bound"}
-                import(zip,expected,cancelled);count++
+                onImported(import(zip,expected,cancelled));count++
             }
         }
         require(count>0){"Voice ZIP contains no supported model files"}

@@ -30,7 +30,7 @@ internal object Ct2Package {
         val downloadName get() = "${spec.id}-${file.name}"
         fun asset() = DownloadAsset(id,file.url,file.bytes,file.sha256,spec.bytes)
     }
-    fun parts(spec: Ct2ModelSpec) = spec.files.mapIndexed { index,file -> Part(spec,file,index) }
+    fun parts(spec: Ct2ModelSpec) = if (!spec.downloadEnabled) emptyList() else spec.files.mapIndexed { index,file -> Part(spec,file,index) }
     fun part(id: String) = Ct2Catalog.models.asSequence().flatMap { parts(it).asSequence() }.firstOrNull { it.id==id }
     fun directory(context: Context,spec: Ct2ModelSpec) = File(context.filesDir,"ct2-models/${spec.id}")
     fun installed(context: Context,spec: Ct2ModelSpec): Boolean = directory(context,spec).let { root ->
@@ -38,6 +38,7 @@ internal object Ct2Package {
     }
     fun enqueue(context: Context,downloads: FileDownloads,spec: Ct2ModelSpec) {
         requireRuntime(context)
+        check(spec.downloadEnabled) { "Import the verified ${spec.label} runtime ZIP from the Hearth release. Original training files are not runtime packages." }
         parts(spec).forEach { downloads.enqueue(DownloadSpec.parse(it.file.url,it.downloadName),true,it.id) }
     }
     private fun manifest(spec: Ct2ModelSpec) = JSONObject().put("schemaVersion",1).put("modelId",spec.id).toString()
@@ -52,6 +53,7 @@ internal object Ct2Package {
     }
     suspend fun install(context: Context,downloads: FileDownloads,spec: Ct2ModelSpec): String? {
         requireRuntime(context)
+        if (!spec.downloadEnabled) return null
         val job=currentCoroutineContext()
         val rows=parts(spec).map { part -> downloads.list().firstOrNull { it.modelId==part.id && downloads.record(it.id)?.optBoolean("downloadComplete")==true } ?: return null }
         val parent=File(context.filesDir,"ct2-models").apply { check(isDirectory || mkdirs()) }

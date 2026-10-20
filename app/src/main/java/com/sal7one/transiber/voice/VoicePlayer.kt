@@ -132,19 +132,18 @@ internal class VoicePlayer(context: Context,private val backendOverride: String?
     private suspend fun local(request: Request,choice: VoiceChoice)=nativeGate.withLock {
         com.sal7one.transiber.runtime.LocalModelPolicy.requireAllowed(context, "downloaded speech voices")
         val baseLanguage=Locale.forLanguageTag(request.language).language
-        val magpie=choice.family=="magpie"
-        if(magpie) {
-            MagpiePolicy.requireAllowed(context,"Magpie speech playback")
-            require(request.gender==VoiceGender.ANY){context.uiText()(R.string.magpie_gender_unverified)}
+        LocalVoiceFamilies.requireAllowed(context,choice.family,"speech playback")
+        val fixedRate=choice.family!="supertonic"
+        if(!LocalVoiceFamilies.verifiedGender(choice.family)) {
+            require(request.gender==VoiceGender.ANY){if(choice.family=="magpie")context.uiText()(R.string.magpie_gender_unverified) else context.uiText()(R.string.local_voice_gender_unverified,LocalVoiceFamilies.label(choice.family))}
         }
-        val languages=if(magpie)com.sal7one.hearth.tts.magpie.MagpieCatalog.languages else VoiceCatalog.languages
-        require(baseLanguage in languages){context.uiText()(R.string.local_voice_language_unsupported,if(magpie)"MagpieTTS v2607" else "Supertonic 3",request.language)}
-        val voice=if(magpie)choice.voice else VoiceGenderMapping.supertonicVoice(choice.voice,request.gender)
-        val engine=if(magpie)com.sal7one.hearth.tts.magpie.MagpieSpeechEngine(File(context.filesDir,"voice-models/magpie")) else SupertonicSpeechEngine(File(context.filesDir,"voice-models"))
+        require(baseLanguage in LocalVoiceFamilies.languages(choice.family)){context.uiText()(R.string.local_voice_language_unsupported,LocalVoiceFamilies.label(choice.family),request.language)}
+        val voice=if(fixedRate)choice.voice else VoiceGenderMapping.supertonicVoice(choice.voice,request.gender)
+        val engine=LocalVoiceFamilies.engine(context,choice.family)
         val reader=ArticleReader(engine)
         articleReader=reader
         try {
-            streamArticle(reader.read(request.text,if(magpie)request.language else baseLanguage,VoicePreference(id=voice),SpeechOptions(if(magpie)1f else choice.rate,choice.steps)),request.volume,if(magpie)choice.rate else 1f)
+            streamArticle(reader.read(request.text,if(fixedRate)request.language else baseLanguage,VoicePreference(id=voice),SpeechOptions(if(fixedRate)1f else choice.rate,choice.steps)),request.volume,if(fixedRate)choice.rate else 1f)
         }finally {
             withContext(NonCancellable){reader.closeAndJoin()}
             if(articleReader===reader)articleReader=null

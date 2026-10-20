@@ -80,6 +80,8 @@ enum class CaptionEngineChoice(val label: String, val explanation: String) {
     COHERE("Cohere Arabic (local)", "Arabic and English utterance captions. Choose the spoken language explicitly. Independent optional translation."),
     FUNASR_MLT("Fun-ASR MLT Nano (local)", "Multilingual recognition including Arabic and English in short utterance windows. Independent optional translation."),
     VOXTRAL("Voxtral Realtime (local)", "Multilingual automatic recognition with bounded windowed partials. Large model; S25 performance needs testing."),
+    AUDAR("Audar Flash (local)", "Arabic/English utterance recognition with an independent decoder and BF16 audio encoder. Optional translation and voices remain separate."),
+    OWSM("OWSM v4 Base (local)", "Compact experimental Arabic/English utterance recognition. Accuracy varies; independent optional translation."),
     /**
      * NETWORK CODE (BYOK) — play distribution only; hidden in the FOSS
      * build (ByokPolicy.cloudEngineAvailable()) and never constructed
@@ -111,7 +113,7 @@ enum class CaptionTheme(val label: String) {
 enum class CaptionSpeakerChoice(val label: String, val explanation: String) {
     SYSTEM("Device voice", "Instant, offline, any language the device has a voice for."),
     CUSTOM("Custom default", "Use your saved Supertonic or self-hosted voice. Set it in Voices & read aloud."),
-    NATIVE("Supertonic 3", "On-device speech in 31 languages; install its model and a voice in Voice settings."),
+    NATIVE("Downloaded voice", "Use the downloaded voice family and voice selected in Voice settings."),
     SHARED("Shared voice settings", "Use the Android, on-device or self-hosted voice selected in Hearth Voice settings."),
     CLOUD("Cloud · BYOK", "Provider TTS with your API key (play distribution only)."),
 }

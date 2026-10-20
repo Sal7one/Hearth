@@ -1,0 +1,168 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-20",
+  "family": "riva-translate",
+  "scope": "Functional host CPU fixture checks; no S25 quality, sustained latency, WER or default-setting claim",
+  "ownerDeviceTested": false,
+  "components": [
+    {
+      "file": "Riva-Translate-4B-Instruct-v2-Q4_K_M.gguf",
+      "repository": "liodon-ai/Riva-Translate-4B-Instruct-v2-imatrix-GGUF",
+      "revision": "aa8cc2e72e2f97e07b021e4afbc612cff3bf9ae9",
+      "url": "https://huggingface.co/liodon-ai/Riva-Translate-4B-Instruct-v2-imatrix-GGUF/resolve/aa8cc2e72e2f97e07b021e4afbc612cff3bf9ae9/Riva-Translate-4B-Instruct-v2-Q4_K_M.gguf",
+      "bytes": 2759302720,
+      "sha256": "90c2f48ff5549b770d9aaecb7eea603548bcca035a970a800d9c17781991804d",
+      "payloadIndependentlyVerified": true
+    }
+  ],
+  "runs": [
+    {
+      "source": "en",
+      "target": "ar",
+      "command": [
+        "/opt/homebrew/opt/python@3.14/bin/python3.14",
+        "scripts/benchmark/run_macos_translation.py",
+        "--model",
+        "build/remaining-mt-smoke/riva-translate/Riva-Translate-4B-Instruct-v2-Q4_K_M.gguf",
+        "--family",
+        "riva-translate",
+        "--source",
+        "en",
+        "--target",
+        "ar",
+        "--threads",
+        "2",
+        "--gpu-layers",
+        "0",
+        "--passes",
+        "1",
+        "--output",
+        "docs/research/mt-riva-translate-en-ar-host-2026-10-20.json",
+        "--runtime",
+        "build/translation-runtime/host/translation_smoke"
+      ],
+      "exitCode": 0,
+      "wallSeconds": 14.918925082994974,
+      "stdout": "{\n  \"output\": \"docs/research/mt-riva-translate-en-ar-host-2026-10-20.json\",\n  \"model\": \"Riva-Translate-4B-Instruct-v2-Q4_K_M.gguf\",\n  \"loadMs\": 3571.54029198864,\n  \"warmMedianMs\": null,\n  \"chrF++\": 0.39222906139616476,\n  \"WER\": 0.863013698630137,\n  \"CER\": 0.5726495726495726,\n  \"error\": null\n}\n",
+      "stderr": "",
+      "result": "docs/research/mt-riva-translate-en-ar-host-2026-10-20.json",
+      "resultSha256": "31c83e3fd88805ddca5c66e14ed2eefd43df8d1ead997c751f0f5dcddc213eab",
+      "error": null,
+      "attemptedCases": 6,
+      "accepted": true
+    },
+    {
+      "source": "ar",
+      "target": "en",
+      "command": [
+        "/opt/homebrew/opt/python@3.14/bin/python3.14",
+        "scripts/benchmark/run_macos_translation.py",
+        "--model",
+        "build/remaining-mt-smoke/riva-translate/Riva-Translate-4B-Instruct-v2-Q4_K_M.gguf",
+        "--family",
+        "riva-translate",
+        "--source",
+        "ar",
+        "--target",
+        "en",
+        "--threads",
+        "2",
+        "--gpu-layers",
+        "0",
+        "--passes",
+        "1",
+        "--output",
+        "docs/research/mt-riva-translate-ar-en-host-2026-10-20.json",
+        "--runtime",
+        "build/translation-runtime/host/translation_smoke"
+      ],
+      "exitCode": 0,
+      "wallSeconds": 12.628387082993868,
+      "stdout": "{\n  \"output\": \"docs/research/mt-riva-translate-ar-en-host-2026-10-20.json\",\n  \"model\": \"Riva-Translate-4B-Instruct-v2-Q4_K_M.gguf\",\n  \"loadMs\": 3355.613125001425,\n  \"warmMedianMs\": null,\n  \"chrF++\": 0.6048796253295231,\n  \"WER\": 0.42592592592592593,\n  \"CER\": 0.32808988764044944,\n  \"error\": null\n}\n",
+      "stderr": "",
+      "result": "docs/research/mt-riva-translate-ar-en-host-2026-10-20.json",
+      "resultSha256": "4cf1969e94b70d2a8bb4c15db30d5ca9e9172760053852ef162a1325f25b9c3f",
+      "error": null,
+      "attemptedCases": 6,
+      "accepted": true
+    }
+  ],
+  "publisherPrompt": {
+    "instruction": "You are an expert at translating text from {sourceName} to {targetName}.",
+    "wireToNative": "{instruction}\n\n{trimmedText}",
+    "envelope": "<s>System\n{instruction}</s>\n<s>User\n{trimmedText}</s>\n<s>Assistant\n",
+    "separatorWarning": "The pinned tokenizer Jinja source contains quoted backslash-n escapes, which Jinja renders as actual U+000A newlines. Native envelope separators must be real newline characters. Independent publisher-render fixture: docs/research/mt-riva-publisher-prompt-2026-10-20.json.",
+    "specialTokens": "Only fixed envelope tokens parsed; user and instruction content literal."
+  },
+  "publisherSources": [
+    "https://huggingface.co/nvidia/Riva-Translate-4B-Instruct-v2/blob/040d958b128018ff0bed2542a7b51005e9ea563c/tokenizer_config.json",
+    "https://huggingface.co/nvidia/Riva-Translate-4B-Instruct-v2",
+    "https://huggingface.co/liodon-ai/Riva-Translate-4B-Instruct-v2-imatrix-GGUF/tree/aa8cc2e72e2f97e07b021e4afbc612cff3bf9ae9"
+  ],
+  "modelLicense": {
+    "name": "NVIDIA Open Model License",
+    "url": "https://www.nvidia.com/en-us/agreements/enterprise-software/nvidia-open-model-license/"
+  },
+  "runnerSha256": "83b56d3bc08594a3d16f280bd9a75fa4a57811eb0030582157b9fef312ae1777",
+  "catalogId": "riva-translate-4b-v2-q4",
+  "runtime": "build/translation-runtime/host/translation_smoke",
+  "runtimeSha256": "2e1bb2f525bd1ce232655bd748f3a9eb1bc889e8d46effceff2af2c4c10224bc",
+  "nativePromptMode": 3,
+  "threads": 2,
+  "gpuLayers": 0,
+  "passes": 1,
+  "nativeSourceSha256": "2249b3cd727ac067ba18373ef0200fe4f8e42cb5951c29b0eec4f06cde809a46",
+  "llamaRevision": "64e9bceb2c3a856efed96feda784a50947049feb",
+  "interpretation": "Six pinned FLEURS sentences per direction, one pass each. Any raw chrF/WER fields are diagnostic fixture outputs, not corpus quality or phone benchmarks.",
+  "safetyChecks": {
+    "checks": [
+      {
+        "case": "missing-instruction",
+        "accepted": true,
+        "publishedText": false,
+        "error": "Riva translation instruction is missing or invalid"
+      },
+      {
+        "case": "oversized-input",
+        "accepted": true,
+        "publishedText": false,
+        "error": "Translation prompt exceeds 12000 UTF-8 bytes or is empty"
+      },
+      {
+        "case": "context-overflow",
+        "accepted": true,
+        "publishedText": false,
+        "error": "Caption exceeds the local translation context (2048 tokens)"
+      },
+      {
+        "case": "active-cancellation",
+        "accepted": true,
+        "pendingAtCancel": true,
+        "publishedText": false,
+        "elapsedMs": 90.2868,
+        "error": "Local translation cancelled\ngraph_compute: ggml_backend_sched_graph_compute_async failed with error 1\nprocess_ubatch: failed to compute graph, compute status: 1\nllama_decode: failed to decode, ret = 2\n"
+      },
+      {
+        "case": "post-cancel-recovery",
+        "accepted": true,
+        "text": "الاجتماع يبدأ في التاسعة."
+      }
+    ],
+    "harnessSource": "#include \"text_model.h\"\n#include <future>\n#include <iostream>\n#include <thread>\n#include <iomanip>\n#include <sstream>\n\nstd::string quote(const std::string& text) {\n std::ostringstream out; out << '\"';\n for(unsigned char c:text) { if(c=='\"'||c=='\\\\') out << '\\\\' << c; else if(c=='\\n') out << \"\\\\n\"; else if(c=='\\r') out << \"\\\\r\"; else if(c<32) out << \"\\\\u\" << std::hex << std::setw(4) << std::setfill('0') << int(c) << std::dec; else out << c; }\n out << '\"'; return out.str();\n}\nint main(int argc,char** argv) {\n if(argc!=2) return 2;\n try {\n  transiber::TextModel model(argv[1],2,0,3);\n  const std::string instruction=\"You are an expert at translating text from English to Arabic.\\n\\n\";\n  int failures=0;\n  const auto reject=[&](const char* name,const std::string& prompt,const char* expected) {\n   std::string error;bool published=false;\n   try { const auto text=model.translate(prompt);published=!text.empty(); }\n   catch(const std::exception& e) { error=e.what(); }\n   bool pass=!published&&error.find(expected)!=std::string::npos;\n   std::cout << \"{\\\"case\\\":\" << quote(name) << \",\\\"accepted\\\":\" << (pass?\"true\":\"false\") << \",\\\"publishedText\\\":\" << (published?\"true\":\"false\") << \",\\\"error\\\":\" << quote(error) << \"}\" << std::endl;\n   if(!pass) ++failures;\n  };\n  reject(\"missing-instruction\",\"The meeting starts at nine.\",\"instruction is missing\");\n  reject(\"oversized-input\",instruction+std::string(12001,'a'),\"exceeds 12000\");\n  std::string context;for(int i=0;i<1800;++i) context+=\"hello \";\n  reject(\"context-overflow\",instruction+context,\"2048 tokens\");\n  const auto begin=std::chrono::steady_clock::now();\n  auto task=std::async(std::launch::async,[&] {\n   try { return std::pair<bool,std::string>{true,model.translate(instruction+\"The meeting starts at nine in the morning, and everybody should bring the documents from the previous discussion. Please translate the entire message faithfully.\")}; }\n   catch(const std::exception& e) { return std::pair<bool,std::string>{false,e.what()}; }\n  });\n  std::this_thread::sleep_for(std::chrono::milliseconds(75));\n  const bool pendingAtCancel=task.wait_for(std::chrono::milliseconds(0))!=std::future_status::ready;\n  model.cancelled.store(true);const auto result=task.get();\n  const auto elapsed=std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-begin).count();\n  const bool cancelled=pendingAtCancel&&!result.first&&result.second.find(\"cancelled\")!=std::string::npos;\n  std::cout << \"{\\\"case\\\":\\\"active-cancellation\\\",\\\"accepted\\\":\" << (cancelled?\"true\":\"false\") << \",\\\"pendingAtCancel\\\":\" << (pendingAtCancel?\"true\":\"false\") << \",\\\"publishedText\\\":\" << (result.first?\"true\":\"false\") << \",\\\"elapsedMs\\\":\" << elapsed << \",\\\"error\\\":\" << quote(result.second) << \"}\" << std::endl;\n  if(!cancelled) ++failures;\n  model.cancelled.store(false);\n  const auto recovered=model.translate(instruction+\"The meeting starts at nine.\");\n  const bool recovery=!recovered.empty()&&recovered.find(\"الاجتماع\")!=std::string::npos;\n  std::cout << \"{\\\"case\\\":\\\"post-cancel-recovery\\\",\\\"accepted\\\":\" << (recovery?\"true\":\"false\") << \",\\\"text\\\":\" << quote(recovered) << \"}\" << std::endl;\n  if(!recovery)++failures;\n  return failures?1:0;\n } catch(const std::exception& e) { std::cerr << e.what() << std::endl;return 1; }\n}\n",
+    "harnessSha256": "1a20f5734bb96387ec20066111fb8841da6256fe24baeae06e1f30f35b9ae24f",
+    "binarySha256": "4aa589a355752a518e14344dbcc3301e7d4a3ecc5184fe1fdc16f6b0d08a1538",
+    "settings": {
+      "threads": 2,
+      "gpuLayers": 0,
+      "nativePromptMode": 3
+    },
+    "scope": "Production TextModel with the exact real pinned GGUF. Cancellation requested after 75ms while future was still pending; no partial text published; reset flag and next request succeeded. No forced 20-second timeout in this real-weight run. Initial sandbox-only invocation could not initialize host-linked Metal context even with GPU layers 0; actual checks ran outside sandbox, same binary and CPU settings."
+  },
+  "promptFix": {
+    "publisherRenderReceipt": "docs/research/mt-riva-publisher-prompt-2026-10-20.json",
+    "beforeReceipt": "docs/research/mt-riva-translate-before-newline-fix-cpu-smoke-2026-10-20.json",
+    "change": "Literal backslash-n fixed envelope separators replaced with actual U+000A newlines from publisher Jinja rendering. Source/instruction literal tokenization preserved.",
+    "observedDifference": "First pinned English→Arabic sentence echoed English with old envelope, produced Arabic with corrected envelope. Other outputs still show factual/terminology errors; no broad quality claim."
+  },
+  "payloadDeletedAfterChecks": true
+}

@@ -165,11 +165,11 @@ object ModelSourceBindings {
         val selectedVoice = VoiceGenderMapping.supertonicVoice(choice.voice,
             runCatching { VoiceGender.valueOf(config.speakerGender.name) }.getOrDefault(VoiceGender.ANY))
         val requiredVoice = if (choice.backend == "supertonic") {
-            if (choice.family == "magpie") VoiceCatalog.magpieAssets else VoiceCatalog.core + VoiceCatalog.supertonicAssets.filter { it.filename == "$selectedVoice.json" }
+            if (choice.family != "supertonic") VoiceCatalog.familyAssets(choice.family) else VoiceCatalog.core + VoiceCatalog.supertonicAssets.filter { it.filename == "$selectedVoice.json" }
         } else emptyList()
         VoiceCatalog.assets.forEach { asset ->
             val file = voice.file(asset)
-            if (file.exists() || asset in requiredVoice) add(asset.id, file, asset.bytes, directory = false)
+            if (file.exists() || asset in requiredVoice) add(asset.id, file, asset.installedBytes, directory = false)
         }
         val magpieRoot = File(context.filesDir, "voice-models/magpie")
         val magpieModels = com.sal7one.hearth.tts.magpie.MagpieModels(magpieRoot)

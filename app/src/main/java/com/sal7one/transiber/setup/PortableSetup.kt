@@ -30,10 +30,15 @@ internal data class PortableSpeechStage(val model: PortableModelRef, val sourceL
 }
 internal data class PortableTranslationStage(
     val modelId: String, val sourceLanguage: String, val targetLanguage: String, val enabled: Boolean = true,
+    val arabicDialect: String? = null,
 ) {
     init {
         require(identifier(modelId)) { "Invalid translation model reference" }
         require(language(sourceLanguage) && language(targetLanguage) && targetLanguage != "auto") { "Invalid translation language" }
+        require(arabicDialect == null || (modelId in setOf("ct2-jisr-50m-en-ar", "ct2-jisr-50m-en-ar-int8") && sourceLanguage in setOf("en","auto") && targetLanguage == "ar")) {
+            "Arabic dialect applies only to Jisr English → Arabic"
+        }
+        arabicDialect?.let(com.sal7one.common_jni.translation.JisrDialects::requireSupported)
     }
 }
 internal data class PortableVoiceStage(
@@ -45,7 +50,7 @@ internal data class PortableVoiceStage(
     val family: String? = null,
 ) {
     init {
-        require(family == null || family in setOf("supertonic", "magpie")) { "Unsupported local voice family" }
+        require(family == null || family in com.sal7one.transiber.voice.LocalVoiceFamilies.ids) { "Unsupported local voice family" }
         require(volume in 0..100) { "Voice volume must be 0–100" }
         require(voiceId == null || voiceId.matches(Regex("[A-Za-z0-9._-]{1,80}"))) { "Invalid voice reference" }
     }
@@ -72,7 +77,8 @@ internal data class PortableSetup(
             }); put("sourceLanguage", stage.sourceLanguage)
         }) }
         translation?.let { stage -> put("translation", JSONObject().put("modelId", stage.modelId)
-            .put("sourceLanguage", stage.sourceLanguage).put("targetLanguage", stage.targetLanguage).put("enabled", stage.enabled)) }
+            .put("sourceLanguage", stage.sourceLanguage).put("targetLanguage", stage.targetLanguage).put("enabled", stage.enabled)
+            .apply { stage.arabicDialect?.let { put("arabicDialect", it) } }) }
         voice?.let { stage -> put("voice", JSONObject().put("enabled", stage.enabled).put("choice", stage.choice.name)
             .put("gender", stage.gender.name).put("volume", stage.volume).apply { stage.voiceId?.let { put("voiceId", it) }; stage.family?.let { put("family", it) } }) }
     }.toString(2)
@@ -115,8 +121,8 @@ internal data class PortableSetup(
                 PortableSpeechStage(PortableModelRef(model.string("family"), model.optionalString("catalogId"),
                     model.optionalString("profile"), model.optionalString("sha256"), model.optionalString("digestKind")), stage.string("sourceLanguage"))
             }
-            val translation = root.optionalObject("translation")?.checked(setOf("modelId", "sourceLanguage", "targetLanguage", "enabled"))?.let {
-                PortableTranslationStage(it.string("modelId"), it.string("sourceLanguage"), it.string("targetLanguage"), it.boolean("enabled"))
+            val translation = root.optionalObject("translation")?.checked(setOf("modelId", "sourceLanguage", "targetLanguage", "enabled", "arabicDialect"))?.let {
+                PortableTranslationStage(it.string("modelId"), it.string("sourceLanguage"), it.string("targetLanguage"), it.boolean("enabled"), it.optionalString("arabicDialect"))
             }
             val voice = root.optionalObject("voice")?.checked(setOf("enabled", "choice", "gender", "volume", "voiceId", "family"))?.let {
                 PortableVoiceStage(it.boolean("enabled"), CaptionSpeakerChoice.valueOf(it.string("choice")),

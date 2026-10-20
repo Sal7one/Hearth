@@ -89,5 +89,16 @@ class PackageTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as d:
             with self.assertRaisesRegex(ValueError, "Unsupported"):
                 packager.create_manifest(Path(d), "whisper", {"model": "model.gguf"})
+    def test_audar_requires_decoder_and_encoder_while_owsm_is_one_model(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            (root / "model.gguf").write_bytes(b"GGUF-decoder")
+            (root / "encoder.gguf").write_bytes(b"GGUF-encoder")
+            result = packager.create_manifest(root, "audar-asr-v1-flash", {"model":"model.gguf", "encoder":"encoder.gguf"})
+            self.assertEqual(set(result["roles"]), {"model","encoder"})
+            with self.assertRaisesRegex(ValueError, "Required roles"):
+                packager.create_manifest(root, "audar-asr-v1-flash", {"model":"model.gguf"})
+            result = packager.create_manifest(root, "owsm-v4-base-102m", {"model":"model.gguf"})
+            self.assertEqual(result["profile"], "owsm-v4-base-102m")
 
 if __name__ == "__main__": unittest.main()

@@ -1,6 +1,9 @@
 {
   "ctranslate2Revision": "8c8cab2a954810216a45d65c1b8d56839c846e5b",
   "sentencepieceRevision": "17d7580d6407802f85855d2cc9190634e2c95624",
+  "huggingFaceTokenizers": "0.22.2; Cargo.lock pins all crate checksums; license inventory packaged",
+  "rustc": "rustc 1.90.0 (1159e78c4 2025-09-14)",
+  "protocol": 2,
   "submodules": [
     "8a494eb1e158ec2050e5f699a504fbc9b896a43b third_party/cpu_features (v0.4.1-122-g8a494eb)",
     "-bbe579a9e3beb6ea6626d9227ec32d0dae119a49 third_party/cutlass",
@@ -13,26 +16,33 @@
     "-b5fe509fd11a925f90d6495176707cc1184eed9d third_party/thrust"
   ],
   "ndk": "27.0.12077973",
-  "backend": "CPU Ruy; two threads; one queued batch; QuickMT FLOAT32; SMaLL INT8_FLOAT32; greedy; no GPU",
+  "backend": "CPU Ruy; two threads; one queued batch; QuickMT FLOAT32; SMaLL INT8_FLOAT32; Jisr FLOAT32/INT8_FLOAT32; greedy; no GPU",
   "androidPatch": "Optional pthread affinity rejected on Android API28; session never requests pinning. Generated build copy only.",
   "sources": {
-    "common-jni/src/main/cpp/translation/ct2/ct2_jni.cpp": "42f89993608cad77b4feed490488ab49cf80e7175a510d6c4bc59e45c1a40365",
-    "common-jni/src/main/cpp/translation/ct2/ct2_model.h": "4152b1e45a4786e35e5116eee39b84996f41221f3da89252794a4488824fd59d",
+    "common-jni/src/main/cpp/common/lease_registry.h": "555d0d227579c671a92f594de45ff7b7ee35eb646d4d68a4266758e00eec94bd",
+    "common-jni/src/main/cpp/translation/bpe-rust/Cargo.lock": "e7dca0fe43e6b041066b28268024b12984ef235a63c77d5ce9d55a9d5459c852",
+    "common-jni/src/main/cpp/translation/bpe-rust/Cargo.toml": "be418311d79bb11e24108fea4a80a0a424f5422f33dca551ec6e19c6df26be7d",
+    "common-jni/src/main/cpp/translation/bpe-rust/src/lib.rs": "c8fab94b3851ce64c34dd90771299bb052a11debf0cfa6f4fbc9463e28e6724e",
+    "common-jni/src/main/cpp/translation/ct2/bpe_smoke.cpp": "2496fcbaa51c9ea8e0a8b9f4fdb990053d93dafa4c2f021021255e8f37da2fc7",
+    "common-jni/src/main/cpp/translation/ct2/byte_bpe.h": "69b4ab48e5d461731819c164bd5b077ba00c59990f6f7265aa3e919ca4b44d0f",
+    "common-jni/src/main/cpp/translation/ct2/ct2_jni.cpp": "b8a325132ef18694925a3307d18c8440c69a7e89bfe5590c0f6d48d503103770",
+    "common-jni/src/main/cpp/translation/ct2/ct2_model.h": "cae9551b85322c68b6c94ec47484244c3798337433f42babea91c0d82de1f83a",
     "common-jni/src/main/cpp/translation/ct2/ct2_smoke.cpp": "414c5beadaaafef895829347c95f17c123dc11fae511e072ddc28ad759cff4d8",
     "common-jni/src/main/cpp/translation/ct2/exports.map": "1efc7d364958477e71a6de5f8ffa014a2961f1799568157e6377b5d201a65ccf",
-    "scripts/translation/ct2/CMakeLists.txt": "c89c4cca60d4fd49ace81aadd12c76ded73aafdc6cc5c04b080924f585e3ce22",
-    "scripts/translation/ct2/build-runtime.sh": "918ae9af48cd9b4d043d498e60ff2981cde433b7d05a7ae8929abea1aa0e37ed",
-    "scripts/translation/ct2/package.py": "a97324e586102d379da19bee6a44bba38d1f0e276398222ef8bde266cff1610f",
+    "scripts/translation/ct2/CMakeLists.txt": "5f0e35a48738dd10a701f92e45df0de407055f2678ce3eb9b55b2b0796cd40f9",
+    "scripts/translation/ct2/build-runtime.sh": "de8b7dce2bb94477586733394b68079b7753e8c9f4a6bd22f9fb53bf34f14e17",
+    "scripts/translation/ct2/package.py": "35758c064364a398c89a4f7b4f5cff3d63a04de8a2108f9b20b7b5f6df6fcce1",
     "scripts/translation/ct2/patch-thread-pool.py": "4cd3b5d2079fdb17fce3bee100d8bf7fa8190306fc52610318cf4dcb7ed6e7f6",
-    "scripts/translation/ct2/stage-runtime.py": "7c95b07c4d64b0561c95844c9139a464a6fe97cb42aae1dbf188c8bded4f8cf5",
-    "common-jni/src/main/cpp/common/lease_registry.h": "555d0d227579c671a92f594de45ff7b7ee35eb646d4d68a4266758e00eec94bd"
+    "scripts/translation/ct2/runtime_sources.py": "f27f7f8a3d2d30fc116ce049eab8777709bae10927b63fe50f8e2db21a7b4d97",
+    "scripts/translation/ct2/stage-runtime.py": "3df73a12caaf422e750e00dfeaa7e52ff6046167315b74489f890cd435700d9e",
+    "scripts/translation/jisr/export.py": "aa3750c6a97dd3fbf0fcc4cf6de49c01f7841aa62035a824cb48f9fa815b16d1"
   },
   "binaries": {
     "arm64-v8a": {
       "name": "libtransiber_ct2.so",
-      "bytes": 2165728,
-      "sha256": "0d28d820928339420e7e8515e7623785322f69c45b6f2f2761f626ed48ebd004",
-      "sourceSetSha256": "2eeece67721446ed4684ae5df354be3515ef003524fbd8f8f29a73a0c3bc8e24"
+      "bytes": 5301536,
+      "sha256": "abcfa3ab4bec651a6938f0f3353767f2a6d36f88fdf87e91583b72237e109b8a",
+      "sourceSetSha256": "bcd46b5461e2e0c302e4b7c090437f77b2c40ef2e56dbb86154614ea8436e24e"
     }
   }
 }

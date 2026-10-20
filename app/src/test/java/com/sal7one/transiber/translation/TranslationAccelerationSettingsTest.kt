@@ -44,4 +44,21 @@ class TranslationAccelerationSettingsTest {
         com.sal7one.transiber.preferences.UserPreferences.store(context, "conversation-translators").edit().putString("gguf-acceleration", "auto").commit()
         assertEquals(TranslationAcceleration.CPU, ConversationTranslationSettings.acceleration(context))
     }
+    @Test fun jisrDialectPersistsAndIsFrozenWithoutChangingModelOrAcceleration() {
+        val model = "ct2-jisr-50m-en-ar-int8"
+        ConversationTranslationSettings.select(context, ConversationTranslationSettings.LOCAL, model)
+        ConversationTranslationSettings.setAcceleration(context, TranslationAcceleration.VULKAN)
+        val original = ConversationTranslationSettings.snapshot(context, model)
+        val revision = ConversationTranslationSettings.revision.value
+        ConversationTranslationSettings.setJisrDialect(context, "ars")
+        val saudi = ConversationTranslationSettings.snapshot(context, model)
+        assertEquals("ar", original.jisrDialect)
+        assertEquals("ars", saudi.jisrDialect)
+        assertEquals("ars", com.sal7one.transiber.preferences.UserPreferences.store(context, "conversation-translators").getString("jisr-dialect", null))
+        assertEquals(model, ConversationTranslationSettings.localModel(context, ""))
+        assertEquals(TranslationAcceleration.VULKAN, ConversationTranslationSettings.acceleration(context))
+        assertTrue(ConversationTranslationSettings.revision.value > revision)
+        assertThrows(IllegalArgumentException::class.java) { ConversationTranslationSettings.setJisrDialect(context, "unknown") }
+        assertEquals("ars", ConversationTranslationSettings.jisrDialect(context))
+    }
 }

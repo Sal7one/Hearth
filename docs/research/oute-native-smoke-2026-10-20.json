@@ -1,0 +1,93 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-20",
+  "scope": "Real pinned Oute1.0 Q8 generator plus IBM DAC1.0; host CPU only. Valid PCM is not intelligibility, gender or device-performance verification.",
+  "host": {
+    "machine": "arm64",
+    "system": "Darwin",
+    "threads": 2
+  },
+  "source": {
+    "repo": "https://github.com/foldl/chatllm.cpp",
+    "revision": "74b8237a4c1796f76bb0ed7f483b8e52e7d4d5c7",
+    "ggml": "embedded at pinned revision"
+  },
+  "runtimeSha256": "531a2df28abbf668da806b5ae8b389d9788ae5158cff3f831f1459744a7a79eb",
+  "sourceSetSha256": "4494bb0baf881552c68936abacd47f1c0a12663f2b70bf3485ebd4158ba98ae1",
+  "model": {
+    "file": "oute-tts-1b.bin",
+    "bytes": 1438416240,
+    "sha256": "e4e14b573459a8a4958e32e39678d2f0ac61cf73ccadb6dbda1f8fde1f8ade83",
+    "verification": "Full bytes and SHA256 before inference"
+  },
+  "reference": {
+    "file": "en-female-1-neutral.json",
+    "bytes": 25295,
+    "sha256": "6bb6bacca60c9759741d849c2baf2af3f6263a51b759d67826ef39e1efc4436c",
+    "language": "en",
+    "gender": "unknown for strict cross-lingual matching"
+  },
+  "cApi": {
+    "english": {
+      "abi": 1,
+      "rate": 24000,
+      "frames": 73912,
+      "chunks": 19,
+      "rms": 0.101565,
+      "loadMs": 313,
+      "synthesisMs": 35073,
+      "text": "Hello. Welcome to Hearth."
+    },
+    "arabic": {
+      "abi": 1,
+      "rate": 24000,
+      "frames": 99512,
+      "chunks": 25,
+      "rms": 0.0945809,
+      "loadMs": 278,
+      "synthesisMs": 38656,
+      "text": "مرحباً. أهلاً بك في هيرث."
+    },
+    "cancellation": {
+      "cancelMs": 109,
+      "audioChunks": 0,
+      "sticky": true,
+      "scheduledAfterMs": 100,
+      "method": "Concurrent native cancel during prefill after registering CPU graph abort callback"
+    }
+  },
+  "jni": {
+    "actualModel": true,
+    "sameHandleReuse": true,
+    "english": {
+      "frames": 73912,
+      "sampleRate": 24000,
+      "rms": 0.10157981081022861
+    },
+    "arabic": {
+      "frames": 99512,
+      "sampleRate": 24000,
+      "rms": 0.09459772301215039
+    },
+    "cancelledHandleRejected": true,
+    "result": "PASS"
+  },
+  "offlineTests": [
+    "Production sampling helper ASAN+UBSAN: stable exponentials, relative weights, min-p/top-p, invalid logits",
+    "Production JNI with isolated fakeCABI: UTF8 errors, exact Java callback exception identity, finite/oversized/empty PCM errors, reentrant close, concurrent cancel/retire, recursive synth rejection; worker-thread callback close and exception identity"
+  ],
+  "android": {
+    "abi": "arm64-v8a",
+    "runtimeBytes": 2414880,
+    "backend": "CPU",
+    "ndk": "27.0.12077973",
+    "deviceTested": false
+  },
+  "limitations": [
+    "Generation finishes before PCM delivery; no realtime streaming claim",
+    "No Android speed/memory/heat measurement",
+    "English reference may retain accent in Arabic",
+    "Model NC/share-alike plus Llama3.2; codecCDLA2; referenceApache2",
+    "No male/nativeArabic reference or gender/intelligibility verification"
+  ]
+}

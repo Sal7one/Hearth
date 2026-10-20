@@ -3,7 +3,7 @@ package com.sal7one.common_jni.speech
 /** Runtime identity is separate from model format: arbitrary ONNX/GGUF files are not ASR models. */
 enum class SpeechBackend(val id: String) {
     MOONSHINE("moonshine"), QWEN3_ASR("qwen3_asr"), OMNILINGUAL_CTC("omnilingual_ctc"), PHONON("phonon"), TRANSCRIBEPSY("transcribepsy"), NEMOTRON_3_5("nemotron_3_5"),
-    COHERE("cohere_asr"), FUNASR_MLT("funasr_mlt_nano"), VOXTRAL_REALTIME("voxtral_realtime")
+    COHERE("cohere_asr"), FUNASR_MLT("funasr_mlt_nano"), VOXTRAL_REALTIME("voxtral_realtime"), AUDAR("audar_mtmd"), OWSM("owsm")
 }
 enum class SpeechStreamingKind { UTTERANCE_WINDOWED, CACHE_AWARE }
 enum class SpeechAcceleration(val id: String) { CPU("cpu"), VULKAN("vulkan"), OPENCL("opencl") }
@@ -26,7 +26,9 @@ enum class SpeechProfile(val id: String, val backend: SpeechBackend) {
     NEMOTRON_3_5_ASR_0_6B("nemotron-3.5-asr-0.6b", SpeechBackend.NEMOTRON_3_5),
     COHERE_ARABIC_07_2026("cohere-transcribe-arabic-07-2026", SpeechBackend.COHERE),
     FUNASR_MLT_NANO_2512("fun-asr-mlt-nano-2512", SpeechBackend.FUNASR_MLT),
-    VOXTRAL_MINI_REALTIME_2602("voxtral-mini-4b-realtime-2602", SpeechBackend.VOXTRAL_REALTIME);
+    VOXTRAL_MINI_REALTIME_2602("voxtral-mini-4b-realtime-2602", SpeechBackend.VOXTRAL_REALTIME),
+    AUDAR_ASR_V1_FLASH("audar-asr-v1-flash", SpeechBackend.AUDAR),
+    OWSM_V4_BASE_102M("owsm-v4-base-102m", SpeechBackend.OWSM);
 
     /** Monolingual checkpoints carry their source identity even when the caller chooses Auto. */
     val fixedSourceLanguage: String? get() = when (this) {
@@ -78,6 +80,8 @@ enum class SpeechProfile(val id: String, val backend: SpeechBackend) {
         )
         SpeechBackend.COHERE -> SpeechCapabilities(SpeechStreamingKind.UTTERANCE_WINDOWED, false,
             setOf("ar", "en"), setOf("ar", "en"), true, automaticSourceLanguage = false)
+        SpeechBackend.AUDAR, SpeechBackend.OWSM -> SpeechCapabilities(SpeechStreamingKind.UTTERANCE_WINDOWED, false,
+            setOf("ar", "en"), setOf("ar", "en"), true)
         SpeechBackend.FUNASR_MLT -> SpeechCapabilities(SpeechStreamingKind.UTTERANCE_WINDOWED, false,
             FUN_LANGUAGES, FUN_LANGUAGES, true)
         SpeechBackend.VOXTRAL_REALTIME -> SpeechCapabilities(SpeechStreamingKind.UTTERANCE_WINDOWED, true,

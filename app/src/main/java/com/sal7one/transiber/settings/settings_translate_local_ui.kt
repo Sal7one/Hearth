@@ -34,13 +34,14 @@ internal fun SettingsTranslateLocalUi(
     includeLegacy: Boolean = false,
     showCaptionControls: Boolean = true,
     repairRevision: Int = 0, repairModelId: String? = null,
+    showFullLibrary: Boolean = false,
 ) {
     val uiText = rememberUiText()
     if (!com.sal7one.transiber.runtime.LocalModelPolicy.allowed(LocalContext.current)) {
         LocalModelPolicyNotice()
         return
     }
-    if (rememberSetupMode() == SetupMode.BASIC) {
+    if (!showFullLibrary && rememberSetupMode() == SetupMode.BASIC) {
         Text(uiText(UiR.string.setup_basic_selected_translation, TranslationOptions.label(config.localTranslationModelId)),
             style = MaterialTheme.typography.labelLarge)
         LocalBundleUi(config, translationOnly = true)
@@ -56,12 +57,12 @@ internal fun SettingsTranslateLocalUi(
     val catalog = remember { translationBrowserItems() }
     val languageModel = rememberCaptionLanguageModel(config)
     val spoken = CaptionLanguages.effectiveSource(config, CloudConfigStore.sttMode(context), languageModel)
-    var source by rememberSaveable { mutableStateOf(spoken.takeIf { it in catalog.flatMap { model -> model.sourceLanguages } } ?: "any") }
-    var target by rememberSaveable { mutableStateOf(config.target.languageTag) }
-    var query by rememberSaveable { mutableStateOf("") }
-    var kind by rememberSaveable { mutableStateOf("any") }
-    var installedOnly by rememberSaveable { mutableStateOf(false) }
-    var showPivots by rememberSaveable { mutableStateOf(MarianCascade.find(config.localTranslationModelId) != null) }
+    var source by com.sal7one.transiber.models.rememberModelBrowseString("translation-source", spoken.takeIf { it in catalog.flatMap { model -> model.sourceLanguages } } ?: "any")
+    var target by com.sal7one.transiber.models.rememberModelBrowseString("translation-target", config.target.languageTag)
+    var query by com.sal7one.transiber.models.rememberModelBrowseString("translation-query", "")
+    var kind by com.sal7one.transiber.models.rememberModelBrowseString("translation-kind", "any")
+    var installedOnly by com.sal7one.transiber.models.rememberModelBrowseBoolean("translation-installed")
+    var showPivots by com.sal7one.transiber.models.rememberModelBrowseBoolean("translation-pivots", MarianCascade.find(config.localTranslationModelId) != null)
     var platformDetails by rememberSaveable { mutableStateOf(config.localTranslationModelId == TranslationOptions.ML_KIT) }
     var records by remember { mutableStateOf<List<FileDownload>>(emptyList()) }
     var installed by remember { mutableStateOf<Set<String>>(emptySet()) }
@@ -262,7 +263,7 @@ internal fun SettingsTranslateLocalUi(
                         if (stage in setOf(DownloadStage.VERIFYING, DownloadStage.INSTALLING)) Text(uiText(UiR.string.model_download_processing_hint), style = MaterialTheme.typography.bodySmall)
                     }
                     failed?.let { Text(it.error.ifBlank { uiText(UiR.string.ui_download_failed_reason_1_s_8bb99, it.reason) }, color = MaterialTheme.colorScheme.error) }
-                    Button(modifier = Modifier.fillMaxWidth(), enabled = !busy && !active && !selected, onClick = {
+                    if (!selected) Button(modifier = Modifier.fillMaxWidth(), enabled = !busy && !active, onClick = {
                         if (!ready && !ByokPolicy.FEATURE_BYOK) {
                             if (spec != null) { importingId = spec.id; importer.launch(arrayOf("*/*")) }
                             else { installedOnly = true; message = uiText(UiR.string.translation_browser_import_pair_hint) }
@@ -311,6 +312,7 @@ internal fun SettingsTranslateLocalUi(
                         progress.completed > 0 -> uiText(UiR.string.translation_browser_download_remaining)
                         else -> uiText(UiR.string.model_browser_download_install)
                     }) }
+                    ModelLibraryDisclosure(uiText(UiR.string.library_details), details, { details = !details }) {
                     if (spec != null) ModelSourceLinks(spec.originalModelCard, spec.filesUrl, spec.licenseUrl, onError = { error = it })
                     else (listOfNotNull(pair) + listOfNotNull(route?.first, route?.second)).distinctBy { it.id }.forEach { component ->
                         if (route != null) Text(
@@ -318,10 +320,6 @@ internal fun SettingsTranslateLocalUi(
                             style = MaterialTheme.typography.labelMedium)
                         ModelSourceLinks(component.originalModelCard, component.filesUrl, component.licenseUrl, onError = { error = it })
                     }
-                    TextButton(onClick = { details = !details }, contentPadding = PaddingValues(0.dp)) {
-                        Text(uiText(if (details) UiR.string.model_browser_hide_details else UiR.string.model_browser_details))
-                    }
-                    if (details) {
                         if (variants.size > 1) ModelFilterPicker(uiText(UiR.string.model_browser_precision), id,
                             variants.map { it.id to "${it.quantization} · ${it.bytes / 1_048_576} MiB" }, { variantId = it })
                         else if (spec != null) Text(uiText(UiR.string.model_browser_format, spec.quantization), style = MaterialTheme.typography.bodySmall)

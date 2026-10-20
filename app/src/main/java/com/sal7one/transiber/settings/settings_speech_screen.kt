@@ -11,6 +11,11 @@ import com.sal7one.transiber.caption.CaptionConfigStore
 import com.sal7one.transiber.caption.CaptionOverlayConfig
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
+import com.sal7one.transiber.preferences.SetupMode
+import com.sal7one.transiber.preferences.rememberSetupMode
+import com.sal7one.transiber.runtime.LocalModelPolicy
+import com.sal7one.transiber.i18n.rememberUiText
+import com.sal7one.transiber.R
 
 @Composable
 internal fun SettingsSpeechScreen(initialLocation: SettingsLocation, entryRevision: Int = 0, onHistory: () -> Unit = {}) {
@@ -18,17 +23,20 @@ internal fun SettingsSpeechScreen(initialLocation: SettingsLocation, entryRevisi
     val scope = rememberCoroutineScope()
     var config by remember { mutableStateOf<CaptionOverlayConfig?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
+    val text = rememberUiText()
+    val advanced = rememberSetupMode() == SetupMode.ADVANCED
+    val localAllowed = LocalModelPolicy.allowed(context)
     LaunchedEffect(Unit) {
         try { CaptionConfigStore.config(context).collect { config = it } }
         catch (e: CancellationException) { throw e }
         catch (e: Exception) { error = e.message ?: e.toString() }
     }
-    SettingsTabs(initialLocation, entryRevision) { location ->
-        com.sal7one.transiber.caption.history.CaptionHistorySettings(onHistory)
-        androidx.compose.material3.HorizontalDivider()
+    SettingsTabs(initialLocation, entryRevision, localAvailable = localAllowed) { location ->
         error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
         if (location == SettingsLocation.CLOUD) {
             SettingsSpeechCloudUi()
+        } else if (!localAllowed) {
+            com.sal7one.transiber.ui.components.LocalModelPolicyNotice()
         } else {
             val current = config
             if (current == null) {
@@ -40,6 +48,11 @@ internal fun SettingsSpeechScreen(initialLocation: SettingsLocation, entryRevisi
                     catch (e: Exception) { error = e.message ?: e.toString() }
                 }
             }
+        }
+        if (advanced) {
+            var history by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
+            androidx.compose.material3.TextButton(onClick = { history = !history }) { Text(text(R.string.settings_flow_history_options)) }
+            if (history) com.sal7one.transiber.caption.history.CaptionHistorySettings(onHistory)
         }
     }
 }

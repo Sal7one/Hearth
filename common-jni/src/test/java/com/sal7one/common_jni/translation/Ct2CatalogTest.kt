@@ -6,6 +6,22 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class Ct2CatalogTest {
+    @Test fun jisrPrecisionVariantsKeepDistinctPackagesAndOneDirectionalFamilyCard() {
+        val jisr=Ct2Catalog.models.filter { it.id.startsWith("ct2-jisr-") }
+        assertEquals(4,jisr.size)
+        assertEquals(2,jisr.map { it.groupId }.distinct().size)
+        assertEquals(setOf(2,3,4,5),jisr.map { it.tokenizerMode }.toSet())
+        assertTrue(jisr.all { !it.downloadEnabled }) // Converted packages are supplied in the draft, not invented HF URLs.
+        jisr.forEach { spec ->
+            assertTrue(spec.files.map { it.name }.containsAll(listOf("model.bin","config.json","shared_vocabulary.json","tokenizer.json","LICENSE","NOTICE")))
+            assertEquals(6,spec.files.size)
+            assertTrue(spec.bytes < if(spec.precisionLabel=="INT8")60_000_000L else 200_000_000L)
+        }
+        assertEquals(14,JisrDialects.tags.size)
+        assertEquals("apc",JisrDialects.tags["apc"])
+        assertEquals("ajp",JisrDialects.tags["ajp"])
+        assertEquals("ajp-ps",JisrDialects.tags["ajp-ps"])
+    }
     @Test fun directionalPackagesHaveCompletePinsAndSmallLanguageAliases() {
         val en=Ct2Catalog.find("ct2-quickmt-en-ar")!!;val ar=Ct2Catalog.find("ct2-quickmt-ar-en")!!
         assertEquals(363_146_041L,en.bytes);assertEquals(410_561_529L,ar.bytes)

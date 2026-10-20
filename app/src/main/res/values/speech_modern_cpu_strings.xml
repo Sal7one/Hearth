@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="speech_audar_note">Audar Flash · Auto or Arabic/English. Final captions follow short utterances. Both the Q4 decoder and matching BF16 audio encoder are required. CPU only; phone quality and speed are unverified.</string>
+    <string name="speech_owsm_note">OWSM v4 Base · Experimental compact model. Auto or Arabic/English; short utterance finals. Host Arabic examples contain substantial errors. CPU only; phone quality and speed are unverified.</string>
+    <string name="speech_component_set_digest">Component inventory SHA-256: %1$s</string>
+    <string name="speech_audar_label">Audar-ASR V1 Flash</string>
+    <string name="speech_owsm_label">OWSM v4 Base 102M</string>
+</resources>

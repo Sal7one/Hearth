@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="moss_nano_runtime">原生 SentencePiece 和 ONNX · arm64 CPU · 流式编解码器</string>
+    <string name="moss_nano_coverage">阿拉伯语、英语及官方多语言覆盖 · 下载 718 MB · 实验性</string>
+    <string name="moss_nano_no_runtime">当前应用进程架构无法使用 MOSS 原生运行时。</string>
+    <string name="moss_nano_voice_note">参考声音性别尚未验证，请先试听。非阿拉伯语参考声音的阿拉伯语发音仍需试听测试。48 kHz 双声道输出显式混合为单声道。尚未实现数字展开或自定义参考编码。</string>
+    <string name="moss_nano_ready">MOSS 生成器、文本分词器、编解码器和参考声音代码已安装。</string>
+    <string name="moss_nano_install_note">请安装全部已校验 ONNX 图、外部数据及元数据。应用不包含权重。</string>
+    <string name="moss_nano_download">下载 MOSS 引擎、编解码器和声音</string>
+    <string name="moss_nano_import">导入已校验 MOSS 组件文件</string>
+</resources>

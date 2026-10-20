@@ -1,0 +1,298 @@
+{
+  "schemaVersion": 1,
+  "checkedAtUtc": "2026-10-20T16:08:54.658047+00:00",
+  "scope": "New OmniVoice, MOSS, Oute, Chatterbox, Audar, OWSM and both Jisr directions: actual UI publisher/files/license URLs before v0.27.0 draft",
+  "method": "Public unauthenticated HEAD requests; unresolved endpoints checked by GET bounded to 1MiB. No model payload bodies downloaded. No external browser/system delegation invoked.",
+  "limits": "Reachability and pinned file identity only; neither a legal opinion nor a model quality/performance result. URLs may change after this check.",
+  "uiCorrections": [
+    {
+      "file": "app/src/main/java/com/sal7one/transiber/settings/settings_voice_moss_ui.kt",
+      "field": "licenseUrl",
+      "before": "https://huggingface.co/OpenMOSS-Team/MOSS-TTS-Nano-100M-ONNX/blob/f52645cb467506d8e18e746ddd59482685b74e58/LICENSE",
+      "after": "https://github.com/OpenMOSS/MOSS-TTS-Nano/blob/8b7bcc9341b3b4ef3a3a58ba1338a7d85ff133eb/LICENSE",
+      "evidence": "Pinned ONNX metadata returns HTTP200, apache-2.0 and no LICENSE sibling. The exact official source LICENSE at the runtime source pin returns HTTP200."
+    }
+  ],
+  "checks": [
+    {
+      "family": "omnivoice",
+      "kind": "publisher",
+      "url": "https://huggingface.co/k2-fsa/OmniVoice",
+      "status": 200,
+      "contentType": "text/html; charset=utf-8",
+      "bytesRead": 0,
+      "method": "HEAD"
+    },
+    {
+      "family": "omnivoice",
+      "kind": "files",
+      "url": "https://huggingface.co/Serveurperso/OmniVoice-GGUF/tree/017094167b5c9ed565a5076ac9b3b93c5ecf5c73",
+      "status": 200,
+      "contentType": "text/html; charset=utf-8",
+      "bytesRead": 0,
+      "method": "HEAD"
+    },
+    {
+      "family": "omnivoice",
+      "kind": "license",
+      "url": "https://huggingface.co/bosonai/higgs-audio-v2-tokenizer/blob/main/LICENSE",
+      "status": 200,
+      "contentType": "text/html; charset=utf-8",
+      "bytesRead": 0,
+      "method": "HEAD"
+    },
+    {
+      "family": "moss",
+      "kind": "publisher",
+      "url": "https://huggingface.co/OpenMOSS-Team/MOSS-TTS-Nano-100M-ONNX",
+      "status": 200,
+      "contentType": "text/html; charset=utf-8",
+      "bytesRead": 0,
+      "method": "HEAD"
+    },
+    {
+      "family": "moss",
+      "kind": "files",
+      "url": "https://huggingface.co/OpenMOSS-Team/MOSS-TTS-Nano-100M-ONNX/tree/f52645cb467506d8e18e746ddd59482685b74e58",
+      "status": 200,
+      "contentType": "text/html; charset=utf-8",
+      "bytesRead": 0,
+      "method": "HEAD"
+    },
+    {
+      "family": "moss",
+      "kind": "license",
+      "url": "https://huggingface.co/OpenMOSS-Team/MOSS-TTS-Nano-100M-ONNX/blob/f52645cb467506d8e18e746ddd59482685b74e58/LICENSE",
+      "status": 404,
+      "bytesRead": 0,
+      "method": "HEAD",
+      "result": "replaced: pinned ONNX inventory has no LICENSE; model metadata declares apache-2.0",
+      "replacement": {
+        "url": "https://github.com/OpenMOSS/MOSS-TTS-Nano/blob/8b7bcc9341b3b4ef3a3a58ba1338a7d85ff133eb/LICENSE",
+        "method": "GET",
+        "status": 200,
+        "bytesRead": 302798
+      }
+    },
+    {
+      "family": "oute",
+      "kind": "publisher",
+      "url": "https://huggingface.co/OuteAI/Llama-OuteTTS-1.0-1B",
+      "status": 200,
+      "contentType": "text/html; charset=utf-8",
+      "bytesRead": 0,
+      "method": "HEAD"
+    },
+    {
+      "family": "oute",
+      "kind": "files",
+      "url": "https://modelscope.cn/api/v1/models/judd2024/chatllm_quantized_oute-tts/repo/files?Revision=a1b7a4fc64949c9d6a3206422830df41009f1ad7&Recursive=true",
+      "status": 404,
+      "bytesRead": 0,
+      "method": "HEAD",
+      "result": "verified by bounded GET: endpoint does not support the HEAD request used here",
+      "getVerification": {
+        "url": "https://modelscope.cn/api/v1/models/judd2024/chatllm_quantized_oute-tts/repo/files?Revision=a1b7a4fc64949c9d6a3206422830df41009f1ad7&Recursive=true",
+        "method": "GET",
+        "status": 200,
+        "bytesRead": 1563
+      },
+      "modelFileMetadata": {
+        "Name": "oute-tts-1b.bin",
+        "Size": 1438416240,
+        "Sha256": "e4e14b573459a8a4958e32e39678d2f0ac61cf73ccadb6dbda1f8fde1f8ade83"
+      }
+    },
+    {
+      "family": "oute",
+      "kind": "license",
+      "url": "https://huggingface.co/OuteAI/Llama-OuteTTS-1.0-1B#license-information",
+      "status": 200,
+      "contentType": "text/html; charset=utf-8",
+      "bytesRead": 0,
+      "method": "HEAD"
+    },
+    {
+      "family": "chatterbox",
+      "kind": "publisher",
+      "url": "https://huggingface.co/Masterx/chatterbox-multilingual-v3-ONNX",
+      "status": 200,
+      "contentType": "text/html; charset=utf-8",
+      "bytesRead": 0,
+      "method": "HEAD"
+    },
+    {
+      "family": "chatterbox",
+      "kind": "files",
+      "url": "https://huggingface.co/Masterx/chatterbox-multilingual-v3-ONNX/tree/19b94afe41de738624b2f3afc75b4cd56221fbeb",
+      "status": 200,
+      "contentType": "text/html; charset=utf-8",
+      "bytesRead": 0,
+      "method": "HEAD"
+    },
+    {
+      "family": "chatterbox",
+      "kind": "license",
+      "url": "https://huggingface.co/Masterx/chatterbox-multilingual-v3-ONNX/blob/19b94afe41de738624b2f3afc75b4cd56221fbeb/LICENSE",
+      "status": 200,
+      "contentType": "text/html; charset=utf-8",
+      "bytesRead": 0,
+      "method": "HEAD"
+    },
+    {
+      "family": "audar",
+      "kind": "publisher",
+      "url": "https://huggingface.co/audarai/Audar-ASR-V1-Flash",
+      "status": 200,
+      "contentType": "text/html; charset=utf-8",
+      "bytesRead": 0,
+      "method": "HEAD"
+    },
+    {
+      "family": "audar",
+      "kind": "files",
+      "url": "https://huggingface.co/audarai/Audar-ASR-V1-Flash/tree/54274d39245beba38f30048128e231d4176bd91d",
+      "status": 200,
+      "contentType": "text/html; charset=utf-8",
+      "bytesRead": 0,
+      "method": "HEAD"
+    },
+    {
+      "family": "audar",
+      "kind": "license",
+      "url": "https://www.audarai.com/license/audarai-open-license-v1.0/",
+      "status": 403,
+      "bytesRead": 0,
+      "method": "HEAD",
+      "result": "verified by bounded GET: HEAD403 alone did not indicate an unavailable page",
+      "getVerification": {
+        "url": "https://www.audarai.com/license/audarai-open-license-v1.0/",
+        "method": "GET",
+        "status": 200,
+        "bytesRead": 33248
+      }
+    },
+    {
+      "family": "owsm",
+      "kind": "publisher",
+      "url": "https://huggingface.co/espnet/owsm_v4_base_102M",
+      "status": 200,
+      "contentType": "text/html; charset=utf-8",
+      "bytesRead": 0,
+      "method": "HEAD"
+    },
+    {
+      "family": "owsm",
+      "kind": "files",
+      "url": "https://huggingface.co/audio-cpp/audio.cpp-gguf/tree/661a224e9d9adbd49c01626f85e426f5f425d771",
+      "status": 200,
+      "contentType": "text/html; charset=utf-8",
+      "bytesRead": 0,
+      "method": "HEAD"
+    },
+    {
+      "family": "owsm",
+      "kind": "license",
+      "url": "https://huggingface.co/espnet/owsm_v4_base_102M",
+      "status": 200,
+      "contentType": "text/html; charset=utf-8",
+      "bytesRead": 0,
+      "method": "HEAD"
+    },
+    {
+      "family": "jisr-en-ar",
+      "kind": "publisher",
+      "url": "https://huggingface.co/oddadmix/Jisr-MT-50M-AllDialects",
+      "status": 200,
+      "contentType": "text/html; charset=utf-8",
+      "bytesRead": 0,
+      "method": "HEAD"
+    },
+    {
+      "family": "jisr-en-ar",
+      "kind": "files",
+      "url": "https://huggingface.co/oddadmix/Jisr-MT-50M-AllDialects/tree/8803d9d4e3b53e96783968237aa32425eb83922e",
+      "status": 200,
+      "contentType": "text/html; charset=utf-8",
+      "bytesRead": 0,
+      "method": "HEAD"
+    },
+    {
+      "family": "jisr-ar-en",
+      "kind": "publisher",
+      "url": "https://huggingface.co/oddadmix/Jisr-MT-50M-Dialects2En",
+      "status": 200,
+      "contentType": "text/html; charset=utf-8",
+      "bytesRead": 0,
+      "method": "HEAD"
+    },
+    {
+      "family": "jisr-ar-en",
+      "kind": "files",
+      "url": "https://huggingface.co/oddadmix/Jisr-MT-50M-Dialects2En/tree/2cfe89dcfaba280c81bc0b9da34e9dc096795405",
+      "status": 200,
+      "contentType": "text/html; charset=utf-8",
+      "bytesRead": 0,
+      "method": "HEAD"
+    }
+  ],
+  "repositoryMetadata": [
+    {
+      "name": "moss-model-metadata",
+      "url": "https://huggingface.co/api/models/OpenMOSS-Team/MOSS-TTS-Nano-100M-ONNX/revision/f52645cb467506d8e18e746ddd59482685b74e58",
+      "method": "GET",
+      "status": 200,
+      "bytesRead": 1503,
+      "sha": "f52645cb467506d8e18e746ddd59482685b74e58",
+      "files": [
+        ".gitattributes",
+        "README.md",
+        "browser_poc_manifest.json",
+        "moss_tts_decode_step.onnx",
+        "moss_tts_global_shared.data",
+        "moss_tts_local_cached_step.onnx",
+        "moss_tts_local_decoder.onnx",
+        "moss_tts_local_fixed_sampled_frame.onnx",
+        "moss_tts_local_shared.data",
+        "moss_tts_prefill.onnx",
+        "tokenizer.model",
+        "tts_browser_onnx_meta.json"
+      ],
+      "license": "apache-2.0"
+    },
+    {
+      "name": "audar-model-metadata",
+      "url": "https://huggingface.co/api/models/audarai/Audar-ASR-V1-Flash/revision/54274d39245beba38f30048128e231d4176bd91d",
+      "method": "GET",
+      "status": 200,
+      "bytesRead": 5679,
+      "sha": "54274d39245beba38f30048128e231d4176bd91d",
+      "files": [
+        ".gitattributes",
+        "Audar-ASR-V1-Flash-Q4_K_M.gguf",
+        "Audar-ASR-V1-Flash-Q8_0.gguf",
+        "Audar-ASR-V1-Flash.gguf",
+        "README.md",
+        "__init__.py",
+        "added_tokens.json",
+        "chat_template.jinja",
+        "chat_template.json",
+        "config.json",
+        "configuration_qwen3_asr.py",
+        "generation_config.json",
+        "merges.txt",
+        "mmproj-Audar-ASR-V1-Flash.gguf",
+        "model.safetensors",
+        "modeling_qwen3_asr.py",
+        "preprocessor_config.json",
+        "processing_qwen3_asr.py",
+        "scheduler.pt",
+        "special_tokens_map.json",
+        "tokenizer.json",
+        "tokenizer_config.json",
+        "vocab.json"
+      ],
+      "license": "other"
+    }
+  ]
+}

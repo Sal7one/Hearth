@@ -9,6 +9,11 @@ trap 'rm -rf "$BUILD"' EXIT
   -pthread -ldl -o "$BUILD/speech_test"
 "$BUILD/speech_test"
 
+# Qwen ASR framing, language verdicts and genuine no-speech are independent of weights.
+"${CXX:-c++}" -std=c++17 -O1 -g -Wall -Wextra -fsanitize=address,undefined \
+  "$SPEECH/tests/audar_protocol_test.cpp" -o "$BUILD/audar_protocol_test"
+"$BUILD/audar_protocol_test"
+
 # The legacy Whisper adapter also serves live captions. Stub only its pinned C
 # API so decoder failures exercise production worker/finalize/batch behavior.
 CPP="$(dirname "$SPEECH")"

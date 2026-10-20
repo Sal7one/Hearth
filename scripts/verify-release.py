@@ -20,10 +20,12 @@ phone_crypto = json.loads((phone_assets / 'forge-source.json').read_text())
 for name, digest in phone_crypto['files'].items():
     assert hashlib.sha256((phone_assets / name).read_bytes()).hexdigest() == digest, f'Phone crypto bundle changed: {name}'
 vendor_hashes = {}
-for line in (libroot / 'SHA256SUMS').read_text().splitlines():
-    expected, name = line.split(None, 1)
-    vendor_hashes["lib/" + name] = expected
-    assert hashlib.sha256((libroot/name).read_bytes()).hexdigest() == expected, name
+for native_root in (libroot, root/'hearth-onnx-runtime/src/main/jniLibs'):
+    for line in (native_root / 'SHA256SUMS').read_text().splitlines():
+        expected, name = line.split(None, 1)
+        vendor_hashes["lib/" + name] = expected
+        assert hashlib.sha256((native_root/name).read_bytes()).hexdigest() == expected, name
+
 sdk = os.environ.get('ANDROID_HOME') or os.environ.get('ANDROID_SDK_ROOT')
 if not sdk:
     props = root / 'local.properties'
@@ -95,6 +97,19 @@ assert speech_expansion['backends'] == ['cohere_asr', 'funasr_mlt_nano', 'voxtra
 assert speech_expansion['publicExports'] == ['hearth_cohere_backend_v1', 'hearth_funasr_backend_v1', 'hearth_voxtral_backend_v1']
 verify_optional_snapshot(speech_expansion, 'adapterSources', {'libhearth_transcribe_cpp.so': False, 'libhearth_transcribe_cpp_vulkan.so': True})
 
+# OWSM and Audar are isolated CPU-only speech plugins, each with its own build snapshot.
+speech_modern = json.loads((root/'common-jni/src/main/assets/licenses/speech-modern-cpu/runtime-build.json').read_text())
+assert speech_modern['abi'] == 2 and speech_modern['architectures'] == ['arm64-v8a']
+modern_speech_exports = {'libhearth_owsm.so': 'hearth_owsm_backend_v1', 'libhearth_audar.so': 'hearth_audar_backend_v1'}
+modern_pins = {'owsm': '673ade451c9cba9c893fb0e606872d9dc44f21e3', 'audar_mtmd': '64e9bceb2c3a856efed96feda784a50947049feb'}
+assert {item['backend'] for item in speech_modern['runtimes']} == set(modern_pins)
+for item in speech_modern['runtimes']:
+    assert item['sourceRevision'] == modern_pins[item['backend']]
+    name = item['artifacts'][0]['file']
+    assert item['publicExports'] == [modern_speech_exports[name]]
+    assert item['artifacts'][0]['acceleration'] == 'cpu'
+    verify_optional_snapshot(item, 'adapterSources', {name: False})
+
 # Dedicated CPU translation runtime, not a generic ONNX/GGUF format shortcut.
 ct2 = json.loads((root/'common-jni/src/main/assets/licenses/ct2/runtime-build.json').read_text())
 assert ct2['ctranslate2Revision'] == '8c8cab2a954810216a45d65c1b8d56839c846e5b'
@@ -118,6 +133,66 @@ assert hashlib.sha256((root/'scripts/voice/nemo-tts-inject.cmake').read_bytes())
 assert hashlib.sha256((root/'scripts/voice/magpie.map').read_bytes()).hexdigest() == magpie['build']['exportsSha256']
 vendor_hashes['lib/arm64-v8a/libhearth_magpie.so'] = magpie['runtime']['sha256']
 gpu_artifacts['libhearth_magpie.so'] = ('arm64-v8a', False)
+
+# Independently packaged OmniVoice CPU provider; trained language IDs and models are pinned.
+omnivoice_root = root/'hearth-tts-omnivoice/src/main'
+omnivoice = json.loads((omnivoice_root/'assets/licenses/omnivoice/runtime-build.json').read_text())
+for path, digest in omnivoice['sources'].items():
+    assert hashlib.sha256((root/path).read_bytes()).hexdigest() == digest, f'OmniVoice source snapshot stale: {path}'
+assert omnivoice['sourceSetSha256'] == source_set_digest(omnivoice['sources']), 'OmniVoice source set changed'
+assert omnivoice['source']['revision'] == '1a468d8b9d65b3544ca1004d2d7c05dfc65d1f3e'
+assert omnivoice['source']['ggmlRevision'] == 'cc5df49a6b878db2b68b9a7b45976e279594627d'
+assert omnivoice['runtime']['abi'] == 'arm64-v8a' and omnivoice['runtime']['backend'] == 'CPU'
+omnivoice_binary = omnivoice_root/'jniLibs/arm64-v8a/libhearth_omnivoice.so'
+assert omnivoice_binary.stat().st_size == omnivoice['runtime']['bytes']
+assert hashlib.sha256(omnivoice_binary.read_bytes()).hexdigest() == omnivoice['runtime']['sha256']
+vendor_hashes['lib/arm64-v8a/libhearth_omnivoice.so'] = omnivoice['runtime']['sha256']
+gpu_artifacts['libhearth_omnivoice.so'] = ('arm64-v8a', False)
+
+# Optional MOSS ONNX runtime shares the single ORT package; no duplicated STT/translation JNI.
+moss_root = root/'hearth-tts-moss/src/main'
+moss = json.loads((moss_root/'assets/licenses/moss/runtime-build.json').read_text())
+for path, digest in moss['sources'].items():
+    assert hashlib.sha256((root/path).read_bytes()).hexdigest() == digest, f'MOSS source snapshot stale: {path}'
+assert moss['sourceSetSha256'] == source_set_digest(moss['sources']), 'MOSS source set changed'
+assert moss['source']['revision'] == '8b7bcc9341b3b4ef3a3a58ba1338a7d85ff133eb'
+assert moss['source']['sentencepieceRevision'] == '17d7580d6407802f85855d2cc9190634e2c95624'
+assert moss['runtime']['abi'] == 'arm64-v8a' and moss['runtime']['backend'] == 'ONNX Runtime CPU'
+moss_binary = moss_root/'jniLibs/arm64-v8a/libhearth_moss.so'
+assert moss_binary.stat().st_size == moss['runtime']['bytes']
+assert hashlib.sha256(moss_binary.read_bytes()).hexdigest() == moss['runtime']['sha256']
+vendor_hashes['lib/arm64-v8a/libhearth_moss.so'] = moss['runtime']['sha256']
+gpu_artifacts['libhearth_moss.so'] = ('arm64-v8a', False)
+
+# Isolated Chatterbox V3 provider, shared ORT plus pinned graph/Perth preparation.
+chatterbox_root = root/'hearth-tts-chatterbox/src/main'
+chatterbox = json.loads((chatterbox_root/'assets/licenses/chatterbox/runtime-build.json').read_text())
+for path, digest in chatterbox['sources'].items():
+    assert hashlib.sha256((root/path).read_bytes()).hexdigest() == digest, f'Chatterbox source snapshot stale: {path}'
+assert chatterbox['sourceSetSha256'] == source_set_digest(chatterbox['sources']), 'Chatterbox source set changed'
+assert chatterbox['source']['revision'] == '1a9a4fc00a6caa8c8bb9bee533225f40661e4220'
+assert chatterbox['source']['perthRevision'] == 'ff1c8ac55a976971245cdd53c18d6131ca00d993'
+assert chatterbox['runtime']['abi'] == 'arm64-v8a' and chatterbox['runtime']['backend'] == 'ONNX Runtime CPU'
+assert chatterbox['modelPreparation']['graph']['outputSha256'] == '60f1451649fcef2014208084f546328f3a4e32c635d57983da7dcf75e9e3dbe8'
+chatterbox_binary = chatterbox_root/'jniLibs/arm64-v8a/libhearth_chatterbox.so'
+assert chatterbox_binary.stat().st_size == chatterbox['runtime']['bytes']
+assert hashlib.sha256(chatterbox_binary.read_bytes()).hexdigest() == chatterbox['runtime']['sha256']
+vendor_hashes['lib/arm64-v8a/libhearth_chatterbox.so'] = chatterbox['runtime']['sha256']
+gpu_artifacts['libhearth_chatterbox.so'] = ('arm64-v8a', False)
+
+# Isolated Oute GGML CPU provider, with its exact patched recipe and combined DAC contract.
+oute_root = root/'hearth-tts-oute/src/main'
+oute = json.loads((oute_root/'assets/licenses/oute/runtime-build.json').read_text())
+for path, digest in oute['sources'].items():
+    assert hashlib.sha256((root/path).read_bytes()).hexdigest() == digest, f'Oute source snapshot stale: {path}'
+assert oute['sourceSetSha256'] == source_set_digest(oute['sources']), 'Oute source set changed'
+assert oute['source']['revision'] == '74b8237a4c1796f76bb0ed7f483b8e52e7d4d5c7'
+assert oute['runtime']['abi'] == 'arm64-v8a' and oute['runtime']['backend'] == 'CPU'
+oute_binary = oute_root/'jniLibs/arm64-v8a/libhearth_oute.so'
+assert oute_binary.stat().st_size == oute['runtime']['bytes']
+assert hashlib.sha256(oute_binary.read_bytes()).hexdigest() == oute['runtime']['sha256']
+vendor_hashes['lib/arm64-v8a/libhearth_oute.so'] = oute['runtime']['sha256']
+gpu_artifacts['libhearth_oute.so'] = ('arm64-v8a', False)
 
 whisper_gpu = json.loads((root/'common-jni/src/main/assets/licenses/whisper-vulkan/runtime-build.json').read_text())
 assert whisper_gpu['apiVersion'] == 1
@@ -148,7 +223,7 @@ manga = json.loads((ocr_assets/'manga-provenance.json').read_text())
 assert hashlib.sha256((ocr_assets/'manga.json').read_bytes()).hexdigest() == manga['dictionary_sha256']
 assert len(json.loads((ocr_assets/'manga.json').read_text())) == manga['classes'] == 6144
 
-expected_libs = {'libhearth_magpie_jni.so','libtransiber_translation.so','libcommon_jni.so','libc++_shared.so','libvosk.so','libonnxruntime.so','libhearth_qwen.so','libhearth_nemotron.so','libhearth_transcribepsy.so','libandroidx.graphics.path.so','libdatastore_shared_counter.so','libimage_processing_util_jni.so'}
+expected_libs = {'libhearth_chatterbox_jni.so','libhearth_oute_jni.so','libhearth_moss_jni.so','libhearth_supertonic_jni.so','libhearth_omnivoice_jni.so','libhearth_magpie_jni.so','libtransiber_translation.so','libcommon_jni.so','libc++_shared.so','libvosk.so','libonnxruntime.so','libhearth_qwen.so','libhearth_nemotron.so','libhearth_transcribepsy.so','libandroidx.graphics.path.so','libdatastore_shared_counter.so','libimage_processing_util_jni.so'}
 platform = {'liblog.so','libandroid.so','libjnigraphics.so','libm.so','libdl.so','libc.so','libz.so'}
 delivery_signers = None
 unsigned_inputs = 0
@@ -214,6 +289,34 @@ for flavor, architecture in [(f, a) for f in ('play','foss') for a in (*ABIS, 'u
                 else:
                     assert exports == {'Java_com_sal7one_common_1jni_translation_Ct2Native_' + method for method in ('protocolVersion', 'create', 'translate', 'cancel', 'destroy')}, (file.name, exports)
                 assert not needed & {'libvosk.so', 'libcommon_jni.so', 'libonnxruntime.so'}, (file.name, needed)
+            if file.name in modern_speech_exports:
+                symbols = subprocess.check_output([readelf, '--dyn-syms', '-W', file], text=True)
+                exports = {line.split()[-1] for line in symbols.splitlines() if re.search(r'\b(?:GLOBAL|WEAK)\s+DEFAULT\s+\d+\s+', line)}
+                assert exports == {modern_speech_exports[file.name]}, (file.name, exports)
+                assert not needed & {'libvosk.so', 'libcommon_jni.so', 'libonnxruntime.so', 'libvulkan.so', 'libOpenCL.so'}, (file.name, needed)
+            if file.name == 'libhearth_supertonic_jni.so':
+                symbols = subprocess.check_output([readelf, '--dyn-syms', '-W', file], text=True)
+                exports = {line.split()[-1] for line in symbols.splitlines() if re.search(r'\b(?:GLOBAL|WEAK)\s+DEFAULT\s+\d+\s+', line)}
+                assert exports == {'Java_com_sal7one_common_1jni_voice_SupertonicNative_' + name for name in ('create','synthesize','cancel','destroy')}, exports
+                assert 'libonnxruntime.so' in needed and 'libcommon_jni.so' not in needed, needed
+            if file.name in {'libhearth_chatterbox.so', 'libhearth_chatterbox_jni.so'}:
+                symbols = subprocess.check_output([readelf, '--dyn-syms', '-W', file], text=True)
+                exports = {line.split()[-1] for line in symbols.splitlines() if re.search(r'\b(?:GLOBAL|WEAK)\s+DEFAULT\s+\d+\s+', line)}
+                if file.name == 'libhearth_chatterbox_jni.so':
+                    assert exports == {'Java_com_sal7one_common_1jni_voice_ChatterboxNative_' + name for name in ('available','create','voices','synthesize','cancel','destroy')}, exports
+                else:
+                    assert exports == {'hearth_chatterbox_' + name for name in ('create','destroy','cancel','voice_count','voice_name','synthesize','last_error')}, exports
+                    assert 'libonnxruntime.so' in needed, needed
+                assert not needed & {'libcommon_jni.so','libvulkan.so','libOpenCL.so'}, needed
+            if file.name in {'libhearth_moss.so', 'libhearth_moss_jni.so'}:
+                symbols = subprocess.check_output([readelf, '--dyn-syms', '-W', file], text=True)
+                exports = {line.split()[-1] for line in symbols.splitlines() if re.search(r'\b(?:GLOBAL|WEAK)\s+DEFAULT\s+\d+\s+', line)}
+                if file.name == 'libhearth_moss_jni.so':
+                    assert exports == {'Java_com_sal7one_common_1jni_voice_MossNative_' + name for name in ('available','create','voices','synthesize','cancel','destroy')}, exports
+                else:
+                    assert exports == {'hearth_moss_' + name for name in ('create','destroy','cancel','voice_count','voice_name','synthesize','last_error')}, exports
+                    assert 'libonnxruntime.so' in needed, needed
+                assert not needed & {'libcommon_jni.so','libvulkan.so','libOpenCL.so'}, needed
             if file.name in {'libhearth_magpie.so', 'libhearth_magpie_jni.so'}:
                 symbols = subprocess.check_output([readelf, '--dyn-syms', '-W', file], text=True)
                 exports = {line.split()[-1] for line in symbols.splitlines() if re.search(r'\b(?:GLOBAL|WEAK)\s+DEFAULT\s+\d+\s+', line)}
@@ -222,6 +325,22 @@ for flavor, architecture in [(f, a) for f in ('play','foss') for a in (*ABIS, 'u
                 else:
                     assert len(exports) == 12 and all(name.startswith('nemo_speech_tts_') for name in exports), exports
                 assert not needed & {'libcommon_jni.so', 'libonnxruntime.so', 'libvulkan.so'}, needed
+            if file.name in {'libhearth_oute.so', 'libhearth_oute_jni.so'}:
+                symbols = subprocess.check_output([readelf, '--dyn-syms', '-W', file], text=True)
+                exports = {line.split()[-1] for line in symbols.splitlines() if re.search(r'\b(?:GLOBAL|WEAK)\s+DEFAULT\s+\d+\s+', line)}
+                if file.name == 'libhearth_oute_jni.so':
+                    assert exports == {'Java_com_sal7one_common_1jni_voice_OuteNative_' + name for name in ('available','create','synthesize','cancel','destroy')}, exports
+                else:
+                    assert exports == {'hearth_oute_' + name for name in ('abi','last_error','create','synthesize','cancel','destroy')}, exports
+                assert not needed & {'libcommon_jni.so','libonnxruntime.so','libvulkan.so','libOpenCL.so'}, needed
+            if file.name in {'libhearth_omnivoice.so', 'libhearth_omnivoice_jni.so'}:
+                symbols = subprocess.check_output([readelf, '--dyn-syms', '-W', file], text=True)
+                exports = {line.split()[-1] for line in symbols.splitlines() if re.search(r'\b(?:GLOBAL|WEAK)\s+DEFAULT\s+\d+\s+', line)}
+                if file.name == 'libhearth_omnivoice_jni.so':
+                    assert exports == {'Java_com_sal7one_common_1jni_voice_OmniVoiceNative_' + name for name in ('available', 'create', 'languages', 'synthesize', 'cancel', 'destroy')}, exports
+                else:
+                    assert exports == {'ov_' + name for name in ('version','last_error','audio_free','init_default_params','init','free','log_set','tts_default_params','synthesize','duration_sec_to_tokens','num_codebooks','n_languages','language_id','language_name','extract_voice_ref','voice_ref_free')}, exports
+                assert not needed & {'libcommon_jni.so', 'libonnxruntime.so', 'libvulkan.so', 'libOpenCL.so'}, needed
             if file.name in gpu_artifacts:
                 assert ('libvulkan.so' in needed) == gpu_artifacts[file.name][1], f'{name}: unexpected Vulkan linkage'
                 assert 'libOpenCL.so' not in needed, f'{name}: OpenCL must use the optional namespace-safe loader'
@@ -239,7 +358,7 @@ for flavor, architecture in [(f, a) for f in ('play','foss') for a in (*ABIS, 'u
         for item in phone_assets.iterdir():
             if item.is_file():
                 assert archive.read('assets/phone-setup/' + item.name) == item.read_bytes(), item.name
-        for family in ['speech', 'translation', 'whisper-vulkan', 'speech-expansion', 'ct2']:
+        for family in ['speech', 'translation', 'whisper-vulkan', 'speech-expansion', 'speech-modern-cpu', 'ct2']:
             name = f'assets/licenses/{family}/runtime-build.json'
             assert archive.read(name) == (root/'common-jni/src/main'/name).read_bytes(), name
             for notice in (root/'common-jni/src/main/assets/licenses'/family).rglob('*'):
@@ -250,12 +369,30 @@ for flavor, architecture in [(f, a) for f in ('play','foss') for a in (*ABIS, 'u
             if asset.is_file():
                 packaged = 'assets/' + asset.relative_to(magpie_root/'assets').as_posix()
                 assert archive.read(packaged) == asset.read_bytes(), f'Magpie source/notice changed or missing: {packaged}'
+        for asset in (omnivoice_root/'assets').rglob('*'):
+            if asset.is_file():
+                packaged = 'assets/' + asset.relative_to(omnivoice_root/'assets').as_posix()
+                assert archive.read(packaged) == asset.read_bytes(), f'OmniVoice source/notice changed or missing: {packaged}'
+        for asset in (oute_root/'assets').rglob('*'):
+            if asset.is_file():
+                packaged = 'assets/' + asset.relative_to(oute_root/'assets').as_posix()
+                assert archive.read(packaged) == asset.read_bytes(), f'Oute source/notice changed or missing: {packaged}'
+        for asset in (chatterbox_root/'assets').rglob('*'):
+            if asset.is_file():
+                packaged = 'assets/' + asset.relative_to(chatterbox_root/'assets').as_posix()
+                assert archive.read(packaged) == asset.read_bytes(), f'Chatterbox source/notice changed or missing: {packaged}'
+        for asset in (moss_root/'assets').rglob('*'):
+            if asset.is_file():
+                packaged = 'assets/' + asset.relative_to(moss_root/'assets').as_posix()
+                assert archive.read(packaged) == asset.read_bytes(), f'MOSS source/notice changed or missing: {packaged}'
         for item in ocr_assets.glob('*.json'):
             assert archive.read('assets/ocr/' + item.name) == item.read_bytes(), item.name
         assert 'assets/licenses/ggml-cpu-NOTICES.txt' in archive.namelist()
         assert 'assets/licenses/ocr/NOTICE.txt' in archive.namelist()
-        for item in (root/'common-jni/src/main/assets/licenses/voice').iterdir():
+        for item in (root/'hearth-tts-supertonic/src/main/assets/licenses/voice').iterdir():
             assert archive.read('assets/licenses/voice/' + item.name) == item.read_bytes(), item.name
+        for item in (root/'hearth-onnx-runtime/src/main/assets/licenses/onnxruntime-1.20.0').iterdir():
+            assert archive.read('assets/licenses/onnxruntime-1.20.0/' + item.name) == item.read_bytes(), item.name
         assert 'assets/licenses/speech/runtime-build.json' in archive.namelist()
         assert 'assets/licenses/translation/runtime-build.json' in archive.namelist()
         assert 'assets/licenses/vosk/COPYING' in archive.namelist()

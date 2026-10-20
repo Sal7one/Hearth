@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="ct2_runtime_hint">Requires a 64-bit ARM app process</string>
+    <string name="ct2_experimental">Experimental · phone quality and speed await testing</string>
+    <string name="jisr_import_hint">Import the verified runtime ZIP from the Hearth draft release. Training files cannot be installed directly.</string>
+    <string name="ct2_files_details">%1$s · %2$d verified files · Greedy decoding with two CPU threads. GGUF GPU settings do not apply.</string>
+    <string name="ct2_promoted_weights">Stored FP16 weights compute as FLOAT32; memory use exceeds the download size.</string>
+    <string name="ct2_package_details">ZIP requires hearth-translation.json at its root, schemaVersion 1, modelId %1$s and all verified runtime components.</string>
+    <string name="jisr_dialect">Jisr Arabic output</string>
+    <string name="jisr_msa">Modern Standard Arabic</string>
+    <string name="jisr_egyptian">Egyptian</string>
+    <string name="jisr_moroccan">Moroccan</string>
+    <string name="jisr_algerian">Algerian</string>
+    <string name="jisr_tunisian">Tunisian</string>
+    <string name="jisr_libyan">Libyan</string>
+    <string name="jisr_lebanese">Lebanese (publisher mapping)</string>
+    <string name="jisr_syrian">Syrian (publisher mapping)</string>
+    <string name="jisr_palestinian">Palestinian</string>
+    <string name="jisr_saudi">Saudi</string>
+    <string name="jisr_gulf">Bahraini / Gulf</string>
+    <string name="jisr_sudanese">Sudanese</string>
+    <string name="jisr_yemeni">Yemeni</string>
+    <string name="jisr_iraqi">Iraqi</string>
+</resources>

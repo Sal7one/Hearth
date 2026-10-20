@@ -40,7 +40,8 @@ internal fun ModelSourcePanel(sources: List<ModelSource>) {
     }
     val source = sources[selected]
     val artifact = SpeechArtifactCatalog.find(source.id)
-    val record = records.firstOrNull { artifact != null && it.modelId == artifact.id }
+    val group = artifact?.components?.let { source -> downloadQueueGroups(records).firstOrNull { it.modelId == source.id } }
+    val record = group?.installedRecord ?: group?.failure ?: group?.representatives?.firstOrNull { it.active || it.paused } ?: group?.representatives?.firstOrNull() ?: records.firstOrNull { artifact != null && it.modelId == artifact.id }
 
     OutlinedCard(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -52,12 +53,16 @@ internal fun ModelSourcePanel(sources: List<ModelSource>) {
             Text(uiText.installation(source), style = MaterialTheme.typography.bodySmall)
             if (ByokPolicy.FEATURE_BYOK) {
                 artifact?.let { model ->
-                    OutlinedButton(enabled = !busy && record?.active != true, onClick = { scope.launch {
+                    OutlinedButton(enabled = !busy && record?.active != true && group?.active != true, onClick = { scope.launch {
                         busy = true
                         error = null; message = null
                         try {
                             records = withContext(Dispatchers.IO) {
-                                if (record?.failed == true && record.id < 0) downloads.retry(record.id)
+                                if (model.components != null) {
+                                    if (group?.installedRecord != null) downloads.selectInstalled(checkNotNull(group.installedRecord))
+                                    else SpeechComponents.enqueue(context, downloads, checkNotNull(model.components))
+                                }
+                                else if (record?.failed == true && record.id < 0) downloads.retry(record.id)
                                 else if (record?.installed == true) downloads.selectInstalled(record)
                                 else downloads.enqueue(DownloadSpec.parse(model.url, model.fileName), modelPackage = true, installModelId = model.id)
                                 downloads.list()
@@ -74,7 +79,7 @@ internal fun ModelSourcePanel(sources: List<ModelSource>) {
                         else -> uiText(UiR.string.ui_download_install_1_s_mib_0e3f4, model.bytes / 1_048_576)
                     }) }
                     if (record?.failed == true) Text(record.error.ifBlank { uiText(UiR.string.ui_download_failed_reason_1_s_8bb99, record.reason) }, color = MaterialTheme.colorScheme.error)
-                    if (record?.active == true) LinearProgressIndicator(Modifier.fillMaxWidth())
+                    if (record?.active == true || group?.active == true) LinearProgressIndicator(Modifier.fillMaxWidth())
                     Text(uiText(UiR.string.ui_download_folder_1_s_models_850ef, downloads.locationLabel), style = MaterialTheme.typography.bodySmall)
                 }
 

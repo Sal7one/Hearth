@@ -32,6 +32,13 @@ internal object ConversationTranslationSettings {
     fun provider(id: String): TextTranslationProvider? = TextTranslationProvider.entries.firstOrNull { it.id == id }
     fun localModel(context: Context, fallback: String): String = prefs(context).getString("local-model", null) ?: fallback
     fun acceleration(context: Context): TranslationAcceleration = TranslationAcceleration.fromId(prefs(context).getString("gguf-acceleration", null))
+    fun jisrDialect(context: Context): String = prefs(context).getString("jisr-dialect", "ar")
+        ?.takeIf { it in com.sal7one.common_jni.translation.JisrDialects.tags } ?: "ar"
+    fun setJisrDialect(context: Context, code: String) {
+        com.sal7one.common_jni.translation.JisrDialects.requireSupported(code)
+        check(prefs(context).edit().putString("jisr-dialect",code).commit()) { "Could not save Jisr Arabic dialect" }
+        changed()
+    }
     fun setAcceleration(context: Context, acceleration: TranslationAcceleration) {
         check(prefs(context).edit().putString("gguf-acceleration", acceleration.id).commit()) { "Could not save translation acceleration" }
         changed()
@@ -120,7 +127,8 @@ internal object ConversationTranslationSettings {
         check(ByokPolicy.FEATURE_BYOK || providerId == LOCAL || providerId.isBlank()) { "Cloud translation is unavailable in the offline build." }
         check(providerId == LOCAL || providerId.isBlank() || provider(providerId) != null) { "Unknown translation provider: $providerId" }
         val provider = provider(providerId) ?: return ConversationTranslatorSnapshot(localId,
-            acceleration = if (TranslationCatalog.models.any { it.id == localId }) acceleration(context) else TranslationAcceleration.CPU)
+            acceleration = if (TranslationCatalog.models.any { it.id == localId }) acceleration(context) else TranslationAcceleration.CPU,
+            jisrDialect = jisrDialect(context))
         return ConversationTranslatorSnapshot(localId, connection(context, provider), checkNotNull(capabilities(context, provider)) { "Check ${provider.label} languages in Translation settings first." })
     }
     private fun readKey(context: Context, provider: TextTranslationProvider): String {
@@ -147,6 +155,7 @@ internal data class ConversationTranslatorSnapshot(
     val cloud: CloudTranslationConnection? = null,
     val languages: CloudTranslationLanguages? = null,
     val acceleration: TranslationAcceleration = TranslationAcceleration.CPU,
+    val jisrDialect: String = "ar",
 ) {
     val label get() = cloud?.provider?.label ?: TranslationOptions.label(localId)
     fun open(context: Context): CancellableTextTranslator {
@@ -158,7 +167,7 @@ internal data class ConversationTranslatorSnapshot(
                 TranslationDirection(pair.source, pair.target), TranslationOptions.label(pair.id))
         }
         else if (MarianCascade.find(localId) != null) MarianCascade.open(context, checkNotNull(MarianCascade.find(localId)))
-        else if (com.sal7one.common_jni.translation.Ct2Catalog.find(localId) != null) com.sal7one.common_jni.translation.Ct2Catalog.find(localId)!!.let { spec -> Ct2Package.requireRuntime(context);com.sal7one.common_jni.translation.Ct2TranslationSession.open(Ct2Package.directory(context,spec),spec) }
+        else if (com.sal7one.common_jni.translation.Ct2Catalog.find(localId) != null) com.sal7one.common_jni.translation.Ct2Catalog.find(localId)!!.let { spec -> Ct2Package.requireRuntime(context);com.sal7one.common_jni.translation.Ct2TranslationSession.open(Ct2Package.directory(context,spec),spec,jisrDialect) }
         else TranslationCatalog.find(localId).let { spec -> LocalTranslationSession.open(LocalTranslationModels(File(context.filesDir, "translation-models")).file(spec), spec, acceleration, File(context.cacheDir, "translation-opencl")) }
     }
 }

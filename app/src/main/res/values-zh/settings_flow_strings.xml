@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_flow_pipeline">你的字幕设置</string>
+    <string name="settings_flow_independent">语音、翻译和朗读协同工作，各自保留独立的引擎和偏好。</string>
+    <string name="settings_flow_speech">1 · 识别语音</string>
+    <string name="settings_flow_translation">2 · 翻译字幕</string>
+    <string name="settings_flow_voice">3 · 朗读字幕</string>
+    <string name="settings_flow_edit">编辑%1$s设置</string>
+    <string name="settings_flow_other">选择%1$s</string>
+    <string name="settings_flow_unavailable">此电视无法使用下载的模型。云服务需要联网版本。</string>
+    <string name="settings_flow_bundles">推荐组合</string>
+    <string name="settings_flow_tools">历史与工具</string>
+    <string name="settings_flow_history_detail">查看已保存的字幕和翻译。</string>
+    <string name="settings_flow_history_options">历史与记录选项</string>
+    <string name="settings_flow_voice_options">语音偏好</string>
+    <string name="settings_flow_model_info">模型详情与来源</string>
+    <string name="settings_flow_show_unavailable">显示可下载模型</string>
+    <string name="settings_flow_installed_choices">已安装及已选模型</string>
+    <string name="settings_flow_no_installed">下载组合或导入模型以添加本地翻译引擎。</string>
+    <string name="settings_flow_translation_scope">应用到其他功能</string>
+    <string name="settings_flow_caption_translation_scope">选择字幕翻译引擎，其他功能保留各自的选择。</string>
+    <string name="settings_flow_integrated_translation">使用语音引擎翻译，或选择文本翻译引擎</string>
+    <string name="settings_flow_connection_options">连接详情与来源</string>
+    <string name="settings_flow_saved_key">API 密钥已保存在此设备上</string>
+    <string name="settings_flow_key_needed">在下方添加密钥以使用此服务。</string>
+</resources>

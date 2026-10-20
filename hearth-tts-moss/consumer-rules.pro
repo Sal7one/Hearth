@@ -1,0 +1,3 @@
+-keep class com.sal7one.common_jni.voice.MossNative { *; }
+-keep interface com.sal7one.common_jni.voice.MossPcmCallback { *; }
+-keepclassmembers class * implements com.sal7one.common_jni.voice.MossPcmCallback { boolean onPcm(float[], int); }

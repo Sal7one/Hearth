@@ -1,0 +1,650 @@
+{
+  "schemaVersion": 1,
+  "asOf": "2026-10-20",
+  "scope": "Real CPU host inference through production HearthSpeechBackend ABI v2 + SpeechNativeSession; not Android phone quality or latency",
+  "host": "macOS ARM64 CPU, four threads",
+  "runtimeSourceRevision": "1dc22facfc931e2f8adb43924b0e38b9c46f83c7",
+  "runtimeMetadata": "common-jni/src/main/assets/licenses/speech-expansion/runtime-build.json",
+  "maxUtteranceMs": 4000,
+  "silenceMs": 600,
+  "ownerDeviceTested": false,
+  "models": [
+    {
+      "profile": "cohere-transcribe-arabic-07-2026",
+      "component": {
+        "file": "cohere-transcribe-arabic-07-2026-Q4_K_M.gguf",
+        "bytes": 1558162848,
+        "sha256": "4671080cd10ffc6166e1e1b36216f9b51e1455f170d55c59cff7b81332ad4621",
+        "revision": "11a54d6895f94cce78d0ece142b8e552e7822539",
+        "payloadIndependentlyVerified": true
+      },
+      "runs": [
+        {
+          "selectedSource": "ar",
+          "fixture": "ar",
+          "timings": {
+            "load_seconds": 0.478301,
+            "inference_seconds": 1.44155,
+            "audio_seconds": 11.0
+          },
+          "events": [
+            {
+              "text": "انقطاع النوم هو عملية الاستيقاظ عن عمد",
+              "language": "ar",
+              "final": true,
+              "utteranceId": 1,
+              "revision": 1,
+              "audioEndSamples": 66880
+            },
+            {
+              "text": "فترة نومك الطبيعية والنوم بعد فترة قصيرة",
+              "language": "ar",
+              "final": true,
+              "utteranceId": 2,
+              "revision": 1,
+              "audioEndSamples": 130880
+            },
+            {
+              "text": "من عشرة إلى ستين دقيقة",
+              "language": "ar",
+              "final": true,
+              "utteranceId": 3,
+              "revision": 1,
+              "audioEndSamples": 169280
+            }
+          ],
+          "acceptedSamples": 176000,
+          "logSha256": "87543a3391476196c589984b0b06571233da729b1b77f97f850b2d76e3be6fe2",
+          "jsonlSha256": "fca637061c448c5e4b3280574e96738340e220b3b91e05bd1880aa944157e26c",
+          "sourceAudio": "https://github.com/handy-computer/transcribe.cpp/blob/1dc22facfc931e2f8adb43924b0e38b9c46f83c7/samples/ar-short.wav",
+          "sourceAudioSha256": "caa7ea2a573d1ac7c7e7b5e4354e5f6bb0c299176e7862eb6f088ddb525f42a0"
+        },
+        {
+          "selectedSource": "en",
+          "fixture": "en",
+          "timings": {
+            "load_seconds": 0.44892,
+            "inference_seconds": 0.891596,
+            "audio_seconds": 10.56
+          },
+          "events": [
+            {
+              "text": "However,",
+              "language": "en",
+              "final": true,
+              "utteranceId": 1,
+              "revision": 1,
+              "audioEndSamples": 30720
+            },
+            {
+              "text": "due to the slow communication.",
+              "language": "en",
+              "final": true,
+              "utteranceId": 2,
+              "revision": 1,
+              "audioEndSamples": 60800
+            },
+            {
+              "text": "styles in the",
+              "language": "en",
+              "final": true,
+              "utteranceId": 3,
+              "revision": 1,
+              "audioEndSamples": 92480
+            },
+            {
+              "text": "could lag.",
+              "language": "en",
+              "final": true,
+              "utteranceId": 4,
+              "revision": 1,
+              "audioEndSamples": 109760
+            },
+            {
+              "text": "by 25 to 30 years.",
+              "language": "en",
+              "final": true,
+              "utteranceId": 5,
+              "revision": 1,
+              "audioEndSamples": 145920
+            }
+          ],
+          "acceptedSamples": 168960,
+          "logSha256": "adac96483d95693e69735f6471b298cf42b7529d387e7afa2a7c91cdbe7408b7",
+          "jsonlSha256": "6b3700c4c787394cf646cfedc5f7779f810f497271ba2d5e6fccf1aed58b6a5f",
+          "sourceAudio": "https://github.com/handy-computer/transcribe.cpp/blob/1dc22facfc931e2f8adb43924b0e38b9c46f83c7/samples/fleurs-en.wav",
+          "sourceAudioSha256": "7835bd6ffb54ce38a2a9bcde3905ba424faed94d50a474f21a9cbe9209b869df"
+        },
+        {
+          "selectedSource": "ar",
+          "fixture": "silence",
+          "timings": {
+            "load_seconds": 0.436606,
+            "inference_seconds": 0.0011555,
+            "audio_seconds": 1.0
+          },
+          "events": [],
+          "acceptedSamples": 16000,
+          "logSha256": "c29fd77e4d5fc6f67500c9654dbc10d87e6edcf4d2266d3398c7b5ab022e0cc4",
+          "jsonlSha256": "6145a5403c282f55ce784e66408b488bfbfa83e43483cc99f731a936948002b0"
+        }
+      ]
+    },
+    {
+      "profile": "voxtral-mini-4b-realtime-2602",
+      "component": {
+        "file": "Voxtral-Mini-4B-Realtime-2602-Q4_K_M.gguf",
+        "bytes": 2830493984,
+        "sha256": "39dc1f65539373a406edea7490505822d77c12edff521744678717eef4da4723",
+        "revision": "7fd3d424fc558edca2c53808578b0541ef52a81a",
+        "payloadIndependentlyVerified": true
+      },
+      "hostRuntimeSha256": "bc3b66c393478a0a08a821ea3a4a7443d4365b4409c9598791e0f9220cb7267b",
+      "languageNote": "Voxtral receives no recognition hint. ar/en are declared source labels for downstream MT; Auto keeps unknown source because this port supplies no detected-language result.",
+      "runs": [
+        {
+          "selectedSource": "ar",
+          "fixture": "ar",
+          "timings": {
+            "load_seconds": 1.28504,
+            "inference_seconds": 10.529,
+            "audio_seconds": 11.0
+          },
+          "events": [
+            {
+              "text": "",
+              "language": "ar",
+              "final": false,
+              "utteranceId": 1,
+              "revision": 1,
+              "audioEndSamples": 10880
+            },
+            {
+              "text": "انقطاع",
+              "language": "ar",
+              "final": false,
+              "utteranceId": 1,
+              "revision": 2,
+              "audioEndSamples": 26880
+            },
+            {
+              "text": "انقطاع النوم",
+              "language": "ar",
+              "final": false,
+              "utteranceId": 1,
+              "revision": 3,
+              "audioEndSamples": 34880
+            },
+            {
+              "text": "انقطاع النوم هو",
+              "language": "ar",
+              "final": false,
+              "utteranceId": 1,
+              "revision": 4,
+              "audioEndSamples": 42880
+            },
+            {
+              "text": "انقطاع النوم هو عملية",
+              "language": "ar",
+              "final": false,
+              "utteranceId": 1,
+              "revision": 5,
+              "audioEndSamples": 50880
+            },
+            {
+              "text": "انقطاع النوم هو عملية الاست",
+              "language": "ar",
+              "final": false,
+              "utteranceId": 1,
+              "revision": 6,
+              "audioEndSamples": 58880
+            },
+            {
+              "text": "انقطاع النوم هو عملية الاستيقاظ عن",
+              "language": "ar",
+              "final": false,
+              "utteranceId": 1,
+              "revision": 7,
+              "audioEndSamples": 66880
+            },
+            {
+              "text": "انقطاع النوم هو عملية الاستيقاظ عن عمد خلال",
+              "language": "ar",
+              "final": true,
+              "utteranceId": 1,
+              "revision": 8,
+              "audioEndSamples": 66880
+            },
+            {
+              "text": "",
+              "language": "ar",
+              "final": false,
+              "utteranceId": 2,
+              "revision": 1,
+              "audioEndSamples": 74880
+            },
+            {
+              "text": "فترة",
+              "language": "ar",
+              "final": false,
+              "utteranceId": 2,
+              "revision": 2,
+              "audioEndSamples": 82880
+            },
+            {
+              "text": "فترة نومك",
+              "language": "ar",
+              "final": false,
+              "utteranceId": 2,
+              "revision": 3,
+              "audioEndSamples": 90880
+            },
+            {
+              "text": "فترة نومك الطبيعية",
+              "language": "ar",
+              "final": false,
+              "utteranceId": 2,
+              "revision": 4,
+              "audioEndSamples": 106880
+            },
+            {
+              "text": "فترة نومك الطبيعية والنوم",
+              "language": "ar",
+              "final": false,
+              "utteranceId": 2,
+              "revision": 5,
+              "audioEndSamples": 114880
+            },
+            {
+              "text": "فترة نومك الطبيعية والنوم بعد",
+              "language": "ar",
+              "final": false,
+              "utteranceId": 2,
+              "revision": 6,
+              "audioEndSamples": 122880
+            },
+            {
+              "text": "فترة نومك الطبيعية والنوم بعد فترة",
+              "language": "ar",
+              "final": false,
+              "utteranceId": 2,
+              "revision": 7,
+              "audioEndSamples": 130880
+            },
+            {
+              "text": "فترة نومك الطبيعية والنوم بعد فترة قصيرة من",
+              "language": "ar",
+              "final": true,
+              "utteranceId": 2,
+              "revision": 8,
+              "audioEndSamples": 130880
+            },
+            {
+              "text": "",
+              "language": "ar",
+              "final": false,
+              "utteranceId": 3,
+              "revision": 1,
+              "audioEndSamples": 138880
+            },
+            {
+              "text": "1",
+              "language": "ar",
+              "final": false,
+              "utteranceId": 3,
+              "revision": 2,
+              "audioEndSamples": 146880
+            },
+            {
+              "text": "10 إلى",
+              "language": "ar",
+              "final": false,
+              "utteranceId": 3,
+              "revision": 3,
+              "audioEndSamples": 154880
+            },
+            {
+              "text": "10 إلى 60",
+              "language": "ar",
+              "final": false,
+              "utteranceId": 3,
+              "revision": 4,
+              "audioEndSamples": 162880
+            },
+            {
+              "text": "10 إلى 60 دقيقة",
+              "language": "ar",
+              "final": true,
+              "utteranceId": 3,
+              "revision": 5,
+              "audioEndSamples": 169280
+            }
+          ],
+          "acceptedSamples": 176000,
+          "logSha256": "fba2d801ece572a30519c8524919acd1688028eb1a6e076b107d22038e5a39c8",
+          "jsonlSha256": "910214e47e245c44f896568001b785ae09ff1271447e99597003ce2114c37052",
+          "sourceAudio": "https://github.com/handy-computer/transcribe.cpp/blob/1dc22facfc931e2f8adb43924b0e38b9c46f83c7/samples/ar-short.wav",
+          "sourceAudioSha256": "caa7ea2a573d1ac7c7e7b5e4354e5f6bb0c299176e7862eb6f088ddb525f42a0"
+        },
+        {
+          "selectedSource": "en",
+          "fixture": "en",
+          "timings": {
+            "load_seconds": 0.745672,
+            "inference_seconds": 12.3109,
+            "audio_seconds": 10.56
+          },
+          "events": [
+            {
+              "text": "",
+              "language": "en",
+              "final": false,
+              "utteranceId": 1,
+              "revision": 1,
+              "audioEndSamples": 22080
+            },
+            {
+              "text": "However,",
+              "language": "en",
+              "final": true,
+              "utteranceId": 1,
+              "revision": 2,
+              "audioEndSamples": 30720
+            },
+            {
+              "text": "",
+              "language": "en",
+              "final": false,
+              "utteranceId": 2,
+              "revision": 1,
+              "audioEndSamples": 38720
+            },
+            {
+              "text": "Due to",
+              "language": "en",
+              "final": false,
+              "utteranceId": 2,
+              "revision": 2,
+              "audioEndSamples": 46720
+            },
+            {
+              "text": "Due to the slow",
+              "language": "en",
+              "final": false,
+              "utteranceId": 2,
+              "revision": 3,
+              "audioEndSamples": 54720
+            },
+            {
+              "text": "Due to the slow communication channels.",
+              "language": "en",
+              "final": true,
+              "utteranceId": 2,
+              "revision": 4,
+              "audioEndSamples": 60800
+            },
+            {
+              "text": "",
+              "language": "en",
+              "final": false,
+              "utteranceId": 3,
+              "revision": 1,
+              "audioEndSamples": 76480
+            },
+            {
+              "text": "Styles",
+              "language": "en",
+              "final": false,
+              "utteranceId": 3,
+              "revision": 2,
+              "audioEndSamples": 92480
+            },
+            {
+              "text": "Styles in the West.",
+              "language": "en",
+              "final": true,
+              "utteranceId": 3,
+              "revision": 3,
+              "audioEndSamples": 92480
+            },
+            {
+              "text": "",
+              "language": "en",
+              "final": false,
+              "utteranceId": 4,
+              "revision": 1,
+              "audioEndSamples": 100480
+            },
+            {
+              "text": "could",
+              "language": "en",
+              "final": false,
+              "utteranceId": 4,
+              "revision": 2,
+              "audioEndSamples": 108480
+            },
+            {
+              "text": "could lag behind.",
+              "language": "en",
+              "final": true,
+              "utteranceId": 4,
+              "revision": 3,
+              "audioEndSamples": 109760
+            },
+            {
+              "text": "",
+              "language": "en",
+              "final": false,
+              "utteranceId": 5,
+              "revision": 1,
+              "audioEndSamples": 119360
+            },
+            {
+              "text": "By",
+              "language": "en",
+              "final": false,
+              "utteranceId": 5,
+              "revision": 2,
+              "audioEndSamples": 127360
+            },
+            {
+              "text": "By 25 to",
+              "language": "en",
+              "final": false,
+              "utteranceId": 5,
+              "revision": 3,
+              "audioEndSamples": 143360
+            },
+            {
+              "text": "By 25 to 30 years.",
+              "language": "en",
+              "final": true,
+              "utteranceId": 5,
+              "revision": 4,
+              "audioEndSamples": 145920
+            }
+          ],
+          "acceptedSamples": 168960,
+          "logSha256": "4d87cae47df6b6727284928a5fc3ce03a4fce2375af0c9b9bc478b64a53c3217",
+          "jsonlSha256": "bcc3c25e83eb9079f7fecef63e1d4fa60ebb525772e46c96858336d2f62ec7f1",
+          "sourceAudio": "https://github.com/handy-computer/transcribe.cpp/blob/1dc22facfc931e2f8adb43924b0e38b9c46f83c7/samples/fleurs-en.wav",
+          "sourceAudioSha256": "7835bd6ffb54ce38a2a9bcde3905ba424faed94d50a474f21a9cbe9209b869df"
+        },
+        {
+          "selectedSource": "auto",
+          "fixture": "ar",
+          "timings": {
+            "load_seconds": 0.741069,
+            "inference_seconds": 10.7717,
+            "audio_seconds": 11.0
+          },
+          "events": [
+            {
+              "text": "انقطاع",
+              "language": "",
+              "final": false,
+              "utteranceId": 1,
+              "revision": 1,
+              "audioEndSamples": 26880
+            },
+            {
+              "text": "انقطاع النوم",
+              "language": "",
+              "final": false,
+              "utteranceId": 1,
+              "revision": 2,
+              "audioEndSamples": 34880
+            },
+            {
+              "text": "انقطاع النوم هو",
+              "language": "",
+              "final": false,
+              "utteranceId": 1,
+              "revision": 3,
+              "audioEndSamples": 42880
+            },
+            {
+              "text": "انقطاع النوم هو عملية",
+              "language": "",
+              "final": false,
+              "utteranceId": 1,
+              "revision": 4,
+              "audioEndSamples": 50880
+            },
+            {
+              "text": "انقطاع النوم هو عملية الاست",
+              "language": "",
+              "final": false,
+              "utteranceId": 1,
+              "revision": 5,
+              "audioEndSamples": 58880
+            },
+            {
+              "text": "انقطاع النوم هو عملية الاستيقاظ عن",
+              "language": "",
+              "final": false,
+              "utteranceId": 1,
+              "revision": 6,
+              "audioEndSamples": 66880
+            },
+            {
+              "text": "انقطاع النوم هو عملية الاستيقاظ عن عمد خلال",
+              "language": "",
+              "final": true,
+              "utteranceId": 1,
+              "revision": 7,
+              "audioEndSamples": 66880
+            },
+            {
+              "text": "فترة",
+              "language": "",
+              "final": false,
+              "utteranceId": 2,
+              "revision": 1,
+              "audioEndSamples": 82880
+            },
+            {
+              "text": "فترة نومك",
+              "language": "",
+              "final": false,
+              "utteranceId": 2,
+              "revision": 2,
+              "audioEndSamples": 90880
+            },
+            {
+              "text": "فترة نومك الطبيعية",
+              "language": "",
+              "final": false,
+              "utteranceId": 2,
+              "revision": 3,
+              "audioEndSamples": 106880
+            },
+            {
+              "text": "فترة نومك الطبيعية والنوم",
+              "language": "",
+              "final": false,
+              "utteranceId": 2,
+              "revision": 4,
+              "audioEndSamples": 114880
+            },
+            {
+              "text": "فترة نومك الطبيعية والنوم بعد",
+              "language": "",
+              "final": false,
+              "utteranceId": 2,
+              "revision": 5,
+              "audioEndSamples": 122880
+            },
+            {
+              "text": "فترة نومك الطبيعية والنوم بعد فترة",
+              "language": "",
+              "final": false,
+              "utteranceId": 2,
+              "revision": 6,
+              "audioEndSamples": 130880
+            },
+            {
+              "text": "فترة نومك الطبيعية والنوم بعد فترة قصيرة من",
+              "language": "",
+              "final": true,
+              "utteranceId": 2,
+              "revision": 7,
+              "audioEndSamples": 130880
+            },
+            {
+              "text": "1",
+              "language": "",
+              "final": false,
+              "utteranceId": 3,
+              "revision": 1,
+              "audioEndSamples": 146880
+            },
+            {
+              "text": "10 إلى",
+              "language": "",
+              "final": false,
+              "utteranceId": 3,
+              "revision": 2,
+              "audioEndSamples": 154880
+            },
+            {
+              "text": "10 إلى 60",
+              "language": "",
+              "final": false,
+              "utteranceId": 3,
+              "revision": 3,
+              "audioEndSamples": 162880
+            },
+            {
+              "text": "10 إلى 60 دقيقة",
+              "language": "",
+              "final": true,
+              "utteranceId": 3,
+              "revision": 4,
+              "audioEndSamples": 169280
+            }
+          ],
+          "acceptedSamples": 176000,
+          "logSha256": "a3135bd12fdd01d1ae7de787fe6dd5852b8e44dfe93aaf828287334da155b3e0",
+          "jsonlSha256": "085af39de60e1f1cce4ce4034725c7403125ed1f95f02f5652c8d78ed8b22a01",
+          "sourceAudio": "https://github.com/handy-computer/transcribe.cpp/blob/1dc22facfc931e2f8adb43924b0e38b9c46f83c7/samples/ar-short.wav",
+          "sourceAudioSha256": "caa7ea2a573d1ac7c7e7b5e4354e5f6bb0c299176e7862eb6f088ddb525f42a0"
+        },
+        {
+          "selectedSource": "auto",
+          "fixture": "silence",
+          "timings": {
+            "load_seconds": 0.739704,
+            "inference_seconds": 0.00153642,
+            "audio_seconds": 1.0
+          },
+          "events": [],
+          "acceptedSamples": 16000,
+          "logSha256": "534d3c7d89452898a0de92f8c996f059956fc888511fcd7044f7767865972785",
+          "jsonlSha256": "6145a5403c282f55ce784e66408b488bfbfa83e43483cc99f731a936948002b0"
+        }
+      ]
+    }
+  ],
+  "interpretation": "Short host fixtures verify native functionality and final/partial ownership. They do not establish WER, selected-quant parity or sustained phone realtime performance. Voxtral here uses bounded windowed partials that reprocess accumulated audio."
+}

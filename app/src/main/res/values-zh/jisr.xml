@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="ct2_runtime_hint">需要 64 位 ARM 应用进程</string>
+    <string name="ct2_experimental">实验功能 · 尚未测量手机上的质量和速度</string>
+    <string name="jisr_import_hint">从 Hearth 草稿版本导入已验证的运行包 ZIP。训练文件不能直接安装。</string>
+    <string name="ct2_files_details">%1$s · %2$d 个已验证文件 · 双 CPU 线程贪心解码。GGUF 的 GPU 设置不适用。</string>
+    <string name="ct2_promoted_weights">存储的 FP16 权重使用 FLOAT32 运算；内存占用大于下载大小。</string>
+    <string name="ct2_package_details">ZIP 根目录必须包含 hearth-translation.json、schemaVersion 1、modelId %1$s 及全部已验证运行文件。</string>
+    <string name="jisr_dialect">Jisr 阿拉伯语输出</string>
+    <string name="jisr_msa">现代标准阿拉伯语</string>
+    <string name="jisr_egyptian">埃及方言</string>
+    <string name="jisr_moroccan">摩洛哥方言</string>
+    <string name="jisr_algerian">阿尔及利亚方言</string>
+    <string name="jisr_tunisian">突尼斯方言</string>
+    <string name="jisr_libyan">利比亚方言</string>
+    <string name="jisr_lebanese">黎巴嫩方言（发布者映射）</string>
+    <string name="jisr_syrian">叙利亚方言（发布者映射）</string>
+    <string name="jisr_palestinian">巴勒斯坦方言</string>
+    <string name="jisr_saudi">沙特方言</string>
+    <string name="jisr_gulf">巴林 / 海湾方言</string>
+    <string name="jisr_sudanese">苏丹方言</string>
+    <string name="jisr_yemeni">也门方言</string>
+    <string name="jisr_iraqi">伊拉克方言</string>
+</resources>

@@ -37,6 +37,13 @@ public class MagpieNative {
   try{synthesize(exceptionId,utf8("Callback exception test."),utf8("en"),utf8("John"),(samples,rate)->{throw sentinel;});throw new AssertionError("callback exception swallowed");}
   catch(RuntimeException received){if(received!=sentinel)throw new AssertionError("callback exception identity lost",received);}
   finally{destroy(exceptionId);}
+
+  if(root.contains("unused-fixture-path"))for(String mode:new String[]{"close","threaded-close"}){
+   final long closing=create(utf8("generator"),utf8("codec"),utf8("tokenizer"),2);
+   try{synthesize(closing,utf8(mode),utf8("en"),utf8("John"),(samples,rate)->{destroy(closing);return true;});throw new AssertionError("close did not abort");}catch(CancellationException expected){}
+   try{voices(closing);throw new AssertionError("callback-close did not retire handle");}catch(IllegalStateException expected){}
+  }
+  System.out.println("PASS callback close from synthesis and foreign native threads");
   System.out.println("PASS JNI preserves exact Java callback exception identity");
   try{voices(id);throw new AssertionError("retired handle accepted");}catch(IllegalStateException expected){}
   System.out.println("PASS JNI Arabic PCM samples="+count[0]+" bounded frames, speaker inventory, exact-once destroy and retired handle rejection");

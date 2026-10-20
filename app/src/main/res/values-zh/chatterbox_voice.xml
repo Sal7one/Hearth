@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="chatterbox_runtime">实验性 · ARM64 CPU · 分段朗读文章</string>
+    <string name="chatterbox_coverage">阿拉伯语和英语 · 下载 1.59 GB · MIT</string>
+    <string name="chatterbox_no_runtime">当前应用进程无法运行随包提供的 Chatterbox ARM64 引擎。</string>
+    <string name="chatterbox_reference">一个固定参考声音。性别和阿拉伯语发音尚未验证。音频会添加 Perth 水印。</string>
+    <string name="chatterbox_ready">V3 模型及所需水印已安装</string>
+    <string name="chatterbox_install">请安装全部模型组件及 Perth 检查点。Hearth 会验证文件，并在本地准备模型图和水印。</string>
+    <string name="chatterbox_download">下载 Chatterbox V3 模型包</string>
+    <string name="chatterbox_import">导入固定版本的 V3 组件</string>
+</resources>

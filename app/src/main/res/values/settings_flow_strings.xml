@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_flow_pipeline">Your caption setup</string>
+    <string name="settings_flow_independent">Speech, translation and voice work together. Each keeps its own engine and preferences.</string>
+    <string name="settings_flow_speech">1 · Recognize speech</string>
+    <string name="settings_flow_translation">2 · Translate captions</string>
+    <string name="settings_flow_voice">3 · Read captions aloud</string>
+    <string name="settings_flow_edit">Edit %1$s setup</string>
+    <string name="settings_flow_other">Choose %1$s</string>
+    <string name="settings_flow_unavailable">Downloaded models are unavailable on this TV. Cloud services require the connected build.</string>
+    <string name="settings_flow_bundles">Recommended bundles</string>
+    <string name="settings_flow_tools">History and tools</string>
+    <string name="settings_flow_history_detail">Review saved captions and translations.</string>
+    <string name="settings_flow_history_options">History and recording options</string>
+    <string name="settings_flow_voice_options">Voice preferences</string>
+    <string name="settings_flow_model_info">Model details and sources</string>
+    <string name="settings_flow_show_unavailable">Show models to download</string>
+    <string name="settings_flow_installed_choices">Installed and selected models</string>
+    <string name="settings_flow_no_installed">Download a bundle or import a model to add a local translator.</string>
+    <string name="settings_flow_translation_scope">Apply to other features</string>
+    <string name="settings_flow_caption_translation_scope">Choose the translator for captions. Other features keep their own choices.</string>
+    <string name="settings_flow_integrated_translation">Speech engine translation, or choose a text translator</string>
+    <string name="settings_flow_connection_options">Connection details and sources</string>
+    <string name="settings_flow_saved_key">API key saved on this device</string>
+    <string name="settings_flow_key_needed">Add a key below to use this service.</string>
+</resources>

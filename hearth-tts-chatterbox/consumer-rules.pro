@@ -1,0 +1,3 @@
+-keep class com.sal7one.common_jni.voice.ChatterboxNative { *; }
+-keep interface com.sal7one.common_jni.voice.ChatterboxPcmCallback { *; }
+-keepclassmembers class * implements com.sal7one.common_jni.voice.ChatterboxPcmCallback { boolean onPcm(float[], int); }

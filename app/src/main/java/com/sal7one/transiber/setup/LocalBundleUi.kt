@@ -37,6 +37,7 @@ internal fun LocalBundleUi(
     onDone: () -> Unit = {},
     onDownloads: () -> Unit = {},
     translationOnly: Boolean = false,
+    showHeading: Boolean = true,
 ) {
     val text = rememberUiText()
     val context = LocalContext.current
@@ -147,8 +148,10 @@ internal fun LocalBundleUi(
     val targetOptions = remember { TranslationCatalog.find(LocalBundlePresets.BROAD_TRANSLATOR).targetLanguages
         .map { it to TranslationLanguages.label(it) }.sortedBy { it.second } }
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text(text(R.string.setup_models_title), style = MaterialTheme.typography.headlineSmall)
-        Text(text(R.string.setup_models_detail), style = MaterialTheme.typography.bodyMedium)
+        if (showHeading) {
+            Text(text(R.string.setup_models_title), style = MaterialTheme.typography.headlineSmall)
+            Text(text(R.string.setup_models_detail), style = MaterialTheme.typography.bodyMedium)
+        }
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             ModelFilterPicker(text(R.string.setup_bundle_source), source, sourceOptions,
                 { source = it; message = null; error = null }, Modifier.weight(1f), enabled = !busy && !requested)

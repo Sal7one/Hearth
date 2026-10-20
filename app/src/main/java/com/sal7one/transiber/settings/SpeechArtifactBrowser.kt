@@ -24,7 +24,7 @@ import java.util.Locale
 
 /** One card per checkpoint. Precision and provenance do not compete with the model choice. */
 @Composable
-internal fun SpeechArtifactBrowser(config: CaptionOverlayConfig) {
+internal fun SpeechArtifactBrowser(config: CaptionOverlayConfig, onManage: (CaptionEngineChoice?) -> Unit = {}) {
     val uiText = rememberUiText()
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -40,10 +40,10 @@ internal fun SpeechArtifactBrowser(config: CaptionOverlayConfig) {
     var message by remember { mutableStateOf<String?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
     var busyArtifactId by remember { mutableStateOf<String?>(null) }
-    var family by rememberSaveable { mutableStateOf("") }
-    var language by rememberSaveable { mutableStateOf("") }
-    var query by rememberSaveable { mutableStateOf("") }
-    var installedOnly by rememberSaveable { mutableStateOf(false) }
+    var family by rememberModelBrowseString("speech-family", "")
+    var language by rememberModelBrowseString("speech-language", "")
+    var query by rememberModelBrowseString("speech-query", "")
+    var installedOnly by rememberModelBrowseBoolean("speech-installed")
     val catalog = SpeechArtifactCatalog.all
     LaunchedEffect(Unit) {
         while (isActive) {
@@ -73,8 +73,6 @@ internal fun SpeechArtifactBrowser(config: CaptionOverlayConfig) {
         .map { it to uiText.languageName(it) }.sortedBy { it.second }
 
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text(uiText(UiR.string.model_explorer_speech_title), style = MaterialTheme.typography.titleMedium)
-        Text(uiText(UiR.string.model_explorer_search_hint), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         currentArtifact?.let { ModelStatusLabel(uiText(UiR.string.model_browser_current, speechCheckpointTitle(it)), selected = true) }
         ModelSearchField(query, { query = it })
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -89,6 +87,7 @@ internal fun SpeechArtifactBrowser(config: CaptionOverlayConfig) {
             horizontalArrangement = Arrangement.SpaceBetween) {
             Text(uiText(UiR.string.model_browser_results, groups.size), style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
+            TextButton(onClick = { onManage(config.engine) }) { Text(uiText(UiR.string.library_import)) }
             if (query.isNotBlank() || family.isNotBlank() || language.isNotBlank() || installedOnly) {
                 TextButton(onClick = { query = ""; family = ""; language = ""; installedOnly = false }) {
                     Text(uiText(UiR.string.model_explorer_reset_filters))
@@ -116,16 +115,17 @@ internal fun SpeechArtifactBrowser(config: CaptionOverlayConfig) {
             var details by rememberSaveable { mutableStateOf(false) }
             val item = variants.firstOrNull { it.id == selectedVariant && speechArtifactMatches(it, query) }
                 ?: preferredSpeechVariant(variants, installedIds, currentArtifact?.id.orEmpty(), query)
-            val record = records.firstOrNull { it.modelId == item.id }
+            val componentState = item.components?.let { source -> downloadQueueGroups(records).firstOrNull { it.modelId == source.id } }
+            val record = componentState?.installedRecord ?: componentState?.failure ?: componentState?.representatives?.firstOrNull { it.active || it.paused } ?: componentState?.representatives?.firstOrNull() ?: records.firstOrNull { it.modelId == item.id }
             val registered = registryMatches[item.id]
             val local = localMatches[item.id]
             val compatibleAbi = android.os.Build.SUPPORTED_ABIS.firstOrNull() in item.supportedAbis &&
                 ("arm64-v8a" !in item.supportedAbis || item.supportedAbis.size > 1 || android.os.Process.is64Bit())
             val installed = item.id in installedIds
             val selected = installed && item.id == currentArtifact?.id
-            val stage = if (record?.installed == true && !installed) DownloadStage.READY else record?.displayStage()
-            val active = record?.active == true
-            val budget = DownloadBudget.estimate(item.bytes, item.installedBytes, record?.bytes?.coerceIn(0, item.bytes) ?: 0)
+            val stage = if (record?.installed == true && !installed) DownloadStage.READY else componentState?.stage ?: record?.displayStage()
+            val active = componentState?.active ?: (record?.active == true)
+            val budget = DownloadBudget.estimate(item.bytes, item.installedBytes, componentState?.transferred ?: record?.bytes?.coerceIn(0, item.bytes) ?: 0)
             OutlinedCard(Modifier.fillMaxWidth(),
                 border = BorderStroke(1.dp, if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant),
                 colors = CardDefaults.outlinedCardColors(containerColor = if (selected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.16f)
@@ -153,13 +153,13 @@ internal fun SpeechArtifactBrowser(config: CaptionOverlayConfig) {
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
                     if (busyArtifactId == item.id) LinearProgressIndicator(Modifier.fillMaxWidth())
                     if (active) {
-                        val progress = record?.transferFraction()
+                        val progress = componentState?.fraction ?: record?.transferFraction()
                         if (progress != null) LinearProgressIndicator(progress = { progress }, modifier = Modifier.fillMaxWidth()) else LinearProgressIndicator(Modifier.fillMaxWidth())
                         if (stage in setOf(DownloadStage.VERIFYING, DownloadStage.INSTALLING)) Text(uiText(UiR.string.model_download_processing_hint), style = MaterialTheme.typography.bodySmall)
                     }
-                    record?.error?.takeIf { it.isNotBlank() }?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+                    (componentState?.failure ?: record)?.error?.takeIf { it.isNotBlank() }?.let { Text(it, color = MaterialTheme.colorScheme.error) }
                     if (installationsLoaded && record?.installed == true && !installed) Text(uiText(UiR.string.model_download_missing_install), color = MaterialTheme.colorScheme.error)
-                    if (installed || ByokPolicy.FEATURE_BYOK) Button(modifier = Modifier.fillMaxWidth(), enabled = compatibleAbi && installationsLoaded && busyArtifactId == null && !active && !selected, onClick = {
+                    if (!selected && (installed || ByokPolicy.FEATURE_BYOK)) Button(modifier = Modifier.fillMaxWidth(), enabled = compatibleAbi && installationsLoaded && busyArtifactId == null && !active && !selected, onClick = {
                         scope.launch {
                             busyArtifactId = item.id; error = null; message = null
                             try {
@@ -172,6 +172,11 @@ internal fun SpeechArtifactBrowser(config: CaptionOverlayConfig) {
                                     local != null -> {
                                         withContext(Dispatchers.IO) { com.sal7one.common_jni.speech.SpeechModelPackage.verify(local.root) }
                                         CaptionConfigStore.update(context) { it.copy(engine = item.engine, modelId = local.id, streamLanguage = if (local.profile.capabilities.automaticSourceLanguage) "auto" else "ar") }
+                                    }
+                                    item.components != null -> withContext(Dispatchers.IO) {
+                                        val group = checkNotNull(item.components)
+                                        if (stage == DownloadStage.READY && record != null) downloads.reinstall(record.id)
+                                        else SpeechComponents.enqueue(context, downloads, group)
                                     }
                                     record != null && record.id < 0 && (record.paused || record.failed) -> withContext(Dispatchers.IO) { downloads.retry(record.id) }
                                     record?.complete == true -> {
@@ -199,11 +204,10 @@ internal fun SpeechArtifactBrowser(config: CaptionOverlayConfig) {
                         stage == DownloadStage.READY -> uiText(UiR.string.ui_install_downloaded_model_d458c)
                         else -> uiText(UiR.string.model_browser_download_install)
                     }) }
-                    else Text(uiText(UiR.string.speech_artifact_import_play_only), style = MaterialTheme.typography.bodySmall)
-                    ModelSourceLinks(item.publisherUrl, item.filesUrl, item.licenseUrl, onError = { error = it })
-                    TextButton(onClick = { details = !details }, contentPadding = PaddingValues(0.dp)) { Text(uiText(if (details) UiR.string.model_browser_hide_details else UiR.string.model_browser_details)) }
-                    if (details) {
-                        HorizontalDivider()
+                    else if (!selected && !installed) OutlinedButton(onClick = { onManage(item.engine) }, enabled = compatibleAbi && busyArtifactId == null,
+                        modifier = Modifier.fillMaxWidth()) { Text(uiText(UiR.string.library_import)) }
+                    ModelLibraryDisclosure(uiText(UiR.string.library_details), details, { details = !details }) {
+                        ModelSourceLinks(item.publisherUrl, item.filesUrl, item.licenseUrl, onError = { error = it })
                         if (variants.size > 1) ModelFilterPicker(uiText(UiR.string.model_browser_precision), item.id,
                             variants.map { it.id to "${it.quant} · ${it.bytes.toMiBString(uiText.locale)} MiB" }, { selectedVariant = it })
                         else Text(uiText(UiR.string.model_browser_format, item.quant), style = MaterialTheme.typography.bodySmall)
@@ -217,7 +221,10 @@ internal fun SpeechArtifactBrowser(config: CaptionOverlayConfig) {
                         SelectionContainer {
                             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                                 Text(uiText(UiR.string.model_browser_revision, item.sourceRevision), style = MaterialTheme.typography.bodySmall)
-                                Text(uiText(UiR.string.model_browser_integrity, item.sha256), style = MaterialTheme.typography.bodySmall)
+                                Text(uiText(if (item.components == null) UiR.string.model_browser_integrity else UiR.string.speech_component_set_digest, item.sha256), style = MaterialTheme.typography.bodySmall)
+                                item.components?.parts?.forEach { part ->
+                                    Text("${part.role} · ${part.fileName} · ${part.bytes.toMiBString(uiText.locale)} MiB\nSHA-256: ${part.sha256}", style = MaterialTheme.typography.bodySmall)
+                                }
                             }
                         }
                     }

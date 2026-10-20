@@ -1,0 +1,15 @@
+OuteTTS optional CPU runtime uses ChatLLM.cpp (MIT), revision
+74b8237a4c1796f76bb0ed7f483b8e52e7d4d5c7, with its embedded ggml (MIT).
+https://github.com/foldl/chatllm.cpp
+
+Hearth's separately fingerprinted preparation applies sticky atomic cancellation,
+rejects truncated generations, and uses an Oute-specific probability sampler.
+No CLI, shell player, external audio decoder or model weights are packaged.
+
+Downloaded OuteTTS 1.0 1B model: CC-BY-NC-SA-4.0 and Llama 3.2 Community License.
+Bundled IBM DAC speech v1.0 codec in that download: CDLA-Permissive-2.0.
+https://huggingface.co/OuteAI/Llama-OuteTTS-1.0-1B#license-information
+https://huggingface.co/ibm-research/DAC.speech.v1.0
+The downloaded English reference profile comes from OuteTTS (Apache-2.0), revision
+f5eac6e70d792844c6a6959d900a47af2c061a5b. No reference/model bytes are in this AAR.
+https://github.com/edwko/OuteTTS

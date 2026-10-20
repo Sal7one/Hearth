@@ -70,9 +70,13 @@ class SpeechModelPackage private constructor(
                 SpeechBackend.QWEN3_ASR -> setOf("frontend", "encoder", "decoder", "tokenizer")
                 SpeechBackend.OMNILINGUAL_CTC -> setOf("model", "tokenizer")
                 SpeechBackend.PHONON -> setOf("model", "frontend", "encoder", "decoder")
+                SpeechBackend.AUDAR -> setOf("model", "encoder")
+                SpeechBackend.OWSM -> setOf("model")
                 SpeechBackend.NEMOTRON_3_5, SpeechBackend.TRANSCRIBEPSY, SpeechBackend.COHERE, SpeechBackend.FUNASR_MLT, SpeechBackend.VOXTRAL_REALTIME -> setOf("model")
             }
             require(roles.keys == expected) { "${profile.id} requires roles: $expected" }
+            if (profile.backend == SpeechBackend.AUDAR)
+                require(roles.getValue("model") != roles.getValue("encoder")) { "Audar decoder and audio encoder must be separate assets" }
             roles.forEach { (role, path) ->
                 if (role == "tokenizer" && profile.backend == SpeechBackend.QWEN3_ASR) {
                     listOf("vocab.json", "merges.txt", "tokenizer_config.json").forEach { required ->
@@ -80,9 +84,12 @@ class SpeechModelPackage private constructor(
                     }
                 } else require(path in declared) { "Role $role references undeclared asset: $path" }
             }
-            if (profile.backend in setOf(SpeechBackend.NEMOTRON_3_5, SpeechBackend.TRANSCRIBEPSY, SpeechBackend.COHERE, SpeechBackend.FUNASR_MLT, SpeechBackend.VOXTRAL_REALTIME)) {
+            if (profile.backend in setOf(SpeechBackend.NEMOTRON_3_5, SpeechBackend.TRANSCRIBEPSY, SpeechBackend.COHERE, SpeechBackend.FUNASR_MLT, SpeechBackend.VOXTRAL_REALTIME, SpeechBackend.OWSM, SpeechBackend.AUDAR)) {
+                val requiredGguf = if (profile.backend == SpeechBackend.AUDAR) listOf("model", "encoder") else listOf("model")
+                requiredGguf.forEach { role ->
                 val magic = ByteArray(4)
-                File(root, roles.getValue("model")).inputStream().use { require(it.read(magic) == 4 && magic.contentEquals("GGUF".toByteArray())) { "${profile.id} requires a GGUF model" } }
+                File(root, roles.getValue(role)).inputStream().use { require(it.read(magic) == 4 && magic.contentEquals("GGUF".toByteArray())) { "${profile.id} requires a GGUF $role" } }
+                }
             }
             return SpeechModelPackage(root.absoluteFile, profile, total, manifestInspection.digest.hex, roles)
         }

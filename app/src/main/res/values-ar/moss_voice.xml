@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="moss_nano_runtime">SentencePiece وONNX أصليان · معالج arm64 · تدفق المفكك الصوتي</string>
+    <string name="moss_nano_coverage">العربية والإنجليزية ولغات أخرى معلنة · تنزيل ٧١٨ ميغابايت · تجريبي</string>
+    <string name="moss_nano_no_runtime">محرك MOSS الأصلي غير متوفر لمعمارية عملية التطبيق.</string>
+    <string name="moss_nano_voice_note">جنس الأصوات المرجعية غير موثّق. استمع إليها أولًا؛ النطق العربي مع مرجع غير عربي يحتاج اختبارًا. يُحوّل الصوت المجسّم بتردد ٤٨ كيلوهرتز صراحةً إلى قناة واحدة. قراءة الأرقام نصيًا وترميز مرجع مخصص غير مدعومين حاليًا.</string>
+    <string name="moss_nano_ready">تم تثبيت مولد MOSS ومحلل النص والمفكك الصوتي ورموز الأصوات.</string>
+    <string name="moss_nano_install_note">ثبّت جميع ملفات ONNX والبيانات الخارجية والبيانات الوصفية الموثقة. لا يتضمن التطبيق أوزانًا.</string>
+    <string name="moss_nano_download">تنزيل محرك MOSS والمفكك والأصوات</string>
+    <string name="moss_nano_import">استيراد ملفات MOSS الموثّقة</string>
+</resources>

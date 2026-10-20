@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "source": {
+    "repo": "https://github.com/ServeurpersoCom/omnivoice.cpp",
+    "revision": "1a468d8b9d65b3544ca1004d2d7c05dfc65d1f3e",
+    "ggmlRevision": "cc5df49a6b878db2b68b9a7b45976e279594627d"
+  },
+  "runtime": {
+    "abi": "arm64-v8a",
+    "backend": "CPU",
+    "file": "libhearth_omnivoice.so",
+    "bytes": 1373672,
+    "sha256": "7a5042f47892b548d7079f86eb351189e519e366bf72aa5c8a0c2112a81b349b"
+  },
+  "build": {
+    "ndk": "27.0.12077973",
+    "api": 28,
+    "cmake": "4.4.2"
+  },
+  "sources": {
+    "hearth-tts-omnivoice/src/main/cpp/vendor/omnivoice.h": "42c7f5543654f7c22492c098930e641b4cdfec13767dd35f3e7c8d8716842173",
+    "scripts/voice/build-omnivoice-runtime.sh": "62fe926330258929e8d365ae8c26531c64cd0534caff4540374eaefdfb0d72e6",
+    "scripts/voice/omnivoice-runtime-sources.py": "aa894088625984881df26cf3740439515bf2d77b52ee4152d1b748d1e15f40de",
+    "scripts/voice/omnivoice-runtime.cmake": "d8b4b397a8b3bdf6462e0f33b17d42e27522f1dd414c3133fcc7b6124228ab4f",
+    "scripts/voice/omnivoice.map": "18ddb7330a7044b2180ee44f1efbbd0b6ff47de7d1bd53919868bcb9691013a7"
+  },
+  "sourceSetSha256": "11b3393227982ac1f7ffd5e55eea368c859175cf9a2eae31312fae22fad73216",
+  "limitations": [
+    "CPU only",
+    "Cooperative cancellation between upstream synthesis chunks",
+    "Generated voice design profiles are not fixed speaker identities; gender is not verified"
+  ]
+}

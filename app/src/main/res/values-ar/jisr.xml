@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="ct2_runtime_hint">يتطلب تشغيل التطبيق بمعمارية ARM ‏64 بت</string>
+    <string name="ct2_experimental">تجريبي · لم تُقَس الجودة والسرعة على الهاتف بعد</string>
+    <string name="jisr_import_hint">استورد حزمة التشغيل ZIP الموثقة من مسودة إصدار Hearth. لا يمكن تثبيت ملفات التدريب مباشرة.</string>
+    <string name="ct2_files_details">%1$s · %2$d ملفات موثقة · توليد مباشر بخيطَي معالجة. لا تنطبق إعدادات GPU الخاصة بـ GGUF.</string>
+    <string name="ct2_promoted_weights">تُشغّل أوزان FP16 المخزنة بصيغة FLOAT32؛ استهلاك الذاكرة أكبر من حجم التنزيل.</string>
+    <string name="ct2_package_details">تتطلب حزمة ZIP ملف hearth-translation.json في الجذر، وschemaVersion 1 وmodelId %1$s وجميع ملفات التشغيل الموثقة.</string>
+    <string name="jisr_dialect">لهجة العربية في Jisr</string>
+    <string name="jisr_msa">العربية الفصحى</string>
+    <string name="jisr_egyptian">المصرية</string>
+    <string name="jisr_moroccan">المغربية</string>
+    <string name="jisr_algerian">الجزائرية</string>
+    <string name="jisr_tunisian">التونسية</string>
+    <string name="jisr_libyan">الليبية</string>
+    <string name="jisr_lebanese">اللبنانية (تسمية الناشر)</string>
+    <string name="jisr_syrian">السورية (تسمية الناشر)</string>
+    <string name="jisr_palestinian">الفلسطينية</string>
+    <string name="jisr_saudi">السعودية</string>
+    <string name="jisr_gulf">البحرينية / الخليجية</string>
+    <string name="jisr_sudanese">السودانية</string>
+    <string name="jisr_yemeni">اليمنية</string>
+    <string name="jisr_iraqi">العراقية</string>
+</resources>

@@ -1,0 +1,18 @@
+#!/usr/bin/env python3
+"""Check actual host trace pairs; no model inference/download is implied by this receipt writer."""
+import array,hashlib,json,math,re
+from pathlib import Path
+root=Path(__file__).resolve().parents[3];work=root/'build/voice-runtimes/chatterbox-parity'
+def traces(name):
+ return [(language,json.loads(ids)) for language,ids in re.findall(r'CHATTERBOX TOKENS language=(\w+) ids=(.*)',(work/name/'smoke.log').read_text())]
+raw,derived=traces('raw124'),traces('derived124')
+assert raw==derived and len(raw)==3 and {'ar','en'}=={item[0] for item in raw}
+comparisons=[]
+for p in sorted((work/'raw124').glob('*.f32')):
+ a=p.read_bytes();b=(work/'derived124'/p.name).read_bytes();assert a==b and a
+ pcm=array.array('f');pcm.frombytes(a);assert all(math.isfinite(x) for x in pcm)
+ comparisons.append({'file':p.name,'samples':len(pcm),'bytes':len(a),'sha256':hashlib.sha256(a).hexdigest(),'maxAbsError':0.0,'rmsError':0.0,'bitIdentical':True})
+assert len(comparisons)==3
+runtime=json.loads((root/'hearth-tts-chatterbox/src/main/assets/licenses/chatterbox/runtime-build.json').read_text())
+receipt={'schemaVersion':1,'date':'2026-10-20','scope':'Actual pinned V3 Q4 Arabic/English CPU synthesis with mandatory native Perth. Finite audio is not owner listening/phone performance validation.','host':{'machine':'arm64','system':'Darwin','threads':2},'model':{'repo':'Masterx/chatterbox-multilingual-v3-ONNX','revision':'19b94afe41de738624b2f3afc75b4cd56221fbeb','rawStackBytes':1556285252,'watermarkSourceBytes':37429684},'runtime':runtime['runtime'],'graphPreparation':runtime['modelPreparation']['graph'],'sameRuntimeParity':{'runtime':'Official ONNX Runtime1.24.3 host','rawGraphAgainstDerivedGraph':True,'decoderNoise':'Test-only identical seed1234 for all three ONNX RandomNormalLike/RandomUniformLike nodes; production decoder retains publisher graph','speechTokens':[{'language':language,'count':len(ids),'ids':ids} for language,ids in raw],'watermarkedPcm':comparisons},'crossRuntimeObservation':{'older':'Official host ORT1.20.1, same API20/schema as Android1.20.0','newer':'Official host ORT1.24.3','olderTokenCounts':[{ 'language':l,'tokens':len(ids)} for l,ids in traces('old')],'newerTokenCounts':[{ 'language':l,'tokens':len(ids)} for l,ids in traces('new')],'arabicTokensEqual':traces('old')[0]==traces('new')[0],'englishTokensEqual':traces('old')[1]==traces('new')[1],'claim':'Do not claim bit parity across runtime versions; greedy Q4 is numerically sensitive.'},'cApi':{'actualModel':True,'androidBuild':'NDK27 ARM64 compilation/link/export checks; no owner-device inference claim','hostRuntime':'ORT1.20.1','arabic':{'text':'مرحبا بكم.','samples':38400,'sampleRate':24000,'chunks':2},'english':{'text':'Hello from Hearth.','samples':27840,'sampleRate':24000,'chunks':2},'callbackAbortStatus':1,'rawVocoderFallback':False},'jni':{'actualModel':True,'arabicEnglishFiniteBoundedPcm':True,'javaCallbackExceptionSameInstance':True,'cancellationException':True,'retiredHandleRejected':True,'duplicateDestroySafe':True,'offlineSameAndForeignThreadCallbackClose':True,'dynamicUtf8ErrorPreserved':True},'perthParityReceipt':'docs/research/perth-watermark-parity-2026-10-20.json','acceptanceGaps':['Owner Arabic/English listening and speaker preference','S25 Ultra/S22 cold/warm latency, realtime factor, peak memory and thermal measurements','No GPU provider enabled','No custom reference import or verified gender profiles','Only Arabic/English frontend advertised initially']}
+output=root/'docs/research/chatterbox-native-smoke-2026-10-20.json';output.write_text(json.dumps(receipt,indent=2,ensure_ascii=False)+'\n');print(output.relative_to(root))

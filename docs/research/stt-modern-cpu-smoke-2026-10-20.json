@@ -1,0 +1,350 @@
+{
+  "schemaVersion": 1,
+  "asOf": "2026-10-20",
+  "scope": "Real CPU inference through HearthSpeechBackend ABI v2 and SpeechNativeSession; macOS ARM64 host, not Android device performance or WER",
+  "threads": 4,
+  "sampleRate": 16000,
+  "maxUtteranceMs": 4000,
+  "silenceMs": 600,
+  "ownerDeviceTested": false,
+  "runtimeMetadata": "common-jni/src/main/assets/licenses/speech-modern-cpu/runtime-build.json",
+  "models": [
+    {
+      "profile": "owsm-v4-base-102m",
+      "modelRevision": "661a224e9d9adbd49c01626f85e426f5f425d771",
+      "components": [
+        {
+          "file": "owsm-v4-base-102m-q8_0.gguf",
+          "bytes": 118204672,
+          "sha256": "7d4efb7188ca85f3bc85c8411cd97d1d667adb22fbb8084142eeb812e83461bc",
+          "payloadIndependentlyVerified": true
+        }
+      ],
+      "runs": [
+        {
+          "selectedSource": "ar",
+          "fixture": "ar",
+          "timings": {
+            "load_seconds": 0.580666,
+            "inference_seconds": 2.51435,
+            "audio_seconds": 11.0
+          },
+          "events": [
+            {
+              "text": "إن قد ان نوم هو عمالية الاستيقض عن عامد خلاف",
+              "language": "ar",
+              "final": true,
+              "utteranceId": 1,
+              "revision": 1,
+              "audioEndSamples": 66880
+            },
+            {
+              "text": "اتجاه اتجاه اللي وم قد تبيع عيا ونوم بعض فترة قاسير من",
+              "language": "ar",
+              "final": true,
+              "utteranceId": 2,
+              "revision": 1,
+              "audioEndSamples": 130880
+            },
+            {
+              "text": "عشراء لا سيتي يندا قيق.",
+              "language": "ar",
+              "final": true,
+              "utteranceId": 3,
+              "revision": 1,
+              "audioEndSamples": 169280
+            }
+          ],
+          "acceptedSamples": 176000,
+          "logSha256": "b7076ddd0617999aa385b6fffb4ec86ec28ec28cde4411be492745ac287bf423",
+          "jsonlSha256": "89af96676cd4a4ae4febc49a14ebd87ba8c9c5d9c1a21545a26c6f7db5d449b2",
+          "sourceAudio": "https://github.com/handy-computer/transcribe.cpp/blob/1dc22facfc931e2f8adb43924b0e38b9c46f83c7/samples/ar-short.wav",
+          "sourceAudioSha256": "caa7ea2a573d1ac7c7e7b5e4354e5f6bb0c299176e7862eb6f088ddb525f42a0"
+        },
+        {
+          "selectedSource": "en",
+          "fixture": "en",
+          "timings": {
+            "load_seconds": 0.126512,
+            "inference_seconds": 3.98669,
+            "audio_seconds": 10.56
+          },
+          "events": [
+            {
+              "text": "However,",
+              "language": "en",
+              "final": true,
+              "utteranceId": 1,
+              "revision": 1,
+              "audioEndSamples": 30720
+            },
+            {
+              "text": "due to the slow communication",
+              "language": "en",
+              "final": true,
+              "utteranceId": 2,
+              "revision": 1,
+              "audioEndSamples": 60800
+            },
+            {
+              "text": "styles in the",
+              "language": "en",
+              "final": true,
+              "utteranceId": 3,
+              "revision": 1,
+              "audioEndSamples": 92480
+            },
+            {
+              "text": "could lagboard",
+              "language": "en",
+              "final": true,
+              "utteranceId": 4,
+              "revision": 1,
+              "audioEndSamples": 109760
+            },
+            {
+              "text": "by 25 to 30 years",
+              "language": "en",
+              "final": true,
+              "utteranceId": 5,
+              "revision": 1,
+              "audioEndSamples": 145920
+            }
+          ],
+          "acceptedSamples": 168960,
+          "logSha256": "67f24d2882653d8bd9f9734682eeae9807bbe1e20787c149f266ca759002563c",
+          "jsonlSha256": "b33a29f2a3a5faca7cacaa608348d59acaa05cf71d2b72327608dea96937fe7c",
+          "sourceAudio": "https://github.com/handy-computer/transcribe.cpp/blob/1dc22facfc931e2f8adb43924b0e38b9c46f83c7/samples/fleurs-en.wav",
+          "sourceAudioSha256": "7835bd6ffb54ce38a2a9bcde3905ba424faed94d50a474f21a9cbe9209b869df"
+        },
+        {
+          "selectedSource": "auto",
+          "fixture": "ar",
+          "timings": {
+            "load_seconds": 0.127429,
+            "inference_seconds": 2.47133,
+            "audio_seconds": 11.0
+          },
+          "events": [
+            {
+              "text": "إن قد ان نوم هو عمالية الاستيقض عن عامد خلاف",
+              "language": "ar",
+              "final": true,
+              "utteranceId": 1,
+              "revision": 1,
+              "audioEndSamples": 66880
+            },
+            {
+              "text": "اتجاه اتجاه اللي وم قد تبيع عيا ونوم بعض فترة قاسير من",
+              "language": "ar",
+              "final": true,
+              "utteranceId": 2,
+              "revision": 1,
+              "audioEndSamples": 130880
+            },
+            {
+              "text": "Ashira ila siti indeq lika",
+              "language": "",
+              "final": true,
+              "utteranceId": 3,
+              "revision": 1,
+              "audioEndSamples": 169280
+            }
+          ],
+          "acceptedSamples": 176000,
+          "logSha256": "197aed2d4e1a5cabde676fa5c7cbaf7c674c4a8af15a56e28226ed4326ed5474",
+          "jsonlSha256": "5ef2aa4dda86ded9d72aa9b196b002a3941df31d0d44f2923a6e4dafd5e3cf93",
+          "sourceAudio": "https://github.com/handy-computer/transcribe.cpp/blob/1dc22facfc931e2f8adb43924b0e38b9c46f83c7/samples/ar-short.wav",
+          "sourceAudioSha256": "caa7ea2a573d1ac7c7e7b5e4354e5f6bb0c299176e7862eb6f088ddb525f42a0"
+        },
+        {
+          "selectedSource": "auto",
+          "fixture": "silence",
+          "timings": {
+            "load_seconds": 0.317966,
+            "inference_seconds": 7.1958,
+            "audio_seconds": 1.0
+          },
+          "events": [],
+          "acceptedSamples": 16000,
+          "logSha256": "55453dd867db698df6ed175626331a43cfe1a55f20f015e2e3beda7b9918dd2d",
+          "jsonlSha256": "6145a5403c282f55ce784e66408b488bfbfa83e43483cc99f731a936948002b0"
+        }
+      ]
+    },
+    {
+      "profile": "audar-asr-v1-flash",
+      "modelRevision": "54274d39245beba38f30048128e231d4176bd91d",
+      "components": [
+        {
+          "file": "Audar-ASR-V1-Flash-Q4_K_M.gguf",
+          "bytes": 396700512,
+          "sha256": "8b0008ada2f47aaf7c82c10a115f6f964a70ebad71062d491db8c2f6ec8054ed",
+          "payloadIndependentlyVerified": true
+        },
+        {
+          "file": "mmproj-Audar-ASR-V1-Flash.gguf",
+          "bytes": 378575424,
+          "sha256": "73f06fc82a009b4a9d6c825782a3676cb553402b3a5ecc27ae77a92caa6b7fa9",
+          "payloadIndependentlyVerified": true
+        }
+      ],
+      "runs": [
+        {
+          "selectedSource": "ar",
+          "fixture": "ar",
+          "timings": {
+            "load_seconds": 1.20216,
+            "inference_seconds": 6.18279,
+            "audio_seconds": 11.0
+          },
+          "events": [
+            {
+              "text": "انقطاع النوم هو عملية الاستيقاظ عن عمد خلال فترة.",
+              "language": "ar",
+              "final": true,
+              "utteranceId": 1,
+              "revision": 1,
+              "audioEndSamples": 66880
+            },
+            {
+              "text": "فترة نومها الطبيعية، والنوم بعد فترة قصيرة من.",
+              "language": "ar",
+              "final": true,
+              "utteranceId": 2,
+              "revision": 1,
+              "audioEndSamples": 130880
+            },
+            {
+              "text": "من 10 إلى 60 دقيقة.",
+              "language": "ar",
+              "final": true,
+              "utteranceId": 3,
+              "revision": 1,
+              "audioEndSamples": 169280
+            }
+          ],
+          "acceptedSamples": 176000,
+          "logSha256": "732053f5645f464d8f99b74ea996723577e3f3a1dabfeafdbaa512b74bd79257",
+          "jsonlSha256": "53927cc9024e9616e6c1db96f2d6a20269df8e1fda56b58acd0a8d6c28b6032e",
+          "sourceAudio": "https://github.com/handy-computer/transcribe.cpp/blob/1dc22facfc931e2f8adb43924b0e38b9c46f83c7/samples/ar-short.wav",
+          "sourceAudioSha256": "caa7ea2a573d1ac7c7e7b5e4354e5f6bb0c299176e7862eb6f088ddb525f42a0"
+        },
+        {
+          "selectedSource": "en",
+          "fixture": "en",
+          "timings": {
+            "load_seconds": 0.471994,
+            "inference_seconds": 4.19736,
+            "audio_seconds": 10.56
+          },
+          "events": [
+            {
+              "text": "However.",
+              "language": "en",
+              "final": true,
+              "utteranceId": 1,
+              "revision": 1,
+              "audioEndSamples": 30720
+            },
+            {
+              "text": "Due to the slow communication.",
+              "language": "en",
+              "final": true,
+              "utteranceId": 2,
+              "revision": 1,
+              "audioEndSamples": 60800
+            },
+            {
+              "text": "Styles in the world.",
+              "language": "en",
+              "final": true,
+              "utteranceId": 3,
+              "revision": 1,
+              "audioEndSamples": 92480
+            },
+            {
+              "text": "Could lag.",
+              "language": "en",
+              "final": true,
+              "utteranceId": 4,
+              "revision": 1,
+              "audioEndSamples": 109760
+            },
+            {
+              "text": "By 25 to 30 years.",
+              "language": "en",
+              "final": true,
+              "utteranceId": 5,
+              "revision": 1,
+              "audioEndSamples": 145920
+            }
+          ],
+          "acceptedSamples": 168960,
+          "logSha256": "521ca580cb3414b3a261c0deefe162c2d34d9bb8ddbbb202e8c0f00ba1979391",
+          "jsonlSha256": "68bbc62bd59db7a849d339e905916370b55fcb1d867833e1f5bcdf95b62d76d4",
+          "sourceAudio": "https://github.com/handy-computer/transcribe.cpp/blob/1dc22facfc931e2f8adb43924b0e38b9c46f83c7/samples/fleurs-en.wav",
+          "sourceAudioSha256": "7835bd6ffb54ce38a2a9bcde3905ba424faed94d50a474f21a9cbe9209b869df"
+        },
+        {
+          "selectedSource": "auto",
+          "fixture": "ar",
+          "timings": {
+            "load_seconds": 1.16795,
+            "inference_seconds": 4.44091,
+            "audio_seconds": 11.0
+          },
+          "events": [
+            {
+              "text": "انقطاع النوم هو عملية الاستيقاظ عن عمد خلال فترة.",
+              "language": "ar",
+              "final": true,
+              "utteranceId": 1,
+              "revision": 1,
+              "audioEndSamples": 66880
+            },
+            {
+              "text": "فترة نومك الطبيعية، والنوم بعد فترة قصيرة من.",
+              "language": "ar",
+              "final": true,
+              "utteranceId": 2,
+              "revision": 1,
+              "audioEndSamples": 130880
+            },
+            {
+              "text": "من 10 إلى 60 دقيقة.",
+              "language": "ar",
+              "final": true,
+              "utteranceId": 3,
+              "revision": 1,
+              "audioEndSamples": 169280
+            }
+          ],
+          "acceptedSamples": 176000,
+          "logSha256": "8f35c3ad3053b5ea6b3180fe768aa952975e4ebe41deda337960603ca2af440d",
+          "jsonlSha256": "b05a2c96fed7c840ab1db5f3a3056f35a6a603679187e2ef0ad0a6c9c4685c0f",
+          "sourceAudio": "https://github.com/handy-computer/transcribe.cpp/blob/1dc22facfc931e2f8adb43924b0e38b9c46f83c7/samples/ar-short.wav",
+          "sourceAudioSha256": "caa7ea2a573d1ac7c7e7b5e4354e5f6bb0c299176e7862eb6f088ddb525f42a0"
+        },
+        {
+          "selectedSource": "auto",
+          "fixture": "silence",
+          "timings": {
+            "load_seconds": 0.425398,
+            "inference_seconds": 8.3917,
+            "audio_seconds": 1.0
+          },
+          "events": [],
+          "acceptedSamples": 16000,
+          "logSha256": "665cbe17416382bedd2c40307e1a8f20650a5f8b0cecc99c509ba5a054ebb313",
+          "jsonlSha256": "6145a5403c282f55ce784e66408b488bfbfa83e43483cc99f731a936948002b0"
+        }
+      ]
+    }
+  ],
+  "interpretation": {
+    "owsm": "Experimental compact option. Arabic fixture contained substantial errors; Auto may return a non-exposed language which stays unknown instead of being mislabeled English. No quality recommendation.",
+    "audar": "Arabic/English forced-source and Auto Arabic generated finite utterance finals. No selected-quant WER or Android latency claim.",
+    "silence": "Both real model sessions accepted a 1s zero PCM fixture with no text events; endpointing suppresses silent decode. The explicit publisher language None protocol is separately covered by audar_protocol_test."
+  }
+}

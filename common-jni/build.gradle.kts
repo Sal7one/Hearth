@@ -1,5 +1,6 @@
 plugins { alias(libs.plugins.android.library); alias(libs.plugins.kotlin.android) }
 android {
+ packaging { jniLibs.excludes += "**/libonnxruntime.so" }
  namespace = "com.sal7one.common_jni"
  compileSdk = 36
  ndkVersion = "27.0.12077973"
@@ -17,6 +18,7 @@ android {
 }
 kotlin { jvmToolchain(17) }
 dependencies {
+ implementation(project(":hearth-onnx-runtime"))
  implementation("androidx.core:core-ktx:1.17.0")
  implementation("androidx.documentfile:documentfile:1.1.0")
  implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")

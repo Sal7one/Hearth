@@ -16,7 +16,7 @@ class MagpieSpeechEngine(private val directory: File,private val threads: Int=4)
     override val voices=MagpieCatalog.speakers.map { SpeechVoice(it,it,MagpieCatalog.languages,VoiceGender.UNKNOWN) }
     private val handle=AtomicLong(0)
     private val cancelled=AtomicBoolean(false)
-    private var closed=false
+    @Volatile private var closed=false
     @Synchronized override fun synthesize(text: String,language: String,voice: SpeechVoice,options: SpeechOptions,cancellation: SpeechCancellation,emit: (PcmAudio)->Unit) {
         check(!closed){"Magpie engine is closed"};require(voice in voices && voice.supports(language)){"Unsupported Magpie voice or language"}
         require(options.rate==1f){"Magpie native synthesis currently supports normal speed only"}
@@ -30,6 +30,7 @@ class MagpieSpeechEngine(private val directory: File,private val threads: Int=4)
             try { check(MagpieNative.voices(created).toList()==MagpieCatalog.speakers){"Magpie speaker metadata does not match pinned v2607 voices"} }
             catch(error: Throwable){MagpieNative.destroy(created);throw error}
             handle.set(created)
+            if(closed){handle.getAndSet(0).takeIf {it!=0L}?.let(MagpieNative::destroy);error("Magpie engine is closed")}
         }
         cancellation.throwIfCancelled();if(cancelled.get())throw CancellationException("Magpie speech stopped")
         MagpieNative.synthesize(handle.get(),text.toByteArray(),MagpieCatalog.nativeLanguage(language).toByteArray(),voice.id.toByteArray(),MagpiePcmCallback {samples,rate ->
@@ -38,6 +39,6 @@ class MagpieSpeechEngine(private val directory: File,private val threads: Int=4)
         })
     }
     override fun cancel(){cancelled.set(true);handle.get().takeIf {it!=0L}?.let(MagpieNative::cancel)}
-    @Synchronized override fun close(){if(!closed){closed=true;handle.getAndSet(0).takeIf {it!=0L}?.let(MagpieNative::destroy)}}
+    override fun close(){closed=true;cancelled.set(true);handle.getAndSet(0).takeIf {it!=0L}?.let(MagpieNative::destroy)}
     companion object { fun available(): Boolean = try {MagpieNative.available()}catch(_: LinkageError){false} }
 }

@@ -1,0 +1,21 @@
+cmake_minimum_required(VERSION 3.22)
+project(hearth_omnivoice LANGUAGES C CXX)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+set(CMAKE_C_VISIBILITY_PRESET hidden)
+set(CMAKE_CXX_VISIBILITY_PRESET hidden)
+set(CMAKE_VISIBILITY_INLINES_HIDDEN ON)
+add_compile_definitions(GGML_MAX_NAME=128)
+find_package(Threads REQUIRED)
+add_subdirectory("${OMNIVOICE_SOURCE_DIR}/ggml" ggml)
+execute_process(COMMAND "${CMAKE_COMMAND}" "-DSRC_DIR=${OMNIVOICE_SOURCE_DIR}" "-DOUTPUT=${CMAKE_BINARY_DIR}/version.h" -P "${OMNIVOICE_SOURCE_DIR}/tools/version.cmake" COMMAND_ERROR_IS_FATAL ANY)
+add_library(hearth_omnivoice SHARED
+    "${OMNIVOICE_SOURCE_DIR}/src/omnivoice.cpp"
+    "${OMNIVOICE_SOURCE_DIR}/src/pipeline-codec.cpp"
+    "${OMNIVOICE_SOURCE_DIR}/src/pipeline-tts.cpp")
+target_compile_definitions(hearth_omnivoice PRIVATE OMNIVOICE_BUILD)
+target_include_directories(hearth_omnivoice PRIVATE "${OMNIVOICE_SOURCE_DIR}/src" "${CMAKE_BINARY_DIR}" "${OMNIVOICE_SOURCE_DIR}/ggml/include")
+target_link_libraries(hearth_omnivoice PRIVATE ggml Threads::Threads)
+if(ANDROID)
+    target_link_options(hearth_omnivoice PRIVATE "-Wl,-z,max-page-size=16384" "-Wl,--version-script=${CMAKE_CURRENT_SOURCE_DIR}/omnivoice.map" "-Wl,--exclude-libs,ALL")
+endif()

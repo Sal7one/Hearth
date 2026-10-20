@@ -1,0 +1,3 @@
+-keep class com.sal7one.common_jni.voice.OmniVoiceNative { *; }
+-keep interface com.sal7one.common_jni.voice.OmniVoicePcmCallback { *; }
+-keepclassmembers class * implements com.sal7one.common_jni.voice.OmniVoicePcmCallback { boolean onPcm(float[], int); }

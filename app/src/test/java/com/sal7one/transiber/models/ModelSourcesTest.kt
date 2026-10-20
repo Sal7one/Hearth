@@ -11,7 +11,7 @@ import java.net.URI
 class ModelSourcesTest {
     @Test fun everySupportedNativeProfileHasSourcesAndAnHonestInstallPath() {
         val sources = CaptionEngineChoice.entries.filter { it.speechBackend != null }.flatMap(ModelSources::speech)
-        assertEquals(SpeechProfile.entries.map { it.id }.toSet(), sources.map { it.id }.toSet())
+        assertEquals(SpeechProfile.entries.map { it.id }.toSet(), sources.map { SpeechArtifactCatalog.find(it.id)?.profile?.id ?: it.id }.toSet())
         sources.forEach { source ->
             assertEquals("https", URI(source.publisher).scheme)
             assertEquals("https", URI(source.files).scheme)
@@ -27,6 +27,16 @@ class ModelSourcesTest {
                 assertTrue(artifact.sha256.matches(Regex("[0-9a-f]{64}")))
             }
         }
+    }
+    @Test fun audarSourceNamesTheCompleteSetWithoutPretendingItIsOneDownload() {
+        val source = ModelSources.speech(CaptionEngineChoice.AUDAR).single()
+        val artifact = checkNotNull(SpeechArtifactCatalog.find(source.id))
+        assertEquals(SpeechArtifactKind.COMPONENTS, artifact.kind)
+        assertNull(source.download)
+        assertNull(source.downloadBytes)
+        assertTrue(source.installation.contains("both required"))
+        assertTrue(source.files.endsWith(artifact.sourceRevision))
+        assertEquals(2, artifact.components!!.parts.size)
     }
     @Test fun unverifiedQwen17AndCloudNeverPretendToBeReadyDownloads() {
         assertNull(ModelSources.speech(CaptionEngineChoice.QWEN).single { it.id == "qwen3-asr-1.7b" }.download)

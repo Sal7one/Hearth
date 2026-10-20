@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="chatterbox_runtime">تجريبي · معالج ARM64 · قراءة المقالات على دفعات</string>
+    <string name="chatterbox_coverage">العربية والإنجليزية · تنزيل 1.59 غيغابايت · MIT</string>
+    <string name="chatterbox_no_runtime">إصدار التطبيق الحالي لا يستطيع تشغيل محرك Chatterbox المخصص لـ ARM64.</string>
+    <string name="chatterbox_reference">صوت مرجعي واحد مثبت. لم يُتحقق من جنس الصوت أو نطقه العربي. تُضاف علامة Perth المائية للصوت.</string>
+    <string name="chatterbox_ready">نموذج V3 والعلامة المائية المطلوبة مثبتان</string>
+    <string name="chatterbox_install">ثبّت كل مكونات النموذج وملف Perth. يتحقق هيرث منها ويجهز النموذج والعلامة المائية محليًا.</string>
+    <string name="chatterbox_download">تنزيل حزمة Chatterbox V3</string>
+    <string name="chatterbox_import">استيراد مكوّن V3 مثبت</string>
+</resources>

@@ -119,12 +119,12 @@ public:
                 throw std::runtime_error(std::string(qwen35 ? "Qwen3.5" : "Hunyuan") + " translation model has no valid assistant terminator or control EOS/EOT token");
         }
         if (!rawPrompt) {
-            promptPrefix = tokenize(riva ? "<s>System\\n" : euro ?
+            promptPrefix = tokenize(riva ? "<s>System\n" : euro ?
                 "<|im_start|>system\n<|im_end|>\n<|im_start|>user\n" : gemma ? "<bos><start_of_turn>user\n" : qwen35 ?
                 "<|im_start|>user\n" : "<｜hy_begin▁of▁sentence｜><｜hy_User｜>", true);
             // Index-Translate's publisher template with enable_thinking=false.
             // Prefill the empty reasoning block so only translation is generated.
-            promptSuffix = tokenize(riva ? "</s>\\n<s>Assistant\\n" : euro ? "<|im_end|>\n<|im_start|>assistant\n" : gemma ? "<end_of_turn>\n<start_of_turn>model\n" : qwen35 ?
+            promptSuffix = tokenize(riva ? "</s>\n<s>Assistant\n" : euro ? "<|im_end|>\n<|im_start|>assistant\n" : gemma ? "<end_of_turn>\n<start_of_turn>model\n" : qwen35 ?
                 "<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n" : "<｜hy_Assistant｜>", true);
         }
         auto cp = llama_context_default_params();
@@ -164,9 +164,9 @@ public:
                     throw std::invalid_argument("Riva translation instruction is missing or invalid");
                 const auto instruction = tokenize(prompt.substr(0, separator), false);
                 tokens.insert(tokens.end(), instruction.begin(), instruction.end());
-                // Match the pinned publisher tokenizer template, including its
-                // literal backslash-n separators. User text is never parsed as tokens.
-                const auto boundary = tokenize("</s>\\n<s>User\\n", true);
+                // Jinja decodes the publisher template's quoted \n escapes to
+                // real line breaks. User text is never parsed as control tokens.
+                const auto boundary = tokenize("</s>\n<s>User\n", true);
                 tokens.insert(tokens.end(), boundary.begin(), boundary.end());
                 userContent = prompt.substr(separator + 2);
             }

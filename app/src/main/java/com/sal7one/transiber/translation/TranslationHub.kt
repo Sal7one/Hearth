@@ -22,7 +22,8 @@ internal fun TranslationHub(onModels: () -> Unit, initialLocation: SettingsLocat
     val localModelId = remember(revision, config.localTranslationModelId) { ConversationTranslationSettings.localModel(context, config.localTranslationModelId) }
     val provider=remember(revision){ConversationTranslationSettings.selected(context)}
     var error by remember {mutableStateOf<String?>(null)}
-    SettingsTabs(initialLocation, entryRevision) { location ->
+    SettingsTabs(initialLocation, entryRevision,
+        localAvailable = com.sal7one.transiber.runtime.LocalModelPolicy.allowed(context)) { location ->
         SettingsHeading(if (location == SettingsLocation.LOCAL) uiText(UiR.string.ui_local_translation_010cc) else uiText(UiR.string.ui_cloud_translation_e9d00),
             uiText(UiR.string.ui_choose_a_translator_here_browsing_tabs_does_not_change_the_active_3b0c1))
         Text(uiText(UiR.string.ui_active_1_s_830d0, ConversationTranslationSettings.label(context, localModelId)), style = MaterialTheme.typography.labelLarge)

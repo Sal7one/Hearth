@@ -165,7 +165,7 @@ VoiceStudio sources: [base contract](https://github.com/debpalash/VoiceStudio/bl
 [TTS checkpoint catalog](https://github.com/debpalash/VoiceStudio/blob/d819ff54d93017bf4a5b34b605833162163c9e3c/backend/config/models.yaml#L299-L396).
 Hearth sources: [shared player](../app/src/main/java/com/sal7one/transiber/voice/VoicePlayer.kt),
 [pinned voice catalog](../app/src/main/java/com/sal7one/transiber/voice/VoiceCatalog.kt),
-[native Supertonic ownership](../common-jni/src/main/java/com/sal7one/common_jni/voice/SupertonicVoice.kt),
+[native Supertonic ownership](../hearth-tts-supertonic/src/main/java/com/sal7one/common_jni/voice/SupertonicVoice.kt),
 [remote protocol](../app/src/main/java/com/sal7one/transiber/voice/RemoteVoiceProtocol.kt),
 [legacy TTS build gates](../common-jni/src/main/cpp/CMakeLists.txt).
 

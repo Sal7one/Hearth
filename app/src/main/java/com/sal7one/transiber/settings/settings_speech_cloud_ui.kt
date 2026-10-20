@@ -49,6 +49,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun SettingsSpeechCloudUi(onStoredChange: (Boolean) -> Unit = {}, onModeChange: (CloudConfigStore.SttMode) -> Unit = {}) {
     val uiText = rememberUiText()
+    val advanced = com.sal7one.transiber.preferences.rememberSetupMode() == com.sal7one.transiber.preferences.SetupMode.ADVANCED
 
     if (!ByokPolicy.FEATURE_BYOK) return
     val context = LocalContext.current
@@ -88,36 +89,27 @@ fun SettingsSpeechCloudUi(onStoredChange: (Boolean) -> Unit = {}, onModeChange: 
     // streaming option — verified 2026-08 their STT is REST-only; their
     // OpenAI-compatible endpoint works as a Batch provider via Custom URL.
     Spacer(Modifier.height(10.dp))
-    Text(uiText(UiR.string.ui_cloud_provider_connection_49770), style = MaterialTheme.typography.labelMedium)
     // FlowRow: four mode chips would squash the last one flat in a Row.
-    androidx.compose.foundation.layout.FlowRow(
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp),
-    ) {
-        CloudConfigStore.SttMode.entries.forEach { mode ->
-            androidx.compose.material3.FilterChip(
-                selected = currentSttMode == mode,
-                enabled = !selectingMode,
-                onClick = {
-                    selectingMode = true
-                    selectionScope.launch {
-                        try {
-                            CloudConfigStore.setSttMode(context, mode)
-                            CaptionConfigStore.update(context) { it.selectCaptionEngine(CaptionEngineChoice.CLOUD, mode) }
-                            currentSttMode = mode
-                            onModeChange(mode)
-                            keyStoreError = null
-                        } catch (e: kotlinx.coroutines.CancellationException) { throw e }
-                        catch (e: Exception) { keyStoreError = e.message ?: e.toString() }
-                        finally { selectingMode = false }
-                    }
-                },
-                label = { Text(uiText.label(mode)) },
-            )
-        }
-    }
+    com.sal7one.transiber.ui.components.ModelFilterPicker(
+        uiText(UiR.string.ui_cloud_provider_connection_49770), currentSttMode.name,
+        CloudConfigStore.SttMode.entries.map { it.name to uiText.label(it) }, enabled = !selectingMode,
+        onSelect = { selected ->
+            val mode = CloudConfigStore.SttMode.valueOf(selected)
+            selectingMode = true
+            selectionScope.launch {
+                try {
+                    CloudConfigStore.setSttMode(context, mode)
+                    CaptionConfigStore.update(context) { it.selectCaptionEngine(CaptionEngineChoice.CLOUD, mode) }
+                    currentSttMode = mode
+                    onModeChange(mode)
+                    keyStoreError = null
+                } catch (e: kotlinx.coroutines.CancellationException) { throw e }
+                catch (e: Exception) { keyStoreError = e.message ?: e.toString() }
+                finally { selectingMode = false }
+            }
+        })
     Spacer(Modifier.height(4.dp))
-    Text(
+    if (advanced) Text(
         when (currentSttMode) {
             CloudConfigStore.SttMode.STREAMING_SONIOX -> uiText(UiR.string.ui_soniox_stt_rt_v5_streaming_cc_and_optional_integrated_translation_7d848)
             CloudConfigStore.SttMode.STREAMING_ELEVENLABS -> uiText(UiR.string.ui_elevenlabs_scribe_v2_realtime_streaming_cc_with_optional_spoken_l_07f57)
@@ -193,7 +185,18 @@ fun SettingsSpeechCloudUi(onStoredChange: (Boolean) -> Unit = {}, onModeChange: 
         }
     }
     }
-    CloudSourceLinks(currentSttMode)
+    val activeKeyStored = when (currentSttMode) {
+        CloudConfigStore.SttMode.STREAMING_SONIOX -> sonioxStored
+        CloudConfigStore.SttMode.STREAMING_ELEVENLABS -> elevenStored
+        CloudConfigStore.SttMode.STREAMING_DEEPGRAM -> deepgramStored
+        CloudConfigStore.SttMode.STREAMING_ASSEMBLYAI -> assemblyStored
+        else -> keyStored
+    }
+    Text(uiText(if (activeKeyStored) UiR.string.settings_flow_saved_key else UiR.string.settings_flow_key_needed),
+        style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    var sourceDetails by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
+    TextButton(onClick = { sourceDetails = !sourceDetails }) { Text(uiText(UiR.string.settings_flow_connection_options)) }
+    if (sourceDetails || advanced) CloudSourceLinks(currentSttMode)
     if (currentSttMode == CloudConfigStore.SttMode.STREAMING_SONIOX) {
         StreamingKeyField(uiText(UiR.string.ui_soniox_api_key_ea6c1), "https://console.soniox.com", sonioxStored,
             { ApiKeyStore.setSonioxKey(context, it); sonioxStored = ApiKeyStore.getSonioxKey(context).isNotBlank() },
@@ -237,7 +240,7 @@ fun SettingsSpeechCloudUi(onStoredChange: (Boolean) -> Unit = {}, onModeChange: 
         )
     }
     var extraOptions by remember { mutableStateOf(false) }
-    if (currentSttMode != CloudConfigStore.SttMode.BATCH) {
+    if (advanced && currentSttMode != CloudConfigStore.SttMode.BATCH) {
         TextButton(onClick = { extraOptions = !extraOptions }) { Text(if (extraOptions) uiText(UiR.string.ui_hide_batch_voice_options_f3f31) else uiText(UiR.string.ui_optional_batch_cloud_voice_settings_6eebe)) }
     }
     if (currentSttMode == CloudConfigStore.SttMode.BATCH || extraOptions) {
@@ -264,7 +267,7 @@ fun SettingsSpeechCloudUi(onStoredChange: (Boolean) -> Unit = {}, onModeChange: 
             )
         }
     }
-    OutlinedTextField(
+    if (advanced || currentProvider == CloudConfigStore.Provider.CUSTOM) OutlinedTextField(
         value = baseUrlDraft,
         onValueChange = {
             baseUrlDraft = it
@@ -312,7 +315,7 @@ fun SettingsSpeechCloudUi(onStoredChange: (Boolean) -> Unit = {}, onModeChange: 
             modelsLoading = false
         }
     }
-    Text(
+    if (advanced) Text(
         uiText(UiR.string.ui_this_picker_changes_batch_stt_only_live_openai_cc_uses_gpt_live_t_3603e) +
             uiText(UiR.string.ui_live_translation_uses_gpt_realtime_translate_newest_creation_date_4eb89) +
             uiText(UiR.string.ui_the_api_does_not_provide_release_dates_or_openai_prices_9cb12),

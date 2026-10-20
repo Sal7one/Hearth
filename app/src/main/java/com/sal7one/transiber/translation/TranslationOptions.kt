@@ -51,5 +51,5 @@ object TranslationOptions {
             "Marian / OPUS-MT · ${com.sal7one.common_jni.translation.TranslationLanguages.label(it.source)} → English → " +
                 "${com.sal7one.common_jni.translation.TranslationLanguages.label(it.target)} · 2 models · ${it.downloadBytes / 1_048_576} MiB"
         }
-        else ct2(id)?.label ?: TranslationCatalog.models.firstOrNull { it.id == id }?.label ?: "Select a translator"
+        else ct2(id)?.selectionLabel ?: TranslationCatalog.models.firstOrNull { it.id == id }?.label ?: "Select a translator"
 }

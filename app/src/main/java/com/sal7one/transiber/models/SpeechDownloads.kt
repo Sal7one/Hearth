@@ -20,6 +20,10 @@ internal data class SpeechDownload(
 internal object SpeechDownloads {
     private const val sherpa = "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/"
     val all = listOf(
+        SpeechDownload(SpeechProfile.OWSM_V4_BASE_102M,
+            "https://huggingface.co/audio-cpp/audio.cpp-gguf/resolve/661a224e9d9adbd49c01626f85e426f5f425d771/OWSM-GGUF/owsm-v4-base-102m-q8_0.gguf", 118204672L,
+            "7d4efb7188ca85f3bc85c8411cd97d1d667adb22fbb8084142eeb812e83461bc", null,
+            mapOf("model" to "owsm-v4-base-102m-q8_0.gguf")),
         SpeechDownload(SpeechProfile.COHERE_ARABIC_07_2026,
             "https://huggingface.co/handy-computer/cohere-transcribe-arabic-07-2026-gguf/resolve/11a54d6895f94cce78d0ece142b8e552e7822539/cohere-transcribe-arabic-07-2026-Q4_K_M.gguf", 1558162848L,
             "4671080cd10ffc6166e1e1b36216f9b51e1455f170d55c59cff7b81332ad4621", null,

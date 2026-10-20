@@ -32,6 +32,9 @@ jobs:
       - run: sdkmanager "platforms;android-36" "build-tools;36.0.0" "ndk;27.0.12077973" "cmake;3.22.1"
       - uses: gradle/actions/setup-gradle@0b6dd653ba04f4f93bf581ec31e66cbd7dcb644d # v4
       - run: ./gradlew test :app:compilePlayQaKotlin :app:compileFossQaKotlin :common-jni:externalNativeBuildDebug :hearth-tts-magpie:externalNativeBuildDebug :app:assemblePlayQa :app:assembleFossQa :app:assemblePlayRelease :app:assembleFossRelease
+      - name: Assemble standalone article SDK artifacts
+        run: ./gradlew :hearth-tts:assembleRelease :hearth-onnx-runtime:assembleRelease :hearth-tts-supertonic:assembleRelease :hearth-tts-magpie:assembleRelease :hearth-tts-omnivoice:assembleRelease :hearth-tts-moss:assembleRelease :hearth-tts-oute:assembleRelease :hearth-tts-chatterbox:assembleRelease
+      - run: python3 scripts/verify-tts-aars.py
       - run: bash common-jni/src/main/cpp/ocr/tests/run_ocr_tests.sh
       - run: bash common-jni/src/main/cpp/common/tests/run_common_utils_tests.sh
       - name: Speech host checks with Clang
@@ -43,10 +46,14 @@ jobs:
           "$CXX" --version
           bash common-jni/src/main/cpp/speech/tests/run_speech_tests.sh
       - run: bash common-jni/src/main/cpp/vosk/tests/run_vosk_api_tests.sh
-      - run: bash common-jni/src/main/cpp/voice/tests/run_voice_tests.sh
+      - run: bash hearth-tts-supertonic/src/main/cpp/voice/tests/run_voice_tests.sh
       - run: python3 -m unittest discover -s scripts/voice -p 'test_*.py'
       - run: python3 -m unittest discover -s scripts/ming -p 'test_*.py'
       - run: bash scripts/voice/run-magpie-jni-contract-test.sh
+      - run: bash scripts/voice/run-omnivoice-jni-contract-test.sh
+      - run: CXX=clang++ bash scripts/voice/run-oute-host-tests.sh
+      - run: bash scripts/voice/run-moss-jni-contract-test.sh
+      - run: bash scripts/voice/run-chatterbox-jni-contract-test.sh
       - run: CXX=clang++ bash scripts/speech/run-expansion-tests.sh
       - run: python3 scripts/validate-model-handoff.py
       - run: python3 scripts/speech/test_package.py

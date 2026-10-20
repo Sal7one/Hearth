@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="local_voice_gender_unverified">لا توجد بيانات موثّقة لجنس أصوات %1$s. اختر «حسب الصوت المختار» واستمع للأصوات في إعدادات القراءة بصوت عالٍ.</string>
+    <string name="local_voice_custom_default">الصوت المخصص الافتراضي: %1$s · %2$s</string>
+    <string name="omnivoice_runtime">GGML أصلي · معالج arm64 · تدفق صوتي</string>
+    <string name="omnivoice_coverage">العربية الفصحى والإنجليزية · تنزيل ٩٤٥ ميغابايت · تجريبي</string>
+    <string name="omnivoice_no_runtime">محرك OmniVoice الأصلي غير متوفر لمعمارية عملية التطبيق.</string>
+    <string name="omnivoice_voice_note">تصميم الصوت يطلب سمة ولا يضمن هوية متحدث ثابتة أو جنسًا موثّقًا، وقد يختلف بين أجزاء النص. النموذج للاستخدام غير التجاري. مفكك Higgs يخضع لشروط Boson Community وLlama 3.</string>
+    <string name="omnivoice_design_female">تصميم صوت أنثوي (غير موثّق)</string>
+    <string name="omnivoice_design_male">تصميم صوت ذكوري (غير موثّق)</string>
+    <string name="omnivoice_design_auto">تصميم تلقائي</string>
+    <string name="omnivoice_ready">تم تثبيت مولّد OmniVoice والمفكك الصوتي.</string>
+    <string name="omnivoice_install_note">ثبّت ملفي GGUF الموثّقين. ملفات النموذج منفصلة عن التطبيق.</string>
+    <string name="omnivoice_download">تنزيل محرك OmniVoice والمفكك الصوتي</string>
+    <string name="omnivoice_import">استيراد ملفات GGUF الموثّقة لـ OmniVoice</string>
+    <string name="local_voice_use_for_captions">استخدام الصوت المختار للتعليقات</string>
+    <string name="voice_file_options">خيارات الملفات والاستيراد</string>
+</resources>

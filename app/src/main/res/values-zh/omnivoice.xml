@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="local_voice_gender_unverified">%1$s 没有已验证的说话人性别。请选择“跟随所选声音”，并在朗读设置中试听。</string>
+    <string name="local_voice_custom_default">自定义默认：%1$s · %2$s</string>
+    <string name="omnivoice_runtime">原生 GGML · arm64 CPU · PCM 流</string>
+    <string name="omnivoice_coverage">标准阿拉伯语和英语 · 下载 945 MB · 实验性</string>
+    <string name="omnivoice_no_runtime">当前应用进程架构无法使用 OmniVoice 原生运行时。</string>
+    <string name="omnivoice_voice_note">声音设计仅请求特征，不代表固定说话人或已验证性别，各段文本的声音可能不同。预训练模型仅限非商业使用。Higgs 编解码器适用 Boson Community 和 Llama 3 条款。</string>
+    <string name="omnivoice_design_female">女性声音设计（未验证）</string>
+    <string name="omnivoice_design_male">男性声音设计（未验证）</string>
+    <string name="omnivoice_design_auto">自动设计</string>
+    <string name="omnivoice_ready">OmniVoice 生成器和编解码器已安装。</string>
+    <string name="omnivoice_install_note">请安装两个已校验的 GGUF 文件。模型权重与应用分开。</string>
+    <string name="omnivoice_download">下载 OmniVoice 引擎和编解码器</string>
+    <string name="omnivoice_import">导入已校验的 OmniVoice GGUF 文件</string>
+    <string name="local_voice_use_for_captions">将所选声音用于字幕朗读</string>
+    <string name="voice_file_options">文件与导入选项</string>
+</resources>

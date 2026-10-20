@@ -159,14 +159,14 @@
       ],
       "downloadBytes": 773707570,
       "runtime": {
-        "status": "integrated-unverified",
+        "status": "implemented-arm64-cpu-host-smoked",
         "targetBackend": "CTranslate2 4.8.3 CPU Ruy; ARM64 Android; 2 threads; bounded greedy decoder",
         "streaming": "Committed text segments; one complete result per input",
         "blockers": [
-          "QuickMT AR→EN production weights and official Python output parity have not run; owner S25 sustained quality/latency/memory testing pending",
+          "Official Python output parity and owner S25 sustained quality/latency/memory testing pending",
           "ARM64 only; 32-bit/other ABI activation and transfers rejected"
         ],
-        "evidence": "Pinned QuickMT EN→AR production package: all six files verified; three public sample translations and empty-input rejection passed through production native adapter on macOS ARM64. Exact evidence: docs/models/ct2-host-smoke-2026-10-20.json. Not an S25 or corpus score."
+        "evidence": "Both production QuickMT directions executed through the native CPU adapter after exact six-component size/SHA-256 verification. EN→AR: three public samples + empty-input rejection (docs/models/ct2-host-smoke-2026-10-20.json). AR→EN: six pinned FLEURS cases, official source SentencePiece pieces with exactly one EOS/no BOS, empty-input rejection (docs/research/mt-quickmt-cpu-smoke-2026-10-20.json). Functional host checks only; no corpus score, official output parity or phone benchmark."
       },
       "license": {
         "name": "CC-BY-4.0",
@@ -284,13 +284,15 @@
       ],
       "downloadBytes": 1045156992,
       "runtime": {
-        "status": "integrated-unverified",
+        "status": "implemented-host-cpu-smoked",
         "targetBackend": "Existing llama.cpp CPU; explicit ARM64 Vulkan or Adreno OpenCL",
         "streaming": "Committed text segment in; complete translation out",
         "blockers": [
-          "Real-weight English/Arabic parity and owner S25 benchmarks pending",
-          "Per-model GPU placement is checked at load; speed is not established"
-        ]
+          "Official reference-output parity and owner S25 quality/latency/memory/thermal testing pending",
+          "Host sample output includes meaning and terminology errors; successful execution does not establish translation quality",
+          "Per-model GPU placement is checked at load; real-weight GPU speed is not established"
+        ],
+        "evidence": "Exact pinned 1,045,156,992-byte Q4_K_M payload verified, then six pinned FLEURS sentences per English↔Arabic direction ran on macOS ARM64 with two CPU threads and GPU layers 0. Receipt: docs/research/mt-eurollm-cpu-smoke-2026-10-20.json. Full outputs retained; AR→EN Romance-language sentence changed the meaning. No defaults or phone claims."
       },
       "license": {
         "name": "Apache-2.0",
@@ -312,7 +314,8 @@
         "en-ar": 85.17,
         "ar-en": 86.34,
         "scope": "Not a Q4 parity result; not all multilingual directions evaluated here."
-      }
+      },
+      "integrationUpdatedAt": "2026-10-20"
     },
     {
       "id": "planned-jisr-50m-dialect-pair",
@@ -564,15 +567,13 @@
       ],
       "downloadBytes": 390802192,
       "runtime": {
-        "status": "not-implemented",
-        "targetBackend": "Exported ONNX/Marian adaptation or tested CTranslate2 converter + ByteLevel BPE tokenizer",
+        "status": "implemented-arm64-cpu-host-validated",
+        "targetBackend": "CTranslate2 CPU + Hugging Face tokenizers 0.22.2 ByteLevel BPE (protocol 2)",
         "streaming": "Committed text segments only",
         "blockers": [
-          "Original safetensors cannot be run by the existing OPUS ONNX adapter",
-          "No verified exported inference package or its pins yet",
-          "Hearth current Marian tokenizer does not implement this ByteLevel BPE pipeline",
-          "Dialect labels must retain publisher mappings, not collapse Arabic codes",
-          "MSA reverse-direction quality is degraded; broad Arabic quality claim prohibited"
+          "Owner S25 quality, latency, heat and memory measurements remain",
+          "Import-only converted runtime packages; original safetensors are not directly executable",
+          "INT8 changes some translations; no publisher score applies to the conversion"
         ]
       },
       "license": {
@@ -650,7 +651,11 @@
         "endTokenId": 1,
         "padTokenId": 0,
         "maxPositions": 1024,
-        "generation": "Publisher beam4, no_repeat_ngram_size3, max_length256; do not silently truncate article text."
+        "generation": "Publisher beam4, no_repeat_ngram_size3, max_length256; do not silently truncate article text.",
+        "sourceEos": false,
+        "truncation": "Serialized 256-token truncation disabled; reject beyond bounded session limit instead",
+        "learnedDecoderStartEmbedding": "ID0 is trained/nonzero; preserved by BartLoader adaptation with no vocabulary row removal",
+        "hearthGeneration": "Greedy, no_repeat_ngram_size3, max255 generated tokens, 20s deadline; cutoffs fail instead of returning partial success"
       },
       "quality": {
         "benchmark": "Alexandria publisher evaluation, beam4",
@@ -663,8 +668,206 @@
         "cautions": [
           "Reverse MSA loses 6.17 BLEU versus base",
           "Algerian, Bahraini, Iraqi lack external validation"
-        ]
-      }
+        ],
+        "hearthChecks": {
+          "float32ExactReference": 21,
+          "float32Cases": 21,
+          "int8ExactFloat32": 15,
+          "int8Cases": 21,
+          "tokenizerExactVectors": 20,
+          "scope": "macOS ARM64 CPU source/native parity; not phone measurements or a translation-quality benchmark",
+          "evidence": "docs/research/jisr-native-parity-2026-10-20.json"
+        }
+      },
+      "liveCatalogIds": [
+        "ct2-jisr-50m-en-ar",
+        "ct2-jisr-50m-en-ar-int8",
+        "ct2-jisr-50m-ar-en",
+        "ct2-jisr-50m-ar-en-int8"
+      ],
+      "integrationUpdatedAt": "2026-10-20",
+      "conversionProfiles": [
+        {
+          "modelId": "ct2-jisr-50m-en-ar",
+          "precision": "float32",
+          "sourceDirection": "en-ar",
+          "requiredBytes": 198431639,
+          "components": [
+            {
+              "filename": "LICENSE",
+              "bytes": 11358,
+              "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+            },
+            {
+              "filename": "NOTICE",
+              "bytes": 562,
+              "sha256": "bce7092fadb678426aaba270129f02b3a3633df9962ee3f438c781e6eccf6372"
+            },
+            {
+              "filename": "config.json",
+              "bytes": 226,
+              "sha256": "99fa08f9ae4fe585ace28258a3420d4d19d59e2b99d3e8dd2bc7dff70aa408cf"
+            },
+            {
+              "filename": "model.bin",
+              "bytes": 194430755,
+              "sha256": "5b0124527a4a9763d819d8087c08ed289df0ce02d926737313aac5492056353c"
+            },
+            {
+              "filename": "shared_vocabulary.json",
+              "bytes": 1318566,
+              "sha256": "12b45628eae6d2949aa85e430d6a2c7f033400f894f9ec2e521466aa82006e5a"
+            },
+            {
+              "filename": "tokenizer.json",
+              "bytes": 2670172,
+              "sha256": "6f45717637add9564d0bd905209208d1aafa55a2e4ec3b8a817309e0384cb307"
+            }
+          ],
+          "importManifest": {
+            "schemaVersion": 1,
+            "modelId": "ct2-jisr-50m-en-ar"
+          },
+          "converter": "scripts/translation/jisr/export.py",
+          "ct2Revision": "8c8cab2a954810216a45d65c1b8d56839c846e5b",
+          "downloadEnabled": false
+        },
+        {
+          "modelId": "ct2-jisr-50m-ar-en",
+          "precision": "float32",
+          "sourceDirection": "ar-en",
+          "requiredBytes": 198405789,
+          "components": [
+            {
+              "filename": "LICENSE",
+              "bytes": 11358,
+              "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+            },
+            {
+              "filename": "NOTICE",
+              "bytes": 562,
+              "sha256": "42b536894f16165d948f83792e502e14ff01aa59a237544b912b16b678ffb282"
+            },
+            {
+              "filename": "config.json",
+              "bytes": 226,
+              "sha256": "99fa08f9ae4fe585ace28258a3420d4d19d59e2b99d3e8dd2bc7dff70aa408cf"
+            },
+            {
+              "filename": "model.bin",
+              "bytes": 194407459,
+              "sha256": "ca3cb2edaff87fddf715db8fcdea9258b47a926624f662aab01e31decd753805"
+            },
+            {
+              "filename": "shared_vocabulary.json",
+              "bytes": 1318394,
+              "sha256": "38b7aaf9fd81d8e6b2cae4603966e768813377b628ba86ae9b1dab28c3929e53"
+            },
+            {
+              "filename": "tokenizer.json",
+              "bytes": 2667790,
+              "sha256": "7ab7a5ec74e7c2a1671c051fe91aaa3d92e3657a75f6867cd584d3b4307dcc9b"
+            }
+          ],
+          "importManifest": {
+            "schemaVersion": 1,
+            "modelId": "ct2-jisr-50m-ar-en"
+          },
+          "converter": "scripts/translation/jisr/export.py",
+          "ct2Revision": "8c8cab2a954810216a45d65c1b8d56839c846e5b",
+          "downloadEnabled": false
+        },
+        {
+          "modelId": "ct2-jisr-50m-en-ar-int8",
+          "precision": "int8",
+          "sourceDirection": "en-ar",
+          "requiredBytes": 54619924,
+          "components": [
+            {
+              "filename": "LICENSE",
+              "bytes": 11358,
+              "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+            },
+            {
+              "filename": "NOTICE",
+              "bytes": 559,
+              "sha256": "d83d54c3ffa0eba669e616af1a0ab8fa775059a6d916206b51b00b7372f88d38"
+            },
+            {
+              "filename": "config.json",
+              "bytes": 226,
+              "sha256": "99fa08f9ae4fe585ace28258a3420d4d19d59e2b99d3e8dd2bc7dff70aa408cf"
+            },
+            {
+              "filename": "model.bin",
+              "bytes": 50619043,
+              "sha256": "6b8b5286c7edc7eb711a17c0b9c644314e41740d1e4e7d93f799980771791375"
+            },
+            {
+              "filename": "shared_vocabulary.json",
+              "bytes": 1318566,
+              "sha256": "12b45628eae6d2949aa85e430d6a2c7f033400f894f9ec2e521466aa82006e5a"
+            },
+            {
+              "filename": "tokenizer.json",
+              "bytes": 2670172,
+              "sha256": "6f45717637add9564d0bd905209208d1aafa55a2e4ec3b8a817309e0384cb307"
+            }
+          ],
+          "importManifest": {
+            "schemaVersion": 1,
+            "modelId": "ct2-jisr-50m-en-ar-int8"
+          },
+          "converter": "scripts/translation/jisr/export.py",
+          "ct2Revision": "8c8cab2a954810216a45d65c1b8d56839c846e5b",
+          "downloadEnabled": false
+        },
+        {
+          "modelId": "ct2-jisr-50m-ar-en-int8",
+          "precision": "int8",
+          "sourceDirection": "ar-en",
+          "requiredBytes": 54611494,
+          "components": [
+            {
+              "filename": "LICENSE",
+              "bytes": 11358,
+              "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+            },
+            {
+              "filename": "NOTICE",
+              "bytes": 559,
+              "sha256": "02665d596142b410fc5f4a2b239ab453619125286e18784fbd7ec630ae94db52"
+            },
+            {
+              "filename": "config.json",
+              "bytes": 226,
+              "sha256": "99fa08f9ae4fe585ace28258a3420d4d19d59e2b99d3e8dd2bc7dff70aa408cf"
+            },
+            {
+              "filename": "model.bin",
+              "bytes": 50613167,
+              "sha256": "fe73eb55916e327c47b9d346f6b2d1f734d3d34533e3a97c55dd74ba4b0e1b19"
+            },
+            {
+              "filename": "shared_vocabulary.json",
+              "bytes": 1318394,
+              "sha256": "38b7aaf9fd81d8e6b2cae4603966e768813377b628ba86ae9b1dab28c3929e53"
+            },
+            {
+              "filename": "tokenizer.json",
+              "bytes": 2667790,
+              "sha256": "7ab7a5ec74e7c2a1671c051fe91aaa3d92e3657a75f6867cd584d3b4307dcc9b"
+            }
+          ],
+          "importManifest": {
+            "schemaVersion": 1,
+            "modelId": "ct2-jisr-50m-ar-en-int8"
+          },
+          "converter": "scripts/translation/jisr/export.py",
+          "ct2Revision": "8c8cab2a954810216a45d65c1b8d56839c846e5b",
+          "downloadEnabled": false
+        }
+      ]
     },
     {
       "id": "planned-small100-ct2-int8",
@@ -1194,14 +1397,16 @@
       ],
       "downloadBytes": 2759302720,
       "runtime": {
-        "status": "integrated-unverified",
+        "status": "implemented-host-cpu-smoked",
         "targetBackend": "Existing llama.cpp CPU; explicit ARM64 Vulkan or Adreno OpenCL",
         "streaming": "Committed text segment in; complete translation out",
         "blockers": [
-          "Real-weight prompt/Arabic Q4 parity and owner S25 benchmarks pending",
+          "Official reference-output/quantization parity and owner S25 quality/latency/memory/thermal testing pending",
+          "Host sample output still has factual and terminology errors; this prompt correction does not establish general quality improvement",
           "No non-English↔non-English direct direction claimed",
-          "Larger concurrent STT/MT/TTS memory and sustained thermal use require owner test"
-        ]
+          "Larger concurrent STT/MT/TTS memory and sustained thermal use require owner test; no new real-weight GPU benchmark"
+        ],
+        "evidence": "Exact pinned 2,759,302,720-byte Q4_K_M payload verified. Actual publisher Jinja rendering exposed and corrected native literal-backslash-n separators to U+000A. Corrected native runtime executed six pinned FLEURS sentences in each English↔Arabic direction on macOS ARM64, two CPU threads/GPU layers 0. First EN→AR source echo became Arabic; other translation errors remain. Five real safety checks passed: malformed/oversized/context inputs fail without text, active cancellation suppresses partial output, next request recovers. Receipts: docs/research/mt-riva-publisher-prompt-2026-10-20.json and docs/research/mt-riva-translate-cpu-smoke-2026-10-20.json; before-fix receipt retained separately. Payload deleted after checks."
       },
       "license": {
         "name": "NVIDIA Open Model License",
@@ -1217,8 +1422,8 @@
       "prompt": {
         "instruction": "You are an expert at translating text from {sourceName} to {targetName}.",
         "wireToNative": "{instruction}\n\n{trimmedText}",
-        "envelope": "<s>System\\n{instruction}</s>\\n<s>User\\n{trimmedText}</s>\\n<s>Assistant\\n",
-        "separatorWarning": "The pinned tokenizer Jinja emits literal backslash+n characters. Do not replace them with newline characters without changing revision and validating real-weight parity.",
+        "envelope": "<s>System\n{instruction}</s>\n<s>User\n{trimmedText}</s>\n<s>Assistant\n",
+        "separatorWarning": "The pinned tokenizer Jinja source contains quoted backslash-n escapes, which Jinja renders as actual U+000A newlines. Native envelope separators must be real newline characters. Independent publisher-render fixture: docs/research/mt-riva-publisher-prompt-2026-10-20.json.",
         "specialTokens": "Only fixed envelope tokens parsed; user and instruction content literal."
       },
       "quality": {
@@ -1226,7 +1431,8 @@
         "en-ar": 25.1,
         "ar-en": 40.7,
         "scope": "Not a Q4 parity or S25 speed result. WMT24++ Arabic is weaker."
-      }
+      },
+      "integrationUpdatedAt": "2026-10-20"
     }
   ]
 }

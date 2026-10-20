@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "source": {
+    "repo": "https://github.com/foldl/chatllm.cpp",
+    "revision": "74b8237a4c1796f76bb0ed7f483b8e52e7d4d5c7",
+    "ggml": "embedded at pinned revision"
+  },
+  "runtime": {
+    "abi": "arm64-v8a",
+    "backend": "CPU",
+    "file": "libhearth_oute.so",
+    "bytes": 2414880,
+    "sha256": "531a2df28abbf668da806b5ae8b389d9788ae5158cff3f831f1459744a7a79eb"
+  },
+  "build": {
+    "ndk": "27.0.12077973",
+    "api": 28,
+    "cmake": "4.4.2"
+  },
+  "sources": {
+    "hearth-tts-oute/src/main/cpp/vendor/hearth_oute.h": "39a7aff3012002825a062a19e1cca3414c1c9765b42efd624bc43c9b1a11b399",
+    "scripts/voice/build-oute-runtime.sh": "8bf64d2e65e1966569b01da6eefe87c0231108a9aa88a49ecaf21217ad8a97bd",
+    "scripts/voice/oute-runtime-sources.py": "015f9f208827cd6debe7f62cf413b01bb55ab967167d917ed325337ca43e391a",
+    "scripts/voice/oute/CMakeLists.txt": "68ef17aa85b8d749b8ebcfba90e2e276cdefc6c503edde9fe167cfb64dade32c",
+    "scripts/voice/oute/exports.map": "8a7057366914dc615916fa8ace56ac7b2f5f4f293e08215709c1c02ed964f9a7",
+    "scripts/voice/oute/oute_sampling.h": "790dbfaf9db200752caf2c08a7c1123f3b6da57a2dd6249960c0d077383bdad2",
+    "scripts/voice/oute/prepare-source.py": "3bbb1b9e52d7c21cd8482d71bbe9e39c9693d32e129b374844953093ed6bd675",
+    "scripts/voice/oute/runtime.cpp": "1d7133cc88c5cacef44a27111a8a51e4b14f5201bf45a202777313906588fabd"
+  },
+  "sourceSetSha256": "4494bb0baf881552c68936abacd47f1c0a12663f2b70bf3485ebd4158ba98ae1",
+  "limitations": [
+    "CPU only; generation completes before bounded PCM delivery",
+    "1B model has noncommercial/share-alike and Llama terms",
+    "English reference; native Arabic quality and gender matching unverified",
+    "No device latency benchmark"
+  ]
+}

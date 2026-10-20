@@ -1,6 +1,6 @@
-# Hearth model expansion and TTS provider implementation plan
+# Hearth model expansion: implementation and acceptance status
 
-This is the implementation handoff for adding five Arabic and English STT models, five translators, and five TTS models, while preparing a small reusable Hearth TTS library for other Android apps. The primary local device is the owner's Galaxy S25 Ultra. Hearth TVs must not execute or install local models. The owner will perform phone testing later.
+This is the current implementation and acceptance record for five Arabic/English STT models, five translation families and five TTS models, plus a reusable TTS SDK. The owner targets Galaxy S25 Ultra and S22 Ultra; Android TVs use explicit cloud connections and cannot execute or install local models. No owner phone or TV testing has been performed by the agents.
 
 Read this file first, then the specialist plan for your task. Work through the acceptance checks before enabling a model in the app. A model card, a downloadable GGUF, a successful native build, and verified phone inference are four different milestones.
 
@@ -15,12 +15,12 @@ Read this file first, then the specialist plan for your task. Work through the a
 | [Translation cards](models/translation.json) | Five translation records, exact directions, components and evaluation scope |
 | [TTS cards](models/tts.json) | Five TTS records, codec/tokenizer requirements, voice evidence and license restrictions |
 | [Readable model cards](models/README.md) | Generated human-readable view of all 15 records and their complete component tables |
-| [Task prompts](task-prompts.md) | Copyable bounded assignments for agents unfamiliar with this codebase |
+| [Task prompts](task-prompts.md) | Original bounded assignments; current completion is recorded below |
 | [Validation record](validation.md) | Checks actually run on this handoff branch; unperformed checks remain explicit |
 
 The earlier broad survey is [model-families-2026-10-19.json](../research/model-families-2026-10-19.json). It is research, not an executable catalog. Prefer the smaller handoff cards for this work. The card files are evidence inputs, not installable archive manifests; do not feed them directly to an existing model importer.
 
-Validate and regenerate the readable cards with `python3 scripts/validate-model-handoff.py --render`. Its six host tests run with `python3 -m unittest discover -s scripts -p test_model_handoff.py`. The validator checks metadata consistency, pinned URL identities, paths, hashes, bilingual coverage and complete component totals; it does not download or execute model weights.
+Validate and regenerate the readable cards with `python3 scripts/validate-model-handoff.py --render`. Its eight host tests run with `python3 -m unittest discover -s scripts -p test_model_handoff.py`. The validator checks metadata consistency, pinned URL identities, paths, hashes, bilingual coverage and complete component totals; it does not download or execute model weights.
 
 ## Start here before changing code
 
@@ -43,31 +43,61 @@ All code paths below are relative to the repository root. The Android package is
 - Preserve the existing overlay setting that optionally shows original captions while a translation is pending. Preserve translation-only behavior and exact-once final text.
 - The reusable TTS core must stay small, have no model weights, no automatic downloads, and no dependency on the Hearth application. Native engines and their weights are optional adapters.
 
-## What exists and what still needs implementation
+## Current implementation checklist
 
-The branch has progressed beyond the initial preparation checkpoint. The validation
-record describes that earlier checkpoint; use the current release notes and the
-implementation evidence linked below for subsequent runtime work. Research-selected
-variants in the handoff cards are not automatically the live app's selected artifacts.
+This section supersedes the original preparation checkpoint. The three JSON
+inventories retain historical documentary IDs; their readiness fields and live
+catalog IDs identify the actual executable routes. Quantizations and directional
+packages remain variants rather than additional model families.
 
-| Area | Baseline and current branch work | Remaining work |
-| --- | --- | --- |
-| STT | Existing engines remain; Cohere Arabic, Fun-ASR MLT Nano and Voxtral have ARM64 CPU/Vulkan adapters, packages and [host evidence](../models/stt-native-expansion.md) | Audar and OWSM remain prepared targets; owner S25 quality/memory/speed testing for new adapters |
-| GGUF MT | Existing CPU, Vulkan and Adreno OpenCL paths; branch adds EuroLLM and Riva prompt modes and catalog identities | Real-model Arabic parity and S25 measurements; keep results separate from successful builds |
-| Other MT | Marian/OPUS and ML Kit remain; [CTranslate2 ARM64 CPU](../models/ct2-translators.md) adds independent QuickMT en→ar / ar→en and SMaLL-100 packages | Production-weight parity and S25 measurements; Jisr still needs its actual tokenizer/export protocol |
-| TTS | Small SDK, working Supertonic adapter and separate Magpie ARM64 CPU adapter used by app; [Magpie uses corrected F16 plus authenticated tokenizer ranges](tts-provider-implementation.md) | OmniVoice, MOSS Nano, native Chatterbox Multilingual V3 and OuteTTS adapters; phone validation and standalone Supertonic dependency extraction |
-| TV | Branch adds app policy checks at model use, transfer and import boundaries plus TV connection UI | Owner UI/runtime testing; test stale saved local selections as well as fresh installations |
-| Cards | Pinned, sourced records for the 15 target models | Promote records into production catalogs only after each adapter satisfies its readiness checks |
-| Release | [0.26.0/code 89](../releases/0.26.0.md) prepares a signed QA draft on top of 0.25.4 | Do not label this a completed 15-model integration or a phone-verified release |
+| Target | Source/runtime/app integration | Real production-model host evidence | Remaining acceptance |
+| --- | --- | --- | --- |
+| Cohere Transcribe Arabic 07-2026 | ARM64 CPU and optional Vulkan, explicit ar/en, bounded finals | [Pinned Q4 Arabic/English/silence through production speech owner](../research/stt-cohere-voxtral-smoke-2026-10-20.json) | Owner phone/Gulf quality, memory/heat, GPU execution/parity |
+| Audar-ASR V1 Flash | Separate mtmd CPU adapter, transactional decoder + publisher mixed BF16/F32/F16 audio projector package | [Pinned Q4 plus projector, Arabic/English/Auto/silence](../research/stt-modern-cpu-smoke-2026-10-20.json) | Phone and selected-quant corpus quality; no GPU claim |
+| Voxtral Mini Realtime 2602 | ARM64 CPU/optional Vulkan; bounded redecoded windowed partials, no acoustic-cache claim | [Pinned Q4, monotonic partial revisions and one final](../research/stt-cohere-voxtral-smoke-2026-10-20.json) | Phone sustained speed/memory and GPU parity; Auto keeps unknown source |
+| Fun-ASR MLT Nano 2512 | Distinct MLT architecture, ARM64 CPU/optional Vulkan, ITN and complete finals | [Pinned Q8 Arabic/English production-session smoke](../models/stt-native-smoke-2026-10-20.json) | Phone/Gulf quality, GPU parity; selected export license remains explicit |
+| OWSM v4 Base 102M | Narrow ARM64 CPU audio.cpp runtime, embedded tokenizer, bounded utterance finals | [Pinned Q8 Arabic/English/Auto/silence](../research/stt-modern-cpu-smoke-2026-10-20.json) | Arabic fixture errors make it experimental; phone quality/speed; no GPU claim |
+| QuickMT EN↔AR | Directional CTranslate2 ARM64 CPU packages and separate tokenizers | [EN→AR production samples](../models/ct2-host-smoke-2026-10-20.json) plus [six pinned AR→EN cases](../research/mt-quickmt-cpu-smoke-2026-10-20.json) | Official Python output parity, broader translation quality and owner phone evaluation |
+| EuroLLM 1.7B Instruct | Catalog plus publisher GGUF prompt and CPU/Vulkan/OpenCL translator paths | [Pinned Q4, six EN→AR and six AR→EN CPU fixtures](../research/mt-eurollm-cpu-smoke-2026-10-20.json) | Fixture output is functional evidence; broader Arabic quality and phone/GPU performance remain acceptance |
+| Jisr 50M dialect pair | Real ByteLevel BPE, dialect tags, CT2 FP32/INT8 export and verified import-only packages | [20 tokenizer vectors; FP32 21/21 source parity; INT8 15/21](../research/jisr-native-parity-2026-10-20.json) | INT8 differences and owner phone/Gulf quality; no fabricated download URLs |
+| SMaLL-100 | ARM64 CTranslate2 INT8_FLOAT32 with actual target tags | [Pinned EN→AR/AR→EN samples](../models/ct2-host-smoke-2026-10-20.json) | Sample subject/name loss, broad language/reference parity and phone evaluation |
+| Riva-Translate 4B v2 | CPU/Vulkan/OpenCL translator paths; corrected actual publisher Jinja line breaks and rebuilt all six Android binaries | [Pinned Q4, six cases each direction and five real safety checks](../research/mt-riva-translate-cpu-smoke-2026-10-20.json), plus [independent publisher-template rendering](../research/mt-riva-publisher-prompt-2026-10-20.json) | Output still contains terminology/meaning errors; broader quality, phone/GPU performance and concurrent-stage heat remain untested |
+| MagpieTTS v2607 | Separate CPU ARM64 SDK, corrected F16 generator/codec and final authenticated tokenizer files | [Real C ABI/JNI Arabic/English, inventory and lifecycle](../research/magpie-native-smoke-2026-10-20.json) | Owner listening/performance; named voice genders unverified |
+| OmniVoice | Isolated CPU ARM64 SDK and real Q8 generator/codec | [Real C ABI/JNI Arabic/English PCM, callback and cancellation](../research/omnivoice-native-smoke-2026-10-20.json) | Noncommercial/codec terms, variable designs, phone listening/performance |
+| MOSS-TTS Nano | CPU ARM64 SDK, real text/SentencePiece frontend, autoregressive cache and stateful codec | [Real C ABI/JNI Arabic/English PCM and lifecycle](../research/moss-native-smoke-2026-10-20.json) | Owner listening/phone performance, unknown reference genders; optional normalization/reference encoder absent |
+| Chatterbox Multilingual V3 | CPU ARM64 SDK, real V3 graphs and mandatory native Perth watermark | [Real Arabic/English C ABI/JNI, graph and watermark parity](../research/chatterbox-native-smoke-2026-10-20.json) | Owner listening/performance; only ar/en frontend exposed and no verified gender |
+| OuteTTS 1.0 1B | Isolated CPU ARM64 SDK; combined Q8 generator/DAC1.0 and pinned reference | [Real C ABI/JNI English/Arabic; cancel during prefill returns after 109 ms](../research/oute-native-smoke-2026-10-20.json) | Slow experimental option, NC/share-alike/Llama terms; English-reference accent/gender and phone quality/performance |
 
-[Ming-3.0](../ming-3.0.md) is a separate five-checkpoint hosted expansion with
-[complete pinned cards](../models/ming-3.0.json). Its published languages exclude
-Arabic, so it is deliberately outside the 15 bilingual target records. TTS uses
-the two distinct official APIs; Audio Tiny/Flash are connected for transcription,
-and ASR Tiny uses the documented SGLang-Omni endpoint. No local Android Ming runtime
-or CUDA inference result is claimed.
+The STT models ingest bounded live audio through the existing pipeline. Complete
+utterance finals and windowed redecoding are not file-only import utilities, and
+neither proves true incremental acoustic-cache streaming. All fifteen proposed
+families have actual selected-weight production-runtime host evidence, including
+the corrected Riva prompt rerun. The [additional translation checks](../models/mt-expansion-host-smoke-2026-10-20.md)
+retain observed meaning and terminology errors. Host functional output is not a
+corpus quality score or a phone benchmark.
 
-New trained weights can count as a new model while sharing an architecture. Audar is explicitly Qwen-derived. Quants and conversions remain variants of one model, not separate model families.
+- [x] Independent STT → optional MT → optional TTS stages, explicit model selection and portable setup validation.
+- [x] Small model-free `:hearth-tts` API; Supertonic extraction into its own native adapter and single shared `:hearth-onnx-runtime`, without a broad STT/translation runtime dependency.
+- [x] Settings stage hub, inline bundles/full library, searchable grouped models, source/license details and package-level download actions.
+- [x] DataStore stage/family/filter choices; browse writes enqueue during the gesture, so leaving before a debounce cannot drop the edit.
+- [x] SAF imports retain original document provenance separately from verified private copies, including final derived/tokenizer files; startup metadata audit and full load-time hashes remain separate.
+- [x] TV cloud-only local-model policy and FOSS no-network/no-delegated-download policy remain enforced.
+- [x] All five proposed TTS models have real native Arabic/English PCM receipts; Chatterbox includes mandatory Perth and graph-compatibility parity.
+- [x] Chatterbox Android native build and all eight SDK release AAR assemblies.
+- [x] Confirmed full Gradle tests, both QA Kotlin compiles and sanitized native/JNI host gates after the last app source changes.
+- [x] Final CT2 clean-source attestation/restaging and actual eight-AAR inventory verification after the ONNX packaging correction.
+- [x] New model publisher/files/license URL audit; one missing MOSS license path corrected to its verified pinned upstream license.
+- [x] Both QA APK assemblies and APK delivery verification, including all ten ABI/universal packages.
+- [ ] Owner S25 Ultra/S22 Ultra/TV checks, listening, quality, sustained latency, peak memory and heat.
+- [x] Frozen v0.27.0 draft inputs: tested source, verified APKs, SDKs and model ZIPs. Publication and remote digest checks follow this source commit; artifacts belong on GitHub, not in chat.
+
+[Ming-3.0](../ming-3.0.md) is a separate five-checkpoint **hosted** expansion,
+with [pinned model/source profiles](../models/ming-3.0.json): TTS 0.5B, TTS Tiny,
+ASR Tiny, Audio Tiny and Audio Flash. Both official TTS APIs and the ASR/audio
+request contracts are implemented and covered by injected-inference/loopback API
+tests. No Ming checkpoint or CUDA inference has run here, no local Android Ming
+runtime is offered, and published languages exclude Arabic. These limits apply
+on phones and TVs; FOSS cannot connect to the servers.
 
 ## Codebase map
 
@@ -104,8 +134,9 @@ Except for the fully qualified first path, shortened paths in this table are und
 | Translation lifecycle | `java/com/sal7one/common_jni/translation/LocalTranslationSession.kt`, `CaptionTranslationBridge.kt` | Protocol check, verified loading, cancel/destroy, stable line IDs and bounded final-only MT queue |
 | Translation C++ | `cpp/translation/text_model.h`, `translation_jni.cpp`, `vulkan_text_model.h`, `opencl_text_model.h` | Prompt envelope, context/cache reuse, decode, error handling and explicit backend execution |
 | Existing ONNX MT | `java/com/sal7one/common_jni/marian/MarianTranslationSession.kt`, `cpp/marian/` | OPUS-specific tokenizer/model layout and decoder cache ownership |
-| Existing TTS | `java/com/sal7one/common_jni/voice/SupertonicVoice.kt`, `VoiceText.kt`, `cpp/voice/` | Existing verified model API, text IDs/style data and native synthesis |
 | Shared safety helpers | `cpp/common/`, `java/com/sal7one/common_jni/model/ModelIntegrity.kt` | Native handle leases, UTF-8, model integrity, contained staging and ownership |
+
+Downloaded TTS implementation is outside `common-jni`: `hearth-tts-supertonic/src/main/java/com/sal7one/common_jni/voice/` preserves the native package, while `hearth-onnx-runtime` owns shared ONNX binaries. The optional provider modules depend on `hearth-tts` rather than the application.
 
 Before writing any helper read [utils-bible.md](../utils-bible.md). Reuse existing ownership, digest, UTF-8 and chunking code where appropriate. New utilities need a real production consumer and meaningful host coverage.
 
@@ -179,41 +210,12 @@ Do not reuse original-weight quality scores as measured quant scores. Each metri
 
 Missing tokenizer, codec, projector, vocoder or reference-encoder files are blockers. Count all required default components once when computing the package total. Store optional components and alternate quants separately. Do not advertise the decoder's size as the full voice or ASR package. Small Git-tracked tokenizer/config files may require computing their content SHA-256; a Git blob ID is not a SHA-256 file digest.
 
-## Implementation sequence
+## Remaining rollout order
 
-### Wave 1 Shared foundations and working reference path
-
-1. Review the TV policy changes and test stale local selections at runtime, in setup imports, model imports, downloads/retries, OCR, benchmarks and downloaded TTS. Keep Android system TTS distinct from downloaded model inference.
-2. Complete the small TTS SDK and its real Supertonic adapter. Confirm the app consumes that adapter and retains cancellation, audio focus, saved voice choices and error reporting.
-3. Finish EuroLLM/Riva protocol changes as one atomic Kotlin/native delivery. An APK with new prompt-mode calls and old DSOs must fail with an actionable protocol mismatch, never run a different prompt silently.
-4. Validate all handoff card records and render their readable index. Do not enable an adapter-required card's Install/Use action.
-
-### Wave 2 First new engines worth integrating
-
-1. **Cohere Arabic and Fun-ASR MLT:** share a pinned transcribe.cpp runtime build, but register separate model/profile identities. Start with CPU host parity and explicit Arabic/English language selection, then arm64 Vulkan. Use complete bounded utterances. Follow the STT plan.
-2. **Magpie v2607:** integrate the official C++ TTS API as an optional runtime. Verify codec and tokenizer/frontend assets and the v2607 speaker-ID ordering before offering voices. Follow the TTS plan; an older converter's speaker IDs must not be assumed correct.
-3. **QuickMT:** add a CTranslate2 CPU adapter with exact source and target tokenization. Test EN→AR and AR→EN as separate model identities; download only the direction a bundle needs. CTranslate2's CUDA support does not provide Adreno GPU acceleration.
-4. Add only these newly working profiles to Basic bundles after real inference checks. Keep bundle entries as references to existing independent stages, not a second engine implementation.
-
-### Wave 3 Additional families
-
-1. **Audar Flash:** implement the actual Qwen audio-conditioned GGUF path including its required audio projector/encoder and output protocol. Existing Qwen recognition support does not imply the shipped GGUF translation DSO contains multimodal audio support.
-2. **OWSM:** add the audio.cpp adapter, exact embedded tokenizer/normalization handling and bounded utterance behavior. Its complete-file text-delta output must remain labeled correctly.
-3. **Voxtral Realtime:** first provide a bounded windowed-partial implementation if that is the pinned upstream contract. A later true incremental cache implementation is a separate verified change.
-4. **SMaLL-100:** reuse CTranslate2 runtime infrastructure, implement its language tags and compare INT8 Arabic parity. Do not copy QuickMT tokenization assumptions.
-5. **Jisr:** implement and verify its custom tokenizer, dialect tags and Marian export. Do not load the original trained checkpoint into the OPUS ONNX adapter or execute Python/pickle in Android.
-6. **MOSS Nano:** implement complete UTF-8 text frontend plus LM and codec state. The official Android example's pretokenized prompts are not a complete app integration.
-7. **OmniVoice:** implement native model and codec, including quantized-codec parity. Respect noncommercial weights in SDK distribution and downloads.
-8. **Chatterbox Multilingual V3:** use the actual V3 graph/weight protocol and all required reference/flow/vocoder components. Native V2 support and English-only Turbo are not substitutes.
-9. **OuteTTS 1.0:** implement the correct DAC codec and measured generation loop, not the older Oute 0.3 codec. Keep its throughput requirements and license restrictions visible in Advanced information.
-
-### Wave 4 Product integration and release
-
-1. Add all newly runnable families to catalog-driven explorer/search, direction/language pickers, source links, downloads/imports, source bindings, startup audits and portable setups.
-2. Add bundle presets for Arabic accuracy, compact Arabic/English, and article voices only where their required runtimes/files exist. Do not hardcode S25 performance defaults from desktop reports.
-3. Persist new choices through existing DataStore infrastructure. Add migrations and compatibility tests. Keep network keys and per-device paths out of portable workflow exports.
-4. Extend benchmarks using the actual production adapters; have the owner run the provided speech and article fixtures on the S25 Ultra.
-5. Run the release gates and prepare a tagged GitHub draft with honest ready/experimental/not-yet-integrated status. Do not attach APKs directly in chat or upload unsigned installation downloads.
+1. Both QA assemblies and APK delivery verification pass, alongside CT2 attestation/restaging, eight-AAR inventory, full application tests/QA compiles and native builds.
+2. Keep new experimental families out of automatic defaults. Preserve existing models and explicit CPU choices; an owner comparison decides any future bundle promotion.
+3. Validate exact selected-weight parity still missing from the table, then run the owner's S25/S22 sustained live-caption and article fixtures. Test stale TV/FOSS selections and model-source repair as well as a fresh setup.
+4. Publish the tested commit and verified artifacts to the owner-requested tagged GitHub draft. Public Maven distribution and an Android system TTS service remain separate work.
 
 ## Shared integrations each model task must audit
 
@@ -278,7 +280,7 @@ Use JDK 17 for Gradle compilation, a discoverable JDK 21 for the existing Androi
 ./gradlew :common-jni:externalNativeBuildDebug
 CXX=clang++ bash common-jni/src/main/cpp/speech/tests/run_speech_tests.sh
 CXX=clang++ bash common-jni/src/main/cpp/common/tests/run_common_utils_tests.sh
-bash common-jni/src/main/cpp/voice/tests/run_voice_tests.sh
+bash hearth-tts-supertonic/src/main/cpp/voice/tests/run_voice_tests.sh
 bash common-jni/src/main/cpp/marian/tests/run_marian_tokenizer_tests.sh
 python3 -m unittest discover -s scripts/speech -p 'test_*.py'
 python3 -m unittest discover -s scripts -p 'test_*.py'

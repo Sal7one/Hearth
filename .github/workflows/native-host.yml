@@ -6,6 +6,10 @@ on:
     paths:
       - '.github/workflows/native-host.yml'
       - 'common-jni/src/main/cpp/**'
+      - 'hearth-tts-supertonic/src/main/cpp/**'
+      - 'hearth-tts-omnivoice/src/main/cpp/**'
+      - 'hearth-tts-moss/src/main/cpp/**'
+      - 'hearth-tts-oute/src/main/cpp/**'
       - 'scripts/speech/test_package.py'
       - 'scripts/voice/**'
       - 'scripts/ming/**'
@@ -36,10 +40,14 @@ jobs:
           bash common-jni/src/main/cpp/speech/tests/run_speech_tests.sh
       - run: bash common-jni/src/main/cpp/ocr/tests/run_ocr_tests.sh
       - run: bash common-jni/src/main/cpp/vosk/tests/run_vosk_api_tests.sh
-      - run: bash common-jni/src/main/cpp/voice/tests/run_voice_tests.sh
+      - run: bash hearth-tts-supertonic/src/main/cpp/voice/tests/run_voice_tests.sh
       - run: python3 -m unittest discover -s scripts/voice -p 'test_*.py'
       - run: python3 -m unittest discover -s scripts/ming -p 'test_*.py'
       - run: bash scripts/voice/run-magpie-jni-contract-test.sh
+      - run: bash scripts/voice/run-omnivoice-jni-contract-test.sh
+      - run: CXX=clang++ bash scripts/voice/run-oute-host-tests.sh
+      - run: bash scripts/voice/run-moss-jni-contract-test.sh
+      - run: bash scripts/voice/run-chatterbox-jni-contract-test.sh
       - run: CXX=clang++ bash scripts/speech/run-expansion-tests.sh
       - run: python3 scripts/speech/test_package.py
       - run: python3 -m unittest discover -s scripts -p 'test_native_abis.py'

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="speech_audar_note">Audar Flash · تلقائي أو العربية/الإنجليزية. تظهر النتائج النهائية بعد مقاطع قصيرة. يلزم كل من مفكك Q4 ومرمّز الصوت BF16 المطابق. المعالج فقط؛ لم تُختبر الجودة والسرعة على الهاتف.</string>
+    <string name="speech_owsm_note">OWSM v4 Base · نموذج صغير تجريبي. تلقائي أو العربية/الإنجليزية؛ نتائج نهائية لمقاطع قصيرة. احتوت الأمثلة العربية على الحاسوب على أخطاء كبيرة. المعالج فقط؛ لم تُختبر الجودة والسرعة على الهاتف.</string>
+    <string name="speech_component_set_digest">SHA-256 لقائمة المكونات: %1$s</string>
+    <string name="speech_audar_label">Audar-ASR V1 Flash</string>
+    <string name="speech_owsm_label">OWSM v4 Base 102M</string>
+</resources>

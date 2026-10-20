@@ -205,7 +205,7 @@ endif()
 # =============================================================================
 # 4. ONNX Runtime Engine (Prebuilt)
 # =============================================================================
-set(ONNX_LIB_FILE "${CMAKE_CURRENT_SOURCE_DIR}/../jniLibs/${ANDROID_ABI}/libonnxruntime.so")
+set(ONNX_LIB_FILE "${CMAKE_CURRENT_SOURCE_DIR}/../../../../hearth-onnx-runtime/src/main/jniLibs/${ANDROID_ABI}/libonnxruntime.so")
 set(ONNX_HEADER_FILE "${CMAKE_CURRENT_SOURCE_DIR}/onnx/include/onnxruntime/onnxruntime_c_api.h")
 
 if(WITH_ONNX AND EXISTS "${ONNX_LIB_FILE}" AND EXISTS "${ONNX_HEADER_FILE}")
@@ -390,7 +390,7 @@ endif()
 
 # Add Marian translation JNI if ONNX Runtime is present.
 if(HAS_ONNX)
-    list(APPEND COMMON_JNI_SOURCES marian/marian_jni.cpp ocr/ocr_jni.cpp ocr/paddle_ocr.cpp ocr/japanese_jni.cpp ocr/japanese_ocr.cpp voice/voice_jni.cpp voice/supertonic.cpp)
+    list(APPEND COMMON_JNI_SOURCES marian/marian_jni.cpp ocr/ocr_jni.cpp ocr/paddle_ocr.cpp ocr/japanese_jni.cpp ocr/japanese_ocr.cpp)
 endif()
 
 

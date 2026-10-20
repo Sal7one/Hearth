@@ -12,6 +12,7 @@ def main():
     cache = root / "build/vendor-artifacts"
     cache.mkdir(parents=True, exist_ok=True)
     libs = root / "common-jni/src/main/jniLibs"
+    onnx_libs = root / "hearth-onnx-runtime/src/main/jniLibs"
     for line in (root / "scripts/supply-chain-artifacts.tsv").read_text().splitlines():
         if line.startswith("#"): continue
         name, digest, url, original_member = line.split("\t")
@@ -33,10 +34,11 @@ def main():
                 filename = Path(original_member).name
                 data = source.read(f"jni/{abi}/{filename}")
                 verify_elf(abi, data)
-                target = libs / abi / filename
+                target = (onnx_libs if name == "onnx-aar" else libs) / abi / filename
                 target.parent.mkdir(parents=True, exist_ok=True)
                 target.write_bytes(data)
                 print(abi, filename, hashlib.sha256(data).hexdigest())
     update_checksums(libs)
+    update_checksums(onnx_libs)
 
 if __name__ == "__main__": main()

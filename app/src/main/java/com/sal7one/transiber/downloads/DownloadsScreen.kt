@@ -7,6 +7,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.ViewModule
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.ui.Alignment
+import com.sal7one.transiber.models.rememberModelBrowseString
+import com.sal7one.transiber.caption.CaptionConfigStore
+import com.sal7one.transiber.caption.TranslationTarget
+import com.sal7one.transiber.translation.Ct2Package
 import com.sal7one.transiber.ui.components.ModelFilterPicker
 import com.sal7one.transiber.ui.components.ModelStatusLabel
 import com.sal7one.transiber.ui.components.downloadStage
@@ -49,7 +55,7 @@ private fun healthLabel(health: DownloadHealth): String {
 }
 
 @Composable
-fun DownloadsScreen(onBrowseModels: () -> Unit = {}) {
+fun DownloadsScreen(onBrowseModels: () -> Unit = {}, onVoices: () -> Unit = {}) {
     val uiText = rememberUiText()
 
  val context = LocalContext.current
@@ -60,9 +66,11 @@ fun DownloadsScreen(onBrowseModels: () -> Unit = {}) {
  val directScroll = rememberScrollState()
  var url by rememberSaveable { mutableStateOf("") }
  var directDownload by rememberSaveable { mutableStateOf(false) }
- var queueFilter by rememberSaveable { mutableStateOf("all") }
+ var queueFilter by rememberModelBrowseString("queue-filter", "all")
+ var options by remember { mutableStateOf(false) }
  var filename by rememberSaveable { mutableStateOf("") }
  var records by remember { mutableStateOf(emptyList<FileDownload>()) }
+ var voiceReadiness by remember { mutableStateOf(emptyMap<String, Boolean>()) }
  var error by remember { mutableStateOf<String?>(null) }
  var busy by remember { mutableStateOf(false) }
  var message by remember { mutableStateOf<String?>(null) }
@@ -95,7 +103,13 @@ fun DownloadsScreen(onBrowseModels: () -> Unit = {}) {
  }
  LaunchedEffect(Unit) {
   if (ByokPolicy.FEATURE_BYOK) while(isActive) {
-   try { records = withContext(Dispatchers.IO) { downloads.list() } }
+   try {
+    val refreshed = withContext(Dispatchers.IO) {
+     val rows = downloads.list()
+     rows to downloadQueueGroups(rows).filter { it.voiceFamily != null }.associate { it.key to voiceQueueReady(context, it) }
+    }
+    records = refreshed.first; voiceReadiness = refreshed.second
+   }
    catch(e: CancellationException) { throw e }
    catch(e: Exception) { error = e.message ?: e.toString() }
    delay(1000)
@@ -107,26 +121,74 @@ fun DownloadsScreen(onBrowseModels: () -> Unit = {}) {
    FeatureAction(uiText(UiR.string.ui_import_models_721f0), Icons.Default.ViewModule, onBrowseModels)
    return@Column
   }
-  FeatureAction(uiText(UiR.string.ui_get_models_21b53), Icons.Default.ViewModule, onBrowseModels, detail=uiText(UiR.string.ui_browse_speech_translation_camera_and_voices_d335d))
-  Row(horizontalArrangement=Arrangement.spacedBy(8.dp)) {
-   FilledTonalButton(onClick={folderSettings=true},modifier=Modifier.weight(1f).heightIn(min=52.dp)) { Icon(Icons.Default.FolderOpen,null); Spacer(Modifier.width(8.dp)); Text(uiText(UiR.string.ui_folder_30baa)) }
-   OutlinedButton(onClick={directDownload=true},modifier=Modifier.weight(1f).heightIn(min=52.dp)) { Icon(Icons.Default.Download,null); Spacer(Modifier.width(8.dp)); Text(uiText(UiR.string.ui_from_link_b9ad3)) }
+  Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+   Text(uiText(UiR.string.model_download_queue), Modifier.weight(1f), style = MaterialTheme.typography.headlineSmall)
+   TextButton(onClick = onBrowseModels) { Text(uiText(UiR.string.library_browse_models)) }
+   Box {
+    IconButton(onClick = { options = true }) { Icon(Icons.Default.MoreVert, uiText(UiR.string.library_download_options)) }
+    DropdownMenu(options, onDismissRequest = { options = false }) {
+     DropdownMenuItem(text = { Text(uiText(UiR.string.ui_folder_30baa)) }, onClick = { options = false; folderSettings = true })
+     DropdownMenuItem(text = { Text(uiText(UiR.string.ui_from_link_b9ad3)) }, onClick = { options = false; directDownload = true })
+    }
+   }
   }
-  Text(folderLabel,style=MaterialTheme.typography.bodySmall,color=MaterialTheme.colorScheme.onSurfaceVariant)
+  Text(uiText(UiR.string.library_queue_hint), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
   if (busy) LinearProgressIndicator(Modifier.fillMaxWidth())
   error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
   message?.let { Text(it) }
-  Text(uiText(UiR.string.model_download_queue), style = MaterialTheme.typography.titleLarge)
-  Text(uiText(UiR.string.model_download_summary, records.count { it.queuePriority() == 0 }, records.count { it.queuePriority() == 1 }), style = MaterialTheme.typography.bodySmall)
+  val groups = downloadQueueGroups(records)
+  Text(uiText(UiR.string.model_download_summary, groups.count { it.priority == 0 }, groups.count { it.priority == 1 }), style = MaterialTheme.typography.bodySmall)
   ModelFilterPicker(uiText(UiR.string.model_download_filter), queueFilter, listOf(
    "all" to uiText(UiR.string.model_download_all), "active" to uiText(UiR.string.model_download_active),
    "attention" to uiText(UiR.string.model_download_attention), "finished" to uiText(UiR.string.model_download_finished)), { queueFilter = it })
-  val visible = records.filter { when (queueFilter) { "active" -> it.queuePriority() == 0; "attention" -> it.queuePriority() == 1; "finished" -> it.queuePriority() >= 2; else -> true } }
-   .sortedWith(compareBy<FileDownload> { it.queuePriority() }.thenBy { it.id })
+  val visible = groups.filter { when (queueFilter) { "active" -> it.priority == 0; "attention" -> it.priority == 1; "finished" -> it.priority >= 2; else -> true } }
+   .sortedWith(compareBy<DownloadQueueGroup> { it.priority }.thenBy { it.rows.minOf { row -> row.id } })
   if (records.isEmpty()) Text(uiText(UiR.string.ui_your_downloads_will_appear_here_1bc2a), Modifier.padding(vertical = 24.dp))
   else if (visible.isEmpty()) Text(uiText(UiR.string.model_download_no_filter_results), Modifier.padding(vertical = 24.dp))
-  visible.forEach { item -> key(item.id) {
-   var details by rememberSaveable { mutableStateOf(false) }
+  visible.forEach { group -> key(group.key) {
+   var expanded by rememberSaveable { mutableStateOf(false) }
+   if (group.multipart) GroupedDownloadCard(group, busy, expanded, { expanded = !expanded }, onAction = { scope.launch {
+    busy = true; error = null; message = null
+    try {
+     when {
+      group.active -> withContext(Dispatchers.IO) { group.rows.filter { it.active && it.id < 0 }.forEach { downloads.pause(it.id) } }
+      group.voiceFamily != null && (voiceReadiness[group.key] == true || group.installedRecord != null) -> onVoices()
+      group.installedRecord != null -> {
+       com.sal7one.transiber.runtime.LocalModelPolicy.requireAllowed(context, "model selection")
+       val installedRow = checkNotNull(group.installedRecord)
+       val inspection = downloads.inspect(installedRow.id, checkOriginal = false)
+       check(inspection.installed == DownloadHealth.VERIFIED) { inspection.installedError ?: uiText(UiR.string.model_download_missing_install) }
+       val pair = group.modelId?.let(MarianPackage::find)
+       val ct2 = com.sal7one.common_jni.translation.Ct2Catalog.find(group.modelId.orEmpty())
+       if (ct2 != null) Ct2Package.requireRuntime(context)
+       if (com.sal7one.transiber.models.SpeechComponents.find(group.modelId.orEmpty()) != null) downloads.selectInstalled(installedRow)
+       else CaptionConfigStore.update(context) { current -> current.copy(localTranslationModelId = checkNotNull(group.modelId),
+        textTranslationProviderId = "local", target = (pair?.target ?: ct2?.targets?.singleOrNull())?.let(TranslationTarget::of) ?: current.target) }
+       message = uiText(UiR.string.ui_model_selected_8d93b)
+      }
+      group.stage == DownloadStage.READY -> withContext(Dispatchers.IO) {
+       if (group.voiceFamily != null) group.representatives.filter { it.complete && !it.installed }.forEach { downloads.reinstall(it.id) }
+       else downloads.reinstall(group.representatives.last { it.complete }.id)
+      }
+      else -> withContext(Dispatchers.IO) {
+       group.representatives.filter { (it.failed || it.paused) && it.id < 0 }.forEach { downloads.retry(it.id) }
+       if (group.voiceFamily != null) group.required.keys.filter { id -> group.rows.none { it.modelId == id } }.forEach { id ->
+        val asset = checkNotNull(DownloadAssets.find(id)) { "Unknown voice component: $id" }
+        val filename = checkNotNull(com.sal7one.transiber.voice.VoiceCatalog.find(id)) { "Unknown voice component: $id" }.filename
+        downloads.enqueue(DownloadSpec.parse(asset.url, filename), true, id)
+       }
+       group.modelId?.let(com.sal7one.transiber.models.SpeechComponents::find)?.let { com.sal7one.transiber.models.SpeechComponents.enqueue(context, downloads, it) }
+       group.modelId?.let(MarianPackage::find)?.let { MarianPackage.enqueue(context, downloads, it) }
+       com.sal7one.common_jni.translation.Ct2Catalog.find(group.modelId.orEmpty())?.let { Ct2Package.enqueue(context, downloads, it) }
+      }
+     }
+     records = withContext(Dispatchers.IO) { downloads.list() }
+    } catch (e: CancellationException) { throw e }
+    catch (e: Exception) { error = e.message ?: e.toString() }
+    finally { busy = false }
+   } }, voiceReady = voiceReadiness[group.key])
+   if (!group.multipart || expanded) group.rows.forEach { item -> key(item.id) {
+   var details by rememberSaveable { mutableStateOf(group.multipart) }
    val stage = item.displayStage()
    val title = com.sal7one.transiber.models.SpeechArtifactCatalog.find(item.modelId)?.label
     ?: downloads.translationModel(item)?.label ?: item.title
@@ -146,7 +208,7 @@ fun DownloadsScreen(onBrowseModels: () -> Unit = {}) {
     if (item.error.isNotBlank()) Text(item.error, color = MaterialTheme.colorScheme.error)
     else if (item.reason != 0 && stage in setOf(DownloadStage.FAILED, DownloadStage.PAUSED)) Text(
      uiText(if (stage == DownloadStage.FAILED) UiR.string.ui_downloadmanager_failed_reason_1_s_54785 else UiR.string.ui_paused_downloadmanager_reason_1_s_ea493, item.reason), color = MaterialTheme.colorScheme.error)
-    when {
+    if (!group.multipart) when {
      item.installed -> Button(enabled = !busy, modifier = Modifier.fillMaxWidth(), onClick = { scope.launch {
       busy = true; error = null; message = null
       try {
@@ -208,6 +270,7 @@ fun DownloadsScreen(onBrowseModels: () -> Unit = {}) {
      }
     }
    } }
+  } }
   } }
   Text(uiText(UiR.string.ui_downloads_may_use_mobile_data_installed_models_keep_a_verified_ap_da870), style = MaterialTheme.typography.bodySmall)
  }

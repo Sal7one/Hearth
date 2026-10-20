@@ -28,6 +28,7 @@ internal data class BenchmarkDownloadProgress(
     companion object {
         fun forModel(model: SuggestedModel, all: List<FileDownload>): BenchmarkDownloadProgress? {
             val ids = when (model.kind) {
+                "speech" -> com.sal7one.transiber.models.SpeechComponents.find(model.id)?.parts?.map { it.id } ?: listOf(model.id)
                 "marian" -> MarianPackage.find(model.id)?.parts?.map { it.id }
                 "cascade" -> MarianCascade.find(model.id)?.let { route ->
                     (route.first.parts + route.second.parts).map { it.id }

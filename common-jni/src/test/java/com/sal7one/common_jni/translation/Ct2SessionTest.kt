@@ -9,7 +9,7 @@ import org.junit.Test
 
 class Ct2SessionTest {
     private class Driver : Ct2Runtime {
-        var protocol=1;var created=0;var destroyed=0;var cancelled=0;var output="translated"
+        var protocol=2;var created=0;var destroyed=0;var cancelled=0;var output="translated"
         var target="";var finish: (() -> Unit)?=null;var failure: Exception?=null
         override fun protocolVersion()=protocol
         override fun create(path: ByteArray,mode: Int): Long { created++;return 42 }
@@ -54,6 +54,24 @@ class Ct2SessionTest {
         }
         val old=Driver().apply { protocol=0 }
         assertThrows(IllegalStateException::class.java) { Ct2TranslationSession.openWithRuntime(root,spec,old) }
+        assertEquals(0,old.created)
+    }
+    @Test fun jisrDialectIsFrozenPerSessionAndCannotChangeTranslationDirection() = fixture { root,fixture ->
+        for (mode in listOf(2,4)) {
+            val spec=fixture.copy(tokenizerMode=mode,sources=setOf("en"),targets=setOf("ar"))
+            val driver=Driver()
+            Ct2TranslationSession.openWithRuntime(root,spec,driver,"ars").use { session ->
+                runBlocking { session.translate("Hello",TranslationDirection("en","ar")) }
+                assertEquals("ars",driver.target)
+                assertThrows(IllegalArgumentException::class.java) {
+                    runBlocking { session.translate("مرحبا",TranslationDirection("ar","en")) }
+                }
+            }
+            assertEquals(1,driver.destroyed)
+            assertThrows(IllegalArgumentException::class.java) { Ct2TranslationSession.openWithRuntime(root,spec,Driver(),"ar-SA") }
+        }
+        val old=Driver().apply { protocol=1 }
+        assertThrows(IllegalStateException::class.java) { Ct2TranslationSession.openWithRuntime(root,fixture,old) }
         assertEquals(0,old.created)
     }
 }

@@ -66,8 +66,8 @@ internal class PortableSetupActions(context: Context) {
                     val artifact = stage.model.catalogId?.let { checkNotNull(SpeechArtifactCatalog.find(it)) { "Unknown speech catalog reference: $it" } }
                     if (artifact != null) {
                         check(artifact.family == stage.model.family) { "Speech family does not match the catalog reference." }
-                        artifact.publisher?.profile?.let(com.sal7one.transiber.caption.SpeechAbiPolicy::requireSupported)
-                        check(artifact.publisher?.profile?.acceptsSource(stage.sourceLanguage) ?: (stage.sourceLanguage == "auto" || stage.sourceLanguage in artifact.languages)) { "The speech model does not support ${stage.sourceLanguage}." }
+                        artifact.profile?.let(com.sal7one.transiber.caption.SpeechAbiPolicy::requireSupported)
+                        check(artifact.profile?.acceptsSource(stage.sourceLanguage) ?: (stage.sourceLanguage == "auto" || stage.sourceLanguage in artifact.languages)) { "The speech model does not support ${stage.sourceLanguage}." }
                         engine = artifact.engine
                         installedSpeech = resolveCatalogSpeech(artifact, fullIntegrity)
                         if (installedSpeech == null) missingSpeech = artifact.id
@@ -126,7 +126,10 @@ internal class PortableSetupActions(context: Context) {
                     } else if (com.sal7one.common_jni.translation.Ct2Catalog.find(stage.modelId)!=null) {
                         val spec=checkNotNull(com.sal7one.common_jni.translation.Ct2Catalog.find(stage.modelId))
                         com.sal7one.transiber.translation.Ct2Package.requireRuntime(context)
-                        if(!com.sal7one.transiber.translation.Ct2Package.installed(context,spec)) missingTranslations += spec.id
+                        if(!com.sal7one.transiber.translation.Ct2Package.installed(context,spec)) {
+                            if (spec.downloadEnabled) missingTranslations += spec.id
+                            else issues += "Import the verified ${spec.label} runtime ZIP from the Hearth release in Models. Original training files cannot be installed."
+                        }
                         else if(fullIntegrity) spec.verify(com.sal7one.transiber.translation.Ct2Package.directory(context,spec))
                     } else {
                         val spec = TranslationCatalog.find(stage.modelId)
@@ -148,15 +151,12 @@ internal class PortableSetupActions(context: Context) {
                         com.sal7one.transiber.runtime.LocalModelPolicy.requireAllowed(context, "downloaded speech voices")
                         val family = voice.family ?: "supertonic"
                         val id = voice.voiceId ?: VoiceSettings.familyVoice(context, family)
-                        if (family == "magpie") {
-                            check(voice.gender == SpeakerGender.ANY) { context.uiText()(R.string.magpie_gender_unverified) }
-                            check(id in com.sal7one.hearth.tts.magpie.MagpieCatalog.speakers) { "Select a supported Magpie voice." }
-                            MagpiePolicy.requireAllowed(context,"portable Magpie setup")
-                            check(com.sal7one.hearth.tts.magpie.MagpieModels(File(context.filesDir, "voice-models/magpie")).ready()) { "Install Magpie weights, codec and tokenizer in Voices first." }
-                        } else {
-                            check(id in VoiceCatalog.voices) { "Select a supported Supertonic voice." }
-                            check(VoiceModels(File(context.filesDir, "voice-models")).ready(id, voice.gender.toVoiceGender())) { "Download or import Supertonic 3 and the requested voice in Voices first." }
+                        if (!LocalVoiceFamilies.verifiedGender(family)) {
+                            check(voice.gender == SpeakerGender.ANY) { if(family=="magpie")context.uiText()(R.string.magpie_gender_unverified) else context.uiText()(R.string.local_voice_gender_unverified,LocalVoiceFamilies.label(family)) }
                         }
+                        LocalVoiceFamilies.requireAllowed(context,family,"portable voice setup")
+                        check(id in LocalVoiceFamilies.voices(family)) { "Select a supported ${LocalVoiceFamilies.label(family)} voice." }
+                        check(LocalVoiceFamilies.ready(context,VoiceSettings.choice(context).copy(family=family,voice=id),voice.gender.toVoiceGender())) { "Install ${LocalVoiceFamilies.label(family)} and the requested voice in Voices first." }
                     }
                     CaptionSpeakerChoice.CLOUD -> {
                         check(ByokPolicy.FEATURE_BYOK) { "Cloud voice is unavailable in the offline build." }
@@ -171,9 +171,9 @@ internal class PortableSetupActions(context: Context) {
                             com.sal7one.transiber.runtime.LocalModelPolicy.requireAllowed(context, "downloaded speech voices")
                         if (backend == "supertonic") {
                             val saved = VoiceSettings.choice(context)
-                            if (saved.family == "magpie") {
-                                check(voice.gender == SpeakerGender.ANY) { context.uiText()(R.string.magpie_gender_unverified) }
-                                MagpiePolicy.requireAllowed(context,"portable shared Magpie setup")
+                            if (!LocalVoiceFamilies.verifiedGender(saved.family)) {
+                                check(voice.gender == SpeakerGender.ANY) { if(saved.family=="magpie")context.uiText()(R.string.magpie_gender_unverified) else context.uiText()(R.string.local_voice_gender_unverified,LocalVoiceFamilies.label(saved.family)) }
+                                LocalVoiceFamilies.requireAllowed(context,saved.family,"portable shared voice setup")
                             }
                             check(VoiceSettings.localReady(context, voice.gender.toVoiceGender())) { "Install the shared on-device voice in Voices first." }
                         }
@@ -195,7 +195,7 @@ internal class PortableSetupActions(context: Context) {
                     verifier.inspect(File(model.path), hash, fullIntegrity)
                 }?.id
         }
-        SpeechArtifactKind.PUBLISHER -> {
+        SpeechArtifactKind.PUBLISHER, SpeechArtifactKind.COMPONENTS -> {
             val snapshot = catalogInstallations.scan(listOf(artifact), emptyList(), speechStore.inspect().models,
                 fullIntegrity = fullIntegrity)
             snapshot.publisher[artifact.id]?.id.also {
@@ -226,7 +226,9 @@ internal class PortableSetupActions(context: Context) {
         val state = preview(setup); val downloads = FileDownloads(context)
         state.missingSpeechCatalogId?.let { id ->
             val artifact = checkNotNull(SpeechArtifactCatalog.find(id))
-            downloads.enqueue(DownloadSpec.parse(artifact.url, artifact.fileName), true, artifact.id)
+            val components = artifact.components
+            if (components != null) SpeechComponents.enqueue(context, downloads, components)
+            else downloads.enqueue(DownloadSpec.parse(artifact.url, artifact.fileName), true, artifact.id)
         }
         state.missingTranslationIds.forEach { id ->
             val pair = MarianPackage.find(id)
@@ -247,6 +249,9 @@ internal class PortableSetupActions(context: Context) {
             VoiceSettings.save(context, VoiceSettings.choice(context).copy(backend = "supertonic", family = family, voice = it.voiceId ?: VoiceSettings.familyVoice(context, family)))
         }
         CaptionConfigStore.update(context) { previous -> PortableSetupPlan.apply(previous, setup, state) }
+        setup.translation?.takeIf { it.modelId in setOf("ct2-jisr-50m-en-ar", "ct2-jisr-50m-en-ar-int8") }?.let { stage ->
+            ConversationTranslationSettings.setJisrDialect(context,stage.arabicDialect ?: "ar")
+        }
         setup.translation?.takeIf { it.enabled }?.let { stage ->
             val localId = if (stage.modelId.startsWith("provider-")) CaptionConfigStore.config(context).first().localTranslationModelId else stage.modelId
             check(UserPreferences.store(context, "typed-translation").edit()
@@ -265,7 +270,7 @@ internal class PortableSetupActions(context: Context) {
             SpeechModelPackage.verify(model.root)
             val family = SpeechArtifactCatalog.all.firstOrNull { it.engine == config.engine }?.family ?: error("Unsupported speech family")
             val known = SpeechArtifactCatalog.forEngine(config.engine).firstOrNull { artifact ->
-                artifact.publisher?.profile == model.profile && resolveCatalogSpeech(artifact, fullIntegrity = true) == model.id
+                artifact.profile == model.profile && resolveCatalogSpeech(artifact, fullIntegrity = true) == model.id
             }
             val ref = if (known != null) PortableModelRef(family, catalogId = known.id)
                 else ModelIntegrity.inspect(model.root).digest.let { PortableModelRef(family, profile = model.profile.id, sha256 = it.hex, digestKind = "tree") }
@@ -285,7 +290,8 @@ internal class PortableSetupActions(context: Context) {
         val translator = config.textTranslationProviderId.takeIf { it.isNotBlank() && it != "local" }?.let { "provider-$it" }
             ?: config.localTranslationModelId.takeIf { it.isNotBlank() }
         PortableSetup(name, speech, translator?.takeIf { includeTranslation }?.let { PortableTranslationStage(it, config.streamLanguage, config.target.languageTag,
-            config.mode == CaptionMode.TRANSLATE && config.localTranslationEnabled) },
+            config.mode == CaptionMode.TRANSLATE && config.localTranslationEnabled,
+            ConversationTranslationSettings.jisrDialect(context).takeIf { _ -> it in setOf("ct2-jisr-50m-en-ar", "ct2-jisr-50m-en-ar-int8") }) },
             if (includeVoice) PortableVoiceStage(config.speakCaptions, config.speakerChoice, config.speakerGender, config.speakerVolume,
                 VoiceSettings.choice(context).voice.takeIf { config.speakerChoice == CaptionSpeakerChoice.NATIVE },
                 VoiceSettings.choice(context).family.takeIf { config.speakerChoice == CaptionSpeakerChoice.NATIVE }) else null)

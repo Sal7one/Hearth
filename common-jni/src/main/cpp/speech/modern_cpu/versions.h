@@ -1,0 +1,3 @@
+#pragma once
+#define HEARTH_OWSM_REVISION "673ade451c9cba9c893fb0e606872d9dc44f21e3"
+#define HEARTH_AUDAR_REVISION "64e9bceb2c3a856efed96feda784a50947049feb"

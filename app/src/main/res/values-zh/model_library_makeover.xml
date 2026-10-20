@@ -1,0 +1,26 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="library_recommended">"推荐组合"</string>
+    <string name="library_all_models">"浏览全部"</string>
+    <string name="library_tools">"模型库工具"</string>
+    <string name="library_portable">"导入或导出配置"</string>
+    <string name="library_integrity">"文件与完整性"</string>
+    <string name="library_import">"导入模型"</string>
+    <string name="library_model_options">"模型选项"</string>
+    <string name="library_details">"详情、精度与来源"</string>
+    <string name="library_advanced">"引擎调节"</string>
+    <string name="library_download_options">"下载选项"</string>
+    <string name="library_download_location">"保存到 %1$s"</string>
+    <string name="library_files">"%1$d 个文件"</string>
+    <string name="library_file_actions">"文件与恢复"</string>
+    <string name="library_pause">"暂停"</string>
+    <string name="library_partial_download">"已下载 %1$d/%2$d 个文件"</string>
+    <string name="library_use_translator">"使用翻译模型"</string>
+    <string name="library_queue_hint">"下载通过校验后会自动安装。准备好后再选择使用已安装的模型。"</string>
+    <string name="library_empty_queue">"尚无下载"</string>
+    <string name="library_browse_models">"查找模型"</string>
+    <string name="library_open_voices">打开语音设置</string>
+    <string name="library_voice_ready">语音文件已就绪。在语音设置中选择引擎和声音即可启用。</string>
+    <string name="library_voice_setup_remaining">下载文件已安装。请打开语音设置以完成配置或修复缺失组件。</string>
+    <string name="library_imported_choose_model">已导入 %1$s。请选择已安装的模型以启用。</string>
+</resources>

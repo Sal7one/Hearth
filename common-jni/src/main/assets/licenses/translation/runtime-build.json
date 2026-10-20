@@ -11,27 +11,27 @@
   "binaries": {
     "arm64-v8a": {
       "name": "libtransiber_translation.so",
-      "bytes": 3904824,
-      "sha256": "5350fca5e9dc913a2d6883f36f2633d0d4c860c40757853f67b3af8be7666027",
-      "sourceSetSha256": "e56301cfb67c8d22ad3cb6eb63d58a1d829fdcaabe4bce8f8be12bfb309b3ce6"
+      "bytes": 3904808,
+      "sha256": "061659d77e57cb86535decb7c8d702e2296a99d7c22188d2617af3aaa3c69869",
+      "sourceSetSha256": "3f88097379a460fc6e0488ed9c378bf5b001ddf3a31cb7f66dbc45d2509418cc"
     },
     "armeabi-v7a": {
       "name": "libtransiber_translation.so",
-      "bytes": 2737040,
-      "sha256": "942572c128e57e1d679c1cdffeab11f0eb04d8a15625180b2583863ed62df98d",
-      "sourceSetSha256": "e56301cfb67c8d22ad3cb6eb63d58a1d829fdcaabe4bce8f8be12bfb309b3ce6"
+      "bytes": 2737024,
+      "sha256": "579e060cf84de1ff2da6b5498d034f2ae31812e535840d8285bb5b7d86fd6919",
+      "sourceSetSha256": "3f88097379a460fc6e0488ed9c378bf5b001ddf3a31cb7f66dbc45d2509418cc"
     },
     "x86": {
       "name": "libtransiber_translation.so",
       "bytes": 5291688,
-      "sha256": "ce77b27d74afdab09d5eb36cd2f7575e0f2065398a36c6d8197bbbe9a7af206c",
-      "sourceSetSha256": "e56301cfb67c8d22ad3cb6eb63d58a1d829fdcaabe4bce8f8be12bfb309b3ce6"
+      "sha256": "969e04cb6c0a04a1ee8749a9a4934ed425bf76203cb87cbed66104352a0d3a28",
+      "sourceSetSha256": "3f88097379a460fc6e0488ed9c378bf5b001ddf3a31cb7f66dbc45d2509418cc"
     },
     "x86_64": {
       "name": "libtransiber_translation.so",
       "bytes": 4321272,
-      "sha256": "f8eb845ee18a79dd3bb43a806124d9b13c6eb043ea5d39500c2dcd2c446103cb",
-      "sourceSetSha256": "e56301cfb67c8d22ad3cb6eb63d58a1d829fdcaabe4bce8f8be12bfb309b3ce6"
+      "sha256": "027ff067c6da3868ef8a79cf6e08df21d015cadaa380f4d80ad79cf0544267e4",
+      "sourceSetSha256": "3f88097379a460fc6e0488ed9c378bf5b001ddf3a31cb7f66dbc45d2509418cc"
     }
   },
   "sources": {
@@ -41,7 +41,7 @@
     "common-jni/src/main/cpp/translation/opencl_exports.map": "69d25087bceb0a47f68fb4e587f591eef7f31839b111a2b99ef8af8bec3841ba",
     "common-jni/src/main/cpp/translation/opencl_policy.h": "31f51e4f99ed485b0989c505936c527fe787763799eb5adf0d69518c363a166f",
     "common-jni/src/main/cpp/translation/opencl_text_model.h": "0dcb255ebc02bb58d34748a10166b9ad2b4e45651be8c8c01549dae716242d45",
-    "common-jni/src/main/cpp/translation/text_model.h": "42ab549bf79ac176eb723469debd9ed519f2f2d93336ad8bdd0cbbc7d947f7b0",
+    "common-jni/src/main/cpp/translation/text_model.h": "2249b3cd727ac067ba18373ef0200fe4f8e42cb5951c29b0eec4f06cde809a46",
     "common-jni/src/main/cpp/translation/translation_jni.cpp": "228708a9c9d50ddca30a5cb16a702e6555789716f9706e2e2f1fe48b6afa0999",
     "common-jni/src/main/cpp/translation/translation_smoke.cpp": "9d3376bf22c0df3e7383a48000b4322a37fbf132ee2f0555403a4b81a08fecf9",
     "common-jni/src/main/cpp/translation/vulkan_exports.map": "286ebb9c6cace46c6830df73f9e95097065ff127abe073b3433c6fe51d2b9cb4",
@@ -56,25 +56,25 @@
     "abi": "arm64-v8a",
     "binary": {
       "name": "libtransiber_translation_vulkan.so",
-      "bytes": 29808976,
-      "sha256": "188d943fd63714d2843c065e979bd869fbbb3c159756488b6e4f683d932095d2",
-      "sourceSetSha256": "e56301cfb67c8d22ad3cb6eb63d58a1d829fdcaabe4bce8f8be12bfb309b3ce6"
+      "bytes": 44629088,
+      "sha256": "ae0409896ecd4a38b636369a9d0b77ea4a1b9e0ab3d77cad5589bbb815d77c86",
+      "sourceSetSha256": "3f88097379a460fc6e0488ed9c378bf5b001ddf3a31cb7f66dbc45d2509418cc"
     },
     "dependencies": {
       "Vulkan-Headers": "19725e4d48082fe78e26622b15d3080ccd54112b",
       "SPIRV-Headers": "01e0577914a75a2569c846778c2f93aa8e6feddd"
     },
-    "shaderCompilerSha256": "8f00047f9343034a116838056ee950893055769399a0019b1648f2e01ce4930c",
-    "shaderCompilerVersion": "shaderc v2022.3 ndk-r27-rc1\nspirv-tools v2022.4 ndk-r27-rc1\nglslang ndk-r27-rc1\n\nTarget: SPIR-V 1.0",
+    "shaderCompilerSha256": "73f9f514345e732bee65d4b92043af384b34f26af3ed797e0afbfb4e1449f8ce",
+    "shaderCompilerVersion": "shaderc v2026.4 unknown hash, 2026-09-11\nspirv-tools v2026.4 v2022.4-1347-gef96ed76\nglslang 11.1.0-1566-ge1b562a8\n\nTarget: SPIR-V 1.0",
     "selection": "Explicit opt-in only; fail on missing GPU, allocation or model errors; no automatic CPU fallback"
   },
   "opencl": {
     "abi": "arm64-v8a",
     "binary": {
       "name": "libtransiber_translation_opencl.so",
-      "bytes": 8495480,
-      "sha256": "264d6960397fe5491df710f6caecf43e6b4cdc309310eb875b60d00ad9e656dd",
-      "sourceSetSha256": "e56301cfb67c8d22ad3cb6eb63d58a1d829fdcaabe4bce8f8be12bfb309b3ce6"
+      "bytes": 8495464,
+      "sha256": "80298d82adf33f9f92eb6e04e6c2215b478635b168d7c00dfb4eb9a5ce0f3589",
+      "sourceSetSha256": "3f88097379a460fc6e0488ed9c378bf5b001ddf3a31cb7f66dbc45d2509418cc"
     },
     "dependencies": {
       "OpenCL-Headers": "30bc20a8e90468e231d7c639805ae61ad1fefa4f"

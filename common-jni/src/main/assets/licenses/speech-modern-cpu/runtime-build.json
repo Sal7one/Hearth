@@ -1,0 +1,97 @@
+{
+  "abi": 2,
+  "architectures": [
+    "arm64-v8a"
+  ],
+  "runtimes": [
+    {
+      "backend": "owsm",
+      "sourceRepo": "https://github.com/0xShug0/audio.cpp",
+      "sourceRevision": "673ade451c9cba9c893fb0e606872d9dc44f21e3",
+      "adapterSources": {
+        "common-jni/src/main/cpp/common/audio_gate.h": "c688837ace59be06d3851be3cdf9af0859dfce4f0346ad267d89eb00875a15e2",
+        "common-jni/src/main/cpp/speech/backend_abi.h": "1abbaf5e7530ea8b1a5e5e89b471c51bdd5e9618d71c7a419ac8d42e1faed788",
+        "common-jni/src/main/cpp/speech/backends/backend_guard.h": "271f1d9d135b73835664614a67b3e0c676aa7aec992311986cb173a266172cbe",
+        "common-jni/src/main/cpp/speech/modern_cpu/owsm.map": "29b7a47460d594132d03ec3d618921aff4993e7738a39daa04e86a38105fb737",
+        "common-jni/src/main/cpp/speech/modern_cpu/owsm_backend.cpp": "7849ad1a673cd096967b758b7f0cf23ed20f94c2e44550e8ce3f21df2e6a858f",
+        "common-jni/src/main/cpp/speech/modern_cpu/versions.h": "0edb7d3350f80763fe0e4bd9f8d9176a7c31872a3ee51c4fed2c23de45761ca1",
+        "common-jni/src/main/cpp/speech/utterance_segmenter.h": "c7f9985392fc7a1ad7d59925ac69aa0b5832d3d2e65ec4cff87d47620b7bbdd3",
+        "scripts/speech/modern_cpu/build.sh": "21c4c33a8364f1f81cfb186144a1c2829e7b87d8f645f84d775dedb9cd386c60",
+        "scripts/speech/modern_cpu/owsm.cmake": "281da62d333c29890c71b112ed897cb87fb1dd91814f0221cbb72f8ec6531c26",
+        "scripts/speech/modern_cpu/prepare-owsm.py": "6cec3c42fa4163fcc48371c1d35ebf508c6372c0e025fa4735694a770262cc86",
+        "scripts/speech/modern_cpu/sources.py": "549a3103662d173cf461ae18c40b7f633c2069a9e4ecdc3d8bccf3f2ab22df38"
+      },
+      "publicExports": [
+        "hearth_owsm_backend_v1"
+      ],
+      "artifacts": [
+        {
+          "abi": "arm64-v8a",
+          "file": "libhearth_owsm.so",
+          "bytes": 3727280,
+          "sha256": "c87281132798901c6b82cb29b5fb5568eb3e24f9601258d7bf9dbc16f25c1b5a",
+          "acceleration": "cpu",
+          "dependencies": [
+            "liblog.so",
+            "libandroid.so",
+            "libm.so",
+            "libdl.so",
+            "libc++_shared.so",
+            "libc.so"
+          ],
+          "minPageAlignment": 16384,
+          "sourceSetSha256": "a2ec6ae7c2a451a4d60e7bb6e724c84487dc037761d7553522f5e83f84772f41"
+        }
+      ]
+    },
+    {
+      "backend": "audar_mtmd",
+      "sourceRepo": "https://github.com/ggml-org/llama.cpp",
+      "sourceRevision": "64e9bceb2c3a856efed96feda784a50947049feb",
+      "adapterSources": {
+        "common-jni/src/main/cpp/common/audio_gate.h": "c688837ace59be06d3851be3cdf9af0859dfce4f0346ad267d89eb00875a15e2",
+        "common-jni/src/main/cpp/speech/backend_abi.h": "1abbaf5e7530ea8b1a5e5e89b471c51bdd5e9618d71c7a419ac8d42e1faed788",
+        "common-jni/src/main/cpp/speech/backends/backend_guard.h": "271f1d9d135b73835664614a67b3e0c676aa7aec992311986cb173a266172cbe",
+        "common-jni/src/main/cpp/speech/modern_cpu/audar.map": "ed0e198a42d45f4a641391244cd6990781a6bbea56b754ff79e03eee963b94c7",
+        "common-jni/src/main/cpp/speech/modern_cpu/audar_backend.cpp": "6b64a31728e9a6cf9612a2863faea569fb1c4f3d6f52ddab6e1c20476abc2ad5",
+        "common-jni/src/main/cpp/speech/modern_cpu/audar_protocol.h": "9cd19d118cb47971e4b5ef1465264057050a30153cc9cef8b3871e61c64978b6",
+        "common-jni/src/main/cpp/speech/modern_cpu/versions.h": "0edb7d3350f80763fe0e4bd9f8d9176a7c31872a3ee51c4fed2c23de45761ca1",
+        "common-jni/src/main/cpp/speech/utterance_segmenter.h": "c7f9985392fc7a1ad7d59925ac69aa0b5832d3d2e65ec4cff87d47620b7bbdd3",
+        "scripts/speech/modern_cpu/audar.cmake": "7e7338b8a711fd8ab8789e71585700dc217a1dd6bbeb6e0b5fc179fc3b44162d",
+        "scripts/speech/modern_cpu/build.sh": "21c4c33a8364f1f81cfb186144a1c2829e7b87d8f645f84d775dedb9cd386c60",
+        "scripts/speech/modern_cpu/sources.py": "549a3103662d173cf461ae18c40b7f633c2069a9e4ecdc3d8bccf3f2ab22df38"
+      },
+      "publicExports": [
+        "hearth_audar_backend_v1"
+      ],
+      "artifacts": [
+        {
+          "abi": "arm64-v8a",
+          "file": "libhearth_audar.so",
+          "bytes": 4655912,
+          "sha256": "1df3b037b799c57db87f85c8687f419a5d92ce0a5243de75b2b829c0bef7401e",
+          "acceleration": "cpu",
+          "dependencies": [
+            "liblog.so",
+            "libandroid.so",
+            "libm.so",
+            "libdl.so",
+            "libc++_shared.so",
+            "libc.so"
+          ],
+          "minPageAlignment": 16384,
+          "sourceSetSha256": "c9a55ad13d66fffb5288d063cbbb164f6e0a1256bd304eaf0ec8dcb1f530efb9"
+        }
+      ]
+    }
+  ],
+  "deviceMeasured": false,
+  "selection": "CPU only; short bounded utterance finals; independent STT stage; no framework server, model manager or network runtime.",
+  "owsmPatches": [
+    "Strict base 102M dimensions only",
+    "Greedy output token exhaustion is an explicit error",
+    "Embedded assets cache beside app-private model folders, never inside immutable package"
+  ],
+  "audarEncoder": "Publisher BF16 projector contains 110 BF16 and 188 F32 tensors plus four F16 frontend tensors: a.conv2d.1.weight, a.conv2d.2.weight, a.conv2d.3.weight, a.conv_out.weight. Adapter accepts only those F16 exceptions; generic F16/quantized encoders are rejected.",
+  "ndk": "Pkg.Desc = Android NDK\nPkg.Revision = 27.0.12077973\nPkg.BaseRevision = 27.0.12077973\nPkg.ReleaseName = r27\n"
+}
