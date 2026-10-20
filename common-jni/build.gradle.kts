@@ -1,6 +1,5 @@
 plugins { alias(libs.plugins.android.library); alias(libs.plugins.kotlin.android) }
 android {
- packaging { jniLibs.excludes += "**/libonnxruntime.so" }
  namespace = "com.sal7one.common_jni"
  compileSdk = 36
  ndkVersion = "27.0.12077973"
@@ -15,6 +14,11 @@ android {
  }
  externalNativeBuild { cmake { path = file("src/main/cpp/CMakeLists.txt"); version = "3.22.1" } }
  compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
+}
+androidComponents.onVariants { variant ->
+ // The shared runtime AAR owns ORT for consumers. The self-instrumenting
+ // library test APK still needs its own copy to resolve libcommon_jni.so.
+ variant.packaging.jniLibs.testOnly.add("**/libonnxruntime.so")
 }
 kotlin { jvmToolchain(17) }
 dependencies {

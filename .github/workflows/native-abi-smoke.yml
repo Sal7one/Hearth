@@ -9,6 +9,12 @@ on:
       - 'app/build.gradle.kts'
       - 'app/src/main/AndroidManifest.xml'
       - 'scripts/test-android-abi.sh'
+      - 'scripts/verify-release.py'
+      - 'scripts/apk_delivery.py'
+      - 'scripts/test_apk_delivery.py'
+      - 'scripts/verify-android-test-apk.py'
+      - 'scripts/test_android_test_apk.py'
+      - 'hearth-onnx-runtime/**'
 permissions:
   contents: read
 jobs:
@@ -48,6 +54,8 @@ jobs:
       - uses: gradle/actions/setup-gradle@0b6dd653ba04f4f93bf581ec31e66cbd7dcb644d
       - name: Build the exact QA and library test APKs
         run: ./gradlew :app:assemblePlayQa :app:assembleFossQa :common-jni:assembleDebugAndroidTest
+      - name: Check self-instrumenting JNI dependencies
+        run: python3 scripts/verify-android-test-apk.py
       - run: python3 scripts/verify-release.py --build-type qa
       - name: Enable KVM in the disposable runner
         run: sudo chmod 666 /dev/kvm
@@ -67,3 +75,10 @@ jobs:
       - name: Print actual installation and JNI results
         if: always()
         run: test ! -f native-${{ matrix.abi }}.log || cat native-${{ matrix.abi }}.log
+      - name: Preserve installation and JNI diagnostics
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: native-abi-${{ matrix.abi }}-logs
+          path: native-${{ matrix.abi }}.log
+          if-no-files-found: ignore

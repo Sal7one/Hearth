@@ -18,12 +18,17 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.Saver
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.launch
 
 /** One labelled action, with an optional current value. Text grows instead of truncating. */
 @Composable
@@ -53,16 +58,47 @@ internal fun FeatureOptionsSheet(
     title: String, onDismiss: () -> Unit, scroll: ScrollState = rememberScrollState(),
     modifier: Modifier = Modifier,
     content: @Composable ColumnScope.() -> Unit,
+) = FeatureOptionsSheet(title, onDismiss, scroll, modifier,
+    rememberFeatureSheetPresentation(), content)
+
+/** A composed feature sheet is open even while its entrance is still in flight.
+ * Save that intent when its whole screen is suspended, rather than saving Hidden
+ * from the beginning of the animation. A fresh conditional opening still starts Hidden.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun rememberFeatureSheetPresentation(): SheetState {
+    val density = LocalDensity.current
+    return rememberSaveable(saver = Saver<SheetState, SheetValue>(
+        save = { SheetValue.Expanded },
+        restore = { SheetState(skipPartiallyExpanded = true, density = density, initialValue = it) },
+    )) { SheetState(skipPartiallyExpanded = true, density = density) }
+}
+
+/** The navigation owner may retain this presentation while a child page is visible. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+internal fun FeatureOptionsSheet(
+    title: String, onDismiss: () -> Unit, scroll: ScrollState = rememberScrollState(),
+    modifier: Modifier = Modifier,
+    sheetState: SheetState,
+    content: @Composable ColumnScope.() -> Unit,
 ) {
     val uiText = rememberUiText()
+    val scope = rememberCoroutineScope()
 
     ModalBottomSheet(onDismissRequest = onDismiss,
         contentColor = MaterialTheme.colorScheme.onSurface,
         containerColor = if(LocalColorfulUi.current) LocalFeatureTint.current.copy(alpha=.15f).compositeOver(MaterialTheme.colorScheme.surface) else MaterialTheme.colorScheme.surface,
-        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
+        sheetState = sheetState) {
         Row(Modifier.fillMaxWidth().padding(start = 20.dp, end = 8.dp), verticalAlignment = Alignment.CenterVertically) {
             Text(title, Modifier.weight(1f).semantics { heading() }, style = MaterialTheme.typography.titleLarge)
-            IconButton(onClick = onDismiss) { Icon(Icons.Default.Close, uiText(UiR.string.ui_close_1_s_93864, title)) }
+            IconButton(onClick = {
+                scope.launch {
+                    sheetState.hide()
+                    if (!sheetState.isVisible) onDismiss()
+                }
+            }) { Icon(Icons.Default.Close, uiText(UiR.string.ui_close_1_s_93864, title)) }
         }
         Column(modifier.fillMaxWidth().verticalScroll(scroll).imePadding().padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp), content = content)

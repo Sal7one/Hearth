@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.27.3 — 2026-10-20 · Setup, model families and settings navigation
+
+- Keep settings sheet presentation, scroll position and expanded options when returning from a child page; avoid replaying its opening animation. Preserve nested model/download navigation and explicit Home behavior.
+- Simplify STT, translation and TTS setup, retain Advanced controls, group downloads, and support portable JSON setups with independent pipeline stages and model readiness checks.
+- Include expanded speech/translation/TTS runtimes and the optional Arabic/English article-speech SDK. Keep experimental model quality, GPU/device performance and hosted Ming limitations explicit in the release notes.
+- Preserve the existing signed QA package for updates, verify all ten APKs, and group optional model packs, SDK libraries, presets and evidence on the official release page.
+- Correct build-tools 37 signature-report compatibility and disposable-emulator test packaging; retain strict signature, artifact integrity and offline FOSS checks.
+
+
 ## 0.25.4 draft — 2026-10-19 · Optional captions while translating
 
 - Add a saved **Show original while translating** switch beside Translation only on phone and TV. Keep it off by default; enable it to show available source captions until that line's translation arrives, then replace them with translated text.

@@ -87,12 +87,21 @@ class ArticleReaderTest {
     @Test(timeout = 10000) fun `slow consumer bounds production and cancellation releases native owner`() = runBlocking {
         val emitted = AtomicInteger(); val closedWhileRunning = AtomicInteger()
         val active = CountDownLatch(1); val finished = CountDownLatch(1)
+        val nativeCancelled = CountDownLatch(1)
         val engine = object : FakeEngine() {
             override fun synthesize(text: String, language: String, voice: SpeechVoice, options: SpeechOptions, cancellation: SpeechCancellation, emit: (PcmAudio) -> Unit) {
                 active.countDown()
                 try { repeat(100) { cancellation.throwIfCancelled(); emitted.incrementAndGet(); emit(PcmAudio(FloatArray(800), 8000)) } }
-                finally { finished.countDown() }
+                finally {
+                    // Keep a native owner alive until cancel() reaches it. Without this
+                    // handshake, aborting the blocked channel send may finish synthesis
+                    // before the reader checks whether native cancellation is still needed.
+                    try {
+                        if (cancellation.isCancelled) assertTrue("Native cancel must release inference", nativeCancelled.await(5, TimeUnit.SECONDS))
+                    } finally { finished.countDown() }
+                }
             }
+            override fun cancel() { super.cancel(); nativeCancelled.countDown() }
             override fun close() { if (finished.count != 0L) closedWhileRunning.incrementAndGet(); super.close() }
         }
         val reader = ArticleReader(engine); val receiving = CompletableDeferred<Unit>()
@@ -105,7 +114,7 @@ class ArticleReaderTest {
         assertTrue("PCM production must stay bounded", emitted.get() <= 3)
         withTimeout(5000) { collection.cancelAndJoin() }
         withTimeout(5000) { reader.closeAndJoin() }
-        assertTrue(engine.cancels.get() > 0)
+        assertTrue("A live native owner must receive cancellation", engine.cancels.get() > 0)
         assertEquals(0, closedWhileRunning.get())
         assertEquals(1, engine.closes.get())
     }

@@ -22,8 +22,10 @@ import com.sal7one.transiber.ui.components.FeatureOptionsSheet
 
 /** One shared setup sheet, reachable directly from every feature. */
 @Composable
+@OptIn(ExperimentalMaterial3Api::class)
 internal fun SettingsQuickSheet(
     scroll: ScrollState,
+    sheetState: SheetState,
     config: com.sal7one.transiber.caption.CaptionOverlayConfig,
     onDismiss: () -> Unit,
     onFeature: (SettingsLocation, SettingsFeature) -> Unit,
@@ -35,7 +37,7 @@ internal fun SettingsQuickSheet(
     val context = androidx.compose.ui.platform.LocalContext.current
 
     FeatureOptionsSheet(uiText(UiR.string.ui_settings_c7f73), onDismiss, scroll,
-        Modifier.semantics { testTagsAsResourceId = true }.testTag("quick-settings-sheet")) {
+        Modifier.semantics { testTagsAsResourceId = true }.testTag("quick-settings-sheet"), sheetState = sheetState) {
         OutlinedButton(onClick = {
             com.sal7one.transiber.caption.OverlayControlsActivity.open(context)
         }, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) { Text(uiText(UiR.string.overlay_controls_title)) }

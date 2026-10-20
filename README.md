@@ -14,21 +14,22 @@ hard-of-hearing users.
 
 ## Download
 
-The **0.26.0 draft** adds compact translation runtimes, more speech engines,
-shared TTS adapters and Ming hosted connections. [Draft build notes](docs/releases/0.26.0.md).
-The public installable downloads below remain the current published QA release.
+**[Hearth 0.27.3 — release notes and downloads](https://github.com/Sal7one/Hearth/releases/tag/v0.27.3)**
 
-**[Hearth 0.23.10 — release notes and SHA256SUMS](https://github.com/Sal7one/Hearth/releases/tag/v0.23.10)**
+Simpler speech, translation and voice setup, searchable model downloads, shared
+JSON setups, expanded model families and an Arabic/English article-speech SDK.
+Back returns directly to your settings sheet, keeping its position and options.
 
+Choose **ARM64** for Galaxy S25 Ultra, S22 Ultra and most modern phones.
 Choose **Universal** if you do not know your phone or TV's CPU.
 
-| CPU | Cloud + local | Offline only |
+| Device / edition | Cloud connections and local models | Offline imports only |
 | --- | --- | --- |
-| **Universal · recommended** | [Download APK](https://github.com/Sal7one/Hearth/releases/download/v0.23.10/hearth-0.23.10-play-qa-universal.apk) | [Download APK](https://github.com/Sal7one/Hearth/releases/download/v0.23.10/hearth-0.23.10-foss-qa-universal.apk) |
-| ARM64 | [Download APK](https://github.com/Sal7one/Hearth/releases/download/v0.23.10/hearth-0.23.10-play-qa-arm64-v8a.apk) | [Download APK](https://github.com/Sal7one/Hearth/releases/download/v0.23.10/hearth-0.23.10-foss-qa-arm64-v8a.apk) |
-| ARMv7 · 32-bit | [Download APK](https://github.com/Sal7one/Hearth/releases/download/v0.23.10/hearth-0.23.10-play-qa-armeabi-v7a.apk) | [Download APK](https://github.com/Sal7one/Hearth/releases/download/v0.23.10/hearth-0.23.10-foss-qa-armeabi-v7a.apk) |
-| x86_64 | [Download APK](https://github.com/Sal7one/Hearth/releases/download/v0.23.10/hearth-0.23.10-play-qa-x86_64.apk) | [Download APK](https://github.com/Sal7one/Hearth/releases/download/v0.23.10/hearth-0.23.10-foss-qa-x86_64.apk) |
-| x86 · 32-bit | [Download APK](https://github.com/Sal7one/Hearth/releases/download/v0.23.10/hearth-0.23.10-play-qa-x86.apk) | [Download APK](https://github.com/Sal7one/Hearth/releases/download/v0.23.10/hearth-0.23.10-foss-qa-x86.apk) |
+| **Modern phone · ARM64** | **[Download APK](https://github.com/Sal7one/Hearth/releases/download/v0.27.3/hearth-0.27.3-play-qa-arm64-v8a.apk)** | [Download APK](https://github.com/Sal7one/Hearth/releases/download/v0.27.3/hearth-0.27.3-foss-qa-arm64-v8a.apk) |
+| **TV or unknown CPU · Universal** | [Download APK](https://github.com/Sal7one/Hearth/releases/download/v0.27.3/hearth-0.27.3-play-qa-universal.apk) | [Download APK](https://github.com/Sal7one/Hearth/releases/download/v0.27.3/hearth-0.27.3-foss-qa-universal.apk) |
+
+Older ARMv7 and Intel builds, optional translation packs, SDK libraries, source and
+checksums are grouped on the [release page](https://github.com/Sal7one/Hearth/releases/tag/v0.27.3).
 
 Android 9+; device-audio capture requires Android 10+. Cloud + local includes
 optional provider connections and model downloads. Offline only has **no network
@@ -103,8 +104,8 @@ buttons over local artwork. **Speech setup** opens compact **Speech**, **Languag
 and **Voice** tabs; setup cards do not remain on the everyday dashboard. Saved
 configuration is read from the current settings, including after phone pairing.
 The Play build uses OpenAI in this TV setup flow, with one key reused
-for its official speech and voice endpoints. FOSS keeps its offline model and
-device-voice setup. Other providers and full settings remain available through
+for its official speech and voice endpoints. FOSS offers separately installed Android system voices; downloaded local models
+are blocked on TVs. Other providers and full settings remain available through
 **Full interface** in setup; **TV mode** brings the TV home back. In Speech, choose **Set up from phone · QR**,
 scan with iPhone or Android, paste the key and choose the three settings on the
 phone, then approve them on the TV. Both devices need the same private home
@@ -178,7 +179,9 @@ languages depend on the selected engine, independently of the interface language
 3. Accept Android's microphone, overlay or capture permissions when requested.
    Add translation or read-aloud only if you want them.
 
-Full model/provider choices are in **Settings → Local / Cloud**.
+Choose speech, translation and voice directly in the settings sheet.
+**Advanced** exposes detailed engine tuning and diagnostics; model browsing and
+imports remain available from their own screens.
 [Easy setup guide](docs/easy-setup.md).
 
 For quick access, add **Live captions** and **Screen translation** through
@@ -190,11 +193,11 @@ still applies, and some apps block capture. [Quick access guide](docs/quick-sett
 
 | Stage | Choices |
 | --- | --- |
-| **Local speech** | Nemotron 3.5 ASR, Qwen3-ASR, Whisper, Vosk, English Moonshine and Phonon 2, experimental Omnilingual CTC. |
-| **Local translation** | HY-MT1.5 / Hy-MT2, TranslateGemma 4B, experimental MiLMMT-46 1B, Marian / OPUS-MT language pairs and ML Kit packs in the cloud-capable build. |
+| **Local speech** | Nemotron 3.5 ASR, Qwen3-ASR, Whisper, Vosk, English Moonshine and Phonon 2, experimental Omnilingual CTC. Optional ARM64 families add Cohere Arabic, Fun-ASR MLT Nano, Voxtral Realtime, Audar Flash and OWSM. |
+| **Local translation** | HY-MT1.5 / Hy-MT2, TranslateGemma 4B, experimental MiLMMT-46 1B, Marian / OPUS-MT language pairs, QuickMT, SMaLL-100, Jisr, EuroLLM and Riva-Translate; ML Kit packs in the cloud-capable build. |
 | **Cloud speech / translation** | OpenAI, OpenRouter and compatible server connections; Soniox and ElevenLabs Scribe for speech. Separate text translators include Google Cloud, Azure, DeepL and LibreTranslate. |
 | **Local OCR** | PaddleOCR, Manga OCR and Meiki, with reader-specific language support. |
-| **Voices** | Android voices, local Supertonic 3, self-hosted Chatterbox/Qwen3-TTS/Fish, and cloud caption voices through OpenAI, OpenRouter, Google Gemini or ElevenLabs. |
+| **Voices** | Android voices, local Supertonic 3 plus optional Magpie, OmniVoice, MOSS Nano, Chatterbox and OuteTTS adapters; self-hosted Chatterbox/Qwen3-TTS/Fish, and cloud caption voices through OpenAI, OpenRouter, Google Gemini or ElevenLabs. |
 
 Use **Download & install** for catalogued models, including Phonon 2, or import a
 supported package. Downloads keep a verified app-owned model copy; the offline
@@ -216,7 +219,7 @@ by feature group; **Use everywhere** explicitly applies one across Hearth.
 - [Camera OCR](docs/camera-ocr.md) · [Caption cloud voices](docs/cloud-tts.md) · [Other voices](docs/voices.md)
 - [Model expansion and reusable TTS implementation handoff](docs/handoff/README.md):
   code maps, 15 pinned model cards, bounded agent assignments and acceptance gates.
-  The handoff distinguishes integrated paths from adapters still to implement.
+  The handoff records implemented paths, validation evidence and remaining device checks.
 
 ## Build
 

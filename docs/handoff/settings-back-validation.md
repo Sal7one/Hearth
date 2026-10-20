@@ -1,7 +1,10 @@
-# Settings Back navigation fix — 0.27.2 / code 92
+# Settings Back navigation and presentation — 0.27.3 / code 93
 
-Back from a page launched by the global settings sheet now restores that sheet,
+Back from a page launched by the global settings sheet restores that sheet,
 its scroll position, expanded inline options and original Home/feature context.
+Version 0.27.3 additionally retains the actual Material3 presentation state while
+a child page is visible, so Back does not replay the entrance animation. Only
+an explicit new opening creates a fresh presentation; normal Close still hides it.
 Model/download descendants unwind before the sheet returns. Nested settings
 visits retain separate return frames. Explicit Home, tab changes, deep links and
 native TV mode clear suspended returns.
@@ -14,7 +17,7 @@ substituted for a failed read. Caption, conversation, typed-translation and came
 sheets also keep their open state while visiting model/voice settings. External
 overlay controls and screen-reading setup preserve their originating sheet.
 
-## Executed checks
+## Original 0.27.2 checks
 
 - Focused host gate: 12 tests, no failures/errors/skips. Ten tests cover settings
   return history, nested pages, origins, restoration and invalid saved state.
@@ -34,7 +37,7 @@ overlay controls and screen-reading setup preserve their originating sheet.
 - Existing standalone AAR distribution verification passes for all eight unchanged
   SDK artifacts. No model, native runtime or SDK inference code changed.
 
-The new Android UI regression source compiles for both editions and covers
+The Android UI regression source compiles for both editions and covers
 system/toolbar Back from Home, Conversation and Translation; a scrolled sheet;
 child recreation; and the full Settings page's scroll position. It has not been
 executed on a device or emulator. It is guarded for disposable phone emulators;
@@ -56,9 +59,34 @@ gate passes with 37.0.0 selected explicitly. The required Gradle test/compile ga
 also passes. This follow-up changes no app code or uploaded release bytes; the
 signed `v0.27.2` tag continues to identify the settings fix at `1b1a27c`.
 
+## 0.27.3 CI and release follow-up
+
+Eight production Compose sheet regressions pass: scroll/inline state, delayed
+settings restoration, first-frame expanded presentation, new-opening animation,
+nested feature presentation, normal Close, and both global/nested navigation
+during an unfinished entrance. Together with ten return-history cases, these
+form 18 navigation regressions. The return-frame tests freeze the animation clock
+and lay out one frame; they do not wait for an entrance animation to finish.
+Controlled negatives reproduce Hidden on global return and nested content below
+the screen (896 px instead of 96 px); restoring the fixed source passes all eight.
+No private Material3 API, reflection or animation delay is used. All six app
+test configurations report 692 tests and no failures/errors (the existing
+Play skips remain 2 per configuration and FOSS skips 11). Both editions also
+compile the Android UI regression suite.
+
+The full test/compile gate, both QA assemblies and common-JNI test APK assembly
+passed in 2m53s. Log: `build/settings-presentation-0273-full-gates.log`.
+
+The self-instrumenting common-JNI APK now includes ONNX Runtime without adding a
+second copy to the consumer AAR. Its preflight checks all four CPU architectures;
+valid, missing-runtime, duplicate-member and wrong-ABI host cases pass. The SDK
+backpressure test uses a deterministic native-cancellation handshake, preserving
+the bounded queue and teardown assertions. Production SDK/native code is unchanged.
+CI retains test reports and installation logs for subsequent failures.
+
 ## Distribution and unchanged baseline
 
-The owner delivery is the tagged GitHub draft, with 22 grouped uploaded assets.
+The owner delivery is the official tagged GitHub release, with 22 grouped assets.
 Every APK remains directly downloadable. SDK, optional JSON setups and evidence
 stay in separate ZIPs. BUILD-PROVENANCE.json and SHA256SUMS bind the exact tagged
 commit, embedded APK revision, native pins, package contents and remote uploads.

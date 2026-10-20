@@ -178,6 +178,7 @@ class MainActivity : AppCompatActivity() {
     var homeDestination by rememberSaveable { mutableStateOf<Int?>(null) }
     var homeEntry by rememberSaveable { mutableIntStateOf(0) }
     var quickSettings by rememberSaveable { mutableStateOf(false) }
+    var quickSettingsSession by rememberSaveable { mutableIntStateOf(0) }
     var settingsReturns by rememberSaveable(stateSaver = listSaver(
      save = { history: List<SettingsSheetReturn> -> SettingsSheetReturn.saveHistory(history) },
      restore = { SettingsSheetReturn.restoreHistory(it) },
@@ -284,9 +285,10 @@ class MainActivity : AppCompatActivity() {
     BackHandler(enabled = !atHome && !tvHome && (simple || route.canGoBack || settingsReturns.isNotEmpty())) { back() }
     BackHandler(enabled = quickSettings && !tvUi && settingsConfig == null) { quickSettings = false }
     val readySettings = settingsConfig
-    RetainedSettingsSheet(visible = quickSettings && !tvUi, ready = readySettings != null) { scroll ->
+    RetainedSettingsSheet(visible = quickSettings && !tvUi, ready = readySettings != null,
+     presentationSession = quickSettingsSession, retainingForChild = settingsReturns.isNotEmpty()) { scroll, sheetState ->
      SettingsQuickSheet(
-      scroll = scroll, config = checkNotNull(readySettings),
+      scroll = scroll, sheetState = sheetState, config = checkNotNull(readySettings),
       onDismiss = { quickSettings = false },
       onFeature = { location, feature -> fromSettingsSheet { settingsFeature(location, feature) } },
       onTranslationModels = { fromSettingsSheet { localModels("Translation") } },
@@ -316,7 +318,7 @@ class MainActivity : AppCompatActivity() {
        if (simple && !atHome && !tvUi) IconButton(modifier = Modifier.testTag("app-home"), onClick = { home() }) { Icon(Icons.Default.Home, uiText(R.string.nav_home)) }
        if (television && fullInterface) TextButton(onClick = { fullInterface = false; home() }) { Text(uiText(R.string.tv_mode)) }
        if (!tvUi) SetupModePicker()
-       if (!tvUi) IconButton(modifier = Modifier.testTag("quick-settings-open"), onClick = { if (settingsConfigError != null) retrySettingsConfig(); quickSettings = true }) { Icon(Icons.Default.Settings, uiText(R.string.nav_quick_settings)) }
+       if (!tvUi) IconButton(modifier = Modifier.testTag("quick-settings-open"), onClick = { if (settingsConfigError != null) retrySettingsConfig(); quickSettingsSession++; quickSettings = true }) { Icon(Icons.Default.Settings, uiText(R.string.nav_quick_settings)) }
       })
     }, bottomBar = {
      if (!simple) NavigationBar {
