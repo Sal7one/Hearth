@@ -30,6 +30,11 @@ jobs:
         with:
           distribution: temurin
           java-version: 21
+      - name: Install Python host test dependencies
+        run: |
+          python3 -m venv "$RUNNER_TEMP/hearth-host-tests"
+          "$RUNNER_TEMP/hearth-host-tests/bin/python" -m pip install --only-binary=:all: "numpy==2.3.5"
+          echo "$RUNNER_TEMP/hearth-host-tests/bin" >> "$GITHUB_PATH"
       - run: bash common-jni/src/main/cpp/common/tests/run_common_utils_tests.sh
       - name: Speech host checks with Clang
         # Match the production NDK compiler family for the private Whisper API.

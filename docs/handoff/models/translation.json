@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "asOf": "2026-10-19",
+  "asOf": "2026-10-20",
   "category": "translation",
   "sizeScope": "Selected full model files and required inference tokenizer/configuration assets. Runtime binary, installation copy overhead, activations and KV caches are not included. Quantizations do not create additional model families.",
   "models": [
@@ -1040,7 +1040,7 @@
       ],
       "downloadBytes": 344075494,
       "runtime": {
-        "status": "integrated-unverified",
+        "status": "implemented-arm64-cpu-host-smoked",
         "targetBackend": "CTranslate2 4.8.3 CPU Ruy; ARM64 Android; 2 threads; bounded greedy decoder",
         "streaming": "Committed text segments; one complete result per input",
         "blockers": [

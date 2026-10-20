@@ -3,7 +3,7 @@
 Hearth's reusable API is `:hearth-tts`. It contains article splitting, voice
 selection, bounded PCM delivery and lifecycle handling. It contains no model,
 network client, Android audio player, app settings or automatic download code.
-The 0.27.0 build prepares the core AAR and separate optional provider AARs for
+The 0.27.1 build prepares the core AAR and separate optional provider AARs for
 integration testing. This is not a Maven publication or an Android system TTS service.
 First-party source follows the repository's [Apache-2.0 license](../LICENSE);
 model and native dependency licenses remain separate.

@@ -513,7 +513,7 @@ Languages: af, am, ar, ast, az, ba, be, bg, bn, br, bs, ca, ceb, cs, cy, da, de,
 
 Required source components: **344.075 MB** (344,075,494 bytes).
 
-Readiness: **integrated-unverified**. Target: CTranslate2 4.8.3 CPU Ruy; ARM64 Android; 2 threads; bounded greedy decoder.
+Readiness: **implemented-arm64-cpu-host-smoked**. Target: CTranslate2 4.8.3 CPU Ruy; ARM64 Android; 2 threads; bounded greedy decoder.
 
 Streaming: Committed text segments; one complete result per input.
 

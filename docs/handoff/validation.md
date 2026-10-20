@@ -3,7 +3,7 @@
 This is the current implementation evidence for `codex/s25-models-tts-provider`,
 which began from `v0.25.4` (`6c15890b284b6c74074d13d7d45d1311d0cf6035`).
 It supersedes the initial preparation-only checkpoint. The current app version is
-0.27.0/code90. A source build, a real host model run, owner device acceptance and
+0.27.1/code91. A source build, a real host model run, owner device acceptance and
 release publication remain distinct milestones.
 
 No agent has driven a phone/TV, used adb, completed owner listening or measured
@@ -32,7 +32,10 @@ inference or Maven publication has run here.
 | Final confirmation after Riva runtime and MOSS license correction | Passed: full tests, both QA compilations and assemblies in 2m55s, `build/roadmap-source-frozen-qa.log` |
 | Both QA assemblies and `python3 scripts/verify-release.py` | Passed for all ten ABI/universal artifacts: signatures/current QA package/version, native hashes/ELF/16 KiB alignment and permissions; FOSS remains offline. `build/roadmap-apk-verification.log` |
 | Final eight-AAR distribution check | Passed again after final builds: `build/roadmap-aar-final-verification.log` |
-| Tagged GitHub draft inputs | Final source, verified artifacts, model ZIPs and SDKs are ready for v0.27.0. Publication follows this frozen source snapshot; the draft's BUILD-PROVENANCE.json and SHA256SUMS bind the tested commit and delivered artifacts |
+| Remote v0.27.0 draft audit | All 63 uploaded asset sizes and SHA-256 digests match; signed tag, source archive and embedded APK revision all bind `ecd1dc02029f66570863633ad890d411f0b103f3`. The tag/artifacts remain unchanged |
+| Final card/CI metadata audit | v0.27.1 corrects stale documentary readiness after real model runs and installs NumPy2.3.5 in isolated CI Python environments. A clean Python3.12 venv passed all66 voice/Ming/catalog/ABI/delivery/speech/benchmark Python tests, all five JNI contract fixtures and Oute sanitized sampling. No Torch/ORT/model download is required for those contract checks |
+| v0.27.1 source-frozen confirmation | Full Gradle tests, both QA compiles/assemblies and all eight SDK release assemblies passed in2m29s (`build/roadmap-0271-final-gates.log`); ten APKs and eight AARs independently verified. Version91/0.27.1; runtime code/pins are unchanged from the v0.27.0 integration snapshot |
+| Tagged GitHub draft inputs | Final source, verified artifacts, model ZIPs and SDKs are prepared for v0.27.1. The draft's BUILD-PROVENANCE.json and SHA256SUMS bind its tested commit and delivered artifacts |
 | Owner device acceptance | Remains with the owner; no phone/TV/adb or listening/performance claim |
 
 Tests using loopback HTTP servers needed local socket access beyond this
@@ -158,4 +161,4 @@ Use the current Homebrew LLVM on this macOS host for sanitized tests: the older
 Apple sanitizer runtime previously hung before main. Production Android uses
 NDK27 Clang. Neither compiler choice removes sanitizer/assertion coverage.
 The final release goes to the owner-requested tagged GitHub draft; APKs are not
-sent in chat. This file will record those final gates after they actually pass.
+sent in chat. The draft validation assets record the executed gates and remaining owner-only checks.

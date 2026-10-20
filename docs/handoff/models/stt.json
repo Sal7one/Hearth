@@ -1,15 +1,15 @@
 {
   "schemaVersion": 1,
-  "asOf": "2026-10-19",
+  "asOf": "2026-10-20",
   "category": "stt",
-  "purpose": "Pinned implementation handoff; never merge these preparation cards into installable SpeechArtifactCatalog until runtime, package, language and device acceptance gates pass.",
+  "purpose": "Current pinned STT implementation and acceptance evidence. These documentary cards are not installable manifests; live catalog IDs identify the separately verified experimental app integrations.",
   "repoBaseline": {
     "branch": "release/v0.25.4",
     "commit": "6c15890b284b6c74074d13d7d45d1311d0cf6035",
     "scope": "baseline before concurrent implementation work; consult git diff for later changes"
   },
   "sizeUnit": "bytes, decimal MB/GB only for display; not peak RAM",
-  "provenance": "Component sizes and SHA-256 were read from public Hugging Face LFS metadata on the asOf date. Weight payloads were not downloaded or independently hashed during this handoff. Installers must verify actual downloaded bytes.",
+  "provenance": "Initial component sizes/SHA-256 came from pinned public Hugging Face metadata. The selected default profiles were subsequently downloaded and independently size/SHA-256 verified before real production-runtime host inference on 2026-10-20; per-model receipts identify the executed weights. Alternate quantization inventories do not imply real-weight testing. Installers still verify every downloaded byte.",
   "runtimeSourcePins": {
     "transcribe.cpp": {
       "repo": "https://github.com/handy-computer/transcribe.cpp",
@@ -104,10 +104,10 @@
         ],
         "sourceRepo": "https://github.com/handy-computer/transcribe.cpp",
         "sourceRevision": "1dc22facfc931e2f8adb43924b0e38b9c46f83c7",
-        "hearthIntegration": "not_implemented",
+        "hearthIntegration": "implemented",
         "proposedAbi": "HearthSpeechBackend v2",
         "proposedAbiScope": "arm64-v8a CPU first; Vulkan optional after real placement and parity checks",
-        "builtForAndroid": false,
+        "builtForAndroid": true,
         "ownerDeviceTested": false,
         "architecture": "cohere_asr",
         "variant": "cohere-transcribe-arabic-07-2026",
@@ -120,8 +120,11 @@
           "metal",
           "cuda"
         ],
-        "hearthGpu": [],
-        "implementationComplete": true
+        "hearthGpu": [
+          "vulkan"
+        ],
+        "implementationComplete": true,
+        "gpuValidation": "Android Vulkan DSO cross-built; load-time primary-backend placement checks implemented. Real-weight execution, speed and parity on owner GPU remain untested."
       },
       "license": {
         "name": "Apache-2.0",
@@ -156,9 +159,9 @@
         "https://github.com/handy-computer/transcribe.cpp/blob/1dc22facfc931e2f8adb43924b0e38b9c46f83c7/docs/models/cohere-transcribe-arabic-07-2026.md",
         "https://huggingface.co/api/models/handy-computer/cohere-transcribe-arabic-07-2026-gguf/revision/11a54d6895f94cce78d0ece142b8e552e7822539?blobs=true"
       ],
-      "catalogReadiness": "research_preparation_only",
+      "catalogReadiness": "integrated_experimental_host_smoked_owner_device_pending",
       "installEnabled": false,
-      "alreadyInHearth": false,
+      "alreadyInHearth": true,
       "phoneBenchmark": "not_measured",
       "recommendedDevice": "Samsung Galaxy S25 Ultra; Android TVs excluded from all local inference",
       "liveCatalogIds": [
@@ -281,7 +284,7 @@
           "opencl"
         ],
         "hearthGpu": [],
-        "sourcePinReason": "Existing Hearth translation pin contains tools/mtmd/models/qwen3a.cpp. Source presence is verified; Audar model execution on that pin is not yet tested.",
+        "sourcePinReason": "Pinned llama.cpp contains tools/mtmd/models/qwen3a.cpp. The separate Audar adapter was built for Android ARM64 CPU and executed the exact pinned Q4 decoder plus publisher projector through the production Hearth host session for Arabic/English/Auto/silence; see docs/research/stt-modern-cpu-smoke-2026-10-20.json. No owner-device or GPU inference claim.",
         "maxModelAudioMs": 30000,
         "actualAbi": "HearthSpeechBackend v2",
         "architectures": [
@@ -327,9 +330,9 @@
         "https://github.com/ggml-org/llama.cpp/blob/64e9bceb2c3a856efed96feda784a50947049feb/tools/mtmd/mtmd.h",
         "https://huggingface.co/api/models/audarai/Audar-ASR-V1-Flash/revision/54274d39245beba38f30048128e231d4176bd91d?blobs=true"
       ],
-      "catalogReadiness": "research_preparation_only",
+      "catalogReadiness": "integrated_experimental_host_smoked_owner_device_pending",
       "installEnabled": false,
-      "alreadyInHearth": false,
+      "alreadyInHearth": true,
       "phoneBenchmark": "not_measured",
       "recommendedDevice": "Samsung Galaxy S25 Ultra; Android TVs excluded from all local inference",
       "currentAppIntegration": {
@@ -399,10 +402,10 @@
         ],
         "sourceRepo": "https://github.com/handy-computer/transcribe.cpp",
         "sourceRevision": "1dc22facfc931e2f8adb43924b0e38b9c46f83c7",
-        "hearthIntegration": "not_implemented",
+        "hearthIntegration": "implemented",
         "proposedAbi": "HearthSpeechBackend v2",
         "proposedAbiScope": "arm64-v8a CPU first; Vulkan optional after real placement and parity checks",
-        "builtForAndroid": false,
+        "builtForAndroid": true,
         "ownerDeviceTested": false,
         "architecture": "voxtral_realtime",
         "variant": "voxtral-mini-4b-realtime-2602",
@@ -415,7 +418,9 @@
           "metal",
           "cuda"
         ],
-        "hearthGpu": [],
+        "hearthGpu": [
+          "vulkan"
+        ],
         "delayTokenMs": 80,
         "defaultDelayTokens": 6,
         "validatedDelayTokens": [
@@ -437,7 +442,8 @@
           30
         ],
         "minDecodeIntervalMsProposed": 500,
-        "implementationComplete": true
+        "implementationComplete": true,
+        "gpuValidation": "Android Vulkan DSO cross-built; load-time primary-backend placement checks implemented. Real-weight execution, speed and parity on owner GPU remain untested."
       },
       "license": {
         "name": "Apache-2.0",
@@ -472,9 +478,9 @@
         "https://github.com/handy-computer/transcribe.cpp/blob/1dc22facfc931e2f8adb43924b0e38b9c46f83c7/include/transcribe/voxtral_realtime.h",
         "https://huggingface.co/api/models/handy-computer/Voxtral-Mini-4B-Realtime-2602-gguf/revision/7fd3d424fc558edca2c53808578b0541ef52a81a?blobs=true"
       ],
-      "catalogReadiness": "research_preparation_only",
+      "catalogReadiness": "integrated_experimental_host_smoked_owner_device_pending",
       "installEnabled": false,
-      "alreadyInHearth": false,
+      "alreadyInHearth": true,
       "phoneBenchmark": "not_measured",
       "recommendedDevice": "Samsung Galaxy S25 Ultra; Android TVs excluded from all local inference",
       "liveCatalogIds": [
@@ -614,10 +620,10 @@
         ],
         "sourceRepo": "https://github.com/handy-computer/transcribe.cpp",
         "sourceRevision": "1dc22facfc931e2f8adb43924b0e38b9c46f83c7",
-        "hearthIntegration": "not_implemented",
+        "hearthIntegration": "implemented",
         "proposedAbi": "HearthSpeechBackend v2",
         "proposedAbiScope": "arm64-v8a CPU first; Vulkan optional after real placement and parity checks",
-        "builtForAndroid": false,
+        "builtForAndroid": true,
         "ownerDeviceTested": false,
         "architecture": "funasr_nano",
         "variant": "fun-asr-mlt-nano-2512",
@@ -630,8 +636,11 @@
           "metal",
           "cuda"
         ],
-        "hearthGpu": [],
-        "implementationComplete": true
+        "hearthGpu": [
+          "vulkan"
+        ],
+        "implementationComplete": true,
+        "gpuValidation": "Android Vulkan DSO cross-built; load-time primary-backend placement checks implemented. Real-weight execution, speed and parity on owner GPU remain untested."
       },
       "license": {
         "name": "FunASR Model Open Source License Agreement v1.1 (selected GGUF); upstream HF metadata currently says Apache-2.0",
@@ -666,9 +675,9 @@
         "https://github.com/handy-computer/transcribe.cpp/blob/1dc22facfc931e2f8adb43924b0e38b9c46f83c7/docs/models/fun-asr-mlt-nano-2512.md",
         "https://huggingface.co/api/models/handy-computer/Fun-ASR-MLT-Nano-2512-gguf/revision/5db7c5bcebbc70d6c372e825399c3019f6089af7?blobs=true"
       ],
-      "catalogReadiness": "research_preparation_only",
+      "catalogReadiness": "integrated_experimental_host_smoked_owner_device_pending",
       "installEnabled": false,
-      "alreadyInHearth": false,
+      "alreadyInHearth": true,
       "phoneBenchmark": "not_measured",
       "recommendedDevice": "Samsung Galaxy S25 Ultra; Android TVs excluded from all local inference",
       "liveCatalogIds": [
@@ -787,9 +796,9 @@
         "https://github.com/0xShug0/audio.cpp/blob/673ade451c9cba9c893fb0e606872d9dc44f21e3/include/audiocpp.h",
         "https://huggingface.co/api/models/audio-cpp/audio.cpp-gguf/revision/661a224e9d9adbd49c01626f85e426f5f425d771?blobs=true"
       ],
-      "catalogReadiness": "research_preparation_only",
+      "catalogReadiness": "integrated_experimental_host_smoked_owner_device_pending",
       "installEnabled": false,
-      "alreadyInHearth": false,
+      "alreadyInHearth": true,
       "phoneBenchmark": "not_measured",
       "recommendedDevice": "Samsung Galaxy S25 Ultra; Android TVs excluded from all local inference",
       "currentAppIntegration": {

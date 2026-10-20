@@ -25,6 +25,11 @@ jobs:
           java-version: |
             17
             21
+      - name: Install Python host test dependencies
+        run: |
+          python3 -m venv "$RUNNER_TEMP/hearth-host-tests"
+          "$RUNNER_TEMP/hearth-host-tests/bin/python" -m pip install --only-binary=:all: "numpy==2.3.5"
+          echo "$RUNNER_TEMP/hearth-host-tests/bin" >> "$GITHUB_PATH"
       - uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407 # v3
         with:
           # The action defaults to the retired SDK package "tools".

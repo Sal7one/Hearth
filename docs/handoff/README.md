@@ -89,7 +89,7 @@ corpus quality score or a phone benchmark.
 - [x] New model publisher/files/license URL audit; one missing MOSS license path corrected to its verified pinned upstream license.
 - [x] Both QA APK assemblies and APK delivery verification, including all ten ABI/universal packages.
 - [ ] Owner S25 Ultra/S22 Ultra/TV checks, listening, quality, sustained latency, peak memory and heat.
-- [x] Frozen v0.27.0 draft inputs: tested source, verified APKs, SDKs and model ZIPs. Publication and remote digest checks follow this source commit; artifacts belong on GitHub, not in chat.
+- [x] Verified v0.27.0 draft: all 63 remote asset sizes and SHA-256 digests match their local records. Final card/CI metadata corrections are included in the v0.27.1 patch draft; artifacts belong on GitHub, not in chat.
 
 [Ming-3.0](../ming-3.0.md) is a separate five-checkpoint **hosted** expansion,
 with [pinned model/source profiles](../models/ming-3.0.json): TTS 0.5B, TTS Tiny,
