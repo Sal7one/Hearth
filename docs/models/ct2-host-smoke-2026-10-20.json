@@ -1,0 +1,285 @@
+{
+  "schemaVersion": 1,
+  "asOf": "2026-10-20",
+  "category": "translation-host-smoke",
+  "scope": "Real selected weights through production Ct2Model; public synthetic samples; no Android/S25 or corpus quality score. Cold process timings include model construction, tokenization and decode, excluding download/hash verification.",
+  "host": "macOS-26.5-arm64-arm-64bit-Mach-O",
+  "nativeRuntime": {
+    "ctranslate2": "4.8.3",
+    "backend": "CPU Ruy",
+    "threads": 2,
+    "beamSize": 1,
+    "maxInputTokensBeforeSpecials": 1022,
+    "maxOutputTokens": 384,
+    "generationDeadlineSeconds": 20,
+    "androidAbi": "arm64-v8a",
+    "androidDsoSha256": "0d28d820928339420e7e8515e7623785322f69c45b6f2f2761f626ed48ebd004",
+    "hostBinarySha256": "652e799b1fdeaf92dfb37d7cbc3cf3badccabd1dc224823bc0c0d538a584def8"
+  },
+  "preprocessingAudit": {
+    "quickmtClientRevision": "5fe386f1d24a42fce4f7115726fb4b51ee83c054",
+    "quickmtClientSource": "https://github.com/quickmt/quickmt/blob/5fe386f1d24a42fce4f7115726fb4b51ee83c054/quickmt/translator.py#L339-L350",
+    "quickmt": "Source SentencePiece string pieces plus </s>; no source BOS; separate target SentencePiece decode; disable_unk=true. CT2 config add_source_eos=false disables automatic append, not the client append.",
+    "small100": "Target-language __code__ then shared SentencePiece string pieces plus </s>; no forced decoder language prefix; INT8_FLOAT32; disable_unk remains runtime default false.",
+    "small100LanguageInventory": "All 100 declared native target tokens exist in the pinned shared vocabulary, including tl and ns."
+  },
+  "models": [
+    {
+      "schemaVersion": 1,
+      "date": "2026-10-20",
+      "family": "quickmt",
+      "host": "macOS-26.5-arm64-arm-64bit-Mach-O",
+      "machine": "arm64",
+      "binary": "build/ct2-runtime/host/ct2_smoke",
+      "binarySha256": "652e799b1fdeaf92dfb37d7cbc3cf3badccabd1dc224823bc0c0d538a584def8",
+      "scope": "Public synthetic sample smoke; wall time includes model construction/startup; not an Android benchmark or quality score",
+      "components": [
+        {
+          "filename": "model.bin",
+          "remoteFilename": "model.bin",
+          "repo": "quickmt/quickmt-en-ar",
+          "revision": "37f2b37486c29b457971295d7711b5ac1869775d",
+          "url": "https://huggingface.co/quickmt/quickmt-en-ar/resolve/37f2b37486c29b457971295d7711b5ac1869775d/model.bin",
+          "bytes": 360843109,
+          "sha256": "2b053bf9e989a3685f902eafac1d8128f8fcf833b90fdd142254f08bd73ca5af",
+          "role": "weights",
+          "required": true,
+          "verified": true
+        },
+        {
+          "filename": "config.json",
+          "remoteFilename": "config.json",
+          "repo": "quickmt/quickmt-en-ar",
+          "revision": "37f2b37486c29b457971295d7711b5ac1869775d",
+          "url": "https://huggingface.co/quickmt/quickmt-en-ar/resolve/37f2b37486c29b457971295d7711b5ac1869775d/config.json",
+          "bytes": 223,
+          "sha256": "66edc5d58ceb812a41b4b784497001f815c35400884f40984b19de29e1bc3d69",
+          "role": "configuration",
+          "required": true,
+          "verified": true
+        },
+        {
+          "filename": "source_vocabulary.json",
+          "remoteFilename": "source_vocabulary.json",
+          "repo": "quickmt/quickmt-en-ar",
+          "revision": "37f2b37486c29b457971295d7711b5ac1869775d",
+          "url": "https://huggingface.co/quickmt/quickmt-en-ar/resolve/37f2b37486c29b457971295d7711b5ac1869775d/source_vocabulary.json",
+          "bytes": 339573,
+          "sha256": "59b2accfaba2b0a8171deed0cce56afdf41d5d724da68c63057b2035c512cbbe",
+          "role": "tokenizer",
+          "required": true,
+          "verified": true
+        },
+        {
+          "filename": "target_vocabulary.json",
+          "remoteFilename": "target_vocabulary.json",
+          "repo": "quickmt/quickmt-en-ar",
+          "revision": "37f2b37486c29b457971295d7711b5ac1869775d",
+          "url": "https://huggingface.co/quickmt/quickmt-en-ar/resolve/37f2b37486c29b457971295d7711b5ac1869775d/target_vocabulary.json",
+          "bytes": 731023,
+          "sha256": "5437c4de92543211144f9319f234bf2bcacda2ea454c3b26453da97d4d76e833",
+          "role": "tokenizer",
+          "required": true,
+          "verified": true
+        },
+        {
+          "filename": "src.spm.model",
+          "remoteFilename": "src.spm.model",
+          "repo": "quickmt/quickmt-en-ar",
+          "revision": "37f2b37486c29b457971295d7711b5ac1869775d",
+          "url": "https://huggingface.co/quickmt/quickmt-en-ar/resolve/37f2b37486c29b457971295d7711b5ac1869775d/src.spm.model",
+          "bytes": 589684,
+          "sha256": "acf054421b5ed52bd6aee14564fb8595b9a6b492df669e971d43fba9edb33c16",
+          "role": "tokenizer",
+          "required": true,
+          "verified": true
+        },
+        {
+          "filename": "tgt.spm.model",
+          "remoteFilename": "tgt.spm.model",
+          "repo": "quickmt/quickmt-en-ar",
+          "revision": "37f2b37486c29b457971295d7711b5ac1869775d",
+          "url": "https://huggingface.co/quickmt/quickmt-en-ar/resolve/37f2b37486c29b457971295d7711b5ac1869775d/tgt.spm.model",
+          "bytes": 642429,
+          "sha256": "c7b8bf117088a901628696f60ddd15e047057ccbdcf9b0996ca19e2779a234c7",
+          "role": "tokenizer",
+          "required": true,
+          "verified": true
+        }
+      ],
+      "samples": [
+        {
+          "source": "en",
+          "target": "ar",
+          "input": "The meeting starts at nine in the morning.",
+          "output": "يبدأ الاجتماع في الساعة التاسعة صباحا.",
+          "stderr": "",
+          "exitCode": 0,
+          "elapsedSeconds": 0.4189
+        },
+        {
+          "source": "en",
+          "target": "ar",
+          "input": "Please turn left at the next street.",
+          "output": "من فضلك انعطف يساراً في الشارع التالي",
+          "stderr": "",
+          "exitCode": 0,
+          "elapsedSeconds": 0.3365
+        },
+        {
+          "source": "en",
+          "target": "ar",
+          "input": "Dr. Ahmed has 25 books in Riyadh, and Sarah has 10.",
+          "output": "الدكتور أحمد لديه 25 كتابا في الرياض، وسارة لديها 10 كتب.",
+          "stderr": "",
+          "exitCode": 0,
+          "elapsedSeconds": 0.3952
+        },
+        {
+          "source": "en",
+          "target": "ar",
+          "input": "",
+          "output": "",
+          "stderr": "CT2 input must contain 1–12000 UTF-8 bytes",
+          "exitCode": 1,
+          "elapsedSeconds": 0.2167
+        }
+      ],
+      "passed": true
+    },
+    {
+      "schemaVersion": 1,
+      "date": "2026-10-20",
+      "family": "small100",
+      "host": "macOS-26.5-arm64-arm-64bit-Mach-O",
+      "machine": "arm64",
+      "binary": "build/ct2-runtime/host/ct2_smoke",
+      "binarySha256": "652e799b1fdeaf92dfb37d7cbc3cf3badccabd1dc224823bc0c0d538a584def8",
+      "scope": "Public synthetic sample smoke; wall time includes model construction/startup; not an Android benchmark or quality score",
+      "components": [
+        {
+          "filename": "model.bin",
+          "remoteFilename": "model.bin",
+          "repo": "solavr/small100-ctranslate2-int8",
+          "revision": "3c5af8e17d5c4f35bda849b7ffceaa1dfc62eb84",
+          "url": "https://huggingface.co/solavr/small100-ctranslate2-int8/resolve/3c5af8e17d5c4f35bda849b7ffceaa1dfc62eb84/model.bin",
+          "bytes": 338727246,
+          "sha256": "24e8b51720b7267cfd8faacedce50128bf11c4327f039632a494deb5e1c421f6",
+          "role": "weights",
+          "required": true,
+          "verified": true
+        },
+        {
+          "filename": "config.json",
+          "remoteFilename": "config.json",
+          "repo": "solavr/small100-ctranslate2-int8",
+          "revision": "3c5af8e17d5c4f35bda849b7ffceaa1dfc62eb84",
+          "url": "https://huggingface.co/solavr/small100-ctranslate2-int8/resolve/3c5af8e17d5c4f35bda849b7ffceaa1dfc62eb84/config.json",
+          "bytes": 233,
+          "sha256": "72901fbd8abd89fb5cf4a388f26fc681f5c4c58a1e1a88b30b879f107270e7ee",
+          "role": "configuration",
+          "required": true,
+          "verified": true
+        },
+        {
+          "filename": "sentencepiece.bpe.model",
+          "remoteFilename": "sentencepiece.bpe.model",
+          "repo": "solavr/small100-ctranslate2-int8",
+          "revision": "3c5af8e17d5c4f35bda849b7ffceaa1dfc62eb84",
+          "url": "https://huggingface.co/solavr/small100-ctranslate2-int8/resolve/3c5af8e17d5c4f35bda849b7ffceaa1dfc62eb84/sentencepiece.bpe.model",
+          "bytes": 2423393,
+          "sha256": "d8f7c76ed2a5e0822be39f0a4f95a55eb19c78f4593ce609e2edbc2aea4d380a",
+          "role": "tokenizer",
+          "required": true,
+          "verified": true
+        },
+        {
+          "filename": "shared_vocabulary.json",
+          "remoteFilename": "shared_vocabulary.json",
+          "repo": "solavr/small100-ctranslate2-int8",
+          "revision": "3c5af8e17d5c4f35bda849b7ffceaa1dfc62eb84",
+          "url": "https://huggingface.co/solavr/small100-ctranslate2-int8/resolve/3c5af8e17d5c4f35bda849b7ffceaa1dfc62eb84/shared_vocabulary.json",
+          "bytes": 2924622,
+          "sha256": "18916ac68f9ac8fbd5250ca603dcb3861aac8672924d93a8dadc82eb3147f941",
+          "role": "tokenizer",
+          "required": true,
+          "verified": true
+        }
+      ],
+      "samples": [
+        {
+          "source": "en",
+          "target": "ar",
+          "input": "The meeting starts at nine in the morning.",
+          "output": "ويبدأ الاجتماع في الساعة التاسعة صباحاً.",
+          "stderr": "",
+          "exitCode": 0,
+          "elapsedSeconds": 0.297
+        },
+        {
+          "source": "en",
+          "target": "ar",
+          "input": "Please turn left at the next street.",
+          "output": "يرجى التوجه اليسار في الشارع التالي.",
+          "stderr": "",
+          "exitCode": 0,
+          "elapsedSeconds": 0.2771
+        },
+        {
+          "source": "en",
+          "target": "ar",
+          "input": "Dr. Ahmed has 25 books in Riyadh, and Sarah has 10.",
+          "output": "الدكتور أحمد لديه 25 كتابا في الرياض، والسارة لديها 10 كتابا.",
+          "stderr": "",
+          "exitCode": 0,
+          "elapsedSeconds": 0.3066
+        },
+        {
+          "source": "ar",
+          "target": "en",
+          "input": "مرحبا، أريد قراءة هذا المقال باللغة العربية.",
+          "output": "Hello, I want to read this article in Arabic.",
+          "stderr": "",
+          "exitCode": 0,
+          "elapsedSeconds": 0.2638
+        },
+        {
+          "source": "ar",
+          "target": "en",
+          "input": "سأعود إلى المنزل بعد انتهاء العمل.",
+          "output": "I will return home after the work is over.",
+          "stderr": "",
+          "exitCode": 0,
+          "elapsedSeconds": 0.2409
+        },
+        {
+          "source": "ar",
+          "target": "en",
+          "input": "قَرَأَ أَحْمَدُ ٢٥ كِتابًا في الرياض.",
+          "output": "I read 25 books in Riyadh.",
+          "stderr": "",
+          "exitCode": 0,
+          "elapsedSeconds": 0.2576
+        },
+        {
+          "source": "en",
+          "target": "ar",
+          "input": "",
+          "output": "",
+          "stderr": "CT2 input must contain 1–12000 UTF-8 bytes",
+          "exitCode": 1,
+          "elapsedSeconds": 0.1366
+        }
+      ],
+      "passed": true
+    }
+  ],
+  "limitations": [
+    "Only QuickMT English-to-Arabic selected weights executed; QuickMT Arabic-to-English package remains untested.",
+    "SMaLL tested only six short Arabic/English translations; other language quality is unmeasured.",
+    "One diacritized Arabic sample lost Ahmed and changed third person to first person. Arabic grammar/name weaknesses are visible in exact output.",
+    "This smoke rejected empty input with nonzero exit and stderr. It did not deliberately force the 20-second deadline or exercise in-flight native cancellation; focused driver/lifecycle tests cover surfaced errors and stale-result rejection.",
+    "No official Python output parity run, sustained overlay/concurrency test, phone memory/thermal run, S25 timing, BLEU/COMET/WER or GPU inference claim."
+  ],
+  "weightsRetained": false
+}

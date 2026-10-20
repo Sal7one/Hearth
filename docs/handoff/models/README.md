@@ -2,7 +2,7 @@
 
 Generated from the three pinned JSON inventories by `python3 scripts/validate-model-handoff.py --render`.
 
-These are implementation records. Two GGUF translators have branch integrations pending real inference checks; the other new adapters remain planned. No S25 results are claimed. Component totals describe required source downloads; they can include conversion-only archives, rather than the final installed footprint.
+These are implementation records. Each card states its current runtime readiness and remaining checks; integrated adapters and planned targets are both included. No S25 results are claimed. Component totals describe required source downloads; they can include conversion-only archives, rather than the final installed footprint.
 
 ## STT
 
@@ -339,7 +339,7 @@ License: [CC-BY-4.0](https://huggingface.co/quickmt/quickmt-en-ar).
 
 Required work:
 
-- Exact QuickMT/SMaLL weight inference and Arabic/English parity have not run; owner S25 measurements pending
+- QuickMT AR→EN production weights and official Python output parity have not run; owner S25 sustained quality/latency/memory testing pending
 - ARM64 only; 32-bit/other ABI activation and transfers rejected
 
 | Component | Role | Bytes | Required | Source |
@@ -384,6 +384,7 @@ Sources:
 - [Source 2](https://huggingface.co/quickmt/quickmt-ar-en)
 - [Source 3](https://github.com/OpenNMT/CTranslate2)
 - [Source 4](https://github.com/quickmt/quickmt)
+- [Source 5](https://github.com/quickmt/quickmt/blob/5fe386f1d24a42fce4f7115726fb4b51ee83c054/quickmt/translator.py)
 
 ### EuroLLM 1.7B Instruct
 
@@ -514,7 +515,7 @@ License: [MIT](https://huggingface.co/solavr/small100-ctranslate2-int8/blob/3c5a
 
 Required work:
 
-- Exact QuickMT/SMaLL weight inference and Arabic/English parity have not run; owner S25 measurements pending
+- Official Python output parity, broad language/Arabic quality and owner S25 sustained latency/memory testing pending; sample exposed subject loss with diacritics
 - ARM64 only; 32-bit/other ABI activation and transfers rejected
 
 | Component | Role | Bytes | Required | Source |

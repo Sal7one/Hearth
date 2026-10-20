@@ -8,7 +8,7 @@ Hearth now includes an optional **ARM64 CPU CTranslate2 4.8.3 runtime** with Ruy
 | `ct2-quickmt-ar-en` | Arabic → English | 6 | 410,561,529 bytes |
 | `ct2-small100-int8` | 100 languages including Arabic/English | 4 | 344,075,494 bytes |
 
-These are experimental integrations awaiting exact production-weight parity and owner S25 measurements. The native host runtime executed the real upstream Arabic transliteration fixture with FLOAT32 and INT8_FLOAT32. That is runtime evidence, not a QuickMT/SMaLL translation score.
+These remain experimental integrations awaiting official reference-output parity and owner S25 measurements. The exact pinned QuickMT EN→AR and SMaLL INT8 production packages now passed [native host sample inference](ct2-host-smoke-2026-10-20.md), including both SMaLL Arabic/English directions and empty-input rejection. The samples exposed a QuickMT EOS preprocessing mismatch, now corrected, and a SMaLL subject-loss error with Arabic diacritics. QuickMT AR→EN weights have not run. The separate upstream Arabic fixture passed FLOAT32 and INT8_FLOAT32. These checks are not translation scores or phone benchmarks.
 
 QuickMT computes stored FP16 weights as FLOAT32, so runtime memory exceeds the download size. SMaLL computes INT8_FLOAT32. Both use greedy decoding, two CPU threads, at most one queued native batch, a 20-second generation deadline, 1022 source tokens, 384 output tokens and one complete nonempty result per call. Cancellation/deadline/length limits never publish a partial translation as success. CT2 exposes no Adreno GPU backend here.
 

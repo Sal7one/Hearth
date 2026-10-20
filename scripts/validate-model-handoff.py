@@ -94,7 +94,7 @@ def compact(value):
 def render(inventories):
     lines = ["# Hearth model implementation cards", "",
              "Generated from the three pinned JSON inventories by `python3 scripts/validate-model-handoff.py --render`.", "",
-             "These are implementation records. Two GGUF translators have branch integrations pending real inference checks; the other new adapters remain planned. No S25 results are claimed. Component totals describe required source downloads; they can include conversion-only archives, rather than the final installed footprint.", ""]
+             "These are implementation records. Each card states its current runtime readiness and remaining checks; integrated adapters and planned targets are both included. No S25 results are claimed. Component totals describe required source downloads; they can include conversion-only archives, rather than the final installed footprint.", ""]
     for category, models in inventories.items():
         lines += [f"## {category.upper()}", ""]
         for model in models:

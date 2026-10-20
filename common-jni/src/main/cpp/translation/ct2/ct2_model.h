@@ -44,13 +44,16 @@ public:
             if (language.size() < 2 || language.size() > 3 || language.find_first_not_of("abcdefghijklmnopqrstuvwxyz") != std::string::npos)
                 throw std::invalid_argument("Invalid CT2 target language");
             pieces.insert(pieces.begin(), "__" + language + "__");
-            pieces.push_back("</s>");
         }
+        // Both publisher tokenizers append EOS themselves; add_source_eos=false
+        // in QuickMT's CT2 config means the runtime must not append a second EOS.
+        pieces.push_back("</s>");
         const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(20);
         ctranslate2::TranslationOptions options;
         options.beam_size = 1;
         options.max_input_length = 0;
         options.max_decoding_length = 384;
+        options.disable_unk = !small;
         options.callback = [this, deadline](ctranslate2::GenerationStepResult) {
             return cancelled.load() || std::chrono::steady_clock::now() >= deadline;
         };

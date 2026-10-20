@@ -163,10 +163,10 @@
         "targetBackend": "CTranslate2 4.8.3 CPU Ruy; ARM64 Android; 2 threads; bounded greedy decoder",
         "streaming": "Committed text segments; one complete result per input",
         "blockers": [
-          "Exact QuickMT/SMaLL weight inference and Arabic/English parity have not run; owner S25 measurements pending",
+          "QuickMT AR→EN production weights and official Python output parity have not run; owner S25 sustained quality/latency/memory testing pending",
           "ARM64 only; 32-bit/other ABI activation and transfers rejected"
         ],
-        "evidence": "Real upstream Arabic transliteration fixture passed on native host in FLOAT32 and INT8_FLOAT32; not a QuickMT or SMaLL accuracy result."
+        "evidence": "Pinned QuickMT EN→AR production package: all six files verified; three public sample translations and empty-input rejection passed through production native adapter on macOS ARM64. Exact evidence: docs/models/ct2-host-smoke-2026-10-20.json. Not an S25 or corpus score."
       },
       "license": {
         "name": "CC-BY-4.0",
@@ -176,16 +176,20 @@
         "https://huggingface.co/quickmt/quickmt-en-ar",
         "https://huggingface.co/quickmt/quickmt-ar-en",
         "https://github.com/OpenNMT/CTranslate2",
-        "https://github.com/quickmt/quickmt"
+        "https://github.com/quickmt/quickmt",
+        "https://github.com/quickmt/quickmt/blob/5fe386f1d24a42fce4f7115726fb4b51ee83c054/quickmt/translator.py"
       ],
       "tokenization": {
         "source": "SentencePiece src.spm.model to string pieces",
         "target": "SentencePiece tgt.spm.model decode output pieces",
         "sourceBos": false,
-        "sourceEos": false,
+        "sourceEos": true,
         "decoderStartToken": "<s>",
         "endToken": "</s>",
-        "directionSelection": "Load the matching directory; do not use one direction as bidirectional"
+        "directionSelection": "Load the matching directory; do not use one direction as bidirectional",
+        "runtimeAutomaticSourceEos": false,
+        "sourceEosNote": "The official quickmt client appends </s>; config add_source_eos=false prevents CT2 from appending another. Verified official client revision 5fe386f1d24a42fce4f7115726fb4b51ee83c054.",
+        "disableUnk": true
       },
       "quality": {
         "benchmark": "FLORES-200 devtest (publisher prose; card header says flores101-devtest)",
@@ -837,10 +841,10 @@
         "targetBackend": "CTranslate2 4.8.3 CPU Ruy; ARM64 Android; 2 threads; bounded greedy decoder",
         "streaming": "Committed text segments; one complete result per input",
         "blockers": [
-          "Exact QuickMT/SMaLL weight inference and Arabic/English parity have not run; owner S25 measurements pending",
+          "Official Python output parity, broad language/Arabic quality and owner S25 sustained latency/memory testing pending; sample exposed subject loss with diacritics",
           "ARM64 only; 32-bit/other ABI activation and transfers rejected"
         ],
-        "evidence": "Real upstream Arabic transliteration fixture passed on native host in FLOAT32 and INT8_FLOAT32; not a QuickMT or SMaLL accuracy result."
+        "evidence": "Pinned INT8 production package: all four files verified; three EN→AR and three AR→EN public samples plus empty-input rejection passed through production native adapter on macOS ARM64. All 100 target language tokens exist in pinned vocabulary. Exact evidence: docs/models/ct2-host-smoke-2026-10-20.json. Not an S25 or corpus score."
       },
       "license": {
         "name": "MIT",

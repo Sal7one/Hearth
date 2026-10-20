@@ -17,7 +17,7 @@
   "androidPatch": "Optional pthread affinity rejected on Android API28; session never requests pinning. Generated build copy only.",
   "sources": {
     "common-jni/src/main/cpp/translation/ct2/ct2_jni.cpp": "42f89993608cad77b4feed490488ab49cf80e7175a510d6c4bc59e45c1a40365",
-    "common-jni/src/main/cpp/translation/ct2/ct2_model.h": "c0b9e74a115caf08e6cd0baf6e34bc5ba0e0b46f20a331a193f9a6ba0747497f",
+    "common-jni/src/main/cpp/translation/ct2/ct2_model.h": "4152b1e45a4786e35e5116eee39b84996f41221f3da89252794a4488824fd59d",
     "common-jni/src/main/cpp/translation/ct2/ct2_smoke.cpp": "414c5beadaaafef895829347c95f17c123dc11fae511e072ddc28ad759cff4d8",
     "common-jni/src/main/cpp/translation/ct2/exports.map": "1efc7d364958477e71a6de5f8ffa014a2961f1799568157e6377b5d201a65ccf",
     "scripts/translation/ct2/CMakeLists.txt": "c89c4cca60d4fd49ace81aadd12c76ded73aafdc6cc5c04b080924f585e3ce22",
@@ -31,8 +31,8 @@
     "arm64-v8a": {
       "name": "libtransiber_ct2.so",
       "bytes": 2165728,
-      "sha256": "dd1b2dda4675030bae96010c294009ef79673abd5b319d673e442c585b8b3ae2",
-      "sourceSetSha256": "e77a3ca825da4d493ad0405d3855b6db6655bda22ba4c08e9216b4c366e0e432"
+      "sha256": "0d28d820928339420e7e8515e7623785322f69c45b6f2f2761f626ed48ebd004",
+      "sourceSetSha256": "2eeece67721446ed4684ae5df354be3515ef003524fbd8f8f29a73a0c3bc8e24"
     }
   }
 }
