@@ -48,6 +48,41 @@ class ApkDeliveryTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "certificate"):
             signature_verdict(0, "Verifies\n")
 
+    def test_build_tools_37_scheme_named_signers(self):
+        for scheme in ("V1", "V2", "V3.0"):
+            for label in (f"{scheme} Signer:", f"{scheme} Signer #1:"):
+                output = SIGNED.replace("Signer #1", label)
+                with self.subTest(label=label):
+                    self.assertEqual(signature_verdict(0, output), frozenset({CERTIFICATE}))
+                    with self.assertRaisesRegex(ValueError, "cannot be delivered"):
+                        signature_verdict(1, output)
+
+    def test_unrelated_or_malformed_digests_are_not_signer_evidence(self):
+        labels = ("Source Stamp Signer:", "Unknown Signer:", "Signer #0", "V2 Signer #0:")
+        for label in labels:
+            output = SIGNED.replace("Signer #1", label)
+            with self.subTest(label=label), self.assertRaisesRegex(ValueError, "certificate"):
+                signature_verdict(0, output)
+        for label in ("Signer #1", "V2 Signer:"):
+            output = SIGNED.replace("Signer #1", label).replace("certificate SHA-256", "public key SHA-256")
+            with self.subTest(label=label), self.assertRaisesRegex(ValueError, "certificate"):
+                signature_verdict(0, output)
+        for digest in (CERTIFICATE[:-1], CERTIFICATE + "0", "g" * 64):
+            with self.subTest(digest=digest), self.assertRaisesRegex(ValueError, "certificate"):
+                signature_verdict(0, SIGNED.replace(CERTIFICATE, digest))
+
+    def test_build_tools_37_multiple_signers_preserve_every_certificate(self):
+        second = "a" * 64
+        output = ("Verifies\nV2 Signer #1: certificate SHA-256 digest: " + CERTIFICATE
+                  + "\nV2 Signer #2: certificate SHA-256 digest: " + second + "\n")
+        self.assertEqual(signature_verdict(0, output), frozenset({CERTIFICATE, second}))
+
+    def test_missing_certificate_error_includes_bounded_tool_diagnostics(self):
+        with self.assertRaises(ValueError) as failure:
+            signature_verdict(0, "unexpected format\n" + "x" * 5000)
+        self.assertIn("unexpected format", str(failure.exception))
+        self.assertLess(len(str(failure.exception)), 2200)
+
     def test_stale_version_or_wrong_build_type_cannot_pass_even_when_signed(self):
         expected = configured_identity(BUILD, "qa")
         for badging in (BADGING.replace(".qa'", "'"), BADGING.replace("versionCode='85'", "versionCode='84'"),

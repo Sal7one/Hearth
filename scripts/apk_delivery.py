@@ -50,10 +50,15 @@ def signature_verdict(returncode: int, output: str, allow_unsigned_for_signing: 
         detail = "\n".join(line for line in output.splitlines() if line.startswith(("ERROR:", "DOES NOT VERIFY")))
         raise ValueError("APK signature verification failed; this APK cannot be delivered for installation. "
                          + (detail or output.strip()))
+    # Build-tools 37 names unrotated signers by signature scheme; older tools
+    # use numbered signers. Match certificate records only, never a source
+    # stamp or public-key digest. A successful verifier exit is still required.
+    signer = r"(?:Signer #[1-9]\d*|V(?:1|2|3\.0) Signer(?: #[1-9]\d*)?:)"
     certificates = frozenset(re.findall(
-        r"^Signer #\d+ certificate SHA-256 digest: ([0-9a-fA-F]{64})$", output, re.MULTILINE))
+        rf"^{signer} certificate SHA-256 digest: ([0-9a-fA-F]{{64}})$", output, re.MULTILINE))
     if not certificates:
-        raise ValueError("apksigner did not report a verified signer certificate")
+        raise ValueError("apksigner did not report a verified signer certificate. Verifier output:\n"
+                         + output.strip()[:2000])
     return frozenset(value.lower() for value in certificates)
 
 

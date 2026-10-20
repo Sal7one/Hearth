@@ -40,6 +40,22 @@ child recreation; and the full Settings page's scroll position. It has not been
 executed on a device or emulator. It is guarded for disposable phone emulators;
 no adb or owner device was used.
 
+## CI verifier compatibility follow-up
+
+The first native-emulator CI run stopped before starting an emulator: Android
+build-tools 37 final reports `V2 Signer: certificate SHA-256 digest:` where older
+tools report `Signer #1 certificate SHA-256 digest:`. The same signed APK verifies
+with both tools. A scripts-only follow-up accepts the explicit unrotated V1, V2
+and V3.0 signer labels while continuing to require a successful verifier exit and
+complete certificate fingerprints. Source Stamp/public-key digests, malformed
+hashes and verifier failures remain rejected; unfamiliar output is reported.
+
+All 14 APK-delivery host tests pass. Actual build-tools 36.0.0, 37.0.0 and
+37.0.0-rc2 return the same delivery certificate, and the full ten-APK verification
+gate passes with 37.0.0 selected explicitly. The required Gradle test/compile gate
+also passes. This follow-up changes no app code or uploaded release bytes; the
+signed `v0.27.2` tag continues to identify the settings fix at `1b1a27c`.
+
 ## Distribution and unchanged baseline
 
 The owner delivery is the tagged GitHub draft, with 22 grouped uploaded assets.
