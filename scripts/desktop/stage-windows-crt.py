@@ -143,6 +143,9 @@ def signatures(paths):
     # Pass filenames through JSON stdin, never interpolated into PowerShell source.
     command = r"""
 $ErrorActionPreference = 'Stop'
+[Console]::InputEncoding = [System.Text.UTF8Encoding]::new($false)
+[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
+Import-Module Microsoft.PowerShell.Security -ErrorAction Stop
 $paths = [Console]::In.ReadToEnd() | ConvertFrom-Json
 $results = @(foreach ($path in $paths) {
   $signature = Get-AuthenticodeSignature -LiteralPath $path
@@ -157,8 +160,15 @@ $results = @(foreach ($path in $paths) {
 })
 ConvertTo-Json -InputObject $results -Depth 4 -Compress
 """
-    output = subprocess.check_output(["powershell.exe", "-NoLogo", "-NoProfile", "-NonInteractive", "-Command", command],
-                                     input=json.dumps([str(path) for path in paths]).encode("utf-8"))
+    host = shutil.which("pwsh.exe") or shutil.which("powershell.exe")
+    if host is None:
+        raise ValueError("PowerShell with Microsoft.PowerShell.Security is required for Authenticode verification")
+    # pwsh-based CI exports its own module search path. A legacy Windows PowerShell
+    # child cannot load those .NET modules. Let the selected host initialize its
+    # matching built-in module roots instead of inheriting another host's path.
+    environment = {key: value for key, value in os.environ.items() if key.casefold() != "psmodulepath"}
+    output = subprocess.check_output([host, "-NoLogo", "-NoProfile", "-NonInteractive", "-Command", command],
+                                     input=json.dumps([str(path) for path in paths]).encode("utf-8"), env=environment)
     return json.loads(output.decode("utf-8-sig"))
 
 

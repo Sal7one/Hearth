@@ -3,6 +3,7 @@ from pathlib import Path
 import struct
 import tempfile
 import unittest
+from unittest import mock
 
 spec = importlib.util.spec_from_file_location("stage_windows_crt", Path(__file__).with_name("stage-windows-crt.py"))
 module = importlib.util.module_from_spec(spec)
@@ -32,6 +33,20 @@ def pe_fixture(import_name="vcruntime140.dll", machine=0x8664, delay=False):
 
 
 class WindowsCrtStageTests(unittest.TestCase):
+    def test_signature_host_does_not_inherit_incompatible_powershell_module_path(self):
+        response = b'[{"name":"vcruntime140.dll","status":"Valid"}]'
+        with mock.patch.dict(module.os.environ, {"PSModulePath": "C:/PowerShell7/Modules", "SystemRoot": "C:/Windows"}), \
+                mock.patch.object(module.shutil, "which", side_effect=lambda name: "C:/PowerShell7/pwsh.exe" if name == "pwsh.exe" else None), \
+                mock.patch.object(module.subprocess, "check_output", return_value=response) as process:
+            result = module.signatures([Path("C:/VS/CRT/vcruntime140.dll")])
+        self.assertEqual(result[0]["status"], "Valid")
+        args, options = process.call_args
+        self.assertEqual(args[0][0], "C:/PowerShell7/pwsh.exe")
+        self.assertNotIn("PSModulePath", options["env"])
+        self.assertEqual(options["env"]["SystemRoot"], "C:/Windows")
+        self.assertIn("Import-Module Microsoft.PowerShell.Security -ErrorAction Stop", args[0][-1])
+        self.assertIn("$signature.Status -ne 'Valid'", args[0][-1])
+
     def test_only_release_x64_visual_studio_redist_candidates_are_considered(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
