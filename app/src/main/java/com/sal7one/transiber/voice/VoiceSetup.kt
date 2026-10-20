@@ -47,7 +47,7 @@ internal fun VoiceSetup(onDownloads: () -> Unit, initialLocation: SettingsLocati
     fun save(value: VoiceChoice){choice=value;VoiceSettings.save(context,value);player.stop();error=null}
     val importer=rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()){uris ->if(uris.isNotEmpty())scope.launch {
         busy=true;error=null
-        try {withContext(Dispatchers.IO){com.sal7one.transiber.runtime.LocalModelPolicy.requireAllowed(context, "downloaded speech voice import");val job=currentCoroutineContext();for(uri in uris){context.contentResolver.openInputStream(uri)?.buffered()?.use {input ->input.mark(4);val a=input.read();val b=input.read();input.reset();if(a==0x50 && b==0x4b)models.importZip(input){job.ensureActive()} else models.import(input){job.ensureActive()}} ?: error(uiText(UiR.string.ui_cannot_open_voice_model_b4ec5))}};revision++}
+        try {withContext(Dispatchers.IO){com.sal7one.transiber.runtime.LocalModelPolicy.requireAllowed(context, "downloaded speech voice import");if(choice.family=="magpie")MagpiePolicy.requireAllowed(context,"Magpie model import");val job=currentCoroutineContext();for(uri in uris){context.contentResolver.openInputStream(uri)?.buffered()?.use {input ->input.mark(4);val a=input.read();val b=input.read();input.reset();if(a==0x50 && b==0x4b)models.importZip(input){job.ensureActive()} else models.import(input){job.ensureActive()}} ?: error(uiText(UiR.string.ui_cannot_open_voice_model_b4ec5))}};revision++}
         catch(e: CancellationException){throw e}catch(e: Exception){error=e.message ?: e.toString()}finally{busy=false}
     }}
     var selfHosted by rememberSaveable { mutableStateOf(false) }
@@ -63,7 +63,7 @@ internal fun VoiceSetup(onDownloads: () -> Unit, initialLocation: SettingsLocati
         }
         if (location == SettingsLocation.LOCAL || selfHosted) {
         Text(when(VoiceSettings.customBackend(context)) {
-            "supertonic" -> uiText(UiR.string.ui_custom_default_supertonic_3_1_s_2f603, choice.voice)
+            "supertonic" -> if(choice.family=="magpie")uiText(UiR.string.magpie_custom_default,choice.voice) else uiText(UiR.string.ui_custom_default_supertonic_3_1_s_2f603, choice.voice)
             "remote" -> uiText(UiR.string.ui_custom_default_your_configured_voice_server_c38eb)
             else -> uiText(UiR.string.ui_choose_supertonic_or_self_hosted_to_set_your_custom_default_c52b6)
         },style=MaterialTheme.typography.bodySmall)

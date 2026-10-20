@@ -130,19 +130,23 @@ internal class VoicePlayer(context: Context,private val backendOverride: String?
     private suspend fun local(request: Request,choice: VoiceChoice)=nativeGate.withLock {
         com.sal7one.transiber.runtime.LocalModelPolicy.requireAllowed(context, "downloaded speech voices")
         val baseLanguage=Locale.forLanguageTag(request.language).language
-        require(baseLanguage in VoiceCatalog.languages){"Supertonic 3 does not support ${request.language}. Choose an installed Android voice or a compatible voice server"}
-        val voice=VoiceGenderMapping.supertonicVoice(choice.voice,request.gender)
-        val reader=ArticleReader(SupertonicSpeechEngine(File(context.filesDir,"voice-models")))
+        val magpie=choice.family=="magpie"
+        if(magpie)MagpiePolicy.requireAllowed(context,"Magpie speech playback")
+        val languages=if(magpie)com.sal7one.hearth.tts.magpie.MagpieCatalog.languages else VoiceCatalog.languages
+        require(baseLanguage in languages){"Supertonic 3 does not support ${request.language}. Choose an installed Android voice or a compatible voice server"}
+        val voice=if(magpie)choice.voice else VoiceGenderMapping.supertonicVoice(choice.voice,request.gender)
+        val engine=if(magpie)com.sal7one.hearth.tts.magpie.MagpieSpeechEngine(File(context.filesDir,"voice-models/magpie")) else SupertonicSpeechEngine(File(context.filesDir,"voice-models"))
+        val reader=ArticleReader(engine)
         articleReader=reader
         try {
-            streamArticle(reader.read(request.text,baseLanguage,VoicePreference(id=voice),SpeechOptions(choice.rate,choice.steps)),request.volume)
+            streamArticle(reader.read(request.text,if(magpie)request.language else baseLanguage,VoicePreference(id=voice),SpeechOptions(if(magpie)1f else choice.rate,choice.steps)),request.volume,if(magpie)choice.rate else 1f)
         }finally {
             withContext(NonCancellable){reader.closeAndJoin()}
             if(articleReader===reader)articleReader=null
         }
     }
     /** One AudioTrack stays open across bounded SDK frames and article parts. */
-    private suspend fun streamArticle(events: Flow<ArticleSpeech>,volume: Float)=withContext(Dispatchers.IO) {
+    private suspend fun streamArticle(events: Flow<ArticleSpeech>,volume: Float,speed: Float=1f)=withContext(Dispatchers.IO) {
         var player: AudioTrack?=null
         var sampleRate=0
         var written=0L
@@ -158,7 +162,7 @@ internal class VoicePlayer(context: Context,private val backendOverride: String?
                             .setAudioFormat(AudioFormat.Builder().setSampleRate(sampleRate).setChannelMask(AudioFormat.CHANNEL_OUT_MONO).setEncoding(AudioFormat.ENCODING_PCM_FLOAT).build())
                             .setTransferMode(AudioTrack.MODE_STREAM).setBufferSizeInBytes(maxOf(minimum,sampleRate/10*4)).build()
                         check(player!!.state==AudioTrack.STATE_INITIALIZED){"Voice audio output failed to initialize"}
-                        track=player;player!!.setVolume(volume.coerceIn(0f,1f));player!!.play()
+                        track=player;player!!.setVolume(volume.coerceIn(0f,1f));if(speed!=1f)player!!.playbackParams=PlaybackParams().allowDefaults().setSpeed(speed);player!!.play()
                     }
                     check(pcm.sampleRate==sampleRate){"Voice changed sample rate during the article"}
                     var offset=0

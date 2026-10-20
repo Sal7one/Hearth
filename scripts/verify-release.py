@@ -85,6 +85,40 @@ def verify_optional_snapshot(metadata, source_key, expected):
 speech_gpu = json.loads((root/'common-jni/src/main/assets/licenses/speech/gpu-runtime-build.json').read_text())
 assert speech_gpu['abi'] == 2
 verify_optional_snapshot(speech_gpu, 'adapterSources', {'libhearth_transcribepsy_vulkan.so': True, 'libhearth_transcribepsy_opencl.so': False})
+# Independently built multilingual STT plugins; CPU availability never loads Vulkan.
+speech_expansion = json.loads((root/'common-jni/src/main/assets/licenses/speech-expansion/runtime-build.json').read_text())
+assert speech_expansion['abi'] == 2
+assert speech_expansion['architectures'] == ['arm64-v8a']
+expansion_pin = re.search(r'HEARTH_TRANSCRIBE_CPP_REVISION "([a-f0-9]{40})"', (root/'common-jni/src/main/cpp/speech/expansion/versions.h').read_text()).group(1)
+assert speech_expansion['sourceRevision'] == expansion_pin == '1dc22facfc931e2f8adb43924b0e38b9c46f83c7'
+assert speech_expansion['backends'] == ['cohere_asr', 'funasr_mlt_nano', 'voxtral_realtime']
+assert speech_expansion['publicExports'] == ['hearth_cohere_backend_v1', 'hearth_funasr_backend_v1', 'hearth_voxtral_backend_v1']
+verify_optional_snapshot(speech_expansion, 'adapterSources', {'libhearth_transcribe_cpp.so': False, 'libhearth_transcribe_cpp_vulkan.so': True})
+
+# Dedicated CPU translation runtime, not a generic ONNX/GGUF format shortcut.
+ct2 = json.loads((root/'common-jni/src/main/assets/licenses/ct2/runtime-build.json').read_text())
+assert ct2['ctranslate2Revision'] == '8c8cab2a954810216a45d65c1b8d56839c846e5b'
+assert ct2['sentencepieceRevision'] == '17d7580d6407802f85855d2cc9190634e2c95624'
+assert set(ct2['binaries']) == {'arm64-v8a'}
+verify_optional_snapshot(dict(ct2, artifacts=[dict(item, abi=abi) for abi, item in ct2['binaries'].items()]),
+                         'sources', {'libtransiber_ct2.so': False})
+# Independently packaged Magpie CPU provider; its JNI shim remains available on every app ABI.
+magpie_root = root/'hearth-tts-magpie/src/main'
+magpie = json.loads((magpie_root/'assets/licenses/magpie/runtime-build.json').read_text())
+for path, digest in magpie['sources'].items():
+    assert hashlib.sha256((root/path).read_bytes()).hexdigest() == digest, f'Magpie source snapshot stale: {path}'
+assert magpie['sourceSetSha256'] == source_set_digest(magpie['sources']), 'Magpie source set changed'
+assert magpie['source']['revision'] == 'caa3f47c7c75fa2e9e6340272ebad57c1647dd44'
+assert magpie['source']['ggmlRevision'] == 'bd4f514db14d87fded667787a7a963bfbaa98e89'
+assert magpie['runtime']['abi'] == 'arm64-v8a' and magpie['runtime']['backend'] == 'CPU'
+magpie_binary = magpie_root/'jniLibs/arm64-v8a/libhearth_magpie.so'
+assert magpie_binary.stat().st_size == magpie['runtime']['bytes']
+assert hashlib.sha256(magpie_binary.read_bytes()).hexdigest() == magpie['runtime']['sha256']
+assert hashlib.sha256((root/'scripts/voice/nemo-tts-inject.cmake').read_bytes()).hexdigest() == magpie['build']['injectionSha256']
+assert hashlib.sha256((root/'scripts/voice/magpie.map').read_bytes()).hexdigest() == magpie['build']['exportsSha256']
+vendor_hashes['lib/arm64-v8a/libhearth_magpie.so'] = magpie['runtime']['sha256']
+gpu_artifacts['libhearth_magpie.so'] = ('arm64-v8a', False)
+
 whisper_gpu = json.loads((root/'common-jni/src/main/assets/licenses/whisper-vulkan/runtime-build.json').read_text())
 assert whisper_gpu['apiVersion'] == 1
 assert whisper_gpu['vendorTreeSha256'] == '5f3464bc06c04426d66eae69e5e510d32fb76621b524c42ab25b4294f035a920'
@@ -114,7 +148,7 @@ manga = json.loads((ocr_assets/'manga-provenance.json').read_text())
 assert hashlib.sha256((ocr_assets/'manga.json').read_bytes()).hexdigest() == manga['dictionary_sha256']
 assert len(json.loads((ocr_assets/'manga.json').read_text())) == manga['classes'] == 6144
 
-expected_libs = {'libtransiber_translation.so','libcommon_jni.so','libc++_shared.so','libvosk.so','libonnxruntime.so','libhearth_qwen.so','libhearth_nemotron.so','libhearth_transcribepsy.so','libandroidx.graphics.path.so','libdatastore_shared_counter.so','libimage_processing_util_jni.so'}
+expected_libs = {'libhearth_magpie_jni.so','libtransiber_translation.so','libcommon_jni.so','libc++_shared.so','libvosk.so','libonnxruntime.so','libhearth_qwen.so','libhearth_nemotron.so','libhearth_transcribepsy.so','libandroidx.graphics.path.so','libdatastore_shared_counter.so','libimage_processing_util_jni.so'}
 platform = {'liblog.so','libandroid.so','libjnigraphics.so','libm.so','libdl.so','libc.so','libz.so'}
 delivery_signers = None
 unsigned_inputs = 0
@@ -172,6 +206,22 @@ for flavor, architecture in [(f, a) for f in ('play','foss') for a in (*ABIS, 'u
                     assert prefix + 'executionInfo' in exports, 'GPU execution status JNI missing'
                 else:
                     assert 'libvulkan.so' not in needed, 'CPU runtime must not load the Vulkan driver'
+            if file.name.startswith('libhearth_transcribe_cpp') or file.name == 'libtransiber_ct2.so':
+                symbols = subprocess.check_output([readelf, '--dyn-syms', '-W', file], text=True)
+                exports = {line.split()[-1] for line in symbols.splitlines() if re.search(r'\b(?:GLOBAL|WEAK)\s+DEFAULT\s+\d+\s+', line)}
+                if file.name.startswith('libhearth_transcribe_cpp'):
+                    assert exports == set(speech_expansion['publicExports']), (file.name, exports)
+                else:
+                    assert exports == {'Java_com_sal7one_common_1jni_translation_Ct2Native_' + method for method in ('protocolVersion', 'create', 'translate', 'cancel', 'destroy')}, (file.name, exports)
+                assert not needed & {'libvosk.so', 'libcommon_jni.so', 'libonnxruntime.so'}, (file.name, needed)
+            if file.name in {'libhearth_magpie.so', 'libhearth_magpie_jni.so'}:
+                symbols = subprocess.check_output([readelf, '--dyn-syms', '-W', file], text=True)
+                exports = {line.split()[-1] for line in symbols.splitlines() if re.search(r'\b(?:GLOBAL|WEAK)\s+DEFAULT\s+\d+\s+', line)}
+                if file.name == 'libhearth_magpie_jni.so':
+                    assert exports == {'Java_com_sal7one_common_1jni_voice_MagpieNative_' + name for name in ('available', 'create', 'voices', 'synthesize', 'cancel', 'destroy')}, exports
+                else:
+                    assert len(exports) == 12 and all(name.startswith('nemo_speech_tts_') for name in exports), exports
+                assert not needed & {'libcommon_jni.so', 'libonnxruntime.so', 'libvulkan.so'}, needed
             if file.name in gpu_artifacts:
                 assert ('libvulkan.so' in needed) == gpu_artifacts[file.name][1], f'{name}: unexpected Vulkan linkage'
                 assert 'libOpenCL.so' not in needed, f'{name}: OpenCL must use the optional namespace-safe loader'

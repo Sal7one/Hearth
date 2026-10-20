@@ -62,6 +62,8 @@ internal fun SettingsVoiceCloudUi(language: String,onLanguage: (String)->Unit,on
     var modelQuery by rememberSaveable { mutableStateOf("") }
     ModelSearchField(modelQuery, { modelQuery = it })
     val serverModels = listOf(
+        VoiceBrowserCard("Ming-3.0-tts-0.5B",uiText(UiR.string.ming_hosted_runtime),uiText(UiR.string.ming_small_coverage),"MIT","https://huggingface.co/inclusionAI/Ming-3.0-tts-0.5B",VoiceBrowserLanguages.ming3Tts),
+        VoiceBrowserCard("Ming-3.0-tts-tiny",uiText(UiR.string.ming_hosted_runtime),uiText(UiR.string.ming_tiny_coverage),"MIT","https://huggingface.co/inclusionAI/Ming-3.0-tts-tiny",VoiceBrowserLanguages.ming3Tts),
         VoiceBrowserCard("Chatterbox Multilingual V3", uiText(UiR.string.ui_self_hosted_python_80a0e),
             uiText(UiR.string.ui_23_languages_including_arabic_default_or_reference_voice_turbo_na_b5a55), "MIT", "https://github.com/resemble-ai/chatterbox", VoiceBrowserLanguages.chatterboxMultilingualV3),
         VoiceBrowserCard("Qwen3-TTS 0.6B Base", uiText(UiR.string.ui_self_hosted_python_80a0e),

@@ -9,6 +9,7 @@ internal fun voiceMenuMatches(query: String, id: String, label: String): Boolean
 
 /** Publisher language inventories describe these examples, not an unchecked server connection. */
 internal object VoiceBrowserLanguages {
+    val ming3Tts = "zh en de es fr ko ja".split(' ').toSet()
     // Checked 2026-10-19: https://github.com/resemble-ai/chatterbox#supported-languages
     val chatterboxMultilingualV3 = "ar da de el en es fi fr he hi it ja ko ms nl no pl pt ru sv sw tr zh".split(' ').toSet()
     // Checked 2026-10-19: https://huggingface.co/Qwen/Qwen3-TTS-12Hz-0.6B-Base#introduction

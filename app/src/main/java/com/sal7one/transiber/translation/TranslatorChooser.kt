@@ -140,6 +140,13 @@ internal fun TranslatorChooser(
                         }
                     }
                 }
+                com.sal7one.common_jni.translation.Ct2Catalog.models.forEach { model ->
+                    val ready=com.sal7one.transiber.translation.Ct2Package.installed(context,model)
+                    TranslatorRow(model.label, "${model.bytes/1_048_576} MiB · CPU" + pair(model::supports),
+                        providerId=="local" && localId==model.id, enabled && com.sal7one.transiber.translation.Ct2Package.runtimeSupported(), actionLabel=if(ready)null else "Set up") {
+                        if(ready) { onSelect("local",model.id);expanded=location!=null } else onModels()
+                    }
+                }
                 TranslationCatalog.models.sortedWith(compareByDescending<com.sal7one.common_jni.translation.TranslationModelSpec> { providerId=="local" && it.id==localId }.thenByDescending { it.id in installed }).forEach { model ->
                     val ready = model.id in installed
                     TranslatorRow(model.label,

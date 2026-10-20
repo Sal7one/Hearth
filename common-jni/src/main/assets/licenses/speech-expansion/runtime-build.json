@@ -1,0 +1,79 @@
+{
+  "abi": 2,
+  "architectures": [
+    "arm64-v8a"
+  ],
+  "sourceRepo": "https://github.com/handy-computer/transcribe.cpp",
+  "sourceRevision": "1dc22facfc931e2f8adb43924b0e38b9c46f83c7",
+  "vendoredGgmlUpstreamRevision": "d7cb574130e6f01ad25b3289685489200febcd74",
+  "adapterSources": {
+    "common-jni/src/main/cpp/common/audio_gate.h": "c688837ace59be06d3851be3cdf9af0859dfce4f0346ad267d89eb00875a15e2",
+    "common-jni/src/main/cpp/speech/backend_abi.h": "1abbaf5e7530ea8b1a5e5e89b471c51bdd5e9618d71c7a419ac8d42e1faed788",
+    "common-jni/src/main/cpp/speech/backends/backend_guard.h": "271f1d9d135b73835664614a67b3e0c676aa7aec992311986cb173a266172cbe",
+    "common-jni/src/main/cpp/speech/expansion/exports.map": "c57a90767bc50b9d4c5290d91372bc04fd9daba531126f0b7d3ddfd236f4f34e",
+    "common-jni/src/main/cpp/speech/expansion/transcribe_cpp_backend.cpp": "5422632fa6b3bc04f4b338a8170e204e4e4ba64839eba302cc3ddeb1479a788f",
+    "common-jni/src/main/cpp/speech/expansion/versions.h": "fce30c8e9b3aa67c79804f0612a556e1360fb509bab4ff4f8578a606ec5111f3",
+    "common-jni/src/main/cpp/speech/utterance_segmenter.h": "c7f9985392fc7a1ad7d59925ac69aa0b5832d3d2e65ec4cff87d47620b7bbdd3",
+    "scripts/speech/build-expansion-runtimes.sh": "beaa0a84a48f724aba9c27d81a95b196eb779e0af091ffe8e70a8c6d9a6e8f2b",
+    "scripts/speech/expansion-runtime-sources.py": "7e8ac7762c727ca857bb57ab272b8fc91dcf764e0d299f06eed9e3eca45bf6bc",
+    "scripts/speech/transcribe-cpp.cmake": "1ecb085a2a8eb9b80a152935b56daa4d56f8afb7b03d60e2cb99816499b59547"
+  },
+  "artifacts": [
+    {
+      "abi": "arm64-v8a",
+      "file": "libhearth_transcribe_cpp.so",
+      "bytes": 2826376,
+      "sha256": "2b3ed0e7ffdb08032b0fc81af83ae5fe6b64b7d5adcafd3d4e9350e6841bfea0",
+      "acceleration": "cpu",
+      "dependencies": [
+        "liblog.so",
+        "libandroid.so",
+        "libm.so",
+        "libdl.so",
+        "libc++_shared.so",
+        "libc.so"
+      ],
+      "minPageAlignment": 16384,
+      "sourceSetSha256": "d97cfaa0b32948059634506e02f4727165419ce67f1cb712a859a2b4eddc5ad7"
+    },
+    {
+      "abi": "arm64-v8a",
+      "file": "libhearth_transcribe_cpp_vulkan.so",
+      "bytes": 39459920,
+      "sha256": "e8d4632809e798630dd56161369ffdfa273937c6cba76e8b9ba3750502016904",
+      "acceleration": "vulkan",
+      "dependencies": [
+        "liblog.so",
+        "libandroid.so",
+        "libm.so",
+        "libdl.so",
+        "libvulkan.so",
+        "libc++_shared.so",
+        "libc.so"
+      ],
+      "minPageAlignment": 16384,
+      "sourceSetSha256": "d97cfaa0b32948059634506e02f4727165419ce67f1cb712a859a2b4eddc5ad7"
+    }
+  ],
+  "publicExports": [
+    "hearth_cohere_backend_v1",
+    "hearth_funasr_backend_v1",
+    "hearth_voxtral_backend_v1"
+  ],
+  "backends": [
+    "cohere_asr",
+    "funasr_mlt_nano",
+    "voxtral_realtime"
+  ],
+  "selection": "CPU default never loads GPU plugin; explicit Vulkan verifies primary backend, frontend remains CPU; Voxtral bounded windowed partials",
+  "shaderCompiler": {
+    "sha256": "73f9f514345e732bee65d4b92043af384b34f26af3ed797e0afbfb4e1449f8ce",
+    "version": "shaderc v2026.4 unknown hash, 2026-09-11\nspirv-tools v2026.4 v2022.4-1347-gef96ed76\nglslang 11.1.0-1566-ge1b562a8\n\nTarget: SPIR-V 1.0"
+  },
+  "dependencies": {
+    "Vulkan-Headers": "19725e4d48082fe78e26622b15d3080ccd54112b",
+    "SPIRV-Headers": "01e0577914a75a2569c846778c2f93aa8e6feddd"
+  },
+  "ndk": "Pkg.Desc = Android NDK\nPkg.Revision = 27.0.12077973\nPkg.BaseRevision = 27.0.12077973\nPkg.ReleaseName = r27\n",
+  "deviceMeasured": false
+}

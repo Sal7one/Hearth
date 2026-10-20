@@ -170,6 +170,11 @@ private suspend fun checkTranslator(context: Context, localId: String, providerI
         }
         return "Marian / OPUS-MT · $source → English → $target · both models verified"
     }
+    com.sal7one.common_jni.translation.Ct2Catalog.find(localId)?.let { spec ->
+        check(target in spec.targets && (!knownSource || spec.supports(source,target))) { "${spec.label} does not support $source → $target" }
+        check(com.sal7one.transiber.translation.Ct2Package.installed(context,spec)) { "Install ${spec.label} in Models → Translation" }
+        return "${spec.label} · CPU · pinned components present"
+    }
     val model = TranslationCatalog.find(localId)
     check(target in model.targetLanguages && (!knownSource || model.supports(source, target))) { "${model.label} does not support $source → $target." }
     check(LocalTranslationModels(File(context.filesDir, "translation-models")).installed().any { it.id == localId }) { "Download or import ${model.label} in Models → Translation." }

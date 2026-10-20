@@ -20,3 +20,11 @@ condition = "AND"
 paths = ['''(^|/)common-jni/src/main/assets/licenses/whisper-vulkan/runtime-build\.json$''']
 regexTarget = "line"
 regexes = ['''^\s*"common-jni/src/main/cpp/whisper/whisper_runtime_api\.h": \"37b718a59f3e7e774146d4ac30473d94111c79e55fc06e0009a83b5ffc8951d3\",$''']
+
+# Verified SHA-256 of public tokenizer bytes; this is not a service token.
+[[allowlists]]
+description = "Pinned public Magpie tokenizer payload SHA-256"
+condition = "AND"
+paths = ['''(^|/)hearth-tts-magpie/src/main/java/com/sal7one/hearth/tts/magpie/MagpieCatalog\.kt$''']
+regexTarget = "line"
+regexes = ['''^\s*const val tokenizerSegmentsSha256 = "169144a64f6d775178696914e5aad8282db44820e73341d5f9a4e7865fac1f26"$''']

@@ -1,0 +1,2 @@
+#pragma once
+#define HEARTH_TRANSCRIBE_CPP_REVISION "1dc22facfc931e2f8adb43924b0e38b9c46f83c7"

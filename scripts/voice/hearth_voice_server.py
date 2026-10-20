@@ -9,6 +9,7 @@ import json
 import os
 from pathlib import Path
 import re
+import sys
 import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import urllib.request
@@ -17,6 +18,10 @@ import wave
 
 QWEN_LANGUAGES = dict(en="English", zh="Chinese", ja="Japanese", ko="Korean", de="German",
                       fr="French", ru="Russian", pt="Portuguese", es="Spanish", it="Italian")
+MING_LANGUAGES = dict(en="English", zh="Chinese", de="German", es="Spanish", fr="French",
+                      ko="Korean", ja="Japanese")
+# Published gender/accent inventory: pinned Ming cookbooks/instruction_en.md.
+MING_ENGLISH_VOICES = ("US_Emma", "US_James", "US_Stella", "UK_George", "UK_Charlotte")
 MAX_AUDIO = 12 * 1024 * 1024
 
 
@@ -35,8 +40,13 @@ def validate_wav(raw):
 def encode_wav(samples, rate):
     import numpy as np
     if hasattr(samples, "detach"):
-        samples = samples.detach().cpu().numpy()
-    data = np.asarray(samples).reshape(-1)
+        samples = samples.detach().float().cpu().numpy()
+    data = np.asarray(samples)
+    # These adapters promise mono. Flattening stereo would change duration and pitch.
+    if data.ndim == 2 and data.shape[0] == 1:
+        data = data[0]
+    if data.ndim != 1:
+        raise ValueError("Model must return mono audio, not an interleaved or multichannel tensor")
     if not len(data) or not np.isfinite(data).all() or len(data) > int(rate) * 120:
         raise ValueError("Model returned empty, non-finite or oversized audio")
     pcm = (np.clip(data, -1, 1) * 32767).astype("<i2").tobytes()
@@ -81,6 +91,62 @@ class Chatterbox:
 
     def speech(self, text, language, voice):
         return encode_wav(self.engine.generate(text, language_id=language, audio_prompt_path=self.reference), self.engine.sr)
+
+
+class Ming:
+    """Two distinct official APIs; never treat the 0.5B and Tiny checkpoints as interchangeable."""
+    def __init__(self, args):
+        if not args.ming_model_dir:
+            raise ValueError("Ming requires --ming-model-dir with a locally downloaded, pinned checkpoint")
+        model_dir = Path(args.ming_model_dir).resolve(strict=True)
+        if not model_dir.is_dir() or not (model_dir / "config.json").is_file():
+            raise ValueError("Ming checkpoint directory is missing config.json")
+        if not args.device.startswith("cuda"):
+            raise ValueError("Ming bridge uses the publisher's CUDA/BF16 path; select --device cuda:0")
+        self.tiny = args.backend == "ming-tiny"
+        self.model_id = "inclusionAI/Ming-3.0-tts-" + ("tiny" if self.tiny else "0.5B")
+        self.label = "Ming-3.0 TTS " + ("Tiny" if self.tiny else "0.5B")
+        sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "ming"))
+        from ming_catalog import verify_bundle
+        verify_bundle(self.model_id, model_dir)
+        if bool(args.reference) != bool(args.transcript):
+            raise ValueError("Ming reference mode requires both --reference WAV and --transcript UTF-8 file")
+        self.reference = str(Path(args.reference).resolve(strict=True)) if args.reference else None
+        self.transcript = Path(args.transcript).read_text(encoding="utf-8").strip() if args.transcript else None
+        if self.reference and not self.transcript:
+            raise ValueError("Ming reference transcript is empty")
+        self.languages = list(MING_LANGUAGES) if self.reference else ["en"]
+        self.voices = ["reference"] if self.reference else list(MING_ENGLISH_VOICES)
+        # PYTHONPATH points at the separately reviewed/pinned official repository.
+        if self.tiny:
+            from ming_tiny import MingTinyTTS
+            self.engine = MingTinyTTS.from_pretrained(str(model_dir), device=args.device)
+        else:
+            from ming_tts import MingTTS
+            self.engine = MingTTS(str(model_dir), device=args.device,
+                                  text_normalization=not args.ming_no_text_normalization)
+
+    def speech(self, text, language, voice):
+        if language not in self.languages or voice not in self.voices:
+            raise ValueError("Ming language or voice is not available in this server configuration")
+        if self.tiny:
+            if self.reference:
+                output = self.engine.generate(task="seed" if language in ("en", "zh") else "multilingual",
+                    text=text, target_language=MING_LANGUAGES[language],
+                    prompt_wav=self.reference, prompt_text=self.transcript)
+            else:
+                output = self.engine.generate(task="ip", text=text, ip=voice)
+            # An exhausted decode budget must not become a truncated successful article chunk.
+            if not output.stopped:
+                raise RuntimeError("Ming Tiny reached its decode limit before finishing speech")
+            samples = output.waveform
+        elif self.reference:
+            samples = self.engine.synthesize(task="TTS" if language in ("en", "zh") else "MULTILINGUAL",
+                text=text, language_id=MING_LANGUAGES[language], prompt_wav_path=self.reference,
+                prompt_text=self.transcript, use_spk_emb=True)
+        else:
+            samples = self.engine.synthesize(task="IP", text=text, controls={"ip": voice}, use_zero_spk_emb=True)
+        return encode_wav(samples, self.engine.sample_rate)
 
 
 class NoRedirect(urllib.request.HTTPRedirectHandler):
@@ -208,18 +274,21 @@ def handler(backend, token):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("backend", choices=["qwen", "chatterbox", "fish"])
+    parser.add_argument("backend", choices=["qwen", "chatterbox", "fish", "ming-0.5b", "ming-tiny"])
     parser.add_argument("--bind", default="127.0.0.1")
     parser.add_argument("--port", default=8787, type=int)
     parser.add_argument("--device", default="cpu")
     parser.add_argument("--reference"); parser.add_argument("--transcript")
+    parser.add_argument("--ming-model-dir", help="Pinned local Ming checkpoint; see docs/ming-3.0.md")
+    parser.add_argument("--ming-no-text-normalization", action="store_true", help="0.5B only: bypass optional pynini frontend")
     parser.add_argument("--fish-url", default="http://127.0.0.1:8080")
     parser.add_argument("--fish-model"); parser.add_argument("--fish-languages"); parser.add_argument("--fish-reference")
     args = parser.parse_args()
     token = os.environ.get("HEARTH_VOICE_API_KEY", "")
     if len(token) < 24 or not token.isascii() or any(c.isspace() for c in token):
         parser.error("Set HEARTH_VOICE_API_KEY to at least 24 non-whitespace ASCII characters")
-    backend = {"qwen": Qwen, "chatterbox": Chatterbox, "fish": Fish}[args.backend](args)
+    backend = {"qwen": Qwen, "chatterbox": Chatterbox, "fish": Fish,
+               "ming-0.5b": Ming, "ming-tiny": Ming}[args.backend](args)
     server = ThreadingHTTPServer((args.bind, args.port), handler(backend, token))
     server.daemon_threads = True
     print(f"Hearth voice bridge: {backend.model_id} on {args.bind}:{args.port}; put HTTPS in front for Android", flush=True)

@@ -1,0 +1,37 @@
+{
+  "asOf": "2026-10-20",
+  "platform": "macOS arm64 development host, CPU; not S25/Android performance",
+  "nemoRevision": "caa3f47c7c75fa2e9e6340272ebad57c1647dd44",
+  "generatorRevision": "446bff55e1fe3d3aa29c771574e7d2b0fa322990",
+  "generatorSha256": "fb8e9297138dcc7b5fc51332f361e3cddfd433d4e0bc1d87e16e6aed21f618fc",
+  "voices": [
+    "Aria",
+    "Jason",
+    "John",
+    "Leo",
+    "Sofia"
+  ],
+  "cAbiResults": [
+    "PASS language=en bytes=131072 rate=22050 chunks=16 elapsed_s=1.300 audio_s=2.972 ttfa_ms=523.840",
+    "PASS language=ar bytes=143360 rate=22050 chunks=18 elapsed_s=1.006 audio_s=3.251 ttfa_ms=155.133",
+    "PASS callback abort stops synthesis with upstream status=3 error=MagpieTTS synthesis failed",
+    "PASS invalid language surfaces error: unsupported language_code 'unsupported'"
+  ],
+  "jniResults": [
+    "PASS JNI cancellation propagates CancellationException",
+    "PASS JNI Arabic PCM samples=81920 bounded frames, speaker inventory, exact-once destroy and retired handle rejection"
+  ],
+  "interpretation": "Functionality and cancellation checks only; no listening/MOS/Arabic intelligibility or owner-device evidence. Upstream callbackabort returns runtimeerror; JNI maps intentionalcancel flag toCancellationException and preserves genuine errors.",
+  "offlineJniContract": {
+    "fixture": "scripts/voice/tests/fake-magpie.cpp",
+    "runner": "scripts/voice/run-magpie-jni-contract-test.sh",
+    "scope": "Real JNI bridge with a deterministic fake C ABI; no model inference or language-quality evidence.",
+    "passed": [
+      "Exact Java callback RuntimeException identity retained",
+      "Arabic and supplementary Unicode native error text preserved",
+      "Malformed PCM reported as actual error rather than cancellation",
+      "Intentional cancellation propagates CancellationException",
+      "Bounded PCM callbacks, idempotent destroy and retired handle rejection"
+    ]
+  }
+}

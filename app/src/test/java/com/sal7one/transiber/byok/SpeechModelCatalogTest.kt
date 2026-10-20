@@ -4,6 +4,16 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class SpeechModelCatalogTest {
+    @Test fun mingAudioRequiresTheTranscriptionAdapterRatherThanGenericAudioCapability() {
+        val models = SpeechModelCatalog.parse("""{"data":[
+          {"id":"inclusionAI/Ming-3.0-asr-tiny"},
+          {"id":"inclusionAI/Ming-3.0-audio-flash"},
+          {"id":"inclusionAI/Ming-3.0-audio-tiny","architecture":{"output_modalities":["transcription"]}},
+          {"id":"inclusionAI/Ming-3.0-tts-0.5B"}
+        ]}""")
+        assertEquals(listOf("inclusionAI/Ming-3.0-asr-tiny", "inclusionAI/Ming-3.0-audio-tiny"), models.map { it.id })
+        assertTrue(models.all { it.role.batchSelectable })
+    }
     @Test fun mixedOpenAiCatalogFiltersChatTtsAndRealtimeConversations() {
         val models = SpeechModelCatalog.parse("""{"data":[
           {"id":"gpt-5"},{"id":"tts-1"},{"id":"gpt-audio-1.5"},{"id":"gpt-realtime-2.1"},

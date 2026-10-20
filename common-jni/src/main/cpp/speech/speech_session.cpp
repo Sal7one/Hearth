@@ -1,5 +1,6 @@
 #include "speech_session.h"
 #include "backend_versions.h"
+#include "expansion/versions.h"
 #include "qwen_language.h"
 #include <cmath>
 #include <cstring>
@@ -30,8 +31,9 @@ SpeechConfig::SpeechConfig(const std::string& json) {
     acceleration = j.find("acceleration") ? stringField(j, "acceleration") : "cpu";
     if (acceleration != "cpu" && acceleration != "vulkan" && acceleration != "opencl")
         throw std::invalid_argument("Unsupported speech acceleration: " + acceleration);
-    if (acceleration != "cpu" && backend != "transcribepsy")
-        throw std::invalid_argument("GPU speech acceleration is supported only by TranscribePsy");
+    if (acceleration != "cpu" && backend != "transcribepsy" &&
+        !(acceleration == "vulkan" && (backend == "cohere_asr" || backend == "funasr_mlt_nano" || backend == "voxtral_realtime")))
+        throw std::invalid_argument("Unsupported speech backend acceleration");
     const char* names[] = {"model", "frontend", "encoder", "decoder", "tokenizer", "language"};
     for (size_t i = 0; i < 6; ++i) paths[i] = stringField(j, names[i]);
     paths[6] = stringField(j, "gpuCacheDirectory", false);
@@ -65,6 +67,18 @@ SpeechConfig::SpeechConfig(const std::string& json) {
         if (paths[5] != "auto" && paths[5] != "en" && paths[5] != "nl" && paths[5] != "fr" &&
             paths[5] != "de" && paths[5] != "it" && paths[5] != "pl" && paths[5] != "pt" && paths[5] != "es")
             throw std::invalid_argument("Unsupported TranscribePsy source declaration: " + paths[5]);
+    } else if (backend == "cohere_asr" || backend == "funasr_mlt_nano" || backend == "voxtral_realtime") {
+        if (paths[0].empty()) throw std::invalid_argument("Native multilingual speech requires a GGUF model path");
+        if (backend == "cohere_asr" && paths[5] != "ar" && paths[5] != "en")
+            throw std::invalid_argument("Cohere Arabic requires ar or en; Auto is unavailable");
+        if (backend == "voxtral_realtime") {
+            const std::string supported = " auto ar en fr es de ru zh ja it pt nl hi ko ";
+            if (supported.find(" " + paths[5] + " ") == std::string::npos) throw std::invalid_argument("Unsupported Voxtral source declaration");
+        }
+        if (backend == "funasr_mlt_nano") {
+            const std::string supported = " auto ar en zh yue ja ko vi id th ms fil hi bg hr cs da nl et fi el hu ga lv lt mt pl pt ro sk sl sv ";
+            if (supported.find(" " + paths[5] + " ") == std::string::npos) throw std::invalid_argument("Unsupported Fun-ASR MLT source language");
+        }
     } else if (backend == "nemotron_3_5") {
         if (paths[0].empty() || paths[5].empty()) throw std::invalid_argument("Nemotron requires a model path and source language");
         const int r = value.right_context;
@@ -75,11 +89,13 @@ SpeechConfig::SpeechConfig(const std::string& json) {
 const HearthSpeechBackend& loadBackend(const std::string& id, const std::string& acceleration) {
     if (acceleration != "cpu" && acceleration != "vulkan" && acceleration != "opencl")
         throw std::invalid_argument("Unsupported speech acceleration: " + acceleration);
-    if (acceleration != "cpu" && id != "transcribepsy")
-        throw std::invalid_argument("GPU speech acceleration is supported only by TranscribePsy");
+    if (acceleration != "cpu" && id != "transcribepsy" &&
+        !(acceleration == "vulkan" && (id == "cohere_asr" || id == "funasr_mlt_nano" || id == "voxtral_realtime")))
+        throw std::invalid_argument("Unsupported speech backend acceleration");
     std::string name, revision;
     if (id == "qwen3_asr" || id == "moonshine" || id == "omnilingual_ctc" || id == "phonon") { name = "libhearth_qwen"; revision = HEARTH_QWEN_REVISION; }
     else if (id == "transcribepsy") { name = "libhearth_transcribepsy"; revision = HEARTH_TRANSCRIBEPSY_REVISION; }
+    else if (id == "cohere_asr" || id == "funasr_mlt_nano" || id == "voxtral_realtime") { name = "libhearth_transcribe_cpp"; revision = HEARTH_TRANSCRIBE_CPP_REVISION; }
     else if (id == "nemotron_3_5") { name = "libhearth_nemotron"; revision = HEARTH_NEMO_REVISION; }
     else throw std::invalid_argument("Unknown speech backend: " + id);
     if (acceleration != "cpu") name += "_" + acceleration;
@@ -99,7 +115,10 @@ const HearthSpeechBackend& loadBackend(const std::string& id, const std::string&
     if (!library) { const char* e = dlerror(); throw std::runtime_error(e ? e : "dlopen failed without an error string"); }
     const char* symbol = id == "moonshine" ? "hearth_moonshine_backend_v1" :
         id == "omnilingual_ctc" ? "hearth_omnilingual_backend_v1" :
-        id == "phonon" ? "hearth_phonon_backend_v1" : "hearth_speech_backend_v1";
+        id == "phonon" ? "hearth_phonon_backend_v1" :
+        id == "cohere_asr" ? "hearth_cohere_backend_v1" :
+        id == "funasr_mlt_nano" ? "hearth_funasr_backend_v1" :
+        id == "voxtral_realtime" ? "hearth_voxtral_backend_v1" : "hearth_speech_backend_v1";
     auto entry = reinterpret_cast<HearthSpeechEntry>(dlsym(library, symbol));
     const auto* api = entry ? entry() : nullptr;
     if (!api || api->abi_version != HEARTH_SPEECH_ABI_VERSION || api->size != sizeof(HearthSpeechBackend) ||

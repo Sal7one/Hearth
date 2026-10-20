@@ -12,7 +12,7 @@ internal object SpeechAccelerationStore {
     private val Context.accelerationDataStore by preferencesDataStore(name = "speech_acceleration")
 
     fun choices(engine: CaptionEngineChoice): List<String> = when (engine) {
-        CaptionEngineChoice.WHISPER -> listOf("cpu", "vulkan")
+        CaptionEngineChoice.WHISPER, CaptionEngineChoice.COHERE, CaptionEngineChoice.FUNASR_MLT, CaptionEngineChoice.VOXTRAL -> listOf("cpu", "vulkan")
         CaptionEngineChoice.TRANSCRIBEPSY -> listOf("cpu", "vulkan", "opencl")
         else -> listOf("cpu")
     }

@@ -158,6 +158,7 @@ internal data class ConversationTranslatorSnapshot(
                 TranslationDirection(pair.source, pair.target), TranslationOptions.label(pair.id))
         }
         else if (MarianCascade.find(localId) != null) MarianCascade.open(context, checkNotNull(MarianCascade.find(localId)))
+        else if (com.sal7one.common_jni.translation.Ct2Catalog.find(localId) != null) com.sal7one.common_jni.translation.Ct2Catalog.find(localId)!!.let { spec -> Ct2Package.requireRuntime(context);com.sal7one.common_jni.translation.Ct2TranslationSession.open(Ct2Package.directory(context,spec),spec) }
         else TranslationCatalog.find(localId).let { spec -> LocalTranslationSession.open(LocalTranslationModels(File(context.filesDir, "translation-models")).file(spec), spec, acceleration, File(context.cacheDir, "translation-opencl")) }
     }
 }

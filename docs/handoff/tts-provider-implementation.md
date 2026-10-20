@@ -2,7 +2,21 @@
 
 This document is for an implementer who has not worked on Hearth. Read `AGENTS.md` first. The owner wants Arabic and English article reading, preferably male and female voices, reusable by other Arabic apps. Local execution targets phones, especially the owner's Galaxy S25 Ultra. **Hearth TVs must not run downloaded local models.** Android's separately installed system TTS remains an explicit service choice. The reusable library does not impose Hearth's app-specific TV policy on other apps.
 
-The latest instruction is plan-first: preserve a coherent, tested provider foundation and produce an actionable implementation plan. **None of the five new model families is integrated or advertised as executable.** Their evidence cards are in [models/tts.json](models/tts.json). Do not turn these staging cards into live download buttons without completing their runtime and package gates.
+Implementation resumed on 20 October 2026. **Magpie is now a real experimental CPU arm64 provider**, integrated through the reusable SDK and app family selector. The other four proposed new TTS families remain planned. [models/tts.json](models/tts.json) records their distinct readiness.
+
+The new `:hearth-tts-magpie` module depends only on the small API, not broad common-jni binaries. It supplies an isolated 1,797,600-byte NeMo CPU runtime on arm64 and a separately built JNI bridge. The bridge keeps `com.sal7one.common_jni`, uses lifetime-bearing leases, enumerates actual speakers and emits bounded mono float PCM through ArticleReader. A fixed packaged library name is loaded; downloaded archives never contain executable code.
+
+Live Magpie package: corrected official F16 generator 568,663,392 bytes +F16 codec 78,823,104 bytes +authenticated tokenizer ranges 31,076,864 bytes =678,563,360 download bytes. Final tokenizer members occupy 20,598,079 bytes, making installed model assets 668,084,575 bytes. The current official 446bff F16 metadata explicitly identifies v2607 and correctly orders Aria, Jason, John, Leo, Sofia. **The older upstream default 198068 F16 was tested and still had stale v2602 labels; it is excluded.**
+
+The 31 MB payload is read through strict HTTPS206/Content-Range/content-length checks, a full SHA-256 and an exact 16-occurrence archive sequence. NVIDIA's append-only TAR contains superseded configurations/dictionaries; only the 10 final pinned members are installed. Generic ZIP duplicate/path/size rules are unchanged. FOSS imports can use the exact `tokenizer.ranges` file produced by the explicit test-asset script. TV and process-ABI policy gates guard app download/import/playback.
+
+Real macOS CPU C ABI/JNI smoke tests generated Arabic and English 22050 Hz PCM and verified 5 speaker names, callback abort, cancellation propagation, bounded frames, idempotent destruction and retired-handle errors. These are functionality checks, not S25 speed/quality claims. Upstream callback abort currently reports a runtime output error rather than its documented cancellation status; the JNI layer maps an explicitly canceled request to CancellationException and preserves genuine callback/provider errors.
+
+The public SDK maps bare `ar` to `ar-MSA`, preserves `ar-SA` and `ar-AE`, and maps `pt` to `pt-BR`; passing bare `ar` directly to the current upstream tokenizer fails. Chinese/Japanese optional native frontends are excluded. Native generation rate is 1.0; Hearth applies its existing rate preference at Android playback. Named speaker genders remain UNKNOWN until primary metadata or owner listening evidence establishes them.
+
+`VoiceChoice.family` persists through DataStore and portable native-voice setup JSON. Legacy files default to Supertonic; per-family remembered voice IDs preserve previous selections. App native transport's existing `supertonic` identifier remains compatible while family selects the actual engine.
+
+Reproduce native builds with `scripts/voice/build-magpie-runtime.sh android arm64-v8a`. Explicitly fetch ignored test assets with `scripts/voice/fetch-magpie-test-assets.py`, then run `scripts/voice/run-magpie-host-smoke.sh` on macOS. Never run owner-device commands. Owner listening, S25 thermal/memory measurements and optional Vulkan remain outstanding.
 
 ## What exists now
 
@@ -68,7 +82,7 @@ The stream uses an explicitly owned `Channel(capacity = 1)`. Cancellation must c
 
 The JSON has exact revisions, URLs, byte counts, SHA-256, sources, license notes, voices and blockers. These are source/component inventories, not root-level ZIP package manifests. Some source components need conversion/extraction before Android use. All sizes are bytes; RAM and installed footprint are separate.
 
-1. **Magpie v2607** is the first native integration. Q8 generator plus F16 NanoCodec decoder is 410,635,296 bytes. It also requires matching tokenizer/config dictionaries from a 1,470,208,000-byte `.nemo` archive. A safe range extractor/repackager can avoid downloading its redundant weights, but must use matching revision/range/member pins. Do not label 411 MB as the entire install. Five baked names are Aria, Jason, John, Leo and Sofia. The official v2607 order is 0,1,2,3,4 respectively. **Older GGUF conversion wrote the v2602 order into v2607.** Inspect `speaker_names` and tokenizer profile, or reconvert from the matching archive. Gender remains unknown in our cards until primary metadata or owner validation is recorded.
+1. **Magpie v2607** is now integrated experimentally with the corrected F16 generator and F16codec (647,486,496bytes). The earlier proposed Q8 generator pluscodec was410,635,296bytes but its stale speaker metadata is excluded. It also requires matching tokenizer/config dictionaries from a 1,470,208,000-byte `.nemo` archive. A safe range extractor/repackager can avoid downloading its redundant weights, but must use matching revision/range/member pins. Do not label 411 MB as the entire install. Five baked names are Aria, Jason, John, Leo and Sofia. The official v2607 order is 0,1,2,3,4 respectively. **Older GGUF conversion wrote the v2602 order into v2607.** Inspect `speaker_names` and tokenizer profile, or reconvert from the matching archive. Gender remains unknown in our cards until primary metadata or owner validation is recorded.
 2. **MOSS-TTS Nano** is the first ONNX implementation. Official generator, tokenizer, waveform decoder and metadata inventory is 717,868,602 bytes. Reference encoding adds 45,322,911 bytes. Its Android smoke example uses pretokenized text, so it is not a complete article frontend. Native output is **48 kHz stereo**; choose an explicit tested downmix to the current mono API or extend the API with channels and layout. Do not interleave stereo and call it mono. The compact PyTorch headline is not the ONNX download size.
 3. **OmniVoice** is an Advanced evaluation backend. Selected Q8 main/codec total 945,284,608 bytes. The pretrained model is noncommercial. The conversion card's codec license description conflicts with original custom-license metadata; resolve original terms before redistribution. There are no verified bundled fixed male/female Arabic presets. Keep voice design/reference profiles separate from the generation model and label them honestly.
 4. **Chatterbox Multilingual V3** needs an ONNX adapter with contrib `MatMulNBits` support and the exact V3 tokenizer/trim logic. The selected Q4 stack totals **1,556,285,252 bytes** including reference and tokenizer. Earlier prose quoting 1.626 GB was an overcount. Native output is 24 kHz mono. The export omits upstream Perth watermarking; inspect upstream policy and document/implement the output provenance decision. V2 source compatibility is not V3 quality validation. Turbo is English-only and must not be substituted.
@@ -88,56 +102,33 @@ For ordinary Arabic article apps, first validate Supertonic, then Magpie and MOS
 
 **Done:** other apps can use TTS without STT/translation runtime dependencies; Hearth still passes app/native gates; minimal sample builds with shrinker and a local test model; model downloads remain explicit and outside the library.
 
-## Task TTS-2: real native Magpie adapter
+## Task TTS-2: Magpie CPU implementation and remaining GPU/device checks
 
-Ignored research checkout available locally at `research/tts-expansion/NeMo-Speech.cpp`, revision **caa3f47c7c75fa2e9e6340272ebad57c1647dd44**. Its llama.cpp submodule is **bd4f514db14d87fded667787a7a963bfbaa98e89**. Do not commit that checkout or any model weights. For a fresh environment, explicitly clone/pin those revisions into an ignored build directory.
+CPU integration is implemented. Continue from these actual files:
 
-Read these upstream files before coding:
+- `hearth-tts-magpie/build.gradle.kts`: optional API-only runtime module. No dependency on the large common-jni binary.
+- `hearth-tts-magpie/src/main/cpp/magpie_jni.cpp`: stable C ABI loaded from fixed packaged `libhearth_magpie.so`; monotonic lease-registry handles, serialized synthesis, cross-thread JNI attachment, borrowed PCM copies, callback exception transport and exclusive destruction.
+- `hearth-tts-magpie/src/main/cpp/vendor/tts.h`: original Apache-2.0 upstream C ABI at caa3f47c7c75fa2e9e6340272ebad57c1647dd44. Preserve append-only struct `size` fields.
+- `MagpieCatalog.kt`: exact corrected F16model/codec pins, final tokenizer members, authenticated range hash and exact 16 regular-member archive sequence. The current generator revision is446bff55e1fe3d3aa29c771574e7d2b0fa322990; do not regress to198068 orQ8 without inspecting actual speaker metadata.
+- `MagpieModels.kt`: pinned weight imports, full SHAverification and bounded authenticated tokenizer extraction. Earlier .nemo snapshots may only be discarded if they match the exact pinned occurrence sequence. Unknown paths, types, fields, sizes, hashes or extra final members fail.
+- `MagpieSpeechEngine.kt`: lazy verified native model load; correct language mapping; real speaker enumeration checked against the pinned model; bounded mono float PCM; token-aware cancellation and exclusiveclose. Native cancellation is terminal for that session; a subsequent article recreates its runtime.
+- `scripts/voice/build-magpie-runtime.sh`, `nemo-tts-inject.cmake`, `magpie.map`: separately built CPUruntime, static private GGML, unique SONAME, only 12 stable C ABI exports,16 KB alignment. Pinned NeMo source caa3f47c7c75fa2e9e6340272ebad57c1647dd44; llama/GGML bd4f514db14d87fded667787a7a963bfbaa98e89. Optional GPU is not built.
+- `scripts/voice/fetch-magpie-test-assets.py`, `run-magpie-host-smoke.sh`, `magpie-smoke.cpp` and`tests/com/sal7one/common_jni/voice/MagpieNative.java`: explicit ignored test assets and real CABI/JNI smoke tests. No networkfetch runs fromGradle.
+- `app/.../voice/MagpiePolicy.kt`: actual running-process runtime availability plus TVpolicy. Download/import/install/select/portableapply/playback must keep this guard; a64bit device can still run a32bit APK.
+- `app/.../voice/MagpieTokenizerDownload.kt`: fresh credential-freeHTTPclient; exactly two 206 range responses and content lengths, then fullpayload/member hashes. No provider key is sent to modelhosts. Cancellation cancelsHTTPcalls and deletes temporary data.
+- `app/.../settings/settings_voice_magpie_ui.kt`: family voice/preview/install UI, EN/AR/ZH labels and explicit unavailable runtime state. Downloadedweights use existing systemDownloadManager; tokenizerinstallation is a foreground cancellable31MBstep. Retry is safe because all components stay pinned.
+- `app/.../voice/VoiceSettings.kt`, `VoicePlayer.kt`, `setup/PortableSetup*.kt`: compatible localtransportidentifier plus explicitfamilyselection, per-family remembered voices, portablefamilyfield and one continuousAudioTrack. Native rate stays1.0; Android playback applies the saved rate.
+- `hearth-tts-magpie/src/main/assets/licenses/magpie/`: source/binary provenance, originalruntime/GGML notices. Modelweights are downloaded separately; no weights reside inGit.
 
-- `include/nemo_speech/tts.h`: stable C ABI, ownership and struct `size` fields.
-- `docs/sdk.md`, `docs/tts/models.md`, `docs/tts/configuration.md`.
-- `src/tts/c_api.cpp`, `src/tts/synthesizer.cpp`, `src/tts/magpietts/CMakeLists.txt`.
-- `models/index.json`: default component pins and bounded tokenizer tar-range/member extraction evidence.
-- Existing Hearth `scripts/speech/build-runtimes.sh`, `scripts/translation/build-runtime.sh` and symbol maps: follow their isolated-library/reproducible-source pattern.
+Run the module JVM tests and existing9coretests. The real-source tokenizer fixture test uses the authenticated ignored range file when available. CABI smoke validates corrected5speakers and nonempty Arabic/English 22050 HzPCM. JNI smoke additionally validates Java callbacks, bounded frames, requested cancellation, idempotent destroy and stalehandle rejection. Upstream currently returns a runtime error after a raw falsePCMcallback; the JNI bridge maps explicit cancellation from its own atomicflag to CancellationException and preserves genuine callback exceptions/errors. Do not treat every provider output failure as cancellation.
 
-Start with a **CPU-only arm64 build** to validate tokenizer and ABI. Upstream requires CMake >=3.26; Android app common-jni uses 3.22.1, so build optional NeMo separately. Local `/opt/homebrew/bin/cmake` is 4.4.2; NDK is 27.0.12077973. A configure recipe to adapt and test is:
+Remaining work:
 
-```bash
-cmake -S research/tts-expansion/NeMo-Speech.cpp \
-  -B build/voice-runtimes/magpie-arm64-cpu -G Ninja \
-  -DCMAKE_BUILD_TYPE=Release \
-  -DCMAKE_TOOLCHAIN_FILE="$ANDROID_NDK_HOME/build/cmake/android.toolchain.cmake" \
-  -DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM=android-28 \
-  -DANDROID_STL=c++_shared -DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON \
-  '-DCMAKE_SHARED_LINKER_FLAGS=-Wl,-z,max-page-size=16384' \
-  -DBUILD_SHARED_LIBS=OFF -DGGML_NATIVE=OFF -DGGML_OPENMP=OFF \
-  -DGGML_VULKAN=OFF -DGGML_METAL=OFF -DGGML_CUDA=OFF \
-  -DNEMO_SPEECH_BUILD_ASR=OFF -DNEMO_SPEECH_BUILD_DIAR=OFF \
-  -DNEMO_SPEECH_BUILD_TTS=ON -DNEMO_SPEECH_BUILD_NMT=OFF \
-  -DNEMO_SPEECH_BUILD_CLI=OFF -DNEMO_SPEECH_BUILD_MIC_CAPTURE=OFF \
-  -DNEMO_SPEECH_BUILD_HTTP=OFF -DNEMO_SPEECH_BUILD_GRPC=OFF \
-  -DNEMO_SPEECH_BUILD_TESTS=OFF -DBUILD_TESTING=OFF \
-  -DNEMO_SPEECH_TTS_WITH_JA=OFF -DNEMO_SPEECH_TTS_WITH_ZH=OFF \
-  -DNEMO_SPEECH_WITH_NORM=OFF
-cmake --build build/voice-runtimes/magpie-arm64-cpu --target nemo_speech_tts -j4
-```
-
-This recipe has **not been executed or proved Android-compatible** in this patch. Verify the upstream patch application path and target dependencies before treating output as shippable. Do not suppress a compilation failure by removing tokenizer support or model layers. Resolve platform-specific build failures as explicit small patches with pinned source inputs. A CPU build is not GPU acceleration evidence.
-
-Then implement a small optional JNI bridge/runtime module:
-
-1. Keep JNI package `com.sal7one.common_jni`. Load a fixed packaged native library; never load executable `.so` files from downloaded model archives. Prefer the stable C ABI. Isolate NeMo's GGML symbols and SONAME from the app's Whisper/translation GGML copies; static GGML into a separate shared runtime with an export/version script and `--exclude-libs,ALL` is the existing pattern. Inspect `llvm-readelf --dyn-syms/--needed`, ABI architecture and load segments.
-2. Create an opaque handle with exclusive lifetime ownership. `nemo_speech_tts_create` receives the matched generator, codec and tokenizer directory. Enumerate real `speaker_count`/`speaker_name`; never hardcode names into a stale GGUF. Select language and voice for every request.
-3. The PCM callback receives **little-endian signed16 mono**. Copy before callback returns, convert to float exactly once and emit bounded frames. Returning false cancels the operation. Do not save the callback's borrowed pointer. A Java exception must stop native callbacks and propagate as a real error.
-4. Upstream exposes no independent cancel entry in this C ABI. Use an atomic per-request cancellation token checked by the PCM callback and before JNI entry. Document worst-case delay before first callback. Do not destroy the synthesizer while a call is active; retire handle, signal cancel, wait for owner, then destroy. Consider a narrow upstream cancellation patch if initial encoder latency is material.
-5. Map returned status and `nemo_speech_tts_last_error()` into meaningful Kotlin errors. `ERROR_CANCELLED` must remain cancellation; invalid arguments/runtime failures must not become no audio. Do not assume thread-local error text can be read on another thread.
-6. Retain a model session across article parts to preserve warm speed. Default threads should leave capacity for independent caption/MT stages. Make longform/window/cache options backend capabilities in Advanced; Basic selects a tested bundle.
-7. Build separate Vulkan arm64 artifact only after CPU parity passes. Configure pinned Vulkan headers, shader generator and host `glslc` following existing speech/translation recipes; prove tensor placement and report backend diagnostics. The C ABI backend-preference enum currently names AUTO/CPU/CUDA, so inspect actual runtime backend selection and do not claim a CPU enum enables Vulkan.
-8. Package native notices, original source revision, patch hashes, binary hash and size in provenance. Native APK needs16KB alignment and all included ABI checks. Keep GPU optional; fail clearly if selected but unavailable rather than silently claiming GPU.
-
-**Model package:** build a safe archive with root manifest matching Hearth's importer and approved exact files. Use an ignored builder to extract the matched `.nemo` tokenizer/config assets, reject links/path traversal/duplicate paths and enforce compressed/uncompressed bounds. The upstream index's range/member hashes are tied to its pinned model revision; do not apply them to a different `.nemo` merely because byte count matches. Record installed size and full download size separately. Enable catalog download only after reproducible artifact hashes and model load smoke tests.
-
-**Done:** actual owner-testable Magpie backend, real Arabic/English tokenizer, all five real voices enumerated, cancellation/error path tests, CPU parity, verified optional Vulkan backend, correct installed/download size, notices and model cards. No future-only option looks installed or runnable.
+1. Owner runs Arabic/English listening and sustainedS25Ultra measurements. Record firstaudio, warm/cold load, realtimefactor, peakmemory and temperature. MacCPU success does not establish phoneperformance or Arabic pronunciationquality. Keep the model labeled experimental until that evidence exists.
+2. Optional Vulkan needs a separate pinned artifact and backend diagnostics. The current CABI backend enum namesAUTO/CPU/CUDA; inspect actual Vulkan placement rather than assumingAUTO meansGPU. Start from CPUparity, isolateGGML symbols, build pinned Vulkanheaders/shaders as the other speech runtime recipes do, and verify no Vulkanload occurs whenCPU is selected.
+3. Confirm real speaker gender metadata/listening observations before male/female labels. Do not infer gender from personal names. Default Arabic isMSA; expose SA/AEchoices deliberately when UI language preferences support them.
+4. The upstream standardgenerationwindow is bounded; preserve punctuation, exact tokenization and cancellationlatency bounds. Do not destroy a handle during anactive call. Additional native cancellation before firstPCM may require a narrow upstream patch, with tests and source provenance.
+5. A fully resumablebackgroundtokenizerdownload is a later refinement. The current foregroundstep is31MB, cancellable, authenticated and safely retryable; the two largeweightfiles already use systemdownloadtracking.
 
 ## Task TTS-3: MOSS ONNX adapter
 

@@ -77,6 +77,9 @@ enum class CaptionEngineChoice(val label: String, val explanation: String) {
         "On-device recognition in eight European languages from a TranscribePsy GGUF model. " +
             "Final captions arrive after short utterances. Translation uses a separate model.",
     ),
+    COHERE("Cohere Arabic (local)", "Arabic and English utterance captions. Choose the spoken language explicitly. Independent optional translation."),
+    FUNASR_MLT("Fun-ASR MLT Nano (local)", "Multilingual recognition including Arabic and English in short utterance windows. Independent optional translation."),
+    VOXTRAL("Voxtral Realtime (local)", "Multilingual automatic recognition with bounded windowed partials. Large model; S25 performance needs testing."),
     /**
      * NETWORK CODE (BYOK) — play distribution only; hidden in the FOSS
      * build (ByokPolicy.cloudEngineAvailable()) and never constructed

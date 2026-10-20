@@ -1,0 +1,9 @@
+<resources>
+    <string name="speech_cohere_note">Cohere Arabic · Choose Arabic or English. Automatic language detection is unavailable. Final captions arrive after short utterances.</string>
+    <string name="speech_funasr_note">Fun-ASR MLT Nano · Multilingual utterance captions, including Arabic and English. Auto or an explicit spoken language.</string>
+    <string name="speech_voxtral_note">Voxtral Realtime · Recognition accepts no language hint. Choose a known source to label text for translation; Auto leaves the source unknown. Bounded windowed partials; phone performance is unverified.</string>
+    <string name="speech_expansion_arm64">This native runtime currently requires a 64-bit ARM phone. Model weights are separate from memory usage; device performance needs testing.</string>
+    <string name="speech_cohere_label">Cohere Arabic (local)</string>
+    <string name="speech_funasr_label">Fun-ASR MLT Nano (local)</string>
+    <string name="speech_voxtral_label">Voxtral Realtime (local)</string>
+</resources>

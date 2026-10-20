@@ -42,8 +42,10 @@ internal data class PortableVoiceStage(
     val gender: SpeakerGender = SpeakerGender.ANY,
     val volume: Int = 100,
     val voiceId: String? = null,
+    val family: String? = null,
 ) {
     init {
+        require(family == null || family in setOf("supertonic", "magpie")) { "Unsupported local voice family" }
         require(volume in 0..100) { "Voice volume must be 0–100" }
         require(voiceId == null || voiceId.matches(Regex("[A-Za-z0-9._-]{1,80}"))) { "Invalid voice reference" }
     }
@@ -72,7 +74,7 @@ internal data class PortableSetup(
         translation?.let { stage -> put("translation", JSONObject().put("modelId", stage.modelId)
             .put("sourceLanguage", stage.sourceLanguage).put("targetLanguage", stage.targetLanguage).put("enabled", stage.enabled)) }
         voice?.let { stage -> put("voice", JSONObject().put("enabled", stage.enabled).put("choice", stage.choice.name)
-            .put("gender", stage.gender.name).put("volume", stage.volume).apply { stage.voiceId?.let { put("voiceId", it) } }) }
+            .put("gender", stage.gender.name).put("volume", stage.volume).apply { stage.voiceId?.let { put("voiceId", it) }; stage.family?.let { put("family", it) } }) }
     }.toString(2)
 
     companion object {
@@ -116,9 +118,9 @@ internal data class PortableSetup(
             val translation = root.optionalObject("translation")?.checked(setOf("modelId", "sourceLanguage", "targetLanguage", "enabled"))?.let {
                 PortableTranslationStage(it.string("modelId"), it.string("sourceLanguage"), it.string("targetLanguage"), it.boolean("enabled"))
             }
-            val voice = root.optionalObject("voice")?.checked(setOf("enabled", "choice", "gender", "volume", "voiceId"))?.let {
+            val voice = root.optionalObject("voice")?.checked(setOf("enabled", "choice", "gender", "volume", "voiceId", "family"))?.let {
                 PortableVoiceStage(it.boolean("enabled"), CaptionSpeakerChoice.valueOf(it.string("choice")),
-                    SpeakerGender.valueOf(it.string("gender")), it.integer("volume"), it.optionalString("voiceId"))
+                    SpeakerGender.valueOf(it.string("gender")), it.integer("volume"), it.optionalString("voiceId"), it.optionalString("family"))
             }
             return PortableSetup(root.string("name"), speech, translation, voice)
         }

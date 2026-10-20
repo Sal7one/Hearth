@@ -45,17 +45,27 @@ All code paths below are relative to the repository root. The Android package is
 
 ## What exists and what still needs implementation
 
-The working tree accompanying this handoff contains a bounded first increment. Use [validation.md](validation.md) for its final verification status.
+The branch has progressed beyond the initial preparation checkpoint. The validation
+record describes that earlier checkpoint; use the current release notes and the
+implementation evidence linked below for subsequent runtime work. Research-selected
+variants in the handoff cards are not automatically the live app's selected artifacts.
 
 | Area | Baseline and current branch work | Remaining work |
 | --- | --- | --- |
-| STT | Existing Whisper, Vosk, Moonshine, Qwen, Omnilingual, Phonon, TranscribePsy and Nemotron paths remain | Five new STT families are preparation cards and implementation recipes, not new live enum choices |
+| STT | Existing engines remain; Cohere Arabic, Fun-ASR MLT Nano and Voxtral have ARM64 CPU/Vulkan adapters, packages and [host evidence](../models/stt-native-expansion.md) | Audar and OWSM remain prepared targets; owner S25 quality/memory/speed testing for new adapters |
 | GGUF MT | Existing CPU, Vulkan and Adreno OpenCL paths; branch adds EuroLLM and Riva prompt modes and catalog identities | Real-model Arabic parity and S25 measurements; keep results separate from successful builds |
-| Other MT | Existing Marian/OPUS ONNX and ML Kit remain | QuickMT/SMaLL need CTranslate2; Jisr needs its actual tokenizer/export protocol |
-| TTS | Existing Supertonic remains the first working native voice; branch prepares a small SDK and Supertonic adapter used by the app | Magpie, OmniVoice, MOSS Nano, Chatterbox Multilingual V3 and OuteTTS adapters and phone validation |
+| Other MT | Marian/OPUS and ML Kit remain; [CTranslate2 ARM64 CPU](../models/ct2-translators.md) adds independent QuickMT en→ar / ar→en and SMaLL-100 packages | Production-weight parity and S25 measurements; Jisr still needs its actual tokenizer/export protocol |
+| TTS | Small SDK, working Supertonic adapter and separate Magpie ARM64 CPU adapter used by app; [Magpie uses corrected F16 plus authenticated tokenizer ranges](tts-provider-implementation.md) | OmniVoice, MOSS Nano, native Chatterbox Multilingual V3 and OuteTTS adapters; phone validation and standalone Supertonic dependency extraction |
 | TV | Branch adds app policy checks at model use, transfer and import boundaries plus TV connection UI | Owner UI/runtime testing; test stale saved local selections as well as fresh installations |
 | Cards | Pinned, sourced records for the 15 target models | Promote records into production catalogs only after each adapter satisfies its readiness checks |
-| Release | Current release baseline is 0.25.4/code 88 | Do not label this preparation branch a completed 15-model release |
+| Release | [0.26.0/code 89](../releases/0.26.0.md) prepares a signed QA draft on top of 0.25.4 | Do not label this a completed 15-model integration or a phone-verified release |
+
+[Ming-3.0](../ming-3.0.md) is a separate five-checkpoint hosted expansion with
+[complete pinned cards](../models/ming-3.0.json). Its published languages exclude
+Arabic, so it is deliberately outside the 15 bilingual target records. TTS uses
+the two distinct official APIs; Audio Tiny/Flash are connected for transcription,
+and ASR Tiny uses the documented SGLang-Omni endpoint. No local Android Ming runtime
+or CUDA inference result is claimed.
 
 New trained weights can count as a new model while sharing an architecture. Audar is explicitly Qwen-derived. Quants and conversions remain variants of one model, not separate model families.
 

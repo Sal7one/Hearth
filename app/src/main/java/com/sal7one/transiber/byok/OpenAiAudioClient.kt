@@ -68,13 +68,27 @@ class OpenAiAudioClient(
             connection.outputStream.use { it.write(body) }
             val status = connection.responseCode
             val stream = if (status in 200..299) connection.inputStream else connection.errorStream
-            val text = stream?.bufferedReader()?.use { it.readText() } ?: ""
+            val text = stream?.bufferedReader()?.use { reader ->
+                val result = StringBuilder()
+                val chunk = CharArray(4096)
+                while (true) {
+                    val count = reader.read(chunk)
+                    if (count < 0) break
+                    if (result.length + count > 1_048_576) throw ByokHttpException("Provider response exceeds 1 MiB")
+                    result.append(chunk, 0, count)
+                }
+                result.toString()
+            } ?: ""
             if (status !in 200..299) {
                 throw ByokHttpException(
-                    "Provider returned HTTP $status from $endpoint: ${text}",
+                    "Provider returned HTTP $status from $endpoint: ${redact(text)}",
                 )
             }
-            return JSONObject(text).optString("text", "").trim()
+            val response = JSONObject(text)
+            if (response.has("error")) throw ByokHttpException("Provider error: ${redact(response.get("error").toString())}")
+            val transcript = response.opt("text")
+            if (transcript !is String) throw ByokHttpException("Provider response is missing a transcription text string")
+            return transcript.trim()
         } finally {
             activeConnection = null
             connection.disconnect()
@@ -86,7 +100,7 @@ class OpenAiAudioClient(
         fun part(name: String, value: String) {
             out.writeAscii("--$boundary\r\n")
             out.writeAscii("Content-Disposition: form-data; name=\"$name\"\r\n\r\n")
-            out.writeAscii(value)
+            out.write(value.toByteArray(Charsets.UTF_8))
             out.writeAscii("\r\n")
         }
         out.writeAscii("--$boundary\r\n")
@@ -107,6 +121,8 @@ class OpenAiAudioClient(
     private fun ByteArrayOutputStream.writeAscii(s: String) {
         for (b in s.toByteArray(Charsets.US_ASCII)) write(b.toInt())
     }
+
+    private fun redact(text: String): String = if (apiKey.isBlank()) text else text.replace(apiKey, "<redacted>")
 }
 
 class ByokHttpException(message: String) : Exception(message)

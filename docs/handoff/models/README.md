@@ -329,9 +329,9 @@ Languages: en, ar.
 
 Required source components: **773.708 MB** (773,707,570 bytes).
 
-Readiness: **not-implemented**. Target: CTranslate2 CPU + SentencePiece.
+Readiness: **integrated-unverified**. Target: CTranslate2 4.8.3 CPU Ruy; ARM64 Android; 2 threads; bounded greedy decoder.
 
-Streaming: Committed text segments; no token streaming currently exposed.
+Streaming: Committed text segments; one complete result per input.
 
 Directions: [{"source": "en", "target": "ar"}, {"source": "ar", "target": "en"}].
 
@@ -339,9 +339,8 @@ License: [CC-BY-4.0](https://huggingface.co/quickmt/quickmt-en-ar).
 
 Required work:
 
-- CTranslate2 Android runtime, JNI session and native provenance not implemented
-- Dedicated multi-file import/download/install integration not implemented
-- Arabic/English tokenizer and real-weight inference parity not tested
+- Exact QuickMT/SMaLL weight inference and Arabic/English parity have not run; owner S25 measurements pending
+- ARM64 only; 32-bit/other ABI activation and transfers rejected
 
 | Component | Role | Bytes | Required | Source |
 | --- | --- | ---: | --- | --- |
@@ -505,9 +504,9 @@ Languages: af, am, ar, ast, az, ba, be, bg, bn, br, bs, ca, ceb, cs, cy, da, de,
 
 Required source components: **344.075 MB** (344,075,494 bytes).
 
-Readiness: **not-implemented**. Target: CTranslate2 CPU int8_float32 + SentencePiece.
+Readiness: **integrated-unverified**. Target: CTranslate2 4.8.3 CPU Ruy; ARM64 Android; 2 threads; bounded greedy decoder.
 
-Streaming: Committed text segments only.
+Streaming: Committed text segments; one complete result per input.
 
 Directions: {"mode": "all-distinct-pairs", "languageCodesRef": "languages", "pairCount": 9900, "requiredHandoffPairs": [{"source": "en", "target": "ar"}, {"source": "ar", "target": "en"}], "qualityNote": "Coverage is not quality verification for every pair. See per-benchmark quality evidence."}.
 
@@ -515,9 +514,8 @@ License: [MIT](https://huggingface.co/solavr/small100-ctranslate2-int8/blob/3c5a
 
 Required work:
 
-- Shared CT2 Android/JNI runtime and package installation not implemented
-- Target-language source prefix differs from standard M2M100; parity tests required
-- Exact INT8 Arabic/English parity unverified
+- Exact QuickMT/SMaLL weight inference and Arabic/English parity have not run; owner S25 measurements pending
+- ARM64 only; 32-bit/other ABI activation and transfers rejected
 
 | Component | Role | Bytes | Required | Source |
 | --- | --- | ---: | --- | --- |
@@ -602,30 +600,30 @@ Parameters: {"generator": 364000000, "codec": "Additional frozen NanoCodec; not 
 
 Languages: ar, zh, en, fr, de, hi, it, ja, ko, pt, es, vi.
 
-Required source components: **1880.843 MB** (1,880,843,296 bytes).
+Required source components: **2117.694 MB** (2,117,694,496 bytes).
 
-Readiness: **planned-not-executable**. Target: NeMo-Speech.cpp separate C ABI library, CPU first then Vulkan.
+Readiness: **integrated-experimental-cpu-arm64**. Target: Pinned isolated NeMo-Speech.cpp CPU arm64 runtime with real JNI PCM callbacks.
 
-Streaming: {"upstream": "Incremental codec PCM callback; longform available", "hearth": false}.
+Streaming: {"upstream": "Incremental codec PCM callback; longform available", "hearth": true}.
 
-Selected model and codec weights: **410.635 MB**. Required frontend/source inputs and installed footprint are separate.
+Selected model and codec weights: **647.486 MB**. Required frontend/source inputs and installed footprint are separate.
 
-requiredSourceBytes includes full .nemo archive for reproducible tokenizer extraction, not installed runtime footprint; previous 411MB headline excludes mandatory tokenizer assets.
+The source inventory includes the entire1.47GB .nemo for reproducibility. Hearth downloads only31,076,864 authenticated range bytes and extracts20,598,079 verified tokenizer bytes. Its actual complete download is678,563,360 bytes; installed components are668,084,575 bytes, plus the optional1,797,600-byte CPU runtime/JNI shim.
 
-Voice evidence: {"kind": "baked-speakers", "items": [{"id": "0", "label": "Aria", "gender": "unknown", "genderEvidence": null}, {"id": "1", "label": "Jason", "gender": "unknown", "genderEvidence": null}, {"id": "2", "label": "John", "gender": "unknown", "genderEvidence": null}, {"id": "3", "label": "Leo", "gender": "unknown", "genderEvidence": null}, {"id": "4", "label": "Sofia", "gender": "unknown", "genderEvidence": null}], "mappingEvidence": "Official v2607 speaker_map; inspect selected GGUF metadata because older converted files used v2602 order. No gender inferred from personal names.", "source": "https://huggingface.co/nvidia/magpie_tts_multilingual_357m/blob/446bff55e1fe3d3aa29c771574e7d2b0fa322990/README.md"}.
+Voice evidence: {"kind": "baked-speakers", "items": [{"id": "0", "label": "Aria", "gender": "unknown", "genderEvidence": null}, {"id": "1", "label": "Jason", "gender": "unknown", "genderEvidence": null}, {"id": "2", "label": "John", "gender": "unknown", "genderEvidence": null}, {"id": "3", "label": "Leo", "gender": "unknown", "genderEvidence": null}, {"id": "4", "label": "Sofia", "gender": "unknown", "genderEvidence": null}], "mappingEvidence": "Pinned corrected F16 GGUF metadata at446bff55e1fe3d3aa29c771574e7d2b0fa322990 was inspected and real C ABI/JNI enumeration matched0Aria,1Jason,2John,3Leo,4Sofia. Older198068F16 and publishedQ8 carried stale v2602 labels and are excluded.", "source": "https://huggingface.co/nvidia/magpie_tts_multilingual_357m/blob/446bff55e1fe3d3aa29c771574e7d2b0fa322990/README.md"}.
 
 License: [NVIDIA Open Model License; runtime Apache-2.0; companion codec license must accompany distribution](https://huggingface.co/nvidia/magpie_tts_multilingual_357m#license).
 
 Required work:
 
-- No Hearth Magpie adapter or Android NeMo runtime is packaged.
-- Tokenizer is outside the GGUF and must match the .nemo revision/profile.
-- Selected published Q8 needs speaker_names verification: upstream documents an old v2602/v2607 mapping bug.
-- No S25 speed, thermals, Arabic Q8 quality or male/female listening validation.
+- Owner S25 Arabic/English listening, sustained latency, thermal and memory validation remain.
+- CPU arm64 only; Vulkan is not supplied or claimed.
+- Male/female metadata for named speakers remains unknown; choose by preview.
+- JNI cancellation is checked at PCM callback boundaries; initialization can delay cancellation.
 
 | Component | Role | Bytes | Required | Source |
 | --- | --- | ---: | --- | --- |
-| `magpie_tts_multilingual_357m.v2607.q8_0.gguf` | generator | 331,812,192 | True | [Pinned file](https://huggingface.co/nvidia/magpie_tts_multilingual_357m/blob/446bff55e1fe3d3aa29c771574e7d2b0fa322990/magpie_tts_multilingual_357m.v2607.q8_0.gguf) |
+| `magpie_tts_multilingual_357m.v2607.f16.gguf` | generator | 568,663,392 | True | [Pinned file](https://huggingface.co/nvidia/magpie_tts_multilingual_357m/blob/446bff55e1fe3d3aa29c771574e7d2b0fa322990/magpie_tts_multilingual_357m.v2607.f16.gguf) |
 | `nemo_nano_codec_22khz_1.89kbps_21.5fps.decoder.f16.gguf` | waveform-decoder | 78,823,104 | True | [Pinned file](https://huggingface.co/nvidia/nemo-nano-codec-22khz-1.89kbps-21.5fps/blob/fc00890b604aa2de298d2641ffc6c5f6caf8c4d7/nemo_nano_codec_22khz_1.89kbps_21.5fps.decoder.f16.gguf) |
 | `magpie_tts_multilingual_357m.nemo` | tokenizer-source-archive | 1,470,208,000 | True | [Pinned file](https://huggingface.co/nvidia/magpie_tts_multilingual_357m/blob/446bff55e1fe3d3aa29c771574e7d2b0fa322990/magpie_tts_multilingual_357m.nemo) |
 
@@ -635,7 +633,7 @@ Evaluation evidence:
 
 ```json
 {
-  "scope": "Publisher original v2607 release; not the selected Q8 generator/codec conversion and not Hearth/S25 measurements.",
+  "scope": "Publisher original v2607 release; selected corrected F16 GGUF/native runtime was not benchmarked for CER/SSIM, and no Hearth/S25 quality measurement is claimed.",
   "Arabic": {
     "CERpercent": 1.62,
     "SSIM": 0.806,

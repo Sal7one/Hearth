@@ -120,9 +120,10 @@ fun ModelsScreen(onDownloads: () -> Unit = {}, onVoices: () -> Unit = {}, initia
                     ManagedModelSourcesUi(onImport = { id -> scope.launch {
                         val registered = registry.getModel(id)
                         val translator = com.sal7one.common_jni.translation.TranslationCatalog.models.firstOrNull { it.id == id }
+                        val ct2 = com.sal7one.common_jni.translation.Ct2Catalog.find(id)
                         val pair = com.sal7one.transiber.translation.MarianPackage.pairs.firstOrNull { it.id == id || it.treeSha256 == registered?.digest?.hex }
-                        if (translator != null || pair != null || registered?.engineType == ModelEngineType.TRANSLATE) {
-                            section = "Translation"; repairModelId = translator?.id ?: pair?.id ?: id
+                        if (translator != null || ct2 != null || pair != null || registered?.engineType == ModelEngineType.TRANSLATE) {
+                            section = "Translation"; repairModelId = translator?.id ?: ct2?.id ?: pair?.id ?: id
                         } else {
                             section = "Speech"
                             repairEngine = when (registered?.engineType) {

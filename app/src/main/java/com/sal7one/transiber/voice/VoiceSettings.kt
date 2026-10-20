@@ -11,22 +11,26 @@ import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
 
-internal data class VoiceChoice(val backend: String="system",val voice: String="F1",val rate: Float=1f,val steps: Int=5)
+internal data class VoiceChoice(val backend: String="system",val voice: String="F1",val rate: Float=1f,val steps: Int=5,val family: String="supertonic")
 internal object VoiceSettings {
     fun prefs(context: Context)=com.sal7one.transiber.preferences.UserPreferences.store(context, "voice-output")
     fun choice(context: Context): VoiceChoice = prefs(context).let {p ->VoiceChoice(
         p.getString("backend","system").orEmpty().let {if(it=="remote" && !ByokPolicy.FEATURE_BYOK)"system" else it},
-        p.getString("voice","F1").orEmpty(),p.getFloat("rate",1f).coerceIn(.5f,2f),p.getInt("steps",5).coerceIn(2,12))}
+        p.getString("voice","F1").orEmpty(),p.getFloat("rate",1f).coerceIn(.5f,2f),p.getInt("steps",5).coerceIn(2,12),p.getString("local-family","supertonic").orEmpty().takeIf {it in setOf("supertonic","magpie")} ?: "supertonic")}
+    fun familyVoice(context: Context,family: String): String = prefs(context).getString("family-voice-$family",null)
+        ?: if(family=="magpie")"John" else "F1"
     fun customBackend(context: Context): String? = prefs(context).let { p ->
         VoiceSelection.customBackend(p.getString("backend","system").orEmpty(), p.getString("custom-backend",null), ByokPolicy.FEATURE_BYOK)
     }
     fun save(context: Context,value: VoiceChoice) {
+        require(value.family in setOf("supertonic","magpie"))
         require(value.backend in setOf("system","supertonic","remote"))
         check(value.backend!="remote" || ByokPolicy.FEATURE_BYOK)
         val p=prefs(context)
+        val previous=choice(context)
         val custom=VoiceSelection.customBackend(value.backend, customBackend(context), ByokPolicy.FEATURE_BYOK)
-        p.edit().putString("backend",value.backend).putString("custom-backend",custom)
-            .putString("voice",value.voice).putFloat("rate",value.rate).putInt("steps",value.steps).apply()
+        p.edit().apply {if(previous.family!=value.family)putString("family-voice-${previous.family}",previous.voice)}.putString("backend",value.backend).putString("custom-backend",custom)
+            .putString("voice",value.voice).putString("family-voice-${value.family}",value.voice).putString("local-family",value.family).putFloat("rate",value.rate).putInt("steps",value.steps).apply()
     }
     fun remote(context: Context): RemoteVoiceConnection {
         check(ByokPolicy.FEATURE_BYOK){"Network voices are unavailable in the offline build"}

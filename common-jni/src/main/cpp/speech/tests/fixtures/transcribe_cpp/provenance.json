@@ -1,0 +1,10 @@
+{
+  "sourceRepo": "https://github.com/handy-computer/transcribe.cpp",
+  "sourceRevision": "1dc22facfc931e2f8adb43924b0e38b9c46f83c7",
+  "purpose": "Only the pinned public C API headers for offline fake-upstream adapter tests. Production runtime builds use the pinned actual upstream source checkout. No weights or engine implementation copied.",
+  "files": {
+    "LICENSE": "86a53633b56f6b029d3cb42158bcc7aac0cdff898aceb13e83b93e368bbc4ac6",
+    "include/transcribe.h": "202a9e17f9828c85315125dd38dacd73f8be51db0de190da7e29d753b0953a76",
+    "include/transcribe/voxtral_realtime.h": "de0321ce95f54904a76a72bdef267621d499c3bcae0cd319587fb9f4242f8082"
+  }
+}

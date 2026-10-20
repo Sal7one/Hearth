@@ -13,6 +13,7 @@ import com.sal7one.common_jni.model.SttConfig
 import com.sal7one.common_jni.speech.*
 import com.sal7one.common_jni.translation.*
 import com.sal7one.transiber.caption.SpeechAccelerationStore
+import com.sal7one.transiber.caption.captionEngine
 import com.sal7one.transiber.caption.CaptionEngineChoice
 import com.sal7one.common_jni.engine.whisper.WhisperAcceleration
 import com.sal7one.transiber.caption.LocalSpeechModels
@@ -169,7 +170,10 @@ internal class LocalBenchmarkRunner(private val context: Context) {
             BenchmarkCandidate(route.id, TranslationOptions.label(route.id), "Translation / ONNX via English",
                 setOf(route.source), setOf(route.target))
         }
-        speech + legacy + gguf + mlKit + marian + cascades
+        val ct2=com.sal7one.common_jni.translation.Ct2Catalog.models.filter { com.sal7one.transiber.translation.Ct2Package.installed(context,it) }.map {
+            BenchmarkCandidate(it.id,it.label,"Translation / CTranslate2 CPU",it.sources,it.targets,file=com.sal7one.transiber.translation.Ct2Package.directory(context,it))
+        }
+        speech + legacy + gguf + mlKit + marian + cascades + ct2
     }
 
     suspend fun run(
@@ -244,8 +248,7 @@ internal class LocalBenchmarkRunner(private val context: Context) {
                                 MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it.toInt() and 255) }
                             }
                             runtime += "; ${candidate.profile.id}; package manifest SHA-256 $manifestHash; defaults: threads 4 where supported, right context 3, utterance 4000 ms"
-                            val acceleration = candidate.acceleration ?: if (candidate.profile.backend == SpeechBackend.TRANSCRIBEPSY)
-                                SpeechAccelerationStore.current(context, CaptionEngineChoice.TRANSCRIBEPSY) else "cpu"
+                            val acceleration = candidate.acceleration ?: SpeechAccelerationStore.current(context, candidate.profile.captionEngine)
                             executedAcceleration = acceleration
                             runtime += "; requested $acceleration; initialization did not complete"
                             speech = backend.open(checkNotNull(candidate.file), SpeechOptions(sourceLanguage = source,
@@ -263,6 +266,12 @@ internal class LocalBenchmarkRunner(private val context: Context) {
                             withContext(Dispatchers.IO) { translator = LocalTranslationSession.open(checkNotNull(candidate.file), candidate.translation, acceleration, File(context.cacheDir, "translation-opencl")) }
                             cancelNative = { translator?.cancel() }
                             runtime = "Pinned GGUF ${candidate.translation.revision}; SHA-256 ${candidate.translation.sha256}; requested ${acceleration.id}; ${translator?.executionInfo}"
+                        }
+                        com.sal7one.common_jni.translation.Ct2Catalog.find(candidate.id)!=null -> {
+                            val spec=checkNotNull(com.sal7one.common_jni.translation.Ct2Catalog.find(candidate.id))
+                            require(spec.supports(source,target)) { "Unsupported CT2 direction" }
+                            withContext(Dispatchers.IO) { translator=com.sal7one.common_jni.translation.Ct2TranslationSession.open(com.sal7one.transiber.translation.Ct2Package.directory(context,spec),spec) }
+                            cancelNative={translator?.cancel()};executedAcceleration="cpu";runtime=checkNotNull(translator?.executionInfo)+"; revision ${spec.files.first().revision}; weights SHA-256 ${spec.files.first { it.name=="model.bin" }.sha256}"
                         }
                         MarianPackage.find(candidate.id) != null -> {
                             val pair = checkNotNull(MarianPackage.find(candidate.id))

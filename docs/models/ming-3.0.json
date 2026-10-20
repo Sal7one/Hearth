@@ -1,0 +1,2174 @@
+{
+  "schemaVersion": 1,
+  "verifiedAt": "2026-10-20",
+  "models": [
+    {
+      "id": "inclusionAI/Ming-3.0-tts-0.5B",
+      "family": "tts",
+      "revision": "e5bd8da31ecf1b9276cdbdda821fa891068f1368",
+      "license": "MIT",
+      "announcedBackboneParameters": 500000000,
+      "announcedActiveParameters": null,
+      "storedTopLevelSafetensorsParameters": 1479454868,
+      "languages": [
+        "zh",
+        "en",
+        "de",
+        "es",
+        "fr",
+        "ko",
+        "ja"
+      ],
+      "androidLocal": false,
+      "execution": "self-hosted-cuda",
+      "repositoryBytes": 3004010892,
+      "modelUrl": "https://huggingface.co/inclusionAI/Ming-3.0-tts-0.5B",
+      "modelScopeUrl": "https://modelscope.cn/models/inclusionAI/Ming-3.0-tts-0.5b",
+      "source": {
+        "url": "https://github.com/inclusionAI/Ming-3.0-tts",
+        "revision": "e999c39fa676722aaa9ea29b5aa19a90525b271f"
+      },
+      "profiles": {
+        "speech": {
+          "files": [
+            "added_tokens.json",
+            "campplus.onnx",
+            "config.json",
+            "configuration.json",
+            "merges.txt",
+            "model.safetensors",
+            "special_tokens_map.json",
+            "tokenizer.json",
+            "tokenizer_config.json",
+            "vocab.json"
+          ],
+          "bytes": 3003264578
+        }
+      },
+      "files": [
+        {
+          "path": "added_tokens.json",
+          "bytes": 1785,
+          "sha256": "34394b1e16d7da2db16618bd43a0f970902ade0075480bcd812fe62d559ec319",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-tts-0.5B/resolve/e5bd8da31ecf1b9276cdbdda821fa891068f1368/added_tokens.json"
+        },
+        {
+          "path": "campplus.onnx",
+          "bytes": 28303423,
+          "sha256": "a6ac6a63997761ae2997373e2ee1c47040854b4b759ea41ec48e4e42df0f4d73",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-tts-0.5B/resolve/e5bd8da31ecf1b9276cdbdda821fa891068f1368/campplus.onnx"
+        },
+        {
+          "path": "config.json",
+          "bytes": 4754,
+          "sha256": "2fb0767361b3cd3f41dc9392709fc23fe5b40a39f19d70a38d04acabe991822c",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-tts-0.5B/resolve/e5bd8da31ecf1b9276cdbdda821fa891068f1368/config.json"
+        },
+        {
+          "path": "configuration.json",
+          "bytes": 51,
+          "sha256": "6720b8448f6ad5b4631689a60857bdeb238053a37f6cc6a5936eb50c2a3b9296",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-tts-0.5B/resolve/e5bd8da31ecf1b9276cdbdda821fa891068f1368/configuration.json"
+        },
+        {
+          "path": "merges.txt",
+          "bytes": 1671853,
+          "sha256": "8831e4f1a044471340f7c0a83d7bd71306a5b867e95fd870f74d0c5308a904d5",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-tts-0.5B/resolve/e5bd8da31ecf1b9276cdbdda821fa891068f1368/merges.txt"
+        },
+        {
+          "path": "model.safetensors",
+          "bytes": 2959055504,
+          "sha256": "45c4d78d8ad6b1d942e3da86ba035fece02de569f7b2ca7e9d121dfaf18d674c",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-tts-0.5B/resolve/e5bd8da31ecf1b9276cdbdda821fa891068f1368/model.safetensors"
+        },
+        {
+          "path": "special_tokens_map.json",
+          "bytes": 2726,
+          "sha256": "2c2ec51b9da5db654ac20de8310350d0c9c1a65918ae0181b80dacd2919b4fc3",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-tts-0.5B/resolve/e5bd8da31ecf1b9276cdbdda821fa891068f1368/special_tokens_map.json"
+        },
+        {
+          "path": "tokenizer.json",
+          "bytes": 11431389,
+          "sha256": "87d54ca3b44ea2f822ba39a0a45cb1b61644bd6606d9d3536dea75367bffb06d",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-tts-0.5B/resolve/e5bd8da31ecf1b9276cdbdda821fa891068f1368/tokenizer.json"
+        },
+        {
+          "path": "tokenizer_config.json",
+          "bytes": 16260,
+          "sha256": "12d6162c815edef24f8606e65b60d43fe0d92b0a4e150a0db8fa01c523aaf36a",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-tts-0.5B/resolve/e5bd8da31ecf1b9276cdbdda821fa891068f1368/tokenizer_config.json"
+        },
+        {
+          "path": "vocab.json",
+          "bytes": 2776833,
+          "sha256": "ca10d7e9fb3ed18575dd1e277a2579c16d108e32f27439684afa0e10b1440910",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-tts-0.5B/resolve/e5bd8da31ecf1b9276cdbdda821fa891068f1368/vocab.json"
+        }
+      ]
+    },
+    {
+      "id": "inclusionAI/Ming-3.0-tts-tiny",
+      "family": "tts",
+      "revision": "b170071302cb0b06435ea784787b119f40a08be8",
+      "license": "MIT",
+      "announcedBackboneParameters": 7900000000,
+      "announcedActiveParameters": 1300000000,
+      "storedTopLevelSafetensorsParameters": 8981004468,
+      "languages": [
+        "zh",
+        "en",
+        "de",
+        "es",
+        "fr",
+        "ko",
+        "ja"
+      ],
+      "androidLocal": false,
+      "execution": "self-hosted-cuda",
+      "repositoryBytes": 18006571994,
+      "modelUrl": "https://huggingface.co/inclusionAI/Ming-3.0-tts-tiny",
+      "modelScopeUrl": "https://modelscope.cn/models/inclusionAI/Ming-3.0-tts-tiny",
+      "source": {
+        "url": "https://github.com/inclusionAI/Ming-3.0-tts",
+        "revision": "e999c39fa676722aaa9ea29b5aa19a90525b271f"
+      },
+      "profiles": {
+        "speech": {
+          "files": [
+            "CFM.py",
+            "__init__.py",
+            "aggregator.py",
+            "campplus.onnx",
+            "chat_template.jinja",
+            "config.json",
+            "configuration_audio_vae.py",
+            "configuration_bailing_moe_v3.py",
+            "configuration_lingv3_tts.py",
+            "conversion_manifest.json",
+            "dit.py",
+            "flowloss.py",
+            "fm_utils.py",
+            "generation_config.json",
+            "istft.py",
+            "mlp.py",
+            "model-00001-of-00030.safetensors",
+            "model-00002-of-00030.safetensors",
+            "model-00003-of-00030.safetensors",
+            "model-00004-of-00030.safetensors",
+            "model-00005-of-00030.safetensors",
+            "model-00006-of-00030.safetensors",
+            "model-00007-of-00030.safetensors",
+            "model-00008-of-00030.safetensors",
+            "model-00009-of-00030.safetensors",
+            "model-00010-of-00030.safetensors",
+            "model-00011-of-00030.safetensors",
+            "model-00012-of-00030.safetensors",
+            "model-00013-of-00030.safetensors",
+            "model-00014-of-00030.safetensors",
+            "model-00015-of-00030.safetensors",
+            "model-00016-of-00030.safetensors",
+            "model-00017-of-00030.safetensors",
+            "model-00018-of-00030.safetensors",
+            "model-00019-of-00030.safetensors",
+            "model-00020-of-00030.safetensors",
+            "model-00021-of-00030.safetensors",
+            "model-00022-of-00030.safetensors",
+            "model-00023-of-00030.safetensors",
+            "model-00024-of-00030.safetensors",
+            "model-00025-of-00030.safetensors",
+            "model-00026-of-00030.safetensors",
+            "model-00027-of-00030.safetensors",
+            "model-00028-of-00030.safetensors",
+            "model-00029-of-00030.safetensors",
+            "model-00030-of-00030.safetensors",
+            "model.safetensors.index.json",
+            "modeling_audio_vae.py",
+            "modeling_bailing_moe_v3.py",
+            "modeling_lingv3_tts.py",
+            "modules.py",
+            "prompt_contract.py",
+            "special_tokens_map.json",
+            "tokenizer.json",
+            "tokenizer_config.json",
+            "vae_modules.py"
+          ],
+          "bytes": 18005190338
+        }
+      },
+      "files": [
+        {
+          "path": "CFM.py",
+          "bytes": 7414,
+          "sha256": "521b4e6989a635fb06e34778674c3b2045e35b404efb234a366ac7acbc19a572",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-tts-tiny/resolve/b170071302cb0b06435ea784787b119f40a08be8/CFM.py"
+        },
+        {
+          "path": "__init__.py",
+          "bytes": 563,
+          "sha256": "8107587369b43fb796f98b3a8a034a3a7540416f06a9f119fafac41212a6cf11",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-tts-tiny/resolve/b170071302cb0b06435ea784787b119f40a08be8/__init__.py"
+        },
+        {
+          "path": "aggregator.py",
+          "bytes": 3259,
+          "sha256": "ef49c58c92a61975274b2909bb821afe867a5a36d359cabf4bba767d38638ebb",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-tts-tiny/resolve/b170071302cb0b06435ea784787b119f40a08be8/aggregator.py"
+        },
+        {
+          "path": "campplus.onnx",
+          "bytes": 28303423,
+          "sha256": "a6ac6a63997761ae2997373e2ee1c47040854b4b759ea41ec48e4e42df0f4d73",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-tts-tiny/resolve/b170071302cb0b06435ea784787b119f40a08be8/campplus.onnx"
+        },
+        {
+          "path": "chat_template.jinja",
+          "bytes": 5984,
+          "sha256": "e09aa078bed51073b54103ff6476f47f3b68783e593aaf6e36a61bf0d1f5b90a",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-tts-tiny/resolve/b170071302cb0b06435ea784787b119f40a08be8/chat_template.jinja"
+        },
+        {
+          "path": "config.json",
+          "bytes": 5873,
+          "sha256": "751c41848f024c5774d839fd5830d624639d9d982b0f2f73128c99b80fdbd33c",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-tts-tiny/resolve/b170071302cb0b06435ea784787b119f40a08be8/config.json"
+        },
+        {
+          "path": "configuration_audio_vae.py",
+          "bytes": 1182,
+          "sha256": "9d4f25c6a14310fc00ba3e84aaadcda8be5e8de5a67a39afda674fd54ed44702",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-tts-tiny/resolve/b170071302cb0b06435ea784787b119f40a08be8/configuration_audio_vae.py"
+        },
+        {
+          "path": "configuration_bailing_moe_v3.py",
+          "bytes": 4725,
+          "sha256": "f2c048966aec8a2f042cfeb1351f74d51a28589b409c55baae7d24e841c1f6c4",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-tts-tiny/resolve/b170071302cb0b06435ea784787b119f40a08be8/configuration_bailing_moe_v3.py"
+        },
+        {
+          "path": "configuration_lingv3_tts.py",
+          "bytes": 5378,
+          "sha256": "5da3c373029c04e848799f2f6bd630f0c5d6172c8f0c316351ecc629e1be2036",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-tts-tiny/resolve/b170071302cb0b06435ea784787b119f40a08be8/configuration_lingv3_tts.py"
+        },
+        {
+          "path": "conversion_manifest.json",
+          "bytes": 8475,
+          "sha256": "66fa519928e6dab8b55843d32485c8b61f5674ab6cc00424e813a42c69802c15",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-tts-tiny/resolve/b170071302cb0b06435ea784787b119f40a08be8/conversion_manifest.json"
+        },
+        {
+          "path": "dit.py",
+          "bytes": 7148,
+          "sha256": "5c839c51cd5233df616cdf3038502ad0aa220f582323c9fb55a07e443919c42f",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-tts-tiny/resolve/b170071302cb0b06435ea784787b119f40a08be8/dit.py"
+        },
+        {
+          "path": "flowloss.py",
+          "bytes": 2221,
+          "sha256": "f2a25c119256671ecb8ac0fdde8225cfdf0f8606f490cdb2906cf8e4cbf8d71f",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-tts-tiny/resolve/b170071302cb0b06435ea784787b119f40a08be8/flowloss.py"
+        },
+        {
+          "path": "fm_utils.py",
+          "bytes": 240,
+          "sha256": "f9763eb057ccbb2c87cef42cd5f3438a832298cfdc0226cd6a5e7063184be0c8",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-tts-tiny/resolve/b170071302cb0b06435ea784787b119f40a08be8/fm_utils.py"
+        },
+        {
+          "path": "generation_config.json",
+          "bytes": 133,
+          "sha256": "fdede64f07be6d6b1c5d2547fa3101cc8bdc033291efcd38c13784fb0e0611e1",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-tts-tiny/resolve/b170071302cb0b06435ea784787b119f40a08be8/generation_config.json"
+        },
+        {
+          "path": "istft.py",
+          "bytes": 7530,
+          "sha256": "de1e5f569e34a5cb05d088310a78d1dba60ef4f2ed403b37b21238c188f6d252",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-tts-tiny/resolve/b170071302cb0b06435ea784787b119f40a08be8/istft.py"
+        },
+        {
+          "path": "mlp.py",
+          "bytes": 11971,
+          "sha256": "c2c173fb33f02ace52e71d44e7a5a659d8f95bc83c641585ccbdc63c8421edb5",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-tts-tiny/resolve/b170071302cb0b06435ea784787b119f40a08be8/mlp.py"
+        },
+        {
+          "path": "model-00001-of-00030.safetensors",
+          "bytes": 965741912,
+          "sha256": "4ca80f04a78064932cbed455aa1a4cdee352feb4f6f758b5ec76329d2455d32e",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-tts-tiny/resolve/b170071302cb0b06435ea784787b119f40a08be8/model-00001-of-00030.safetensors"
+        },
+        {
+          "path": "model-00002-of-00030.safetensors",
+          "bytes": 80331128,
+          "sha256": "3d18804ddcfb1a49fcbeb73c2c9f50bf61e2985e59809af1e2d4656e53e06dc2",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-tts-tiny/resolve/b170071302cb0b06435ea784787b119f40a08be8/model-00002-of-00030.safetensors"
+        },
+        {
+          "path": "model-00003-of-00030.safetensors",
+          "bytes": 647005032,
+          "sha256": "028350cd0d60ca1aded89a008123998ca4af4dc0e77a774f75583c5881bbbb70",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-tts-tiny/resolve/b170071302cb0b06435ea784787b119f40a08be8/model-00003-of-00030.safetensors"
+        },
+        {
+          "path": "model-00004-of-00030.safetensors",
+          "bytes": 647005032,
+          "sha256": "e6d57795f6ad969683d1920bbcb1e42cea760967bbf9203c52c9e8647efc48cb",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-tts-tiny/resolve/b170071302cb0b06435ea784787b119f40a08be8/model-00004-of-00030.safetensors"
+        },
+        {
+          "path": "model-00005-of-00030.safetensors",
+          "bytes": 623814136,
+          "sha256": "88031f3afe410542edc79a50cf5779ee2371f8801702a11f81c9097903c4b129",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-tts-tiny/resolve/b170071302cb0b06435ea784787b119f40a08be8/model-00005-of-00030.safetensors"
+        },
+        {
+          "path": "model-00006-of-00030.safetensors",
+          "bytes": 647005032,
+          "sha256": "9e8d7f4b149228105f46fb41388bd7e53596e0a0a82ca1a582b34ea9383c6e29",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-tts-tiny/resolve/b170071302cb0b06435ea784787b119f40a08be8/model-00006-of-00030.safetensors"
+        },
+        {
+          "path": "model-00007-of-00030.safetensors",
+          "bytes": 647005032,
+          "sha256": "fa7161f8a58fd4a30ef7ad63edcffa719143787a2a7492a792ed2dd3fd34c370",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-tts-tiny/resolve/b170071302cb0b06435ea784787b119f40a08be8/model-00007-of-00030.safetensors"
+        },
+        {
+          "path": "model-00008-of-00030.safetensors",
+          "bytes": 647005032,
+          "sha256": "55cbb4ad1e5cdbae03bfed256c5d3207277296ff9bb00e97380dbb41bf731db3",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-tts-tiny/resolve/b170071302cb0b06435ea784787b119f40a08be8/model-00008-of-00030.safetensors"
+        },
+        {
+          "path": "model-00009-of-00030.safetensors",
+          "bytes": 623814136,
+          "sha256": "a0f88fe126825f6cc67551ae616256dfaf713916ab5e9983024d92ef21a506da",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-tts-tiny/resolve/b170071302cb0b06435ea784787b119f40a08be8/model-00009-of-00030.safetensors"
+        },
+        {
+          "path": "model-00010-of-00030.safetensors",
+          "bytes": 647005032,
+          "sha256": "2b590fabb029f8653604ac81f0ce61f493713de6cdcefabe439014a7f0b63fc4",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-tts-tiny/resolve/b170071302cb0b06435ea784787b119f40a08be8/model-00010-of-00030.safetensors"
+        },
+        {
+          "path": "model-00011-of-00030.safetensors",
+          "bytes": 647005032,
+          "sha256": "9cb2183e67d5df5325a5ec4620b5a8c02dc8b204c4c32f4b0c17e220655206b1",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-tts-tiny/resolve/b170071302cb0b06435ea784787b119f40a08be8/model-00011-of-00030.safetensors"
+        },
+        {
+          "path": "model-00012-of-00030.safetensors",
+          "bytes": 647005432,
+          "sha256": "da309bc97964e6a591cdd66512e510013fb229ddb4b4a034e984cef917ef45a6",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-tts-tiny/resolve/b170071302cb0b06435ea784787b119f40a08be8/model-00012-of-00030.safetensors"
+        },
+        {
+          "path": "model-00013-of-00030.safetensors",
+          "bytes": 623814536,
+          "sha256": "efb95b8a3dee7e647ef85a5f2d2962f6df3f077f00a9e9ca4afe50bda4a5df1a",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-tts-tiny/resolve/b170071302cb0b06435ea784787b119f40a08be8/model-00013-of-00030.safetensors"
+        },
+        {
+          "path": "model-00014-of-00030.safetensors",
+          "bytes": 647005432,
+          "sha256": "261794f8c9e9eae56f57485393fa0705742c680721e421d770055b5bc1a89410",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-tts-tiny/resolve/b170071302cb0b06435ea784787b119f40a08be8/model-00014-of-00030.safetensors"
+        },
+        {
+          "path": "model-00015-of-00030.safetensors",
+          "bytes": 647005432,
+          "sha256": "a1dc73be7c176dafa9a4c37f494a655faeb8713ece5522736f61c10151a3a0f0",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-tts-tiny/resolve/b170071302cb0b06435ea784787b119f40a08be8/model-00015-of-00030.safetensors"
+        },
+        {
+          "path": "model-00016-of-00030.safetensors",
+          "bytes": 647005432,
+          "sha256": "cb87be885c8dbe6e9a7026320702a730cf3878bd0b87dd94db4dcd451d7779d8",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-tts-tiny/resolve/b170071302cb0b06435ea784787b119f40a08be8/model-00016-of-00030.safetensors"
+        },
+        {
+          "path": "model-00017-of-00030.safetensors",
+          "bytes": 623814536,
+          "sha256": "366509ff79f509a712d096357f9ac6ce4c8ea0a9904b0f2919d0c0ec16ebfbbd",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-tts-tiny/resolve/b170071302cb0b06435ea784787b119f40a08be8/model-00017-of-00030.safetensors"
+        },
+        {
+          "path": "model-00018-of-00030.safetensors",
+          "bytes": 647005432,
+          "sha256": "09a3d13f4640f4a506466175b5f4313d314c20e3080d9942a521c71697aeaf77",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-tts-tiny/resolve/b170071302cb0b06435ea784787b119f40a08be8/model-00018-of-00030.safetensors"
+        },
+        {
+          "path": "model-00019-of-00030.safetensors",
+          "bytes": 647005432,
+          "sha256": "a03fd3321d21b2c7c6441c5d16f4a579bddda55e2fb8847f114eaa91b085cc13",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-tts-tiny/resolve/b170071302cb0b06435ea784787b119f40a08be8/model-00019-of-00030.safetensors"
+        },
+        {
+          "path": "model-00020-of-00030.safetensors",
+          "bytes": 647005432,
+          "sha256": "8f53ace8fdc9e5bf75c208a337e2d1facd2a64a083e2b7c5e50a6fe2fc64edde",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-tts-tiny/resolve/b170071302cb0b06435ea784787b119f40a08be8/model-00020-of-00030.safetensors"
+        },
+        {
+          "path": "model-00021-of-00030.safetensors",
+          "bytes": 623814536,
+          "sha256": "70b7b05b20976b77733168e0a2a5abb3a605cdf5a9f0599a5548c7281de7d6bd",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-tts-tiny/resolve/b170071302cb0b06435ea784787b119f40a08be8/model-00021-of-00030.safetensors"
+        },
+        {
+          "path": "model-00022-of-00030.safetensors",
+          "bytes": 647005432,
+          "sha256": "c3c7c71925ae95762bea4313f87d92ace88d9d70579081765206c4a36011f403",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-tts-tiny/resolve/b170071302cb0b06435ea784787b119f40a08be8/model-00022-of-00030.safetensors"
+        },
+        {
+          "path": "model-00023-of-00030.safetensors",
+          "bytes": 647005432,
+          "sha256": "845929a1b626c78f2ddd73def10c9646846f3c30df4e5a03e53dbf800aa5f2c9",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-tts-tiny/resolve/b170071302cb0b06435ea784787b119f40a08be8/model-00023-of-00030.safetensors"
+        },
+        {
+          "path": "model-00024-of-00030.safetensors",
+          "bytes": 647005432,
+          "sha256": "938b2370dd0968f5d80b92d7b9f58f6f50ce5cbad4181d509a10d66a443546f8",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-tts-tiny/resolve/b170071302cb0b06435ea784787b119f40a08be8/model-00024-of-00030.safetensors"
+        },
+        {
+          "path": "model-00025-of-00030.safetensors",
+          "bytes": 623814536,
+          "sha256": "4f87d70dd15509d48876ad2dfbce6cf91b91039ccee5252a92e0391ade1a4f71",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-tts-tiny/resolve/b170071302cb0b06435ea784787b119f40a08be8/model-00025-of-00030.safetensors"
+        },
+        {
+          "path": "model-00026-of-00030.safetensors",
+          "bytes": 1560859924,
+          "sha256": "aabe4b48977064f3e5f40bf8e1ce44c36c7558facc5439904592e6a3a3bdf0ad",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-tts-tiny/resolve/b170071302cb0b06435ea784787b119f40a08be8/model-00026-of-00030.safetensors"
+        },
+        {
+          "path": "model-00027-of-00030.safetensors",
+          "bytes": 409081040,
+          "sha256": "fc8672a7066615c307ec3db30543b2e5f38a83ed9bd19997704c1718acec8e17",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-tts-tiny/resolve/b170071302cb0b06435ea784787b119f40a08be8/model-00027-of-00030.safetensors"
+        },
+        {
+          "path": "model-00028-of-00030.safetensors",
+          "bytes": 204806616,
+          "sha256": "274c04b50247a8a2b8412807aadee984e1fc2066011c977c037f6f808a0e1677",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-tts-tiny/resolve/b170071302cb0b06435ea784787b119f40a08be8/model-00028-of-00030.safetensors"
+        },
+        {
+          "path": "model-00029-of-00030.safetensors",
+          "bytes": 593096,
+          "sha256": "27be5fc95f910e5515ee134a995109347f7fe97bc586c3b1ec08703d81281217",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-tts-tiny/resolve/b170071302cb0b06435ea784787b119f40a08be8/model-00029-of-00030.safetensors"
+        },
+        {
+          "path": "model-00030-of-00030.safetensors",
+          "bytes": 6332,
+          "sha256": "2f438e9cb1290272ae03ba0fe96fa645adf865daffd3170ca39596327111820a",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-tts-tiny/resolve/b170071302cb0b06435ea784787b119f40a08be8/model-00030-of-00030.safetensors"
+        },
+        {
+          "path": "model.safetensors.index.json",
+          "bytes": 983055,
+          "sha256": "81c4f438901705ddea66bc14efc5bdbc985fae5891b788a4cc3ac0925f796347",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-tts-tiny/resolve/b170071302cb0b06435ea784787b119f40a08be8/model.safetensors.index.json"
+        },
+        {
+          "path": "modeling_audio_vae.py",
+          "bytes": 6699,
+          "sha256": "71eee4dae57c041e0adb542eeb0e6dd3efa7224d7e0c42a9ee807daa0aec338d",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-tts-tiny/resolve/b170071302cb0b06435ea784787b119f40a08be8/modeling_audio_vae.py"
+        },
+        {
+          "path": "modeling_bailing_moe_v3.py",
+          "bytes": 96060,
+          "sha256": "c212543640e02c04f96853f3863afe8334ad60f5e006fbfcd70e48246f704216",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-tts-tiny/resolve/b170071302cb0b06435ea784787b119f40a08be8/modeling_bailing_moe_v3.py"
+        },
+        {
+          "path": "modeling_lingv3_tts.py",
+          "bytes": 27186,
+          "sha256": "476951f7102a88f48a715dfd6c5053c047e7cf7699c917bea03d8a1e042a3083",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-tts-tiny/resolve/b170071302cb0b06435ea784787b119f40a08be8/modeling_lingv3_tts.py"
+        },
+        {
+          "path": "modules.py",
+          "bytes": 8834,
+          "sha256": "4f2f9209c7385f92209cbf50f1dcee106737db6c6c0cd9f0164c3e84043f7183",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-tts-tiny/resolve/b170071302cb0b06435ea784787b119f40a08be8/modules.py"
+        },
+        {
+          "path": "prompt_contract.py",
+          "bytes": 16993,
+          "sha256": "085e660dbcbb6ca2748db522de488deff457a1033e3451fe2915d2fd8fcc9be9",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-tts-tiny/resolve/b170071302cb0b06435ea784787b119f40a08be8/prompt_contract.py"
+        },
+        {
+          "path": "special_tokens_map.json",
+          "bytes": 722,
+          "sha256": "97cb54787ce5ed537fe2b0211768bfce371defabe8241d39459493de9f23b1fc",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-tts-tiny/resolve/b170071302cb0b06435ea784787b119f40a08be8/special_tokens_map.json"
+        },
+        {
+          "path": "tokenizer.json",
+          "bytes": 12210216,
+          "sha256": "7e831c9b79b2cc4af0d3c7c7878a073371a5cbbaf1f4cb33f6fbce20417722f2",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-tts-tiny/resolve/b170071302cb0b06435ea784787b119f40a08be8/tokenizer.json"
+        },
+        {
+          "path": "tokenizer_config.json",
+          "bytes": 60134,
+          "sha256": "23b25d6e0fa85152cb3f3136a29e3d7787ecff7d3e6b224beabda9a4d10e4b31",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-tts-tiny/resolve/b170071302cb0b06435ea784787b119f40a08be8/tokenizer_config.json"
+        },
+        {
+          "path": "vae_modules.py",
+          "bytes": 8912,
+          "sha256": "75da8960213a60cae68667b89561d6d40e8ae254d8ecbe210264f3a1b99ba5de",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-tts-tiny/resolve/b170071302cb0b06435ea784787b119f40a08be8/vae_modules.py"
+        }
+      ]
+    },
+    {
+      "id": "inclusionAI/Ming-3.0-asr-tiny",
+      "family": "stt",
+      "revision": "3ec2edd73a93a32efe853722af2b53ac9a6dea0f",
+      "license": "MIT",
+      "announcedBackboneParameters": 8600000000,
+      "announcedActiveParameters": 2000000000,
+      "storedTopLevelSafetensorsParameters": 8865800992,
+      "languages": [
+        "zh",
+        "en"
+      ],
+      "androidLocal": false,
+      "execution": "self-hosted-cuda",
+      "repositoryBytes": 17751084203,
+      "modelUrl": "https://huggingface.co/inclusionAI/Ming-3.0-asr-tiny",
+      "modelScopeUrl": "https://modelscope.cn/models/inclusionAI/Ming-3.0-asr-tiny",
+      "source": {
+        "url": "https://github.com/inclusionAI/Ming-3.0-asr",
+        "revision": "6141e8c552815db724d8df0f72c9d865c547a1ea"
+      },
+      "profiles": {
+        "speech": {
+          "files": [
+            "LICENSE",
+            "LICENSE-APACHE-2.0",
+            "WHISPER_LICENSE",
+            "asr_request.py",
+            "audio_spec.py",
+            "chat_format.py",
+            "chat_template.jinja",
+            "config.json",
+            "configuration_ming_v3_asr.py",
+            "examples/transcribe.py",
+            "feature_extraction_ming_v3_asr.py",
+            "generation_config.json",
+            "model-00001-of-00002.safetensors",
+            "model-00002-of-00002.safetensors",
+            "model.safetensors.index.json",
+            "modeling_ming_v3_asr.py",
+            "modeling_ming_v3_asr_encoder.py",
+            "modeling_whisper_encoder.py",
+            "preprocessor_config.json",
+            "processing_ming_v3_asr.py",
+            "requirements.txt",
+            "special_tokens_map.json",
+            "tokenization_bailing.py",
+            "tokenizer.json",
+            "tokenizer_config.json"
+          ],
+          "bytes": 17746272457
+        }
+      },
+      "files": [
+        {
+          "path": "LICENSE",
+          "bytes": 1068,
+          "sha256": "b772c54f1f150a680e7c083a92431c518cf62821a407f6cccdf53f6a07bcf702",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-asr-tiny/resolve/3ec2edd73a93a32efe853722af2b53ac9a6dea0f/LICENSE"
+        },
+        {
+          "path": "LICENSE-APACHE-2.0",
+          "bytes": 11357,
+          "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-asr-tiny/resolve/3ec2edd73a93a32efe853722af2b53ac9a6dea0f/LICENSE-APACHE-2.0"
+        },
+        {
+          "path": "WHISPER_LICENSE",
+          "bytes": 1063,
+          "sha256": "b5d65a59060e68c4ff940e1eddfa6f94b2d68fdf58ed7f4dd57721c997e35e9d",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-asr-tiny/resolve/3ec2edd73a93a32efe853722af2b53ac9a6dea0f/WHISPER_LICENSE"
+        },
+        {
+          "path": "asr_request.py",
+          "bytes": 1528,
+          "sha256": "132e8e9417442c812e8be88e05b23ac266950c63786564ee71dfeb09c5e616ac",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-asr-tiny/resolve/3ec2edd73a93a32efe853722af2b53ac9a6dea0f/asr_request.py"
+        },
+        {
+          "path": "audio_spec.py",
+          "bytes": 5181,
+          "sha256": "02fab4222d2a1d52b85849947e7b7c1e88afe824e3162ad3dbc7ceed258eed36",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-asr-tiny/resolve/3ec2edd73a93a32efe853722af2b53ac9a6dea0f/audio_spec.py"
+        },
+        {
+          "path": "chat_format.py",
+          "bytes": 33423,
+          "sha256": "d1c2b7dc3697d2b786deda9c0625e2d3cd3b61509c487b50027c2856bbf849ea",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-asr-tiny/resolve/3ec2edd73a93a32efe853722af2b53ac9a6dea0f/chat_format.py"
+        },
+        {
+          "path": "chat_template.jinja",
+          "bytes": 2155,
+          "sha256": "667cda03032af9d30c2d7b803825deee08dc98ef5a742725dee87cc83d6e6438",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-asr-tiny/resolve/3ec2edd73a93a32efe853722af2b53ac9a6dea0f/chat_template.jinja"
+        },
+        {
+          "path": "config.json",
+          "bytes": 2351,
+          "sha256": "e2738ad0d6b3b2f95ffc8fd716d496ce9cd508958f4acabe89d580f62da88d78",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-asr-tiny/resolve/3ec2edd73a93a32efe853722af2b53ac9a6dea0f/config.json"
+        },
+        {
+          "path": "configuration_ming_v3_asr.py",
+          "bytes": 10421,
+          "sha256": "56a4f0945e9570488d675e377c4f425a86bdabdfb344123bd5e27ac154c77249",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-asr-tiny/resolve/3ec2edd73a93a32efe853722af2b53ac9a6dea0f/configuration_ming_v3_asr.py"
+        },
+        {
+          "path": "examples/transcribe.py",
+          "bytes": 3837,
+          "sha256": "1aac240bedbb5d162da6f6e149c737cd68a923df3557b269f55309f4e4e3bed6",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-asr-tiny/resolve/3ec2edd73a93a32efe853722af2b53ac9a6dea0f/examples/transcribe.py"
+        },
+        {
+          "path": "feature_extraction_ming_v3_asr.py",
+          "bytes": 9258,
+          "sha256": "5069a868d6df58bebaf1a475c7eacc610518e5cdf2b7de45415c95a7fb5a35a7",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-asr-tiny/resolve/3ec2edd73a93a32efe853722af2b53ac9a6dea0f/feature_extraction_ming_v3_asr.py"
+        },
+        {
+          "path": "generation_config.json",
+          "bytes": 77,
+          "sha256": "da85e6f967c54b0e4c5a0653c6135e8d01e2c459fdc5c8c15ca7bf600a860f86",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-asr-tiny/resolve/3ec2edd73a93a32efe853722af2b53ac9a6dea0f/generation_config.json"
+        },
+        {
+          "path": "model-00001-of-00002.safetensors",
+          "bytes": 10709697720,
+          "sha256": "3c3aeb85649b6f64a032d069a2321826191d36fe1413191bddd01835b1570d45",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-asr-tiny/resolve/3ec2edd73a93a32efe853722af2b53ac9a6dea0f/model-00001-of-00002.safetensors"
+        },
+        {
+          "path": "model-00002-of-00002.safetensors",
+          "bytes": 7023162728,
+          "sha256": "a274b5c624f396a3a2547cbc7cf28aeb33890b61141457b45ac1af85ac6e7c55",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-asr-tiny/resolve/3ec2edd73a93a32efe853722af2b53ac9a6dea0f/model-00002-of-00002.safetensors"
+        },
+        {
+          "path": "model.safetensors.index.json",
+          "bytes": 908935,
+          "sha256": "a51e821fd8374acc98eeecdf4ca3abfae6c3531b4fb061cadc4376be8b297121",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-asr-tiny/resolve/3ec2edd73a93a32efe853722af2b53ac9a6dea0f/model.safetensors.index.json"
+        },
+        {
+          "path": "modeling_ming_v3_asr.py",
+          "bytes": 87010,
+          "sha256": "bc4067d0b45be129e08853462a05824b6424efbbb9aba5b568268485de1adc59",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-asr-tiny/resolve/3ec2edd73a93a32efe853722af2b53ac9a6dea0f/modeling_ming_v3_asr.py"
+        },
+        {
+          "path": "modeling_ming_v3_asr_encoder.py",
+          "bytes": 3308,
+          "sha256": "6bb4b2bc0a3d6f5a35be5bd5adee90b779c3181df775507202185fda74c6ee66",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-asr-tiny/resolve/3ec2edd73a93a32efe853722af2b53ac9a6dea0f/modeling_ming_v3_asr_encoder.py"
+        },
+        {
+          "path": "modeling_whisper_encoder.py",
+          "bytes": 5542,
+          "sha256": "5000230a955b01d9b1f5f74024f157d4c63ddafba6c58195f805dff4af91149d",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-asr-tiny/resolve/3ec2edd73a93a32efe853722af2b53ac9a6dea0f/modeling_whisper_encoder.py"
+        },
+        {
+          "path": "preprocessor_config.json",
+          "bytes": 670,
+          "sha256": "2ab8ff5b5b58b9033f72e285f0db54882cc11685eeea4cb9a2da226a207bb25e",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-asr-tiny/resolve/3ec2edd73a93a32efe853722af2b53ac9a6dea0f/preprocessor_config.json"
+        },
+        {
+          "path": "processing_ming_v3_asr.py",
+          "bytes": 10693,
+          "sha256": "61d8e74ce97e4d8e91709b009eaa9a8ffc5ab95a0e0dfd3be649a2a4a67289c9",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-asr-tiny/resolve/3ec2edd73a93a32efe853722af2b53ac9a6dea0f/processing_ming_v3_asr.py"
+        },
+        {
+          "path": "requirements.txt",
+          "bytes": 274,
+          "sha256": "d1ed487e69a538dafdf982c39bd8aaeea3b825baf37117c91b2ce3f75aa1e14d",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-asr-tiny/resolve/3ec2edd73a93a32efe853722af2b53ac9a6dea0f/requirements.txt"
+        },
+        {
+          "path": "special_tokens_map.json",
+          "bytes": 879,
+          "sha256": "8c383d444e75b12f2643b4695bece7f3dd1d43725d8a26deeb019aa40a8f891d",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-asr-tiny/resolve/3ec2edd73a93a32efe853722af2b53ac9a6dea0f/special_tokens_map.json"
+        },
+        {
+          "path": "tokenization_bailing.py",
+          "bytes": 45620,
+          "sha256": "f71041856662c0663f7666394e1ed87347c49238309912280f30cfbb484aa1e1",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-asr-tiny/resolve/3ec2edd73a93a32efe853722af2b53ac9a6dea0f/tokenization_bailing.py"
+        },
+        {
+          "path": "tokenizer.json",
+          "bytes": 12210708,
+          "sha256": "e4f5fe09e7484071da5fa93cfb82f7db15c0ebf9b6ee9821599c5a997563ee96",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-asr-tiny/resolve/3ec2edd73a93a32efe853722af2b53ac9a6dea0f/tokenizer.json"
+        },
+        {
+          "path": "tokenizer_config.json",
+          "bytes": 56651,
+          "sha256": "4ee1398783bc0e3a395d2a0efa3a851aa9b51a3bb3187c4c294c38b6af42f419",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-asr-tiny/resolve/3ec2edd73a93a32efe853722af2b53ac9a6dea0f/tokenizer_config.json"
+        }
+      ]
+    },
+    {
+      "id": "inclusionAI/Ming-3.0-audio-tiny",
+      "family": "audio",
+      "revision": "25b96e30be3739849bf76c0f48ac11db4a262fb3",
+      "license": "MIT",
+      "announcedBackboneParameters": 9300000000,
+      "announcedActiveParameters": 2700000000,
+      "storedTopLevelSafetensorsParameters": 8871306016,
+      "languages": [
+        "zh",
+        "en"
+      ],
+      "androidLocal": false,
+      "execution": "self-hosted-cuda",
+      "repositoryBytes": 20775047895,
+      "modelUrl": "https://huggingface.co/inclusionAI/Ming-3.0-audio-tiny",
+      "modelScopeUrl": "https://modelscope.cn/models/inclusionAI/Ming-3.0-audio-tiny",
+      "source": {
+        "url": "https://github.com/inclusionAI/Ming-3.0-audio-flash",
+        "revision": "8d19d23878fdb583c2a520b9ce51705fe1825902"
+      },
+      "profiles": {
+        "speech": {
+          "files": [
+            "chat_template.jinja",
+            "config.json",
+            "configuration_bailing_moe_v3.py",
+            "configuration_bailing_moe_v3_audio.py",
+            "generation_config.json",
+            "model-00001-of-00002.safetensors",
+            "model-00002-of-00002.safetensors",
+            "model.safetensors.index.json",
+            "modeling_bailing_moe_v3.py",
+            "modeling_bailing_moe_v3_audio.py",
+            "processing_bailing_moe_v3_audio.py",
+            "processor_config.json",
+            "special_tokens_map.json",
+            "tokenizer.json",
+            "tokenizer_config.json"
+          ],
+          "bytes": 17757238725
+        },
+        "withTalker": {
+          "files": [
+            "chat_template.jinja",
+            "config.json",
+            "configuration_bailing_moe_v3.py",
+            "configuration_bailing_moe_v3_audio.py",
+            "generation_config.json",
+            "model-00001-of-00002.safetensors",
+            "model-00002-of-00002.safetensors",
+            "model.safetensors.index.json",
+            "modeling_bailing_moe_v3.py",
+            "modeling_bailing_moe_v3_audio.py",
+            "processing_bailing_moe_v3_audio.py",
+            "processor_config.json",
+            "special_tokens_map.json",
+            "talker/AudioVAE/__init__.py",
+            "talker/AudioVAE/configuration_audio_vae.py",
+            "talker/AudioVAE/istft.py",
+            "talker/AudioVAE/modeling_audio_vae.py",
+            "talker/AudioVAE/vae_modules.py",
+            "talker/__init__.py",
+            "talker/campplus.onnx",
+            "talker/config.json",
+            "talker/configuration_bailing_talker.py",
+            "talker/data/lid.176.ftz",
+            "talker/front/__init__.py",
+            "talker/front/number_en.py",
+            "talker/front/text_segment_cut.py",
+            "talker/front/toolkit.py",
+            "talker/inference.py",
+            "talker/llm/added_tokens.json",
+            "talker/llm/config.json",
+            "talker/llm/generation_config.json",
+            "talker/llm/merges.txt",
+            "talker/llm/special_tokens_map.json",
+            "talker/llm/tokenizer.json",
+            "talker/llm/tokenizer_config.json",
+            "talker/llm/vocab.json",
+            "talker/model.safetensors",
+            "talker/requirements.txt",
+            "talker/talker_module/__init__.py",
+            "talker/talker_module/aggregator.py",
+            "talker/talker_module/cfm.py",
+            "talker/talker_module/dit.py",
+            "talker/talker_module/modules.py",
+            "talker/talker_tn/__init__.py",
+            "talker/talker_tn/en_tn_tagger.fst",
+            "talker/talker_tn/en_tn_verbalizer.fst",
+            "talker/talker_tn/normalizer.py",
+            "talker/talker_tn/re_utils/__init__.py",
+            "talker/talker_tn/re_utils/re_base.py",
+            "talker/talker_tn/re_utils/re_char.py",
+            "talker/talker_tn/re_utils/re_date.py",
+            "talker/talker_tn/re_utils/re_decimal.py",
+            "talker/talker_tn/re_utils/re_digit.py",
+            "talker/talker_tn/re_utils/re_formula.py",
+            "talker/talker_tn/re_utils/re_frac.py",
+            "talker/talker_tn/re_utils/re_ip.py",
+            "talker/talker_tn/re_utils/re_measure.py",
+            "talker/talker_tn/re_utils/re_money.py",
+            "talker/talker_tn/re_utils/re_order.py",
+            "talker/talker_tn/re_utils/re_percent.py",
+            "talker/talker_tn/re_utils/re_phone_dash.py",
+            "talker/talker_tn/re_utils/re_punc.py",
+            "talker/talker_tn/re_utils/re_serial.py",
+            "talker/talker_tn/re_utils/re_sn.py",
+            "talker/talker_tn/re_utils/re_time.py",
+            "talker/talker_tn/re_utils/re_utils.py",
+            "talker/talker_tn/re_utils/re_version.py",
+            "talker/talker_tn/talker_pre_processor.py",
+            "talker/talker_tn/talker_re.json",
+            "talker/talker_tn/talker_re.py",
+            "talker/talker_tn/talker_tn.py",
+            "talker/talker_tn/token_parser.py",
+            "talker/talker_tn/zh_tn_tagger.fst",
+            "talker/talker_tn/zh_tn_verbalizer.fst",
+            "talker/tts_prompt.py",
+            "talker/vae/config.json",
+            "talker/vae/model.safetensors",
+            "tokenizer.json",
+            "tokenizer_config.json"
+          ],
+          "bytes": 20771991029
+        }
+      },
+      "files": [
+        {
+          "path": "chat_template.jinja",
+          "bytes": 7543,
+          "sha256": "e6fcddb0528613f9edf26d95875aa70bfb0ceff690f937abd6c11d5328fd8249",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-tiny/resolve/25b96e30be3739849bf76c0f48ac11db4a262fb3/chat_template.jinja"
+        },
+        {
+          "path": "config.json",
+          "bytes": 3008,
+          "sha256": "8f4f45090b7d74eebad38d0dd2767b46df178b82efb4bcdfc02f8b871f500f13",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-tiny/resolve/25b96e30be3739849bf76c0f48ac11db4a262fb3/config.json"
+        },
+        {
+          "path": "configuration_bailing_moe_v3.py",
+          "bytes": 4951,
+          "sha256": "a7c800d3e75da56294cb9c07bc1b65d96ccf16cd8fdada2520de1be1cbb3ac70",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-tiny/resolve/25b96e30be3739849bf76c0f48ac11db4a262fb3/configuration_bailing_moe_v3.py"
+        },
+        {
+          "path": "configuration_bailing_moe_v3_audio.py",
+          "bytes": 8421,
+          "sha256": "b5e2fed9fbdb6b65370e0a29342c9e119ffa4cf6fa17c1afea01849ec78509d4",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-tiny/resolve/25b96e30be3739849bf76c0f48ac11db4a262fb3/configuration_bailing_moe_v3_audio.py"
+        },
+        {
+          "path": "generation_config.json",
+          "bytes": 77,
+          "sha256": "1da133d04c4f99a72e09b1565d0bb4fc0a2edc5c373a46b7076a3494edc7eb43",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-tiny/resolve/25b96e30be3739849bf76c0f48ac11db4a262fb3/generation_config.json"
+        },
+        {
+          "path": "model-00001-of-00002.safetensors",
+          "bytes": 9551820960,
+          "sha256": "53b7663c7c52aa36e487977d6e9bb2f5666b7aaa543bd5d5dd4e96ec88cfd957",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-tiny/resolve/25b96e30be3739849bf76c0f48ac11db4a262fb3/model-00001-of-00002.safetensors"
+        },
+        {
+          "path": "model-00002-of-00002.safetensors",
+          "bytes": 8192122649,
+          "sha256": "08d9e7bd9d885a0d6608953c6bbe40dbfb67f673a0cce9382414b55a9380053a",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-tiny/resolve/25b96e30be3739849bf76c0f48ac11db4a262fb3/model-00002-of-00002.safetensors"
+        },
+        {
+          "path": "model.safetensors.index.json",
+          "bytes": 908959,
+          "sha256": "f61c0cc9a162c23afafaf9f2107a2b5a5a838bcf6e69daa61c4178ca327b0adc",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-tiny/resolve/25b96e30be3739849bf76c0f48ac11db4a262fb3/model.safetensors.index.json"
+        },
+        {
+          "path": "modeling_bailing_moe_v3.py",
+          "bytes": 75640,
+          "sha256": "fb3b1dcb621e45453995f0adb4cb8e0b71046b7794f7db593b5dc57ba97fdb4f",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-tiny/resolve/25b96e30be3739849bf76c0f48ac11db4a262fb3/modeling_bailing_moe_v3.py"
+        },
+        {
+          "path": "modeling_bailing_moe_v3_audio.py",
+          "bytes": 14123,
+          "sha256": "821d99b872f6e31dd4fdb9f284b9ff58a051e0263532ad404c39eb87d87311c9",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-tiny/resolve/25b96e30be3739849bf76c0f48ac11db4a262fb3/modeling_bailing_moe_v3_audio.py"
+        },
+        {
+          "path": "processing_bailing_moe_v3_audio.py",
+          "bytes": 4852,
+          "sha256": "0a6845f18c359260c2e4b5fca99eb58a2a34e6c77b6f1857ca9c5d16484caaa3",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-tiny/resolve/25b96e30be3739849bf76c0f48ac11db4a262fb3/processing_bailing_moe_v3_audio.py"
+        },
+        {
+          "path": "processor_config.json",
+          "bytes": 157,
+          "sha256": "9e8b173a9aa4d8cf3b1469d8ebe6af4348a9a4f2a21e910013e9839be87f0164",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-tiny/resolve/25b96e30be3739849bf76c0f48ac11db4a262fb3/processor_config.json"
+        },
+        {
+          "path": "special_tokens_map.json",
+          "bytes": 1290,
+          "sha256": "2ac79f0a2ab99a3e6ffb7709b77246f5595584f8dcd006694cb940a6fec8cb8d",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-tiny/resolve/25b96e30be3739849bf76c0f48ac11db4a262fb3/special_tokens_map.json"
+        },
+        {
+          "path": "talker/AudioVAE/__init__.py",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-tiny/resolve/25b96e30be3739849bf76c0f48ac11db4a262fb3/talker/AudioVAE/__init__.py"
+        },
+        {
+          "path": "talker/AudioVAE/configuration_audio_vae.py",
+          "bytes": 515,
+          "sha256": "cb5f2646940d3270326be87a4d564cb911bdede48e4334acd2ca02594822050b",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-tiny/resolve/25b96e30be3739849bf76c0f48ac11db4a262fb3/talker/AudioVAE/configuration_audio_vae.py"
+        },
+        {
+          "path": "talker/AudioVAE/istft.py",
+          "bytes": 7530,
+          "sha256": "de1e5f569e34a5cb05d088310a78d1dba60ef4f2ed403b37b21238c188f6d252",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-tiny/resolve/25b96e30be3739849bf76c0f48ac11db4a262fb3/talker/AudioVAE/istft.py"
+        },
+        {
+          "path": "talker/AudioVAE/modeling_audio_vae.py",
+          "bytes": 3361,
+          "sha256": "6ce1f0b024ec88c059e3f8c3c60071a3bd0ce5ca3188863a203eed0c2c38e76d",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-tiny/resolve/25b96e30be3739849bf76c0f48ac11db4a262fb3/talker/AudioVAE/modeling_audio_vae.py"
+        },
+        {
+          "path": "talker/AudioVAE/vae_modules.py",
+          "bytes": 8093,
+          "sha256": "6d7490f161c9e5c9e8a5884f165e22e7b5574c655280051c55200e4832e3a8c9",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-tiny/resolve/25b96e30be3739849bf76c0f48ac11db4a262fb3/talker/AudioVAE/vae_modules.py"
+        },
+        {
+          "path": "talker/__init__.py",
+          "bytes": 119,
+          "sha256": "d6d4518927f866c01c99d0b53643754cdc8d17171894b69a5c1b5c7e18c5c43e",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-tiny/resolve/25b96e30be3739849bf76c0f48ac11db4a262fb3/talker/__init__.py"
+        },
+        {
+          "path": "talker/campplus.onnx",
+          "bytes": 28303423,
+          "sha256": "a6ac6a63997761ae2997373e2ee1c47040854b4b759ea41ec48e4e42df0f4d73",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-tiny/resolve/25b96e30be3739849bf76c0f48ac11db4a262fb3/talker/campplus.onnx"
+        },
+        {
+          "path": "talker/config.json",
+          "bytes": 708,
+          "sha256": "ca789038e8a94aafa4ae4f7c4e060525db776906fc0b804bab86dd5f118945d9",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-tiny/resolve/25b96e30be3739849bf76c0f48ac11db4a262fb3/talker/config.json"
+        },
+        {
+          "path": "talker/configuration_bailing_talker.py",
+          "bytes": 798,
+          "sha256": "5ef569b0e0c62f0254c80605724caf3ede871f24f48b647b0b9711df94666ea1",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-tiny/resolve/25b96e30be3739849bf76c0f48ac11db4a262fb3/talker/configuration_bailing_talker.py"
+        },
+        {
+          "path": "talker/data/lid.176.ftz",
+          "bytes": 938013,
+          "sha256": "8f3472cfe8738a7b6099e8e999c3cbfae0dcd15696aac7d7738a8039db603e83",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-tiny/resolve/25b96e30be3739849bf76c0f48ac11db4a262fb3/talker/data/lid.176.ftz"
+        },
+        {
+          "path": "talker/front/__init__.py",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-tiny/resolve/25b96e30be3739849bf76c0f48ac11db4a262fb3/talker/front/__init__.py"
+        },
+        {
+          "path": "talker/front/number_en.py",
+          "bytes": 10878,
+          "sha256": "299caced391e34d927cd021193dfcf83b2d953516bf45ba4f2f6b15372aa225e",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-tiny/resolve/25b96e30be3739849bf76c0f48ac11db4a262fb3/talker/front/number_en.py"
+        },
+        {
+          "path": "talker/front/text_segment_cut.py",
+          "bytes": 15368,
+          "sha256": "504f7e420731fe0a928e53fd012b3a6d156da0bd0f35e73a023af11c17a3ba20",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-tiny/resolve/25b96e30be3739849bf76c0f48ac11db4a262fb3/talker/front/text_segment_cut.py"
+        },
+        {
+          "path": "talker/front/toolkit.py",
+          "bytes": 8920,
+          "sha256": "813d2787a3dcec15c0b6ff13479f54292492b81a3b87fa92925a22bd784fd472",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-tiny/resolve/25b96e30be3739849bf76c0f48ac11db4a262fb3/talker/front/toolkit.py"
+        },
+        {
+          "path": "talker/inference.py",
+          "bytes": 17609,
+          "sha256": "d3956d5d1a7c61b64d53dca95e8e7231ae47ab3a7f47e5aa82f188abbd279b20",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-tiny/resolve/25b96e30be3739849bf76c0f48ac11db4a262fb3/talker/inference.py"
+        },
+        {
+          "path": "talker/llm/added_tokens.json",
+          "bytes": 1785,
+          "sha256": "34394b1e16d7da2db16618bd43a0f970902ade0075480bcd812fe62d559ec319",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-tiny/resolve/25b96e30be3739849bf76c0f48ac11db4a262fb3/talker/llm/added_tokens.json"
+        },
+        {
+          "path": "talker/llm/config.json",
+          "bytes": 659,
+          "sha256": "18e18afcaccafade98daf13a54092927904649e1dd4eba8299ab717d5d94ff45",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-tiny/resolve/25b96e30be3739849bf76c0f48ac11db4a262fb3/talker/llm/config.json"
+        },
+        {
+          "path": "talker/llm/generation_config.json",
+          "bytes": 242,
+          "sha256": "e558847a8b4402616f1273797b015104dc266fe4b520056fca88823ba8f8ebe6",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-tiny/resolve/25b96e30be3739849bf76c0f48ac11db4a262fb3/talker/llm/generation_config.json"
+        },
+        {
+          "path": "talker/llm/merges.txt",
+          "bytes": 1671853,
+          "sha256": "8831e4f1a044471340f7c0a83d7bd71306a5b867e95fd870f74d0c5308a904d5",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-tiny/resolve/25b96e30be3739849bf76c0f48ac11db4a262fb3/talker/llm/merges.txt"
+        },
+        {
+          "path": "talker/llm/special_tokens_map.json",
+          "bytes": 2726,
+          "sha256": "2c2ec51b9da5db654ac20de8310350d0c9c1a65918ae0181b80dacd2919b4fc3",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-tiny/resolve/25b96e30be3739849bf76c0f48ac11db4a262fb3/talker/llm/special_tokens_map.json"
+        },
+        {
+          "path": "talker/llm/tokenizer.json",
+          "bytes": 11431389,
+          "sha256": "87d54ca3b44ea2f822ba39a0a45cb1b61644bd6606d9d3536dea75367bffb06d",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-tiny/resolve/25b96e30be3739849bf76c0f48ac11db4a262fb3/talker/llm/tokenizer.json"
+        },
+        {
+          "path": "talker/llm/tokenizer_config.json",
+          "bytes": 16260,
+          "sha256": "12d6162c815edef24f8606e65b60d43fe0d92b0a4e150a0db8fa01c523aaf36a",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-tiny/resolve/25b96e30be3739849bf76c0f48ac11db4a262fb3/talker/llm/tokenizer_config.json"
+        },
+        {
+          "path": "talker/llm/vocab.json",
+          "bytes": 2776833,
+          "sha256": "ca10d7e9fb3ed18575dd1e277a2579c16d108e32f27439684afa0e10b1440910",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-tiny/resolve/25b96e30be3739849bf76c0f48ac11db4a262fb3/talker/llm/vocab.json"
+        },
+        {
+          "path": "talker/model.safetensors",
+          "bytes": 1398191068,
+          "sha256": "7df7677cf9e9d76ecd3d8ea07606bb04249c72010f71827dd3daca3dfa7fd040",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-tiny/resolve/25b96e30be3739849bf76c0f48ac11db4a262fb3/talker/model.safetensors"
+        },
+        {
+          "path": "talker/requirements.txt",
+          "bytes": 225,
+          "sha256": "0cb602357c53eedf63e47fa7fbdcc2cf17bea4f21d2a12e887a8e2867bea833a",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-tiny/resolve/25b96e30be3739849bf76c0f48ac11db4a262fb3/talker/requirements.txt"
+        },
+        {
+          "path": "talker/talker_module/__init__.py",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-tiny/resolve/25b96e30be3739849bf76c0f48ac11db4a262fb3/talker/talker_module/__init__.py"
+        },
+        {
+          "path": "talker/talker_module/aggregator.py",
+          "bytes": 4283,
+          "sha256": "2375f96a148cf8d60ae96f67f11e39055382163cf83b7f284f64744cdf0bd334",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-tiny/resolve/25b96e30be3739849bf76c0f48ac11db4a262fb3/talker/talker_module/aggregator.py"
+        },
+        {
+          "path": "talker/talker_module/cfm.py",
+          "bytes": 2586,
+          "sha256": "3765ee73097ef23c9452a72acb19f5adbe3a3e2779b1b90041b96c122f4cff47",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-tiny/resolve/25b96e30be3739849bf76c0f48ac11db4a262fb3/talker/talker_module/cfm.py"
+        },
+        {
+          "path": "talker/talker_module/dit.py",
+          "bytes": 7475,
+          "sha256": "0cf950bf50aa487abfddb45bf7c5933eb0e4de412406539188933a9b2a555905",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-tiny/resolve/25b96e30be3739849bf76c0f48ac11db4a262fb3/talker/talker_module/dit.py"
+        },
+        {
+          "path": "talker/talker_module/modules.py",
+          "bytes": 11306,
+          "sha256": "bc706f4a2a94f2698a5e5a2cfb6091d6f2d3743dc6d8b30146128c24961c9b9f",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-tiny/resolve/25b96e30be3739849bf76c0f48ac11db4a262fb3/talker/talker_module/modules.py"
+        },
+        {
+          "path": "talker/talker_tn/__init__.py",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-tiny/resolve/25b96e30be3739849bf76c0f48ac11db4a262fb3/talker/talker_tn/__init__.py"
+        },
+        {
+          "path": "talker/talker_tn/en_tn_tagger.fst",
+          "bytes": 5159642,
+          "sha256": "657174a078edecda7eeb1006b2542aa194038f05452f464ab0963659e0892cf3",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-tiny/resolve/25b96e30be3739849bf76c0f48ac11db4a262fb3/talker/talker_tn/en_tn_tagger.fst"
+        },
+        {
+          "path": "talker/talker_tn/en_tn_verbalizer.fst",
+          "bytes": 2176998,
+          "sha256": "4ae3bbab8380968b3f3d2a8891027afeadb288670faf7287491e30e8bc153896",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-tiny/resolve/25b96e30be3739849bf76c0f48ac11db4a262fb3/talker/talker_tn/en_tn_verbalizer.fst"
+        },
+        {
+          "path": "talker/talker_tn/normalizer.py",
+          "bytes": 1143,
+          "sha256": "bf074ff85c8aae59de868b96c254a26066e8f67d9b214d2aca4ade7bfdc8b7b4",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-tiny/resolve/25b96e30be3739849bf76c0f48ac11db4a262fb3/talker/talker_tn/normalizer.py"
+        },
+        {
+          "path": "talker/talker_tn/re_utils/__init__.py",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-tiny/resolve/25b96e30be3739849bf76c0f48ac11db4a262fb3/talker/talker_tn/re_utils/__init__.py"
+        },
+        {
+          "path": "talker/talker_tn/re_utils/re_base.py",
+          "bytes": 382,
+          "sha256": "9c9ede8d0e2cc6270286cf4a7c1d817013d30b66d06e0791e3a8d1d712998025",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-tiny/resolve/25b96e30be3739849bf76c0f48ac11db4a262fb3/talker/talker_tn/re_utils/re_base.py"
+        },
+        {
+          "path": "talker/talker_tn/re_utils/re_char.py",
+          "bytes": 251,
+          "sha256": "99787b75d479889126582132757f11b153b9b1b1abd5c4ef683e2859b1f57354",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-tiny/resolve/25b96e30be3739849bf76c0f48ac11db4a262fb3/talker/talker_tn/re_utils/re_char.py"
+        },
+        {
+          "path": "talker/talker_tn/re_utils/re_date.py",
+          "bytes": 3848,
+          "sha256": "3a765743bdeefba13b572a1c917d16ca7fd5a6143c26d36226445d8deeaa584d",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-tiny/resolve/25b96e30be3739849bf76c0f48ac11db4a262fb3/talker/talker_tn/re_utils/re_date.py"
+        },
+        {
+          "path": "talker/talker_tn/re_utils/re_decimal.py",
+          "bytes": 1079,
+          "sha256": "da2efd34d1c5f25178757ed3d1fd5260d70e23ef90486e8678abac03399f7d82",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-tiny/resolve/25b96e30be3739849bf76c0f48ac11db4a262fb3/talker/talker_tn/re_utils/re_decimal.py"
+        },
+        {
+          "path": "talker/talker_tn/re_utils/re_digit.py",
+          "bytes": 2852,
+          "sha256": "ac94c0ab2111b0a0d2f503245727ed92c92c5ffc084d0af9dcb497b7e63841e5",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-tiny/resolve/25b96e30be3739849bf76c0f48ac11db4a262fb3/talker/talker_tn/re_utils/re_digit.py"
+        },
+        {
+          "path": "talker/talker_tn/re_utils/re_formula.py",
+          "bytes": 1382,
+          "sha256": "3bd17eec4f4aef09735fb1a9caa4cd1d8fdbeda1cf03654bf479bc1b8fb596cd",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-tiny/resolve/25b96e30be3739849bf76c0f48ac11db4a262fb3/talker/talker_tn/re_utils/re_formula.py"
+        },
+        {
+          "path": "talker/talker_tn/re_utils/re_frac.py",
+          "bytes": 1212,
+          "sha256": "691d6570105d2e9699a5c1374d8629bf8820cd339d6b9423ee712b5702537494",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-tiny/resolve/25b96e30be3739849bf76c0f48ac11db4a262fb3/talker/talker_tn/re_utils/re_frac.py"
+        },
+        {
+          "path": "talker/talker_tn/re_utils/re_ip.py",
+          "bytes": 783,
+          "sha256": "6b0ba3a11d5b0d12496f2277c5c7f97e729af3ca54875077d89a54bba8e572a4",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-tiny/resolve/25b96e30be3739849bf76c0f48ac11db4a262fb3/talker/talker_tn/re_utils/re_ip.py"
+        },
+        {
+          "path": "talker/talker_tn/re_utils/re_measure.py",
+          "bytes": 2400,
+          "sha256": "1b9343909530772bd43ad7c5ecd92e92b4c126ae129f40d6256532445d8fa36a",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-tiny/resolve/25b96e30be3739849bf76c0f48ac11db4a262fb3/talker/talker_tn/re_utils/re_measure.py"
+        },
+        {
+          "path": "talker/talker_tn/re_utils/re_money.py",
+          "bytes": 1335,
+          "sha256": "0f558440afbd100df0a38751c59795fc3da646e62cc3b2743cb472ca6c375cdf",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-tiny/resolve/25b96e30be3739849bf76c0f48ac11db4a262fb3/talker/talker_tn/re_utils/re_money.py"
+        },
+        {
+          "path": "talker/talker_tn/re_utils/re_order.py",
+          "bytes": 611,
+          "sha256": "d8c317a10f6759b3ce104aecda3efd8137225d309b6d27d0bc5a4a077629b44d",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-tiny/resolve/25b96e30be3739849bf76c0f48ac11db4a262fb3/talker/talker_tn/re_utils/re_order.py"
+        },
+        {
+          "path": "talker/talker_tn/re_utils/re_percent.py",
+          "bytes": 834,
+          "sha256": "4426abbd9cec17ace92e66d42b5eba502e89baa2d3091f62f96c58dd199889bb",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-tiny/resolve/25b96e30be3739849bf76c0f48ac11db4a262fb3/talker/talker_tn/re_utils/re_percent.py"
+        },
+        {
+          "path": "talker/talker_tn/re_utils/re_phone_dash.py",
+          "bytes": 1327,
+          "sha256": "b27231888654ea06fc409900ed2e65854be3e52278c171bca09d8f827d5ef644",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-tiny/resolve/25b96e30be3739849bf76c0f48ac11db4a262fb3/talker/talker_tn/re_utils/re_phone_dash.py"
+        },
+        {
+          "path": "talker/talker_tn/re_utils/re_punc.py",
+          "bytes": 252,
+          "sha256": "99a043c45dff8c8cb7a02cab6ec1c2603d15995a8548d5052faf97e4a275881c",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-tiny/resolve/25b96e30be3739849bf76c0f48ac11db4a262fb3/talker/talker_tn/re_utils/re_punc.py"
+        },
+        {
+          "path": "talker/talker_tn/re_utils/re_serial.py",
+          "bytes": 1723,
+          "sha256": "2e85bab3410b701db03fee73b36feba8bed06d7628fd5f842889a9a0754ab8a5",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-tiny/resolve/25b96e30be3739849bf76c0f48ac11db4a262fb3/talker/talker_tn/re_utils/re_serial.py"
+        },
+        {
+          "path": "talker/talker_tn/re_utils/re_sn.py",
+          "bytes": 1502,
+          "sha256": "ddc8d9783103d290a4ddb0d2fc9833f553fef24fcdd49bb8c7d45607f3c286b9",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-tiny/resolve/25b96e30be3739849bf76c0f48ac11db4a262fb3/talker/talker_tn/re_utils/re_sn.py"
+        },
+        {
+          "path": "talker/talker_tn/re_utils/re_time.py",
+          "bytes": 3962,
+          "sha256": "8f8a270ba43d9a9750eef282e959ffee76d4c6994343f898631332d5b7a41887",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-tiny/resolve/25b96e30be3739849bf76c0f48ac11db4a262fb3/talker/talker_tn/re_utils/re_time.py"
+        },
+        {
+          "path": "talker/talker_tn/re_utils/re_utils.py",
+          "bytes": 2668,
+          "sha256": "e6974675756e75789d16ca03465c4bdd3512af3f10a467b057437fd2b8a47708",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-tiny/resolve/25b96e30be3739849bf76c0f48ac11db4a262fb3/talker/talker_tn/re_utils/re_utils.py"
+        },
+        {
+          "path": "talker/talker_tn/re_utils/re_version.py",
+          "bytes": 934,
+          "sha256": "cc989d48173c3561fdd399c74be99345430fc74d5896fe05b85795391178e69f",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-tiny/resolve/25b96e30be3739849bf76c0f48ac11db4a262fb3/talker/talker_tn/re_utils/re_version.py"
+        },
+        {
+          "path": "talker/talker_tn/talker_pre_processor.py",
+          "bytes": 1766,
+          "sha256": "371e1b026102dbfa64e94b68908c9b2fb744cb0fe668e4b61b6ebcc3e828ab02",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-tiny/resolve/25b96e30be3739849bf76c0f48ac11db4a262fb3/talker/talker_tn/talker_pre_processor.py"
+        },
+        {
+          "path": "talker/talker_tn/talker_re.json",
+          "bytes": 14244,
+          "sha256": "a34bc5334044d564ac16ec89652f77d9bb6b5fc89c89e82b7b33f55cc63efbff",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-tiny/resolve/25b96e30be3739849bf76c0f48ac11db4a262fb3/talker/talker_tn/talker_re.json"
+        },
+        {
+          "path": "talker/talker_tn/talker_re.py",
+          "bytes": 6626,
+          "sha256": "2f1356079e8bf129525309ef42aabb625bb24a1915d801e762e81b053371ef2f",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-tiny/resolve/25b96e30be3739849bf76c0f48ac11db4a262fb3/talker/talker_tn/talker_re.py"
+        },
+        {
+          "path": "talker/talker_tn/talker_tn.py",
+          "bytes": 1929,
+          "sha256": "ad0a57189fd05bd0e29275529db8d80c3930e61e22d4de2da61b326309658f62",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-tiny/resolve/25b96e30be3739849bf76c0f48ac11db4a262fb3/talker/talker_tn/talker_tn.py"
+        },
+        {
+          "path": "talker/talker_tn/token_parser.py",
+          "bytes": 4487,
+          "sha256": "9ec4d8cee83e82ad876274c91e36bf1d79eda11557de0213400948f73f16bd65",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-tiny/resolve/25b96e30be3739849bf76c0f48ac11db4a262fb3/talker/talker_tn/token_parser.py"
+        },
+        {
+          "path": "talker/talker_tn/zh_tn_tagger.fst",
+          "bytes": 2960982,
+          "sha256": "8191a723f0e00a96fe8f9f74eb79d056facf98a95e07ef06d81f11d1db4b3b07",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-tiny/resolve/25b96e30be3739849bf76c0f48ac11db4a262fb3/talker/talker_tn/zh_tn_tagger.fst"
+        },
+        {
+          "path": "talker/talker_tn/zh_tn_verbalizer.fst",
+          "bytes": 87702,
+          "sha256": "8a0ead4c61217bad171a37e9bd659ef912dd3a749267a4b672008f25b510bdb4",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-tiny/resolve/25b96e30be3739849bf76c0f48ac11db4a262fb3/talker/talker_tn/zh_tn_verbalizer.fst"
+        },
+        {
+          "path": "talker/tts_prompt.py",
+          "bytes": 14300,
+          "sha256": "23a79cdeb2c898f48eb92aace503d0842297970c92aa577a9167bbc48357b238",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-tiny/resolve/25b96e30be3739849bf76c0f48ac11db4a262fb3/talker/tts_prompt.py"
+        },
+        {
+          "path": "talker/vae/config.json",
+          "bytes": 3055,
+          "sha256": "a6cd2af45e935bfb862dc696af9746e4e4c1cd0bbc039c99c77dcbbe41acf2a9",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-tiny/resolve/25b96e30be3739849bf76c0f48ac11db4a262fb3/talker/vae/config.json"
+        },
+        {
+          "path": "talker/vae/model.safetensors",
+          "bytes": 1560856068,
+          "sha256": "61ffb5e9ca7e8f95169381bdd0d84b9bdc4d8cbf87fa0d0e01c43be61f64fc00",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-tiny/resolve/25b96e30be3739849bf76c0f48ac11db4a262fb3/talker/vae/model.safetensors"
+        },
+        {
+          "path": "tokenizer.json",
+          "bytes": 12210658,
+          "sha256": "2207eca933084436c15bb85ee648e28b2957934bc1da9506e10ea6c243bad869",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-tiny/resolve/25b96e30be3739849bf76c0f48ac11db4a262fb3/tokenizer.json"
+        },
+        {
+          "path": "tokenizer_config.json",
+          "bytes": 55437,
+          "sha256": "29c99ad0d76b663b5acd6cffcade4c1bc7897b2b44a64c8224b1222143002e7a",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-tiny/resolve/25b96e30be3739849bf76c0f48ac11db4a262fb3/tokenizer_config.json"
+        },
+        {
+          "path": "voice_presets/voice_audio/US_James.wav",
+          "bytes": 931086,
+          "sha256": "47a72c8360c85ba1ad6592cd6870725523d6a697269fecdcf37f57ec1357a5e1",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-tiny/resolve/25b96e30be3739849bf76c0f48ac11db4a262fb3/voice_presets/voice_audio/US_James.wav"
+        },
+        {
+          "path": "voice_presets/voice_audio/\u7075\u6977.wav",
+          "bytes": 529806,
+          "sha256": "b1124ae0df12d91e2e1af683a4155202bef98857d44587833da34673408d09e8",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-tiny/resolve/25b96e30be3739849bf76c0f48ac11db4a262fb3/voice_presets/voice_audio/%E7%81%B5%E6%A5%B7.wav"
+        },
+        {
+          "path": "voice_presets/voice_prompts.json",
+          "bytes": 349,
+          "sha256": "7c33e2f4511538ded2c1dac7a4b13d38e9a29f66782088f44aba6c0972ca5550",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-tiny/resolve/25b96e30be3739849bf76c0f48ac11db4a262fb3/voice_presets/voice_prompts.json"
+        }
+      ]
+    },
+    {
+      "id": "inclusionAI/Ming-3.0-audio-flash",
+      "family": "audio",
+      "revision": "e0a47cc6d67113257f45b6173c529d9f03640315",
+      "license": "MIT",
+      "announcedBackboneParameters": 126000000000,
+      "announcedActiveParameters": 6500000000,
+      "storedTopLevelSafetensorsParameters": 128181010400,
+      "languages": [
+        "zh",
+        "en"
+      ],
+      "androidLocal": false,
+      "execution": "self-hosted-cuda",
+      "repositoryBytes": 259406941165,
+      "modelUrl": "https://huggingface.co/inclusionAI/Ming-3.0-audio-flash",
+      "modelScopeUrl": "https://modelscope.cn/models/inclusionAI/Ming-3.0-audio-flash",
+      "source": {
+        "url": "https://github.com/inclusionAI/Ming-3.0-audio-flash",
+        "revision": "8d19d23878fdb583c2a520b9ce51705fe1825902"
+      },
+      "profiles": {
+        "speech": {
+          "files": [
+            "chat_template.jinja",
+            "config.json",
+            "configuration_bailing_moe_v3.py",
+            "configuration_bailing_moe_v3_audio.py",
+            "generation_config.json",
+            "model-00001-of-00025.safetensors",
+            "model-00002-of-00025.safetensors",
+            "model-00003-of-00025.safetensors",
+            "model-00004-of-00025.safetensors",
+            "model-00005-of-00025.safetensors",
+            "model-00006-of-00025.safetensors",
+            "model-00007-of-00025.safetensors",
+            "model-00008-of-00025.safetensors",
+            "model-00009-of-00025.safetensors",
+            "model-00010-of-00025.safetensors",
+            "model-00011-of-00025.safetensors",
+            "model-00012-of-00025.safetensors",
+            "model-00013-of-00025.safetensors",
+            "model-00014-of-00025.safetensors",
+            "model-00015-of-00025.safetensors",
+            "model-00016-of-00025.safetensors",
+            "model-00017-of-00025.safetensors",
+            "model-00018-of-00025.safetensors",
+            "model-00019-of-00025.safetensors",
+            "model-00020-of-00025.safetensors",
+            "model-00021-of-00025.safetensors",
+            "model-00022-of-00025.safetensors",
+            "model-00023-of-00025.safetensors",
+            "model-00024-of-00025.safetensors",
+            "model-00025-of-00025.safetensors",
+            "model.safetensors.index.json",
+            "modeling_bailing_moe_v3.py",
+            "modeling_bailing_moe_v3_audio.py",
+            "processing_bailing_moe_v3_audio.py",
+            "processor_config.json",
+            "special_tokens_map.json",
+            "tokenizer.json",
+            "tokenizer_config.json"
+          ],
+          "bytes": 256388580051
+        },
+        "withTalker": {
+          "files": [
+            "chat_template.jinja",
+            "config.json",
+            "configuration_bailing_moe_v3.py",
+            "configuration_bailing_moe_v3_audio.py",
+            "generation_config.json",
+            "model-00001-of-00025.safetensors",
+            "model-00002-of-00025.safetensors",
+            "model-00003-of-00025.safetensors",
+            "model-00004-of-00025.safetensors",
+            "model-00005-of-00025.safetensors",
+            "model-00006-of-00025.safetensors",
+            "model-00007-of-00025.safetensors",
+            "model-00008-of-00025.safetensors",
+            "model-00009-of-00025.safetensors",
+            "model-00010-of-00025.safetensors",
+            "model-00011-of-00025.safetensors",
+            "model-00012-of-00025.safetensors",
+            "model-00013-of-00025.safetensors",
+            "model-00014-of-00025.safetensors",
+            "model-00015-of-00025.safetensors",
+            "model-00016-of-00025.safetensors",
+            "model-00017-of-00025.safetensors",
+            "model-00018-of-00025.safetensors",
+            "model-00019-of-00025.safetensors",
+            "model-00020-of-00025.safetensors",
+            "model-00021-of-00025.safetensors",
+            "model-00022-of-00025.safetensors",
+            "model-00023-of-00025.safetensors",
+            "model-00024-of-00025.safetensors",
+            "model-00025-of-00025.safetensors",
+            "model.safetensors.index.json",
+            "modeling_bailing_moe_v3.py",
+            "modeling_bailing_moe_v3_audio.py",
+            "processing_bailing_moe_v3_audio.py",
+            "processor_config.json",
+            "special_tokens_map.json",
+            "talker/AudioVAE/__init__.py",
+            "talker/AudioVAE/configuration_audio_vae.py",
+            "talker/AudioVAE/istft.py",
+            "talker/AudioVAE/modeling_audio_vae.py",
+            "talker/AudioVAE/vae_modules.py",
+            "talker/__init__.py",
+            "talker/campplus.onnx",
+            "talker/config.json",
+            "talker/configuration_bailing_talker.py",
+            "talker/data/lid.176.ftz",
+            "talker/front/__init__.py",
+            "talker/front/number_en.py",
+            "talker/front/text_segment_cut.py",
+            "talker/front/toolkit.py",
+            "talker/inference.py",
+            "talker/llm/added_tokens.json",
+            "talker/llm/config.json",
+            "talker/llm/generation_config.json",
+            "talker/llm/merges.txt",
+            "talker/llm/special_tokens_map.json",
+            "talker/llm/tokenizer.json",
+            "talker/llm/tokenizer_config.json",
+            "talker/llm/vocab.json",
+            "talker/model.safetensors",
+            "talker/requirements.txt",
+            "talker/talker_module/__init__.py",
+            "talker/talker_module/aggregator.py",
+            "talker/talker_module/cfm.py",
+            "talker/talker_module/dit.py",
+            "talker/talker_module/modules.py",
+            "talker/talker_tn/__init__.py",
+            "talker/talker_tn/en_tn_tagger.fst",
+            "talker/talker_tn/en_tn_verbalizer.fst",
+            "talker/talker_tn/normalizer.py",
+            "talker/talker_tn/re_utils/__init__.py",
+            "talker/talker_tn/re_utils/re_base.py",
+            "talker/talker_tn/re_utils/re_char.py",
+            "talker/talker_tn/re_utils/re_date.py",
+            "talker/talker_tn/re_utils/re_decimal.py",
+            "talker/talker_tn/re_utils/re_digit.py",
+            "talker/talker_tn/re_utils/re_formula.py",
+            "talker/talker_tn/re_utils/re_frac.py",
+            "talker/talker_tn/re_utils/re_ip.py",
+            "talker/talker_tn/re_utils/re_measure.py",
+            "talker/talker_tn/re_utils/re_money.py",
+            "talker/talker_tn/re_utils/re_order.py",
+            "talker/talker_tn/re_utils/re_percent.py",
+            "talker/talker_tn/re_utils/re_phone_dash.py",
+            "talker/talker_tn/re_utils/re_punc.py",
+            "talker/talker_tn/re_utils/re_serial.py",
+            "talker/talker_tn/re_utils/re_sn.py",
+            "talker/talker_tn/re_utils/re_time.py",
+            "talker/talker_tn/re_utils/re_utils.py",
+            "talker/talker_tn/re_utils/re_version.py",
+            "talker/talker_tn/talker_pre_processor.py",
+            "talker/talker_tn/talker_re.json",
+            "talker/talker_tn/talker_re.py",
+            "talker/talker_tn/talker_tn.py",
+            "talker/talker_tn/token_parser.py",
+            "talker/talker_tn/zh_tn_tagger.fst",
+            "talker/talker_tn/zh_tn_verbalizer.fst",
+            "talker/tts_prompt.py",
+            "talker/vae/config.json",
+            "talker/vae/model.safetensors",
+            "tokenizer.json",
+            "tokenizer_config.json"
+          ],
+          "bytes": 259403332355
+        }
+      },
+      "files": [
+        {
+          "path": "chat_template.jinja",
+          "bytes": 7543,
+          "sha256": "e6fcddb0528613f9edf26d95875aa70bfb0ceff690f937abd6c11d5328fd8249",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-flash/resolve/e0a47cc6d67113257f45b6173c529d9f03640315/chat_template.jinja"
+        },
+        {
+          "path": "config.json",
+          "bytes": 3771,
+          "sha256": "4f08c2c4b5b43b7acd002919d605486432b7b60300ad9364d9af8b3f24487ad5",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-flash/resolve/e0a47cc6d67113257f45b6173c529d9f03640315/config.json"
+        },
+        {
+          "path": "configuration_bailing_moe_v3.py",
+          "bytes": 4951,
+          "sha256": "a7c800d3e75da56294cb9c07bc1b65d96ccf16cd8fdada2520de1be1cbb3ac70",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-flash/resolve/e0a47cc6d67113257f45b6173c529d9f03640315/configuration_bailing_moe_v3.py"
+        },
+        {
+          "path": "configuration_bailing_moe_v3_audio.py",
+          "bytes": 8421,
+          "sha256": "b5e2fed9fbdb6b65370e0a29342c9e119ffa4cf6fa17c1afea01849ec78509d4",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-flash/resolve/e0a47cc6d67113257f45b6173c529d9f03640315/configuration_bailing_moe_v3_audio.py"
+        },
+        {
+          "path": "generation_config.json",
+          "bytes": 77,
+          "sha256": "1da133d04c4f99a72e09b1565d0bb4fc0a2edc5c373a46b7076a3494edc7eb43",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-flash/resolve/e0a47cc6d67113257f45b6173c529d9f03640315/generation_config.json"
+        },
+        {
+          "path": "model-00001-of-00025.safetensors",
+          "bytes": 9768914400,
+          "sha256": "1007f50e9601639174c167fcb2ff839ce907938d5bb23574d87d1ae91f8f4b66",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-flash/resolve/e0a47cc6d67113257f45b6173c529d9f03640315/model-00001-of-00025.safetensors"
+        },
+        {
+          "path": "model-00002-of-00025.safetensors",
+          "bytes": 10711541960,
+          "sha256": "f5c3837106e58b31f4c80f9272584714758048afdb25fee6ce17cd5e66a8297e",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-flash/resolve/e0a47cc6d67113257f45b6173c529d9f03640315/model-00002-of-00025.safetensors"
+        },
+        {
+          "path": "model-00003-of-00025.safetensors",
+          "bytes": 10522791920,
+          "sha256": "bdf83b774cc7325e68203b24f20e033e5a033b0bbee107de582ac94063f7c9da",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-flash/resolve/e0a47cc6d67113257f45b6173c529d9f03640315/model-00003-of-00025.safetensors"
+        },
+        {
+          "path": "model-00004-of-00025.safetensors",
+          "bytes": 10522791920,
+          "sha256": "d2034a3db6bc664c178b74db4a962f18ef295ca8930cc85c700936097e88a5bd",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-flash/resolve/e0a47cc6d67113257f45b6173c529d9f03640315/model-00004-of-00025.safetensors"
+        },
+        {
+          "path": "model-00005-of-00025.safetensors",
+          "bytes": 10522791960,
+          "sha256": "c94c955982a973415fa3439781992cd34b8d3e6cf2b7a186c2f79c729420ef9b",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-flash/resolve/e0a47cc6d67113257f45b6173c529d9f03640315/model-00005-of-00025.safetensors"
+        },
+        {
+          "path": "model-00006-of-00025.safetensors",
+          "bytes": 10711543416,
+          "sha256": "e5448471045f228039411cd3014f375e3764289a817d6db2f994e4d035815287",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-flash/resolve/e0a47cc6d67113257f45b6173c529d9f03640315/model-00006-of-00025.safetensors"
+        },
+        {
+          "path": "model-00007-of-00025.safetensors",
+          "bytes": 10522794600,
+          "sha256": "d1e757fa48eafe1e7a362e701c51561a7a7f9088a6c35adcc69689abb1451daf",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-flash/resolve/e0a47cc6d67113257f45b6173c529d9f03640315/model-00007-of-00025.safetensors"
+        },
+        {
+          "path": "model-00008-of-00025.safetensors",
+          "bytes": 10522794600,
+          "sha256": "d6688b0af50e495f2776b4e2b0f0b5b7f388f47716dfd772471ab66d3519f554",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-flash/resolve/e0a47cc6d67113257f45b6173c529d9f03640315/model-00008-of-00025.safetensors"
+        },
+        {
+          "path": "model-00009-of-00025.safetensors",
+          "bytes": 10522794632,
+          "sha256": "4ab83f0b0df7a3821a89eed66115e49cb804775caa01b15bf563dcc8c2eeb785",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-flash/resolve/e0a47cc6d67113257f45b6173c529d9f03640315/model-00009-of-00025.safetensors"
+        },
+        {
+          "path": "model-00010-of-00025.safetensors",
+          "bytes": 10711544688,
+          "sha256": "9584a8f749690f0e9187d544ce01abe9641da0ed8351d61556c6b9fe5f901267",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-flash/resolve/e0a47cc6d67113257f45b6173c529d9f03640315/model-00010-of-00025.safetensors"
+        },
+        {
+          "path": "model-00011-of-00025.safetensors",
+          "bytes": 10522794600,
+          "sha256": "2a7ee48877ed9bc4837a8ab92d76111fe97954f7b27fac72fbf522b55301256a",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-flash/resolve/e0a47cc6d67113257f45b6173c529d9f03640315/model-00011-of-00025.safetensors"
+        },
+        {
+          "path": "model-00012-of-00025.safetensors",
+          "bytes": 10522794600,
+          "sha256": "cfc4925a5be2cdc82206902834b8303d53f4ea7238b9d8ce827a8190aec1c1bb",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-flash/resolve/e0a47cc6d67113257f45b6173c529d9f03640315/model-00012-of-00025.safetensors"
+        },
+        {
+          "path": "model-00013-of-00025.safetensors",
+          "bytes": 10522794632,
+          "sha256": "2a36e92b20f205d25fbcecd86d07d280f9b36bc39c612cb977339b9d93071de6",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-flash/resolve/e0a47cc6d67113257f45b6173c529d9f03640315/model-00013-of-00025.safetensors"
+        },
+        {
+          "path": "model-00014-of-00025.safetensors",
+          "bytes": 10711544688,
+          "sha256": "91637ee8e7eaab44dd450bac919ad335aa6899a31eb5b6f6892577d5300dd78f",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-flash/resolve/e0a47cc6d67113257f45b6173c529d9f03640315/model-00014-of-00025.safetensors"
+        },
+        {
+          "path": "model-00015-of-00025.safetensors",
+          "bytes": 10522794600,
+          "sha256": "544692b8ab2d4092f1abf7a73cdf4eb72e1bac14b91405b91b38c3cb6b5fe568",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-flash/resolve/e0a47cc6d67113257f45b6173c529d9f03640315/model-00015-of-00025.safetensors"
+        },
+        {
+          "path": "model-00016-of-00025.safetensors",
+          "bytes": 10522794600,
+          "sha256": "519436b704fad572de3a88b761ceb61b3f63ac2f9f27b53e302fe8e86d6ee25b",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-flash/resolve/e0a47cc6d67113257f45b6173c529d9f03640315/model-00016-of-00025.safetensors"
+        },
+        {
+          "path": "model-00017-of-00025.safetensors",
+          "bytes": 10522794632,
+          "sha256": "188bf3ef3ba8d472f74901fa4e7cadedafa0cae75e7be38ac60dc642e63fec71",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-flash/resolve/e0a47cc6d67113257f45b6173c529d9f03640315/model-00017-of-00025.safetensors"
+        },
+        {
+          "path": "model-00018-of-00025.safetensors",
+          "bytes": 10711544688,
+          "sha256": "c3452160b3b08725136dbd940094d333ecfa14726269bad03646324a8b34a7ca",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-flash/resolve/e0a47cc6d67113257f45b6173c529d9f03640315/model-00018-of-00025.safetensors"
+        },
+        {
+          "path": "model-00019-of-00025.safetensors",
+          "bytes": 10522794600,
+          "sha256": "9c4d0116829ee4ebdb985a6c16d34dc853a71245ccd9a900b0b4e31aec82b534",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-flash/resolve/e0a47cc6d67113257f45b6173c529d9f03640315/model-00019-of-00025.safetensors"
+        },
+        {
+          "path": "model-00020-of-00025.safetensors",
+          "bytes": 10522794600,
+          "sha256": "212b32887cd6dd9d6f8a6b93ef91d704b2e561e5b9a81775b6039a79eb56b2f6",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-flash/resolve/e0a47cc6d67113257f45b6173c529d9f03640315/model-00020-of-00025.safetensors"
+        },
+        {
+          "path": "model-00021-of-00025.safetensors",
+          "bytes": 10522794632,
+          "sha256": "5ce720c67c502875dedc5c9ece934647dc6384dbcd53f694b8d37ac518ac227a",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-flash/resolve/e0a47cc6d67113257f45b6173c529d9f03640315/model-00021-of-00025.safetensors"
+        },
+        {
+          "path": "model-00022-of-00025.safetensors",
+          "bytes": 10711544688,
+          "sha256": "79d0d149e9ea8ce25f47a91541e885d128e56e9c098e2c60bb9a9aa617f974e3",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-flash/resolve/e0a47cc6d67113257f45b6173c529d9f03640315/model-00022-of-00025.safetensors"
+        },
+        {
+          "path": "model-00023-of-00025.safetensors",
+          "bytes": 10522794600,
+          "sha256": "2430f944efb959dadf85213cc2866f3b6685d6b272d367fca4e68844feb1c4a4",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-flash/resolve/e0a47cc6d67113257f45b6173c529d9f03640315/model-00023-of-00025.safetensors"
+        },
+        {
+          "path": "model-00024-of-00025.safetensors",
+          "bytes": 10522794600,
+          "sha256": "e0a322d5bee80fb2609b3a14dce41c15c4326b2e1d9db37724071569de24c16e",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-flash/resolve/e0a47cc6d67113257f45b6173c529d9f03640315/model-00024-of-00025.safetensors"
+        },
+        {
+          "path": "model-00025-of-00025.safetensors",
+          "bytes": 3444681392,
+          "sha256": "f208503634053d0df8a356b1a7afd6ba8bb2aeb9d63f897ab224579c5bf182ea",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-flash/resolve/e0a47cc6d67113257f45b6173c529d9f03640315/model-00025-of-00025.safetensors"
+        },
+        {
+          "path": "model.safetensors.index.json",
+          "bytes": 5832883,
+          "sha256": "15f45d142b0f4a80ce0ebabe865e8548b1d5410721b4b48c8d686660f018a1d6",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-flash/resolve/e0a47cc6d67113257f45b6173c529d9f03640315/model.safetensors.index.json"
+        },
+        {
+          "path": "modeling_bailing_moe_v3.py",
+          "bytes": 75640,
+          "sha256": "fb3b1dcb621e45453995f0adb4cb8e0b71046b7794f7db593b5dc57ba97fdb4f",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-flash/resolve/e0a47cc6d67113257f45b6173c529d9f03640315/modeling_bailing_moe_v3.py"
+        },
+        {
+          "path": "modeling_bailing_moe_v3_audio.py",
+          "bytes": 14123,
+          "sha256": "821d99b872f6e31dd4fdb9f284b9ff58a051e0263532ad404c39eb87d87311c9",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-flash/resolve/e0a47cc6d67113257f45b6173c529d9f03640315/modeling_bailing_moe_v3_audio.py"
+        },
+        {
+          "path": "processing_bailing_moe_v3_audio.py",
+          "bytes": 4852,
+          "sha256": "0a6845f18c359260c2e4b5fca99eb58a2a34e6c77b6f1857ca9c5d16484caaa3",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-flash/resolve/e0a47cc6d67113257f45b6173c529d9f03640315/processing_bailing_moe_v3_audio.py"
+        },
+        {
+          "path": "processor_config.json",
+          "bytes": 157,
+          "sha256": "9e8b173a9aa4d8cf3b1469d8ebe6af4348a9a4f2a21e910013e9839be87f0164",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-flash/resolve/e0a47cc6d67113257f45b6173c529d9f03640315/processor_config.json"
+        },
+        {
+          "path": "special_tokens_map.json",
+          "bytes": 1290,
+          "sha256": "2ac79f0a2ab99a3e6ffb7709b77246f5595584f8dcd006694cb940a6fec8cb8d",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-flash/resolve/e0a47cc6d67113257f45b6173c529d9f03640315/special_tokens_map.json"
+        },
+        {
+          "path": "talker/AudioVAE/__init__.py",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-flash/resolve/e0a47cc6d67113257f45b6173c529d9f03640315/talker/AudioVAE/__init__.py"
+        },
+        {
+          "path": "talker/AudioVAE/configuration_audio_vae.py",
+          "bytes": 515,
+          "sha256": "cb5f2646940d3270326be87a4d564cb911bdede48e4334acd2ca02594822050b",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-flash/resolve/e0a47cc6d67113257f45b6173c529d9f03640315/talker/AudioVAE/configuration_audio_vae.py"
+        },
+        {
+          "path": "talker/AudioVAE/istft.py",
+          "bytes": 7530,
+          "sha256": "de1e5f569e34a5cb05d088310a78d1dba60ef4f2ed403b37b21238c188f6d252",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-flash/resolve/e0a47cc6d67113257f45b6173c529d9f03640315/talker/AudioVAE/istft.py"
+        },
+        {
+          "path": "talker/AudioVAE/modeling_audio_vae.py",
+          "bytes": 3361,
+          "sha256": "6ce1f0b024ec88c059e3f8c3c60071a3bd0ce5ca3188863a203eed0c2c38e76d",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-flash/resolve/e0a47cc6d67113257f45b6173c529d9f03640315/talker/AudioVAE/modeling_audio_vae.py"
+        },
+        {
+          "path": "talker/AudioVAE/vae_modules.py",
+          "bytes": 8093,
+          "sha256": "6d7490f161c9e5c9e8a5884f165e22e7b5574c655280051c55200e4832e3a8c9",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-flash/resolve/e0a47cc6d67113257f45b6173c529d9f03640315/talker/AudioVAE/vae_modules.py"
+        },
+        {
+          "path": "talker/__init__.py",
+          "bytes": 119,
+          "sha256": "d6d4518927f866c01c99d0b53643754cdc8d17171894b69a5c1b5c7e18c5c43e",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-flash/resolve/e0a47cc6d67113257f45b6173c529d9f03640315/talker/__init__.py"
+        },
+        {
+          "path": "talker/campplus.onnx",
+          "bytes": 28303423,
+          "sha256": "a6ac6a63997761ae2997373e2ee1c47040854b4b759ea41ec48e4e42df0f4d73",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-flash/resolve/e0a47cc6d67113257f45b6173c529d9f03640315/talker/campplus.onnx"
+        },
+        {
+          "path": "talker/config.json",
+          "bytes": 708,
+          "sha256": "ca789038e8a94aafa4ae4f7c4e060525db776906fc0b804bab86dd5f118945d9",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-flash/resolve/e0a47cc6d67113257f45b6173c529d9f03640315/talker/config.json"
+        },
+        {
+          "path": "talker/configuration_bailing_talker.py",
+          "bytes": 798,
+          "sha256": "5ef569b0e0c62f0254c80605724caf3ede871f24f48b647b0b9711df94666ea1",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-flash/resolve/e0a47cc6d67113257f45b6173c529d9f03640315/talker/configuration_bailing_talker.py"
+        },
+        {
+          "path": "talker/data/lid.176.ftz",
+          "bytes": 938013,
+          "sha256": "8f3472cfe8738a7b6099e8e999c3cbfae0dcd15696aac7d7738a8039db603e83",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-flash/resolve/e0a47cc6d67113257f45b6173c529d9f03640315/talker/data/lid.176.ftz"
+        },
+        {
+          "path": "talker/front/__init__.py",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-flash/resolve/e0a47cc6d67113257f45b6173c529d9f03640315/talker/front/__init__.py"
+        },
+        {
+          "path": "talker/front/number_en.py",
+          "bytes": 10878,
+          "sha256": "299caced391e34d927cd021193dfcf83b2d953516bf45ba4f2f6b15372aa225e",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-flash/resolve/e0a47cc6d67113257f45b6173c529d9f03640315/talker/front/number_en.py"
+        },
+        {
+          "path": "talker/front/text_segment_cut.py",
+          "bytes": 15368,
+          "sha256": "504f7e420731fe0a928e53fd012b3a6d156da0bd0f35e73a023af11c17a3ba20",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-flash/resolve/e0a47cc6d67113257f45b6173c529d9f03640315/talker/front/text_segment_cut.py"
+        },
+        {
+          "path": "talker/front/toolkit.py",
+          "bytes": 8920,
+          "sha256": "813d2787a3dcec15c0b6ff13479f54292492b81a3b87fa92925a22bd784fd472",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-flash/resolve/e0a47cc6d67113257f45b6173c529d9f03640315/talker/front/toolkit.py"
+        },
+        {
+          "path": "talker/inference.py",
+          "bytes": 17609,
+          "sha256": "d3956d5d1a7c61b64d53dca95e8e7231ae47ab3a7f47e5aa82f188abbd279b20",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-flash/resolve/e0a47cc6d67113257f45b6173c529d9f03640315/talker/inference.py"
+        },
+        {
+          "path": "talker/llm/added_tokens.json",
+          "bytes": 1785,
+          "sha256": "34394b1e16d7da2db16618bd43a0f970902ade0075480bcd812fe62d559ec319",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-flash/resolve/e0a47cc6d67113257f45b6173c529d9f03640315/talker/llm/added_tokens.json"
+        },
+        {
+          "path": "talker/llm/config.json",
+          "bytes": 659,
+          "sha256": "18e18afcaccafade98daf13a54092927904649e1dd4eba8299ab717d5d94ff45",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-flash/resolve/e0a47cc6d67113257f45b6173c529d9f03640315/talker/llm/config.json"
+        },
+        {
+          "path": "talker/llm/generation_config.json",
+          "bytes": 242,
+          "sha256": "e558847a8b4402616f1273797b015104dc266fe4b520056fca88823ba8f8ebe6",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-flash/resolve/e0a47cc6d67113257f45b6173c529d9f03640315/talker/llm/generation_config.json"
+        },
+        {
+          "path": "talker/llm/merges.txt",
+          "bytes": 1671853,
+          "sha256": "8831e4f1a044471340f7c0a83d7bd71306a5b867e95fd870f74d0c5308a904d5",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-flash/resolve/e0a47cc6d67113257f45b6173c529d9f03640315/talker/llm/merges.txt"
+        },
+        {
+          "path": "talker/llm/special_tokens_map.json",
+          "bytes": 2726,
+          "sha256": "2c2ec51b9da5db654ac20de8310350d0c9c1a65918ae0181b80dacd2919b4fc3",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-flash/resolve/e0a47cc6d67113257f45b6173c529d9f03640315/talker/llm/special_tokens_map.json"
+        },
+        {
+          "path": "talker/llm/tokenizer.json",
+          "bytes": 11431389,
+          "sha256": "87d54ca3b44ea2f822ba39a0a45cb1b61644bd6606d9d3536dea75367bffb06d",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-flash/resolve/e0a47cc6d67113257f45b6173c529d9f03640315/talker/llm/tokenizer.json"
+        },
+        {
+          "path": "talker/llm/tokenizer_config.json",
+          "bytes": 16260,
+          "sha256": "12d6162c815edef24f8606e65b60d43fe0d92b0a4e150a0db8fa01c523aaf36a",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-flash/resolve/e0a47cc6d67113257f45b6173c529d9f03640315/talker/llm/tokenizer_config.json"
+        },
+        {
+          "path": "talker/llm/vocab.json",
+          "bytes": 2776833,
+          "sha256": "ca10d7e9fb3ed18575dd1e277a2579c16d108e32f27439684afa0e10b1440910",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-flash/resolve/e0a47cc6d67113257f45b6173c529d9f03640315/talker/llm/vocab.json"
+        },
+        {
+          "path": "talker/model.safetensors",
+          "bytes": 1398191068,
+          "sha256": "7df7677cf9e9d76ecd3d8ea07606bb04249c72010f71827dd3daca3dfa7fd040",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-flash/resolve/e0a47cc6d67113257f45b6173c529d9f03640315/talker/model.safetensors"
+        },
+        {
+          "path": "talker/requirements.txt",
+          "bytes": 225,
+          "sha256": "0cb602357c53eedf63e47fa7fbdcc2cf17bea4f21d2a12e887a8e2867bea833a",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-flash/resolve/e0a47cc6d67113257f45b6173c529d9f03640315/talker/requirements.txt"
+        },
+        {
+          "path": "talker/talker_module/__init__.py",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-flash/resolve/e0a47cc6d67113257f45b6173c529d9f03640315/talker/talker_module/__init__.py"
+        },
+        {
+          "path": "talker/talker_module/aggregator.py",
+          "bytes": 4283,
+          "sha256": "2375f96a148cf8d60ae96f67f11e39055382163cf83b7f284f64744cdf0bd334",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-flash/resolve/e0a47cc6d67113257f45b6173c529d9f03640315/talker/talker_module/aggregator.py"
+        },
+        {
+          "path": "talker/talker_module/cfm.py",
+          "bytes": 2586,
+          "sha256": "3765ee73097ef23c9452a72acb19f5adbe3a3e2779b1b90041b96c122f4cff47",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-flash/resolve/e0a47cc6d67113257f45b6173c529d9f03640315/talker/talker_module/cfm.py"
+        },
+        {
+          "path": "talker/talker_module/dit.py",
+          "bytes": 7475,
+          "sha256": "0cf950bf50aa487abfddb45bf7c5933eb0e4de412406539188933a9b2a555905",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-flash/resolve/e0a47cc6d67113257f45b6173c529d9f03640315/talker/talker_module/dit.py"
+        },
+        {
+          "path": "talker/talker_module/modules.py",
+          "bytes": 11306,
+          "sha256": "bc706f4a2a94f2698a5e5a2cfb6091d6f2d3743dc6d8b30146128c24961c9b9f",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-flash/resolve/e0a47cc6d67113257f45b6173c529d9f03640315/talker/talker_module/modules.py"
+        },
+        {
+          "path": "talker/talker_tn/__init__.py",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-flash/resolve/e0a47cc6d67113257f45b6173c529d9f03640315/talker/talker_tn/__init__.py"
+        },
+        {
+          "path": "talker/talker_tn/en_tn_tagger.fst",
+          "bytes": 5159642,
+          "sha256": "657174a078edecda7eeb1006b2542aa194038f05452f464ab0963659e0892cf3",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-flash/resolve/e0a47cc6d67113257f45b6173c529d9f03640315/talker/talker_tn/en_tn_tagger.fst"
+        },
+        {
+          "path": "talker/talker_tn/en_tn_verbalizer.fst",
+          "bytes": 2176998,
+          "sha256": "4ae3bbab8380968b3f3d2a8891027afeadb288670faf7287491e30e8bc153896",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-flash/resolve/e0a47cc6d67113257f45b6173c529d9f03640315/talker/talker_tn/en_tn_verbalizer.fst"
+        },
+        {
+          "path": "talker/talker_tn/normalizer.py",
+          "bytes": 1143,
+          "sha256": "bf074ff85c8aae59de868b96c254a26066e8f67d9b214d2aca4ade7bfdc8b7b4",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-flash/resolve/e0a47cc6d67113257f45b6173c529d9f03640315/talker/talker_tn/normalizer.py"
+        },
+        {
+          "path": "talker/talker_tn/re_utils/__init__.py",
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-flash/resolve/e0a47cc6d67113257f45b6173c529d9f03640315/talker/talker_tn/re_utils/__init__.py"
+        },
+        {
+          "path": "talker/talker_tn/re_utils/re_base.py",
+          "bytes": 382,
+          "sha256": "9c9ede8d0e2cc6270286cf4a7c1d817013d30b66d06e0791e3a8d1d712998025",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-flash/resolve/e0a47cc6d67113257f45b6173c529d9f03640315/talker/talker_tn/re_utils/re_base.py"
+        },
+        {
+          "path": "talker/talker_tn/re_utils/re_char.py",
+          "bytes": 251,
+          "sha256": "99787b75d479889126582132757f11b153b9b1b1abd5c4ef683e2859b1f57354",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-flash/resolve/e0a47cc6d67113257f45b6173c529d9f03640315/talker/talker_tn/re_utils/re_char.py"
+        },
+        {
+          "path": "talker/talker_tn/re_utils/re_date.py",
+          "bytes": 3848,
+          "sha256": "3a765743bdeefba13b572a1c917d16ca7fd5a6143c26d36226445d8deeaa584d",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-flash/resolve/e0a47cc6d67113257f45b6173c529d9f03640315/talker/talker_tn/re_utils/re_date.py"
+        },
+        {
+          "path": "talker/talker_tn/re_utils/re_decimal.py",
+          "bytes": 1079,
+          "sha256": "da2efd34d1c5f25178757ed3d1fd5260d70e23ef90486e8678abac03399f7d82",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-flash/resolve/e0a47cc6d67113257f45b6173c529d9f03640315/talker/talker_tn/re_utils/re_decimal.py"
+        },
+        {
+          "path": "talker/talker_tn/re_utils/re_digit.py",
+          "bytes": 2852,
+          "sha256": "ac94c0ab2111b0a0d2f503245727ed92c92c5ffc084d0af9dcb497b7e63841e5",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-flash/resolve/e0a47cc6d67113257f45b6173c529d9f03640315/talker/talker_tn/re_utils/re_digit.py"
+        },
+        {
+          "path": "talker/talker_tn/re_utils/re_formula.py",
+          "bytes": 1382,
+          "sha256": "3bd17eec4f4aef09735fb1a9caa4cd1d8fdbeda1cf03654bf479bc1b8fb596cd",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-flash/resolve/e0a47cc6d67113257f45b6173c529d9f03640315/talker/talker_tn/re_utils/re_formula.py"
+        },
+        {
+          "path": "talker/talker_tn/re_utils/re_frac.py",
+          "bytes": 1212,
+          "sha256": "691d6570105d2e9699a5c1374d8629bf8820cd339d6b9423ee712b5702537494",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-flash/resolve/e0a47cc6d67113257f45b6173c529d9f03640315/talker/talker_tn/re_utils/re_frac.py"
+        },
+        {
+          "path": "talker/talker_tn/re_utils/re_ip.py",
+          "bytes": 783,
+          "sha256": "6b0ba3a11d5b0d12496f2277c5c7f97e729af3ca54875077d89a54bba8e572a4",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-flash/resolve/e0a47cc6d67113257f45b6173c529d9f03640315/talker/talker_tn/re_utils/re_ip.py"
+        },
+        {
+          "path": "talker/talker_tn/re_utils/re_measure.py",
+          "bytes": 2400,
+          "sha256": "1b9343909530772bd43ad7c5ecd92e92b4c126ae129f40d6256532445d8fa36a",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-flash/resolve/e0a47cc6d67113257f45b6173c529d9f03640315/talker/talker_tn/re_utils/re_measure.py"
+        },
+        {
+          "path": "talker/talker_tn/re_utils/re_money.py",
+          "bytes": 1335,
+          "sha256": "0f558440afbd100df0a38751c59795fc3da646e62cc3b2743cb472ca6c375cdf",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-flash/resolve/e0a47cc6d67113257f45b6173c529d9f03640315/talker/talker_tn/re_utils/re_money.py"
+        },
+        {
+          "path": "talker/talker_tn/re_utils/re_order.py",
+          "bytes": 611,
+          "sha256": "d8c317a10f6759b3ce104aecda3efd8137225d309b6d27d0bc5a4a077629b44d",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-flash/resolve/e0a47cc6d67113257f45b6173c529d9f03640315/talker/talker_tn/re_utils/re_order.py"
+        },
+        {
+          "path": "talker/talker_tn/re_utils/re_percent.py",
+          "bytes": 834,
+          "sha256": "4426abbd9cec17ace92e66d42b5eba502e89baa2d3091f62f96c58dd199889bb",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-flash/resolve/e0a47cc6d67113257f45b6173c529d9f03640315/talker/talker_tn/re_utils/re_percent.py"
+        },
+        {
+          "path": "talker/talker_tn/re_utils/re_phone_dash.py",
+          "bytes": 1327,
+          "sha256": "b27231888654ea06fc409900ed2e65854be3e52278c171bca09d8f827d5ef644",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-flash/resolve/e0a47cc6d67113257f45b6173c529d9f03640315/talker/talker_tn/re_utils/re_phone_dash.py"
+        },
+        {
+          "path": "talker/talker_tn/re_utils/re_punc.py",
+          "bytes": 252,
+          "sha256": "99a043c45dff8c8cb7a02cab6ec1c2603d15995a8548d5052faf97e4a275881c",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-flash/resolve/e0a47cc6d67113257f45b6173c529d9f03640315/talker/talker_tn/re_utils/re_punc.py"
+        },
+        {
+          "path": "talker/talker_tn/re_utils/re_serial.py",
+          "bytes": 1723,
+          "sha256": "2e85bab3410b701db03fee73b36feba8bed06d7628fd5f842889a9a0754ab8a5",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-flash/resolve/e0a47cc6d67113257f45b6173c529d9f03640315/talker/talker_tn/re_utils/re_serial.py"
+        },
+        {
+          "path": "talker/talker_tn/re_utils/re_sn.py",
+          "bytes": 1502,
+          "sha256": "ddc8d9783103d290a4ddb0d2fc9833f553fef24fcdd49bb8c7d45607f3c286b9",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-flash/resolve/e0a47cc6d67113257f45b6173c529d9f03640315/talker/talker_tn/re_utils/re_sn.py"
+        },
+        {
+          "path": "talker/talker_tn/re_utils/re_time.py",
+          "bytes": 3962,
+          "sha256": "8f8a270ba43d9a9750eef282e959ffee76d4c6994343f898631332d5b7a41887",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-flash/resolve/e0a47cc6d67113257f45b6173c529d9f03640315/talker/talker_tn/re_utils/re_time.py"
+        },
+        {
+          "path": "talker/talker_tn/re_utils/re_utils.py",
+          "bytes": 2668,
+          "sha256": "e6974675756e75789d16ca03465c4bdd3512af3f10a467b057437fd2b8a47708",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-flash/resolve/e0a47cc6d67113257f45b6173c529d9f03640315/talker/talker_tn/re_utils/re_utils.py"
+        },
+        {
+          "path": "talker/talker_tn/re_utils/re_version.py",
+          "bytes": 934,
+          "sha256": "cc989d48173c3561fdd399c74be99345430fc74d5896fe05b85795391178e69f",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-flash/resolve/e0a47cc6d67113257f45b6173c529d9f03640315/talker/talker_tn/re_utils/re_version.py"
+        },
+        {
+          "path": "talker/talker_tn/talker_pre_processor.py",
+          "bytes": 1766,
+          "sha256": "371e1b026102dbfa64e94b68908c9b2fb744cb0fe668e4b61b6ebcc3e828ab02",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-flash/resolve/e0a47cc6d67113257f45b6173c529d9f03640315/talker/talker_tn/talker_pre_processor.py"
+        },
+        {
+          "path": "talker/talker_tn/talker_re.json",
+          "bytes": 14244,
+          "sha256": "a34bc5334044d564ac16ec89652f77d9bb6b5fc89c89e82b7b33f55cc63efbff",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-flash/resolve/e0a47cc6d67113257f45b6173c529d9f03640315/talker/talker_tn/talker_re.json"
+        },
+        {
+          "path": "talker/talker_tn/talker_re.py",
+          "bytes": 6626,
+          "sha256": "2f1356079e8bf129525309ef42aabb625bb24a1915d801e762e81b053371ef2f",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-flash/resolve/e0a47cc6d67113257f45b6173c529d9f03640315/talker/talker_tn/talker_re.py"
+        },
+        {
+          "path": "talker/talker_tn/talker_tn.py",
+          "bytes": 1929,
+          "sha256": "ad0a57189fd05bd0e29275529db8d80c3930e61e22d4de2da61b326309658f62",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-flash/resolve/e0a47cc6d67113257f45b6173c529d9f03640315/talker/talker_tn/talker_tn.py"
+        },
+        {
+          "path": "talker/talker_tn/token_parser.py",
+          "bytes": 4487,
+          "sha256": "9ec4d8cee83e82ad876274c91e36bf1d79eda11557de0213400948f73f16bd65",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-flash/resolve/e0a47cc6d67113257f45b6173c529d9f03640315/talker/talker_tn/token_parser.py"
+        },
+        {
+          "path": "talker/talker_tn/zh_tn_tagger.fst",
+          "bytes": 2960982,
+          "sha256": "8191a723f0e00a96fe8f9f74eb79d056facf98a95e07ef06d81f11d1db4b3b07",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-flash/resolve/e0a47cc6d67113257f45b6173c529d9f03640315/talker/talker_tn/zh_tn_tagger.fst"
+        },
+        {
+          "path": "talker/talker_tn/zh_tn_verbalizer.fst",
+          "bytes": 87702,
+          "sha256": "8a0ead4c61217bad171a37e9bd659ef912dd3a749267a4b672008f25b510bdb4",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-flash/resolve/e0a47cc6d67113257f45b6173c529d9f03640315/talker/talker_tn/zh_tn_verbalizer.fst"
+        },
+        {
+          "path": "talker/tts_prompt.py",
+          "bytes": 14300,
+          "sha256": "23a79cdeb2c898f48eb92aace503d0842297970c92aa577a9167bbc48357b238",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-flash/resolve/e0a47cc6d67113257f45b6173c529d9f03640315/talker/tts_prompt.py"
+        },
+        {
+          "path": "talker/vae/config.json",
+          "bytes": 3055,
+          "sha256": "a6cd2af45e935bfb862dc696af9746e4e4c1cd0bbc039c99c77dcbbe41acf2a9",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-flash/resolve/e0a47cc6d67113257f45b6173c529d9f03640315/talker/vae/config.json"
+        },
+        {
+          "path": "talker/vae/model.safetensors",
+          "bytes": 1560856068,
+          "sha256": "61ffb5e9ca7e8f95169381bdd0d84b9bdc4d8cbf87fa0d0e01c43be61f64fc00",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-flash/resolve/e0a47cc6d67113257f45b6173c529d9f03640315/talker/vae/model.safetensors"
+        },
+        {
+          "path": "tokenizer.json",
+          "bytes": 12210658,
+          "sha256": "2207eca933084436c15bb85ee648e28b2957934bc1da9506e10ea6c243bad869",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-flash/resolve/e0a47cc6d67113257f45b6173c529d9f03640315/tokenizer.json"
+        },
+        {
+          "path": "tokenizer_config.json",
+          "bytes": 55437,
+          "sha256": "29c99ad0d76b663b5acd6cffcade4c1bc7897b2b44a64c8224b1222143002e7a",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-flash/resolve/e0a47cc6d67113257f45b6173c529d9f03640315/tokenizer_config.json"
+        },
+        {
+          "path": "voice_presets/voice_audio/US_James.wav",
+          "bytes": 931086,
+          "sha256": "47a72c8360c85ba1ad6592cd6870725523d6a697269fecdcf37f57ec1357a5e1",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-flash/resolve/e0a47cc6d67113257f45b6173c529d9f03640315/voice_presets/voice_audio/US_James.wav"
+        },
+        {
+          "path": "voice_presets/voice_audio/\u7075\u6977.wav",
+          "bytes": 529806,
+          "sha256": "b1124ae0df12d91e2e1af683a4155202bef98857d44587833da34673408d09e8",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-flash/resolve/e0a47cc6d67113257f45b6173c529d9f03640315/voice_presets/voice_audio/%E7%81%B5%E6%A5%B7.wav"
+        },
+        {
+          "path": "voice_presets/voice_prompts.json",
+          "bytes": 349,
+          "sha256": "7c33e2f4511538ded2c1dac7a4b13d38e9a29f66782088f44aba6c0972ca5550",
+          "url": "https://huggingface.co/inclusionAI/Ming-3.0-audio-flash/resolve/e0a47cc6d67113257f45b6173c529d9f03640315/voice_presets/voice_prompts.json"
+        }
+      ]
+    }
+  ]
+}

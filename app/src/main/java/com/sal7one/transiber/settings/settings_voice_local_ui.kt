@@ -46,7 +46,7 @@ internal fun SettingsVoiceLocalUi(
     var queuing by remember { mutableStateOf(false) }
     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         (listOf("system" to uiText(UiR.string.ui_android_voices_60cb9)) +
-            if (localModelsAllowed) listOf("supertonic" to "Supertonic 3") else emptyList()).forEach { (id, label) ->
+            if (localModelsAllowed) listOf("supertonic" to uiText(UiR.string.voice_downloaded_models)) else emptyList()).forEach { (id, label) ->
             FilterChip(selected = localBackend == id, onClick = { save(choice.copy(backend = id)) }, label = { Text(label) })
         }
     }
@@ -64,6 +64,11 @@ internal fun SettingsVoiceLocalUi(
             }
             "supertonic" -> {
                 if (!localModelsAllowed) { LocalModelPolicyNotice(); return }
+                VoiceMenu(uiText(UiR.string.voice_model_family),choice.family,listOf("supertonic" to "Supertonic 3","magpie" to "MagpieTTS v2607")){ family -> save(choice.copy(family=family,voice=VoiceSettings.familyVoice(context,family))) }
+                if(choice.family=="magpie") {
+                    SettingsVoiceMagpieUi(choice,save,language,onLanguage,onError,onImport,onDownloads,revision,onRevision)
+                    return
+                }
                 var ready by remember { mutableStateOf(false) }
                 var records by remember { mutableStateOf<List<FileDownload>>(emptyList()) }
                 var tuning by rememberSaveable { mutableStateOf(false) }

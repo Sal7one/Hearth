@@ -29,6 +29,9 @@ internal object ModelSources {
 
     private fun artifactSource(artifact: SpeechArtifact): ModelSource {
         val guidance = when (artifact.engine) {
+            CaptionEngineChoice.COHERE -> " Arabic/English utterance finals; choose the spoken language explicitly. CPU or explicit ARM64 Vulkan; phone speed unverified."
+            CaptionEngineChoice.FUNASR_MLT -> " Multilingual utterance finals including Arabic/English, with ITN enabled. CPU or explicit ARM64 Vulkan; phone speed unverified."
+            CaptionEngineChoice.VOXTRAL -> " No recognition language hint; a chosen source labels text for translation. Auto keeps the source unknown. Bounded windowed partials in this adapter; the native partial path reprocesses accumulated audio. CPU or explicit ARM64 Vulkan; phone speed and Arabic quant parity unverified."
             CaptionEngineChoice.TRANSCRIBEPSY -> " Released October 14, 2026. Eight European languages in short utterance windows; no partials or language hints. Translation uses a separate model."
             CaptionEngineChoice.NEMOTRON -> " Multilingual streaming captions; translation uses a separate model."
             CaptionEngineChoice.QWEN -> " Multilingual captions in short audio segments. Runtime package: March 2026."

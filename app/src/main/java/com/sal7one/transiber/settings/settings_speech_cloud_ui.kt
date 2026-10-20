@@ -286,6 +286,12 @@ fun SettingsSpeechCloudUi(onStoredChange: (Boolean) -> Unit = {}, onModeChange: 
         label = { Text(uiText(UiR.string.ui_batch_stt_model_captions_3d989)) },
         placeholder = { Text("openai/whisper-1 / groq/whisper-large-v3-turbo") },
     )
+    if (currentProvider == CloudConfigStore.Provider.CUSTOM) {
+        MingSpeechModelsUi(sttModelDraft) { model ->
+            sttModelDraft = model
+            CloudConfigStore.setSttModel(context, model)
+        }
+    }
     // Each explicit open refreshes the selected endpoint/account; no shared disk cache.
     var modelMenuOpen by remember(baseUrlDraft, keyRevision) { mutableStateOf(false) }
     var modelsLoading by remember(baseUrlDraft, keyRevision) { mutableStateOf(false) }

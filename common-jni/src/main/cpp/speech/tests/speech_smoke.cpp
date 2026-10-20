@@ -15,7 +15,8 @@ int main(int argc, char** argv) {
         if (!stt::JsonUtils::parse(buffer.str(), j, &error)) throw std::runtime_error(error);
         std::string profile; j.find("profile")->asString(profile);
         const auto* roles = j.find("roles");
-        stt::JsonValue::Object cfg{{"backend", profile.find("qwen") == 0 ? "qwen3_asr" :
+        stt::JsonValue::Object cfg{{"backend", profile.find("cohere-") == 0 ? "cohere_asr" : profile.find("fun-asr-mlt-") == 0 ? "funasr_mlt_nano" :
+            profile.find("voxtral-mini-") == 0 ? "voxtral_realtime" : profile.find("qwen") == 0 ? "qwen3_asr" :
             profile.find("omnilingual") == 0 ? "omnilingual_ctc" : profile.find("phonon") == 0 ? "phonon" :
             profile.find("moonshine") == 0 ? "moonshine" : profile.find("transcribepsy") == 0 ? "transcribepsy" : "nemotron_3_5"}};
         for (const char* name : {"model", "frontend", "encoder", "decoder", "tokenizer"}) {

@@ -64,7 +64,8 @@ internal class PortableSetupActions(context: Context) {
                     val artifact = stage.model.catalogId?.let { checkNotNull(SpeechArtifactCatalog.find(it)) { "Unknown speech catalog reference: $it" } }
                     if (artifact != null) {
                         check(artifact.family == stage.model.family) { "Speech family does not match the catalog reference." }
-                        check(stage.sourceLanguage == "auto" || stage.sourceLanguage in artifact.languages) { "The speech model does not support ${stage.sourceLanguage}." }
+                        artifact.publisher?.profile?.let(com.sal7one.transiber.caption.SpeechAbiPolicy::requireSupported)
+                        check(artifact.publisher?.profile?.acceptsSource(stage.sourceLanguage) ?: (stage.sourceLanguage == "auto" || stage.sourceLanguage in artifact.languages)) { "The speech model does not support ${stage.sourceLanguage}." }
                         engine = artifact.engine
                         installedSpeech = resolveCatalogSpeech(artifact, fullIntegrity)
                         if (installedSpeech == null) missingSpeech = artifact.id
@@ -85,8 +86,9 @@ internal class PortableSetupActions(context: Context) {
                         }
                         stage.model.profile?.let { id ->
                             val profile = SpeechProfile.fromId(id)
+                            com.sal7one.transiber.caption.SpeechAbiPolicy.requireSupported(profile)
                             check(profile.captionEngine == engine) { "Custom speech profile belongs to a different engine." }
-                            check(stage.sourceLanguage == "auto" || stage.sourceLanguage in profile.capabilities.sourceLanguages) { "Custom speech profile does not support the spoken language." }
+                            check(profile.acceptsSource(stage.sourceLanguage)) { "Custom speech profile does not support the spoken language." }
                         }
                     }
                 }
@@ -119,6 +121,11 @@ internal class PortableSetupActions(context: Context) {
                         // Pack installation/readiness is owned by its existing platform setup.
                         val installed = PlatformTranslation.installed()
                         check(stage.sourceLanguage in installed && stage.targetLanguage in installed) { "Install the selected platform language packs in Translation settings." }
+                    } else if (com.sal7one.common_jni.translation.Ct2Catalog.find(stage.modelId)!=null) {
+                        val spec=checkNotNull(com.sal7one.common_jni.translation.Ct2Catalog.find(stage.modelId))
+                        com.sal7one.transiber.translation.Ct2Package.requireRuntime(context)
+                        if(!com.sal7one.transiber.translation.Ct2Package.installed(context,spec)) missingTranslations += spec.id
+                        else if(fullIntegrity) spec.verify(com.sal7one.transiber.translation.Ct2Package.directory(context,spec))
                     } else {
                         val spec = TranslationCatalog.find(stage.modelId)
                         val file = LocalTranslationModels(File(context.filesDir, "translation-models")).file(spec)
@@ -137,9 +144,16 @@ internal class PortableSetupActions(context: Context) {
                     CaptionSpeakerChoice.SYSTEM -> notes += "Android voice availability is checked by the device when speech starts."
                     CaptionSpeakerChoice.NATIVE -> {
                         com.sal7one.transiber.runtime.LocalModelPolicy.requireAllowed(context, "downloaded speech voices")
-                        val id = voice.voiceId ?: VoiceSettings.choice(context).voice
-                        check(id in VoiceCatalog.voices) { "Select a supported Supertonic voice." }
-                        check(VoiceModels(File(context.filesDir, "voice-models")).ready(id)) { "Download or import Supertonic 3 and voice $id in Voices first." }
+                        val family = voice.family ?: "supertonic"
+                        val id = voice.voiceId ?: VoiceSettings.familyVoice(context, family)
+                        if (family == "magpie") {
+                            check(id in com.sal7one.hearth.tts.magpie.MagpieCatalog.speakers) { "Select a supported Magpie voice." }
+                            MagpiePolicy.requireAllowed(context,"portable Magpie setup")
+                            check(com.sal7one.hearth.tts.magpie.MagpieModels(File(context.filesDir, "voice-models/magpie")).ready()) { "Install Magpie weights, codec and tokenizer in Voices first." }
+                        } else {
+                            check(id in VoiceCatalog.voices) { "Select a supported Supertonic voice." }
+                            check(VoiceModels(File(context.filesDir, "voice-models")).ready(id)) { "Download or import Supertonic 3 and voice $id in Voices first." }
+                        }
                     }
                     CaptionSpeakerChoice.CLOUD -> {
                         check(ByokPolicy.FEATURE_BYOK) { "Cloud voice is unavailable in the offline build." }
@@ -152,7 +166,13 @@ internal class PortableSetupActions(context: Context) {
                             ?: error("Select a custom voice on this device first.") else VoiceSettings.choice(context).backend
                         if (backend !in setOf("system", "remote"))
                             com.sal7one.transiber.runtime.LocalModelPolicy.requireAllowed(context, "downloaded speech voices")
-                        if (backend == "supertonic") check(VoiceModels(File(context.filesDir, "voice-models")).ready(VoiceSettings.choice(context).voice)) { "Install the shared on-device voice in Voices first." }
+                        if (backend == "supertonic") {
+                            val saved = VoiceSettings.choice(context)
+                            if (saved.family == "magpie") MagpiePolicy.requireAllowed(context,"portable shared Magpie setup")
+                            val installed = if (saved.family == "magpie") com.sal7one.hearth.tts.magpie.MagpieModels(File(context.filesDir, "voice-models/magpie")).ready()
+                                else VoiceModels(File(context.filesDir, "voice-models")).ready(saved.voice)
+                            check(installed) { "Install the shared on-device voice in Voices first." }
+                        }
                         if (backend == "remote") { check(ByokPolicy.FEATURE_BYOK) { "Remote voice is unavailable in the offline build." }; VoiceSettings.remote(context) }
                         notes += "Shared/custom voice settings stay on this device; their connection and credentials are excluded from the file."
                     }
@@ -207,6 +227,7 @@ internal class PortableSetupActions(context: Context) {
         state.missingTranslationIds.forEach { id ->
             val pair = MarianPackage.find(id)
             if (pair != null) MarianPackage.enqueue(context, downloads, pair)
+            else if(com.sal7one.common_jni.translation.Ct2Catalog.find(id)!=null) com.sal7one.transiber.translation.Ct2Package.enqueue(context,downloads,checkNotNull(com.sal7one.common_jni.translation.Ct2Catalog.find(id)))
             else TranslationCatalog.find(id).let { downloads.enqueue(DownloadSpec.parse(it.url, it.fileName), true, it.id) }
         }
     }
@@ -217,8 +238,9 @@ internal class PortableSetupActions(context: Context) {
         idle(); val state = preview(setup, fullIntegrity = true)
         check(state.ready) { (state.issues + listOfNotNull(state.missingSpeechCatalogId) + state.missingTranslationIds).joinToString("\n").ifBlank { "Install the required models first." } }
         idle()
-        setup.voice?.takeIf { it.choice == CaptionSpeakerChoice.NATIVE && it.voiceId != null }?.let {
-            VoiceSettings.save(context, VoiceSettings.choice(context).copy(backend = "supertonic", voice = checkNotNull(it.voiceId)))
+        setup.voice?.takeIf { it.choice == CaptionSpeakerChoice.NATIVE }?.let {
+            val family = it.family ?: "supertonic"
+            VoiceSettings.save(context, VoiceSettings.choice(context).copy(backend = "supertonic", family = family, voice = it.voiceId ?: VoiceSettings.familyVoice(context, family)))
         }
         CaptionConfigStore.update(context) { previous -> PortableSetupPlan.apply(previous, setup, state) }
         setup.translation?.takeIf { it.enabled }?.let { stage ->
@@ -261,6 +283,7 @@ internal class PortableSetupActions(context: Context) {
         PortableSetup(name, speech, translator?.takeIf { includeTranslation }?.let { PortableTranslationStage(it, config.streamLanguage, config.target.languageTag,
             config.mode == CaptionMode.TRANSLATE && config.localTranslationEnabled) },
             if (includeVoice) PortableVoiceStage(config.speakCaptions, config.speakerChoice, config.speakerGender, config.speakerVolume,
-                VoiceSettings.choice(context).voice.takeIf { config.speakerChoice == CaptionSpeakerChoice.NATIVE }) else null)
+                VoiceSettings.choice(context).voice.takeIf { config.speakerChoice == CaptionSpeakerChoice.NATIVE },
+                VoiceSettings.choice(context).family.takeIf { config.speakerChoice == CaptionSpeakerChoice.NATIVE }) else null)
     }
 }

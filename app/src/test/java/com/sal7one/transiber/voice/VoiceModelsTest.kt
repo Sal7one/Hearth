@@ -22,9 +22,9 @@ class VoiceModelsTest {
         } finally { dir.deleteRecursively() }
     }
     @Test fun downloadsArePinnedAndEveryVoiceHasItsStyle() {
-        assertEquals(16,VoiceCatalog.assets.size)
+        assertEquals(16,VoiceCatalog.supertonicAssets.size)
         assertEquals(VoiceCatalog.assets.size,VoiceCatalog.assets.map {it.id}.toSet().size)
-        VoiceCatalog.assets.forEach {assertTrue(it.sha256.matches(Regex("[a-f0-9]{64}")));assertTrue(it.bytes>0);assertTrue(it.url.startsWith("https://huggingface.co/Supertone/supertonic-3/resolve/3cadd1ee6394adea1bd021217a0e650ede09a323/"))}
+        VoiceCatalog.supertonicAssets.forEach {assertTrue(it.sha256.matches(Regex("[a-f0-9]{64}")));assertTrue(it.bytes>0);assertTrue(it.url.startsWith("https://huggingface.co/Supertone/supertonic-3/resolve/3cadd1ee6394adea1bd021217a0e650ede09a323/"))}
         VoiceCatalog.voices.forEach {assertEquals("$it.json",VoiceCatalog.file("$it.json").filename)}
     }
     private fun zip(name: String,bytes: ByteArray):ByteArray=ByteArrayOutputStream().also {out->ZipOutputStream(out).use {it.putNextEntry(ZipEntry(name));it.write(bytes);it.closeEntry()}}.toByteArray()

@@ -12,8 +12,9 @@ class SpeechBrowserPresentationTest {
         listOf("vosk", "nemotron").forEach { family ->
             assertTrue(groups.getValue(family).all { speechDecodeMode(it) == SpeechDecodeMode.STREAMING_PARTIALS })
         }
+        assertTrue(groups.getValue("voxtral-realtime").all { speechDecodeMode(it) == SpeechDecodeMode.WINDOWED_PARTIALS && it.supportedAbis == setOf("arm64-v8a") })
         assertTrue(groups.getValue("whisper").all { speechDecodeMode(it) == SpeechDecodeMode.WINDOWED_PARTIALS })
-        listOf("moonshine", "qwen3-asr", "omnilingual", "phonon", "transcribepsy").forEach { family ->
+        listOf("moonshine", "qwen3-asr", "omnilingual", "phonon", "transcribepsy", "cohere", "funasr-mlt").forEach { family ->
             assertTrue(groups.getValue(family).all { speechDecodeMode(it) == SpeechDecodeMode.UTTERANCE_FINALS })
         }
     }

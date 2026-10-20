@@ -73,8 +73,11 @@ object ModelSourceBindings {
         val grants = context.contentResolver.persistedUriPermissions.filter { it.isReadPermission }.map { it.uri.toString() }.toSet()
         val results = read(context).map { binding ->
             val states = binding.paths.map { ModelPathSnapshots.check(context.filesDir, it) }
-            ModelBindingCheck(binding.id, binding.paths.map { it.path }, states.isNotEmpty() && states.all { it.available },
-                binding.error ?: states.firstOrNull { !it.available }?.error, states.any { it.changed }, binding.sourceUri,
+            val ct2 = com.sal7one.common_jni.translation.Ct2Catalog.find(binding.id)
+            val packageError = ct2?.takeUnless { com.sal7one.transiber.translation.Ct2Package.installed(context,it) }
+                ?.let { "CT2 translation package is missing or truncated. Import or download all required model files." }
+            ModelBindingCheck(binding.id, binding.paths.map { it.path }, packageError == null && states.isNotEmpty() && states.all { it.available },
+                packageError ?: binding.error ?: states.firstOrNull { !it.available }?.error, states.any { it.changed }, binding.sourceUri,
                 when (binding.sourceUri) { null -> ModelSourceAccess.NOT_RECORDED; in grants -> ModelSourceAccess.GRANT_RETAINED_NOT_PROBED; else -> ModelSourceAccess.GRANT_MISSING })
         }.toMutableList()
         val config = CaptionConfigStore.config(context).first()
@@ -142,6 +145,10 @@ object ModelSourceBindings {
         val selectedTranslations = setOf(config.localTranslationModelId,
             UserPreferences.store(context, "conversation-translators").getString("local-model", null),
             UserPreferences.store(context, "camera-translate").getString("local-model", null))
+        com.sal7one.common_jni.translation.Ct2Catalog.models.forEach { spec ->
+            val directory = com.sal7one.transiber.translation.Ct2Package.directory(context,spec)
+            if (directory.exists() || spec.id in selectedTranslations) add(spec.id,directory,directory=true)
+        }
         TranslationCatalog.models.forEach { spec ->
             val file = File(context.filesDir, "translation-models/${spec.id}.gguf")
             if (file.exists() || spec.id in selectedTranslations) add(spec.id, file, spec.bytes, directory = false)
@@ -157,10 +164,18 @@ object ModelSourceBindings {
         val choice = VoiceSettings.choice(context)
         val selectedVoice = VoiceGenderMapping.supertonicVoice(choice.voice,
             runCatching { VoiceGender.valueOf(config.speakerGender.name) }.getOrDefault(VoiceGender.ANY))
-        val requiredVoice = if (choice.backend == "supertonic") VoiceCatalog.core + VoiceCatalog.assets.filter { it.filename == "$selectedVoice.json" } else emptyList()
+        val requiredVoice = if (choice.backend == "supertonic") {
+            if (choice.family == "magpie") VoiceCatalog.magpieAssets else VoiceCatalog.core + VoiceCatalog.supertonicAssets.filter { it.filename == "$selectedVoice.json" }
+        } else emptyList()
         VoiceCatalog.assets.forEach { asset ->
             val file = voice.file(asset)
             if (file.exists() || asset in requiredVoice) add(asset.id, file, asset.bytes, directory = false)
+        }
+        val magpieRoot = File(context.filesDir, "voice-models/magpie")
+        val magpieModels = com.sal7one.hearth.tts.magpie.MagpieModels(magpieRoot)
+        com.sal7one.hearth.tts.magpie.MagpieCatalog.tokenizer.forEach { asset ->
+            val file = magpieModels.file(asset)
+            if (file.exists() || (choice.backend == "supertonic" && choice.family == "magpie")) add("voice-magpie-tokenizer-${asset.filename}", file, asset.bytes, directory = false)
         }
         if (additions.isNotEmpty()) {
             val editor = UserPreferences.store(context, STORE).edit()

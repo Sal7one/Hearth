@@ -10,6 +10,7 @@ internal object BenchmarkAccelerationPlan {
         return models.flatMap { model ->
             val modes = when {
                 model.translation != null || model.profile?.backend == SpeechBackend.TRANSCRIBEPSY -> listOf("cpu", "vulkan", "opencl")
+                model.profile?.backend in setOf(SpeechBackend.COHERE, SpeechBackend.FUNASR_MLT, SpeechBackend.VOXTRAL_REALTIME) -> listOf("cpu", "vulkan")
                 model.route.startsWith("Whisper /") -> listOf("cpu", "vulkan")
                 else -> listOf("cpu")
             }

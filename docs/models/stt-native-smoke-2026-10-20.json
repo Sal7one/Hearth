@@ -1,0 +1,109 @@
+{
+  "schemaVersion": 1,
+  "asOf": "2026-10-20",
+  "runtimeSourceRevision": "1dc22facfc931e2f8adb43924b0e38b9c46f83c7",
+  "model": "Fun-ASR-MLT-Nano-2512-Q8_0.gguf",
+  "modelBytes": 891271232,
+  "modelSha256": "d12476d8d9f2baa0ebf738fa955fa05ed33a654f1567289033a810c45d9d9002",
+  "modelHashVerifiedFromPayload": true,
+  "host": "macOS ARM64 developer host, CPU, four threads; not Android/S25 performance",
+  "path": "same HearthSpeechBackend + SpeechNativeSession used by JNI, host CPU DSO",
+  "audioSampleRate": 16000,
+  "maxUtteranceMs": 4000,
+  "silenceMs": 600,
+  "runs": [
+    {
+      "sourceAudio": "https://github.com/handy-computer/transcribe.cpp/blob/1dc22facfc931e2f8adb43924b0e38b9c46f83c7/samples/ar-short.wav",
+      "sourceAudioSha256": "caa7ea2a573d1ac7c7e7b5e4354e5f6bb0c299176e7862eb6f088ddb525f42a0",
+      "selectedSource": "ar",
+      "timings": {
+        "load_seconds": 0.772916,
+        "inference_seconds": 0.883945,
+        "audio_seconds": 11.0
+      },
+      "finals": [
+        {
+          "text": "انقطع نومه وعمليات الاستيقاظ عن عمد خلاف.",
+          "language": "ar",
+          "final": true,
+          "utteranceId": 1,
+          "revision": 1,
+          "audioEndSamples": 66880
+        },
+        {
+          "text": "فترة، نومك الطبيعي، والنوم بعد فترة قصيرة من.",
+          "language": "ar",
+          "final": true,
+          "utteranceId": 2,
+          "revision": 1,
+          "audioEndSamples": 130880
+        },
+        {
+          "text": "عشرا إلى ستين دقيقة.",
+          "language": "ar",
+          "final": true,
+          "utteranceId": 3,
+          "revision": 1,
+          "audioEndSamples": 169280
+        }
+      ]
+    },
+    {
+      "sourceAudio": "https://github.com/handy-computer/transcribe.cpp/blob/1dc22facfc931e2f8adb43924b0e38b9c46f83c7/samples/fleurs-en.wav",
+      "sourceAudioSha256": "7835bd6ffb54ce38a2a9bcde3905ba424faed94d50a474f21a9cbe9209b869df",
+      "selectedSource": "en",
+      "timings": {
+        "load_seconds": 0.302477,
+        "inference_seconds": 0.624629,
+        "audio_seconds": 10.56
+      },
+      "finals": [
+        {
+          "text": "However.",
+          "language": "en",
+          "final": true,
+          "utteranceId": 1,
+          "revision": 1,
+          "audioEndSamples": 30720
+        },
+        {
+          "text": "Due to the slow communication.",
+          "language": "en",
+          "final": true,
+          "utteranceId": 2,
+          "revision": 1,
+          "audioEndSamples": 60800
+        },
+        {
+          "text": "Styles in the.",
+          "language": "en",
+          "final": true,
+          "utteranceId": 3,
+          "revision": 1,
+          "audioEndSamples": 92480
+        },
+        {
+          "text": "Could wag.",
+          "language": "en",
+          "final": true,
+          "utteranceId": 4,
+          "revision": 1,
+          "audioEndSamples": 109760
+        },
+        {
+          "text": "By 25 to 30 years.",
+          "language": "en",
+          "final": true,
+          "utteranceId": 5,
+          "revision": 1,
+          "audioEndSamples": 145920
+        }
+      ]
+    }
+  ],
+  "limitations": [
+    "No human-reference quality/WER measured.",
+    "Cohere/Voxtral compiled and ABI-tested but complete weight inference not run in this session.",
+    "Android CPU/Vulkan DSOs cross-compiled and ELF/source verified; owner device testing still required."
+  ]
+}

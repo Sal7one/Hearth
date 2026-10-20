@@ -20,12 +20,12 @@ internal object PortableSetupCatalog {
         if (artifact != null) {
             require(artifact.family == ref.family) { "Speech family does not match the catalog reference." }
             require(ref.profile == null || artifact.publisher?.profile?.id == ref.profile) { "Speech profile does not match the catalog reference." }
-            require(stage.sourceLanguage == "auto" || stage.sourceLanguage in artifact.languages) { "The speech model does not support the spoken language." }
+            require(artifact.publisher?.profile?.acceptsSource(stage.sourceLanguage) ?: (stage.sourceLanguage == "auto" || stage.sourceLanguage in artifact.languages)) { "The speech model does not support the spoken language." }
         } else if (engine.speechBackend != null) {
             require(ref.digestKind == "tree" && ref.profile != null) { "Custom speech packages need a profile and tree SHA-256." }
             val profile = SpeechProfile.fromId(checkNotNull(ref.profile))
             require(profile.captionEngine == engine) { "Custom speech profile belongs to a different engine." }
-            require(stage.sourceLanguage == "auto" || stage.sourceLanguage in profile.capabilities.sourceLanguages) { "Custom speech profile does not support the spoken language." }
+            require(profile.acceptsSource(stage.sourceLanguage)) { "Custom speech profile does not support the spoken language." }
         } else {
             require(ref.profile == null) { "Legacy speech files do not have package profiles." }
             require(ref.digestKind == if (engine == CaptionEngineChoice.WHISPER) "file" else "tree") { "Speech digest type does not match the model family." }

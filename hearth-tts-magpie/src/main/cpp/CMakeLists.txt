@@ -1,0 +1,8 @@
+cmake_minimum_required(VERSION 3.22.1)
+project(hearth_magpie_jni LANGUAGES CXX)
+set(CMAKE_CXX_STANDARD 17)
+add_library(hearth_magpie_jni SHARED magpie_jni.cpp)
+target_include_directories(hearth_magpie_jni PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../../../../common-jni/src/main/cpp/common")
+target_link_libraries(hearth_magpie_jni dl)
+target_compile_options(hearth_magpie_jni PRIVATE -fvisibility=hidden -fstack-protector-strong)
+target_link_options(hearth_magpie_jni PRIVATE "-Wl,-z,max-page-size=16384" "-Wl,--version-script=${CMAKE_CURRENT_SOURCE_DIR}/exports.map")

@@ -1,0 +1,9 @@
+<resources>
+    <string name="speech_cohere_note">Cohere Arabic · 请选择阿拉伯语或英语，不支持自动检测语言。短句结束后显示最终字幕。</string>
+    <string name="speech_funasr_note">Fun-ASR MLT Nano · 支持阿拉伯语和英语等多语种短句字幕。可自动识别或选择明确的源语言。</string>
+    <string name="speech_voxtral_note">Voxtral Realtime · 无法强制识别语言。选择已知的口语语言仅用于为翻译标记源文本；自动选项保持源语言未知。分段显示部分字幕，手机性能尚未验证。</string>
+    <string name="speech_expansion_arm64">此原生运行时目前需要 64 位 ARM 手机。模型下载大小不同于内存占用，仍需在设备上测试性能。</string>
+    <string name="speech_cohere_label">Cohere Arabic（本地）</string>
+    <string name="speech_funasr_label">Fun-ASR MLT Nano（本地）</string>
+    <string name="speech_voxtral_label">Voxtral Realtime（本地）</string>
+</resources>

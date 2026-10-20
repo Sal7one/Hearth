@@ -1,0 +1,93 @@
+{
+  "repo": "nvidia/magpie_tts_multilingual_357m",
+  "aliases": [
+    "magpie",
+    "magpie-tts"
+  ],
+  "revision": "446bff55e1fe3d3aa29c771574e7d2b0fa322990",
+  "license": "NVIDIA Open Model License",
+  "license_url": "https://huggingface.co/nvidia/magpie_tts_multilingual_357m",
+  "companions": [
+    "nvidia/nemo-nano-codec-22khz-1.89kbps-21.5fps"
+  ],
+  "artifacts": [
+    {
+      "role": "tts",
+      "type": "file",
+      "filename": "magpie_tts_multilingual_357m.v2607.f16.gguf",
+      "size": 568663392,
+      "sha256": "fb8e9297138dcc7b5fc51332f361e3cddfd433d4e0bc1d87e16e6aed21f618fc"
+    },
+    {
+      "role": "tokenizer",
+      "type": "tar-ranges",
+      "filename": "magpie_tts_multilingual_357m.nemo",
+      "directory": "tokenizer",
+      "size": 31076864,
+      "sha256": "169144a64f6d775178696914e5aad8282db44820e73341d5f9a4e7865fac1f26",
+      "ranges": [
+        {
+          "start": 0,
+          "end": 20619263,
+          "stop_before": "model_weights.ckpt"
+        },
+        {
+          "start": 1459750400,
+          "end": 1470207999
+        }
+      ],
+      "members": [
+        {
+          "name": "05adc40366e149b69319acd4b28a4919_pt_br_prondict-v1.0.dict",
+          "size": 3580284,
+          "sha256": "6492abc404db16bbad83dd9d7f9a60eb617699f0a3ff54b3be6184e14507b745"
+        },
+        {
+          "name": "339da71c54b046f98cbcf38ef6d4ff67_hindi_phoneme_merged_phoneme_dict.dict",
+          "size": 7319864,
+          "sha256": "3b50cc2c21cd8d34983d8492c91308e9db4a58c1194d6506fdbb2b97aead75fc"
+        },
+        {
+          "name": "41913ebaa70342058574da74293b7630_magpie_tts_multilingual_357m.nemo.speakers.json",
+          "size": 68,
+          "sha256": "36cdcf01ebc0afb506660ac71f2d0a211236374ad5c872d7d8d985a3f9f6ccaf"
+        },
+        {
+          "name": "61d57a4ccb064d1e8e3d9f871c571932_heteronyms-052722",
+          "size": 1606,
+          "sha256": "b701909aedf753172eff223950f8859cd4b9b4c80199cf0a6e9ac4a307c8f8ec"
+        },
+        {
+          "name": "74b3e832fe914a569fcd42b51d06b2f1_ipa_dict_nv23.05.txt",
+          "size": 5419,
+          "sha256": "252e8eaf60dfd891520759913dc8534393eebfa8d57192365f76f9229f294e9e"
+        },
+        {
+          "name": "7dbc31751f224f2486090d59dc95b9f7_es_ES_nv230301.dict",
+          "size": 2230910,
+          "sha256": "94c9a25bb359f733cd863c887d0112e7ae19a744b0333ef64b6a88e576428669"
+        },
+        {
+          "name": "c5e4ec2af5a14ce294f4b9edcc936535_de_nv230119.heteronym",
+          "size": 44566,
+          "sha256": "771cc585a574fd35bd14f4ce6108edf1e0e512a8dbc810db7de4c1165ba9d0ef"
+        },
+        {
+          "name": "cf01ab5c48c84f3282ef7888263361e5_de_nv230119.dict",
+          "size": 4313907,
+          "sha256": "5c7bbf3346ebd6dc57769b5cc805124215cb1bcc3b8174c4254e9e928c5d6094"
+        },
+        {
+          "name": "dc7d60d6b15a4651b21c9ca2932b62c6_ipa_cmudict-0.7b_nv23.01.txt",
+          "size": 3093097,
+          "sha256": "7ea5c4c2c59cc780748b24d4ab60bd689779c4ac4ea7e27c0a8c3e20f300c0fa"
+        },
+        {
+          "name": "model_config.yaml",
+          "size": 8358,
+          "sha256": "9577bfa4769981849feccd6a54d38425d81fff41ac16c282f60be97faf46ebe4"
+        }
+      ]
+    }
+  ]
+}

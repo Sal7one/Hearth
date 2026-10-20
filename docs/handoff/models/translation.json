@@ -159,14 +159,14 @@
       ],
       "downloadBytes": 773707570,
       "runtime": {
-        "status": "not-implemented",
-        "targetBackend": "CTranslate2 CPU + SentencePiece",
-        "streaming": "Committed text segments; no token streaming currently exposed",
+        "status": "integrated-unverified",
+        "targetBackend": "CTranslate2 4.8.3 CPU Ruy; ARM64 Android; 2 threads; bounded greedy decoder",
+        "streaming": "Committed text segments; one complete result per input",
         "blockers": [
-          "CTranslate2 Android runtime, JNI session and native provenance not implemented",
-          "Dedicated multi-file import/download/install integration not implemented",
-          "Arabic/English tokenizer and real-weight inference parity not tested"
-        ]
+          "Exact QuickMT/SMaLL weight inference and Arabic/English parity have not run; owner S25 measurements pending",
+          "ARM64 only; 32-bit/other ABI activation and transfers rejected"
+        ],
+        "evidence": "Real upstream Arabic transliteration fixture passed on native host in FLOAT32 and INT8_FLOAT32; not a QuickMT or SMaLL accuracy result."
       },
       "license": {
         "name": "CC-BY-4.0",
@@ -200,7 +200,12 @@
           "COMET22": 87.64
         },
         "scope": "Publisher scores; no S25 measurement. Do not relabel chrF as chrF++."
-      }
+      },
+      "liveCatalogIds": [
+        "ct2-quickmt-en-ar",
+        "ct2-quickmt-ar-en"
+      ],
+      "integrationUpdatedAt": "2026-10-20"
     },
     {
       "id": "eurollm-17b-q4",
@@ -828,14 +833,14 @@
       ],
       "downloadBytes": 344075494,
       "runtime": {
-        "status": "not-implemented",
-        "targetBackend": "CTranslate2 CPU int8_float32 + SentencePiece",
-        "streaming": "Committed text segments only",
+        "status": "integrated-unverified",
+        "targetBackend": "CTranslate2 4.8.3 CPU Ruy; ARM64 Android; 2 threads; bounded greedy decoder",
+        "streaming": "Committed text segments; one complete result per input",
         "blockers": [
-          "Shared CT2 Android/JNI runtime and package installation not implemented",
-          "Target-language source prefix differs from standard M2M100; parity tests required",
-          "Exact INT8 Arabic/English parity unverified"
-        ]
+          "Exact QuickMT/SMaLL weight inference and Arabic/English parity have not run; owner S25 measurements pending",
+          "ARM64 only; 32-bit/other ABI activation and transfers rejected"
+        ],
+        "evidence": "Real upstream Arabic transliteration fixture passed on native host in FLOAT32 and INT8_FLOAT32; not a QuickMT or SMaLL accuracy result."
       },
       "license": {
         "name": "MIT",
@@ -857,7 +862,11 @@
         "en-ar": 26.1,
         "ar-en": 30.8,
         "scope": "Not a score for this INT8 export; do not compare directly to COMET/chrF/other corpora."
-      }
+      },
+      "liveCatalogIds": [
+        "ct2-small100-int8"
+      ],
+      "integrationUpdatedAt": "2026-10-20"
     },
     {
       "id": "riva-translate-4b-v2-q4",

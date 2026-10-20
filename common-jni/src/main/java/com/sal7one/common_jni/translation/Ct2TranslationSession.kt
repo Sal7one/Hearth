@@ -1,0 +1,61 @@
+package com.sal7one.common_jni.translation
+
+import com.sal7one.common_jni.speech.TranslationDirection
+import java.io.File
+import java.util.concurrent.atomic.AtomicLong
+import java.util.concurrent.atomic.AtomicBoolean
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+
+internal object Ct2Native {
+    init { System.loadLibrary("transiber_ct2") }
+    external fun protocolVersion(): Int
+    external fun create(path: ByteArray, mode: Int): Long
+    external fun translate(handle: Long, text: ByteArray, target: ByteArray): ByteArray
+    external fun cancel(handle: Long)
+    external fun destroy(handle: Long)
+}
+internal interface Ct2Runtime {
+    fun protocolVersion(): Int
+    fun create(path: ByteArray,mode: Int): Long
+    fun translate(handle: Long,text: ByteArray,target: ByteArray): ByteArray
+    fun cancel(handle: Long)
+    fun destroy(handle: Long)
+}
+private object JniCt2Runtime : Ct2Runtime {
+    override fun protocolVersion()=Ct2Native.protocolVersion()
+    override fun create(path: ByteArray,mode: Int)=Ct2Native.create(path,mode)
+    override fun translate(handle: Long,text: ByteArray,target: ByteArray)=Ct2Native.translate(handle,text,target)
+    override fun cancel(handle: Long)=Ct2Native.cancel(handle)
+    override fun destroy(handle: Long)=Ct2Native.destroy(handle)
+}
+class Ct2TranslationSession private constructor(private val spec: Ct2ModelSpec, handle: Long,private val runtime: Ct2Runtime) : CancellableTextTranslator {
+    private val handle = AtomicLong(handle)
+    private val cancelled = AtomicBoolean(false)
+    override val id get() = spec.id
+    override val directions get() = spec.directions
+    override val executionInfo get() = "CPU · CTranslate2 4.8.3 · Ruy · ${if(spec.tokenizerMode==1) "INT8_FLOAT32" else "FLOAT32"} · 2 threads · greedy"
+    override suspend fun translate(text: String, direction: TranslationDirection): String = withContext(Dispatchers.IO) {
+        require(text.isNotBlank() && text.length <= 2000) { "CT2 translation accepts 1–2000 caption characters" }
+        require(spec.supports(direction.source,direction.target)) { "${spec.label} does not support ${direction.source} → ${direction.target}" }
+        check(!cancelled.get()) { "CT2 translation cancelled" }
+        val current=handle.get();check(current!=0L) { "CT2 session is closed" }
+        val normalized=TranslationLanguages.normalize(direction.target)
+        val target=if(normalized=="fil") "tl" else normalized
+        runtime.translate(current,text.toByteArray(Charsets.UTF_8),target.toByteArray(Charsets.UTF_8)).toString(Charsets.UTF_8).trim()
+            .also { check(!cancelled.get() && handle.get()==current) { "CT2 translation cancelled or closed" };check(it.isNotBlank()) { "CT2 returned empty text" } }
+    }
+    override fun cancel() { cancelled.set(true);handle.get().takeIf { it!=0L }?.let(runtime::cancel) }
+    override fun close() { cancelled.set(true);handle.getAndSet(0).takeIf { it!=0L }?.let(runtime::destroy) }
+    companion object {
+        fun open(directory: File,spec: Ct2ModelSpec): Ct2TranslationSession = openWithRuntime(directory,spec,JniCt2Runtime)
+        internal fun openWithRuntime(directory: File,spec: Ct2ModelSpec,runtime: Ct2Runtime): Ct2TranslationSession {
+            val protocol=try { runtime.protocolVersion() } catch(e: LinkageError) { throw IllegalStateException("CT2 runtime is unavailable for this APK architecture: ${e.message}",e) }
+            check(protocol==1) { "CT2 native runtime protocol mismatch" }
+            spec.verify(directory)
+            val handle=runtime.create(directory.absolutePath.toByteArray(Charsets.UTF_8),spec.tokenizerMode)
+            check(handle!=0L) { "CT2 returned an invalid handle" }
+            return Ct2TranslationSession(spec,handle,runtime)
+        }
+    }
+}

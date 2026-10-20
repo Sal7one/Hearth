@@ -1,2 +1,5 @@
 # Preserve the exact upstream license bytes, including their whitespace.
 common-jni/src/main/assets/licenses/**/SPIRV-Headers/** whitespace=-blank-at-eol,-blank-at-eof
+common-jni/src/main/assets/licenses/ct2/CTranslate2/third_party/spdlog/LICENSE whitespace=-blank-at-eol,-blank-at-eof
+common-jni/src/main/assets/licenses/ct2/SentencePiece/third_party/absl/LICENSE whitespace=-blank-at-eol,-blank-at-eof
+common-jni/src/main/assets/licenses/ct2/SentencePiece/third_party/darts_clone/LICENSE whitespace=-blank-at-eol,-blank-at-eof

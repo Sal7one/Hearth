@@ -70,7 +70,7 @@ class SpeechModelPackage private constructor(
                 SpeechBackend.QWEN3_ASR -> setOf("frontend", "encoder", "decoder", "tokenizer")
                 SpeechBackend.OMNILINGUAL_CTC -> setOf("model", "tokenizer")
                 SpeechBackend.PHONON -> setOf("model", "frontend", "encoder", "decoder")
-                SpeechBackend.NEMOTRON_3_5, SpeechBackend.TRANSCRIBEPSY -> setOf("model")
+                SpeechBackend.NEMOTRON_3_5, SpeechBackend.TRANSCRIBEPSY, SpeechBackend.COHERE, SpeechBackend.FUNASR_MLT, SpeechBackend.VOXTRAL_REALTIME -> setOf("model")
             }
             require(roles.keys == expected) { "${profile.id} requires roles: $expected" }
             roles.forEach { (role, path) ->
@@ -80,7 +80,7 @@ class SpeechModelPackage private constructor(
                     }
                 } else require(path in declared) { "Role $role references undeclared asset: $path" }
             }
-            if (profile.backend == SpeechBackend.NEMOTRON_3_5 || profile.backend == SpeechBackend.TRANSCRIBEPSY) {
+            if (profile.backend in setOf(SpeechBackend.NEMOTRON_3_5, SpeechBackend.TRANSCRIBEPSY, SpeechBackend.COHERE, SpeechBackend.FUNASR_MLT, SpeechBackend.VOXTRAL_REALTIME)) {
                 val magic = ByteArray(4)
                 File(root, roles.getValue("model")).inputStream().use { require(it.read(magic) == 4 && magic.contentEquals("GGUF".toByteArray())) { "${profile.id} requires a GGUF model" } }
             }

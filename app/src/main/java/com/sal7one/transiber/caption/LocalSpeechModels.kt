@@ -17,6 +17,9 @@ internal val CaptionEngineChoice.speechBackend: SpeechBackend? get() = when (thi
     CaptionEngineChoice.PHONON -> SpeechBackend.PHONON
     CaptionEngineChoice.NEMOTRON -> SpeechBackend.NEMOTRON_3_5
     CaptionEngineChoice.TRANSCRIBEPSY -> SpeechBackend.TRANSCRIBEPSY
+    CaptionEngineChoice.COHERE -> SpeechBackend.COHERE
+    CaptionEngineChoice.FUNASR_MLT -> SpeechBackend.FUNASR_MLT
+    CaptionEngineChoice.VOXTRAL -> SpeechBackend.VOXTRAL_REALTIME
     else -> null
 }
 internal val SpeechProfile.captionEngine: CaptionEngineChoice get() = when (backend) {
@@ -26,8 +29,14 @@ internal val SpeechProfile.captionEngine: CaptionEngineChoice get() = when (back
     SpeechBackend.PHONON -> CaptionEngineChoice.PHONON
     SpeechBackend.NEMOTRON_3_5 -> CaptionEngineChoice.NEMOTRON
     SpeechBackend.TRANSCRIBEPSY -> CaptionEngineChoice.TRANSCRIBEPSY
+    SpeechBackend.COHERE -> CaptionEngineChoice.COHERE
+    SpeechBackend.FUNASR_MLT -> CaptionEngineChoice.FUNASR_MLT
+    SpeechBackend.VOXTRAL_REALTIME -> CaptionEngineChoice.VOXTRAL
 }
 internal val SpeechProfile.label: String get() = when (this) {
+    SpeechProfile.COHERE_ARABIC_07_2026 -> "Cohere Transcribe Arabic · Q4_K_M"
+    SpeechProfile.FUNASR_MLT_NANO_2512 -> "Fun-ASR MLT Nano · Q8_0"
+    SpeechProfile.VOXTRAL_MINI_REALTIME_2602 -> "Voxtral Mini Realtime · Q4_K_M"
     SpeechProfile.MOONSHINE_TINY_EN -> "Moonshine Tiny · English"
     SpeechProfile.MOONSHINE_BASE_EN -> "Moonshine Base · English"
     SpeechProfile.MOONSHINE_BASE_AR -> "Moonshine Base · Arabic"
@@ -82,11 +91,12 @@ internal class LocalSpeechModels(private val root: File) {
             check(directory.isDirectory) { "Selected ${engine.label} package is missing: $id. Select an imported model again." }
             return read(directory).also { model ->
                 check(model.profile.backend == engine.speechBackend) { "Selected speech package belongs to a different engine: $id" }
+                SpeechAbiPolicy.requireSupported(model.profile)
             }
         }
         val candidates = list().filter { it.profile.backend == engine.speechBackend }
-        return candidates.firstOrNull()
-            ?: error("No ${engine.label} model installed. Open Models to download or import it.")
+        return (candidates.firstOrNull()
+            ?: error("No ${engine.label} model installed. Open Models to download or import it.")).also { SpeechAbiPolicy.requireSupported(it.profile) }
     }
 
     /** ZIP contents must have hearth-speech.json at the root. No temporary extracted tree is selectable. */
@@ -113,6 +123,7 @@ internal class LocalSpeechModels(private val root: File) {
             }
             checkActive()
             val verified = SpeechModelPackage.verify(staged.file)
+            SpeechAbiPolicy.requireSupported(verified.profile)
             checkActive()
             val id = "speech-${UUID.randomUUID()}"
             val destination = File(root, id)
@@ -123,6 +134,7 @@ internal class LocalSpeechModels(private val root: File) {
 
     fun installPublisher(input: InputStream, source: com.sal7one.transiber.models.SpeechDownload, downloadId: Long,
         checkActive: () -> Unit = {}): LocalSpeechModel {
+        SpeechAbiPolicy.requireSupported(source.profile)
         val id = "speech-${UUID.nameUUIDFromBytes("download-$downloadId".toByteArray())}"
         val destination = File(root, id)
         val receipts = com.sal7one.transiber.models.PublisherSpeechReceipts(root)

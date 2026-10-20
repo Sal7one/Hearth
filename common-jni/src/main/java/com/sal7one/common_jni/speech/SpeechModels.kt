@@ -2,7 +2,8 @@ package com.sal7one.common_jni.speech
 
 /** Runtime identity is separate from model format: arbitrary ONNX/GGUF files are not ASR models. */
 enum class SpeechBackend(val id: String) {
-    MOONSHINE("moonshine"), QWEN3_ASR("qwen3_asr"), OMNILINGUAL_CTC("omnilingual_ctc"), PHONON("phonon"), TRANSCRIBEPSY("transcribepsy"), NEMOTRON_3_5("nemotron_3_5")
+    MOONSHINE("moonshine"), QWEN3_ASR("qwen3_asr"), OMNILINGUAL_CTC("omnilingual_ctc"), PHONON("phonon"), TRANSCRIBEPSY("transcribepsy"), NEMOTRON_3_5("nemotron_3_5"),
+    COHERE("cohere_asr"), FUNASR_MLT("funasr_mlt_nano"), VOXTRAL_REALTIME("voxtral_realtime")
 }
 enum class SpeechStreamingKind { UTTERANCE_WINDOWED, CACHE_AWARE }
 enum class SpeechAcceleration(val id: String) { CPU("cpu"), VULKAN("vulkan"), OPENCL("opencl") }
@@ -22,7 +23,10 @@ enum class SpeechProfile(val id: String, val backend: SpeechBackend) {
     OMNILINGUAL_CTC_300M_V2("omnilingual-ctc-300m-v2-int8", SpeechBackend.OMNILINGUAL_CTC),
     PHONON_2("phonon-2", SpeechBackend.PHONON),
     TRANSCRIBEPSY_250M_EU_SUB("transcribepsy-250m-eu-sub-q8", SpeechBackend.TRANSCRIBEPSY),
-    NEMOTRON_3_5_ASR_0_6B("nemotron-3.5-asr-0.6b", SpeechBackend.NEMOTRON_3_5);
+    NEMOTRON_3_5_ASR_0_6B("nemotron-3.5-asr-0.6b", SpeechBackend.NEMOTRON_3_5),
+    COHERE_ARABIC_07_2026("cohere-transcribe-arabic-07-2026", SpeechBackend.COHERE),
+    FUNASR_MLT_NANO_2512("fun-asr-mlt-nano-2512", SpeechBackend.FUNASR_MLT),
+    VOXTRAL_MINI_REALTIME_2602("voxtral-mini-4b-realtime-2602", SpeechBackend.VOXTRAL_REALTIME);
 
     /** Monolingual checkpoints carry their source identity even when the caller chooses Auto. */
     val fixedSourceLanguage: String? get() = when (this) {
@@ -41,6 +45,13 @@ enum class SpeechProfile(val id: String, val backend: SpeechBackend) {
     internal fun runtimeSourceLanguage(selection: String): String {
         val source = SpeechLanguage.normalize(selection)
         return if (source == "auto") fixedSourceLanguage ?: source else source
+    }
+
+    /** Recognition selection, including Auto, is validated consistently by UI/imports/runtime. */
+    fun acceptsSource(selection: String): Boolean {
+        val code = SpeechLanguage.normalize(selection)
+        return if (code == "auto") capabilities.automaticSourceLanguage
+        else code in capabilities.sourceLanguages
     }
 
     val capabilities: SpeechCapabilities get() = when (backend) {
@@ -65,6 +76,12 @@ enum class SpeechProfile(val id: String, val backend: SpeechBackend) {
             partialResults = false, sourceLanguages = setOf("en", "nl", "fr", "de", "it", "pl", "pt", "es"),
             sourceLanguageHints = emptySet(), configurableThreads = true,
         )
+        SpeechBackend.COHERE -> SpeechCapabilities(SpeechStreamingKind.UTTERANCE_WINDOWED, false,
+            setOf("ar", "en"), setOf("ar", "en"), true, automaticSourceLanguage = false)
+        SpeechBackend.FUNASR_MLT -> SpeechCapabilities(SpeechStreamingKind.UTTERANCE_WINDOWED, false,
+            FUN_LANGUAGES, FUN_LANGUAGES, true)
+        SpeechBackend.VOXTRAL_REALTIME -> SpeechCapabilities(SpeechStreamingKind.UTTERANCE_WINDOWED, true,
+            "ar en fr es de ru zh ja it pt nl hi ko".split(' ').toSet(), emptySet(), true)
         SpeechBackend.NEMOTRON_3_5 -> SpeechCapabilities(
             streaming = SpeechStreamingKind.CACHE_AWARE,
             partialResults = true, sourceLanguages = NEMO_LANGUAGES, sourceLanguageHints = NEMO_LANGUAGES,
@@ -75,6 +92,7 @@ enum class SpeechProfile(val id: String, val backend: SpeechBackend) {
     companion object {
         fun fromId(id: String): SpeechProfile = entries.firstOrNull { it.id == id }
             ?: throw IllegalArgumentException("Unsupported speech model profile: $id")
+        private val FUN_LANGUAGES = "ar en zh yue ja ko vi id th ms fil hi bg hr cs da nl et fi el hu ga lv lt mt pl pt ro sk sl sv".split(' ').toSet()
         private val QWEN_LANGUAGES = "zh en yue ar de fr es pt id it ko ru th vi ja tr hi ms nl sv da fi pl cs fil fa el hu mk ro".split(' ').toSet()
         // Excludes NVIDIA's adaptation-only languages, which need fine-tuning.
         private val NEMO_LANGUAGES = "en es fr it pt nl de tr ru ar hi ja ko vi uk pl sv cs nb da bg fi hr sk zh hu ro et".split(' ').toSet()
@@ -89,6 +107,7 @@ data class SpeechCapabilities(
     val sourceLanguages: Set<String>,
     val sourceLanguageHints: Set<String>,
     val configurableThreads: Boolean,
+    val automaticSourceLanguage: Boolean = true,
 ) {
     val languages: List<SpeechSourceLanguage> get() = sourceLanguages.map { SpeechSourceLanguage(it, it in sourceLanguageHints) }
     val sampleRate: Int get() = 16000
@@ -120,11 +139,12 @@ data class SpeechOptions(
         require(maxUtteranceMs in 1000..15000 && maxUtteranceMs % 20 == 0) { "maxUtteranceMs must be 1000..15000 in 20ms frames" }
         require(silenceMs in 200..2000 && silenceMs % 20 == 0) { "silenceMs must be 200..2000 in 20ms frames" }
         require(silenceThresholdDb.isFinite() && silenceThresholdDb in -100f..-10f) { "Invalid silenceThresholdDb" }
-        require(acceleration == SpeechAcceleration.CPU || profile.backend == SpeechBackend.TRANSCRIBEPSY) {
-            "GPU speech acceleration is supported only by TranscribePsy"
+        require(acceleration == SpeechAcceleration.CPU || profile.backend == SpeechBackend.TRANSCRIBEPSY ||
+            (acceleration == SpeechAcceleration.VULKAN && profile.backend in setOf(SpeechBackend.COHERE, SpeechBackend.FUNASR_MLT, SpeechBackend.VOXTRAL_REALTIME))) {
+            "Unsupported speech backend acceleration"
         }
         val source = SpeechLanguage.normalize(sourceLanguage)
-        require(source == "auto" || source in profile.capabilities.sourceLanguages) {
+        require(profile.acceptsSource(source)) {
             "${profile.id} does not support this source-language selection: $sourceLanguage"
         }
     }

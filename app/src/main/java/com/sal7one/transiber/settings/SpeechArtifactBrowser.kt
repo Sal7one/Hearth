@@ -119,6 +119,8 @@ internal fun SpeechArtifactBrowser(config: CaptionOverlayConfig) {
             val record = records.firstOrNull { it.modelId == item.id }
             val registered = registryMatches[item.id]
             val local = localMatches[item.id]
+            val compatibleAbi = android.os.Build.SUPPORTED_ABIS.firstOrNull() in item.supportedAbis &&
+                ("arm64-v8a" !in item.supportedAbis || item.supportedAbis.size > 1 || android.os.Process.is64Bit())
             val installed = item.id in installedIds
             val selected = installed && item.id == currentArtifact?.id
             val stage = if (record?.installed == true && !installed) DownloadStage.READY else record?.displayStage()
@@ -145,6 +147,7 @@ internal fun SpeechArtifactBrowser(config: CaptionOverlayConfig) {
                         SpeechDecodeMode.WINDOWED_PARTIALS -> UiR.string.model_speech_windowed_partials
                         SpeechDecodeMode.UTTERANCE_FINALS -> UiR.string.model_speech_utterance_finals
                     }), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    if (!compatibleAbi) Text(uiText(UiR.string.speech_expansion_arm64), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
                     if (!installed) Text(uiText(if (item.installedBytes == null) UiR.string.model_browser_disk_estimate else UiR.string.model_browser_disk,
                         budget.sameVolumeRequired.toMiBString(uiText.locale)), style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -156,7 +159,7 @@ internal fun SpeechArtifactBrowser(config: CaptionOverlayConfig) {
                     }
                     record?.error?.takeIf { it.isNotBlank() }?.let { Text(it, color = MaterialTheme.colorScheme.error) }
                     if (installationsLoaded && record?.installed == true && !installed) Text(uiText(UiR.string.model_download_missing_install), color = MaterialTheme.colorScheme.error)
-                    if (installed || ByokPolicy.FEATURE_BYOK) Button(modifier = Modifier.fillMaxWidth(), enabled = installationsLoaded && busyArtifactId == null && !active && !selected, onClick = {
+                    if (installed || ByokPolicy.FEATURE_BYOK) Button(modifier = Modifier.fillMaxWidth(), enabled = compatibleAbi && installationsLoaded && busyArtifactId == null && !active && !selected, onClick = {
                         scope.launch {
                             busyArtifactId = item.id; error = null; message = null
                             try {
@@ -168,7 +171,7 @@ internal fun SpeechArtifactBrowser(config: CaptionOverlayConfig) {
                                     }
                                     local != null -> {
                                         withContext(Dispatchers.IO) { com.sal7one.common_jni.speech.SpeechModelPackage.verify(local.root) }
-                                        CaptionConfigStore.update(context) { it.copy(engine = item.engine, modelId = local.id, streamLanguage = "auto") }
+                                        CaptionConfigStore.update(context) { it.copy(engine = item.engine, modelId = local.id, streamLanguage = if (local.profile.capabilities.automaticSourceLanguage) "auto" else "ar") }
                                     }
                                     record != null && record.id < 0 && (record.paused || record.failed) -> withContext(Dispatchers.IO) { downloads.retry(record.id) }
                                     record?.complete == true -> {

@@ -1,0 +1,9 @@
+<resources>
+    <string name="speech_cohere_note">Cohere Arabic · اختر العربية أو الإنجليزية. لا يتوفر اكتشاف اللغة تلقائيًا. تظهر الترجمة النصية بعد مقاطع كلام قصيرة.</string>
+    <string name="speech_funasr_note">Fun-ASR MLT Nano · تحويل مقاطع الكلام إلى نص بلغات متعددة، منها العربية والإنجليزية. اختر اللغة أو الاكتشاف التلقائي.</string>
+    <string name="speech_voxtral_note">Voxtral Realtime · لا يمكن فرض لغة التعرف. اختر لغة كلام معروفة لتمريرها إلى الترجمة؛ الخيار التلقائي يُبقي لغة المصدر مجهولة. نص جزئي ضمن مقاطع محدودة، والأداء على الهاتف غير مختبر.</string>
+    <string name="speech_expansion_arm64">يتطلب هذا المحرك حاليًا هاتف ARM بمعمارية 64 بت. حجم النموذج يختلف عن استهلاك الذاكرة؛ يحتاج الأداء إلى اختبار على الجهاز.</string>
+    <string name="speech_cohere_label">Cohere Arabic (محلي)</string>
+    <string name="speech_funasr_label">Fun-ASR MLT Nano (محلي)</string>
+    <string name="speech_voxtral_label">Voxtral Realtime (محلي)</string>
+</resources>

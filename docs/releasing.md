@@ -4,6 +4,9 @@ The source is self-contained. Use the [README toolchain and gates](../README.md#
 The application ID remains `com.sal7one.transiber` for compatibility; Hearth is the
 visible name. Both flavors support ARM64, ARMv7, x86_64 and x86, Android 9+, with playback
 capture on Android 10+. Universal APKs include all four architectures.
+The new CT2, Magpie and Cohere/Fun-ASR/Voxtral runtimes are optional ARM64 components;
+other architectures retain their supported existing engines. TVs use cloud connections
+and cannot install or execute downloaded local models.
 
 | Variant | Network | Translation/download differences |
 | --- | --- | --- |

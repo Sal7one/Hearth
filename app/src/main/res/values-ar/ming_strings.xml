@@ -1,0 +1,6 @@
+<resources>
+    <string name="ming_speech_models">نماذج Ming-3.0 الصوتية المستضافة</string>
+    <string name="ming_asr_hosted_detail">الصينية والإنجليزية مع دعم اللهجات والسياق. استخدم خادم SGLang-Omni الخاص بك عبر ‎/v1. تفريغ المقاطع دون نص جزئي مباشر أو واجهة ترجمة صوتية. يتطلب خادم CUDA.</string>
+    <string name="ming_audio_hosted_detail">نماذج صوتية للصينية والإنجليزية. استخدم جسر Hearth لتفريغ Ming أمام خادم SGLang الخاص بك. تفريغ المقاطع دون نص جزئي مباشر. يتطلب خادم CUDA.</string>
+    <string name="ming_official_model_card">بطاقة النموذج الرسمية</string>
+</resources>

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="voice_model_family">Model family</string>
+    <string name="voice_downloaded_models">Downloaded voices</string>
+    <string name="magpie_runtime">Native NeMo · CPU arm64 · streaming PCM</string>
+    <string name="magpie_coverage">Arabic + English · 5 speakers · %1$d MB download</string>
+    <string name="magpie_no_runtime">The Magpie native runtime is unavailable for this device ABI.</string>
+    <string name="magpie_voice_note">Speaker gender metadata is unverified. Preview voices before choosing. This native build excludes Chinese and Japanese frontends.</string>
+    <string name="magpie_ready">Magpie engine, codec and tokenizer are installed.</string>
+    <string name="magpie_install_note">Install both weight files and the verified 31 MB tokenizer. Weight downloads appear in Downloads.</string>
+    <string name="magpie_installing">Installing tokenizer…</string>
+    <string name="magpie_download">Download engine + tokenizer</string>
+    <string name="magpie_import">Import pinned weights or tokenizer.ranges</string>
+    <string name="magpie_voice">Voice</string>
+    <string name="magpie_language">Preview language</string>
+    <string name="magpie_downloads">Downloads</string>
+    <string name="ming_hosted_runtime">Self-hosted CUDA · Hearth bridge</string>
+    <string name="ming_small_coverage">7 languages; English supported, no Arabic. 0.5B backbone; about 3 GB server package. Five English preset voices or your reference with transcript.</string>
+    <string name="ming_tiny_coverage">7 languages; English supported, no Arabic. 7.9B backbone, 1.3B active; about 18 GB server package. Server only.</string>
+    <string name="magpie_custom_default">Custom default: MagpieTTS v2607 · %1$s</string>
+</resources>

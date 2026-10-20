@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="voice_model_family">模型系列</string>
+    <string name="voice_downloaded_models">已下载语音</string>
+    <string name="magpie_runtime">原生 NeMo · arm64 CPU · PCM 流</string>
+    <string name="magpie_coverage">阿拉伯语和英语 · 5 个说话人 · 下载 %1$d MB</string>
+    <string name="magpie_no_runtime">此设备架构无法使用 Magpie 原生运行时。</string>
+    <string name="magpie_voice_note">说话人性别元数据尚未验证，请先试听。此原生构建不包含中文和日文文本前端。</string>
+    <string name="magpie_ready">Magpie 引擎、音频编解码器及分词器已安装。</string>
+    <string name="magpie_install_note">请安装两个权重文件和已验证的 31 MB 分词器。权重下载任务显示在“下载”页面。</string>
+    <string name="magpie_installing">正在安装分词器…</string>
+    <string name="magpie_download">下载引擎和分词器</string>
+    <string name="magpie_import">导入已校验权重或 tokenizer.ranges</string>
+    <string name="magpie_voice">声音</string>
+    <string name="magpie_language">试听语言</string>
+    <string name="magpie_downloads">下载</string>
+    <string name="ming_hosted_runtime">自托管 CUDA · Hearth 桥接</string>
+    <string name="ming_small_coverage">支持 7 种语言，包括英语，不支持阿拉伯语。0.5B 主干，服务器包约 3 GB。提供五个英语预设声音或使用参考音频及文本。</string>
+    <string name="ming_tiny_coverage">支持 7 种语言，包括英语，不支持阿拉伯语。7.9B 主干、1.3B 激活参数，服务器包约 18 GB。仅在服务器运行。</string>
+    <string name="magpie_custom_default">自定义默认：MagpieTTS v2607 · %1$s</string>
+</resources>

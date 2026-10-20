@@ -20,6 +20,18 @@ internal data class SpeechDownload(
 internal object SpeechDownloads {
     private const val sherpa = "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/"
     val all = listOf(
+        SpeechDownload(SpeechProfile.COHERE_ARABIC_07_2026,
+            "https://huggingface.co/handy-computer/cohere-transcribe-arabic-07-2026-gguf/resolve/11a54d6895f94cce78d0ece142b8e552e7822539/cohere-transcribe-arabic-07-2026-Q4_K_M.gguf", 1558162848L,
+            "4671080cd10ffc6166e1e1b36216f9b51e1455f170d55c59cff7b81332ad4621", null,
+            mapOf("model" to "cohere-transcribe-arabic-07-2026-Q4_K_M.gguf")),
+        SpeechDownload(SpeechProfile.VOXTRAL_MINI_REALTIME_2602,
+            "https://huggingface.co/handy-computer/Voxtral-Mini-4B-Realtime-2602-gguf/resolve/7fd3d424fc558edca2c53808578b0541ef52a81a/Voxtral-Mini-4B-Realtime-2602-Q4_K_M.gguf", 2830493984L,
+            "39dc1f65539373a406edea7490505822d77c12edff521744678717eef4da4723", null,
+            mapOf("model" to "Voxtral-Mini-4B-Realtime-2602-Q4_K_M.gguf")),
+        SpeechDownload(SpeechProfile.FUNASR_MLT_NANO_2512,
+            "https://huggingface.co/handy-computer/Fun-ASR-MLT-Nano-2512-gguf/resolve/5db7c5bcebbc70d6c372e825399c3019f6089af7/Fun-ASR-MLT-Nano-2512-Q8_0.gguf", 891271232L,
+            "d12476d8d9f2baa0ebf738fa955fa05ed33a654f1567289033a810c45d9d9002", null,
+            mapOf("model" to "Fun-ASR-MLT-Nano-2512-Q8_0.gguf")),
         SpeechDownload(SpeechProfile.MOONSHINE_TINY_EN,
             sherpa + "sherpa-onnx-moonshine-tiny-en-quantized-2026-02-27.tar.bz2", 29858559,
             "9ec31b342d8fa3240c3b81b8f82e1cf7e3ac467c93ca5a999b741d5887164f8d",

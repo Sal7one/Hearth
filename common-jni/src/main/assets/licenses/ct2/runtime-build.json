@@ -1,0 +1,38 @@
+{
+  "ctranslate2Revision": "8c8cab2a954810216a45d65c1b8d56839c846e5b",
+  "sentencepieceRevision": "17d7580d6407802f85855d2cc9190634e2c95624",
+  "submodules": [
+    "8a494eb1e158ec2050e5f699a504fbc9b896a43b third_party/cpu_features (v0.4.1-122-g8a494eb)",
+    "-bbe579a9e3beb6ea6626d9227ec32d0dae119a49 third_party/cutlass",
+    "-44380e5a44706ab7347f400698c703eb2a196202 third_party/cxxopts",
+    "-f8d7d77c06936315286eb55f8de22cd23c188571 third_party/googletest",
+    " 363f252289fb7a1fba1703d99196524698cb884d third_party/ruy (363f252)",
+    " 082deffc80ce517f81dc2f3aebe6ba671fcd09c9 third_party/ruy/third_party/cpuinfo (082deff)",
+    " 6c58c11d5497b6ee1df3cb400ce30deb72fc28c0 third_party/ruy/third_party/googletest (release-1.8.0-2588-g6c58c11d)",
+    " 76fb40d95455f249bd70824ecfcae7a8f0930fa3 third_party/spdlog (v1.2.1-2055-g76fb40d9)",
+    "-b5fe509fd11a925f90d6495176707cc1184eed9d third_party/thrust"
+  ],
+  "ndk": "27.0.12077973",
+  "backend": "CPU Ruy; two threads; one queued batch; QuickMT FLOAT32; SMaLL INT8_FLOAT32; greedy; no GPU",
+  "androidPatch": "Optional pthread affinity rejected on Android API28; session never requests pinning. Generated build copy only.",
+  "sources": {
+    "common-jni/src/main/cpp/translation/ct2/ct2_jni.cpp": "42f89993608cad77b4feed490488ab49cf80e7175a510d6c4bc59e45c1a40365",
+    "common-jni/src/main/cpp/translation/ct2/ct2_model.h": "c0b9e74a115caf08e6cd0baf6e34bc5ba0e0b46f20a331a193f9a6ba0747497f",
+    "common-jni/src/main/cpp/translation/ct2/ct2_smoke.cpp": "414c5beadaaafef895829347c95f17c123dc11fae511e072ddc28ad759cff4d8",
+    "common-jni/src/main/cpp/translation/ct2/exports.map": "1efc7d364958477e71a6de5f8ffa014a2961f1799568157e6377b5d201a65ccf",
+    "scripts/translation/ct2/CMakeLists.txt": "c89c4cca60d4fd49ace81aadd12c76ded73aafdc6cc5c04b080924f585e3ce22",
+    "scripts/translation/ct2/build-runtime.sh": "918ae9af48cd9b4d043d498e60ff2981cde433b7d05a7ae8929abea1aa0e37ed",
+    "scripts/translation/ct2/package.py": "a97324e586102d379da19bee6a44bba38d1f0e276398222ef8bde266cff1610f",
+    "scripts/translation/ct2/patch-thread-pool.py": "4cd3b5d2079fdb17fce3bee100d8bf7fa8190306fc52610318cf4dcb7ed6e7f6",
+    "scripts/translation/ct2/stage-runtime.py": "7c95b07c4d64b0561c95844c9139a464a6fe97cb42aae1dbf188c8bded4f8cf5",
+    "common-jni/src/main/cpp/common/lease_registry.h": "555d0d227579c671a92f594de45ff7b7ee35eb646d4d68a4266758e00eec94bd"
+  },
+  "binaries": {
+    "arm64-v8a": {
+      "name": "libtransiber_ct2.so",
+      "bytes": 2165728,
+      "sha256": "dd1b2dda4675030bae96010c294009ef79673abd5b319d673e442c585b8b3ae2",
+      "sourceSetSha256": "e77a3ca825da4d493ad0405d3855b6db6655bda22ba4c08e9216b4c366e0e432"
+    }
+  }
+}

@@ -15,6 +15,12 @@ class BenchmarkAccelerationPlanTest {
         assertNull(qvac.acceleration)
     }
 
+    @Test fun newNativeMultilingualEnginesUseOnlyTheirPackagedComputeRoutes() {
+        listOf(SpeechProfile.COHERE_ARABIC_07_2026, SpeechProfile.FUNASR_MLT_NANO_2512, SpeechProfile.VOXTRAL_MINI_REALTIME_2602).forEach { profile ->
+            val candidate = BenchmarkCandidate(profile.id, profile.id, "Speech / utterance", setOf("ar", "en"), profile = profile)
+            assertEquals(listOf("cpu", "vulkan"), BenchmarkAccelerationPlan.expand(listOf(candidate), true).map { it.acceleration })
+        }
+    }
     @Test fun cpuOnlyEnginesDoNotReceiveInventedGpuRoutes() {
         val vosk = BenchmarkCandidate("vosk-model", "Vosk", "Vosk / batch", setOf("model"))
         assertEquals(listOf("cpu"), BenchmarkAccelerationPlan.expand(listOf(vosk), true).map { it.acceleration })

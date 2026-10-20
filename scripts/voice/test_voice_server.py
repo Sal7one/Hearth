@@ -70,6 +70,54 @@ class BridgeTest(unittest.TestCase):
         self.assertEqual(self.request(self.payload())[0],200)
 
 class AdapterTest(unittest.TestCase):
+    def ming(self, tiny=False, reference=None):
+        engine = server.Ming.__new__(server.Ming)
+        engine.tiny = tiny; engine.reference = reference; engine.transcript = "reference words" if reference else None
+        engine.languages = list(server.MING_LANGUAGES) if reference else ["en"]
+        engine.voices = ["reference"] if reference else list(server.MING_ENGLISH_VOICES)
+        return engine
+
+    def test_bfloat_tensor_is_converted_before_numpy_and_stereo_is_rejected(self):
+        class BfloatTensor:
+            def __init__(self): self.converted=False
+            def detach(self): return self
+            def float(self): self.converted=True;return self
+            def cpu(self): return self
+            def numpy(self):
+                if not self.converted: raise TypeError("Unsupported ScalarType BFloat16")
+                return [[0.1,-0.1]]
+        samples=BfloatTensor()
+        raw=server.encode_wav(samples,24000)
+        self.assertTrue(samples.converted)
+        with wave.open(io.BytesIO(raw)) as audio:
+            self.assertEqual(audio.getnchannels(),1)
+            self.assertEqual(audio.getnframes(),2)
+        with self.assertRaisesRegex(ValueError,"mono"):
+            server.encode_wav([[0.1,0.2],[0.3,0.4]],24000)
+
+    def test_ming_uses_distinct_apis_and_published_voices_without_advertising_arabic(self):
+        captured = []
+        dense = self.ming()
+        dense.engine = SimpleNamespace(sample_rate=44100, synthesize=lambda **kw: captured.append(kw) or [0.1])
+        with patch.object(server, "encode_wav", return_value=wav()) as encode:
+            dense.speech("Article", "en", "US_James")
+        self.assertEqual(captured.pop(), dict(task="IP", text="Article", controls={"ip":"US_James"}, use_zero_spk_emb=True))
+        encode.assert_called_once_with([0.1],44100)
+        tiny = self.ming(True,"/owned/reference.wav")
+        tiny.engine = SimpleNamespace(sample_rate=44100, generate=lambda **kw: captured.append(kw) or SimpleNamespace(waveform=[0.2], stopped=True))
+        with patch.object(server,"encode_wav",return_value=wav()):
+            tiny.speech("Bonjour", "fr", "reference")
+        self.assertEqual(captured.pop(), dict(task="multilingual", text="Bonjour", target_language="French",
+            prompt_wav="/owned/reference.wav", prompt_text="reference words"))
+        with self.assertRaises(ValueError): tiny.speech("مرحبا", "ar", "reference")
+        self.assertNotIn("ar", server.MING_LANGUAGES)
+        self.assertEqual(len(server.MING_ENGLISH_VOICES),5)
+
+    def test_ming_tiny_decode_exhaustion_is_an_actual_failure(self):
+        engine=self.ming(True)
+        engine.engine=SimpleNamespace(sample_rate=44100,generate=lambda **kw:SimpleNamespace(waveform=[0.1],stopped=False))
+        with self.assertRaisesRegex(RuntimeError,"decode limit"):engine.speech("hello","en","US_Emma")
+
     def test_qwen_passes_explicit_language_and_user_reference(self):
         engine=server.Qwen.__new__(server.Qwen); engine.reference="/user/voice.wav";engine.transcript="user transcript"
         captured={}

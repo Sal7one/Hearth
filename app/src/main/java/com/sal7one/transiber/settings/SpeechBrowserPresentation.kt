@@ -21,6 +21,9 @@ internal fun speechDecodeMode(item: SpeechArtifact): SpeechDecodeMode = when (it
 }
 
 internal fun speechFamilyTitle(id: String): String = when (id) {
+    "cohere" -> "Cohere Transcribe Arabic"
+    "funasr-mlt" -> "Fun-ASR MLT Nano"
+    "voxtral-realtime" -> "Voxtral Realtime"
     "nemotron" -> "Nemotron"
     "qwen3-asr" -> "Qwen3-ASR"
     "omnilingual" -> "Omnilingual CTC"
@@ -34,6 +37,9 @@ internal fun speechFamilyTitle(id: String): String = when (id) {
 
 /** A precision is an option of one checkpoint, not another model card. */
 internal fun speechCheckpointTitle(item: SpeechArtifact): String = when (item.family) {
+    "cohere" -> "Cohere Transcribe Arabic 07-2026"
+    "funasr-mlt" -> "Fun-ASR MLT Nano 2512"
+    "voxtral-realtime" -> "Voxtral Mini Realtime 2602"
     "whisper" -> "Whisper " + item.checkpoint.removeSuffix(".en").split('-').joinToString(" ") { it.replaceFirstChar(Char::uppercase) }
     else -> item.label.substringBefore(" · INT8").substringBefore(" · Q8_0").substringBefore(" · F16")
 }

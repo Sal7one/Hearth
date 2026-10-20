@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "source": {
+    "repo": "https://github.com/NVIDIA/NeMo-Speech.cpp",
+    "revision": "caa3f47c7c75fa2e9e6340272ebad57c1647dd44",
+    "ggmlRevision": "bd4f514db14d87fded667787a7a963bfbaa98e89"
+  },
+  "runtime": {
+    "abi": "arm64-v8a",
+    "backend": "CPU",
+    "file": "libhearth_magpie.so",
+    "bytes": 1797600,
+    "sha256": "725025457a15375b0a93524a63fc2edf7e5e9698074d355b3b5fe0b9222e4af9"
+  },
+  "build": {
+    "ndk": "27.0.12077973",
+    "api": 28,
+    "cmake": "4.4.2",
+    "recipe": "scripts/voice/build-magpie-runtime.sh",
+    "patches": [],
+    "injectionSha256": "4a4d43e66139701bd4c47d5046e10b552748acfd7692767b44ad44552e2e6212",
+    "exportsSha256": "7fbba4143694bd3dbdd47aa14fae758fd32964683ed02ccb28cd953ebbb391bc"
+  },
+  "limitations": [
+    "CPU only; no Vulkan claim",
+    "Chinese and Japanese optional frontends excluded",
+    "Cancellation checked at PCM callbacks; initialization/first callback can delay cancellation"
+  ],
+  "sources": {
+    "hearth-tts-magpie/src/main/cpp/vendor/tts.h": "dbc414e65f095e90b7ab085a10e3e7559acfcbcc61e4637bec1549279eaecfbb",
+    "scripts/voice/build-magpie-runtime.sh": "aa9365ac5421e9fda15fbdf8b94c970e7b3aa348d78cbbdaa22583d3a2a6de3a",
+    "scripts/voice/magpie-runtime-sources.py": "7aa9bee6313bbfd8e4976c409f5956206c38ec07a4abb370b28879e904577978",
+    "scripts/voice/magpie.map": "7fbba4143694bd3dbdd47aa14fae758fd32964683ed02ccb28cd953ebbb391bc",
+    "scripts/voice/nemo-tts-inject.cmake": "4a4d43e66139701bd4c47d5046e10b552748acfd7692767b44ad44552e2e6212"
+  },
+  "sourceSetSha256": "a2a50828070822ccc70faa9864c42a31ade8e2e1063ef96267822a680c42d327"
+}

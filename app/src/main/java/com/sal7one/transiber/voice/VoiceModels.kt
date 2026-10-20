@@ -9,7 +9,7 @@ import java.util.zip.ZipInputStream
 
 /** Both public downloads and document imports use this verified installation sink. */
 internal class VoiceModels(private val root: File) {
-    fun file(asset: VoiceAsset) = File(root,asset.filename)
+    fun file(asset: VoiceAsset) = File(root,if(asset.id.startsWith("voice-magpie-"))"magpie/${asset.filename}" else asset.filename)
     fun installed(asset: VoiceAsset) = file(asset).let {it.isFile && it.length()==asset.bytes}
     fun ready(voice: String, gender: VoiceGender = VoiceGender.ANY): Boolean {
         val requested = VoiceGenderMapping.supertonicVoice(voice, gender)
@@ -17,22 +17,27 @@ internal class VoiceModels(private val root: File) {
             installed(VoiceCatalog.file("$requested.json"))
     }
     fun import(input: InputStream, expected: VoiceAsset?=null, cancelled: () -> Unit = {}): VoiceAsset {
-        root.mkdirs(); val temporary=File.createTempFile("voice-", ".part",root)
+        root.mkdirs(); expected?.let {file(it).parentFile?.mkdirs()}; val temporary=File.createTempFile("voice-", ".part",root)
         try {
             val digest=MessageDigest.getInstance("SHA-256");var size=0L
             temporary.outputStream().use {out ->
                 val buffer=ByteArray(65536)
                 while(true) {
                     cancelled();val count=input.read(buffer);if(count<0)break
-                    size+=count;require(size<=(expected?.bytes ?: 260_000_000)){"Voice model file exceeds the supported size"}
+                    size+=count;require(size<=(expected?.bytes ?: VoiceCatalog.assets.maxOf {it.bytes})){"Voice model file exceeds the supported size"}
                     digest.update(buffer,0,count);out.write(buffer,0,count)
                 }
             }
             val hash=digest.digest().joinToString(""){"%02x".format(it)}
+            if(size==com.sal7one.hearth.tts.magpie.MagpieCatalog.tokenizerSegmentsBytes && hash==com.sal7one.hearth.tts.magpie.MagpieCatalog.tokenizerSegmentsSha256) {
+                require(expected==null){"Expected a different voice component"}
+                com.sal7one.hearth.tts.magpie.MagpieModels(File(root,"magpie")).installTokenizerSegments(temporary,cancelled)
+                return VoiceAsset("voice-magpie-tokenizer","tokenizer.ranges","tokenizer.ranges",size,hash,com.sal7one.hearth.tts.magpie.MagpieCatalog.source)
+            }
             val asset=VoiceCatalog.assets.firstOrNull {it.bytes==size && it.sha256==hash}
-                ?: error("Voice file does not match the pinned Supertonic 3 model or voice styles")
+                ?: error("Voice file does not match a pinned Hearth speech voice component")
             require(expected==null || expected==asset){"Downloaded voice file does not match the selected asset"}
-            cancelled();Files.move(temporary.toPath(),file(asset).toPath(),StandardCopyOption.ATOMIC_MOVE,StandardCopyOption.REPLACE_EXISTING)
+            cancelled();file(asset).parentFile?.mkdirs();Files.move(temporary.toPath(),file(asset).toPath(),StandardCopyOption.ATOMIC_MOVE,StandardCopyOption.REPLACE_EXISTING)
             return asset
         }finally {temporary.delete()}
     }
@@ -47,7 +52,7 @@ internal class VoiceModels(private val root: File) {
                 val name=entry.name.substringAfterLast('/')
                 if(name in setOf("README.md","LICENSE",".gitattributes")) {var bytes=0;val buffer=ByteArray(4096);while(true){cancelled();val n=zip.read(buffer);if(n<0)break;bytes+=n;require(bytes<=65536){"ZIP document exceeds limit"}};continue}
                 require(seen.add(name)){"Duplicate voice file: $name"}
-                val expected=VoiceCatalog.assets.firstOrNull {it.filename==name} ?: error("Unsupported voice ZIP entry: $name")
+                val expected=VoiceCatalog.supertonicAssets.firstOrNull {it.filename==name} ?: error("Unsupported voice ZIP entry: $name")
                 total+=expected.bytes;require(total<=410_000_000){"Voice ZIP exceeds installation bound"}
                 import(zip,expected,cancelled);count++
             }

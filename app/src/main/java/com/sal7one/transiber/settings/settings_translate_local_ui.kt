@@ -112,6 +112,7 @@ internal fun SettingsTranslateLocalUi(
         val browse = UserPreferences.store(context, "translation-browser")
         (repairModelId.takeIf { repairRevision > 0 } ?: browse.getString("model", null))?.let { id ->
             TranslationCatalog.models.firstOrNull { it.id == id }?.let { query = it.label.substringBefore(" · "); kind = "text" }
+            com.sal7one.common_jni.translation.Ct2Catalog.find(id)?.let { query=it.label.substringBefore(" · ");kind="compact" }
             val pair = MarianPackage.find(id)
             val route = MarianCascade.find(id)
             if (pair != null || route != null) {
@@ -200,14 +201,15 @@ internal fun SettingsTranslateLocalUi(
         error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
-            Text(uiText(UiR.string.model_browser_results, shown.size), style = MaterialTheme.typography.labelMedium)
+            Text(uiText(UiR.string.model_browser_results, shown.size + com.sal7one.common_jni.translation.Ct2Catalog.models.count { ct2BrowserMatches(it,query,source,target,kind) && (!installedOnly || Ct2Package.installed(context,it)) }), style = MaterialTheme.typography.labelMedium)
             if (source != "any" || target != "any" || kind != "any" || showPivots) TextButton(onClick = {
                 source = "any"; target = "any"; kind = "any"; showPivots = false
             }) { Text(uiText(UiR.string.explorer_clear_filters)) }
         }
-        if (shown.isEmpty()) ModelBrowserEmptyState(onReset = {
+        if (shown.isEmpty() && com.sal7one.common_jni.translation.Ct2Catalog.models.none { ct2BrowserMatches(it,query,source,target,kind) && (!installedOnly || Ct2Package.installed(context,it)) }) ModelBrowserEmptyState(onReset = {
             query = ""; source = "any"; target = "any"; kind = "any"; installedOnly = false; showPivots = false
         })
+        Ct2ModelsUi(query,source,target,kind,installedOnly,config.localTranslationModelId,{ select(it) },{ error=it })
         shown.forEach { item -> key(item.id) {
             var variantId by rememberSaveable { mutableStateOf("") }
             var details by rememberSaveable { mutableStateOf(false) }

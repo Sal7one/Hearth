@@ -10,6 +10,19 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class CaptionLanguagesTest {
+    @Test fun newNativeSpeechLanguageChoicesPreserveForcedVersusDeclaredSources() {
+        val cohere = CaptionOverlayConfig(engine = CaptionEngineChoice.COHERE, streamLanguage = "ar")
+        assertEquals(setOf("ar", "en"), CaptionLanguages.source(cohere, SttMode.BATCH).codes)
+        assertTrue(CaptionLanguages.source(cohere, SttMode.BATCH).languages.all { it.canForce })
+        val voxtral = cohere.copy(engine = CaptionEngineChoice.VOXTRAL)
+        val choices = CaptionLanguages.source(voxtral, SttMode.BATCH)
+        assertTrue(choices.codes.containsAll(setOf("auto", "ar", "en")))
+        assertTrue(choices.languages.none { it.canForce })
+        assertEquals("ar", CaptionLanguages.effectiveSource(voxtral, SttMode.BATCH))
+        assertEquals("auto", CaptionLanguages.effectiveSource(voxtral.copy(streamLanguage = "auto"), SttMode.BATCH))
+        assertTrue(CaptionLanguages.source(cohere.copy(engine = CaptionEngineChoice.FUNASR_MLT), SttMode.BATCH).codes.containsAll(setOf("ar", "en", "auto")))
+    }
+
     @Test fun transcribepsyRequiresKnownSourceForTranslationAndDoesNotInventLanguageHints() {
         val config = CaptionOverlayConfig(engine = CaptionEngineChoice.TRANSCRIBEPSY, streamLanguage = "auto")
         val choices = CaptionLanguages.source(config, SttMode.BATCH)

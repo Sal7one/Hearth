@@ -41,6 +41,9 @@ internal object SpeechModelCatalog {
                 slug == "gpt-live-transcribe" || slug.startsWith("gpt-live-transcribe-") ||
                     slug == "gpt-realtime-whisper" || slug.startsWith("gpt-realtime-whisper-") -> Role.LIVE
                 slug.startsWith("gpt-4o-transcribe-diarize") -> Role.DIARIZATION
+                // Ming ASR has a published /audio/transcriptions contract. The audio-chat
+                // models need explicit transcription metadata from the Hearth adapter.
+                id == "inclusionAI/Ming-3.0-asr-tiny" -> Role.TRANSCRIPTION
                 slug == "whisper-1" || slug.startsWith("whisper-large-v3") ||
                     Regex("gpt-(4o-(mini-)?)?transcribe(-[0-9]{4}-[0-9]{2}-[0-9]{2})?").matches(slug) -> Role.TRANSCRIPTION
                 model.optJSONObject("architecture")?.optJSONArray("output_modalities")?.let { modalities ->

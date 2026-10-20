@@ -18,6 +18,13 @@ class PortableSetupTest {
         assertFalse(plan.toJson().contains("modelId\": \"speech-"))
         assertFalse(plan.toJson().contains("endpoint")); assertFalse(plan.toJson().contains("apiKey"))
     }
+    @Test fun localVoiceFamilyRoundTripIsExplicitAndLegacyFilesKeepTheirDefault() {
+        val magpie = PortableSetup("Arabic article", voice = PortableVoiceStage(true, CaptionSpeakerChoice.NATIVE, SpeakerGender.ANY, 100, "John", "magpie"))
+        assertEquals(magpie, PortableSetup.parse(magpie.toJson()))
+        val legacy = PortableSetup("Existing voice", voice = PortableVoiceStage(voiceId = "F2"))
+        assertNull(PortableSetup.parse(legacy.toJson()).voice!!.family)
+        rejects { PortableVoiceStage(family = "https://host/model") }
+    }
     @Test fun schemaRejectsUnknownStagesSecretsPathsAndCoercedTypes() {
         val raw = PortableSetup("Tiny", speech).toJson()
         listOf("apiKey", "endpoint", "path", "shell", "nodes", "url").forEach { key -> rejects {
@@ -48,6 +55,15 @@ class PortableSetupTest {
         rejects { PortableSetupCatalog.validateSpeech(PortableSpeechStage(PortableModelRef("moonshine", profile = "transcribepsy-250m-eu-sub-q8", sha256 = "a".repeat(64), digestKind = "tree"), "en")) }
         rejects { PortableSetupCatalog.validateSpeech(PortableSpeechStage(PortableModelRef("transcribepsy", profile = "transcribepsy-250m-eu-sub-q8", sha256 = "a".repeat(64), digestKind = "tree"), "ar")) }
         rejects { PortableSetupCatalog.validateSpeech(PortableSpeechStage(PortableModelRef("whisper", sha256 = "a".repeat(64), digestKind = "tree"), "en")) }
+    }
+    @Test fun newNativeSpeechSetupsUseActualSourceSelectionContracts() {
+        val cohere = PortableSpeechStage(PortableModelRef("cohere", "cohere-transcribe-arabic-07-2026"), "ar")
+        PortableSetupCatalog.validateSpeech(cohere)
+        rejects { PortableSetupCatalog.validateSpeech(cohere.copy(sourceLanguage = "auto")) }
+        val voxtral = PortableSpeechStage(PortableModelRef("voxtral-realtime", "voxtral-mini-4b-realtime-2602"), "ar")
+        PortableSetupCatalog.validateSpeech(voxtral)
+        PortableSetupCatalog.validateSpeech(voxtral.copy(sourceLanguage = "auto"))
+        rejects { PortableSetupCatalog.validateSpeech(voxtral.copy(sourceLanguage = "xx")) }
     }
     @Test fun captionsOnlyDisablesPriorTranslationAndPreservesVoiceAndAppearance() {
         val previous = CaptionOverlayConfig(engine = CaptionEngineChoice.NEMOTRON, modelId = "old", mode = CaptionMode.TRANSLATE,

@@ -1,0 +1,6 @@
+<resources>
+    <string name="ming_speech_models">Ming-3.0 hosted speech models</string>
+    <string name="ming_asr_hosted_detail">Chinese and English, with dialect and context support. Use your SGLang-Omni /v1 server. Utterance transcription; no live partial captions or speech translation endpoint. CUDA server required.</string>
+    <string name="ming_audio_hosted_detail">Chinese and English audio models. Use the Hearth Ming transcription bridge in front of your SGLang server. Utterance transcription; no live partial captions. CUDA server required.</string>
+    <string name="ming_official_model_card">Official model card</string>
+</resources>

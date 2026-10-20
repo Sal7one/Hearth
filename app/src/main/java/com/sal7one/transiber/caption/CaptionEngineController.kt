@@ -813,7 +813,7 @@ class CaptionEngineController(
                     delay(
                     when (config.effectiveEngine) {
                         CaptionEngineChoice.VOSK -> 500L
-                        CaptionEngineChoice.CLOUD, CaptionEngineChoice.MOONSHINE, CaptionEngineChoice.QWEN, CaptionEngineChoice.OMNILINGUAL, CaptionEngineChoice.PHONON, CaptionEngineChoice.NEMOTRON, CaptionEngineChoice.TRANSCRIBEPSY -> 100L
+                        CaptionEngineChoice.CLOUD, CaptionEngineChoice.MOONSHINE, CaptionEngineChoice.QWEN, CaptionEngineChoice.OMNILINGUAL, CaptionEngineChoice.PHONON, CaptionEngineChoice.NEMOTRON, CaptionEngineChoice.TRANSCRIBEPSY, CaptionEngineChoice.COHERE, CaptionEngineChoice.FUNASR_MLT, CaptionEngineChoice.VOXTRAL -> 100L
                         // Reads the native worker's published text; it does not run another decode.
                         CaptionEngineChoice.WHISPER -> 100L
                     },

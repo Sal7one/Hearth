@@ -14,8 +14,8 @@ hard-of-hearing users.
 
 ## Download
 
-The **0.25.0 draft** adds setup bundles, portable JSON recipes, modern local
-models and optional GPU backends. [Draft build notes](docs/releases/0.25.0.md).
+The **0.26.0 draft** adds compact translation runtimes, more speech engines,
+shared TTS adapters and Ming hosted connections. [Draft build notes](docs/releases/0.26.0.md).
 The public installable downloads below remain the current published QA release.
 
 **[Hearth 0.23.10 — release notes and SHA256SUMS](https://github.com/Sal7one/Hearth/releases/tag/v0.23.10)**

@@ -50,6 +50,9 @@ internal fun SettingsSpeechLocalUi(config: CaptionOverlayConfig,
     })
     Text(uiText(UiR.string.model_browser_manage_hint), style = MaterialTheme.typography.bodySmall)
     val engines = listOf(
+        CaptionEngineChoice.COHERE to "Cohere Arabic",
+        CaptionEngineChoice.FUNASR_MLT to "Fun-ASR MLT Nano",
+        CaptionEngineChoice.VOXTRAL to "Voxtral Realtime",
         CaptionEngineChoice.TRANSCRIBEPSY to "TranscribePsy 250M",
         CaptionEngineChoice.NEMOTRON to "Nemotron",
         CaptionEngineChoice.QWEN to "Qwen3-ASR",

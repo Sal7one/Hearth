@@ -144,11 +144,32 @@ class SpeechFoundationTest {
         File(root, SpeechModelPackage.MANIFEST).writeText(j.toString())
         rejects("requires a GGUF") { SpeechModelPackage.verify(root) }
     }
+    @Test fun newMultilingualProfilesVerifyCompleteGgufPackagesAndTruthfulLanguageControl() = withPackage { root ->
+        val profiles = listOf(SpeechProfile.COHERE_ARABIC_07_2026, SpeechProfile.FUNASR_MLT_NANO_2512, SpeechProfile.VOXTRAL_MINI_REALTIME_2602)
+        profiles.forEach { profile ->
+            File(root, SpeechModelPackage.MANIFEST).writeText(manifest(root).put("profile", profile.id).toString())
+            assertEquals(profile, SpeechModelPackage.verify(root).profile)
+            assertTrue(profile.capabilities.sourceLanguages.containsAll(setOf("ar", "en")))
+            assertEquals(SpeechStreamingKind.UTTERANCE_WINDOWED, profile.capabilities.streaming)
+            val language = if (profile == SpeechProfile.VOXTRAL_MINI_REALTIME_2602) "auto" else "ar"
+            SpeechOptions(sourceLanguage = language, acceleration = SpeechAcceleration.VULKAN).validate(profile)
+            rejects("acceleration") { SpeechOptions(sourceLanguage = language, acceleration = SpeechAcceleration.OPENCL).validate(profile) }
+        }
+        assertFalse(SpeechProfile.COHERE_ARABIC_07_2026.acceptsSource("auto"))
+        assertTrue(SpeechProfile.VOXTRAL_MINI_REALTIME_2602.acceptsSource("ar"))
+        assertTrue(SpeechProfile.VOXTRAL_MINI_REALTIME_2602.capabilities.partialResults)
+        assertTrue(SpeechProfile.VOXTRAL_MINI_REALTIME_2602.capabilities.sourceLanguageHints.isEmpty())
+        rejects("source-language") { SpeechOptions().validate(SpeechProfile.COHERE_ARABIC_07_2026) }
+        rejects("source-language") { SpeechOptions(sourceLanguage = "xx").validate(SpeechProfile.VOXTRAL_MINI_REALTIME_2602) }
+        File(root, "model.gguf").writeText("ONNXfixture")
+        File(root, SpeechModelPackage.MANIFEST).writeText(manifest(root).put("profile", SpeechProfile.COHERE_ARABIC_07_2026.id).toString())
+        rejects("requires a GGUF") { SpeechModelPackage.verify(root) }
+    }
     @Test fun speechGpuSelectionIsExplicitAndPreservesResolvedExecutionInformation() = withPackage { root ->
         File(root, SpeechModelPackage.MANIFEST).writeText(manifest(root).put("profile", "transcribepsy-250m-eu-sub-q8").toString())
         assertEquals(SpeechAcceleration.CPU, SpeechOptions().acceleration)
-        SpeechProfile.entries.filter { it.backend != SpeechBackend.TRANSCRIBEPSY }.forEach { profile ->
-            rejects("only by TranscribePsy") { SpeechOptions(acceleration = SpeechAcceleration.VULKAN).validate(profile) }
+        SpeechProfile.entries.filter { it.backend !in setOf(SpeechBackend.TRANSCRIBEPSY, SpeechBackend.COHERE, SpeechBackend.FUNASR_MLT, SpeechBackend.VOXTRAL_REALTIME) }.forEach { profile ->
+            rejects("Unsupported speech backend acceleration") { SpeechOptions(acceleration = SpeechAcceleration.VULKAN).validate(profile) }
         }
         runBlocking {
             val driver = FakeDriver().apply { execution = "TranscribePsy · mel: CPU · encoder: Vulkan0 · decoder: Vulkan0" }

@@ -113,6 +113,9 @@ internal fun UiText.label(value: com.sal7one.transiber.caption.CaptionEngineChoi
     com.sal7one.transiber.caption.CaptionEngineChoice.PHONON -> R.string.label_captionenginechoice_phonon_label
     com.sal7one.transiber.caption.CaptionEngineChoice.NEMOTRON -> R.string.label_captionenginechoice_nemotron_label
     com.sal7one.transiber.caption.CaptionEngineChoice.TRANSCRIBEPSY -> R.string.label_captionenginechoice_transcribepsy_label
+    com.sal7one.transiber.caption.CaptionEngineChoice.COHERE -> R.string.speech_cohere_label
+    com.sal7one.transiber.caption.CaptionEngineChoice.FUNASR_MLT -> R.string.speech_funasr_label
+    com.sal7one.transiber.caption.CaptionEngineChoice.VOXTRAL -> R.string.speech_voxtral_label
     com.sal7one.transiber.caption.CaptionEngineChoice.CLOUD -> R.string.label_captionenginechoice_cloud_label
 })
 
@@ -125,6 +128,9 @@ internal fun UiText.explanation(value: com.sal7one.transiber.caption.CaptionEngi
     com.sal7one.transiber.caption.CaptionEngineChoice.PHONON -> R.string.label_captionenginechoice_phonon_explanation
     com.sal7one.transiber.caption.CaptionEngineChoice.NEMOTRON -> R.string.label_captionenginechoice_nemotron_explanation
     com.sal7one.transiber.caption.CaptionEngineChoice.TRANSCRIBEPSY -> R.string.label_captionenginechoice_transcribepsy_explanation
+    com.sal7one.transiber.caption.CaptionEngineChoice.COHERE -> R.string.speech_cohere_note
+    com.sal7one.transiber.caption.CaptionEngineChoice.FUNASR_MLT -> R.string.speech_funasr_note
+    com.sal7one.transiber.caption.CaptionEngineChoice.VOXTRAL -> R.string.speech_voxtral_note
     com.sal7one.transiber.caption.CaptionEngineChoice.CLOUD -> R.string.label_captionenginechoice_cloud_explanation
 })
 

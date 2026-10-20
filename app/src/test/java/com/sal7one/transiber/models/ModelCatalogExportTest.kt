@@ -34,6 +34,12 @@ class ModelCatalogExportTest {
         }
         CaptionEngineChoice.entries.flatMap(ModelSources::speech).forEach { source(it.publisher, it.files) }
         source(ModelSources.marian.publisher, ModelSources.marian.files)
+        com.sal7one.common_jni.translation.Ct2Catalog.models.forEach { spec ->
+            com.sal7one.transiber.translation.Ct2Package.parts(spec).forEach { part ->
+                artifact(part.id,"translation",part.file.url,part.file.bytes,part.file.sha256,spec.license)
+            }
+            source(spec.modelCard,"https://huggingface.co/${spec.files.first().repo}/tree/${spec.files.first().revision}")
+        }
         TranslationCatalog.models.forEach {
             artifact(it.id, "translation", it.url, it.bytes, it.sha256, it.license)
             source(it.modelCard, it.filesUrl, it.originalModelCard, it.licenseUrl)
@@ -46,7 +52,7 @@ class ModelCatalogExportTest {
             artifact(it.id, "ocr", it.url, it.bytes, it.sha256, it.license)
             source(it.modelCard, it.filesUrl, it.originalModelCard, it.licenseUrl)
         }
-        VoiceCatalog.assets.forEach { artifact(it.id, "voice", it.url, it.bytes, it.sha256, VoiceCatalog.license) }
+        VoiceCatalog.assets.forEach { artifact(it.id, "voice", it.url, it.bytes, it.sha256, it.license) }
         source(VoiceCatalog.modelCard, VoiceCatalog.projectUrl, VoiceCatalog.filesUrl, VoiceCatalog.licenseUrl)
         assertEquals("Duplicate artifact IDs", artifacts.size, artifacts.map { it.getString("id") }.toSet().size)
         sources.forEach { assertEquals("Invalid source $it", "https", URI(it).scheme) }

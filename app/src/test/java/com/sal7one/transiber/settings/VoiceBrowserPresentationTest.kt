@@ -33,6 +33,12 @@ class VoiceBrowserPresentationTest {
         assertFalse(qwen.matches("Hindi"))
     }
 
+    @Test fun mingHostedCardsNeverAdvertiseArabic() {
+        val ming = VoiceBrowserCard("Ming-3.0-tts-0.5B", "Self-hosted CUDA", "7 languages, no Arabic", "MIT", "https://huggingface.co/inclusionAI/Ming-3.0-tts-0.5B", VoiceBrowserLanguages.ming3Tts)
+        assertEquals(7, ming.languages.size)
+        assertTrue(ming.matches("English CUDA"))
+        assertFalse(ming.matches("Arabic")); assertFalse(ming.matches("العربية"))
+    }
     @Test fun fixedChatterboxCoverageAndUnspecifiedFishCheckpointRemainDistinct() {
         val chatterbox = VoiceBrowserCard("Chatterbox Multilingual V3", "Self-hosted Python", "23 languages",
             "MIT", "https://github.com/resemble-ai/chatterbox", VoiceBrowserLanguages.chatterboxMultilingualV3)

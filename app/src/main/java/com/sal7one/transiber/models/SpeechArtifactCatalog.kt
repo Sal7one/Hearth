@@ -26,6 +26,8 @@ internal data class SpeechArtifact(
     val advanced: Boolean = false,
     val archiveRoot: String? = null,
     val publisher: SpeechDownload? = null,
+    /** New native runtimes are published only for ARM64 phones. */
+    val supportedAbis: Set<String> = setOf("arm64-v8a", "armeabi-v7a", "x86", "x86_64"),
 ) {
     val fileName: String get() = url.substringAfterLast('/')
     /** Browsable artifact provenance, never a multi-gigabyte raw download. */
@@ -39,6 +41,7 @@ internal data class SpeechArtifact(
     }
     /** The upstream model card explains the model license, distinct from runtime licenses. */
     val licenseUrl: String get() = when {
+        family == "funasr-mlt" -> url.substringBefore("/resolve/") + "/blob/" + sourceRevision + "/LICENSE"
         publisherUrl == "https://github.com/moonshine-ai/moonshine" -> "$publisherUrl/blob/main/LICENSE"
         publisherUrl.startsWith("https://github.com/") -> "$publisherUrl#license"
         else -> publisherUrl
@@ -47,6 +50,9 @@ internal data class SpeechArtifact(
         SpeechArtifactKind.WHISPER -> CaptionEngineChoice.WHISPER
         SpeechArtifactKind.VOSK -> CaptionEngineChoice.VOSK
         SpeechArtifactKind.PUBLISHER -> when (family) {
+            "cohere" -> CaptionEngineChoice.COHERE
+            "funasr-mlt" -> CaptionEngineChoice.FUNASR_MLT
+            "voxtral-realtime" -> CaptionEngineChoice.VOXTRAL
             "moonshine" -> CaptionEngineChoice.MOONSHINE
             "qwen3-asr" -> CaptionEngineChoice.QWEN
             "omnilingual" -> CaptionEngineChoice.OMNILINGUAL
@@ -69,7 +75,7 @@ internal data class SpeechArtifact(
 /** Only installable artifacts belong here; research candidates never become fake download buttons. */
 internal object SpeechArtifactCatalog {
     private data class ArtifactInfo(
-        val quantization: String, val revision: String, val artifactDate: String,
+        val quantization: String, val revision: String, val artifactDate: String?,
         val license: String, val publisherUrl: String, val label: String,
     )
     // Publisher archives are pinned before exposing direct installation; arbitrary imports stay separate.
@@ -79,6 +85,9 @@ internal object SpeechArtifactCatalog {
 
     private fun SpeechDownload.artifact(): SpeechArtifact {
         val family = when (profile.backend) {
+            com.sal7one.common_jni.speech.SpeechBackend.COHERE -> "cohere"
+            com.sal7one.common_jni.speech.SpeechBackend.FUNASR_MLT -> "funasr-mlt"
+            com.sal7one.common_jni.speech.SpeechBackend.VOXTRAL_REALTIME -> "voxtral-realtime"
             com.sal7one.common_jni.speech.SpeechBackend.MOONSHINE -> "moonshine"
             com.sal7one.common_jni.speech.SpeechBackend.QWEN3_ASR -> "qwen3-asr"
             com.sal7one.common_jni.speech.SpeechBackend.OMNILINGUAL_CTC -> "omnilingual"
@@ -87,6 +96,9 @@ internal object SpeechArtifactCatalog {
             com.sal7one.common_jni.speech.SpeechBackend.TRANSCRIBEPSY -> "transcribepsy"
         }
         val info = when (profile) {
+            com.sal7one.common_jni.speech.SpeechProfile.COHERE_ARABIC_07_2026 -> ArtifactInfo("Q4_K_M", "11a54d6895f94cce78d0ece142b8e552e7822539", null, "Apache-2.0", "https://huggingface.co/CohereLabs/cohere-transcribe-arabic-07-2026", "Cohere Transcribe Arabic 07-2026 \u00b7 Q4_K_M \u00b7 phone test pending")
+            com.sal7one.common_jni.speech.SpeechProfile.VOXTRAL_MINI_REALTIME_2602 -> ArtifactInfo("Q4_K_M", "7fd3d424fc558edca2c53808578b0541ef52a81a", null, "Apache-2.0", "https://huggingface.co/mistralai/Voxtral-Mini-4B-Realtime-2602", "Voxtral Mini Realtime 2602 \u00b7 Q4_K_M \u00b7 phone test pending")
+            com.sal7one.common_jni.speech.SpeechProfile.FUNASR_MLT_NANO_2512 -> ArtifactInfo("Q8_0", "5db7c5bcebbc70d6c372e825399c3019f6089af7", null, "FunASR Model Open Source License Agreement v1.1 (selected GGUF); upstream HF metadata currently says Apache-2.0", "https://huggingface.co/FunAudioLLM/Fun-ASR-MLT-Nano-2512", "Fun-ASR MLT Nano 2512 \u00b7 Q8_0 \u00b7 phone test pending")
             com.sal7one.common_jni.speech.SpeechProfile.MOONSHINE_TINY_EN -> ArtifactInfo("INT8", "sherpa-onnx/asr-models/2026-02-27", "2026-02-27", "MIT", "https://github.com/moonshine-ai/moonshine", "Moonshine Tiny · English · INT8")
             com.sal7one.common_jni.speech.SpeechProfile.MOONSHINE_BASE_EN -> ArtifactInfo("INT8", "sherpa-onnx/asr-models/2026-02-27", "2026-02-27", "MIT", "https://github.com/moonshine-ai/moonshine", "Moonshine Base · English · INT8")
             com.sal7one.common_jni.speech.SpeechProfile.MOONSHINE_BASE_AR -> ArtifactInfo("INT8", "sherpa-onnx/asr-models/2026-02-27", "2026-02-27", "Moonshine Community License", "https://github.com/moonshine-ai/moonshine-v2", "Moonshine Base · Arabic · INT8")
@@ -112,6 +124,8 @@ internal object SpeechArtifactCatalog {
                 else -> null
             }, info.artifactDate,
             profile.capabilities.sourceLanguages, info.license, info.publisherUrl,
-            installedBytes = installationBytes, archiveRoot = archiveRoot, publisher = this)
+            installedBytes = installationBytes, archiveRoot = archiveRoot, publisher = this,
+            advanced = family in setOf("cohere", "funasr-mlt", "voxtral-realtime"),
+            supportedAbis = if (family in setOf("cohere", "funasr-mlt", "voxtral-realtime")) setOf("arm64-v8a") else setOf("arm64-v8a", "armeabi-v7a", "x86", "x86_64"))
     }
 }

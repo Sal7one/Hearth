@@ -62,17 +62,17 @@
             "genderEvidence": null
           }
         ],
-        "mappingEvidence": "Official v2607 speaker_map; inspect selected GGUF metadata because older converted files used v2602 order. No gender inferred from personal names.",
+        "mappingEvidence": "Pinned corrected F16 GGUF metadata at446bff55e1fe3d3aa29c771574e7d2b0fa322990 was inspected and real C ABI/JNI enumeration matched0Aria,1Jason,2John,3Leo,4Sofia. Older198068F16 and publishedQ8 carried stale v2602 labels and are excluded.",
         "source": "https://huggingface.co/nvidia/magpie_tts_multilingual_357m/blob/446bff55e1fe3d3aa29c771574e7d2b0fa322990/README.md"
       },
       "components": [
         {
-          "filename": "magpie_tts_multilingual_357m.v2607.q8_0.gguf",
+          "filename": "magpie_tts_multilingual_357m.v2607.f16.gguf",
           "repo": "nvidia/magpie_tts_multilingual_357m",
           "revision": "446bff55e1fe3d3aa29c771574e7d2b0fa322990",
-          "url": "https://huggingface.co/nvidia/magpie_tts_multilingual_357m/resolve/446bff55e1fe3d3aa29c771574e7d2b0fa322990/magpie_tts_multilingual_357m.v2607.q8_0.gguf",
-          "bytes": 331812192,
-          "sha256": "318c8f8376a28d8fdf3ce99b67b268af843c5128367000245ae30a1398c50cf9",
+          "url": "https://huggingface.co/nvidia/magpie_tts_multilingual_357m/resolve/446bff55e1fe3d3aa29c771574e7d2b0fa322990/magpie_tts_multilingual_357m.v2607.f16.gguf",
+          "bytes": 568663392,
+          "sha256": "fb8e9297138dcc7b5fc51332f361e3cddfd433d4e0bc1d87e16e6aed21f618fc",
           "role": "generator",
           "required": true
         },
@@ -99,17 +99,17 @@
         }
       ],
       "runtime": {
-        "status": "planned-not-executable",
-        "targetBackend": "NeMo-Speech.cpp separate C ABI library, CPU first then Vulkan",
+        "status": "integrated-experimental-cpu-arm64",
+        "targetBackend": "Pinned isolated NeMo-Speech.cpp CPU arm64 runtime with real JNI PCM callbacks",
         "streaming": {
           "upstream": "Incremental codec PCM callback; longform available",
-          "hearth": false
+          "hearth": true
         },
         "blockers": [
-          "No Hearth Magpie adapter or Android NeMo runtime is packaged.",
-          "Tokenizer is outside the GGUF and must match the .nemo revision/profile.",
-          "Selected published Q8 needs speaker_names verification: upstream documents an old v2602/v2607 mapping bug.",
-          "No S25 speed, thermals, Arabic Q8 quality or male/female listening validation."
+          "Owner S25 Arabic/English listening, sustained latency, thermal and memory validation remain.",
+          "CPU arm64 only; Vulkan is not supplied or claimed.",
+          "Male/female metadata for named speakers remains unknown; choose by preview.",
+          "JNI cancellation is checked at PCM callback boundaries; initialization can delay cancellation."
         ]
       },
       "license": {
@@ -121,11 +121,11 @@
         "https://huggingface.co/nvidia/nemo-nano-codec-22khz-1.89kbps-21.5fps",
         "https://github.com/NVIDIA/NeMo-Speech.cpp/blob/caa3f47c7c75fa2e9e6340272ebad57c1647dd44/docs/tts/models.md"
       ],
-      "requiredSourceBytes": 1880843296,
-      "selectedWeightsBytes": 410635296,
-      "sourceArchiveDownloadWarning": "requiredSourceBytes includes full .nemo archive for reproducible tokenizer extraction, not installed runtime footprint; previous 411MB headline excludes mandatory tokenizer assets.",
+      "requiredSourceBytes": 2117694496,
+      "selectedWeightsBytes": 647486496,
+      "sourceArchiveDownloadWarning": "The source inventory includes the entire1.47GB .nemo for reproducibility. Hearth downloads only31,076,864 authenticated range bytes and extracts20,598,079 verified tokenizer bytes. Its actual complete download is678,563,360 bytes; installed components are668,084,575 bytes, plus the optional1,797,600-byte CPU runtime/JNI shim.",
       "quality": {
-        "scope": "Publisher original v2607 release; not the selected Q8 generator/codec conversion and not Hearth/S25 measurements.",
+        "scope": "Publisher original v2607 release; selected corrected F16 GGUF/native runtime was not benchmarked for CER/SSIM, and no Hearth/S25 quality measurement is claimed.",
         "Arabic": {
           "CERpercent": 1.62,
           "SSIM": 0.806,
@@ -138,6 +138,32 @@
         },
         "metricNotes": "CER lower is better; SSIM speaker similarity higher is better. Arabic and English use different datasets; these are not cross-model rankings.",
         "source": "https://huggingface.co/nvidia/magpie_tts_multilingual_357m/blob/446bff55e1fe3d3aa29c771574e7d2b0fa322990/README.md#evaluation"
+      },
+      "appDownloadBytes": 678563360,
+      "installedBytes": 668084575,
+      "tokenizerRangePackage": {
+        "sourceUrl": "https://huggingface.co/nvidia/magpie_tts_multilingual_357m/resolve/446bff55e1fe3d3aa29c771574e7d2b0fa322990/magpie_tts_multilingual_357m.nemo",
+        "sourceBytes": 1470208000,
+        "sourceSha256": "ec675fa8c02b9c1d5382c5c2b5a6acec6492c1e8344866c07cf3892185d18953",
+        "bytes": 31076864,
+        "sha256": "169144a64f6d775178696914e5aad8282db44820e73341d5f9a4e7865fac1f26",
+        "ranges": [
+          [
+            0,
+            20619263
+          ],
+          [
+            1459750400,
+            1470207999
+          ]
+        ],
+        "memberInventory": "hearth-tts-magpie/src/main/assets/magpie-sources.json",
+        "archiveOccurrences": "hearth-tts-magpie/src/main/assets/magpie-archive-members.json"
+      },
+      "validation": {
+        "host": "macOS ARM CPU; corrected5speaker enumeration, Arabic/English nonempty22050Hz PCM, callbackabort, JNI CancellationException, boundedframes, double-close and retired-handle rejection",
+        "android": "NDK27arm64 CPU runtime and JNI compiled; owner device measurements remain",
+        "gpu": "Not implemented"
       }
     },
     {

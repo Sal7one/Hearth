@@ -1,6 +1,6 @@
 # Translation implementation handoff
 
-As of 2026-10-19. Target: local Arabic/English on the owner's Galaxy S25 Ultra. TVs must use configured cloud services. Preserve separate, independently selectable STT, MT and TTS stages. This document is an implementation specification, not a claim that every researched model runs in Hearth.
+Research as of 2026-10-19; CT2 integration updated 2026-10-20. Target: local Arabic/English on the owner's Galaxy S25 Ultra. TVs must use configured cloud services. Preserve separate, independently selectable STT, MT and TTS stages. This document is an implementation specification, not a claim that every researched model runs in Hearth.
 
 The complete pinned file inventory, SHA-256, exact byte sizes, licenses, language/direction inventories and evaluation caveats live in [models/translation.json](models/translation.json). Do not reconstruct downloads from rounded sizes in this document. Do not count precision variants as new trained models.
 
@@ -10,11 +10,11 @@ The complete pinned file inventory, SHA-256, exact byte sizes, licenses, languag
 | --- | ---: | --- | --- |
 | EuroLLM 1.7B Instruct Q4_K_M | 1,045,156,992 bytes | Pinned GGUF catalog/import/download/selection; publisher prompt; native CPU and explicit ARM64 GPU paths | Real-weight prompt/output parity, then owner S25 sustained benchmark |
 | Riva-Translate 4B Instruct v2 Q4_K_M | 2,759,302,720 bytes | Same GGUF path; separate publisher prompt; English-paired directions enforced | Same; prove memory/thermal behavior beside STT and TTS |
-| QuickMT EN↔AR | 773,707,570 bytes for both directions | Exact six-file-per-direction source packages researched; no CT2 runtime/session/install implementation | Build and validate CT2 + SentencePiece, then add atomic package flow |
-| SMaLL-100 INT8 | 344,075,494 bytes | Exact four-file CT2 package researched; no executable integration | Shared CT2 runtime plus target-language-on-source tokenization parity |
+| QuickMT EN↔AR | 773,707,570 bytes for both directions | ARM64 CT2 + SentencePiece runtime/session, pinned atomic download/ZIP install, shared dispatch/chooser/source bindings/setup/benchmark path | Real QuickMT inference parity and owner S25 measurement |
+| SMaLL-100 INT8 | 344,075,494 bytes | Same ARM64 CT2 path, separate target-token-on-source tokenizer, INT8_FLOAT32 compute | Real SMaLL inference/tokenizer parity and owner S25 measurement |
 | Jisr-MT 50M pair | 390,802,192 bytes | Exact original safetensors/tokenizer packages researched; no executable export | Export and match ByteLevel BPE and dialect tags; then add runtime/package flow |
 
-Only the first two are added to `TranslationCatalog.models`. They are labeled experimental. The remaining three use `planned-` IDs in the handoff JSON and must not be inserted into runnable model choices merely because metadata exists. No new model weights were downloaded or executed in this pass. GPU capability is retained from the existing proven-placement loader; no new per-model GPU speed measurement exists.
+The first two are added to `TranslationCatalog.models`; QuickMT direction models and SMaLL are in the separate `Ct2Catalog.models`. All new paths remain experimental. QuickMT and SMaLL now have separate executable catalog identities (`liveCatalogIds` in the handoff JSON); Jisr remains planned. No new production model weights were downloaded or executed in this pass. The small upstream native CT2 Arabic transliteration fixture was executed in both FLOAT32 and INT8_FLOAT32; it validates the runtime, not QuickMT/SMaLL accuracy. GPU capability is retained from the existing proven-placement loader; no new per-model GPU speed measurement exists.
 
 All byte totals above include the selected package's tokenizer/configuration files. They exclude the runtime DSO, installation/staging copies, model activations, KV caches and Android memory. QuickMT's FP16 weights may be promoted at load on a CPU without a compatible FP16 compute path; never present the download size as peak RAM.
 

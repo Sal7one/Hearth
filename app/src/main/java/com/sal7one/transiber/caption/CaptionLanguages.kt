@@ -72,6 +72,14 @@ object CaptionLanguages {
                     "TranscribePsy · Eight European languages, with final text after short utterances. Choose a known source for translation; this does not force recognition. Auto keeps the source unknown and provides original captions only."),
                 capabilities.languages)
         }
+        CaptionEngineChoice.COHERE -> CaptionLanguageChoices(setOf("ar", "en"),
+            UiMessage(UiR.string.speech_cohere_note, "Cohere Arabic · Choose Arabic or English. Automatic language detection is unavailable."),
+            SpeechProfile.COHERE_ARABIC_07_2026.capabilities.languages)
+        CaptionEngineChoice.FUNASR_MLT -> hinted("Fun-ASR MLT Nano", SpeechProfile.FUNASR_MLT_NANO_2512.capabilities.sourceLanguageHints,
+            UiMessage(UiR.string.speech_funasr_note, "Fun-ASR MLT Nano · Multilingual utterance captions, including Arabic and English. Auto or an explicit spoken language."))
+        CaptionEngineChoice.VOXTRAL -> CaptionLanguageChoices(SpeechProfile.VOXTRAL_MINI_REALTIME_2602.capabilities.sourceLanguages + "auto",
+            UiMessage(UiR.string.speech_voxtral_note, "Voxtral Realtime · Recognition accepts no language hint. Choose a known source to label text for translation; Auto leaves the source unknown. Bounded windowed partials; phone performance is unverified."),
+            SpeechProfile.VOXTRAL_MINI_REALTIME_2602.capabilities.languages)
         CaptionEngineChoice.NEMOTRON, CaptionEngineChoice.QWEN -> {
             val profile = if (config.engine == CaptionEngineChoice.NEMOTRON) SpeechProfile.NEMOTRON_3_5_ASR_0_6B
                 else if (model.id == SpeechProfile.QWEN3_ASR_1_7B.id) SpeechProfile.QWEN3_ASR_1_7B else SpeechProfile.QWEN3_ASR_0_6B

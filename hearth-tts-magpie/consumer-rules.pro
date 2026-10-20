@@ -1,0 +1,3 @@
+-keep class com.sal7one.common_jni.voice.MagpieNative { *; }
+-keep interface com.sal7one.common_jni.voice.MagpiePcmCallback { *; }
+-keepclassmembers class * implements com.sal7one.common_jni.voice.MagpiePcmCallback { boolean onPcm(short[], int); }

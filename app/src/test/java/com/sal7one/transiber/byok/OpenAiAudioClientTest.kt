@@ -7,6 +7,21 @@ import org.junit.Test
 import java.util.concurrent.TimeUnit
 
 class OpenAiAudioClientTest {
+    @Test fun providerFailuresCannotBecomeEmptyTranscriptsAndContextPreservesArabic() {
+        if (!ByokPolicy.FEATURE_BYOK) return
+        MockWebServer().use { server ->
+            val client = OpenAiAudioClient("fixture-key", server.url("/v1").toString(), "inclusionAI/Ming-3.0-asr-tiny")
+            for (body in listOf("{}", "{\"text\":null}", "{\"text\":42}", "{\"error\":\"fixture-key failed\"}")) {
+                server.enqueue(MockResponse().setBody(body))
+                val error = assertThrows(ByokHttpException::class.java) { client.transcribe(byteArrayOf(1)) }
+                assertFalse(error.message.orEmpty().contains("fixture-key"))
+                server.takeRequest()
+            }
+            server.enqueue(MockResponse().setBody("{\"text\":\"مرحبا\"}"))
+            assertEquals("مرحبا", client.transcribe(byteArrayOf(1), "ar", "مصطلحات عربية"))
+            assertTrue(server.takeRequest().body.readUtf8().contains("مصطلحات عربية"))
+        }
+    }
     @Test fun optionalServerKeyIsOmittedAndOfflineBuildCannotSendAudio() {
         MockWebServer().use {server->
             if(!ByokPolicy.FEATURE_BYOK) {

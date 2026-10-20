@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="voice_model_family">عائلة النموذج</string>
+    <string name="voice_downloaded_models">الأصوات المحملة</string>
+    <string name="magpie_runtime">NeMo أصلي · معالج arm64 · تدفق صوتي</string>
+    <string name="magpie_coverage">العربية والإنجليزية · ٥ أصوات · تنزيل %1$d ميغابايت</string>
+    <string name="magpie_no_runtime">محرك Magpie الأصلي غير متوفر لمعمارية هذا الجهاز.</string>
+    <string name="magpie_voice_note">بيانات جنس المتحدث غير مؤكدة. استمع للأصوات قبل الاختيار. لا يتضمن هذا الإصدار معالجة النصوص الصينية واليابانية.</string>
+    <string name="magpie_ready">تم تثبيت محرك Magpie والمفكك الصوتي ومحلل النص.</string>
+    <string name="magpie_install_note">ثبّت ملفي النموذج ومحلل النص الموثّق بحجم ٣١ ميغابايت. تظهر تنزيلات الملفات في صفحة التنزيلات.</string>
+    <string name="magpie_installing">جارٍ تثبيت محلل النص…</string>
+    <string name="magpie_download">تنزيل المحرك ومحلل النص</string>
+    <string name="magpie_import">استيراد ملفات موثقة أو tokenizer.ranges</string>
+    <string name="magpie_voice">الصوت</string>
+    <string name="magpie_language">لغة المعاينة</string>
+    <string name="magpie_downloads">التنزيلات</string>
+    <string name="ming_hosted_runtime">CUDA على خادمك · جسر Hearth</string>
+    <string name="ming_small_coverage">٧ لغات، تدعم الإنجليزية ولا تدعم العربية. نموذج أساسي ٠٫٥ مليار؛ حزمة خادم بنحو ٣ غيغابايت. خمسة أصوات إنجليزية أو صوت مرجعي مع نصه.</string>
+    <string name="ming_tiny_coverage">٧ لغات، تدعم الإنجليزية ولا تدعم العربية. نموذج أساسي ٧٫٩ مليار، النشط ١٫٣ مليار؛ حزمة خادم بنحو ١٨ غيغابايت. للخوادم فقط.</string>
+    <string name="magpie_custom_default">الصوت المخصص الافتراضي: MagpieTTS v2607 · %1$s</string>
+</resources>
