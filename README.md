@@ -4,13 +4,21 @@
 
 **Read speech. Translate your screen. Talk across languages.**
 
-An Android app for live captions, translation and conversations. Run models on
+An Android app for live captions, translation and conversations, with a new
+Windows/macOS desktop application built with Kotlin Multiplatform. Run models on
 this device, use your own cloud keys, or mix local and cloud stages. Translation
 and read-aloud are optional, with their own settings.
 Built to make speech and languages more accessible, including for deaf and
 hard-of-hearing users.
 
-[Download](#download) · [Screenshots](#screenshots) · [Quick start](#quick-start) · [Models](#models-and-connections) · [Build](#build)
+[Desktop build and integration guide](docs/desktop.md) · [Download](#download) · [Screenshots](#screenshots) · [Quick start](#quick-start) · [Models](#models-and-connections) · [Build](#build)
+
+## Desktop
+
+The desktop workspace accepts microphone/audio-video files and typed text, with
+independent STT, translation and voice stages, floating captions and an OBS/external
+app interface. Models and provider keys are managed separately.
+[Desktop implementation, build targets and current coverage](docs/desktop.md).
 
 ## Download
 

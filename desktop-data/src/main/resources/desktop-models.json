@@ -1,0 +1,859 @@
+{
+  "schemaVersion": 1,
+  "provenance": "Generated from existing Android pins; run scripts/desktop/generate-catalog.py --check",
+  "models": [
+    {
+      "id": "whisper-tiny-q5_1",
+      "name": "Whisper tiny · Q5_1",
+      "family": "Whisper",
+      "stage": "STT",
+      "engineId": "whisper-local",
+      "languages": [
+        "multilingual",
+        "ar",
+        "en"
+      ],
+      "source": "https://huggingface.co/ggerganov/whisper.cpp",
+      "license": "MIT",
+      "note": "Pinned Android artifact; desktop uses the same whisper.cpp model format. Quantizations are file options within the Whisper family.",
+      "options": {},
+      "artifacts": [
+        {
+          "filename": "ggml-tiny-q5_1.bin",
+          "bytes": 32152673,
+          "sha256": "818710568da3ca15689e31a743197b520007872ff9576237bda97bd1b469c3d7",
+          "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-tiny-q5_1.bin"
+        }
+      ]
+    },
+    {
+      "id": "whisper-tiny-q8_0",
+      "name": "Whisper tiny · Q8_0",
+      "family": "Whisper",
+      "stage": "STT",
+      "engineId": "whisper-local",
+      "languages": [
+        "multilingual",
+        "ar",
+        "en"
+      ],
+      "source": "https://huggingface.co/ggerganov/whisper.cpp",
+      "license": "MIT",
+      "note": "Pinned Android artifact; desktop uses the same whisper.cpp model format. Quantizations are file options within the Whisper family.",
+      "options": {},
+      "artifacts": [
+        {
+          "filename": "ggml-tiny-q8_0.bin",
+          "bytes": 43537433,
+          "sha256": "c2085835d3f50733e2ff6e4b41ae8a2b8d8110461e18821b09a15c40c42d1cca",
+          "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-tiny-q8_0.bin"
+        }
+      ]
+    },
+    {
+      "id": "whisper-tiny-f16",
+      "name": "Whisper tiny · F16",
+      "family": "Whisper",
+      "stage": "STT",
+      "engineId": "whisper-local",
+      "languages": [
+        "multilingual",
+        "ar",
+        "en"
+      ],
+      "source": "https://huggingface.co/ggerganov/whisper.cpp",
+      "license": "MIT",
+      "note": "Pinned Android artifact; desktop uses the same whisper.cpp model format. Quantizations are file options within the Whisper family.",
+      "options": {},
+      "artifacts": [
+        {
+          "filename": "ggml-tiny.bin",
+          "bytes": 77691713,
+          "sha256": "be07e048e1e599ad46341c8d2a135645097a538221678b7acdd1b1919c6e1b21",
+          "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-tiny.bin"
+        }
+      ]
+    },
+    {
+      "id": "whisper-tiny.en-q5_1",
+      "name": "Whisper tiny.en · Q5_1",
+      "family": "Whisper",
+      "stage": "STT",
+      "engineId": "whisper-local",
+      "languages": [
+        "en"
+      ],
+      "source": "https://huggingface.co/ggerganov/whisper.cpp",
+      "license": "MIT",
+      "note": "Pinned Android artifact; desktop uses the same whisper.cpp model format. Quantizations are file options within the Whisper family.",
+      "options": {},
+      "artifacts": [
+        {
+          "filename": "ggml-tiny.en-q5_1.bin",
+          "bytes": 32166155,
+          "sha256": "c77c5766f1cef09b6b7d47f21b546cbddd4157886b3b5d6d4f709e91e66c7c2b",
+          "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-tiny.en-q5_1.bin"
+        }
+      ]
+    },
+    {
+      "id": "whisper-tiny.en-q8_0",
+      "name": "Whisper tiny.en · Q8_0",
+      "family": "Whisper",
+      "stage": "STT",
+      "engineId": "whisper-local",
+      "languages": [
+        "en"
+      ],
+      "source": "https://huggingface.co/ggerganov/whisper.cpp",
+      "license": "MIT",
+      "note": "Pinned Android artifact; desktop uses the same whisper.cpp model format. Quantizations are file options within the Whisper family.",
+      "options": {},
+      "artifacts": [
+        {
+          "filename": "ggml-tiny.en-q8_0.bin",
+          "bytes": 43550795,
+          "sha256": "5bc2b3860aa151a4c6e7bb095e1fcce7cf12c7b020ca08dcec0c6d018bb7dd94",
+          "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-tiny.en-q8_0.bin"
+        }
+      ]
+    },
+    {
+      "id": "whisper-tiny.en-f16",
+      "name": "Whisper tiny.en · F16",
+      "family": "Whisper",
+      "stage": "STT",
+      "engineId": "whisper-local",
+      "languages": [
+        "en"
+      ],
+      "source": "https://huggingface.co/ggerganov/whisper.cpp",
+      "license": "MIT",
+      "note": "Pinned Android artifact; desktop uses the same whisper.cpp model format. Quantizations are file options within the Whisper family.",
+      "options": {},
+      "artifacts": [
+        {
+          "filename": "ggml-tiny.en.bin",
+          "bytes": 77704715,
+          "sha256": "921e4cf8686fdd993dcd081a5da5b6c365bfde1162e72b08d75ac75289920b1f",
+          "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-tiny.en.bin"
+        }
+      ]
+    },
+    {
+      "id": "whisper-base-q5_1",
+      "name": "Whisper base · Q5_1",
+      "family": "Whisper",
+      "stage": "STT",
+      "engineId": "whisper-local",
+      "languages": [
+        "multilingual",
+        "ar",
+        "en"
+      ],
+      "source": "https://huggingface.co/ggerganov/whisper.cpp",
+      "license": "MIT",
+      "note": "Pinned Android artifact; desktop uses the same whisper.cpp model format. Quantizations are file options within the Whisper family.",
+      "options": {},
+      "artifacts": [
+        {
+          "filename": "ggml-base-q5_1.bin",
+          "bytes": 59707625,
+          "sha256": "422f1ae452ade6f30a004d7e5c6a43195e4433bc370bf23fac9cc591f01a8898",
+          "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-base-q5_1.bin"
+        }
+      ]
+    },
+    {
+      "id": "whisper-base-q8_0",
+      "name": "Whisper base · Q8_0",
+      "family": "Whisper",
+      "stage": "STT",
+      "engineId": "whisper-local",
+      "languages": [
+        "multilingual",
+        "ar",
+        "en"
+      ],
+      "source": "https://huggingface.co/ggerganov/whisper.cpp",
+      "license": "MIT",
+      "note": "Pinned Android artifact; desktop uses the same whisper.cpp model format. Quantizations are file options within the Whisper family.",
+      "options": {},
+      "artifacts": [
+        {
+          "filename": "ggml-base-q8_0.bin",
+          "bytes": 81768585,
+          "sha256": "c577b9a86e7e048a0b7eada054f4dd79a56bbfa911fbdacf900ac5b567cbb7d9",
+          "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-base-q8_0.bin"
+        }
+      ]
+    },
+    {
+      "id": "whisper-base-f16",
+      "name": "Whisper base · F16",
+      "family": "Whisper",
+      "stage": "STT",
+      "engineId": "whisper-local",
+      "languages": [
+        "multilingual",
+        "ar",
+        "en"
+      ],
+      "source": "https://huggingface.co/ggerganov/whisper.cpp",
+      "license": "MIT",
+      "note": "Pinned Android artifact; desktop uses the same whisper.cpp model format. Quantizations are file options within the Whisper family.",
+      "options": {},
+      "artifacts": [
+        {
+          "filename": "ggml-base.bin",
+          "bytes": 147951465,
+          "sha256": "60ed5bc3dd14eea856493d334349b405782ddcaf0028d4b5df4088345fba2efe",
+          "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-base.bin"
+        }
+      ]
+    },
+    {
+      "id": "whisper-base.en-q5_1",
+      "name": "Whisper base.en · Q5_1",
+      "family": "Whisper",
+      "stage": "STT",
+      "engineId": "whisper-local",
+      "languages": [
+        "en"
+      ],
+      "source": "https://huggingface.co/ggerganov/whisper.cpp",
+      "license": "MIT",
+      "note": "Pinned Android artifact; desktop uses the same whisper.cpp model format. Quantizations are file options within the Whisper family.",
+      "options": {},
+      "artifacts": [
+        {
+          "filename": "ggml-base.en-q5_1.bin",
+          "bytes": 59721011,
+          "sha256": "4baf70dd0d7c4247ba2b81fafd9c01005ac77c2f9ef064e00dcf195d0e2fdd2f",
+          "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-base.en-q5_1.bin"
+        }
+      ]
+    },
+    {
+      "id": "whisper-base.en-q8_0",
+      "name": "Whisper base.en · Q8_0",
+      "family": "Whisper",
+      "stage": "STT",
+      "engineId": "whisper-local",
+      "languages": [
+        "en"
+      ],
+      "source": "https://huggingface.co/ggerganov/whisper.cpp",
+      "license": "MIT",
+      "note": "Pinned Android artifact; desktop uses the same whisper.cpp model format. Quantizations are file options within the Whisper family.",
+      "options": {},
+      "artifacts": [
+        {
+          "filename": "ggml-base.en-q8_0.bin",
+          "bytes": 81781811,
+          "sha256": "a4d4a0768075e13cfd7e19df3ae2dbc4a68d37d36a7dad45e8410c9a34f8c87e",
+          "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-base.en-q8_0.bin"
+        }
+      ]
+    },
+    {
+      "id": "whisper-base.en-f16",
+      "name": "Whisper base.en · F16",
+      "family": "Whisper",
+      "stage": "STT",
+      "engineId": "whisper-local",
+      "languages": [
+        "en"
+      ],
+      "source": "https://huggingface.co/ggerganov/whisper.cpp",
+      "license": "MIT",
+      "note": "Pinned Android artifact; desktop uses the same whisper.cpp model format. Quantizations are file options within the Whisper family.",
+      "options": {},
+      "artifacts": [
+        {
+          "filename": "ggml-base.en.bin",
+          "bytes": 147964211,
+          "sha256": "a03779c86df3323075f5e796cb2ce5029f00ec8869eee3fdfb897afe36c6d002",
+          "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-base.en.bin"
+        }
+      ]
+    },
+    {
+      "id": "whisper-small-q5_1",
+      "name": "Whisper small · Q5_1",
+      "family": "Whisper",
+      "stage": "STT",
+      "engineId": "whisper-local",
+      "languages": [
+        "multilingual",
+        "ar",
+        "en"
+      ],
+      "source": "https://huggingface.co/ggerganov/whisper.cpp",
+      "license": "MIT",
+      "note": "Pinned Android artifact; desktop uses the same whisper.cpp model format. Quantizations are file options within the Whisper family.",
+      "options": {},
+      "artifacts": [
+        {
+          "filename": "ggml-small-q5_1.bin",
+          "bytes": 190085487,
+          "sha256": "ae85e4a935d7a567bd102fe55afc16bb595bdb618e11b2fc7591bc08120411bb",
+          "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-small-q5_1.bin"
+        }
+      ]
+    },
+    {
+      "id": "whisper-small-q8_0",
+      "name": "Whisper small · Q8_0",
+      "family": "Whisper",
+      "stage": "STT",
+      "engineId": "whisper-local",
+      "languages": [
+        "multilingual",
+        "ar",
+        "en"
+      ],
+      "source": "https://huggingface.co/ggerganov/whisper.cpp",
+      "license": "MIT",
+      "note": "Pinned Android artifact; desktop uses the same whisper.cpp model format. Quantizations are file options within the Whisper family.",
+      "options": {},
+      "artifacts": [
+        {
+          "filename": "ggml-small-q8_0.bin",
+          "bytes": 264464607,
+          "sha256": "49c8fb02b65e6049d5fa6c04f81f53b867b5ec9540406812c643f177317f779f",
+          "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-small-q8_0.bin"
+        }
+      ]
+    },
+    {
+      "id": "whisper-small-f16",
+      "name": "Whisper small · F16",
+      "family": "Whisper",
+      "stage": "STT",
+      "engineId": "whisper-local",
+      "languages": [
+        "multilingual",
+        "ar",
+        "en"
+      ],
+      "source": "https://huggingface.co/ggerganov/whisper.cpp",
+      "license": "MIT",
+      "note": "Pinned Android artifact; desktop uses the same whisper.cpp model format. Quantizations are file options within the Whisper family.",
+      "options": {},
+      "artifacts": [
+        {
+          "filename": "ggml-small.bin",
+          "bytes": 487601967,
+          "sha256": "1be3a9b2063867b937e64e2ec7483364a79917e157fa98c5d94b5c1fffea987b",
+          "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-small.bin"
+        }
+      ]
+    },
+    {
+      "id": "whisper-small.en-q5_1",
+      "name": "Whisper small.en · Q5_1",
+      "family": "Whisper",
+      "stage": "STT",
+      "engineId": "whisper-local",
+      "languages": [
+        "en"
+      ],
+      "source": "https://huggingface.co/ggerganov/whisper.cpp",
+      "license": "MIT",
+      "note": "Pinned Android artifact; desktop uses the same whisper.cpp model format. Quantizations are file options within the Whisper family.",
+      "options": {},
+      "artifacts": [
+        {
+          "filename": "ggml-small.en-q5_1.bin",
+          "bytes": 190098681,
+          "sha256": "bfdff4894dcb76bbf647d56263ea2a96645423f1669176f4844a1bf8e478ad30",
+          "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-small.en-q5_1.bin"
+        }
+      ]
+    },
+    {
+      "id": "whisper-small.en-q8_0",
+      "name": "Whisper small.en · Q8_0",
+      "family": "Whisper",
+      "stage": "STT",
+      "engineId": "whisper-local",
+      "languages": [
+        "en"
+      ],
+      "source": "https://huggingface.co/ggerganov/whisper.cpp",
+      "license": "MIT",
+      "note": "Pinned Android artifact; desktop uses the same whisper.cpp model format. Quantizations are file options within the Whisper family.",
+      "options": {},
+      "artifacts": [
+        {
+          "filename": "ggml-small.en-q8_0.bin",
+          "bytes": 264477561,
+          "sha256": "67a179f608ea6114bd3fdb9060e762b588a3fb3bd00c4387971be4d177958067",
+          "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-small.en-q8_0.bin"
+        }
+      ]
+    },
+    {
+      "id": "whisper-small.en-f16",
+      "name": "Whisper small.en · F16",
+      "family": "Whisper",
+      "stage": "STT",
+      "engineId": "whisper-local",
+      "languages": [
+        "en"
+      ],
+      "source": "https://huggingface.co/ggerganov/whisper.cpp",
+      "license": "MIT",
+      "note": "Pinned Android artifact; desktop uses the same whisper.cpp model format. Quantizations are file options within the Whisper family.",
+      "options": {},
+      "artifacts": [
+        {
+          "filename": "ggml-small.en.bin",
+          "bytes": 487614201,
+          "sha256": "c6138d6d58ecc8322097e0f987c32f1be8bb0a18532a3f88f734d1bbf9c41e5d",
+          "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-small.en.bin"
+        }
+      ]
+    },
+    {
+      "id": "whisper-medium-q5_0",
+      "name": "Whisper medium · Q5_0",
+      "family": "Whisper",
+      "stage": "STT",
+      "engineId": "whisper-local",
+      "languages": [
+        "multilingual",
+        "ar",
+        "en"
+      ],
+      "source": "https://huggingface.co/ggerganov/whisper.cpp",
+      "license": "MIT",
+      "note": "Pinned Android artifact; desktop uses the same whisper.cpp model format. Quantizations are file options within the Whisper family.",
+      "options": {},
+      "artifacts": [
+        {
+          "filename": "ggml-medium-q5_0.bin",
+          "bytes": 539212467,
+          "sha256": "19fea4b380c3a618ec4723c3eef2eb785ffba0d0538cf43f8f235e7b3b34220f",
+          "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-medium-q5_0.bin"
+        }
+      ]
+    },
+    {
+      "id": "whisper-medium-q8_0",
+      "name": "Whisper medium · Q8_0",
+      "family": "Whisper",
+      "stage": "STT",
+      "engineId": "whisper-local",
+      "languages": [
+        "multilingual",
+        "ar",
+        "en"
+      ],
+      "source": "https://huggingface.co/ggerganov/whisper.cpp",
+      "license": "MIT",
+      "note": "Pinned Android artifact; desktop uses the same whisper.cpp model format. Quantizations are file options within the Whisper family.",
+      "options": {},
+      "artifacts": [
+        {
+          "filename": "ggml-medium-q8_0.bin",
+          "bytes": 823369779,
+          "sha256": "42a1ffcbe4167d224232443396968db4d02d4e8e87e213d3ee2e03095dea6502",
+          "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-medium-q8_0.bin"
+        }
+      ]
+    },
+    {
+      "id": "whisper-medium-f16",
+      "name": "Whisper medium · F16",
+      "family": "Whisper",
+      "stage": "STT",
+      "engineId": "whisper-local",
+      "languages": [
+        "multilingual",
+        "ar",
+        "en"
+      ],
+      "source": "https://huggingface.co/ggerganov/whisper.cpp",
+      "license": "MIT",
+      "note": "Pinned Android artifact; desktop uses the same whisper.cpp model format. Quantizations are file options within the Whisper family.",
+      "options": {},
+      "artifacts": [
+        {
+          "filename": "ggml-medium.bin",
+          "bytes": 1533763059,
+          "sha256": "6c14d5adee5f86394037b4e4e8b59f1673b6cee10e3cf0b11bbdbee79c156208",
+          "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-medium.bin"
+        }
+      ]
+    },
+    {
+      "id": "whisper-medium.en-q5_0",
+      "name": "Whisper medium.en · Q5_0",
+      "family": "Whisper",
+      "stage": "STT",
+      "engineId": "whisper-local",
+      "languages": [
+        "en"
+      ],
+      "source": "https://huggingface.co/ggerganov/whisper.cpp",
+      "license": "MIT",
+      "note": "Pinned Android artifact; desktop uses the same whisper.cpp model format. Quantizations are file options within the Whisper family.",
+      "options": {},
+      "artifacts": [
+        {
+          "filename": "ggml-medium.en-q5_0.bin",
+          "bytes": 539225533,
+          "sha256": "76733e26ad8fe1c7a5bf7531a9d41917b2adc0f20f2e4f5531688a8c6cd88eb0",
+          "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-medium.en-q5_0.bin"
+        }
+      ]
+    },
+    {
+      "id": "whisper-medium.en-q8_0",
+      "name": "Whisper medium.en · Q8_0",
+      "family": "Whisper",
+      "stage": "STT",
+      "engineId": "whisper-local",
+      "languages": [
+        "en"
+      ],
+      "source": "https://huggingface.co/ggerganov/whisper.cpp",
+      "license": "MIT",
+      "note": "Pinned Android artifact; desktop uses the same whisper.cpp model format. Quantizations are file options within the Whisper family.",
+      "options": {},
+      "artifacts": [
+        {
+          "filename": "ggml-medium.en-q8_0.bin",
+          "bytes": 823382461,
+          "sha256": "43fa2cd084de5a04399a896a9a7a786064e221365c01700cea4666005218f11c",
+          "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-medium.en-q8_0.bin"
+        }
+      ]
+    },
+    {
+      "id": "whisper-medium.en-f16",
+      "name": "Whisper medium.en · F16",
+      "family": "Whisper",
+      "stage": "STT",
+      "engineId": "whisper-local",
+      "languages": [
+        "en"
+      ],
+      "source": "https://huggingface.co/ggerganov/whisper.cpp",
+      "license": "MIT",
+      "note": "Pinned Android artifact; desktop uses the same whisper.cpp model format. Quantizations are file options within the Whisper family.",
+      "options": {},
+      "artifacts": [
+        {
+          "filename": "ggml-medium.en.bin",
+          "bytes": 1533774781,
+          "sha256": "cc37e93478338ec7700281a7ac30a10128929eb8f427dda2e865faa8f6da4356",
+          "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-medium.en.bin"
+        }
+      ]
+    },
+    {
+      "id": "whisper-large-v3-turbo-q5_0",
+      "name": "Whisper large-v3-turbo · Q5_0",
+      "family": "Whisper",
+      "stage": "STT",
+      "engineId": "whisper-local",
+      "languages": [
+        "multilingual",
+        "ar",
+        "en"
+      ],
+      "source": "https://huggingface.co/ggerganov/whisper.cpp",
+      "license": "MIT",
+      "note": "Pinned Android artifact; desktop uses the same whisper.cpp model format. Quantizations are file options within the Whisper family.",
+      "options": {},
+      "artifacts": [
+        {
+          "filename": "ggml-large-v3-turbo-q5_0.bin",
+          "bytes": 574041195,
+          "sha256": "394221709cd5ad1f40c46e6031ca61bce88931e6e088c188294c6d5a55ffa7e2",
+          "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-large-v3-turbo-q5_0.bin"
+        }
+      ]
+    },
+    {
+      "id": "whisper-large-v3-turbo-q8_0",
+      "name": "Whisper large-v3-turbo · Q8_0",
+      "family": "Whisper",
+      "stage": "STT",
+      "engineId": "whisper-local",
+      "languages": [
+        "multilingual",
+        "ar",
+        "en"
+      ],
+      "source": "https://huggingface.co/ggerganov/whisper.cpp",
+      "license": "MIT",
+      "note": "Pinned Android artifact; desktop uses the same whisper.cpp model format. Quantizations are file options within the Whisper family.",
+      "options": {},
+      "artifacts": [
+        {
+          "filename": "ggml-large-v3-turbo-q8_0.bin",
+          "bytes": 874188075,
+          "sha256": "317eb69c11673c9de1e1f0d459b253999804ec71ac4c23c17ecf5fbe24e259a1",
+          "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-large-v3-turbo-q8_0.bin"
+        }
+      ]
+    },
+    {
+      "id": "whisper-large-v3-turbo-f16",
+      "name": "Whisper large-v3-turbo · F16",
+      "family": "Whisper",
+      "stage": "STT",
+      "engineId": "whisper-local",
+      "languages": [
+        "multilingual",
+        "ar",
+        "en"
+      ],
+      "source": "https://huggingface.co/ggerganov/whisper.cpp",
+      "license": "MIT",
+      "note": "Pinned Android artifact; desktop uses the same whisper.cpp model format. Quantizations are file options within the Whisper family.",
+      "options": {},
+      "artifacts": [
+        {
+          "filename": "ggml-large-v3-turbo.bin",
+          "bytes": 1624555275,
+          "sha256": "1fc70f774d38eb169993ac391eea357ef47c88757ef72ee5943879b7e8e2bc69",
+          "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-large-v3-turbo.bin"
+        }
+      ]
+    },
+    {
+      "id": "eurollm-17b-q4",
+      "name": "EuroLLM 1.7B Instruct",
+      "family": "eurollm",
+      "stage": "TRANSLATION",
+      "engineId": "llama-translation-local",
+      "languages": [
+        "bg",
+        "hr",
+        "cs",
+        "da",
+        "nl",
+        "en",
+        "et",
+        "fi",
+        "fr",
+        "de",
+        "el",
+        "hu",
+        "ga",
+        "it",
+        "lv",
+        "lt",
+        "mt",
+        "pl",
+        "pt",
+        "ro",
+        "sk",
+        "sl",
+        "es",
+        "sv",
+        "ar",
+        "ca",
+        "zh",
+        "gl",
+        "hi",
+        "ja",
+        "ko",
+        "no",
+        "ru",
+        "tr",
+        "uk"
+      ],
+      "source": "https://huggingface.co/utter-project/EuroLLM-1.7B-Instruct/blob/a25c7fa65fc2a644e6270b8940dbe295b51da681/README.md",
+      "license": "Apache-2.0",
+      "note": "Uses the existing Hearth translation prompt protocol. Quality varies by direction; see linked model evidence.",
+      "options": {
+        "promptMode": "euro"
+      },
+      "artifacts": [
+        {
+          "filename": "EuroLLM-1.7B-Instruct.Q4_K_M.gguf",
+          "bytes": 1045156992,
+          "sha256": "f22ab4b628f6e3cd12ec2e5aa6d1e460be2fa83f25cb6a8f5dd6d4d77b285b66",
+          "url": "https://huggingface.co/QuantFactory/EuroLLM-1.7B-Instruct-GGUF/resolve/4126f034ddfe7fd39ca3378ae58d3b1d74065315/EuroLLM-1.7B-Instruct.Q4_K_M.gguf"
+        }
+      ]
+    },
+    {
+      "id": "riva-translate-4b-v2-q4",
+      "name": "Riva-Translate 4B Instruct v2",
+      "family": "riva-translate",
+      "stage": "TRANSLATION",
+      "engineId": "llama-translation-local",
+      "languages": [
+        "en",
+        "cs",
+        "da",
+        "de",
+        "el",
+        "es",
+        "fi",
+        "fr",
+        "hu",
+        "it",
+        "lt",
+        "lv",
+        "nl",
+        "no",
+        "pl",
+        "pt",
+        "ro",
+        "ru",
+        "sk",
+        "sv",
+        "zh",
+        "ja",
+        "hi",
+        "ko",
+        "et",
+        "sl",
+        "bg",
+        "uk",
+        "hr",
+        "ar",
+        "vi",
+        "tr",
+        "id",
+        "th"
+      ],
+      "source": "https://huggingface.co/nvidia/Riva-Translate-4B-Instruct-v2/blob/040d958b128018ff0bed2542a7b51005e9ea563c/tokenizer_config.json",
+      "license": "NVIDIA Open Model License",
+      "note": "Uses the existing Hearth translation prompt protocol. Quality varies by direction; see linked model evidence.",
+      "options": {
+        "promptMode": "riva"
+      },
+      "artifacts": [
+        {
+          "filename": "Riva-Translate-4B-Instruct-v2-Q4_K_M.gguf",
+          "bytes": 2759302720,
+          "sha256": "90c2f48ff5549b770d9aaecb7eea603548bcca035a970a800d9c17781991804d",
+          "url": "https://huggingface.co/liodon-ai/Riva-Translate-4B-Instruct-v2-imatrix-GGUF/resolve/aa8cc2e72e2f97e07b021e4afbc612cff3bf9ae9/Riva-Translate-4B-Instruct-v2-Q4_K_M.gguf"
+        }
+      ]
+    },
+    {
+      "id": "supertonic-3",
+      "name": "Supertonic 3 · ten voices",
+      "family": "Supertonic",
+      "stage": "TTS",
+      "engineId": "supertonic-local",
+      "languages": [
+        "multilingual",
+        "ar",
+        "en"
+      ],
+      "source": "https://huggingface.co/Supertone/supertonic-3",
+      "license": "OpenRAIL-M (weights); MIT (runtime)",
+      "note": "Includes verified F1–F5 and M1–M5 voice styles. Desktop CPU adapter; Arabic/English listening still requires owner testing.",
+      "options": {},
+      "artifacts": [
+        {
+          "filename": "duration_predictor.onnx",
+          "bytes": 3700147,
+          "sha256": "c3eb91414d5ff8a7a239b7fe9e34e7e2bf8a8140d8375ffb14718b1c639325db",
+          "url": "https://huggingface.co/Supertone/supertonic-3/resolve/3cadd1ee6394adea1bd021217a0e650ede09a323/onnx/duration_predictor.onnx"
+        },
+        {
+          "filename": "text_encoder.onnx",
+          "bytes": 36416150,
+          "sha256": "c7befd5ea8c3119769e8a6c1486c4edc6a3bc8365c67621c881bbb774b9902ff",
+          "url": "https://huggingface.co/Supertone/supertonic-3/resolve/3cadd1ee6394adea1bd021217a0e650ede09a323/onnx/text_encoder.onnx"
+        },
+        {
+          "filename": "tts.json",
+          "bytes": 8253,
+          "sha256": "42078d3aef1cd43ab43021f3c54f47d2d75ceb4e75f627f118890128b06a0d09",
+          "url": "https://huggingface.co/Supertone/supertonic-3/resolve/3cadd1ee6394adea1bd021217a0e650ede09a323/onnx/tts.json"
+        },
+        {
+          "filename": "unicode_indexer.json",
+          "bytes": 277676,
+          "sha256": "9bf7346e43883a81f8645c81224f786d43c5b57f3641f6e7671a7d6c493cb24f",
+          "url": "https://huggingface.co/Supertone/supertonic-3/resolve/3cadd1ee6394adea1bd021217a0e650ede09a323/onnx/unicode_indexer.json"
+        },
+        {
+          "filename": "vector_estimator.onnx",
+          "bytes": 256534781,
+          "sha256": "883ac868ea0275ef0e991524dc64f16b3c0376efd7c320af6b53f5b780d7c61c",
+          "url": "https://huggingface.co/Supertone/supertonic-3/resolve/3cadd1ee6394adea1bd021217a0e650ede09a323/onnx/vector_estimator.onnx"
+        },
+        {
+          "filename": "vocoder.onnx",
+          "bytes": 101424195,
+          "sha256": "085de76dd8e8d5836d6ca66826601f615939218f90e519f70ee8a36ed2a4c4ba",
+          "url": "https://huggingface.co/Supertone/supertonic-3/resolve/3cadd1ee6394adea1bd021217a0e650ede09a323/onnx/vocoder.onnx"
+        },
+        {
+          "filename": "F1.json",
+          "bytes": 292046,
+          "sha256": "bbdec6ee00231c2c742ad05483df5334cab3b52fda3ba38e6a07059c4563dbc2",
+          "url": "https://huggingface.co/Supertone/supertonic-3/resolve/3cadd1ee6394adea1bd021217a0e650ede09a323/voice_styles/F1.json"
+        },
+        {
+          "filename": "F2.json",
+          "bytes": 292423,
+          "sha256": "7c722c6a72707b1a77f035d67f0d1351ba187738e06f7683e8c72b1df3477fc6",
+          "url": "https://huggingface.co/Supertone/supertonic-3/resolve/3cadd1ee6394adea1bd021217a0e650ede09a323/voice_styles/F2.json"
+        },
+        {
+          "filename": "F3.json",
+          "bytes": 290794,
+          "sha256": "12f6ef2573baa2defa1128069cb59f203e3ab67c92af77b42df8a0e3a2f7c6ab",
+          "url": "https://huggingface.co/Supertone/supertonic-3/resolve/3cadd1ee6394adea1bd021217a0e650ede09a323/voice_styles/F3.json"
+        },
+        {
+          "filename": "F4.json",
+          "bytes": 291808,
+          "sha256": "c2fa764c1225a76dfc3e2c73e8aa4f70d9ee48793860eb34c295fff01c2e032b",
+          "url": "https://huggingface.co/Supertone/supertonic-3/resolve/3cadd1ee6394adea1bd021217a0e650ede09a323/voice_styles/F4.json"
+        },
+        {
+          "filename": "F5.json",
+          "bytes": 291479,
+          "sha256": "45966e73316415626cf41a7d1c6f3b4c70dbc1ba2bee5c1978ef0ce33244fc8d",
+          "url": "https://huggingface.co/Supertone/supertonic-3/resolve/3cadd1ee6394adea1bd021217a0e650ede09a323/voice_styles/F5.json"
+        },
+        {
+          "filename": "M1.json",
+          "bytes": 291748,
+          "sha256": "e35604687f5d23694b8e91593a93eec0e4eca6c0b02bb8ed69139ab2ea6b0a5b",
+          "url": "https://huggingface.co/Supertone/supertonic-3/resolve/3cadd1ee6394adea1bd021217a0e650ede09a323/voice_styles/M1.json"
+        },
+        {
+          "filename": "M2.json",
+          "bytes": 292055,
+          "sha256": "b76cbf62bac707c710cf0ae5aba5e31eea1a6339a9734bfae33ab98499534a50",
+          "url": "https://huggingface.co/Supertone/supertonic-3/resolve/3cadd1ee6394adea1bd021217a0e650ede09a323/voice_styles/M2.json"
+        },
+        {
+          "filename": "M3.json",
+          "bytes": 290198,
+          "sha256": "ea1ac35ccb91b0d7ecad533a2fbd0eec10c91513d8951e3b25fbba99954e159b",
+          "url": "https://huggingface.co/Supertone/supertonic-3/resolve/3cadd1ee6394adea1bd021217a0e650ede09a323/voice_styles/M3.json"
+        },
+        {
+          "filename": "M4.json",
+          "bytes": 291522,
+          "sha256": "ca8eefad4fcd989c9379032ff3e50738adc547eeb5e221b82593a6d7b3bac303",
+          "url": "https://huggingface.co/Supertone/supertonic-3/resolve/3cadd1ee6394adea1bd021217a0e650ede09a323/voice_styles/M4.json"
+        },
+        {
+          "filename": "M5.json",
+          "bytes": 291469,
+          "sha256": "dd22b92740314321f8ae11c5e87f8dd60d060f15dd3a632b5adf77f471f77af2",
+          "url": "https://huggingface.co/Supertone/supertonic-3/resolve/3cadd1ee6394adea1bd021217a0e650ede09a323/voice_styles/M5.json"
+        }
+      ]
+    }
+  ]
+}

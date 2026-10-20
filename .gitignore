@@ -31,3 +31,7 @@ signing.properties
 
 # locally generated LAN QA overlay; never ship
 app/src/qa/
+
+# Desktop host binaries are built from pinned sources, never checked in.
+/desktop-runtime/native-libs/
+/desktop-media/native-libs/

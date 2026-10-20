@@ -1,0 +1,159 @@
+name: Desktop Windows and macOS
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, 'codex/**']
+    paths:
+      - 'desktop*/**'
+      - 'hearth-core/**'
+      - 'scripts/desktop/**'
+      - 'hearth-tts/src/**'
+      - 'hearth-tts-supertonic/src/**'
+      - 'common-jni/src/main/cpp/**'
+      - 'gradle/**'
+      - '*gradle*'
+      - '.github/workflows/desktop.yml'
+  pull_request:
+    paths:
+      - 'desktop*/**'
+      - 'hearth-core/**'
+      - 'scripts/desktop/**'
+      - 'hearth-tts/src/**'
+      - 'hearth-tts-supertonic/src/**'
+      - 'common-jni/src/main/cpp/**'
+      - 'gradle/**'
+      - '*gradle*'
+      - '.github/workflows/desktop.yml'
+permissions:
+  contents: read
+concurrency:
+  group: desktop-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-15, macos-15-intel, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.12'
+      - uses: gradle/actions/setup-gradle@0b6dd653ba04f4f93bf581ec31e66cbd7dcb644d
+      - name: Verify native and installer tools
+        shell: bash
+        run: |
+          python - <<'PY'
+          import os
+          from pathlib import Path
+          import platform
+          import shutil
+          import subprocess
+
+          print(f"Host: {platform.system()} {platform.machine()}", flush=True)
+          for tool in ("java", "javac", "jpackage", "jimage", "cmake", "ctest"):
+              path = shutil.which(tool)
+              if path is None:
+                  raise SystemExit(f"Required build tool is missing: {tool}")
+              option = "-version" if tool in ("java", "javac") else "--version"
+              if tool == "jimage":
+                  option = "--version"
+              subprocess.run([path, option], check=True)
+          if platform.system() == "Windows":
+              wix = os.environ.get("WIX")
+              roots = [Path(wix) / "bin", Path(wix)] if wix else []
+              for tool in ("candle.exe", "light.exe"):
+                  path = shutil.which(tool) or next((str(root / tool) for root in roots if (root / tool).is_file()), None)
+                  if path is None:
+                      raise SystemExit(f"JDK17 Windows installers require WiX3 tool: {tool}")
+                  print(f"WiX: {path}", flush=True)
+                  subprocess.run([path, "-?"], check=True, stdout=subprocess.DEVNULL)
+                  with open(os.environ["GITHUB_PATH"], "a", encoding="utf-8") as output:
+                      output.write(str(Path(path).parent) + "\n")
+          PY
+      - name: Validate desktop build scripts
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          for source in Path("scripts/desktop").rglob("*.py"):
+              compile(source.read_text(encoding="utf-8"), str(source), "exec")
+          PY
+      - name: Verify model catalog matches Android pins
+        shell: bash
+        run: |
+          python scripts/desktop/generate-catalog.py --check
+          python -m unittest discover -s scripts/desktop -p 'test_*.py'
+      - name: Prepare pinned model-free native dependencies
+        run: python scripts/desktop/prepare-dependencies.py --github-env
+      - name: Build isolated JNI runtimes
+        run: python scripts/desktop/build-native.py --llama-root "$env:HEARTH_LLAMA_ROOT" --ort-root "$env:HEARTH_ORT_ROOT" --jobs 3
+        if: runner.os == 'Windows'
+      - name: Build isolated JNI runtimes
+        run: python3 scripts/desktop/build-native.py --llama-root "$HEARTH_LLAMA_ROOT" --ort-root "$HEARTH_ORT_ROOT" --jobs 3 --metal
+        if: runner.os == 'macOS'
+      - name: Stage verified app-local Microsoft runtime
+        if: runner.os == 'Windows'
+        run: python scripts/desktop/stage-windows-crt.py
+      - name: Build native media and Keychain adapters
+        if: runner.os == 'macOS'
+        run: bash scripts/desktop/build-media.sh
+      - name: Build native media adapter
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: ./scripts/desktop/build-media.ps1
+      - name: Desktop regression tests and application image
+        shell: bash
+        run: ./gradlew -PhearthDesktopOnly=true -PhearthRequireMedia=true :hearth-core:desktopTest :desktop-data:test :desktop-runtime:test :desktop-integration:test :desktop-media:test :desktopApp:desktopTest :desktopApp:createDistributable --console=plain
+      - name: Verify packaged Java runtime modules
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          import subprocess
+
+          # Compose strips runtime commands; inspect the actual image with the build JDK's jimage.
+          images = [path for path in Path("desktopApp/build/compose/binaries/main/app").rglob("modules") if path.parent.name == "lib"]
+          if len(images) != 1:
+              raise SystemExit(f"Expected one packaged Java module image, found {images}")
+          output = subprocess.check_output(["jimage", "list", str(images[0])], text=True)
+          modules = set(re.findall(r"^Module: (\S+)", output, flags=re.MULTILINE))
+          required = {"java.base", "java.desktop", "java.net.http", "jdk.httpserver", "java.logging", "java.prefs", "jdk.unsupported", "jdk.crypto.ec"}
+          missing = required - modules
+          if missing:
+              raise SystemExit(f"Packaged runtime is missing required modules: {sorted(missing)}")
+          print("Packaged runtime modules verified:", ", ".join(sorted(modules)))
+          PY
+      - name: Execute packaged launcher self-check
+        run: python scripts/desktop/check-packaged.py
+      - name: Package macOS disk image
+        if: runner.os == 'macOS'
+        run: ./gradlew -PhearthDesktopOnly=true :desktopApp:packageDmg --console=plain
+      - name: Package Windows installers
+        if: runner.os == 'Windows'
+        shell: bash
+        run: ./gradlew -PhearthDesktopOnly=true :desktopApp:packageMsi :desktopApp:packageExe --console=plain
+      - name: Save desktop distributions and reports
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: hearth-desktop-${{ matrix.os }}
+          path: |
+            desktopApp/build/compose/binaries/main/dmg/*.dmg
+            desktopApp/build/compose/binaries/main/msi/*.msi
+            desktopApp/build/compose/binaries/main/exe/*.exe
+            **/build/test-results/**/TEST-*.xml
+            **/build/reports/tests/**
+            desktop-runtime/native-libs/*/manifest.json
+            build/desktop-packaged-self-check.properties
+          if-no-files-found: warn
