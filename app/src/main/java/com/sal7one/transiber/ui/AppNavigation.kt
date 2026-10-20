@@ -18,6 +18,8 @@ internal class AppNavigation private constructor(
     val isRoot: Boolean get() = page == tab.page
     val canGoBack: Boolean get() = !isRoot || tab != MainTab.CAPTIONS
 
+    internal fun containsInCurrentPath(page: Int): Boolean = page in stacks[tab.ordinal]
+
     fun select(next: MainTab): AppNavigation =
         if (next == tab) replace(listOf(next.page)) else AppNavigation(next, stacks)
 

@@ -51,6 +51,7 @@ internal fun FeatureAction(
 @Composable
 internal fun FeatureOptionsSheet(
     title: String, onDismiss: () -> Unit, scroll: ScrollState = rememberScrollState(),
+    modifier: Modifier = Modifier,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val uiText = rememberUiText()
@@ -63,7 +64,7 @@ internal fun FeatureOptionsSheet(
             Text(title, Modifier.weight(1f).semantics { heading() }, style = MaterialTheme.typography.titleLarge)
             IconButton(onClick = onDismiss) { Icon(Icons.Default.Close, uiText(UiR.string.ui_close_1_s_93864, title)) }
         }
-        Column(Modifier.fillMaxWidth().verticalScroll(scroll).imePadding().padding(20.dp),
+        Column(modifier.fillMaxWidth().verticalScroll(scroll).imePadding().padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp), content = content)
     }
 }

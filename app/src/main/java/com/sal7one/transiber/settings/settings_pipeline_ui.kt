@@ -31,12 +31,12 @@ import kotlinx.coroutines.launch
 /** A directory reads the saved pipeline. Only explicit switches edit their own stage. */
 @Composable
 internal fun SettingsPipelineUi(onFeature: (SettingsLocation, SettingsFeature) -> Unit,
-    onTranslationModels: () -> Unit) {
+    onTranslationModels: () -> Unit, initialConfig: CaptionOverlayConfig? = null) {
     val text = rememberUiText()
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val localAllowed = LocalModelPolicy.allowed(context)
-    var config by remember { mutableStateOf<CaptionOverlayConfig?>(null) }
+    var config by remember { mutableStateOf(initialConfig) }
     var error by remember { mutableStateOf<String?>(null) }
     var translationEditor by rememberSaveable { mutableStateOf<SettingsLocation?>(null) }
     LaunchedEffect(Unit) {

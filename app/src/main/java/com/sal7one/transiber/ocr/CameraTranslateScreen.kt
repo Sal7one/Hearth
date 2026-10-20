@@ -197,15 +197,15 @@ internal fun CameraTranslateScreen(onModels: () -> Unit,onConnections: () -> Uni
         scope.launch {controller.stop();controller.awaitStopped();begin(false,crop)}
     }) }
     if(settings)FeatureOptionsSheet(uiText(UiR.string.ui_camera_reading_settings_a67f8), {settings=false}, settingsScroll) {
-            OutlinedButton(onClick={voice.stop();settings=false;onVoices()}){Text(uiText(UiR.string.ui_voices_read_aloud_64e95))}
+            OutlinedButton(onClick={voice.stop();onVoices()}){Text(uiText(UiR.string.ui_voices_read_aloud_64e95))}
             TranslatorChooser(providerId,localModelId,uiText(UiR.string.ui_used_by_camera_and_the_screen_reading_overlay_ef332),source,target,
-                enabled=!state.closing, onModels={settings=false;onModels()}, onSelect={provider,model->scope.launch {
+                enabled=!state.closing, onModels=onModels, onSelect={provider,model->scope.launch {
                     try { controller.stop();controller.invalidate();voice.stop();selectionStore.update {it.copy(providerId=provider,localModelId=model)} }
                     catch(e: kotlinx.coroutines.CancellationException){throw e}
                 catch(e: Exception){controller.error(e)}
                 }})
             Text(uiText(UiR.string.ui_changing_settings_stops_recognition_your_captured_photo_stays_ava_a5b31),style=MaterialTheme.typography.bodySmall)
             HorizontalDivider()
-            SettingsOcrLocalUi(onDownloads={settings=false;onDownloads()},selected=profileId,onSelect={changeSelection(selection.withProfile(it));settings=false})
+            SettingsOcrLocalUi(onDownloads=onDownloads,selected=profileId,onSelect={changeSelection(selection.withProfile(it));settings=false})
     }
 }

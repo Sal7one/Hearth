@@ -303,13 +303,13 @@ fun ConversationScreen(onModels: () -> Unit = {}, onCloud: () -> Unit = {}, onLa
             if (speaking) TextButton(onClick = { voice.stop() }) { Text(uiText(UiR.string.ui_stop_speech_3f0d2)) }
             Text(uiText.note(sourceChoices), style = MaterialTheme.typography.bodySmall)
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                TextButton(onClick = { options = false; onModels() }) { Text(uiText(UiR.string.ui_models_f3798)) }
-                if (com.sal7one.transiber.byok.ByokPolicy.FEATURE_BYOK) TextButton(onClick = { options = false; onCloud() }) { Text(uiText(UiR.string.ui_cloud_connection_ad1ee)) }
+                TextButton(onClick = onModels) { Text(uiText(UiR.string.ui_models_f3798)) }
+                if (com.sal7one.transiber.byok.ByokPolicy.FEATURE_BYOK) TextButton(onClick = onCloud) { Text(uiText(UiR.string.ui_cloud_connection_ad1ee)) }
                 TextButton(onClick = { controller.languages(state.session.second, state.session.first) }) { Text(uiText(UiR.string.ui_swap_languages_efa6c)) }
             }
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) { Text(uiText(UiR.string.ui_read_translations_aloud_f1394), Modifier.weight(1f)); Switch(automaticSpeech, { automaticSpeech = it; prefs.edit().putBoolean("auto_speech", it).apply() }, modifier = Modifier.semantics { contentDescription = uiText(UiR.string.ui_read_translations_aloud_f1394) }) }
             Text(uiText(UiR.string.ui_uses_your_shared_android_supertonic_or_self_hosted_voice_listenin_614db), style = MaterialTheme.typography.bodySmall)
-            OutlinedButton(onClick={voice.stop();options=false;onVoices()}){Text(uiText(UiR.string.ui_voices_read_aloud_64e95))}
+            OutlinedButton(onClick={voice.stop();onVoices()}){Text(uiText(UiR.string.ui_voices_read_aloud_64e95))}
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) { Text(uiText(UiR.string.ui_save_history_on_this_device_5b5ad), Modifier.weight(1f)); Switch(state.saveHistory, controller::saveHistory, modifier = Modifier.semantics { contentDescription = uiText(UiR.string.ui_save_history_on_this_device_5b5ad) }) }
             Text(uiText(UiR.string.ui_turning_history_off_starts_a_temporary_conversation_earlier_saved_57b46), style = MaterialTheme.typography.bodySmall)
             Text(uiText(UiR.string.ui_translation_text_size_1_s_d50ff, textSize.toInt()))
@@ -320,7 +320,7 @@ fun ConversationScreen(onModels: () -> Unit = {}, onCloud: () -> Unit = {}, onLa
     if (translationSettings) FeatureOptionsSheet(uiText(UiR.string.ui_translator_1fafc), { translationSettings = false }, translationScroll) {
             TranslatorChooser(ConversationTranslationSettings.selected(context),localModelId,
                 uiText(UiR.string.ui_used_by_conversation_face_to_face_and_typed_text_472fa),state.session.first,state.session.second,
-                onModels={translationSettings=false;onModels()},onSelect={provider,model->scope.launch {
+                onModels=onModels,onSelect={provider,model->scope.launch {
                     try { ConversationTranslationSettings.select(context,provider,model) }
                     catch(e: kotlinx.coroutines.CancellationException){throw e}
                     catch(e: Exception){voiceError=e.message ?: e.toString()}

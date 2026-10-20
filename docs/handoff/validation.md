@@ -1,5 +1,10 @@
 # Model roadmap validation — 20 October 2026
 
+Latest UI patch: **0.27.2 / code 92**. See the
+[settings Back/scroll validation addendum](settings-back-validation.md) for the
+686-test configurations, actual Compose restoration checks and current delivery.
+The model/runtime evidence below is the unchanged 0.27.1 baseline.
+
 This is the current implementation evidence for `codex/s25-models-tts-provider`,
 which began from `v0.25.4` (`6c15890b284b6c74074d13d7d45d1311d0cf6035`).
 It supersedes the initial preparation-only checkpoint. The current app version is

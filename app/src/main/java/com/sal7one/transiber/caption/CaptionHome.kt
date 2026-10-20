@@ -166,10 +166,10 @@ fun CaptionHome(
         }
     }
     if (options) FeatureOptionsSheet(uiText(UiR.string.ui_caption_settings_da0c8), { options = false }, optionsScroll) {
-        com.sal7one.transiber.caption.history.CaptionHistoryOptions(cfg, ::update, { options = false; onHistory() })
+        com.sal7one.transiber.caption.history.CaptionHistoryOptions(cfg, ::update, onHistory)
         HorizontalDivider()
         if (basic) {
-            OutlinedButton(onClick = { options = false; onModels() }, modifier = Modifier.fillMaxWidth()) {
+            OutlinedButton(onClick = onModels, modifier = Modifier.fillMaxWidth()) {
                 Text(uiText(UiR.string.setup_basic_manage))
             }
             AdvancedSetupLink()
@@ -182,12 +182,12 @@ fun CaptionHome(
             }
         }
         Text(if (isCloud) uiText(UiR.string.ui_audio_goes_to_your_configured_cloud_provider_77561) else uiText(UiR.string.ui_speech_stays_on_this_phone_c93d7), style = MaterialTheme.typography.bodySmall)
-        OutlinedButton(onClick = { options = false; if (isCloud) onCloud() else onModels() }, modifier = Modifier.fillMaxWidth()) {
+        OutlinedButton(onClick = { if (isCloud) onCloud() else onModels() }, modifier = Modifier.fillMaxWidth()) {
             Text(if (isCloud) uiText(UiR.string.ui_manage_speech_connection_1959e) else uiText(UiR.string.ui_choose_or_download_speech_models_34085))
         }
         if (cfg.mode == CaptionMode.TRANSLATE) {
             HorizontalDivider()
-            com.sal7one.transiber.translation.CaptionTranslatorChooser(cfg, ::update, { options = false; onModels() }, enabled = !running)
+            com.sal7one.transiber.translation.CaptionTranslatorChooser(cfg, ::update, onModels, enabled = !running)
         }
         if (running) Text(uiText(UiR.string.ui_stop_captions_to_change_setup_19d9d), style = MaterialTheme.typography.bodySmall)
         if (cfg.source == CaptionSource.PLAYBACK_CAPTURE) Text(uiText(UiR.string.ui_some_apps_block_audio_capture_use_microphone_if_captions_stay_sil_60ad2), style = MaterialTheme.typography.bodySmall)

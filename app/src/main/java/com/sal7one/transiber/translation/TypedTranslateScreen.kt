@@ -134,12 +134,12 @@ internal fun TypedTranslateScreen(onModels: ()->Unit,onConnections: ()->Unit,onV
     if(options)FeatureOptionsSheet(uiText(UiR.string.ui_translation_settings_2aee9), {options=false}, optionsScroll) {
         if (!advanced) {
             Text(label, style=MaterialTheme.typography.titleMedium)
-            OutlinedButton(onClick={options=false;onModels()},modifier=Modifier.fillMaxWidth()) {
+            OutlinedButton(onClick=onModels,modifier=Modifier.fillMaxWidth()) {
                 Text(uiText(UiR.string.progressive_change_bundle))
             }
         }
         if (advanced) TranslatorChooser(ConversationTranslationSettings.selected(context),localModelId,
-            uiText(UiR.string.ui_used_by_typed_text_conversation_and_face_to_face_a208e),source,target,onModels={options=false;onModels()},
+            uiText(UiR.string.ui_used_by_typed_text_conversation_and_face_to_face_a208e),source,target,onModels=onModels,
             onSelect={provider,model->scope.launch {
                 try { ConversationTranslationSettings.select(context,provider,model) }
                 catch(e: kotlinx.coroutines.CancellationException){throw e}
@@ -149,7 +149,7 @@ internal fun TypedTranslateScreen(onModels: ()->Unit,onConnections: ()->Unit,onV
             Text(uiText(UiR.string.ui_translate_as_i_type_e7304),Modifier.weight(1f))
             Switch(automatic,{ enabled -> TypedTranslationSettings.automatic(context,enabled);inputOrigin=TypedInputOrigin.TYPED},modifier=Modifier.semantics {contentDescription=uiText(UiR.string.ui_translate_as_i_type_e7304)})
         }
-        OutlinedButton(onClick={options=false;onVoices()},modifier=Modifier.fillMaxWidth()){Text(uiText(UiR.string.ui_voices_read_aloud_64e95))}
-        if(com.sal7one.transiber.byok.ByokPolicy.FEATURE_BYOK)TextButton(onClick={options=false;onConnections()}){Text(uiText(UiR.string.ui_manage_cloud_connections_376a5))}
+        OutlinedButton(onClick=onVoices,modifier=Modifier.fillMaxWidth()){Text(uiText(UiR.string.ui_voices_read_aloud_64e95))}
+        if(com.sal7one.transiber.byok.ByokPolicy.FEATURE_BYOK)TextButton(onClick=onConnections){Text(uiText(UiR.string.ui_manage_cloud_connections_376a5))}
     }
 }

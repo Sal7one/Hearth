@@ -28,10 +28,13 @@ import com.sal7one.transiber.preferences.StartupModelAudit
 import com.sal7one.transiber.setup.ModelBindingRepairNotice
 import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.testTagsAsResourceId
 import com.sal7one.transiber.ui.AppNavigation
 import com.sal7one.transiber.ui.MainTab
+import com.sal7one.transiber.ui.SettingsSheetReturn
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -175,6 +178,22 @@ class MainActivity : AppCompatActivity() {
     var homeDestination by rememberSaveable { mutableStateOf<Int?>(null) }
     var homeEntry by rememberSaveable { mutableIntStateOf(0) }
     var quickSettings by rememberSaveable { mutableStateOf(false) }
+    var settingsReturns by rememberSaveable(stateSaver = listSaver(
+     save = { history: List<SettingsSheetReturn> -> SettingsSheetReturn.saveHistory(history) },
+     restore = { SettingsSheetReturn.restoreHistory(it) },
+    )) { mutableStateOf(emptyList<SettingsSheetReturn>()) }
+    // Keep real pipeline data while a settings child is visible. Restoring a
+    // scrollable loading-only sheet would clamp its saved position to the top.
+    var settingsConfig by remember { mutableStateOf<CaptionOverlayConfig?>(null) }
+    var settingsConfigError by remember { mutableStateOf<String?>(null) }
+    var settingsConfigAttempt by remember { mutableIntStateOf(0) }
+    LaunchedEffect(settingsConfigAttempt) {
+     try {
+      CaptionConfigStore.config(this@MainActivity).collect { settingsConfig = it; settingsConfigError = null }
+     } catch (e: kotlinx.coroutines.CancellationException) { throw e }
+     catch (e: Exception) { settingsConfigError = e.message ?: e.toString() }
+    }
+    fun retrySettingsConfig() { settingsConfigError = null; settingsConfigAttempt++ }
     val atHome = simple && showHome
     val page = route.page
     val tvHome = tvUi && (atHome || page == 0)
@@ -204,7 +223,7 @@ class MainActivity : AppCompatActivity() {
     LaunchedEffect(Unit) { if (intent.getIntExtra("page", 0) == 12) { voiceLocation = captionVoiceLocation(); voiceEntry++ } }
     val requestedPage by navigation.collectAsState()
     LaunchedEffect(requestedPage) {
-     requestedPage?.let { if (it == 15) setupStep = EasySetupStep.CHOICE; if (it == 4) { speechLocation = SettingsLocation.CLOUD; speechEntry++ }; if (it == 12) { voiceLocation = captionVoiceLocation(); voiceEntry++ }; focus.clearFocus(); route = AppNavigation.initial(it); homeDestination = null; showHome = false; navigation.value = null }
+     requestedPage?.let { if (it == 15) setupStep = EasySetupStep.CHOICE; if (it == 4) { speechLocation = SettingsLocation.CLOUD; speechEntry++ }; if (it == 12) { voiceLocation = captionVoiceLocation(); voiceEntry++ }; focus.clearFocus(); quickSettings = false; settingsReturns = emptyList(); route = AppNavigation.initial(it); homeDestination = null; showHome = false; navigation.value = null }
     }
     var faceLayout by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(page, atHome, faceLayout) {
@@ -220,15 +239,23 @@ class MainActivity : AppCompatActivity() {
      voiceLocation = location ?: if (com.sal7one.transiber.voice.VoiceSettings.choice(this@MainActivity).backend == "remote") SettingsLocation.CLOUD else SettingsLocation.LOCAL
      voiceEntry++; go(12)
     }
-    fun home() { focus.clearFocus(); homeDestination = null; showHome = true }
+    fun home() { focus.clearFocus(); quickSettings = false; settingsReturns = emptyList(); homeDestination = null; showHome = true }
     fun back() {
      focus.clearFocus()
-     if (intent.action == android.content.Intent.ACTION_PROCESS_TEXT && page == 11 && route.isRoot) { finish(); return }
-     if (tvUi) { home(); return }
      if (page == 15 && !tvUi && setupStep.back() != null) {
       setupStep = requireNotNull(setupStep.back())
       return
      }
+     settingsReturns.lastOrNull()?.takeIf { !tvUi && it.reachedFrom(route) }?.let { origin ->
+      route = origin.origin
+      showHome = origin.home
+      homeDestination = origin.homeDestination
+      settingsReturns = settingsReturns.dropLast(1)
+      quickSettings = true
+      return
+     }
+     if (intent.action == android.content.Intent.ACTION_PROCESS_TEXT && page == 11 && route.isRoot) { finish(); return }
+     if (tvUi) { home(); return }
      if (intent.getBooleanExtra("returnToReading", false) && (route.isRoot || page == intent.getIntExtra("page", 0))) finish()
      else if (simple && (route.isRoot || page == homeDestination)) home() else route = route.back()
     }
@@ -240,21 +267,43 @@ class MainActivity : AppCompatActivity() {
       SettingsFeature.CAMERA -> localModels("Camera")
      }
     }
-    fun reading() {
+    fun fromSettingsSheet(open: () -> Unit) {
+     val origin = route
+     val originHome = atHome
+     val originDestination = homeDestination
+     quickSettings = false
+     open()
+     settingsReturns = SettingsSheetReturn.push(settingsReturns,
+      SettingsSheetReturn(origin, originHome, originDestination, route.page))
+    }
+    fun reading(preserveOrigin: Boolean = false) {
      com.sal7one.transiber.home.HomeServiceStore.remember(this@MainActivity, com.sal7one.transiber.home.HomeService.SCREEN)
-     if (simple) { homeEntry++; home() }
+     if (simple && !preserveOrigin) { homeEntry++; home() }
      startActivity(android.content.Intent(this@MainActivity, com.sal7one.transiber.reading.ReadingStartActivity::class.java)) }
-    BackHandler(enabled = !atHome && !tvHome && (simple || route.canGoBack)) { back() }
-    if (quickSettings && !tvUi) SettingsQuickSheet(
-     onDismiss = { quickSettings = false },
-     onFeature = { location, feature -> quickSettings = false; settingsFeature(location, feature) },
-     onTranslationModels = { quickSettings = false; localModels("Translation") },
-     onPage = { quickSettings = false; go(it) },
-     onReading = { quickSettings = false; reading() },
+    LaunchedEffect(tvUi) { if (tvUi) { quickSettings = false; settingsReturns = emptyList() } }
+    BackHandler(enabled = !atHome && !tvHome && (simple || route.canGoBack || settingsReturns.isNotEmpty())) { back() }
+    BackHandler(enabled = quickSettings && !tvUi && settingsConfig == null) { quickSettings = false }
+    val readySettings = settingsConfig
+    RetainedSettingsSheet(visible = quickSettings && !tvUi, ready = readySettings != null) { scroll ->
+     SettingsQuickSheet(
+      scroll = scroll, config = checkNotNull(readySettings),
+      onDismiss = { quickSettings = false },
+      onFeature = { location, feature -> fromSettingsSheet { settingsFeature(location, feature) } },
+      onTranslationModels = { fromSettingsSheet { localModels("Translation") } },
+      onPage = { destination -> fromSettingsSheet { go(destination) } },
+      onReading = { reading(preserveOrigin = true) },
+     )
+    }
+    if (quickSettings && !tvUi && readySettings == null && settingsConfigError != null) AlertDialog(
+     onDismissRequest = { quickSettings = false },
+     title = { Text(uiText(R.string.setup_preferences_failed)) },
+     text = { Text(settingsConfigError.orEmpty()) },
+     confirmButton = { TextButton(onClick = { retrySettingsConfig() }) { Text(uiText(R.string.setup_preferences_retry)) } },
+     dismissButton = { TextButton(onClick = { quickSettings = false }) { Text(uiText(R.string.ui_close_bbfa7)) } },
     )
     FeatureBackdrop(artwork = when { atHome -> null; page == 0 -> R.drawable.home_captions; page == 7 -> R.drawable.home_conversation; page == 10 -> R.drawable.home_camera; page == 11 -> R.drawable.home_text; else -> R.drawable.home_face },
      tint = androidx.compose.ui.graphics.Color(when(page) { 7 -> 0xFFEAA077; 10 -> 0xFFEDA84C; 11 -> 0xFF9470F5; else -> 0xFF448EFF })) {
-    Scaffold(containerColor = androidx.compose.ui.graphics.Color.Transparent, contentColor = MaterialTheme.colorScheme.onBackground, topBar = {
+    Scaffold(modifier = Modifier.semantics { testTagsAsResourceId = true }, containerColor = androidx.compose.ui.graphics.Color.Transparent, contentColor = MaterialTheme.colorScheme.onBackground, topBar = {
      if (!tvHome) TopAppBar(colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface.copy(alpha = .55f)), title = { Text(if (atHome || tvHome) "Hearth" else if (tvUi) uiText(R.string.tv_setup_title) else when(page) {
       0 -> uiText(R.string.label_maintab_captions_title); 1 -> uiText(R.string.ui_models_f3798); 2 -> uiText(R.string.nav_downloads); 3 -> uiText(R.string.label_maintab_settings_title)
       4 -> uiText(R.string.nav_speech_settings); 5 -> uiText(R.string.nav_advanced_captions)
@@ -262,19 +311,19 @@ class MainActivity : AppCompatActivity() {
       8 -> uiText(R.string.ui_local_benchmark_3acfe); 9 -> uiText(R.string.label_settingsfeature_translation_label); 10 -> uiText(R.string.label_maintab_camera_title)
       11 -> uiText(R.string.label_maintab_translate_title); 12 -> uiText(R.string.label_settingsfeature_voices_label); 13 -> uiText(R.string.ui_appearance_navigation_433af); 14 -> uiText(R.string.overlay_shortcuts_title); 15 -> uiText(R.string.ui_easy_setup_35fb5); 16 -> uiText(R.string.caption_history_title); else -> uiText(R.string.nav_help)
      }, style = MaterialTheme.typography.titleMedium) },
-      navigationIcon = { if (!atHome && !tvHome && (simple || !route.isRoot)) IconButton(onClick = { if (page == 16) onBackPressedDispatcher.onBackPressed() else back() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, uiText(R.string.ui_back_b52b3)) } },
+      navigationIcon = { if (!atHome && !tvHome && (simple || !route.isRoot || settingsReturns.isNotEmpty())) IconButton(modifier = Modifier.testTag("app-back"), onClick = { if (page == 16) onBackPressedDispatcher.onBackPressed() else back() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, uiText(R.string.ui_back_b52b3)) } },
       actions = {
-       if (simple && !atHome && !tvUi) IconButton(onClick = { home() }) { Icon(Icons.Default.Home, uiText(R.string.nav_home)) }
+       if (simple && !atHome && !tvUi) IconButton(modifier = Modifier.testTag("app-home"), onClick = { home() }) { Icon(Icons.Default.Home, uiText(R.string.nav_home)) }
        if (television && fullInterface) TextButton(onClick = { fullInterface = false; home() }) { Text(uiText(R.string.tv_mode)) }
        if (!tvUi) SetupModePicker()
-       if (!tvUi) IconButton(onClick = { quickSettings = true }) { Icon(Icons.Default.Settings, uiText(R.string.nav_quick_settings)) }
+       if (!tvUi) IconButton(modifier = Modifier.testTag("quick-settings-open"), onClick = { if (settingsConfigError != null) retrySettingsConfig(); quickSettings = true }) { Icon(Icons.Default.Settings, uiText(R.string.nav_quick_settings)) }
       })
     }, bottomBar = {
      if (!simple) NavigationBar {
       MainTab.entries.forEach { tab ->
        NavigationBarItem(
         selected = route.tab == tab,
-        onClick = { focus.clearFocus(); route = route.select(tab) },
+        onClick = { focus.clearFocus(); quickSettings = false; settingsReturns = emptyList(); route = route.select(tab) },
         icon = { Icon(when(tab) {
          MainTab.CAPTIONS -> Icons.Default.ClosedCaption
          MainTab.TALK -> Icons.Default.Forum
@@ -291,6 +340,7 @@ class MainActivity : AppCompatActivity() {
      Column(Modifier.fillMaxSize().padding(padding)) {
       nativeFailure?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(16.dp)) }
       preferencesFailure?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(16.dp)) }
+      if (quickSettings && readySettings == null && settingsConfigError == null) LinearProgressIndicator(Modifier.fillMaxWidth())
       ModelBindingRepairNotice(onRepair = { localModels("Speech") }, launchError = modelCheckError)
       Box(Modifier.weight(1f)) {
        screenState.SaveableStateProvider(com.sal7one.transiber.ui.navigationStateKey(tvUi, atHome, page)) {
@@ -320,20 +370,26 @@ class MainActivity : AppCompatActivity() {
         0 -> CaptionHome(onModels = { go(1) }, onCloud = { speechSettings(SettingsLocation.CLOUD) }, onHistory = { go(16) })
         1 -> ModelsScreen(onDownloads = { go(2) }, onVoices = { voiceSettings(SettingsLocation.LOCAL) }, initialSection = modelsSection)
         2 -> DownloadsScreen(onBrowseModels = { go(1) }, onVoices = { voiceSettings(SettingsLocation.LOCAL) })
-        3 -> SettingsScreen(
+        3 -> if (readySettings != null) SettingsScreen(
+            initialConfig = readySettings,
             onEasySetup = { go(15) }, onHistory = { go(16) },
             onAppearance = { go(13) }, onShortcuts = { go(14) },
             onFeature = ::settingsFeature,
             onTranslationModels = { localModels("Translation") },
             onDownloads = { go(2) }, onBenchmark = { go(8) }, onAdvanced = { go(5) }, onHelp = { go(6) },
-        )
+        ) else Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            settingsConfigError?.let { failure ->
+                Text(failure, color = MaterialTheme.colorScheme.error)
+                TextButton(onClick = { retrySettingsConfig() }) { Text(uiText(R.string.setup_preferences_retry)) }
+            } ?: LinearProgressIndicator(Modifier.fillMaxWidth())
+        }
         15 -> com.sal7one.transiber.setup.EasySetupScreen(step=setupStep,onStep={setupStep=it},onCaptions={go(0)},onHome={home()},onSettings={go(3)},onDownloads={go(2)})
         13 -> Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) { AppearanceSettings() }
         14 -> Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp)) { SettingsShortcutsUi() }
         4 -> SettingsSpeechScreen(speechLocation, speechEntry, onHistory = { go(16) })
         5 -> CaptionScreen(onBrowseModels = { go(1) })
         7 -> ConversationScreen(onModels = { go(1) }, onCloud = { speechSettings(SettingsLocation.CLOUD) }, onLayoutChanged = { faceLayout = it }, initialFaceToFace = faceLayout, onVoices={voiceSettings()})
-        10 -> com.sal7one.transiber.ocr.CameraTranslateScreen(onModels = { localModels("Camera") }, onConnections = { translationSettings(SettingsLocation.CLOUD) }, onDownloads = { go(2) },onVoices={voiceSettings()},sharedImage=sharedImage,onShareConsumed={sharedImage=null},onReading={reading()})
+        10 -> com.sal7one.transiber.ocr.CameraTranslateScreen(onModels = { localModels("Camera") }, onConnections = { translationSettings(SettingsLocation.CLOUD) }, onDownloads = { go(2) },onVoices={voiceSettings()},sharedImage=sharedImage,onShareConsumed={sharedImage=null},onReading={reading(preserveOrigin = true)})
         11 -> com.sal7one.transiber.translation.TypedTranslateScreen(onModels={localModels("Translation")},onConnections={translationSettings(SettingsLocation.CLOUD)},onVoices={voiceSettings()},sharedText=sharedText,translateSharedTextImmediately=translateSharedTextImmediately,onShareConsumed={sharedText=null;translateSharedTextImmediately=false})
         12 -> com.sal7one.transiber.voice.VoiceSetup(onDownloads={go(2)}, initialLocation=voiceLocation, entryRevision=voiceEntry)
         16 -> com.sal7one.transiber.caption.history.CaptionHistoryScreen()

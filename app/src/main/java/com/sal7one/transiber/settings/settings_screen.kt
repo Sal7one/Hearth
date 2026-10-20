@@ -19,6 +19,7 @@ import com.sal7one.transiber.runtime.LocalModelPolicy
 
 @Composable
 internal fun SettingsScreen(
+    initialConfig: com.sal7one.transiber.caption.CaptionOverlayConfig? = null,
     onEasySetup: () -> Unit,
     onAppearance: () -> Unit,
     onShortcuts: () -> Unit,
@@ -37,7 +38,7 @@ internal fun SettingsScreen(
     var tools by rememberSaveable { mutableStateOf(false) }
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        SettingsPipelineUi(onFeature, onTranslationModels)
+        SettingsPipelineUi(onFeature, onTranslationModels, initialConfig)
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             if (localAllowed) OutlinedButton(onClick = onEasySetup) { Text(uiText(UiR.string.settings_flow_bundles)) }
             else if (ByokPolicy.FEATURE_BYOK) OutlinedButton(onClick = onEasySetup) { Text(uiText(UiR.string.ui_easy_setup_35fb5)) }
