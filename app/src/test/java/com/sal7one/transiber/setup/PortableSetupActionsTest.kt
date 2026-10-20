@@ -6,6 +6,10 @@ import com.sal7one.common_jni.model.ModelIntegrity
 import com.sal7one.transiber.caption.*
 import com.sal7one.transiber.models.PublisherSpeechReceipts
 import com.sal7one.transiber.models.SpeechDownloads
+import com.sal7one.transiber.voice.VoiceChoice
+import com.sal7one.transiber.voice.VoiceSettings
+import com.sal7one.transiber.i18n.uiText
+import com.sal7one.transiber.R
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.json.JSONArray
@@ -26,6 +30,33 @@ import java.util.UUID
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [28], manifest = Config.NONE, application = Application::class)
 class PortableSetupActionsTest {
+    @Test fun magpieGenderFiltersFailPreviewAndApplyWithoutChangingSavedChoices() = runBlocking {
+        val context = RuntimeEnvironment.getApplication()
+        val previous = VoiceSettings.choice(context)
+        try {
+            val selected = VoiceChoice(backend = "supertonic", voice = "John", family = "magpie")
+            VoiceSettings.save(context, selected)
+            val actions = PortableSetupActions(context)
+            val error = context.uiText()(R.string.magpie_gender_unverified)
+            listOf(CaptionSpeakerChoice.NATIVE, CaptionSpeakerChoice.SHARED, CaptionSpeakerChoice.CUSTOM).forEach { choice ->
+                val voice = PortableVoiceStage(enabled = true, choice = choice, gender = SpeakerGender.FEMALE,
+                    voiceId = "John".takeIf { choice == CaptionSpeakerChoice.NATIVE },
+                    family = "magpie".takeIf { choice == CaptionSpeakerChoice.NATIVE })
+                val setup = PortableSetup("Unsupported gender filter", voice = voice)
+                val preview = actions.preview(setup)
+                assertFalse(preview.ready)
+                assertTrue(preview.issues.toString(), error in preview.issues)
+                val failure = runCatching { actions.apply(setup) }.exceptionOrNull()
+                assertNotNull(failure)
+                assertTrue(failure!!.message.orEmpty().contains(error))
+                assertEquals(selected, VoiceSettings.choice(context))
+                assertFalse(CaptionSpeakerFactory.isAvailable(context, choice, SpeakerGender.FEMALE))
+            }
+        } finally {
+            VoiceSettings.save(context, previous)
+        }
+    }
+
     @Test fun trustedPublisherReceiptResolvesOfflineAndExportsDownloadableCatalogReference() = runBlocking {
         val context = RuntimeEnvironment.getApplication()
         val root = File(context.filesDir, "speech-models")

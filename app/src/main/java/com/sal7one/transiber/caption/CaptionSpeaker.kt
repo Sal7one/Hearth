@@ -3,7 +3,6 @@ package com.sal7one.transiber.caption
 import android.content.Context
 import com.sal7one.transiber.byok.*
 import com.sal7one.transiber.voice.*
-import java.io.File
 
 interface CaptionSpeaker {
     fun speak(text: String, languageTag: String): Boolean
@@ -15,9 +14,12 @@ interface CaptionSpeaker {
 }
 object CaptionSpeakerFactory {
     fun isAvailable(context: Context, choice: CaptionSpeakerChoice, gender: SpeakerGender = SpeakerGender.ANY): Boolean = when(choice) {
-        CaptionSpeakerChoice.SYSTEM, CaptionSpeakerChoice.SHARED -> true
-        CaptionSpeakerChoice.CUSTOM -> VoiceSettings.customBackend(context)!=null
-        CaptionSpeakerChoice.NATIVE -> VoiceModels(File(context.filesDir,"voice-models")).ready(VoiceSettings.choice(context).voice, gender.toVoiceGender())
+        CaptionSpeakerChoice.SYSTEM -> true
+        CaptionSpeakerChoice.SHARED -> VoiceSettings.choice(context).backend != "supertonic" || VoiceSettings.localReady(context, gender.toVoiceGender())
+        CaptionSpeakerChoice.CUSTOM -> VoiceSettings.customBackend(context)?.let {
+            it != "supertonic" || VoiceSettings.localReady(context, gender.toVoiceGender())
+        } ?: false
+        CaptionSpeakerChoice.NATIVE -> VoiceSettings.localReady(context, gender.toVoiceGender())
         CaptionSpeakerChoice.CLOUD -> ByokPolicy.FEATURE_BYOK && runCatching { CloudVoiceStore.hasKey(context, CloudVoiceStore.config(context)) }.getOrDefault(false)
     }
     fun create(context: Context, choice: CaptionSpeakerChoice, onError: (String)->Unit = {}): CaptionSpeaker = when(choice) {

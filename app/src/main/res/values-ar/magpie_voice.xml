@@ -18,4 +18,7 @@
     <string name="ming_small_coverage">٧ لغات، تدعم الإنجليزية ولا تدعم العربية. نموذج أساسي ٠٫٥ مليار؛ حزمة خادم بنحو ٣ غيغابايت. خمسة أصوات إنجليزية أو صوت مرجعي مع نصه.</string>
     <string name="ming_tiny_coverage">٧ لغات، تدعم الإنجليزية ولا تدعم العربية. نموذج أساسي ٧٫٩ مليار، النشط ١٫٣ مليار؛ حزمة خادم بنحو ١٨ غيغابايت. للخوادم فقط.</string>
     <string name="magpie_custom_default">الصوت المخصص الافتراضي: MagpieTTS v2607 · %1$s</string>
+    <string name="magpie_gender_unverified">جنس متحدثي Magpie غير موثّق. اختر «حسب الصوت المختار» واستمع للأصوات في إعدادات القراءة بصوت عالٍ.</string>
+    <string name="local_voice_not_ready">ثبّت %1$s واختر صوتًا متاحًا في إعدادات القراءة بصوت عالٍ.</string>
+    <string name="local_voice_language_unsupported">لا يدعم %1$s اللغة %2$s. اختر صوت أندرويد مثبتًا أو خادم أصوات متوافقًا.</string>
 </resources>

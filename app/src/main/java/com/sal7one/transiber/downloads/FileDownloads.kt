@@ -292,7 +292,7 @@ class FileDownloads(private val context: Context) {
   VoiceCatalog.find(modelId)?.let { asset ->
    val job = currentCoroutineContext()
    val installed = context.contentResolver.openInputStream(uri(id))?.use { input ->
-    VoiceModels(File(context.filesDir,"voice-models")).import(input,asset) {job.ensureActive()}
+    VoiceModels(File(context.filesDir,"voice-models")){com.sal7one.transiber.voice.MagpiePolicy.requireAllowed(context,"Magpie model installation")}.import(input,asset) {job.ensureActive()}
    } ?: error("Cannot open downloaded voice model")
    return@withContext installed.id
   }

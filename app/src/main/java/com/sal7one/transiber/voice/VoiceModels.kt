@@ -8,7 +8,7 @@ import java.security.MessageDigest
 import java.util.zip.ZipInputStream
 
 /** Both public downloads and document imports use this verified installation sink. */
-internal class VoiceModels(private val root: File) {
+internal class VoiceModels(private val root: File, private val permitMagpie: () -> Unit = {}) {
     fun file(asset: VoiceAsset) = File(root,if(asset.id.startsWith("voice-magpie-"))"magpie/${asset.filename}" else asset.filename)
     fun installed(asset: VoiceAsset) = file(asset).let {it.isFile && it.length()==asset.bytes}
     fun ready(voice: String, gender: VoiceGender = VoiceGender.ANY): Boolean {
@@ -31,12 +31,14 @@ internal class VoiceModels(private val root: File) {
             val hash=digest.digest().joinToString(""){"%02x".format(it)}
             if(size==com.sal7one.hearth.tts.magpie.MagpieCatalog.tokenizerSegmentsBytes && hash==com.sal7one.hearth.tts.magpie.MagpieCatalog.tokenizerSegmentsSha256) {
                 require(expected==null){"Expected a different voice component"}
+                permitMagpie()
                 com.sal7one.hearth.tts.magpie.MagpieModels(File(root,"magpie")).installTokenizerSegments(temporary,cancelled)
                 return VoiceAsset("voice-magpie-tokenizer","tokenizer.ranges","tokenizer.ranges",size,hash,com.sal7one.hearth.tts.magpie.MagpieCatalog.source)
             }
             val asset=VoiceCatalog.assets.firstOrNull {it.bytes==size && it.sha256==hash}
                 ?: error("Voice file does not match a pinned Hearth speech voice component")
             require(expected==null || expected==asset){"Downloaded voice file does not match the selected asset"}
+            if(asset.id.startsWith("voice-magpie-"))permitMagpie()
             cancelled();file(asset).parentFile?.mkdirs();Files.move(temporary.toPath(),file(asset).toPath(),StandardCopyOption.ATOMIC_MOVE,StandardCopyOption.REPLACE_EXISTING)
             return asset
         }finally {temporary.delete()}

@@ -12,6 +12,8 @@ import com.sal7one.hearth.tts.ArticleSpeech
 import com.sal7one.hearth.tts.SpeechOptions
 import com.sal7one.hearth.tts.VoicePreference
 import com.sal7one.hearth.tts.supertonic.SupertonicSpeechEngine
+import com.sal7one.transiber.R
+import com.sal7one.transiber.i18n.uiText
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collect
 import com.sal7one.common_jni.voice.VoiceText
@@ -131,9 +133,12 @@ internal class VoicePlayer(context: Context,private val backendOverride: String?
         com.sal7one.transiber.runtime.LocalModelPolicy.requireAllowed(context, "downloaded speech voices")
         val baseLanguage=Locale.forLanguageTag(request.language).language
         val magpie=choice.family=="magpie"
-        if(magpie)MagpiePolicy.requireAllowed(context,"Magpie speech playback")
+        if(magpie) {
+            MagpiePolicy.requireAllowed(context,"Magpie speech playback")
+            require(request.gender==VoiceGender.ANY){context.uiText()(R.string.magpie_gender_unverified)}
+        }
         val languages=if(magpie)com.sal7one.hearth.tts.magpie.MagpieCatalog.languages else VoiceCatalog.languages
-        require(baseLanguage in languages){"Supertonic 3 does not support ${request.language}. Choose an installed Android voice or a compatible voice server"}
+        require(baseLanguage in languages){context.uiText()(R.string.local_voice_language_unsupported,if(magpie)"MagpieTTS v2607" else "Supertonic 3",request.language)}
         val voice=if(magpie)choice.voice else VoiceGenderMapping.supertonicVoice(choice.voice,request.gender)
         val engine=if(magpie)com.sal7one.hearth.tts.magpie.MagpieSpeechEngine(File(context.filesDir,"voice-models/magpie")) else SupertonicSpeechEngine(File(context.filesDir,"voice-models"))
         val reader=ArticleReader(engine)

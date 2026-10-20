@@ -239,13 +239,17 @@ for flavor, architecture in [(f, a) for f in ('play','foss') for a in (*ABIS, 'u
         for item in phone_assets.iterdir():
             if item.is_file():
                 assert archive.read('assets/phone-setup/' + item.name) == item.read_bytes(), item.name
-        for family in ['speech', 'translation', 'whisper-vulkan']:
+        for family in ['speech', 'translation', 'whisper-vulkan', 'speech-expansion', 'ct2']:
             name = f'assets/licenses/{family}/runtime-build.json'
             assert archive.read(name) == (root/'common-jni/src/main'/name).read_bytes(), name
             for notice in (root/'common-jni/src/main/assets/licenses'/family).rglob('*'):
                 if notice.is_file():
                     packaged = 'assets/licenses/' + family + '/' + notice.relative_to(root/'common-jni/src/main/assets/licenses'/family).as_posix()
                     assert archive.read(packaged) == notice.read_bytes(), f'Runtime notice changed or missing: {packaged}'
+        for asset in (magpie_root/'assets').rglob('*'):
+            if asset.is_file():
+                packaged = 'assets/' + asset.relative_to(magpie_root/'assets').as_posix()
+                assert archive.read(packaged) == asset.read_bytes(), f'Magpie source/notice changed or missing: {packaged}'
         for item in ocr_assets.glob('*.json'):
             assert archive.read('assets/ocr/' + item.name) == item.read_bytes(), item.name
         assert 'assets/licenses/ggml-cpu-NOTICES.txt' in archive.namelist()

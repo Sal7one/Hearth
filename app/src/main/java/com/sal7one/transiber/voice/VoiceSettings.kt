@@ -19,6 +19,17 @@ internal object VoiceSettings {
         p.getString("voice","F1").orEmpty(),p.getFloat("rate",1f).coerceIn(.5f,2f),p.getInt("steps",5).coerceIn(2,12),p.getString("local-family","supertonic").orEmpty().takeIf {it in setOf("supertonic","magpie")} ?: "supertonic")}
     fun familyVoice(context: Context,family: String): String = prefs(context).getString("family-voice-$family",null)
         ?: if(family=="magpie")"John" else "F1"
+    fun localReady(context: Context, gender: VoiceGender = VoiceGender.ANY): Boolean {
+        val selected = choice(context)
+        val root = java.io.File(context.filesDir, "voice-models")
+        return LocalVoiceReadiness.ready(
+            selected.family, selected.voice, gender,
+            com.sal7one.transiber.runtime.LocalModelPolicy.allowed(context),
+            supertonicReady = { VoiceModels(root).ready(selected.voice, gender) },
+            magpieAvailable = { MagpiePolicy.available(context) },
+            magpieReady = { com.sal7one.hearth.tts.magpie.MagpieModels(java.io.File(root, "magpie")).ready() },
+        )
+    }
     fun customBackend(context: Context): String? = prefs(context).let { p ->
         VoiceSelection.customBackend(p.getString("backend","system").orEmpty(), p.getString("custom-backend",null), ByokPolicy.FEATURE_BYOK)
     }

@@ -28,7 +28,7 @@ internal fun VoiceSetup(onDownloads: () -> Unit, initialLocation: SettingsLocati
     var choice by remember {mutableStateOf(VoiceSettings.choice(context))}
     var error by remember {mutableStateOf<String?>(null)};var busy by remember {mutableStateOf(false)}
     var revision by remember {mutableIntStateOf(0)}
-    val models=remember {VoiceModels(File(context.filesDir,"voice-models"))}
+    val models=remember {VoiceModels(File(context.filesDir,"voice-models")){MagpiePolicy.requireAllowed(context,"Magpie model import")}}
     var language by rememberSaveable {mutableStateOf("en")}
     var systemVoices by remember {mutableStateOf(emptyList<android.speech.tts.Voice>())}
     var speaking by remember {mutableStateOf(false)}

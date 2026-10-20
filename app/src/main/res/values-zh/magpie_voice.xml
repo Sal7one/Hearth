@@ -18,4 +18,7 @@
     <string name="ming_small_coverage">支持 7 种语言，包括英语，不支持阿拉伯语。0.5B 主干，服务器包约 3 GB。提供五个英语预设声音或使用参考音频及文本。</string>
     <string name="ming_tiny_coverage">支持 7 种语言，包括英语，不支持阿拉伯语。7.9B 主干、1.3B 激活参数，服务器包约 18 GB。仅在服务器运行。</string>
     <string name="magpie_custom_default">自定义默认：MagpieTTS v2607 · %1$s</string>
+    <string name="magpie_gender_unverified">Magpie 说话人的性别尚未验证。请选择“跟随所选声音”，并在朗读设置中试听声音。</string>
+    <string name="local_voice_not_ready">请在朗读设置中安装 %1$s 并选择可用声音。</string>
+    <string name="local_voice_language_unsupported">%1$s 不支持 %2$s。请选择已安装的 Android 声音或兼容的语音服务器。</string>
 </resources>

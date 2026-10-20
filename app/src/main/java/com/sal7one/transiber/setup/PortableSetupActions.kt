@@ -13,6 +13,8 @@ import com.sal7one.transiber.reading.ReadingOverlayService
 import com.sal7one.transiber.runtime.LocalWorkGate
 import com.sal7one.transiber.translation.*
 import com.sal7one.transiber.voice.*
+import com.sal7one.transiber.R
+import com.sal7one.transiber.i18n.uiText
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
@@ -147,12 +149,13 @@ internal class PortableSetupActions(context: Context) {
                         val family = voice.family ?: "supertonic"
                         val id = voice.voiceId ?: VoiceSettings.familyVoice(context, family)
                         if (family == "magpie") {
+                            check(voice.gender == SpeakerGender.ANY) { context.uiText()(R.string.magpie_gender_unverified) }
                             check(id in com.sal7one.hearth.tts.magpie.MagpieCatalog.speakers) { "Select a supported Magpie voice." }
                             MagpiePolicy.requireAllowed(context,"portable Magpie setup")
                             check(com.sal7one.hearth.tts.magpie.MagpieModels(File(context.filesDir, "voice-models/magpie")).ready()) { "Install Magpie weights, codec and tokenizer in Voices first." }
                         } else {
                             check(id in VoiceCatalog.voices) { "Select a supported Supertonic voice." }
-                            check(VoiceModels(File(context.filesDir, "voice-models")).ready(id)) { "Download or import Supertonic 3 and voice $id in Voices first." }
+                            check(VoiceModels(File(context.filesDir, "voice-models")).ready(id, voice.gender.toVoiceGender())) { "Download or import Supertonic 3 and the requested voice in Voices first." }
                         }
                     }
                     CaptionSpeakerChoice.CLOUD -> {
@@ -168,10 +171,11 @@ internal class PortableSetupActions(context: Context) {
                             com.sal7one.transiber.runtime.LocalModelPolicy.requireAllowed(context, "downloaded speech voices")
                         if (backend == "supertonic") {
                             val saved = VoiceSettings.choice(context)
-                            if (saved.family == "magpie") MagpiePolicy.requireAllowed(context,"portable shared Magpie setup")
-                            val installed = if (saved.family == "magpie") com.sal7one.hearth.tts.magpie.MagpieModels(File(context.filesDir, "voice-models/magpie")).ready()
-                                else VoiceModels(File(context.filesDir, "voice-models")).ready(saved.voice)
-                            check(installed) { "Install the shared on-device voice in Voices first." }
+                            if (saved.family == "magpie") {
+                                check(voice.gender == SpeakerGender.ANY) { context.uiText()(R.string.magpie_gender_unverified) }
+                                MagpiePolicy.requireAllowed(context,"portable shared Magpie setup")
+                            }
+                            check(VoiceSettings.localReady(context, voice.gender.toVoiceGender())) { "Install the shared on-device voice in Voices first." }
                         }
                         if (backend == "remote") { check(ByokPolicy.FEATURE_BYOK) { "Remote voice is unavailable in the offline build." }; VoiceSettings.remote(context) }
                         notes += "Shared/custom voice settings stay on this device; their connection and credentials are excluded from the file."

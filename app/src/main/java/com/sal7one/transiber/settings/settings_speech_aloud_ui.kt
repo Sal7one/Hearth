@@ -29,7 +29,6 @@ import com.sal7one.transiber.caption.CaptionOverlayConfig
 import com.sal7one.transiber.caption.SpeakerGender
 import com.sal7one.transiber.caption.DeviceMediaVolumeUi
 import com.sal7one.transiber.caption.toVoiceGender
-import java.io.File
 
 /**
  * Read-aloud (TTS) layer for the speech overlay: speak recognized/translated
@@ -47,7 +46,8 @@ internal fun SettingsSpeechAloudUi(
     val uiText = rememberUiText()
     val context = LocalContext.current
     val localAllowed = com.sal7one.transiber.runtime.LocalModelPolicy.allowed(context)
-    val sharedBackend = com.sal7one.transiber.voice.VoiceSettings.choice(context).backend
+    val localVoice = com.sal7one.transiber.voice.VoiceSettings.choice(context)
+    val sharedBackend = localVoice.backend
     val customBackend = com.sal7one.transiber.voice.VoiceSettings.customBackend(context)
     fun needsDownloadedModel(choice: CaptionSpeakerChoice): Boolean = when (choice) {
         CaptionSpeakerChoice.NATIVE -> true
@@ -55,11 +55,7 @@ internal fun SettingsSpeechAloudUi(
         CaptionSpeakerChoice.CUSTOM -> customBackend != null && customBackend !in setOf("system", "remote")
         else -> false
     }
-    val voiceReady = remember(context, config.speakerGender, localAllowed) {
-        val choice = com.sal7one.transiber.voice.VoiceSettings.choice(context)
-        localAllowed && com.sal7one.transiber.voice.VoiceModels(File(context.filesDir, "voice-models"))
-            .ready(choice.voice, config.speakerGender.toVoiceGender())
-    }
+    val voiceReady = com.sal7one.transiber.voice.VoiceSettings.localReady(context, config.speakerGender.toVoiceGender())
 
     Text(uiText(UiR.string.ui_read_captions_aloud_title_e5b31), style = MaterialTheme.typography.titleSmall)
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
@@ -100,7 +96,7 @@ internal fun SettingsSpeechAloudUi(
                 FilterChip(
                     selected = config.speakerChoice == choice,
                     enabled = (localAllowed || !needsDownloadedModel(choice)) &&
-                        (choice != CaptionSpeakerChoice.NATIVE || voiceReady),
+                        (!needsDownloadedModel(choice) || voiceReady),
                     onClick = { update { it.copy(speakerChoice = choice) } },
                     label = { Text(uiText.label(choice)) },
                 )
@@ -108,9 +104,12 @@ internal fun SettingsSpeechAloudUi(
     }
     if (!localAllowed && needsDownloadedModel(config.speakerChoice))
         com.sal7one.transiber.ui.components.LocalModelPolicyNotice()
-    else Text(if (config.speakerChoice == CaptionSpeakerChoice.NATIVE && !voiceReady)
-        uiText(UiR.string.ui_install_supertonic_3_and_a_voice_in_read_aloud_settings_8a8c5)
+    else Text(if (needsDownloadedModel(config.speakerChoice) && !voiceReady)
+        if (localVoice.family == "magpie" && config.speakerGender != SpeakerGender.ANY)
+            uiText(UiR.string.magpie_gender_unverified)
+        else uiText(UiR.string.local_voice_not_ready, if (localVoice.family == "magpie") "MagpieTTS v2607" else "Supertonic 3")
         else uiText.explanation(config.speakerChoice), style = MaterialTheme.typography.bodySmall)
-    Text(uiText(UiR.string.ui_speaker_gender_note_9a25c), style = MaterialTheme.typography.bodySmall)
+    Text(uiText(if (needsDownloadedModel(config.speakerChoice) && localVoice.family == "magpie")
+        UiR.string.magpie_voice_note else UiR.string.ui_speaker_gender_note_9a25c), style = MaterialTheme.typography.bodySmall)
     onOpenVoices?.let { open -> TextButton(onClick = open) { Text(uiText(UiR.string.ui_read_aloud_voices_downloads_7b18c)) } }
 }

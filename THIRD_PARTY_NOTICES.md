@@ -75,3 +75,28 @@ Apache-2.0, but its detector/reader weights declare LGPL-3.0. These are separate
 licenses and the weights are not bundled. Publisher links, pinned artifacts and
 limitations are recorded in [Japanese OCR adapters](docs/manga-ocr-adapters.md)
 and packaged in `assets/licenses/ocr/NOTICE.txt`.
+
+## Additional optional runtimes in 0.26.0
+
+- Cohere/Fun-ASR/Voxtral use the MIT-licensed
+  [transcribe.cpp](https://github.com/handy-computer/transcribe.cpp) port pinned at
+  `1dc22facfc931e2f8adb43924b0e38b9c46f83c7`, with GGML and dependency notices
+  packaged in `assets/licenses/speech-expansion/`. CPU and Vulkan binaries have
+  separate hashes and source snapshots. Model weights retain their publisher's
+  terms, including the selected Fun-ASR conversion's distinct license evidence;
+  see the sourced model cards rather than assuming the runtime license covers weights.
+- [CTranslate2](https://github.com/OpenNMT/CTranslate2) 4.8.3 and
+  [SentencePiece](https://github.com/google/sentencepiece) use MIT and Apache-2.0
+  respectively. Ruy, cpuinfo, cpu_features, spdlog and other retained dependency
+  notices are in `assets/licenses/ct2/`. QuickMT weights use CC-BY-4.0; the selected
+  SMaLL-100 checkpoint declares MIT. These model files are separate downloads.
+- [NeMo-Speech.cpp](https://github.com/NVIDIA/NeMo-Speech.cpp), pinned at
+  `caa3f47c7c75fa2e9e6340272ebad57c1647dd44`, supplies the optional Magpie CPU
+  runtime under Apache-2.0, with GGML MIT and retained dependency notices in
+  `assets/licenses/magpie/`. Magpie and codec model assets are separately acquired
+  under their published terms; the app links the NVIDIA Open Model License.
+- The [Ming-3.0](https://huggingface.co/collections/inclusionAI/ming-30) models and
+  original upstream code declare MIT, with their own third-party notices. Hearth
+  distributes first-party server adapters and pinned metadata; Ming model code,
+  weights, reference voices and server dependencies are not included in the APK
+  or SDK AARs. See [Ming sources and sizes](docs/ming-3.0.md).

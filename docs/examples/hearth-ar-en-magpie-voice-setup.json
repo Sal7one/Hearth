@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "name": "Arabic and English · Magpie voice",
+  "voice": {
+    "enabled": true,
+    "choice": "NATIVE",
+    "family": "magpie",
+    "voiceId": "Aria",
+    "gender": "ANY",
+    "volume": 100
+  }
+}

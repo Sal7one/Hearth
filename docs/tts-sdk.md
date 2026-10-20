@@ -5,6 +5,8 @@ selection, bounded PCM delivery and lifecycle handling. It contains no model,
 network client, Android audio player, app settings or automatic download code.
 The 0.26.0 draft provides the core AAR and optional Magpie AAR for integration
 testing. This is not a Maven publication or an Android system TTS service.
+First-party source follows the repository's [Apache-2.0 license](../LICENSE);
+model and native dependency licenses remain separate.
 
 ## Dependencies
 
@@ -108,3 +110,10 @@ returned to the caller. It never authorizes replacing Arabic with English.
 Ming's hosted voices are separate app connections and do not add server/Python
 dependencies to this local SDK. See [the implementation handoff](handoff/tts-provider-implementation.md)
 for API internals, tested cancellation cases and the remaining provider work.
+
+Hearth also supplies [a Magpie voice setup](examples/hearth-ar-en-magpie-voice-setup.json)
+and [a Supertonic male voice setup](examples/hearth-ar-en-male-voice-setup.json).
+Install the required model components in Voices first, then import and preview
+the setup. These examples select the voice stage without replacing STT or MT.
+They enable caption read aloud as well as choosing the shared local voice. They
+contain no weights, server addresses, keys or executable workflow nodes.
