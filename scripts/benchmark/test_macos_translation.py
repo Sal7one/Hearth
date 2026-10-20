@@ -22,6 +22,12 @@ class HostTranslationBenchmarkTests(unittest.TestCase):
                          host.make_prompt(" Привет ", "milmmt-46", "ru", "ar"))
         self.assertEqual("Translate this from Chinese (Simplified) to English:\nChinese (Simplified): 你好\nEnglish:",
                          host.make_prompt("你好", "milmmt-46", "zh", "en"))
+        self.assertEqual("Translate the following English source text to Arabic:\nEnglish: hello\nArabic:",
+                         host.make_prompt(" hello ", "eurollm", "en", "ar"))
+        self.assertEqual("You are an expert at translating text from English to Arabic.\n\nhello",
+                         host.make_prompt(" hello ", "riva-translate", "en", "ar"))
+        with self.assertRaisesRegex(ValueError, "English-paired"):
+            host.make_prompt("hello", "riva-translate", "ru", "ar")
 
     def test_error_rates_and_sentence_chrf(self):
         self.assertEqual(0.0, host.error_rate("Hello, world!", "hello world"))

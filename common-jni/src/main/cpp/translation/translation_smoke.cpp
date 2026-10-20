@@ -32,19 +32,21 @@ int main(int argc, char** argv) {
    return 0;
   }
   if ((argc < 6 || argc > 8) || std::string(argv[2]) != "--stream")
-   throw std::invalid_argument("Usage: translation_smoke MODEL.gguf --stream THREADS GPU_LAYERS NUL-DELIMITED-STDIN [STOP-ON-ERROR] [RAW-PROMPT]");
+   throw std::invalid_argument("Usage: translation_smoke MODEL.gguf --stream THREADS GPU_LAYERS NUL-DELIMITED-STDIN [STOP-ON-ERROR] [RAW-PROMPT|EURO-PROMPT|RIVA-PROMPT]");
   const int threads = std::max(1, std::stoi(argv[3]));
   const int gpuLayers = std::max(0, std::stoi(argv[4]));
   if (std::string(argv[5]) != "NUL-DELIMITED-STDIN") throw std::invalid_argument("Invalid stream marker");
   bool stopOnError = false;
-  bool rawPrompt = false;
+  int promptMode = 0;
   for (int i = 6; i < argc; ++i) {
    if (std::string(argv[i]) == "STOP-ON-ERROR") stopOnError = true;
-   else if (std::string(argv[i]) == "RAW-PROMPT") rawPrompt = true;
+   else if (std::string(argv[i]) == "RAW-PROMPT") promptMode = 1;
+   else if (std::string(argv[i]) == "EURO-PROMPT") promptMode = 2;
+   else if (std::string(argv[i]) == "RIVA-PROMPT") promptMode = 3;
    else throw std::invalid_argument("Invalid stream option");
   }
   const auto loadStart = std::chrono::steady_clock::now();
-  transiber::TextModel model(argv[1], threads, gpuLayers, rawPrompt);
+  transiber::TextModel model(argv[1], threads, gpuLayers, promptMode);
   const auto loadMs = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - loadStart).count();
   std::cout << "{\"event\":\"ready\",\"loadMs\":" << loadMs << "}" << std::endl;
   std::string prompt;

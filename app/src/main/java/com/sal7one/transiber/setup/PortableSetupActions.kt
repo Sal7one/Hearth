@@ -60,6 +60,7 @@ internal class PortableSetupActions(context: Context) {
                     engine = CaptionEngineChoice.CLOUD; installedSpeech = ""
                     notes += "Cloud speech uses this device’s saved connection. Server, model and credentials are excluded from the file."
                 } else {
+                    com.sal7one.transiber.runtime.LocalModelPolicy.requireAllowed(context, "speech setup")
                     val artifact = stage.model.catalogId?.let { checkNotNull(SpeechArtifactCatalog.find(it)) { "Unknown speech catalog reference: $it" } }
                     if (artifact != null) {
                         check(artifact.family == stage.model.family) { "Speech family does not match the catalog reference." }
@@ -105,6 +106,7 @@ internal class PortableSetupActions(context: Context) {
                         "setup validation", stage.sourceLanguage, stage.targetLanguage, languages)
                     notes += "Cloud translation uses this device’s saved connection. Server, model and credentials are excluded from the file."
                 } else {
+                    com.sal7one.transiber.runtime.LocalModelPolicy.requireAllowed(context, "translation setup")
                     check(TranslationOptions.supports(stage.modelId, stage.sourceLanguage, stage.targetLanguage)) { "The selected translator does not support ${stage.sourceLanguage} → ${stage.targetLanguage}." }
                     val pairs = MarianCascade.find(stage.modelId)?.let { listOf(it.first, it.second) }
                         ?: MarianPackage.find(stage.modelId)?.let(::listOf)
@@ -134,6 +136,7 @@ internal class PortableSetupActions(context: Context) {
                 when (voice.choice) {
                     CaptionSpeakerChoice.SYSTEM -> notes += "Android voice availability is checked by the device when speech starts."
                     CaptionSpeakerChoice.NATIVE -> {
+                        com.sal7one.transiber.runtime.LocalModelPolicy.requireAllowed(context, "downloaded speech voices")
                         val id = voice.voiceId ?: VoiceSettings.choice(context).voice
                         check(id in VoiceCatalog.voices) { "Select a supported Supertonic voice." }
                         check(VoiceModels(File(context.filesDir, "voice-models")).ready(id)) { "Download or import Supertonic 3 and voice $id in Voices first." }
@@ -147,6 +150,8 @@ internal class PortableSetupActions(context: Context) {
                     CaptionSpeakerChoice.SHARED, CaptionSpeakerChoice.CUSTOM -> {
                         val backend = if (voice.choice == CaptionSpeakerChoice.CUSTOM) VoiceSettings.customBackend(context)
                             ?: error("Select a custom voice on this device first.") else VoiceSettings.choice(context).backend
+                        if (backend !in setOf("system", "remote"))
+                            com.sal7one.transiber.runtime.LocalModelPolicy.requireAllowed(context, "downloaded speech voices")
                         if (backend == "supertonic") check(VoiceModels(File(context.filesDir, "voice-models")).ready(VoiceSettings.choice(context).voice)) { "Install the shared on-device voice in Voices first." }
                         if (backend == "remote") { check(ByokPolicy.FEATURE_BYOK) { "Remote voice is unavailable in the offline build." }; VoiceSettings.remote(context) }
                         notes += "Shared/custom voice settings stay on this device; their connection and credentials are excluded from the file."
@@ -193,6 +198,7 @@ internal class PortableSetupActions(context: Context) {
     }
     suspend fun downloadMissing(setup: PortableSetup) = withContext(Dispatchers.IO) {
         check(ByokPolicy.FEATURE_BYOK) { "Import models in the offline build." }; idle()
+        com.sal7one.transiber.runtime.LocalModelPolicy.requireAllowed(context, "model downloads")
         val state = preview(setup); val downloads = FileDownloads(context)
         state.missingSpeechCatalogId?.let { id ->
             val artifact = checkNotNull(SpeechArtifactCatalog.find(id))

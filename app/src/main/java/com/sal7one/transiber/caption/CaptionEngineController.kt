@@ -541,9 +541,13 @@ class CaptionEngineController(
     }
 
     private suspend fun loadEngine(config: CaptionOverlayConfig): LoadedCaptionEngine = withContext(Dispatchers.IO) {
+        if (config.effectiveEngine != CaptionEngineChoice.CLOUD)
+            com.sal7one.transiber.runtime.LocalModelPolicy.requireAllowed(context, "speech recognition")
         engineTranslatesToTarget = false
         val cloudMode = com.sal7one.transiber.byok.CloudConfigStore.sttMode(context)
         activeRoute = captionTranslationRoute(config, cloudMode)
+        if (activeRoute in setOf(CaptionTranslationRoute.ENGLISH_PIVOT, CaptionTranslationRoute.ENGLISH_TEXT))
+            com.sal7one.transiber.runtime.LocalModelPolicy.requireAllowed(context, "translation")
         val spokenLanguage = CaptionLanguages.effectiveSource(config, cloudMode, captionLanguageModel(context, config))
         resolvedSpokenLanguage = spokenLanguage
         if (config.effectiveEngine.speechBackend != null) {

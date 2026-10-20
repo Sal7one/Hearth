@@ -134,6 +134,7 @@ internal class LocalBenchmarkRunner(private val context: Context) {
     fun cancel() { cancelNative?.invoke() }
 
     suspend fun candidates(): List<BenchmarkCandidate> = withContext(Dispatchers.IO) {
+        if (!com.sal7one.transiber.runtime.LocalModelPolicy.allowed(context)) return@withContext emptyList()
         val speech = LocalSpeechModels(File(context.filesDir, "speech-models")).list().map { model ->
             BenchmarkCandidate(model.id, model.profile.label + " · " + model.id.takeLast(6),
                 "Speech / ${model.profile.capabilities.streaming}", model.profile.capabilities.sourceLanguages + (if (model.profile.capabilities.sourceLanguages.size > 1) setOf("auto") else emptySet()),
@@ -177,6 +178,7 @@ internal class LocalBenchmarkRunner(private val context: Context) {
         compareAcceleration: Boolean = false,
         progress: (String) -> Unit, onResult: (BenchmarkResult) -> Unit,
     ) = withContext(Dispatchers.Default) {
+        com.sal7one.transiber.runtime.LocalModelPolicy.requireAllowed(context, "model benchmarking")
         suspend fun reportProgress(message: String) = withContext(Dispatchers.Main.immediate) { progress(message) }
         require(selected.isNotEmpty() && selected.size <= 12) { "Choose between 1 and 12 installed models" }
         val planned = BenchmarkAccelerationPlan.expand(selected, compareAcceleration)

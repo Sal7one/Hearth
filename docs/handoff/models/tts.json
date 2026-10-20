@@ -1,0 +1,691 @@
+{
+  "schemaVersion": 1,
+  "asOf": "2026-10-19",
+  "category": "tts",
+  "purpose": "Implementation staging evidence only; not an import/download manifest and not an executable support claim.",
+  "sizeUnits": "Exact bytes; decimal MB/GB in prose. Peak RAM additionally includes sessions, KV/cache, activations, PCM and Android.",
+  "validation": "LFS SHA256/size from public HF metadata; ordinary small files fetched and SHA256 calculated. No model weights downloaded or executed.",
+  "models": [
+    {
+      "id": "magpie-v2607",
+      "label": "MagpieTTS v2607",
+      "family": "MagpieTTS",
+      "parameters": {
+        "generator": 364000000,
+        "codec": "Additional frozen NanoCodec; not included in 364M headline"
+      },
+      "languages": [
+        "ar",
+        "zh",
+        "en",
+        "fr",
+        "de",
+        "hi",
+        "it",
+        "ja",
+        "ko",
+        "pt",
+        "es",
+        "vi"
+      ],
+      "voices": {
+        "kind": "baked-speakers",
+        "items": [
+          {
+            "id": "0",
+            "label": "Aria",
+            "gender": "unknown",
+            "genderEvidence": null
+          },
+          {
+            "id": "1",
+            "label": "Jason",
+            "gender": "unknown",
+            "genderEvidence": null
+          },
+          {
+            "id": "2",
+            "label": "John",
+            "gender": "unknown",
+            "genderEvidence": null
+          },
+          {
+            "id": "3",
+            "label": "Leo",
+            "gender": "unknown",
+            "genderEvidence": null
+          },
+          {
+            "id": "4",
+            "label": "Sofia",
+            "gender": "unknown",
+            "genderEvidence": null
+          }
+        ],
+        "mappingEvidence": "Official v2607 speaker_map; inspect selected GGUF metadata because older converted files used v2602 order. No gender inferred from personal names.",
+        "source": "https://huggingface.co/nvidia/magpie_tts_multilingual_357m/blob/446bff55e1fe3d3aa29c771574e7d2b0fa322990/README.md"
+      },
+      "components": [
+        {
+          "filename": "magpie_tts_multilingual_357m.v2607.q8_0.gguf",
+          "repo": "nvidia/magpie_tts_multilingual_357m",
+          "revision": "446bff55e1fe3d3aa29c771574e7d2b0fa322990",
+          "url": "https://huggingface.co/nvidia/magpie_tts_multilingual_357m/resolve/446bff55e1fe3d3aa29c771574e7d2b0fa322990/magpie_tts_multilingual_357m.v2607.q8_0.gguf",
+          "bytes": 331812192,
+          "sha256": "318c8f8376a28d8fdf3ce99b67b268af843c5128367000245ae30a1398c50cf9",
+          "role": "generator",
+          "required": true
+        },
+        {
+          "filename": "nemo_nano_codec_22khz_1.89kbps_21.5fps.decoder.f16.gguf",
+          "repo": "nvidia/nemo-nano-codec-22khz-1.89kbps-21.5fps",
+          "revision": "fc00890b604aa2de298d2641ffc6c5f6caf8c4d7",
+          "url": "https://huggingface.co/nvidia/nemo-nano-codec-22khz-1.89kbps-21.5fps/resolve/fc00890b604aa2de298d2641ffc6c5f6caf8c4d7/nemo_nano_codec_22khz_1.89kbps_21.5fps.decoder.f16.gguf",
+          "bytes": 78823104,
+          "sha256": "cc86d36d821a27cdc1d4ef600a3e2b0dabe76e88fcc2a8652d9543134c07ef2d",
+          "role": "waveform-decoder",
+          "required": true
+        },
+        {
+          "filename": "magpie_tts_multilingual_357m.nemo",
+          "repo": "nvidia/magpie_tts_multilingual_357m",
+          "revision": "446bff55e1fe3d3aa29c771574e7d2b0fa322990",
+          "url": "https://huggingface.co/nvidia/magpie_tts_multilingual_357m/resolve/446bff55e1fe3d3aa29c771574e7d2b0fa322990/magpie_tts_multilingual_357m.nemo",
+          "bytes": 1470208000,
+          "sha256": "ec675fa8c02b9c1d5382c5c2b5a6acec6492c1e8344866c07cf3892185d18953",
+          "role": "tokenizer-source-archive",
+          "required": true,
+          "installAction": "Extract only bounded approved tokenizer/config dictionaries; discard embedded model_weights.ckpt. This is not an app runtime file. Downloading whole archive is unnecessary once matching verified range extraction exists."
+        }
+      ],
+      "runtime": {
+        "status": "planned-not-executable",
+        "targetBackend": "NeMo-Speech.cpp separate C ABI library, CPU first then Vulkan",
+        "streaming": {
+          "upstream": "Incremental codec PCM callback; longform available",
+          "hearth": false
+        },
+        "blockers": [
+          "No Hearth Magpie adapter or Android NeMo runtime is packaged.",
+          "Tokenizer is outside the GGUF and must match the .nemo revision/profile.",
+          "Selected published Q8 needs speaker_names verification: upstream documents an old v2602/v2607 mapping bug.",
+          "No S25 speed, thermals, Arabic Q8 quality or male/female listening validation."
+        ]
+      },
+      "license": {
+        "name": "NVIDIA Open Model License; runtime Apache-2.0; companion codec license must accompany distribution",
+        "url": "https://huggingface.co/nvidia/magpie_tts_multilingual_357m#license"
+      },
+      "sources": [
+        "https://huggingface.co/nvidia/magpie_tts_multilingual_357m",
+        "https://huggingface.co/nvidia/nemo-nano-codec-22khz-1.89kbps-21.5fps",
+        "https://github.com/NVIDIA/NeMo-Speech.cpp/blob/caa3f47c7c75fa2e9e6340272ebad57c1647dd44/docs/tts/models.md"
+      ],
+      "requiredSourceBytes": 1880843296,
+      "selectedWeightsBytes": 410635296,
+      "sourceArchiveDownloadWarning": "requiredSourceBytes includes full .nemo archive for reproducible tokenizer extraction, not installed runtime footprint; previous 411MB headline excludes mandatory tokenizer assets.",
+      "quality": {
+        "scope": "Publisher original v2607 release; not the selected Q8 generator/codec conversion and not Hearth/S25 measurements.",
+        "Arabic": {
+          "CERpercent": 1.62,
+          "SSIM": 0.806,
+          "dataset": "Internal per-language held-out Arabic test set"
+        },
+        "English": {
+          "CERpercent": 0.37,
+          "SSIM": 0.822,
+          "dataset": "LibriTTS test-clean"
+        },
+        "metricNotes": "CER lower is better; SSIM speaker similarity higher is better. Arabic and English use different datasets; these are not cross-model rankings.",
+        "source": "https://huggingface.co/nvidia/magpie_tts_multilingual_357m/blob/446bff55e1fe3d3aa29c771574e7d2b0fa322990/README.md#evaluation"
+      }
+    },
+    {
+      "id": "omnivoice",
+      "label": "OmniVoice",
+      "family": "OmniVoice",
+      "parameters": {
+        "generator": 612600000,
+        "codec": "Additional HuBERT/DAC/RVQ stack"
+      },
+      "languages": [
+        "ar",
+        "en"
+      ],
+      "voices": {
+        "kind": "voice-design-or-user-reference",
+        "items": [],
+        "genderEvidence": null,
+        "notes": "No verified stable named male/female preset inventory. Gender prompting does not establish speaker metadata. Arabic/English reference profiles require separate provenance and installation."
+      },
+      "components": [
+        {
+          "filename": "omnivoice-base-Q8_0.gguf",
+          "repo": "Serveurperso/OmniVoice-GGUF",
+          "revision": "017094167b5c9ed565a5076ac9b3b93c5ecf5c73",
+          "url": "https://huggingface.co/Serveurperso/OmniVoice-GGUF/resolve/017094167b5c9ed565a5076ac9b3b93c5ecf5c73/omnivoice-base-Q8_0.gguf",
+          "bytes": 656395008,
+          "sha256": "2882d887921798aea13d45236556bdf8012842ab6f8cd2690943eead6289f298",
+          "role": "generator",
+          "required": true
+        },
+        {
+          "filename": "omnivoice-tokenizer-Q8_0.gguf",
+          "repo": "Serveurperso/OmniVoice-GGUF",
+          "revision": "017094167b5c9ed565a5076ac9b3b93c5ecf5c73",
+          "url": "https://huggingface.co/Serveurperso/OmniVoice-GGUF/resolve/017094167b5c9ed565a5076ac9b3b93c5ecf5c73/omnivoice-tokenizer-Q8_0.gguf",
+          "bytes": 288889600,
+          "sha256": "75204fa566a8e30984e7a1066da6557184c9fd099c8f1bc0cb5b9415edfec255",
+          "role": "audio-codec",
+          "required": true
+        }
+      ],
+      "runtime": {
+        "status": "planned-not-executable",
+        "targetBackend": "omnivoice.cpp isolated GGML backend; CPU then optional Vulkan",
+        "streaming": {
+          "upstream": "Diffusion-style generation; verify chunk semantics, do not assume autoregressive token streaming",
+          "hearth": false
+        },
+        "blockers": [
+          "No Hearth adapter.",
+          "Noncommercial model must not enter commercial Arabic SDK default bundles.",
+          "Codec terms need resolution before redistribution.",
+          "Q8 main and codec Arabic parity and voice stability unverified.",
+          "No pinned male/female Arabic reference profile supplied."
+        ]
+      },
+      "license": {
+        "name": "CC-BY-NC-4.0 weights; codec upstream terms require independent audit; runtime MIT",
+        "url": "https://huggingface.co/k2-fsa/OmniVoice#license",
+        "redistributionBlocker": "Community conversion card calls codec Apache-2.0, while original tokenizer metadata uses other/custom terms. Verify original license text before bundling."
+      },
+      "sources": [
+        "https://huggingface.co/k2-fsa/OmniVoice",
+        "https://huggingface.co/Serveurperso/OmniVoice-GGUF",
+        "https://github.com/ServeurpersoCom/omnivoice.cpp"
+      ],
+      "requiredSourceBytes": 945284608,
+      "selectedWeightsBytes": 945284608,
+      "quality": {
+        "ArabicWER": 1.392,
+        "EnglishWER": 1.56,
+        "dataset": "MiniMax-Multilingual-24",
+        "scope": "Original model, not this Q8 conversion",
+        "source": "https://arxiv.org/html/2604.00688v1#S4.T3"
+      }
+    },
+    {
+      "id": "moss-tts-nano",
+      "label": "MOSS-TTS Nano 100M",
+      "family": "MOSS-TTS Nano",
+      "parameters": {
+        "generator": 100000000,
+        "codec": "Approximately22M additional parameters"
+      },
+      "languages": [
+        "ar",
+        "en"
+      ],
+      "voices": {
+        "kind": "user-reference-or-unconditioned",
+        "items": [],
+        "genderEvidence": null,
+        "notes": "No packaged verified male/female Arabic/English styles. Need authored reference recordings/profiles and QA."
+      },
+      "components": [
+        {
+          "filename": "moss_tts_prefill.onnx",
+          "repo": "OpenMOSS-Team/MOSS-TTS-Nano-100M-ONNX",
+          "revision": "f52645cb467506d8e18e746ddd59482685b74e58",
+          "url": "https://huggingface.co/OpenMOSS-Team/MOSS-TTS-Nano-100M-ONNX/resolve/f52645cb467506d8e18e746ddd59482685b74e58/moss_tts_prefill.onnx",
+          "bytes": 283305,
+          "sha256": "d56126dcd0574c2f15d98fc6b35eda68d0386b5bd9c5e38e28548d6f2ea8f3db",
+          "role": "generator",
+          "required": true
+        },
+        {
+          "filename": "moss_tts_decode_step.onnx",
+          "repo": "OpenMOSS-Team/MOSS-TTS-Nano-100M-ONNX",
+          "revision": "f52645cb467506d8e18e746ddd59482685b74e58",
+          "url": "https://huggingface.co/OpenMOSS-Team/MOSS-TTS-Nano-100M-ONNX/resolve/f52645cb467506d8e18e746ddd59482685b74e58/moss_tts_decode_step.onnx",
+          "bytes": 291483,
+          "sha256": "698cbc2fc1c2feca16e5895614ed52bbb32ded10f236c076f477b2e69abf32d8",
+          "role": "generator",
+          "required": true
+        },
+        {
+          "filename": "moss_tts_local_decoder.onnx",
+          "repo": "OpenMOSS-Team/MOSS-TTS-Nano-100M-ONNX",
+          "revision": "f52645cb467506d8e18e746ddd59482685b74e58",
+          "url": "https://huggingface.co/OpenMOSS-Team/MOSS-TTS-Nano-100M-ONNX/resolve/f52645cb467506d8e18e746ddd59482685b74e58/moss_tts_local_decoder.onnx",
+          "bytes": 49231,
+          "sha256": "51aa754301b38550a5f9adda0ad93bd3dc95819afb511e6dcabf4a90b345a454",
+          "role": "generator",
+          "required": true
+        },
+        {
+          "filename": "moss_tts_local_cached_step.onnx",
+          "repo": "OpenMOSS-Team/MOSS-TTS-Nano-100M-ONNX",
+          "revision": "f52645cb467506d8e18e746ddd59482685b74e58",
+          "url": "https://huggingface.co/OpenMOSS-Team/MOSS-TTS-Nano-100M-ONNX/resolve/f52645cb467506d8e18e746ddd59482685b74e58/moss_tts_local_cached_step.onnx",
+          "bytes": 53685,
+          "sha256": "aa9035fefc1c138a951a8bcfc0374fb03a25f1ece67f7f7f53bce349b84a1dd5",
+          "role": "generator",
+          "required": true
+        },
+        {
+          "filename": "moss_tts_local_fixed_sampled_frame.onnx",
+          "repo": "OpenMOSS-Team/MOSS-TTS-Nano-100M-ONNX",
+          "revision": "f52645cb467506d8e18e746ddd59482685b74e58",
+          "url": "https://huggingface.co/OpenMOSS-Team/MOSS-TTS-Nano-100M-ONNX/resolve/f52645cb467506d8e18e746ddd59482685b74e58/moss_tts_local_fixed_sampled_frame.onnx",
+          "bytes": 471262,
+          "sha256": "40cdb00efc171c450cf91468e01429caa41b0252222cd308e978f58fe354afa8",
+          "role": "generator",
+          "required": true
+        },
+        {
+          "filename": "moss_tts_global_shared.data",
+          "repo": "OpenMOSS-Team/MOSS-TTS-Nano-100M-ONNX",
+          "revision": "f52645cb467506d8e18e746ddd59482685b74e58",
+          "url": "https://huggingface.co/OpenMOSS-Team/MOSS-TTS-Nano-100M-ONNX/resolve/f52645cb467506d8e18e746ddd59482685b74e58/moss_tts_global_shared.data",
+          "bytes": 440813568,
+          "sha256": "bce8312c3df6a44545302cae229b61054fe0672e0b252ba59cba47adeed831dc",
+          "role": "generator",
+          "required": true
+        },
+        {
+          "filename": "moss_tts_local_shared.data",
+          "repo": "OpenMOSS-Team/MOSS-TTS-Nano-100M-ONNX",
+          "revision": "f52645cb467506d8e18e746ddd59482685b74e58",
+          "url": "https://huggingface.co/OpenMOSS-Team/MOSS-TTS-Nano-100M-ONNX/resolve/f52645cb467506d8e18e746ddd59482685b74e58/moss_tts_local_shared.data",
+          "bytes": 229678080,
+          "sha256": "bae7782032c0fb12490ab42afe009f87ae6c75a0f0596fc7b5c08e4d5ee93916",
+          "role": "generator",
+          "required": true
+        },
+        {
+          "filename": "tokenizer.model",
+          "repo": "OpenMOSS-Team/MOSS-TTS-Nano-100M-ONNX",
+          "revision": "f52645cb467506d8e18e746ddd59482685b74e58",
+          "url": "https://huggingface.co/OpenMOSS-Team/MOSS-TTS-Nano-100M-ONNX/resolve/f52645cb467506d8e18e746ddd59482685b74e58/tokenizer.model",
+          "bytes": 470897,
+          "sha256": "c353ee1479b536bf414c1b247f5542b6607fb8ae91320e5af1781fee200fddff",
+          "role": "text-tokenizer",
+          "required": true
+        },
+        {
+          "filename": "tts_browser_onnx_meta.json",
+          "repo": "OpenMOSS-Team/MOSS-TTS-Nano-100M-ONNX",
+          "revision": "f52645cb467506d8e18e746ddd59482685b74e58",
+          "url": "https://huggingface.co/OpenMOSS-Team/MOSS-TTS-Nano-100M-ONNX/resolve/f52645cb467506d8e18e746ddd59482685b74e58/tts_browser_onnx_meta.json",
+          "bytes": 4487,
+          "sha256": "3edf25232dcd0af3d061c837e9a968a39e2f8592e06777d740503c4f2244f95c",
+          "role": "model-metadata",
+          "required": true
+        },
+        {
+          "filename": "browser_poc_manifest.json",
+          "repo": "OpenMOSS-Team/MOSS-TTS-Nano-100M-ONNX",
+          "revision": "f52645cb467506d8e18e746ddd59482685b74e58",
+          "url": "https://huggingface.co/OpenMOSS-Team/MOSS-TTS-Nano-100M-ONNX/resolve/f52645cb467506d8e18e746ddd59482685b74e58/browser_poc_manifest.json",
+          "bytes": 503354,
+          "sha256": "097d80e993dc29f0bae427590b4f77084a161cb578b50d82c29f455d5faa9eee",
+          "role": "model-metadata",
+          "required": true
+        },
+        {
+          "filename": "moss_audio_tokenizer_decode_full.onnx",
+          "repo": "OpenMOSS-Team/MOSS-Audio-Tokenizer-Nano-ONNX",
+          "revision": "ceff0d0749bfb3fa2d61149794ec6feef0d1e1ae",
+          "url": "https://huggingface.co/OpenMOSS-Team/MOSS-Audio-Tokenizer-Nano-ONNX/resolve/ceff0d0749bfb3fa2d61149794ec6feef0d1e1ae/moss_audio_tokenizer_decode_full.onnx",
+          "bytes": 681902,
+          "sha256": "0fbbafe3fd4afa2a019af5c5ced204af6e2d1db044fa40f021525d2aee95b4ac",
+          "role": "waveform-decoder",
+          "required": true
+        },
+        {
+          "filename": "moss_audio_tokenizer_decode_step.onnx",
+          "repo": "OpenMOSS-Team/MOSS-Audio-Tokenizer-Nano-ONNX",
+          "revision": "ceff0d0749bfb3fa2d61149794ec6feef0d1e1ae",
+          "url": "https://huggingface.co/OpenMOSS-Team/MOSS-Audio-Tokenizer-Nano-ONNX/resolve/ceff0d0749bfb3fa2d61149794ec6feef0d1e1ae/moss_audio_tokenizer_decode_step.onnx",
+          "bytes": 351400,
+          "sha256": "9527c86a29e1837edec1f74db57d5eeaadb3a715af3382703566460afed25855",
+          "role": "waveform-decoder",
+          "required": true
+        },
+        {
+          "filename": "moss_audio_tokenizer_decode_shared.data",
+          "repo": "OpenMOSS-Team/MOSS-Audio-Tokenizer-Nano-ONNX",
+          "revision": "ceff0d0749bfb3fa2d61149794ec6feef0d1e1ae",
+          "url": "https://huggingface.co/OpenMOSS-Team/MOSS-Audio-Tokenizer-Nano-ONNX/resolve/ceff0d0749bfb3fa2d61149794ec6feef0d1e1ae/moss_audio_tokenizer_decode_shared.data",
+          "bytes": 44198912,
+          "sha256": "e69d52e0f4e84ca27850557ee54face46632d3a5a16c89bd246c7c408466dcad",
+          "role": "waveform-decoder",
+          "required": true
+        },
+        {
+          "filename": "codec_browser_onnx_meta.json",
+          "repo": "OpenMOSS-Team/MOSS-Audio-Tokenizer-Nano-ONNX",
+          "revision": "ceff0d0749bfb3fa2d61149794ec6feef0d1e1ae",
+          "url": "https://huggingface.co/OpenMOSS-Team/MOSS-Audio-Tokenizer-Nano-ONNX/resolve/ceff0d0749bfb3fa2d61149794ec6feef0d1e1ae/codec_browser_onnx_meta.json",
+          "bytes": 17036,
+          "sha256": "3e291c883bb7d11ff2fe8e964e3e495519760358859f35c951254c7741592731",
+          "role": "codec-metadata",
+          "required": true
+        },
+        {
+          "filename": "moss_audio_tokenizer_encode.onnx",
+          "repo": "OpenMOSS-Team/MOSS-Audio-Tokenizer-Nano-ONNX",
+          "revision": "ceff0d0749bfb3fa2d61149794ec6feef0d1e1ae",
+          "url": "https://huggingface.co/OpenMOSS-Team/MOSS-Audio-Tokenizer-Nano-ONNX/resolve/ceff0d0749bfb3fa2d61149794ec6feef0d1e1ae/moss_audio_tokenizer_encode.onnx",
+          "bytes": 815775,
+          "sha256": "eadea4a645abdcf98714c7aead122ee2ce7da6e080f9f80b977cd1ca8e19473a",
+          "role": "reference-audio-encoder",
+          "required": false
+        },
+        {
+          "filename": "moss_audio_tokenizer_encode.data",
+          "repo": "OpenMOSS-Team/MOSS-Audio-Tokenizer-Nano-ONNX",
+          "revision": "ceff0d0749bfb3fa2d61149794ec6feef0d1e1ae",
+          "url": "https://huggingface.co/OpenMOSS-Team/MOSS-Audio-Tokenizer-Nano-ONNX/resolve/ceff0d0749bfb3fa2d61149794ec6feef0d1e1ae/moss_audio_tokenizer_encode.data",
+          "bytes": 44507136,
+          "sha256": "aa751265b2bab2887eac224484546b194875aa7494b607115439b3dc6b228a2c",
+          "role": "reference-audio-encoder",
+          "required": false
+        }
+      ],
+      "runtime": {
+        "status": "planned-not-executable",
+        "targetBackend": "ONNX Runtime CPU; native SentencePiece/text frontend and cached multi-graph decoder",
+        "streaming": {
+          "upstream": "KV-cached global/local decoding plus stateful codec",
+          "hearth": false,
+          "nativeOutput": "48000Hz stereo; Hearth SDK currently accepts mono, requiring explicit tested downmix or an API extension"
+        },
+        "blockers": [
+          "No Hearth adapter; upstream Android smoke example consumes pretokenized prompts.",
+          "Implement SentencePiece and exact special tokens/prompt grammar.",
+          "Implement KV ownership, local generation sampler, decode-step termination and stereo-to-mono conversion.",
+          "No verified Nano-specific Arabic quality score.",
+          "Official ONNX assets are much larger than the 100M parameter headline; do not claim PyTorch size as Android download."
+        ]
+      },
+      "license": {
+        "name": "Apache-2.0; verify all codec and reference-profile terms",
+        "url": "https://huggingface.co/OpenMOSS-Team/MOSS-TTS-Nano-100M-ONNX"
+      },
+      "sources": [
+        "https://github.com/OpenMOSS/MOSS-TTS-Nano",
+        "https://huggingface.co/OpenMOSS-Team/MOSS-TTS-Nano-100M-ONNX",
+        "https://huggingface.co/OpenMOSS-Team/MOSS-Audio-Tokenizer-Nano-ONNX"
+      ],
+      "requiredSourceBytes": 717868602
+    },
+    {
+      "id": "chatterbox-multilingual-v3",
+      "label": "Chatterbox Multilingual V3",
+      "family": "Chatterbox",
+      "parameters": {
+        "backbone": 500000000,
+        "total": "Additional speech encoder and conditional decoder; 500M is not full-stack count"
+      },
+      "languages": [
+        "en",
+        "ar",
+        "da",
+        "de",
+        "el",
+        "es",
+        "fi",
+        "fr",
+        "he",
+        "hi",
+        "it",
+        "ko",
+        "ms",
+        "nl",
+        "no",
+        "pl",
+        "pt",
+        "ru",
+        "sv",
+        "sw",
+        "tr",
+        "ja",
+        "zh"
+      ],
+      "voices": {
+        "kind": "default-reference-or-user-reference",
+        "items": [
+          {
+            "id": "default",
+            "label": "Bundled default reference",
+            "gender": "unknown",
+            "genderEvidence": null
+          }
+        ],
+        "notes": "Default reference gender is unverified. Pin user/imported male/female reference metadata separately."
+      },
+      "components": [
+        {
+          "filename": "onnx/speech_encoder.onnx",
+          "repo": "Masterx/chatterbox-multilingual-v3-ONNX",
+          "revision": "19b94afe41de738624b2f3afc75b4cd56221fbeb",
+          "url": "https://huggingface.co/Masterx/chatterbox-multilingual-v3-ONNX/resolve/19b94afe41de738624b2f3afc75b4cd56221fbeb/onnx/speech_encoder.onnx",
+          "bytes": 1204600,
+          "sha256": "012a9583c0a9560afa11307b585f1e799fca0e1701bdae53fa34766da78f8eae",
+          "role": "onnx-model",
+          "required": true
+        },
+        {
+          "filename": "onnx/speech_encoder.onnx_data",
+          "repo": "Masterx/chatterbox-multilingual-v3-ONNX",
+          "revision": "19b94afe41de738624b2f3afc75b4cd56221fbeb",
+          "url": "https://huggingface.co/Masterx/chatterbox-multilingual-v3-ONNX/resolve/19b94afe41de738624b2f3afc75b4cd56221fbeb/onnx/speech_encoder.onnx_data",
+          "bytes": 591274880,
+          "sha256": "f1f663a1a03aa885f8f0fcaa730dd8dfbce8caad514093b13c9682a4a2842990",
+          "role": "onnx-model",
+          "required": true
+        },
+        {
+          "filename": "onnx/embed_tokens.onnx",
+          "repo": "Masterx/chatterbox-multilingual-v3-ONNX",
+          "revision": "19b94afe41de738624b2f3afc75b4cd56221fbeb",
+          "url": "https://huggingface.co/Masterx/chatterbox-multilingual-v3-ONNX/resolve/19b94afe41de738624b2f3afc75b4cd56221fbeb/onnx/embed_tokens.onnx",
+          "bytes": 17616,
+          "sha256": "c8dd692ee8dfc9099baf39c8074e9bcc0a760e8c25ae1cac4a8c62c7cf4536bc",
+          "role": "onnx-model",
+          "required": true
+        },
+        {
+          "filename": "onnx/embed_tokens.onnx_data",
+          "repo": "Masterx/chatterbox-multilingual-v3-ONNX",
+          "revision": "19b94afe41de738624b2f3afc75b4cd56221fbeb",
+          "url": "https://huggingface.co/Masterx/chatterbox-multilingual-v3-ONNX/resolve/19b94afe41de738624b2f3afc75b4cd56221fbeb/onnx/embed_tokens.onnx_data",
+          "bytes": 68808704,
+          "sha256": "d263116bec8ae582953c99bdffa9ecd53914d1ae2732da8455e361ed5baa2a9a",
+          "role": "onnx-model",
+          "required": true
+        },
+        {
+          "filename": "onnx/language_model_q4.onnx",
+          "repo": "Masterx/chatterbox-multilingual-v3-ONNX",
+          "revision": "19b94afe41de738624b2f3afc75b4cd56221fbeb",
+          "url": "https://huggingface.co/Masterx/chatterbox-multilingual-v3-ONNX/resolve/19b94afe41de738624b2f3afc75b4cd56221fbeb/onnx/language_model_q4.onnx",
+          "bytes": 228633,
+          "sha256": "91846c24706116f87b39aac5b13aa1a67243b6f973bc433327d143b8eff9fde6",
+          "role": "onnx-model",
+          "required": true
+        },
+        {
+          "filename": "onnx/language_model_q4.onnx_data",
+          "repo": "Masterx/chatterbox-multilingual-v3-ONNX",
+          "revision": "19b94afe41de738624b2f3afc75b4cd56221fbeb",
+          "url": "https://huggingface.co/Masterx/chatterbox-multilingual-v3-ONNX/resolve/19b94afe41de738624b2f3afc75b4cd56221fbeb/onnx/language_model_q4.onnx_data",
+          "bytes": 353621248,
+          "sha256": "621a963492f871ccc841592c6ca117bf88dbea4c0c25d61be4391197c8b878b0",
+          "role": "onnx-model",
+          "required": true
+        },
+        {
+          "filename": "onnx/conditional_decoder.onnx",
+          "repo": "Masterx/chatterbox-multilingual-v3-ONNX",
+          "revision": "19b94afe41de738624b2f3afc75b4cd56221fbeb",
+          "url": "https://huggingface.co/Masterx/chatterbox-multilingual-v3-ONNX/resolve/19b94afe41de738624b2f3afc75b4cd56221fbeb/onnx/conditional_decoder.onnx",
+          "bytes": 6371670,
+          "sha256": "f494d8fed14f269e969a58ccbd627cdfb5eb889d0816c7fde09621fdcb160128",
+          "role": "onnx-model",
+          "required": true
+        },
+        {
+          "filename": "onnx/conditional_decoder.onnx_data",
+          "repo": "Masterx/chatterbox-multilingual-v3-ONNX",
+          "revision": "19b94afe41de738624b2f3afc75b4cd56221fbeb",
+          "url": "https://huggingface.co/Masterx/chatterbox-multilingual-v3-ONNX/resolve/19b94afe41de738624b2f3afc75b4cd56221fbeb/onnx/conditional_decoder.onnx_data",
+          "bytes": 533970816,
+          "sha256": "f41f149c1a30c273133739e873294e28dbc3c4ae6376b0a501e9cd21de286835",
+          "role": "onnx-model",
+          "required": true
+        },
+        {
+          "filename": "tokenizer.json",
+          "repo": "Masterx/chatterbox-multilingual-v3-ONNX",
+          "revision": "19b94afe41de738624b2f3afc75b4cd56221fbeb",
+          "url": "https://huggingface.co/Masterx/chatterbox-multilingual-v3-ONNX/resolve/19b94afe41de738624b2f3afc75b4cd56221fbeb/tokenizer.json",
+          "bytes": 72765,
+          "sha256": "8763bb615f5e0ad49fbb53b65d371e37961f64bb0a55b96c0205f4a59ba5be13",
+          "role": "text-tokenizer",
+          "required": true
+        },
+        {
+          "filename": "default_voice.wav",
+          "repo": "Masterx/chatterbox-multilingual-v3-ONNX",
+          "revision": "19b94afe41de738624b2f3afc75b4cd56221fbeb",
+          "url": "https://huggingface.co/Masterx/chatterbox-multilingual-v3-ONNX/resolve/19b94afe41de738624b2f3afc75b4cd56221fbeb/default_voice.wav",
+          "bytes": 714320,
+          "sha256": "3ebc531cdaba358a327099c1c4f0448026719957bcf4d8e9868767f227e02f4e",
+          "role": "reference-audio",
+          "required": true
+        }
+      ],
+      "runtime": {
+        "status": "planned-not-executable",
+        "targetBackend": "ONNX Runtime CPU with com.microsoft contrib ops and MatMulNBits support",
+        "streaming": {
+          "upstream": "KV-cached LM then conditional waveform decoder; exact streaming behavior to validate",
+          "hearth": false,
+          "nativeOutput": "24000Hz mono"
+        },
+        "blockers": [
+          "No Hearth V3 adapter.",
+          "Use NFKD full-case tokenizer; do not lowercase.",
+          "Trim reference to6s; maintain16-head/64dim caches; drop final960audio samples per upstream V3 contract.",
+          "Export omits Perth watermarking used upstream; integration needs explicit output provenance/watermark decision and upstream policy check.",
+          "Chinese/Japanese frontends missing in this export; metadata language coverage is upstream and does not mean all native text frontends are implemented.",
+          "Q4 Arabic parity, live latency and gender inventory unverified."
+        ]
+      },
+      "license": {
+        "name": "MIT model/export; upstream watermarking policy and reference rights must be preserved",
+        "url": "https://huggingface.co/Masterx/chatterbox-multilingual-v3-ONNX/blob/19b94afe41de738624b2f3afc75b4cd56221fbeb/LICENSE"
+      },
+      "sources": [
+        "https://github.com/resemble-ai/chatterbox",
+        "https://huggingface.co/Masterx/chatterbox-multilingual-v3-ONNX"
+      ],
+      "requiredSourceBytes": 1556285252,
+      "quality": {
+        "scope": "Export parity tested on limited non-Arabic examples; do not label as Arabic quality verified."
+      }
+    },
+    {
+      "id": "outetts-1.0-1b",
+      "label": "OuteTTS1.0 1B",
+      "family": "OuteTTS",
+      "parameters": {
+        "headline": 1000000000,
+        "storedGeneratorApprox": 1248000000,
+        "codec": "Additional DAC waveform codec"
+      },
+      "languages": [
+        "ar",
+        "en"
+      ],
+      "voices": {
+        "kind": "default-or-user-speaker-profiles",
+        "items": [
+          {
+            "id": "EN-FEMALE-1-NEUTRAL",
+            "label": "English female neutral (upstream example)",
+            "gender": "female",
+            "genderEvidence": "Official Oute model usage names this profile explicitly; profile bytes and cross-lingual Arabic QA not pinned here."
+          }
+        ],
+        "notes": "No verified male or native Arabic reference profile currently bundled. Do not expose a missing profile as installed."
+      },
+      "components": [
+        {
+          "filename": "Llama-OuteTTS-1.0-1B-Q4_K_M.gguf",
+          "repo": "OuteAI/Llama-OuteTTS-1.0-1B-GGUF",
+          "revision": "f0a131bce9ca77922d38da5af18db11d29b6b768",
+          "url": "https://huggingface.co/OuteAI/Llama-OuteTTS-1.0-1B-GGUF/resolve/f0a131bce9ca77922d38da5af18db11d29b6b768/Llama-OuteTTS-1.0-1B-Q4_K_M.gguf",
+          "bytes": 818168800,
+          "sha256": "4713e9f50ec53500bb6cff56a95940d944ad5e637f6abc8a4780f07e2a71d41f",
+          "role": "generator",
+          "required": true
+        },
+        {
+          "filename": "weights_24khz_1.5kbps_v1.0.pth",
+          "repo": "ibm-research/DAC.speech.v1.0",
+          "revision": "1ea7f64cd0678415e2d8c32d67b190722cb9b149",
+          "url": "https://huggingface.co/ibm-research/DAC.speech.v1.0/resolve/1ea7f64cd0678415e2d8c32d67b190722cb9b149/weights_24khz_1.5kbps_v1.0.pth",
+          "bytes": 295731578,
+          "sha256": "d77ca0b04df942ec64e6a7a162bcac093b1127700acdaec0079f40d32c4405fb",
+          "role": "codec-source-weights",
+          "required": true,
+          "installAction": "Convert to an Android executable codec graph/native runtime. This PyTorch file is not supported by Hearth."
+        },
+        {
+          "filename": "config.json",
+          "repo": "ibm-research/DAC.speech.v1.0",
+          "revision": "1ea7f64cd0678415e2d8c32d67b190722cb9b149",
+          "url": "https://huggingface.co/ibm-research/DAC.speech.v1.0/resolve/1ea7f64cd0678415e2d8c32d67b190722cb9b149/config.json",
+          "bytes": 601,
+          "sha256": "0c70fd77a5f698061e323c0adb483ffeeb622f27f7a11f1301fa0c3b9b41df76",
+          "role": "codec-metadata",
+          "required": true
+        }
+      ],
+      "runtime": {
+        "status": "planned-not-executable",
+        "targetBackend": "Isolated llama.cpp generator plus separately converted IBM DAC2-codebook waveform decoder",
+        "streaming": {
+          "upstream": "Chunked speech generation; reference profile occupies context",
+          "hearth": false,
+          "nativeOutput": "24000Hz mono"
+        },
+        "blockers": [
+          "No Hearth adapter.",
+          "Source codec weights need executable Android conversion with pinned outputs and parity tests.",
+          "Native port must implement1.0 prompt timing/energy/pitch metadata; do not use0.3 WavTokenizer.",
+          "Pin and verify speaker-profile bytes and provenance; reference uses context, reducing available generation duration.",
+          "Noncommercial/share-alike/Llama terms exclude this from an unrestricted commercial default SDK bundle.",
+          "No verified Arabic Q4 quality or S25 benchmark."
+        ]
+      },
+      "license": {
+        "name": "CC-BY-NC-SA-4.0 continued training/components; Llama3.2 Community License; DAC CDLA-Permissive2.0",
+        "url": "https://huggingface.co/OuteAI/Llama-OuteTTS-1.0-1B#license-information"
+      },
+      "sources": [
+        "https://huggingface.co/OuteAI/Llama-OuteTTS-1.0-1B",
+        "https://huggingface.co/OuteAI/Llama-OuteTTS-1.0-1B-GGUF",
+        "https://huggingface.co/ibm-research/DAC.speech.v1.0",
+        "https://github.com/edwko/OuteTTS"
+      ],
+      "requiredSourceBytes": 1113900979,
+      "selectedWeightsBytes": 1113900378
+    }
+  ]
+}

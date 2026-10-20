@@ -38,6 +38,7 @@ internal object ConversationTranslationSettings {
     }
     fun select(context: Context, id: String, localId: String? = null) {
         require(id == LOCAL || (ByokPolicy.FEATURE_BYOK && provider(id) != null)) { "Cloud translation is unavailable in the offline build." }
+        if (id == LOCAL) com.sal7one.transiber.runtime.LocalModelPolicy.requireAllowed(context, "local translation selection")
         prefs(context).edit().putString("selected", id).apply {
             if (localId != null) putString("local-model", localId)
         }.apply(); changed()
@@ -45,6 +46,7 @@ internal object ConversationTranslationSettings {
     /** Explicit user action; does not happen merely by opening a feature or saving a key. */
     suspend fun useEverywhere(context: Context, providerId: String, localId: String) {
         require(providerId == LOCAL || (ByokPolicy.FEATURE_BYOK && provider(providerId) != null)) { "Cloud translation is unavailable in the offline build." }
+        if (providerId == LOCAL) com.sal7one.transiber.runtime.LocalModelPolicy.requireAllowed(context, "local translation selection")
         com.sal7one.transiber.caption.CaptionConfigStore.update(context) { it.copy(
             localTranslationModelId=localId, textTranslationProviderId=providerId, localTranslationEnabled=true) }
         check(com.sal7one.transiber.preferences.UserPreferences.store(context, "camera-translate").edit().putString("provider",providerId).putString("local-model",localId).commit()) { "Could not save camera translator" }
@@ -147,7 +149,9 @@ internal data class ConversationTranslatorSnapshot(
     val acceleration: TranslationAcceleration = TranslationAcceleration.CPU,
 ) {
     val label get() = cloud?.provider?.label ?: TranslationOptions.label(localId)
-    fun open(context: Context): CancellableTextTranslator = cloud?.let { CloudTextTranslator(it, checkNotNull(languages)) }
+    fun open(context: Context): CancellableTextTranslator {
+        if (cloud == null) com.sal7one.transiber.runtime.LocalModelPolicy.requireAllowed(context, "translation")
+        return cloud?.let { CloudTextTranslator(it, checkNotNull(languages)) }
         ?: if (localId == TranslationOptions.ML_KIT) PlatformTranslation.open()
         else if (MarianPackage.find(localId) != null) checkNotNull(MarianPackage.find(localId)).let { pair ->
             MarianTranslationSession.open(MarianPackage.modelDirectory(context, pair),
@@ -155,4 +159,5 @@ internal data class ConversationTranslatorSnapshot(
         }
         else if (MarianCascade.find(localId) != null) MarianCascade.open(context, checkNotNull(MarianCascade.find(localId)))
         else TranslationCatalog.find(localId).let { spec -> LocalTranslationSession.open(LocalTranslationModels(File(context.filesDir, "translation-models")).file(spec), spec, acceleration, File(context.cacheDir, "translation-opencl")) }
+    }
 }

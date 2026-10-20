@@ -38,10 +38,16 @@ internal suspend fun overlayPreflight(context: Context, shortcut: OverlayShortcu
             check(LocalWorkGate.owner.value == null) { "${LocalWorkGate.owner.value} is still running or releasing its models. Stop it before starting ${shortcut.label}." }
             "No conflicting session"
         },
-        SetupProbe("Native runtime", SetupFix.MODELS) { CommonJni.init(context.applicationContext); "Libraries initialized" },
+        SetupProbe("Native runtime", SetupFix.MODELS) {
+            if (com.sal7one.transiber.runtime.LocalModelPolicy.allowed(context)) {
+                CommonJni.init(context.applicationContext); "Libraries initialized"
+            } else "Cloud connections only on TV"
+        },
     )
     if (shortcut == OverlayShortcut.CAPTIONS) {
         probes += SetupProbe("Speech recognition", if (config.engine == CaptionEngineChoice.CLOUD) SetupFix.CAPTIONS else SetupFix.MODELS) {
+            if (config.effectiveEngine != CaptionEngineChoice.CLOUD)
+                com.sal7one.transiber.runtime.LocalModelPolicy.requireAllowed(context, "speech recognition")
             when {
                 config.engine == CaptionEngineChoice.CLOUD -> {
                     check(ByokPolicy.FEATURE_BYOK) { "Cloud speech is unavailable in the offline build." }
@@ -93,6 +99,7 @@ internal suspend fun overlayPreflight(context: Context, shortcut: OverlayShortcu
                     checkTranslator(context, config.localTranslationModelId, config.textTranslationProviderId.ifBlank { "local" }, spoken, config.target.languageTag)
                 }
                 CaptionTranslationRoute.ENGLISH_PIVOT, CaptionTranslationRoute.ENGLISH_TEXT -> {
+                    com.sal7one.transiber.runtime.LocalModelPolicy.requireAllowed(context, "translation")
                     val pair = checkNotNull(MarianPackage.find(TranslationOptions.MARIAN_EN_AR))
                     check(MarianPackage.installed(context, pair) != null) {
                         "Download the verified English → Arabic translation model, or choose a different text translator."
@@ -107,6 +114,7 @@ internal suspend fun overlayPreflight(context: Context, shortcut: OverlayShortcu
         }
     } else {
         probes += SetupProbe("OCR model & source language", SetupFix.CAMERA) {
+            com.sal7one.transiber.runtime.LocalModelPolicy.requireAllowed(context, "OCR")
             val profile = OcrCatalog.profile(profileId)
             check(source in profile.languages) { "${profile.label} does not support source language $source." }
             val missing = OcrModels(File(context.filesDir, "ocr-models")).missing(profile)
@@ -134,6 +142,7 @@ private suspend fun checkTranslator(context: Context, localId: String, providerI
         CloudTranslationProtocol.translateRequest(connection, "Setup check", if (knownSource) source else languages.sourceLanguages.first { languages.supports(it, target) }, target)
         return "${provider.label} · saved connection and supported languages"
     }
+    com.sal7one.transiber.runtime.LocalModelPolicy.requireAllowed(context, "translation")
     if (localId == TranslationOptions.ML_KIT) {
         check(PlatformTranslation.available) { "ML Kit is unavailable in this build. Select an imported local translator." }
         check(target in TranslationOptions.mlKitCodes && (!knownSource || source in TranslationOptions.mlKitCodes)) { "ML Kit does not support $source → $target." }

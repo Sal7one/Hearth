@@ -25,6 +25,10 @@ import java.io.File
 internal fun SettingsOcrLocalUi(onDownloads: () -> Unit = {}, selected: String? = null, onSelect: ((String) -> Unit)? = null) {
     val uiText = rememberUiText()
     val context = LocalContext.current
+    if (!com.sal7one.transiber.runtime.LocalModelPolicy.allowed(context)) {
+        com.sal7one.transiber.ui.components.LocalModelPolicyNotice()
+        return
+    }
     val scope = rememberCoroutineScope()
     val models = remember { OcrModels(File(context.filesDir, "ocr-models")) }
     val downloads = remember { FileDownloads(context.applicationContext) }

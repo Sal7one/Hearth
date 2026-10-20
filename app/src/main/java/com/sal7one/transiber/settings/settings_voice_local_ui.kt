@@ -41,10 +41,12 @@ internal fun SettingsVoiceLocalUi(
     val uiText = rememberUiText()
 
     val context = LocalContext.current
+    val localModelsAllowed = com.sal7one.transiber.runtime.LocalModelPolicy.allowed(context)
     val scope = rememberCoroutineScope()
     var queuing by remember { mutableStateOf(false) }
     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        listOf("system" to uiText(UiR.string.ui_android_voices_60cb9), "supertonic" to "Supertonic 3").forEach { (id, label) ->
+        (listOf("system" to uiText(UiR.string.ui_android_voices_60cb9)) +
+            if (localModelsAllowed) listOf("supertonic" to "Supertonic 3") else emptyList()).forEach { (id, label) ->
             FilterChip(selected = localBackend == id, onClick = { save(choice.copy(backend = id)) }, label = { Text(label) })
         }
     }
@@ -61,6 +63,7 @@ internal fun SettingsVoiceLocalUi(
                 OutlinedButton(onClick={try{context.startActivity(Intent("com.android.settings.TTS_SETTINGS"))}catch(e: Exception){onError(e.message)}}){Text(uiText(UiR.string.ui_install_or_manage_android_voices_0f03f))}
             }
             "supertonic" -> {
+                if (!localModelsAllowed) { LocalModelPolicyNotice(); return }
                 var ready by remember { mutableStateOf(false) }
                 var records by remember { mutableStateOf<List<FileDownload>>(emptyList()) }
                 var tuning by rememberSaveable { mutableStateOf(false) }

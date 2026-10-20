@@ -30,6 +30,7 @@ internal data class TranslationBrowserItem(
         if (source != "any" && source !in sourceLanguages) return false
         if (target != "any" && target !in targetLanguages) return false
         if (source != "any" && source == target) return false
+        if (source != "any" && target != "any" && variants.isNotEmpty() && variants.none { it.supports(source, target) }) return false
         return if (variants.isNotEmpty()) variants.any { variantMatches(query, it) }
         else ModelSearch.matches(query, title, id, "Marian OPUS-MT ONNX compact",
             ModelSearch.languageTerms(sourceLanguages + targetLanguages),

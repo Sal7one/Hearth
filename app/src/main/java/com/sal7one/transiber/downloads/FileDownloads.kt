@@ -87,6 +87,7 @@ class FileDownloads(private val context: Context) {
 
  fun enqueue(spec: DownloadSpec, modelPackage: Boolean = false, installModelId: String = "", duplicate: Boolean = false): Long {
   check(ByokPolicy.FEATURE_BYOK) { "Downloads are unavailable in the offline build" }
+  if (modelPackage || installModelId.isNotBlank()) com.sal7one.transiber.runtime.LocalModelPolicy.requireAllowed(context, "model downloads")
   val checked = DownloadSpec.parse(spec.url, spec.fileName)
   check(Build.VERSION.SDK_INT >= 29 || folderUri != null) { "Choose a download folder first on Android 9" }
   if (installModelId.isNotEmpty()) {
@@ -170,6 +171,8 @@ class FileDownloads(private val context: Context) {
  }
  fun retry(id: Long) {
   check(ByokPolicy.FEATURE_BYOK)
+  record(id)?.let { if (it.optBoolean("modelsFolder") || it.optString("model").isNotBlank())
+   com.sal7one.transiber.runtime.LocalModelPolicy.requireAllowed(context, "model downloads") }
   update(id) { it.put("phase", "Waiting").remove("error") }
   try { DownloadRunner.start(context) } catch (e: Exception) { fail(id, e); throw e }
  }
@@ -258,12 +261,14 @@ class FileDownloads(private val context: Context) {
  }
  suspend fun installTranslation(id: Long, spec: TranslationModelSpec) = withContext(Dispatchers.IO) {
   check(ByokPolicy.FEATURE_BYOK) { "Downloads are unavailable in the offline build" }
+  com.sal7one.transiber.runtime.LocalModelPolicy.requireAllowed(context, "model installation")
   val job = currentCoroutineContext()
   context.contentResolver.openInputStream(uri(id))?.use {
    LocalTranslationModels(File(context.filesDir, "translation-models")).import(it, spec) { job.ensureActive() }
   } ?: error("Cannot open downloaded translation model")
  }
  internal suspend fun installModel(id: Long, modelId: String): String = withContext(Dispatchers.IO) {
+  com.sal7one.transiber.runtime.LocalModelPolicy.requireAllowed(context, "model installation")
   MarianPackage.pairForPart(modelId)?.let { pair ->
    return@withContext MarianPackage.install(context, this@FileDownloads, pair).orEmpty()
   }
@@ -330,6 +335,7 @@ class FileDownloads(private val context: Context) {
  }
  /** Installing is deliberately separate from activating: a late background completion must not change a running session. */
  suspend fun selectInstalled(item: FileDownload) {
+  com.sal7one.transiber.runtime.LocalModelPolicy.requireAllowed(context, "model selection")
   val modelId = record(item.id)?.optString("model").orEmpty()
   MarianPackage.pairForPart(modelId)?.let { pair ->
    require(MarianPackage.installed(context, pair) != null) { "Finish installing the Marian model files first" }

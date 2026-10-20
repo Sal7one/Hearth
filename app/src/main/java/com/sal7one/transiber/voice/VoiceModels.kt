@@ -1,9 +1,5 @@
 package com.sal7one.transiber.voice
 
-import com.sal7one.common_jni.voice.SupertonicVoice
-import com.sal7one.common_jni.voice.VoiceStyle
-import org.json.JSONArray
-import org.json.JSONObject
 import java.io.File
 import java.io.InputStream
 import java.nio.file.Files
@@ -67,17 +63,4 @@ internal class VoiceModels(private val root: File) {
             check(digest.digest().joinToString(""){"%02x".format(it)}==asset.sha256){"Installed voice checksum failed: ${asset.filename}"}
         }
     }
-    fun style(voice: String): VoiceStyle {
-        require(voice in VoiceCatalog.voices)
-        val json=JSONObject(file(VoiceCatalog.file("$voice.json")).readText())
-        fun values(key: String, a: Int, b: Int): FloatArray {
-            val value=json.getJSONObject(key);val dims=value.getJSONArray("dims")
-            require(dims.length()==3 && dims.getInt(0)==1 && dims.getInt(1)==a && dims.getInt(2)==b){"Invalid voice style dimensions"}
-            val data=value.getJSONArray("data").getJSONArray(0)
-            return FloatArray(a*b){i ->data.getJSONArray(i/b).getDouble(i%b).toFloat().also {require(it.isFinite())}}
-        }
-        return VoiceStyle(values("style_ttl",50,256),values("style_dp",8,16))
-    }
-    fun indexer(): LongArray = JSONArray(file(VoiceCatalog.file("unicode_indexer.json")).readText()).let {a ->LongArray(a.length(),a::getLong)}
-    fun open() = SupertonicVoice(root)
 }

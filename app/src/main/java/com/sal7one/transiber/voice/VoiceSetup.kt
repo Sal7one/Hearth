@@ -47,7 +47,7 @@ internal fun VoiceSetup(onDownloads: () -> Unit, initialLocation: SettingsLocati
     fun save(value: VoiceChoice){choice=value;VoiceSettings.save(context,value);player.stop();error=null}
     val importer=rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()){uris ->if(uris.isNotEmpty())scope.launch {
         busy=true;error=null
-        try {withContext(Dispatchers.IO){val job=currentCoroutineContext();for(uri in uris){context.contentResolver.openInputStream(uri)?.buffered()?.use {input ->input.mark(4);val a=input.read();val b=input.read();input.reset();if(a==0x50 && b==0x4b)models.importZip(input){job.ensureActive()} else models.import(input){job.ensureActive()}} ?: error(uiText(UiR.string.ui_cannot_open_voice_model_b4ec5))}};revision++}
+        try {withContext(Dispatchers.IO){com.sal7one.transiber.runtime.LocalModelPolicy.requireAllowed(context, "downloaded speech voice import");val job=currentCoroutineContext();for(uri in uris){context.contentResolver.openInputStream(uri)?.buffered()?.use {input ->input.mark(4);val a=input.read();val b=input.read();input.reset();if(a==0x50 && b==0x4b)models.importZip(input){job.ensureActive()} else models.import(input){job.ensureActive()}} ?: error(uiText(UiR.string.ui_cannot_open_voice_model_b4ec5))}};revision++}
         catch(e: CancellationException){throw e}catch(e: Exception){error=e.message ?: e.toString()}finally{busy=false}
     }}
     var selfHosted by rememberSaveable { mutableStateOf(false) }

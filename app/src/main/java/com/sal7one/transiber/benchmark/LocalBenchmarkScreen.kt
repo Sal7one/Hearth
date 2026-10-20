@@ -57,6 +57,10 @@ fun LocalBenchmarkScreen(onModels: (String) -> Unit = {}, onDownloads: () -> Uni
     val uiText = rememberUiText()
 
     val context = LocalContext.current
+    if (!com.sal7one.transiber.runtime.LocalModelPolicy.allowed(context)) {
+        Column(Modifier.padding(16.dp)) { com.sal7one.transiber.ui.components.LocalModelPolicyNotice() }
+        return
+    }
     val scope = rememberCoroutineScope()
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     val runner = remember { LocalBenchmarkRunner(context.applicationContext) }

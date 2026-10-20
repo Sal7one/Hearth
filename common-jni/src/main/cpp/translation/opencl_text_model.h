@@ -23,8 +23,8 @@ class OpenClTextModel : public TextModel {
         return path;
     }
 public:
-    explicit OpenClTextModel(const std::string& path, bool rawPrompt) :
-        TextModel(checkedPath(path), 2, 99, rawPrompt) {
+    explicit OpenClTextModel(const std::string& path, int promptMode) :
+        TextModel(checkedPath(path), 2, 99, promptMode) {
         const auto device = gpuDevice();
         const char* name = device ? ggml_backend_dev_name(device) : nullptr;
         execution = openclExecutionInfo(gpuDescription(), name ? name : "", nativeOffloadSummary, nativeModelBufferSummary);

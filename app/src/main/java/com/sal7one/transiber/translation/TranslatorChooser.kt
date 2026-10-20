@@ -44,10 +44,11 @@ internal fun TranslatorChooser(
 
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
+    val localAllowed = com.sal7one.transiber.runtime.LocalModelPolicy.allowed(context)
     val revision by ConversationTranslationSettings.revision.collectAsState()
     var expanded by rememberSaveable { mutableStateOf(location != null) }
     var cloudTab by rememberSaveable { mutableStateOf(providerId !in setOf("", "local")) }
-    val showCloud = location?.let { it == SettingsLocation.CLOUD } ?: cloudTab
+    val showCloud = !localAllowed || (location?.let { it == SettingsLocation.CLOUD } ?: cloudTab)
     var editing by remember { mutableStateOf<TextTranslationProvider?>(null) }
     var installed by remember { mutableStateOf<Set<String>>(emptySet()) }
     val registered by remember(context) { ModelRegistry.getInstance(context).registeredModels }.collectAsState()
@@ -79,7 +80,7 @@ internal fun TranslatorChooser(
         if (expanded) {
             Text(scopeLabel, style = MaterialTheme.typography.bodySmall)
             Text(uiText(UiR.string.ui_local_model_and_saved_connections_are_shared_22351), style = MaterialTheme.typography.bodySmall)
-            if (providerId.isNotBlank() && (location == null || (providerId == "local") == (location == SettingsLocation.LOCAL))) {
+            if (providerId.isNotBlank() && (localAllowed || providerId != "local") && (location == null || (providerId == "local") == (location == SettingsLocation.LOCAL))) {
                 OutlinedButton(enabled=enabled && !applying, onClick={
                     applying=true;failure=null
                     scope.launch { try {
@@ -95,10 +96,11 @@ internal fun TranslatorChooser(
                 onSelect("", localId); expanded = location != null
             }
             if(ByokPolicy.FEATURE_BYOK && location == null) Row(horizontalArrangement=Arrangement.spacedBy(8.dp)) {
-                FilterChip(selected=!showCloud,onClick={cloudTab=false;editing=null},label={Text(uiText(UiR.string.ui_on_device_72a3f))})
+                if (localAllowed) FilterChip(selected=!showCloud,onClick={cloudTab=false;editing=null},label={Text(uiText(UiR.string.ui_on_device_72a3f))})
                 FilterChip(selected=showCloud,onClick={cloudTab=true;editing=null},label={Text(uiText(UiR.string.ui_cloud_server_ba8c1))})
             }
-            if(!showCloud || !ByokPolicy.FEATURE_BYOK) {
+            if (!localAllowed) com.sal7one.transiber.ui.components.LocalModelPolicyNotice()
+            if(localAllowed && (!showCloud || !ByokPolicy.FEATURE_BYOK)) {
             Text(uiText(UiR.string.ui_on_device_72a3f), style = MaterialTheme.typography.titleMedium)
             Text(uiText(UiR.string.ui_original_text_stays_on_your_phone_2fbea), style = MaterialTheme.typography.bodySmall)
             Column(Modifier.selectableGroup()) {

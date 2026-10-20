@@ -29,6 +29,10 @@ import java.io.File
 
 @Composable internal fun EasySetupLocalUi(onDone: () -> Unit, onDownloads: () -> Unit) {
     val uiText = rememberUiText()
+    if (!com.sal7one.transiber.runtime.LocalModelPolicy.allowed(LocalContext.current)) {
+        com.sal7one.transiber.ui.components.LocalModelPolicyNotice()
+        return
+    }
     if (com.sal7one.transiber.preferences.rememberSetupMode() == com.sal7one.transiber.preferences.SetupMode.BASIC) {
         val context = LocalContext.current
         var current by remember { mutableStateOf<CaptionOverlayConfig?>(null) }

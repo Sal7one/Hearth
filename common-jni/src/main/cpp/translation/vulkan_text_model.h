@@ -20,8 +20,8 @@ class VulkanTextModel : public TextModel {
         return path;
     }
 public:
-    explicit VulkanTextModel(const std::string& path, bool rawPrompt) :
-        TextModel(checkedPath(path), 2, 99, rawPrompt) {
+    explicit VulkanTextModel(const std::string& path, int promptMode) :
+        TextModel(checkedPath(path), 2, 99, promptMode) {
         const auto device = gpuDevice();
         const char* description = device ? ggml_backend_dev_description(device) : nullptr;
         const char* name = device ? ggml_backend_dev_name(device) : nullptr;

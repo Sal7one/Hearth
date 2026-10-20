@@ -202,6 +202,10 @@ build has no downloader. Model variants, language coverage and licenses are show
 in their setup pages. A benchmark preset is a suggestion to test on your device,
 not a measured universal ranking.
 
+On TVs, Hearth blocks downloaded local models and offers explicit cloud connections.
+The offline build keeps its network restrictions on TVs too. Existing model files
+and saved choices are retained so a device policy change does not delete user data.
+
 Local speech and translation use separate models. Whisper's built-in translation
 targets English; other recognizers use the selected translation stage. Provider
 integrations can supply their own translation. Translator choices are remembered
@@ -210,6 +214,9 @@ by feature group; **Use everywhere** explicitly applies one across Hearth.
 - [Model catalog and sources](docs/model-sources.md) · [Speech setup](docs/models.md)
 - [Local translation](docs/local-translation.md) · [Translation routing](docs/translation-choices.md)
 - [Camera OCR](docs/camera-ocr.md) · [Caption cloud voices](docs/cloud-tts.md) · [Other voices](docs/voices.md)
+- [Model expansion and reusable TTS implementation handoff](docs/handoff/README.md):
+  code maps, 15 pinned model cards, bounded agent assignments and acceptance gates.
+  The handoff distinguishes integrated paths from adapters still to implement.
 
 ## Build
 

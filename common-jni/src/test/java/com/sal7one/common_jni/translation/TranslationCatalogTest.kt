@@ -6,11 +6,27 @@ class TranslationCatalogTest {
   assertEquals(TranslationCatalog.models.size, TranslationCatalog.models.map { it.id }.toSet().size)
   TranslationCatalog.models.forEach {
    assertTrue(it.sha256.matches(Regex("[0-9a-f]{64}"))); assertTrue(it.revision.matches(Regex("[0-9a-f]{40}")))
-   assertTrue(it.supports("ru-RU", "ar")); assertTrue(it.supports("zh-CN", "en")); if (it.family !in setOf("translategemma", "milmmt-46")) assertTrue(it.supports("tl", "ar"))
+   if (it.family != "riva-translate") assertTrue(it.supports("ru-RU", "ar")); assertTrue(it.supports("zh-CN", "en")); if (it.family !in setOf("translategemma", "milmmt-46", "eurollm", "riva-translate")) assertTrue(it.supports("tl", "ar"))
    assertFalse(it.supports("auto", "ar")); assertFalse(it.supports("mul", "en")); assertFalse(it.supports("xx", "ar"))
    assertFalse(it.supports("ar", "ar"))
    assertTrue(it.prompt("hello", "en", "ar").contains("hello"))
   }
+ }
+ @Test fun euroAndRivaUseSeparatePublisherPromptsAndDirections() {
+  val euro = TranslationCatalog.find("eurollm-17b-q4")
+  assertEquals(2, euro.promptMode)
+  assertEquals(1_045_156_992L, euro.bytes)
+  assertEquals("Apache-2.0", euro.license)
+  assertEquals("Translate the following English source text to Arabic:\nEnglish: hello\nArabic:", euro.prompt(" hello ", "en", "ar"))
+  assertFalse(euro.supports("tl", "ar"))
+  val riva = TranslationCatalog.find("riva-translate-4b-v2-q4")
+  assertEquals(3, riva.promptMode)
+  assertEquals(2_759_302_720L, riva.bytes)
+  assertTrue(riva.supports("en", "ar")); assertTrue(riva.supports("ar", "en"))
+  assertFalse(riva.supports("ru", "ar"))
+  assertEquals((riva.sourceLanguages.size - 1) * 2, riva.directions.size)
+  assertEquals("You are an expert at translating text from English to Arabic.\n\nhello", riva.prompt(" hello ", "en", "ar"))
+  assertEquals("You are an expert at translating text from European Spanish to English.\n\nhola", riva.prompt("hola", "es", "en"))
  }
  @Test fun overlongCaptionIsRejectedBeforeNative() {
   try { TranslationCatalog.models.first().prompt("x".repeat(2001), "en", "ar"); fail("Too long") } catch (_: IllegalArgumentException) {}

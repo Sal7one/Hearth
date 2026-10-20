@@ -7,7 +7,13 @@ import android.os.Looper
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
 import com.sal7one.common_jni.audio.PcmWave
-import com.sal7one.common_jni.voice.SupertonicVoice
+import com.sal7one.hearth.tts.ArticleReader
+import com.sal7one.hearth.tts.ArticleSpeech
+import com.sal7one.hearth.tts.SpeechOptions
+import com.sal7one.hearth.tts.VoicePreference
+import com.sal7one.hearth.tts.supertonic.SupertonicSpeechEngine
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.collect
 import com.sal7one.common_jni.voice.VoiceText
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
@@ -29,7 +35,7 @@ internal class VoicePlayer(context: Context,private val backendOverride: String?
     private var systemPending: Pair<String,CompletableDeferred<Unit>>?=null
     private val systemReady=CompletableDeferred<Unit>()
     private var system: TextToSpeech?=null
-    @Volatile private var model: SupertonicVoice?=null
+    @Volatile private var articleReader: ArticleReader?=null
     @Volatile private var track: AudioTrack?=null
     private var network: RemoteVoiceClient?=null
     private val audioManager=context.getSystemService(AudioManager::class.java)
@@ -122,20 +128,51 @@ internal class VoicePlayer(context: Context,private val backendOverride: String?
         }
     }
     private suspend fun local(request: Request,choice: VoiceChoice)=nativeGate.withLock {
+        com.sal7one.transiber.runtime.LocalModelPolicy.requireAllowed(context, "downloaded speech voices")
         val baseLanguage=Locale.forLanguageTag(request.language).language
         require(baseLanguage in VoiceCatalog.languages){"Supertonic 3 does not support ${request.language}. Choose an installed Android voice or a compatible voice server"}
-        val models=VoiceModels(File(context.filesDir,"voice-models"))
         val voice=VoiceGenderMapping.supertonicVoice(choice.voice,request.gender)
+        val reader=ArticleReader(SupertonicSpeechEngine(File(context.filesDir,"voice-models")))
+        articleReader=reader
         try {
-            val job=currentCoroutineContext()
-            val data=withContext(Dispatchers.IO){models.verify(voice){job.ensureActive()};models.indexer() to models.style(voice)}
-            withContext(Dispatchers.IO+NonCancellable){model=models.open()}
-            currentCoroutineContext().ensureActive()
-            for(part in VoiceText.chunks(request.text)) {
-                val samples=withContext(Dispatchers.Default){checkNotNull(model).synthesize(VoiceText.ids(part,baseLanguage,data.first),data.second,choice.steps,choice.rate)}
-                currentCoroutineContext().ensureActive();play(samples,SupertonicVoice.SAMPLE_RATE,1f,request.volume)
+            streamArticle(reader.read(request.text,baseLanguage,VoicePreference(id=voice),SpeechOptions(choice.rate,choice.steps)),request.volume)
+        }finally {
+            withContext(NonCancellable){reader.closeAndJoin()}
+            if(articleReader===reader)articleReader=null
+        }
+    }
+    /** One AudioTrack stays open across bounded SDK frames and article parts. */
+    private suspend fun streamArticle(events: Flow<ArticleSpeech>,volume: Float)=withContext(Dispatchers.IO) {
+        var player: AudioTrack?=null
+        var sampleRate=0
+        var written=0L
+        try {
+            events.collect { event ->
+                if(event is ArticleSpeech.Audio) {
+                    val pcm=event.pcm
+                    if(player==null) {
+                        sampleRate=pcm.sampleRate
+                        val minimum=AudioTrack.getMinBufferSize(sampleRate,AudioFormat.CHANNEL_OUT_MONO,AudioFormat.ENCODING_PCM_FLOAT)
+                        check(minimum>0){"Android cannot play $sampleRate Hz voice audio: $minimum"}
+                        player=AudioTrack.Builder().setAudioAttributes(audioAttributes)
+                            .setAudioFormat(AudioFormat.Builder().setSampleRate(sampleRate).setChannelMask(AudioFormat.CHANNEL_OUT_MONO).setEncoding(AudioFormat.ENCODING_PCM_FLOAT).build())
+                            .setTransferMode(AudioTrack.MODE_STREAM).setBufferSizeInBytes(maxOf(minimum,sampleRate/10*4)).build()
+                        check(player!!.state==AudioTrack.STATE_INITIALIZED){"Voice audio output failed to initialize"}
+                        track=player;player!!.setVolume(volume.coerceIn(0f,1f));player!!.play()
+                    }
+                    check(pcm.sampleRate==sampleRate){"Voice changed sample rate during the article"}
+                    var offset=0
+                    while(offset<pcm.samples.size) {
+                        currentCoroutineContext().ensureActive()
+                        val count=player!!.write(pcm.samples,offset,minOf(4096,pcm.samples.size-offset),AudioTrack.WRITE_BLOCKING)
+                        check(count>0){"Android voice audio write failed: $count"}
+                        offset+=count;written+=count
+                    }
+                }
             }
-        }finally {withContext(Dispatchers.IO+NonCancellable){model?.close();model=null}}
+            check(written>0){"Voice returned no article audio"}
+            withTimeout(120000){while((player!!.playbackHeadPosition.toLong() and 0xffffffffL)<written)delay(20)}
+        }finally {track=null;player?.release()}
     }
     private suspend fun remote(request: Request,choice: VoiceChoice) {
         val connection=VoiceSettings.remote(context)
@@ -170,7 +207,7 @@ internal class VoicePlayer(context: Context,private val backendOverride: String?
     fun stop(){scope.launch {stopNow()}}
     private fun stopNow() {
         generation++;while(queue.tryReceive().isSuccess)Unit
-        model?.cancel();network?.close();operation?.cancel();systemPending?.second?.cancel();system?.stop()
+        articleReader?.stop();network?.close();operation?.cancel();systemPending?.second?.cancel();system?.stop()
         runCatching {track?.pause();track?.flush()};changed(false,null)
     }
     override fun close(){scope.launch {stopNow();queue.close();scope.cancel();system?.shutdown();system=null;if(audibleOwner===this@VoicePlayer)audibleOwner=null}}

@@ -35,6 +35,15 @@ def sha256_file(path):
 
 def make_prompt(text, family, source, target):
     to = NAMES.get(target, target)
+    if family == "eurollm":
+        source_name = NAMES.get(source, source)
+        return f"Translate the following {source_name} source text to {to}:\n{source_name}: {text.strip()}\n{to}:"
+    if family == "riva-translate":
+        if source != "en" and target != "en":
+            raise ValueError("Riva supports English-paired directions only")
+        source_name = "Simplified Chinese" if source == "zh" else NAMES.get(source, source)
+        target_name = "Simplified Chinese" if target == "zh" else to
+        return f"You are an expert at translating text from {source_name} to {target_name}.\n\n{text.strip()}"
     if family == "milmmt-46":
         from_name = "Chinese (Simplified)" if source == "zh" else NAMES.get(source, source)
         to_name = "Chinese (Simplified)" if target == "zh" else to
@@ -129,7 +138,7 @@ def machine_name():
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--model", required=True, type=Path, help="already-downloaded GGUF file; weights are never fetched")
-    parser.add_argument("--family", choices=("hy-mt1.5", "hy-mt2", "translategemma", "milmmt-46"), required=True)
+    parser.add_argument("--family", choices=("hy-mt1.5", "hy-mt2", "translategemma", "milmmt-46", "eurollm", "riva-translate"), required=True)
     parser.add_argument("--source", choices=tuple(NAMES), required=True)
     parser.add_argument("--target", choices=tuple(NAMES), required=True)
     parser.add_argument("--threads", type=int, default=2)
@@ -142,6 +151,8 @@ def main():
         parser.error("This runner is for macOS; use the Android app for phone measurements.")
     if args.source == args.target:
         parser.error("Source and destination must differ.")
+    if args.family == "riva-translate" and args.source != "en" and args.target != "en":
+        parser.error("Riva supports English-paired directions only.")
     if (not 1 <= args.threads <= 32 or not 1 <= args.passes <= 5
             or (args.gpu_layers is not None and not 0 <= args.gpu_layers <= 999)):
         parser.error("Threads, passes or GPU layers are outside safe benchmark limits.")
@@ -168,6 +179,10 @@ def main():
                "NUL-DELIMITED-STDIN", "STOP-ON-ERROR"]
     if args.family == "milmmt-46":
         command.append("RAW-PROMPT")
+    if args.family == "eurollm":
+        command.append("EURO-PROMPT")
+    if args.family == "riva-translate":
+        command.append("RIVA-PROMPT")
     hash_start = time.perf_counter()
     model_hash = sha256_file(args.model)
     verify_ms = (time.perf_counter() - hash_start) * 1000

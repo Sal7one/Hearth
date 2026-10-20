@@ -1,5 +1,25 @@
 # Utilities and consumers
 
+## Model expansion and reusable article speech foundation
+
+`hearth-tts` exposes the network-free `SpeechEngine` contract, strict
+`SpeechVoices.resolve`, bounded `PcmAudio`, lazy `ArticleText` splitting and
+`ArticleReader` lifecycle. Its production consumer is `VoicePlayer` through the
+`hearth-tts-supertonic` adapter. `ArticleReaderTest` covers Arabic/supplementary
+Unicode preservation, strict gender/fallback, sequential reuse, concurrent
+ownership, real/empty inference failures, bounded backpressure, borrowed PCM
+copying and cancellation/close while a full channel blocks the producer. Cleanup
+cancels the owned channel before awaiting native completion; engine destruction
+stays on the owning worker. New model adapters remain separate implementation
+tasks in [the handoff](handoff/README.md).
+
+`LocalModelPolicy` is consumed by app speech/translation/TTS opens, model
+downloads/imports, portable setups, OCR, benchmarks and local model screens.
+`LocalModelPolicyTest` checks actionable failures; `TvLocalModelBoundariesTest`
+uses actual TV contexts to reject stale translator snapshots, transfer/retry,
+installation and registry imports before file/network work. Android system TTS
+and the standalone SDK are distinct from Hearth's downloaded-model TV policy.
+
 `CaptionPresentation` is consumed by phone captions, TV subtitles and held-history
 copying. It strictly selects source/translation text using immutable published
 provenance and filters visible finals before applying history limits. Translation

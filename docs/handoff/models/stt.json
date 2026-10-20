@@ -1,0 +1,729 @@
+{
+  "schemaVersion": 1,
+  "asOf": "2026-10-19",
+  "category": "stt",
+  "purpose": "Pinned implementation handoff; never merge these preparation cards into installable SpeechArtifactCatalog until runtime, package, language and device acceptance gates pass.",
+  "repoBaseline": {
+    "branch": "release/v0.25.4",
+    "commit": "6c15890b284b6c74074d13d7d45d1311d0cf6035",
+    "scope": "baseline before concurrent implementation work; consult git diff for later changes"
+  },
+  "sizeUnit": "bytes, decimal MB/GB only for display; not peak RAM",
+  "provenance": "Component sizes and SHA-256 were read from public Hugging Face LFS metadata on the asOf date. Weight payloads were not downloaded or independently hashed during this handoff. Installers must verify actual downloaded bytes.",
+  "runtimeSourcePins": {
+    "transcribe.cpp": {
+      "repo": "https://github.com/handy-computer/transcribe.cpp",
+      "revision": "1dc22facfc931e2f8adb43924b0e38b9c46f83c7",
+      "license": "MIT",
+      "vendoredGgmlUpstreamRevision": "d7cb574130e6f01ad25b3289685489200febcd74",
+      "vendoredGgmlPatchNotice": "ggml/UPSTREAM names two downstream patches; build the pinned vendored tree, never substitute another GGML silently."
+    },
+    "audio.cpp": {
+      "repo": "https://github.com/0xShug0/audio.cpp",
+      "revision": "673ade451c9cba9c893fb0e606872d9dc44f21e3",
+      "license": "Apache-2.0",
+      "buildModels": [
+        "owsm"
+      ],
+      "note": "Build only the narrow selected model; do not ship the framework server/model manager."
+    },
+    "llama.cpp-mtmd": {
+      "repo": "https://github.com/ggml-org/llama.cpp",
+      "revision": "64e9bceb2c3a856efed96feda784a50947049feb",
+      "license": "MIT",
+      "note": "Already pinned for Hearth translation, contains Qwen3-ASR audio encoder source. Existing translation DSO disables mtmd and cannot transcribe audio."
+    }
+  },
+  "models": [
+    {
+      "id": "planned-cohere-transcribe-arabic-07-2026",
+      "label": "Cohere Transcribe Arabic 07-2026",
+      "family": "Cohere Transcribe",
+      "parameters": {
+        "count": 2065804048,
+        "basis": "HF official safetensors total",
+        "exact": true,
+        "scope": "encoder and autoregressive decoder"
+      },
+      "languages": [
+        "ar",
+        "en"
+      ],
+      "sourceLanguageHints": [
+        "ar",
+        "en"
+      ],
+      "autoLanguageDetection": false,
+      "components": [
+        {
+          "filename": "cohere-transcribe-arabic-07-2026-Q4_K_M.gguf",
+          "repo": "handy-computer/cohere-transcribe-arabic-07-2026-gguf",
+          "revision": "11a54d6895f94cce78d0ece142b8e552e7822539",
+          "url": "https://huggingface.co/handy-computer/cohere-transcribe-arabic-07-2026-gguf/resolve/11a54d6895f94cce78d0ece142b8e552e7822539/cohere-transcribe-arabic-07-2026-Q4_K_M.gguf",
+          "bytes": 1558162848,
+          "sha256": "4671080cd10ffc6166e1e1b36216f9b51e1455f170d55c59cff7b81332ad4621",
+          "role": "model",
+          "required": true,
+          "verification": "publisher_lfs_metadata_verified; payload_not_downloaded_in_this_handoff",
+          "sourcePath": "cohere-transcribe-arabic-07-2026-Q4_K_M.gguf"
+        }
+      ],
+      "downloadBytes": 1558162848,
+      "quantization": "Q4_K_M",
+      "variants": [
+        {
+          "id": "q8_0",
+          "components": [
+            {
+              "filename": "cohere-transcribe-arabic-07-2026-Q8_0.gguf",
+              "repo": "handy-computer/cohere-transcribe-arabic-07-2026-gguf",
+              "revision": "11a54d6895f94cce78d0ece142b8e552e7822539",
+              "url": "https://huggingface.co/handy-computer/cohere-transcribe-arabic-07-2026-gguf/resolve/11a54d6895f94cce78d0ece142b8e552e7822539/cohere-transcribe-arabic-07-2026-Q8_0.gguf",
+              "bytes": 2410655136,
+              "sha256": "910de5c9c57f9fd8a280e1701f9cd96f63768878c1ca9e4ecf23638a5e0fef16",
+              "role": "model",
+              "required": true,
+              "verification": "publisher_lfs_metadata_verified; payload_not_downloaded_in_this_handoff",
+              "sourcePath": "cohere-transcribe-arabic-07-2026-Q8_0.gguf"
+            }
+          ],
+          "downloadBytes": 2410655136
+        }
+      ],
+      "runtime": {
+        "status": "upstream_runtime_available_hearth_adapter_missing",
+        "targetBackend": "cohere_asr",
+        "streaming": "utterance_finals",
+        "blockers": [
+          "Implement pinned transcribe.cpp HearthSpeechBackend adapter and architecture/variant checks.",
+          "Build and attest CPU runtime; build separate optional arm64 Vulkan runtime with explicit backend validation.",
+          "Cohere requires a spoken-language selection; do not accept Auto and silently select Arabic.",
+          "Real Arabic/English parity and S25 latency/RAM tests pending."
+        ],
+        "sourceRepo": "https://github.com/handy-computer/transcribe.cpp",
+        "sourceRevision": "1dc22facfc931e2f8adb43924b0e38b9c46f83c7",
+        "hearthIntegration": "not_implemented",
+        "proposedAbi": "HearthSpeechBackend v2",
+        "proposedAbiScope": "arm64-v8a CPU first; Vulkan optional after real placement and parity checks",
+        "builtForAndroid": false,
+        "ownerDeviceTested": false,
+        "architecture": "cohere_asr",
+        "variant": "cohere-transcribe-arabic-07-2026",
+        "roles": {
+          "model": "cohere-transcribe-arabic-07-2026-Q4_K_M.gguf"
+        },
+        "selfContainedTokenizer": true,
+        "upstreamGpu": [
+          "vulkan",
+          "metal",
+          "cuda"
+        ],
+        "hearthGpu": []
+      },
+      "license": {
+        "name": "Apache-2.0",
+        "url": "https://huggingface.co/CohereLabs/cohere-transcribe-arabic-07-2026/blob/c3e911b42149bf7a1e53d5cef9878aee87515a23/README.md"
+      },
+      "quality": [
+        {
+          "metric": "WER",
+          "value": 11.18,
+          "unit": "percent",
+          "language": "ar",
+          "dataset": "FLEURS ar_eg full test, 428 utterances",
+          "weights": "selected Q4_K_M GGUF",
+          "publisher": "transcribe.cpp conversion maintainer",
+          "normalizer": "Whisper BasicTextNormalizer",
+          "source": "https://github.com/handy-computer/transcribe.cpp/blob/1dc22facfc931e2f8adb43924b0e38b9c46f83c7/docs/models/cohere-transcribe-arabic-07-2026.md",
+          "caveat": "Egyptian-dialect FLEURS score; not a Gulf/Saudi score and not the same protocol as the six-set average."
+        },
+        {
+          "metric": "WER",
+          "value": 1.34,
+          "unit": "percent",
+          "language": "en",
+          "dataset": "LibriSpeech test-clean",
+          "weights": "selected Q4_K_M GGUF",
+          "publisher": "transcribe.cpp conversion maintainer",
+          "source": "https://github.com/handy-computer/transcribe.cpp/blob/1dc22facfc931e2f8adb43924b0e38b9c46f83c7/docs/models/cohere-transcribe-arabic-07-2026.md"
+        }
+      ],
+      "sources": [
+        "https://huggingface.co/CohereLabs/cohere-transcribe-arabic-07-2026/blob/c3e911b42149bf7a1e53d5cef9878aee87515a23/README.md",
+        "https://github.com/handy-computer/transcribe.cpp/blob/1dc22facfc931e2f8adb43924b0e38b9c46f83c7/docs/models/cohere-transcribe-arabic-07-2026.md",
+        "https://huggingface.co/api/models/handy-computer/cohere-transcribe-arabic-07-2026-gguf/revision/11a54d6895f94cce78d0ece142b8e552e7822539?blobs=true"
+      ],
+      "catalogReadiness": "research_preparation_only",
+      "installEnabled": false,
+      "alreadyInHearth": false,
+      "phoneBenchmark": "not_measured",
+      "recommendedDevice": "Samsung Galaxy S25 Ultra; Android TVs excluded from all local inference"
+    },
+    {
+      "id": "planned-audar-asr-v1-flash",
+      "label": "Audar-ASR V1 Flash",
+      "family": "Audar ASR / Qwen3-ASR adaptation",
+      "parameters": {
+        "count": 782426112,
+        "exact": true,
+        "basis": "official card and safetensors metadata",
+        "parts": {
+          "decoder": 596049920,
+          "audioEncoder": 186376192
+        }
+      },
+      "languages": [
+        "ar",
+        "en"
+      ],
+      "publisherClaimedLanguageCount": 30,
+      "languageCoverageNote": "Arabic and English explicitly enumerated in metadata. Do not fabricate names for the other 28 claimed languages before verifying their protocol/tests.",
+      "sourceLanguageHints": [
+        "ar",
+        "en"
+      ],
+      "autoLanguageDetection": true,
+      "components": [
+        {
+          "filename": "Audar-ASR-V1-Flash-Q4_K_M.gguf",
+          "repo": "audarai/Audar-ASR-V1-Flash",
+          "revision": "54274d39245beba38f30048128e231d4176bd91d",
+          "url": "https://huggingface.co/audarai/Audar-ASR-V1-Flash/resolve/54274d39245beba38f30048128e231d4176bd91d/Audar-ASR-V1-Flash-Q4_K_M.gguf",
+          "bytes": 396700512,
+          "sha256": "8b0008ada2f47aaf7c82c10a115f6f964a70ebad71062d491db8c2f6ec8054ed",
+          "role": "model",
+          "required": true,
+          "verification": "publisher_lfs_metadata_verified; payload_not_downloaded_in_this_handoff",
+          "sourcePath": "Audar-ASR-V1-Flash-Q4_K_M.gguf"
+        },
+        {
+          "filename": "mmproj-Audar-ASR-V1-Flash.gguf",
+          "repo": "audarai/Audar-ASR-V1-Flash",
+          "revision": "54274d39245beba38f30048128e231d4176bd91d",
+          "url": "https://huggingface.co/audarai/Audar-ASR-V1-Flash/resolve/54274d39245beba38f30048128e231d4176bd91d/mmproj-Audar-ASR-V1-Flash.gguf",
+          "bytes": 378575424,
+          "sha256": "73f06fc82a009b4a9d6c825782a3676cb553402b3a5ecc27ae77a92caa6b7fa9",
+          "role": "encoder",
+          "required": true,
+          "verification": "publisher_lfs_metadata_verified; payload_not_downloaded_in_this_handoff",
+          "sourcePath": "mmproj-Audar-ASR-V1-Flash.gguf"
+        }
+      ],
+      "downloadBytes": 775275936,
+      "quantization": "Q4_K_M decoder + BF16 audio encoder",
+      "variants": [
+        {
+          "id": "q8_0",
+          "components": [
+            {
+              "filename": "Audar-ASR-V1-Flash-Q8_0.gguf",
+              "repo": "audarai/Audar-ASR-V1-Flash",
+              "revision": "54274d39245beba38f30048128e231d4176bd91d",
+              "url": "https://huggingface.co/audarai/Audar-ASR-V1-Flash/resolve/54274d39245beba38f30048128e231d4176bd91d/Audar-ASR-V1-Flash-Q8_0.gguf",
+              "bytes": 639442784,
+              "sha256": "1b01c707fcf162ef8e844a89f0833bd0d005933342e0c37fa8da164497a9fb38",
+              "role": "model",
+              "required": true,
+              "verification": "publisher_lfs_metadata_verified; payload_not_downloaded_in_this_handoff",
+              "sourcePath": "Audar-ASR-V1-Flash-Q8_0.gguf"
+            },
+            {
+              "filename": "mmproj-Audar-ASR-V1-Flash.gguf",
+              "repo": "audarai/Audar-ASR-V1-Flash",
+              "revision": "54274d39245beba38f30048128e231d4176bd91d",
+              "url": "https://huggingface.co/audarai/Audar-ASR-V1-Flash/resolve/54274d39245beba38f30048128e231d4176bd91d/mmproj-Audar-ASR-V1-Flash.gguf",
+              "bytes": 378575424,
+              "sha256": "73f06fc82a009b4a9d6c825782a3676cb553402b3a5ecc27ae77a92caa6b7fa9",
+              "role": "encoder",
+              "required": true,
+              "verification": "publisher_lfs_metadata_verified; payload_not_downloaded_in_this_handoff",
+              "sourcePath": "mmproj-Audar-ASR-V1-Flash.gguf"
+            }
+          ],
+          "downloadBytes": 1018018208
+        }
+      ],
+      "runtime": {
+        "status": "upstream_multimodal_path_available_hearth_adapter_missing",
+        "targetBackend": "audar_mtmd",
+        "streaming": "utterance_finals_first; local_agreement_windowed_partials_later",
+        "blockers": [
+          "Audar GGUF is a decoder plus separate BF16 mmproj; current sherpa QWEN3_ASR ONNX adapter cannot load either file.",
+          "Implement dedicated mtmd ASR adapter and two-file transactional installer.",
+          "Do not quantize the required BF16 audio encoder.",
+          "Implement Qwen ASR scaffold parsing and genuine language None no-speech semantics.",
+          "Validate Q4/Q8 Arabic and English against publisher BF16 protocol; no selected-quant WER is published.",
+          "LocalAgreement redecoding is not cache-aware acoustic streaming."
+        ],
+        "sourceRepo": "https://github.com/ggml-org/llama.cpp",
+        "sourceRevision": "64e9bceb2c3a856efed96feda784a50947049feb",
+        "hearthIntegration": "not_implemented",
+        "proposedAbi": "HearthSpeechBackend v2",
+        "proposedAbiScope": "arm64-v8a CPU first; Vulkan optional after real placement and parity checks",
+        "builtForAndroid": false,
+        "ownerDeviceTested": false,
+        "roles": {
+          "model": "Audar-ASR-V1-Flash-Q4_K_M.gguf",
+          "encoder": "mmproj-Audar-ASR-V1-Flash.gguf"
+        },
+        "selfContainedTokenizer": true,
+        "upstreamGpu": [
+          "vulkan",
+          "opencl"
+        ],
+        "hearthGpu": [],
+        "sourcePinReason": "Existing Hearth translation pin contains tools/mtmd/models/qwen3a.cpp. Source presence is verified; Audar model execution on that pin is not yet tested.",
+        "maxModelAudioMs": 30000
+      },
+      "license": {
+        "name": "AudarAI Open License v1.0",
+        "url": "https://www.audarai.com/license/audarai-open-license-v1.0/"
+      },
+      "quality": [
+        {
+          "metric": "WER",
+          "value": 32.04,
+          "unit": "percent",
+          "language": "ar",
+          "dataset": "Open Universal Arabic ASR six full test sets: SADA, CV-18, MASC-clean, MASC-noisy, MGB-2, Casablanca",
+          "weights": "BF16 official qwen-asr protocol, not selected GGUF quant",
+          "publisher": "Audar model card reports independently reproduced leaderboard result",
+          "referenceBaseline": {
+            "model": "Qwen3-ASR-0.6B",
+            "value": 42.19,
+            "unit": "percent WER, same table"
+          },
+          "source": "https://huggingface.co/audarai/Audar-ASR-V1-Flash/blob/54274d39245beba38f30048128e231d4176bd91d/README.md",
+          "caveat": "Use forced Arabic language scaffold, max_new_tokens=256, genuine no-speech handling. Do not attribute 32.04% to Q4 without testing."
+        }
+      ],
+      "sources": [
+        "https://huggingface.co/audarai/Audar-ASR-V1-Flash/blob/54274d39245beba38f30048128e231d4176bd91d/README.md",
+        "https://github.com/AudarAI/Audar-ASR-V1",
+        "https://github.com/ggml-org/llama.cpp/blob/64e9bceb2c3a856efed96feda784a50947049feb/tools/mtmd/models/qwen3a.cpp",
+        "https://github.com/ggml-org/llama.cpp/blob/64e9bceb2c3a856efed96feda784a50947049feb/tools/mtmd/mtmd.h",
+        "https://huggingface.co/api/models/audarai/Audar-ASR-V1-Flash/revision/54274d39245beba38f30048128e231d4176bd91d?blobs=true"
+      ],
+      "catalogReadiness": "research_preparation_only",
+      "installEnabled": false,
+      "alreadyInHearth": false,
+      "phoneBenchmark": "not_measured",
+      "recommendedDevice": "Samsung Galaxy S25 Ultra; Android TVs excluded from all local inference"
+    },
+    {
+      "id": "planned-voxtral-mini-4b-realtime-2602",
+      "label": "Voxtral Mini Realtime 2602",
+      "family": "Voxtral Realtime",
+      "parameters": {
+        "count": 4429679360,
+        "exact": true,
+        "basis": "official HF safetensors stored total",
+        "marketingLabel": "4B"
+      },
+      "languages": [
+        "ar",
+        "en",
+        "fr",
+        "es",
+        "de",
+        "ru",
+        "zh",
+        "ja",
+        "it",
+        "pt",
+        "nl",
+        "hi",
+        "ko"
+      ],
+      "sourceLanguageHints": [],
+      "autoLanguageDetection": true,
+      "components": [
+        {
+          "filename": "Voxtral-Mini-4B-Realtime-2602-Q4_K_M.gguf",
+          "repo": "handy-computer/Voxtral-Mini-4B-Realtime-2602-gguf",
+          "revision": "7fd3d424fc558edca2c53808578b0541ef52a81a",
+          "url": "https://huggingface.co/handy-computer/Voxtral-Mini-4B-Realtime-2602-gguf/resolve/7fd3d424fc558edca2c53808578b0541ef52a81a/Voxtral-Mini-4B-Realtime-2602-Q4_K_M.gguf",
+          "bytes": 2830493984,
+          "sha256": "39dc1f65539373a406edea7490505822d77c12edff521744678717eef4da4723",
+          "role": "model",
+          "required": true,
+          "verification": "publisher_lfs_metadata_verified; payload_not_downloaded_in_this_handoff",
+          "sourcePath": "Voxtral-Mini-4B-Realtime-2602-Q4_K_M.gguf"
+        }
+      ],
+      "downloadBytes": 2830493984,
+      "quantization": "Q4_K_M",
+      "variants": [],
+      "runtime": {
+        "status": "upstream_stream_api_available_hearth_adapter_missing",
+        "targetBackend": "voxtral_realtime",
+        "streaming": "windowed_partials_in_current_upstream_adapter; model_architecture_is_streaming",
+        "blockers": [
+          "Implement transcribe.cpp stream adapter and hard bounded utterance resets.",
+          "Current pinned public extension says tentative partials reprocess accumulated audio; do not label cache-aware constant-memory streaming.",
+          "Stream is Auto-language only; do not advertise forced Arabic/English support.",
+          "Honor transcribe_was_truncated even if stream_finalize status is OK; never turn truncated output into successful complete final.",
+          "Arabic Q4 parity, S25 memory and thermal performance pending."
+        ],
+        "sourceRepo": "https://github.com/handy-computer/transcribe.cpp",
+        "sourceRevision": "1dc22facfc931e2f8adb43924b0e38b9c46f83c7",
+        "hearthIntegration": "not_implemented",
+        "proposedAbi": "HearthSpeechBackend v2",
+        "proposedAbiScope": "arm64-v8a CPU first; Vulkan optional after real placement and parity checks",
+        "builtForAndroid": false,
+        "ownerDeviceTested": false,
+        "architecture": "voxtral_realtime",
+        "variant": "voxtral-mini-4b-realtime-2602",
+        "roles": {
+          "model": "Voxtral-Mini-4B-Realtime-2602-Q4_K_M.gguf"
+        },
+        "selfContainedTokenizer": true,
+        "upstreamGpu": [
+          "vulkan",
+          "metal",
+          "cuda"
+        ],
+        "hearthGpu": [],
+        "delayTokenMs": 80,
+        "defaultDelayTokens": 6,
+        "validatedDelayTokens": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          30
+        ],
+        "minDecodeIntervalMsProposed": 500
+      },
+      "license": {
+        "name": "Apache-2.0",
+        "url": "https://huggingface.co/mistralai/Voxtral-Mini-4B-Realtime-2602/blob/2769294da9567371363522aac9bbcfdd19447add/README.md"
+      },
+      "quality": [
+        {
+          "metric": "WER",
+          "value": 22.53,
+          "unit": "percent",
+          "language": "ar",
+          "dataset": "FLEURS test",
+          "weights": "official original weights at 480ms model delay, not selected GGUF Q4",
+          "publisher": "Mistral official card",
+          "source": "https://huggingface.co/mistralai/Voxtral-Mini-4B-Realtime-2602/blob/2769294da9567371363522aac9bbcfdd19447add/README.md"
+        },
+        {
+          "metric": "WER",
+          "value": 2.08,
+          "unit": "percent",
+          "language": "en",
+          "dataset": "LibriSpeech test-clean, 2620 utterances",
+          "weights": "selected Q4_K_M GGUF, offline path at delay 6",
+          "publisher": "transcribe.cpp conversion maintainer",
+          "source": "https://github.com/handy-computer/transcribe.cpp/blob/1dc22facfc931e2f8adb43924b0e38b9c46f83c7/docs/models/voxtral-realtime.md",
+          "caveat": "Pinned runtime offline default delay is 30; published quant table was measured at delay 6. 480ms is algorithmic delay, not measured phone end-to-end latency."
+        }
+      ],
+      "sources": [
+        "https://huggingface.co/mistralai/Voxtral-Mini-4B-Realtime-2602/blob/2769294da9567371363522aac9bbcfdd19447add/README.md",
+        "https://github.com/handy-computer/transcribe.cpp/blob/1dc22facfc931e2f8adb43924b0e38b9c46f83c7/docs/models/voxtral-realtime.md",
+        "https://github.com/handy-computer/transcribe.cpp/blob/1dc22facfc931e2f8adb43924b0e38b9c46f83c7/include/transcribe/voxtral_realtime.h",
+        "https://huggingface.co/api/models/handy-computer/Voxtral-Mini-4B-Realtime-2602-gguf/revision/7fd3d424fc558edca2c53808578b0541ef52a81a?blobs=true"
+      ],
+      "catalogReadiness": "research_preparation_only",
+      "installEnabled": false,
+      "alreadyInHearth": false,
+      "phoneBenchmark": "not_measured",
+      "recommendedDevice": "Samsung Galaxy S25 Ultra; Android TVs excluded from all local inference"
+    },
+    {
+      "id": "planned-fun-asr-mlt-nano-2512",
+      "label": "Fun-ASR MLT Nano 2512",
+      "family": "Fun-ASR multilingual Nano",
+      "parameters": {
+        "count": 800000000,
+        "exact": false,
+        "basis": "official checkpoint card approximately 800M; do not report marketing estimate as an exact full-stack count"
+      },
+      "languages": [
+        "ar",
+        "en",
+        "zh",
+        "yue",
+        "ja",
+        "ko",
+        "vi",
+        "id",
+        "th",
+        "ms",
+        "fil",
+        "hi",
+        "bg",
+        "hr",
+        "cs",
+        "da",
+        "nl",
+        "et",
+        "fi",
+        "el",
+        "hu",
+        "ga",
+        "lv",
+        "lt",
+        "mt",
+        "pl",
+        "pt",
+        "ro",
+        "sk",
+        "sl",
+        "sv"
+      ],
+      "sourceLanguageHints": [
+        "ar",
+        "en",
+        "zh",
+        "yue",
+        "ja",
+        "ko",
+        "vi",
+        "id",
+        "th",
+        "ms",
+        "fil",
+        "hi",
+        "bg",
+        "hr",
+        "cs",
+        "da",
+        "nl",
+        "et",
+        "fi",
+        "el",
+        "hu",
+        "ga",
+        "lv",
+        "lt",
+        "mt",
+        "pl",
+        "pt",
+        "ro",
+        "sk",
+        "sl",
+        "sv"
+      ],
+      "autoLanguageDetection": true,
+      "components": [
+        {
+          "filename": "Fun-ASR-MLT-Nano-2512-Q8_0.gguf",
+          "repo": "handy-computer/Fun-ASR-MLT-Nano-2512-gguf",
+          "revision": "5db7c5bcebbc70d6c372e825399c3019f6089af7",
+          "url": "https://huggingface.co/handy-computer/Fun-ASR-MLT-Nano-2512-gguf/resolve/5db7c5bcebbc70d6c372e825399c3019f6089af7/Fun-ASR-MLT-Nano-2512-Q8_0.gguf",
+          "bytes": 891271232,
+          "sha256": "d12476d8d9f2baa0ebf738fa955fa05ed33a654f1567289033a810c45d9d9002",
+          "role": "model",
+          "required": true,
+          "verification": "publisher_lfs_metadata_verified; payload_not_downloaded_in_this_handoff",
+          "sourcePath": "Fun-ASR-MLT-Nano-2512-Q8_0.gguf"
+        }
+      ],
+      "downloadBytes": 891271232,
+      "quantization": "Q8_0",
+      "variants": [
+        {
+          "id": "q4_k_m",
+          "components": [
+            {
+              "filename": "Fun-ASR-MLT-Nano-2512-Q4_K_M.gguf",
+              "repo": "handy-computer/Fun-ASR-MLT-Nano-2512-gguf",
+              "revision": "5db7c5bcebbc70d6c372e825399c3019f6089af7",
+              "url": "https://huggingface.co/handy-computer/Fun-ASR-MLT-Nano-2512-gguf/resolve/5db7c5bcebbc70d6c372e825399c3019f6089af7/Fun-ASR-MLT-Nano-2512-Q4_K_M.gguf",
+              "bytes": 556975168,
+              "sha256": "9232584a27a7dcbcaf13640de8f9c2e7375178ea11e587f90a5328ecf06d58a1",
+              "role": "model",
+              "required": true,
+              "verification": "publisher_lfs_metadata_verified; payload_not_downloaded_in_this_handoff",
+              "sourcePath": "Fun-ASR-MLT-Nano-2512-Q4_K_M.gguf"
+            }
+          ],
+          "downloadBytes": 556975168
+        }
+      ],
+      "runtime": {
+        "status": "upstream_runtime_available_hearth_adapter_missing",
+        "targetBackend": "funasr_mlt_nano",
+        "streaming": "utterance_finals",
+        "blockers": [
+          "Implement pinned transcribe.cpp adapter; require MLT variant, not Chinese/English/Japanese-only Nano sibling.",
+          "Build/stage CPU and optional Vulkan runtimes with matching ABI and source notices.",
+          "Keep ITN on for parity with the pinned quant benchmark.",
+          "Resolve license mismatch between current upstream HF metadata and the GGUF conversion LICENSE before enabling redistribution/download.",
+          "S25 speed, memory, Gulf quality and Q4 Arabic parity pending."
+        ],
+        "sourceRepo": "https://github.com/handy-computer/transcribe.cpp",
+        "sourceRevision": "1dc22facfc931e2f8adb43924b0e38b9c46f83c7",
+        "hearthIntegration": "not_implemented",
+        "proposedAbi": "HearthSpeechBackend v2",
+        "proposedAbiScope": "arm64-v8a CPU first; Vulkan optional after real placement and parity checks",
+        "builtForAndroid": false,
+        "ownerDeviceTested": false,
+        "architecture": "funasr_nano",
+        "variant": "fun-asr-mlt-nano-2512",
+        "roles": {
+          "model": "Fun-ASR-MLT-Nano-2512-Q8_0.gguf"
+        },
+        "selfContainedTokenizer": true,
+        "upstreamGpu": [
+          "vulkan",
+          "metal",
+          "cuda"
+        ],
+        "hearthGpu": []
+      },
+      "license": {
+        "name": "FunASR Model Open Source License Agreement v1.1 (selected GGUF); upstream HF metadata currently says Apache-2.0",
+        "url": "https://huggingface.co/handy-computer/Fun-ASR-MLT-Nano-2512-gguf/blob/5db7c5bcebbc70d6c372e825399c3019f6089af7/LICENSE",
+        "needsResolutionBeforeRedistribution": true,
+        "upstreamMetadataUrl": "https://huggingface.co/FunAudioLLM/Fun-ASR-MLT-Nano-2512/blob/2c088f535108689beff7e11cdc3d792af7d56552/README.md"
+      },
+      "quality": [
+        {
+          "metric": "WER",
+          "value": 25.88,
+          "unit": "percent",
+          "language": "ar",
+          "dataset": "FLEURS test",
+          "weights": "selected Q8_0 GGUF, ITN on",
+          "publisher": "transcribe.cpp conversion maintainer, pinned source snapshot",
+          "source": "https://github.com/handy-computer/transcribe.cpp/blob/1dc22facfc931e2f8adb43924b0e38b9c46f83c7/docs/models/fun-asr-mlt-nano-2512.md"
+        },
+        {
+          "metric": "WER",
+          "value": 5.02,
+          "unit": "percent",
+          "language": "en",
+          "dataset": "FLEURS test",
+          "weights": "selected Q8_0 GGUF, ITN on",
+          "publisher": "transcribe.cpp conversion maintainer, pinned source snapshot",
+          "source": "https://github.com/handy-computer/transcribe.cpp/blob/1dc22facfc931e2f8adb43924b0e38b9c46f83c7/docs/models/fun-asr-mlt-nano-2512.md"
+        }
+      ],
+      "sources": [
+        "https://huggingface.co/FunAudioLLM/Fun-ASR-MLT-Nano-2512/blob/2c088f535108689beff7e11cdc3d792af7d56552/README.md",
+        "https://github.com/handy-computer/transcribe.cpp/blob/1dc22facfc931e2f8adb43924b0e38b9c46f83c7/docs/models/fun-asr-mlt-nano-2512.md",
+        "https://huggingface.co/api/models/handy-computer/Fun-ASR-MLT-Nano-2512-gguf/revision/5db7c5bcebbc70d6c372e825399c3019f6089af7?blobs=true"
+      ],
+      "catalogReadiness": "research_preparation_only",
+      "installEnabled": false,
+      "alreadyInHearth": false,
+      "phoneBenchmark": "not_measured",
+      "recommendedDevice": "Samsung Galaxy S25 Ultra; Android TVs excluded from all local inference"
+    },
+    {
+      "id": "planned-owsm-v4-base-102m",
+      "label": "OWSM v4 Base 102M",
+      "family": "OWSM v4",
+      "parameters": {
+        "count": 102000000,
+        "exact": false,
+        "basis": "official ESPnet checkpoint name/paper; native package omits unused CTC head"
+      },
+      "languages": [
+        "ar",
+        "en"
+      ],
+      "languageCoverageNote": "Conservative initial Hearth exposure: Arabic and English verified in model configuration. OWSM has wider coverage; enumerate from the pinned exact checkpoint before advertising additional languages.",
+      "sourceLanguageHints": [
+        "ar",
+        "en"
+      ],
+      "autoLanguageDetection": true,
+      "components": [
+        {
+          "filename": "owsm-v4-base-102m-q8_0.gguf",
+          "repo": "audio-cpp/audio.cpp-gguf",
+          "revision": "661a224e9d9adbd49c01626f85e426f5f425d771",
+          "url": "https://huggingface.co/audio-cpp/audio.cpp-gguf/resolve/661a224e9d9adbd49c01626f85e426f5f425d771/OWSM-GGUF/owsm-v4-base-102m-q8_0.gguf",
+          "bytes": 118204672,
+          "sha256": "7d4efb7188ca85f3bc85c8411cd97d1d667adb22fbb8084142eeb812e83461bc",
+          "role": "model",
+          "required": true,
+          "verification": "publisher_lfs_metadata_verified; payload_not_downloaded_in_this_handoff",
+          "sourcePath": "OWSM-GGUF/owsm-v4-base-102m-q8_0.gguf"
+        }
+      ],
+      "downloadBytes": 118204672,
+      "quantization": "Q8_0",
+      "variants": [],
+      "runtime": {
+        "status": "upstream_runtime_available_android_adapter_missing",
+        "targetBackend": "owsm",
+        "streaming": "utterance_finals",
+        "blockers": [
+          "Implement narrow audio.cpp OWSM-only build and HearthSpeechBackend adapter; upstream framework default includes unrelated models and services.",
+          "Disable native model manager/network clients, server, CLI/media helpers, examples, tests from shipping DSO.",
+          "Map ar/en to ara/eng only at adapter boundary and retain ISO-639-1 output for MT routing.",
+          "Use complete bounded utterance input: audio.cpp streaming mode emits tokens from a complete file, not incremental microphone audio.",
+          "Validate Arabic Q8 quality, Android toolchain and GPU operation coverage before enabling GPU."
+        ],
+        "sourceRepo": "https://github.com/0xShug0/audio.cpp",
+        "sourceRevision": "673ade451c9cba9c893fb0e606872d9dc44f21e3",
+        "hearthIntegration": "not_implemented",
+        "proposedAbi": "HearthSpeechBackend v2",
+        "proposedAbiScope": "arm64-v8a CPU first; Vulkan optional after real placement and parity checks",
+        "builtForAndroid": false,
+        "ownerDeviceTested": false,
+        "roles": {
+          "model": "owsm-v4-base-102m-q8_0.gguf"
+        },
+        "selfContainedTokenizer": true,
+        "upstreamGpu": [
+          "vulkan",
+          "metal",
+          "cuda"
+        ],
+        "hearthGpu": [],
+        "maxModelAudioMs": 30000
+      },
+      "license": {
+        "name": "CC-BY-4.0 (model weights); Apache-2.0 audio.cpp runtime is a separate license",
+        "url": "https://huggingface.co/espnet/owsm_v4_base_102M/blob/1529407e6b49ffa6c335cbcff0926c72e16b2b63/README.md",
+        "conversionLicenseUrl": "https://huggingface.co/audio-cpp/audio.cpp-gguf/blob/661a224e9d9adbd49c01626f85e426f5f425d771/OWSM-GGUF/README.md",
+        "redistributionNote": "Retain OWSM/Yifan Peng and original dataset/model attribution; do not relabel weights Apache-2.0 because the native runtime uses Apache."
+      },
+      "quality": [
+        {
+          "metric": "word_disagreement",
+          "value": 1.21,
+          "unit": "percent",
+          "language": "en",
+          "dataset": "conversion parity sample against Python, not human-reference WER",
+          "weights": "Q8_0 native conversion",
+          "publisher": "audio.cpp conversion maintainer",
+          "source": "https://huggingface.co/audio-cpp/audio.cpp-gguf/blob/661a224e9d9adbd49c01626f85e426f5f425d771/OWSM-GGUF/README.md",
+          "caveat": "No exact Arabic Q8 WER verified. Do not use 1.21% as speech recognition WER."
+        }
+      ],
+      "sources": [
+        "https://huggingface.co/espnet/owsm_v4_base_102M/blob/1529407e6b49ffa6c335cbcff0926c72e16b2b63/exp/s2t_train_conv2d8_size384_e6_d6_mel128_raw_bpe50000/config.yaml",
+        "https://huggingface.co/audio-cpp/audio.cpp-gguf/blob/661a224e9d9adbd49c01626f85e426f5f425d771/OWSM-GGUF/README.md",
+        "https://github.com/0xShug0/audio.cpp/blob/673ade451c9cba9c893fb0e606872d9dc44f21e3/docs/models/owsm.md",
+        "https://github.com/0xShug0/audio.cpp/blob/673ade451c9cba9c893fb0e606872d9dc44f21e3/include/audiocpp.h",
+        "https://huggingface.co/api/models/audio-cpp/audio.cpp-gguf/revision/661a224e9d9adbd49c01626f85e426f5f425d771?blobs=true"
+      ],
+      "catalogReadiness": "research_preparation_only",
+      "installEnabled": false,
+      "alreadyInHearth": false,
+      "phoneBenchmark": "not_measured",
+      "recommendedDevice": "Samsung Galaxy S25 Ultra; Android TVs excluded from all local inference"
+    }
+  ]
+}

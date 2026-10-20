@@ -46,9 +46,18 @@ internal fun SettingsSpeechAloudUi(
 ) {
     val uiText = rememberUiText()
     val context = LocalContext.current
-    val voiceReady = remember(context, config.speakerGender) {
+    val localAllowed = com.sal7one.transiber.runtime.LocalModelPolicy.allowed(context)
+    val sharedBackend = com.sal7one.transiber.voice.VoiceSettings.choice(context).backend
+    val customBackend = com.sal7one.transiber.voice.VoiceSettings.customBackend(context)
+    fun needsDownloadedModel(choice: CaptionSpeakerChoice): Boolean = when (choice) {
+        CaptionSpeakerChoice.NATIVE -> true
+        CaptionSpeakerChoice.SHARED -> sharedBackend !in setOf("system", "remote")
+        CaptionSpeakerChoice.CUSTOM -> customBackend != null && customBackend !in setOf("system", "remote")
+        else -> false
+    }
+    val voiceReady = remember(context, config.speakerGender, localAllowed) {
         val choice = com.sal7one.transiber.voice.VoiceSettings.choice(context)
-        com.sal7one.transiber.voice.VoiceModels(File(context.filesDir, "voice-models"))
+        localAllowed && com.sal7one.transiber.voice.VoiceModels(File(context.filesDir, "voice-models"))
             .ready(choice.voice, config.speakerGender.toVoiceGender())
     }
 
@@ -90,13 +99,16 @@ internal fun SettingsSpeechAloudUi(
             .forEach { choice ->
                 FilterChip(
                     selected = config.speakerChoice == choice,
-                    enabled = choice != CaptionSpeakerChoice.NATIVE || voiceReady,
+                    enabled = (localAllowed || !needsDownloadedModel(choice)) &&
+                        (choice != CaptionSpeakerChoice.NATIVE || voiceReady),
                     onClick = { update { it.copy(speakerChoice = choice) } },
                     label = { Text(uiText.label(choice)) },
                 )
             }
     }
-    Text(if (config.speakerChoice == CaptionSpeakerChoice.NATIVE && !voiceReady)
+    if (!localAllowed && needsDownloadedModel(config.speakerChoice))
+        com.sal7one.transiber.ui.components.LocalModelPolicyNotice()
+    else Text(if (config.speakerChoice == CaptionSpeakerChoice.NATIVE && !voiceReady)
         uiText(UiR.string.ui_install_supertonic_3_and_a_voice_in_read_aloud_settings_8a8c5)
         else uiText.explanation(config.speakerChoice), style = MaterialTheme.typography.bodySmall)
     Text(uiText(UiR.string.ui_speaker_gender_note_9a25c), style = MaterialTheme.typography.bodySmall)

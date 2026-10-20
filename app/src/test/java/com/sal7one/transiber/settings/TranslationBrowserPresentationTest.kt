@@ -90,4 +90,11 @@ class TranslationBrowserPresentationTest {
         assertTrue(items.filter { it.matches("English pivot Arabic French", "ar", "fr", "compact") }.all { it.throughEnglish })
         assertTrue(items.any { it.matches("onnx-community", "en", "ar", "compact") })
     }
+    @Test fun rivaOnlyAppearsForItsEnglishPairedDirections() {
+        val card = translationBrowserItems().single { it.variants.any { model -> model.family == "riva-translate" } }
+        assertTrue(card.matches("Riva Arabic", "en", "ar", "text"))
+        assertTrue(card.matches("", "ar", "en", "text"))
+        assertFalse(card.matches("", "ar", "fr", "text"))
+        assertFalse(card.matches("", "ru", "ar", "text"))
+    }
 }

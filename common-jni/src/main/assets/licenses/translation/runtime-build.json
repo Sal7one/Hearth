@@ -11,27 +11,27 @@
   "binaries": {
     "arm64-v8a": {
       "name": "libtransiber_translation.so",
-      "bytes": 3902408,
-      "sha256": "a1c51ebd67db9787ce2c2ac37b3ab0db6f7d545f4fe9f92f97c7b741e8da442b",
-      "sourceSetSha256": "536eb3ba1ac60d255cfd72172c26270b4b740fb6adbba1b7c2b8148fa55b9d4a"
+      "bytes": 3904824,
+      "sha256": "5350fca5e9dc913a2d6883f36f2633d0d4c860c40757853f67b3af8be7666027",
+      "sourceSetSha256": "e56301cfb67c8d22ad3cb6eb63d58a1d829fdcaabe4bce8f8be12bfb309b3ce6"
     },
     "armeabi-v7a": {
       "name": "libtransiber_translation.so",
-      "bytes": 2735376,
-      "sha256": "e07f4baea82f722206dfc8d7f416c70a1f92d45a6455008c0abea9f20766b985",
-      "sourceSetSha256": "536eb3ba1ac60d255cfd72172c26270b4b740fb6adbba1b7c2b8148fa55b9d4a"
+      "bytes": 2737040,
+      "sha256": "942572c128e57e1d679c1cdffeab11f0eb04d8a15625180b2583863ed62df98d",
+      "sourceSetSha256": "e56301cfb67c8d22ad3cb6eb63d58a1d829fdcaabe4bce8f8be12bfb309b3ce6"
     },
     "x86": {
       "name": "libtransiber_translation.so",
-      "bytes": 5288600,
-      "sha256": "3a994c5950a7d287e106dad2c9cd01870bca7d33dc448589cc49231d9871820c",
-      "sourceSetSha256": "536eb3ba1ac60d255cfd72172c26270b4b740fb6adbba1b7c2b8148fa55b9d4a"
+      "bytes": 5291688,
+      "sha256": "ce77b27d74afdab09d5eb36cd2f7575e0f2065398a36c6d8197bbbe9a7af206c",
+      "sourceSetSha256": "e56301cfb67c8d22ad3cb6eb63d58a1d829fdcaabe4bce8f8be12bfb309b3ce6"
     },
     "x86_64": {
       "name": "libtransiber_translation.so",
-      "bytes": 4318424,
-      "sha256": "7daaf05232955d31b0ded7950b48ebcf1bfbf2c9670d76fd962e346d6b892e7c",
-      "sourceSetSha256": "536eb3ba1ac60d255cfd72172c26270b4b740fb6adbba1b7c2b8148fa55b9d4a"
+      "bytes": 4321272,
+      "sha256": "f8eb845ee18a79dd3bb43a806124d9b13c6eb043ea5d39500c2dcd2c446103cb",
+      "sourceSetSha256": "e56301cfb67c8d22ad3cb6eb63d58a1d829fdcaabe4bce8f8be12bfb309b3ce6"
     }
   },
   "sources": {
@@ -40,13 +40,13 @@
     "common-jni/src/main/cpp/translation/exports.map": "01a3130f08b26ac1f00ff059093f9df6c761a73e48cc56a8b4572954f61f1f45",
     "common-jni/src/main/cpp/translation/opencl_exports.map": "69d25087bceb0a47f68fb4e587f591eef7f31839b111a2b99ef8af8bec3841ba",
     "common-jni/src/main/cpp/translation/opencl_policy.h": "31f51e4f99ed485b0989c505936c527fe787763799eb5adf0d69518c363a166f",
-    "common-jni/src/main/cpp/translation/opencl_text_model.h": "4d57fd394f258d6298d9a1ec3ee6f917350b0636320056c9246d5a73f6d051a6",
-    "common-jni/src/main/cpp/translation/text_model.h": "62e1bd3a3919c2fe409c7d3ab3e703451e9f53f3e26b241e0293c523034fa69f",
-    "common-jni/src/main/cpp/translation/translation_jni.cpp": "cc612e95edbe5dc938ed959280212d83ffe5cf6cc779156caa5ab24843d53756",
-    "common-jni/src/main/cpp/translation/translation_smoke.cpp": "21f7925cbca47d4b6418eeb446487954ab78718971d9971d620616801da4a985",
+    "common-jni/src/main/cpp/translation/opencl_text_model.h": "0dcb255ebc02bb58d34748a10166b9ad2b4e45651be8c8c01549dae716242d45",
+    "common-jni/src/main/cpp/translation/text_model.h": "42ab549bf79ac176eb723469debd9ed519f2f2d93336ad8bdd0cbbc7d947f7b0",
+    "common-jni/src/main/cpp/translation/translation_jni.cpp": "228708a9c9d50ddca30a5cb16a702e6555789716f9706e2e2f1fe48b6afa0999",
+    "common-jni/src/main/cpp/translation/translation_smoke.cpp": "9d3376bf22c0df3e7383a48000b4322a37fbf132ee2f0555403a4b81a08fecf9",
     "common-jni/src/main/cpp/translation/vulkan_exports.map": "286ebb9c6cace46c6830df73f9e95097065ff127abe073b3433c6fe51d2b9cb4",
     "common-jni/src/main/cpp/translation/vulkan_policy.h": "c94850e6ea5688375d72fbe064a70e4ea8758f2573c39724de350ac4bdb7a119",
-    "common-jni/src/main/cpp/translation/vulkan_text_model.h": "4cf020bf8b666317b560ed2905a313b2d2dcb6f73f67669aa5033116a919e175",
+    "common-jni/src/main/cpp/translation/vulkan_text_model.h": "4eac3dc7aa8094c09891d1a2304d8e50c46adb7611e266e255a37f394e3e3c95",
     "scripts/translation/CMakeLists.txt": "b0edce38713bc88be277808ab848e456a0cda401e82fdaeca2b8da2756d4ddbc",
     "scripts/translation/build-runtime.sh": "8f34fbd4acd0a1bb9a3b057002616d2821522d04122801d9c469d9a94dd3c948",
     "scripts/translation/generate-opencl-shim.py": "ccf1a205370a48aab3956b6dae1767ab473f14c231197bf85758a9cc02d783a5",
@@ -56,9 +56,9 @@
     "abi": "arm64-v8a",
     "binary": {
       "name": "libtransiber_translation_vulkan.so",
-      "bytes": 29806560,
-      "sha256": "b981ddb542f48b730ec0ef040b4efb271d032bcae2955c58e9579899342d31dc",
-      "sourceSetSha256": "536eb3ba1ac60d255cfd72172c26270b4b740fb6adbba1b7c2b8148fa55b9d4a"
+      "bytes": 29808976,
+      "sha256": "188d943fd63714d2843c065e979bd869fbbb3c159756488b6e4f683d932095d2",
+      "sourceSetSha256": "e56301cfb67c8d22ad3cb6eb63d58a1d829fdcaabe4bce8f8be12bfb309b3ce6"
     },
     "dependencies": {
       "Vulkan-Headers": "19725e4d48082fe78e26622b15d3080ccd54112b",
@@ -72,9 +72,9 @@
     "abi": "arm64-v8a",
     "binary": {
       "name": "libtransiber_translation_opencl.so",
-      "bytes": 8493064,
-      "sha256": "07cf27c12374f253ab6d251bdcf64d1880646f064f3708c787165fc49289e4ab",
-      "sourceSetSha256": "536eb3ba1ac60d255cfd72172c26270b4b740fb6adbba1b7c2b8148fa55b9d4a"
+      "bytes": 8495480,
+      "sha256": "264d6960397fe5491df710f6caecf43e6b4cdc309310eb875b60d00ad9e656dd",
+      "sourceSetSha256": "e56301cfb67c8d22ad3cb6eb63d58a1d829fdcaabe4bce8f8be12bfb309b3ce6"
     },
     "dependencies": {
       "OpenCL-Headers": "30bc20a8e90468e231d7c639805ae61ad1fefa4f"

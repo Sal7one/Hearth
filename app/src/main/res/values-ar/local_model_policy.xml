@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="tv_local_models_disabled">النماذج المحلية معطّلة على أجهزة التلفزيون. اختر خدمة سحابية للتعرّف على الكلام أو الترجمة أو القراءة الصوتية. ستبقى النماذج وإعدادات الهاتف المحفوظة دون تغيير.</string>
+    <string name="tv_model_connections">اتصالات التلفزيون</string>
+    <string name="tv_offline_connections_unavailable">الاتصالات السحابية غير متاحة في النسخة غير المتصلة. استخدم نسخة Play لإعداد اتصال التلفزيون.</string>
+</resources>

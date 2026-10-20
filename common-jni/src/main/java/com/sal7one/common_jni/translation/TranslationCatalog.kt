@@ -21,6 +21,9 @@ object TranslationLanguages {
     // Initial supported adapter coverage; not a claim of an exhaustive model quality matrix.
     val gemmaLanguages = "ar zh en fr de es pt ru ja ko hi it nl pl tr uk vi id th sv da fi cs ro el hu he fa bg hr sk sl et lv lt".split(' ').toSet()
     val hyLanguages: Set<String> = "zh en fr pt es ja tr ru ar ko th it de vi ms id fil hi pl cs nl km my fa gu ur te mr he bn ta uk bo kk mn ug yue".split(' ').toSet()
+    val euroLanguages: Set<String> = "bg hr cs da nl en et fi fr de el hu ga it lv lt mt pl pt ro sk sl es sv ar ca zh gl hi ja ko no ru tr uk".split(' ').toSet()
+    // Riva is trained for English-paired translation, not every multilingual edge.
+    val rivaLanguages: Set<String> = "en cs da de el es fi fr hu it lt lv nl no pl pt ro ru sk sv zh ja hi ko et sl bg uk hr ar vi tr id th".split(' ').toSet()
     // Publisher's 46 languages; the current picker groups Traditional/Simplified Chinese as zh.
     val milmmtNames: Map<String, String> = mapOf(
         "ar" to "Arabic", "az" to "Azerbaijani", "bg" to "Bulgarian", "bn" to "Bengali",
@@ -46,14 +49,23 @@ data class TranslationModelSpec(
         "translategemma" -> TranslationLanguages.gemmaLanguages
         "milmmt-46" -> TranslationLanguages.milmmtNames.keys
         "index-translate" -> IndexTranslationLanguages.names.keys
+        "eurollm" -> TranslationLanguages.euroLanguages
+        "riva-translate" -> TranslationLanguages.rivaLanguages
         else -> TranslationLanguages.hyLanguages
     }
     val targetLanguages get() = sourceLanguages
-    val license get() = when (family) { "translategemma", "milmmt-46" -> "Gemma terms"; "hy-mt2", "index-translate" -> "Apache-2.0"; else -> "Tencent Hunyuan community license" }
+    val license get() = when (family) { "translategemma", "milmmt-46" -> "Gemma terms"; "hy-mt2", "index-translate", "eurollm" -> "Apache-2.0"; "riva-translate" -> "NVIDIA Open Model License"; else -> "Tencent Hunyuan community license" }
+    /** Versioned JNI prompt mode, separate from model architecture and execution backend. */
+    val promptMode get() = when (family) { "milmmt-46" -> 1; "eurollm" -> 2; "riva-translate" -> 3; else -> 0 }
+    val evaluationNote get() = when (family) {
+        "eurollm" -> "Original-weight FLORES-200 COMET-22: English → Arabic 85.17; Arabic → English 86.34. Q4 Arabic parity and S25 latency require testing."
+        "riva-translate" -> "Original-weight FLORES-101 sacreBLEU: English → Arabic 25.10; Arabic → English 40.70. English-paired directions only; Q4 Arabic parity and S25 latency require testing."
+        else -> "Publisher language coverage is not a device-specific accuracy or speed guarantee."
+    }
     // Broad multilingual inventories can contain tens of thousands of edges.
     // Keep the immutable set once instead of rebuilding it for every caption.
     val directions: Set<TranslationDirection> by lazy {
-        sourceLanguages.flatMap { a -> targetLanguages.filter { it != a }.map { TranslationDirection(a, it) } }.toSet()
+        sourceLanguages.flatMap { a -> targetLanguages.filter { it != a && supports(a, it) }.map { TranslationDirection(a, it) } }.toSet()
     }
     val url get() = "https://huggingface.co/$repo/resolve/$revision/$fileName"
     val modelCard get() = "https://huggingface.co/$repo"
@@ -64,6 +76,8 @@ data class TranslationModelSpec(
         "milmmt-46" -> "xiaomi-research/MiLMMT-46-1B-v1.0"
         "index-translate" -> "IndexTeam/Index-Translate-2B"
         "hy-mt2" -> "tencent/Hy-MT2-1.8B"
+        "eurollm" -> "utter-project/EuroLLM-1.7B-Instruct"
+        "riva-translate" -> "nvidia/Riva-Translate-4B-Instruct-v2"
         else -> "tencent/HY-MT1.5-1.8B"
     }
     val licenseUrl get() = when {
@@ -74,12 +88,25 @@ data class TranslationModelSpec(
     fun supports(source: String, target: String): Boolean {
         val from = TranslationLanguages.normalize(source)
         val to = TranslationLanguages.normalize(target)
-        return from != to && from in sourceLanguages && to in targetLanguages
+        return from != to && from in sourceLanguages && to in targetLanguages &&
+            (family != "riva-translate" || from == "en" || to == "en")
     }
     fun prompt(text: String, source: String, target: String): String {
         require(text.isNotBlank() && text.length <= 2000) { "Local translation accepts 1–2000 caption characters per line" }
         require(supports(source, target)) { "$label does not support $source → $target" }
         val to = TranslationLanguages.label(TranslationLanguages.normalize(target))
+        if (family == "eurollm") {
+            val from = TranslationLanguages.label(TranslationLanguages.normalize(source))
+            return "Translate the following $from source text to $to:\n$from: ${text.trim()}\n$to:"
+        }
+        if (family == "riva-translate") {
+            fun name(code: String) = when (TranslationLanguages.normalize(code)) {
+                "es" -> "European Spanish"; "pt" -> "European Portuguese"; "zh" -> "Simplified Chinese"
+                else -> TranslationLanguages.label(TranslationLanguages.normalize(code))
+            }
+            // The native adapter separates the trusted instruction from literal user content.
+            return "You are an expert at translating text from ${name(source)} to ${name(target)}.\n\n${text.trim()}"
+        }
         if (family == "index-translate") {
             val targetName = IndexTranslationLanguages.promptName(TranslationLanguages.normalize(target))
             return "请将以下文本翻译为$targetName，直接输出翻译结果，不要进行任何解释。\n\n${text.trim()}"
@@ -106,6 +133,10 @@ data class TranslationModelSpec(
 }
 object TranslationCatalog {
     val models = listOf(
+        TranslationModelSpec("eurollm-17b-q4", "EuroLLM 1.7B Instruct · Q4_K_M · experimental", "eurollm", "Q4_K_M", 1045156992L,
+            "f22ab4b628f6e3cd12ec2e5aa6d1e460be2fa83f25cb6a8f5dd6d4d77b285b66", "QuantFactory/EuroLLM-1.7B-Instruct-GGUF", "4126f034ddfe7fd39ca3378ae58d3b1d74065315", "EuroLLM-1.7B-Instruct.Q4_K_M.gguf"),
+        TranslationModelSpec("riva-translate-4b-v2-q4", "Riva-Translate 4B v2 · Q4_K_M · experimental", "riva-translate", "Q4_K_M", 2759302720L,
+            "90c2f48ff5549b770d9aaecb7eea603548bcca035a970a800d9c17781991804d", "liodon-ai/Riva-Translate-4B-Instruct-v2-imatrix-GGUF", "aa8cc2e72e2f97e07b021e4afbc612cff3bf9ae9", "Riva-Translate-4B-Instruct-v2-Q4_K_M.gguf"),
         TranslationModelSpec("translategemma-4b-q4", "TranslateGemma 4B · Q4_K_M", "translategemma", "Q4_K_M", 2489909760,
             "81200d03e843d2ec1ece6eeafe7d13cb6e5211e1fcd336ade55790b683a08330", "mradermacher/translategemma-4b-it-GGUF", "35a7486e128b19642cdc72d7b91b21ba388aaf42", "translategemma-4b-it.Q4_K_M.gguf"),
         TranslationModelSpec("hy-mt15-q4", "HY-MT1.5 1.8B · Q4_K_M", "hy-mt1.5", "Q4_K_M", 1133080512,

@@ -49,6 +49,8 @@ class TextModel {
     std::chrono::steady_clock::time_point deadline;
     bool gemma = false;
     bool qwen35 = false;
+    bool euro = false;
+    bool riva = false;
     bool rawPrompt = false;
     bool prefixCacheEnabled = false;
     llama_token assistantEnd = LLAMA_TOKEN_NULL;
@@ -71,7 +73,9 @@ class TextModel {
 public:
     std::mutex mutex;
     std::atomic<bool> cancelled{false};
-    explicit TextModel(const std::string& path, int threads = 2, int gpuLayers = 0, bool useRawPrompt = false) : rawPrompt(useRawPrompt) {
+    explicit TextModel(const std::string& path, int threads = 2, int gpuLayers = 0, int promptMode = 0) :
+        euro(promptMode == 2), riva(promptMode == 3), rawPrompt(promptMode == 1) {
+        if (promptMode < 0 || promptMode > 3) throw std::invalid_argument("Unknown translation prompt mode");
         initializeRuntime();
         nativeError.clear();
         nativeOffloadSummary.clear();
@@ -84,7 +88,9 @@ public:
         llama_model_meta_val_str(model.get(), "general.architecture", architecture, sizeof(architecture));
         gemma = std::string(architecture) == "gemma3";
         qwen35 = std::string(architecture) == "qwen35";
-        if (!gemma && !qwen35 && std::string(architecture) != "hunyuan-dense") throw std::runtime_error("Unsupported translation architecture: " + std::string(architecture));
+        if (euro || riva) {
+            if (std::string(architecture) != "llama") throw std::runtime_error("EuroLLM/Riva prompt requires the pinned Llama architecture");
+        } else if (!gemma && !qwen35 && std::string(architecture) != "hunyuan-dense") throw std::runtime_error("Unsupported translation architecture: " + std::string(architecture));
         if (rawPrompt && !gemma) throw std::runtime_error("Raw translation prompt requires a Gemma 3 model");
         // Gemma's sliding-window cache can evict the start of a previous
         // prompt. Keep its existing full-prefill behavior until checkpointed
@@ -97,7 +103,7 @@ public:
             // control token. Some pinned GGUF conversions instead label an
             // ordinary '$' token as EOS, and llama's generic EOG discovery
             // does not recognize the Hunyuan assistant terminator.
-            const char* marker = qwen35 ? "<|im_end|>" : "<｜hy_place▁holder▁no▁2｜>";
+            const char* marker = riva ? "</s>" : qwen35 || euro ? "<|im_end|>" : "<｜hy_place▁holder▁no▁2｜>";
             const auto stop = tokenize(marker, true);
             const auto* vocab = llama_model_get_vocab(model.get());
             if (stop.size() == 1 && llama_vocab_is_control(vocab, stop[0])) {
@@ -113,11 +119,12 @@ public:
                 throw std::runtime_error(std::string(qwen35 ? "Qwen3.5" : "Hunyuan") + " translation model has no valid assistant terminator or control EOS/EOT token");
         }
         if (!rawPrompt) {
-            promptPrefix = tokenize(gemma ? "<bos><start_of_turn>user\n" : qwen35 ?
+            promptPrefix = tokenize(riva ? "<s>System\\n" : euro ?
+                "<|im_start|>system\n<|im_end|>\n<|im_start|>user\n" : gemma ? "<bos><start_of_turn>user\n" : qwen35 ?
                 "<|im_start|>user\n" : "<｜hy_begin▁of▁sentence｜><｜hy_User｜>", true);
             // Index-Translate's publisher template with enable_thinking=false.
             // Prefill the empty reasoning block so only translation is generated.
-            promptSuffix = tokenize(gemma ? "<end_of_turn>\n<start_of_turn>model\n" : qwen35 ?
+            promptSuffix = tokenize(riva ? "</s>\\n<s>Assistant\\n" : euro ? "<|im_end|>\n<|im_start|>assistant\n" : gemma ? "<end_of_turn>\n<start_of_turn>model\n" : qwen35 ?
                 "<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n" : "<｜hy_Assistant｜>", true);
         }
         auto cp = llama_context_default_params();
@@ -149,7 +156,21 @@ public:
             // inject a synthetic end-of-turn marker.
             const auto* vocab = llama_model_get_vocab(model.get());
             std::vector<llama_token> tokens = promptPrefix;
-            const auto content = tokenize(prompt, false);
+            std::string userContent = prompt;
+            if (riva) {
+                const auto separator = prompt.find("\n\n");
+                if (separator == std::string::npos || separator > 180 || separator + 2 == prompt.size() ||
+                    prompt.rfind("You are an expert at translating text from ", 0) != 0)
+                    throw std::invalid_argument("Riva translation instruction is missing or invalid");
+                const auto instruction = tokenize(prompt.substr(0, separator), false);
+                tokens.insert(tokens.end(), instruction.begin(), instruction.end());
+                // Match the pinned publisher tokenizer template, including its
+                // literal backslash-n separators. User text is never parsed as tokens.
+                const auto boundary = tokenize("</s>\\n<s>User\\n", true);
+                tokens.insert(tokens.end(), boundary.begin(), boundary.end());
+                userContent = prompt.substr(separator + 2);
+            }
+            const auto content = tokenize(userContent, false);
             tokens.insert(tokens.end(), content.begin(), content.end());
             tokens.insert(tokens.end(), promptSuffix.begin(), promptSuffix.end());
             constexpr int maxOutput = 384;

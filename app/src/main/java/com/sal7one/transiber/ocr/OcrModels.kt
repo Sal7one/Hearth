@@ -70,6 +70,7 @@ internal class OcrModels(private val root: File) {
         } finally { temp.delete() }
     }
     fun open(context: Context, profile: OcrProfile): OcrEngine {
+        com.sal7one.transiber.runtime.LocalModelPolicy.requireAllowed(context, "OCR")
         for(asset in profile.assets) {
             val path = file(asset); check(installed(asset)) { "Download or import ${asset.filename} first" }
             val hash = path.inputStream().use { input -> val digest=MessageDigest.getInstance("SHA-256");val b=ByteArray(65536);while(true){val n=input.read(b);if(n<0)break;digest.update(b,0,n)};digest.digest().joinToString(""){"%02x".format(it)} }

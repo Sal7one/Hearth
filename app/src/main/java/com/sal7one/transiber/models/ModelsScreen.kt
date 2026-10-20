@@ -24,6 +24,10 @@ fun ModelsScreen(onDownloads: () -> Unit = {}, onVoices: () -> Unit = {}, initia
     val uiText = rememberUiText()
 
     val context = LocalContext.current
+    if (!com.sal7one.transiber.runtime.LocalModelPolicy.allowed(context)) {
+        TvCloudModelsUi(initialSection)
+        return
+    }
     val setupMode = rememberSetupMode()
     val scope = rememberCoroutineScope()
     val registry = remember { ModelRegistry.getInstance(context) }

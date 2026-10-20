@@ -56,10 +56,10 @@ void fail(JNIEnv* env, const char* error) {
 }
 }
 // Reject APKs that accidentally bundle an older JNI binary: JNI can resolve
-// create(byte[], boolean) to an old create(byte[]) symbol without noticing the
+// create(byte[], int) to an old create(byte[]) symbol without noticing the
 // extra argument, silently selecting a different translation prompt.
 extern "C" JNIEXPORT jint JNICALL HEARTH_TRANSLATION_JNI(promptProtocolVersion)(JNIEnv*, jobject) {
-    return 2;
+    return 3;
 }
 #ifdef HEARTH_TRANSLATION_OPENCL
 extern "C" JNIEXPORT void JNICALL HEARTH_TRANSLATION_JNI(configureCache)(JNIEnv* env, jobject, jbyteArray path) {
@@ -74,14 +74,14 @@ extern "C" JNIEXPORT void JNICALL HEARTH_TRANSLATION_JNI(configureCache)(JNIEnv*
     } catch (const std::exception& error) { fail(env, error.what()); }
 }
 #endif
-extern "C" JNIEXPORT jlong JNICALL HEARTH_TRANSLATION_JNI(create)(JNIEnv* env, jobject, jbyteArray path, jboolean rawPrompt) {
+extern "C" JNIEXPORT jlong JNICALL HEARTH_TRANSLATION_JNI(create)(JNIEnv* env, jobject, jbyteArray path, jint promptMode) {
     try {
 #if defined(HEARTH_TRANSLATION_OPENCL)
-        return models.insert(std::make_unique<transiber::OpenClTextModel>(bytes(env, path), rawPrompt == JNI_TRUE));
+        return models.insert(std::make_unique<transiber::OpenClTextModel>(bytes(env, path), promptMode));
 #elif defined(HEARTH_TRANSLATION_VULKAN)
-        return models.insert(std::make_unique<transiber::VulkanTextModel>(bytes(env, path), rawPrompt == JNI_TRUE));
+        return models.insert(std::make_unique<transiber::VulkanTextModel>(bytes(env, path), promptMode));
 #else
-        return models.insert(std::make_unique<transiber::TextModel>(bytes(env, path), 2, 0, rawPrompt == JNI_TRUE));
+        return models.insert(std::make_unique<transiber::TextModel>(bytes(env, path), 2, 0, promptMode));
 #endif
     }
     catch (const std::exception& e) { fail(env, e.what()); return 0; }

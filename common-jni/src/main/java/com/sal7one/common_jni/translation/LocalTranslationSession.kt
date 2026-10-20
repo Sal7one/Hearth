@@ -11,7 +11,7 @@ import kotlinx.coroutines.withContext
 internal object LocalTranslationNative {
     init { System.loadLibrary("transiber_translation") }
     external fun promptProtocolVersion(): Int
-    external fun create(path: ByteArray, rawPrompt: Boolean): Long
+    external fun create(path: ByteArray, promptMode: Int): Long
     external fun translate(handle: Long, prompt: ByteArray): ByteArray
     external fun cancel(handle: Long)
     external fun destroy(handle: Long)
@@ -20,7 +20,7 @@ internal object LocalTranslationNative {
 internal object LocalTranslationVulkanNative {
     init { System.loadLibrary("transiber_translation_vulkan") }
     external fun promptProtocolVersion(): Int
-    external fun create(path: ByteArray, rawPrompt: Boolean): Long
+    external fun create(path: ByteArray, promptMode: Int): Long
     external fun executionInfo(handle: Long): ByteArray
     external fun translate(handle: Long, prompt: ByteArray): ByteArray
     external fun cancel(handle: Long)
@@ -31,7 +31,7 @@ internal object LocalTranslationOpenClNative {
     init { System.loadLibrary("transiber_translation_opencl") }
     external fun promptProtocolVersion(): Int
     external fun configureCache(directory: ByteArray)
-    external fun create(path: ByteArray, rawPrompt: Boolean): Long
+    external fun create(path: ByteArray, promptMode: Int): Long
     external fun executionInfo(handle: Long): ByteArray
     external fun translate(handle: Long, prompt: ByteArray): ByteArray
     external fun cancel(handle: Long)
@@ -40,7 +40,7 @@ internal object LocalTranslationOpenClNative {
 internal interface TranslationRuntime {
     fun configure(cacheDirectory: File?) = Unit
     fun protocolVersion(): Int
-    fun create(path: ByteArray, rawPrompt: Boolean): Long
+    fun create(path: ByteArray, promptMode: Int): Long
     fun executionInfo(handle: Long): String
     fun translate(handle: Long, prompt: ByteArray): ByteArray
     fun cancel(handle: Long)
@@ -48,7 +48,7 @@ internal interface TranslationRuntime {
 }
 private object CpuTranslationRuntime : TranslationRuntime {
     override fun protocolVersion() = LocalTranslationNative.promptProtocolVersion()
-    override fun create(path: ByteArray, rawPrompt: Boolean) = LocalTranslationNative.create(path, rawPrompt)
+    override fun create(path: ByteArray, promptMode: Int) = LocalTranslationNative.create(path, promptMode)
     override fun executionInfo(handle: Long) = "CPU · llama.cpp"
     override fun translate(handle: Long, prompt: ByteArray) = LocalTranslationNative.translate(handle, prompt)
     override fun cancel(handle: Long) = LocalTranslationNative.cancel(handle)
@@ -56,7 +56,7 @@ private object CpuTranslationRuntime : TranslationRuntime {
 }
 private object VulkanTranslationRuntime : TranslationRuntime {
     override fun protocolVersion() = LocalTranslationVulkanNative.promptProtocolVersion()
-    override fun create(path: ByteArray, rawPrompt: Boolean) = LocalTranslationVulkanNative.create(path, rawPrompt)
+    override fun create(path: ByteArray, promptMode: Int) = LocalTranslationVulkanNative.create(path, promptMode)
     override fun executionInfo(handle: Long) = LocalTranslationVulkanNative.executionInfo(handle).toString(Charsets.UTF_8).trim()
         .also { check(it.isNotBlank()) { "Vulkan translation returned no execution information" } }
     override fun translate(handle: Long, prompt: ByteArray) = LocalTranslationVulkanNative.translate(handle, prompt)
@@ -71,7 +71,7 @@ private object OpenClTranslationRuntime : TranslationRuntime {
         LocalTranslationOpenClNative.configureCache(directory.toByteArray(Charsets.UTF_8))
     }
     override fun protocolVersion() = LocalTranslationOpenClNative.promptProtocolVersion()
-    override fun create(path: ByteArray, rawPrompt: Boolean) = LocalTranslationOpenClNative.create(path, rawPrompt)
+    override fun create(path: ByteArray, promptMode: Int) = LocalTranslationOpenClNative.create(path, promptMode)
     override fun executionInfo(handle: Long) = LocalTranslationOpenClNative.executionInfo(handle).toString(Charsets.UTF_8).trim()
         .also { check(it.isNotBlank()) { "OpenCL translation returned no execution information" } }
     override fun translate(handle: Long, prompt: ByteArray) = LocalTranslationOpenClNative.translate(handle, prompt)
@@ -126,12 +126,12 @@ class LocalTranslationSession private constructor(
                     "$gpuName translation runtime is unavailable: ${e.message}. Select CPU in Models → Translation.", e)
                 throw IllegalStateException("Local translation native runtime is outdated: ${e.message}", e)
             }
-            check(protocol == 2) { "Local translation native prompt protocol mismatch: expected 2, got $protocol" }
+            check(protocol == 3) { "Local translation native prompt protocol mismatch: expected 3, got $protocol" }
             check(file.length() == spec.bytes) { "Local translation model is missing or has the wrong size" }
             ModelIntegrity.inspect(file, spec.sha256)
             val path = file.absolutePath.toByteArray(Charsets.UTF_8)
             val handle = try {
-                runtime.create(path, spec.family == "milmmt-46")
+                runtime.create(path, spec.promptMode)
             } catch (e: Exception) {
                 if (acceleration != TranslationAcceleration.CPU) throw IllegalStateException(
                     "$gpuName translation could not start: ${e.message}. Select CPU in Models → Translation.", e)

@@ -40,6 +40,10 @@ internal fun LocalBundleUi(
 ) {
     val text = rememberUiText()
     val context = LocalContext.current
+    if (!com.sal7one.transiber.runtime.LocalModelPolicy.allowed(context)) {
+        com.sal7one.transiber.ui.components.LocalModelPolicyNotice()
+        return
+    }
     val scope = rememberCoroutineScope()
     val actions = remember { PortableSetupActions(context) }
     val registry = remember { ModelRegistry.getInstance(context) }

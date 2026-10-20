@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="tv_local_models_disabled">电视上已禁用本地模型。请为语音识别、翻译或朗读选择云端连接。现有模型和已保存的手机配置将保持不变。</string>
+    <string name="tv_model_connections">电视连接</string>
+    <string name="tv_offline_connections_unavailable">离线版本不支持云端连接。请使用 Play 版本配置电视连接。</string>
+</resources>

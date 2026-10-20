@@ -20,6 +20,10 @@ internal fun SettingsSpeechLocalUi(config: CaptionOverlayConfig,
     repairRevision: Int = 0, repairEngine: CaptionEngineChoice? = null,
     update: ((CaptionOverlayConfig) -> CaptionOverlayConfig) -> Unit) {
     val uiText = rememberUiText()
+    if (!com.sal7one.transiber.runtime.LocalModelPolicy.allowed(androidx.compose.ui.platform.LocalContext.current)) {
+        com.sal7one.transiber.ui.components.LocalModelPolicyNotice()
+        return
+    }
     if (rememberSetupMode() == SetupMode.BASIC) {
         Text(uiText(UiR.string.setup_basic_selected_speech, uiText.label(config.engine)), style = MaterialTheme.typography.labelLarge)
         LocalBundleUi(config)

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="tv_local_models_disabled">Local models are disabled on TVs. Choose a cloud connection for speech, translation, or read aloud. Models and saved phone setups are kept without changes.</string>
+    <string name="tv_model_connections">TV connections</string>
+    <string name="tv_offline_connections_unavailable">Cloud connections are unavailable in the offline build. Use the Play build to configure a TV connection.</string>
+</resources>

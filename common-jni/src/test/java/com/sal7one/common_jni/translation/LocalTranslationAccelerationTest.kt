@@ -18,10 +18,11 @@ class LocalTranslationAccelerationTest {
     }
     private class Runtime : TranslationRuntime {
         var created = 0; var destroyed = 0; var cancelled = 0
+        var promptMode = -1
         var loadFailure: Throwable? = null; var infoFailure: Throwable? = null
         var output = "translated"; var info = "Vulkan · test GPU · offload requested 99 layers"
-        override fun protocolVersion() = 2
-        override fun create(path: ByteArray, rawPrompt: Boolean): Long { created++; loadFailure?.let { throw it }; return 7 }
+        override fun protocolVersion() = 3
+        override fun create(path: ByteArray, promptMode: Int): Long { this.promptMode = promptMode; created++; loadFailure?.let { throw it }; return 7 }
         override fun executionInfo(handle: Long): String { assertEquals(7L, handle); infoFailure?.let { throw it }; return info }
         override fun translate(handle: Long, prompt: ByteArray) = output.toByteArray()
         override fun cancel(handle: Long) { cancelled++ }
@@ -32,6 +33,23 @@ class LocalTranslationAccelerationTest {
         assertEquals(TranslationAcceleration.CPU, TranslationAcceleration.fromId("future-backend"))
         assertEquals(TranslationAcceleration.VULKAN, TranslationAcceleration.fromId("vulkan"))
         assertEquals(TranslationAcceleration.OPENCL, TranslationAcceleration.fromId("opencl"))
+    }
+    @Test fun modeComesFromThePinnedFamilyAndOldProtocolCannotCreateAModel() {
+        val (file, spec) = model()
+        for (id in listOf("hy-mt2-q4", "milmmt-46-1b-q4", "eurollm-17b-q4", "riva-translate-4b-v2-q4")) {
+            val selected = TranslationCatalog.find(id).copy(bytes = spec.bytes, sha256 = spec.sha256)
+            val runtime = Runtime()
+            LocalTranslationSession.openWithRuntime(file, selected, TranslationAcceleration.CPU) { runtime }.use {
+                assertEquals(selected.promptMode, runtime.promptMode)
+            }
+        }
+        val old = Runtime()
+        val runtime = object : TranslationRuntime by old { override fun protocolVersion() = 2 }
+        val error = assertThrows(IllegalStateException::class.java) {
+            LocalTranslationSession.openWithRuntime(file, spec, TranslationAcceleration.CPU) { runtime }
+        }
+        assertTrue(error.message.orEmpty().contains("expected 3, got 2"))
+        assertEquals(0, old.created)
     }
     @Test fun openClKernelCompileFailureRetainsActualCauseWithoutCpuFallback() {
         val (file, spec) = model()
@@ -53,7 +71,7 @@ class LocalTranslationAccelerationTest {
         val calls = mutableListOf<String>()
         val runtime = object : TranslationRuntime by Runtime() {
             override fun configure(cacheDirectory: File?) { assertEquals(cache, cacheDirectory); calls += "cache" }
-            override fun protocolVersion(): Int { calls += "protocol"; return 2 }
+            override fun protocolVersion(): Int { calls += "protocol"; return 3 }
         }
         LocalTranslationSession.openWithRuntime(file, spec, TranslationAcceleration.OPENCL, cache) { runtime }.use {
             assertEquals(listOf("cache", "protocol"), calls)

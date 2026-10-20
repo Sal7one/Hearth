@@ -36,6 +36,10 @@ internal fun SettingsTranslateLocalUi(
     repairRevision: Int = 0, repairModelId: String? = null,
 ) {
     val uiText = rememberUiText()
+    if (!com.sal7one.transiber.runtime.LocalModelPolicy.allowed(LocalContext.current)) {
+        LocalModelPolicyNotice()
+        return
+    }
     if (rememberSetupMode() == SetupMode.BASIC) {
         Text(uiText(UiR.string.setup_basic_selected_translation, TranslationOptions.label(config.localTranslationModelId)),
             style = MaterialTheme.typography.labelLarge)
@@ -239,7 +243,7 @@ internal fun SettingsTranslateLocalUi(
                         else uiText(UiR.string.translation_browser_pair_size, TranslationLanguages.label(checkNotNull(fixedSource)),
                             TranslationLanguages.label(checkNotNull(fixedTarget)), bytes / 1_048_576), style = MaterialTheme.typography.bodyMedium)
                     if (route != null) Text(uiText(UiR.string.model_marian_via_english_warning), style = MaterialTheme.typography.bodySmall)
-                    if (spec?.family == "milmmt-46" || spec?.family == "index-translate" || spec?.quantization == "Q2_K")
+                    if (spec?.family == "milmmt-46" || spec?.family == "index-translate" || spec?.family == "eurollm" || spec?.family == "riva-translate" || spec?.quantization == "Q2_K")
                         Text(uiText(UiR.string.translation_browser_experimental), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     if (selected || ready || stage != null || progress.completed > 0) ModelStatusLabel(when {
                         selected -> uiText(UiR.string.model_browser_selected)
@@ -321,6 +325,7 @@ internal fun SettingsTranslateLocalUi(
                         else if (spec != null) Text(uiText(UiR.string.model_browser_format, spec.quantization), style = MaterialTheme.typography.bodySmall)
                         Text(uiText(UiR.string.ui_1_s_imported_files_must_match_the_selected_artifact_8b0a8, license), style = MaterialTheme.typography.bodySmall)
                         if (spec != null) {
+                            if (spec.family in setOf("eurollm", "riva-translate")) Text(spec.evaluationNote, style = MaterialTheme.typography.bodySmall)
                             if (spec.family == "index-translate") Text(uiText(UiR.string.translation_browser_index_new), style = MaterialTheme.typography.bodySmall)
                             val budget = DownloadBudget.estimate(spec.bytes, spec.bytes, record?.bytes?.coerceIn(0, spec.bytes) ?: 0)
                             if (!ready) Text(uiText(UiR.string.model_browser_disk, budget.sameVolumeRequired / 1_048_576), style = MaterialTheme.typography.bodySmall)

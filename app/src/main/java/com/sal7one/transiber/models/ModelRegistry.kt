@@ -173,6 +173,7 @@ class ModelRegistry private constructor(private val context: Context) {
         copyToInternal: Boolean = true,
         expectedSha256: String? = null
     ): RegisteredModel? = withContext(Dispatchers.IO) {
+        com.sal7one.transiber.runtime.LocalModelPolicy.requireAllowed(context, "model import")
         val file = File(path)
         if (!file.exists()) {
             Log.e(TAG, "Model file not found: $path")
@@ -198,6 +199,7 @@ class ModelRegistry private constructor(private val context: Context) {
         uri: Uri,
         expectedSha256: String? = null
     ): RegisteredModel? = withContext(Dispatchers.IO) {
+        com.sal7one.transiber.runtime.LocalModelPolicy.requireAllowed(context, "model import")
         val document = DocumentFile.fromSingleUri(context, uri)
             ?: throw ModelIntegrityException("Invalid model URI")
         if (!document.isFile) throw ModelIntegrityException("Model URI is not a file")
@@ -214,6 +216,7 @@ class ModelRegistry private constructor(private val context: Context) {
         uri: Uri,
         expectedSha256: String? = null
     ): RegisteredModel? = withContext(Dispatchers.IO) {
+        com.sal7one.transiber.runtime.LocalModelPolicy.requireAllowed(context, "model import")
         val document = DocumentFile.fromTreeUri(context, uri)
             ?: throw ModelIntegrityException("Invalid model directory URI")
         if (!document.isDirectory) throw ModelIntegrityException("Model URI is not a directory")
@@ -287,6 +290,7 @@ class ModelRegistry private constructor(private val context: Context) {
     suspend fun registerStagedModel(
         staged: StagedModel
     ): RegisteredModel? = withContext(Dispatchers.IO) {
+        com.sal7one.transiber.runtime.LocalModelPolicy.requireAllowed(context, "model installation")
         if (!ModelIntegrity.isContained(modelsDir, staged.file)) {
             throw ModelIntegrityException("Staged model is outside the private model root")
         }
@@ -299,6 +303,7 @@ class ModelRegistry private constructor(private val context: Context) {
         expectedTreeSha256: String,
         populate: (ModelIntegrity.DirectorySink) -> Unit,
     ): RegisteredModel = withContext(Dispatchers.IO) {
+        com.sal7one.transiber.runtime.LocalModelPolicy.requireAllowed(context, "model installation")
         val staged = ModelIntegrity.stageDirectory(modelsDir, name, expectedTreeSha256, populate)
         val registered = registerStagedModelInternal(staged, deleteIfRejected = true)
             ?: throw ModelIntegrityException("Publisher model package has an unsupported structure")
