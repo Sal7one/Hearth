@@ -40,6 +40,11 @@ import com.sal7one.hearth.desktop.ui.screens.files.filesState
 import com.sal7one.hearth.desktop.ui.screens.connections.ConnectionsActions
 import com.sal7one.hearth.desktop.ui.screens.connections.ConnectionsScreen
 import com.sal7one.hearth.desktop.ui.screens.connections.connectionsState
+import com.sal7one.hearth.desktop.ui.screens.integrations.IntegrationsActions
+import com.sal7one.hearth.desktop.ui.screens.integrations.IntegrationsScreen
+import com.sal7one.hearth.desktop.ui.screens.integrations.IntegrationsState
+import com.sal7one.hearth.desktop.ui.screens.translate.TranslateScreen
+import com.sal7one.hearth.desktop.ui.screens.translate.TranslateState
 import com.sal7one.hearth.desktop.ui.screens.overlay.OverlayCaptionView
 import com.sal7one.hearth.desktop.ui.screens.overlay.OverlaySettings
 import com.sal7one.hearth.desktop.ui.screens.overlay.OverlayState
@@ -534,6 +539,66 @@ class DesignPreviewRenderTest {
                     onNavigate = {},
                 ) {
                     ConnectionsScreen(state = connectionsFixture, actions = ConnectionsActions())
+                }
+            }
+        }
+    }
+
+    @Test
+    fun renderIntegrations() = render("integrations", height = 1150) { width, height ->
+        ImageComposeScene(width = width, height = height, density = Density(1f)) {
+            HearthTheme(preset = AccentPreset.INK, dark = true) {
+                AppShell(
+                    current = DesktopScreen.INTEGRATIONS,
+                    status = "Server running",
+                    statusLive = true,
+                    dark = true,
+                    onToggleTheme = {},
+                    onNavigate = {},
+                ) {
+                    IntegrationsScreen(
+                        state = IntegrationsState(
+                            running = true,
+                            baseUrl = "http://127.0.0.1:47821",
+                            overlayUrl = "http://127.0.0.1:47821/overlay#c=8f2a",
+                            limits = listOf(
+                                "Concurrency" to "Four sessions",
+                                "Size" to "64 MiB per file",
+                                "Access" to "This Mac only",
+                            ),
+                        ),
+                        actions = IntegrationsActions(),
+                    )
+                }
+            }
+        }
+    }
+
+    @Test
+    fun renderTranslate() = render("translate", height = 900) { width, height ->
+        ImageComposeScene(width = width, height = height, density = Density(1f)) {
+            HearthTheme(preset = AccentPreset.INK, dark = true) {
+                AppShell(
+                    current = DesktopScreen.TRANSLATE,
+                    status = "EuroLLM ready",
+                    statusLive = false,
+                    dark = true,
+                    onToggleTheme = {},
+                    onNavigate = {},
+                ) {
+                    TranslateScreen(
+                        state = TranslateState(
+                            sourceLabel = "English",
+                            targetLabel = "العربية",
+                            translationEnabled = true,
+                            translated = "يفتح المتحف في التاسعة، لكن الجناح الشرقي يبقى مغلقاً حتى الظهر.",
+                            original = "The museum opens at nine, but the east wing stays closed until noon.",
+                        ),
+                        onTranslate = {},
+                        onSwapLanguages = {},
+                        onCopyResult = {},
+                        onOpenVoice = {},
+                    )
                 }
             }
         }

@@ -43,6 +43,11 @@ import com.sal7one.hearth.desktop.ui.screens.files.filesState
 import com.sal7one.hearth.desktop.ui.screens.connections.ConnectionsActions
 import com.sal7one.hearth.desktop.ui.screens.connections.ConnectionsScreen
 import com.sal7one.hearth.desktop.ui.screens.connections.connectionsState
+import com.sal7one.hearth.desktop.ui.screens.integrations.IntegrationsActions
+import com.sal7one.hearth.desktop.ui.screens.integrations.IntegrationsScreen
+import com.sal7one.hearth.desktop.ui.screens.integrations.integrationsState
+import com.sal7one.hearth.desktop.ui.screens.translate.TranslateScreen
+import com.sal7one.hearth.desktop.ui.screens.translate.translateState
 import com.sal7one.hearth.desktop.ui.screens.presets.BuiltInPresets
 import com.sal7one.hearth.desktop.ui.screens.presets.PresetsActions
 import com.sal7one.hearth.desktop.ui.screens.presets.PresetsScreen
@@ -299,6 +304,20 @@ internal fun HearthDesktopRoot(
         onSteps = { steps -> withVoiceOption("steps", steps.toString()) },
         onStopAudio = { controller.stopPlayback() },
     )
+
+    val integrations = integrationsState(workspace)
+
+    val integrationsActions = IntegrationsActions(
+        onStart = { controller.startIntegration() },
+        onStop = { controller.stopIntegration() },
+        onCopyOverlayUrl = {
+            runCatching { copyToClipboard(workspace.integration?.overlayUrl.orEmpty()) }
+                .onFailure { failure(it.message ?: it.toString()) }
+        },
+        onCopyApiToken = { controller.copyApiToken(::copyToClipboard) },
+    )
+
+    val translate = translateState(config, workspace)
 
     val connections = connectionsState(
         capabilities = controller.capabilities,
@@ -560,6 +579,23 @@ internal fun HearthDesktopRoot(
                     },
                     onOpen = ::navigate,
                     onOpenWorkspace = { navigate(DesktopScreen.CAPTIONS) },
+                )
+                DesktopScreen.INTEGRATIONS -> IntegrationsScreen(state = integrations, actions = integrationsActions)
+                DesktopScreen.TRANSLATE -> TranslateScreen(
+                    state = translate,
+                    onTranslate = { text ->
+                        if (text.isNotBlank()) controller.start(WorkspaceInput.TEXT, text, "", null)
+                    },
+                    onSwapLanguages = {
+                        controller.updateConfig {
+                            it.copy(sourceLanguage = it.targetLanguage, targetLanguage = it.sourceLanguage)
+                        }
+                    },
+                    onCopyResult = {
+                        runCatching { copyToClipboard(translate.translated.ifBlank { translate.original }) }
+                            .onFailure { failure(it.message ?: it.toString()) }
+                    },
+                    onOpenVoice = { navigate(DesktopScreen.VOICES) },
                 )
                 DesktopScreen.CONNECTIONS -> ConnectionsScreen(state = connections, actions = connectionsActions)
                 DesktopScreen.APPEARANCE -> AppearanceScreen(
