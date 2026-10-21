@@ -60,8 +60,9 @@ class DesktopSettingsTest {
             val nemotron = if (macosArm) 1 else 0
             val moonshine = if (macosArm) 1 else 0
             val ct2 = if (macosArm) 3 else 0
+            val moss = if (macosArm) 1 else 0
             val byStage = library.catalog.groupingBy { it.stage.name }.eachCount()
-            assertEquals(mapOf("STT" to 27 + qwen + transcribepsy + nemotron + moonshine, "TRANSLATION" to 14 + ct2, "TTS" to 1), byStage)
+            assertEquals(mapOf("STT" to 27 + qwen + transcribepsy + nemotron + moonshine, "TRANSLATION" to 14 + ct2, "TTS" to 1 + moss), byStage)
             assertEquals(if (qwen + transcribepsy + nemotron + moonshine > 0) 5 else 1, library.catalog.filter { it.stage.name == "STT" }.map { it.family }.distinct().size)
             if (qwen == 1) {
                 val card = library.catalog.single { it.id == "qwen3-asr-0.6b" }
@@ -93,6 +94,13 @@ class DesktopSettingsTest {
                 assertEquals("moonshine-local", card.engineId)
                 assertEquals(4, card.archive?.files?.size)
                 assertEquals("9ec31b342d8fa3240c3b81b8f82e1cf7e3ac467c93ca5a999b741d5887164f8d", card.artifacts.single().sha256)
+            }
+            if (moss == 1) {
+                val card = library.catalog.single { it.id == "moss-tts-nano" }
+                assertEquals("moss-tts-local", card.engineId)
+                assertEquals(14, card.artifacts.size)
+                assertEquals(717_868_602L, card.bytes)
+                assertEquals("Ava", card.options["voice"])
             }
             // Every shipped llama translator must use a prompt family the desktop engine implements,
             // and the option the engine reads must be the catalog's own family, not a fallback.

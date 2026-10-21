@@ -95,7 +95,7 @@ internal fun verifiedNativeDependencies(directory: Path, orderedFiles: List<Stri
 
 /** Windows ORT links the Microsoft DLL CRT even though Hearth's own JNI targets use /MT. */
 internal fun nativeDependencyOrder(library: String, platform: String, files: Set<String>): List<String> {
-    if (library != "hearth_supertonic_jni" && library != "hearth_desktop_qwen3_asr") return emptyList()
+    if (library !in setOf("hearth_supertonic_jni", "hearth_desktop_qwen3_asr", "hearth_desktop_moss")) return emptyList()
     // The Qwen3-ASR stage is staged for macOS arm64 only; do not preload a Windows ORT for a dylib that is not part of that bundle.
     if (library == "hearth_desktop_qwen3_asr" && !platform.startsWith("macos-")) return emptyList()
     if (platform.startsWith("windows-")) {

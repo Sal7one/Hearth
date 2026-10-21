@@ -8,7 +8,7 @@ do not have. Keep this file honest: do not add a row you have not run.
 | Check | Command | Result |
 | --- | --- | --- |
 | Android native, 4 ABIs | `./gradlew :common-jni:externalNativeBuildDebug` | `libcommon_jni.so` for arm64-v8a, armeabi-v7a, x86, x86_64 |
-| Native bundle packaged | `./gradlew -PhearthDesktopOnly=true :desktop-runtime:jar` | 18 `native/macos-arm64/` entries, libraries stored as `*.payload` |
+| Native bundle packaged | `./gradlew -PhearthDesktopOnly=true :desktop-runtime:jar` | 20 `native/macos-arm64/` entries, libraries stored as `*.payload` |
 | Bundle loads + hashes | `:desktop-runtime:test --tests "*DesktopNativeContractTest*"` | 2 tests, 0 skipped; includes Qwen readiness/protocol |
 | Handle ownership | `:desktop-runtime:test --tests "*DesktopNativeOwnershipTest*"` | 6 tests, 1 skipped |
 | Whisper alone | `:desktop-runtime:test --tests "*DesktopWhisperRealSmokeTest*"` | transcript exact, `Metal GPU; threads=2` |
@@ -18,6 +18,7 @@ do not have. Keep this file honest: do not add a row you have not run.
 | TranscribePsy 250M EU | `:desktop-runtime:test --tests "*DesktopTranscribePsyRealSmokeTest*"` | `The museum opens at 9 in the morning. Please bring your ticket to the East Entrance.` (75 ms warm decode, 4561 ms engine path) |
 | Nemotron 3.5 ASR | `:desktop-runtime:test --tests "*DesktopNemotronRealSmokeTest*"` | `museum opens at nine in the morning please bring your ticket to the east entrance` (573 ms decode, 6784 ms engine path) |
 | Moonshine tiny.en (shared sherpa bridge) | `:desktop-runtime:test --tests "*DesktopMoonshineRealSmokeTest*"` | `The museum opens at 9 in the morning. Please bring your ticket to the East Entrance.` (32 ms decode, 3999 ms engine path) |
+| MOSS-TTS Nano 100M | `:desktop-runtime:test --tests "*DesktopMossRealSmokeTest*"` | "Hello from Hearth." / Ava, 48 kHz WAV, peak 0.516, RMS 0.0996, 99% non-zero; direct JNI 61,440 samples |
 | Speech + voice | `:desktop-runtime:test --tests "*DesktopSpeechVoiceRealSmokeTest*"` | `COMPLETED segments=1 audio=1` |
 | Speech + translation + voice | `:desktop-runtime:test --tests "*DesktopFullPipelineRealSmokeTest*"` | `COMPLETED ms=6182 segments=1 audio=1` |
 
@@ -52,6 +53,19 @@ HEARTH_SMOKE_WAV="$PWD/build/smoke/hello.wav" \
 Expected: `status=COMPLETED`, one caption segment, one audio artifact, and an
 Arabic translation of the English line. A Mac without an installed English system
 voice fails the test with that reason rather than silently skipping the stage.
+
+### Reproducing the MOSS smoke
+
+```bash
+# put the 14 pinned MOSS files in build/agents/tts/models (fetch-moss-test-assets.py)
+HEARTH_MOSS_SMOKE=1 HEARTH_SMOKE_MOSS="$PWD/build/agents/tts/models" \
+  ./gradlew -PhearthDesktopOnly=true :desktop-runtime:test --tests "*DesktopMossRealSmokeTest*"
+```
+
+The `moss` stage compiles `hearth-tts-moss/src/main/cpp/moss.cpp`, the desktop
+`moss_jni.cpp` direct-link adapter and the pinned SentencePiece source against the
+already-shipped ONNX Runtime 1.20.1. The runtime is one dylib; no model weights are
+committed.
 
 ### Reproducing the Moonshine smoke
 

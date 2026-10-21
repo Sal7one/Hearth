@@ -18,7 +18,7 @@ class DesktopVoiceCacheTest {
         val root = Files.createTempDirectory("hearth-voice-cache-")
         val model = Files.createDirectory(root.resolve("models"))
         val engines = CopyOnWriteArrayList<FakeEngine>()
-        val cache = DesktopVoiceCache(root) { path ->
+        val cache = DesktopVoiceCache(root) { path, _ ->
             assertEquals(model.toRealPath(), path)
             FakeEngine().also(engines::add)
         }
@@ -42,7 +42,7 @@ class DesktopVoiceCacheTest {
         val alternate = Files.createDirectory(root.resolve("other-models"))
         val order = CopyOnWriteArrayList<String>()
         var count = 0
-        val cache = DesktopVoiceCache(root) {
+        val cache = DesktopVoiceCache(root) { _, _ ->
             val index = ++count
             order += "create$index"
             FakeEngine(onClose = { order += "close$index" })
@@ -63,7 +63,7 @@ class DesktopVoiceCacheTest {
         val root = Files.createTempDirectory("hearth-voice-failure-")
         val model = Files.createDirectory(root.resolve("models"))
         val engines = CopyOnWriteArrayList<FakeEngine>()
-        val cache = DesktopVoiceCache(root) {
+        val cache = DesktopVoiceCache(root) { _, _ ->
             val fail = engines.isEmpty()
             FakeEngine(onSpeech = { _, _ -> if (fail) error("Pinned voice component failed verification") }).also(engines::add)
         }
@@ -85,7 +85,7 @@ class DesktopVoiceCacheTest {
         val release = CountDownLatch(1)
         val exited = CompletableDeferred<Unit>()
         val engines = CopyOnWriteArrayList<FakeEngine>()
-        val cache = DesktopVoiceCache(root) {
+        val cache = DesktopVoiceCache(root) { _, _ ->
             val first = engines.isEmpty()
             FakeEngine(onSpeech = { _, _ -> if (first) {
                 entered.complete(Unit)
@@ -114,7 +114,7 @@ class DesktopVoiceCacheTest {
         val engine = FakeEngine(onSpeech = { _, _ -> if (attempts.incrementAndGet() == 1) {
             entered.complete(Unit); check(release.await(3, TimeUnit.SECONDS))
         } })
-        val cache = DesktopVoiceCache(root) { created.incrementAndGet(); engine }
+        val cache = DesktopVoiceCache(root) { _, _ -> created.incrementAndGet(); engine }
         try {
             val first = async(Dispatchers.Default) { cache.read("first", selection(model), "en", "F1") }
             withTimeout(3_000) { entered.await() }
@@ -136,7 +136,7 @@ class DesktopVoiceCacheTest {
         val release = CountDownLatch(1)
         val engine = FakeEngine(onSpeech = { _, _ -> entered.complete(Unit); check(release.await(3, TimeUnit.SECONDS)) },
             onCancel = { release.countDown() })
-        val cache = DesktopVoiceCache(root) { engine }
+        val cache = DesktopVoiceCache(root) { _, _ -> engine }
         try {
             val reading = launch(Dispatchers.Default) { cache.read("active", selection(model), "en", "F1") }
             withTimeout(3_000) {
@@ -158,7 +158,7 @@ class DesktopVoiceCacheTest {
         val closing = CompletableDeferred<Unit>()
         val releaseClose = CountDownLatch(1)
         val engines = CopyOnWriteArrayList<FakeEngine>()
-        val cache = DesktopVoiceCache(root) {
+        val cache = DesktopVoiceCache(root) { _, _ ->
             val first = engines.isEmpty()
             FakeEngine(onClose = { if (first) { closing.complete(Unit); check(releaseClose.await(3, TimeUnit.SECONDS)) } }).also(engines::add)
         }

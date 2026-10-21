@@ -1588,6 +1588,113 @@
       }
     },
     {
+      "id": "moss-tts-nano",
+      "name": "MOSS-TTS Nano 100M",
+      "family": "MOSS",
+      "stage": "TTS",
+      "engineId": "moss-tts-local",
+      "languages": [
+        "ar",
+        "en"
+      ],
+      "source": "https://huggingface.co/OpenMOSS-Team/MOSS-TTS-Nano-100M-ONNX",
+      "license": "Apache-2.0",
+      "note": "Pinned MOSS-TTS Nano 100M ONNX package; CPU-only, 48 kHz mono, macOS Apple silicon. Every component is verified before loading; the default voice is Ava.",
+      "options": {
+        "voice": "Ava",
+        "threads": "2"
+      },
+      "platforms": [
+        "macos-arm64"
+      ],
+      "artifacts": [
+        {
+          "filename": "moss_tts_prefill.onnx",
+          "bytes": 283305,
+          "sha256": "d56126dcd0574c2f15d98fc6b35eda68d0386b5bd9c5e38e28548d6f2ea8f3db",
+          "url": "https://huggingface.co/OpenMOSS-Team/MOSS-TTS-Nano-100M-ONNX/resolve/f52645cb467506d8e18e746ddd59482685b74e58/moss_tts_prefill.onnx"
+        },
+        {
+          "filename": "moss_tts_decode_step.onnx",
+          "bytes": 291483,
+          "sha256": "698cbc2fc1c2feca16e5895614ed52bbb32ded10f236c076f477b2e69abf32d8",
+          "url": "https://huggingface.co/OpenMOSS-Team/MOSS-TTS-Nano-100M-ONNX/resolve/f52645cb467506d8e18e746ddd59482685b74e58/moss_tts_decode_step.onnx"
+        },
+        {
+          "filename": "moss_tts_local_decoder.onnx",
+          "bytes": 49231,
+          "sha256": "51aa754301b38550a5f9adda0ad93bd3dc95819afb511e6dcabf4a90b345a454",
+          "url": "https://huggingface.co/OpenMOSS-Team/MOSS-TTS-Nano-100M-ONNX/resolve/f52645cb467506d8e18e746ddd59482685b74e58/moss_tts_local_decoder.onnx"
+        },
+        {
+          "filename": "moss_tts_local_cached_step.onnx",
+          "bytes": 53685,
+          "sha256": "aa9035fefc1c138a951a8bcfc0374fb03a25f1ece67f7f7f53bce349b84a1dd5",
+          "url": "https://huggingface.co/OpenMOSS-Team/MOSS-TTS-Nano-100M-ONNX/resolve/f52645cb467506d8e18e746ddd59482685b74e58/moss_tts_local_cached_step.onnx"
+        },
+        {
+          "filename": "moss_tts_local_fixed_sampled_frame.onnx",
+          "bytes": 471262,
+          "sha256": "40cdb00efc171c450cf91468e01429caa41b0252222cd308e978f58fe354afa8",
+          "url": "https://huggingface.co/OpenMOSS-Team/MOSS-TTS-Nano-100M-ONNX/resolve/f52645cb467506d8e18e746ddd59482685b74e58/moss_tts_local_fixed_sampled_frame.onnx"
+        },
+        {
+          "filename": "moss_tts_global_shared.data",
+          "bytes": 440813568,
+          "sha256": "bce8312c3df6a44545302cae229b61054fe0672e0b252ba59cba47adeed831dc",
+          "url": "https://huggingface.co/OpenMOSS-Team/MOSS-TTS-Nano-100M-ONNX/resolve/f52645cb467506d8e18e746ddd59482685b74e58/moss_tts_global_shared.data"
+        },
+        {
+          "filename": "moss_tts_local_shared.data",
+          "bytes": 229678080,
+          "sha256": "bae7782032c0fb12490ab42afe009f87ae6c75a0f0596fc7b5c08e4d5ee93916",
+          "url": "https://huggingface.co/OpenMOSS-Team/MOSS-TTS-Nano-100M-ONNX/resolve/f52645cb467506d8e18e746ddd59482685b74e58/moss_tts_local_shared.data"
+        },
+        {
+          "filename": "tokenizer.model",
+          "bytes": 470897,
+          "sha256": "c353ee1479b536bf414c1b247f5542b6607fb8ae91320e5af1781fee200fddff",
+          "url": "https://huggingface.co/OpenMOSS-Team/MOSS-TTS-Nano-100M-ONNX/resolve/f52645cb467506d8e18e746ddd59482685b74e58/tokenizer.model"
+        },
+        {
+          "filename": "tts_browser_onnx_meta.json",
+          "bytes": 4487,
+          "sha256": "3edf25232dcd0af3d061c837e9a968a39e2f8592e06777d740503c4f2244f95c",
+          "url": "https://huggingface.co/OpenMOSS-Team/MOSS-TTS-Nano-100M-ONNX/resolve/f52645cb467506d8e18e746ddd59482685b74e58/tts_browser_onnx_meta.json"
+        },
+        {
+          "filename": "browser_poc_manifest.json",
+          "bytes": 503354,
+          "sha256": "097d80e993dc29f0bae427590b4f77084a161cb578b50d82c29f455d5faa9eee",
+          "url": "https://huggingface.co/OpenMOSS-Team/MOSS-TTS-Nano-100M-ONNX/resolve/f52645cb467506d8e18e746ddd59482685b74e58/browser_poc_manifest.json"
+        },
+        {
+          "filename": "moss_audio_tokenizer_decode_full.onnx",
+          "bytes": 681902,
+          "sha256": "0fbbafe3fd4afa2a019af5c5ced204af6e2d1db044fa40f021525d2aee95b4ac",
+          "url": "https://huggingface.co/OpenMOSS-Team/MOSS-Audio-Tokenizer-Nano-ONNX/resolve/ceff0d0749bfb3fa2d61149794ec6feef0d1e1ae/moss_audio_tokenizer_decode_full.onnx"
+        },
+        {
+          "filename": "moss_audio_tokenizer_decode_step.onnx",
+          "bytes": 351400,
+          "sha256": "9527c86a29e1837edec1f74db57d5eeaadb3a715af3382703566460afed25855",
+          "url": "https://huggingface.co/OpenMOSS-Team/MOSS-Audio-Tokenizer-Nano-ONNX/resolve/ceff0d0749bfb3fa2d61149794ec6feef0d1e1ae/moss_audio_tokenizer_decode_step.onnx"
+        },
+        {
+          "filename": "moss_audio_tokenizer_decode_shared.data",
+          "bytes": 44198912,
+          "sha256": "e69d52e0f4e84ca27850557ee54face46632d3a5a16c89bd246c7c408466dcad",
+          "url": "https://huggingface.co/OpenMOSS-Team/MOSS-Audio-Tokenizer-Nano-ONNX/resolve/ceff0d0749bfb3fa2d61149794ec6feef0d1e1ae/moss_audio_tokenizer_decode_shared.data"
+        },
+        {
+          "filename": "codec_browser_onnx_meta.json",
+          "bytes": 17036,
+          "sha256": "3e291c883bb7d11ff2fe8e964e3e495519760358859f35c951254c7741592731",
+          "url": "https://huggingface.co/OpenMOSS-Team/MOSS-Audio-Tokenizer-Nano-ONNX/resolve/ceff0d0749bfb3fa2d61149794ec6feef0d1e1ae/codec_browser_onnx_meta.json"
+        }
+      ]
+    },
+    {
       "id": "moonshine-tiny-en-v2",
       "name": "Moonshine tiny.en · q8",
       "family": "Moonshine",

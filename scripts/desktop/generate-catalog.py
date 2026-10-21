@@ -156,6 +156,14 @@ def generate():
         archive=dict(format='tar.bz2', root='sherpa-onnx-qwen3-asr-0.6B-int8-2026-03-25',
             expandedBytes=sum(size for _, size, _ in qwen_files),
             files=[dict(path=path, bytes=size, sha256=digest) for path, size, digest in qwen_files])))
+    moss_source = (ROOT / 'hearth-tts-moss/src/main/java/com/sal7one/hearth/tts/moss/MossCatalog.kt').read_text(encoding='utf-8')
+    moss_assets = re.findall(r'MossAsset\("([^"]+)",\s*(\d+),\s*"([a-f0-9]{64})",\s*"([^"]+)"\)', moss_source)
+    assert len(moss_assets) == 14, len(moss_assets)
+    models.append(dict(id='moss-tts-nano', name='MOSS-TTS Nano 100M', family='MOSS', stage='TTS', engineId='moss-tts-local',
+        languages=['ar', 'en'], source='https://huggingface.co/OpenMOSS-Team/MOSS-TTS-Nano-100M-ONNX', license='Apache-2.0',
+        note='Pinned MOSS-TTS Nano 100M ONNX package; CPU-only, 48 kHz mono, macOS Apple silicon. Every component is verified before loading; the default voice is Ava.',
+        options={'voice': 'Ava', 'threads': '2'}, platforms=['macos-arm64'],
+        artifacts=[dict(filename=name, bytes=int(size), sha256=digest, url=url) for name, size, digest, url in moss_assets]))
     moonshine = next(a for a in audit['artifacts'] if a['id'] == 'moonshine-tiny-en-v2')
     moonshine_files = [
         ('tokens.txt', 549350, '2870d843e14c1e187bf1913a521562a63b53933814bd7f2145120468f494a049'),
@@ -189,7 +197,7 @@ def generate():
         note='Pinned Nemotron 3.5 ASR streaming q8 GGUF; CPU-only, macOS Apple silicon. The single GGUF hash is verified before loading.',
         options={}, platforms=['macos-arm64'],
         artifacts=[dict(filename=nemotron['url'].rsplit('/', 1)[-1], bytes=nemotron['bytes'], sha256=nemotron['sha256'], url=nemotron['url'])]))
-    assert len(models) == 49, len(models)
+    assert len(models) == 50, len(models)
     return json.dumps({'schemaVersion':1,'provenance':'Generated from existing Android pins, the audited Qwen3-ASR release archive, reviewed CT2 catalog pins and reviewed desktop engine pins; run scripts/desktop/generate-catalog.py --check','models':models},ensure_ascii=False,indent=2)+'\n'
 
 

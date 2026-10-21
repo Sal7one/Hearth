@@ -5,7 +5,9 @@ kotlin {
     sourceSets.main {
         kotlin.srcDir("../hearth-tts/src/main/java")
         kotlin.srcDir("../hearth-tts-supertonic/src/main/java")
+        kotlin.srcDir("../hearth-tts-moss/src/main/java")
         kotlin.exclude("**/SupertonicVoice.kt")
+        kotlin.exclude("**/MossNative.kt")
     }
 }
 dependencies {

@@ -27,10 +27,14 @@ import java.nio.file.Path
 import java.nio.file.attribute.BasicFileAttributes
 import java.nio.file.attribute.FileTime
 
-/** One resident, SDK-verified Supertonic owner; successful captions keep its sessions and styles warm. */
+/** One resident, SDK-verified voice owner; successful captions keep its sessions and styles warm. */
 internal class DesktopVoiceCache(
     private val directory: Path,
-    private val engineFactory: (Path) -> SpeechEngine = { SupertonicSpeechEngine(it.toFile()) },
+    private val engineId: String = "supertonic-local",
+    private val sampleRate: Int = 44_100,
+    private val defaultVoice: String = "F1",
+    private val assetNames: List<String> = SupertonicCatalog.assets.map { it.filename },
+    private val engineFactory: (Path, Int) -> SpeechEngine = { path, _ -> SupertonicSpeechEngine(path.toFile()) },
 ) : AutoCloseable {
     private val voiceGate = Mutex()
     private val lifecycle = Any()
@@ -40,7 +44,7 @@ internal class DesktopVoiceCache(
 
     private data class AssetStamp(val name: String, val path: Path?, val bytes: Long = 0,
         val modified: FileTime? = null, val created: FileTime? = null, val fileKey: String? = null)
-    private data class PackageKey(val root: Path, val files: List<AssetStamp>)
+    private data class PackageKey(val root: Path, val files: List<AssetStamp>, val threads: Int)
     private class Resident(val key: PackageKey, val reader: ArticleReader)
 
     suspend fun read(text: String, selection: EngineSelection, language: String, voiceId: String): GeneratedAudio = voiceGate.withLock {
@@ -51,19 +55,20 @@ internal class DesktopVoiceCache(
         }
         var output: Path? = null
         try {
-            require(selection.engineId == "supertonic-local") { "Desktop voice cache supports Supertonic only" }
+            require(selection.engineId == engineId) { "Desktop voice cache supports $engineId only" }
             require(text.isNotBlank()) { "Read aloud needs text" }
-            require(selection.options["acceleration"] in setOf(null, "cpu")) { "Supertonic desktop currently supports CPU acceleration only" }
+            require(selection.options["acceleration"] in setOf(null, "cpu")) { "Local desktop voices currently support CPU acceleration only" }
             val options = SpeechOptions(
                 rate = selection.options["speed"]?.toFloatOrNull() ?: 1f,
                 qualitySteps = selection.options["steps"]?.toIntOrNull() ?: 5,
             )
-            val key = withContext(Dispatchers.IO) { fingerprint(Path.of(selection.modelPath)) }
+            val threadCount = (selection.options["threads"]?.toIntOrNull() ?: 2).also { require(it in 1..8) { "Voice threads must be 1–8" } }
+            val key = withContext(Dispatchers.IO) { fingerprint(Path.of(selection.modelPath), threadCount) }
             if (cached?.key != key) {
                 retire()
                 withContext(Dispatchers.IO) {
                     currentCoroutineContext().ensureActive()
-                    val engine = engineFactory(key.root)
+                    val engine = engineFactory(key.root, key.threads)
                     val reader = try { ArticleReader(engine) }
                     catch (failure: Throwable) {
                         try { engine.close() } catch (cleanup: Throwable) { failure.addSuppressed(cleanup) }
@@ -77,10 +82,10 @@ internal class DesktopVoiceCache(
             withContext(Dispatchers.IO) {
                 val target = outputFile(directory)
                 output = target
-                WaveWriter(target, SAMPLE_RATE).use { wave ->
-                    reader.read(text, language, VoicePreference(id = voiceId.ifBlank { "F1" }), options).collect { event ->
+                WaveWriter(target, sampleRate).use { wave ->
+                    reader.read(text, language, VoicePreference(id = voiceId.ifBlank { defaultVoice }), options).collect { event ->
                         if (event is ArticleSpeech.Audio) {
-                            check(event.pcm.sampleRate == SAMPLE_RATE) { "Supertonic returned an unexpected sample rate" }
+                            check(event.pcm.sampleRate == sampleRate) { "The local voice returned an unexpected sample rate" }
                             wave.append(event.pcm.samples)
                         }
                     }
@@ -100,19 +105,19 @@ internal class DesktopVoiceCache(
     }
 
     /** Missing unused styles remain valid metadata; the SDK verifies core and the selected style before inference. */
-    private suspend fun fingerprint(path: Path): PackageKey {
+    private suspend fun fingerprint(path: Path, threads: Int): PackageKey {
         val root = path.toRealPath()
-        require(Files.isDirectory(root)) { "Choose the Supertonic model directory" }
-        val files = SupertonicCatalog.assets.map { asset ->
+        require(Files.isDirectory(root)) { "Choose the local voice model directory" }
+        val files = assetNames.map { filename ->
             currentCoroutineContext().ensureActive()
             try {
-                val file = root.resolve(asset.filename).toRealPath()
+                val file = root.resolve(filename).toRealPath()
                 val stat = Files.readAttributes(file, BasicFileAttributes::class.java)
-                require(stat.isRegularFile) { "Supertonic component is not a regular file: ${asset.filename}" }
-                AssetStamp(asset.filename, file, stat.size(), stat.lastModifiedTime(), stat.creationTime(), stat.fileKey()?.toString())
-            } catch (_: NoSuchFileException) { AssetStamp(asset.filename, null) }
+                require(stat.isRegularFile) { "Voice component is not a regular file: $filename" }
+                AssetStamp(filename, file, stat.size(), stat.lastModifiedTime(), stat.creationTime(), stat.fileKey()?.toString())
+            } catch (_: NoSuchFileException) { AssetStamp(filename, null) }
         }
-        return PackageKey(root, files)
+        return PackageKey(root, files, threads)
     }
 
     private suspend fun retire() = withContext(NonCancellable) {
@@ -134,5 +139,4 @@ internal class DesktopVoiceCache(
     /** Blocking lifecycle boundary; desktop engines call this on IO after cancelling pipeline jobs. */
     override fun close() { runBlocking { closeAndJoin() } }
 
-    private companion object { const val SAMPLE_RATE = 44_100 }
 }

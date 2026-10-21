@@ -114,7 +114,9 @@ def snapshot():
                  "common-jni/src/main/cpp/speech/backend_versions.h",
                  "scripts/speech/build-runtimes.sh",
                  "scripts/speech/transcribepsy.cmake",
-                 "scripts/speech/nemo-inject.cmake"]:
+                 "scripts/speech/nemo-inject.cmake",
+                 "hearth-tts-moss/src/main/cpp/moss.cpp",
+                 "hearth-tts-moss/src/main/cpp/vendor/moss.h"]:
         paths.append(ROOT / name)
     paths.extend((ROOT / "hearth-tts-supertonic/src/main/cpp/voice").glob("*.cpp"))
     paths.append(ROOT / "hearth-tts-supertonic/src/main/cpp/voice/supertonic.h")
@@ -307,7 +309,7 @@ def speech_backend_install(names, output, jobs):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--stage", choices=["all", "whisper", "translation", "supertonic", "onnx", "ct2", "backend"], default="all")
+    parser.add_argument("--stage", choices=["all", "whisper", "translation", "supertonic", "onnx", "ct2", "moss", "backend"], default="all")
     parser.add_argument("--speech-backends", default="transcribepsy,nemotron", help="Comma-separated speech backends to stage (transcribepsy, nemotron)")
     parser.add_argument("--llama-root", type=Path, default=ROOT / "build/translation-runtime/llama.cpp")
     parser.add_argument("--sherpa-root", type=Path, default=ROOT / "build/desktop-dependencies/sherpa-onnx")
@@ -328,9 +330,9 @@ def main():
     stages = ["whisper", "translation", "supertonic"] if args.stage == "all" else [args.stage]
     if args.stage == "all":
         if (system, arch) == ("macos", "arm64"):
-            stages.extend(["onnx", "ct2", "backend"])
+            stages.extend(["onnx", "ct2", "backend", "moss"])
         else:
-            print(f"Skipping Qwen3-ASR (onnx), CTranslate2 (ct2) and speech backends (backend): built only for macos-arm64; host is {target}", file=sys.stderr)
+            print(f"Skipping Qwen3-ASR (onnx), CTranslate2 (ct2), speech backends (backend) and MOSS TTS (moss): built only for macos-arm64; host is {target}", file=sys.stderr)
     if "onnx" in stages and system != "macos":
         parser.error("The Qwen3-ASR (sherpa-onnx) stage is built for macOS arm64 only")
     if "onnx" in stages and arch != "arm64":
@@ -339,6 +341,8 @@ def main():
         parser.error("The CTranslate2 (ct2) stage is built for macOS arm64 only")
     if "backend" in stages and (system, arch) != ("macos", "arm64"):
         parser.error("The desktop speech backend stage is built for macOS arm64 only")
+    if "moss" in stages and (system, arch) != ("macos", "arm64"):
+        parser.error("The MOSS TTS stage is built for macOS arm64 only")
     speech_backends = [value.strip() for value in args.speech_backends.split(",") if value.strip()]
     if any(value not in ("transcribepsy", "nemotron") for value in speech_backends):
         parser.error("--speech-backends accepts transcribepsy and/or nemotron")
@@ -397,6 +401,12 @@ def main():
                    f"-DHEARTH_DESKTOP_METAL={'ON' if args.metal else 'OFF'}"]
         if args.ort_root: command.append(f"-DHEARTH_ORT_ROOT={args.ort_root.resolve()}")
         if stage == "onnx": command.append(f"-DHEARTH_SHERPA_ROOT={sherpa}")
+        if stage == "moss":
+            sentencepiece = ROOT / "build/ct2-runtime/src/sentencepiece"
+            if not (sentencepiece / "src/sentencepiece_processor.h").is_file():
+                raise RuntimeError("The MOSS stage needs the pinned SentencePiece source from the CT2 build; run --stage ct2 first")
+            command.append(f"-DHEARTH_MOSS_CPP={ROOT / 'hearth-tts-moss/src/main/cpp'}")
+            command.append(f"-DHEARTH_SENTENCEPIECE_SOURCE={sentencepiece}")
         if system == "macos": command.append(f"-DCMAKE_OSX_DEPLOYMENT_TARGET={'13.3' if stage == 'onnx' else '13.0'}")
         subprocess.run(command, check=True)
         subprocess.run(["cmake", "--build", str(cache), "--config", "Release", "--parallel", str(args.jobs)], check=True)
@@ -406,6 +416,19 @@ def main():
             if not installed_backend.is_file():
                 raise RuntimeError("The desktop speech backend bridge was not staged")
             require_exports(installed_backend, "_Java_com_sal7one_common_1jni_desktop_DesktopBackendSpeechNative_", 7)
+        if stage == "moss":
+            installed_moss = output / "libhearth_desktop_moss.dylib"
+            if not installed_moss.is_file():
+                raise RuntimeError("The MOSS desktop voice dylib was not staged")
+            require_exports(installed_moss, "_Java_com_sal7one_common_1jni_voice_MossNative_", 6)
+            linked = subprocess.check_output(["otool", "-L", str(installed_moss)], text=True)
+            if "@rpath/libonnxruntime.1.20.1.dylib" not in linked:
+                raise RuntimeError("The MOSS dylib does not link the staged ONNX Runtime 1.20.1")
+            notices = []
+            for path in sorted((ROOT / "hearth-tts-moss/src/main/assets/licenses/moss").glob("*")):
+                if path.is_file():
+                    notices.append(f"===== MOSS asset {path.name} =====\n{path.read_text(encoding='utf-8', errors='replace').rstrip()}\n")
+            (output / "Moss-Dependencies-NOTICES.txt").write_text("\n".join(notices), encoding="utf-8", newline="\n")
         if stage == "onnx":
             installed = output / "libhearth_desktop_qwen3_asr.dylib"
             if not installed.is_file():
@@ -458,6 +481,11 @@ def main():
         })
     if backend_revisions:
         upstreams.update(backend_revisions)
+    if "moss" in stages:
+        upstreams.update({
+            "mossRuntimeSourceSha256": sha(ROOT / "hearth-tts-moss/src/main/cpp/moss.cpp"),
+            "sentencepieceRevision": SENTENCEPIECE_PIN,
+        })
     manifest = {"schemaVersion": 1, "platform": target, "files": files, "sources": before,
                 "sourceSetSha256": hashlib.sha256(json.dumps(before, sort_keys=True, separators=(",", ":")).encode()).hexdigest(),
                 "upstreams": upstreams,

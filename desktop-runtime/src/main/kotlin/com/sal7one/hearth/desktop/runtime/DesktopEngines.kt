@@ -7,6 +7,8 @@ import com.sal7one.common_jni.translation.Ct2Native
 import com.sal7one.common_jni.translation.LocalTranslationNative
 import com.sal7one.hearth.core.*
 import com.sal7one.hearth.desktop.media.DesktopMediaDecoder
+import com.sal7one.hearth.tts.moss.MossCatalog
+import com.sal7one.hearth.tts.moss.MossSpeechEngine
 import com.sal7one.hearth.tts.supertonic.SupertonicCatalog
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
@@ -34,6 +36,14 @@ class DesktopEngines(
 ) : PipelineEngines, AutoCloseable {
     private val cloud = DesktopCloud(credentials, appDataDirectory)
     private val voices = DesktopVoiceCache(appDataDirectory)
+    private val mossVoices = DesktopVoiceCache(
+        appDataDirectory,
+        engineId = "moss-tts-local",
+        sampleRate = 48_000,
+        defaultVoice = "Ava",
+        assetNames = MossCatalog.assets.map { it.filename },
+        engineFactory = { path, threads -> MossSpeechEngine(path.toFile(), threads) },
+    )
     private val translationGate = Mutex()
     private val ct2Gate = Mutex()
     private val lifecycle = Any()
@@ -92,6 +102,7 @@ class DesktopEngines(
             local("transcribepsy-local", "TranscribePsy 250M", PipelineStage.STT, "hearth_desktop_backend_speech", TRANSCRIBEPSY_LANGUAGES),
             local("nemotron-asr-local", "Nemotron 3.5 ASR", PipelineStage.STT, "hearth_desktop_backend_speech", NEMOTRON_LANGUAGES),
             local("moonshine-local", "Moonshine tiny.en", PipelineStage.STT, "hearth_desktop_backend_speech", setOf("en")),
+            local("moss-tts-local", "MOSS-TTS Nano 100M", PipelineStage.TTS, "hearth_desktop_moss", setOf("ar", "en")),
             local("llama-translation-local", "Local GGUF translation", PipelineStage.TRANSLATION, "transiber_translation"),
             local("marian-local", "CTranslate2 · Marian/OPUS", PipelineStage.TRANSLATION, "hearth_desktop_ct2"),
             local("supertonic-local", "Supertonic 3", PipelineStage.TTS, "hearth_supertonic_jni", SupertonicCatalog.languages),
@@ -390,6 +401,10 @@ class DesktopEngines(
         require(text.isNotBlank()) { "Read aloud needs text" }
         if (selection.engineId == "openai-tts") return cloud.synthesize(text, selection, voiceId)
         if (selection.engineId == "system-tts") return DesktopSystemSpeech.synthesize(text, language, voiceId, appDataDirectory)
+        if (selection.engineId == "moss-tts-local") {
+            require(!metal(selection)) { "MOSS desktop currently supports CPU acceleration only" }
+            return mossVoices.read(text, selection, language, voiceId)
+        }
         require(selection.engineId == "supertonic-local") { "Unknown voice engine: ${selection.engineId}" }
         require(!metal(selection)) { "Supertonic desktop currently supports CPU acceleration only" }
         return voices.read(text, selection, language, voiceId)
@@ -404,7 +419,7 @@ class DesktopEngines(
         engine?.close()
     }
     override fun close() {
-        if (closed.compareAndSet(false, true)) try { clearTranslation(); clearCt2() } finally { voices.close() }
+        if (closed.compareAndSet(false, true)) try { clearTranslation(); clearCt2() } finally { voices.close(); mossVoices.close() }
     }
 
     private suspend fun verifiedModel(selection: EngineSelection): Path = withContext(Dispatchers.IO) {
