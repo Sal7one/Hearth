@@ -44,6 +44,11 @@ internal class DesktopBackendSpeechEngine private constructor(
             model: Path,
             language: String,
             threads: Int,
+            entrySymbol: String = "hearth_speech_backend_v1",
+            encoder: Path? = null,
+            decoder: Path? = null,
+            tokenizer: Path? = null,
+            convFrontend: Path? = null,
             rightContext: Int = 3,
             maximumMs: Int = 15000,
             silenceMs: Int = 600,
@@ -53,7 +58,10 @@ internal class DesktopBackendSpeechEngine private constructor(
             check(DesktopBackendSpeechNative.protocolVersion() == PROTOCOL_VERSION) { "Desktop speech backend protocol mismatch; rebuild the native bundle" }
             val library = DesktopNativeLibraries.libraryPath(backendLibrary)
             val handle = DesktopBackendSpeechNative.create(
-                library.toString().toByteArray(), backendId.toByteArray(), model.toString().toByteArray(), language.toByteArray(),
+                library.toString().toByteArray(), backendId.toByteArray(), entrySymbol.toByteArray(), model.toString().toByteArray(),
+                encoder?.toString().orEmpty().toByteArray(), decoder?.toString().orEmpty().toByteArray(),
+                tokenizer?.toString().orEmpty().toByteArray(), convFrontend?.toString().orEmpty().toByteArray(),
+                language.toByteArray(),
                 threads, rightContext, maximumMs, silenceMs, thresholdDb,
             )
             check(handle != 0L) { "Speech backend returned an invalid handle" }

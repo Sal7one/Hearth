@@ -411,6 +411,11 @@ def main():
             if not installed.is_file():
                 raise RuntimeError("The Qwen3-ASR dylib was not staged into the bundle")
             require_exports(installed, "_Java_com_sal7one_common_1jni_desktop_DesktopQwenNative_", 7)
+            symbols = subprocess.check_output(["nm", "-gU", str(installed)], text=True)
+            for symbol in ("_hearth_speech_backend_v1", "_hearth_moonshine_backend_v1",
+                           "_hearth_omnilingual_backend_v1", "_hearth_phonon_backend_v1"):
+                if symbol not in symbols.split():
+                    raise RuntimeError(f"The sherpa dylib does not export {symbol}")
             linked = subprocess.check_output(["otool", "-L", str(installed)], text=True)
             if "@rpath/libonnxruntime.1.20.1.dylib" not in linked:
                 raise RuntimeError("The Qwen3-ASR dylib does not link the staged ONNX Runtime 1.20.1")

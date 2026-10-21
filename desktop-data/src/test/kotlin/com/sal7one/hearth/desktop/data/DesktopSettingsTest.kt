@@ -58,10 +58,11 @@ class DesktopSettingsTest {
             val qwen = if (macosArm) 1 else 0
             val transcribepsy = if (macosArm) 1 else 0
             val nemotron = if (macosArm) 1 else 0
+            val moonshine = if (macosArm) 1 else 0
             val ct2 = if (macosArm) 3 else 0
             val byStage = library.catalog.groupingBy { it.stage.name }.eachCount()
-            assertEquals(mapOf("STT" to 27 + qwen + transcribepsy + nemotron, "TRANSLATION" to 14 + ct2, "TTS" to 1), byStage)
-            assertEquals(if (qwen + transcribepsy + nemotron > 0) 4 else 1, library.catalog.filter { it.stage.name == "STT" }.map { it.family }.distinct().size)
+            assertEquals(mapOf("STT" to 27 + qwen + transcribepsy + nemotron + moonshine, "TRANSLATION" to 14 + ct2, "TTS" to 1), byStage)
+            assertEquals(if (qwen + transcribepsy + nemotron + moonshine > 0) 5 else 1, library.catalog.filter { it.stage.name == "STT" }.map { it.family }.distinct().size)
             if (qwen == 1) {
                 val card = library.catalog.single { it.id == "qwen3-asr-0.6b" }
                 assertEquals("qwen3-asr-local", card.engineId)
@@ -86,6 +87,12 @@ class DesktopSettingsTest {
                 assertEquals("a5c435f294eea8f88ce68dd27b8c3bfea7f777cb2fbba04fcd30eaa555f429ae", card.artifacts.single().sha256)
                 assertEquals("OpenMDW-1.1", card.license)
                 assertEquals(null, card.archive)
+            }
+            if (moonshine == 1) {
+                val card = library.catalog.single { it.id == "moonshine-tiny-en-v2" }
+                assertEquals("moonshine-local", card.engineId)
+                assertEquals(4, card.archive?.files?.size)
+                assertEquals("9ec31b342d8fa3240c3b81b8f82e1cf7e3ac467c93ca5a999b741d5887164f8d", card.artifacts.single().sha256)
             }
             // Every shipped llama translator must use a prompt family the desktop engine implements,
             // and the option the engine reads must be the catalog's own family, not a fallback.

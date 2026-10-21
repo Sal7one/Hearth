@@ -17,6 +17,7 @@ do not have. Keep this file honest: do not add a row you have not run.
 | CTranslate2 QuickMT EN→AR | `:desktop-runtime:test --tests "*DesktopCt2RealSmokeTest*"` | `يفتح المتحف في الساعة التاسعة صباحًا.` (111 ms native, 4771 ms engine path) |
 | TranscribePsy 250M EU | `:desktop-runtime:test --tests "*DesktopTranscribePsyRealSmokeTest*"` | `The museum opens at 9 in the morning. Please bring your ticket to the East Entrance.` (75 ms warm decode, 4561 ms engine path) |
 | Nemotron 3.5 ASR | `:desktop-runtime:test --tests "*DesktopNemotronRealSmokeTest*"` | `museum opens at nine in the morning please bring your ticket to the east entrance` (573 ms decode, 6784 ms engine path) |
+| Moonshine tiny.en (shared sherpa bridge) | `:desktop-runtime:test --tests "*DesktopMoonshineRealSmokeTest*"` | `The museum opens at 9 in the morning. Please bring your ticket to the East Entrance.` (32 ms decode, 3999 ms engine path) |
 | Speech + voice | `:desktop-runtime:test --tests "*DesktopSpeechVoiceRealSmokeTest*"` | `COMPLETED segments=1 audio=1` |
 | Speech + translation + voice | `:desktop-runtime:test --tests "*DesktopFullPipelineRealSmokeTest*"` | `COMPLETED ms=6182 segments=1 audio=1` |
 
@@ -51,6 +52,20 @@ HEARTH_SMOKE_WAV="$PWD/build/smoke/hello.wav" \
 Expected: `status=COMPLETED`, one caption segment, one audio artifact, and an
 Arabic translation of the English line. A Mac without an installed English system
 voice fails the test with that reason rather than silently skipping the stage.
+
+### Reproducing the Moonshine smoke
+
+```bash
+# download and extract sherpa-onnx-moonshine-tiny-en-quantized-2026-02-27.tar.bz2
+HEARTH_MOONSHINE_SMOKE=1 \
+HEARTH_SMOKE_MOONSHINE=<extracted sherpa-onnx-moonshine-tiny-en-quantized-2026-02-27> \
+HEARTH_SMOKE_WAV="$PWD/build/smoke/hello.wav" \
+./gradlew -PhearthDesktopOnly=true :desktop-runtime:test --tests "*DesktopMoonshineRealSmokeTest*"
+```
+
+Moonshine uses the same Qwen sherpa dylib and the same `hearth_speech_backend_v1`
+bridge; the only additions are the `hearth_moonshine_backend_v1` export, an explicit
+entry symbol, and encoder/decoder paths. No new engine code.
 
 ### Reproducing the Nemotron smoke
 

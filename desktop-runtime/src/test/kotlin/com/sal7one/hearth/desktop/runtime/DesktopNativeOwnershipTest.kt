@@ -142,7 +142,8 @@ class DesktopNativeOwnershipTest {
         val failure = assertFailsWith<IllegalStateException> {
             DesktopBackendSpeechNative.create(
                 "/nonexistent/libhearth_transcribepsy.dylib".toByteArray(), "transcribepsy".toByteArray(),
-                "/nonexistent/model.gguf".toByteArray(), "en".toByteArray(), 2, 3, 15000, 600, -45f,
+                "hearth_speech_backend_v1".toByteArray(), "/nonexistent/model.gguf".toByteArray(),
+                byteArrayOf(), byteArrayOf(), byteArrayOf(), byteArrayOf(), "en".toByteArray(), 2, 3, 15000, 600, -45f,
             )
         }
         assertContains(failure.message.orEmpty(), "Could not load speech backend")

@@ -28,17 +28,19 @@ struct Backend {
     std::string executionInfo;
     std::string lastLanguage;
 
-    Backend(const std::string& libraryPath, const std::string& expectedId, const std::string& model,
-            const std::string& language, int threads, int rightContext, int maximumMs, int silenceMs, float thresholdDb) {
+    Backend(const std::string& libraryPath, const std::string& expectedId, const std::string& entrySymbol,
+            const std::string& model, const std::string& encoder, const std::string& decoder, const std::string& tokenizer,
+            const std::string& convFrontend, const std::string& language, int threads, int rightContext, int maximumMs, int silenceMs, float thresholdDb) {
         if (threads < 1 || threads > 32) throw std::invalid_argument("Speech threads must be 1–32");
         if (language.size() > 32) throw std::invalid_argument("Speech language is too long");
+        if (entrySymbol.empty() || entrySymbol.size() > 128) throw std::invalid_argument("Speech backend entry symbol is invalid");
         library = dlopen(libraryPath.c_str(), RTLD_NOW | RTLD_LOCAL);
         if (!library) {
             const char* error = dlerror();
             throw std::runtime_error("Could not load speech backend " + libraryPath + ": " + (error ? error : "unknown dlopen error"));
         }
-        const auto entry = reinterpret_cast<HearthEntry>(dlsym(library, "hearth_speech_backend_v1"));
-        if (!entry) throw std::runtime_error("Speech backend does not export hearth_speech_backend_v1: " + libraryPath);
+        const auto entry = reinterpret_cast<HearthEntry>(dlsym(library, entrySymbol.c_str()));
+        if (!entry) throw std::runtime_error("Speech backend does not export " + entrySymbol + ": " + libraryPath);
         api = entry();
         if (!api || api->abi_version != HEARTH_SPEECH_ABI_VERSION || api->size != sizeof(HearthSpeechBackend)) {
             throw std::runtime_error("Speech backend ABI mismatch: " + libraryPath);
@@ -52,10 +54,10 @@ struct Backend {
         HearthSpeechConfig config{};
         config.size = sizeof(config);
         config.model = model.c_str();
-        config.conv_frontend = "";
-        config.encoder = "";
-        config.decoder = "";
-        config.tokenizer = "";
+        config.conv_frontend = convFrontend.c_str();
+        config.encoder = encoder.c_str();
+        config.decoder = decoder.c_str();
+        config.tokenizer = tokenizer.c_str();
         config.language = language.c_str();
         config.num_threads = threads;
         config.right_context = rightContext;
@@ -135,12 +137,15 @@ stt::concurrency::LeaseRegistry<Backend> backends;
 extern "C" JNIEXPORT jint JNICALL Java_com_sal7one_common_1jni_desktop_DesktopBackendSpeechNative_protocolVersion(JNIEnv*, jobject) { return 1; }
 
 extern "C" JNIEXPORT jlong JNICALL Java_com_sal7one_common_1jni_desktop_DesktopBackendSpeechNative_create(
-    JNIEnv* env, jobject, jbyteArray library, jbyteArray backendId, jbyteArray model, jbyteArray language,
+    JNIEnv* env, jobject, jbyteArray library, jbyteArray backendId, jbyteArray entrySymbol, jbyteArray model,
+    jbyteArray encoder, jbyteArray decoder, jbyteArray tokenizer, jbyteArray convFrontend, jbyteArray language,
     jint threads, jint rightContext, jint maximumMs, jint silenceMs, jfloat thresholdDb) {
     try {
         const auto handle = backends.insert(std::make_unique<Backend>(
-            desktopUtf8(env, library, 4096), desktopUtf8(env, backendId, 64), desktopUtf8(env, model, 4096),
-            desktopUtf8(env, language, 32), threads, rightContext, maximumMs, silenceMs, thresholdDb));
+            desktopUtf8(env, library, 4096), desktopUtf8(env, backendId, 64), desktopUtf8(env, entrySymbol, 128),
+            desktopUtf8(env, model, 4096), desktopUtf8(env, encoder, 4096), desktopUtf8(env, decoder, 4096),
+            desktopUtf8(env, tokenizer, 4096), desktopUtf8(env, convFrontend, 4096), desktopUtf8(env, language, 32),
+            threads, rightContext, maximumMs, silenceMs, thresholdDb));
         if (!handle) throw std::runtime_error("Speech backend handle registry exhausted");
         return handle;
     } catch (const std::exception& e) { desktopFail(env, e.what()); return 0; }

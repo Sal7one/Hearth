@@ -12,7 +12,8 @@ internal object DesktopBackendSpeechNative {
     init { DesktopNativeLibraries.load("hearth_desktop_backend_speech") }
     external fun protocolVersion(): Int
     external fun create(
-        library: ByteArray, backendId: ByteArray, model: ByteArray, language: ByteArray,
+        library: ByteArray, backendId: ByteArray, entrySymbol: ByteArray, model: ByteArray,
+        encoder: ByteArray, decoder: ByteArray, tokenizer: ByteArray, convFrontend: ByteArray, language: ByteArray,
         threads: Int, rightContext: Int, maximumMs: Int, silenceMs: Int, thresholdDb: Float,
     ): Long
     external fun transcribe(handle: Long, pcm: FloatArray): ByteArray

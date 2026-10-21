@@ -156,6 +156,22 @@ def generate():
         archive=dict(format='tar.bz2', root='sherpa-onnx-qwen3-asr-0.6B-int8-2026-03-25',
             expandedBytes=sum(size for _, size, _ in qwen_files),
             files=[dict(path=path, bytes=size, sha256=digest) for path, size, digest in qwen_files])))
+    moonshine = next(a for a in audit['artifacts'] if a['id'] == 'moonshine-tiny-en-v2')
+    moonshine_files = [
+        ('tokens.txt', 549350, '2870d843e14c1e187bf1913a521562a63b53933814bd7f2145120468f494a049'),
+        ('encoder_model.ort', 13281600, '94e90a4654fc45cdfedb77c4c08e1739f48862998e58fada384b25118134f221'),
+        ('decoder_model_merged.ort', 30412256, 'cf524c4862d36e9e5ab032eddc73637efd822d70e868ac575cf1a46e1e4708a0'),
+        ('LICENSE', 13344, '6148d7574a6554b7379b633cfd4c4fe5840c3f548d13bc83e00b52dc6fa00abd'),
+    ]
+    models.append(dict(id='moonshine-tiny-en-v2', name='Moonshine tiny.en · q8', family='Moonshine',
+        stage='STT', engineId='moonshine-local', languages=['en'],
+        source='https://github.com/k2-fsa/sherpa-onnx/releases/tag/asr-models', license='MIT',
+        note='Pinned sherpa-onnx Moonshine package; CPU-only, macOS Apple silicon. The archive and each model file are verified before loading.',
+        options={}, platforms=['macos-arm64'],
+        artifacts=[dict(filename=moonshine['url'].rsplit('/', 1)[-1], bytes=moonshine['bytes'], sha256=moonshine['sha256'], url=moonshine['url'])],
+        archive=dict(format='tar.bz2', root='sherpa-onnx-moonshine-tiny-en-quantized-2026-02-27',
+            expandedBytes=sum(size for _, size, _ in moonshine_files),
+            files=[dict(path=path, bytes=size, sha256=digest) for path, size, digest in moonshine_files])))
     transcribepsy = next(a for a in audit['artifacts'] if a['id'] == 'transcribepsy-250m-eu-sub-q8')
     models.append(dict(id='transcribepsy-250m-eu-sub-q8', name='TranscribePsy 250M · EU (q8)', family='TranscribePsy',
         stage='STT', engineId='transcribepsy-local',
@@ -173,7 +189,7 @@ def generate():
         note='Pinned Nemotron 3.5 ASR streaming q8 GGUF; CPU-only, macOS Apple silicon. The single GGUF hash is verified before loading.',
         options={}, platforms=['macos-arm64'],
         artifacts=[dict(filename=nemotron['url'].rsplit('/', 1)[-1], bytes=nemotron['bytes'], sha256=nemotron['sha256'], url=nemotron['url'])]))
-    assert len(models) == 48, len(models)
+    assert len(models) == 49, len(models)
     return json.dumps({'schemaVersion':1,'provenance':'Generated from existing Android pins, the audited Qwen3-ASR release archive, reviewed CT2 catalog pins and reviewed desktop engine pins; run scripts/desktop/generate-catalog.py --check','models':models},ensure_ascii=False,indent=2)+'\n'
 
 

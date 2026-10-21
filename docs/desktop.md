@@ -11,7 +11,7 @@ conditions through the Android application.
 | Area | Desktop implementation |
 | --- | --- |
 | Inputs | Typed text, a chosen microphone/virtual audio device, PCM WAV and native-system-supported audio/video files. |
-| Local recognition | Pinned whisper.cpp, Qwen3-ASR (sherpa-onnx), TranscribePsy (parakeet/ggml) and Nemotron 3.5 (NeMo ggml) on macOS arm64, all CPU. Live recognition uses utterance windows; it is not a token-streaming decoder. |
+| Local recognition | Pinned whisper.cpp, Qwen3-ASR, Moonshine (sherpa-onnx), TranscribePsy (parakeet/ggml) and Nemotron 3.5 (NeMo ggml) on macOS arm64, all CPU. Live recognition uses utterance windows; it is not a token-streaming decoder. |
 | Local translation | Hearth's existing llama.cpp translation model/prompt protocol plus pinned CTranslate2 QuickMT/SMaLL-100 packages, with pinned EuroLLM/Riva catalog entries and explicit verified custom model paths. |
 | Local voice | The same model-free article-speech SDK, Supertonic 3 model verification, F1–F5/M1–M5 voices and native inference sources used on Android. |
 | Cloud stages | Independently configured OpenAI-compatible STT, chat translation and WAV TTS endpoints; local compatible servers may omit credentials. Provider keys never enter the model downloader. |

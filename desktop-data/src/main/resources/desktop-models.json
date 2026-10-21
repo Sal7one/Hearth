@@ -1588,6 +1588,58 @@
       }
     },
     {
+      "id": "moonshine-tiny-en-v2",
+      "name": "Moonshine tiny.en · q8",
+      "family": "Moonshine",
+      "stage": "STT",
+      "engineId": "moonshine-local",
+      "languages": [
+        "en"
+      ],
+      "source": "https://github.com/k2-fsa/sherpa-onnx/releases/tag/asr-models",
+      "license": "MIT",
+      "note": "Pinned sherpa-onnx Moonshine package; CPU-only, macOS Apple silicon. The archive and each model file are verified before loading.",
+      "options": {},
+      "platforms": [
+        "macos-arm64"
+      ],
+      "artifacts": [
+        {
+          "filename": "sherpa-onnx-moonshine-tiny-en-quantized-2026-02-27.tar.bz2",
+          "bytes": 29858559,
+          "sha256": "9ec31b342d8fa3240c3b81b8f82e1cf7e3ac467c93ca5a999b741d5887164f8d",
+          "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-moonshine-tiny-en-quantized-2026-02-27.tar.bz2"
+        }
+      ],
+      "archive": {
+        "format": "tar.bz2",
+        "root": "sherpa-onnx-moonshine-tiny-en-quantized-2026-02-27",
+        "expandedBytes": 44256550,
+        "files": [
+          {
+            "path": "tokens.txt",
+            "bytes": 549350,
+            "sha256": "2870d843e14c1e187bf1913a521562a63b53933814bd7f2145120468f494a049"
+          },
+          {
+            "path": "encoder_model.ort",
+            "bytes": 13281600,
+            "sha256": "94e90a4654fc45cdfedb77c4c08e1739f48862998e58fada384b25118134f221"
+          },
+          {
+            "path": "decoder_model_merged.ort",
+            "bytes": 30412256,
+            "sha256": "cf524c4862d36e9e5ab032eddc73637efd822d70e868ac575cf1a46e1e4708a0"
+          },
+          {
+            "path": "LICENSE",
+            "bytes": 13344,
+            "sha256": "6148d7574a6554b7379b633cfd4c4fe5840c3f548d13bc83e00b52dc6fa00abd"
+          }
+        ]
+      }
+    },
+    {
       "id": "transcribepsy-250m-eu-sub-q8",
       "name": "TranscribePsy 250M · EU (q8)",
       "family": "TranscribePsy",
