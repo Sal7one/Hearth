@@ -24,6 +24,7 @@ do not have. Keep this file honest: do not add a row you have not run.
 | Vosk English | `:desktop-runtime:test --tests "*DesktopVoskRealSmokeTest*"` | exact lower-case transcript, 586 ms decode |
 | Vosk six languages | `:desktop-runtime:test --tests "*DesktopVoskLanguagesSmokeTest*"` | six non-empty transcripts; Spanish quality/repeat stability unverified |
 | Ming-3.0 TTS local | `:desktop-runtime:test --tests "*DesktopMingLocalRealSmokeTest*"` | 44.1 kHz mono, 61,740 frames, 87% non-zero, peak 14,658; English only |
+| Ming catalog install | `:desktopApp:desktopTest --tests "*DesktopMingLocalInstallTest*"` | real 850 MB download, 17 files verified, flat→parts, 61,740 frames |
 | Speech + voice | `:desktop-runtime:test --tests "*DesktopSpeechVoiceRealSmokeTest*"` | `COMPLETED segments=1 audio=1` |
 | Speech + translation + voice | `:desktop-runtime:test --tests "*DesktopFullPipelineRealSmokeTest*"` | `COMPLETED ms=6182 segments=1 audio=1` |
 
