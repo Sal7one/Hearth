@@ -21,6 +21,12 @@ import com.sal7one.hearth.desktop.ui.screens.models.ModelsActions
 import com.sal7one.hearth.desktop.ui.screens.models.ModelsFilter
 import com.sal7one.hearth.desktop.ui.screens.models.ModelsScreen
 import com.sal7one.hearth.desktop.ui.screens.models.modelsState
+import com.sal7one.hearth.desktop.engineSelection
+import com.sal7one.hearth.desktop.ui.screens.speech.Compute
+import com.sal7one.hearth.desktop.ui.screens.speech.Responsiveness
+import com.sal7one.hearth.desktop.ui.screens.speech.SpeechActions
+import com.sal7one.hearth.desktop.ui.screens.speech.SpeechScreen
+import com.sal7one.hearth.desktop.ui.screens.speech.speechState
 import com.sal7one.hearth.desktop.ui.screens.presets.BuiltInPresets
 import com.sal7one.hearth.desktop.ui.screens.presets.PresetsActions
 import com.sal7one.hearth.desktop.ui.screens.presets.PresetsScreen
@@ -154,6 +160,51 @@ internal fun HearthDesktopRoot(
                 .onFailure { failure(it.message ?: it.toString()) }
         },
         onNavigate = ::navigate,
+    )
+
+    val speech = speechState(
+        capabilities = controller.capabilities,
+        config = config,
+        catalog = models.library.catalog,
+        installations = installations,
+        devices = workspace.devices,
+        deviceId = deviceId,
+    )
+
+    fun withSpeechOptions(key: String, value: String) = controller.updateConfig { current ->
+        val selected = current.speech ?: return@updateConfig current
+        current.copy(speech = selected.copy(options = selected.options + (key to value)))
+    }
+
+    val speechActions = SpeechActions(
+        onNavigate = ::navigate,
+        onSelectEngine = { id ->
+            controller.capabilities.firstOrNull { it.id == id && it.stage == PipelineStage.STT }?.let { engine ->
+                controller.updateConfig { current -> current.copy(speech = engineSelection(engine)) }
+            }
+        },
+        onSelectModel = { id ->
+            val verified = models.library.installedSelection(id)
+            if (verified != null) {
+                controller.updateConfig { current -> current.useVerifiedModel(PipelineStage.STT, verified) }
+            } else {
+                navigate(DesktopScreen.DOWNLOADS)
+            }
+        },
+        onLanguage = { code -> controller.updateConfig { current -> current.copy(sourceLanguage = code) } },
+        onDevice = { id -> deviceId = id },
+        onRefreshDevices = { controller.refreshDevices() },
+        onResponsiveness = { level -> withSpeechOptions("windowMs", level.windowMs.toString()) },
+        onCompute = { compute -> withSpeechOptions("acceleration", compute.key) },
+        onThreads = { threads -> withSpeechOptions("threads", threads.coerceIn(1, 32).toString()) },
+        onTestMicrophone = {
+            if (speech.ready) {
+                controller.start(WorkspaceInput.MICROPHONE, "", "", deviceId)
+                navigate(DesktopScreen.CAPTIONS)
+            } else {
+                navigate(DesktopScreen.MODELS)
+            }
+        },
     )
 
     val presets = presetsState(
@@ -336,6 +387,7 @@ internal fun HearthDesktopRoot(
                     onOpen = ::navigate,
                     onOpenWorkspace = { navigate(DesktopScreen.CAPTIONS) },
                 )
+                DesktopScreen.SPEECH -> SpeechScreen(state = speech, actions = speechActions)
                 DesktopScreen.MODELS -> ModelsScreen(state = libraryState, actions = modelsActions)
                 DesktopScreen.PRESETS -> PresetsScreen(state = presets, actions = presetsActions)
                 DesktopScreen.DOWNLOADS -> DownloadsScreen(state = downloads, actions = downloadsActions)

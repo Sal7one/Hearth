@@ -5,6 +5,7 @@ import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
@@ -51,8 +52,8 @@ internal fun Segmented(
     Row(
         modifier
             .height(36.dp)
-            .background(colors.surface2, RoundedCornerShape(11.dp))
-            .border(1.dp, colors.border, RoundedCornerShape(11.dp))
+            .background(colors.bg.copy(alpha = 0.55f), RoundedCornerShape(11.dp))
+            .border(1.dp, colors.borderStrong, RoundedCornerShape(11.dp))
             .padding(3.dp),
         horizontalArrangement = Arrangement.spacedBy(2.dp),
     ) {
@@ -71,6 +72,10 @@ internal fun Segmented(
                             else -> Color.Transparent
                         },
                         RoundedCornerShape(8.dp),
+                    )
+                    .then(
+                        if (active) Modifier.border(1.dp, colors.borderStrong, RoundedCornerShape(8.dp))
+                        else Modifier,
                     )
                     .pointerHoverIcon(if (enabled) PointerIcon.Hand else PointerIcon.Default)
                     .clickable(interactionSource = interaction, indication = null, enabled = enabled) { onSelect(index) },

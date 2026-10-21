@@ -18,6 +18,13 @@ import com.sal7one.hearth.desktop.ui.screens.models.ModelsActions
 import com.sal7one.hearth.desktop.ui.screens.models.ModelsFilter
 import com.sal7one.hearth.desktop.ui.screens.models.ModelsScreen
 import com.sal7one.hearth.desktop.ui.screens.models.modelsState
+import com.sal7one.hearth.core.EngineDescriptor
+import com.sal7one.hearth.core.EngineKind
+import com.sal7one.hearth.core.EngineSelection
+import com.sal7one.hearth.core.PipelineStage
+import com.sal7one.hearth.desktop.ui.screens.speech.SpeechActions
+import com.sal7one.hearth.desktop.ui.screens.speech.SpeechScreen
+import com.sal7one.hearth.desktop.ui.screens.speech.speechState
 import com.sal7one.hearth.desktop.ui.screens.presets.BuiltInPresets
 import com.sal7one.hearth.desktop.ui.screens.presets.PresetsActions
 import com.sal7one.hearth.desktop.ui.screens.presets.PresetsScreen
@@ -206,6 +213,42 @@ class DesignPreviewRenderTest {
 
     private val previewTransfer = ModelTransfer("whisper-tiny-q5_1", downloaded = 40_000_000, total = 75_000_000)
 
+    private val previewEngines = listOf(
+        EngineDescriptor(
+            id = "whisper-local",
+            name = "Whisper.cpp",
+            stage = PipelineStage.STT,
+            kind = EngineKind.LOCAL,
+            streaming = true,
+            acceleration = setOf("cpu", "metal"),
+            requiresModel = true,
+        ),
+        EngineDescriptor(
+            id = "openai-stt",
+            name = "OpenAI-compatible transcription",
+            stage = PipelineStage.STT,
+            kind = EngineKind.CLOUD,
+            streaming = true,
+            requiresCredential = true,
+        ),
+    )
+
+    private val speechFixture = speechState(
+        capabilities = previewEngines,
+        config = PipelineConfig(
+            speech = EngineSelection(
+                engineId = "whisper-local",
+                modelId = "whisper-large-v3-turbo-q5_0",
+                options = mapOf("windowMs" to "4000", "acceleration" to "metal"),
+            ),
+            sourceLanguage = "en",
+        ),
+        catalog = previewCatalog,
+        installations = previewInstallations,
+        devices = emptyList(),
+        deviceId = null,
+    )
+
     private val modelsFixture = modelsState(
         catalog = previewCatalog,
         installations = previewInstallations,
@@ -278,6 +321,24 @@ class DesignPreviewRenderTest {
                     onNavigate = {},
                 ) {
                     DownloadsScreen(state = downloadsFixture, actions = DownloadsActions())
+                }
+            }
+        }
+    }
+
+    @Test
+    fun renderSpeech() = render("speech", height = 1250) { width, height ->
+        ImageComposeScene(width = width, height = height, density = Density(1f)) {
+            HearthTheme(preset = AccentPreset.INK, dark = true) {
+                AppShell(
+                    current = DesktopScreen.SPEECH,
+                    status = "Whisper ready",
+                    statusLive = false,
+                    dark = true,
+                    onToggleTheme = {},
+                    onNavigate = {},
+                ) {
+                    SpeechScreen(state = speechFixture, actions = SpeechActions())
                 }
             }
         }
