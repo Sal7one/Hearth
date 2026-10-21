@@ -135,8 +135,10 @@ catalog layout into the runtime's `parts/` layout, and writes 44.1 kHz mono WAV 
 JNI. It advertises **English and Chinese only**, because the shipped runtime hardcodes
 `language: None`; the other five published languages need a library-level wrapper.
 Peak RSS is ~1 GB and each one-shot call reloads the bundle (~0.9 s). `DesktopMingLocalRealSmokeTest`
-is owner-opt-in. Android is **build-verified only** (aarch64 `.so`, API 28, 16 KB pages)
-and has not been run on a device; the default Android kernel is scalar and much slower.
+is owner-opt-in. Android now has an in-app JNI proof on a Galaxy S20 FE (RTF ~2.1 with the `+dotprod`
+build and 4 threads, ~1.02 GB peak RSS); the engine is registered behind an
+off-by-default feature flag. The default scalar build measured RTF 34 on that phone
+and is only a fallback. No UI select/enable flow or human listening test yet.
 
 ## ASR Tiny: direct connection
 

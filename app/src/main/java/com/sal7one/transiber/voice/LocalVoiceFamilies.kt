@@ -7,6 +7,9 @@ import com.sal7one.hearth.tts.omnivoice.*
 import com.sal7one.hearth.tts.moss.*
 import com.sal7one.hearth.tts.oute.*
 import com.sal7one.hearth.tts.chatterbox.*
+import com.sal7one.hearth.tts.ming.MingCatalog
+import com.sal7one.hearth.tts.ming.MingModels
+import com.sal7one.hearth.tts.ming.MingSpeechEngine
 import com.sal7one.hearth.tts.supertonic.SupertonicSpeechEngine
 import com.sal7one.transiber.runtime.LocalModelPolicy
 import java.io.File
@@ -57,6 +60,11 @@ internal object LocalVoiceFamilies {
             packageReady = { root, _, _ -> OuteModels(root).ready() },
             verifyPackage = { root, _, cancel -> OuteModels(root).verify(cancel) },
             createEngine = ::OuteSpeechEngine),
+        LocalVoiceFamily(MingCatalog.FAMILY, "${MingCatalog.DISPLAY_NAME} · experimental", MingCatalog.voices, MingCatalog.languages,
+            runtimeAvailable = MingSpeechEngine::available,
+            packageReady = { root, _, _ -> MingModels(root).ready() },
+            verifyPackage = { root, _, cancel -> MingModels(root).verify(cancel) },
+            createEngine = { MingSpeechEngine(it) }),
     ) }
     val ids get() = providers.map { it.id }.toSet()
     fun find(family: String) = providers.firstOrNull { it.id == family }
@@ -65,14 +73,21 @@ internal object LocalVoiceFamilies {
     fun voices(family: String) = find(family)?.voices.orEmpty()
     fun languages(family: String) = find(family)?.languages.orEmpty()
     fun verifiedGender(family: String) = find(family)?.verifiedGender == true
-    fun available(context: Context, family: String) = LocalModelPolicy.allowed(context) && find(family)?.runtimeAvailable?.invoke() == true
+    private fun experimentalAllowed(context: Context, family: String) =
+        family != MingCatalog.FAMILY || MingLocalFeature.enabled(context)
+    fun available(context: Context, family: String) = LocalModelPolicy.allowed(context) &&
+        experimentalAllowed(context, family) && find(family)?.runtimeAvailable?.invoke() == true
     fun requireAllowed(context: Context, family: String, feature: String = "downloaded speech voices") {
         LocalModelPolicy.requireAllowed(context, feature)
+        check(experimentalAllowed(context, family)) {
+            "Ming local TTS is experimental and off by default; enable it in Voice settings ($feature)"
+        }
         check(available(context, family)) { "${label(family)} requires its packaged native runtime in this app process ($feature)" }
     }
     fun directory(context: Context, family: String) = File(context.filesDir, if(family == "supertonic") "voice-models" else "voice-models/$family")
     fun ready(context: Context, choice: VoiceChoice, gender: VoiceGender = VoiceGender.ANY): Boolean {
         val family = find(choice.family) ?: return false
+        if (!experimentalAllowed(context, family.id)) return false
         return LocalVoiceReadiness.ready(choice.voice, gender, LocalModelPolicy.allowed(context), family.voices, family.verifiedGender,
             runtimeAvailable = family.runtimeAvailable,
             packageReady = { family.packageReady(directory(context, family.id), choice.voice, gender) })

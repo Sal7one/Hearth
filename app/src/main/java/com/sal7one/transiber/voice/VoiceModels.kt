@@ -1,5 +1,6 @@
 package com.sal7one.transiber.voice
 
+import com.sal7one.hearth.tts.ming.MingCatalog
 import java.io.File
 import java.io.InputStream
 import java.nio.file.Files
@@ -61,7 +62,7 @@ internal class VoiceModels(private val root: File, private val permitFamily: (St
         }finally {temporary.delete()}
     }
     fun importZip(input: InputStream, onImported: (VoiceAsset) -> Unit = {}, cancelled: () -> Unit = {}): Int {
-        var count=0;var entries=0;var total=0L;val seen=mutableSetOf<String>()
+        var count=0;var entries=0;var supertonicTotal=0L;var mingTotal=0L;val seen=mutableSetOf<String>()
         ZipInputStream(input).use {zip ->
             while(true) {
                 cancelled();val entry=zip.nextEntry ?: break
@@ -70,9 +71,17 @@ internal class VoiceModels(private val root: File, private val permitFamily: (St
                 if(entry.isDirectory)continue
                 val name=entry.name.substringAfterLast('/')
                 if(name in setOf("README.md","LICENSE",".gitattributes")) {var bytes=0;val buffer=ByteArray(4096);while(true){cancelled();val n=zip.read(buffer);if(n<0)break;bytes+=n;require(bytes<=65536){"ZIP document exceeds limit"}};continue}
-                require(seen.add(name)){"Duplicate voice file: $name"}
-                val expected=VoiceCatalog.supertonicAssets.firstOrNull {it.filename==name} ?: error("Unsupported voice ZIP entry: $name")
-                total+=expected.bytes;require(total<=410_000_000){"Voice ZIP exceeds installation bound"}
+                // Supertonic ZIPs use flat names. The Ming bundle may be zipped either flat or as
+                // the published parts/000.bin layout; MingCatalog maps both to the flat install name.
+                val expected=VoiceCatalog.supertonicAssets.firstOrNull {it.filename==name}
+                    ?: MingCatalog.flatFilename(entry.name)?.let {flat -> VoiceCatalog.mingAssets.firstOrNull {it.filename==flat}}
+                    ?: error("Unsupported voice ZIP entry: ${entry.name}")
+                require(seen.add(expected.filename)){"Duplicate voice file: ${expected.filename}"}
+                when(expected.family) {
+                    "supertonic" -> { supertonicTotal+=expected.bytes;require(supertonicTotal<=410_000_000){"Supertonic voice ZIP exceeds installation bound"} }
+                    MingCatalog.FAMILY -> { mingTotal+=expected.bytes;require(mingTotal<=MingCatalog.totalBytes){"Ming bundle ZIP exceeds installation bound"} }
+                    else -> error("Unsupported voice ZIP entry: ${entry.name}")
+                }
                 onImported(import(zip,expected,cancelled));count++
             }
         }

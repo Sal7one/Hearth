@@ -9,6 +9,7 @@ if (!providers.gradleProperty("hearthDesktopOnly").map(String::toBoolean).getOrE
     include(":hearth-tts-moss")
     include(":hearth-tts-oute")
     include(":hearth-tts-chatterbox")
+    include(":hearth-tts-ming")
 }
 
 // Desktop shares contracts and pipeline policy; Android keeps its existing platform adapters.

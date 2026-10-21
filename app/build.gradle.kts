@@ -65,6 +65,7 @@ dependencies {
  implementation(project(":hearth-tts-moss"))
  implementation(project(":hearth-tts-oute"))
  implementation(project(":hearth-tts-chatterbox"))
+ implementation(project(":hearth-tts-ming"))
  for (module in listOf("camera-core", "camera-camera2", "camera-lifecycle", "camera-view")) implementation("androidx.camera:$module:1.4.0")
  "playImplementation"("com.google.mlkit:translate:17.0.3")
  implementation(libs.zxing.core)

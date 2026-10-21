@@ -45,6 +45,23 @@ so the output is intelligible, not merely non-silent.
   gate and foreground/work-manager behavior.
 - Load is ~1.9 s per one-shot call; RTF ~2.1 means a 3.6 s utterance takes ~10 s.
   This is usable for read-aloud/pre-generation, not real-time conversation.
-- **Not yet verified:** `System.loadLibrary` inside the app APK, JNI on an app
-  process under SELinux, LMKD behavior with the full UI resident, audio listening
-  by a human, thermal soak beyond two repeated runs.
+- **Not yet verified:** the UI enable/select flow, LMKD behavior with the full UI
+  resident, audio listening by a human, thermal soak beyond two repeated runs.
+- **Verified later:** `System.loadLibrary` inside the installed APK, JNI under
+  SELinux, flat bundle verification/materialization, and 44.1 kHz output (see above).
+## In-app JNI proof
+
+Installed the `playDebug` arm64 APK (contains `libming_jni.so` and
+`libming_jni_scalar.so`), pushed the flat 17-file bundle to the app's external files
+directory, and ran `MingLocalDeviceTest` through `MingSpeechEngine` + `ArticleReader`
+inside the app process:
+
+```
+OK (1 test), 7.317 s
+I/System.out: MING_ANDROID_APP frames=88200 peak=0.46887207
+```
+
+This is `System.loadLibrary` from the installed APK, JNI under SELinux, the flat
+bundle verification, the parts/ materialization, 44.1 kHz output and the ~1 GB
+process footprint. The engine remains **off by default** behind `MingLocalFeature`;
+no UI enable/select flow or human listening test has been run.
