@@ -22,27 +22,69 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 /**
- * Headless proof that the same CaptionLayer used by the floating window draws live
- * original/translated text. It does not open the always-on-top window; that remains
- * an owner screen check.
+ * Headless proof that the same CaptionLayer used by the floating window draws both
+ * the original line and the translated line, in both brightness modes.
+ *
+ * The always-on-top [com.sal7one.hearth.desktop.ui.screens.overlay.FloatingCaptionWindow]
+ * itself is deliberately NOT composed here: opening a real OS window remains an
+ * owner-only screen check. This test only rasterises the shared caption content, and
+ * it never touches a model, microphone, provider, network or display.
  */
 @OptIn(ExperimentalComposeUiApi::class)
 class DesktopOverlayCaptionRenderTest {
+
+    private val original = "The museum opens at nine in the morning."
+    private val translation = "يبدأ المتحف في التاسعة صباحًا."
+    private val otherTranslation = "الجناح الشرقي يبقى مغلقًا حتى الظهر."
+
     @Test
     fun floatingCaptionLayerRendersOriginalAndTranslation() {
         val empty = render(null)
-        val live = render(
-            OverlayCaptionView(
-                primary = "يبدأ المتحف في التاسعة صباحًا.",
-                original = "The museum opens at nine in the morning.",
-                partial = false,
-            ),
+        val translatedOnly = render(caption(primary = translation, original = null))
+        val translatedWithOriginal = render(caption(primary = translation, original = original))
+        val partial = render(caption(primary = translation, original = original, partial = true))
+
+        assertTrue(empty.isNotEmpty(), "The empty overlay produced no PNG")
+        assertFalse(
+            empty.contentEquals(translatedOnly),
+            "The translated caption did not change the rendered overlay",
         )
-        assertFalse(empty.contentEquals(live), "The live caption did not change the rendered overlay")
-        assertTrue(live.size > empty.size, "The rendered overlay did not grow with caption text")
+        assertFalse(
+            translatedOnly.contentEquals(translatedWithOriginal),
+            "The original line was not drawn above the translation",
+        )
+        assertFalse(
+            translatedWithOriginal.contentEquals(partial),
+            "The partial marker was not drawn",
+        )
     }
 
-    private fun render(caption: OverlayCaptionView?): ByteArray {
+    @Test
+    fun floatingCaptionLayerRendersTranslationAndBothBrightnesses() {
+        val dark = render(caption(primary = translation, original = original, partial = true), dark = true)
+        val light = render(caption(primary = translation, original = original, partial = true), dark = false)
+        val other = render(caption(primary = otherTranslation, original = original, partial = true))
+
+        assertFalse(
+            dark.contentEquals(other),
+            "The translated line is not part of the rendered overlay",
+        )
+        assertFalse(
+            dark.contentEquals(light),
+            "The caption layer did not follow the dark/light theme",
+        )
+        listOf("dark" to dark, "light" to light).forEach { (name, bytes) ->
+            assertTrue(bytes.size > 1_000, "The $name overlay PNG is suspiciously small (${bytes.size} bytes)")
+        }
+    }
+
+    private fun caption(
+        primary: String,
+        original: String?,
+        partial: Boolean = false,
+    ) = OverlayCaptionView(primary = primary, original = original, partial = partial)
+
+    private fun render(caption: OverlayCaptionView?, dark: Boolean = true): ByteArray {
         val state = OverlayState(
             settings = OverlaySettings(style = OverlayStyle.BAR, backdropFraction = 1f, visible = true),
             caption = caption,
@@ -50,7 +92,7 @@ class DesktopOverlayCaptionRenderTest {
             translationEnabled = true,
         )
         val scene = ImageComposeScene(width = 900, height = 240, density = Density(1f)) {
-            HearthTheme(preset = AccentPreset.INK, dark = true) {
+            HearthTheme(preset = AccentPreset.INK, dark = dark) {
                 Box(Modifier.fillMaxSize().background(Color.Black)) {
                     CaptionLayer(state = state, modifier = Modifier.fillMaxWidth(), scale = 1f, maxLines = 4)
                 }
