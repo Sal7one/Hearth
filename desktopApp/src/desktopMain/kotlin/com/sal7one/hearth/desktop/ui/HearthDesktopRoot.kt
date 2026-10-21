@@ -49,6 +49,7 @@ import com.sal7one.hearth.desktop.ui.screens.reading.ReadingScreen
 import com.sal7one.hearth.desktop.ui.screens.integrations.IntegrationsActions
 import com.sal7one.hearth.desktop.ui.screens.integrations.IntegrationsScreen
 import com.sal7one.hearth.desktop.ui.screens.integrations.integrationsState
+import com.sal7one.hearth.desktop.ui.screens.translate.TranslateActions
 import com.sal7one.hearth.desktop.ui.screens.translate.TranslateScreen
 import com.sal7one.hearth.desktop.ui.screens.translate.translateState
 import com.sal7one.hearth.desktop.ui.screens.presets.BuiltInPresets
@@ -589,19 +590,21 @@ internal fun HearthDesktopRoot(
                 DesktopScreen.INTEGRATIONS -> IntegrationsScreen(state = integrations, actions = integrationsActions)
                 DesktopScreen.TRANSLATE -> TranslateScreen(
                     state = translate,
-                    onTranslate = { text ->
-                        if (text.isNotBlank()) controller.start(WorkspaceInput.TEXT, text, "", null)
-                    },
-                    onSwapLanguages = {
-                        controller.updateConfig {
-                            it.copy(sourceLanguage = it.targetLanguage, targetLanguage = it.sourceLanguage)
-                        }
-                    },
-                    onCopyResult = {
-                        runCatching { copyToClipboard(translate.translated.ifBlank { translate.original }) }
-                            .onFailure { failure(it.message ?: it.toString()) }
-                    },
-                    onOpenVoice = { navigate(DesktopScreen.VOICES) },
+                    actions = TranslateActions(
+                        onTranslate = { text ->
+                            if (text.isNotBlank()) controller.start(WorkspaceInput.TEXT, text, "", null)
+                        },
+                        onSwapLanguages = {
+                            controller.updateConfig {
+                                it.copy(sourceLanguage = it.targetLanguage, targetLanguage = it.sourceLanguage)
+                            }
+                        },
+                        onCopyResult = {
+                            runCatching { copyToClipboard(translate.translated.ifBlank { translate.original }) }
+                                .onFailure { failure(it.message ?: it.toString()) }
+                        },
+                        onOpenVoice = { navigate(DesktopScreen.VOICES) },
+                    ),
                 )
                 DesktopScreen.CONNECTIONS -> ConnectionsScreen(state = connections, actions = connectionsActions)
                 DesktopScreen.APPEARANCE -> AppearanceScreen(

@@ -597,10 +597,7 @@ class DesignPreviewRenderTest {
                             translated = "يفتح المتحف في التاسعة، لكن الجناح الشرقي يبقى مغلقاً حتى الظهر.",
                             original = "The museum opens at nine, but the east wing stays closed until noon.",
                         ),
-                        onTranslate = {},
-                        onSwapLanguages = {},
-                        onCopyResult = {},
-                        onOpenVoice = {},
+                        actions = com.sal7one.hearth.desktop.ui.screens.translate.TranslateActions(),
                     )
                 }
             }
