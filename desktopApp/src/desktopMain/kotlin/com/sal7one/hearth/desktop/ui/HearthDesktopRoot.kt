@@ -21,6 +21,13 @@ import com.sal7one.hearth.desktop.ui.screens.models.ModelsActions
 import com.sal7one.hearth.desktop.ui.screens.models.ModelsFilter
 import com.sal7one.hearth.desktop.ui.screens.models.ModelsScreen
 import com.sal7one.hearth.desktop.ui.screens.models.modelsState
+import com.sal7one.hearth.desktop.ui.screens.presets.BuiltInPresets
+import com.sal7one.hearth.desktop.ui.screens.presets.PresetsActions
+import com.sal7one.hearth.desktop.ui.screens.presets.PresetsScreen
+import com.sal7one.hearth.desktop.ui.screens.presets.presetsState
+import com.sal7one.hearth.desktop.ui.screens.downloads.DownloadsActions
+import com.sal7one.hearth.desktop.ui.screens.downloads.DownloadsScreen
+import com.sal7one.hearth.desktop.ui.screens.downloads.downloadsState
 import com.sal7one.hearth.desktop.ui.screens.captions.CaptionsActions
 import com.sal7one.hearth.desktop.ui.screens.captions.CaptionsState
 import com.sal7one.hearth.desktop.ui.screens.captions.CaptionsScreen
@@ -141,6 +148,59 @@ internal fun HearthDesktopRoot(
                 models.download(id)
             }
         },
+        onRefresh = { models.refresh(config) },
+        onOpenFolder = {
+            runCatching { openPath(controller.dataDirectory) }
+                .onFailure { failure(it.message ?: it.toString()) }
+        },
+        onNavigate = ::navigate,
+    )
+
+    val presets = presetsState(
+        definitions = BuiltInPresets.all,
+        catalog = models.library.catalog,
+        installations = installations,
+        config = config,
+    )
+
+    val presetsActions = PresetsActions(
+        onApply = { id ->
+            val definition = BuiltInPresets.all.first { it.id == id }
+            val speech = definition.speechId?.let(models.library::installedSelection)
+            val translation = definition.translationId?.let(models.library::installedSelection)
+            val voice = definition.voiceId?.let(models.library::installedSelection)
+            val missing = buildList {
+                if (definition.speechId != null && speech == null) add(definition.speechId)
+                if (definition.translationId != null && translation == null) add(definition.translationId)
+                if (definition.voiceId != null && voice == null) add(definition.voiceId)
+            }
+            if (missing.isEmpty()) {
+                controller.updateConfig {
+                    it.copy(
+                        speech = speech,
+                        translation = translation,
+                        voice = voice,
+                        voiceId = if (voice != null) definition.voiceStyle else "",
+                    )
+                }
+            } else {
+                navigate(DesktopScreen.DOWNLOADS)
+            }
+        },
+        onNavigate = ::navigate,
+        onOpenDownloads = { navigate(DesktopScreen.DOWNLOADS) },
+    )
+
+    val downloads = downloadsState(
+        catalog = models.library.catalog,
+        installations = installations,
+        transfer = library.transfer,
+        freeBytes = freeBytes,
+    ).copy(refreshing = library.refreshing)
+
+    val downloadsActions = DownloadsActions(
+        onDownload = { id -> models.download(id) },
+        onCancel = { models.cancel() },
         onRefresh = { models.refresh(config) },
         onOpenFolder = {
             runCatching { openPath(controller.dataDirectory) }
@@ -277,6 +337,8 @@ internal fun HearthDesktopRoot(
                     onOpenWorkspace = { navigate(DesktopScreen.CAPTIONS) },
                 )
                 DesktopScreen.MODELS -> ModelsScreen(state = libraryState, actions = modelsActions)
+                DesktopScreen.PRESETS -> PresetsScreen(state = presets, actions = presetsActions)
+                DesktopScreen.DOWNLOADS -> DownloadsScreen(state = downloads, actions = downloadsActions)
                 DesktopScreen.OVERLAY -> OverlayScreen(state = overlay, actions = overlayActions)
                 DesktopScreen.CAPTIONS -> CaptionsScreen(
                     state = captions,

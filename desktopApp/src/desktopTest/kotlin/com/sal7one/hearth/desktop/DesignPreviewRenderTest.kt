@@ -18,6 +18,13 @@ import com.sal7one.hearth.desktop.ui.screens.models.ModelsActions
 import com.sal7one.hearth.desktop.ui.screens.models.ModelsFilter
 import com.sal7one.hearth.desktop.ui.screens.models.ModelsScreen
 import com.sal7one.hearth.desktop.ui.screens.models.modelsState
+import com.sal7one.hearth.desktop.ui.screens.presets.BuiltInPresets
+import com.sal7one.hearth.desktop.ui.screens.presets.PresetsActions
+import com.sal7one.hearth.desktop.ui.screens.presets.PresetsScreen
+import com.sal7one.hearth.desktop.ui.screens.presets.presetsState
+import com.sal7one.hearth.desktop.ui.screens.downloads.DownloadsActions
+import com.sal7one.hearth.desktop.ui.screens.downloads.DownloadsScreen
+import com.sal7one.hearth.desktop.ui.screens.downloads.downloadsState
 import com.sal7one.hearth.desktop.ui.screens.overlay.OverlayActions
 import com.sal7one.hearth.desktop.ui.screens.overlay.OverlayCaptionView
 import com.sal7one.hearth.desktop.ui.screens.overlay.OverlayScreen
@@ -180,30 +187,47 @@ class DesignPreviewRenderTest {
         artifacts = listOf(DesktopModelArtifact("${'$'}id.bin", "https://example.invalid/${'$'}id", (gb * 1_000_000_000).toLong(), "0".repeat(64))),
     )
 
-    private val modelsFixture = run {
-        val catalog = listOf(
-            card("whisper-large-v3", "Whisper Large v3", com.sal7one.hearth.core.PipelineStage.STT, 1.55, setOf("multilingual")),
-            card("whisper-small", "Whisper Small", com.sal7one.hearth.core.PipelineStage.STT, 0.461, setOf("multilingual")),
-            card("whisper-tiny", "Whisper Tiny", com.sal7one.hearth.core.PipelineStage.STT, 0.075, setOf("multilingual")),
-            card("eurollm-1.7b", "EuroLLM 1.7B", com.sal7one.hearth.core.PipelineStage.TRANSLATION, 1.05, setOf("en", "ar", "de")),
-            card("riva-4b", "Riva Translate 4B", com.sal7one.hearth.core.PipelineStage.TRANSLATION, 2.76, setOf("en", "ar")),
-            card("supertonic-3", "Supertonic 3", com.sal7one.hearth.core.PipelineStage.TTS, 0.412, setOf("ar", "en")),
-        )
-        val installations = mapOf(
-            "whisper-large-v3" to DesktopModelStatus(true, null),
-            "eurollm-1.7b" to DesktopModelStatus(true, null),
-            "supertonic-3" to DesktopModelStatus(true, null),
-            "riva-4b" to DesktopModelStatus(false, null, "Downloaded file does not match the pinned SHA-256"),
-        )
-        modelsState(
-            catalog = catalog,
-            installations = installations,
-            config = PipelineConfig(),
-            transfer = ModelTransfer("whisper-small", downloaded = 180_000_000, total = 461_000_000),
-            filter = ModelsFilter(),
-            freeBytes = 214_000_000_000,
-        )
-    }
+    private val previewCatalog = listOf(
+        card("whisper-large-v3-turbo-q5_0", "Whisper large-v3-turbo · Q5_0", com.sal7one.hearth.core.PipelineStage.STT, 1.55, setOf("multilingual")),
+        card("whisper-small-q5_1", "Whisper small · Q5_1", com.sal7one.hearth.core.PipelineStage.STT, 0.461, setOf("multilingual")),
+        card("whisper-tiny-q5_1", "Whisper tiny · Q5_1", com.sal7one.hearth.core.PipelineStage.STT, 0.075, setOf("multilingual")),
+        card("eurollm-17b-q4", "EuroLLM 1.7B Instruct", com.sal7one.hearth.core.PipelineStage.TRANSLATION, 1.05, setOf("en", "ar", "de")),
+        card("riva-translate-4b-v2-q4", "Riva-Translate 4B Instruct v2", com.sal7one.hearth.core.PipelineStage.TRANSLATION, 2.76, setOf("en", "ar")),
+        card("supertonic-3", "Supertonic 3 · ten voices", com.sal7one.hearth.core.PipelineStage.TTS, 0.412, setOf("ar", "en")),
+    )
+
+    private val previewInstallations = mapOf(
+        "whisper-large-v3-turbo-q5_0" to DesktopModelStatus(true, null),
+        "whisper-small-q5_1" to DesktopModelStatus(true, null),
+        "eurollm-17b-q4" to DesktopModelStatus(true, null),
+        "supertonic-3" to DesktopModelStatus(true, null),
+        "riva-translate-4b-v2-q4" to DesktopModelStatus(false, null, "Downloaded file does not match the pinned SHA-256"),
+    )
+
+    private val previewTransfer = ModelTransfer("whisper-tiny-q5_1", downloaded = 40_000_000, total = 75_000_000)
+
+    private val modelsFixture = modelsState(
+        catalog = previewCatalog,
+        installations = previewInstallations,
+        config = PipelineConfig(),
+        transfer = previewTransfer,
+        filter = ModelsFilter(),
+        freeBytes = 214_000_000_000,
+    )
+
+    private val presetsFixture = presetsState(
+        definitions = BuiltInPresets.all,
+        catalog = previewCatalog,
+        installations = previewInstallations,
+        config = PipelineConfig(),
+    )
+
+    private val downloadsFixture = downloadsState(
+        catalog = previewCatalog,
+        installations = previewInstallations,
+        transfer = previewTransfer,
+        freeBytes = 214_000_000_000,
+    )
 
     @Test
     fun renderModels() = render("models", height = 1100) { width, height ->
@@ -218,6 +242,42 @@ class DesignPreviewRenderTest {
                     onNavigate = {},
                 ) {
                     ModelsScreen(state = modelsFixture, actions = ModelsActions())
+                }
+            }
+        }
+    }
+
+    @Test
+    fun renderPresets() = render("presets", height = 1200) { width, height ->
+        ImageComposeScene(width = width, height = height, density = Density(1f)) {
+            HearthTheme(preset = AccentPreset.INK, dark = true) {
+                AppShell(
+                    current = DesktopScreen.PRESETS,
+                    status = "4 installed",
+                    statusLive = false,
+                    dark = true,
+                    onToggleTheme = {},
+                    onNavigate = {},
+                ) {
+                    PresetsScreen(state = presetsFixture, actions = PresetsActions())
+                }
+            }
+        }
+    }
+
+    @Test
+    fun renderDownloads() = render("downloads", height = 1150) { width, height ->
+        ImageComposeScene(width = width, height = height, density = Density(1f)) {
+            HearthTheme(preset = AccentPreset.INK, dark = true) {
+                AppShell(
+                    current = DesktopScreen.DOWNLOADS,
+                    status = "1 downloading",
+                    statusLive = true,
+                    dark = true,
+                    onToggleTheme = {},
+                    onNavigate = {},
+                ) {
+                    DownloadsScreen(state = downloadsFixture, actions = DownloadsActions())
                 }
             }
         }
