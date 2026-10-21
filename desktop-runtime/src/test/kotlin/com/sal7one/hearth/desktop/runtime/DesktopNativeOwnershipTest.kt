@@ -1,0 +1,92 @@
+package com.sal7one.hearth.desktop.runtime
+
+import com.sal7one.common_jni.desktop.DesktopWhisperNative
+import org.junit.Assume.assumeTrue
+import java.nio.file.Path
+import kotlin.test.Test
+import kotlin.test.assertContains
+import kotlin.test.assertFailsWith
+import kotlin.test.assertTrue
+
+/**
+ * Handle-ownership guarantees for the desktop JNI layer, which the UI depends on
+ * when a session is cancelled, restarted or closed out of order.
+ *
+ * These run without a model file: rejecting a bad handle must never require one.
+ */
+class DesktopNativeOwnershipTest {
+    @Test
+    fun operationsOnAnUnknownHandleFailClearly() {
+        val text = assertFailsWith<IllegalStateException> {
+            DesktopWhisperNative.transcribe(0L, floatArrayOf())
+        }
+        assertContains(text.message.orEmpty(), "closed", ignoreCase = true)
+
+        val info = assertFailsWith<IllegalStateException> { DesktopWhisperNative.executionInfo(0L) }
+        assertContains(info.message.orEmpty(), "closed", ignoreCase = true)
+
+        val language = assertFailsWith<IllegalStateException> { DesktopWhisperNative.language(0L) }
+        assertContains(language.message.orEmpty(), "closed", ignoreCase = true)
+
+        // A handle that was never issued is rejected the same way as a retired one.
+        assertFailsWith<IllegalStateException> { DesktopWhisperNative.transcribe(9_999_999L, floatArrayOf()) }
+    }
+
+    @Test
+    fun retiringAnUnknownHandleIsANoOp() {
+        // Cancelling and destroying must be idempotent: a UI teardown can race a close.
+        DesktopWhisperNative.cancel(0L)
+        DesktopWhisperNative.destroy(0L)
+        DesktopWhisperNative.cancel(9_999_999L)
+        DesktopWhisperNative.destroy(9_999_999L)
+        DesktopWhisperNative.destroy(9_999_999L)
+    }
+
+    @Test
+    fun creationSurfacesRealErrorsInsteadOfReturningAHandle() {
+        val bogus = Path.of("/nonexistent/hearth-smoke/missing.bin")
+        val loadFailure = assertFailsWith<IllegalStateException> {
+            DesktopWhisperNative.create(bogus.toString().toByteArray(), "en".toByteArray(), 2, false)
+        }
+        assertTrue(loadFailure.message.orEmpty().isNotBlank(), "A failed load must carry a reason")
+
+        // Validation happens before the model is touched, so this cannot depend on the file.
+        val languageFailure = assertFailsWith<IllegalStateException> {
+            DesktopWhisperNative.create(bogus.toString().toByteArray(), "zz".toByteArray(), 2, false)
+        }
+        assertContains(languageFailure.message.orEmpty(), "language", ignoreCase = true)
+
+        val threadFailure = assertFailsWith<IllegalStateException> {
+            DesktopWhisperNative.create(bogus.toString().toByteArray(), "en".toByteArray(), 0, false)
+        }
+        assertContains(threadFailure.message.orEmpty(), "threads", ignoreCase = true)
+    }
+
+    @Test
+    fun destroyingAModelTwiceIsSafeAndUseAfterDestroyIsRejected() {
+        assumeTrue(
+            "Set HEARTH_WHISPER_SMOKE=1 and provide HEARTH_SMOKE_WHISPER",
+            System.getenv("HEARTH_WHISPER_SMOKE") == "1",
+        )
+        val model = Path.of(requireNotNull(System.getenv("HEARTH_SMOKE_WHISPER"))).toRealPath()
+        val handle = DesktopWhisperNative.create(model.toString().toByteArray(), "en".toByteArray(), 2, false)
+        assertTrue(handle > 0, "A successful create must return a live handle")
+
+        DesktopWhisperNative.destroy(handle)
+        // Second destroy must not crash or free twice.
+        DesktopWhisperNative.destroy(handle)
+
+        val afterDestroy = assertFailsWith<IllegalStateException> {
+            DesktopWhisperNative.transcribe(handle, floatArrayOf(0f, 0f, 0f))
+        }
+        assertContains(afterDestroy.message.orEmpty(), "closed", ignoreCase = true)
+
+        // Handles are monotonic and never reused: a fresh model must not inherit the old one.
+        val next = DesktopWhisperNative.create(model.toString().toByteArray(), "en".toByteArray(), 2, false)
+        try {
+            assertTrue(next != handle, "Handle values must never be reused")
+        } finally {
+            DesktopWhisperNative.destroy(next)
+        }
+    }
+}
