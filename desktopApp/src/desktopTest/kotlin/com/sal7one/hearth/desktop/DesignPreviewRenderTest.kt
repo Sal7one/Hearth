@@ -37,6 +37,9 @@ import com.sal7one.hearth.desktop.ui.screens.appearance.appearanceState
 import com.sal7one.hearth.desktop.ui.screens.files.FilesActions
 import com.sal7one.hearth.desktop.ui.screens.files.FilesScreen
 import com.sal7one.hearth.desktop.ui.screens.files.filesState
+import com.sal7one.hearth.desktop.ui.screens.connections.ConnectionsActions
+import com.sal7one.hearth.desktop.ui.screens.connections.ConnectionsScreen
+import com.sal7one.hearth.desktop.ui.screens.connections.connectionsState
 import com.sal7one.hearth.desktop.ui.screens.overlay.OverlayCaptionView
 import com.sal7one.hearth.desktop.ui.screens.overlay.OverlaySettings
 import com.sal7one.hearth.desktop.ui.screens.overlay.OverlayState
@@ -325,6 +328,19 @@ class DesignPreviewRenderTest {
         translationEnabled = true,
     )
 
+    private val connectionsFixture = connectionsState(
+        capabilities = previewEngines,
+        config = PipelineConfig(
+            speech = EngineSelection(
+                engineId = "openai-stt",
+                endpoint = "https://api.openai.com/v1/audio/transcriptions",
+                modelId = "gpt-4o-mini-transcribe",
+                credentialId = "openai-main",
+            ),
+        ),
+        credentialStorage = "the operating system secure store",
+    )
+
     private val filesFixture = filesState(
         dataDirectory = java.nio.file.Path.of("/Users/preview/Library/Application Support/Hearth"),
         catalog = previewCatalog,
@@ -500,6 +516,24 @@ class DesignPreviewRenderTest {
                     onNavigate = {},
                 ) {
                     FilesScreen(state = filesFixture, actions = FilesActions())
+                }
+            }
+        }
+    }
+
+    @Test
+    fun renderConnections() = render("connections", height = 1100) { width, height ->
+        ImageComposeScene(width = width, height = height, density = Density(1f)) {
+            HearthTheme(preset = AccentPreset.INK, dark = true) {
+                AppShell(
+                    current = DesktopScreen.CONNECTIONS,
+                    status = "1 connected",
+                    statusLive = false,
+                    dark = true,
+                    onToggleTheme = {},
+                    onNavigate = {},
+                ) {
+                    ConnectionsScreen(state = connectionsFixture, actions = ConnectionsActions())
                 }
             }
         }

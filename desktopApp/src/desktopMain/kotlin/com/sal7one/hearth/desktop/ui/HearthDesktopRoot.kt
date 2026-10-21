@@ -17,6 +17,7 @@ import com.sal7one.hearth.desktop.finalTranscript
 import com.sal7one.hearth.desktop.openPath
 import com.sal7one.hearth.desktop.useVerifiedModel
 import com.sal7one.hearth.core.PipelineStage
+import com.sal7one.hearth.core.EngineSelection
 import com.sal7one.hearth.desktop.ui.screens.models.ModelsActions
 import com.sal7one.hearth.desktop.ui.screens.models.ModelsFilter
 import com.sal7one.hearth.desktop.ui.screens.models.ModelsScreen
@@ -39,6 +40,9 @@ import com.sal7one.hearth.desktop.ui.screens.appearance.appearanceState
 import com.sal7one.hearth.desktop.ui.screens.files.FilesActions
 import com.sal7one.hearth.desktop.ui.screens.files.FilesScreen
 import com.sal7one.hearth.desktop.ui.screens.files.filesState
+import com.sal7one.hearth.desktop.ui.screens.connections.ConnectionsActions
+import com.sal7one.hearth.desktop.ui.screens.connections.ConnectionsScreen
+import com.sal7one.hearth.desktop.ui.screens.connections.connectionsState
 import com.sal7one.hearth.desktop.ui.screens.presets.BuiltInPresets
 import com.sal7one.hearth.desktop.ui.screens.presets.PresetsActions
 import com.sal7one.hearth.desktop.ui.screens.presets.PresetsScreen
@@ -296,6 +300,46 @@ internal fun HearthDesktopRoot(
         onStopAudio = { controller.stopPlayback() },
     )
 
+    val connections = connectionsState(
+        capabilities = controller.capabilities,
+        config = config,
+        credentialStorage = "the operating system secure store",
+    )
+
+    val connectionsActions = ConnectionsActions(
+        onNavigate = ::navigate,
+        onActivate = { engineId ->
+            controller.capabilities.firstOrNull { it.id == engineId }?.let { engine ->
+                controller.updateConfig { current ->
+                    when (engine.stage) {
+                        PipelineStage.STT -> current.copy(speech = engineSelection(engine))
+                        PipelineStage.TRANSLATION -> current.copy(translation = engineSelection(engine))
+                        PipelineStage.TTS -> current.copy(voice = engineSelection(engine))
+                    }
+                }
+            }
+        },
+        onSave = { engineId, endpoint, model, credentialId ->
+            controller.capabilities.firstOrNull { it.id == engineId }?.let { engine ->
+                controller.updateConfig { current ->
+                    val route = EngineSelection(
+                        engineId = engine.id,
+                        modelId = model,
+                        endpoint = endpoint,
+                        credentialId = credentialId,
+                    )
+                    when (engine.stage) {
+                        PipelineStage.STT -> current.copy(speech = route)
+                        PipelineStage.TRANSLATION -> current.copy(translation = route)
+                        PipelineStage.TTS -> current.copy(voice = route)
+                    }
+                }
+            }
+        },
+        onSaveKey = { credentialId, secret -> controller.saveCredential(credentialId, secret) },
+        onForgetKey = { credentialId -> controller.forgetCredential(credentialId) },
+    )
+
     val appearance = appearanceState(selected = preset, dark = dark, reduceMotion = reduceMotion)
 
     val appearanceActions = AppearanceActions(
@@ -517,6 +561,7 @@ internal fun HearthDesktopRoot(
                     onOpen = ::navigate,
                     onOpenWorkspace = { navigate(DesktopScreen.CAPTIONS) },
                 )
+                DesktopScreen.CONNECTIONS -> ConnectionsScreen(state = connections, actions = connectionsActions)
                 DesktopScreen.APPEARANCE -> AppearanceScreen(
                     state = appearance,
                     overlay = overlay,
