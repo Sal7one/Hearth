@@ -1,5 +1,6 @@
 package com.sal7one.hearth.desktop.runtime
 
+import com.sal7one.common_jni.desktop.DesktopQwenNative
 import com.sal7one.common_jni.desktop.DesktopWhisperNative
 import com.sal7one.common_jni.translation.LocalTranslationNative
 import com.sal7one.common_jni.voice.SupertonicNative
@@ -39,6 +40,11 @@ class DesktopNativeContractTest {
             assertNull(DesktopNativeLibraries.readiness("hearth_desktop_whisper"))
             assertNull(DesktopNativeLibraries.readiness("transiber_translation"))
             assertNull(DesktopNativeLibraries.readiness("hearth_supertonic_jni"))
+            val qwenStaged = javaClass.getResource("/native/${DesktopNativeLibraries.platform}/libhearth_desktop_qwen3_asr.dylib.payload") != null
+            if (qwenStaged) {
+                assertNull(DesktopNativeLibraries.readiness(QwenSpeechModel.LIBRARY))
+                assertEquals(QwenSpeechModel.PROTOCOL_VERSION, DesktopQwenNative.protocolVersion())
+            }
             assertEquals(2, DesktopWhisperNative.protocolVersion())
             assertEquals(4, LocalTranslationNative.promptProtocolVersion())
             val model = directory.resolve("غير صالح🙂.ggml")
@@ -64,12 +70,18 @@ class DesktopNativeContractTest {
                 assertEquals(DesktopWhisperNative.metalAvailable(), "metal" in descriptors.getValue("whisper-local").acceleration)
                 assertEquals(LocalTranslationNative.metalAvailable(), "metal" in descriptors.getValue("llama-translation-local").acceleration)
                 assertEquals(setOf("cpu"), descriptors.getValue("supertonic-local").acceleration)
+                if (qwenStaged) assertEquals(setOf("cpu"), descriptors.getValue(QwenSpeechModel.ENGINE_ID).acceleration)
             }
             assertFailsWith<IllegalStateException> { DesktopWhisperNative.transcribe(0, floatArrayOf(0f)) }
             assertFailsWith<RuntimeException> { LocalTranslationNative.translate(0, "hello".toByteArray()) }
             assertFailsWith<IllegalStateException> { DesktopWhisperNative.executionInfo(0) }
             assertFailsWith<RuntimeException> { LocalTranslationNative.executionInfo(0) }
             assertFailsWith<IllegalStateException> { SupertonicNative.synthesize(0, longArrayOf(1), FloatArray(12800), FloatArray(128), 5, 1f) }
+            if (qwenStaged) {
+                assertFailsWith<IllegalStateException> { DesktopQwenNative.transcribe(0, floatArrayOf(0f)) }
+                assertFailsWith<IllegalStateException> { DesktopQwenNative.executionInfo(0) }
+                DesktopQwenNative.cancel(0); DesktopQwenNative.destroy(0)
+            }
             DesktopWhisperNative.cancel(0); DesktopWhisperNative.destroy(0)
             LocalTranslationNative.cancel(0); LocalTranslationNative.destroy(0)
             SupertonicNative.cancel(0); SupertonicNative.destroy(0)

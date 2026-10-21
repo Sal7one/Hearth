@@ -58,7 +58,7 @@ internal fun downloadsState(
         installedCount = installed.size,
         totalCount = items.size,
         activeCount = items.count { it.bucket == DownloadBucket.DOWNLOADING },
-        storageLabel = formatBytes(installed.sumOf { item -> catalog.first { it.id == item.id }.bytes }),
+        storageLabel = formatBytes(installed.sumOf { item -> catalog.first { it.id == item.id }.installedBytes }),
         freeDiskLabel = if (freeBytes > 0) formatBytes(freeBytes) else "—",
     )
 }

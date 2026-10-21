@@ -54,9 +54,20 @@ class DesktopSettingsTest {
         val directory = Files.createTempDirectory("hearth-model-test-")
         try {
             val library = DesktopModelLibrary(directory)
+            val qwen = if (desktopPlatform() == "macos-arm64") 1 else 0
             val byStage = library.catalog.groupingBy { it.stage.name }.eachCount()
-            assertEquals(mapOf("STT" to 27, "TRANSLATION" to 14, "TTS" to 1), byStage)
-            assertEquals(1, library.catalog.filter { it.stage.name == "STT" }.map { it.family }.distinct().size)
+            assertEquals(mapOf("STT" to 27 + qwen, "TRANSLATION" to 14, "TTS" to 1), byStage)
+            assertEquals(if (qwen == 1) 2 else 1, library.catalog.filter { it.stage.name == "STT" }.map { it.family }.distinct().size)
+            if (qwen == 1) {
+                val card = library.catalog.single { it.id == "qwen3-asr-0.6b" }
+                assertEquals("qwen3-asr-local", card.engineId)
+                assertEquals(setOf("macos-arm64"), card.platforms)
+                assertEquals(878_702_423L, card.bytes)
+                assertEquals(987_015_347L, card.installedBytes)
+                assertEquals(6, card.archive?.files?.size)
+                assertTrue(card.archive!!.files.all { it.sha256.length == 64 && it.bytes > 0 })
+                assertEquals("393f8a14e2f5fb96746aaab342997a40641001fbd5bf9592a080a8329178ee96", card.artifacts.single().sha256)
+            }
             // Every shipped translator must use a prompt family the desktop engine implements,
             // and the option the engine reads must be the catalog's own family, not a fallback.
             val supportedFamilies = setOf("eurollm", "riva-translate", "milmmt-46", "hy-mt2", "index-translate", "translategemma")

@@ -17,8 +17,8 @@ internal fun filesState(
     freeBytes: Long,
 ): FilesState {
     val installed = catalog.filter { installations[it.id]?.ready == true }
-    val installedBytes = installed.sumOf { it.bytes }
-    val catalogBytes = catalog.sumOf { it.bytes }
+    val installedBytes = installed.sumOf { it.installedBytes }
+    val catalogBytes = catalog.sumOf { it.installedBytes }
     val modelsRoot = dataDirectory.resolve("models")
 
     return FilesState(

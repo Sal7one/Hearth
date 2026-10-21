@@ -80,17 +80,19 @@ internal fun verifiedNativeDependencies(directory: Path, orderedFiles: List<Stri
 
 /** Windows ORT links the Microsoft DLL CRT even though Hearth's own JNI targets use /MT. */
 internal fun nativeDependencyOrder(library: String, platform: String, files: Set<String>): List<String> {
-    if (library != "hearth_supertonic_jni") return emptyList()
+    if (library != "hearth_supertonic_jni" && library != "hearth_desktop_qwen3_asr") return emptyList()
+    // The Qwen3-ASR stage is staged for macOS arm64 only; do not preload a Windows ORT for a dylib that is not part of that bundle.
+    if (library == "hearth_desktop_qwen3_asr" && !platform.startsWith("macos-")) return emptyList()
     if (platform.startsWith("windows-")) {
         val microsoft = listOf("vcruntime140.dll", "vcruntime140_1.dll", "msvcp140.dll", "msvcp140_1.dll")
         for (filename in microsoft) check(filename in files) {
-            "Windows Supertonic is missing its bundled Microsoft Visual C++ dependency: $filename. Rebuild/package the verified Windows runtime."
+            "Windows $library is missing its bundled Microsoft Visual C++ dependency: $filename. Rebuild/package the verified Windows runtime."
         }
-        check("onnxruntime.dll" in files) { "Supertonic bundle is missing its host ONNX Runtime" }
+        check("onnxruntime.dll" in files) { "$library bundle is missing its host ONNX Runtime" }
         return microsoft + "onnxruntime.dll"
     }
     val candidates = if (platform.startsWith("macos-")) listOf("libonnxruntime.1.20.1.dylib", "libonnxruntime.dylib") else listOf("libonnxruntime.so")
-    return listOf(candidates.firstOrNull { it in files } ?: error("Supertonic bundle is missing its host ONNX Runtime"))
+    return listOf(candidates.firstOrNull { it in files } ?: error("$library bundle is missing its host ONNX Runtime"))
 }
 
 internal fun nativeResourceFilename(filename: String): String {

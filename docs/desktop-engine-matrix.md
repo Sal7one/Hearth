@@ -3,13 +3,14 @@
 What each model family needs before it can run on macOS/Windows like it does on
 Android. Status is what has been *executed*, not what is planned.
 
-Last updated when the translation catalog was expanded to 8 models.
+Last updated when Qwen3-ASR passed its real-speech smoke on macOS arm64.
 
 ## Working today on desktop
 
 | Family | Models | Desktop engine | Verified |
 | --- | --- | --- | --- |
 | Whisper (ggml) | 27 | `hearth_desktop_whisper` (whisper.cpp, Metal) | real speech → text, `DesktopWhisperRealSmokeTest` |
+| Qwen3-ASR (sherpa-onnx) | 1 | `hearth_desktop_qwen3_asr` (static sherpa-onnx 1.13.7, CPU ONNX Runtime 1.20.1) | real speech → text, `DesktopQwenRealSmokeTest`: 4.65 s audio, 406 ms decode, exact transcript (macOS arm64) |
 | Supertonic 3 (TTS) | 1 | `hearth_supertonic_jni` (ONNX Runtime) | capability + synthesis path via `DesktopSupertonicRealSmokeTest` (needs model dir) |
 | GGUF translation | 14 | `libtransiber_translation` (llama.cpp) | MiLMMT-46 proven EN→AR in `DesktopFullPipelineRealSmokeTest` |
 
@@ -18,51 +19,32 @@ Last updated when the translation catalog was expanded to 8 models.
 | Family | Models | Android implementation | What a desktop port needs |
 | --- | --- | --- | --- |
 | ONNX speech — Nemotron | 1 | `speech/backends/nemotron_backend.cpp` | compile `IEngine` framework + backend for macOS, ORT link, JNI surface, Kotlin binding, catalog |
-| ONNX speech — Qwen3-ASR | 1 | `speech/backends/qwen_backend.cpp` | same |
-| ONNX speech — TranscribePsy | 1 | `speech/backends/transcribepsy_backend.cpp` | same |
-| ONNX speech — Moonshine ×9, Omnilingual, Phonon | 11 | **no backend file found** in `common-jni/src/main/cpp/speech/backends` | backend has to be written before any port |
+| TranscribePsy (ggml/parakeet, not ONNX) | 1 | `speech/backends/transcribepsy_backend.cpp` | build parakeet.cpp, JNI surface, Kotlin binding, catalog |
+| sherpa-onnx speech — Moonshine ×9, Omnilingual, Phonon | 11 | `qwen_backend.cpp` already exports `hearth_moonshine_backend_v1`, `hearth_omnilingual_backend_v1` and `hearth_phonon_backend_v1` | the Qwen build already produced the static sherpa library; each family still needs its own model pins, jni binding, engine wiring and smoke |
 | Vosk | 6 | `common-jni/src/main/cpp/vosk` | build Vosk/Kaldi for macOS + Windows; no prebuilt exists in this repo |
 | Marian pairs | 14 | `common-jni/src/main/cpp/marian` (CT2 + SentencePiece) | CTranslate2 build for macOS + Windows, SentencePiece, JNI |
 | TTS — Chatterbox, Magpie, Moss, OmniVoice, Oute | 5 | `hearth-tts-*` modules | each family has its own architecture and runtime; five separate engines |
 
-## Why the ONNX block is the right next step
+## What Qwen3-ASR proved
 
-- ONNX Runtime is **already** in the desktop bundle (`libonnxruntime.1.20.1.dylib`)
-  because Supertonic depends on it, so the runtime dependency is solved.
-- Three backends already exist in C++ (Nemotron, Qwen3-ASR, TranscribePsy) — but each
-  one pulls an external SDK that only exists under `research/`:
+- The pinned sherpa-onnx checkout (`HEARTH_QWEN_REVISION`,
+  `210f340bcfdfd5b9ad6b24245e77a934d6c28f1b`) compiles statically for macOS arm64
+  against the ONNX Runtime 1.20.1 dylib the desktop bundle already ships for
+  Supertonic. The link probe and a real decode both ran; no static ORT copy is linked.
+- `onnx/onnx_engine.cpp` compiles for macOS unchanged and is linked into the Qwen
+  dylib as the shared ONNX framework, but the Qwen path itself uses the existing
+  `speech/backends/qwen_backend.cpp` sherpa adapter.
+- The Android backend needed no source change: the desktop JNI wraps its C ABI with
+  the same lease/retire handle discipline as Whisper.
+- The remaining external SDKs are still unbuilt: NeMo-Speech.cpp (Nemotron) and
+  parakeet.cpp (TranscribePsy). Moonshine, Omnilingual and Phonon use sherpa-onnx
+  too, so the static library built for Qwen is reusable.
 
-  | Backend | Missing SDK (verified by compiling it for macOS) |
-  | --- | --- |
-  | Nemotron | `nemo_speech/asr.h` — NeMo-Speech.cpp |
-  | Qwen3-ASR | `sherpa-onnx/c-api/c-api.h` |
-  | TranscribePsy | `parakeet/engine.h` |
+## Port checklist for one external-SDK family
 
-  `onnx/onnx_engine.cpp` itself compiles cleanly for macOS, so the framework is
-  portable; the real cost is building those three C++ projects for macOS and
-  Windows before any family can be ported.
-- The remaining ONNX families (Moonshine, Omnilingual, Phonon) need their backend
-  written first — a larger task than a port.
-
-## Build probes (what was actually tried)
-
-| Target | Result |
-| --- | --- |
-| `onnx/onnx_engine.cpp` for macOS | compiles to an object, no changes |
-| `nemotron_backend.cpp` | stops at `nemo_speech/asr.h` (not in repo, only under `research/`) |
-| `qwen_backend.cpp` | stops at `sherpa-onnx/c-api/c-api.h` (not built) |
-| `transcribepsy_backend.cpp` | stops at `parakeet/engine.h` (not built) |
-| `research/sherpa-onnx` configure | 56 MB tree that fetches asio, cargs and other dependencies over the network via `FetchContent`; not a quick local build |
-
-Conclusion: no ONNX speech engine can be added without first building one of those
-external C++ projects for macOS and Windows. Each is its own multi-hour task with
-its own toolchain pitfalls, and none of them has been built in this repo yet.
-
-## Port checklist for one ONNX family
-
-1. Extend `scripts/desktop/build-native.py` to compile `onnx/onnx_engine.cpp` plus
-   the chosen backend against the staged ORT SDK and emit `*.payload` entries with
-   hashes in `manifest.json`.
+1. Extend `scripts/desktop/build-native.py` to build the external SDK statically,
+   compile the backend against the staged ORT SDK, and emit hashed entries in
+   `manifest.json` (done for sherpa-onnx in the `onnx` stage).
 2. Add a desktop JNI wrapper (`DesktopOnnxSpeechNative`) with the same lease-based
    handle discipline as `DesktopWhisperNative`.
 3. Implement `SpeechEngine` over it in `desktop-runtime` and register the engine id
@@ -77,6 +59,9 @@ catalog before it has a passing smoke.
 ## Not claimed
 
 - Windows for any of the above. No Windows host has run this code.
+- Qwen3-ASR auto language detection. The upstream C API does not populate the
+  detected language without the Android build patch; the desktop engine reports an
+  explicit source language and leaves Auto unknown. Transcription still works.
 - The Android catalog and the desktop catalog intentionally differ: Android can run
   families desktop cannot yet execute, and listing an unrunnable model would be a
   worse lie than a shorter list.

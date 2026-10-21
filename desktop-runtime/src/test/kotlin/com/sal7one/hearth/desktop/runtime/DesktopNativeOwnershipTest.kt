@@ -1,5 +1,6 @@
 package com.sal7one.hearth.desktop.runtime
 
+import com.sal7one.common_jni.desktop.DesktopQwenNative
 import com.sal7one.common_jni.desktop.DesktopWhisperNative
 import org.junit.Assume.assumeTrue
 import java.nio.file.Path
@@ -88,5 +89,36 @@ class DesktopNativeOwnershipTest {
         } finally {
             DesktopWhisperNative.destroy(next)
         }
+    }
+
+    @Test
+    fun qwenRejectsUnknownHandlesAndRetiresIdempotently() {
+        assumeTrue("Qwen3-ASR bundle is staged for this host", runCatching { DesktopQwenNative.protocolVersion() == 1 }.getOrDefault(false))
+        val text = assertFailsWith<IllegalStateException> { DesktopQwenNative.transcribe(0L, floatArrayOf()) }
+        assertContains(text.message.orEmpty(), "closed", ignoreCase = true)
+        assertFailsWith<IllegalStateException> { DesktopQwenNative.language(0L) }
+        assertFailsWith<IllegalStateException> { DesktopQwenNative.executionInfo(0L) }
+        DesktopQwenNative.cancel(0L)
+        DesktopQwenNative.destroy(0L)
+        DesktopQwenNative.cancel(9_999_999L)
+        DesktopQwenNative.destroy(9_999_999L)
+    }
+
+    @Test
+    fun qwenCreationSurfacesRealErrorsInsteadOfReturningAHandle() {
+        assumeTrue("Qwen3-ASR bundle is staged for this host", runCatching { DesktopQwenNative.protocolVersion() == 1 }.getOrDefault(false))
+        val bogus = Path.of("/nonexistent/hearth-qwen/missing")
+        val loadFailure = assertFailsWith<IllegalStateException> {
+            DesktopQwenNative.create(bogus.toString().toByteArray(), "en".toByteArray(), 2)
+        }
+        assertContains(loadFailure.message.orEmpty(), "Qwen3-ASR")
+        val languageFailure = assertFailsWith<IllegalStateException> {
+            DesktopQwenNative.create(bogus.toString().toByteArray(), "zz".toByteArray(), 2)
+        }
+        assertContains(languageFailure.message.orEmpty(), "language", ignoreCase = true)
+        val threadFailure = assertFailsWith<IllegalStateException> {
+            DesktopQwenNative.create(bogus.toString().toByteArray(), "en".toByteArray(), 0)
+        }
+        assertContains(threadFailure.message.orEmpty(), "threads", ignoreCase = true)
     }
 }

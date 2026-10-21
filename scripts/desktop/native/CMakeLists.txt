@@ -77,10 +77,53 @@ elseif(HEARTH_STAGE STREQUAL "supertonic")
  target_link_libraries(hearth_supertonic_jni PRIVATE onnx_host)
  set_target_properties(hearth_supertonic_jni PROPERTIES BUILD_RPATH "${HEARTH_ORT_ROOT}/lib" INSTALL_RPATH "@loader_path")
  set(OUTPUT_TARGET hearth_supertonic_jni)
+elseif(HEARTH_STAGE STREQUAL "onnx")
+ if(NOT APPLE OR NOT CMAKE_SYSTEM_PROCESSOR STREQUAL "arm64")
+  message(FATAL_ERROR "The Qwen3-ASR desktop runtime is built only for macOS arm64")
+ endif()
+ if(NOT EXISTS "${HEARTH_ORT_ROOT}/VERSION_NUMBER")
+  message(FATAL_ERROR "Set HEARTH_ORT_ROOT to the extracted official ONNX Runtime 1.20.1 host SDK")
+ endif()
+ file(READ "${HEARTH_ORT_ROOT}/VERSION_NUMBER" ORT_VERSION)
+ string(STRIP "${ORT_VERSION}" ORT_VERSION)
+ if(NOT ORT_VERSION STREQUAL "1.20.1")
+  message(FATAL_ERROR "The desktop bundle ships ONNX Runtime 1.20.1")
+ endif()
+ if(NOT EXISTS "${HEARTH_SHERPA_ROOT}/include/sherpa-onnx/c-api/c-api.h" OR
+    NOT EXISTS "${HEARTH_SHERPA_ROOT}/lib/libsherpa-onnx.a")
+  message(FATAL_ERROR "Set HEARTH_SHERPA_ROOT to the pinned static sherpa-onnx install tree")
+ endif()
+ add_library(onnx_host SHARED IMPORTED)
+ if(WIN32)
+  set_target_properties(onnx_host PROPERTIES IMPORTED_LOCATION "${HEARTH_ORT_ROOT}/lib/onnxruntime.dll" IMPORTED_IMPLIB "${HEARTH_ORT_ROOT}/lib/onnxruntime.lib")
+ elseif(APPLE)
+  set_target_properties(onnx_host PROPERTIES IMPORTED_LOCATION "${HEARTH_ORT_ROOT}/lib/libonnxruntime.1.20.1.dylib")
+ else()
+  set_target_properties(onnx_host PROPERTIES IMPORTED_LOCATION "${HEARTH_ORT_ROOT}/lib/libonnxruntime.so")
+ endif()
+ # The Android backend and the shared ONNX framework are compiled unchanged.
+ # sherpa-onnx is statically linked; ONNX Runtime stays the shipped 1.20.1 dylib.
+ add_library(hearth_desktop_qwen3_asr SHARED
+   "${DESKTOP_CPP}/qwen_jni.cpp"
+   "${CPP}/speech/backends/qwen_backend.cpp"
+   "${CPP}/onnx/onnx_engine.cpp"
+   "${CPP}/common/logging.cpp"
+   "${CPP}/common/json_utils.cpp"
+   "${CPP}/common/engine_interface.cpp"
+   "${CPP}/common/audio_utils.cpp"
+ )
+ target_compile_definitions(hearth_desktop_qwen3_asr PRIVATE ONNX_AVAILABLE=1)
+ target_include_directories(hearth_desktop_qwen3_asr PRIVATE
+   ${JNI_INCLUDE_DIRS} "${DESKTOP_CPP}" "${CPP}/common" "${CPP}/speech" "${CPP}/speech/backends"
+   "${CPP}/onnx" "${CPP}/onnx/include" "${CPP}/onnx/include/onnxruntime"
+   "${HEARTH_SHERPA_ROOT}/include")
+ target_link_libraries(hearth_desktop_qwen3_asr PRIVATE onnx_host "${HEARTH_SHERPA_ROOT}/lib/libsherpa-onnx.a" "-framework Foundation")
+ set_target_properties(hearth_desktop_qwen3_asr PROPERTIES BUILD_RPATH "${HEARTH_ORT_ROOT}/lib" INSTALL_RPATH "@loader_path")
+ set(OUTPUT_TARGET hearth_desktop_qwen3_asr)
 else()
- message(FATAL_ERROR "HEARTH_STAGE must be whisper, translation or supertonic")
+ message(FATAL_ERROR "HEARTH_STAGE must be whisper, translation, supertonic or onnx")
 endif()
-if(APPLE AND HEARTH_DESKTOP_METAL AND NOT HEARTH_STAGE STREQUAL "supertonic")
+if(APPLE AND HEARTH_DESKTOP_METAL AND NOT HEARTH_STAGE STREQUAL "supertonic" AND NOT HEARTH_STAGE STREQUAL "onnx")
  target_sources(${OUTPUT_TARGET} PRIVATE "${DESKTOP_CPP}/metal_device.mm")
 endif()
 if(APPLE)

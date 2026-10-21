@@ -46,8 +46,28 @@ def generate():
         languages=['multilingual','ar','en'], source='https://huggingface.co/Supertone/supertonic-3',license='OpenRAIL-M (weights); MIT (runtime)',
         note='Includes verified F1–F5 and M1–M5 voice styles. Desktop CPU adapter; Arabic/English listening still requires owner testing.',
         options={},artifacts=assets))
-    assert len(models) >= 29
-    return json.dumps({'schemaVersion':1,'provenance':'Generated from existing Android pins; run scripts/desktop/generate-catalog.py --check','models':models},ensure_ascii=False,indent=2)+'\n'
+    # Qwen3-ASR desktop package: engine-owned file pins plus the audited release archive.
+    qwen_source = (ROOT / 'desktop-runtime/src/main/kotlin/com/sal7one/hearth/desktop/runtime/QwenSpeechModel.kt').read_text(encoding='utf-8')
+    qwen_files = []
+    for path, size, digest in re.findall(r'PinnedFile\("([^"]+)",\s*([0-9_]+)L,\s*"([a-f0-9]{64})"\)', qwen_source):
+        qwen_files.append((path, int(size.replace('_', '')), digest))
+    assert len(qwen_files) == 6, qwen_files
+    language_block = re.search(r'val languages: Set<String> = setOf\((.*?)\)', qwen_source, re.S).group(1)
+    qwen_languages = re.findall(r'"([a-z]+)"', language_block)
+    assert len(qwen_languages) == 30, qwen_languages
+    audit = json.loads((ROOT / 'docs/model-catalog-audit-2026-10-19.json').read_text(encoding='utf-8'))
+    archive = next(a for a in audit['artifacts'] if a['id'] == 'qwen3-asr-0.6b')
+    assert archive['bytes'] > 0 and re.fullmatch(r'[a-f0-9]{64}', archive['sha256']), 'Qwen3-ASR archive pin is missing'
+    models.append(dict(id='qwen3-asr-0.6b', name='Qwen3-ASR 0.6B · int8', family='Qwen3-ASR', stage='STT', engineId='qwen3-asr-local',
+        languages=qwen_languages, source='https://github.com/k2-fsa/sherpa-onnx/releases/tag/asr-models', license='Apache-2.0',
+        note='Pinned sherpa-onnx Qwen3-ASR package; CPU-only, utterance-windowed, macOS Apple silicon. Six model files are verified individually before loading; the archive hash is the audited release pin.',
+        options={}, platforms=['macos-arm64'],
+        artifacts=[dict(filename='sherpa-onnx-qwen3-asr-0.6B-int8-2026-03-25.tar.bz2', bytes=archive['bytes'], sha256=archive['sha256'], url=archive['url'])],
+        archive=dict(format='tar.bz2', root='sherpa-onnx-qwen3-asr-0.6B-int8-2026-03-25',
+            expandedBytes=sum(size for _, size, _ in qwen_files),
+            files=[dict(path=path, bytes=size, sha256=digest) for path, size, digest in qwen_files])))
+    assert len(models) == 43, len(models)
+    return json.dumps({'schemaVersion':1,'provenance':'Generated from existing Android pins, the audited Qwen3-ASR release archive and reviewed desktop engine pins; run scripts/desktop/generate-catalog.py --check','models':models},ensure_ascii=False,indent=2)+'\n'
 
 
 if __name__ == '__main__':

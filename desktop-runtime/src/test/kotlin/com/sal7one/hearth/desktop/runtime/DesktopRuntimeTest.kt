@@ -54,6 +54,9 @@ class DesktopRuntimeTest {
         assertEquals(emptyList(), nativeDependencyOrder("transiber_translation", "windows-x64", emptySet()))
         assertEquals(listOf("libonnxruntime.1.20.1.dylib"), nativeDependencyOrder("hearth_supertonic_jni", "macos-arm64", setOf("libonnxruntime.1.20.1.dylib")))
         assertEquals(listOf("libonnxruntime.dylib"), nativeDependencyOrder("hearth_supertonic_jni", "macos-x64", setOf("libonnxruntime.dylib")))
+        assertEquals(listOf("libonnxruntime.1.20.1.dylib"), nativeDependencyOrder("hearth_desktop_qwen3_asr", "macos-arm64", setOf("libonnxruntime.1.20.1.dylib")))
+        assertFailsWith<IllegalStateException> { nativeDependencyOrder("hearth_desktop_qwen3_asr", "macos-arm64", emptySet()) }
+        assertEquals(emptyList(), nativeDependencyOrder("hearth_desktop_qwen3_asr", "windows-x64", emptySet()))
     }
     @Test fun malformedPastedCredentialsNeverReachHttpHeadersOrErrors() = runBlocking<Unit> {
         val folder = Files.createTempDirectory("hearth-secret-header-test")

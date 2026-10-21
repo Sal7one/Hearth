@@ -39,5 +39,9 @@ class RuntimeArchiveTests(unittest.TestCase):
         for name,digest in module.ASSETS.values():
             self.assertIn('1.20.1',name);self.assertRegex(digest,r'^[a-f0-9]{64}$')
 
+    def test_sherpa_pin_matches_the_android_backend_revision(self):
+        versions=(module.ROOT/'common-jni/src/main/cpp/speech/backend_versions.h').read_text(encoding='utf-8')
+        self.assertIn(f'HEARTH_QWEN_REVISION "{module.SHERPA_PIN}"',versions)
+
 
 if __name__=='__main__': unittest.main()

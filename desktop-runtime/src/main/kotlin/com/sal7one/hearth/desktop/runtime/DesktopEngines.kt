@@ -1,5 +1,6 @@
 package com.sal7one.hearth.desktop.runtime
 
+import com.sal7one.common_jni.desktop.DesktopQwenNative
 import com.sal7one.common_jni.desktop.DesktopWhisperNative
 import com.sal7one.common_jni.translation.LocalTranslationNative
 import com.sal7one.hearth.core.*
@@ -22,6 +23,7 @@ import java.nio.file.Path
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
+import java.util.concurrent.atomic.AtomicReference
 
 /** Independent desktop adapters. Native handles are private to this owner, never shared with Android. */
 class DesktopEngines(
@@ -52,6 +54,10 @@ class DesktopEngines(
                             check(LocalTranslationNative.promptProtocolVersion() == 4) { "Desktop translation protocol mismatch; rebuild the native bundle" }
                             LocalTranslationNative.metalAvailable()
                         }
+                        QwenSpeechModel.ENGINE_ID -> {
+                            check(DesktopQwenNative.protocolVersion() == QwenSpeechModel.PROTOCOL_VERSION) { "Desktop Qwen3-ASR protocol mismatch; rebuild the native bundle" }
+                            false
+                        }
                         else -> false
                     }
                     if (metal) acceleration = setOf("cpu", "metal")
@@ -62,6 +68,7 @@ class DesktopEngines(
         }
         return listOf(
             local("whisper-local", "Whisper.cpp", PipelineStage.STT, "hearth_desktop_whisper", streaming = true),
+            local(QwenSpeechModel.ENGINE_ID, "Qwen3-ASR 0.6B", PipelineStage.STT, QwenSpeechModel.LIBRARY, QwenSpeechModel.languages),
             local("llama-translation-local", "Local GGUF translation", PipelineStage.TRANSLATION, "transiber_translation"),
             local("supertonic-local", "Supertonic 3", PipelineStage.TTS, "hearth_supertonic_jni", SupertonicCatalog.languages),
             EngineDescriptor("openai-stt", "OpenAI-compatible transcription", PipelineStage.STT, EngineKind.CLOUD,
@@ -77,7 +84,7 @@ class DesktopEngines(
 
     override suspend fun recognize(input: PipelineInput, selection: EngineSelection, sourceLanguage: String, emit: suspend (SpeechSegment) -> Unit) {
         check(!closed.get()) { "Desktop engines are closed" }
-        require(selection.engineId in setOf("whisper-local", "openai-stt")) { "Unknown speech engine: ${selection.engineId}" }
+        require(selection.engineId in setOf("whisper-local", QwenSpeechModel.ENGINE_ID, "openai-stt")) { "Unknown speech engine: ${selection.engineId}" }
         var decoded: Path? = null
         val frames: Flow<PcmFrame> = when (input) {
             is PipelineInput.AudioStream -> input.frames
@@ -91,6 +98,7 @@ class DesktopEngines(
             is PipelineInput.Text -> error("Speech recognition needs an audio file or microphone")
         }
         val handle = AtomicLong()
+        val qwenEngine = AtomicReference<DesktopQwenSpeechEngine?>(null)
         var offsetSamples = 0L
         var sequence = 0
         var recognized = false
@@ -105,9 +113,23 @@ class DesktopEngines(
                     handle.set(DesktopWhisperNative.create(path.toString().toByteArray(), sourceLanguage.toByteArray(), threads(selection), metal))
                     check(handle.get() != 0L) { "Whisper returned an invalid model handle" }
                 }
+            } else if (selection.engineId == QwenSpeechModel.ENGINE_ID) {
+                val directory = verifiedQwenModel(selection)
+                val language = QwenSpeechModel.language(sourceLanguage)
+                val threadCount = threads(selection)
+                val owner = currentCoroutineContext()
+                joinedBlocking({ qwenEngine.get()?.cancel() }) {
+                    owner.ensureActive()
+                    val opened = DesktopQwenSpeechEngine.open(directory, language, threadCount)
+                    if (!qwenEngine.compareAndSet(null, opened)) {
+                        opened.close()
+                        error("Qwen3-ASR engine was already published")
+                    }
+                }
             }
             val live = input is PipelineInput.AudioStream
-            val windowMs = selection.options["windowMs"]?.toIntOrNull() ?: if (live) 4000 else 20000
+            val windowMs = selection.options["windowMs"]?.toIntOrNull()
+                ?: if (selection.engineId == QwenSpeechModel.ENGINE_ID) 15000 else if (live) 4000 else 20000
             require(windowMs in 1000..30000) { "Speech window must be 1000–30000 ms" }
             val windowBytes = windowMs * 32
             val buffered = ByteArrayOutputStream(windowBytes)
@@ -122,14 +144,22 @@ class DesktopEngines(
                 if (live && observedSpeech == 0) { offsetSamples += bytes.size / 2; return }
                 val text: String
                 var language: String? = sourceLanguage.takeUnless { it == "auto" }
-                if (selection.engineId == "openai-stt") text = cloud.recognize(bytes, selection, sourceLanguage) else {
+                val owner = currentCoroutineContext()
+                if (selection.engineId == "openai-stt") {
+                    text = cloud.recognize(bytes, selection, sourceLanguage)
+                } else {
                     val pcm = ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN).asShortBuffer()
                     val samples = FloatArray(pcm.remaining()) { pcm.get() / 32768f }
-                    val owner = currentCoroutineContext()
-                    text = joinedBlocking({ DesktopWhisperNative.cancel(handle.get()) }) {
-                        owner.ensureActive(); DesktopWhisperNative.transcribe(handle.get(), samples).toString(Charsets.UTF_8).trim()
+                    if (selection.engineId == QwenSpeechModel.ENGINE_ID) {
+                        val engine = checkNotNull(qwenEngine.get()) { "Qwen3-ASR is not open" }
+                        text = joinedBlocking({ engine.cancel() }) { owner.ensureActive(); engine.transcribe(samples) }
+                        language = QwenSpeechModel.detected(engine.language()) ?: language
+                    } else {
+                        text = joinedBlocking({ DesktopWhisperNative.cancel(handle.get()) }) {
+                            owner.ensureActive(); DesktopWhisperNative.transcribe(handle.get(), samples).toString(Charsets.UTF_8).trim()
+                        }
+                        language = DesktopWhisperNative.language(handle.get()).toString(Charsets.UTF_8).ifBlank { language }
                     }
-                    language = DesktopWhisperNative.language(handle.get()).toString(Charsets.UTF_8).ifBlank { language }
                 }
                 val end = offsetSamples + bytes.size / 2
                 if (text.isNotBlank()) {
@@ -157,8 +187,17 @@ class DesktopEngines(
             transcribe()
             check(recognized) { "No speech was recognized in the supplied audio" }
         } finally {
-            withContext(NonCancellable + Dispatchers.IO) { handle.getAndSet(0).takeIf { it != 0L }?.let(DesktopWhisperNative::destroy) }
-            decoded?.let { Files.deleteIfExists(it) }
+            try {
+                withContext(NonCancellable + Dispatchers.IO) {
+                    try {
+                        qwenEngine.getAndSet(null)?.close()
+                    } finally {
+                        handle.getAndSet(0).takeIf { it != 0L }?.let(DesktopWhisperNative::destroy)
+                    }
+                }
+            } finally {
+                decoded?.let { Files.deleteIfExists(it) }
+            }
         }
     }
 
@@ -244,6 +283,15 @@ class DesktopEngines(
         currentCoroutineContext().ensureActive()
         path
     }
+
+    /** Qwen3-ASR ships as a directory; the engine owns the six reviewed file pins. */
+    private suspend fun verifiedQwenModel(selection: EngineSelection): Path = withContext(Dispatchers.IO) {
+        val root = Path.of(selection.modelPath).toRealPath()
+        val context = currentCoroutineContext()
+        QwenSpeechModel.verify(root) { context.ensureActive() }
+        root
+    }
+
     private fun threads(selection: EngineSelection) = (selection.options["threads"]?.toIntOrNull() ?: minOf(4, Runtime.getRuntime().availableProcessors())).also { require(it in 1..32) { "Threads must be 1–32" } }
     private fun metal(selection: EngineSelection): Boolean = when (selection.options["acceleration"] ?: "cpu") {
         "cpu" -> false

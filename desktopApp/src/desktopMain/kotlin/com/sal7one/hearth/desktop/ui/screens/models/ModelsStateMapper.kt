@@ -43,8 +43,8 @@ internal fun modelsState(
     }
 
     val installedCards = catalog.filter { installations[it.id]?.ready == true }
-    val installedBytes = installedCards.sumOf { it.bytes }
-    val catalogBytes = catalog.sumOf { it.bytes }
+    val installedBytes = installedCards.sumOf { it.installedBytes }
+    val catalogBytes = catalog.sumOf { it.installedBytes }
     val activeTransfer = transfer?.let { current ->
         val card = catalog.firstOrNull { it.id == current.id }
         TransferView(
@@ -85,7 +85,7 @@ private fun modelRow(card: DesktopModelCard, status: DesktopModelStatus?, config
         id = card.id,
         name = card.name,
         stage = card.stage,
-        sizeLabel = formatBytes(card.bytes),
+        sizeLabel = formatBytes(card.installedBytes),
         metaLabel = languageLabel(card.languages),
         status = modelStatus,
         inUse = inUse,

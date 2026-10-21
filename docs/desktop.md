@@ -11,7 +11,7 @@ conditions through the Android application.
 | Area | Desktop implementation |
 | --- | --- |
 | Inputs | Typed text, a chosen microphone/virtual audio device, PCM WAV and native-system-supported audio/video files. |
-| Local recognition | Pinned whisper.cpp models, including multilingual Arabic/English models. Live recognition uses utterance windows; it is not a token-streaming decoder. |
+| Local recognition | Pinned whisper.cpp models plus pinned Qwen3-ASR (sherpa-onnx, macOS arm64, CPU). Live recognition uses utterance windows; it is not a token-streaming decoder. |
 | Local translation | Hearth's existing llama.cpp translation model/prompt protocol, with pinned EuroLLM/Riva catalog entries and explicit verified custom model paths. |
 | Local voice | The same model-free article-speech SDK, Supertonic 3 model verification, F1–F5/M1–M5 voices and native inference sources used on Android. |
 | Cloud stages | Independently configured OpenAI-compatible STT, chat translation and WAV TTS endpoints; local compatible servers may omit credentials. Provider keys never enter the model downloader. |
@@ -22,7 +22,7 @@ conditions through the Android application.
 | Settings | DataStore preferences, portable JSON setups, macOS Keychain and Windows current-user DPAPI for provider secrets. |
 | Integrations | Authenticated loopback HTTP jobs, live bounded PCM input, SSE results/cancellation and read-only OBS caption access. |
 
-The initial native desktop ports are Whisper, llama translation and Supertonic.
+The initial native desktop ports are Whisper, Qwen3-ASR (macOS arm64), llama translation and Supertonic.
 Android's other ASR/TTS families, camera OCR, MediaProjection capture, TV pairing
 and Android-specific screens have not been presented as desktop implementations.
 Select a virtual input device or submit PCM from another app for a live audio
@@ -30,7 +30,8 @@ source. Automatic system-audio capture and an OBS native plugin are separate
 platform adapters; the Browser Source and external-app API work without a plugin.
 
 On macOS, Whisper and GGUF translation offer explicit CPU or Metal selection.
-Supertonic stays on CPU. Windows currently uses CPU native adapters. GPU selection
+Supertonic and Qwen3-ASR stay on CPU. Windows currently uses CPU native adapters;
+the Qwen3-ASR stage is macOS arm64 only and is skipped on Windows. GPU selection
 fails if the requested backend cannot initialize or place the model; it never
 silently reports GPU while executing a CPU fallback. The [real-model smoke receipt](research/desktop-real-smoke-2026-10-20.json)
 records a completed local Whisper → Arabic translation → English system-voice
@@ -49,7 +50,8 @@ downloads models or calls a provider.
 
 When combining cloud recognition with local EuroLLM/Riva translation, choose an
 explicit source language. The generic cloud recognition route does not currently
-propagate detected language; local Whisper does.
+propagate detected language; local Whisper does, and Qwen3-ASR does when an explicit
+source language is selected (its Auto mode leaves the detected label unknown).
 
 Native video/audio decoding uses AVFoundation on macOS and Media Foundation on
 Windows. It reads the first audio track and produces bounded PCM for the speech
@@ -78,8 +80,8 @@ On Windows, run `python` and `scripts/desktop/build-media.ps1` instead of the Ba
 media script. The official host SDK directory is
 `build/desktop-dependencies/onnxruntime-win-x64-1.20.1`. The C++ build needs Visual
 Studio C++ tools and a Windows SDK. Intel Macs use the `osx-x86_64` SDK. Native
-builds are pinned to the same Whisper/llama sources as Android and ONNX Runtime
-1.20.1. Preparation checks exact SDK archive hashes and the extracted content.
+builds are pinned to the same Whisper/llama/sherpa-onnx sources as Android and
+the same ONNX Runtime 1.20.1 host SDK. Preparation checks exact SDK archive hashes and the extracted content.
 It downloads build runtimes/source only, never model weights.
 
 After the Windows JNI build, run `python scripts/desktop/stage-windows-crt.py`
@@ -156,14 +158,15 @@ becomes completed transcription.
 A runtime adapter must release or cache its own handles deliberately. Cached
 translation models stay resident across chunks; cancelling/failing invalidates the
 relevant cached owner. Closing desktop services joins jobs before closing native
-caches. Native wrappers retain `com.sal7one.common_jni` and isolate the Whisper and
-llama GGML symbol spaces in separate libraries. Android sources and ABIs are not
+caches. Native wrappers retain `com.sal7one.common_jni` and isolate the Whisper, llama GGML
+and sherpa-onnx symbol spaces in separate libraries. Android sources and ABIs are not
 rewritten to accomplish the desktop ports.
 
 ## Models and setups
 
 `scripts/desktop/generate-catalog.py` derives desktop pins from the existing
-Android Whisper/Supertonic catalogs and reviewed translation cards. Run it after
+Android Whisper/Supertonic catalogs, reviewed translation cards, the audited
+Qwen3-ASR release archive and the engine-owned Qwen file pins. Run it after
 changing those sources; `--check` rejects drift. A download must finish size/hash
 verification before it can be selected. Installing does not activate a stage.
 A missing, changed or incompatible import remains a visible setup problem.

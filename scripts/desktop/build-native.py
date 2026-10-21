@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
 """Build isolated, model-free Windows/macOS desktop JNI adapters from pinned local sources.
 
-No downloads are performed. Supply the official extracted ONNX Runtime 1.20.1 SDK
-and a local llama.cpp checkout at the exact Android translation source revision.
+The ONNX speech stage compiles pinned static sherpa-onnx for macOS arm64; its own
+CMake dependencies are fetched at build time and pinned by URL_HASH upstream.
+Supply the official extracted ONNX Runtime 1.20.1 SDK, a local llama.cpp checkout at
+the exact Android translation source revision, and a clean sherpa-onnx checkout at
+HEARTH_QWEN_REVISION.
 """
 import argparse
 import hashlib
@@ -10,6 +13,7 @@ import json
 import os
 from pathlib import Path
 import platform
+import re
 import shutil
 import subprocess
 import sys
@@ -17,6 +21,31 @@ import sys
 ROOT = Path(__file__).resolve().parents[2]
 LLAMA_PIN = "64e9bceb2c3a856efed96feda784a50947049feb"
 WHISPER_PIN = "5f3464bc06c04426d66eae69e5e510d32fb76621b524c42ab25b4294f035a920"
+SHERPA_PIN = "210f340bcfdfd5b9ad6b24245e77a934d6c28f1b"
+# Every dependency the pinned sherpa-onnx CMake fetches is declared with this URL_HASH.
+# The build fetches them at build time; the digest of this map is recorded in the bundle.
+SHERPA_INPUTS = {
+    "eigen-5.0.1.tar.gz": "e9c326dc8c05cd1e044c71f30f1b2e34a6161a3b6ecf445d56b53ff1669e3dec",
+    "hclust-cpp-2026-02-25.tar.gz": "8f14e024c709d73afb40ae69cb22de4b73dba67cbce40f2e518813da8139ab56",
+    "json-v3.12.0.tar.gz": "4b92eb0c06d10683f7447ce9406cb97cd4b453be18d7279320f7b2f025c10187",
+    "kaldi-decoder-v0.3.0.tar.gz": "b9f34cfb4fd3b1344100eead79ef4d37aa15962274b9e3056de345021f76a1b0",
+    "kaldi-native-fbank-v1.22.3.tar.gz": "9176cc66fc7ce1edf85cf355b06e320c57db6297df74277f575183468893cf61",
+    "openfst-v1.8.5-2026-07-09.tar.gz": "2ff712a32952fcb01d351121a6bc8ccf4fdc6b2aa06ce8df2b3095dedd518c0e",
+    "simple-sentencepiece-v0.7.tar.gz": "1748a822060a35baa9f6609f84efc8eb54dc0e74b9ece3d82367b7119fdc75af",
+    "kaldifst-v1.8.0.tar.gz": "3f247b7e5a2409071202f5e2bc6200060f66728c0a3443c03923ad2723e040b3",
+    "kissfft-febd4cae.zip": "497103e664168ebe39580b757adbe616f6cf85a16572af581ca7bc42d0ab13fd",
+}
+SHERPA_NOTICES = [
+    "sherpa-onnx/LICENSE", "eigen/LICENSE", "eigen/COPYING.APACHE", "eigen/COPYING.BSD",
+    "eigen/COPYING.MINPACK", "eigen/COPYING.MPL2", "eigen/COPYING.README", "json/LICENSE.MIT",
+    "kaldi_decoder/LICENSE", "kaldi_native_fbank/LICENSE", "kaldifst/LICENSE", "kissfft/COPYING",
+    "openfst/COPYING", "sentencepiece/LICENSE", "simple-sentencepiece/LICENSE",
+]
+SHERPA_COMBINED = [
+    "libsherpa-onnx-c-api.a", "libsherpa-onnx-core.a", "libkaldi-native-fbank-core.a",
+    "libkissfft-float.a", "libsherpa-onnx-fstfar.a", "libsherpa-onnx-fst.a",
+    "libsherpa-onnx-kaldifst-core.a", "libkaldi-decoder-core.a", "libssentencepiece_core.a",
+]
 
 
 def sha(path):
@@ -27,13 +56,48 @@ def sha(path):
     return digest.hexdigest()
 
 
+def source_tree_sha(root):
+    """Content digest of a pinned checkout's tracked files; never follows symlinks."""
+    names = subprocess.check_output(["git", "-C", str(root), "ls-files", "-z"], text=False).split(b"\0")
+    entries = {}
+    for raw in names:
+        if not raw:
+            continue
+        relative = os.fsdecode(raw)
+        path = root / relative
+        entries[relative] = "symlink:" + os.readlink(path) if path.is_symlink() else sha(path)
+    return hashlib.sha256(json.dumps(entries, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+
+
+def require_exports(dylib, prefix, expected):
+    names = [line.split()[-1] for line in subprocess.check_output(["nm", "-gU", str(dylib)], text=True).splitlines() if line.strip()]
+    found = [name for name in names if name.startswith(prefix)]
+    if len(found) != expected:
+        raise RuntimeError(f"Desktop JNI exports changed: expected {expected} {prefix} symbols, found {len(found)}")
+
+
 def snapshot():
     paths = [ROOT / "scripts/desktop/build-native.py"]
     for folder in ["scripts/desktop/native", "desktop-runtime/src/main/cpp"]:
         paths.extend(p for p in (ROOT / folder).rglob("*") if p.is_file())
     for name in ["common-jni/src/main/cpp/translation/text_model.h", "common-jni/src/main/cpp/translation/translation_jni.cpp",
                  "common-jni/src/main/cpp/common/lease_registry.h", "hearth-tts-supertonic/src/main/cpp/voice/voice_bounds.h",
-                 "common-jni/src/main/cpp/onnx/include/onnxruntime/onnxruntime_c_api.h"]:
+                 "common-jni/src/main/cpp/onnx/include/onnxruntime/onnxruntime_c_api.h",
+                 "common-jni/src/main/cpp/speech/backends/qwen_backend.cpp",
+                 "common-jni/src/main/cpp/speech/backend_abi.h",
+                 "common-jni/src/main/cpp/speech/backends/backend_guard.h",
+                 "common-jni/src/main/cpp/speech/backend_versions.h",
+                 "common-jni/src/main/cpp/speech/utterance_segmenter.h",
+                 "common-jni/src/main/cpp/speech/qwen_language.h",
+                 "common-jni/src/main/cpp/onnx/onnx_engine.cpp",
+                 "common-jni/src/main/cpp/onnx/onnx_engine.h",
+                 "common-jni/src/main/cpp/common/logging.cpp", "common-jni/src/main/cpp/common/logging.h",
+                 "common-jni/src/main/cpp/common/json_utils.cpp", "common-jni/src/main/cpp/common/json_utils.h",
+                 "common-jni/src/main/cpp/common/engine_interface.cpp", "common-jni/src/main/cpp/common/engine_interface.h",
+                 "common-jni/src/main/cpp/common/audio_utils.cpp", "common-jni/src/main/cpp/common/audio_utils.h",
+                 "common-jni/src/main/cpp/common/error_codes.h", "common-jni/src/main/cpp/common/audio_gate.h",
+                 "common-jni/src/main/cpp/common/buffer_view.h",
+                 "common-jni/src/main/cpp/common/lifecycle_gate.h", "common-jni/src/main/cpp/common/scoped_timer.h"]:
         paths.append(ROOT / name)
     paths.extend((ROOT / "hearth-tts-supertonic/src/main/cpp/voice").glob("*.cpp"))
     paths.append(ROOT / "hearth-tts-supertonic/src/main/cpp/voice/supertonic.h")
@@ -78,10 +142,64 @@ stt::concurrency::LeaseRegistry<DesktopTextModel> models;''')
     return source
 
 
+def sherpa_install(source, ort_root, cache, jobs):
+    """Build the pinned static sherpa-onnx C API for macOS arm64 and combine its archives."""
+    pin = subprocess.check_output(["git", "-C", str(source), "rev-parse", "HEAD"], text=True).strip()
+    if pin != SHERPA_PIN:
+        raise RuntimeError(f"sherpa-onnx must be checked out at {SHERPA_PIN}, found {pin}")
+    changes = subprocess.check_output(["git", "-C", str(source), "status", "--porcelain"], text=True)
+    if changes.strip():
+        raise RuntimeError("Desktop sherpa-onnx source checkout has local changes")
+    if (ort_root / "VERSION_NUMBER").read_text(encoding="utf-8").strip() != "1.20.1":
+        raise RuntimeError("The desktop sherpa build requires the official ONNX Runtime 1.20.1 host SDK")
+    match = re.search(r'static const char \*version = "([^"]+)"',
+                      (source / "sherpa-onnx/csrc/version.cc").read_text(encoding="utf-8"))
+    if not match:
+        raise RuntimeError("Unable to read the pinned sherpa-onnx version")
+    build = cache / "sherpa-build"
+    install = cache / "sherpa-install"
+    # sherpa's pre-installed ORT probe looks for the unversioned dylib name.
+    ort_lib = cache / "sherpa-ort-lib"
+    ort_lib.mkdir(parents=True, exist_ok=True)
+    unversioned = ort_lib / "libonnxruntime.dylib"
+    if unversioned.is_symlink() or unversioned.exists():
+        unversioned.unlink()
+    unversioned.symlink_to((ort_root / "lib/libonnxruntime.1.20.1.dylib").resolve())
+    environment = os.environ.copy()
+    environment["SHERPA_ONNXRUNTIME_INCLUDE_DIR"] = str((ort_root / "include").resolve())
+    environment["SHERPA_ONNXRUNTIME_LIB_DIR"] = str(ort_lib.resolve())
+    configure = [
+        "cmake", "-S", str(source), "-B", str(build),
+        "-DCMAKE_BUILD_TYPE=Release", f"-DCMAKE_INSTALL_PREFIX={install}",
+        "-DCMAKE_OSX_ARCHITECTURES=arm64", "-DCMAKE_OSX_DEPLOYMENT_TARGET=13.0",
+        "-DBUILD_SHARED_LIBS=OFF", "-DSHERPA_ONNX_ENABLE_C_API=ON",
+        "-DSHERPA_ONNX_ENABLE_BINARY=OFF", "-DSHERPA_ONNX_BUILD_C_API_EXAMPLES=OFF",
+        "-DSHERPA_ONNX_ENABLE_TESTS=OFF", "-DSHERPA_ONNX_ENABLE_CHECK=OFF",
+        "-DSHERPA_ONNX_ENABLE_PYTHON=OFF", "-DSHERPA_ONNX_ENABLE_JNI=OFF",
+        "-DSHERPA_ONNX_ENABLE_PORTAUDIO=OFF", "-DSHERPA_ONNX_ENABLE_WEBSOCKET=OFF",
+        "-DSHERPA_ONNX_ENABLE_TTS=OFF",
+        "-DSHERPA_ONNX_USE_PRE_INSTALLED_ONNXRUNTIME_IF_AVAILABLE=ON",
+    ]
+    subprocess.run(configure, check=True, env=environment)
+    subprocess.run(["cmake", "--build", str(build), "--config", "Release", "--parallel", str(jobs)], check=True, env=environment)
+    subprocess.run(["cmake", "--install", str(build), "--config", "Release", "--prefix", str(install)], check=True, env=environment)
+    headers = install / "include/sherpa-onnx/c-api/c-api.h"
+    if not headers.is_file():
+        raise RuntimeError("The pinned sherpa-onnx build did not install its C API header")
+    libraries = install / "lib"
+    members = [libraries / name for name in SHERPA_COMBINED]
+    missing = [member.name for member in members if not member.is_file()]
+    if missing:
+        raise RuntimeError("The pinned sherpa-onnx build is missing archives: " + ", ".join(missing))
+    subprocess.run(["libtool", "-static", "-o", str(libraries / "libsherpa-onnx.a"), *map(str, members)], check=True)
+    return install, match.group(1)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--stage", choices=["all", "whisper", "translation", "supertonic"], default="all")
+    parser.add_argument("--stage", choices=["all", "whisper", "translation", "supertonic", "onnx"], default="all")
     parser.add_argument("--llama-root", type=Path, default=ROOT / "build/translation-runtime/llama.cpp")
+    parser.add_argument("--sherpa-root", type=Path, default=ROOT / "build/desktop-dependencies/sherpa-onnx")
     parser.add_argument("--ort-root", type=Path, default=os.environ.get("HEARTH_ORT_ROOT"))
     parser.add_argument("--build-dir", type=Path, default=ROOT / "build/desktop-native")
     parser.add_argument("--output", type=Path)
@@ -97,6 +215,15 @@ def main():
     output.mkdir(parents=True, exist_ok=True)
     args.build_dir.mkdir(parents=True, exist_ok=True)
     stages = ["whisper", "translation", "supertonic"] if args.stage == "all" else [args.stage]
+    if args.stage == "all":
+        if (system, arch) == ("macos", "arm64"):
+            stages.append("onnx")
+        else:
+            print(f"Skipping Qwen3-ASR (onnx): built only for macos-arm64; host is {target}", file=sys.stderr)
+    if "onnx" in stages and system != "macos":
+        parser.error("The Qwen3-ASR (sherpa-onnx) stage is built for macOS arm64 only")
+    if "onnx" in stages and arch != "arm64":
+        parser.error("The Qwen3-ASR (sherpa-onnx) stage is built for macOS arm64 only")
     if args.metal and system != "macos": parser.error("Metal requires macOS")
     before = snapshot()
     subprocess.run([sys.executable, str(ROOT / "scripts/whisper/source-pin.py"),
@@ -107,8 +234,17 @@ def main():
         if pin != LLAMA_PIN: raise RuntimeError(f"llama.cpp must be checked out at {LLAMA_PIN}, found {pin}")
         changes = subprocess.check_output(["git", "-C", str(args.llama_root), "status", "--porcelain"], text=True)
         if changes.strip(): raise RuntimeError("Desktop llama.cpp source checkout has local changes")
-    if "supertonic" in stages and (not args.ort_root or not args.ort_root.is_dir()):
+    if ("supertonic" in stages or "onnx" in stages) and (not args.ort_root or not args.ort_root.is_dir()):
         parser.error("--ort-root/HEARTH_ORT_ROOT must name the official extracted ONNX Runtime 1.20.1 host SDK")
+    sherpa = None
+    sherpa_version = None
+    sherpa_tree = None
+    sherpa_source_tree = None
+    if "onnx" in stages:
+        sherpa, sherpa_version = sherpa_install(args.sherpa_root.resolve(), args.ort_root.resolve(),
+                                                args.build_dir.resolve() / target / "onnx", args.jobs)
+        sherpa_tree = subprocess.check_output(["git", "-C", str(args.sherpa_root), "rev-parse", "HEAD^{tree}"], text=True).strip()
+        sherpa_source_tree = source_tree_sha(args.sherpa_root.resolve())
     source = ROOT / "hearth-tts-supertonic/src/main/cpp/voice/supertonic.cpp"
     original = source.read_text(encoding="utf-8")
     old = 'for(int i=0;i<4;++i)checked(api()->CreateSession(env,(dir+"/"+names[i]).c_str(),options,&sessions[i]));'
@@ -134,11 +270,20 @@ def main():
                    f"-DHEARTH_TRANSLATION_JNI_SOURCE={translation_jni}",
                    f"-DHEARTH_DESKTOP_METAL={'ON' if args.metal else 'OFF'}"]
         if args.ort_root: command.append(f"-DHEARTH_ORT_ROOT={args.ort_root.resolve()}")
-        if system == "macos": command.append("-DCMAKE_OSX_DEPLOYMENT_TARGET=13.0")
+        if stage == "onnx": command.append(f"-DHEARTH_SHERPA_ROOT={sherpa}")
+        if system == "macos": command.append(f"-DCMAKE_OSX_DEPLOYMENT_TARGET={'13.3' if stage == 'onnx' else '13.0'}")
         subprocess.run(command, check=True)
         subprocess.run(["cmake", "--build", str(cache), "--config", "Release", "--parallel", str(args.jobs)], check=True)
         subprocess.run(["cmake", "--install", str(cache), "--config", "Release", "--component", "hearth-desktop", "--prefix", str(output)], check=True)
-    if "supertonic" in stages:
+        if stage == "onnx":
+            installed = output / "libhearth_desktop_qwen3_asr.dylib"
+            if not installed.is_file():
+                raise RuntimeError("The Qwen3-ASR dylib was not staged into the bundle")
+            require_exports(installed, "_Java_com_sal7one_common_1jni_desktop_DesktopQwenNative_", 7)
+            linked = subprocess.check_output(["otool", "-L", str(installed)], text=True)
+            if "@rpath/libonnxruntime.1.20.1.dylib" not in linked:
+                raise RuntimeError("The Qwen3-ASR dylib does not link the staged ONNX Runtime 1.20.1")
+    if "supertonic" in stages or "onnx" in stages:
         ort = args.ort_root.resolve()
         if system == "macos":
             # JAR resources cannot preserve symlinks. The linked versioned install name is sufficient.
@@ -148,14 +293,30 @@ def main():
         else: shutil.copyfile(ort / "lib/libonnxruntime.so", output / "libonnxruntime.so")
         for name, dest in [("LICENSE", "ONNX-LICENSE.txt"), ("ThirdPartyNotices.txt", "ONNX-ThirdPartyNotices.txt")]:
             shutil.copyfile(ort / name, output / dest)
+    if "onnx" in stages:
+        shutil.copyfile(args.sherpa_root / "LICENSE", output / "Sherpa-LICENSE.txt")
+        notices = ROOT / "common-jni/src/main/assets/licenses/speech"
+        aggregate = []
+        for name in SHERPA_NOTICES:
+            aggregate.append(f"===== {name} =====\n{(notices / name).read_text(encoding='utf-8').rstrip()}\n")
+        (output / "Sherpa-Dependencies-NOTICES.txt").write_text("\n".join(aggregate), encoding="utf-8", newline="\n")
     shutil.copyfile(ROOT / "common-jni/src/main/cpp/whisper/upstream/LICENSE", output / "Whisper-LICENSE.txt")
     if "translation" in stages: shutil.copyfile(args.llama_root / "LICENSE", output / "llama-LICENSE.txt")
     shutil.copyfile(ROOT / "hearth-tts-supertonic/src/main/assets/licenses/voice/Supertonic-MIT.txt", output / "Supertonic-LICENSE.txt")
     if before != snapshot(): raise RuntimeError("Desktop native sources changed during compilation; rebuild the complete bundle")
     files = {p.name: sha(p) for p in sorted(output.iterdir()) if p.is_file() and p.name != "manifest.json"}
+    upstreams = {"whisperSourceTreeSha256": WHISPER_PIN, "llamaRevision": LLAMA_PIN, "onnxRuntime": "1.20.1"}
+    if "onnx" in stages:
+        upstreams.update({
+            "sherpaRevision": SHERPA_PIN,
+            "sherpaTreeRevision": sherpa_tree,
+            "sherpaSourceTreeSha256": sherpa_source_tree,
+            "sherpaInputsSha256": hashlib.sha256(json.dumps(SHERPA_INPUTS, sort_keys=True, separators=(",", ":")).encode()).hexdigest(),
+            "sherpaVersion": sherpa_version,
+        })
     manifest = {"schemaVersion": 1, "platform": target, "files": files, "sources": before,
                 "sourceSetSha256": hashlib.sha256(json.dumps(before, sort_keys=True, separators=(",", ":")).encode()).hexdigest(),
-                "upstreams": {"whisperSourceTreeSha256": WHISPER_PIN, "llamaRevision": LLAMA_PIN, "onnxRuntime": "1.20.1"},
+                "upstreams": upstreams,
                 "backends": ["cpu", "metal"] if args.metal else ["cpu"],
                 "compiledMetalSupport": args.metal, "metalSelectionRequiresUsableDevice": True,
                 "modelWeightsIncluded": False}
