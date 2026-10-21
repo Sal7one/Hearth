@@ -1,5 +1,6 @@
 package com.sal7one.hearth.desktop.runtime
 
+import com.sal7one.common_jni.desktop.DesktopBackendSpeechNative
 import com.sal7one.common_jni.desktop.DesktopQwenNative
 import com.sal7one.common_jni.translation.Ct2Native
 import com.sal7one.common_jni.desktop.DesktopWhisperNative
@@ -131,5 +132,21 @@ class DesktopNativeOwnershipTest {
         assertTrue(failure.message.orEmpty().isNotBlank())
         Ct2Native.cancel(0L)
         Ct2Native.destroy(0L)
+    }
+
+    @Test
+    fun backendBridgeRejectsUnknownHandlesAndMissingLibraries() {
+        assumeTrue("Speech backend bridge is staged for this host", runCatching { DesktopBackendSpeechNative.protocolVersion() == 1 }.getOrDefault(false))
+        assertFailsWith<IllegalStateException> { DesktopBackendSpeechNative.transcribe(0L, floatArrayOf()) }
+        assertFailsWith<IllegalStateException> { DesktopBackendSpeechNative.executionInfo(0L) }
+        val failure = assertFailsWith<IllegalStateException> {
+            DesktopBackendSpeechNative.create(
+                "/nonexistent/libhearth_transcribepsy.dylib".toByteArray(), "transcribepsy".toByteArray(),
+                "/nonexistent/model.gguf".toByteArray(), "en".toByteArray(), 2, 3, 15000, 600, -45f,
+            )
+        }
+        assertContains(failure.message.orEmpty(), "Could not load speech backend")
+        DesktopBackendSpeechNative.cancel(0L)
+        DesktopBackendSpeechNative.destroy(0L)
     }
 }

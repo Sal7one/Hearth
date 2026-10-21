@@ -22,6 +22,7 @@ fun defaultDataDirectory(): Path {
 internal object DesktopNativeLibraries {
     private var dataDirectory = defaultDataDirectory()
     private val loaded = mutableSetOf<String>()
+    private val locations = mutableMapOf<String, Path>()
     val platform: String get() {
         val os = System.getProperty("os.name").lowercase().let { if (it.startsWith("windows")) "windows" else if (it.contains("mac")) "macos" else "linux" }
         val arch = System.getProperty("os.arch").lowercase().let { if (it in setOf("aarch64", "arm64")) "arm64" else if (it in setOf("amd64", "x86_64")) "x64" else it }
@@ -67,7 +68,21 @@ internal object DesktopNativeLibraries {
         val dependencies = nativeDependencyOrder(name, platform, files.keys)
         verifiedNativeDependencies(folder, dependencies, files).forEach { dependency -> System.load(dependency.toAbsolutePath().toString()) }
         System.load(folder.resolve(filename).toAbsolutePath().toString())
+        locations[name] = folder.resolve(filename).toAbsolutePath()
         loaded += name
+    }
+    @Synchronized fun libraryPath(name: String): Path {
+        val cached = locations[name]
+        if (cached != null && Files.isRegularFile(cached, LinkOption.NOFOLLOW_LINKS)) {
+            load(name)
+            return cached
+        }
+        if (cached != null) {
+            loaded.remove(name)
+            locations.remove(name)
+        }
+        load(name)
+        return locations[name] ?: error("Desktop native library path is unavailable: $name")
     }
 }
 

@@ -1,5 +1,6 @@
 package com.sal7one.hearth.desktop.runtime
 
+import com.sal7one.common_jni.desktop.DesktopBackendSpeechNative
 import com.sal7one.common_jni.desktop.DesktopQwenNative
 import com.sal7one.common_jni.desktop.DesktopWhisperNative
 import com.sal7one.common_jni.translation.Ct2Native
@@ -46,6 +47,8 @@ class DesktopEngines(
     override fun capabilities(): List<EngineDescriptor> {
         fun local(id: String, name: String, stage: PipelineStage, library: String, languages: Set<String> = emptySet(), streaming: Boolean = false): EngineDescriptor {
             var error = DesktopNativeLibraries.readiness(library)
+            val backendLibrary = when (id) { "transcribepsy-local" -> "hearth_transcribepsy"; else -> null }
+            if (backendLibrary != null && error == null) error = DesktopNativeLibraries.readiness(backendLibrary)
             var acceleration = setOf("cpu")
             if (error == null) {
                 runCatching {
@@ -66,6 +69,10 @@ class DesktopEngines(
                             check(Ct2Native.protocolVersion() == DesktopCt2TranslationEngine.PROTOCOL_VERSION) { "Desktop CTranslate2 protocol mismatch; rebuild the native bundle" }
                             false
                         }
+                        "transcribepsy-local" -> {
+                            check(DesktopBackendSpeechNative.protocolVersion() == DesktopBackendSpeechEngine.PROTOCOL_VERSION) { "Desktop speech backend protocol mismatch; rebuild the native bundle" }
+                            false
+                        }
                         else -> false
                     }
                     if (metal) acceleration = setOf("cpu", "metal")
@@ -77,6 +84,7 @@ class DesktopEngines(
         return listOf(
             local("whisper-local", "Whisper.cpp", PipelineStage.STT, "hearth_desktop_whisper", streaming = true),
             local(QwenSpeechModel.ENGINE_ID, "Qwen3-ASR 0.6B", PipelineStage.STT, QwenSpeechModel.LIBRARY, QwenSpeechModel.languages),
+            local("transcribepsy-local", "TranscribePsy 250M", PipelineStage.STT, "hearth_desktop_backend_speech", TRANSCRIBEPSY_LANGUAGES),
             local("llama-translation-local", "Local GGUF translation", PipelineStage.TRANSLATION, "transiber_translation"),
             local("marian-local", "CTranslate2 · Marian/OPUS", PipelineStage.TRANSLATION, "hearth_desktop_ct2"),
             local("supertonic-local", "Supertonic 3", PipelineStage.TTS, "hearth_supertonic_jni", SupertonicCatalog.languages),
@@ -93,7 +101,7 @@ class DesktopEngines(
 
     override suspend fun recognize(input: PipelineInput, selection: EngineSelection, sourceLanguage: String, emit: suspend (SpeechSegment) -> Unit) {
         check(!closed.get()) { "Desktop engines are closed" }
-        require(selection.engineId in setOf("whisper-local", QwenSpeechModel.ENGINE_ID, "openai-stt")) { "Unknown speech engine: ${selection.engineId}" }
+        require(selection.engineId in setOf("whisper-local", QwenSpeechModel.ENGINE_ID, "transcribepsy-local", "openai-stt")) { "Unknown speech engine: ${selection.engineId}" }
         var decoded: Path? = null
         val frames: Flow<PcmFrame> = when (input) {
             is PipelineInput.AudioStream -> input.frames
@@ -108,6 +116,7 @@ class DesktopEngines(
         }
         val handle = AtomicLong()
         val qwenEngine = AtomicReference<DesktopQwenSpeechEngine?>(null)
+        val backendEngine = AtomicReference<DesktopBackendSpeechEngine?>(null)
         var offsetSamples = 0L
         var sequence = 0
         var recognized = false
@@ -135,10 +144,22 @@ class DesktopEngines(
                         error("Qwen3-ASR engine was already published")
                     }
                 }
+            } else if (selection.engineId == "transcribepsy-local") {
+                val path = verifiedModel(selection)
+                val owner = currentCoroutineContext()
+                joinedBlocking({ backendEngine.get()?.cancel() }) {
+                    owner.ensureActive()
+                    val opened = DesktopBackendSpeechEngine.open("hearth_transcribepsy", "transcribepsy", path, sourceLanguage, threads(selection))
+                    if (!backendEngine.compareAndSet(null, opened)) {
+                        opened.close()
+                        error("Speech backend engine was already published")
+                    }
+                }
             }
             val live = input is PipelineInput.AudioStream
+            val spokenWindow = selection.engineId == QwenSpeechModel.ENGINE_ID || selection.engineId == "transcribepsy-local"
             val windowMs = selection.options["windowMs"]?.toIntOrNull()
-                ?: if (selection.engineId == QwenSpeechModel.ENGINE_ID) 15000 else if (live) 4000 else 20000
+                ?: if (spokenWindow) 15000 else if (live) 4000 else 20000
             require(windowMs in 1000..30000) { "Speech window must be 1000–30000 ms" }
             val windowBytes = windowMs * 32
             val buffered = ByteArrayOutputStream(windowBytes)
@@ -163,6 +184,10 @@ class DesktopEngines(
                         val engine = checkNotNull(qwenEngine.get()) { "Qwen3-ASR is not open" }
                         text = joinedBlocking({ engine.cancel() }) { owner.ensureActive(); engine.transcribe(samples) }
                         language = QwenSpeechModel.detected(engine.language()) ?: language
+                    } else if (selection.engineId == "transcribepsy-local") {
+                        val engine = checkNotNull(backendEngine.get()) { "Speech backend is not open" }
+                        text = joinedBlocking({ engine.cancel() }) { owner.ensureActive(); engine.transcribe(samples) }
+                        language = engine.language().ifBlank { language }
                     } else {
                         text = joinedBlocking({ DesktopWhisperNative.cancel(handle.get()) }) {
                             owner.ensureActive(); DesktopWhisperNative.transcribe(handle.get(), samples).toString(Charsets.UTF_8).trim()
@@ -200,6 +225,7 @@ class DesktopEngines(
                 withContext(NonCancellable + Dispatchers.IO) {
                     try {
                         qwenEngine.getAndSet(null)?.close()
+                        backendEngine.getAndSet(null)?.close()
                     } finally {
                         handle.getAndSet(0).takeIf { it != 0L }?.let(DesktopWhisperNative::destroy)
                     }
@@ -367,3 +393,5 @@ class DesktopEngines(
 }
 
 internal fun outputFile(directory: Path): Path = directory.resolve("generated-audio").also { Files.createDirectories(it) }.resolve("${UUID.randomUUID()}.wav")
+
+private val TRANSCRIBEPSY_LANGUAGES = setOf("en", "nl", "fr", "de", "it", "pl", "pt", "es")

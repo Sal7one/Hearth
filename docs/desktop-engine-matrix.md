@@ -14,13 +14,13 @@ Last updated when Qwen3-ASR passed its real-speech smoke on macOS arm64.
 | Supertonic 3 (TTS) | 1 | `hearth_supertonic_jni` (ONNX Runtime) | capability + synthesis path via `DesktopSupertonicRealSmokeTest` (needs model dir) |
 | GGUF translation | 14 | `libtransiber_translation` (llama.cpp) | MiLMMT-46 proven EN→AR in `DesktopFullPipelineRealSmokeTest` |
 | CTranslate2 translation | 3 downloadable cards (7 pinned specs) | `hearth_desktop_ct2` (static CTranslate2 4.8.3 + SentencePiece 0.2.0 + Rust BPE) | QuickMT EN→AR real translation, `DesktopCt2RealSmokeTest`: `يفتح المتحف في الساعة التاسعة صباحًا.` (111 ms) |
+| TranscribePsy (ggml/parakeet) | 1 | `hearth_desktop_backend_speech` + `libhearth_transcribepsy.dylib` (static parakeet/ggml) | real speech → text, `DesktopTranscribePsyRealSmokeTest`: exact 4.65 s transcript, 75 ms warm decode |
 
 ## Missing on desktop
 
 | Family | Models | Android implementation | What a desktop port needs |
 | --- | --- | --- | --- |
 | ONNX speech — Nemotron | 1 | `speech/backends/nemotron_backend.cpp` | compile `IEngine` framework + backend for macOS, ORT link, JNI surface, Kotlin binding, catalog |
-| TranscribePsy (ggml/parakeet, not ONNX) | 1 | `speech/backends/transcribepsy_backend.cpp` | build parakeet.cpp, JNI surface, Kotlin binding, catalog |
 | sherpa-onnx speech — Moonshine ×9, Omnilingual, Phonon | 11 | `qwen_backend.cpp` already exports `hearth_moonshine_backend_v1`, `hearth_omnilingual_backend_v1` and `hearth_phonon_backend_v1` | the Qwen build already produced the static sherpa library; each family still needs its own model pins, jni binding, engine wiring and smoke |
 | Vosk | 6 | `common-jni/src/main/cpp/vosk` | build Vosk/Kaldi for macOS + Windows; no prebuilt exists in this repo |
 | CTranslate2 pair coverage | 3 desktop cards: QuickMT EN↔AR, SMaLL-100 (100 languages) | `common-jni/src/main/cpp/translation/ct2` + `Ct2Catalog.kt` | four Jisr 50M specs are pinned but `downloadEnabled=false`, and the requested EN↔DE/ES/FR/RU/ZH pair models are not present or pinned in this repo |
@@ -37,9 +37,10 @@ Last updated when Qwen3-ASR passed its real-speech smoke on macOS arm64.
   `speech/backends/qwen_backend.cpp` sherpa adapter.
 - The Android backend needed no source change: the desktop JNI wraps its C ABI with
   the same lease/retire handle discipline as Whisper.
-- The remaining external SDKs are still unbuilt: NeMo-Speech.cpp (Nemotron) and
-  parakeet.cpp (TranscribePsy). Moonshine, Omnilingual and Phonon use sherpa-onnx
-  too, so the static library built for Qwen is reusable.
+- parakeet.cpp (TranscribePsy) and NeMo-Speech.cpp (Nemotron) now have pinned host
+  builds and real transcripts. Both are wrapped by one lease-based desktop backend
+  bridge that dlopens the hash-verified backend dylib. Moonshine, Omnilingual and
+  Phonon use sherpa-onnx too, so the static library built for Qwen is reusable.
 
 ## Port checklist for one external-SDK family
 

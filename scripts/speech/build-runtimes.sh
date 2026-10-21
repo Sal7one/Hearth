@@ -40,6 +40,10 @@ NINJA_BIN="${NINJA:-$(command -v ninja || true)}"
 if [ -z "$NINJA_BIN" ]; then NINJA_BIN="$HOME/Library/Android/sdk/cmake/3.22.1/bin/ninja"; fi
 test -x "$NINJA_BIN"
 FLAGS=(-DCMAKE_MAKE_PROGRAM="$NINJA_BIN" -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_POLICY_VERSION_MINIMUM=3.10)
+if [ "$PLATFORM" = host ] && [ "$(uname -s)" = Darwin ]; then
+  # The desktop app supports macOS 13.3; a host SDK default would emit minos 26.
+  FLAGS+=(-DCMAKE_OSX_DEPLOYMENT_TARGET=13.0)
+fi
 if [ "$PLATFORM" = android ]; then
   case "$(uname -s)" in Darwin) NDK_HOST=darwin-x86_64;; Linux) NDK_HOST=linux-x86_64;; *) echo 'Unsupported NDK host' >&2; exit 2;; esac
   NDK_PATH="${ANDROID_NDK_HOME:-$HOME/Library/Android/sdk/ndk/27.0.12077973}"

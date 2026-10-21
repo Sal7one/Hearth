@@ -15,6 +15,7 @@ do not have. Keep this file honest: do not add a row you have not run.
 | Qwen3-ASR alone | `:desktop-runtime:test --tests "*DesktopQwenRealSmokeTest*"` | transcript exact, 406 ms decode for 4.65 s audio (RTF 0.081), model load 2.0 s |
 | Qwen3-ASR through the desktop engine | same test | `COMPLETED`, one final segment, 5550 ms including model verification/load |
 | CTranslate2 QuickMT EN→AR | `:desktop-runtime:test --tests "*DesktopCt2RealSmokeTest*"` | `يفتح المتحف في الساعة التاسعة صباحًا.` (111 ms native, 4771 ms engine path) |
+| TranscribePsy 250M EU | `:desktop-runtime:test --tests "*DesktopTranscribePsyRealSmokeTest*"` | `The museum opens at 9 in the morning. Please bring your ticket to the East Entrance.` (75 ms warm decode, 4561 ms engine path) |
 | Speech + voice | `:desktop-runtime:test --tests "*DesktopSpeechVoiceRealSmokeTest*"` | `COMPLETED segments=1 audio=1` |
 | Speech + translation + voice | `:desktop-runtime:test --tests "*DesktopFullPipelineRealSmokeTest*"` | `COMPLETED ms=6182 segments=1 audio=1` |
 
@@ -49,6 +50,21 @@ HEARTH_SMOKE_WAV="$PWD/build/smoke/hello.wav" \
 Expected: `status=COMPLETED`, one caption segment, one audio artifact, and an
 Arabic translation of the English line. A Mac without an installed English system
 voice fails the test with that reason rather than silently skipping the stage.
+
+### Reproducing the TranscribePsy smoke
+
+```bash
+HEARTH_BUILD_JOBS=8 python3 scripts/desktop/build-native.py --stage backend --speech-backends transcribepsy
+# put the pinned transcribepsy-250m-eu-sub.gguf in build/smoke/transcribepsy/
+HEARTH_TRANSCRIBEPSY_SMOKE=1 \
+HEARTH_SMOKE_TRANSCRIBEPSY="$PWD/build/smoke/transcribepsy/transcribepsy-250m-eu-sub.gguf" \
+HEARTH_SMOKE_WAV="$PWD/build/smoke/hello.wav" \
+./gradlew -PhearthDesktopOnly=true :desktop-runtime:test --tests "*DesktopTranscribePsyRealSmokeTest*"
+```
+
+The host speech recipe is pinned to the reviewed parakeet revision and now emits
+macOS 13.0 dylibs. The bridge dlopens the backend by its hash-verified absolute path;
+the backend keeps parakeet and ggml static inside.
 
 ### Reproducing the CTranslate2 smoke
 

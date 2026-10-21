@@ -1586,6 +1586,38 @@
           }
         ]
       }
+    },
+    {
+      "id": "transcribepsy-250m-eu-sub-q8",
+      "name": "TranscribePsy 250M · EU (q8)",
+      "family": "TranscribePsy",
+      "stage": "STT",
+      "engineId": "transcribepsy-local",
+      "languages": [
+        "en",
+        "nl",
+        "fr",
+        "de",
+        "it",
+        "pl",
+        "pt",
+        "es"
+      ],
+      "source": "https://huggingface.co/qvac/TranscribePsy-250M-EU-sub-gguf",
+      "license": "Apache-2.0",
+      "note": "Pinned TranscribePsy 250M EU q8 GGUF; CPU-only, macOS Apple silicon. The single GGUF hash is verified before loading.",
+      "options": {},
+      "platforms": [
+        "macos-arm64"
+      ],
+      "artifacts": [
+        {
+          "filename": "transcribepsy-250m-eu-sub.gguf",
+          "bytes": 304879584,
+          "sha256": "a93ef324d38e410b5e49389db95d06364eddbb890b74a69f311e482d2fda6f4b",
+          "url": "https://huggingface.co/qvac/TranscribePsy-250M-EU-sub-gguf/resolve/92460e0a8e7dc20f2fb126198bdd9eebb9ba2dc7/transcribepsy-250m-eu-sub.gguf"
+        }
+      ]
     }
   ]
 }

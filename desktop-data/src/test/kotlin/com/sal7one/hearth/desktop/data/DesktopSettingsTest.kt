@@ -56,10 +56,11 @@ class DesktopSettingsTest {
             val library = DesktopModelLibrary(directory)
             val macosArm = desktopPlatform() == "macos-arm64"
             val qwen = if (macosArm) 1 else 0
+            val transcribepsy = if (macosArm) 1 else 0
             val ct2 = if (macosArm) 3 else 0
             val byStage = library.catalog.groupingBy { it.stage.name }.eachCount()
-            assertEquals(mapOf("STT" to 27 + qwen, "TRANSLATION" to 14 + ct2, "TTS" to 1), byStage)
-            assertEquals(if (qwen == 1) 2 else 1, library.catalog.filter { it.stage.name == "STT" }.map { it.family }.distinct().size)
+            assertEquals(mapOf("STT" to 27 + qwen + transcribepsy, "TRANSLATION" to 14 + ct2, "TTS" to 1), byStage)
+            assertEquals(if (qwen + transcribepsy > 0) 3 else 1, library.catalog.filter { it.stage.name == "STT" }.map { it.family }.distinct().size)
             if (qwen == 1) {
                 val card = library.catalog.single { it.id == "qwen3-asr-0.6b" }
                 assertEquals("qwen3-asr-local", card.engineId)
@@ -69,6 +70,13 @@ class DesktopSettingsTest {
                 assertEquals(6, card.archive?.files?.size)
                 assertTrue(card.archive!!.files.all { it.sha256.length == 64 && it.bytes > 0 })
                 assertEquals("393f8a14e2f5fb96746aaab342997a40641001fbd5bf9592a080a8329178ee96", card.artifacts.single().sha256)
+            }
+            if (transcribepsy == 1) {
+                val card = library.catalog.single { it.id == "transcribepsy-250m-eu-sub-q8" }
+                assertEquals("transcribepsy-local", card.engineId)
+                assertEquals(304_879_584L, card.bytes)
+                assertEquals("a93ef324d38e410b5e49389db95d06364eddbb890b74a69f311e482d2fda6f4b", card.artifacts.single().sha256)
+                assertEquals(null, card.archive)
             }
             // Every shipped llama translator must use a prompt family the desktop engine implements,
             // and the option the engine reads must be the catalog's own family, not a fallback.

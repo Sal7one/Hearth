@@ -24,6 +24,8 @@ WHISPER_PIN = "5f3464bc06c04426d66eae69e5e510d32fb76621b524c42ab25b4294f035a920"
 SHERPA_PIN = "210f340bcfdfd5b9ad6b24245e77a934d6c28f1b"
 CT2_PIN = "8c8cab2a954810216a45d65c1b8d56839c846e5b"
 SENTENCEPIECE_PIN = "17d7580d6407802f85855d2cc9190634e2c95624"
+TRANSCRIBEPSY_PIN = "364ec36130dc87d2cd46e596598268a6e3313751"
+NEMO_PIN = "ffa38cb2408f1e832a36d46fef5e3e1e80d07e6c"
 # Every dependency the pinned sherpa-onnx CMake fetches is declared with this URL_HASH.
 # The build fetches them at build time; the digest of this map is recorded in the bundle.
 SHERPA_INPUTS = {
@@ -108,7 +110,11 @@ def snapshot():
                  "common-jni/src/main/cpp/translation/bpe-rust/Cargo.toml",
                  "common-jni/src/main/cpp/translation/bpe-rust/Cargo.lock",
                  "scripts/translation/ct2/CMakeLists.txt",
-                 "scripts/translation/ct2/build-runtime.sh"]:
+                 "scripts/translation/ct2/build-runtime.sh",
+                 "common-jni/src/main/cpp/speech/backend_versions.h",
+                 "scripts/speech/build-runtimes.sh",
+                 "scripts/speech/transcribepsy.cmake",
+                 "scripts/speech/nemo-inject.cmake"]:
         paths.append(ROOT / name)
     paths.extend((ROOT / "hearth-tts-supertonic/src/main/cpp/voice").glob("*.cpp"))
     paths.append(ROOT / "hearth-tts-supertonic/src/main/cpp/voice/supertonic.h")
@@ -244,9 +250,65 @@ def ct2_install(build_dir, output, jobs):
     return sha(receipt) if receipt.is_file() else ""
 
 
+def speech_backend_install(names, output, jobs):
+    """Build the pinned speech backends with the host recipe and stage their dylibs."""
+    environment = os.environ.copy()
+    environment["HEARTH_BUILD_JOBS"] = str(jobs)
+    checkouts = {"transcribepsy": ("transcribepsy", TRANSCRIBEPSY_PIN), "nemotron": ("nemo", NEMO_PIN)}
+    revisions = {}
+    source_root = ROOT / "build/speech-runtimes/src"
+    for name in names:
+        subprocess.run(["bash", str(ROOT / "scripts/speech/build-runtimes.sh"), name, "host"], check=True, env=environment)
+        directory, pin = checkouts[name]
+        head = subprocess.check_output(["git", "-C", str(source_root / directory), "rev-parse", "HEAD"], text=True).strip()
+        if head != pin:
+            raise RuntimeError(f"{directory} must be checked out at {pin}, found {head}")
+        dylib = ROOT / "build/speech-runtimes/host/lib" / f"libhearth_{name}.dylib"
+        if not dylib.is_file():
+            raise RuntimeError(f"The host speech build did not produce {dylib.name}")
+        require_exports(dylib, "_hearth_speech_backend_v1", 1)
+        linked = subprocess.check_output(["otool", "-L", str(dylib)], text=True).splitlines()[1:]
+        for line in linked:
+            entry = line.strip().split(" ")[0] if line.strip() else ""
+            if entry.startswith("/") and not (entry.startswith("/usr/lib/") or entry.startswith("/System/Library/")):
+                raise RuntimeError(f"{dylib.name} must not depend on a non-system dylib: {entry}")
+        shutil.copyfile(dylib, output / dylib.name)
+        if name == "transcribepsy":
+            revisions["transcribepsyRevision"] = TRANSCRIBEPSY_PIN
+        else:
+            revisions["nemoRevision"] = NEMO_PIN
+            revisions["sentencepieceRevision"] = SENTENCEPIECE_PIN
+    if "nemotron" in names:
+        head = subprocess.check_output(["git", "-C", str(source_root / "sentencepiece"), "rev-parse", "HEAD"], text=True).strip()
+        if head != SENTENCEPIECE_PIN:
+            raise RuntimeError(f"sentencepiece must be checked out at {SENTENCEPIECE_PIN}, found {head}")
+    notices = []
+    candidates = []
+    if "transcribepsy" in names:
+        candidates += [
+            (source_root / "transcribepsy/LICENSE", "TranscribePsy/parakeet LICENSE (Apache-2.0)"),
+            (source_root / "transcribepsy/NOTICE", "TranscribePsy NOTICE"),
+            (source_root / "transcribepsy/ggml/LICENSE", "TranscribePsy ggml LICENSE (MIT)"),
+        ]
+    if "nemotron" in names:
+        candidates += [
+            (source_root / "nemo/LICENSE", "NeMo-Speech.cpp LICENSE (Apache-2.0)"),
+            (source_root / "nemo/NOTICE", "NeMo-Speech.cpp NOTICE"),
+            (source_root / "nemo/THIRD_PARTY_NOTICES.md", "NeMo-Speech.cpp third-party notices"),
+            (source_root / "nemo/ggml/LICENSE", "NeMo-Speech.cpp ggml LICENSE (MIT)"),
+            (source_root / "sentencepiece/LICENSE", "SentencePiece LICENSE (Apache-2.0)"),
+        ]
+    for path, label in candidates:
+        if path.is_file():
+            notices.append(f"===== {label} =====\n{path.read_text(encoding='utf-8').rstrip()}\n")
+    (output / "Speech-Backends-NOTICES.txt").write_text("\n".join(notices), encoding="utf-8", newline="\n")
+    return revisions
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--stage", choices=["all", "whisper", "translation", "supertonic", "onnx", "ct2"], default="all")
+    parser.add_argument("--stage", choices=["all", "whisper", "translation", "supertonic", "onnx", "ct2", "backend"], default="all")
+    parser.add_argument("--speech-backends", default="transcribepsy", help="Comma-separated speech backends to stage (transcribepsy, nemotron)")
     parser.add_argument("--llama-root", type=Path, default=ROOT / "build/translation-runtime/llama.cpp")
     parser.add_argument("--sherpa-root", type=Path, default=ROOT / "build/desktop-dependencies/sherpa-onnx")
     parser.add_argument("--ort-root", type=Path, default=os.environ.get("HEARTH_ORT_ROOT"))
@@ -266,15 +328,22 @@ def main():
     stages = ["whisper", "translation", "supertonic"] if args.stage == "all" else [args.stage]
     if args.stage == "all":
         if (system, arch) == ("macos", "arm64"):
-            stages.extend(["onnx", "ct2"])
+            stages.extend(["onnx", "ct2", "backend"])
         else:
-            print(f"Skipping Qwen3-ASR (onnx) and CTranslate2 (ct2): built only for macos-arm64; host is {target}", file=sys.stderr)
+            print(f"Skipping Qwen3-ASR (onnx), CTranslate2 (ct2) and speech backends (backend): built only for macos-arm64; host is {target}", file=sys.stderr)
     if "onnx" in stages and system != "macos":
         parser.error("The Qwen3-ASR (sherpa-onnx) stage is built for macOS arm64 only")
     if "onnx" in stages and arch != "arm64":
         parser.error("The Qwen3-ASR (sherpa-onnx) stage is built for macOS arm64 only")
     if "ct2" in stages and (system, arch) != ("macos", "arm64"):
         parser.error("The CTranslate2 (ct2) stage is built for macOS arm64 only")
+    if "backend" in stages and (system, arch) != ("macos", "arm64"):
+        parser.error("The desktop speech backend stage is built for macOS arm64 only")
+    speech_backends = [value.strip() for value in args.speech_backends.split(",") if value.strip()]
+    if any(value not in ("transcribepsy", "nemotron") for value in speech_backends):
+        parser.error("--speech-backends accepts transcribepsy and/or nemotron")
+    if "backend" in stages and not speech_backends:
+        parser.error("--speech-backends must name at least one backend")
     if args.metal and system != "macos": parser.error("Metal requires macOS")
     before = snapshot()
     subprocess.run([sys.executable, str(ROOT / "scripts/whisper/source-pin.py"),
@@ -299,6 +368,9 @@ def main():
     ct2_sources = None
     if "ct2" in stages:
         ct2_sources = ct2_install(args.build_dir.resolve() / target / "ct2", output, args.jobs)
+    backend_revisions = None
+    if "backend" in stages:
+        backend_revisions = speech_backend_install(speech_backends, output, args.jobs)
     source = ROOT / "hearth-tts-supertonic/src/main/cpp/voice/supertonic.cpp"
     original = source.read_text(encoding="utf-8")
     old = 'for(int i=0;i<4;++i)checked(api()->CreateSession(env,(dir+"/"+names[i]).c_str(),options,&sessions[i]));'
@@ -329,6 +401,11 @@ def main():
         subprocess.run(command, check=True)
         subprocess.run(["cmake", "--build", str(cache), "--config", "Release", "--parallel", str(args.jobs)], check=True)
         subprocess.run(["cmake", "--install", str(cache), "--config", "Release", "--component", "hearth-desktop", "--prefix", str(output)], check=True)
+        if stage == "backend":
+            installed_backend = output / "libhearth_desktop_backend_speech.dylib"
+            if not installed_backend.is_file():
+                raise RuntimeError("The desktop speech backend bridge was not staged")
+            require_exports(installed_backend, "_Java_com_sal7one_common_1jni_desktop_DesktopBackendSpeechNative_", 7)
         if stage == "onnx":
             installed = output / "libhearth_desktop_qwen3_asr.dylib"
             if not installed.is_file():
@@ -374,6 +451,8 @@ def main():
             "sentencepieceRevision": SENTENCEPIECE_PIN,
             "ct2SourcesSha256": ct2_sources,
         })
+    if backend_revisions:
+        upstreams.update(backend_revisions)
     manifest = {"schemaVersion": 1, "platform": target, "files": files, "sources": before,
                 "sourceSetSha256": hashlib.sha256(json.dumps(before, sort_keys=True, separators=(",", ":")).encode()).hexdigest(),
                 "upstreams": upstreams,

@@ -156,7 +156,15 @@ def generate():
         archive=dict(format='tar.bz2', root='sherpa-onnx-qwen3-asr-0.6B-int8-2026-03-25',
             expandedBytes=sum(size for _, size, _ in qwen_files),
             files=[dict(path=path, bytes=size, sha256=digest) for path, size, digest in qwen_files])))
-    assert len(models) == 46, len(models)
+    transcribepsy = next(a for a in audit['artifacts'] if a['id'] == 'transcribepsy-250m-eu-sub-q8')
+    models.append(dict(id='transcribepsy-250m-eu-sub-q8', name='TranscribePsy 250M · EU (q8)', family='TranscribePsy',
+        stage='STT', engineId='transcribepsy-local',
+        languages=['en', 'nl', 'fr', 'de', 'it', 'pl', 'pt', 'es'],
+        source='https://huggingface.co/qvac/TranscribePsy-250M-EU-sub-gguf', license='Apache-2.0',
+        note='Pinned TranscribePsy 250M EU q8 GGUF; CPU-only, macOS Apple silicon. The single GGUF hash is verified before loading.',
+        options={}, platforms=['macos-arm64'],
+        artifacts=[dict(filename=transcribepsy['url'].rsplit('/', 1)[-1], bytes=transcribepsy['bytes'], sha256=transcribepsy['sha256'], url=transcribepsy['url'])]))
+    assert len(models) == 47, len(models)
     return json.dumps({'schemaVersion':1,'provenance':'Generated from existing Android pins, the audited Qwen3-ASR release archive, reviewed CT2 catalog pins and reviewed desktop engine pins; run scripts/desktop/generate-catalog.py --check','models':models},ensure_ascii=False,indent=2)+'\n'
 
 
