@@ -16,7 +16,6 @@ import com.sal7one.hearth.desktop.ui.DesktopScreen
 import com.sal7one.hearth.desktop.ui.components.Banner
 import com.sal7one.hearth.desktop.ui.components.BannerTone
 import com.sal7one.hearth.desktop.ui.components.HearthCard
-import com.sal7one.hearth.desktop.ui.components.KeyValueRow
 import com.sal7one.hearth.desktop.ui.components.PageHeader
 import com.sal7one.hearth.desktop.ui.screens.settings.SettingsSubnav
 import com.sal7one.hearth.desktop.ui.shell.PageScaffold
@@ -54,30 +53,8 @@ internal fun ConnectionsScreen(
                 }
             }
 
-            Column(Modifier.width(Space.sideColumn), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                HearthCard(padding = 16.dp) {
-                    Text(ConnectionsCopy.WHERE_KEYS, style = HearthType.h3.copy(fontSize = 14.sp), color = colors.text)
-                    Spacer(Modifier.height(4.dp))
-                    Text(ConnectionsCopy.WHERE_KEYS_DETAIL, style = HearthType.small, color = colors.muted)
-                    Spacer(Modifier.height(10.dp))
-                    KeyValueRow(ConnectionsCopy.STORED, "OS store")
-                    KeyValueRow(ConnectionsCopy.SHOWN, "Only on reveal")
-                    KeyValueRow(ConnectionsCopy.EXPORTED, "Never")
-                }
-                HearthCard(padding = 16.dp) {
-                    Text(ConnectionsCopy.ENV_TITLE, style = HearthType.h3.copy(fontSize = 14.sp), color = colors.text)
-                    Spacer(Modifier.height(4.dp))
-                    Text(ConnectionsCopy.ENV_DETAIL, style = HearthType.small, color = colors.muted)
-                    Spacer(Modifier.height(10.dp))
-                    Banner("env:OPENAI_API_KEY", tone = BannerTone.Neutral)
-                    Spacer(Modifier.height(8.dp))
-                    Text(ConnectionsCopy.ENV_NOTE, style = HearthType.small, color = colors.muted)
-                }
-                HearthCard(padding = 16.dp) {
-                    Text(ConnectionsCopy.NEVER, style = HearthType.h3.copy(fontSize = 14.sp), color = colors.text)
-                    Spacer(Modifier.height(4.dp))
-                    Text(ConnectionsCopy.NEVER_DETAIL, style = HearthType.small, color = colors.muted)
-                }
+            Column(Modifier.width(Space.sideColumn)) {
+                ConnectionsSidebar()
             }
         }
     }
