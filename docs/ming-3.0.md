@@ -111,6 +111,21 @@ voices → Self-hosted → Save & check voices** in Hearth. The existing capabil
 check supplies the model, languages and voice IDs. Requests remain bounded at
 300 characters and complete PCM16 WAV output; longer articles are split by the client.
 
+### Desktop app
+
+The desktop app exposes Ming TTS as the self-hosted **`ming-tts`** provider, not a
+local dylib. Set the full `/speech` endpoint (default
+`http://127.0.0.1:8787/speech`), the exact model id
+(`inclusionAI/Ming-3.0-tts-0.5B` or `inclusionAI/Ming-3.0-tts-tiny`) and the
+`HEARTH_VOICE_API_KEY` credential. Requests are capped at 300 characters; published
+languages are zh/en/de/es/fr/ko/ja (no Arabic) and the voice presets are US_Emma,
+US_James, US_Stella, UK_George and UK_Charlotte. `DesktopMingTtsTest` exercises the
+exact contract with a loopback mock; a real CUDA server is not run in CI.
+
+The upstream `fusor-rs/ming-wasm` project has a **desktop-only** native CLI for
+macOS arm64 (experimental v0.1, 850 MB bundle, ~2 GB memory, phones unmeasured).
+There is no Android runtime for it; Android uses the hosted bridge above.
+
 ## ASR Tiny: direct connection
 
 Follow the pinned [official ASR setup](https://github.com/inclusionAI/Ming-3.0-asr)

@@ -112,6 +112,9 @@ class DesktopEngines(
                 requiresCredential = true, defaultEndpoint = "https://api.openai.com/v1/chat/completions", defaultModel = "gpt-4.1-mini"),
             EngineDescriptor("openai-tts", "OpenAI-compatible speech", PipelineStage.TTS, EngineKind.CLOUD,
                 requiresCredential = true, defaultEndpoint = "https://api.openai.com/v1/audio/speech", defaultModel = "gpt-4o-mini-tts"),
+            EngineDescriptor("ming-tts", "Ming-3.0 TTS (self-hosted)", PipelineStage.TTS, EngineKind.CLOUD,
+                languages = MING_LANGUAGES, requiresCredential = true,
+                defaultEndpoint = "http://127.0.0.1:8787/speech", defaultModel = "inclusionAI/Ming-3.0-tts-0.5B"),
             EngineDescriptor("system-tts", "Installed system voices", PipelineStage.TTS, EngineKind.SYSTEM,
                 available = DesktopSystemSpeech.available, unavailableReason = if (DesktopSystemSpeech.available) null else "System speech is available on Windows and macOS"),
         )
@@ -400,6 +403,7 @@ class DesktopEngines(
         check(!closed.get()) { "Desktop engines are closed" }
         require(text.isNotBlank()) { "Read aloud needs text" }
         if (selection.engineId == "openai-tts") return cloud.synthesize(text, selection, voiceId)
+        if (selection.engineId == "ming-tts") return cloud.synthesizeMing(text, selection, language, voiceId)
         if (selection.engineId == "system-tts") return DesktopSystemSpeech.synthesize(text, language, voiceId, appDataDirectory)
         if (selection.engineId == "moss-tts-local") {
             require(!metal(selection)) { "MOSS desktop currently supports CPU acceleration only" }

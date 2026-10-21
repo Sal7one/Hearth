@@ -80,6 +80,27 @@ internal class DesktopCloud(private val credentials: CredentialResolver, private
         } catch (error: Throwable) { Files.deleteIfExists(path); throw error }
     }
 
+    /** Official Hearth voice bridge for the self-hosted Ming CUDA server. */
+    suspend fun synthesizeMing(text: String, selection: EngineSelection, language: String, voice: String): GeneratedAudio {
+        require(text.length in 1..300) { "Ming accepts 1–300 characters per request; split longer articles" }
+        require(language in MING_LANGUAGES) { "Ming-3.0 TTS does not publish $language" }
+        val selectedVoice = voice.ifBlank { "US_Emma" }
+        require(selectedVoice in MING_VOICES) { "Ming voice is not one of the published presets" }
+        val model = selection.modelId.ifBlank { "inclusionAI/Ming-3.0-tts-0.5B" }
+        val body = buildJsonObject {
+            put("text", text); put("model", model); put("language", language); put("voice", selectedVoice)
+        }
+        val bytes = request(selection, "http://127.0.0.1:8787/speech", "application/json", body.toString().toByteArray(), 32_000_000)
+        val path = outputFile(directory)
+        try {
+            Files.write(path, bytes)
+            var frames = 0
+            DesktopAudioFiles.frames(path.toString()).collect { frames++ }
+            check(frames > 0) { "Ming returned no speech audio" }
+            return GeneratedAudio(path.toString(), text = text)
+        } catch (error: Throwable) { Files.deleteIfExists(path); throw error }
+    }
+
     internal suspend fun request(selection: EngineSelection, defaultEndpoint: String, contentType: String, body: ByteArray, maximum: Int): ByteArray {
         val endpoint = providerEndpoint(selection.endpoint.ifBlank { defaultEndpoint })
         val key = if (selection.credentialId.isBlank()) null else credentials.resolve(selection.credentialId)
@@ -133,3 +154,6 @@ internal class DesktopCloud(private val credentials: CredentialResolver, private
 
 internal fun redactedProviderError(message: String, key: String?): String =
     (if (key.isNullOrEmpty()) message else message.replace(key, "[redacted]")).take(2048)
+
+internal val MING_LANGUAGES = setOf("zh", "en", "de", "es", "fr", "ko", "ja")
+internal val MING_VOICES = setOf("US_Emma", "US_James", "US_Stella", "UK_George", "UK_Charlotte")
