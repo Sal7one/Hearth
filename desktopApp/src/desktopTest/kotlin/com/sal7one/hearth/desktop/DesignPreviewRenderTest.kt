@@ -9,6 +9,11 @@ import com.sal7one.hearth.desktop.ui.screens.captions.CaptionsActions
 import com.sal7one.hearth.desktop.ui.screens.captions.CaptionsScreen
 import com.sal7one.hearth.desktop.ui.screens.captions.CaptionsState
 import com.sal7one.hearth.desktop.ui.screens.home.HomeScreen
+import com.sal7one.hearth.desktop.ui.screens.overlay.OverlayActions
+import com.sal7one.hearth.desktop.ui.screens.overlay.OverlayCaptionView
+import com.sal7one.hearth.desktop.ui.screens.overlay.OverlayScreen
+import com.sal7one.hearth.desktop.ui.screens.overlay.OverlaySettings
+import com.sal7one.hearth.desktop.ui.screens.overlay.OverlayState
 import com.sal7one.hearth.desktop.ui.screens.home.HomeState
 import com.sal7one.hearth.desktop.ui.shell.AppShell
 import com.sal7one.hearth.desktop.ui.theme.AccentPreset
@@ -110,6 +115,36 @@ class DesignPreviewRenderTest {
                         actions = CaptionsActions(),
                         onOpenModels = {},
                         fixedClock = "00:42",
+                    )
+                }
+            }
+        }
+    }
+
+    @Test
+    fun renderOverlay() = render("overlay", height = 1000) { width, height ->
+        ImageComposeScene(width = width, height = height, density = Density(1f)) {
+            HearthTheme(preset = AccentPreset.INK, dark = true) {
+                AppShell(
+                    current = DesktopScreen.OVERLAY,
+                    status = "Overlay on",
+                    statusLive = true,
+                    dark = true,
+                    onToggleTheme = {},
+                    onNavigate = {},
+                ) {
+                    OverlayScreen(
+                        state = OverlayState(
+                            settings = OverlaySettings(visible = true),
+                            caption = OverlayCaptionView(
+                                primary = "لنبدأ بالجزء الذي اتفق عليه الجميع.",
+                                original = "We should start with the part everyone agreed on.",
+                                partial = false,
+                            ),
+                            targetRtl = true,
+                            translationEnabled = true,
+                        ),
+                        actions = OverlayActions(),
                     )
                 }
             }

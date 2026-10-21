@@ -7,7 +7,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import com.sal7one.hearth.desktop.CaptionOverlayWindow
 import com.sal7one.hearth.desktop.DesktopModelController
 import com.sal7one.hearth.desktop.DesktopWorkspaceController
 import com.sal7one.hearth.desktop.WorkspaceInput
@@ -22,6 +21,13 @@ import com.sal7one.hearth.desktop.ui.screens.captions.StageSlot
 import com.sal7one.hearth.desktop.ui.screens.captions.captionsState
 import com.sal7one.hearth.desktop.ui.screens.home.HomeScreen
 import com.sal7one.hearth.desktop.ui.screens.home.homeState
+import com.sal7one.hearth.desktop.ui.screens.overlay.FloatingCaptionWindow
+import com.sal7one.hearth.desktop.ui.screens.overlay.OverlayActions
+import com.sal7one.hearth.desktop.ui.screens.overlay.OverlayScreen
+import com.sal7one.hearth.desktop.ui.screens.overlay.OverlaySettings
+import com.sal7one.hearth.desktop.ui.screens.overlay.overlayPrefs
+import com.sal7one.hearth.desktop.ui.screens.overlay.overlaySettingsFrom
+import com.sal7one.hearth.desktop.ui.screens.overlay.overlayState
 import com.sal7one.hearth.desktop.ui.shell.AppShell
 import com.sal7one.hearth.desktop.ui.theme.AccentPreset
 import com.sal7one.hearth.desktop.ui.theme.HearthTheme
@@ -46,9 +52,8 @@ internal fun HearthDesktopRoot(
     var preset by remember {
         mutableStateOf(AccentPreset.entries.firstOrNull { it.name == initialUi["palette"] } ?: AccentPreset.INK)
     }
-    var showOriginal by remember { mutableStateOf(initialUi["overlay-original"] != "false") }
     var showPendingOriginal by remember { mutableStateOf(initialUi["overlay-pending"] != "false") }
-    var overlayVisible by remember { mutableStateOf(false) }
+    var overlaySettings by remember { mutableStateOf(overlaySettingsFrom(initialUi)) }
     var deviceId by remember { mutableStateOf<String?>(null) }
 
     val config by controller.config.collectAsState()
@@ -59,6 +64,11 @@ internal fun HearthDesktopRoot(
         runCatching {
             models.library.catalog.count { models.library.installedSelection(it.id) != null }
         }.getOrDefault(0)
+    }
+
+    fun applyOverlay(next: OverlaySettings) {
+        overlaySettings = next
+        saveUi(overlayPrefs(next))
     }
 
     fun navigate(destination: DesktopScreen) {
@@ -84,23 +94,41 @@ internal fun HearthDesktopRoot(
         statusLive = workspace.active && !closing,
     )
 
+    val overlay = overlayState(
+        snapshot = workspace.snapshot,
+        translationEnabled = config.translation != null,
+        targetLanguage = config.targetLanguage,
+        settings = overlaySettings,
+    )
+
+    val overlayActions = OverlayActions(
+        onChange = ::applyOverlay,
+        onToggleVisible = { visible -> applyOverlay(overlaySettings.copy(visible = visible)) },
+        onReset = {
+            applyOverlay(
+                OverlaySettings(
+                    showOriginal = overlaySettings.showOriginal,
+                    showPartials = overlaySettings.showPartials,
+                    visible = overlaySettings.visible,
+                ),
+            )
+        },
+    )
+
     val captions: CaptionsState = captionsState(
         workspace = workspace,
         config = config,
         capabilities = controller.capabilities,
-        showOriginal = showOriginal,
+        showOriginal = overlaySettings.showOriginal,
         showPendingOriginal = showPendingOriginal,
-        overlayVisible = overlayVisible,
+        overlayVisible = overlaySettings.visible,
         deviceName = workspace.devices.firstOrNull { it.id == deviceId }?.name,
         inputLabel = "Microphone",
     )
 
     val captionsActions = CaptionsActions(
-        onToggleOverlay = { overlayVisible = it },
-        onShowOriginal = {
-            showOriginal = it
-            saveUi(mapOf("overlay-original" to it.toString()))
-        },
+        onToggleOverlay = { visible -> applyOverlay(overlaySettings.copy(visible = visible)) },
+        onShowOriginal = { applyOverlay(overlaySettings.copy(showOriginal = it)) },
         onShowPendingOriginal = {
             showPendingOriginal = it
             saveUi(mapOf("overlay-pending" to it.toString()))
@@ -193,6 +221,7 @@ internal fun HearthDesktopRoot(
                     onOpen = ::navigate,
                     onOpenWorkspace = { navigate(DesktopScreen.CAPTIONS) },
                 )
+                DesktopScreen.OVERLAY -> OverlayScreen(state = overlay, actions = overlayActions)
                 DesktopScreen.CAPTIONS -> CaptionsScreen(
                     state = captions,
                     actions = captionsActions,
@@ -202,13 +231,12 @@ internal fun HearthDesktopRoot(
             }
         }
 
-        if (overlayVisible) {
-            CaptionOverlayWindow(
-                snapshot = workspace.snapshot,
-                showOriginal = showOriginal,
-                translationEnabled = config.translation != null,
-                showOriginalWhilePending = showPendingOriginal,
-                onClose = { overlayVisible = false },
+        if (overlaySettings.visible) {
+            FloatingCaptionWindow(
+                state = overlay,
+                dark = dark,
+                preset = preset,
+                onClose = { applyOverlay(overlaySettings.copy(visible = false)) },
             )
         }
     }
