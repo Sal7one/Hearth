@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "provenance": "Generated from existing Android pins, the audited Qwen3-ASR release archive and reviewed desktop engine pins; run scripts/desktop/generate-catalog.py --check",
+  "provenance": "Generated from existing Android pins, the audited Qwen3-ASR release archive, reviewed CT2 catalog pins and reviewed desktop engine pins; run scripts/desktop/generate-catalog.py --check",
   "models": [
     {
       "id": "whisper-tiny-q5_1",
@@ -1108,6 +1108,278 @@
           "sha256": "3ae19dabf326ce42eca36d52a9dbd769ed34ffab744f18b4f45822117681e50b",
           "url": "https://huggingface.co/mradermacher/MiLMMT-46-1B-v1.0-GGUF/resolve/34df5efbe6592773ec168cc7b307728c08623472/MiLMMT-46-1B-v1.0.Q5_K_M.gguf"
         }
+      ]
+    },
+    {
+      "id": "ct2-quickmt-en-ar",
+      "name": "QuickMT · English → Arabic",
+      "family": "ct2",
+      "stage": "TRANSLATION",
+      "engineId": "marian-local",
+      "languages": [
+        "ar",
+        "en"
+      ],
+      "source": "https://huggingface.co/quickmt/quickmt-en-ar",
+      "license": "CC-BY-4.0",
+      "note": "Pinned CTranslate2 package (6 components); CPU-only, macOS Apple silicon. Component hashes are verified at install and before translation.",
+      "options": {
+        "profile": "0",
+        "backend": "ct2",
+        "family": "ct2",
+        "sources": "en",
+        "targets": "ar"
+      },
+      "artifacts": [
+        {
+          "filename": "model.bin",
+          "bytes": 360843109,
+          "sha256": "2b053bf9e989a3685f902eafac1d8128f8fcf833b90fdd142254f08bd73ca5af",
+          "url": "https://huggingface.co/quickmt/quickmt-en-ar/resolve/37f2b37486c29b457971295d7711b5ac1869775d/model.bin"
+        },
+        {
+          "filename": "config.json",
+          "bytes": 223,
+          "sha256": "66edc5d58ceb812a41b4b784497001f815c35400884f40984b19de29e1bc3d69",
+          "url": "https://huggingface.co/quickmt/quickmt-en-ar/resolve/37f2b37486c29b457971295d7711b5ac1869775d/config.json"
+        },
+        {
+          "filename": "source_vocabulary.json",
+          "bytes": 339573,
+          "sha256": "59b2accfaba2b0a8171deed0cce56afdf41d5d724da68c63057b2035c512cbbe",
+          "url": "https://huggingface.co/quickmt/quickmt-en-ar/resolve/37f2b37486c29b457971295d7711b5ac1869775d/source_vocabulary.json"
+        },
+        {
+          "filename": "target_vocabulary.json",
+          "bytes": 731023,
+          "sha256": "5437c4de92543211144f9319f234bf2bcacda2ea454c3b26453da97d4d76e833",
+          "url": "https://huggingface.co/quickmt/quickmt-en-ar/resolve/37f2b37486c29b457971295d7711b5ac1869775d/target_vocabulary.json"
+        },
+        {
+          "filename": "src.spm.model",
+          "bytes": 589684,
+          "sha256": "acf054421b5ed52bd6aee14564fb8595b9a6b492df669e971d43fba9edb33c16",
+          "url": "https://huggingface.co/quickmt/quickmt-en-ar/resolve/37f2b37486c29b457971295d7711b5ac1869775d/src.spm.model"
+        },
+        {
+          "filename": "tgt.spm.model",
+          "bytes": 642429,
+          "sha256": "c7b8bf117088a901628696f60ddd15e047057ccbdcf9b0996ca19e2779a234c7",
+          "url": "https://huggingface.co/quickmt/quickmt-en-ar/resolve/37f2b37486c29b457971295d7711b5ac1869775d/tgt.spm.model"
+        }
+      ],
+      "platforms": [
+        "macos-arm64"
+      ]
+    },
+    {
+      "id": "ct2-quickmt-ar-en",
+      "name": "QuickMT · Arabic → English",
+      "family": "ct2",
+      "stage": "TRANSLATION",
+      "engineId": "marian-local",
+      "languages": [
+        "ar",
+        "en"
+      ],
+      "source": "https://huggingface.co/quickmt/quickmt-ar-en",
+      "license": "CC-BY-4.0",
+      "note": "Pinned CTranslate2 package (6 components); CPU-only, macOS Apple silicon. Component hashes are verified at install and before translation.",
+      "options": {
+        "profile": "0",
+        "backend": "ct2",
+        "family": "ct2",
+        "sources": "ar",
+        "targets": "en"
+      },
+      "artifacts": [
+        {
+          "filename": "model.bin",
+          "bytes": 407101843,
+          "sha256": "2c4e6f5d86de0d9d6c23c54768d7ab6bd20fb7a36099c987368d6a9f45c32da1",
+          "url": "https://huggingface.co/quickmt/quickmt-ar-en/resolve/a1542c88d817d641a2acf2b8952bc892144882c0/model.bin"
+        },
+        {
+          "filename": "config.json",
+          "bytes": 223,
+          "sha256": "66edc5d58ceb812a41b4b784497001f815c35400884f40984b19de29e1bc3d69",
+          "url": "https://huggingface.co/quickmt/quickmt-ar-en/resolve/a1542c88d817d641a2acf2b8952bc892144882c0/config.json"
+        },
+        {
+          "filename": "source_vocabulary.json",
+          "bytes": 1205230,
+          "sha256": "1d31fe3264650f0e839b072f0d55059934fdd01b016b2616cf5afc66bd4ba8a4",
+          "url": "https://huggingface.co/quickmt/quickmt-ar-en/resolve/a1542c88d817d641a2acf2b8952bc892144882c0/source_vocabulary.json"
+        },
+        {
+          "filename": "target_vocabulary.json",
+          "bytes": 546670,
+          "sha256": "b099813467f7c6dbf00414324904782d55dac0f4c4635e440c4d36cb0f383825",
+          "url": "https://huggingface.co/quickmt/quickmt-ar-en/resolve/a1542c88d817d641a2acf2b8952bc892144882c0/target_vocabulary.json"
+        },
+        {
+          "filename": "src.spm.model",
+          "bytes": 901383,
+          "sha256": "1a510ccfeb5cf06584327b9c2482ed0a4111d06348a56e28d165165b6dabe520",
+          "url": "https://huggingface.co/quickmt/quickmt-ar-en/resolve/a1542c88d817d641a2acf2b8952bc892144882c0/src.spm.model"
+        },
+        {
+          "filename": "tgt.spm.model",
+          "bytes": 806180,
+          "sha256": "8c793ee4a6d01a8b3fcd24d246a1580febf053747e44eefe99606974957cfdaa",
+          "url": "https://huggingface.co/quickmt/quickmt-ar-en/resolve/a1542c88d817d641a2acf2b8952bc892144882c0/tgt.spm.model"
+        }
+      ],
+      "platforms": [
+        "macos-arm64"
+      ]
+    },
+    {
+      "id": "ct2-small100-int8",
+      "name": "SMaLL-100 · INT8",
+      "family": "ct2",
+      "stage": "TRANSLATION",
+      "engineId": "marian-local",
+      "languages": [
+        "af",
+        "am",
+        "ar",
+        "ast",
+        "az",
+        "ba",
+        "be",
+        "bg",
+        "bn",
+        "br",
+        "bs",
+        "ca",
+        "ceb",
+        "cs",
+        "cy",
+        "da",
+        "de",
+        "el",
+        "en",
+        "es",
+        "et",
+        "fa",
+        "ff",
+        "fi",
+        "fil",
+        "fr",
+        "fy",
+        "ga",
+        "gd",
+        "gl",
+        "gu",
+        "ha",
+        "he",
+        "hi",
+        "hr",
+        "ht",
+        "hu",
+        "hy",
+        "id",
+        "ig",
+        "ilo",
+        "is",
+        "it",
+        "ja",
+        "jv",
+        "ka",
+        "kk",
+        "km",
+        "kn",
+        "ko",
+        "lb",
+        "lg",
+        "ln",
+        "lo",
+        "lt",
+        "lv",
+        "mg",
+        "mk",
+        "ml",
+        "mn",
+        "mr",
+        "ms",
+        "my",
+        "ne",
+        "nl",
+        "no",
+        "ns",
+        "oc",
+        "or",
+        "pa",
+        "pl",
+        "ps",
+        "pt",
+        "ro",
+        "ru",
+        "sd",
+        "si",
+        "sk",
+        "sl",
+        "so",
+        "sq",
+        "sr",
+        "ss",
+        "su",
+        "sv",
+        "sw",
+        "ta",
+        "th",
+        "tn",
+        "tr",
+        "uk",
+        "ur",
+        "uz",
+        "vi",
+        "wo",
+        "xh",
+        "yi",
+        "yo",
+        "zh",
+        "zu"
+      ],
+      "source": "https://huggingface.co/alirezamsh/small100",
+      "license": "MIT",
+      "note": "Pinned CTranslate2 package (4 components); CPU-only, macOS Apple silicon. Component hashes are verified at install and before translation.",
+      "options": {
+        "profile": "1",
+        "backend": "ct2",
+        "family": "ct2",
+        "sources": "af,am,ar,ast,az,ba,be,bg,bn,br,bs,ca,ceb,cs,cy,da,de,el,en,es,et,fa,ff,fi,fil,fr,fy,ga,gd,gl,gu,ha,he,hi,hr,ht,hu,hy,id,ig,ilo,is,it,ja,jv,ka,kk,km,kn,ko,lb,lg,ln,lo,lt,lv,mg,mk,ml,mn,mr,ms,my,ne,nl,no,ns,oc,or,pa,pl,ps,pt,ro,ru,sd,si,sk,sl,so,sq,sr,ss,su,sv,sw,ta,th,tn,tr,uk,ur,uz,vi,wo,xh,yi,yo,zh,zu",
+        "targets": "af,am,ar,ast,az,ba,be,bg,bn,br,bs,ca,ceb,cs,cy,da,de,el,en,es,et,fa,ff,fi,fil,fr,fy,ga,gd,gl,gu,ha,he,hi,hr,ht,hu,hy,id,ig,ilo,is,it,ja,jv,ka,kk,km,kn,ko,lb,lg,ln,lo,lt,lv,mg,mk,ml,mn,mr,ms,my,ne,nl,no,ns,oc,or,pa,pl,ps,pt,ro,ru,sd,si,sk,sl,so,sq,sr,ss,su,sv,sw,ta,th,tn,tr,uk,ur,uz,vi,wo,xh,yi,yo,zh,zu"
+      },
+      "artifacts": [
+        {
+          "filename": "model.bin",
+          "bytes": 338727246,
+          "sha256": "24e8b51720b7267cfd8faacedce50128bf11c4327f039632a494deb5e1c421f6",
+          "url": "https://huggingface.co/solavr/small100-ctranslate2-int8/resolve/3c5af8e17d5c4f35bda849b7ffceaa1dfc62eb84/model.bin"
+        },
+        {
+          "filename": "config.json",
+          "bytes": 233,
+          "sha256": "72901fbd8abd89fb5cf4a388f26fc681f5c4c58a1e1a88b30b879f107270e7ee",
+          "url": "https://huggingface.co/solavr/small100-ctranslate2-int8/resolve/3c5af8e17d5c4f35bda849b7ffceaa1dfc62eb84/config.json"
+        },
+        {
+          "filename": "sentencepiece.bpe.model",
+          "bytes": 2423393,
+          "sha256": "d8f7c76ed2a5e0822be39f0a4f95a55eb19c78f4593ce609e2edbc2aea4d380a",
+          "url": "https://huggingface.co/solavr/small100-ctranslate2-int8/resolve/3c5af8e17d5c4f35bda849b7ffceaa1dfc62eb84/sentencepiece.bpe.model"
+        },
+        {
+          "filename": "shared_vocabulary.json",
+          "bytes": 2924622,
+          "sha256": "18916ac68f9ac8fbd5250ca603dcb3861aac8672924d93a8dadc82eb3147f941",
+          "url": "https://huggingface.co/solavr/small100-ctranslate2-int8/resolve/3c5af8e17d5c4f35bda849b7ffceaa1dfc62eb84/shared_vocabulary.json"
+        }
+      ],
+      "platforms": [
+        "macos-arm64"
       ]
     },
     {

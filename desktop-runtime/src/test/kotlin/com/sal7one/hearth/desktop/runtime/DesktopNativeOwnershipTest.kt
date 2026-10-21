@@ -1,6 +1,7 @@
 package com.sal7one.hearth.desktop.runtime
 
 import com.sal7one.common_jni.desktop.DesktopQwenNative
+import com.sal7one.common_jni.translation.Ct2Native
 import com.sal7one.common_jni.desktop.DesktopWhisperNative
 import org.junit.Assume.assumeTrue
 import java.nio.file.Path
@@ -120,5 +121,15 @@ class DesktopNativeOwnershipTest {
             DesktopQwenNative.create(bogus.toString().toByteArray(), "en".toByteArray(), 0)
         }
         assertContains(threadFailure.message.orEmpty(), "threads", ignoreCase = true)
+    }
+
+    @Test
+    fun ct2RejectsUnknownHandlesAndCreationErrors() {
+        assumeTrue("CTranslate2 bundle is staged for this host", runCatching { Ct2Native.protocolVersion() == 2 }.getOrDefault(false))
+        assertFailsWith<RuntimeException> { Ct2Native.translate(0L, "hello".toByteArray(), "ar".toByteArray()) }
+        val failure = assertFailsWith<RuntimeException> { Ct2Native.create(Path.of("/nonexistent/hearth-ct2").toString().toByteArray(), 0) }
+        assertTrue(failure.message.orEmpty().isNotBlank())
+        Ct2Native.cancel(0L)
+        Ct2Native.destroy(0L)
     }
 }

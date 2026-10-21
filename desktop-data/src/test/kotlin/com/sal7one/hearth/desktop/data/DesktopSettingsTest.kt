@@ -54,9 +54,11 @@ class DesktopSettingsTest {
         val directory = Files.createTempDirectory("hearth-model-test-")
         try {
             val library = DesktopModelLibrary(directory)
-            val qwen = if (desktopPlatform() == "macos-arm64") 1 else 0
+            val macosArm = desktopPlatform() == "macos-arm64"
+            val qwen = if (macosArm) 1 else 0
+            val ct2 = if (macosArm) 3 else 0
             val byStage = library.catalog.groupingBy { it.stage.name }.eachCount()
-            assertEquals(mapOf("STT" to 27 + qwen, "TRANSLATION" to 14, "TTS" to 1), byStage)
+            assertEquals(mapOf("STT" to 27 + qwen, "TRANSLATION" to 14 + ct2, "TTS" to 1), byStage)
             assertEquals(if (qwen == 1) 2 else 1, library.catalog.filter { it.stage.name == "STT" }.map { it.family }.distinct().size)
             if (qwen == 1) {
                 val card = library.catalog.single { it.id == "qwen3-asr-0.6b" }
@@ -68,17 +70,38 @@ class DesktopSettingsTest {
                 assertTrue(card.archive!!.files.all { it.sha256.length == 64 && it.bytes > 0 })
                 assertEquals("393f8a14e2f5fb96746aaab342997a40641001fbd5bf9592a080a8329178ee96", card.artifacts.single().sha256)
             }
-            // Every shipped translator must use a prompt family the desktop engine implements,
+            // Every shipped llama translator must use a prompt family the desktop engine implements,
             // and the option the engine reads must be the catalog's own family, not a fallback.
             val supportedFamilies = setOf("eurollm", "riva-translate", "milmmt-46", "hy-mt2", "index-translate", "translategemma")
-            val translators = library.catalog.filter { it.stage.name == "TRANSLATION" }
+            val translators = library.catalog.filter { it.engineId == "llama-translation-local" }
             assertTrue(translators.all { it.family in supportedFamilies }, translators.map { it.family }.toString())
             assertTrue(translators.all { it.options["family"] == it.family }, translators.map { it.id to it.options }.toString())
             assertTrue(translators.all { it.artifacts.size == 1 && it.artifacts.single().filename.endsWith(".gguf") })
+            if (ct2 > 0) {
+                val marian = library.catalog.filter { it.engineId == "marian-local" }
+                assertEquals(3, marian.size, marian.map { it.id }.toString())
+                assertTrue(marian.all { it.artifacts.size > 1 }, marian.map { it.id to it.artifacts.size }.toString())
+                val quickmt = marian.single { it.id == "ct2-quickmt-en-ar" }
+                assertEquals("0", quickmt.options["profile"])
+                assertEquals("en", quickmt.options["sources"])
+                assertEquals("ar", quickmt.options["targets"])
+                assertEquals(6, quickmt.artifacts.size)
+            }
             assertTrue(library.catalog.flatMap { it.artifacts }.all { it.url.startsWith("https://") && it.sha256.length == 64 && it.bytes > 0 })
             val fake = directory.resolve("ggml-tiny-q5_1.bin"); Files.write(fake, byteArrayOf(1, 2, 3))
             assertFailsWith<IllegalStateException> { library.verify("whisper-tiny-q5_1", fake) }
             library.refresh(); assertTrue(library.installations.value.values.none { it.ready })
         } finally { directory.toFile().deleteRecursively() }
+    }
+
+    @Test fun setupRoundTripsMultiComponentPins() {
+        val options = mapOf(
+            "profile" to "0", "sources" to "en", "targets" to "ar",
+            "sha256.model.bin" to "a".repeat(64),
+        )
+        val config = PipelineConfig(translation = EngineSelection("marian-local", "ct2-quickmt-en-ar", "/private/model", options = options))
+        val decoded = SetupCodec.decode(SetupCodec.encode(config))
+        assertEquals(options, decoded.translation!!.options)
+        assertEquals("/private/model", decoded.translation!!.modelPath)
     }
 }

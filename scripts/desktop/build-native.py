@@ -22,6 +22,8 @@ ROOT = Path(__file__).resolve().parents[2]
 LLAMA_PIN = "64e9bceb2c3a856efed96feda784a50947049feb"
 WHISPER_PIN = "5f3464bc06c04426d66eae69e5e510d32fb76621b524c42ab25b4294f035a920"
 SHERPA_PIN = "210f340bcfdfd5b9ad6b24245e77a934d6c28f1b"
+CT2_PIN = "8c8cab2a954810216a45d65c1b8d56839c846e5b"
+SENTENCEPIECE_PIN = "17d7580d6407802f85855d2cc9190634e2c95624"
 # Every dependency the pinned sherpa-onnx CMake fetches is declared with this URL_HASH.
 # The build fetches them at build time; the digest of this map is recorded in the bundle.
 SHERPA_INPUTS = {
@@ -97,7 +99,16 @@ def snapshot():
                  "common-jni/src/main/cpp/common/audio_utils.cpp", "common-jni/src/main/cpp/common/audio_utils.h",
                  "common-jni/src/main/cpp/common/error_codes.h", "common-jni/src/main/cpp/common/audio_gate.h",
                  "common-jni/src/main/cpp/common/buffer_view.h",
-                 "common-jni/src/main/cpp/common/lifecycle_gate.h", "common-jni/src/main/cpp/common/scoped_timer.h"]:
+                 "common-jni/src/main/cpp/common/lifecycle_gate.h", "common-jni/src/main/cpp/common/scoped_timer.h",
+                 "common-jni/src/main/cpp/translation/ct2/ct2_jni.cpp",
+                 "common-jni/src/main/cpp/translation/ct2/ct2_model.h",
+                 "common-jni/src/main/cpp/translation/ct2/byte_bpe.h",
+                 "common-jni/src/main/cpp/translation/ct2/ct2_desktop.exports",
+                 "common-jni/src/main/cpp/translation/bpe-rust/src/lib.rs",
+                 "common-jni/src/main/cpp/translation/bpe-rust/Cargo.toml",
+                 "common-jni/src/main/cpp/translation/bpe-rust/Cargo.lock",
+                 "scripts/translation/ct2/CMakeLists.txt",
+                 "scripts/translation/ct2/build-runtime.sh"]:
         paths.append(ROOT / name)
     paths.extend((ROOT / "hearth-tts-supertonic/src/main/cpp/voice").glob("*.cpp"))
     paths.append(ROOT / "hearth-tts-supertonic/src/main/cpp/voice/supertonic.h")
@@ -195,9 +206,47 @@ def sherpa_install(source, ort_root, cache, jobs):
     return install, match.group(1)
 
 
+def ct2_install(build_dir, output, jobs):
+    """Build the pinned CTranslate2/SentencePiece host runtime and stage its JNI dylib."""
+    if not shutil.which("cargo") or not shutil.which("rustc"):
+        raise RuntimeError("The CTranslate2 stage requires cargo and rustc")
+    environment = os.environ.copy()
+    environment["HEARTH_BUILD_JOBS"] = str(jobs)
+    subprocess.run(["bash", str(ROOT / "scripts/translation/ct2/build-runtime.sh"), "host"], check=True, env=environment)
+    for name, pin in [("CTranslate2", CT2_PIN), ("sentencepiece", SENTENCEPIECE_PIN)]:
+        checkout = ROOT / "build/ct2-runtime/src" / name
+        head = subprocess.check_output(["git", "-C", str(checkout), "rev-parse", "HEAD"], text=True).strip()
+        if head != pin:
+            raise RuntimeError(f"{name} must be checked out at {pin}, found {head}")
+    dylib = ROOT / "build/ct2-runtime/host/libhearth_desktop_ct2.dylib"
+    if not dylib.is_file():
+        raise RuntimeError("The CTranslate2 host build did not produce libhearth_desktop_ct2.dylib")
+    require_exports(dylib, "_Java_com_sal7one_common_1jni_translation_Ct2Native_", 5)
+    linked = subprocess.check_output(["otool", "-L", str(dylib)], text=True)
+    for banned in ("libctranslate2", "libsentencepiece", "libhearth_byte_bpe"):
+        if banned in linked:
+            raise RuntimeError(f"The CTranslate2 dylib must statically embed {banned}")
+    shutil.copyfile(dylib, output / "libhearth_desktop_ct2.dylib")
+    notices = [
+        (ROOT / "build/ct2-runtime/src/CTranslate2/LICENSE", "CTranslate2 LICENSE (MIT)"),
+        (ROOT / "build/ct2-runtime/src/CTranslate2/third_party/ruy/LICENSE", "Ruy LICENSE (Apache-2.0)"),
+        (ROOT / "build/ct2-runtime/src/CTranslate2/third_party/spdlog/LICENSE", "spdlog LICENSE (MIT)"),
+        (ROOT / "build/ct2-runtime/src/CTranslate2/third_party/cpu_features/LICENSE", "cpu_features LICENSE (Apache-2.0)"),
+        (ROOT / "build/ct2-runtime/src/sentencepiece/LICENSE", "SentencePiece LICENSE (Apache-2.0)"),
+    ]
+    aggregate = []
+    for path, label in notices:
+        if path.is_file():
+            aggregate.append(f"===== {label} =====\n{path.read_text(encoding='utf-8').rstrip()}\n")
+    aggregate.append("===== hearth-byte-bpe (Apache-2.0) =====\nThe pinned Rust byte-BPE static library is built from common-jni/src/main/cpp/translation/bpe-rust (Apache-2.0) and its Cargo.lock dependencies.\n")
+    (output / "Ct2-Dependencies-NOTICES.txt").write_text("\n".join(aggregate), encoding="utf-8", newline="\n")
+    receipt = ROOT / "build/ct2-runtime/host/hearth-ct2-sources.json"
+    return sha(receipt) if receipt.is_file() else ""
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--stage", choices=["all", "whisper", "translation", "supertonic", "onnx"], default="all")
+    parser.add_argument("--stage", choices=["all", "whisper", "translation", "supertonic", "onnx", "ct2"], default="all")
     parser.add_argument("--llama-root", type=Path, default=ROOT / "build/translation-runtime/llama.cpp")
     parser.add_argument("--sherpa-root", type=Path, default=ROOT / "build/desktop-dependencies/sherpa-onnx")
     parser.add_argument("--ort-root", type=Path, default=os.environ.get("HEARTH_ORT_ROOT"))
@@ -217,13 +266,15 @@ def main():
     stages = ["whisper", "translation", "supertonic"] if args.stage == "all" else [args.stage]
     if args.stage == "all":
         if (system, arch) == ("macos", "arm64"):
-            stages.append("onnx")
+            stages.extend(["onnx", "ct2"])
         else:
-            print(f"Skipping Qwen3-ASR (onnx): built only for macos-arm64; host is {target}", file=sys.stderr)
+            print(f"Skipping Qwen3-ASR (onnx) and CTranslate2 (ct2): built only for macos-arm64; host is {target}", file=sys.stderr)
     if "onnx" in stages and system != "macos":
         parser.error("The Qwen3-ASR (sherpa-onnx) stage is built for macOS arm64 only")
     if "onnx" in stages and arch != "arm64":
         parser.error("The Qwen3-ASR (sherpa-onnx) stage is built for macOS arm64 only")
+    if "ct2" in stages and (system, arch) != ("macos", "arm64"):
+        parser.error("The CTranslate2 (ct2) stage is built for macOS arm64 only")
     if args.metal and system != "macos": parser.error("Metal requires macOS")
     before = snapshot()
     subprocess.run([sys.executable, str(ROOT / "scripts/whisper/source-pin.py"),
@@ -245,6 +296,9 @@ def main():
                                                 args.build_dir.resolve() / target / "onnx", args.jobs)
         sherpa_tree = subprocess.check_output(["git", "-C", str(args.sherpa_root), "rev-parse", "HEAD^{tree}"], text=True).strip()
         sherpa_source_tree = source_tree_sha(args.sherpa_root.resolve())
+    ct2_sources = None
+    if "ct2" in stages:
+        ct2_sources = ct2_install(args.build_dir.resolve() / target / "ct2", output, args.jobs)
     source = ROOT / "hearth-tts-supertonic/src/main/cpp/voice/supertonic.cpp"
     original = source.read_text(encoding="utf-8")
     old = 'for(int i=0;i<4;++i)checked(api()->CreateSession(env,(dir+"/"+names[i]).c_str(),options,&sessions[i]));'
@@ -260,7 +314,7 @@ def main():
     prepared_jni.write_text('#include "desktop_jni.h"\n' + jni_source.replace(old_error, 'void fail(JNIEnv* env,const char* message){desktopFail(env,message);}'), encoding="utf-8")
     translation_jni = args.build_dir.resolve() / "translation-jni-desktop.cpp"
     translation_jni.write_text(prepare_translation((ROOT / "common-jni/src/main/cpp/translation/translation_jni.cpp").read_text(encoding="utf-8")), encoding="utf-8")
-    for stage in stages:
+    for stage in [value for value in stages if value != "ct2"]:
         cache = args.build_dir.resolve() / target / stage
         command = ["cmake", "-S", str(ROOT / "scripts/desktop/native"), "-B", str(cache),
                    "-DCMAKE_BUILD_TYPE=Release", f"-DHEARTH_ROOT={ROOT}", f"-DHEARTH_STAGE={stage}",
@@ -313,6 +367,12 @@ def main():
             "sherpaSourceTreeSha256": sherpa_source_tree,
             "sherpaInputsSha256": hashlib.sha256(json.dumps(SHERPA_INPUTS, sort_keys=True, separators=(",", ":")).encode()).hexdigest(),
             "sherpaVersion": sherpa_version,
+        })
+    if "ct2" in stages:
+        upstreams.update({
+            "ct2Revision": CT2_PIN,
+            "sentencepieceRevision": SENTENCEPIECE_PIN,
+            "ct2SourcesSha256": ct2_sources,
         })
     manifest = {"schemaVersion": 1, "platform": target, "files": files, "sources": before,
                 "sourceSetSha256": hashlib.sha256(json.dumps(before, sort_keys=True, separators=(",", ":")).encode()).hexdigest(),

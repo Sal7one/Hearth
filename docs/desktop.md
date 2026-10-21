@@ -12,7 +12,7 @@ conditions through the Android application.
 | --- | --- |
 | Inputs | Typed text, a chosen microphone/virtual audio device, PCM WAV and native-system-supported audio/video files. |
 | Local recognition | Pinned whisper.cpp models plus pinned Qwen3-ASR (sherpa-onnx, macOS arm64, CPU). Live recognition uses utterance windows; it is not a token-streaming decoder. |
-| Local translation | Hearth's existing llama.cpp translation model/prompt protocol, with pinned EuroLLM/Riva catalog entries and explicit verified custom model paths. |
+| Local translation | Hearth's existing llama.cpp translation model/prompt protocol plus pinned CTranslate2 QuickMT/SMaLL-100 packages, with pinned EuroLLM/Riva catalog entries and explicit verified custom model paths. |
 | Local voice | The same model-free article-speech SDK, Supertonic 3 model verification, F1–F5/M1–M5 voices and native inference sources used on Android. |
 | Cloud stages | Independently configured OpenAI-compatible STT, chat translation and WAV TTS endpoints; local compatible servers may omit credentials. Provider keys never enter the model downloader. |
 | System voice | Installed macOS/Windows voices, enumerated by language; no automatic voice installation or assumption that every OS has Arabic voices. |
@@ -22,7 +22,7 @@ conditions through the Android application.
 | Settings | DataStore preferences, portable JSON setups, macOS Keychain and Windows current-user DPAPI for provider secrets. |
 | Integrations | Authenticated loopback HTTP jobs, live bounded PCM input, SSE results/cancellation and read-only OBS caption access. |
 
-The initial native desktop ports are Whisper, Qwen3-ASR (macOS arm64), llama translation and Supertonic.
+The initial native desktop ports are Whisper, Qwen3-ASR (macOS arm64), llama translation, CTranslate2 translation (macOS arm64) and Supertonic.
 Android's other ASR/TTS families, camera OCR, MediaProjection capture, TV pairing
 and Android-specific screens have not been presented as desktop implementations.
 Select a virtual input device or submit PCM from another app for a live audio
@@ -166,7 +166,8 @@ rewritten to accomplish the desktop ports.
 
 `scripts/desktop/generate-catalog.py` derives desktop pins from the existing
 Android Whisper/Supertonic catalogs, reviewed translation cards, the audited
-Qwen3-ASR release archive and the engine-owned Qwen file pins. Run it after
+Qwen3-ASR release archive and engine-owned Qwen file pins, and the reviewed
+multi-component CTranslate2 catalog (`Ct2Catalog.kt`). Run it after
 changing those sources; `--check` rejects drift. A download must finish size/hash
 verification before it can be selected. Installing does not activate a stage.
 A missing, changed or incompatible import remains a visible setup problem.

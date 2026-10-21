@@ -9,6 +9,95 @@ ROOT = Path(__file__).resolve().parents[2]
 OUTPUT = ROOT / 'desktop-data/src/main/resources/desktop-models.json'
 
 
+
+
+def kotlin_calls(text, name):
+    """Yield the argument text of each name(...) call, respecting strings and nesting."""
+    import re
+    for match in re.finditer(rf'{name}\s*\(', text):
+        start = match.end(); depth = 1; index = start; in_string = False; escaped = False
+        while index < len(text):
+            ch = text[index]
+            if in_string:
+                if escaped: escaped = False
+                elif ch == '\\': escaped = True
+                elif ch == '"': in_string = False
+            else:
+                if ch == '"': in_string = True
+                elif ch == '(': depth += 1
+                elif ch == ')':
+                    depth -= 1
+                    if depth == 0:
+                        yield text[start:index]
+                        break
+            index += 1
+
+
+def split_kotlin_args(call):
+    args = []; depth = 0; in_string = False; escaped = False; start = 0
+    for index, ch in enumerate(call):
+        if in_string:
+            if escaped: escaped = False
+            elif ch == '\\': escaped = True
+            elif ch == '"': in_string = False
+        else:
+            if ch == '"': in_string = True
+            elif ch in '([{': depth += 1
+            elif ch in ')]}': depth -= 1
+            elif ch == ',' and depth == 0:
+                args.append(call[start:index].strip()); start = index + 1
+    args.append(call[start:].strip())
+    return [arg for arg in args if arg]
+
+
+def kotlin_string(arg):
+    import re
+    match = re.fullmatch(r'"(.*)"', arg, re.S)
+    return match.group(1) if match else arg.strip()
+
+
+def kotlin_set(arg):
+    import re
+    return set(re.findall(r'"([^"]+)"', arg))
+
+
+def kotlin_ct2_models():
+    """Read the reviewed CT2 pins from the Android catalog; multi-component cards."""
+    import re
+    text = (ROOT / 'common-jni/src/main/java/com/sal7one/common_jni/translation/Ct2Catalog.kt').read_text(encoding='utf-8')
+    models = []
+    for call in kotlin_calls(text, 'Ct2ModelSpec'):
+        args = split_kotlin_args(call)
+        if len(args) < 8 or not args[0].lstrip().startswith('"'):
+            continue
+        model_id = kotlin_string(args[0]); label = kotlin_string(args[1])
+        mode = int(args[2].removesuffix('L'))
+        sources = kotlin_set(args[3]); targets = kotlin_set(args[4])
+        files = []
+        for file_call in kotlin_calls(args[5], 'Ct2File'):
+            parts = split_kotlin_args(file_call)
+            if len(parts) != 5:
+                continue
+            name = kotlin_string(parts[0]); size = int(parts[1].removesuffix('L'))
+            digest = kotlin_string(parts[2]); repo = kotlin_string(parts[3]); revision = kotlin_string(parts[4])
+            files.append(dict(filename=name, bytes=size, sha256=digest,
+                              url=f'https://huggingface.co/{repo}/resolve/{revision}/{name}'))
+        license_name = kotlin_string(args[6]); card = kotlin_string(args[7])
+        named = {arg.split('=', 1)[0].strip(): arg.split('=', 1)[1].strip() for arg in args[8:] if '=' in arg}
+        if named.get('downloadEnabled', 'true') == 'false':
+            continue
+        if not files or len(files) < 2:
+            continue
+        models.append(dict(id=model_id, name=label, family='ct2', stage='TRANSLATION', engineId='marian-local',
+            languages=sorted(sources | targets), source=card, license=license_name,
+            note=f'Pinned CTranslate2 package ({len(files)} components); CPU-only, macOS Apple silicon. Component hashes are verified at install and before translation.',
+            options={'profile': str(mode), 'backend': 'ct2', 'family': 'ct2',
+                     'sources': ','.join(sorted(sources)), 'targets': ','.join(sorted(targets))},
+            artifacts=files, platforms=['macos-arm64']))
+    assert len(models) == 3, [m['id'] for m in models]
+    return models
+
+
 def generate():
     models = []
     whisper = (ROOT / 'app/src/main/java/com/sal7one/transiber/models/WhisperDownloads.kt').read_text(encoding="utf-8")
@@ -35,6 +124,7 @@ def generate():
             license=license_info.get('name','See source') if isinstance(license_info, dict) else license_info,
             note='Uses the existing Hearth translation prompt protocol. Quality varies by direction; see linked model evidence.',
             options={'promptMode':mode, 'family':model['family']}, artifacts=[{k:c[k] for k in ('filename', 'bytes','sha256','url')}]))
+    models.extend(kotlin_ct2_models())
     voice = (ROOT / 'hearth-tts-supertonic/src/main/java/com/sal7one/hearth/tts/supertonic/SupertonicCatalog.kt').read_text(encoding="utf-8")
     revision = re.search(r'const val revision = "([a-f0-9]{40})"', voice).group(1)
     assets = []
@@ -66,8 +156,8 @@ def generate():
         archive=dict(format='tar.bz2', root='sherpa-onnx-qwen3-asr-0.6B-int8-2026-03-25',
             expandedBytes=sum(size for _, size, _ in qwen_files),
             files=[dict(path=path, bytes=size, sha256=digest) for path, size, digest in qwen_files])))
-    assert len(models) == 43, len(models)
-    return json.dumps({'schemaVersion':1,'provenance':'Generated from existing Android pins, the audited Qwen3-ASR release archive and reviewed desktop engine pins; run scripts/desktop/generate-catalog.py --check','models':models},ensure_ascii=False,indent=2)+'\n'
+    assert len(models) == 46, len(models)
+    return json.dumps({'schemaVersion':1,'provenance':'Generated from existing Android pins, the audited Qwen3-ASR release archive, reviewed CT2 catalog pins and reviewed desktop engine pins; run scripts/desktop/generate-catalog.py --check','models':models},ensure_ascii=False,indent=2)+'\n'
 
 
 if __name__ == '__main__':

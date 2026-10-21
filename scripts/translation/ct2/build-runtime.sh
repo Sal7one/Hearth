@@ -32,11 +32,19 @@ if [ "$ABI" != host ];then
  export AR_aarch64_linux_android="$TOOLCHAIN/llvm-ar"
  export CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER="$TOOLCHAIN/aarch64-linux-android28-clang"
 fi
+if [ "$ABI" = host ] && [ "$(uname -s)" = Darwin ]; then
+ FLAGS+=(-DCMAKE_OSX_DEPLOYMENT_TARGET=13.3)
+ export MACOSX_DEPLOYMENT_TARGET=13.3
+fi
 python3 "$ROOT/scripts/translation/ct2/runtime_sources.py" > "$WORK/$OUTPUT.sources.before.json"
 cargo build --manifest-path "$ROOT/common-jni/src/main/cpp/translation/bpe-rust/Cargo.toml" --locked --release --target "$RUST_TARGET" --target-dir "$WORK/rust"
 FLAGS+=(-DBPE_LIB="$WORK/rust/$RUST_TARGET/release/libhearth_byte_bpe.a")
 cmake -S "$ROOT/scripts/translation/ct2" -B "$WORK/$OUTPUT" "${FLAGS[@]}"
-cmake --build "$WORK/$OUTPUT" --target "$([ "$ABI" = host ] && echo ct2_smoke || echo transiber_ct2)" -j "${HEARTH_BUILD_JOBS:-4}"
+if [ "$ABI" = host ]; then
+ cmake --build "$WORK/$OUTPUT" --target ct2_smoke hearth_desktop_ct2 -j "${HEARTH_BUILD_JOBS:-4}"
+else
+ cmake --build "$WORK/$OUTPUT" --target transiber_ct2 -j "${HEARTH_BUILD_JOBS:-4}"
+fi
 python3 "$ROOT/scripts/translation/ct2/runtime_sources.py" > "$WORK/$OUTPUT.sources.after.json"
 cmp "$WORK/$OUTPUT.sources.before.json" "$WORK/$OUTPUT.sources.after.json"
 cp "$WORK/$OUTPUT.sources.before.json" "$WORK/$OUTPUT/hearth-ct2-sources.json"

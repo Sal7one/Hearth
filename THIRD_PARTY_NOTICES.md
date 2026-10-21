@@ -12,6 +12,7 @@ APK assets under `licenses/`.
 | ONNX Runtime | Maven com.microsoft.onnxruntime:onnxruntime-android:1.20.0 | MIT and upstream third-party notices in `licenses/onnxruntime-1.20.0/` |
 | Qwen / Moonshine speech adapter | sherpa-onnx 210f340bcfdfd5b9ad6b24245e77a934d6c28f1b; CPU ONNX Runtime 1.27.1 (Android) / 1.20.1 (desktop) | Apache-2.0 and dependency notices in `licenses/speech/` |
 | Qwen3-ASR desktop adapter | static sherpa-onnx 210f340bcfdfd5b9ad6b24245e77a934d6c28f1b linked with the shipped ONNX Runtime 1.20.1; Qwen3-ASR weights Apache-2.0 (separately downloaded, never committed) | `Sherpa-LICENSE.txt` and the aggregated `Sherpa-Dependencies-NOTICES.txt` are staged into the desktop native bundle and listed in its manifest |
+| CTranslate2 desktop translator | static CTranslate2 4.8.3 (MIT), SentencePiece 0.2.0 (Apache-2.0), Ruy (Apache-2.0), spdlog (MIT), cpu_features (Apache-2.0), Apache-2.0 Rust byte-BPE; QuickMT weights CC-BY-4.0 / SMaLL-100 MIT (separately downloaded, never committed) | `Ct2-Dependencies-NOTICES.txt` is staged into the desktop native bundle and listed in its manifest; model cards carry the weight licenses |
 | Nemotron speech adapter | nemo-speech ffa38cb2408f1e832a36d46fef5e3e1e80d07e6c | MIT; GGML, SentencePiece and other notices in `licenses/speech/` |
 | C++ shared runtime | Android NDK 27.0.12077973 | NDK NOTICE / NOTICE.toolchain in assets |
 | AndroidX / Compose / Material | Version catalog and app Gradle dependencies | Apache-2.0; `licenses/android/Apache-2.0.txt` |

@@ -2,6 +2,7 @@ package com.sal7one.hearth.desktop.runtime
 
 import com.sal7one.common_jni.desktop.DesktopQwenNative
 import com.sal7one.common_jni.desktop.DesktopWhisperNative
+import com.sal7one.common_jni.translation.Ct2Native
 import com.sal7one.common_jni.translation.LocalTranslationNative
 import com.sal7one.hearth.core.*
 import com.sal7one.hearth.desktop.media.DesktopMediaDecoder
@@ -33,10 +34,13 @@ class DesktopEngines(
     private val cloud = DesktopCloud(credentials, appDataDirectory)
     private val voices = DesktopVoiceCache(appDataDirectory)
     private val translationGate = Mutex()
+    private val ct2Gate = Mutex()
     private val lifecycle = Any()
     private val closed = AtomicBoolean()
     private var translationHandle = 0L
     private var translationKey = ""
+    private var ct2Engine: DesktopCt2TranslationEngine? = null
+    private var ct2Key = ""
     init { DesktopNativeLibraries.configure(appDataDirectory) }
 
     override fun capabilities(): List<EngineDescriptor> {
@@ -58,6 +62,10 @@ class DesktopEngines(
                             check(DesktopQwenNative.protocolVersion() == QwenSpeechModel.PROTOCOL_VERSION) { "Desktop Qwen3-ASR protocol mismatch; rebuild the native bundle" }
                             false
                         }
+                        "marian-local" -> {
+                            check(Ct2Native.protocolVersion() == DesktopCt2TranslationEngine.PROTOCOL_VERSION) { "Desktop CTranslate2 protocol mismatch; rebuild the native bundle" }
+                            false
+                        }
                         else -> false
                     }
                     if (metal) acceleration = setOf("cpu", "metal")
@@ -70,6 +78,7 @@ class DesktopEngines(
             local("whisper-local", "Whisper.cpp", PipelineStage.STT, "hearth_desktop_whisper", streaming = true),
             local(QwenSpeechModel.ENGINE_ID, "Qwen3-ASR 0.6B", PipelineStage.STT, QwenSpeechModel.LIBRARY, QwenSpeechModel.languages),
             local("llama-translation-local", "Local GGUF translation", PipelineStage.TRANSLATION, "transiber_translation"),
+            local("marian-local", "CTranslate2 · Marian/OPUS", PipelineStage.TRANSLATION, "hearth_desktop_ct2"),
             local("supertonic-local", "Supertonic 3", PipelineStage.TTS, "hearth_supertonic_jni", SupertonicCatalog.languages),
             EngineDescriptor("openai-stt", "OpenAI-compatible transcription", PipelineStage.STT, EngineKind.CLOUD,
                 streaming = true, requiresCredential = true, defaultEndpoint = "https://api.openai.com/v1/audio/transcriptions", defaultModel = "gpt-4o-mini-transcribe"),
@@ -205,6 +214,7 @@ class DesktopEngines(
         check(!closed.get()) { "Desktop engines are closed" }
         require(text.isNotBlank() && text.length <= TextChunks.MAX_TEXT_CHARACTERS) { "Translation accepts 1–32000 characters" }
         if (selection.engineId == "openai-translation") return cloud.translate(text, selection, sourceLanguage, targetLanguage)
+        if (selection.engineId == "marian-local") return translateCt2(text, selection, sourceLanguage, targetLanguage)
         require(selection.engineId == "llama-translation-local") { "Unknown translation engine: ${selection.engineId}" }
         return translationGate.withLock {
             val path = Path.of(selection.modelPath).toAbsolutePath().normalize()
@@ -255,6 +265,58 @@ class DesktopEngines(
         }
     }
 
+    private suspend fun translateCt2(text: String, selection: EngineSelection, sourceLanguage: String, targetLanguage: String): String = ct2Gate.withLock {
+        val root = Path.of(selection.modelPath).toRealPath()
+        require(Files.isDirectory(root)) { "Select a complete CTranslate2 model directory" }
+        val mode = selection.options["profile"]?.toIntOrNull() ?: error("CTranslate2 tokenizer mode is required")
+        require(mode in 0..5) { "Unsupported CTranslate2 tokenizer mode" }
+        val sources = selection.options["sources"].orEmpty().split(',').filter { it.isNotBlank() }.toSet()
+        val targets = selection.options["targets"].orEmpty().split(',').filter { it.isNotBlank() }.toSet()
+        require(sources.isEmpty() || sourceLanguage in sources) { "This CTranslate2 model does not support $sourceLanguage → $targetLanguage" }
+        require(targets.isEmpty() || targetLanguage in targets) { "This CTranslate2 model does not support $sourceLanguage → $targetLanguage" }
+        val key = "$root|$mode|${Files.getLastModifiedTime(root.resolve("model.bin"))}"
+        if (synchronized(lifecycle) { ct2Key != key || ct2Engine == null }) {
+            verifiedCt2Model(root, selection)
+            withContext(Dispatchers.IO) {
+                synchronized(lifecycle) {
+                    check(!closed.get()) { "Desktop engines are closed" }
+                    ct2Engine?.close()
+                    ct2Engine = DesktopCt2TranslationEngine.open(root, mode)
+                    ct2Key = key
+                }
+            }
+        }
+        val engine = synchronized(lifecycle) { ct2Engine } ?: error("CTranslate2 engine is not open")
+        try {
+            val result = mutableListOf<String>()
+            for (part in TextChunks.split(text, 500)) {
+                currentCoroutineContext().ensureActive()
+                val owner = currentCoroutineContext()
+                result += joinedBlocking({ engine.cancel() }) { owner.ensureActive(); engine.translate(part, targetLanguage) }
+            }
+            result.joinToString("\n")
+        } catch (error: Throwable) {
+            withContext(NonCancellable + Dispatchers.IO) { clearCt2() }
+            throw error
+        }
+    }
+
+    private suspend fun verifiedCt2Model(root: Path, selection: EngineSelection) = withContext(Dispatchers.IO) {
+        val pins = selection.options.filterKeys { it.startsWith("sha256.") }
+        require(pins.isNotEmpty()) { "A pinned SHA-256 is required for every CTranslate2 component" }
+        for ((key, expected) in pins) {
+            require(expected.matches(Regex("[0-9a-f]{64}"))) { "A pinned SHA-256 is required for every CTranslate2 component" }
+            val relative = key.removePrefix("sha256.")
+            require(relative.isNotBlank() && !relative.startsWith("/") && relative.split('/').none { it == ".." || it.isEmpty() }) { "Invalid CTranslate2 component: $relative" }
+            val file = root.resolve(relative).normalize()
+            require(file.startsWith(root)) { "CTranslate2 component escapes its directory: $relative" }
+            check(Files.isRegularFile(file) && Files.size(file) > 0) { "Missing CTranslate2 component: $relative" }
+            currentCoroutineContext().ensureActive()
+            check(sha256(file) == expected) { "CTranslate2 component checksum mismatch: $relative" }
+        }
+        root
+    }
+
     override suspend fun synthesize(text: String, selection: EngineSelection, language: String, voiceId: String): GeneratedAudio {
         check(!closed.get()) { "Desktop engines are closed" }
         require(text.isNotBlank()) { "Read aloud needs text" }
@@ -269,8 +331,12 @@ class DesktopEngines(
         val id = translationHandle; translationHandle = 0; translationKey = ""
         if (id != 0L) LocalTranslationNative.destroy(id)
     }
+    private fun clearCt2() = synchronized(lifecycle) {
+        val engine = ct2Engine; ct2Engine = null; ct2Key = ""
+        engine?.close()
+    }
     override fun close() {
-        if (closed.compareAndSet(false, true)) try { clearTranslation() } finally { voices.close() }
+        if (closed.compareAndSet(false, true)) try { clearTranslation(); clearCt2() } finally { voices.close() }
     }
 
     private suspend fun verifiedModel(selection: EngineSelection): Path = withContext(Dispatchers.IO) {

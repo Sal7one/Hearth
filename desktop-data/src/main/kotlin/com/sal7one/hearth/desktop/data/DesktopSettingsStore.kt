@@ -105,10 +105,10 @@ class DesktopSettingsStore(val directory: Path) : AutoCloseable {
     }
 }
 
-private fun EngineSelection.portable() = copy(modelPath = "", credentialId = "", options = options.filterKeys { it in SetupCodec.allowedOptions })
+private fun EngineSelection.portable() = copy(modelPath = "", credentialId = "", options = options.filterKeys { it in SetupCodec.allowedOptions || it.startsWith("sha256.") })
 
 object SetupCodec {
-    internal val allowedOptions = setOf("sha256", "threads", "acceleration", "voice", "speed", "steps", "temperature", "maxTokens", "profile", "backend", "family", "promptMode")
+    internal val allowedOptions = setOf("sha256", "threads", "acceleration", "voice", "speed", "steps", "temperature", "maxTokens", "profile", "backend", "family", "promptMode", "sources", "targets")
     private val json = Json { prettyPrint = true }
     fun encode(config: PipelineConfig): String = json.encodeToString(JsonElement.serializer(), buildJsonObject {
         put("format", "hearth.desktop.setup"); put("schemaVersion", 1)
@@ -118,7 +118,7 @@ object SetupCodec {
         config.voice?.let { put("voice", route(it)) }
     }).also { decode(it) }
     private fun route(selection: EngineSelection) = buildJsonObject {
-        require(selection.options.keys.all { it in allowedOptions }) { "Unknown or unsafe engine option" }
+        require(selection.options.keys.all { it in allowedOptions || it.startsWith("sha256.") }) { "Unknown or unsafe engine option" }
         put("engineId", selection.engineId); put("modelId", selection.modelId); put("modelPath", selection.modelPath)
         put("endpoint", selection.endpoint); put("credentialId", selection.credentialId)
         put("options", JsonObject(selection.options.mapValues { JsonPrimitive(it.value) }))
@@ -132,7 +132,7 @@ object SetupCodec {
             val value = root[name]?.jsonObject ?: return null
             fun get(key: String) = value[key]?.jsonPrimitive?.content ?: ""
             val options = value["options"]?.jsonObject?.mapValues { it.value.jsonPrimitive.content } ?: emptyMap()
-            require(options.size <= 16 && options.all { it.key in allowedOptions && it.value.length <= 4096 }) { "Unsupported engine option" }
+            require(options.size <= 16 && options.all { (it.key in allowedOptions || it.key.startsWith("sha256.")) && it.value.length <= 4096 }) { "Unsupported engine option" }
             require(get("engineId").matches(Regex("[A-Za-z0-9._-]{1,100}"))) { "Invalid engine identity" }
             val endpoint = get("endpoint")
             require(endpoint.length <= 2048 && (endpoint.isEmpty() || java.net.URI(endpoint).let {

@@ -8,12 +8,13 @@ do not have. Keep this file honest: do not add a row you have not run.
 | Check | Command | Result |
 | --- | --- | --- |
 | Android native, 4 ABIs | `./gradlew :common-jni:externalNativeBuildDebug` | `libcommon_jni.so` for arm64-v8a, armeabi-v7a, x86, x86_64 |
-| Native bundle packaged | `./gradlew -PhearthDesktopOnly=true :desktop-runtime:jar` | 12 `native/macos-arm64/` entries, libraries stored as `*.payload` |
+| Native bundle packaged | `./gradlew -PhearthDesktopOnly=true :desktop-runtime:jar` | 14 `native/macos-arm64/` entries, libraries stored as `*.payload` |
 | Bundle loads + hashes | `:desktop-runtime:test --tests "*DesktopNativeContractTest*"` | 2 tests, 0 skipped; includes Qwen readiness/protocol |
 | Handle ownership | `:desktop-runtime:test --tests "*DesktopNativeOwnershipTest*"` | 6 tests, 1 skipped |
 | Whisper alone | `:desktop-runtime:test --tests "*DesktopWhisperRealSmokeTest*"` | transcript exact, `Metal GPU; threads=2` |
 | Qwen3-ASR alone | `:desktop-runtime:test --tests "*DesktopQwenRealSmokeTest*"` | transcript exact, 406 ms decode for 4.65 s audio (RTF 0.081), model load 2.0 s |
 | Qwen3-ASR through the desktop engine | same test | `COMPLETED`, one final segment, 5550 ms including model verification/load |
+| CTranslate2 QuickMT EN→AR | `:desktop-runtime:test --tests "*DesktopCt2RealSmokeTest*"` | `يفتح المتحف في الساعة التاسعة صباحًا.` (111 ms native, 4771 ms engine path) |
 | Speech + voice | `:desktop-runtime:test --tests "*DesktopSpeechVoiceRealSmokeTest*"` | `COMPLETED segments=1 audio=1` |
 | Speech + translation + voice | `:desktop-runtime:test --tests "*DesktopFullPipelineRealSmokeTest*"` | `COMPLETED ms=6182 segments=1 audio=1` |
 
@@ -48,6 +49,20 @@ HEARTH_SMOKE_WAV="$PWD/build/smoke/hello.wav" \
 Expected: `status=COMPLETED`, one caption segment, one audio artifact, and an
 Arabic translation of the English line. A Mac without an installed English system
 voice fails the test with that reason rather than silently skipping the stage.
+
+### Reproducing the CTranslate2 smoke
+
+```bash
+HEARTH_BUILD_JOBS=8 python3 scripts/desktop/build-native.py --stage ct2
+mkdir -p build/smoke/ct2
+# fetch the six quickmt-en-ar files pinned in Ct2Catalog.kt into one directory, then:
+HEARTH_CT2_SMOKE=1 HEARTH_SMOKE_CT2_DIR="$PWD/build/smoke/ct2/quickmt-en-ar" \
+  ./gradlew -PhearthDesktopOnly=true :desktop-runtime:test --tests "*DesktopCt2RealSmokeTest*"
+```
+
+The stage builds CTranslate2 4.8.3 + SentencePiece 0.2.0 + the Rust byte-BPE
+statically (only system frameworks remain dynamic) and records the source receipt
+backend_versions in the bundle manifest. The smoke never downloads or uses the network.
 
 ### Reproducing the Qwen3-ASR smoke
 

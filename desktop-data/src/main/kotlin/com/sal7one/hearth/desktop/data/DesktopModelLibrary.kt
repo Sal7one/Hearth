@@ -127,7 +127,9 @@ class DesktopModelLibrary(private val directory: Path) {
     fun find(id: String): DesktopModelCard = catalog.singleOrNull { it.id == id } ?: error("Unknown desktop model: $id")
     private fun selection(card: DesktopModelCard, path: Path): EngineSelection {
         val single = if (card.artifacts.size == 1 && card.archive == null) mapOf("sha256" to card.artifacts.single().sha256) else emptyMap()
-        return EngineSelection(card.engineId, card.id, path.toString(), options = card.options + single)
+        // Multi-component engines verify each file; single-file engines keep the one sha256 pin.
+        val components = if (card.artifacts.size > 1) card.artifacts.associate { "sha256.${it.filename}" to it.sha256 } else emptyMap()
+        return EngineSelection(card.engineId, card.id, path.toString(), options = card.options + single + components)
     }
     private fun modelDirectory(card: DesktopModelCard): Path = directory.resolve("models").resolve(card.id)
     private fun runtimePath(card: DesktopModelCard, root: Path) =

@@ -13,6 +13,7 @@ Last updated when Qwen3-ASR passed its real-speech smoke on macOS arm64.
 | Qwen3-ASR (sherpa-onnx) | 1 | `hearth_desktop_qwen3_asr` (static sherpa-onnx 1.13.7, CPU ONNX Runtime 1.20.1) | real speech → text, `DesktopQwenRealSmokeTest`: 4.65 s audio, 406 ms decode, exact transcript (macOS arm64) |
 | Supertonic 3 (TTS) | 1 | `hearth_supertonic_jni` (ONNX Runtime) | capability + synthesis path via `DesktopSupertonicRealSmokeTest` (needs model dir) |
 | GGUF translation | 14 | `libtransiber_translation` (llama.cpp) | MiLMMT-46 proven EN→AR in `DesktopFullPipelineRealSmokeTest` |
+| CTranslate2 translation | 3 downloadable cards (7 pinned specs) | `hearth_desktop_ct2` (static CTranslate2 4.8.3 + SentencePiece 0.2.0 + Rust BPE) | QuickMT EN→AR real translation, `DesktopCt2RealSmokeTest`: `يفتح المتحف في الساعة التاسعة صباحًا.` (111 ms) |
 
 ## Missing on desktop
 
@@ -22,7 +23,7 @@ Last updated when Qwen3-ASR passed its real-speech smoke on macOS arm64.
 | TranscribePsy (ggml/parakeet, not ONNX) | 1 | `speech/backends/transcribepsy_backend.cpp` | build parakeet.cpp, JNI surface, Kotlin binding, catalog |
 | sherpa-onnx speech — Moonshine ×9, Omnilingual, Phonon | 11 | `qwen_backend.cpp` already exports `hearth_moonshine_backend_v1`, `hearth_omnilingual_backend_v1` and `hearth_phonon_backend_v1` | the Qwen build already produced the static sherpa library; each family still needs its own model pins, jni binding, engine wiring and smoke |
 | Vosk | 6 | `common-jni/src/main/cpp/vosk` | build Vosk/Kaldi for macOS + Windows; no prebuilt exists in this repo |
-| Marian pairs | 14 | `common-jni/src/main/cpp/marian` (CT2 + SentencePiece) | CTranslate2 build for macOS + Windows, SentencePiece, JNI |
+| CTranslate2 pair coverage | 3 desktop cards: QuickMT EN↔AR, SMaLL-100 (100 languages) | `common-jni/src/main/cpp/translation/ct2` + `Ct2Catalog.kt` | four Jisr 50M specs are pinned but `downloadEnabled=false`, and the requested EN↔DE/ES/FR/RU/ZH pair models are not present or pinned in this repo |
 | TTS — Chatterbox, Magpie, Moss, OmniVoice, Oute | 5 | `hearth-tts-*` modules | each family has its own architecture and runtime; five separate engines |
 
 ## What Qwen3-ASR proved
@@ -62,6 +63,10 @@ catalog before it has a passing smoke.
 - Qwen3-ASR auto language detection. The upstream C API does not populate the
   detected language without the Android build patch; the desktop engine reports an
   explicit source language and leaves Auto unknown. Transcription still works.
+- The desktop CTranslate2 catalog has three downloadable cards from the pinned
+  `Ct2Catalog` (QuickMT EN→AR and AR→EN, SMaLL-100); it is not the 14-pair matrix.
+  The four Jisr specs are pinned but download-disabled, and no EN↔DE/ES/FR/RU/ZH
+  CT2 pair pins exist in the repo. Windows/x64 skips the `ct2` stage.
 - The Android catalog and the desktop catalog intentionally differ: Android can run
   families desktop cannot yet execute, and listing an unrunnable model would be a
   worse lie than a shorter list.
