@@ -20,6 +20,9 @@ Last updated when Moonshine tiny.en passed through the shared speech backend bri
 
 ## Missing on desktop
 
+The shared ABI and the family-versus-model rule are documented in
+[docs/desktop-engine-sharing.md](desktop-engine-sharing.md).
+
 | Family | Models | Android implementation | What a desktop port needs |
 | --- | --- | --- | --- |
 | sherpa-onnx speech — remaining Moonshine ×8, Omnilingual, Phonon | 10 | `qwen_backend.cpp` already exports all three backend entry points | one dylib and one bridge already exist; each remaining family needs only model pins, a catalog card, an engine branch and a real-audio smoke |

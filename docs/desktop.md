@@ -23,6 +23,8 @@ conditions through the Android application.
 | Integrations | Authenticated loopback HTTP jobs, live bounded PCM input, SSE results/cancellation and read-only OBS caption access. |
 
 The initial native desktop ports are Whisper, Qwen3-ASR, TranscribePsy and Nemotron 3.5 (macOS arm64 speech), llama translation, CTranslate2 translation (macOS arm64) and Supertonic.
+Engine sharing rules (one C ABI, one bridge, one dylib per SDK family) are in
+[docs/desktop-engine-sharing.md](desktop-engine-sharing.md).
 Android's other ASR/TTS families, camera OCR, MediaProjection capture, TV pairing
 and Android-specific screens have not been presented as desktop implementations.
 Select a virtual input device or submit PCM from another app for a live audio
