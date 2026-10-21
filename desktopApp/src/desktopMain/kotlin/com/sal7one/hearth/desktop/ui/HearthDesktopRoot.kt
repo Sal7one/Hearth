@@ -27,6 +27,12 @@ import com.sal7one.hearth.desktop.ui.screens.speech.Responsiveness
 import com.sal7one.hearth.desktop.ui.screens.speech.SpeechActions
 import com.sal7one.hearth.desktop.ui.screens.speech.SpeechScreen
 import com.sal7one.hearth.desktop.ui.screens.speech.speechState
+import com.sal7one.hearth.desktop.ui.screens.translation.TranslationActions
+import com.sal7one.hearth.desktop.ui.screens.translation.TranslationScreen
+import com.sal7one.hearth.desktop.ui.screens.translation.translationState
+import com.sal7one.hearth.desktop.ui.screens.voice.VoicesActions
+import com.sal7one.hearth.desktop.ui.screens.voice.VoicesScreen
+import com.sal7one.hearth.desktop.ui.screens.voice.voicesState
 import com.sal7one.hearth.desktop.ui.screens.presets.BuiltInPresets
 import com.sal7one.hearth.desktop.ui.screens.presets.PresetsActions
 import com.sal7one.hearth.desktop.ui.screens.presets.PresetsScreen
@@ -205,6 +211,82 @@ internal fun HearthDesktopRoot(
                 navigate(DesktopScreen.MODELS)
             }
         },
+    )
+
+    val translation = translationState(
+        capabilities = controller.capabilities,
+        config = config,
+        catalog = models.library.catalog,
+        installations = installations,
+    )
+
+    fun withTranslationOption(key: String, value: String) = controller.updateConfig { current ->
+        val selected = current.translation ?: return@updateConfig current
+        current.copy(translation = selected.copy(options = selected.options + (key to value)))
+    }
+
+    val translationActions = TranslationActions(
+        onNavigate = ::navigate,
+        onSelectEngine = { id ->
+            if (id == null) {
+                controller.updateConfig { current -> current.copy(translation = null) }
+            } else {
+                controller.capabilities.firstOrNull { it.id == id && it.stage == PipelineStage.TRANSLATION }?.let { engine ->
+                    controller.updateConfig { current -> current.copy(translation = engineSelection(engine)) }
+                }
+            }
+        },
+        onSelectModel = { id ->
+            val verified = models.library.installedSelection(id)
+            if (verified != null) {
+                controller.updateConfig { current -> current.useVerifiedModel(PipelineStage.TRANSLATION, verified) }
+            } else {
+                navigate(DesktopScreen.DOWNLOADS)
+            }
+        },
+        onSourceLanguage = { code -> controller.updateConfig { current -> current.copy(sourceLanguage = code) } },
+        onTargetLanguage = { code -> controller.updateConfig { current -> current.copy(targetLanguage = code) } },
+        onPromptMode = { mode -> withTranslationOption("promptMode", mode.key) },
+        onCompute = { compute -> withTranslationOption("acceleration", compute.key) },
+        onThreads = { threads -> withTranslationOption("threads", threads.coerceIn(1, 32).toString()) },
+    )
+
+    val voices = voicesState(controller.capabilities, config)
+
+    fun withVoiceOption(key: String, value: String) = controller.updateConfig { current ->
+        val selected = current.voice ?: return@updateConfig current
+        current.copy(voice = selected.copy(options = selected.options + (key to value)))
+    }
+
+    val voicesActions = VoicesActions(
+        onNavigate = ::navigate,
+        onSelectEngine = { id ->
+            if (id == null) {
+                controller.updateConfig { current -> current.copy(voice = null, voiceId = "") }
+            } else {
+                controller.capabilities.firstOrNull { it.id == id && it.stage == PipelineStage.TTS }?.let { engine ->
+                    controller.updateConfig { current ->
+                        current.copy(voice = engineSelection(engine), voiceId = current.voiceId.ifBlank { "F1" })
+                    }
+                }
+            }
+        },
+        onSelectStyle = { style -> controller.updateConfig { current -> current.copy(voiceId = style) } },
+        onSpeakTranslation = { spoken -> controller.updateConfig { current -> current.copy(speakTranslatedText = spoken) } },
+        onToggleReadAloud = { aloud ->
+            if (aloud) {
+                controller.capabilities.firstOrNull { it.id == "supertonic-local" || it.stage == PipelineStage.TTS }?.let { engine ->
+                    controller.updateConfig { current ->
+                        current.copy(voice = current.voice ?: engineSelection(engine), voiceId = current.voiceId.ifBlank { "F1" })
+                    }
+                }
+            } else {
+                controller.updateConfig { current -> current.copy(voice = null) }
+            }
+        },
+        onSpeed = { speed -> withVoiceOption("speed", String.format(java.util.Locale.ENGLISH, "%.2f", speed)) },
+        onSteps = { steps -> withVoiceOption("steps", steps.toString()) },
+        onStopAudio = { controller.stopPlayback() },
     )
 
     val presets = presetsState(
@@ -388,6 +470,8 @@ internal fun HearthDesktopRoot(
                     onOpenWorkspace = { navigate(DesktopScreen.CAPTIONS) },
                 )
                 DesktopScreen.SPEECH -> SpeechScreen(state = speech, actions = speechActions)
+                DesktopScreen.TRANSLATION_SETTINGS -> TranslationScreen(state = translation, actions = translationActions)
+                DesktopScreen.VOICES -> VoicesScreen(state = voices, actions = voicesActions)
                 DesktopScreen.MODELS -> ModelsScreen(state = libraryState, actions = modelsActions)
                 DesktopScreen.PRESETS -> PresetsScreen(state = presets, actions = presetsActions)
                 DesktopScreen.DOWNLOADS -> DownloadsScreen(state = downloads, actions = downloadsActions)

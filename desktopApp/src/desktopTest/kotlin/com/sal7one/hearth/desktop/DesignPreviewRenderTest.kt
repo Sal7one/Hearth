@@ -25,6 +25,12 @@ import com.sal7one.hearth.core.PipelineStage
 import com.sal7one.hearth.desktop.ui.screens.speech.SpeechActions
 import com.sal7one.hearth.desktop.ui.screens.speech.SpeechScreen
 import com.sal7one.hearth.desktop.ui.screens.speech.speechState
+import com.sal7one.hearth.desktop.ui.screens.translation.TranslationActions
+import com.sal7one.hearth.desktop.ui.screens.translation.TranslationScreen
+import com.sal7one.hearth.desktop.ui.screens.translation.translationState
+import com.sal7one.hearth.desktop.ui.screens.voice.VoicesActions
+import com.sal7one.hearth.desktop.ui.screens.voice.VoicesScreen
+import com.sal7one.hearth.desktop.ui.screens.voice.voicesState
 import com.sal7one.hearth.desktop.ui.screens.presets.BuiltInPresets
 import com.sal7one.hearth.desktop.ui.screens.presets.PresetsActions
 import com.sal7one.hearth.desktop.ui.screens.presets.PresetsScreen
@@ -224,6 +230,35 @@ class DesignPreviewRenderTest {
             requiresModel = true,
         ),
         EngineDescriptor(
+            id = "llama-translation-local",
+            name = "Local GGUF translation",
+            stage = PipelineStage.TRANSLATION,
+            kind = EngineKind.LOCAL,
+            acceleration = setOf("cpu", "metal"),
+            requiresModel = true,
+        ),
+        EngineDescriptor(
+            id = "openai-translation",
+            name = "OpenAI-compatible translation",
+            stage = PipelineStage.TRANSLATION,
+            kind = EngineKind.CLOUD,
+            requiresCredential = true,
+        ),
+        EngineDescriptor(
+            id = "supertonic-local",
+            name = "Supertonic 3",
+            stage = PipelineStage.TTS,
+            kind = EngineKind.LOCAL,
+            acceleration = setOf("cpu"),
+            requiresModel = true,
+        ),
+        EngineDescriptor(
+            id = "system-tts",
+            name = "Installed system voices",
+            stage = PipelineStage.TTS,
+            kind = EngineKind.SYSTEM,
+        ),
+        EngineDescriptor(
             id = "openai-stt",
             name = "OpenAI-compatible transcription",
             stage = PipelineStage.STT,
@@ -247,6 +282,30 @@ class DesignPreviewRenderTest {
         installations = previewInstallations,
         devices = emptyList(),
         deviceId = null,
+    )
+
+    private val translationFixture = translationState(
+        capabilities = previewEngines,
+        config = PipelineConfig(
+            translation = EngineSelection(
+                engineId = "llama-translation-local",
+                modelId = "eurollm-17b-q4",
+                options = mapOf("promptMode" to "euro", "acceleration" to "metal", "threads" to "6"),
+            ),
+            sourceLanguage = "en",
+            targetLanguage = "ar",
+        ),
+        catalog = previewCatalog,
+        installations = previewInstallations,
+    )
+
+    private val voicesFixture = voicesState(
+        capabilities = previewEngines,
+        config = PipelineConfig(
+            voice = EngineSelection(engineId = "supertonic-local", modelId = "supertonic-3"),
+            voiceId = "F2",
+            speakTranslatedText = true,
+        ),
     )
 
     private val modelsFixture = modelsState(
@@ -339,6 +398,42 @@ class DesignPreviewRenderTest {
                     onNavigate = {},
                 ) {
                     SpeechScreen(state = speechFixture, actions = SpeechActions())
+                }
+            }
+        }
+    }
+
+    @Test
+    fun renderTranslation() = render("translation", height = 1250) { width, height ->
+        ImageComposeScene(width = width, height = height, density = Density(1f)) {
+            HearthTheme(preset = AccentPreset.INK, dark = true) {
+                AppShell(
+                    current = DesktopScreen.TRANSLATION_SETTINGS,
+                    status = "EuroLLM ready",
+                    statusLive = false,
+                    dark = true,
+                    onToggleTheme = {},
+                    onNavigate = {},
+                ) {
+                    TranslationScreen(state = translationFixture, actions = TranslationActions())
+                }
+            }
+        }
+    }
+
+    @Test
+    fun renderVoices() = render("voices", height = 1250) { width, height ->
+        ImageComposeScene(width = width, height = height, density = Density(1f)) {
+            HearthTheme(preset = AccentPreset.INK, dark = true) {
+                AppShell(
+                    current = DesktopScreen.VOICES,
+                    status = "Supertonic ready",
+                    statusLive = false,
+                    dark = true,
+                    onToggleTheme = {},
+                    onNavigate = {},
+                ) {
+                    VoicesScreen(state = voicesFixture, actions = VoicesActions())
                 }
             }
         }
