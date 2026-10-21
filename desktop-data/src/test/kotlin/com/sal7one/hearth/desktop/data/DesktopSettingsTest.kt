@@ -59,11 +59,13 @@ class DesktopSettingsTest {
             val transcribepsy = if (macosArm) 1 else 0
             val nemotron = if (macosArm) 1 else 0
             val moonshine = if (macosArm) 1 else 0
+            val omnilingual = if (macosArm) 1 else 0
+            val phonon = if (macosArm) 1 else 0
             val ct2 = if (macosArm) 3 else 0
             val moss = if (macosArm) 1 else 0
             val byStage = library.catalog.groupingBy { it.stage.name }.eachCount()
-            assertEquals(mapOf("STT" to 27 + qwen + transcribepsy + nemotron + moonshine, "TRANSLATION" to 14 + ct2, "TTS" to 1 + moss), byStage)
-            assertEquals(if (qwen + transcribepsy + nemotron + moonshine > 0) 5 else 1, library.catalog.filter { it.stage.name == "STT" }.map { it.family }.distinct().size)
+            assertEquals(mapOf("STT" to 27 + qwen + transcribepsy + nemotron + moonshine + omnilingual + phonon, "TRANSLATION" to 14 + ct2, "TTS" to 1 + moss), byStage)
+            assertEquals(if (qwen + transcribepsy + nemotron + moonshine + omnilingual + phonon > 0) 7 else 1, library.catalog.filter { it.stage.name == "STT" }.map { it.family }.distinct().size)
             if (qwen == 1) {
                 val card = library.catalog.single { it.id == "qwen3-asr-0.6b" }
                 assertEquals("qwen3-asr-local", card.engineId)
@@ -94,6 +96,18 @@ class DesktopSettingsTest {
                 assertEquals("moonshine-local", card.engineId)
                 assertEquals(4, card.archive?.files?.size)
                 assertEquals("9ec31b342d8fa3240c3b81b8f82e1cf7e3ac467c93ca5a999b741d5887164f8d", card.artifacts.single().sha256)
+            }
+            if (omnilingual == 1) {
+                val card = library.catalog.single { it.id == "omnilingual-ctc-300m-v2-int8" }
+                assertEquals("omnilingual-local", card.engineId)
+                assertEquals(2, card.archive?.files?.size)
+                assertEquals(292_313_120L, card.bytes)
+            }
+            if (phonon == 1) {
+                val card = library.catalog.single { it.id == "phonon-2" }
+                assertEquals("phonon-local", card.engineId)
+                assertEquals(4, card.archive?.files?.size)
+                assertEquals(339_918_748L, card.bytes)
             }
             if (moss == 1) {
                 val card = library.catalog.single { it.id == "moss-tts-nano" }

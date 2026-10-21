@@ -180,6 +180,40 @@ def generate():
         archive=dict(format='tar.bz2', root='sherpa-onnx-moonshine-tiny-en-quantized-2026-02-27',
             expandedBytes=sum(size for _, size, _ in moonshine_files),
             files=[dict(path=path, bytes=size, sha256=digest) for path, size, digest in moonshine_files])))
+    omnilingual = next(a for a in audit['artifacts'] if a['id'] == 'omnilingual-ctc-300m-v2-int8')
+    omnilingual_files = [
+        ('model.int8.onnx', 365841453, 'e3042b2f3b3ef0af2211bf99d2b4bf94a21f5ac0e9898827e7dd6d003a860e91'),
+        ('tokens.txt', 90630, '7d99997ef207ff14c2cfe825f2aa037528ea250113cc3c6392bfe49326884ba6'),
+    ]
+    models.append(dict(id='omnilingual-ctc-300m-v2-int8', name='Omnilingual CTC 300M · int8', family='Omnilingual CTC',
+        stage='STT', engineId='omnilingual-local', languages=['en', 'ar', 'ru', 'zh'],
+        source='https://huggingface.co/facebook/omniASR-CTC-300M', license=omnilingual['license'],
+        note='Pinned sherpa-onnx Omnilingual CTC 300M package; CPU-only, utterance-windowed, macOS Apple silicon. '
+             'The archive and both model files are verified before loading. CTC recognition; the source language '
+             'labels captions for translation and is never a decoder hint.',
+        options={}, platforms=['macos-arm64'],
+        artifacts=[dict(filename=omnilingual['url'].rsplit('/', 1)[-1], bytes=omnilingual['bytes'], sha256=omnilingual['sha256'], url=omnilingual['url'])],
+        archive=dict(format='tar.bz2', root='sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-v2-int8-2026-02-05',
+            expandedBytes=sum(size for _, size, _ in omnilingual_files),
+            files=[dict(path=path, bytes=size, sha256=digest) for path, size, digest in omnilingual_files])))
+    phonon = next(a for a in audit['artifacts'] if a['id'] == 'phonon-2')
+    phonon_files = [
+        ('tokens.txt', 93939, 'd58544679ea4bc6ac563d1f545eb7d474bd6cfa467f0a6e2c1dc1c7d37e3c35d'),
+        ('encoder.int8.onnx', 611893758, '953ae3bd0b635e4d0929e53cdc1d4757629099b99dee9b88e0812cb6ee6f670a'),
+        ('decoder.int8.onnx', 12257659, 'd92e2d8fc9c99ef9faf0a2cf1728af4ec08c0a83b99ece29a46037c4a5a757bf'),
+        ('joiner.int8.onnx', 5281492, 'b848103db33b89be7167d218587ea59e772e40ba6ba1cd787230e7e754839633'),
+    ]
+    models.append(dict(id='phonon-2', name='Phonon 2 · int8', family='Phonon 2',
+        stage='STT', engineId='phonon-local', languages=['en'],
+        source='https://huggingface.co/FermionResearch/Phonon-2', license=phonon['license'],
+        note='Pinned Phonon 2 (NeMo TDT transducer) int8 package; CPU-only, utterance-windowed, macOS Apple silicon. '
+             'The archive and all four files are verified before loading. English only; the joiner is passed to the '
+             'backend conv_frontend slot.',
+        options={}, platforms=['macos-arm64'],
+        artifacts=[dict(filename=phonon['url'].rsplit('/', 1)[-1], bytes=phonon['bytes'], sha256=phonon['sha256'], url=phonon['url'])],
+        archive=dict(format='tar.bz2', root='phonon-2-hearth-int8',
+            expandedBytes=sum(size for _, size, _ in phonon_files),
+            files=[dict(path=path, bytes=size, sha256=digest) for path, size, digest in phonon_files])))
     transcribepsy = next(a for a in audit['artifacts'] if a['id'] == 'transcribepsy-250m-eu-sub-q8')
     models.append(dict(id='transcribepsy-250m-eu-sub-q8', name='TranscribePsy 250M · EU (q8)', family='TranscribePsy',
         stage='STT', engineId='transcribepsy-local',
@@ -197,7 +231,7 @@ def generate():
         note='Pinned Nemotron 3.5 ASR streaming q8 GGUF; CPU-only, macOS Apple silicon. The single GGUF hash is verified before loading.',
         options={}, platforms=['macos-arm64'],
         artifacts=[dict(filename=nemotron['url'].rsplit('/', 1)[-1], bytes=nemotron['bytes'], sha256=nemotron['sha256'], url=nemotron['url'])]))
-    assert len(models) == 50, len(models)
+    assert len(models) == 52, len(models)
     return json.dumps({'schemaVersion':1,'provenance':'Generated from existing Android pins, the audited Qwen3-ASR release archive, reviewed CT2 catalog pins and reviewed desktop engine pins; run scripts/desktop/generate-catalog.py --check','models':models},ensure_ascii=False,indent=2)+'\n'
 
 

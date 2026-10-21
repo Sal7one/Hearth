@@ -60,7 +60,7 @@ class DesktopEngines(
             val backendLibrary = when (id) {
                 "transcribepsy-local" -> "hearth_transcribepsy"
                 "nemotron-asr-local" -> "hearth_nemotron"
-                "moonshine-local" -> "hearth_desktop_qwen3_asr"
+                "moonshine-local", "omnilingual-local", "phonon-local" -> "hearth_desktop_qwen3_asr"
                 else -> null
             }
             if (backendLibrary != null && error == null) error = DesktopNativeLibraries.readiness(backendLibrary)
@@ -84,7 +84,7 @@ class DesktopEngines(
                             check(Ct2Native.protocolVersion() == DesktopCt2TranslationEngine.PROTOCOL_VERSION) { "Desktop CTranslate2 protocol mismatch; rebuild the native bundle" }
                             false
                         }
-                        "transcribepsy-local", "nemotron-asr-local", "moonshine-local" -> {
+                        "transcribepsy-local", "nemotron-asr-local", "moonshine-local", "omnilingual-local", "phonon-local" -> {
                             check(DesktopBackendSpeechNative.protocolVersion() == DesktopBackendSpeechEngine.PROTOCOL_VERSION) { "Desktop speech backend protocol mismatch; rebuild the native bundle" }
                             false
                         }
@@ -102,6 +102,8 @@ class DesktopEngines(
             local("transcribepsy-local", "TranscribePsy 250M", PipelineStage.STT, "hearth_desktop_backend_speech", TRANSCRIBEPSY_LANGUAGES),
             local("nemotron-asr-local", "Nemotron 3.5 ASR", PipelineStage.STT, "hearth_desktop_backend_speech", NEMOTRON_LANGUAGES),
             local("moonshine-local", "Moonshine tiny.en", PipelineStage.STT, "hearth_desktop_backend_speech", setOf("en")),
+            local("omnilingual-local", "Omnilingual CTC 300M", PipelineStage.STT, "hearth_desktop_backend_speech", OMNILINGUAL_LANGUAGES),
+            local("phonon-local", "Phonon 2", PipelineStage.STT, "hearth_desktop_backend_speech", PHONON_LANGUAGES),
             local("moss-tts-local", "MOSS-TTS Nano 100M", PipelineStage.TTS, "hearth_desktop_moss", setOf("ar", "en")),
             local("llama-translation-local", "Local GGUF translation", PipelineStage.TRANSLATION, "transiber_translation"),
             local("marian-local", "CTranslate2 · Marian/OPUS", PipelineStage.TRANSLATION, "hearth_desktop_ct2"),
@@ -122,7 +124,7 @@ class DesktopEngines(
 
     override suspend fun recognize(input: PipelineInput, selection: EngineSelection, sourceLanguage: String, emit: suspend (SpeechSegment) -> Unit) {
         check(!closed.get()) { "Desktop engines are closed" }
-        require(selection.engineId in setOf("whisper-local", QwenSpeechModel.ENGINE_ID, "transcribepsy-local", "nemotron-asr-local", "moonshine-local", "openai-stt")) { "Unknown speech engine: ${selection.engineId}" }
+        require(selection.engineId in setOf("whisper-local", QwenSpeechModel.ENGINE_ID, "transcribepsy-local", "nemotron-asr-local", "moonshine-local", "omnilingual-local", "phonon-local", "openai-stt")) { "Unknown speech engine: ${selection.engineId}" }
         var decoded: Path? = null
         val frames: Flow<PcmFrame> = when (input) {
             is PipelineInput.AudioStream -> input.frames
@@ -182,6 +184,42 @@ class DesktopEngines(
                         error("Speech backend engine was already published")
                     }
                 }
+            } else if (selection.engineId == "omnilingual-local") {
+                val root = verifiedSherpaPackage(selection, OMNILINGUAL_FILES, "Omnilingual CTC")
+                val owner = currentCoroutineContext()
+                joinedBlocking({ backendEngine.get()?.cancel() }) {
+                    owner.ensureActive()
+                    val opened = DesktopBackendSpeechEngine.open(
+                        "hearth_desktop_qwen3_asr", "omnilingual_ctc", root.resolve("model.int8.onnx"),
+                        sourceLanguage, threads(selection),
+                        entrySymbol = "hearth_omnilingual_backend_v1",
+                        tokenizer = root.resolve("tokens.txt"),
+                        maximumMs = 15000,
+                    )
+                    if (!backendEngine.compareAndSet(null, opened)) {
+                        opened.close()
+                        error("Speech backend engine was already published")
+                    }
+                }
+            } else if (selection.engineId == "phonon-local") {
+                val root = verifiedSherpaPackage(selection, PHONON_FILES, "Phonon 2")
+                val owner = currentCoroutineContext()
+                joinedBlocking({ backendEngine.get()?.cancel() }) {
+                    owner.ensureActive()
+                    val opened = DesktopBackendSpeechEngine.open(
+                        "hearth_desktop_qwen3_asr", "phonon", root.resolve("tokens.txt"),
+                        sourceLanguage, threads(selection),
+                        entrySymbol = "hearth_phonon_backend_v1",
+                        encoder = root.resolve("encoder.int8.onnx"),
+                        decoder = root.resolve("decoder.int8.onnx"),
+                        convFrontend = root.resolve("joiner.int8.onnx"),
+                        maximumMs = 15000,
+                    )
+                    if (!backendEngine.compareAndSet(null, opened)) {
+                        opened.close()
+                        error("Speech backend engine was already published")
+                    }
+                }
             } else if (selection.engineId == "transcribepsy-local" || selection.engineId == "nemotron-asr-local") {
                 val path = verifiedModel(selection)
                 val transcribepsy = selection.engineId == "transcribepsy-local"
@@ -200,7 +238,7 @@ class DesktopEngines(
                 }
             }
             val live = input is PipelineInput.AudioStream
-            val spokenWindow = selection.engineId == QwenSpeechModel.ENGINE_ID || selection.engineId == "transcribepsy-local" || selection.engineId == "nemotron-asr-local" || selection.engineId == "moonshine-local"
+            val spokenWindow = selection.engineId == QwenSpeechModel.ENGINE_ID || selection.engineId == "transcribepsy-local" || selection.engineId == "nemotron-asr-local" || selection.engineId == "moonshine-local" || selection.engineId == "omnilingual-local" || selection.engineId == "phonon-local"
             val windowMs = selection.options["windowMs"]?.toIntOrNull()
                 ?: if (spokenWindow) 15000 else if (live) 4000 else 20000
             require(windowMs in 1000..30000) { "Speech window must be 1000–30000 ms" }
@@ -227,7 +265,7 @@ class DesktopEngines(
                         val engine = checkNotNull(qwenEngine.get()) { "Qwen3-ASR is not open" }
                         text = joinedBlocking({ engine.cancel() }) { owner.ensureActive(); engine.transcribe(samples) }
                         language = QwenSpeechModel.detected(engine.language()) ?: language
-                    } else if (selection.engineId == "transcribepsy-local" || selection.engineId == "nemotron-asr-local" || selection.engineId == "moonshine-local") {
+                    } else if (selection.engineId == "transcribepsy-local" || selection.engineId == "nemotron-asr-local" || selection.engineId == "moonshine-local" || selection.engineId == "omnilingual-local" || selection.engineId == "phonon-local") {
                         val engine = checkNotNull(backendEngine.get()) { "Speech backend is not open" }
                         text = joinedBlocking({ engine.cancel() }) { owner.ensureActive(); engine.transcribe(samples) }
                         language = engine.language().ifBlank { language }
@@ -370,15 +408,19 @@ class DesktopEngines(
         }
     }
 
-    private suspend fun verifiedMoonshineModel(selection: EngineSelection): Path = withContext(Dispatchers.IO) {
+    private suspend fun verifiedMoonshineModel(selection: EngineSelection): Path =
+        verifiedSherpaPackage(selection, MOONSHINE_FILES, "Moonshine")
+
+    /** Every sherpa family package is a directory whose components carry individual pins. */
+    private suspend fun verifiedSherpaPackage(selection: EngineSelection, pins: Map<String, String>, label: String): Path = withContext(Dispatchers.IO) {
         val root = Path.of(selection.modelPath).toRealPath()
-        require(Files.isDirectory(root)) { "Select a complete Moonshine model directory" }
-        for ((name, expected) in MOONSHINE_FILES) {
+        require(Files.isDirectory(root)) { "Select a complete $label model directory" }
+        for ((name, expected) in pins) {
             val file = root.resolve(name).normalize()
-            require(file.startsWith(root)) { "Moonshine component escapes its directory: $name" }
-            check(Files.isRegularFile(file)) { "Missing Moonshine component: $name" }
+            require(file.startsWith(root)) { "$label component escapes its directory: $name" }
+            check(Files.isRegularFile(file)) { "Missing $label component: $name" }
             currentCoroutineContext().ensureActive()
-            check(sha256(file) == expected) { "Moonshine component checksum mismatch: $name" }
+            check(sha256(file) == expected) { "$label component checksum mismatch: $name" }
         }
         root
     }
@@ -460,6 +502,20 @@ private val MOONSHINE_FILES = mapOf(
     "tokens.txt" to "2870d843e14c1e187bf1913a521562a63b53933814bd7f2145120468f494a049",
     "encoder_model.ort" to "94e90a4654fc45cdfedb77c4c08e1739f48862998e58fada384b25118134f221",
     "decoder_model_merged.ort" to "cf524c4862d36e9e5ab032eddc73637efd822d70e868ac575cf1a46e1e4708a0",
+)
+private val PHONON_LANGUAGES = setOf("en")
+// Mirrors Android SpeechProfile.OMNILINGUAL_CTC_300M_V2 capabilities; the checkpoint
+// covers more languages, but only this reviewed subset may be declared to the user.
+private val OMNILINGUAL_LANGUAGES = setOf("en", "ar", "ru", "zh")
+private val OMNILINGUAL_FILES = mapOf(
+    "model.int8.onnx" to "e3042b2f3b3ef0af2211bf99d2b4bf94a21f5ac0e9898827e7dd6d003a860e91",
+    "tokens.txt" to "7d99997ef207ff14c2cfe825f2aa037528ea250113cc3c6392bfe49326884ba6",
+)
+private val PHONON_FILES = mapOf(
+    "tokens.txt" to "d58544679ea4bc6ac563d1f545eb7d474bd6cfa467f0a6e2c1dc1c7d37e3c35d",
+    "encoder.int8.onnx" to "953ae3bd0b635e4d0929e53cdc1d4757629099b99dee9b88e0812cb6ee6f670a",
+    "decoder.int8.onnx" to "d92e2d8fc9c99ef9faf0a2cf1728af4ec08c0a83b99ece29a46037c4a5a757bf",
+    "joiner.int8.onnx" to "b848103db33b89be7167d218587ea59e772e40ba6ba1cd787230e7e754839633",
 )
 private val NEMOTRON_LANGUAGES = setOf(
     "en", "es", "fr", "it", "pt", "nl", "de", "tr", "ru", "ar", "hi", "ja", "ko", "vi", "uk",

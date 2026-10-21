@@ -1747,6 +1747,103 @@
       }
     },
     {
+      "id": "omnilingual-ctc-300m-v2-int8",
+      "name": "Omnilingual CTC 300M · int8",
+      "family": "Omnilingual CTC",
+      "stage": "STT",
+      "engineId": "omnilingual-local",
+      "languages": [
+        "en",
+        "ar",
+        "ru",
+        "zh"
+      ],
+      "source": "https://huggingface.co/facebook/omniASR-CTC-300M",
+      "license": "Apache-2.0",
+      "note": "Pinned sherpa-onnx Omnilingual CTC 300M package; CPU-only, utterance-windowed, macOS Apple silicon. The archive and both model files are verified before loading. CTC recognition; the source language labels captions for translation and is never a decoder hint.",
+      "options": {},
+      "platforms": [
+        "macos-arm64"
+      ],
+      "artifacts": [
+        {
+          "filename": "sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-v2-int8-2026-02-05.tar.bz2",
+          "bytes": 292313120,
+          "sha256": "951b32409aade32bd525310bb39e9666773ba3fc611a39e817f620936d76c631",
+          "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-v2-int8-2026-02-05.tar.bz2"
+        }
+      ],
+      "archive": {
+        "format": "tar.bz2",
+        "root": "sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-v2-int8-2026-02-05",
+        "expandedBytes": 365932083,
+        "files": [
+          {
+            "path": "model.int8.onnx",
+            "bytes": 365841453,
+            "sha256": "e3042b2f3b3ef0af2211bf99d2b4bf94a21f5ac0e9898827e7dd6d003a860e91"
+          },
+          {
+            "path": "tokens.txt",
+            "bytes": 90630,
+            "sha256": "7d99997ef207ff14c2cfe825f2aa037528ea250113cc3c6392bfe49326884ba6"
+          }
+        ]
+      }
+    },
+    {
+      "id": "phonon-2",
+      "name": "Phonon 2 · int8",
+      "family": "Phonon 2",
+      "stage": "STT",
+      "engineId": "phonon-local",
+      "languages": [
+        "en"
+      ],
+      "source": "https://huggingface.co/FermionResearch/Phonon-2",
+      "license": "CC-BY-4.0",
+      "note": "Pinned Phonon 2 (NeMo TDT transducer) int8 package; CPU-only, utterance-windowed, macOS Apple silicon. The archive and all four files are verified before loading. English only; the joiner is passed to the backend conv_frontend slot.",
+      "options": {},
+      "platforms": [
+        "macos-arm64"
+      ],
+      "artifacts": [
+        {
+          "filename": "phonon-2-hearth-int8.tar.bz2",
+          "bytes": 339918748,
+          "sha256": "6b6cd464a3271f25f0bcbde0c12839516cd1e9b49f8292368da6a1931a2fa805",
+          "url": "https://github.com/Sal7one/Hearth/releases/download/v0.23.0/phonon-2-hearth-int8.tar.bz2"
+        }
+      ],
+      "archive": {
+        "format": "tar.bz2",
+        "root": "phonon-2-hearth-int8",
+        "expandedBytes": 629526848,
+        "files": [
+          {
+            "path": "tokens.txt",
+            "bytes": 93939,
+            "sha256": "d58544679ea4bc6ac563d1f545eb7d474bd6cfa467f0a6e2c1dc1c7d37e3c35d"
+          },
+          {
+            "path": "encoder.int8.onnx",
+            "bytes": 611893758,
+            "sha256": "953ae3bd0b635e4d0929e53cdc1d4757629099b99dee9b88e0812cb6ee6f670a"
+          },
+          {
+            "path": "decoder.int8.onnx",
+            "bytes": 12257659,
+            "sha256": "d92e2d8fc9c99ef9faf0a2cf1728af4ec08c0a83b99ece29a46037c4a5a757bf"
+          },
+          {
+            "path": "joiner.int8.onnx",
+            "bytes": 5281492,
+            "sha256": "b848103db33b89be7167d218587ea59e772e40ba6ba1cd787230e7e754839633"
+          }
+        ]
+      }
+    },
+    {
       "id": "transcribepsy-250m-eu-sub-q8",
       "name": "TranscribePsy 250M · EU (q8)",
       "family": "TranscribePsy",

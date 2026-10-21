@@ -19,6 +19,8 @@ do not have. Keep this file honest: do not add a row you have not run.
 | Nemotron 3.5 ASR | `:desktop-runtime:test --tests "*DesktopNemotronRealSmokeTest*"` | `museum opens at nine in the morning please bring your ticket to the east entrance` (573 ms decode, 6784 ms engine path) |
 | Moonshine tiny.en (shared sherpa bridge) | `:desktop-runtime:test --tests "*DesktopMoonshineRealSmokeTest*"` | `The museum opens at 9 in the morning. Please bring your ticket to the East Entrance.` (32 ms decode, 3999 ms engine path) |
 | MOSS-TTS Nano 100M | `:desktop-runtime:test --tests "*DesktopMossRealSmokeTest*"` | "Hello from Hearth." / Ava, 48 kHz WAV, peak 0.516, RMS 0.0996, 99% non-zero; direct JNI 61,440 samples |
+| Omnilingual CTC 300M | `:desktop-runtime:test --tests "*DesktopSherpaFamiliesRealSmokeTest*"` | `the museum opens at nine in the morning please bring your ticket to the east entrance` (220 ms warm) |
+| Phonon 2 | same test | `The museum opens at nine in the morning. Please bring your ticket to the East Entrance.` (117 ms warm) |
 | Speech + voice | `:desktop-runtime:test --tests "*DesktopSpeechVoiceRealSmokeTest*"` | `COMPLETED segments=1 audio=1` |
 | Speech + translation + voice | `:desktop-runtime:test --tests "*DesktopFullPipelineRealSmokeTest*"` | `COMPLETED ms=6182 segments=1 audio=1` |
 
@@ -53,6 +55,19 @@ HEARTH_SMOKE_WAV="$PWD/build/smoke/hello.wav" \
 Expected: `status=COMPLETED`, one caption segment, one audio artifact, and an
 Arabic translation of the English line. A Mac without an installed English system
 voice fails the test with that reason rather than silently skipping the stage.
+
+### Reproducing the Omnilingual/Phonon smoke
+
+```bash
+HEARTH_SHERPA_FAMILIES_SMOKE=1 \
+HEARTH_SMOKE_OMNILINGUAL=<extracted omnilingual root> \
+HEARTH_SMOKE_PHONON=<extracted phonon-2 root> \
+HEARTH_SMOKE_WAV="$PWD/build/smoke/hello.wav" \
+./gradlew -PhearthDesktopOnly=true :desktop-runtime:test --tests "*DesktopSherpaFamiliesRealSmokeTest*"
+```
+
+Both reuse the Qwen dylib and the shared bridge; the only differences are the entry
+symbol and the component paths. Phonon's joiner is passed in the `conv_frontend` slot.
 
 ### Reproducing the MOSS smoke
 
