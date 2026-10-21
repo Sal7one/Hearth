@@ -64,8 +64,9 @@ class DesktopSettingsTest {
             val vosk = if (macosArm) 6 else 0
             val ct2 = if (macosArm) 3 else 0
             val moss = if (macosArm) 1 else 0
+            val ming = if (macosArm) 1 else 0
             val byStage = library.catalog.groupingBy { it.stage.name }.eachCount()
-            assertEquals(mapOf("STT" to 27 + qwen + transcribepsy + nemotron + moonshine + omnilingual + phonon + vosk, "TRANSLATION" to 14 + ct2, "TTS" to 1 + moss), byStage)
+            assertEquals(mapOf("STT" to 27 + qwen + transcribepsy + nemotron + moonshine + omnilingual + phonon + vosk, "TRANSLATION" to 14 + ct2, "TTS" to 1 + moss + ming), byStage)
             assertEquals(if (qwen + transcribepsy + nemotron + moonshine + omnilingual + phonon + vosk > 0) 8 else 1, library.catalog.filter { it.stage.name == "STT" }.map { it.family }.distinct().size)
             if (qwen == 1) {
                 val card = library.catalog.single { it.id == "qwen3-asr-0.6b" }
@@ -116,6 +117,13 @@ class DesktopSettingsTest {
                 assertEquals("phonon-local", card.engineId)
                 assertEquals(4, card.archive?.files?.size)
                 assertEquals(339_918_748L, card.bytes)
+            }
+            if (ming == 1) {
+                val card = library.catalog.single { it.id == "ming-3.0-tts-0.5b-web" }
+                assertEquals("ming-local", card.engineId)
+                assertEquals(17, card.artifacts.size)
+                assertEquals(850_115_730L, card.bytes)
+                assertEquals("US_Emma", card.options["voice"])
             }
             if (moss == 1) {
                 val card = library.catalog.single { it.id == "moss-tts-nano" }

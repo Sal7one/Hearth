@@ -130,6 +130,34 @@ def vosk_models(models):
                 url=f"https://alphacephei.com/vosk/models/{pin['checkpoint']}.zip")],
             archive=dict(format='zip', root=pin['checkpoint'], expandedBytes=pin['expanded_bytes'], treeSha256=pin['tree_sha256'])))
 
+MING_ARTIFACTS = [
+    ('manifest.json', 88437, 'a50db3af1bfa6dfcbba12bfaca42c7d7d85fc440e76ee63b1a2a99f39cf36f05', 'https://huggingface.co/fusorlabs/ming-3.0-tts-0.5b-web/resolve/62588575d91dceb33822fe1e3925e748393c6b3e/manifest.json'),
+    ('tokenizer.json', 11431389, '87d54ca3b44ea2f822ba39a0a45cb1b61644bd6606d9d3536dea75367bffb06d', 'https://huggingface.co/fusorlabs/ming-3.0-tts-0.5b-web/resolve/62588575d91dceb33822fe1e3925e748393c6b3e/tokenizer.json'),
+    ('part-000.bin', 153151488, '018d43eaf832edfa69ba0096a60473850ac2d53019dd7e7102e10e9d69a8a58e', 'https://huggingface.co/fusorlabs/ming-3.0-tts-0.5b-web/resolve/62588575d91dceb33822fe1e3925e748393c6b3e/parts/000.bin'),
+    ('part-001.bin', 47809536, '79e273bc0c6b078c4571a86131eb9ed382daf24a5b5f58edf0a3c90b00da5fc6', 'https://huggingface.co/fusorlabs/ming-3.0-tts-0.5b-web/resolve/62588575d91dceb33822fe1e3925e748393c6b3e/parts/001.bin'),
+    ('part-002.bin', 49374720, '221d0161d1007ae8e8c8de3d02f5c87002a5dcedbc38fe46e392a1467c45b5c0', 'https://huggingface.co/fusorlabs/ming-3.0-tts-0.5b-web/resolve/62588575d91dceb33822fe1e3925e748393c6b3e/parts/002.bin'),
+    ('part-003.bin', 49374720, '317cb4dc946ed5ed4fca4a059099c2ced5f19c8a30d183a6dd6df4b27cf4b281', 'https://huggingface.co/fusorlabs/ming-3.0-tts-0.5b-web/resolve/62588575d91dceb33822fe1e3925e748393c6b3e/parts/003.bin'),
+    ('part-004.bin', 50028032, 'bb3b243dc4648a01db1aaf6bd08c680a8ef49880076b51681d90339f79e2c971', 'https://huggingface.co/fusorlabs/ming-3.0-tts-0.5b-web/resolve/62588575d91dceb33822fe1e3925e748393c6b3e/parts/004.bin'),
+    ('part-005.bin', 49883648, '138c06bfbac9059121dfbbf4f25993c0fb6c589f670bd8299e2d74033ef0c640', 'https://huggingface.co/fusorlabs/ming-3.0-tts-0.5b-web/resolve/62588575d91dceb33822fe1e3925e748393c6b3e/parts/005.bin'),
+    ('part-006.bin', 49374720, 'e460bd70b20ec14a6d603aaf075a2e275ad0aea1ee7c89d6299220fd0f6c8b33', 'https://huggingface.co/fusorlabs/ming-3.0-tts-0.5b-web/resolve/62588575d91dceb33822fe1e3925e748393c6b3e/parts/006.bin'),
+    ('part-007.bin', 50028032, 'ddf4c79abf8aa8a7df88f23820d591718aa1344cc4c0184b8f13b65fff7c4660', 'https://huggingface.co/fusorlabs/ming-3.0-tts-0.5b-web/resolve/62588575d91dceb33822fe1e3925e748393c6b3e/parts/007.bin'),
+    ('part-008.bin', 49880064, '2ae3893f08712067981d29dfff3f754c7c0944522bd8f0cb04d251c5e592e1af', 'https://huggingface.co/fusorlabs/ming-3.0-tts-0.5b-web/resolve/62588575d91dceb33822fe1e3925e748393c6b3e/parts/008.bin'),
+    ('part-009.bin', 49374720, '429b0551b819e339e12f7f8134e64c2cd79c137b01df9ed6bb4facffc25188ca', 'https://huggingface.co/fusorlabs/ming-3.0-tts-0.5b-web/resolve/62588575d91dceb33822fe1e3925e748393c6b3e/parts/009.bin'),
+    ('part-010.bin', 47382272, '091292f51b1d33b2f34bfe886bae8b3076dd855ba4122604fdb04df84c49e334', 'https://huggingface.co/fusorlabs/ming-3.0-tts-0.5b-web/resolve/62588575d91dceb33822fe1e3925e748393c6b3e/parts/010.bin'),
+    ('part-011.bin', 47366144, '543b01946f9455d87569c27bf3167c1c9271499fd2dfb732b5724a6cb15a9c90', 'https://huggingface.co/fusorlabs/ming-3.0-tts-0.5b-web/resolve/62588575d91dceb33822fe1e3925e748393c6b3e/parts/011.bin'),
+    ('part-012.bin', 48627200, '316d6fce01f71a016a60013f335aab496e77aae13324ee32737acb7f0abf819d', 'https://huggingface.co/fusorlabs/ming-3.0-tts-0.5b-web/resolve/62588575d91dceb33822fe1e3925e748393c6b3e/parts/012.bin'),
+    ('part-013.bin', 47321088, '3f55b8b32511799a0863ee567d033874a81ca4e627e0ef7e33dbe02cbc55722f', 'https://huggingface.co/fusorlabs/ming-3.0-tts-0.5b-web/resolve/62588575d91dceb33822fe1e3925e748393c6b3e/parts/013.bin'),
+    ('part-014.bin', 49619520, 'ee8cd2ff0385c4b99b6dfe4556be7326e53b30cf93258d52028c5af0f3550a1c', 'https://huggingface.co/fusorlabs/ming-3.0-tts-0.5b-web/resolve/62588575d91dceb33822fe1e3925e748393c6b3e/parts/014.bin'),
+]
+
+def ming_models(models):
+    models.append(dict(id='ming-3.0-tts-0.5b-web', name='Ming-3.0 TTS 0.5B · local', family='Ming-3.0',
+        stage='TTS', engineId='ming-local', languages=['en', 'zh'],
+        source='https://huggingface.co/fusorlabs/ming-3.0-tts-0.5b-web', license='MIT',
+        note='Experimental local Ming runtime; 850 MB fusor-ai bundle, CPU, 44.1 kHz, English/Chinese built-in voices. The flat files are verified and linked into the parts/ layout the runtime expects. Synthetic speech must be labelled.',
+        options={'voice': 'US_Emma', 'threads': '6'}, platforms=['macos-arm64'],
+        artifacts=[dict(filename=name, bytes=size, sha256=digest, url=url) for name, size, digest, url in MING_ARTIFACTS]))
+
 def generate():
     models = []
     whisper = (ROOT / 'app/src/main/java/com/sal7one/transiber/models/WhisperDownloads.kt').read_text(encoding="utf-8")
@@ -264,7 +292,8 @@ def generate():
         options={}, platforms=['macos-arm64'],
         artifacts=[dict(filename=nemotron['url'].rsplit('/', 1)[-1], bytes=nemotron['bytes'], sha256=nemotron['sha256'], url=nemotron['url'])]))
     vosk_models(models)
-    assert len(models) == 58, len(models)
+    ming_models(models)
+    assert len(models) == 59, len(models)
     return json.dumps({'schemaVersion':1,'provenance':'Generated from existing Android pins, the audited Qwen3-ASR release archive, reviewed CT2 catalog pins and reviewed desktop engine pins; run scripts/desktop/generate-catalog.py --check','models':models},ensure_ascii=False,indent=2)+'\n'
 
 

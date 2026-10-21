@@ -21,6 +21,7 @@ Last updated when Moonshine tiny.en passed through the shared speech backend bri
 | Phonon 2 (sherpa-onnx) | 1 | same dylib/bridge (`hearth_phonon_backend_v1`, joiner as `conv_frontend`) | real speech → text, same test: sentence-case transcript, 117 ms warm decode |
 | Vosk (Kaldi) | 6 | `hearth_vosk` + pinned official v0.3.42 `libvosk.dylib` (thin arm64), one `vosk-local` engine | EN exact transcript; six app-path language smokes (en/de/fr/es/ru/zh); Spanish quality/repeat stability unverified |
 | MOSS-TTS Nano 100M | 1 (14 pinned files) | `hearth_desktop_moss` (static SentencePiece 0.2.0 + the shipped ONNX Runtime 1.20.1) | real 48 kHz non-silent WAV, `DesktopMossRealSmokeTest`: 20,481 samples / peak 0.516 / RMS 0.0996 through the app path; direct JNI 61,440 samples |
+| Ming-3.0 TTS 0.5B (local) | 1 (17 pinned files) | `libming_jni.dylib` (pinned ming-ffi over fusor-ai 0.1.2) | real 44.1 kHz non-silent WAV, `DesktopMingLocalRealSmokeTest`: 61,740 frames / peak 14,658 / 87% non-zero; English/Chinese only; Android build-only |
 
 ## Missing on desktop
 
@@ -31,7 +32,7 @@ The shared ABI and the family-versus-model rule are documented in
 | --- | --- | --- | --- |
 | sherpa-onnx speech — remaining Moonshine ×8 | 8 | `qwen_backend.cpp` already exports the entry point | one dylib and one bridge already exist; each remaining model needs only its pins, a card and a real-audio smoke |
 | CTranslate2 pair coverage | 3 desktop cards: QuickMT EN↔AR, SMaLL-100 (100 languages) | `common-jni/src/main/cpp/translation/ct2` + `Ct2Catalog.kt` | four Jisr 50M specs are pinned but `downloadEnabled=false`, and the requested EN↔DE/ES/FR/RU/ZH pair models are not present or pinned in this repo |
-| TTS — Chatterbox, Magpie, OmniVoice, Oute | 4 | `hearth-tts-*` modules | each family has its own architecture and runtime; MOSS is the first shared desktop TTS runtime |
+| TTS — Chatterbox, Magpie, OmniVoice, Oute | 4 | `hearth-tts-*` modules | each family has its own architecture and runtime; MOSS and Ming local are the shared desktop TTS runtimes |
 
 ## What Qwen3-ASR proved
 

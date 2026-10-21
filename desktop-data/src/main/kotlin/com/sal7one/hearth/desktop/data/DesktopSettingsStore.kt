@@ -132,7 +132,7 @@ object SetupCodec {
             val value = root[name]?.jsonObject ?: return null
             fun get(key: String) = value[key]?.jsonPrimitive?.content ?: ""
             val options = value["options"]?.jsonObject?.mapValues { it.value.jsonPrimitive.content } ?: emptyMap()
-            require(options.size <= 16 && options.all { (it.key in allowedOptions || it.key.startsWith("sha256.")) && it.value.length <= 4096 }) { "Unsupported engine option" }
+            require(options.size <= 24 && options.all { (it.key in allowedOptions || it.key.startsWith("sha256.")) && it.value.length <= 4096 }) { "Unsupported engine option" }
             require(get("engineId").matches(Regex("[A-Za-z0-9._-]{1,100}"))) { "Invalid engine identity" }
             val endpoint = get("endpoint")
             require(endpoint.length <= 2048 && (endpoint.isEmpty() || java.net.URI(endpoint).let {

@@ -126,6 +126,18 @@ The upstream `fusor-rs/ming-wasm` project has a **desktop-only** native CLI for
 macOS arm64 (experimental v0.1, 850 MB bundle, ~2 GB memory, phones unmeasured).
 There is no Android runtime for it; Android uses the hosted bridge above.
 
+### Desktop local engine (experimental)
+
+The desktop app also exposes **`ming-local`**, a local Ming-3.0-tts-0.5B engine built
+from the pinned `ming-ffi`/`ming-jni` Rust source over fusor-ai 0.1.2. It downloads the
+850 MB `fusorlabs/ming-3.0-tts-0.5b-web` bundle (17 pinned files), converts the flat
+catalog layout into the runtime's `parts/` layout, and writes 44.1 kHz mono WAV through
+JNI. It advertises **English and Chinese only**, because the shipped runtime hardcodes
+`language: None`; the other five published languages need a library-level wrapper.
+Peak RSS is ~1 GB and each one-shot call reloads the bundle (~0.9 s). `DesktopMingLocalRealSmokeTest`
+is owner-opt-in. Android is **build-verified only** (aarch64 `.so`, API 28, 16 KB pages)
+and has not been run on a device; the default Android kernel is scalar and much slower.
+
 ## ASR Tiny: direct connection
 
 Follow the pinned [official ASR setup](https://github.com/inclusionAI/Ming-3.0-asr)

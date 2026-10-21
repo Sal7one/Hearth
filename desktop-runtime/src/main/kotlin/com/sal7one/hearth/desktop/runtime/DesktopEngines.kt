@@ -36,6 +36,14 @@ class DesktopEngines(
 ) : PipelineEngines, AutoCloseable {
     private val cloud = DesktopCloud(credentials, appDataDirectory)
     private val voices = DesktopVoiceCache(appDataDirectory)
+    private val mingVoices = DesktopVoiceCache(
+        appDataDirectory,
+        engineId = "ming-local",
+        sampleRate = 44_100,
+        defaultVoice = "US_Emma",
+        assetNames = MingLocalModel.assets,
+        engineFactory = { path, threads -> MingLocalEngine(path.toFile(), threads) },
+    )
     private val mossVoices = DesktopVoiceCache(
         appDataDirectory,
         engineId = "moss-tts-local",
@@ -106,6 +114,7 @@ class DesktopEngines(
             local("omnilingual-local", "Omnilingual CTC 300M", PipelineStage.STT, "hearth_desktop_backend_speech", OMNILINGUAL_LANGUAGES),
             local("phonon-local", "Phonon 2", PipelineStage.STT, "hearth_desktop_backend_speech", PHONON_LANGUAGES),
             local("moss-tts-local", "MOSS-TTS Nano 100M", PipelineStage.TTS, "hearth_desktop_moss", setOf("ar", "en")),
+            local("ming-local", "Ming-3.0 TTS 0.5B (local)", PipelineStage.TTS, "ming_jni", setOf("en", "zh")),
             local("llama-translation-local", "Local GGUF translation", PipelineStage.TRANSLATION, "transiber_translation"),
             local("marian-local", "CTranslate2 · Marian/OPUS", PipelineStage.TRANSLATION, "hearth_desktop_ct2"),
             local("supertonic-local", "Supertonic 3", PipelineStage.TTS, "hearth_supertonic_jni", SupertonicCatalog.languages),
@@ -467,6 +476,10 @@ class DesktopEngines(
             require(!metal(selection)) { "MOSS desktop currently supports CPU acceleration only" }
             return mossVoices.read(text, selection, language, voiceId)
         }
+        if (selection.engineId == "ming-local") {
+            require(!metal(selection)) { "Ming local supports CPU acceleration only" }
+            return mingVoices.read(text, selection, language, voiceId)
+        }
         require(selection.engineId == "supertonic-local") { "Unknown voice engine: ${selection.engineId}" }
         require(!metal(selection)) { "Supertonic desktop currently supports CPU acceleration only" }
         return voices.read(text, selection, language, voiceId)
@@ -481,7 +494,7 @@ class DesktopEngines(
         engine?.close()
     }
     override fun close() {
-        if (closed.compareAndSet(false, true)) try { clearTranslation(); clearCt2() } finally { voices.close(); mossVoices.close() }
+        if (closed.compareAndSet(false, true)) try { clearTranslation(); clearCt2() } finally { voices.close(); mossVoices.close(); mingVoices.close() }
     }
 /** Vosk models are extracted directories whose model-tree-sha256-v1 digest is the pin.
  *  The desktop library verifies it on install/refresh and the adapter re-derives and

@@ -8,7 +8,7 @@ do not have. Keep this file honest: do not add a row you have not run.
 | Check | Command | Result |
 | --- | --- | --- |
 | Android native, 4 ABIs | `./gradlew :common-jni:externalNativeBuildDebug` | `libcommon_jni.so` for arm64-v8a, armeabi-v7a, x86, x86_64 |
-| Native bundle packaged | `./gradlew -PhearthDesktopOnly=true :desktop-runtime:jar` | 23 `native/macos-arm64/` entries, libraries stored as `*.payload` |
+| Native bundle packaged | `./gradlew -PhearthDesktopOnly=true :desktop-runtime:jar` | 25 `native/macos-arm64/` entries, libraries stored as `*.payload` |
 | Bundle loads + hashes | `:desktop-runtime:test --tests "*DesktopNativeContractTest*"` | 2 tests, 0 skipped; includes Qwen readiness/protocol |
 | Handle ownership | `:desktop-runtime:test --tests "*DesktopNativeOwnershipTest*"` | 6 tests, 1 skipped |
 | Whisper alone | `:desktop-runtime:test --tests "*DesktopWhisperRealSmokeTest*"` | transcript exact, `Metal GPU; threads=2` |
@@ -23,6 +23,7 @@ do not have. Keep this file honest: do not add a row you have not run.
 | Phonon 2 | same test | `The museum opens at nine in the morning. Please bring your ticket to the East Entrance.` (117 ms warm) |
 | Vosk English | `:desktop-runtime:test --tests "*DesktopVoskRealSmokeTest*"` | exact lower-case transcript, 586 ms decode |
 | Vosk six languages | `:desktop-runtime:test --tests "*DesktopVoskLanguagesSmokeTest*"` | six non-empty transcripts; Spanish quality/repeat stability unverified |
+| Ming-3.0 TTS local | `:desktop-runtime:test --tests "*DesktopMingLocalRealSmokeTest*"` | 44.1 kHz mono, 61,740 frames, 87% non-zero, peak 14,658; English only |
 | Speech + voice | `:desktop-runtime:test --tests "*DesktopSpeechVoiceRealSmokeTest*"` | `COMPLETED segments=1 audio=1` |
 | Speech + translation + voice | `:desktop-runtime:test --tests "*DesktopFullPipelineRealSmokeTest*"` | `COMPLETED ms=6182 segments=1 audio=1` |
 
@@ -57,6 +58,19 @@ HEARTH_SMOKE_WAV="$PWD/build/smoke/hello.wav" \
 Expected: `status=COMPLETED`, one caption segment, one audio artifact, and an
 Arabic translation of the English line. A Mac without an installed English system
 voice fails the test with that reason rather than silently skipping the stage.
+
+### Reproducing the Ming local smoke
+
+```bash
+HEARTH_BUILD_JOBS=8 python3 scripts/desktop/build-native.py --stage ming
+HEARTH_MING_LOCAL_SMOKE=1 HEARTH_MING_LOCAL_BUNDLE=<17-file bundle> \
+  ./gradlew -PhearthDesktopOnly=true :desktop-runtime:test --tests "*DesktopMingLocalRealSmokeTest*"
+```
+
+The `ming` stage builds the pinned Rust JNI with rustc 1.99 and stages
+`libming_jni.dylib` + `Ming-NOTICES.txt`. The runtime verifies the bundle's BLAKE3
+parts; the catalog verifies per-file SHA-256. This is experimental and desktop-only;
+Android is build-verified, not runtime-verified.
 
 ### Reproducing the Vosk smoke
 

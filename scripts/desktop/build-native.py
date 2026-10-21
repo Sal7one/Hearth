@@ -26,6 +26,8 @@ CT2_PIN = "8c8cab2a954810216a45d65c1b8d56839c846e5b"
 SENTENCEPIECE_PIN = "17d7580d6407802f85855d2cc9190634e2c95624"
 TRANSCRIBEPSY_PIN = "364ec36130dc87d2cd46e596598268a6e3313751"
 NEMO_PIN = "ffa38cb2408f1e832a36d46fef5e3e1e80d07e6c"
+MING_WASM_PIN = "7252aa537ab2ef4c4c2c58088116ecb754f654d6"
+MING_FUSOR_AI_PIN = "7dda3bfb4015d76bed053456ad371f1e4f487ad9"
 # Pinned official Vosk macOS release. The app never downloads a native runtime:
 # this runs at build time only, verifies the release ZIP and each member, thins
 # the universal2 slice to arm64 and records both digests in the manifest.
@@ -139,7 +141,15 @@ def snapshot():
                  "scripts/speech/transcribepsy.cmake",
                  "scripts/speech/nemo-inject.cmake",
                  "hearth-tts-moss/src/main/cpp/moss.cpp",
-                 "hearth-tts-moss/src/main/cpp/vendor/moss.h"]:
+                 "hearth-tts-moss/src/main/cpp/vendor/moss.h",
+                 "common-jni/src/main/cpp/ming/ffi/Cargo.toml",
+                 "common-jni/src/main/cpp/ming/ffi/Cargo.lock",
+                 "common-jni/src/main/cpp/ming/ffi/src/lib.rs",
+                 "common-jni/src/main/cpp/ming/ffi/include/ming.h",
+                 "common-jni/src/main/cpp/ming/jni/Cargo.toml",
+                 "common-jni/src/main/cpp/ming/jni/Cargo.lock",
+                 "common-jni/src/main/cpp/ming/jni/src/lib.rs",
+                 "scripts/desktop/build-ming-runtime.sh"]:
         paths.append(ROOT / name)
     paths.extend((ROOT / "hearth-tts-supertonic/src/main/cpp/voice").glob("*.cpp"))
     paths.append(ROOT / "hearth-tts-supertonic/src/main/cpp/voice/supertonic.h")
@@ -362,9 +372,42 @@ def vosk_install(cache, output):
             "voskHeaderSha256": VOSK_HEADER_SHA256}
 
 
+def ming_install(output):
+    """Build the experimental Ming JNI runtime from the pinned Rust source."""
+    script = ROOT / "scripts/desktop/build-ming-runtime.sh"
+    environment = os.environ.copy()
+    environment["HEARTH_MING_OUTPUT"] = str(output)
+    subprocess.run(["bash", str(script)], check=True, env=environment)
+    dylib = output / "libming_jni.dylib"
+    if not dylib.is_file():
+        raise RuntimeError("The Ming runtime build did not produce libming_jni.dylib")
+    require_exports(dylib, "_Java_com_sal7one_common_1jni_MingNative_", 3)
+    linked = subprocess.check_output(["otool", "-L", str(dylib)], text=True).splitlines()[1:]
+    for line in linked:
+        entry = line.strip().split(" ")[0] if line.strip() else ""
+        if entry in (str(dylib), "@rpath/libming_jni.dylib"):
+            continue
+        if entry.startswith("/") and not (entry.startswith("/usr/lib/") or entry.startswith("/System/Library/")):
+            raise RuntimeError(f"libming_jni.dylib has a non-system dependency: {entry}")
+    notice = """===== ming-wasm / fusor-ai (MIT) =====
+ming-wasm 7252aa537ab2ef4c4c2c58088116ecb754f654d6 (MIT, (c) 2026 Fusor)
+fusor-ai 7dda3bfb4015d76bed053456ad371f1e4f487ad9, crates fusor-ai-* 0.1.2 (MIT)
+https://github.com/fusor-rs/ming-wasm
+https://github.com/fusor-rs/fusor-ai
+The shipped JNI binary also includes its MIT/Apache-2.0 Rust dependency closure.
+===== Ming-3.0-tts-0.5B (MIT) =====
+Model inclusionAI/Ming-3.0-tts-0.5B revision e5bd8da31ecf1b9276cdbdda821fa891068f1368.
+The precompiled fusor-ai bundle is fusorlabs/ming-3.0-tts-0.5b-web revision 62588575d91dceb33822fe1e3925e748393c6b3e.
+Synthetic speech must be labelled as synthetic. Model weights are downloaded separately and never committed.
+"""
+    (output / "Ming-NOTICES.txt").write_text(notice, encoding="utf-8", newline="\n")
+    return {"mingWasmRevision": MING_WASM_PIN, "mingFusorAiRevision": MING_FUSOR_AI_PIN,
+            "mingJniSha256": sha(dylib)}
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--stage", choices=["all", "whisper", "translation", "supertonic", "onnx", "ct2", "moss", "backend", "vosk"], default="all")
+    parser.add_argument("--stage", choices=["all", "whisper", "translation", "supertonic", "onnx", "ct2", "moss", "backend", "vosk", "ming"], default="all")
     parser.add_argument("--speech-backends", default="transcribepsy,nemotron", help="Comma-separated speech backends to stage (transcribepsy, nemotron)")
     parser.add_argument("--llama-root", type=Path, default=ROOT / "build/translation-runtime/llama.cpp")
     parser.add_argument("--sherpa-root", type=Path, default=ROOT / "build/desktop-dependencies/sherpa-onnx")
@@ -385,7 +428,7 @@ def main():
     stages = ["whisper", "translation", "supertonic"] if args.stage == "all" else [args.stage]
     if args.stage == "all":
         if (system, arch) == ("macos", "arm64"):
-            stages.extend(["onnx", "ct2", "backend", "moss", "vosk"])
+            stages.extend(["onnx", "ct2", "backend", "moss", "vosk", "ming"])
         else:
             print(f"Skipping Qwen3-ASR (onnx), CTranslate2 (ct2), speech backends (backend) and MOSS TTS (moss): built only for macos-arm64; host is {target}", file=sys.stderr)
     if "onnx" in stages and system != "macos":
@@ -398,6 +441,8 @@ def main():
         parser.error("The desktop speech backend stage is built for macOS arm64 only")
     if "moss" in stages and (system, arch) != ("macos", "arm64"):
         parser.error("The MOSS TTS stage is built for macOS arm64 only")
+    if "ming" in stages and (system, arch) != ("macos", "arm64"):
+        parser.error("The Ming TTS runtime is built for macOS arm64 in this stage")
     if "vosk" in stages and (system, arch) != ("macos", "arm64"):
         parser.error("The Vosk speech backend stage is built for macOS arm64 only")
     speech_backends = [value.strip() for value in args.speech_backends.split(",") if value.strip()]
@@ -433,6 +478,9 @@ def main():
     vosk_upstreams = None
     if "backend" in stages:
         backend_revisions = speech_backend_install(speech_backends, output, args.jobs)
+    ming_revisions = None
+    if "ming" in stages:
+        ming_revisions = ming_install(output)
     source = ROOT / "hearth-tts-supertonic/src/main/cpp/voice/supertonic.cpp"
     original = source.read_text(encoding="utf-8")
     old = 'for(int i=0;i<4;++i)checked(api()->CreateSession(env,(dir+"/"+names[i]).c_str(),options,&sessions[i]));'
@@ -448,7 +496,7 @@ def main():
     prepared_jni.write_text('#include "desktop_jni.h"\n' + jni_source.replace(old_error, 'void fail(JNIEnv* env,const char* message){desktopFail(env,message);}'), encoding="utf-8")
     translation_jni = args.build_dir.resolve() / "translation-jni-desktop.cpp"
     translation_jni.write_text(prepare_translation((ROOT / "common-jni/src/main/cpp/translation/translation_jni.cpp").read_text(encoding="utf-8")), encoding="utf-8")
-    for stage in [value for value in stages if value != "ct2"]:
+    for stage in [value for value in stages if value not in ("ct2", "ming")]:
         cache = args.build_dir.resolve() / target / stage
         command = ["cmake", "-S", str(ROOT / "scripts/desktop/native"), "-B", str(cache),
                    "-DCMAKE_BUILD_TYPE=Release", f"-DHEARTH_ROOT={ROOT}", f"-DHEARTH_STAGE={stage}",
@@ -552,6 +600,8 @@ def main():
         upstreams.update(backend_revisions)
     if vosk_upstreams:
         upstreams.update(vosk_upstreams)
+    if ming_revisions:
+        upstreams.update(ming_revisions)
     if "moss" in stages:
         upstreams.update({
             "mossRuntimeSourceSha256": sha(ROOT / "hearth-tts-moss/src/main/cpp/moss.cpp"),
