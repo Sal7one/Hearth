@@ -11,6 +11,7 @@ import kotlinx.serialization.json.*
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream
 import java.io.BufferedInputStream
+import java.util.zip.ZipInputStream
 import java.net.URI
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
@@ -26,9 +27,13 @@ import kotlin.coroutines.resumeWithException
 data class DesktopModelArtifact(val filename: String, val url: String, val bytes: Long, val sha256: String)
 data class DesktopModelArchiveFile(val path: String, val bytes: Long, val sha256: String)
 data class DesktopModelArchive(
-    val format: String, val root: String, val expandedBytes: Long, val files: List<DesktopModelArchiveFile>,
+    val format: String, val root: String, val expandedBytes: Long, val files: List<DesktopModelArchiveFile> = emptyList(),
+    val treeSha256: String? = null,
     val byPath: Map<String, DesktopModelArchiveFile> = files.associateBy { it.path },
-)
+) {
+    /** Archive that pins every component; otherwise the expanded tree digest is the pin. */
+    val hasComponentPins: Boolean get() = files.isNotEmpty()
+}
 data class DesktopModelCard(
     val id: String, val name: String, val family: String, val stage: PipelineStage,
     val engineId: String, val languages: Set<String>, val source: String, val license: String,
@@ -137,6 +142,11 @@ class DesktopModelLibrary(private val directory: Path) {
     private suspend fun verifyFiles(card: DesktopModelCard, root: Path) {
         val archive = card.archive
         if (archive != null) {
+            if (!archive.hasComponentPins) {
+                requireNotNull(archive.treeSha256) { "Model archive has no tree pin" }
+                check(modelTreeSha256(root) == archive.treeSha256) { "Missing or modified model tree: ${card.id}" }
+                return
+            }
             for (file in archive.files) {
                 val target = root.resolve(file.path).normalize()
                 check(target.startsWith(root.normalize())) { "Model component escapes its directory: ${file.path}" }
@@ -155,6 +165,7 @@ class DesktopModelLibrary(private val directory: Path) {
     /** Unpack the verified archive into the model directory, keeping only pinned components. */
     internal fun installArchive(card: DesktopModelCard, root: Path) {
         val archive = card.archive ?: return
+        if (archive.format == "zip") { installZip(card, root); return }
         val tarball = root.resolve(card.artifacts.single().filename)
         check(Files.isRegularFile(tarball)) { "Model archive is missing: ${tarball.fileName}" }
         val staging = Files.createTempDirectory(root, ".extract-")
@@ -216,6 +227,65 @@ class DesktopModelLibrary(private val directory: Path) {
         }
         staging.toFile().deleteRecursively()
     }
+    /**
+     * Stream a verified model ZIP with the same bounds as the tar path, then verify the
+     * expanded model-tree-sha256-v1 digest before publishing. The verified archive is kept
+     * on failure so a retry does not download it again.
+     */
+    internal fun installZip(card: DesktopModelCard, root: Path) {
+        val archive = card.archive ?: return
+        val expectedTree = requireNotNull(archive.treeSha256) { "A ZIP model archive requires a tree digest pin" }
+        val zip = root.resolve(card.artifacts.single().filename)
+        check(Files.isRegularFile(zip)) { "Model archive is missing: ${zip.fileName}" }
+        val staging = Files.createTempDirectory(root, ".extract-")
+        val seen = mutableSetOf<String>()
+        var expanded = 0L
+        try {
+            ZipInputStream(BufferedInputStream(Files.newInputStream(zip), 1 shl 16)).use { input ->
+                var entries = 0
+                while (true) {
+                    val entry = input.nextEntry ?: break
+                    check(++entries <= 2000) { "Model archive exceeds 2000 entries" }
+                    val full = entry.name.trimEnd('/')
+                    require(full.isNotEmpty() && full.length <= 1024 && safeArchivePath(full)) { "Invalid model archive path: ${entry.name}" }
+                    require(full == archive.root || full.startsWith(archive.root + "/")) { "Unexpected model archive root: $full" }
+                    if (entry.isDirectory) continue
+                    val relative = full.removePrefix(archive.root + "/")
+                    require(relative.isNotEmpty() && seen.add(relative)) { "Duplicate model archive component: $relative" }
+                    val target = staging.resolve(relative).normalize()
+                    require(target.startsWith(staging.normalize())) { "Model archive component escapes its directory: $relative" }
+                    Files.createDirectories(target.parent)
+                    Files.newOutputStream(target).use { output ->
+                        val buffer = ByteArray(1 shl 16)
+                        while (true) {
+                            val read = input.read(buffer)
+                            if (read < 0) break
+                            expanded = Math.addExact(expanded, read.toLong())
+                            require(expanded <= archive.expandedBytes) { "Model archive exceeds its pinned expanded size" }
+                            output.write(buffer, 0, read)
+                        }
+                    }
+                }
+            }
+            require(expanded == archive.expandedBytes) { "Model archive expanded size differs from its pin" }
+            check(modelTreeSha256(staging) == expectedTree) { "Model tree checksum mismatch after extraction" }
+            // Collect first: moving files while walking the same staging tree mutates
+            // the directory stream mid-iteration.
+            val published = Files.walk(staging).use { stream ->
+                stream.filter { Files.isRegularFile(it) }.map { staging.relativize(it).toString() }.toList()
+            }
+            for (relative in published) {
+                val target = root.resolve(relative)
+                Files.createDirectories(target.parent)
+                Files.move(staging.resolve(relative), target, StandardCopyOption.REPLACE_EXISTING)
+            }
+            Files.deleteIfExists(zip)
+        } catch (error: Throwable) {
+            staging.toFile().deleteRecursively()
+            throw error
+        }
+        staging.toFile().deleteRecursively()
+    }
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     private suspend fun openArtifact(initial: URI): HttpResponse<java.io.InputStream> {
         var current = initial
@@ -257,24 +327,34 @@ class DesktopModelLibrary(private val directory: Path) {
                 val id = text("id"); require(id.matches(Regex("[a-zA-Z0-9_.-]{1,100}")))
                 val archive = m["archive"]?.jsonObject?.let { a ->
                     val format = a.getValue("format").jsonPrimitive.content
-                    require(format == "tar.bz2") { "Unsupported desktop model archive format: $format" }
+                    require(format == "tar.bz2" || format == "zip") { "Unsupported desktop model archive format: $format" }
                     val root = a.getValue("root").jsonPrimitive.content
                     require(safeArchivePath(root) && '/' !in root) { "Invalid desktop model archive root: $root" }
                     val expanded = a.getValue("expandedBytes").jsonPrimitive.long
-                    val files = a.getValue("files").jsonArray.map { f ->
+                    require(expanded > 0) { "Desktop model archive must declare its expanded size" }
+                    val tree = a["treeSha256"]?.jsonPrimitive?.content
+                    require(tree == null || tree.matches(Regex("[a-f0-9]{64}"))) { "Invalid desktop model archive tree SHA-256" }
+                    val files = a["files"]?.jsonArray?.map { f ->
                         val o = f.jsonObject
                         val path = o.getValue("path").jsonPrimitive.content
                         val bytes = o.getValue("bytes").jsonPrimitive.long
                         val sha = o.getValue("sha256").jsonPrimitive.content
                         require(safeArchivePath(path) && bytes > 0 && sha.matches(Regex("[a-f0-9]{64}"))) { "Invalid desktop model archive component: $path" }
                         DesktopModelArchiveFile(path, bytes, sha)
+                    } ?: emptyList()
+                    if (format == "zip") {
+                        require(tree != null && files.isEmpty()) {
+                            "A ZIP model archive pins the expanded model-tree SHA-256 and no component list"
+                        }
+                    } else {
+                        require(files.size in 1..1000 && files.map { it.path }.toSet().size == files.size) { "Desktop model archive components are missing or duplicated" }
+                        require(files.sumOf { it.bytes } == expanded) { "Desktop model archive expanded size differs from its components" }
                     }
-                    require(files.size in 1..1000 && files.map { it.path }.toSet().size == files.size) { "Desktop model archive components are missing or duplicated" }
-                    require(files.sumOf { it.bytes } == expanded) { "Desktop model archive expanded size differs from its components" }
-                    DesktopModelArchive(format, root, expanded, files)
+                    DesktopModelArchive(format, root, expanded, files, tree)
                 }
-                require(archive == null || (assets.size == 1 && assets.single().filename.endsWith(".tar.bz2"))) {
-                    "An archive model must have exactly one .tar.bz2 artifact"
+                require(archive == null || (assets.size == 1 && assets.single().filename.endsWith(
+                    if (archive.format == "zip") ".zip" else ".tar.bz2"))) {
+                    "An archive model must have exactly one matching archive artifact"
                 }
                 val platforms = m["platforms"]?.jsonArray?.map { it.jsonPrimitive.content }?.toSet()
                 require(platforms == null || platforms.isNotEmpty() && platforms.all { it.matches(Regex("[a-z0-9]+-[a-z0-9]+")) }) {
@@ -296,6 +376,48 @@ class DesktopModelLibrary(private val directory: Path) {
         private fun ByteArray.hex() = joinToString("") { "%02x".format(it) }
     }
 }
+
+/**
+ * model-tree-sha256-v1 over a directory: the domain, then each regular file sorted by
+ * UTF-8 path bytes as u64be(pathBytes) + path + u64be(size) + SHA-256(content).
+ * Byte-for-byte compatible with common-jni's native ModelIntegrity/computeModelTreeSha256.
+ */
+internal fun modelTreeSha256(root: Path): String {
+    val digest = MessageDigest.getInstance("SHA-256")
+    digest.update("model-tree-sha256-v1\u0000".toByteArray(Charsets.US_ASCII))
+    val files = mutableListOf<Pair<ByteArray, Path>>()
+    Files.walk(root).use { stream ->
+        stream.filter { Files.isRegularFile(it, java.nio.file.LinkOption.NOFOLLOW_LINKS) }.forEach { path ->
+            files += root.relativize(path).joinToString("/").toByteArray(Charsets.UTF_8) to path
+        }
+    }
+    check(files.isNotEmpty()) { "Model tree is empty" }
+    files.sortWith { first, second -> comparePathBytes(first.first, second.first) }
+    for ((relative, path) in files) {
+        digest.update(longBytes(relative.size.toLong()))
+        digest.update(relative)
+        digest.update(longBytes(Files.size(path)))
+        // The canonical contract hashes each file's 32-byte content digest, not the bytes.
+        val content = MessageDigest.getInstance("SHA-256")
+        Files.newInputStream(path).use { input ->
+            val buffer = ByteArray(1 shl 16)
+            while (true) { val read = input.read(buffer); if (read < 0) break; content.update(buffer, 0, read) }
+        }
+        digest.update(content.digest())
+    }
+    return digest.digest().joinToString("") { "%02x".format(it) }
+}
+
+private fun comparePathBytes(first: ByteArray, second: ByteArray): Int {
+    val limit = minOf(first.size, second.size)
+    for (index in 0 until limit) {
+        val difference = (first[index].toInt() and 0xff) - (second[index].toInt() and 0xff)
+        if (difference != 0) return difference
+    }
+    return first.size - second.size
+}
+
+private fun longBytes(value: Long): ByteArray = ByteArray(8) { index -> (value ushr (56 - index * 8)).toByte() }
 
 private fun safeArchivePath(path: String): Boolean =
     path.isNotEmpty() && path.length <= 1024 &&

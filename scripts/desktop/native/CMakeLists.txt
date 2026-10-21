@@ -160,10 +160,30 @@ elseif(HEARTH_STAGE STREQUAL "backend")
  target_include_directories(hearth_desktop_backend_speech PRIVATE ${JNI_INCLUDE_DIRS} "${DESKTOP_CPP}" "${CPP}/common" "${CPP}/speech")
  target_link_libraries(hearth_desktop_backend_speech PRIVATE ${CMAKE_DL_LIBS})
  set(OUTPUT_TARGET hearth_desktop_backend_speech)
+elseif(HEARTH_STAGE STREQUAL "vosk")
+ if(NOT APPLE OR NOT CMAKE_SYSTEM_PROCESSOR STREQUAL "arm64")
+  message(FATAL_ERROR "The Vosk desktop backend is built only for macOS arm64")
+ endif()
+ # The pinned official libvosk.dylib is never linked here: this adapter dlopen()s
+ # its sibling by absolute path at create() so the runtime stays a verified bundle
+ # file and the adapter carries no Vosk load command.
+ add_library(hearth_vosk SHARED
+   "${CPP}/speech/backends/vosk_backend.cpp"
+   "${CPP}/vosk/vosk_engine.cpp"
+   "${CPP}/common/logging.cpp"
+   "${CPP}/common/json_utils.cpp"
+   "${CPP}/common/engine_interface.cpp"
+   "${CPP}/common/audio_utils.cpp"
+ )
+ target_compile_definitions(hearth_vosk PRIVATE VOSK_AVAILABLE=1)
+ target_include_directories(hearth_vosk PRIVATE
+   "${CPP}" "${CPP}/common" "${CPP}/speech" "${CPP}/speech/backends" "${CPP}/vosk")
+ target_link_libraries(hearth_vosk PRIVATE ${CMAKE_DL_LIBS})
+ set(OUTPUT_TARGET hearth_vosk)
 else()
- message(FATAL_ERROR "HEARTH_STAGE must be whisper, translation, supertonic, onnx, moss or backend")
+ message(FATAL_ERROR "HEARTH_STAGE must be whisper, translation, supertonic, onnx, moss, backend or vosk")
 endif()
-if(APPLE AND HEARTH_DESKTOP_METAL AND NOT HEARTH_STAGE STREQUAL "supertonic" AND NOT HEARTH_STAGE STREQUAL "onnx" AND NOT HEARTH_STAGE STREQUAL "backend")
+if(APPLE AND HEARTH_DESKTOP_METAL AND NOT HEARTH_STAGE STREQUAL "supertonic" AND NOT HEARTH_STAGE STREQUAL "onnx" AND NOT HEARTH_STAGE STREQUAL "backend" AND NOT HEARTH_STAGE STREQUAL "vosk")
  target_sources(${OUTPUT_TARGET} PRIVATE "${DESKTOP_CPP}/metal_device.mm")
 endif()
 if(APPLE)

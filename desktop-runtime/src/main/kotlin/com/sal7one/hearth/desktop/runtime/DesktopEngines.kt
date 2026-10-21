@@ -84,7 +84,7 @@ class DesktopEngines(
                             check(Ct2Native.protocolVersion() == DesktopCt2TranslationEngine.PROTOCOL_VERSION) { "Desktop CTranslate2 protocol mismatch; rebuild the native bundle" }
                             false
                         }
-                        "transcribepsy-local", "nemotron-asr-local", "moonshine-local", "omnilingual-local", "phonon-local" -> {
+                        "transcribepsy-local", "nemotron-asr-local", "moonshine-local", "omnilingual-local", "phonon-local", "vosk-local" -> {
                             check(DesktopBackendSpeechNative.protocolVersion() == DesktopBackendSpeechEngine.PROTOCOL_VERSION) { "Desktop speech backend protocol mismatch; rebuild the native bundle" }
                             false
                         }
@@ -102,6 +102,7 @@ class DesktopEngines(
             local("transcribepsy-local", "TranscribePsy 250M", PipelineStage.STT, "hearth_desktop_backend_speech", TRANSCRIBEPSY_LANGUAGES),
             local("nemotron-asr-local", "Nemotron 3.5 ASR", PipelineStage.STT, "hearth_desktop_backend_speech", NEMOTRON_LANGUAGES),
             local("moonshine-local", "Moonshine tiny.en", PipelineStage.STT, "hearth_desktop_backend_speech", setOf("en")),
+            local("vosk-local", "Vosk (Kaldi)", PipelineStage.STT, "hearth_vosk", VOSK_LANGUAGES),
             local("omnilingual-local", "Omnilingual CTC 300M", PipelineStage.STT, "hearth_desktop_backend_speech", OMNILINGUAL_LANGUAGES),
             local("phonon-local", "Phonon 2", PipelineStage.STT, "hearth_desktop_backend_speech", PHONON_LANGUAGES),
             local("moss-tts-local", "MOSS-TTS Nano 100M", PipelineStage.TTS, "hearth_desktop_moss", setOf("ar", "en")),
@@ -124,7 +125,7 @@ class DesktopEngines(
 
     override suspend fun recognize(input: PipelineInput, selection: EngineSelection, sourceLanguage: String, emit: suspend (SpeechSegment) -> Unit) {
         check(!closed.get()) { "Desktop engines are closed" }
-        require(selection.engineId in setOf("whisper-local", QwenSpeechModel.ENGINE_ID, "transcribepsy-local", "nemotron-asr-local", "moonshine-local", "omnilingual-local", "phonon-local", "openai-stt")) { "Unknown speech engine: ${selection.engineId}" }
+        require(selection.engineId in setOf("whisper-local", QwenSpeechModel.ENGINE_ID, "transcribepsy-local", "nemotron-asr-local", "moonshine-local", "vosk-local", "omnilingual-local", "phonon-local", "openai-stt")) { "Unknown speech engine: ${selection.engineId}" }
         var decoded: Path? = null
         val frames: Flow<PcmFrame> = when (input) {
             is PipelineInput.AudioStream -> input.frames
@@ -236,9 +237,24 @@ class DesktopEngines(
                         error("Speech backend engine was already published")
                     }
                 }
+            } else if (selection.engineId == "vosk-local") {
+                val path = verifiedVoskModel(selection)
+                val owner = currentCoroutineContext()
+                joinedBlocking({ backendEngine.get()?.cancel() }) {
+                    owner.ensureActive()
+                    // One engine id for all six models: the model directory chooses the
+                    // language and the adapter verifies its pinned tree digest.
+                    val opened = DesktopBackendSpeechEngine.open(
+                        "hearth_vosk", "vosk", path, sourceLanguage, threads(selection),
+                    )
+                    if (!backendEngine.compareAndSet(null, opened)) {
+                        opened.close()
+                        error("Speech backend engine was already published")
+                    }
+                }
             }
             val live = input is PipelineInput.AudioStream
-            val spokenWindow = selection.engineId == QwenSpeechModel.ENGINE_ID || selection.engineId == "transcribepsy-local" || selection.engineId == "nemotron-asr-local" || selection.engineId == "moonshine-local" || selection.engineId == "omnilingual-local" || selection.engineId == "phonon-local"
+            val spokenWindow = selection.engineId == QwenSpeechModel.ENGINE_ID || selection.engineId == "transcribepsy-local" || selection.engineId == "nemotron-asr-local" || selection.engineId == "moonshine-local" || selection.engineId == "vosk-local"
             val windowMs = selection.options["windowMs"]?.toIntOrNull()
                 ?: if (spokenWindow) 15000 else if (live) 4000 else 20000
             require(windowMs in 1000..30000) { "Speech window must be 1000–30000 ms" }
@@ -265,7 +281,7 @@ class DesktopEngines(
                         val engine = checkNotNull(qwenEngine.get()) { "Qwen3-ASR is not open" }
                         text = joinedBlocking({ engine.cancel() }) { owner.ensureActive(); engine.transcribe(samples) }
                         language = QwenSpeechModel.detected(engine.language()) ?: language
-                    } else if (selection.engineId == "transcribepsy-local" || selection.engineId == "nemotron-asr-local" || selection.engineId == "moonshine-local" || selection.engineId == "omnilingual-local" || selection.engineId == "phonon-local") {
+                    } else if (selection.engineId == "transcribepsy-local" || selection.engineId == "nemotron-asr-local" || selection.engineId == "moonshine-local" || selection.engineId == "omnilingual-local" || selection.engineId == "phonon-local" || selection.engineId == "vosk-local") {
                         val engine = checkNotNull(backendEngine.get()) { "Speech backend is not open" }
                         text = joinedBlocking({ engine.cancel() }) { owner.ensureActive(); engine.transcribe(samples) }
                         language = engine.language().ifBlank { language }
@@ -467,8 +483,18 @@ class DesktopEngines(
     override fun close() {
         if (closed.compareAndSet(false, true)) try { clearTranslation(); clearCt2() } finally { voices.close(); mossVoices.close() }
     }
+/** Vosk models are extracted directories whose model-tree-sha256-v1 digest is the pin.
+ *  The desktop library verifies it on install/refresh and the adapter re-derives and
+ *  verifies the same digest immediately before loading the model. */
+private suspend fun verifiedVoskModel(selection: EngineSelection): Path = withContext(Dispatchers.IO) {
+    val root = Path.of(selection.modelPath).toRealPath()
+    require(Files.isDirectory(root)) { "Select a complete Vosk model directory" }
+    val expected = selection.options["treeSha256"].orEmpty().lowercase()
+    require(expected.matches(Regex("[0-9a-f]{64}"))) { "A pinned model tree SHA-256 is required for Vosk" }
+    root
+}
 
-    private suspend fun verifiedModel(selection: EngineSelection): Path = withContext(Dispatchers.IO) {
+private suspend fun verifiedModel(selection: EngineSelection): Path = withContext(Dispatchers.IO) {
         val path = Path.of(selection.modelPath).toRealPath()
         require(Files.isRegularFile(path) && Files.size(path) > 0) { "Select a complete model file" }
         val expected = selection.options["sha256"].orEmpty().lowercase()
@@ -497,7 +523,10 @@ class DesktopEngines(
 
 internal fun outputFile(directory: Path): Path = directory.resolve("generated-audio").also { Files.createDirectories(it) }.resolve("${UUID.randomUUID()}.wav")
 
+
+// Exactly the six models pinned in the Android catalog; Vosk has no code-switching or detection.
 private val TRANSCRIBEPSY_LANGUAGES = setOf("en", "nl", "fr", "de", "it", "pl", "pt", "es")
+private val VOSK_LANGUAGES = setOf("en", "de", "fr", "es", "ru", "zh")
 private val MOONSHINE_FILES = mapOf(
     "tokens.txt" to "2870d843e14c1e187bf1913a521562a63b53933814bd7f2145120468f494a049",
     "encoder_model.ort" to "94e90a4654fc45cdfedb77c4c08e1739f48862998e58fada384b25118134f221",

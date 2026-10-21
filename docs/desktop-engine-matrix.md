@@ -19,6 +19,7 @@ Last updated when Moonshine tiny.en passed through the shared speech backend bri
 | Moonshine tiny.en (sherpa-onnx) | 1 | `hearth_desktop_qwen3_asr` + the shared `hearth_desktop_backend_speech` bridge (`hearth_moonshine_backend_v1`) | real speech → text, `DesktopMoonshineRealSmokeTest`: exact 4.65 s transcript, 32 ms decode; no new engine code |
 | Omnilingual CTC 300M (sherpa-onnx) | 1 | same dylib/bridge (`hearth_omnilingual_backend_v1`) | real speech → text, `DesktopSherpaFamiliesRealSmokeTest`: exact 4.65 s transcript, 220 ms warm decode |
 | Phonon 2 (sherpa-onnx) | 1 | same dylib/bridge (`hearth_phonon_backend_v1`, joiner as `conv_frontend`) | real speech → text, same test: sentence-case transcript, 117 ms warm decode |
+| Vosk (Kaldi) | 6 | `hearth_vosk` + pinned official v0.3.42 `libvosk.dylib` (thin arm64), one `vosk-local` engine | EN exact transcript; six app-path language smokes (en/de/fr/es/ru/zh); Spanish quality/repeat stability unverified |
 | MOSS-TTS Nano 100M | 1 (14 pinned files) | `hearth_desktop_moss` (static SentencePiece 0.2.0 + the shipped ONNX Runtime 1.20.1) | real 48 kHz non-silent WAV, `DesktopMossRealSmokeTest`: 20,481 samples / peak 0.516 / RMS 0.0996 through the app path; direct JNI 61,440 samples |
 
 ## Missing on desktop
@@ -29,7 +30,6 @@ The shared ABI and the family-versus-model rule are documented in
 | Family | Models | Android implementation | What a desktop port needs |
 | --- | --- | --- | --- |
 | sherpa-onnx speech — remaining Moonshine ×8 | 8 | `qwen_backend.cpp` already exports the entry point | one dylib and one bridge already exist; each remaining model needs only its pins, a card and a real-audio smoke |
-| Vosk | 6 | `common-jni/src/main/cpp/vosk` | build Vosk/Kaldi for macOS + Windows; no prebuilt exists in this repo |
 | CTranslate2 pair coverage | 3 desktop cards: QuickMT EN↔AR, SMaLL-100 (100 languages) | `common-jni/src/main/cpp/translation/ct2` + `Ct2Catalog.kt` | four Jisr 50M specs are pinned but `downloadEnabled=false`, and the requested EN↔DE/ES/FR/RU/ZH pair models are not present or pinned in this repo |
 | TTS — Chatterbox, Magpie, OmniVoice, Oute | 4 | `hearth-tts-*` modules | each family has its own architecture and runtime; MOSS is the first shared desktop TTS runtime |
 

@@ -1926,6 +1926,204 @@
           "url": "https://huggingface.co/nvidia/nemotron-3.5-asr-streaming-0.6b/resolve/1c8deaecc64b91f034d73e08dd8b64625eb3395d/nemotron-3.5-asr-streaming-0.6b.q8_0.gguf"
         }
       ]
+    },
+    {
+      "id": "vosk-model-small-en-us-0.15",
+      "name": "Vosk · US English Small 0.15",
+      "family": "Vosk",
+      "stage": "STT",
+      "engineId": "vosk-local",
+      "languages": [
+        "en"
+      ],
+      "source": "https://alphacephei.com/vosk/models",
+      "license": "Apache-2.0",
+      "note": "Pinned Vosk Kaldi model; the ZIP is hash-verified before extraction and the expanded model-tree SHA-256 is verified before loading. One desktop engine id (vosk-local) serves all six models.",
+      "options": {
+        "treeSha256": "1855931c4d84fa0f731a5a7906c1356837335d49ee7f2ca6a6a32389bac7f8e8"
+      },
+      "platforms": [
+        "macos-arm64"
+      ],
+      "artifacts": [
+        {
+          "filename": "vosk-model-small-en-us-0.15.zip",
+          "bytes": 41205931,
+          "sha256": "30f26242c4eb449f948e42cb302dd7a686cb29a3423a8367f99ff41780942498",
+          "url": "https://alphacephei.com/vosk/models/vosk-model-small-en-us-0.15.zip"
+        }
+      ],
+      "archive": {
+        "format": "zip",
+        "root": "vosk-model-small-en-us-0.15",
+        "expandedBytes": 70898967,
+        "treeSha256": "1855931c4d84fa0f731a5a7906c1356837335d49ee7f2ca6a6a32389bac7f8e8"
+      }
+    },
+    {
+      "id": "vosk-model-small-de-0.15",
+      "name": "Vosk · German Small 0.15",
+      "family": "Vosk",
+      "stage": "STT",
+      "engineId": "vosk-local",
+      "languages": [
+        "de"
+      ],
+      "source": "https://alphacephei.com/vosk/models",
+      "license": "Apache-2.0",
+      "note": "Pinned Vosk Kaldi model; the ZIP is hash-verified before extraction and the expanded model-tree SHA-256 is verified before loading. One desktop engine id (vosk-local) serves all six models.",
+      "options": {
+        "treeSha256": "b8a470cd032c88ea1bad4b173071a30c014ffa345f45a41499747fdac69a8743"
+      },
+      "platforms": [
+        "macos-arm64"
+      ],
+      "artifacts": [
+        {
+          "filename": "vosk-model-small-de-0.15.zip",
+          "bytes": 46499967,
+          "sha256": "b7e53c90b1f0a38456f4cd62b366ecd58803cd97cd42b06438e2c131713d5e43",
+          "url": "https://alphacephei.com/vosk/models/vosk-model-small-de-0.15.zip"
+        }
+      ],
+      "archive": {
+        "format": "zip",
+        "root": "vosk-model-small-de-0.15",
+        "expandedBytes": 95621761,
+        "treeSha256": "b8a470cd032c88ea1bad4b173071a30c014ffa345f45a41499747fdac69a8743"
+      }
+    },
+    {
+      "id": "vosk-model-small-fr-0.22",
+      "name": "Vosk · French Small 0.22",
+      "family": "Vosk",
+      "stage": "STT",
+      "engineId": "vosk-local",
+      "languages": [
+        "fr"
+      ],
+      "source": "https://alphacephei.com/vosk/models",
+      "license": "Apache-2.0",
+      "note": "Pinned Vosk Kaldi model; the ZIP is hash-verified before extraction and the expanded model-tree SHA-256 is verified before loading. One desktop engine id (vosk-local) serves all six models.",
+      "options": {
+        "treeSha256": "42427727ea015131d1f3f54c21bfeb772945b8682a87b6165dc61d9aa3d4d3c4"
+      },
+      "platforms": [
+        "macos-arm64"
+      ],
+      "artifacts": [
+        {
+          "filename": "vosk-model-small-fr-0.22.zip",
+          "bytes": 42233323,
+          "sha256": "cabf6180e177eb9b3a9a9d43a437bd5e549f3a7d09525e5d69a3fed787be12ad",
+          "url": "https://alphacephei.com/vosk/models/vosk-model-small-fr-0.22.zip"
+        }
+      ],
+      "archive": {
+        "format": "zip",
+        "root": "vosk-model-small-fr-0.22",
+        "expandedBytes": 68483807,
+        "treeSha256": "42427727ea015131d1f3f54c21bfeb772945b8682a87b6165dc61d9aa3d4d3c4"
+      }
+    },
+    {
+      "id": "vosk-model-small-es-0.42",
+      "name": "Vosk · Spanish Small 0.42",
+      "family": "Vosk",
+      "stage": "STT",
+      "engineId": "vosk-local",
+      "languages": [
+        "es"
+      ],
+      "source": "https://alphacephei.com/vosk/models",
+      "license": "Apache-2.0",
+      "note": "Pinned Vosk Kaldi model; the ZIP is hash-verified before extraction and the expanded model-tree SHA-256 is verified before loading. One desktop engine id (vosk-local) serves all six models.",
+      "options": {
+        "treeSha256": "aaf9b97e2b0efadfdbaabb97900e620884908a554fd1f5072339d3f1458ad129"
+      },
+      "platforms": [
+        "macos-arm64"
+      ],
+      "artifacts": [
+        {
+          "filename": "vosk-model-small-es-0.42.zip",
+          "bytes": 39817833,
+          "sha256": "09b239888f633ef2f0b4e09736e3d9936acfd810bc65d53fad45261762c6511f",
+          "url": "https://alphacephei.com/vosk/models/vosk-model-small-es-0.42.zip"
+        }
+      ],
+      "archive": {
+        "format": "zip",
+        "root": "vosk-model-small-es-0.42",
+        "expandedBytes": 60286598,
+        "treeSha256": "aaf9b97e2b0efadfdbaabb97900e620884908a554fd1f5072339d3f1458ad129"
+      }
+    },
+    {
+      "id": "vosk-model-small-ru-0.22",
+      "name": "Vosk · Russian Small 0.22",
+      "family": "Vosk",
+      "stage": "STT",
+      "engineId": "vosk-local",
+      "languages": [
+        "ru"
+      ],
+      "source": "https://alphacephei.com/vosk/models",
+      "license": "Apache-2.0",
+      "note": "Pinned Vosk Kaldi model; the ZIP is hash-verified before extraction and the expanded model-tree SHA-256 is verified before loading. One desktop engine id (vosk-local) serves all six models.",
+      "options": {
+        "treeSha256": "4f1bd9e45f0a1c1fd669b6cb75ae1bcded09ed9e22de60247bb57a40814f0f07"
+      },
+      "platforms": [
+        "macos-arm64"
+      ],
+      "artifacts": [
+        {
+          "filename": "vosk-model-small-ru-0.22.zip",
+          "bytes": 46236750,
+          "sha256": "961d5ff98a17f4aa6de69864d0aa71fa5bac682301d2b5d17a3f24c5c99a46d4",
+          "url": "https://alphacephei.com/vosk/models/vosk-model-small-ru-0.22.zip"
+        }
+      ],
+      "archive": {
+        "format": "zip",
+        "root": "vosk-model-small-ru-0.22",
+        "expandedBytes": 91289240,
+        "treeSha256": "4f1bd9e45f0a1c1fd669b6cb75ae1bcded09ed9e22de60247bb57a40814f0f07"
+      }
+    },
+    {
+      "id": "vosk-model-small-cn-0.22",
+      "name": "Vosk · Chinese Small 0.22",
+      "family": "Vosk",
+      "stage": "STT",
+      "engineId": "vosk-local",
+      "languages": [
+        "zh"
+      ],
+      "source": "https://alphacephei.com/vosk/models",
+      "license": "Apache-2.0",
+      "note": "Pinned Vosk Kaldi model; the ZIP is hash-verified before extraction and the expanded model-tree SHA-256 is verified before loading. One desktop engine id (vosk-local) serves all six models.",
+      "options": {
+        "treeSha256": "ebbc20212be98c8cf0c5076915ebf2854106a7bf5ca376b11110f28b042e4555"
+      },
+      "platforms": [
+        "macos-arm64"
+      ],
+      "artifacts": [
+        {
+          "filename": "vosk-model-small-cn-0.22.zip",
+          "bytes": 43898754,
+          "sha256": "3af8b0e7e0f835ae9d414ce5df580237a3cfb08d586c9fbbb0f7ff29ad5b14ba",
+          "url": "https://alphacephei.com/vosk/models/vosk-model-small-cn-0.22.zip"
+        }
+      ],
+      "archive": {
+        "format": "zip",
+        "root": "vosk-model-small-cn-0.22",
+        "expandedBytes": 68292271,
+        "treeSha256": "ebbc20212be98c8cf0c5076915ebf2854106a7bf5ca376b11110f28b042e4555"
+      }
     }
   ]
 }

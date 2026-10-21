@@ -61,11 +61,12 @@ class DesktopSettingsTest {
             val moonshine = if (macosArm) 1 else 0
             val omnilingual = if (macosArm) 1 else 0
             val phonon = if (macosArm) 1 else 0
+            val vosk = if (macosArm) 6 else 0
             val ct2 = if (macosArm) 3 else 0
             val moss = if (macosArm) 1 else 0
             val byStage = library.catalog.groupingBy { it.stage.name }.eachCount()
-            assertEquals(mapOf("STT" to 27 + qwen + transcribepsy + nemotron + moonshine + omnilingual + phonon, "TRANSLATION" to 14 + ct2, "TTS" to 1 + moss), byStage)
-            assertEquals(if (qwen + transcribepsy + nemotron + moonshine + omnilingual + phonon > 0) 7 else 1, library.catalog.filter { it.stage.name == "STT" }.map { it.family }.distinct().size)
+            assertEquals(mapOf("STT" to 27 + qwen + transcribepsy + nemotron + moonshine + omnilingual + phonon + vosk, "TRANSLATION" to 14 + ct2, "TTS" to 1 + moss), byStage)
+            assertEquals(if (qwen + transcribepsy + nemotron + moonshine + omnilingual + phonon + vosk > 0) 8 else 1, library.catalog.filter { it.stage.name == "STT" }.map { it.family }.distinct().size)
             if (qwen == 1) {
                 val card = library.catalog.single { it.id == "qwen3-asr-0.6b" }
                 assertEquals("qwen3-asr-local", card.engineId)
@@ -96,6 +97,13 @@ class DesktopSettingsTest {
                 assertEquals("moonshine-local", card.engineId)
                 assertEquals(4, card.archive?.files?.size)
                 assertEquals("9ec31b342d8fa3240c3b81b8f82e1cf7e3ac467c93ca5a999b741d5887164f8d", card.artifacts.single().sha256)
+            }
+            if (vosk == 6) {
+                val card = library.catalog.single { it.id == "vosk-model-small-en-us-0.15" }
+                assertEquals("vosk-local", card.engineId)
+                assertEquals("zip", card.archive?.format)
+                assertEquals(70_898_967L, card.installedBytes)
+                assertEquals("1855931c4d84fa0f731a5a7906c1356837335d49ee7f2ca6a6a32389bac7f8e8", card.archive?.treeSha256)
             }
             if (omnilingual == 1) {
                 val card = library.catalog.single { it.id == "omnilingual-ctc-300m-v2-int8" }

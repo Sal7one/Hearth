@@ -95,6 +95,14 @@ internal fun verifiedNativeDependencies(directory: Path, orderedFiles: List<Stri
 
 /** Windows ORT links the Microsoft DLL CRT even though Hearth's own JNI targets use /MT. */
 internal fun nativeDependencyOrder(library: String, platform: String, files: Set<String>): List<String> {
+    // The Vosk adapter dlopens its sibling at create() time. Verify and load the pinned
+    // runtime first so the path the adapter resolves is the file this manifest approved,
+    // never a post-extraction swap or a DYLD fallback.
+    if (library == "hearth_vosk") {
+        check(platform.startsWith("macos-")) { "The Vosk desktop backend is staged for macOS only" }
+        check("libvosk.dylib" in files) { "hearth_vosk bundle is missing its pinned Vosk runtime: libvosk.dylib" }
+        return listOf("libvosk.dylib")
+    }
     if (library !in setOf("hearth_supertonic_jni", "hearth_desktop_qwen3_asr", "hearth_desktop_moss")) return emptyList()
     // The Qwen3-ASR stage is staged for macOS arm64 only; do not preload a Windows ORT for a dylib that is not part of that bundle.
     if (library == "hearth_desktop_qwen3_asr" && !platform.startsWith("macos-")) return emptyList()

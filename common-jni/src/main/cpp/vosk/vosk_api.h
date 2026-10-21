@@ -9,6 +9,18 @@ namespace stt {
 // Keep the legacy static C++ runtime in Vosk out of common_jni's dependency
 // scope. Only these C functions cross the boundary. Retain the DSO for process
 // life, including after failed symbol resolution (native TLS may refer to it).
+//
+// Android resolves the soname "libvosk.so" from the APK. Desktop adapters that
+// ship a sibling dylib must pin an explicit absolute path before the first
+// voskApi() call; the default stays unchanged so Android behavior is identical.
+inline std::string& voskLibraryPath() {
+    static std::string path = "libvosk.so";
+    return path;
+}
+inline void setVoskLibraryPath(const std::string& path) {
+    if (path.empty()) throw std::invalid_argument("Vosk runtime path is empty");
+    voskLibraryPath() = path;
+}
 struct VoskApi {
     VoskModel* (*vosk_model_new)(const char* model_path) = nullptr;
     void (*vosk_model_free)(VoskModel* model) = nullptr;
@@ -22,9 +34,13 @@ struct VoskApi {
     const char* (*vosk_recognizer_final_result)(VoskRecognizer* recognizer) = nullptr;
     void (*vosk_recognizer_reset)(VoskRecognizer* recognizer) = nullptr;
     void (*vosk_set_log_level)(int log_level) = nullptr;
-    explicit VoskApi(const char* path = "libvosk.so") {
-        void* handle = dlopen(path, RTLD_NOW | RTLD_LOCAL);
-        if (!handle) { const char* error = dlerror(); throw std::runtime_error(error ? error : "dlopen libvosk.so failed"); }
+    explicit VoskApi(const char* path = nullptr) {
+        const std::string resolved = path ? std::string(path) : voskLibraryPath();
+        void* handle = dlopen(resolved.c_str(), RTLD_NOW | RTLD_LOCAL);
+        if (!handle) {
+            const char* error = dlerror();
+            throw std::runtime_error("dlopen " + resolved + " failed: " + (error ? error : "unknown dlopen error"));
+        }
         vosk_model_new = symbol<decltype(vosk_model_new)>(handle, "vosk_model_new");
         vosk_model_free = symbol<decltype(vosk_model_free)>(handle, "vosk_model_free");
         vosk_recognizer_new = symbol<decltype(vosk_recognizer_new)>(handle, "vosk_recognizer_new");

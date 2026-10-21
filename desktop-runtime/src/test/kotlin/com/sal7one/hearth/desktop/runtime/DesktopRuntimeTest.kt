@@ -56,6 +56,9 @@ class DesktopRuntimeTest {
         assertEquals(listOf("libonnxruntime.dylib"), nativeDependencyOrder("hearth_supertonic_jni", "macos-x64", setOf("libonnxruntime.dylib")))
         assertEquals(listOf("libonnxruntime.1.20.1.dylib"), nativeDependencyOrder("hearth_desktop_qwen3_asr", "macos-arm64", setOf("libonnxruntime.1.20.1.dylib")))
         assertFailsWith<IllegalStateException> { nativeDependencyOrder("hearth_desktop_qwen3_asr", "macos-arm64", emptySet()) }
+        assertEquals(listOf("libvosk.dylib"), nativeDependencyOrder("hearth_vosk", "macos-arm64", setOf("libvosk.dylib")))
+        assertFailsWith<IllegalStateException> { nativeDependencyOrder("hearth_vosk", "macos-arm64", setOf("libhearth_vosk.dylib")) }
+        assertFailsWith<IllegalStateException> { nativeDependencyOrder("hearth_vosk", "windows-x64", setOf("libvosk.dylib")) }
         assertEquals(emptyList(), nativeDependencyOrder("hearth_desktop_qwen3_asr", "windows-x64", emptySet()))
     }
     @Test fun malformedPastedCredentialsNeverReachHttpHeadersOrErrors() = runBlocking<Unit> {

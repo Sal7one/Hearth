@@ -26,6 +26,25 @@ CT2_PIN = "8c8cab2a954810216a45d65c1b8d56839c846e5b"
 SENTENCEPIECE_PIN = "17d7580d6407802f85855d2cc9190634e2c95624"
 TRANSCRIBEPSY_PIN = "364ec36130dc87d2cd46e596598268a6e3313751"
 NEMO_PIN = "ffa38cb2408f1e832a36d46fef5e3e1e80d07e6c"
+# Pinned official Vosk macOS release. The app never downloads a native runtime:
+# this runs at build time only, verifies the release ZIP and each member, thins
+# the universal2 slice to arm64 and records both digests in the manifest.
+VOSK_RELEASE = "0.3.42"
+VOSK_ZIP_URL = f"https://github.com/alphacep/vosk-api/releases/download/v{VOSK_RELEASE}/vosk-osx-{VOSK_RELEASE}.zip"
+VOSK_ZIP_SHA256 = "65395f196c9d0583d79949142b25560acaf9c295f36284e18433097f3adb0ea1"
+VOSK_DYLIB_SHA256 = "82fdfba0dde392a7dbba70f9c1a17f6e3da27a50444a9f53939508525a1e6fdf"
+VOSK_ARM64_SHA256 = "6baf792c6eefe9c19c5203afeea368d2a8cda73b7142863228c78dc6ddb274d3"
+VOSK_HEADER_SHA256 = "3c53864a8ed10d77e3c456f6371ea8e361414ad478314378309168d8add5325c"
+VOSK_NOTICES = """===== Vosk / Kaldi (Apache-2.0) =====
+Vosk runtime: official vosk-osx-0.3.42 release asset (Apache-2.0), downloaded and
+verified at build time from https://github.com/alphacep/vosk-api/releases/tag/v0.3.42
+Release ZIP SHA-256: 65395f196c9d0583d79949142b25560acaf9c295f36284e18433097f3adb0ea1
+Universal libvosk.dylib SHA-256: 82fdfba0dde392a7dbba70f9c1a17f6e3da27a50444a9f53939508525a1e6fdf
+Staged arm64 slice SHA-256: 6baf792c6eefe9c19c5203afeea368d2a8cda73b7142863228c78dc6ddb274d3
+Vosk bundles Kaldi and OpenFST statically; only Accelerate, libc++ and libSystem
+are dynamic dependencies. Model archives are Vosk/Kaldi models (Apache-2.0) from
+https://alphacephei.com/vosk/models and are pinned by archive and tree digest.
+"""
 # Every dependency the pinned sherpa-onnx CMake fetches is declared with this URL_HASH.
 # The build fetches them at build time; the digest of this map is recorded in the bundle.
 SHERPA_INPUTS = {
@@ -88,6 +107,10 @@ def snapshot():
                  "common-jni/src/main/cpp/common/lease_registry.h", "hearth-tts-supertonic/src/main/cpp/voice/voice_bounds.h",
                  "common-jni/src/main/cpp/onnx/include/onnxruntime/onnxruntime_c_api.h",
                  "common-jni/src/main/cpp/speech/backends/qwen_backend.cpp",
+                 "common-jni/src/main/cpp/speech/backends/vosk_backend.cpp",
+                 "common-jni/src/main/cpp/vosk/vosk_api.h",
+                 "common-jni/src/main/cpp/vosk/vosk_engine.cpp",
+                 "scripts/desktop/native/vosk.exports",
                  "common-jni/src/main/cpp/speech/backend_abi.h",
                  "common-jni/src/main/cpp/speech/backends/backend_guard.h",
                  "common-jni/src/main/cpp/speech/backend_versions.h",
@@ -307,9 +330,41 @@ def speech_backend_install(names, output, jobs):
     return revisions
 
 
+def vosk_install(cache, output):
+    """Fetch, verify and stage the pinned official Vosk runtime; never at app runtime."""
+    archive = cache / f"vosk-osx-{VOSK_RELEASE}.zip"
+    if not archive.is_file() or sha(archive) != VOSK_ZIP_SHA256:
+        cache.mkdir(parents=True, exist_ok=True)
+        archive.unlink(missing_ok=True)
+        subprocess.run(["curl", "--fail", "--location", "--silent", "--show-error", "--output",
+                        str(archive), VOSK_ZIP_URL], check=True)
+        if sha(archive) != VOSK_ZIP_SHA256:
+            archive.unlink(missing_ok=True)
+            raise RuntimeError("The Vosk release archive does not match its pinned SHA-256")
+    members = set(subprocess.check_output(["unzip", "-Z1", str(archive)], text=True).split())
+    expected = {f"vosk-osx-{VOSK_RELEASE}/", f"vosk-osx-{VOSK_RELEASE}/libvosk.dylib", f"vosk-osx-{VOSK_RELEASE}/vosk_api.h"}
+    if members != expected:
+        raise RuntimeError("The Vosk release archive layout changed: " + ", ".join(sorted(members)))
+    extracted = cache / f"vosk-osx-{VOSK_RELEASE}"
+    shutil.rmtree(extracted, ignore_errors=True)
+    subprocess.run(["unzip", "-q", str(archive), "-d", str(cache)], check=True)
+    dylib, header = extracted / "libvosk.dylib", extracted / "vosk_api.h"
+    if sha(dylib) != VOSK_DYLIB_SHA256 or sha(header) != VOSK_HEADER_SHA256:
+        raise RuntimeError("The Vosk release members do not match their pinned SHA-256")
+    thin = cache / "libvosk-arm64.dylib"
+    subprocess.run(["lipo", str(dylib), "-thin", "arm64", "-output", str(thin)], check=True)
+    if sha(thin) != VOSK_ARM64_SHA256:
+        raise RuntimeError("The Vosk arm64 slice does not match its pinned SHA-256")
+    shutil.copyfile(thin, output / "libvosk.dylib")
+    (output / "Vosk-NOTICES.txt").write_text(VOSK_NOTICES, encoding="utf-8", newline="\n")
+    return {"voskRelease": VOSK_RELEASE, "voskZipSha256": VOSK_ZIP_SHA256,
+            "voskDylibSha256": VOSK_DYLIB_SHA256, "voskArm64DylibSha256": VOSK_ARM64_SHA256,
+            "voskHeaderSha256": VOSK_HEADER_SHA256}
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--stage", choices=["all", "whisper", "translation", "supertonic", "onnx", "ct2", "moss", "backend"], default="all")
+    parser.add_argument("--stage", choices=["all", "whisper", "translation", "supertonic", "onnx", "ct2", "moss", "backend", "vosk"], default="all")
     parser.add_argument("--speech-backends", default="transcribepsy,nemotron", help="Comma-separated speech backends to stage (transcribepsy, nemotron)")
     parser.add_argument("--llama-root", type=Path, default=ROOT / "build/translation-runtime/llama.cpp")
     parser.add_argument("--sherpa-root", type=Path, default=ROOT / "build/desktop-dependencies/sherpa-onnx")
@@ -330,7 +385,7 @@ def main():
     stages = ["whisper", "translation", "supertonic"] if args.stage == "all" else [args.stage]
     if args.stage == "all":
         if (system, arch) == ("macos", "arm64"):
-            stages.extend(["onnx", "ct2", "backend", "moss"])
+            stages.extend(["onnx", "ct2", "backend", "moss", "vosk"])
         else:
             print(f"Skipping Qwen3-ASR (onnx), CTranslate2 (ct2), speech backends (backend) and MOSS TTS (moss): built only for macos-arm64; host is {target}", file=sys.stderr)
     if "onnx" in stages and system != "macos":
@@ -343,6 +398,8 @@ def main():
         parser.error("The desktop speech backend stage is built for macOS arm64 only")
     if "moss" in stages and (system, arch) != ("macos", "arm64"):
         parser.error("The MOSS TTS stage is built for macOS arm64 only")
+    if "vosk" in stages and (system, arch) != ("macos", "arm64"):
+        parser.error("The Vosk speech backend stage is built for macOS arm64 only")
     speech_backends = [value.strip() for value in args.speech_backends.split(",") if value.strip()]
     if any(value not in ("transcribepsy", "nemotron") for value in speech_backends):
         parser.error("--speech-backends accepts transcribepsy and/or nemotron")
@@ -373,6 +430,7 @@ def main():
     if "ct2" in stages:
         ct2_sources = ct2_install(args.build_dir.resolve() / target / "ct2", output, args.jobs)
     backend_revisions = None
+    vosk_upstreams = None
     if "backend" in stages:
         backend_revisions = speech_backend_install(speech_backends, output, args.jobs)
     source = ROOT / "hearth-tts-supertonic/src/main/cpp/voice/supertonic.cpp"
@@ -416,6 +474,17 @@ def main():
             if not installed_backend.is_file():
                 raise RuntimeError("The desktop speech backend bridge was not staged")
             require_exports(installed_backend, "_Java_com_sal7one_common_1jni_desktop_DesktopBackendSpeechNative_", 7)
+        if stage == "vosk":
+            installed_vosk = output / "libhearth_vosk.dylib"
+            if not installed_vosk.is_file():
+                raise RuntimeError("The Vosk speech backend dylib was not staged")
+            require_exports(installed_vosk, "_hearth_speech_backend_v1", 1)
+            linked = subprocess.check_output(["otool", "-L", str(installed_vosk)], text=True).splitlines()[1:]
+            for line in linked:
+                entry = line.strip().split(" ")[0] if line.strip() else ""
+                if "libvosk" in entry:
+                    raise RuntimeError("libhearth_vosk.dylib must dlopen libvosk.dylib, not link it")
+            vosk_upstreams = vosk_install(args.build_dir.resolve() / target / "vosk", output)
         if stage == "moss":
             installed_moss = output / "libhearth_desktop_moss.dylib"
             if not installed_moss.is_file():
@@ -481,6 +550,8 @@ def main():
         })
     if backend_revisions:
         upstreams.update(backend_revisions)
+    if vosk_upstreams:
+        upstreams.update(vosk_upstreams)
     if "moss" in stages:
         upstreams.update({
             "mossRuntimeSourceSha256": sha(ROOT / "hearth-tts-moss/src/main/cpp/moss.cpp"),

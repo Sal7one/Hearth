@@ -98,6 +98,38 @@ def kotlin_ct2_models():
     return models
 
 
+VOSK_MODELS = [
+    dict(checkpoint='vosk-model-small-en-us-0.15', label='US English Small 0.15', language='en',
+         zip_bytes=41205931, zip_sha256='30f26242c4eb449f948e42cb302dd7a686cb29a3423a8367f99ff41780942498',
+         expanded_bytes=70898967, tree_sha256='1855931c4d84fa0f731a5a7906c1356837335d49ee7f2ca6a6a32389bac7f8e8'),
+    dict(checkpoint='vosk-model-small-de-0.15', label='German Small 0.15', language='de',
+         zip_bytes=46499967, zip_sha256='b7e53c90b1f0a38456f4cd62b366ecd58803cd97cd42b06438e2c131713d5e43',
+         expanded_bytes=95621761, tree_sha256='b8a470cd032c88ea1bad4b173071a30c014ffa345f45a41499747fdac69a8743'),
+    dict(checkpoint='vosk-model-small-fr-0.22', label='French Small 0.22', language='fr',
+         zip_bytes=42233323, zip_sha256='cabf6180e177eb9b3a9a9d43a437bd5e549f3a7d09525e5d69a3fed787be12ad',
+         expanded_bytes=68483807, tree_sha256='42427727ea015131d1f3f54c21bfeb772945b8682a87b6165dc61d9aa3d4d3c4'),
+    dict(checkpoint='vosk-model-small-es-0.42', label='Spanish Small 0.42', language='es',
+         zip_bytes=39817833, zip_sha256='09b239888f633ef2f0b4e09736e3d9936acfd810bc65d53fad45261762c6511f',
+         expanded_bytes=60286598, tree_sha256='aaf9b97e2b0efadfdbaabb97900e620884908a554fd1f5072339d3f1458ad129'),
+    dict(checkpoint='vosk-model-small-ru-0.22', label='Russian Small 0.22', language='ru',
+         zip_bytes=46236750, zip_sha256='961d5ff98a17f4aa6de69864d0aa71fa5bac682301d2b5d17a3f24c5c99a46d4',
+         expanded_bytes=91289240, tree_sha256='4f1bd9e45f0a1c1fd669b6cb75ae1bcded09ed9e22de60247bb57a40814f0f07'),
+    dict(checkpoint='vosk-model-small-cn-0.22', label='Chinese Small 0.22', language='zh',
+         zip_bytes=43898754, zip_sha256='3af8b0e7e0f835ae9d414ce5df580237a3cfb08d586c9fbbb0f7ff29ad5b14ba',
+         expanded_bytes=68292271, tree_sha256='ebbc20212be98c8cf0c5076915ebf2854106a7bf5ca376b11110f28b042e4555'),
+]
+
+def vosk_models(models):
+    for pin in VOSK_MODELS:
+        models.append(dict(id=pin['checkpoint'], name=f"Vosk · {pin['label']}", family='Vosk', stage='STT',
+            engineId='vosk-local', languages=[pin['language']],
+            source='https://alphacephei.com/vosk/models', license='Apache-2.0',
+            note='Pinned Vosk Kaldi model; the ZIP is hash-verified before extraction and the expanded model-tree SHA-256 is verified before loading. One desktop engine id (vosk-local) serves all six models.',
+            options={'treeSha256': pin['tree_sha256']}, platforms=['macos-arm64'],
+            artifacts=[dict(filename=f"{pin['checkpoint']}.zip", bytes=pin['zip_bytes'], sha256=pin['zip_sha256'],
+                url=f"https://alphacephei.com/vosk/models/{pin['checkpoint']}.zip")],
+            archive=dict(format='zip', root=pin['checkpoint'], expandedBytes=pin['expanded_bytes'], treeSha256=pin['tree_sha256'])))
+
 def generate():
     models = []
     whisper = (ROOT / 'app/src/main/java/com/sal7one/transiber/models/WhisperDownloads.kt').read_text(encoding="utf-8")
@@ -231,7 +263,8 @@ def generate():
         note='Pinned Nemotron 3.5 ASR streaming q8 GGUF; CPU-only, macOS Apple silicon. The single GGUF hash is verified before loading.',
         options={}, platforms=['macos-arm64'],
         artifacts=[dict(filename=nemotron['url'].rsplit('/', 1)[-1], bytes=nemotron['bytes'], sha256=nemotron['sha256'], url=nemotron['url'])]))
-    assert len(models) == 52, len(models)
+    vosk_models(models)
+    assert len(models) == 58, len(models)
     return json.dumps({'schemaVersion':1,'provenance':'Generated from existing Android pins, the audited Qwen3-ASR release archive, reviewed CT2 catalog pins and reviewed desktop engine pins; run scripts/desktop/generate-catalog.py --check','models':models},ensure_ascii=False,indent=2)+'\n'
 
 
