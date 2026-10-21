@@ -164,7 +164,16 @@ def generate():
         note='Pinned TranscribePsy 250M EU q8 GGUF; CPU-only, macOS Apple silicon. The single GGUF hash is verified before loading.',
         options={}, platforms=['macos-arm64'],
         artifacts=[dict(filename=transcribepsy['url'].rsplit('/', 1)[-1], bytes=transcribepsy['bytes'], sha256=transcribepsy['sha256'], url=transcribepsy['url'])]))
-    assert len(models) == 47, len(models)
+    nemotron = next(a for a in audit['artifacts'] if a['id'] == 'nemotron-3.5-asr-0.6b')
+    models.append(dict(id='nemotron-3.5-asr-0.6b', name='Nemotron 3.5 ASR · 0.6B (q8)', family='Nemotron 3.5',
+        stage='STT', engineId='nemotron-asr-local',
+        languages=['en', 'es', 'fr', 'it', 'pt', 'nl', 'de', 'tr', 'ru', 'ar', 'hi', 'ja', 'ko', 'vi', 'uk',
+                   'pl', 'sv', 'cs', 'nb', 'da', 'bg', 'fi', 'hr', 'sk', 'zh', 'hu', 'ro', 'et'],
+        source='https://huggingface.co/nvidia/nemotron-3.5-asr-streaming-0.6b', license=nemotron['license'],
+        note='Pinned Nemotron 3.5 ASR streaming q8 GGUF; CPU-only, macOS Apple silicon. The single GGUF hash is verified before loading.',
+        options={}, platforms=['macos-arm64'],
+        artifacts=[dict(filename=nemotron['url'].rsplit('/', 1)[-1], bytes=nemotron['bytes'], sha256=nemotron['sha256'], url=nemotron['url'])]))
+    assert len(models) == 48, len(models)
     return json.dumps({'schemaVersion':1,'provenance':'Generated from existing Android pins, the audited Qwen3-ASR release archive, reviewed CT2 catalog pins and reviewed desktop engine pins; run scripts/desktop/generate-catalog.py --check','models':models},ensure_ascii=False,indent=2)+'\n'
 
 

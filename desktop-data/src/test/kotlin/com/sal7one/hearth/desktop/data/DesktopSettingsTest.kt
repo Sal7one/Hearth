@@ -57,10 +57,11 @@ class DesktopSettingsTest {
             val macosArm = desktopPlatform() == "macos-arm64"
             val qwen = if (macosArm) 1 else 0
             val transcribepsy = if (macosArm) 1 else 0
+            val nemotron = if (macosArm) 1 else 0
             val ct2 = if (macosArm) 3 else 0
             val byStage = library.catalog.groupingBy { it.stage.name }.eachCount()
-            assertEquals(mapOf("STT" to 27 + qwen + transcribepsy, "TRANSLATION" to 14 + ct2, "TTS" to 1), byStage)
-            assertEquals(if (qwen + transcribepsy > 0) 3 else 1, library.catalog.filter { it.stage.name == "STT" }.map { it.family }.distinct().size)
+            assertEquals(mapOf("STT" to 27 + qwen + transcribepsy + nemotron, "TRANSLATION" to 14 + ct2, "TTS" to 1), byStage)
+            assertEquals(if (qwen + transcribepsy + nemotron > 0) 4 else 1, library.catalog.filter { it.stage.name == "STT" }.map { it.family }.distinct().size)
             if (qwen == 1) {
                 val card = library.catalog.single { it.id == "qwen3-asr-0.6b" }
                 assertEquals("qwen3-asr-local", card.engineId)
@@ -76,6 +77,14 @@ class DesktopSettingsTest {
                 assertEquals("transcribepsy-local", card.engineId)
                 assertEquals(304_879_584L, card.bytes)
                 assertEquals("a93ef324d38e410b5e49389db95d06364eddbb890b74a69f311e482d2fda6f4b", card.artifacts.single().sha256)
+                assertEquals(null, card.archive)
+            }
+            if (nemotron == 1) {
+                val card = library.catalog.single { it.id == "nemotron-3.5-asr-0.6b" }
+                assertEquals("nemotron-asr-local", card.engineId)
+                assertEquals(741_548_352L, card.bytes)
+                assertEquals("a5c435f294eea8f88ce68dd27b8c3bfea7f777cb2fbba04fcd30eaa555f429ae", card.artifacts.single().sha256)
+                assertEquals("OpenMDW-1.1", card.license)
                 assertEquals(null, card.archive)
             }
             // Every shipped llama translator must use a prompt family the desktop engine implements,

@@ -308,7 +308,7 @@ def speech_backend_install(names, output, jobs):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--stage", choices=["all", "whisper", "translation", "supertonic", "onnx", "ct2", "backend"], default="all")
-    parser.add_argument("--speech-backends", default="transcribepsy", help="Comma-separated speech backends to stage (transcribepsy, nemotron)")
+    parser.add_argument("--speech-backends", default="transcribepsy,nemotron", help="Comma-separated speech backends to stage (transcribepsy, nemotron)")
     parser.add_argument("--llama-root", type=Path, default=ROOT / "build/translation-runtime/llama.cpp")
     parser.add_argument("--sherpa-root", type=Path, default=ROOT / "build/desktop-dependencies/sherpa-onnx")
     parser.add_argument("--ort-root", type=Path, default=os.environ.get("HEARTH_ORT_ROOT"))

@@ -1618,6 +1618,58 @@
           "url": "https://huggingface.co/qvac/TranscribePsy-250M-EU-sub-gguf/resolve/92460e0a8e7dc20f2fb126198bdd9eebb9ba2dc7/transcribepsy-250m-eu-sub.gguf"
         }
       ]
+    },
+    {
+      "id": "nemotron-3.5-asr-0.6b",
+      "name": "Nemotron 3.5 ASR · 0.6B (q8)",
+      "family": "Nemotron 3.5",
+      "stage": "STT",
+      "engineId": "nemotron-asr-local",
+      "languages": [
+        "en",
+        "es",
+        "fr",
+        "it",
+        "pt",
+        "nl",
+        "de",
+        "tr",
+        "ru",
+        "ar",
+        "hi",
+        "ja",
+        "ko",
+        "vi",
+        "uk",
+        "pl",
+        "sv",
+        "cs",
+        "nb",
+        "da",
+        "bg",
+        "fi",
+        "hr",
+        "sk",
+        "zh",
+        "hu",
+        "ro",
+        "et"
+      ],
+      "source": "https://huggingface.co/nvidia/nemotron-3.5-asr-streaming-0.6b",
+      "license": "OpenMDW-1.1",
+      "note": "Pinned Nemotron 3.5 ASR streaming q8 GGUF; CPU-only, macOS Apple silicon. The single GGUF hash is verified before loading.",
+      "options": {},
+      "platforms": [
+        "macos-arm64"
+      ],
+      "artifacts": [
+        {
+          "filename": "nemotron-3.5-asr-streaming-0.6b.q8_0.gguf",
+          "bytes": 741548352,
+          "sha256": "a5c435f294eea8f88ce68dd27b8c3bfea7f777cb2fbba04fcd30eaa555f429ae",
+          "url": "https://huggingface.co/nvidia/nemotron-3.5-asr-streaming-0.6b/resolve/1c8deaecc64b91f034d73e08dd8b64625eb3395d/nemotron-3.5-asr-streaming-0.6b.q8_0.gguf"
+        }
+      ]
     }
   ]
 }
