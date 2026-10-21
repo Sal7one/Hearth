@@ -27,6 +27,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
@@ -166,28 +167,26 @@ internal fun Subnav(
                 val active = id == currentId
                 val interaction = remember(id) { MutableInteractionSource() }
                 val hovered by interaction.collectIsHoveredAsState()
-                Column {
-                    Text(
-                        label,
-                        style = HearthType.label,
-                        color = when {
-                            active -> colors.text
-                            hovered -> colors.text
-                            else -> colors.muted
-                        },
-                        modifier = Modifier
-                            .pointerHoverIcon(PointerIcon.Hand)
-                            .clickable(interactionSource = interaction, indication = null) { onSelect(id) }
-                            .padding(horizontal = 14.dp, vertical = 11.dp),
-                    )
-                    Box(
-                        Modifier
-                            .padding(horizontal = 10.dp)
-                            .fillMaxWidth()
-                            .height(2.dp)
-                            .background(if (active) colors.accent else Color.Transparent, RoundedCornerShape(2.dp)),
-                    )
-                }
+                Text(
+                    label,
+                    style = HearthType.label,
+                    color = if (active || hovered) colors.text else colors.muted,
+                    modifier = Modifier
+                        .pointerHoverIcon(PointerIcon.Hand)
+                        .clickable(interactionSource = interaction, indication = null) { onSelect(id) }
+                        .drawBehind {
+                            if (active) {
+                                val stroke = 2.dp.toPx()
+                                drawLine(
+                                    color = colors.accent,
+                                    start = androidx.compose.ui.geometry.Offset(10.dp.toPx(), size.height - stroke / 2),
+                                    end = androidx.compose.ui.geometry.Offset(size.width - 10.dp.toPx(), size.height - stroke / 2),
+                                    strokeWidth = stroke,
+                                )
+                            }
+                        }
+                        .padding(horizontal = 14.dp, vertical = 11.dp),
+                )
             }
         }
         Box(Modifier.fillMaxWidth().height(1.dp).background(colors.border))

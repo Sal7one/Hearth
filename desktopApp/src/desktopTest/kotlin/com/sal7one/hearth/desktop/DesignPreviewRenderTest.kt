@@ -8,7 +8,16 @@ import com.sal7one.hearth.desktop.ui.screens.captions.CaptionLine
 import com.sal7one.hearth.desktop.ui.screens.captions.CaptionsActions
 import com.sal7one.hearth.desktop.ui.screens.captions.CaptionsScreen
 import com.sal7one.hearth.desktop.ui.screens.captions.CaptionsState
+import com.sal7one.hearth.core.PipelineConfig
+import com.sal7one.hearth.desktop.data.DesktopModelArtifact
+import com.sal7one.hearth.desktop.data.DesktopModelCard
+import com.sal7one.hearth.desktop.data.DesktopModelStatus
+import com.sal7one.hearth.desktop.ModelTransfer
 import com.sal7one.hearth.desktop.ui.screens.home.HomeScreen
+import com.sal7one.hearth.desktop.ui.screens.models.ModelsActions
+import com.sal7one.hearth.desktop.ui.screens.models.ModelsFilter
+import com.sal7one.hearth.desktop.ui.screens.models.ModelsScreen
+import com.sal7one.hearth.desktop.ui.screens.models.modelsState
 import com.sal7one.hearth.desktop.ui.screens.overlay.OverlayActions
 import com.sal7one.hearth.desktop.ui.screens.overlay.OverlayCaptionView
 import com.sal7one.hearth.desktop.ui.screens.overlay.OverlayScreen
@@ -146,6 +155,69 @@ class DesignPreviewRenderTest {
                         ),
                         actions = OverlayActions(),
                     )
+                }
+            }
+        }
+    }
+
+    private fun card(
+        id: String,
+        name: String,
+        stage: com.sal7one.hearth.core.PipelineStage,
+        gb: Double,
+        languages: Set<String>,
+    ) = DesktopModelCard(
+        id = id,
+        name = name,
+        family = name.substringBefore(' '),
+        stage = stage,
+        engineId = "${'$'}{stage.name.lowercase()}-local",
+        languages = languages,
+        source = "Pinned catalog",
+        license = "MIT",
+        note = "",
+        options = emptyMap(),
+        artifacts = listOf(DesktopModelArtifact("${'$'}id.bin", "https://example.invalid/${'$'}id", (gb * 1_000_000_000).toLong(), "0".repeat(64))),
+    )
+
+    private val modelsFixture = run {
+        val catalog = listOf(
+            card("whisper-large-v3", "Whisper Large v3", com.sal7one.hearth.core.PipelineStage.STT, 1.55, setOf("multilingual")),
+            card("whisper-small", "Whisper Small", com.sal7one.hearth.core.PipelineStage.STT, 0.461, setOf("multilingual")),
+            card("whisper-tiny", "Whisper Tiny", com.sal7one.hearth.core.PipelineStage.STT, 0.075, setOf("multilingual")),
+            card("eurollm-1.7b", "EuroLLM 1.7B", com.sal7one.hearth.core.PipelineStage.TRANSLATION, 1.05, setOf("en", "ar", "de")),
+            card("riva-4b", "Riva Translate 4B", com.sal7one.hearth.core.PipelineStage.TRANSLATION, 2.76, setOf("en", "ar")),
+            card("supertonic-3", "Supertonic 3", com.sal7one.hearth.core.PipelineStage.TTS, 0.412, setOf("ar", "en")),
+        )
+        val installations = mapOf(
+            "whisper-large-v3" to DesktopModelStatus(true, null),
+            "eurollm-1.7b" to DesktopModelStatus(true, null),
+            "supertonic-3" to DesktopModelStatus(true, null),
+            "riva-4b" to DesktopModelStatus(false, null, "Downloaded file does not match the pinned SHA-256"),
+        )
+        modelsState(
+            catalog = catalog,
+            installations = installations,
+            config = PipelineConfig(),
+            transfer = ModelTransfer("whisper-small", downloaded = 180_000_000, total = 461_000_000),
+            filter = ModelsFilter(),
+            freeBytes = 214_000_000_000,
+        )
+    }
+
+    @Test
+    fun renderModels() = render("models", height = 1100) { width, height ->
+        ImageComposeScene(width = width, height = height, density = Density(1f)) {
+            HearthTheme(preset = AccentPreset.INK, dark = true) {
+                AppShell(
+                    current = DesktopScreen.MODELS,
+                    status = "3 installed",
+                    statusLive = false,
+                    dark = true,
+                    onToggleTheme = {},
+                    onNavigate = {},
+                ) {
+                    ModelsScreen(state = modelsFixture, actions = ModelsActions())
                 }
             }
         }

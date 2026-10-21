@@ -270,6 +270,13 @@ internal object HearthIcons {
         }
     }
 
+    val Search: ImageVector by lazy {
+        line(newBuilder("Search")) {
+            circle(11f, 11f, 7f)
+            moveTo(16.2f, 16.2f); lineTo(21f, 21f)
+        }
+    }
+
     val Overlay: ImageVector by lazy {
         line(newBuilder("Overlay")) {
             moveTo(3f, 6f)

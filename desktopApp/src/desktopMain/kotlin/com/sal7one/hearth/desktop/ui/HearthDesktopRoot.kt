@@ -14,6 +14,13 @@ import com.sal7one.hearth.desktop.chooseFile
 import com.sal7one.hearth.desktop.chooseSaveFile
 import com.sal7one.hearth.desktop.copyToClipboard
 import com.sal7one.hearth.desktop.finalTranscript
+import com.sal7one.hearth.desktop.openPath
+import com.sal7one.hearth.desktop.useVerifiedModel
+import com.sal7one.hearth.core.PipelineStage
+import com.sal7one.hearth.desktop.ui.screens.models.ModelsActions
+import com.sal7one.hearth.desktop.ui.screens.models.ModelsFilter
+import com.sal7one.hearth.desktop.ui.screens.models.ModelsScreen
+import com.sal7one.hearth.desktop.ui.screens.models.modelsState
 import com.sal7one.hearth.desktop.ui.screens.captions.CaptionsActions
 import com.sal7one.hearth.desktop.ui.screens.captions.CaptionsState
 import com.sal7one.hearth.desktop.ui.screens.captions.CaptionsScreen
@@ -55,10 +62,22 @@ internal fun HearthDesktopRoot(
     var showPendingOriginal by remember { mutableStateOf(initialUi["overlay-pending"] != "false") }
     var overlaySettings by remember { mutableStateOf(overlaySettingsFrom(initialUi)) }
     var deviceId by remember { mutableStateOf<String?>(null) }
+    var modelFilter by remember {
+        mutableStateOf(
+            ModelsFilter(
+                stage = initialUi["model-stage"]?.let { stored -> PipelineStage.entries.firstOrNull { it.name == stored } },
+                onlyInstalled = initialUi["model-installed"] == "true",
+            ),
+        )
+    }
 
     val config by controller.config.collectAsState()
     val workspace by controller.state.collectAsState()
     val library by models.state.collectAsState()
+    val installations by models.library.installations.collectAsState()
+    val freeBytes = remember {
+        runCatching { java.io.File(controller.dataDirectory.toFile(), ".").usableSpace }.getOrDefault(0L)
+    }
 
     val installed = remember(library.refreshing) {
         runCatching {
@@ -92,6 +111,42 @@ internal fun HearthDesktopRoot(
             else -> if (installed > 0) "Ready" else "Setup needed"
         },
         statusLive = workspace.active && !closing,
+    )
+
+    val libraryState = modelsState(
+        catalog = models.library.catalog,
+        installations = installations,
+        config = config,
+        transfer = library.transfer,
+        filter = modelFilter,
+        freeBytes = freeBytes,
+    ).copy(refreshing = library.refreshing)
+
+    val modelsActions = ModelsActions(
+        onSearch = { query -> modelFilter = modelFilter.copy(query = query) },
+        onFilterStage = { stage ->
+            modelFilter = modelFilter.copy(stage = stage)
+            saveUi(mapOf("model-stage" to stage?.name.orEmpty()))
+        },
+        onToggleInstalledOnly = {
+            modelFilter = modelFilter.copy(onlyInstalled = !modelFilter.onlyInstalled)
+            saveUi(mapOf("model-installed" to modelFilter.onlyInstalled.toString()))
+        },
+        onAction = { id ->
+            val card = models.library.find(id)
+            val installed = models.library.installedSelection(id)
+            if (installed != null) {
+                controller.updateConfig { it.useVerifiedModel(card.stage, installed) }
+            } else {
+                models.download(id)
+            }
+        },
+        onRefresh = { models.refresh(config) },
+        onOpenFolder = {
+            runCatching { openPath(controller.dataDirectory) }
+                .onFailure { failure(it.message ?: it.toString()) }
+        },
+        onNavigate = ::navigate,
     )
 
     val overlay = overlayState(
@@ -221,6 +276,7 @@ internal fun HearthDesktopRoot(
                     onOpen = ::navigate,
                     onOpenWorkspace = { navigate(DesktopScreen.CAPTIONS) },
                 )
+                DesktopScreen.MODELS -> ModelsScreen(state = libraryState, actions = modelsActions)
                 DesktopScreen.OVERLAY -> OverlayScreen(state = overlay, actions = overlayActions)
                 DesktopScreen.CAPTIONS -> CaptionsScreen(
                     state = captions,
