@@ -44,6 +44,20 @@ Last updated when the translation catalog was expanded to 8 models.
 - The remaining ONNX families (Moonshine, Omnilingual, Phonon) need their backend
   written first — a larger task than a port.
 
+## Build probes (what was actually tried)
+
+| Target | Result |
+| --- | --- |
+| `onnx/onnx_engine.cpp` for macOS | compiles to an object, no changes |
+| `nemotron_backend.cpp` | stops at `nemo_speech/asr.h` (not in repo, only under `research/`) |
+| `qwen_backend.cpp` | stops at `sherpa-onnx/c-api/c-api.h` (not built) |
+| `transcribepsy_backend.cpp` | stops at `parakeet/engine.h` (not built) |
+| `research/sherpa-onnx` configure | 56 MB tree that fetches asio, cargs and other dependencies over the network via `FetchContent`; not a quick local build |
+
+Conclusion: no ONNX speech engine can be added without first building one of those
+external C++ projects for macOS and Windows. Each is its own multi-hour task with
+its own toolchain pitfalls, and none of them has been built in this repo yet.
+
 ## Port checklist for one ONNX family
 
 1. Extend `scripts/desktop/build-native.py` to compile `onnx/onnx_engine.cpp` plus
