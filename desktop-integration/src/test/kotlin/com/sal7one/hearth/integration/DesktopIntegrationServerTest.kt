@@ -285,6 +285,38 @@ class DesktopIntegrationServerTest {
         assertThrows(IllegalStateException::class.java) { server.start() }
     }
 
+    @Test fun overlayPageAndSseExposeLiveCaptionsWithoutProviderCredentials() = fixture { service, server ->
+        val page = request(server, "/overlay/", authenticated = false)
+        assertEquals(200, page.status)
+        assertTrue(page.body.contains("Hearth captions"))
+        assertTrue(page.body.contains("/overlay/app.js"))
+        val script = request(server, "/overlay/app.js", authenticated = false)
+        assertEquals(200, script.status)
+        assertTrue(script.body.contains("/overlay/events"))
+
+        assertEquals(202, request(server, "/v1/sessions", "POST", """{"text":"hello","voiceEnabled":false}""").status)
+        val session = service.sessions.single()
+        session.state.value = session.state.value.copy(
+            status = PipelineStatus.RUNNING,
+            segments = listOf(CaptionSegment("s1", "Hello overlay", "مرحبا overlay", true, 0, 100)),
+        )
+        await { request(server, "/v1/sessions/${session.id}").body.contains("Hello overlay") }
+
+        val fragment = server.overlayUrl.substringAfter("#")
+        val connect = request(server, "/overlay/connect", "POST", """{"token":"$fragment"}""", authenticated = false)
+        assertEquals(200, connect.status)
+        val cookie = connect.headers.entries.firstOrNull { it.key.equals("Set-Cookie", ignoreCase = true) }?.value?.firstOrNull()
+            ?.substringBefore(";") ?: error("Overlay connect did not set its cookie")
+        val stream = connection(server, "/overlay/events", authenticated = false).apply {
+            setRequestProperty("Cookie", cookie); connectTimeout = 5_000; readTimeout = 5_000
+        }
+        try {
+            val payload = readUntil(stream.inputStream.bufferedReader()) { it.startsWith("data:") && it.contains("Hello overlay") }
+            assertTrue(payload.contains("مرحبا overlay"))
+            assertFalse(payload.contains(server.apiToken))
+        } finally { stream.disconnect() }
+    }
+
     @Test fun eventBackpressureSignalsResyncRatherThanGrowingOrDroppingFinalSilently() {
         val events = IntegrationEvents()
         val slow = events.subscribe(null, null)
