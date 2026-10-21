@@ -925,6 +925,192 @@
       ]
     },
     {
+      "id": "hy-mt15-q6",
+      "name": "Hy Mt15 Q6",
+      "family": "hy-mt2",
+      "stage": "TRANSLATION",
+      "engineId": "llama-translation-local",
+      "languages": [
+        "ar",
+        "en",
+        "de",
+        "es",
+        "fr",
+        "ru",
+        "zh"
+      ],
+      "source": "https://huggingface.co/tencent/HY-MT1.5-1.8B-GGUF",
+      "license": "Apache-2.0",
+      "note": "Uses the existing Hearth translation prompt protocol. Quality varies by direction; see linked model evidence.",
+      "options": {
+        "promptMode": "default",
+        "family": "hy-mt2"
+      },
+      "artifacts": [
+        {
+          "filename": "HY-MT1.5-1.8B-Q6_K.gguf",
+          "bytes": 1474785216,
+          "sha256": "c3819200ab9a79cb29b9a05ce8920e2eb01ae7ce520094fc5b57356494f3c641",
+          "url": "https://huggingface.co/tencent/HY-MT1.5-1.8B-GGUF/resolve/265b2e615a7dc9b06c435dc878829ad99a512ba2/HY-MT1.5-1.8B-Q6_K.gguf"
+        }
+      ]
+    },
+    {
+      "id": "hy-mt15-q8",
+      "name": "Hy Mt15 Q8",
+      "family": "hy-mt2",
+      "stage": "TRANSLATION",
+      "engineId": "llama-translation-local",
+      "languages": [
+        "ar",
+        "en",
+        "de",
+        "es",
+        "fr",
+        "ru",
+        "zh"
+      ],
+      "source": "https://huggingface.co/tencent/HY-MT1.5-1.8B-GGUF",
+      "license": "Apache-2.0",
+      "note": "Uses the existing Hearth translation prompt protocol. Quality varies by direction; see linked model evidence.",
+      "options": {
+        "promptMode": "default",
+        "family": "hy-mt2"
+      },
+      "artifacts": [
+        {
+          "filename": "HY-MT1.5-1.8B-Q8_0.gguf",
+          "bytes": 1908528288,
+          "sha256": "6789b06d0902f2f5312c0e1703d56ccbddfcfb6c653d22519b7c720f7db9a98e",
+          "url": "https://huggingface.co/tencent/HY-MT1.5-1.8B-GGUF/resolve/265b2e615a7dc9b06c435dc878829ad99a512ba2/HY-MT1.5-1.8B-Q8_0.gguf"
+        }
+      ]
+    },
+    {
+      "id": "hy-mt2-q3km",
+      "name": "Hy Mt2 Q3Km",
+      "family": "hy-mt2",
+      "stage": "TRANSLATION",
+      "engineId": "llama-translation-local",
+      "languages": [
+        "ar",
+        "en",
+        "de",
+        "es",
+        "fr",
+        "ru",
+        "zh"
+      ],
+      "source": "https://huggingface.co/mradermacher/Hy-MT2-1.8B-GGUF",
+      "license": "Apache-2.0",
+      "note": "Uses the existing Hearth translation prompt protocol. Quality varies by direction; see linked model evidence.",
+      "options": {
+        "promptMode": "default",
+        "family": "hy-mt2"
+      },
+      "artifacts": [
+        {
+          "filename": "Hy-MT2-1.8B.Q3_K_M.gguf",
+          "bytes": 951022336,
+          "sha256": "11a4e50e70bdb876d4cdf158b47a895fd1bc8173d6ba63d4d6c8261d7cc63756",
+          "url": "https://huggingface.co/mradermacher/Hy-MT2-1.8B-GGUF/resolve/d760e9708bbded7cee9aa135b4f1dedb42ed2fc4/Hy-MT2-1.8B.Q3_K_M.gguf"
+        }
+      ]
+    },
+    {
+      "id": "hy-mt2-q6",
+      "name": "Hy Mt2 Q6",
+      "family": "hy-mt2",
+      "stage": "TRANSLATION",
+      "engineId": "llama-translation-local",
+      "languages": [
+        "ar",
+        "en",
+        "de",
+        "es",
+        "fr",
+        "ru",
+        "zh"
+      ],
+      "source": "https://huggingface.co/tencent/Hy-MT2-1.8B-GGUF",
+      "license": "Apache-2.0",
+      "note": "Uses the existing Hearth translation prompt protocol. Quality varies by direction; see linked model evidence.",
+      "options": {
+        "promptMode": "default",
+        "family": "hy-mt2"
+      },
+      "artifacts": [
+        {
+          "filename": "Hy-MT2-1.8B-Q6_K.gguf",
+          "bytes": 1474785120,
+          "sha256": "d98fe604dec1f28f58f80d7d560f7177e584d3b8e5835862687660e5ff97cb40",
+          "url": "https://huggingface.co/tencent/Hy-MT2-1.8B-GGUF/resolve/a0c709d9fac510f2c807aa3af52872340dc37a4a/Hy-MT2-1.8B-Q6_K.gguf"
+        }
+      ]
+    },
+    {
+      "id": "hy-mt2-q8",
+      "name": "Hy Mt2 Q8",
+      "family": "hy-mt2",
+      "stage": "TRANSLATION",
+      "engineId": "llama-translation-local",
+      "languages": [
+        "ar",
+        "en",
+        "de",
+        "es",
+        "fr",
+        "ru",
+        "zh"
+      ],
+      "source": "https://huggingface.co/tencent/Hy-MT2-1.8B-GGUF",
+      "license": "Apache-2.0",
+      "note": "Uses the existing Hearth translation prompt protocol. Quality varies by direction; see linked model evidence.",
+      "options": {
+        "promptMode": "default",
+        "family": "hy-mt2"
+      },
+      "artifacts": [
+        {
+          "filename": "Hy-MT2-1.8B-Q8_0.gguf",
+          "bytes": 1908528192,
+          "sha256": "5c3fe0b1408a5ceb0143184ef247b11b579c525f4b02b060e6c851bb76fef1a4",
+          "url": "https://huggingface.co/tencent/Hy-MT2-1.8B-GGUF/resolve/a0c709d9fac510f2c807aa3af52872340dc37a4a/Hy-MT2-1.8B-Q8_0.gguf"
+        }
+      ]
+    },
+    {
+      "id": "milmmt-46-1b-q5",
+      "name": "Milmmt 46 1B Q5",
+      "family": "milmmt-46",
+      "stage": "TRANSLATION",
+      "engineId": "llama-translation-local",
+      "languages": [
+        "ar",
+        "en",
+        "de",
+        "es",
+        "fr",
+        "ru",
+        "zh"
+      ],
+      "source": "https://huggingface.co/mradermacher/MiLMMT-46-1B-v1.0-GGUF",
+      "license": "Gemma terms",
+      "note": "Uses the existing Hearth translation prompt protocol. Quality varies by direction; see linked model evidence.",
+      "options": {
+        "promptMode": "raw",
+        "family": "milmmt-46"
+      },
+      "artifacts": [
+        {
+          "filename": "MiLMMT-46-1B-v1.0.Q5_K_M.gguf",
+          "bytes": 851344832,
+          "sha256": "3ae19dabf326ce42eca36d52a9dbd769ed34ffab744f18b4f45822117681e50b",
+          "url": "https://huggingface.co/mradermacher/MiLMMT-46-1B-v1.0-GGUF/resolve/34df5efbe6592773ec168cc7b307728c08623472/MiLMMT-46-1B-v1.0.Q5_K_M.gguf"
+        }
+      ]
+    },
+    {
       "id": "supertonic-3",
       "name": "Supertonic 3 · ten voices",
       "family": "Supertonic",

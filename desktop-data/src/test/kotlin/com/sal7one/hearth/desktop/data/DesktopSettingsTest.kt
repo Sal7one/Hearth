@@ -55,7 +55,7 @@ class DesktopSettingsTest {
         try {
             val library = DesktopModelLibrary(directory)
             val byStage = library.catalog.groupingBy { it.stage.name }.eachCount()
-            assertEquals(mapOf("STT" to 27, "TRANSLATION" to 8, "TTS" to 1), byStage)
+            assertEquals(mapOf("STT" to 27, "TRANSLATION" to 14, "TTS" to 1), byStage)
             assertEquals(1, library.catalog.filter { it.stage.name == "STT" }.map { it.family }.distinct().size)
             // Every shipped translator must use a prompt family the desktop engine implements,
             // and the option the engine reads must be the catalog's own family, not a fallback.

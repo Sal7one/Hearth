@@ -11,7 +11,7 @@ Last updated when the translation catalog was expanded to 8 models.
 | --- | --- | --- | --- |
 | Whisper (ggml) | 27 | `hearth_desktop_whisper` (whisper.cpp, Metal) | real speech → text, `DesktopWhisperRealSmokeTest` |
 | Supertonic 3 (TTS) | 1 | `hearth_supertonic_jni` (ONNX Runtime) | capability + synthesis path via `DesktopSupertonicRealSmokeTest` (needs model dir) |
-| GGUF translation | 8 | `libtransiber_translation` (llama.cpp) | MiLMMT-46 proven EN→AR in `DesktopFullPipelineRealSmokeTest` |
+| GGUF translation | 14 | `libtransiber_translation` (llama.cpp) | MiLMMT-46 proven EN→AR in `DesktopFullPipelineRealSmokeTest` |
 
 ## Missing on desktop
 
@@ -29,8 +29,18 @@ Last updated when the translation catalog was expanded to 8 models.
 
 - ONNX Runtime is **already** in the desktop bundle (`libonnxruntime.1.20.1.dylib`)
   because Supertonic depends on it, so the runtime dependency is solved.
-- Three backends already exist in C++ (Nemotron, Qwen3-ASR, TranscribePsy), so the
-  work is framework port + JNI + Kotlin binding, not new model code.
+- Three backends already exist in C++ (Nemotron, Qwen3-ASR, TranscribePsy) — but each
+  one pulls an external SDK that only exists under `research/`:
+
+  | Backend | Missing SDK (verified by compiling it for macOS) |
+  | --- | --- |
+  | Nemotron | `nemo_speech/asr.h` — NeMo-Speech.cpp |
+  | Qwen3-ASR | `sherpa-onnx/c-api/c-api.h` |
+  | TranscribePsy | `parakeet/engine.h` |
+
+  `onnx/onnx_engine.cpp` itself compiles cleanly for macOS, so the framework is
+  portable; the real cost is building those three C++ projects for macOS and
+  Windows before any family can be ported.
 - The remaining ONNX families (Moonshine, Omnilingual, Phonon) need their backend
   written first — a larger task than a port.
 
