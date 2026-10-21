@@ -108,7 +108,7 @@ class DesktopSettingsStore(val directory: Path) : AutoCloseable {
 private fun EngineSelection.portable() = copy(modelPath = "", credentialId = "", options = options.filterKeys { it in SetupCodec.allowedOptions || it.startsWith("sha256.") })
 
 object SetupCodec {
-    internal val allowedOptions = setOf("sha256", "threads", "acceleration", "voice", "speed", "steps", "temperature", "maxTokens", "profile", "backend", "family", "promptMode", "sources", "targets")
+    internal val allowedOptions = setOf("sha256", "threads", "acceleration", "voice", "speed", "steps", "temperature", "maxTokens", "profile", "backend", "family", "promptMode", "sources", "targets", "treeSha256")
     private val json = Json { prettyPrint = true }
     fun encode(config: PipelineConfig): String = json.encodeToString(JsonElement.serializer(), buildJsonObject {
         put("format", "hearth.desktop.setup"); put("schemaVersion", 1)
