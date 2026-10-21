@@ -43,7 +43,9 @@ class WindowsCrtStageTests(unittest.TestCase):
         args, options = process.call_args
         self.assertEqual(args[0][0], "C:/PowerShell7/pwsh.exe")
         self.assertNotIn("PSModulePath", options["env"])
-        self.assertEqual(options["env"]["SystemRoot"], "C:/Windows")
+        # Windows normalizes environment keys to uppercase; compare the value case-insensitively.
+        system_root = next((value for key, value in options["env"].items() if key.casefold() == "systemroot"), None)
+        self.assertEqual(system_root, "C:/Windows")
         self.assertIn("Import-Module Microsoft.PowerShell.Security -ErrorAction Stop", args[0][-1])
         self.assertIn("$signature.Status -ne 'Valid'", args[0][-1])
 
