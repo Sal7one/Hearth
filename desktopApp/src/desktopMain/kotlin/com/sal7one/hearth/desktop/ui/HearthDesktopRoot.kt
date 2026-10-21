@@ -5,19 +5,32 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import com.sal7one.hearth.desktop.CaptionOverlayWindow
 import com.sal7one.hearth.desktop.DesktopModelController
 import com.sal7one.hearth.desktop.DesktopWorkspaceController
+import com.sal7one.hearth.desktop.WorkspaceInput
+import com.sal7one.hearth.desktop.chooseFile
+import com.sal7one.hearth.desktop.chooseSaveFile
+import com.sal7one.hearth.desktop.copyToClipboard
+import com.sal7one.hearth.desktop.finalTranscript
+import com.sal7one.hearth.desktop.ui.screens.captions.CaptionsActions
+import com.sal7one.hearth.desktop.ui.screens.captions.CaptionsState
+import com.sal7one.hearth.desktop.ui.screens.captions.CaptionsScreen
+import com.sal7one.hearth.desktop.ui.screens.captions.StageSlot
+import com.sal7one.hearth.desktop.ui.screens.captions.captionsState
 import com.sal7one.hearth.desktop.ui.screens.home.HomeScreen
 import com.sal7one.hearth.desktop.ui.screens.home.homeState
 import com.sal7one.hearth.desktop.ui.shell.AppShell
 import com.sal7one.hearth.desktop.ui.theme.AccentPreset
 import com.sal7one.hearth.desktop.ui.theme.HearthTheme
+import kotlinx.coroutines.launch
 
 /**
- * The application root: navigation, appearance and the mapping from controller
- * state to each screen's view state. Screens never talk to a controller directly,
- * so a screen can be rendered from a fixed state for review or testing.
+ * The application root: navigation, appearance, and the mapping from controllers
+ * to each screen's view state. Screens never talk to a controller directly, which
+ * is what makes them renderable from a fixed fixture.
  */
 @Composable
 internal fun HearthDesktopRoot(
@@ -27,11 +40,16 @@ internal fun HearthDesktopRoot(
     saveUi: (Map<String, String>) -> Unit,
     closing: Boolean,
 ) {
+    val scope = rememberCoroutineScope()
     var screen by remember { mutableStateOf(DesktopScreen.fromId(initialUi["screen"] ?: "home")) }
     var dark by remember { mutableStateOf(initialUi["theme"] != "light") }
     var preset by remember {
         mutableStateOf(AccentPreset.entries.firstOrNull { it.name == initialUi["palette"] } ?: AccentPreset.INK)
     }
+    var showOriginal by remember { mutableStateOf(initialUi["overlay-original"] != "false") }
+    var showPendingOriginal by remember { mutableStateOf(initialUi["overlay-pending"] != "false") }
+    var overlayVisible by remember { mutableStateOf(false) }
+    var deviceId by remember { mutableStateOf<String?>(null) }
 
     val config by controller.config.collectAsState()
     val workspace by controller.state.collectAsState()
@@ -42,17 +60,21 @@ internal fun HearthDesktopRoot(
             models.library.catalog.count { models.library.installedSelection(it.id) != null }
         }.getOrDefault(0)
     }
-    val verified = remember(library.refreshing) {
-        runCatching {
-            models.library.catalog.count { models.library.installedSelection(it.id) != null }
-        }.getOrDefault(0)
+
+    fun navigate(destination: DesktopScreen) {
+        if (screen != destination) {
+            screen = destination
+            saveUi(mapOf("screen" to destination.id))
+        }
     }
+
+    fun failure(message: String) = controller.showError(message)
 
     val home = homeState(
         config = config,
         capabilities = controller.capabilities,
         installedModels = installed,
-        verifiedModels = verified,
+        verifiedModels = installed,
         statusText = when {
             closing -> "Closing"
             workspace.error != null -> "Needs attention"
@@ -62,12 +84,90 @@ internal fun HearthDesktopRoot(
         statusLive = workspace.active && !closing,
     )
 
-    fun navigate(destination: DesktopScreen) {
-        if (screen != destination) {
-            screen = destination
-            saveUi(mapOf("screen" to destination.id))
-        }
-    }
+    val captions: CaptionsState = captionsState(
+        workspace = workspace,
+        config = config,
+        capabilities = controller.capabilities,
+        showOriginal = showOriginal,
+        showPendingOriginal = showPendingOriginal,
+        overlayVisible = overlayVisible,
+        deviceName = workspace.devices.firstOrNull { it.id == deviceId }?.name,
+        inputLabel = "Microphone",
+    )
+
+    val captionsActions = CaptionsActions(
+        onToggleOverlay = { overlayVisible = it },
+        onShowOriginal = {
+            showOriginal = it
+            saveUi(mapOf("overlay-original" to it.toString()))
+        },
+        onShowPendingOriginal = {
+            showPendingOriginal = it
+            saveUi(mapOf("overlay-pending" to it.toString()))
+        },
+        onOpenStages = { navigate(DesktopScreen.MODELS) },
+        onChangeStage = { slot ->
+            navigate(
+                when (slot) {
+                    StageSlot.RECOGNIZE -> DesktopScreen.SPEECH
+                    StageSlot.TRANSLATE -> DesktopScreen.TRANSLATION_SETTINGS
+                    StageSlot.SPEAK -> DesktopScreen.VOICES
+                },
+            )
+        },
+        onCopyTranscript = {
+            runCatching { copyToClipboard(finalTranscript(workspace.snapshot, false)) }
+                .onFailure { failure(it.message ?: it.toString()) }
+        },
+        onCopyTranslation = {
+            runCatching { copyToClipboard(finalTranscript(workspace.snapshot, true)) }
+                .onFailure { failure(it.message ?: it.toString()) }
+        },
+        onSaveTranscript = {
+            val path = chooseSaveFile(null, "Export transcript", "hearth-transcript.txt")
+            if (path != null) controller.exportTranscript(path, false)
+        },
+        onPlaySpeech = {
+            val audio = workspace.snapshot?.audio?.lastOrNull()
+            if (audio != null) controller.play(audio) else failure("This session has not produced any speech yet")
+        },
+        onStopSpeech = { controller.stopPlayback() },
+        onStart = {
+            if (!captions.speechReady) {
+                navigate(DesktopScreen.MODELS)
+            } else {
+                controller.start(WorkspaceInput.MICROPHONE, "", "", deviceId)
+            }
+        },
+        onStop = { controller.cancel() },
+        onFinishMicrophone = { controller.finishMicrophone() },
+        onSwapLanguages = {
+            controller.updateConfig {
+                it.copy(sourceLanguage = it.targetLanguage, targetLanguage = it.sourceLanguage)
+            }
+        },
+        onToggleTranslate = {
+            if (config.translation == null) navigate(DesktopScreen.TRANSLATION_SETTINGS)
+            else controller.updateConfig { it.copy(translation = null) }
+        },
+        onToggleVoice = {
+            if (config.voice == null) navigate(DesktopScreen.VOICES)
+            else controller.updateConfig { it.copy(voice = null) }
+        },
+        onPickMicrophone = { /* already the active input; the label is the menu anchor */ },
+        onPickAudioFile = {
+            val path = chooseFile(null, "Choose audio or video", listOf("wav", "mp4", "mov", "m4a", "mp3", "aac"))
+            if (path != null) {
+                if (captions.speechReady) {
+                    controller.start(WorkspaceInput.AUDIO_FILE, "", path.toAbsolutePath().toString(), null)
+                } else {
+                    navigate(DesktopScreen.MODELS)
+                }
+            }
+        },
+        onPickText = { navigate(DesktopScreen.TRANSLATE) },
+        onRetry = { controller.clearNotice() },
+    )
 
     HearthTheme(preset = preset, dark = dark, reduceMotion = initialUi["reduce-motion"] == "true") {
         AppShell(
@@ -93,11 +193,23 @@ internal fun HearthDesktopRoot(
                     onOpen = ::navigate,
                     onOpenWorkspace = { navigate(DesktopScreen.CAPTIONS) },
                 )
-                else -> NotPortedScreen(
-                    screen = screen,
-                    onBack = { navigate(DesktopScreen.HOME) },
+                DesktopScreen.CAPTIONS -> CaptionsScreen(
+                    state = captions,
+                    actions = captionsActions,
+                    onOpenModels = { navigate(DesktopScreen.MODELS) },
                 )
+                else -> NotPortedScreen(screen = screen, onBack = { navigate(DesktopScreen.HOME) })
             }
+        }
+
+        if (overlayVisible) {
+            CaptionOverlayWindow(
+                snapshot = workspace.snapshot,
+                showOriginal = showOriginal,
+                translationEnabled = config.translation != null,
+                showOriginalWhilePending = showPendingOriginal,
+                onClose = { overlayVisible = false },
+            )
         }
     }
 }

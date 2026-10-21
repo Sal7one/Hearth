@@ -4,6 +4,10 @@ import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.ImageComposeScene
 import androidx.compose.ui.unit.Density
 import com.sal7one.hearth.desktop.ui.DesktopScreen
+import com.sal7one.hearth.desktop.ui.screens.captions.CaptionLine
+import com.sal7one.hearth.desktop.ui.screens.captions.CaptionsActions
+import com.sal7one.hearth.desktop.ui.screens.captions.CaptionsScreen
+import com.sal7one.hearth.desktop.ui.screens.captions.CaptionsState
 import com.sal7one.hearth.desktop.ui.screens.home.HomeScreen
 import com.sal7one.hearth.desktop.ui.screens.home.HomeState
 import com.sal7one.hearth.desktop.ui.shell.AppShell
@@ -57,6 +61,55 @@ class DesignPreviewRenderTest {
                         onSwapLanguages = {},
                         onOpen = {},
                         onOpenWorkspace = {},
+                    )
+                }
+            }
+        }
+    }
+
+    private val captionsState = CaptionsState(
+        sourceLabel = "English",
+        targetLabel = "العربية",
+        targetLanguage = "ar",
+        speechEngine = "Whisper Large v3",
+        translationEngine = "EuroLLM 1.7B",
+        speechReady = true,
+        translationEnabled = true,
+        voiceEnabled = false,
+        active = true,
+        microphone = true,
+        showOriginal = true,
+        showPendingOriginal = true,
+        overlayVisible = false,
+        deviceName = "MacBook Pro Microphone",
+        lines = listOf(
+            CaptionLine("a", 1, "00:04", "We should start with the part everyone already agreed on.",
+                "لنبدأ بالجزء الذي اتفق عليه الجميع.", false),
+            CaptionLine("b", 2, "00:11", "Then we can talk about the budget, and what it costs us next year.",
+                "ثم يمكننا الحديث عن الميزانية، وعن تكلفتها في العام القادم.", false),
+            CaptionLine("c", 3, "00:19", "I think the number is close enough to last quarter that nobody will object.",
+                "أعتقد أن الرقم قريب بما يكفي من الربع الماضي، فلن يعترض أحد.", false),
+            CaptionLine("d", 4, "00:27", "And after that, we still have to—", "وبعد ذلك، ما زال علينا أن—", true),
+        ),
+    )
+
+    @Test
+    fun renderCaptions() = render("captions", height = 900) { width, height ->
+        ImageComposeScene(width = width, height = height, density = Density(1f)) {
+            HearthTheme(preset = AccentPreset.INK, dark = true) {
+                AppShell(
+                    current = DesktopScreen.CAPTIONS,
+                    status = "Listening",
+                    statusLive = true,
+                    dark = true,
+                    onToggleTheme = {},
+                    onNavigate = {},
+                ) {
+                    CaptionsScreen(
+                        state = captionsState,
+                        actions = CaptionsActions(),
+                        onOpenModels = {},
+                        fixedClock = "00:42",
                     )
                 }
             }
