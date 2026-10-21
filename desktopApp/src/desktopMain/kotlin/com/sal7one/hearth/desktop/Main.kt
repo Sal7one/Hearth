@@ -1,8 +1,22 @@
 package com.sal7one.hearth.desktop
 
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
@@ -15,7 +29,15 @@ import com.sal7one.hearth.desktop.data.DesktopCredentialStore
 import com.sal7one.hearth.desktop.data.DesktopModelLibrary
 import com.sal7one.hearth.desktop.data.DesktopSettingsStore
 import com.sal7one.hearth.desktop.runtime.DesktopEngines
-import kotlinx.coroutines.*
+import com.sal7one.hearth.desktop.ui.HearthDesktopRoot
+import com.sal7one.hearth.desktop.ui.components.HearthButton
+import com.sal7one.hearth.desktop.ui.components.ButtonTone
+import com.sal7one.hearth.desktop.ui.theme.HearthTheme
+import com.sal7one.hearth.desktop.ui.theme.HearthType
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.withContext
 import java.nio.file.Path
 
 private class DesktopServices(
@@ -94,7 +116,7 @@ private fun launchDesktop() = application {
                     }
                 } catch (cleanup: Exception) { e.addSuppressed(cleanup) }
             }
-            if (e is CancellationException) throw e
+            if (e is kotlinx.coroutines.CancellationException) throw e
             startupError = e.message ?: e.toString()
         }
     }
@@ -119,19 +141,34 @@ private fun launchDesktop() = application {
             val prefs by loaded.settings.ui.collectAsState()
             val settingsError by loaded.settings.error.collectAsState()
             LaunchedEffect(settingsError) { settingsError?.let(loaded.controller::showError) }
-            HearthDesktopApp(loaded.controller, window, prefs, saveUi = { loaded.controller.saveUi(it) },
-                credentialStorageDescription = loaded.credentials.storageDescription, models = loaded.models, closing = closing)
-        } else HearthDesktopTheme {
-            Surface(Modifier.fillMaxSize()) {
-                Column(Modifier.fillMaxSize().padding(40.dp), horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically)) {
-                    Text("Hearth", style = MaterialTheme.typography.headlineLarge)
-                    if (startupError == null) { CircularProgressIndicator(); Text("Loading settings and checking engines…") }
-                    else {
-                        Text(startupError.orEmpty(), color = MaterialTheme.colorScheme.error)
-                        Button(onClick = { retry++ }) { Text("Retry loading settings") }
-                    }
-                }
+            HearthDesktopRoot(
+                controller = loaded.controller,
+                models = loaded.models,
+                initialUi = prefs,
+                saveUi = { loaded.controller.saveUi(it) },
+                closing = closing,
+            )
+        } else {
+            StartupScreen(startupError) { retry++ }
+        }
+    }
+}
+
+@Composable
+private fun StartupScreen(error: String?, onRetry: () -> Unit) {
+    HearthTheme {
+        Column(
+            Modifier.fillMaxSize().background(HearthTheme.colors.bg).padding(40.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically),
+        ) {
+            Text("Hearth", style = HearthType.h1, color = HearthTheme.colors.text)
+            if (error == null) {
+                CircularProgressIndicator(Modifier.size(22.dp), color = HearthTheme.colors.accent)
+                Text("Loading settings and checking engines…", style = HearthType.small, color = HearthTheme.colors.muted)
+            } else {
+                Text(error, style = HearthType.small, color = HearthTheme.colors.err)
+                HearthButton("Retry loading settings", onRetry, tone = ButtonTone.Primary)
             }
         }
     }
