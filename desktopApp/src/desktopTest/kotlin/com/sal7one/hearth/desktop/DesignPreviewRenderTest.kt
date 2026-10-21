@@ -40,6 +40,9 @@ import com.sal7one.hearth.desktop.ui.screens.files.filesState
 import com.sal7one.hearth.desktop.ui.screens.connections.ConnectionsActions
 import com.sal7one.hearth.desktop.ui.screens.connections.ConnectionsScreen
 import com.sal7one.hearth.desktop.ui.screens.connections.connectionsState
+import com.sal7one.hearth.desktop.ui.screens.conversation.ConversationScreen
+import com.sal7one.hearth.desktop.ui.screens.camera.CameraScreen
+import com.sal7one.hearth.desktop.ui.screens.reading.ReadingScreen
 import com.sal7one.hearth.desktop.ui.screens.integrations.IntegrationsActions
 import com.sal7one.hearth.desktop.ui.screens.integrations.IntegrationsScreen
 import com.sal7one.hearth.desktop.ui.screens.integrations.IntegrationsState
@@ -600,6 +603,54 @@ class DesignPreviewRenderTest {
                         onOpenVoice = {},
                     )
                 }
+            }
+        }
+    }
+
+    @Test
+    fun renderCompanions() = render("companions", height = 1000) { width, height ->
+        ImageComposeScene(width = width, height = height, density = Density(1f)) {
+            HearthTheme(preset = AccentPreset.INK, dark = true) {
+                AppShell(
+                    current = DesktopScreen.CONVERSATION,
+                    status = "On your phone",
+                    statusLive = false,
+                    dark = true,
+                    onToggleTheme = {},
+                    onNavigate = {},
+                ) { ConversationScreen() }
+            }
+        }
+    }
+
+    @Test
+    fun renderCamera() = render("camera", height = 1000) { width, height ->
+        ImageComposeScene(width = width, height = height, density = Density(1f)) {
+            HearthTheme(preset = AccentPreset.INK, dark = true) {
+                AppShell(
+                    current = DesktopScreen.CAMERA,
+                    status = "On your phone",
+                    statusLive = false,
+                    dark = true,
+                    onToggleTheme = {},
+                    onNavigate = {},
+                ) { CameraScreen() }
+            }
+        }
+    }
+
+    @Test
+    fun renderReading() = render("reading", height = 1000) { width, height ->
+        ImageComposeScene(width = width, height = height, density = Density(1f)) {
+            HearthTheme(preset = AccentPreset.INK, dark = true) {
+                AppShell(
+                    current = DesktopScreen.READING,
+                    status = "On your phone",
+                    statusLive = false,
+                    dark = true,
+                    onToggleTheme = {},
+                    onNavigate = {},
+                ) { ReadingScreen() }
             }
         }
     }

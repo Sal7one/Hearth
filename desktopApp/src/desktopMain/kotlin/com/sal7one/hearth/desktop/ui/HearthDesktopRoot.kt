@@ -43,6 +43,9 @@ import com.sal7one.hearth.desktop.ui.screens.files.filesState
 import com.sal7one.hearth.desktop.ui.screens.connections.ConnectionsActions
 import com.sal7one.hearth.desktop.ui.screens.connections.ConnectionsScreen
 import com.sal7one.hearth.desktop.ui.screens.connections.connectionsState
+import com.sal7one.hearth.desktop.ui.screens.conversation.ConversationScreen
+import com.sal7one.hearth.desktop.ui.screens.camera.CameraScreen
+import com.sal7one.hearth.desktop.ui.screens.reading.ReadingScreen
 import com.sal7one.hearth.desktop.ui.screens.integrations.IntegrationsActions
 import com.sal7one.hearth.desktop.ui.screens.integrations.IntegrationsScreen
 import com.sal7one.hearth.desktop.ui.screens.integrations.integrationsState
@@ -580,6 +583,9 @@ internal fun HearthDesktopRoot(
                     onOpen = ::navigate,
                     onOpenWorkspace = { navigate(DesktopScreen.CAPTIONS) },
                 )
+                DesktopScreen.CONVERSATION -> ConversationScreen()
+                DesktopScreen.CAMERA -> CameraScreen()
+                DesktopScreen.READING -> ReadingScreen()
                 DesktopScreen.INTEGRATIONS -> IntegrationsScreen(state = integrations, actions = integrationsActions)
                 DesktopScreen.TRANSLATE -> TranslateScreen(
                     state = translate,

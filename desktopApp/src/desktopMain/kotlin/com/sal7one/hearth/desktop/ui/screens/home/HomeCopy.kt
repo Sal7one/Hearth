@@ -29,6 +29,7 @@ internal object HomeCopy {
             description = "Two people, two languages. Every turn kept, nothing lost between them.",
             available = Availability.MOBILE,
             art = HearthArt.CONVERSATION,
+            destination = DesktopScreen.CONVERSATION,
         ),
         HomeFeature(
             id = "face",
@@ -36,6 +37,7 @@ internal object HomeCopy {
             description = "Share one screen across a table. Each side reads its own translation.",
             available = Availability.MOBILE,
             art = HearthArt.FACE,
+            destination = DesktopScreen.CONVERSATION,
         ),
         HomeFeature(
             id = "text",
@@ -51,6 +53,7 @@ internal object HomeCopy {
             description = "A menu, a sign, a page. Point at it and read it in your language.",
             available = Availability.MOBILE,
             art = HearthArt.CAMERA,
+            destination = DesktopScreen.CAMERA,
         ),
         HomeFeature(
             id = "reading",
@@ -58,6 +61,7 @@ internal object HomeCopy {
             description = "Read books and comics with translation laid over the page.",
             available = Availability.MOBILE,
             art = HearthArt.SCREEN,
+            destination = DesktopScreen.READING,
         ),
         HomeFeature(
             id = "integration",
