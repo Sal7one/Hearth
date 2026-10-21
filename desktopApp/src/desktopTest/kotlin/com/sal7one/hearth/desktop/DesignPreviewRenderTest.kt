@@ -31,6 +31,15 @@ import com.sal7one.hearth.desktop.ui.screens.translation.translationState
 import com.sal7one.hearth.desktop.ui.screens.voice.VoicesActions
 import com.sal7one.hearth.desktop.ui.screens.voice.VoicesScreen
 import com.sal7one.hearth.desktop.ui.screens.voice.voicesState
+import com.sal7one.hearth.desktop.ui.screens.appearance.AppearanceActions
+import com.sal7one.hearth.desktop.ui.screens.appearance.AppearanceScreen
+import com.sal7one.hearth.desktop.ui.screens.appearance.appearanceState
+import com.sal7one.hearth.desktop.ui.screens.files.FilesActions
+import com.sal7one.hearth.desktop.ui.screens.files.FilesScreen
+import com.sal7one.hearth.desktop.ui.screens.files.filesState
+import com.sal7one.hearth.desktop.ui.screens.overlay.OverlayCaptionView
+import com.sal7one.hearth.desktop.ui.screens.overlay.OverlaySettings
+import com.sal7one.hearth.desktop.ui.screens.overlay.OverlayState
 import com.sal7one.hearth.desktop.ui.screens.presets.BuiltInPresets
 import com.sal7one.hearth.desktop.ui.screens.presets.PresetsActions
 import com.sal7one.hearth.desktop.ui.screens.presets.PresetsScreen
@@ -39,10 +48,7 @@ import com.sal7one.hearth.desktop.ui.screens.downloads.DownloadsActions
 import com.sal7one.hearth.desktop.ui.screens.downloads.DownloadsScreen
 import com.sal7one.hearth.desktop.ui.screens.downloads.downloadsState
 import com.sal7one.hearth.desktop.ui.screens.overlay.OverlayActions
-import com.sal7one.hearth.desktop.ui.screens.overlay.OverlayCaptionView
 import com.sal7one.hearth.desktop.ui.screens.overlay.OverlayScreen
-import com.sal7one.hearth.desktop.ui.screens.overlay.OverlaySettings
-import com.sal7one.hearth.desktop.ui.screens.overlay.OverlayState
 import com.sal7one.hearth.desktop.ui.screens.home.HomeState
 import com.sal7one.hearth.desktop.ui.shell.AppShell
 import com.sal7one.hearth.desktop.ui.theme.AccentPreset
@@ -308,6 +314,24 @@ class DesignPreviewRenderTest {
         ),
     )
 
+    private val previewOverlay = OverlayState(
+        settings = OverlaySettings(visible = true),
+        caption = OverlayCaptionView(
+            primary = "لنبدأ بالجزء الذي اتفق عليه الجميع.",
+            original = "We should start with the part everyone agreed on.",
+            partial = false,
+        ),
+        targetRtl = true,
+        translationEnabled = true,
+    )
+
+    private val filesFixture = filesState(
+        dataDirectory = java.nio.file.Path.of("/Users/preview/Library/Application Support/Hearth"),
+        catalog = previewCatalog,
+        installations = previewInstallations,
+        freeBytes = 214_000_000_000,
+    )
+
     private val modelsFixture = modelsState(
         catalog = previewCatalog,
         installations = previewInstallations,
@@ -434,6 +458,48 @@ class DesignPreviewRenderTest {
                     onNavigate = {},
                 ) {
                     VoicesScreen(state = voicesFixture, actions = VoicesActions())
+                }
+            }
+        }
+    }
+
+    @Test
+    fun renderAppearance() = render("appearance", height = 1150) { width, height ->
+        ImageComposeScene(width = width, height = height, density = Density(1f)) {
+            HearthTheme(preset = AccentPreset.INK, dark = true) {
+                AppShell(
+                    current = DesktopScreen.APPEARANCE,
+                    status = "Saved",
+                    statusLive = false,
+                    dark = true,
+                    onToggleTheme = {},
+                    onNavigate = {},
+                ) {
+                    AppearanceScreen(
+                        state = appearanceState(AccentPreset.INK, dark = true, reduceMotion = false),
+                        overlay = previewOverlay,
+                        actions = AppearanceActions(),
+                        storageLabel = modelsFixture.storageLabel,
+                        freeLabel = modelsFixture.freeDiskLabel,
+                    )
+                }
+            }
+        }
+    }
+
+    @Test
+    fun renderFiles() = render("files", height = 1000) { width, height ->
+        ImageComposeScene(width = width, height = height, density = Density(1f)) {
+            HearthTheme(preset = AccentPreset.INK, dark = true) {
+                AppShell(
+                    current = DesktopScreen.FILES,
+                    status = "3.3 GB used",
+                    statusLive = false,
+                    dark = true,
+                    onToggleTheme = {},
+                    onNavigate = {},
+                ) {
+                    FilesScreen(state = filesFixture, actions = FilesActions())
                 }
             }
         }

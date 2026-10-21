@@ -33,6 +33,12 @@ import com.sal7one.hearth.desktop.ui.screens.translation.translationState
 import com.sal7one.hearth.desktop.ui.screens.voice.VoicesActions
 import com.sal7one.hearth.desktop.ui.screens.voice.VoicesScreen
 import com.sal7one.hearth.desktop.ui.screens.voice.voicesState
+import com.sal7one.hearth.desktop.ui.screens.appearance.AppearanceActions
+import com.sal7one.hearth.desktop.ui.screens.appearance.AppearanceScreen
+import com.sal7one.hearth.desktop.ui.screens.appearance.appearanceState
+import com.sal7one.hearth.desktop.ui.screens.files.FilesActions
+import com.sal7one.hearth.desktop.ui.screens.files.FilesScreen
+import com.sal7one.hearth.desktop.ui.screens.files.filesState
 import com.sal7one.hearth.desktop.ui.screens.presets.BuiltInPresets
 import com.sal7one.hearth.desktop.ui.screens.presets.PresetsActions
 import com.sal7one.hearth.desktop.ui.screens.presets.PresetsScreen
@@ -80,6 +86,7 @@ internal fun HearthDesktopRoot(
     }
     var showPendingOriginal by remember { mutableStateOf(initialUi["overlay-pending"] != "false") }
     var overlaySettings by remember { mutableStateOf(overlaySettingsFrom(initialUi)) }
+    var reduceMotion by remember { mutableStateOf(initialUi["reduce-motion"] == "true") }
     var deviceId by remember { mutableStateOf<String?>(null) }
     var modelFilter by remember {
         mutableStateOf(
@@ -289,6 +296,47 @@ internal fun HearthDesktopRoot(
         onStopAudio = { controller.stopPlayback() },
     )
 
+    val appearance = appearanceState(selected = preset, dark = dark, reduceMotion = reduceMotion)
+
+    val appearanceActions = AppearanceActions(
+        onNavigate = ::navigate,
+        onPalette = { chosen ->
+            preset = chosen
+            saveUi(mapOf("palette" to chosen.name))
+        },
+        onDark = { isDark ->
+            dark = isDark
+            saveUi(mapOf("theme" to if (isDark) "dark" else "light"))
+        },
+        onReduceMotion = { reduced ->
+            reduceMotion = reduced
+            saveUi(mapOf("reduce-motion" to reduced.toString()))
+        },
+    )
+
+    val files = filesState(
+        dataDirectory = controller.dataDirectory,
+        catalog = models.library.catalog,
+        installations = installations,
+        freeBytes = freeBytes,
+    )
+
+    val filesActions = FilesActions(
+        onNavigate = ::navigate,
+        onOpenFolder = { path ->
+            runCatching { openPath(java.nio.file.Path.of(path)) }
+                .onFailure { failure(it.message ?: it.toString()) }
+        },
+        onExportSetup = {
+            val target = chooseSaveFile(null, "Export Hearth setup", "hearth-setup.json")
+            if (target != null) controller.exportSetup(target)
+        },
+        onImportSetup = {
+            val source = chooseFile(null, "Import Hearth setup", listOf("json"))
+            if (source != null) controller.importSetup(source)
+        },
+    )
+
     val presets = presetsState(
         definitions = BuiltInPresets.all,
         catalog = models.library.catalog,
@@ -445,7 +493,7 @@ internal fun HearthDesktopRoot(
         onRetry = { controller.clearNotice() },
     )
 
-    HearthTheme(preset = preset, dark = dark, reduceMotion = initialUi["reduce-motion"] == "true") {
+    HearthTheme(preset = preset, dark = dark, reduceMotion = reduceMotion) {
         AppShell(
             current = screen,
             status = home.statusText,
@@ -469,6 +517,14 @@ internal fun HearthDesktopRoot(
                     onOpen = ::navigate,
                     onOpenWorkspace = { navigate(DesktopScreen.CAPTIONS) },
                 )
+                DesktopScreen.APPEARANCE -> AppearanceScreen(
+                    state = appearance,
+                    overlay = overlay,
+                    actions = appearanceActions,
+                    storageLabel = libraryState.storageLabel,
+                    freeLabel = libraryState.freeDiskLabel,
+                )
+                DesktopScreen.FILES -> FilesScreen(state = files, actions = filesActions)
                 DesktopScreen.SPEECH -> SpeechScreen(state = speech, actions = speechActions)
                 DesktopScreen.TRANSLATION_SETTINGS -> TranslationScreen(state = translation, actions = translationActions)
                 DesktopScreen.VOICES -> VoicesScreen(state = voices, actions = voicesActions)
