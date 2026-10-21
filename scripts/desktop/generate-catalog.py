@@ -34,7 +34,7 @@ def generate():
             languages=model.get('languages', ['ar', 'en']), source=model['sources'][0],
             license=license_info.get('name','See source') if isinstance(license_info, dict) else license_info,
             note='Uses the existing Hearth translation prompt protocol. Quality varies by direction; see linked model evidence.',
-            options={'promptMode':mode}, artifacts=[{k:c[k] for k in ('filename', 'bytes','sha256','url')}]))
+            options={'promptMode':mode, 'family':model['family']}, artifacts=[{k:c[k] for k in ('filename', 'bytes','sha256','url')}]))
     voice = (ROOT / 'hearth-tts-supertonic/src/main/java/com/sal7one/hearth/tts/supertonic/SupertonicCatalog.kt').read_text(encoding="utf-8")
     revision = re.search(r'const val revision = "([a-f0-9]{40})"', voice).group(1)
     assets = []

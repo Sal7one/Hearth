@@ -673,7 +673,8 @@
       "license": "Apache-2.0",
       "note": "Uses the existing Hearth translation prompt protocol. Quality varies by direction; see linked model evidence.",
       "options": {
-        "promptMode": "euro"
+        "promptMode": "euro",
+        "family": "eurollm"
       },
       "artifacts": [
         {
@@ -730,7 +731,8 @@
       "license": "NVIDIA Open Model License",
       "note": "Uses the existing Hearth translation prompt protocol. Quality varies by direction; see linked model evidence.",
       "options": {
-        "promptMode": "riva"
+        "promptMode": "riva",
+        "family": "riva-translate"
       },
       "artifacts": [
         {
@@ -738,6 +740,187 @@
           "bytes": 2759302720,
           "sha256": "90c2f48ff5549b770d9aaecb7eea603548bcca035a970a800d9c17781991804d",
           "url": "https://huggingface.co/liodon-ai/Riva-Translate-4B-Instruct-v2-imatrix-GGUF/resolve/aa8cc2e72e2f97e07b021e4afbc612cff3bf9ae9/Riva-Translate-4B-Instruct-v2-Q4_K_M.gguf"
+        }
+      ]
+    },
+    {
+      "id": "milmmt-46-1b-q4",
+      "name": "MiLMMT-46 1B · Q4_K_M",
+      "family": "milmmt-46",
+      "stage": "TRANSLATION",
+      "engineId": "llama-translation-local",
+      "languages": [
+        "ar",
+        "en"
+      ],
+      "source": "https://huggingface.co/mradermacher/MiLMMT-46-1B-v1.0-GGUF",
+      "license": "Gemma terms",
+      "note": "Uses the existing Hearth translation prompt protocol. Quality varies by direction; see linked model evidence.",
+      "options": {
+        "promptMode": "raw",
+        "family": "milmmt-46"
+      },
+      "artifacts": [
+        {
+          "filename": "MiLMMT-46-1B-v1.0.Q4_K_M.gguf",
+          "bytes": 806057408,
+          "sha256": "74d38ba75108d455326e9deeaf9ab01bb266dfa665eae9c4aa84e84485d4fdf9",
+          "url": "https://huggingface.co/mradermacher/MiLMMT-46-1B-v1.0-GGUF/resolve/34df5efbe6592773ec168cc7b307728c08623472/MiLMMT-46-1B-v1.0.Q4_K_M.gguf"
+        }
+      ]
+    },
+    {
+      "id": "hy-mt2-q2",
+      "name": "Hy-MT2 1.8B · Q2_K",
+      "family": "hy-mt2",
+      "stage": "TRANSLATION",
+      "engineId": "llama-translation-local",
+      "languages": [
+        "ar",
+        "en",
+        "de",
+        "es",
+        "fr",
+        "ru",
+        "zh"
+      ],
+      "source": "https://huggingface.co/mradermacher/Hy-MT2-1.8B-GGUF",
+      "license": "Apache-2.0",
+      "note": "Uses the existing Hearth translation prompt protocol. Quality varies by direction; see linked model evidence.",
+      "options": {
+        "promptMode": "default",
+        "family": "hy-mt2"
+      },
+      "artifacts": [
+        {
+          "filename": "Hy-MT2-1.8B.Q2_K.gguf",
+          "bytes": 777483008,
+          "sha256": "dced2d16784aaf339cab86a469ec3a6963111b200d863ed345a2380842b88ce7",
+          "url": "https://huggingface.co/mradermacher/Hy-MT2-1.8B-GGUF/resolve/d760e9708bbded7cee9aa135b4f1dedb42ed2fc4/Hy-MT2-1.8B.Q2_K.gguf"
+        }
+      ]
+    },
+    {
+      "id": "hy-mt2-q4",
+      "name": "Hy-MT2 1.8B · Q4_K_M",
+      "family": "hy-mt2",
+      "stage": "TRANSLATION",
+      "engineId": "llama-translation-local",
+      "languages": [
+        "ar",
+        "en",
+        "de",
+        "es",
+        "fr",
+        "ru",
+        "zh"
+      ],
+      "source": "https://huggingface.co/tencent/Hy-MT2-1.8B-GGUF",
+      "license": "Apache-2.0",
+      "note": "Uses the existing Hearth translation prompt protocol. Quality varies by direction; see linked model evidence.",
+      "options": {
+        "promptMode": "default",
+        "family": "hy-mt2"
+      },
+      "artifacts": [
+        {
+          "filename": "Hy-MT2-1.8B-Q4_K_M.gguf",
+          "bytes": 1133080448,
+          "sha256": "dc5f44fcf1fa496ee7ad725982c0c8c553a4de00259b53af84c4b89fb0c06699",
+          "url": "https://huggingface.co/tencent/Hy-MT2-1.8B-GGUF/resolve/a0c709d9fac510f2c807aa3af52872340dc37a4a/Hy-MT2-1.8B-Q4_K_M.gguf"
+        }
+      ]
+    },
+    {
+      "id": "hy-mt15-q4",
+      "name": "Hy-MT1.5 1.8B · Q4_K_M",
+      "family": "hy-mt2",
+      "stage": "TRANSLATION",
+      "engineId": "llama-translation-local",
+      "languages": [
+        "ar",
+        "en",
+        "de",
+        "es",
+        "fr",
+        "ru",
+        "zh"
+      ],
+      "source": "https://huggingface.co/tencent/HY-MT1.5-1.8B-GGUF",
+      "license": "Tencent Hunyuan community license",
+      "note": "Uses the existing Hearth translation prompt protocol. Quality varies by direction; see linked model evidence.",
+      "options": {
+        "promptMode": "default",
+        "family": "hy-mt2"
+      },
+      "artifacts": [
+        {
+          "filename": "HY-MT1.5-1.8B-Q4_K_M.gguf",
+          "bytes": 1133080512,
+          "sha256": "4383ac0c3c8e476de98ff979c2a3f069f8c4fb385e7860cf2d28da896cc477c7",
+          "url": "https://huggingface.co/tencent/HY-MT1.5-1.8B-GGUF/resolve/265b2e615a7dc9b06c435dc878829ad99a512ba2/HY-MT1.5-1.8B-Q4_K_M.gguf"
+        }
+      ]
+    },
+    {
+      "id": "index-translate-2b-q4",
+      "name": "Index-Translate 2B · Q4_K_M",
+      "family": "index-translate",
+      "stage": "TRANSLATION",
+      "engineId": "llama-translation-local",
+      "languages": [
+        "ar",
+        "en",
+        "de",
+        "es",
+        "fr",
+        "ru",
+        "zh"
+      ],
+      "source": "https://huggingface.co/IndexTeam/Index-Translate-2B-GGUF",
+      "license": "Apache-2.0",
+      "note": "Uses the existing Hearth translation prompt protocol. Quality varies by direction; see linked model evidence.",
+      "options": {
+        "promptMode": "default",
+        "family": "index-translate"
+      },
+      "artifacts": [
+        {
+          "filename": "Index-Translate-2B.Q4_K_M.gguf",
+          "bytes": 1312164352,
+          "sha256": "044b313d29342bd3b2c77cbb64023ca0d209bd9b3247763f9d162767ef2d746a",
+          "url": "https://huggingface.co/IndexTeam/Index-Translate-2B-GGUF/resolve/3a0eca6ce931d88d00614d427ab3ed8ff0743902/Index-Translate-2B.Q4_K_M.gguf"
+        }
+      ]
+    },
+    {
+      "id": "translategemma-4b-q4",
+      "name": "TranslateGemma 4B · Q4_K_M",
+      "family": "translategemma",
+      "stage": "TRANSLATION",
+      "engineId": "llama-translation-local",
+      "languages": [
+        "ar",
+        "en",
+        "de",
+        "es",
+        "fr",
+        "ru",
+        "zh"
+      ],
+      "source": "https://huggingface.co/mradermacher/translategemma-4b-it-GGUF",
+      "license": "Gemma terms",
+      "note": "Uses the existing Hearth translation prompt protocol. Quality varies by direction; see linked model evidence.",
+      "options": {
+        "promptMode": "default",
+        "family": "translategemma"
+      },
+      "artifacts": [
+        {
+          "filename": "translategemma-4b-it.Q4_K_M.gguf",
+          "bytes": 2489909760,
+          "sha256": "81200d03e843d2ec1ece6eeafe7d13cb6e5211e1fcd336ade55790b683a08330",
+          "url": "https://huggingface.co/mradermacher/translategemma-4b-it-GGUF/resolve/35a7486e128b19642cdc72d7b91b21ba388aaf42/translategemma-4b-it.Q4_K_M.gguf"
         }
       ]
     },

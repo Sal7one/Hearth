@@ -54,8 +54,16 @@ class DesktopSettingsTest {
         val directory = Files.createTempDirectory("hearth-model-test-")
         try {
             val library = DesktopModelLibrary(directory)
-            assertEquals(30, library.catalog.size)
+            val byStage = library.catalog.groupingBy { it.stage.name }.eachCount()
+            assertEquals(mapOf("STT" to 27, "TRANSLATION" to 8, "TTS" to 1), byStage)
             assertEquals(1, library.catalog.filter { it.stage.name == "STT" }.map { it.family }.distinct().size)
+            // Every shipped translator must use a prompt family the desktop engine implements,
+            // and the option the engine reads must be the catalog's own family, not a fallback.
+            val supportedFamilies = setOf("eurollm", "riva-translate", "milmmt-46", "hy-mt2", "index-translate", "translategemma")
+            val translators = library.catalog.filter { it.stage.name == "TRANSLATION" }
+            assertTrue(translators.all { it.family in supportedFamilies }, translators.map { it.family }.toString())
+            assertTrue(translators.all { it.options["family"] == it.family }, translators.map { it.id to it.options }.toString())
+            assertTrue(translators.all { it.artifacts.size == 1 && it.artifacts.single().filename.endsWith(".gguf") })
             assertTrue(library.catalog.flatMap { it.artifacts }.all { it.url.startsWith("https://") && it.sha256.length == 64 && it.bytes > 0 })
             val fake = directory.resolve("ggml-tiny-q5_1.bin"); Files.write(fake, byteArrayOf(1, 2, 3))
             assertFailsWith<IllegalStateException> { library.verify("whisper-tiny-q5_1", fake) }
