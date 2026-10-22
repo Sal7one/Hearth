@@ -24,20 +24,16 @@ injected ABI property. The arm64 APK itself contains only `lib/arm64-v8a`.
 | `:app` | arm64-v8a, armeabi-v7a, x86, x86_64 | Java/Compose app; split APKs |
 | `:common-jni` | arm64-v8a, armeabi-v7a, x86, x86_64 | shared speech JNI |
 | `:hearth-onnx-runtime` | arm64-v8a, armeabi-v7a, x86, x86_64 | shared ONNX Runtime |
-| `:hearth-tts` | pure Java | SpeechEngine/ArticleReader contracts |
-| `:hearth-tts-supertonic` | arm64-v8a, armeabi-v7a, x86, x86_64 | ONNX Runtime backend; no prebuilt family runtime |
-| `:hearth-tts-magpie` | **arm64-v8a** | prebuilt Magpie runtime is ARM64-only |
-| `:hearth-tts-moss` | **arm64-v8a** | prebuilt MOSS runtime is ARM64-only |
-| `:hearth-tts-omnivoice` | **arm64-v8a** | prebuilt OmniVoice runtime is ARM64-only |
-| `:hearth-tts-oute` | **arm64-v8a** | prebuilt Oute runtime is ARM64-only |
-| `:hearth-tts-chatterbox` | **arm64-v8a** | prebuilt Chatterbox/ORT graph runtime is ARM64-only |
-| `:hearth-tts-ming` | **arm64-v8a** | prebuilt Ming JNI is ARM64-only |
+| `:hearth-tts` | **arm64-v8a** | core + all TTS adapters, one CMake project, one test set |
+| `:hearth-onnx-runtime` | arm64-v8a, armeabi-v7a, x86, x86_64 | shared ONNX Runtime used by speech and TTS |
 
-The x86/ARMv7 APKs still contain Supertonic, Vosk and the shared speech stack, but
-**not** the ARM64-only TTS families. Earlier builds packaged their tiny JNI
-wrappers without the family runtime on x86 — those could load but could never
-synthesize; this is fixed by per-module `ndk.abiFilters` and the release verifier's
-explicit ARM64-only set.
+The x86/ARMv7 APKs still contain Vosk and the shared speech stack, but **not**
+TTS: all TTS adapters, including Supertonic and Ming, are ARM64-only. Earlier
+builds packaged tiny TTS JNI wrappers without their family runtimes on x86 —
+those could load but could never synthesize. The merged module now follows
+Android Studio's injected active ABI: selecting x86 emits no TTS native build;
+selecting arm64-v8a builds the TTS CMake targets. The release verifier enforces
+the explicit ARM64-only set.
 
 ## Why there are so many Gradle modules
 
@@ -52,28 +48,26 @@ Timeline from `settings.gradle.kts` history:
 | `09de08f` | `:hearth-tts`, `:hearth-tts-supertonic` |
 | `539e0c0` | `:hearth-tts-magpie` |
 | `ecd1dc0` / `13429dd` | `:hearth-onnx-runtime`, `:hearth-tts-moss`, `:hearth-tts-oute`, `:hearth-tts-chatterbox` |
-| `1a2f41e` (this session) | `:hearth-tts-ming` |
+| `1a2f41e` (this session) | `:hearth-tts-ming` (now folded into `:hearth-tts`) |
 
-The `:hearth-tts-ming` module is mine. I followed the existing pattern instead of
-challenging it; that was a mistake relative to the intended
-`app + common-jni + core` shape.
+The `:hearth-tts-ming` module was mine. It is now folded into `:hearth-tts`; all
+seven adapter projects and their `settings.gradle.kts` entries are gone. I followed
+the existing pattern instead of challenging it; that was a mistake relative to the
+intended `app + common-jni + core` shape.
 
 The original reason for separate adapter projects was publishing one AAR per TTS
 family for the standalone TTS SDK. The app does not need that topology: all
 adapters compile into the same APK and share the same core contracts.
 
-## Consolidation target
+## Completed consolidation
 
-One Android library module, `:hearth-tts`, should own:
+`:hearth-tts` is now the single Android TTS Gradle module. It owns:
 
 - `SpeechEngine`, `ArticleReader`, voice resolution and all adapter classes.
-- One Android CMake project that builds the family JNI targets.
-- The ARM64 prebuilt runtime `jniLibs` and the shared ONNX Runtime packaging.
-- One test source set (the current per-module tests move in place).
+- One Android CMake project that builds every family JNI target.
+- The ARM64 prebuilt runtime `jniLibs` and the merged test source set.
 
-The standalone SDK can still publish per-family AARs from one project using
-publications/source sets; it does not need seven Gradle projects in the app build.
-This is a structural refactor, not a small ABI change, so it should not be mixed
-into the 0.28.0 APK fix. The follow-up should remove the six adapter entries from
-`settings.gradle.kts` only after the merged `:hearth-tts` module builds, tests and
-the release verifier pass.
+`:hearth-onnx-runtime` remains the one shared ONNX Runtime module. The old
+`hearth-tts-*` source directories remain as source folders referenced by
+`hearth-tts` source sets; their Gradle build files are removed, so they are not
+separate modules. A future cosmetic move can fold the directories physically.

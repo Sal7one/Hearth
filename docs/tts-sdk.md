@@ -3,8 +3,9 @@
 Hearth's reusable API is `:hearth-tts`. It contains article splitting, voice
 selection, bounded PCM delivery and lifecycle handling. It contains no model,
 network client, Android audio player, app settings or automatic download code.
-The 0.27.1 build prepares the core AAR and separate optional provider AARs for
-integration testing. This is not a Maven publication or an Android system TTS service.
+The 0.28.0 build prepares one `hearth-tts` AAR containing the core and every
+adapter, plus the shared `hearth-onnx-runtime` AAR. This is not a Maven publication
+or an Android system TTS service.
 First-party source follows the repository's [Apache-2.0 license](../LICENSE);
 model and native dependency licenses remain separate.
 
@@ -14,8 +15,8 @@ Inside this repository:
 
 ```kotlin
 dependencies {
-    implementation(project(":hearth-tts"))
-    implementation(project(":hearth-tts-magpie")) // optional ARM64 CPU engine
+    implementation(project(":hearth-tts")) // core + all adapters
+    implementation(project(":hearth-onnx-runtime")) // shared ONNX runtime
 }
 ```
 
@@ -26,14 +27,12 @@ compile SDK 36 and minimum Android API 28. Native bindings remain in
 `com.sal7one.common_jni`; retain the AAR's consumer ProGuard rules. Do not copy
 or rename JNI classes, or package a second conflicting native library.
 
-`:hearth-tts-supertonic` is another working adapter and the best current choice
-for explicitly gendered Arabic/English voices. It now depends on the API plus
-`:hearth-onnx-runtime`, which owns one ONNX Runtime 1.20.0 binary per ABI. It no
-longer depends on the STT/translation `:common-jni` binary. Local AAR users need
-all three AARs (API, Supertonic adapter, shared ONNX runtime), plus coroutines.
+`The merged AAR carries Supertonic, Magpie, OmniVoice, MOSS, Oute, Chatterbox and
+Ming adapters. All TTS native code is **ARM64-only**; the AAR contains both the
+JNI wrappers and the prebuilt family runtimes. The separate
+`hearth-onnx-runtime` AAR owns the one shared ONNX Runtime 1.20.0 binary set.
 The ONNX runtime contributes its actual native footprint; this is not a claim
-that ONNX itself is tiny. Magpie and OmniVoice have isolated GGML runtimes and
-depend only on the core.
+that ONNX itself is tiny.
 
 When combining multiple optional native AARs, the consuming app can need an
 explicit rule for their matching NDK27 `libc++_shared.so` copies:
@@ -46,11 +45,10 @@ android {
 }
 ```
 
-Use the same compatible NDK C++ runtime across the selected adapters. ONNX is
-supplied once by `hearth-onnx-runtime`; include that shared AAR for Supertonic,
-MOSS or Chatterbox. The adapter AARs do not bundle another ONNX copy.
-`python3 scripts/verify-tts-aars.py` checks the actual eight release archives,
-including their native inventory, model-free core and absence of broad app/STT/MT
+Use the same compatible NDK C++ runtime for the merged TTS AAR. ONNX is supplied
+once by the shared `hearth-onnx-runtime` AAR; `hearth-tts` does not bundle another
+copy. `python3 scripts/verify-tts-aars.py` checks the two actual release archives,
+including the merged native inventory, no model weights, and absence of app/STT/MT
 classes. Verified archive sizes are in the [validation record](handoff/validation.md#sdk-and-product-boundaries).
 
 ## Installing a model

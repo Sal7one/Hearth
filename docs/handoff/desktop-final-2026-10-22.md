@@ -98,6 +98,10 @@ download or play audio by default.
   library still fails.
 - The handoff validator accepts the expanded 17-entry translation inventory
   (minimum five families, research-only entries carry an explicit no-runtime block).
+- Android TTS was collapsed from eight Gradle modules to one `:hearth-tts` module
+  with one CMake project, one jniLibs set and one test source set; all TTS
+  adapters are ARM64-only and follow Android Studio's injected active ABI. The
+  shared ONNX Runtime remains the only separate runtime module.
 
 **Verification:** Android host tests/QA compiles, both QA APK sets,
 `verify-release.py` (10 APKs), the full desktop suite, `generate-catalog.py

@@ -6,8 +6,7 @@ import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
 ABIS = {"arm64-v8a", "armeabi-v7a", "x86", "x86_64"}
-MODULES = ["hearth-tts", "hearth-onnx-runtime", "hearth-tts-supertonic", "hearth-tts-magpie",
-           "hearth-tts-omnivoice", "hearth-tts-moss", "hearth-tts-oute", "hearth-tts-chatterbox"]
+MODULES = ["hearth-tts", "hearth-onnx-runtime"]
 
 
 def main():
@@ -23,9 +22,9 @@ def main():
             else:
                 assert not native & ort, f"{module} duplicates the shared ONNX runtime"
                 if module == "hearth-tts":
-                    assert not native, "The core SDK must remain native/model free"
+                    assert native, "The merged TTS SDK must contain its adapter runtimes"
                 else:
-                    assert native, f"Missing adapter runtime: {module}"
+                    assert native, f"Missing runtime: {module}"
             assert not any(name.endswith((".gguf", ".safetensors", ".onnx", ".pth", ".bin")) for name in names), f"Model weights leaked into {module}"
             if "classes.jar" in names:
                 with zipfile.ZipFile(io.BytesIO(archive.read("classes.jar"))) as classes:

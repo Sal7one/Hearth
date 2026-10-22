@@ -36,9 +36,9 @@ jobs:
           packages: platform-tools
       - run: sdkmanager "platforms;android-36" "build-tools;36.0.0" "ndk;27.0.12077973" "cmake;3.22.1"
       - uses: gradle/actions/setup-gradle@0b6dd653ba04f4f93bf581ec31e66cbd7dcb644d # v4
-      - run: ./gradlew test :app:compilePlayQaKotlin :app:compileFossQaKotlin :common-jni:externalNativeBuildDebug :hearth-tts-magpie:externalNativeBuildDebug :app:assemblePlayQa :app:assembleFossQa :app:assemblePlayRelease :app:assembleFossRelease
+      - run: ./gradlew test :app:compilePlayQaKotlin :app:compileFossQaKotlin :common-jni:externalNativeBuildDebug :hearth-tts:externalNativeBuildDebug :app:assemblePlayQa :app:assembleFossQa :app:assemblePlayRelease :app:assembleFossRelease
       - name: Assemble standalone article SDK artifacts
-        run: ./gradlew :hearth-tts:assembleRelease :hearth-onnx-runtime:assembleRelease :hearth-tts-supertonic:assembleRelease :hearth-tts-magpie:assembleRelease :hearth-tts-omnivoice:assembleRelease :hearth-tts-moss:assembleRelease :hearth-tts-oute:assembleRelease :hearth-tts-chatterbox:assembleRelease
+        run: ./gradlew :hearth-tts:assembleRelease :hearth-onnx-runtime:assembleRelease
       - run: python3 scripts/verify-tts-aars.py
       - run: bash common-jni/src/main/cpp/ocr/tests/run_ocr_tests.sh
       - run: bash common-jni/src/main/cpp/common/tests/run_common_utils_tests.sh

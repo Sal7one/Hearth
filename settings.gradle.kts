@@ -3,13 +3,10 @@ dependencyResolutionManagement { repositoriesMode.set(RepositoriesMode.FAIL_ON_P
 rootProject.name = "Hearth"
 if (!providers.gradleProperty("hearthDesktopOnly").map(String::toBoolean).getOrElse(false)) {
     include(":app", ":common-jni")
-    include(":hearth-tts", ":hearth-tts-supertonic", ":hearth-tts-magpie")
-    include(":hearth-tts-omnivoice")
+    // One Android TTS library; the per-family adaptation sources are folded into it.
+    include(":hearth-tts")
+    // Shared ONNX Runtime remains the one cross-module runtime dependency.
     include(":hearth-onnx-runtime")
-    include(":hearth-tts-moss")
-    include(":hearth-tts-oute")
-    include(":hearth-tts-chatterbox")
-    include(":hearth-tts-ming")
 }
 
 // Desktop shares contracts and pipeline policy; Android keeps its existing platform adapters.
