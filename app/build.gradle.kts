@@ -54,7 +54,7 @@ android {
    )
   }
  }
- packaging { jniLibs.useLegacyPackaging = true; jniLibs.keepDebugSymbols += setOf("**/libonnxruntime.so", "**/libvosk.so", "**/libhearth_qwen.so", "**/libhearth_nemotron.so", "**/libhearth_transcribepsy.so", "**/libtransiber_translation.so", "**/libtransiber_translation_vulkan.so", "**/libtransiber_translation_opencl.so", "**/libhearth_transcribepsy_vulkan.so", "**/libhearth_transcribepsy_opencl.so", "**/libhearth_whisper_vulkan.so"); resources.excludes += "/META-INF/{AL2.0,LGPL2.1}" }
+ packaging { jniLibs.useLegacyPackaging = true; jniLibs.keepDebugSymbols += setOf("**/libming_jni.so", "**/libming_jni_scalar.so", "**/libonnxruntime.so", "**/libvosk.so", "**/libhearth_qwen.so", "**/libhearth_nemotron.so", "**/libhearth_transcribepsy.so", "**/libtransiber_translation.so", "**/libtransiber_translation_vulkan.so", "**/libtransiber_translation_opencl.so", "**/libhearth_transcribepsy_vulkan.so", "**/libhearth_transcribepsy_opencl.so", "**/libhearth_whisper_vulkan.so"); resources.excludes += "/META-INF/{AL2.0,LGPL2.1}" }
 }
 kotlin { jvmToolchain(17) }
 dependencies {
