@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="model_hardware_filter">Hardware</string>
+    <string name="model_hardware_all">All hardware</string>
+    <string name="model_hardware_gpu">All GPU paths</string>
+    <string name="model_hardware_cpu">CPU-only engines</string>
+    <string name="model_hardware_paths">GPU paths: %1$s</string>
+    <string name="model_hardware_gpu_hint">GPU paths require 64-bit ARM and a compatible driver. Model placement is verified when you start; filtering does not change compute settings.</string>
+    <string name="model_hardware_cpu_hint">These engines currently have no GPU path in Hearth. GPU-capable models can also run on CPU.</string>
+</resources>

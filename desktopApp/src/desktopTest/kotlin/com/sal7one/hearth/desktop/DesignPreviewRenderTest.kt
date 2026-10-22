@@ -37,6 +37,7 @@ import com.sal7one.hearth.desktop.ui.screens.integrations.IntegrationsActions
 import com.sal7one.hearth.desktop.ui.screens.integrations.IntegrationsScreen
 import com.sal7one.hearth.desktop.ui.screens.integrations.IntegrationsState
 import com.sal7one.hearth.desktop.ui.screens.models.ModelsActions
+import com.sal7one.hearth.desktop.ui.screens.models.ModelHardwareFilter
 import com.sal7one.hearth.desktop.ui.screens.models.ModelsFilter
 import com.sal7one.hearth.desktop.ui.screens.models.ModelsScreen
 import com.sal7one.hearth.desktop.ui.screens.models.modelsState
@@ -829,6 +830,17 @@ class DesignPreviewRenderTest {
             "Every DesktopScreen needs a representative render fixture",
         )
         renderAll("representative", representativeScreens)
+    }
+
+    @Test
+    fun gpuModelFiltersRenderAtNarrowWidth() {
+        for (hardware in listOf(ModelHardwareFilter.AVAILABLE, ModelHardwareFilter.CUDA, ModelHardwareFilter.CPU_ONLY)) {
+            val state = modelsState(previewCatalog, previewInstallations, PipelineConfig(), emptyList(),
+                ModelsFilter(hardware = hardware), 214_000_000_000, engines = previewEngines)
+            case(DesktopScreen.MODELS, name = "models-hardware-${hardware.key}", status = "Ready", width = 1100, height = 1150) {
+                ModelsScreen(state, ModelsActions())
+            }.render()
+        }
     }
 
     @Test

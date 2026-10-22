@@ -19,6 +19,8 @@ import com.sal7one.transiber.preferences.*
 import com.sal7one.transiber.setup.*
 import com.sal7one.transiber.downloads.*
 import com.sal7one.transiber.i18n.rememberUiText
+import com.sal7one.transiber.models.ModelHardwareFilter
+import com.sal7one.transiber.models.translationGpuPaths
 import com.sal7one.transiber.models.LegacyModelSetup
 import com.sal7one.transiber.models.ModelEngineType
 import com.sal7one.transiber.models.ModelRegistry
@@ -62,6 +64,8 @@ internal fun SettingsTranslateLocalUi(
     var query by com.sal7one.transiber.models.rememberModelBrowseString("translation-query", "")
     var kind by com.sal7one.transiber.models.rememberModelBrowseString("translation-kind", "any")
     var installedOnly by com.sal7one.transiber.models.rememberModelBrowseBoolean("translation-installed")
+    var hardwareId by com.sal7one.transiber.models.rememberModelBrowseString("translation-hardware", "all")
+    val hardware = ModelHardwareFilter.fromKey(hardwareId)
     var showPivots by com.sal7one.transiber.models.rememberModelBrowseBoolean("translation-pivots", MarianCascade.find(config.localTranslationModelId) != null)
     var platformDetails by rememberSaveable { mutableStateOf(config.localTranslationModelId == TranslationOptions.ML_KIT) }
     var records by remember { mutableStateOf<List<FileDownload>>(emptyList()) }
@@ -161,8 +165,12 @@ internal fun SettingsTranslateLocalUi(
     val shown = catalog.filter { item ->
         item.matches(query, source, target, kind) && (!installedOnly ||
             if (item.compact) item.installed(installed) else item.matchingVariants(query, installed).isNotEmpty()) &&
-            (!item.throughEnglish || showPivots)
+            (!item.throughEnglish || showPivots) && hardware.matches(translationGpuPaths(item.variants.isNotEmpty()))
     }
+
+    val shownCt2Count = com.sal7one.common_jni.translation.Ct2Catalog.models.filter {
+        ct2BrowserMatches(it, query, source, target, kind, hardware) && (!installedOnly || Ct2Package.installed(context, it))
+    }.map { it.groupId }.distinct().size
 
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         if (showCaptionControls) Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -193,6 +201,7 @@ internal fun SettingsTranslateLocalUi(
             "any" to uiText(UiR.string.translation_browser_type_all),
             "compact" to uiText(UiR.string.translation_browser_type_compact),
             "text" to uiText(UiR.string.translation_browser_type_text)), { kind = it })
+        ModelHardwarePicker(hardware, { hardwareId = it })
         if (kind != "text") Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Checkbox(showPivots, { showPivots = it })
             Text(uiText(UiR.string.translation_browser_pivots), style = MaterialTheme.typography.bodyMedium)
@@ -202,15 +211,15 @@ internal fun SettingsTranslateLocalUi(
         error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
-            Text(uiText(UiR.string.model_browser_results, shown.size + com.sal7one.common_jni.translation.Ct2Catalog.models.count { ct2BrowserMatches(it,query,source,target,kind) && (!installedOnly || Ct2Package.installed(context,it)) }), style = MaterialTheme.typography.labelMedium)
-            if (source != "any" || target != "any" || kind != "any" || showPivots) TextButton(onClick = {
-                source = "any"; target = "any"; kind = "any"; showPivots = false
+            Text(uiText(UiR.string.model_browser_results, shown.size + shownCt2Count), style = MaterialTheme.typography.labelMedium)
+            if (query.isNotBlank() || installedOnly || source != "any" || target != "any" || kind != "any" || showPivots || hardware != ModelHardwareFilter.ALL) TextButton(onClick = {
+                query = ""; installedOnly = false; source = "any"; target = "any"; kind = "any"; showPivots = false; hardwareId = "all"
             }) { Text(uiText(UiR.string.explorer_clear_filters)) }
         }
-        if (shown.isEmpty() && com.sal7one.common_jni.translation.Ct2Catalog.models.none { ct2BrowserMatches(it,query,source,target,kind) && (!installedOnly || Ct2Package.installed(context,it)) }) ModelBrowserEmptyState(onReset = {
-            query = ""; source = "any"; target = "any"; kind = "any"; installedOnly = false; showPivots = false
+        if (shown.isEmpty() && shownCt2Count == 0) ModelBrowserEmptyState(onReset = {
+            query = ""; source = "any"; target = "any"; kind = "any"; installedOnly = false; showPivots = false; hardwareId = "all"
         })
-        Ct2ModelsUi(query,source,target,kind,installedOnly,config.localTranslationModelId,{ select(it) },{ error=it })
+        if (hardware.matches(emptySet())) Ct2ModelsUi(query,source,target,kind,installedOnly,config.localTranslationModelId,{ select(it) },{ error=it })
         shown.forEach { item -> key(item.id) {
             var variantId by rememberSaveable { mutableStateOf("") }
             var details by rememberSaveable { mutableStateOf(false) }
@@ -238,6 +247,7 @@ internal fun SettingsTranslateLocalUi(
                     else MaterialTheme.colorScheme.surfaceContainerLow)) {
                 Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(item.title, style = MaterialTheme.typography.titleMedium)
+                    ModelGpuPaths(translationGpuPaths(item.variants.isNotEmpty()))
                     Text(uiText(if (item.compact) {
                         if (item.throughEnglish) UiR.string.explorer_translation_pivot else UiR.string.explorer_translation_direct
                     } else UiR.string.explorer_translation_multilingual), style = MaterialTheme.typography.labelMedium,
@@ -350,15 +360,17 @@ internal fun SettingsTranslateLocalUi(
         } }
         if (installedOnly && includeLegacy) {
             HorizontalDivider()
-            Text(uiText(UiR.string.translation_browser_folder_import), style = MaterialTheme.typography.titleSmall)
-            Text(uiText(UiR.string.translation_browser_import_pair_hint), style = MaterialTheme.typography.bodySmall)
-            LegacyModelSetup(ModelEngineType.TRANSLATE, config, update, showDownloadSources = false)
-            ModelFilterPicker(uiText(UiR.string.translation_browser_gguf_import), importingId.ifBlank { "choose" },
+            if (hardware.matches(emptySet())) {
+                Text(uiText(UiR.string.translation_browser_folder_import), style = MaterialTheme.typography.titleSmall)
+                Text(uiText(UiR.string.translation_browser_import_pair_hint), style = MaterialTheme.typography.bodySmall)
+                LegacyModelSetup(ModelEngineType.TRANSLATE, config, update, showDownloadSources = false)
+            }
+            if (hardware.matches(translationGpuPaths(true))) ModelFilterPicker(uiText(UiR.string.translation_browser_gguf_import), importingId.ifBlank { "choose" },
                 listOf("choose" to uiText(UiR.string.translation_browser_choose_artifact)) + TranslationCatalog.models.map { it.id to it.label }, { id ->
                     TranslationCatalog.models.firstOrNull { it.id == id }?.let { importingId = it.id; importer.launch(arrayOf("*/*")) }
                 })
         }
-        if (PlatformTranslation.available) {
+        if (PlatformTranslation.available && hardware.matches(emptySet())) {
             HorizontalDivider()
             TextButton(onClick = { platformDetails = !platformDetails }) { Text(uiText(UiR.string.translation_browser_platform)) }
             if (platformDetails) MlKitSetup(config, update)

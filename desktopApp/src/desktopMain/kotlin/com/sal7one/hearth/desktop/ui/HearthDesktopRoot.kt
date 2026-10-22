@@ -20,6 +20,7 @@ import com.sal7one.hearth.desktop.useVerifiedModel
 import com.sal7one.hearth.core.PipelineStage
 import com.sal7one.hearth.core.EngineSelection
 import com.sal7one.hearth.desktop.ui.screens.models.ModelsActions
+import com.sal7one.hearth.desktop.ui.screens.models.ModelHardwareFilter
 import com.sal7one.hearth.desktop.ui.screens.models.ModelsFilter
 import com.sal7one.hearth.desktop.ui.screens.models.ModelsScreen
 import com.sal7one.hearth.desktop.ui.screens.models.modelsState
@@ -116,6 +117,7 @@ internal fun HearthDesktopRoot(
             ModelsFilter(
                 stage = initialUi["model-stage"]?.let { stored -> PipelineStage.entries.firstOrNull { it.name == stored } },
                 onlyInstalled = initialUi["model-installed"] == "true",
+                hardware = ModelHardwareFilter.fromKey(initialUi["model-hardware"]),
             ),
         )
     }
@@ -207,6 +209,7 @@ internal fun HearthDesktopRoot(
         freeBytes = freeBytes,
         verifiedImports = library.verifiedImports,
         issues = library.issues,
+        engines = controller.capabilities,
     ).copy(refreshing = library.refreshing)
 
     val modelsActions = ModelsActions(
@@ -218,6 +221,14 @@ internal fun HearthDesktopRoot(
         onToggleInstalledOnly = {
             modelFilter = modelFilter.copy(onlyInstalled = !modelFilter.onlyInstalled)
             saveUi(mapOf("model-installed" to modelFilter.onlyInstalled.toString()))
+        },
+        onFilterHardware = { hardware ->
+            modelFilter = modelFilter.copy(hardware = hardware)
+            saveUi(mapOf("model-hardware" to hardware.key))
+        },
+        onResetFilters = {
+            modelFilter = ModelsFilter()
+            saveUi(mapOf("model-hardware" to "all", "model-stage" to "", "model-installed" to "false"))
         },
         onAction = { id ->
             val card = models.library.find(id)

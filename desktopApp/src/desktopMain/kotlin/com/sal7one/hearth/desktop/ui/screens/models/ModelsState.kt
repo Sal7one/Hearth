@@ -15,6 +15,7 @@ internal data class ModelRow(
     val inUse: Boolean,
     val issue: String? = null,
     val activity: String? = null,
+    val gpuLabel: String? = null,
 ) {
     val actionLabel: String
         get() = when {
@@ -41,6 +42,7 @@ internal data class ModelsFilter(
     val query: String = "",
     val stage: PipelineStage? = null,
     val onlyInstalled: Boolean = false,
+    val hardware: ModelHardwareFilter = ModelHardwareFilter.ALL,
 )
 
 /** A real transfer, already resolved to display strings by the mapper. */
@@ -69,5 +71,5 @@ internal data class ModelsState(
     val issues: List<String> = emptyList(),
 ) {
     val isEmpty: Boolean get() = groups.all { it.rows.isEmpty() }
-    val isEmptyBecauseOfFilter: Boolean get() = isEmpty && (filter.query.isNotBlank() || filter.onlyInstalled || filter.stage != null)
+    val isEmptyBecauseOfFilter: Boolean get() = isEmpty && (filter.query.isNotBlank() || filter.onlyInstalled || filter.stage != null || filter.hardware != ModelHardwareFilter.ALL)
 }

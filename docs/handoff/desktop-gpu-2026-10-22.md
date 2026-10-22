@@ -107,3 +107,37 @@ Ignored logs and receipts are under `build/desktop-gpu-smoke/`, especially
 `final-gate.log`, `build-whisper-final.log`, `build-translation-final.log`,
 `common-host.log`, `speech-host.log`, `python-tests.log`, `packaged-check.log`,
 `metal-packaged.log` and `metal-packaged.json`.
+
+## Follow-up: model hardware filters
+
+Local checkpoint `desktop-v1.0.0-rc.4` adds a saved hardware filter to the desktop
+Models library: All hardware, GPU available here, All GPU paths, Apple Metal,
+NVIDIA CUDA and CPU only. Paths describe implemented adapters across OSes;
+availability comes from the matching local engine's actual runtime capabilities.
+NVIDIA build paths remain explicitly marked as awaiting Windows hardware
+validation. Search includes GPU path names. Stage, installed and search filters
+combine with hardware; reset clears the saved filter state. Empty groups are
+hidden and the page shows the filtered result count. Cards state their supported
+GPU paths and current host availability. Browsing does not select an engine,
+change compute settings or download a model.
+
+Android's full speech and translation browsers now have saved All/GPU/Vulkan/
+Adreno OpenCL/CPU-only filters, sourced from existing runtime acceleration choices.
+CT2/Marian/ML Kit do not leak into GPU-only results. Speech precision variants
+stay grouped; compact translation counts now count cards rather than precision
+variants. No local GPU TTS path is advertised, and TV local-model restrictions
+remain intact. Labels are translated into English, Arabic and Chinese. Android
+hardware discovery/inference behavior was not changed and no phone was driven.
+
+Filter policy, combined search/stage/installation, DataStore persistence and narrow
+1100px desktop layout checks passed. Required Android tests/QA compilation and all
+six desktop suites passed. Android reports 701 tests per Play/FOSS build variant,
+with no failures; desktop UI reports 65 tests, no failures, two opt-in skips. The
+actual packaged launcher check also passed. Native GPU inference was not repeated
+for this presentation-only change; the preceding hardware receipt remains valid.
+Logs/renders are ignored under `build/desktop-gpu-filter/`.
+
+The owner was actively captioning while these filters were built. That session
+was left running; the rebuilt app image must be restarted after the owner's test
+to load the updated UI. No GitHub operations, workflow dispatches, pushes or APK
+deliveries were performed.

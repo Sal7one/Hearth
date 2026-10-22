@@ -48,6 +48,15 @@ inference counters and CPU/GPU outputs. The packaged launcher can repeat this
 with `scripts/desktop/validate-gpu.py --backend metal` and explicit model/WAV paths.
 These single-fixture timings do not establish broad quality or performance.
 
+In **Models**, the hardware menu combines with stage, search and installed filters.
+Choose **GPU available here** for the current computer, **All GPU paths** for the
+implemented adapters, or **Apple Metal**, **NVIDIA CUDA** and **CPU only** separately.
+A path for another OS does not claim availability on this device. Hardware filters
+persist in DataStore and do not change pipeline selections. Android's full speech
+and translation libraries similarly offer Vulkan, Adreno OpenCL and CPU-only
+filters; Android GPU labels require a compatible ARM64 device/driver and do not
+claim that the selected model has already passed device inference.
+
 An opt-in [Windows NVIDIA CUDA build and validation path](desktop-cuda.md) now
 covers these same two adapters, explicit device indices and verified app-local
 CUDA redistributables. **NVIDIA hardware execution is pending the owner's local

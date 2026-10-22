@@ -24,8 +24,9 @@ import com.sal7one.transiber.ui.components.ModelLibraryDisclosure
 import com.sal7one.transiber.translation.ConversationTranslationSettings
 import kotlinx.coroutines.*
 
-internal fun ct2BrowserMatches(spec: Ct2ModelSpec,query: String,source: String,target: String,kind: String): Boolean =
-    kind!="text" && (source=="any" || source in spec.sources) && (target=="any" || target in spec.targets) &&
+internal fun ct2BrowserMatches(spec: Ct2ModelSpec,query: String,source: String,target: String,kind: String,
+    hardware: com.sal7one.transiber.models.ModelHardwareFilter = com.sal7one.transiber.models.ModelHardwareFilter.ALL): Boolean =
+    hardware.matches(emptySet()) && kind!="text" && (source=="any" || source in spec.sources) && (target=="any" || target in spec.targets) &&
         (source=="any" || target=="any" || spec.supports(source,target)) &&
         ModelSearch.matches(query,spec.id,spec.label,spec.precisionLabel,"CTranslate2 CT2 CPU compact Arabic English",spec.license,
             if (spec.tokenizerMode>=2) "Jisr Saudi Egyptian Moroccan Algerian Tunisian Libyan Lebanese Syrian Palestinian Gulf Sudanese Yemeni Iraqi السعودية مصري دارجة شامي خليجي" else "",

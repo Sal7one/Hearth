@@ -3,6 +3,8 @@ package com.sal7one.hearth.desktop.ui.screens.models
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -28,6 +30,8 @@ import com.sal7one.hearth.desktop.ui.components.HearthButton
 import com.sal7one.hearth.desktop.ui.components.FilterPill
 import com.sal7one.hearth.desktop.ui.components.HearthTextField
 import com.sal7one.hearth.desktop.ui.icons.HearthIcons
+import com.sal7one.hearth.desktop.ui.screens.settings.SettingsSelect
+import com.sal7one.hearth.desktop.ui.screens.settings.SelectOption
 import com.sal7one.hearth.desktop.ui.theme.HearthTheme
 import com.sal7one.hearth.desktop.ui.theme.HearthType
 
@@ -35,37 +39,42 @@ import com.sal7one.hearth.desktop.ui.theme.HearthType
  * Search plus stage filters. The filter row is the same control the section uses
  * everywhere, so "Installed" means one thing across the app.
  */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 internal fun ModelsToolbar(
     filter: ModelsFilter,
     onSearch: (String) -> Unit,
     onStage: (PipelineStage?) -> Unit,
     onToggleInstalled: () -> Unit,
+    onHardware: (ModelHardwareFilter) -> Unit,
+    onReset: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val colors = HearthTheme.colors
-    Row(
-        modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
-    ) {
+    Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         HearthTextField(
             value = filter.query,
             onValueChange = onSearch,
             placeholder = ModelsCopy.SEARCH,
             leading = HearthIcons.Search,
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.fillMaxWidth(),
         )
-        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            FilterPill("All", filter.stage == null && !filter.onlyInstalled) {
-                onStage(null)
-                if (filter.onlyInstalled) onToggleInstalled()
-            }
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            FilterPill("All stages", filter.stage == null) { onStage(null) }
             FilterPill("Speech", filter.stage == PipelineStage.STT) { onStage(PipelineStage.STT) }
             FilterPill("Translation", filter.stage == PipelineStage.TRANSLATION) { onStage(PipelineStage.TRANSLATION) }
             FilterPill("Voice", filter.stage == PipelineStage.TTS) { onStage(PipelineStage.TTS) }
             FilterPill("Installed", filter.onlyInstalled) { onToggleInstalled() }
+            SettingsSelect(
+                value = filter.hardware.key,
+                options = ModelHardwareFilter.entries.map { SelectOption(it.key, it.label) },
+                onSelect = { onHardware(ModelHardwareFilter.fromKey(it)) },
+                modifier = Modifier.width(220.dp),
+            )
+            if (filter != ModelsFilter()) HearthButton("Reset filters", onReset,
+                tone = ButtonTone.Ghost, size = ButtonSize.Small)
         }
+        Text(filter.hardware.detail, style = HearthType.small, color = colors.muted)
     }
 }
 
@@ -121,6 +130,7 @@ internal fun ModelRowView(
                     color = colors.muted,
                     maxLines = 1,
                 )
+                row.gpuLabel?.let { Text(it, style = HearthType.rowSub, color = colors.accent, maxLines = 2) }
                 row.issue?.let {
                     Text(it, style = HearthType.rowSub, color = colors.err, maxLines = 2)
                 }

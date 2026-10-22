@@ -12,14 +12,14 @@ internal object ModelsCopy {
             "Installing never turns a stage on."
     const val IMPORT = "Import file…"
     const val ADD = "Add model"
-    const val SEARCH = "Search models, families or languages"
+    const val SEARCH = "Search models, families, languages or GPU paths"
 
     const val GROUP_SPEECH = "Speech recognition"
-    const val GROUP_SPEECH_DETAIL = "Whisper · 99 languages, Arabic and English included"
+    const val GROUP_SPEECH_DETAIL = "Local speech engines · language support varies by model"
     const val GROUP_TRANSLATION = "Translation"
-    const val GROUP_TRANSLATION_DETAIL = "Local GGUF models · your text never leaves the Mac"
+    const val GROUP_TRANSLATION_DETAIL = "GGUF and compact translation models"
     const val GROUP_VOICE = "Voice"
-    const val GROUP_VOICE_DETAIL = "Supertonic 3 · ten styles, plus voices already on this Mac"
+    const val GROUP_VOICE_DETAIL = "Local voice models · available voices vary by engine"
 
     const val STORAGE = "Storage"
     const val STORAGE_DETAIL = "Stored in Application Support. Removing a model asks first and keeps your setup."

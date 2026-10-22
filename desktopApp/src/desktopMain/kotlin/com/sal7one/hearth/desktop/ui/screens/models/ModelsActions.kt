@@ -11,6 +11,8 @@ internal class ModelsActions(
     val onSearch: (String) -> Unit = {},
     val onFilterStage: (PipelineStage?) -> Unit = {},
     val onToggleInstalledOnly: () -> Unit = {},
+    val onFilterHardware: (ModelHardwareFilter) -> Unit = {},
+    val onResetFilters: () -> Unit = {},
     val onAction: (String) -> Unit = {},
     val onImport: (String) -> Unit = {},
     val onRefresh: () -> Unit = {},

@@ -1,6 +1,7 @@
 package com.sal7one.hearth.desktop.ui.screens.models
 
 import com.sal7one.hearth.core.PipelineConfig
+import com.sal7one.hearth.core.EngineDescriptor
 import com.sal7one.hearth.core.EngineSelection
 import com.sal7one.hearth.core.PipelineStage
 import com.sal7one.hearth.desktop.ModelTransfer
@@ -23,6 +24,7 @@ internal fun modelsState(
     freeBytes: Long,
     verifiedImports: Map<String, EngineSelection> = emptyMap(),
     issues: Map<String, String> = emptyMap(),
+    engines: List<EngineDescriptor> = emptyList(),
 ): ModelsState {
     val verified = installations.toMutableMap()
     verifiedImports.forEach { (id, route) ->
@@ -31,16 +33,20 @@ internal fun modelsState(
         }
     }
     issues.forEach { (id, issue) -> verified[id] = (verified[id] ?: DesktopModelStatus(false, null)).copy(issue = issue) }
-    val rows = catalog.map { card -> modelRow(card, verified[card.id], config).copy(activity = transfers.firstOrNull { it.id == card.id }?.label) }
+    val rows = catalog.map { card -> modelRow(card, verified[card.id], config).copy(
+        activity = transfers.firstOrNull { it.id == card.id }?.label,
+        gpuLabel = modelGpuLabel(desktopModelGpuPaths(card), availableModelGpuPaths(card, engines))) }
+    val cardsById = catalog.associateBy { it.id }
 
     val filtered = rows.filter { row ->
-        val card = catalog.first { it.id == row.id }
-        val matchesQuery = filter.query.isBlank() || listOf(card.name, card.family, card.stage.name)
+        val card = cardsById.getValue(row.id)
+        val matchesQuery = filter.query.isBlank() || listOf(card.name, card.family, card.stage.name, row.gpuLabel.orEmpty(), "CPU", modelGpuLabel(desktopModelGpuPaths(card), emptySet()).orEmpty())
             .any { it.contains(filter.query, ignoreCase = true) } ||
             card.languages.any { it.contains(filter.query, ignoreCase = true) }
         val matchesStage = filter.stage == null || card.stage == filter.stage
         val matchesInstalled = !filter.onlyInstalled || row.status != ModelStatus.AVAILABLE
-        matchesQuery && matchesStage && matchesInstalled
+        matchesQuery && matchesStage && matchesInstalled &&
+            filter.hardware.matches(desktopModelGpuPaths(card), availableModelGpuPaths(card, engines))
     }
 
     val groups = listOf(PipelineStage.STT, PipelineStage.TRANSLATION, PipelineStage.TTS).map { stage ->

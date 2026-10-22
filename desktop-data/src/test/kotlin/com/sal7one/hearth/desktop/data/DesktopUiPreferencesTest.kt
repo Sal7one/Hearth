@@ -36,7 +36,7 @@ class DesktopUiPreferencesTest {
             DesktopSettingsStore(directory).let { store ->
                 try {
                     store.saveUi(mapOf("overlay-pending" to "false", "overlay-visible" to "true"))
-                    store.saveUi(mapOf("palette" to "INK", "model-stage" to "STT"))
+                    store.saveUi(mapOf("palette" to "INK", "model-stage" to "STT", "model-hardware" to "available-gpu"))
                     store.saveUi(mapOf("screen" to "captions"))
                     // An explicit empty selection resets that preference, preserving all others.
                     store.saveUi(mapOf("model-stage" to ""))
@@ -46,7 +46,7 @@ class DesktopUiPreferencesTest {
                 try {
                     store.load()
                     assertEquals(mapOf("overlay-pending" to "false", "overlay-visible" to "true",
-                        "palette" to "INK", "model-stage" to "", "screen" to "captions"), store.ui.value)
+                        "palette" to "INK", "model-stage" to "", "model-hardware" to "available-gpu", "screen" to "captions"), store.ui.value)
                 } finally { store.closeAndJoin() }
             }
         } finally { directory.toFile().deleteRecursively() }

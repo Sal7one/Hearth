@@ -64,8 +64,12 @@ internal fun ModelsScreen(
                     onSearch = actions.onSearch,
                     onStage = actions.onFilterStage,
                     onToggleInstalled = actions.onToggleInstalledOnly,
+                    onHardware = actions.onFilterHardware,
+                    onReset = actions.onResetFilters,
                 )
 
+                Text("${state.groups.sumOf { it.rows.size }} of ${state.totalCount} models",
+                    style = HearthType.small, color = colors.muted)
                 state.transfers.forEach { transfer -> TransferCard(transfer) }
 
                 if (state.isEmpty) {
@@ -76,7 +80,7 @@ internal fun ModelsScreen(
                     Spacer(Modifier.height(2.dp))
                 }
 
-                state.groups.forEach { group ->
+                state.groups.filter { it.rows.isNotEmpty() }.forEach { group ->
                     ModelGroupCard(group = group, onAction = actions.onAction, onImport = actions.onImport,
                         importEnabled = true)
                 }

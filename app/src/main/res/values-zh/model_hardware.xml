@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="model_hardware_filter">硬件</string>
+    <string name="model_hardware_all">所有硬件</string>
+    <string name="model_hardware_gpu">所有 GPU 路径</string>
+    <string name="model_hardware_cpu">仅 CPU 引擎</string>
+    <string name="model_hardware_paths">GPU 路径：%1$s</string>
+    <string name="model_hardware_gpu_hint">GPU 路径需要 64 位 ARM 和兼容的驱动程序。开始运行时会验证模型的实际执行位置；筛选不会更改计算设置。</string>
+    <string name="model_hardware_cpu_hint">这些引擎目前在 Hearth 中没有 GPU 路径。支持 GPU 的模型也可以在 CPU 上运行。</string>
+</resources>

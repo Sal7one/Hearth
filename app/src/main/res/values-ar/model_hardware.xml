@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="model_hardware_filter">العتاد</string>
+    <string name="model_hardware_all">كل خيارات العتاد</string>
+    <string name="model_hardware_gpu">كل مسارات GPU</string>
+    <string name="model_hardware_cpu">محركات CPU فقط</string>
+    <string name="model_hardware_paths">مسارات GPU: %1$s</string>
+    <string name="model_hardware_gpu_hint">تتطلب مسارات GPU معمارية ARM ‏64 بت وتعريفًا متوافقًا. يُتحقق من تشغيل النموذج عند البدء؛ التصفية لا تغيّر إعدادات المعالجة.</string>
+    <string name="model_hardware_cpu_hint">لا تملك هذه المحركات حاليًا مسار GPU في Hearth. يمكن أيضًا تشغيل النماذج الداعمة لـ GPU على CPU.</string>
+</resources>
