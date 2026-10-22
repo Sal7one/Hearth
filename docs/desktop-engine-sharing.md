@@ -65,6 +65,13 @@ Runtime. Linking them into one dylib duplicates symbols, versions and memory, an
 makes a license audit harder. One dylib per SDK family, one C ABI between them, is
 the stable shape. The bridge can load any number of backends in one process.
 
+NeMo-Speech.cpp now has two desktop consumers: Nemotron ASR and Magpie TTS. They
+share a repository, not a dylib. Magpie's adapter builds the pinned TTS C ABI and
+the desktop JNI together in `libhearth_desktop_magpie.dylib` (one static ggml from
+llama.cpp `bd4f514d`); it is never linked with `libhearth_nemotron.dylib`, and the
+ASR bridge is not involved. A Magpie call is `DesktopVoiceCache → VoiceEngine`,
+not `HearthSpeechBackend`.
+
 ## 4. Adding a family vs adding a model
 
 **New model in a known family** (e.g. another Moonshine or Vosk language):

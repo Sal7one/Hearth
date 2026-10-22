@@ -11,6 +11,7 @@ import kotlinx.serialization.json.*
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream
 import java.io.BufferedInputStream
+import java.io.RandomAccessFile
 import java.util.zip.ZipInputStream
 import java.net.URI
 import java.net.http.HttpClient
@@ -34,18 +35,28 @@ data class DesktopModelArchive(
     /** Archive that pins every component; otherwise the expanded tree digest is the pin. */
     val hasComponentPins: Boolean get() = files.isNotEmpty()
 }
+
+/** Authenticated append-only HTTP range segments extracted from a pinned upstream archive. */
+data class DesktopRangePackage(
+    val sourceUrl: String, val sourceBytes: Long, val sourceSha256: String,
+    val bytes: Long, val sha256: String,
+    val ranges: List<LongRange>, val members: List<DesktopModelArchiveFile>,
+    val memberByPath: Map<String, DesktopModelArchiveFile> = members.associateBy { it.path },
+)
 data class DesktopModelCard(
     val id: String, val name: String, val family: String, val stage: PipelineStage,
     val engineId: String, val languages: Set<String>, val source: String, val license: String,
     val note: String, val options: Map<String, String>, val artifacts: List<DesktopModelArtifact>,
     val archive: DesktopModelArchive? = null,
+    val rangePackage: DesktopRangePackage? = null,
     val platforms: Set<String>? = null,
 ) {
     /** Bytes transferred from the model host. */
-    val bytes: Long get() = artifacts.sumOf { it.bytes }
+    val bytes: Long get() = artifacts.sumOf { it.bytes } + (rangePackage?.bytes ?: 0L)
 
-    /** Bytes on disk after a pinned archive has been unpacked. */
-    val installedBytes: Long get() = archive?.expandedBytes ?: bytes
+    /** Bytes on disk after pinned components have been unpacked. */
+    val installedBytes: Long get() = archive?.expandedBytes
+        ?: (artifacts.sumOf { it.bytes } + (rangePackage?.members?.sumOf { it.bytes } ?: 0L))
 }
 data class DesktopModelStatus(val ready: Boolean, val path: Path?, val issue: String? = null)
 
@@ -112,6 +123,7 @@ class DesktopModelLibrary(private val directory: Path) {
                 } finally { Files.deleteIfExists(temporary) }
             }
             if (card.archive != null) installArchive(card, root)
+            if (card.rangePackage != null) installRanges(card, root) { done -> progress(completed + done, card.bytes) }
             verifyFiles(card, root)
             val selected = selection(card, runtimePath(card, root))
             mutableInstallations.value = mutableInstallations.value + (card.id to DesktopModelStatus(true, runtimePath(card, root)))
@@ -120,7 +132,7 @@ class DesktopModelLibrary(private val directory: Path) {
     }
     suspend fun verify(id: String, path: Path): EngineSelection = withContext(Dispatchers.IO) {
         val card = find(id)
-        val single = card.artifacts.size == 1 && card.archive == null
+        val single = card.artifacts.size == 1 && card.archive == null && card.rangePackage == null
         val root = if (single) path.toAbsolutePath().parent else path.toAbsolutePath()
         if (single) {
             val artifact = card.artifacts.single()
@@ -131,14 +143,14 @@ class DesktopModelLibrary(private val directory: Path) {
     fun installedSelection(id: String): EngineSelection? = mutableInstallations.value[id]?.takeIf { it.ready }?.path?.let { selection(find(id), it) }
     fun find(id: String): DesktopModelCard = catalog.singleOrNull { it.id == id } ?: error("Unknown desktop model: $id")
     private fun selection(card: DesktopModelCard, path: Path): EngineSelection {
-        val single = if (card.artifacts.size == 1 && card.archive == null) mapOf("sha256" to card.artifacts.single().sha256) else emptyMap()
+        val single = if (card.artifacts.size == 1 && card.archive == null && card.rangePackage == null) mapOf("sha256" to card.artifacts.single().sha256) else emptyMap()
         // Multi-component engines verify each file; single-file engines keep the one sha256 pin.
         val components = if (card.artifacts.size > 1) card.artifacts.associate { "sha256.${it.filename}" to it.sha256 } else emptyMap()
         return EngineSelection(card.engineId, card.id, path.toString(), options = card.options + single + components)
     }
     private fun modelDirectory(card: DesktopModelCard): Path = directory.resolve("models").resolve(card.id)
     private fun runtimePath(card: DesktopModelCard, root: Path) =
-        if (card.artifacts.size == 1 && card.archive == null) root.resolve(card.artifacts.single().filename) else root
+        if (card.artifacts.size == 1 && card.archive == null && card.rangePackage == null) root.resolve(card.artifacts.single().filename) else root
     private suspend fun verifyFiles(card: DesktopModelCard, root: Path) {
         val archive = card.archive
         if (archive != null) {
@@ -159,6 +171,15 @@ class DesktopModelLibrary(private val directory: Path) {
         for (asset in card.artifacts) {
             val file = root.resolve(asset.filename)
             check(Files.isRegularFile(file) && Files.size(file) == asset.bytes && digest(file) == asset.sha256) { "Missing or modified model component: ${asset.filename}" }
+        }
+        val rangePackage = card.rangePackage
+        if (rangePackage != null) {
+            for (member in rangePackage.members) {
+                val file = root.resolve("tokenizer").resolve(member.path)
+                check(Files.isRegularFile(file) && Files.size(file) == member.bytes && digest(file) == member.sha256) {
+                    "Missing or modified model component: tokenizer/${member.path}"
+                }
+            }
         }
     }
 
@@ -227,6 +248,128 @@ class DesktopModelLibrary(private val directory: Path) {
         }
         staging.toFile().deleteRecursively()
     }
+
+    /**
+     * Download the pinned append-only byte ranges from an upstream archive, verify the
+     * concatenated payload, and publish only the authenticated tokenizer members. The
+     * embedded model_weights.ckpt is skipped and never installed. Superseded members are
+     * authenticated and discarded; the final inventory is verified by SHA-256 on disk.
+     */
+    private suspend fun installRanges(card: DesktopModelCard, root: Path, progress: (Long) -> Unit = {}) {
+        val packageInfo = card.rangePackage ?: return
+        val tokenizer = root.resolve("tokenizer")
+        if (packageInfo.members.all { member ->
+                val file = tokenizer.resolve(member.path)
+                Files.isRegularFile(file) && Files.size(file) == member.bytes && digest(file) == member.sha256
+            }) { progress(packageInfo.bytes); return }
+        val payload = Files.createTempFile(root, ".tokenizer-ranges-", ".part")
+        try {
+            val hash = MessageDigest.getInstance("SHA-256")
+            var total = 0L
+            Files.newOutputStream(payload).use { output ->
+                for (range in packageInfo.ranges) {
+                    currentCoroutineContext().ensureActive()
+                    val response = openRange(URI(packageInfo.sourceUrl), range.first, range.last, packageInfo.sourceBytes)
+                    response.body().use { input ->
+                        var remaining = range.last - range.first + 1
+                        val buffer = ByteArray(1 shl 16)
+                        while (remaining > 0) {
+                            currentCoroutineContext().ensureActive()
+                            val read = runInterruptible { input.read(buffer, 0, minOf(buffer.size.toLong(), remaining).toInt()) }
+                            check(read > 0) { "Model range ended before its pinned length (range=${range.first}-${range.last}, remaining=$remaining, received=$total)" }
+                            output.write(buffer, 0, read); hash.update(buffer, 0, read)
+                            total += read; remaining -= read; check(total <= packageInfo.bytes) { "Model range exceeds its pinned payload" }
+                        }
+                        check(runInterruptible { input.read() } < 0) { "Model range exceeded its pinned extent" }
+                    }
+                    progress(total)
+                }
+            }
+            check(total == packageInfo.bytes && hash.digest().joinToString("") { "%02x".format(it) } == packageInfo.sha256) {
+                "Model range payload failed verification"
+            }
+            val staging = Files.createTempDirectory(root, ".tokenizer-")
+            val backup = root.resolve(".tokenizer-backup")
+            try {
+                extractRangePayload(payload, packageInfo, staging)
+                if (Files.exists(backup)) backup.toFile().deleteRecursively()
+                if (Files.exists(tokenizer)) Files.move(tokenizer, backup, StandardCopyOption.REPLACE_EXISTING)
+                try { Files.move(staging, tokenizer) }
+                catch (error: Throwable) {
+                    if (Files.exists(backup) && !Files.exists(tokenizer)) Files.move(backup, tokenizer, StandardCopyOption.REPLACE_EXISTING)
+                    throw error
+                }
+                backup.toFile().deleteRecursively()
+            } finally { staging.toFile().deleteRecursively() }
+        } finally { Files.deleteIfExists(payload) }
+    }
+
+    /** Bounded TAR walk over the concatenated ranges; extracts only pinned members. */
+    internal fun extractRangePayload(payload: Path, packageInfo: DesktopRangePackage, staging: Path) {
+        val expected = packageInfo.memberByPath
+        val seen = mutableSetOf<String>()
+        RandomAccessFile(payload.toFile(), "r").use { input ->
+            var boundary = 0L
+            for ((segment, range) in packageInfo.ranges.withIndex()) {
+                boundary += range.last - range.first + 1
+                var entries = 0
+                while (input.filePointer + 512 <= boundary) {
+                    val header = ByteArray(512)
+                    input.readFully(header)
+                    if (header.all { it == 0.toByte() }) break
+                    fun field(offset: Int, length: Int) = header.copyOfRange(offset, offset + length).toString(Charsets.US_ASCII).trimEnd('\u0000', ' ')
+                    fun octal(offset: Int, length: Int) = field(offset, length).trim().let { if (it.isEmpty()) 0L else it.toLong(8) }
+                    val checksum = header.indices.sumOf { index -> if (index in 148..155) 32L else (header[index].toInt() and 0xff).toLong() }
+                    require(checksum == octal(148, 8)) { "Invalid model range TAR header checksum" }
+                    require(++entries <= 200) { "Model range contains too many TAR entries" }
+                    val name = field(0, 100).removePrefix("./")
+                    val prefix = field(345, 155)
+                    val size = octal(124, 12)
+                    require(size >= 0) { "Invalid model range TAR size" }
+                    val type = header[156].toInt().toChar()
+                    // PAX/GNU metadata headers carry names like ./@PaxHeader and the root
+                    // directory entry is "./" (empty after normalization); both are skipped.
+                    if (!(type == '5' && (name.isEmpty() || name == "."))) {
+                        require(prefix.isEmpty() && name.isNotEmpty() && name.length <= 200 && !name.startsWith("/") && '\\' !in name && name.split('/').none { it == ".." }) {
+                            "Unsafe model range path: $name"
+                        }
+                    }
+                    if (segment == 0 && name == "model_weights.ckpt") break
+                    val padded = ((size + 511) / 512) * 512
+                    require(input.filePointer + padded <= boundary) { "Truncated model range TAR member" }
+                    when (type) {
+                        '0', '\u0000' -> {
+                            require(safeArchivePath(name)) { "Unsafe model range path: $name" }
+                            val member = expected[name]
+                            if (member != null && member.bytes == size) {
+                                val bytes = ByteArray(size.toInt())
+                                input.readFully(bytes)
+                                // The pinned .nemo is append-only: earlier occurrences of the same
+                                // name are superseded snapshots. Only an occurrence matching the
+                                // final member hash is published; a missing final match fails below.
+                                if (digest(bytes) == member.sha256) {
+                                    val target = staging.resolve(name).normalize()
+                                    require(target.startsWith(staging.normalize())) { "Model tokenizer component escapes its directory: $name" }
+                                    Files.write(target, bytes)
+                                    seen += name
+                                }
+                            } else input.seek(input.filePointer + size)
+                        }
+                        '5' -> require(size == 0L) { "Unsupported model range directory entry" }
+                        'x', 'g' -> {
+                            require(size <= 65536) { "Model range PAX metadata exceeds bound" }
+                            input.seek(input.filePointer + size)
+                        }
+                        else -> error("Unsupported model range TAR entry type: $type")
+                    }
+                    input.seek(input.filePointer + (padded - size))
+                }
+                input.seek(boundary)
+            }
+        }
+        check(seen == expected.keys) { "Model tokenizer is missing components: ${expected.keys - seen}" }
+    }
+
     /**
      * Stream a verified model ZIP with the same bounds as the tar path, then verify the
      * expanded model-tree-sha256-v1 digest before publishing. The verified archive is kept
@@ -308,6 +451,39 @@ class DesktopModelLibrary(private val directory: Path) {
         }
         error("Too many model redirects")
     }
+    /** A single pinned byte range; the model host must answer 206 with the exact extent. */
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    private suspend fun openRange(initial: URI, start: Long, end: Long, sourceBytes: Long): HttpResponse<java.io.InputStream> {
+        var current = initial
+        repeat(6) { redirects ->
+            check(current.scheme == "https" && current.userInfo == null) { "Model range download requires HTTPS" }
+            val request = HttpRequest.newBuilder(current).timeout(Duration.ofHours(2))
+                .header("User-Agent", "Hearth-Desktop/1")
+                .header("Range", "bytes=$start-$end")
+                .header("Accept-Encoding", "identity")
+                .GET().build()
+            val response = suspendCancellableCoroutine<HttpResponse<java.io.InputStream>> { continuation ->
+                val future = client.sendAsync(request, HttpResponse.BodyHandlers.ofInputStream())
+                continuation.invokeOnCancellation { future.cancel(true) }
+                future.whenComplete { value, error ->
+                    if (error != null) continuation.resumeWithException(error)
+                    else if (continuation.isActive) continuation.resume(value) { value.body().close() }
+                    else value.body().close()
+                }
+            }
+            if (response.statusCode() in setOf(301, 302, 303, 307, 308)) {
+                response.body().close()
+                check(redirects < 5) { "Too many model range redirects" }
+                current = current.resolve(response.headers().firstValue("Location").orElseThrow { IllegalStateException("Model range redirect has no destination") })
+            } else {
+                check(response.statusCode() == 206) { "Model host did not honor the pinned byte range (HTTP ${response.statusCode()})" }
+                val expected = "bytes $start-$end/$sourceBytes"
+                check(response.headers().firstValue("Content-Range").orElse("") == expected) { "Model range response differs from its pin" }
+                return response
+            }
+        }
+        error("Too many model range redirects")
+    }
     companion object {
         private fun readCatalog(): List<DesktopModelCard> {
             val content = requireNotNull(DesktopModelLibrary::class.java.getResourceAsStream("/desktop-models.json")).bufferedReader().use { it.readText() }
@@ -356,13 +532,43 @@ class DesktopModelLibrary(private val directory: Path) {
                     if (archive.format == "zip") ".zip" else ".tar.bz2"))) {
                     "An archive model must have exactly one matching archive artifact"
                 }
+                val rangePackage = m["rangePackage"]?.jsonObject?.let { r ->
+                    val sourceUrl = r.getValue("sourceUrl").jsonPrimitive.content
+                    require(URI(sourceUrl).scheme == "https") { "A range package requires an HTTPS source" }
+                    val sourceBytes = r.getValue("sourceBytes").jsonPrimitive.long
+                    val sourceSha = r.getValue("sourceSha256").jsonPrimitive.content
+                    val payloadBytes = r.getValue("bytes").jsonPrimitive.long
+                    val payloadSha = r.getValue("sha256").jsonPrimitive.content
+                    require(sourceBytes > 0 && payloadBytes > 0 && sourceSha.matches(Regex("[a-f0-9]{64}")) && payloadSha.matches(Regex("[a-f0-9]{64}"))) {
+                        "Invalid desktop range package pins"
+                    }
+                    val ranges = r.getValue("ranges").jsonArray.map { part ->
+                        val pair = part.jsonArray
+                        require(pair.size == 2) { "A range package entry needs a start and end" }
+                        val start = pair[0].jsonPrimitive.long; val end = pair[1].jsonPrimitive.long
+                        require(start >= 0 && end >= start && end < sourceBytes) { "Invalid desktop range extent" }
+                        LongRange(start, end)
+                    }
+                    require(ranges.isNotEmpty() && ranges.size <= 16) { "Invalid desktop range package" }
+                    val members = r.getValue("members").jsonArray.map { entry ->
+                        val member = entry.jsonObject
+                        val path = member.getValue("path").jsonPrimitive.content
+                        val bytes = member.getValue("bytes").jsonPrimitive.long
+                        val sha = member.getValue("sha256").jsonPrimitive.content
+                        require(safeArchivePath(path) && bytes > 0 && sha.matches(Regex("[a-f0-9]{64}"))) { "Invalid desktop range member: $path" }
+                        DesktopModelArchiveFile(path, bytes, sha)
+                    }
+                    require(members.isNotEmpty() && members.map { it.path }.toSet().size == members.size) { "Desktop range members are missing or duplicated" }
+                    DesktopRangePackage(sourceUrl, sourceBytes, sourceSha, payloadBytes, payloadSha, ranges, members)
+                }
+                require(rangePackage == null || archive == null) { "A model cannot combine an archive and a range package" }
                 val platforms = m["platforms"]?.jsonArray?.map { it.jsonPrimitive.content }?.toSet()
                 require(platforms == null || platforms.isNotEmpty() && platforms.all { it.matches(Regex("[a-z0-9]+-[a-z0-9]+")) }) {
                     "Invalid desktop model platforms"
                 }
                 DesktopModelCard(id, text("name"), text("family"), PipelineStage.valueOf(text("stage")), text("engineId"),
                     m.getValue("languages").jsonArray.map { it.jsonPrimitive.content }.toSet(), text("source"), text("license"), text("note"),
-                    m.getValue("options").jsonObject.mapValues { it.value.jsonPrimitive.content }, assets, archive, platforms)
+                    m.getValue("options").jsonObject.mapValues { it.value.jsonPrimitive.content }, assets, archive, rangePackage, platforms)
             }
         }
         internal suspend fun digest(path: Path): String {
@@ -373,6 +579,7 @@ class DesktopModelLibrary(private val directory: Path) {
             }
             return hash.digest().hex()
         }
+        internal fun digest(bytes: ByteArray): String = MessageDigest.getInstance("SHA-256").digest(bytes).hex()
         private fun ByteArray.hex() = joinToString("") { "%02x".format(it) }
     }
 }

@@ -33,6 +33,11 @@ MING_FUSOR_AI_PIN = "7dda3bfb4015d76bed053456ad371f1e4f487ad9"
 # duplicates ggml or ONNX Runtime into another dylib.
 OMNIVOICE_PIN = "1a468d8b9d65b3544ca1004d2d7c05dfc65d1f3e"
 OMNIVOICE_GGML_PIN = "cc5df49a6b878db2b68b9a7b45976e279594627d"
+# MagpieTTS is a second C ABI inside the NeMo-Speech.cpp family. It is pinned to the
+# revision the Android runtime already ships, builds its own static ggml from the
+# llama.cpp submodule pin, and is staged as one self-contained dylib (codec included).
+MAGPIE_NEMO_PIN = "caa3f47c7c75fa2e9e6340272ebad57c1647dd44"
+MAGPIE_NEMO_GGML_PIN = "bd4f514db14d87fded667787a7a963bfbaa98e89"
 # Pinned official Vosk macOS release. The app never downloads a native runtime:
 # this runs at build time only, verifies the release ZIP and each member, thins
 # the universal2 slice to arm64 and records both digests in the manifest.
@@ -144,6 +149,7 @@ def snapshot():
                  "common-jni/src/main/cpp/speech/backend_versions.h",
                  "scripts/speech/build-runtimes.sh",
                  "scripts/speech/transcribepsy.cmake",
+                 "hearth-tts-magpie/src/main/cpp/vendor/tts.h",
                  "scripts/speech/nemo-inject.cmake",
                  "hearth-tts-moss/src/main/cpp/moss.cpp",
                  "hearth-tts-moss/src/main/cpp/vendor/moss.h",
@@ -427,13 +433,122 @@ Synthetic speech must be labelled as synthetic. Model weights are downloaded sep
             "mingJniSha256": sha(dylib)}
 
 
+def magpie_install(output, nemo_root, build_dir, jobs):
+    """Build the pinned NeMo MagpieTTS C ABI plus Hearth's desktop JNI into one dylib.
+
+    The upstream project is configured standalone (its CMake relies on CMAKE_SOURCE_DIR),
+    with a top-level include that attaches the JNI adapter and restricts exports. The
+    runtime statically owns the one pinned ggml build; no ORT/sherpa copy is linked.
+    """
+    root = nemo_root.resolve()
+    if not (root / "src/tts/magpietts/magpietts.cpp").is_file():
+        raise RuntimeError(f"--nemo-root must name a clean NeMo-Speech.cpp checkout at {MAGPIE_NEMO_PIN}; {root} is incomplete")
+    pin = subprocess.check_output(["git", "-C", str(root), "rev-parse", "HEAD"], text=True).strip()
+    if pin != MAGPIE_NEMO_PIN:
+        raise RuntimeError(f"NeMo-Speech.cpp must be checked out at {MAGPIE_NEMO_PIN}, found {pin}")
+    ggml_pin = subprocess.check_output(["git", "-C", str(root / "llama.cpp"), "rev-parse", "HEAD"], text=True).strip()
+    if ggml_pin != MAGPIE_NEMO_GGML_PIN:
+        raise RuntimeError(f"NeMo-Speech.cpp/llama.cpp must be checked out at {MAGPIE_NEMO_GGML_PIN}, found {ggml_pin}")
+    for folder, label in ((root, "NeMo-Speech.cpp"), (root / "llama.cpp", "NeMo-Speech.cpp/llama.cpp")):
+        changes = subprocess.check_output(["git", "-C", str(folder), "status", "--porcelain"], text=True)
+        if changes.strip():
+            raise RuntimeError(f"{label} source checkout has local changes")
+    java_home = os.environ.get("JAVA_HOME")
+    if not java_home:
+        try:
+            java_home = subprocess.check_output(["/usr/libexec/java_home", "-v", "17"], text=True).strip()
+        except (OSError, subprocess.CalledProcessError):
+            raise RuntimeError("Set JAVA_HOME to a JDK 17 installation for the Magpie JNI adapter")
+    jni_include = f"{java_home}/include;{java_home}/include/darwin"
+    cache = build_dir.resolve() / "magpie-nemo"
+    command = [
+        "cmake", "-S", str(root), "-B", str(cache), "-G", "Ninja",
+        "-DCMAKE_BUILD_TYPE=Release", "-DCMAKE_OSX_DEPLOYMENT_TARGET=13.0",
+        "-DCMAKE_POSITION_INDEPENDENT_CODE=ON", "-DBUILD_SHARED_LIBS=OFF",
+        "-DGGML_NATIVE=OFF", "-DGGML_OPENMP=OFF", "-DGGML_METAL=OFF", "-DGGML_VULKAN=OFF",
+        "-DGGML_CUDA=OFF", "-DGGML_BLAS=OFF", "-DGGML_BACKEND_DL=OFF",
+        "-DNEMO_SPEECH_GGML_PATCHED=OFF", "-DNEMO_SPEECH_BUILD_ASR=OFF",
+        "-DNEMO_SPEECH_BUILD_DIAR=OFF", "-DNEMO_SPEECH_BUILD_TTS=ON",
+        "-DNEMO_SPEECH_BUILD_NMT=OFF", "-DNEMO_SPEECH_BUILD_CLI=OFF",
+        "-DNEMO_SPEECH_BUILD_MIC_CAPTURE=OFF", "-DNEMO_SPEECH_BUILD_HTTP=OFF",
+        "-DNEMO_SPEECH_BUILD_GRPC=OFF", "-DNEMO_SPEECH_BUILD_TESTS=OFF", "-DBUILD_TESTING=OFF",
+        "-DNEMO_SPEECH_TTS_WITH_JA=OFF", "-DNEMO_SPEECH_TTS_WITH_ZH=OFF", "-DNEMO_SPEECH_WITH_NORM=OFF",
+        f"-DCMAKE_PROJECT_TOP_LEVEL_INCLUDES={ROOT / 'scripts/desktop/native/magpie-inject.cmake'}",
+        f"-DHEARTH_MAGPIE_ROOT={ROOT}",
+        f"-DHEARTH_MAGPIE_JNI_SOURCE={ROOT / 'desktop-runtime/src/main/cpp/magpie_jni.cpp'}",
+        f"-DHEARTH_MAGPIE_JNI_INCLUDE_DIRS={jni_include}",
+        f"-DHEARTH_MAGPIE_COMMON_CPP={ROOT / 'common-jni/src/main/cpp/common'}",
+        f"-DHEARTH_MAGPIE_EXPORTS={ROOT / 'scripts/desktop/native/magpie.exports'}",
+        f"-DCMAKE_C_FLAGS=-ffile-prefix-map={root}=nemo-speech",
+        f"-DCMAKE_CXX_FLAGS=-ffile-prefix-map={root}=nemo-speech -fdebug-prefix-map={root}=nemo-speech",
+    ]
+    environment = dict(os.environ)
+    # ggml embeds `git rev-parse --short HEAD`; fix the abbreviation so the same pin
+    # produces the same embedded revision in a full and a shallow checkout.
+    environment.update({"GIT_CONFIG_COUNT": "1", "GIT_CONFIG_KEY_0": "core.abbrev", "GIT_CONFIG_VALUE_0": "7"})
+    subprocess.run(command, check=True, env=environment)
+    subprocess.run(["cmake", "--build", str(cache), "--target", "nemo_speech_tts",
+                    "--parallel", str(jobs)], check=True, env=environment)
+    built = [path for path in (cache / "bin").glob("libhearth_desktop_magpie*.dylib") if not path.is_symlink()]
+    if len(built) != 1:
+        raise RuntimeError(f"The Magpie runtime build produced {len(built)} candidate dylibs; expected one")
+    staged = output / "libhearth_desktop_magpie.dylib"
+    shutil.copyfile(built[0], staged)
+    subprocess.run(["install_name_tool", "-id", "@rpath/libhearth_desktop_magpie.dylib", str(staged)], check=True)
+    require_exports(staged, "_Java_com_sal7one_common_1jni_voice_MagpieNative_", 6)
+    symbols = subprocess.check_output(["nm", "-gU", str(staged)], text=True).split()
+    for symbol in ("_nemo_speech_tts_create", "_nemo_speech_tts_synthesize_text", "_nemo_speech_tts_speaker_count"):
+        if symbol not in symbols:
+            raise RuntimeError(f"The Magpie dylib does not export its C ABI symbol {symbol}")
+    linked = subprocess.check_output(["otool", "-L", str(staged)], text=True).splitlines()[1:]
+    for line in linked:
+        entry = line.strip().split(" ")[0] if line.strip() else ""
+        if not entry:
+            continue
+        if entry.startswith(("/usr/lib/", "/System/Library/Frameworks/", "@rpath/libhearth_desktop_magpie.dylib")):
+            continue
+        raise RuntimeError(f"The Magpie dylib has a non-system dependency: {entry}")
+    notices = ["===== NeMo-Speech.cpp TTS runtime (Apache-2.0) =====\n"
+               f"Source: https://github.com/NVIDIA/NeMo-Speech.cpp revision {MAGPIE_NEMO_PIN}\n"
+               f"ggml: llama.cpp/ggml revision {MAGPIE_NEMO_GGML_PIN} (MIT), built statically into this dylib.\n"
+               "No ONNX Runtime, sherpa-onnx or other ggml copy is linked into this dylib.\n"]
+    for name, label in (("LICENSE", "NeMo-Speech.cpp Apache-2.0 license"), ("NOTICE", "NeMo-Speech.cpp NOTICE"),
+                        ("THIRD_PARTY_NOTICES.md", "NeMo-Speech.cpp third-party notices")):
+        path = root / name
+        if not path.is_file():
+            raise RuntimeError(f"Missing pinned NeMo-Speech.cpp notice: {path}")
+        notices.append(f"===== {label} =====\n{path.read_text(encoding='utf-8', errors='replace').rstrip()}\n")
+    magpie_assets = ROOT / "hearth-tts-magpie/src/main/assets/licenses/magpie"
+    for name in ("GGML-LICENSE", "THIRD_PARTY_NOTICES.md"):
+        path = magpie_assets / name
+        if path.is_file():
+            notices.append(f"===== Magpie Android runtime {name} =====\n{path.read_text(encoding='utf-8', errors='replace').rstrip()}\n")
+    notices.append(
+        "===== MagpieTTS pretrained weights (downloaded separately, never bundled) =====\n"
+        "nvidia/magpie_tts_multilingual_357m revision 446bff55e1fe3d3aa29c771574e7d2b0fa322990, "
+        "NVIDIA Open Model License: https://huggingface.co/nvidia/magpie_tts_multilingual_357m#license\n"
+        "nvidia/nemo-nano-codec-22khz-1.89kbps-21.5fps revision fc00890b604aa2de298d2641ffc6c5f6caf8c4d7; "
+        "the companion codec license must accompany distribution.\n"
+        "Tokenizer dictionaries come from authenticated byte ranges of the pinned .nemo archive; "
+        "the embedded model_weights.ckpt is discarded and never installed.\n")
+    (output / "Magpie-Dependencies-NOTICES.txt").write_text("\n".join(notices), encoding="utf-8", newline="\n")
+    return {
+        "magpieNemoRevision": MAGPIE_NEMO_PIN,
+        "magpieGgmlRevision": MAGPIE_NEMO_GGML_PIN,
+        "magpieNemoSourceTreeSha256": source_tree_sha_files(root),
+        "magpieGgmlSourceTreeSha256": source_tree_sha_files(root / "llama.cpp"),
+        "magpieDylibSha256": sha(staged),
+    }
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--stage", choices=["all", "whisper", "translation", "supertonic", "onnx", "ct2", "moss", "omnivoice", "backend", "vosk", "ming"], default="all")
+    parser.add_argument("--stage", choices=["all", "whisper", "translation", "supertonic", "onnx", "ct2", "moss", "omnivoice", "magpie", "backend", "vosk", "ming"], default="all")
     parser.add_argument("--speech-backends", default="transcribepsy,nemotron", help="Comma-separated speech backends to stage (transcribepsy, nemotron)")
     parser.add_argument("--llama-root", type=Path, default=ROOT / "build/translation-runtime/llama.cpp")
     parser.add_argument("--sherpa-root", type=Path, default=ROOT / "build/desktop-dependencies/sherpa-onnx")
     parser.add_argument("--omnivoice-root", type=Path, default=Path(os.environ.get("HEARTH_OMNIVOICE_ROOT", str(ROOT / "build/desktop-dependencies/omnivoice.cpp"))))
+    parser.add_argument("--nemo-root", type=Path, default=Path(os.environ.get("HEARTH_NEMO_ROOT", str(ROOT / "build/desktop-dependencies/NeMo-Speech.cpp"))))
     parser.add_argument("--ort-root", type=Path, default=os.environ.get("HEARTH_ORT_ROOT"))
     parser.add_argument("--build-dir", type=Path, default=ROOT / "build/desktop-native")
     parser.add_argument("--output", type=Path)
@@ -466,6 +581,8 @@ def main():
         parser.error("The MOSS TTS stage is built for macOS arm64 only")
     if "omnivoice" in stages and (system, arch) != ("macos", "arm64"):
         parser.error("The OmniVoice TTS stage is built for macOS arm64 only")
+    if "magpie" in stages and (system, arch) != ("macos", "arm64"):
+        parser.error("The Magpie TTS stage is built for macOS arm64 only")
     if "ming" in stages and (system, arch) != ("macos", "arm64"):
         parser.error("The Ming TTS runtime is built for macOS arm64 in this stage")
     if "vosk" in stages and (system, arch) != ("macos", "arm64"):
@@ -521,6 +638,9 @@ def main():
     ming_revisions = None
     if "ming" in stages:
         ming_revisions = ming_install(output)
+    magpie_pins = None
+    if "magpie" in stages:
+        magpie_pins = magpie_install(output, args.nemo_root, args.build_dir, args.jobs)
     source = ROOT / "hearth-tts-supertonic/src/main/cpp/voice/supertonic.cpp"
     original = source.read_text(encoding="utf-8")
     old = 'for(int i=0;i<4;++i)checked(api()->CreateSession(env,(dir+"/"+names[i]).c_str(),options,&sessions[i]));'
@@ -536,7 +656,7 @@ def main():
     prepared_jni.write_text('#include "desktop_jni.h"\n' + jni_source.replace(old_error, 'void fail(JNIEnv* env,const char* message){desktopFail(env,message);}'), encoding="utf-8")
     translation_jni = args.build_dir.resolve() / "translation-jni-desktop.cpp"
     translation_jni.write_text(prepare_translation((ROOT / "common-jni/src/main/cpp/translation/translation_jni.cpp").read_text(encoding="utf-8")), encoding="utf-8")
-    for stage in [value for value in stages if value not in ("ct2", "ming")]:
+    for stage in [value for value in stages if value not in ("ct2", "ming", "magpie")]:
         cache = args.build_dir.resolve() / target / stage
         command = ["cmake", "-S", str(ROOT / "scripts/desktop/native"), "-B", str(cache),
                    "-DCMAKE_BUILD_TYPE=Release", f"-DHEARTH_ROOT={ROOT}", f"-DHEARTH_STAGE={stage}",
@@ -670,6 +790,8 @@ def main():
         upstreams.update(vosk_upstreams)
     if ming_revisions:
         upstreams.update(ming_revisions)
+    if magpie_pins:
+        upstreams.update(magpie_pins)
     if "moss" in stages:
         upstreams.update({
             "mossRuntimeSourceSha256": sha(ROOT / "hearth-tts-moss/src/main/cpp/moss.cpp"),

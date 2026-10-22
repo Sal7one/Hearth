@@ -65,9 +65,10 @@ class DesktopSettingsTest {
             val ct2 = if (macosArm) 3 else 0
             val moss = if (macosArm) 1 else 0
             val omnivoice = if (macosArm) 1 else 0
+            val magpie = if (macosArm) 1 else 0
             val ming = if (macosArm) 1 else 0
             val byStage = library.catalog.groupingBy { it.stage.name }.eachCount()
-            assertEquals(mapOf("STT" to 27 + qwen + transcribepsy + nemotron + moonshine + omnilingual + phonon + vosk, "TRANSLATION" to 14 + ct2, "TTS" to 1 + moss + omnivoice + ming), byStage)
+            assertEquals(mapOf("STT" to 27 + qwen + transcribepsy + nemotron + moonshine + omnilingual + phonon + vosk, "TRANSLATION" to 14 + ct2, "TTS" to 1 + moss + omnivoice + magpie + ming), byStage)
             assertEquals(if (qwen + transcribepsy + nemotron + moonshine + omnilingual + phonon + vosk > 0) 8 else 1, library.catalog.filter { it.stage.name == "STT" }.map { it.family }.distinct().size)
             if (qwen == 1) {
                 val card = library.catalog.single { it.id == "qwen3-asr-0.6b" }
@@ -163,6 +164,22 @@ class DesktopSettingsTest {
                 assertTrue(card.artifacts.all { it.sha256.length == 64 && it.bytes > 0 })
                 assertEquals("omnivoice-base-Q8_0.gguf", card.artifacts[0].filename)
                 assertEquals("2882d887921798aea13d45236556bdf8012842ab6f8cd2690943eead6289f298", card.artifacts[0].sha256)
+            }
+            if (magpie == 1) {
+                val card = library.catalog.single { it.id == "magpie-tts" }
+                assertEquals("magpie-tts-local", card.engineId)
+                assertEquals(setOf("macos-arm64"), card.platforms)
+                assertEquals(2, card.artifacts.size)
+                assertEquals(678_563_360L, card.bytes)
+                assertEquals(668_084_575L, card.installedBytes)
+                assertEquals("Aria", card.options["voice"])
+                assertEquals(setOf("ar", "en", "fr", "de", "hi", "it", "ko", "pt", "es", "vi"), card.languages)
+                assertEquals(2, card.rangePackage?.ranges?.size)
+                assertEquals(31_076_864L, card.rangePackage?.bytes)
+                assertEquals(10, card.rangePackage?.members?.size)
+                assertTrue(card.artifacts.all { it.sha256.length == 64 && it.bytes > 0 })
+                assertEquals("magpie_tts_multilingual_357m.v2607.f16.gguf", card.artifacts[0].filename)
+                assertEquals("fb8e9297138dcc7b5fc51332f361e3cddfd433d4e0bc1d87e16e6aed21f618fc", card.artifacts[0].sha256)
             }
             // Every shipped llama translator must use a prompt family the desktop engine implements,
             // and the option the engine reads must be the catalog's own family, not a fallback.

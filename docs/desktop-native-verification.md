@@ -20,6 +20,8 @@ do not have. Keep this file honest: do not add a row you have not run.
 | Moonshine ×10 (shared sherpa bridge) | `:desktop-runtime:test --tests "*DesktopMoonshineRealSmokeTest*"` | 10/10 variants through the bridge and `DesktopEngines`; tiny.en/base.en exact transcript `The museum opens at 9 in the morning. Please bring your ticket to the East entrance.` (145/340 ms load, 33/58 ms decode; app path 328/789 ms); ar/es/ja/ko/uk/vi/zh non-empty native-script transcripts (147–421 ms load, 74–1,088 ms decode; app path 464–1,456 ms). Each variant verified all four pinned components before loading |
 | MOSS-TTS Nano 100M | `:desktop-runtime:test --tests "*DesktopMossRealSmokeTest*"` | "Hello from Hearth." / Ava, 48 kHz WAV, peak 0.516, RMS 0.0996, 99% non-zero; direct JNI 61,440 samples |
 | OmniVoice TTS | `:desktop-runtime:test --tests "*DesktopOmniVoiceRealSmokeTest*"` | 24 kHz WAV through the desktop engine: EN 44,160 samples / peak 0.936 / RMS 0.173 / 39,294 non-zero / RTF 5.25 cold; AR 43,920 samples / peak 0.905 / RMS 0.142 / 38,286 non-zero / RTF 4.26 warm (repeats measured 4.1-5.3, and 14.1 once under heavy unrelated host load; the smoke asserts audio validity, not throughput); derived 48 kHz copies 88,320 / 87,840 samples; direct JNI Arabic 22,320 and English 44,160 samples |
+| MagpieTTS Multilingual 357M | `:desktop-runtime:test --tests "*DesktopMagpieRealSmokeTest*"` | 22.05 kHz WAV through the desktop engine: EN 1.486 s / peak 0.441 / RMS 0.0805 / RTF 4.15 cold (2 threads, includes load); AR 2.229 s / peak 0.486 / RMS 0.0606 / RTF 0.97 warm. Direct C ABI probe: EN 1.393 s / peak 0.5549 / RMS 0.0942 / 30,503 of 30,720 non-zero / RTF 1.91; AR 2.508 s / peak 0.3139 / RMS 0.0433 / 54,716 of 55,296 non-zero / RTF 1.10 (4 threads, includes first-call load). Real-model JNI smoke PASS (Arabic 79,872 bounded samples, cancellation, speaker inventory, closed handles) |
+| Magpie catalog install | `:desktopApp:desktopTest --tests "*DesktopMagpieCatalogInstallTest*"` | verifies the two pinned GGUF files (served from the local cache in this run; a missing file is downloaded by the same pinned installer) and downloads the 31,076,864 B authenticated tokenizer ranges, extracts and verifies 10 tokenizer members, then synthesizes 22.05 kHz non-silent audio: 1.115 s / peak 0.5146 / RMS 0.0759 / 24,414 of 24,576 non-zero |
 | Omnilingual CTC 300M | `:desktop-runtime:test --tests "*DesktopSherpaFamiliesRealSmokeTest*"` | `the museum opens at nine in the morning please bring your ticket to the east entrance` (220 ms warm) |
 | Phonon 2 | same test | `The museum opens at nine in the morning. Please bring your ticket to the East Entrance.` (117 ms warm) |
 | Vosk English | `:desktop-runtime:test --tests "*DesktopVoskRealSmokeTest*"` | exact lower-case transcript, 586 ms decode |
@@ -134,6 +136,30 @@ The two GGUF files are user downloads (CC-BY-NC-4.0 generator; separate codec
 terms) and are never committed. The engine emits native 24 kHz mono; the smoke
 additionally writes a derived 48 kHz compatibility WAV with explicit 2× linear
 interpolation, never presented as native output.
+
+### Reproducing the Magpie smoke
+
+```bash
+python3 scripts/voice/fetch-magpie-test-assets.py --directory build/agents/magpie/models
+python3 scripts/desktop/build-native.py --stage magpie \
+  --nemo-root research/tts-expansion/NeMo-Speech.cpp
+HEARTH_MAGPIE_SMOKE=1 HEARTH_SMOKE_MAGPIE="$PWD/build/agents/magpie/models" \
+  HEARTH_MAGPIE_SMOKE_RECEIPT="$PWD/build/agents/magpie/out/desktop-engine-receipt.json" \
+  ./gradlew -PhearthDesktopOnly=true :desktop-runtime:test --tests "*DesktopMagpieRealSmokeTest*"
+# Catalog install path (reuses the already-fetched GGUF files instead of re-downloading them):
+HEARTH_MAGPIE_INSTALL_SMOKE=1 HEARTH_MAGPIE_MODEL_CACHE="$PWD/build/agents/magpie/models" \
+  ./gradlew -PhearthDesktopOnly=true :desktopApp:desktopTest --tests "*DesktopMagpieCatalogInstallTest*"
+```
+
+The `magpie` stage verifies NeMo-Speech.cpp at
+`caa3f47c7c75fa2e9e6340272ebad57c1647dd44` and its `llama.cpp` submodule at
+`bd4f514db14d87fded667787a7a963bfbaa98e89`, then configures the upstream TTS build
+standalone (its CMake relies on `CMAKE_SOURCE_DIR`) with a top-level include that
+attaches Hearth's desktop JNI and restricts exports. It stages one self-contained
+`libhearth_desktop_magpie.dylib` (C ABI + 6 JNI entries, minos 13.0, CPU only) plus
+`Magpie-Dependencies-NOTICES.txt`. The two GGUF files are user downloads; the
+tokenizer dictionaries are extracted from authenticated byte ranges of the pinned
+`.nemo` archive and its embedded 1.44 GB `model_weights.ckpt` is never installed.
 
 ### Reproducing the Moonshine smoke
 

@@ -279,6 +279,28 @@ def generate():
         options={'voice': 'design-female', 'threads': '2'}, platforms=['macos-arm64'],
         artifacts=[dict(filename=name, bytes=int(size), sha256=digest,
             url=f'{omnivoice_repo}/resolve/{omnivoice_revision}/{name}') for name, size, digest in omnivoice_assets]))
+    magpie_index = json.loads((ROOT / 'hearth-tts-magpie/src/main/assets/magpie-sources.json').read_text(encoding='utf-8'))
+    magpie_handoff = next(m for m in json.loads((ROOT / 'docs/handoff/models/tts.json').read_text(encoding='utf-8'))['models'] if m['id'] == 'magpie-v2607')
+    magpie_weights = [c for c in magpie_handoff['components'] if c['role'] in ('generator', 'waveform-decoder')]
+    assert len(magpie_weights) == 2, magpie_weights
+    magpie_tokenizer = magpie_index['artifacts'][1]
+    magpie_range = magpie_handoff['tokenizerRangePackage']
+    magpie_languages = ['ar', 'en', 'fr', 'de', 'hi', 'it', 'ko', 'pt', 'es', 'vi']
+    models.append(dict(id='magpie-tts', name='MagpieTTS Multilingual 357M', family='MagpieTTS', stage='TTS', engineId='magpie-tts-local',
+        languages=magpie_languages, source='https://huggingface.co/nvidia/magpie_tts_multilingual_357m',
+        license=magpie_handoff['license']['name'],
+        note='Pinned MagpieTTS v2607 F16 generator and NanoCodec plus the authenticated tokenizer package; CPU-only, 22.05 kHz mono, macOS Apple silicon. '
+             'Two GGUF files are downloaded directly and the tokenizer dictionaries are extracted from pinned append-only byte ranges of the .nemo archive; '
+             'model_weights.ckpt is discarded. Every weight and tokenizer member is verified before loading. Languages are the runtime set supported by this build '
+             '(Chinese and Japanese frontends are excluded).',
+        options={'voice': 'Aria', 'threads': '2'}, platforms=['macos-arm64'],
+        artifacts=[dict(filename=c['filename'], bytes=c['bytes'], sha256=c['sha256'], url=c['url']) for c in magpie_weights],
+        rangePackage=dict(
+            sourceUrl=f"https://huggingface.co/{magpie_index['repo']}/resolve/{magpie_index['revision']}/{magpie_tokenizer['filename']}",
+            sourceBytes=magpie_range['sourceBytes'], sourceSha256=magpie_range['sourceSha256'],
+            bytes=magpie_range['bytes'], sha256=magpie_range['sha256'],
+            ranges=[[start, end] for start, end in magpie_range['ranges']],
+            members=[dict(path=m['name'], bytes=m['size'], sha256=m['sha256']) for m in magpie_tokenizer['members']])))
     moonshine_models(models, audit)
     omnilingual = next(a for a in audit['artifacts'] if a['id'] == 'omnilingual-ctc-300m-v2-int8')
     omnilingual_files = [
@@ -333,7 +355,7 @@ def generate():
         artifacts=[dict(filename=nemotron['url'].rsplit('/', 1)[-1], bytes=nemotron['bytes'], sha256=nemotron['sha256'], url=nemotron['url'])]))
     vosk_models(models)
     ming_models(models)
-    assert len(models) == 69, len(models)
+    assert len(models) == 70, len(models)
     return json.dumps({'schemaVersion':1,'provenance':'Generated from existing Android pins, the audited Qwen3-ASR release archive, reviewed CT2 catalog pins and reviewed desktop engine pins; run scripts/desktop/generate-catalog.py --check','models':models},ensure_ascii=False,indent=2)+'\n'
 
 

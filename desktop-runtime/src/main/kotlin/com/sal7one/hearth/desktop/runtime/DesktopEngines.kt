@@ -7,6 +7,8 @@ import com.sal7one.common_jni.translation.Ct2Native
 import com.sal7one.common_jni.translation.LocalTranslationNative
 import com.sal7one.hearth.core.*
 import com.sal7one.hearth.desktop.media.DesktopMediaDecoder
+import com.sal7one.hearth.tts.magpie.MagpieCatalog
+import com.sal7one.hearth.tts.magpie.MagpieSpeechEngine
 import com.sal7one.hearth.tts.moss.MossCatalog
 import com.sal7one.hearth.tts.moss.MossSpeechEngine
 import com.sal7one.hearth.tts.omnivoice.OmniVoiceCatalog
@@ -61,6 +63,14 @@ class DesktopEngines(
         defaultVoice = "design-female",
         assetNames = OmniVoiceCatalog.assets.map { it.filename },
         engineFactory = { path, _ -> OmniVoiceSpeechEngine(path.toFile()) },
+    )
+    private val magpieVoices = DesktopVoiceCache(
+        appDataDirectory,
+        engineId = "magpie-tts-local",
+        sampleRate = 22_050,
+        defaultVoice = "Aria",
+        assetNames = MagpieCatalog.weights.map { it.filename } + MagpieCatalog.tokenizer.map { "tokenizer/${it.filename}" },
+        engineFactory = { path, threads -> MagpieSpeechEngine(path.toFile(), threads) },
     )
     private val translationGate = Mutex()
     private val ct2Gate = Mutex()
@@ -125,6 +135,7 @@ class DesktopEngines(
             local("phonon-local", "Phonon 2", PipelineStage.STT, "hearth_desktop_backend_speech", PHONON_LANGUAGES),
             local("moss-tts-local", "MOSS-TTS Nano 100M", PipelineStage.TTS, "hearth_desktop_moss", setOf("ar", "en")),
             local("omnivoice-tts-local", "OmniVoice (voice design)", PipelineStage.TTS, "hearth_desktop_omnivoice", setOf("ar", "en")),
+            local("magpie-tts-local", "MagpieTTS Multilingual 357M", PipelineStage.TTS, "hearth_desktop_magpie", MagpieCatalog.languages),
             local("ming-local", "Ming-3.0 TTS 0.5B (local)", PipelineStage.TTS, "ming_jni", setOf("en", "zh")),
             local("llama-translation-local", "Local GGUF translation", PipelineStage.TRANSLATION, "transiber_translation"),
             local("marian-local", "CTranslate2 · Marian/OPUS", PipelineStage.TRANSLATION, "hearth_desktop_ct2"),
@@ -499,6 +510,10 @@ class DesktopEngines(
             require(!metal(selection)) { "OmniVoice desktop supports CPU acceleration only" }
             return omnivoiceVoices.read(text, selection, language, voiceId)
         }
+        if (selection.engineId == "magpie-tts-local") {
+            require(!metal(selection)) { "Magpie desktop supports CPU acceleration only" }
+            return magpieVoices.read(text, selection, language, voiceId)
+        }
         if (selection.engineId == "ming-local") {
             require(!metal(selection)) { "Ming local supports CPU acceleration only" }
             return mingVoices.read(text, selection, language, voiceId)
@@ -517,7 +532,7 @@ class DesktopEngines(
         engine?.close()
     }
     override fun close() {
-        if (closed.compareAndSet(false, true)) try { clearTranslation(); clearCt2() } finally { voices.close(); mossVoices.close(); omnivoiceVoices.close(); mingVoices.close() }
+        if (closed.compareAndSet(false, true)) try { clearTranslation(); clearCt2() } finally { voices.close(); mossVoices.close(); omnivoiceVoices.close(); magpieVoices.close(); mingVoices.close() }
     }
 /** Vosk models are extracted directories whose model-tree-sha256-v1 digest is the pin.
  *  The desktop library verifies it on install/refresh and the adapter re-derives and

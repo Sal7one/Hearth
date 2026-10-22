@@ -1730,6 +1730,118 @@
       ]
     },
     {
+      "id": "magpie-tts",
+      "name": "MagpieTTS Multilingual 357M",
+      "family": "MagpieTTS",
+      "stage": "TTS",
+      "engineId": "magpie-tts-local",
+      "languages": [
+        "ar",
+        "en",
+        "fr",
+        "de",
+        "hi",
+        "it",
+        "ko",
+        "pt",
+        "es",
+        "vi"
+      ],
+      "source": "https://huggingface.co/nvidia/magpie_tts_multilingual_357m",
+      "license": "NVIDIA Open Model License; runtime Apache-2.0; companion codec license must accompany distribution",
+      "note": "Pinned MagpieTTS v2607 F16 generator and NanoCodec plus the authenticated tokenizer package; CPU-only, 22.05 kHz mono, macOS Apple silicon. Two GGUF files are downloaded directly and the tokenizer dictionaries are extracted from pinned append-only byte ranges of the .nemo archive; model_weights.ckpt is discarded. Every weight and tokenizer member is verified before loading. Languages are the runtime set supported by this build (Chinese and Japanese frontends are excluded).",
+      "options": {
+        "voice": "Aria",
+        "threads": "2"
+      },
+      "platforms": [
+        "macos-arm64"
+      ],
+      "artifacts": [
+        {
+          "filename": "magpie_tts_multilingual_357m.v2607.f16.gguf",
+          "bytes": 568663392,
+          "sha256": "fb8e9297138dcc7b5fc51332f361e3cddfd433d4e0bc1d87e16e6aed21f618fc",
+          "url": "https://huggingface.co/nvidia/magpie_tts_multilingual_357m/resolve/446bff55e1fe3d3aa29c771574e7d2b0fa322990/magpie_tts_multilingual_357m.v2607.f16.gguf"
+        },
+        {
+          "filename": "nemo_nano_codec_22khz_1.89kbps_21.5fps.decoder.f16.gguf",
+          "bytes": 78823104,
+          "sha256": "cc86d36d821a27cdc1d4ef600a3e2b0dabe76e88fcc2a8652d9543134c07ef2d",
+          "url": "https://huggingface.co/nvidia/nemo-nano-codec-22khz-1.89kbps-21.5fps/resolve/fc00890b604aa2de298d2641ffc6c5f6caf8c4d7/nemo_nano_codec_22khz_1.89kbps_21.5fps.decoder.f16.gguf"
+        }
+      ],
+      "rangePackage": {
+        "sourceUrl": "https://huggingface.co/nvidia/magpie_tts_multilingual_357m/resolve/446bff55e1fe3d3aa29c771574e7d2b0fa322990/magpie_tts_multilingual_357m.nemo",
+        "sourceBytes": 1470208000,
+        "sourceSha256": "ec675fa8c02b9c1d5382c5c2b5a6acec6492c1e8344866c07cf3892185d18953",
+        "bytes": 31076864,
+        "sha256": "169144a64f6d775178696914e5aad8282db44820e73341d5f9a4e7865fac1f26",
+        "ranges": [
+          [
+            0,
+            20619263
+          ],
+          [
+            1459750400,
+            1470207999
+          ]
+        ],
+        "members": [
+          {
+            "path": "05adc40366e149b69319acd4b28a4919_pt_br_prondict-v1.0.dict",
+            "bytes": 3580284,
+            "sha256": "6492abc404db16bbad83dd9d7f9a60eb617699f0a3ff54b3be6184e14507b745"
+          },
+          {
+            "path": "339da71c54b046f98cbcf38ef6d4ff67_hindi_phoneme_merged_phoneme_dict.dict",
+            "bytes": 7319864,
+            "sha256": "3b50cc2c21cd8d34983d8492c91308e9db4a58c1194d6506fdbb2b97aead75fc"
+          },
+          {
+            "path": "41913ebaa70342058574da74293b7630_magpie_tts_multilingual_357m.nemo.speakers.json",
+            "bytes": 68,
+            "sha256": "36cdcf01ebc0afb506660ac71f2d0a211236374ad5c872d7d8d985a3f9f6ccaf"
+          },
+          {
+            "path": "61d57a4ccb064d1e8e3d9f871c571932_heteronyms-052722",
+            "bytes": 1606,
+            "sha256": "b701909aedf753172eff223950f8859cd4b9b4c80199cf0a6e9ac4a307c8f8ec"
+          },
+          {
+            "path": "74b3e832fe914a569fcd42b51d06b2f1_ipa_dict_nv23.05.txt",
+            "bytes": 5419,
+            "sha256": "252e8eaf60dfd891520759913dc8534393eebfa8d57192365f76f9229f294e9e"
+          },
+          {
+            "path": "7dbc31751f224f2486090d59dc95b9f7_es_ES_nv230301.dict",
+            "bytes": 2230910,
+            "sha256": "94c9a25bb359f733cd863c887d0112e7ae19a744b0333ef64b6a88e576428669"
+          },
+          {
+            "path": "c5e4ec2af5a14ce294f4b9edcc936535_de_nv230119.heteronym",
+            "bytes": 44566,
+            "sha256": "771cc585a574fd35bd14f4ce6108edf1e0e512a8dbc810db7de4c1165ba9d0ef"
+          },
+          {
+            "path": "cf01ab5c48c84f3282ef7888263361e5_de_nv230119.dict",
+            "bytes": 4313907,
+            "sha256": "5c7bbf3346ebd6dc57769b5cc805124215cb1bcc3b8174c4254e9e928c5d6094"
+          },
+          {
+            "path": "dc7d60d6b15a4651b21c9ca2932b62c6_ipa_cmudict-0.7b_nv23.01.txt",
+            "bytes": 3093097,
+            "sha256": "7ea5c4c2c59cc780748b24d4ab60bd689779c4ac4ea7e27c0a8c3e20f300c0fa"
+          },
+          {
+            "path": "model_config.yaml",
+            "bytes": 8358,
+            "sha256": "9577bfa4769981849feccd6a54d38425d81fff41ac16c282f60be97faf46ebe4"
+          }
+        ]
+      }
+    },
+    {
       "id": "moonshine-tiny-en-v2",
       "name": "Moonshine tiny.en · q8",
       "family": "Moonshine",

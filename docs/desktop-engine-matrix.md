@@ -3,7 +3,7 @@
 What each model family needs before it can run on macOS/Windows like it does on
 Android. Status is what has been *executed*, not what is planned.
 
-Last updated when all ten pinned Moonshine variants passed through the shared speech backend bridge on macOS arm64.
+Last updated after the MagpieTTS desktop family passed real non-silent C ABI/JNI/catalog-install proofs on macOS arm64.
 
 ## Working today on desktop
 
@@ -23,6 +23,7 @@ Last updated when all ten pinned Moonshine variants passed through the shared sp
 | MOSS-TTS Nano 100M | 1 (14 pinned files) | `hearth_desktop_moss` (static SentencePiece 0.2.0 + the shipped ONNX Runtime 1.20.1) | real 48 kHz non-silent WAV, `DesktopMossRealSmokeTest`: 20,481 samples / peak 0.516 / RMS 0.0996 through the app path; direct JNI 61,440 samples |
 | Ming-3.0 TTS 0.5B (local) | 1 (17 pinned files) | `libming_jni.dylib` (pinned ming-ffi over fusor-ai 0.1.2) | real 44.1 kHz non-silent WAV, `DesktopMingLocalRealSmokeTest`: 61,740 frames / peak 14,658 / 87% non-zero; English/Chinese only; Android build-only |
 | OmniVoice | 1 (2 pinned GGUF files) | `hearth_desktop_omnivoice` (static omnivoice.cpp `1a468d8b` + ggml `cc5df49a`, CPU, 24 kHz) | real non-silent WAV through the desktop engine, `DesktopOmniVoiceRealSmokeTest`: EN 1.84 s / peak 0.936 / RMS 0.173 / 39,294 of 44,160 non-zero; AR 1.83 s / peak 0.905 / RMS 0.142 / 38,286 of 43,920 non-zero; 32 MaskGIT steps, RTF 5.25 cold EN (includes load) and 4.26 warm AR, 32 steps, on a busy host; repeats measured 4.1-5.3, with one 14.1 under heavy unrelated build load |
+| MagpieTTS Multilingual 357M | 1 (2 pinned GGUF files + 31,076,864 B authenticated tokenizer ranges) | `hearth_desktop_magpie` (static NeMo-Speech.cpp `caa3f47c` + llama.cpp/ggml `bd4f514d`, CPU, 22.05 kHz) | real non-silent WAV through the C ABI, `magpie_probe`: EN 1.393 s / peak 0.5549 / RMS 0.0942 / 30,503 of 30,720 non-zero / RTF 1.91; AR 2.508 s / peak 0.3139 / RMS 0.0433 / 54,716 of 55,296 non-zero / RTF 1.10 (4 threads, includes first-call load); desktop engine `DesktopMagpieRealSmokeTest`: EN 1.486 s / peak 0.441 / RMS 0.0805 / 4.15 cold, AR 2.229 s / peak 0.486 / RMS 0.0606 / 0.97 warm at 2 threads; catalog install `DesktopMagpieCatalogInstallTest` verifies the two GGUF files (local cache in this run) plus the downloaded range-extracted tokenizer and synthesizes non-silent 22.05 kHz WAV |
 
 ## Missing on desktop
 
@@ -32,7 +33,7 @@ The shared ABI and the family-versus-model rule are documented in
 | Family | Models | Android implementation | What a desktop port needs |
 | --- | --- | --- | --- |
 | CTranslate2 pair coverage | 3 desktop cards: QuickMT EN↔AR, SMaLL-100 (100 languages) | `common-jni/src/main/cpp/translation/ct2` + `Ct2Catalog.kt` | four Jisr 50M specs are pinned but `downloadEnabled=false`, and the requested EN↔DE/ES/FR/RU/ZH pair models are not present or pinned in this repo |
-| TTS — Chatterbox, Magpie, Oute | 3 | `hearth-tts-*` modules | each family has its own architecture and runtime; OmniVoice, MOSS and Ming local are the proven desktop TTS runtimes |
+| TTS — Chatterbox, Oute | 2 | `hearth-tts-*` modules | each family has its own architecture and runtime; OmniVoice, MOSS, Ming local and Magpie are the proven desktop TTS runtimes |
 
 ## What Qwen3-ASR proved
 
@@ -83,6 +84,25 @@ catalog before it has a passing smoke.
 - Audio is natively 24 kHz mono. The smoke also writes an explicitly derived
   48 kHz compatibility WAV with 2x linear interpolation; it is never reported as
   native engine output.
+
+## What the Magpie proof shows
+
+- Magpie is a second NeMo-Speech.cpp desktop consumer, but a separate dylib from the
+  Nemotron ASR backend. `libhearth_desktop_magpie.dylib` contains the pinned TTS C ABI
+  (`caa3f47c`), one static llama.cpp/ggml build (`bd4f514d`), the six JNI entries and
+  nothing else exported; `otool -L` shows only system libraries.
+- The earlier "≈2.12 GB" rejection was the full `.nemo` source inventory. The actual
+  desktop install is 678,563,360 B: two direct GGUF files plus two authenticated byte
+  ranges (31,076,864 B) from the archive. The embedded 1.44 GB `model_weights.ckpt` is
+  discarded and never installed. The `.nemo` itself is never downloaded whole.
+- The catalog card now installs that layout: a bounded TAR walk extracts only the ten
+  final tokenizer members, authenticates the concatenated range payload, and treats
+  earlier append-only copies as superseded. A host that ignores the range request
+  fails loudly.
+- Audio is natively 22.05 kHz mono. No resampling, normalization or derived WAV is
+  produced by the engine. The proof WAVs are direct engine PCM16.
+- CPU only. The direct 4-thread probe measured RTF 1.91 (EN) and 1.10 (AR) including
+  first-call load; the 2-thread desktop engine path measured 4.15 cold and 0.97 warm.
 
 ## Not claimed
 

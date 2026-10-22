@@ -116,6 +116,24 @@
         "name": "NVIDIA Open Model License; runtime Apache-2.0; companion codec license must accompany distribution",
         "url": "https://huggingface.co/nvidia/magpie_tts_multilingual_357m#license"
       },
+      "desktopRuntime": {
+        "status": "integrated-experimental-cpu-macos-arm64",
+        "engineId": "magpie-tts-local",
+        "library": "hearth_desktop_magpie",
+        "catalogCard": "magpie-tts",
+        "sampleRate": 22050,
+        "runtimeRevision": "caa3f47c7c75fa2e9e6340272ebad57c1647dd44",
+        "ggmlRevision": "bd4f514db14d87fded667787a7a963bfbaa98e89",
+        "dylibBytes": 1943168,
+        "dylibSha256": "2e7ff6020caaa0de555cbc42ba198417b6fd6c39222f94d4b8d1da245f9e769f",
+        "proof": "Real non-silent 22.05 kHz WAVs through the C ABI probe (EN 1.393 s / peak 0.5549 / RMS 0.0942 / RTF 1.91; AR 2.508 s / peak 0.3139 / RMS 0.0433 / RTF 1.10), DesktopMagpieRealSmokeTest and the catalog-install test; 10 tokenizer members extracted from authenticated byte ranges; CPU only.",
+        "blockers": [
+          "macOS arm64 host only; no Windows build or run.",
+          "No listening/MOS/intelligibility measurement; non-silence proves execution only.",
+          "RTF is ~1.1-1.9 at 4 threads on a busy Apple M4 Pro (includes first-call load); the desktop engine smoke at 2 threads measured 4.15 cold EN and 0.97 warm AR.",
+          "Chinese and Japanese tokenizer frontends are excluded from this build."
+        ]
+      },
       "sources": [
         "https://huggingface.co/nvidia/magpie_tts_multilingual_357m",
         "https://huggingface.co/nvidia/nemo-nano-codec-22khz-1.89kbps-21.5fps",
@@ -123,7 +141,7 @@
       ],
       "requiredSourceBytes": 2117694496,
       "selectedWeightsBytes": 647486496,
-      "sourceArchiveDownloadWarning": "The source inventory includes the entire1.47GB .nemo for reproducibility. Hearth downloads only31,076,864 authenticated range bytes and extracts20,598,079 verified tokenizer bytes. Its actual complete download is678,563,360 bytes; installed components are668,084,575 bytes, plus the optional1,797,600-byte CPU runtime/JNI shim.",
+      "sourceArchiveDownloadWarning": "The source inventory includes the entire1.47GB .nemo for reproducibility. Hearth downloads only31,076,864 authenticated range bytes and extracts20,598,079 verified tokenizer bytes. Its actual complete download is678,563,360 bytes; installed components are668,084,575 bytes, plus the1,797,600-byte Android CPU runtime/JNI shim or the1,943,168-byte desktop dylib (sha256 2e7ff602...9e769f).",
       "quality": {
         "scope": "Publisher original v2607 release; selected corrected F16 GGUF/native runtime was not benchmarked for CER/SSIM, and no Hearth/S25 quality measurement is claimed.",
         "Arabic": {
