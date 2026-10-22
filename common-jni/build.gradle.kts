@@ -1,4 +1,6 @@
 plugins { alias(libs.plugins.android.library); alias(libs.plugins.kotlin.android) }
+
+val activeHearthAbis = rootProject.extra["hearthActiveAbis"] as List<String>
 android {
  namespace = "com.sal7one.common_jni"
  compileSdk = 36
@@ -8,7 +10,7 @@ android {
   // The self-instrumenting library test APK must also declare a modern target.
   targetSdk = 36
   testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-  ndk { abiFilters += listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64") }
+  ndk { abiFilters += activeHearthAbis }
   externalNativeBuild { cmake { arguments += listOf("-DANDROID_STL=c++_shared", "-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON") } }
   consumerProguardFiles("consumer-rules.pro")
  }

@@ -4,6 +4,8 @@ plugins {
  alias(libs.plugins.kotlin.android)
  alias(libs.plugins.kotlin.compose)
 }
+
+val activeHearthAbis = rootProject.extra["hearthActiveAbis"] as List<String>
 android {
  namespace = "com.sal7one.transiber"
  compileSdk = 36
@@ -14,7 +16,7 @@ android {
   versionCode = 94
   versionName = "0.28.0"
   testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-  ndk { abiFilters += listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64") }
+  ndk { abiFilters += activeHearthAbis }
  }
  flavorDimensions += "distribution"
  productFlavors {
@@ -32,7 +34,7 @@ android {
   abi {
    isEnable = true
    reset()
-   include("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
+   include(*activeHearthAbis.toTypedArray())
    isUniversalApk = true
   }
  }

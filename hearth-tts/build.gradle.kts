@@ -1,10 +1,9 @@
 plugins { alias(libs.plugins.android.library); alias(libs.plugins.kotlin.android) }
 
-// Android Studio injects the active ABI here. Intersect it with TTS's ARM64-only
-// runtimes so selecting x86 does not leave a stale ARM64 JNI build behind.
-val requestedAbis = providers.gradleProperty("android.injected.build.abi").orNull
-    ?.split(',')?.map(String::trim)?.filter(String::isNotEmpty)
-val ttsAbis = requestedAbis?.filter { it == "arm64-v8a" } ?: listOf("arm64-v8a")
+// The app, common-jni and TTS share one active ABI. TTS supports ARM64 only;
+// selecting x86 intentionally produces no TTS native build.
+val activeHearthAbis = rootProject.extra["hearthActiveAbis"] as List<String>
+val ttsAbis = activeHearthAbis.filter { it == "arm64-v8a" }
 
 android {
     namespace = "com.sal7one.hearth.tts"

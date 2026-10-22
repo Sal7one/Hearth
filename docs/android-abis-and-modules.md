@@ -59,6 +59,30 @@ The original reason for separate adapter projects was publishing one AAR per TTS
 family for the standalone TTS SDK. The app does not need that topology: all
 adapters compile into the same APK and share the same core contracts.
 
+
+## Android Studio active ABI
+
+There is one active-ABI source in the root build script:
+
+1. Android Studio's injected `android.injected.build.abi`.
+2. `-PhearthAbis=arm64-v8a` (comma-separated for more than one).
+3. Otherwise all four release ABIs.
+
+The app and `:common-jni` use the active list directly. `:hearth-tts` intersects it
+with ARM64, because every TTS runtime is ARM64-only.
+
+**Important when switching ABI in the IDE:** run **Sync Project with Gradle Files**
+and a **Clean Project** once. Old `build/.cxx` outputs remain on disk after a switch
+and can make it look as if the other ABI is still configured. After a clean build:
+
+- arm64 active: `common-jni` and `hearth-tts` both contain only `arm64-v8a`.
+- x86 active: `common-jni` contains only `x86`; `hearth-tts` has no native build
+  and the x86 APK contains no TTS wrappers.
+
+If no active ABI is supplied (plain `./gradlew assemblePlayQa`), the app and
+`common-jni` build all four ABIs while TTS still builds ARM64 only. That is a
+capability boundary, not a stale task: TTS does not exist on x86/ARMv7.
+
 ## Completed consolidation
 
 `:hearth-tts` is now the single Android TTS Gradle module. It owns:
