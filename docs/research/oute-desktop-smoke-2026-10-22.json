@@ -1,0 +1,156 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-22",
+  "scope": "Real pinned OuteTTS 1.0 1B desktop engine on macOS arm64 (CPU only). Valid non-silent PCM is not intelligibility, gender, pronunciation or real-time verification.",
+  "host": {
+    "machine": "arm64",
+    "system": "Darwin 26.5 (25F71)",
+    "cpu": "Apple M4 Pro",
+    "loadAverageAtMeasurement": "11.62 11.23 9.26 (concurrent unrelated worktree builds)",
+    "jdk": "17"
+  },
+  "runtime": {
+    "repo": "https://github.com/foldl/chatllm.cpp",
+    "revision": "74b8237a4c1796f76bb0ed7f483b8e52e7d4d5c7",
+    "embeddedGgml": "at the pinned revision",
+    "preparation": "scripts/voice/oute/prepare-source.py",
+    "preparationSha256": "3bbb1b9e52d7c21cd8482d71bbe9e39c9693d32e129b374844953093ed6bd675",
+    "desktopDylib": {
+      "file": "libhearth_desktop_oute.dylib",
+      "bytes": 3498976,
+      "sha256": "9498c7eb21eac90ef918c3352843c30c008b3a919abc8106272ad7ef304074b2",
+      "minos": "13.0",
+      "exports": 5,
+      "dynamicDependencies": [
+        "/usr/lib/libSystem.B.dylib",
+        "Accelerate.framework",
+        "/usr/lib/libc++.1.dylib"
+      ]
+    }
+  },
+  "model": {
+    "file": "oute-tts-1b.bin",
+    "bytes": 1438416240,
+    "sha256": "e4e14b573459a8a4958e32e39678d2f0ac61cf73ccadb6dbda1f8fde1f8ade83",
+    "repo": "judd2024/chatllm_quantized_oute-tts",
+    "revision": "a1b7a4fc64949c9d6a3206422830df41009f1ad7",
+    "verification": "full bytes and SHA-256 before inference"
+  },
+  "reference": {
+    "file": "en-female-1-neutral.json",
+    "bytes": 25295,
+    "sha256": "6bb6bacca60c9759741d849c2baf2af3f6263a51b759d67826ef39e1efc4436c",
+    "repo": "edwko/OuteTTS",
+    "revision": "f5eac6e70d792844c6a6959d900a47af2c061a5b",
+    "language": "en"
+  },
+  "cAbi": {
+    "en": {
+      "abi": 1,
+      "rate": 24000,
+      "frames": 53112,
+      "chunks": 13,
+      "durationSeconds": 2.213,
+      "peak": 0.504608,
+      "rms": 0.0971249,
+      "nonZeroSamples": 48268,
+      "loadMs": 640.225,
+      "synthesisMs": 43222.5,
+      "rtf": 19.5312
+    },
+    "ar": {
+      "abi": 1,
+      "rate": 24000,
+      "frames": 99512,
+      "chunks": 25,
+      "durationSeconds": 4.14633,
+      "peak": 0.598511,
+      "rms": 0.0945975,
+      "nonZeroSamples": 95243,
+      "loadMs": 439.062,
+      "synthesisMs": 43233.4,
+      "rtf": 10.4269
+    }
+  },
+  "desktopEngine": {
+    "test": "DesktopOuteRealSmokeTest",
+    "engineId": "oute-tts-local",
+    "modelId": "outetts-1.0-1b",
+    "receipt": {
+      "schemaVersion": 1,
+      "engineId": "oute-tts-local",
+      "modelId": "outetts-1.0-1b",
+      "nativeSampleRate": 24000,
+      "derivedSampleRate": 48000,
+      "networkProvidersCalled": false,
+      "audioPlayed": false,
+      "cases": [
+        {
+          "language": "en",
+          "elapsedMs": 50189,
+          "durationSeconds": 2.213,
+          "sampleRate": 24000,
+          "peak": 0.504608154296875,
+          "rms": 0.09710886292292016,
+          "nonZeroSamples": 47489,
+          "samples": 53112,
+          "rtf": 22.67916854948034,
+          "wavBytes": 106268,
+          "derived48kBytes": 212492
+        },
+        {
+          "language": "ar",
+          "elapsedMs": 36568,
+          "durationSeconds": 3.3596666666666666,
+          "sampleRate": 24000,
+          "peak": 0.527679443359375,
+          "rms": 0.09195842865662263,
+          "nonZeroSamples": 71766,
+          "samples": 80632,
+          "rtf": 10.88441313622383,
+          "wavBytes": 161308,
+          "derived48kBytes": 322572
+        }
+      ]
+    },
+    "wav": {
+      "en": {
+        "file": "desktop-engine-en.wav",
+        "frames": 53112,
+        "durationSeconds": 2.213,
+        "peak": 0.504608154296875,
+        "rms": 0.09710886292292016,
+        "nonZeroSamples": 47489,
+        "sha256": "21b7b8010d637f3df73285104eb8ec39247e5b2f19b9550ab1934a3289bd4857"
+      },
+      "ar": {
+        "file": "desktop-engine-ar.wav",
+        "frames": 80632,
+        "durationSeconds": 3.3596666666666666,
+        "peak": 0.527679443359375,
+        "rms": 0.09195842865662263,
+        "nonZeroSamples": 71766,
+        "sha256": "82e9910b9fa6736d565b1cca42ee866803149636a212548ed506c49243591907"
+      }
+    },
+    "derived48k": {
+      "enSha256": "24361593efcd48ee142ea83cf8d7c56d77dcf993f5fa4c5e04ddd6c85e97997d",
+      "arSha256": "193c57f1142a59d3333c65e0ebde08ee1b89f5e2e707343d9422308821f30c2e",
+      "method": "explicit 2x linear interpolation by the smoke test; never presented as native output"
+    }
+  },
+  "licenses": {
+    "model": "CC-BY-NC-SA-4.0 and Llama 3.2 Community License (combined generator; DAC codec CDLA-Permissive-2.0)",
+    "reference": "Apache-2.0",
+    "runtime": "MIT (ChatLLM.cpp + embedded ggml)",
+    "redistribution": "Weights are user downloads and are not committed or bundled.",
+    "familyCaveat": "The pinned 1.0-1B artifact is CC-BY-NC-SA-4.0 + Llama 3.2. Upstream OuteTTS-1.0-0.6B is Apache-2.0 and ChatLLM.cpp lists 0.6B support, but it requires a PyTorch/DAC conversion to ChatLLM format and a hosted pinned artifact; it was not converted or proven in this work."
+  },
+  "limitations": [
+    "RTF is ~11-23 on this host depending on cold model verification/load and sentence; it is not real-time.",
+    "The host load average was ~11 from unrelated concurrent builds during measurement; the prior quieter host receipt measured 35.1 s for 3.08 s (RTF 11.4).",
+    "One English reference is used cross-lingually; Arabic accent, intelligibility, gender and pronunciation are unverified.",
+    "Model terms are noncommercial/share-alike plus Llama 3.2; this cannot be an unrestricted commercial default.",
+    "No Windows build or run; macOS arm64 only. No packaged-app validation."
+  ]
+}
