@@ -70,6 +70,7 @@ class DesktopNativeContractTest {
                 assertEquals(DesktopWhisperNative.metalAvailable(), "metal" in descriptors.getValue("whisper-local").acceleration)
                 assertEquals(LocalTranslationNative.metalAvailable(), "metal" in descriptors.getValue("llama-translation-local").acceleration)
                 assertEquals(setOf("cpu"), descriptors.getValue("supertonic-local").acceleration)
+                assertEquals(setOf("cpu"), descriptors.getValue("omnivoice-tts-local").acceleration)
                 if (qwenStaged) assertEquals(setOf("cpu"), descriptors.getValue(QwenSpeechModel.ENGINE_ID).acceleration)
             }
             assertFailsWith<IllegalStateException> { DesktopWhisperNative.transcribe(0, floatArrayOf(0f)) }

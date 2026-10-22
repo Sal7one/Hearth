@@ -8,7 +8,7 @@ do not have. Keep this file honest: do not add a row you have not run.
 | Check | Command | Result |
 | --- | --- | --- |
 | Android native, 4 ABIs | `./gradlew :common-jni:externalNativeBuildDebug` | `libcommon_jni.so` for arm64-v8a, armeabi-v7a, x86, x86_64 |
-| Native bundle packaged | `./gradlew -PhearthDesktopOnly=true :desktop-runtime:jar` | 25 `native/macos-arm64/` entries, libraries stored as `*.payload` |
+| Native bundle packaged | `./gradlew -PhearthDesktopOnly=true :desktop-runtime:jar` | 27 `native/macos-arm64/` entries, libraries stored as `*.payload` |
 | Bundle loads + hashes | `:desktop-runtime:test --tests "*DesktopNativeContractTest*"` | 2 tests, 0 skipped; includes Qwen readiness/protocol |
 | Handle ownership | `:desktop-runtime:test --tests "*DesktopNativeOwnershipTest*"` | 6 tests, 1 skipped |
 | Whisper alone | `:desktop-runtime:test --tests "*DesktopWhisperRealSmokeTest*"` | transcript exact, `Metal GPU; threads=2` |
@@ -17,8 +17,9 @@ do not have. Keep this file honest: do not add a row you have not run.
 | CTranslate2 QuickMT EN→AR | `:desktop-runtime:test --tests "*DesktopCt2RealSmokeTest*"` | `يفتح المتحف في الساعة التاسعة صباحًا.` (111 ms native, 4771 ms engine path) |
 | TranscribePsy 250M EU | `:desktop-runtime:test --tests "*DesktopTranscribePsyRealSmokeTest*"` | `The museum opens at 9 in the morning. Please bring your ticket to the East Entrance.` (75 ms warm decode, 4561 ms engine path) |
 | Nemotron 3.5 ASR | `:desktop-runtime:test --tests "*DesktopNemotronRealSmokeTest*"` | `museum opens at nine in the morning please bring your ticket to the east entrance` (573 ms decode, 6784 ms engine path) |
-| Moonshine tiny.en (shared sherpa bridge) | `:desktop-runtime:test --tests "*DesktopMoonshineRealSmokeTest*"` | `The museum opens at 9 in the morning. Please bring your ticket to the East Entrance.` (32 ms decode, 3999 ms engine path) |
+| Moonshine ×10 (shared sherpa bridge) | `:desktop-runtime:test --tests "*DesktopMoonshineRealSmokeTest*"` | 10/10 variants through the bridge and `DesktopEngines`; tiny.en/base.en exact transcript `The museum opens at 9 in the morning. Please bring your ticket to the East entrance.` (145/340 ms load, 33/58 ms decode; app path 328/789 ms); ar/es/ja/ko/uk/vi/zh non-empty native-script transcripts (147–421 ms load, 74–1,088 ms decode; app path 464–1,456 ms). Each variant verified all four pinned components before loading |
 | MOSS-TTS Nano 100M | `:desktop-runtime:test --tests "*DesktopMossRealSmokeTest*"` | "Hello from Hearth." / Ava, 48 kHz WAV, peak 0.516, RMS 0.0996, 99% non-zero; direct JNI 61,440 samples |
+| OmniVoice TTS | `:desktop-runtime:test --tests "*DesktopOmniVoiceRealSmokeTest*"` | 24 kHz WAV through the desktop engine: EN 44,160 samples / peak 0.936 / RMS 0.173 / 39,294 non-zero / RTF 5.25 cold; AR 43,920 samples / peak 0.905 / RMS 0.142 / 38,286 non-zero / RTF 4.26 warm (repeats measured 4.1-5.3, and 14.1 once under heavy unrelated host load; the smoke asserts audio validity, not throughput); derived 48 kHz copies 88,320 / 87,840 samples; direct JNI Arabic 22,320 and English 44,160 samples |
 | Omnilingual CTC 300M | `:desktop-runtime:test --tests "*DesktopSherpaFamiliesRealSmokeTest*"` | `the museum opens at nine in the morning please bring your ticket to the east entrance` (220 ms warm) |
 | Phonon 2 | same test | `The museum opens at nine in the morning. Please bring your ticket to the East Entrance.` (117 ms warm) |
 | Vosk English | `:desktop-runtime:test --tests "*DesktopVoskRealSmokeTest*"` | exact lower-case transcript, 586 ms decode |
@@ -112,7 +113,31 @@ The `moss` stage compiles `hearth-tts-moss/src/main/cpp/moss.cpp`, the desktop
 already-shipped ONNX Runtime 1.20.1. The runtime is one dylib; no model weights are
 committed.
 
+### Reproducing the OmniVoice smoke
+
+```bash
+python3 scripts/voice/fetch-omnivoice-test-assets.py --directory build/agents/omnivoice/models
+python3 scripts/desktop/build-native.py --stage omnivoice \
+  --omnivoice-root research/tts-expansion/omnivoice.cpp
+# CI: scripts/desktop/prepare-dependencies.py checks out the pinned sources and
+# exports HEARTH_OMNIVOICE_ROOT, so `build-native.py --stage all` needs no extra flag.
+HEARTH_OMNIVOICE_SMOKE=1 HEARTH_SMOKE_OMNIVOICE="$PWD/build/agents/omnivoice/models" \
+  HEARTH_OMNIVOICE_SMOKE_RECEIPT="$PWD/build/agents/omnivoice/out/desktop-engine-receipt.json" \
+  ./gradlew -PhearthDesktopOnly=true :desktop-runtime:test --tests "*DesktopOmniVoiceRealSmokeTest*"
+```
+
+The `omnivoice` stage verifies the source checkout at
+`1a468d8b9d65b3544ca1004d2d7c05dfc65d1f3e` and its `ggml` submodule at
+`cc5df49a6b878db2b68b9a7b45976e279594627d`, compiles its own static CPU ggml, and
+stages `libhearth_desktop_omnivoice.dylib` + `OmniVoice-Dependencies-NOTICES.txt`.
+The two GGUF files are user downloads (CC-BY-NC-4.0 generator; separate codec
+terms) and are never committed. The engine emits native 24 kHz mono; the smoke
+additionally writes a derived 48 kHz compatibility WAV with explicit 2× linear
+interpolation, never presented as native output.
+
 ### Reproducing the Moonshine smoke
+
+One variant with the historical single-model fixture:
 
 ```bash
 # download and extract sherpa-onnx-moonshine-tiny-en-quantized-2026-02-27.tar.bz2
@@ -122,9 +147,23 @@ HEARTH_SMOKE_WAV="$PWD/build/smoke/hello.wav" \
 ./gradlew -PhearthDesktopOnly=true :desktop-runtime:test --tests "*DesktopMoonshineRealSmokeTest*"
 ```
 
-Moonshine uses the same Qwen sherpa dylib and the same `hearth_speech_backend_v1`
-bridge; the only additions are the `hearth_moonshine_backend_v1` export, an explicit
-entry symbol, and encoder/decoder paths. No new engine code.
+All ten variants: the fixture directory holds one subdirectory per card id with the
+four pinned files and a 16 kHz mono WAV named `<card id>.wav`. Absent fixtures are
+reported by id and skipped; present-but-incomplete fixtures fail.
+
+```bash
+HEARTH_MOONSHINE_VARIANTS_SMOKE=1 \
+HEARTH_SMOKE_MOONSHINE_VARIANTS="$PWD/build/moonshine-pins/variants" \
+./gradlew -PhearthDesktopOnly=true :desktop-runtime:test --tests "*DesktopMoonshineRealSmokeTest*"
+```
+
+The ten archives are 829,981,535 B compressed and 1,101,518,768 B of pinned
+components (they also carry an untracked `test_wavs/` member). The smoke asserts a
+non-silent input (RMS 0.049–0.178), non-empty transcripts and English wording; it
+does not claim word accuracy for the multilingual packages. Moonshine uses the same
+Qwen sherpa dylib and the same `hearth_desktop_backend_speech` bridge; the only
+additions are the `hearth_moonshine_backend_v1` export, an explicit entry symbol,
+the selected card's component pins, and encoder/decoder paths. No new engine code.
 
 ### Reproducing the Nemotron smoke
 

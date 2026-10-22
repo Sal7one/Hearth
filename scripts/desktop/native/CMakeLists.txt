@@ -151,6 +151,46 @@ elseif(HEARTH_STAGE STREQUAL "moss")
  target_link_libraries(hearth_desktop_moss PRIVATE sentencepiece-static onnx_host)
  set_target_properties(hearth_desktop_moss PROPERTIES BUILD_RPATH "${HEARTH_ORT_ROOT}/lib" INSTALL_RPATH "@loader_path")
  set(OUTPUT_TARGET hearth_desktop_moss)
+elseif(HEARTH_STAGE STREQUAL "omnivoice")
+ if(NOT APPLE OR NOT CMAKE_SYSTEM_PROCESSOR STREQUAL "arm64")
+  message(FATAL_ERROR "The OmniVoice desktop voice runtime is built only for macOS arm64")
+ endif()
+ if(NOT DEFINED HEARTH_OMNIVOICE_SOURCE OR NOT EXISTS "${HEARTH_OMNIVOICE_SOURCE}/src/omnivoice.cpp" OR
+    NOT EXISTS "${HEARTH_OMNIVOICE_SOURCE}/ggml/CMakeLists.txt")
+  message(FATAL_ERROR "Set HEARTH_OMNIVOICE_SOURCE to the pinned omnivoice.cpp checkout")
+ endif()
+ # OmniVoice statically owns one pinned ggml build of its own. It is never linked
+ # into whisper/parakeet/NeMo dylibs and does not use Metal GPU offload in this stage.
+ set(GGML_METAL OFF CACHE BOOL "" FORCE)
+ set(GGML_OPENMP OFF CACHE BOOL "" FORCE)
+ set(GGML_BLAS OFF CACHE BOOL "" FORCE)
+ set(GGML_VULKAN OFF CACHE BOOL "" FORCE)
+ set(GGML_CUDA OFF CACHE BOOL "" FORCE)
+ set(GGML_BACKEND_DL OFF CACHE BOOL "" FORCE)
+ set(GGML_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+ set(GGML_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+ add_compile_definitions(GGML_MAX_NAME=128)
+ # Pin the embedded source identity for the runtime and its static ggml so two clean
+ # checkouts at the same revisions produce the same dylib, independent of checkout path.
+ add_compile_options(
+   "-ffile-prefix-map=${HEARTH_OMNIVOICE_SOURCE}=omnivoice"
+   "-fdebug-prefix-map=${HEARTH_OMNIVOICE_SOURCE}=omnivoice")
+ add_subdirectory("${HEARTH_OMNIVOICE_SOURCE}/ggml" ggml-omnivoice)
+ find_package(Threads REQUIRED)
+ execute_process(COMMAND "${CMAKE_COMMAND}" "-DSRC_DIR=${HEARTH_OMNIVOICE_SOURCE}" "-DOUTPUT=${CMAKE_BINARY_DIR}/version.h" -P "${HEARTH_OMNIVOICE_SOURCE}/tools/version.cmake" COMMAND_ERROR_IS_FATAL ANY)
+ add_library(hearth_desktop_omnivoice SHARED
+   "${DESKTOP_CPP}/omnivoice_jni.cpp"
+   "${HEARTH_OMNIVOICE_SOURCE}/src/omnivoice.cpp"
+   "${HEARTH_OMNIVOICE_SOURCE}/src/pipeline-codec.cpp"
+   "${HEARTH_OMNIVOICE_SOURCE}/src/pipeline-tts.cpp"
+ )
+ target_compile_definitions(hearth_desktop_omnivoice PRIVATE OMNIVOICE_BUILD=1)
+ target_include_directories(hearth_desktop_omnivoice PRIVATE
+   ${JNI_INCLUDE_DIRS} "${DESKTOP_CPP}" "${CPP}/common"
+   "${HEARTH_OMNIVOICE_SOURCE}/src" "${HEARTH_OMNIVOICE_SOURCE}/ggml/include"
+   "${HEARTH_ROOT}/hearth-tts-omnivoice/src/main/cpp/vendor" "${CMAKE_BINARY_DIR}")
+ target_link_libraries(hearth_desktop_omnivoice PRIVATE ggml Threads::Threads)
+ set(OUTPUT_TARGET hearth_desktop_omnivoice)
 elseif(HEARTH_STAGE STREQUAL "backend")
  if(NOT APPLE OR NOT CMAKE_SYSTEM_PROCESSOR STREQUAL "arm64")
   message(FATAL_ERROR "The desktop speech backend bridge is built only for macOS arm64")
@@ -181,9 +221,9 @@ elseif(HEARTH_STAGE STREQUAL "vosk")
  target_link_libraries(hearth_vosk PRIVATE ${CMAKE_DL_LIBS})
  set(OUTPUT_TARGET hearth_vosk)
 else()
- message(FATAL_ERROR "HEARTH_STAGE must be whisper, translation, supertonic, onnx, moss, backend or vosk")
+ message(FATAL_ERROR "HEARTH_STAGE must be whisper, translation, supertonic, onnx, moss, omnivoice, backend or vosk")
 endif()
-if(APPLE AND HEARTH_DESKTOP_METAL AND NOT HEARTH_STAGE STREQUAL "supertonic" AND NOT HEARTH_STAGE STREQUAL "onnx" AND NOT HEARTH_STAGE STREQUAL "backend" AND NOT HEARTH_STAGE STREQUAL "vosk")
+if(APPLE AND HEARTH_DESKTOP_METAL AND NOT HEARTH_STAGE STREQUAL "supertonic" AND NOT HEARTH_STAGE STREQUAL "onnx" AND NOT HEARTH_STAGE STREQUAL "omnivoice" AND NOT HEARTH_STAGE STREQUAL "backend" AND NOT HEARTH_STAGE STREQUAL "vosk")
  target_sources(${OUTPUT_TARGET} PRIVATE "${DESKTOP_CPP}/metal_device.mm")
 endif()
 if(APPLE)

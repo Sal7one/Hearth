@@ -28,6 +28,11 @@ TRANSCRIBEPSY_PIN = "364ec36130dc87d2cd46e596598268a6e3313751"
 NEMO_PIN = "ffa38cb2408f1e832a36d46fef5e3e1e80d07e6c"
 MING_WASM_PIN = "7252aa537ab2ef4c4c2c58088116ecb754f654d6"
 MING_FUSOR_AI_PIN = "7dda3bfb4015d76bed053456ad371f1e4f487ad9"
+# OmniVoice is a self-contained C++/ggml family. Sources are a developer checkout at
+# these exact revisions; the desktop stage links its own static ggml copy and never
+# duplicates ggml or ONNX Runtime into another dylib.
+OMNIVOICE_PIN = "1a468d8b9d65b3544ca1004d2d7c05dfc65d1f3e"
+OMNIVOICE_GGML_PIN = "cc5df49a6b878db2b68b9a7b45976e279594627d"
 # Pinned official Vosk macOS release. The app never downloads a native runtime:
 # this runs at build time only, verifies the release ZIP and each member, thins
 # the universal2 slice to arm64 and records both digests in the manifest.
@@ -142,6 +147,7 @@ def snapshot():
                  "scripts/speech/nemo-inject.cmake",
                  "hearth-tts-moss/src/main/cpp/moss.cpp",
                  "hearth-tts-moss/src/main/cpp/vendor/moss.h",
+                 "hearth-tts-omnivoice/src/main/cpp/vendor/omnivoice.h",
                  "common-jni/src/main/cpp/ming/ffi/Cargo.toml",
                  "common-jni/src/main/cpp/ming/ffi/Cargo.lock",
                  "common-jni/src/main/cpp/ming/ffi/src/lib.rs",
@@ -154,6 +160,22 @@ def snapshot():
     paths.extend((ROOT / "hearth-tts-supertonic/src/main/cpp/voice").glob("*.cpp"))
     paths.append(ROOT / "hearth-tts-supertonic/src/main/cpp/voice/supertonic.h")
     return {p.relative_to(ROOT).as_posix(): sha(p) for p in sorted(set(paths))}
+
+
+def source_tree_sha_files(root):
+    """Content digest of a pinned checkout's tracked files, skipping submodule gitlinks."""
+    names = subprocess.check_output(["git", "-C", str(root), "ls-files", "-z"], text=False).split(b"\0")
+    entries = {}
+    for raw in names:
+        if not raw:
+            continue
+        relative = os.fsdecode(raw)
+        path = root / relative
+        if path.is_dir():
+            # A gitlink is recorded separately by the caller via its own revision.
+            continue
+        entries[relative] = "symlink:" + os.readlink(path) if path.is_symlink() else sha(path)
+    return hashlib.sha256(json.dumps(entries, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
 
 
 def prepare_translation(source):
@@ -407,10 +429,11 @@ Synthetic speech must be labelled as synthetic. Model weights are downloaded sep
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--stage", choices=["all", "whisper", "translation", "supertonic", "onnx", "ct2", "moss", "backend", "vosk", "ming"], default="all")
+    parser.add_argument("--stage", choices=["all", "whisper", "translation", "supertonic", "onnx", "ct2", "moss", "omnivoice", "backend", "vosk", "ming"], default="all")
     parser.add_argument("--speech-backends", default="transcribepsy,nemotron", help="Comma-separated speech backends to stage (transcribepsy, nemotron)")
     parser.add_argument("--llama-root", type=Path, default=ROOT / "build/translation-runtime/llama.cpp")
     parser.add_argument("--sherpa-root", type=Path, default=ROOT / "build/desktop-dependencies/sherpa-onnx")
+    parser.add_argument("--omnivoice-root", type=Path, default=Path(os.environ.get("HEARTH_OMNIVOICE_ROOT", str(ROOT / "build/desktop-dependencies/omnivoice.cpp"))))
     parser.add_argument("--ort-root", type=Path, default=os.environ.get("HEARTH_ORT_ROOT"))
     parser.add_argument("--build-dir", type=Path, default=ROOT / "build/desktop-native")
     parser.add_argument("--output", type=Path)
@@ -428,9 +451,9 @@ def main():
     stages = ["whisper", "translation", "supertonic"] if args.stage == "all" else [args.stage]
     if args.stage == "all":
         if (system, arch) == ("macos", "arm64"):
-            stages.extend(["onnx", "ct2", "backend", "moss", "vosk", "ming"])
+            stages.extend(["onnx", "ct2", "backend", "moss", "omnivoice", "vosk", "ming"])
         else:
-            print(f"Skipping Qwen3-ASR (onnx), CTranslate2 (ct2), speech backends (backend) and MOSS TTS (moss): built only for macos-arm64; host is {target}", file=sys.stderr)
+            print(f"Skipping Qwen3-ASR (onnx), CTranslate2 (ct2), speech backends (backend), MOSS TTS (moss) and OmniVoice TTS (omnivoice): built only for macos-arm64; host is {target}", file=sys.stderr)
     if "onnx" in stages and system != "macos":
         parser.error("The Qwen3-ASR (sherpa-onnx) stage is built for macOS arm64 only")
     if "onnx" in stages and arch != "arm64":
@@ -441,6 +464,8 @@ def main():
         parser.error("The desktop speech backend stage is built for macOS arm64 only")
     if "moss" in stages and (system, arch) != ("macos", "arm64"):
         parser.error("The MOSS TTS stage is built for macOS arm64 only")
+    if "omnivoice" in stages and (system, arch) != ("macos", "arm64"):
+        parser.error("The OmniVoice TTS stage is built for macOS arm64 only")
     if "ming" in stages and (system, arch) != ("macos", "arm64"):
         parser.error("The Ming TTS runtime is built for macOS arm64 in this stage")
     if "vosk" in stages and (system, arch) != ("macos", "arm64"):
@@ -460,6 +485,21 @@ def main():
         if pin != LLAMA_PIN: raise RuntimeError(f"llama.cpp must be checked out at {LLAMA_PIN}, found {pin}")
         changes = subprocess.check_output(["git", "-C", str(args.llama_root), "status", "--porcelain"], text=True)
         if changes.strip(): raise RuntimeError("Desktop llama.cpp source checkout has local changes")
+    omnivoice_tree = None
+    omnivoice_ggml_tree = None
+    if "omnivoice" in stages:
+        root = args.omnivoice_root.resolve()
+        if not (root / "src/omnivoice.cpp").is_file() or not (root / "ggml/CMakeLists.txt").is_file():
+            raise RuntimeError(f"--omnivoice-root must name a clean omnivoice.cpp checkout at {OMNIVOICE_PIN}; {root} is incomplete")
+        pin = subprocess.check_output(["git", "-C", str(root), "rev-parse", "HEAD"], text=True).strip()
+        if pin != OMNIVOICE_PIN: raise RuntimeError(f"omnivoice.cpp must be checked out at {OMNIVOICE_PIN}, found {pin}")
+        ggml_pin = subprocess.check_output(["git", "-C", str(root / "ggml"), "rev-parse", "HEAD"], text=True).strip()
+        if ggml_pin != OMNIVOICE_GGML_PIN: raise RuntimeError(f"omnivoice.cpp/ggml must be checked out at {OMNIVOICE_GGML_PIN}, found {ggml_pin}")
+        for folder, label in ((root, "omnivoice.cpp"), (root / "ggml", "omnivoice.cpp/ggml")):
+            changes = subprocess.check_output(["git", "-C", str(folder), "status", "--porcelain"], text=True)
+            if changes.strip(): raise RuntimeError(f"{label} source checkout has local changes")
+        omnivoice_tree = source_tree_sha_files(root)
+        omnivoice_ggml_tree = source_tree_sha_files(root / "ggml")
     if ("supertonic" in stages or "onnx" in stages) and (not args.ort_root or not args.ort_root.is_dir()):
         parser.error("--ort-root/HEARTH_ORT_ROOT must name the official extracted ONNX Runtime 1.20.1 host SDK")
     sherpa = None
@@ -507,6 +547,8 @@ def main():
                    f"-DHEARTH_DESKTOP_METAL={'ON' if args.metal else 'OFF'}"]
         if args.ort_root: command.append(f"-DHEARTH_ORT_ROOT={args.ort_root.resolve()}")
         if stage == "onnx": command.append(f"-DHEARTH_SHERPA_ROOT={sherpa}")
+        if stage == "omnivoice":
+            command.append(f"-DHEARTH_OMNIVOICE_SOURCE={args.omnivoice_root.resolve()}")
         if stage == "moss":
             sentencepiece = ROOT / "build/ct2-runtime/src/sentencepiece"
             if not (sentencepiece / "src/sentencepiece_processor.h").is_file():
@@ -514,8 +556,13 @@ def main():
             command.append(f"-DHEARTH_MOSS_CPP={ROOT / 'hearth-tts-moss/src/main/cpp'}")
             command.append(f"-DHEARTH_SENTENCEPIECE_SOURCE={sentencepiece}")
         if system == "macos": command.append(f"-DCMAKE_OSX_DEPLOYMENT_TARGET={'13.3' if stage == 'onnx' else '13.0'}")
-        subprocess.run(command, check=True)
-        subprocess.run(["cmake", "--build", str(cache), "--config", "Release", "--parallel", str(args.jobs)], check=True)
+        stage_env = dict(os.environ)
+        if stage == "omnivoice":
+            # ggml embeds `git rev-parse --short HEAD`; without a fixed abbreviation the
+            # same pin produced cc5df49 in a full checkout and cc5df49a in a shallow one.
+            stage_env.update({"GIT_CONFIG_COUNT": "1", "GIT_CONFIG_KEY_0": "core.abbrev", "GIT_CONFIG_VALUE_0": "7"})
+        subprocess.run(command, check=True, env=stage_env)
+        subprocess.run(["cmake", "--build", str(cache), "--config", "Release", "--parallel", str(args.jobs)], check=True, env=stage_env)
         subprocess.run(["cmake", "--install", str(cache), "--config", "Release", "--component", "hearth-desktop", "--prefix", str(output)], check=True)
         if stage == "backend":
             installed_backend = output / "libhearth_desktop_backend_speech.dylib"
@@ -546,6 +593,27 @@ def main():
                 if path.is_file():
                     notices.append(f"===== MOSS asset {path.name} =====\n{path.read_text(encoding='utf-8', errors='replace').rstrip()}\n")
             (output / "Moss-Dependencies-NOTICES.txt").write_text("\n".join(notices), encoding="utf-8", newline="\n")
+        if stage == "omnivoice":
+            installed_omnivoice = output / "libhearth_desktop_omnivoice.dylib"
+            if not installed_omnivoice.is_file():
+                raise RuntimeError("The OmniVoice desktop voice dylib was not staged")
+            require_exports(installed_omnivoice, "_Java_com_sal7one_common_1jni_voice_OmniVoiceNative_", 6)
+            linked = subprocess.check_output(["otool", "-L", str(installed_omnivoice)], text=True).splitlines()[1:]
+            for line in linked:
+                entry = line.strip().split(" ")[0] if line.strip() else ""
+                if not entry: continue
+                if entry.startswith(("/usr/lib/", "/System/Library/Frameworks/", "@rpath/libhearth_desktop_omnivoice.dylib")):
+                    continue
+                raise RuntimeError(f"The OmniVoice dylib has a non-system dependency: {entry}")
+            notices = ["===== OmniVoice pretrained weights (downloaded separately, never bundled) =====\n"
+                       "OmniVoice generator weights: CC-BY-NC-4.0 (k2-fsa/OmniVoice).\n"
+                       "Audio codec weights: Boson Higgs Audio 2 Community License with incorporated Meta Llama 3 terms.\n"
+                       "The user downloads the pinned Q8 GGUF files; they are not redistributed with Hearth.\n"]
+            for name, label in (("LICENSE", "omnivoice.cpp"), ("GGML-LICENSE", "ggml")):
+                path = ROOT / "hearth-tts-omnivoice/src/main/assets/licenses/omnivoice" / name
+                if not path.is_file(): raise RuntimeError(f"Missing pinned {label} notice: {path}")
+                notices.append(f"===== {label} ({name}) =====\n{path.read_text(encoding='utf-8').rstrip()}\n")
+            (output / "OmniVoice-Dependencies-NOTICES.txt").write_text("\n".join(notices), encoding="utf-8", newline="\n")
         if stage == "onnx":
             installed = output / "libhearth_desktop_qwen3_asr.dylib"
             if not installed.is_file():
@@ -606,6 +674,14 @@ def main():
         upstreams.update({
             "mossRuntimeSourceSha256": sha(ROOT / "hearth-tts-moss/src/main/cpp/moss.cpp"),
             "sentencepieceRevision": SENTENCEPIECE_PIN,
+        })
+    if "omnivoice" in stages:
+        upstreams.update({
+            "omnivoiceRevision": OMNIVOICE_PIN,
+            "omnivoiceGgmlRevision": OMNIVOICE_GGML_PIN,
+            "omnivoiceSourceTreeSha256": omnivoice_tree,
+            "omnivoiceGgmlTreeSha256": omnivoice_ggml_tree,
+            "omnivoiceJniSha256": sha(output / "libhearth_desktop_omnivoice.dylib"),
         })
     manifest = {"schemaVersion": 1, "platform": target, "files": files, "sources": before,
                 "sourceSetSha256": hashlib.sha256(json.dumps(before, sort_keys=True, separators=(",", ":")).encode()).hexdigest(),

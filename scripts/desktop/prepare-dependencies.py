@@ -16,6 +16,8 @@ import zipfile
 ROOT = Path(__file__).resolve().parents[2]
 LLAMA_PIN = '64e9bceb2c3a856efed96feda784a50947049feb'
 SHERPA_PIN = '210f340bcfdfd5b9ad6b24245e77a934d6c28f1b'
+OMNIVOICE_PIN = '1a468d8b9d65b3544ca1004d2d7c05dfc65d1f3e'
+OMNIVOICE_GGML_PIN = 'cc5df49a6b878db2b68b9a7b45976e279594627d'
 ASSETS = {
     'macos-arm64': ('onnxruntime-osx-arm64-1.20.1.tgz', 'b678fc3c2354c771fea4fba420edeccfba205140088334df801e7fc40e83a57a'),
     'macos-x64': ('onnxruntime-osx-x86_64-1.20.1.tgz', '0f73006813af2a1a5d1723ed7dfb694fc629d15037124081bb61b7bf7d99fc78'),
@@ -102,6 +104,25 @@ def main():
     exists=subprocess.run(['git','-C',str(sherpa),'cat-file','-e',f'{SHERPA_PIN}^{{commit}}'],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL).returncode==0
     if not exists: subprocess.run(['git','-C',str(sherpa),'fetch','--depth','1','https://github.com/k2-fsa/sherpa-onnx.git',SHERPA_PIN],check=True)
     subprocess.run(['git','-C',str(sherpa),'checkout','--detach',SHERPA_PIN],check=True)
+    omnivoice=None
+    if key=='macos-arm64':
+        omnivoice=work/'omnivoice.cpp'
+        if not (omnivoice/'.git').is_dir():
+            if omnivoice.exists(): raise RuntimeError('Refusing to overwrite a non-checkout omnivoice.cpp directory')
+            subprocess.run(['git','init',str(omnivoice)],check=True)
+            subprocess.run(['git','-C',str(omnivoice),'remote','add','origin','https://github.com/ServeurpersoCom/omnivoice.cpp.git'],check=True)
+        status=subprocess.check_output(['git','-C',str(omnivoice),'status','--porcelain'],text=True)
+        if status.strip(): raise RuntimeError('omnivoice.cpp checkout has local changes; not resetting it')
+        exists=subprocess.run(['git','-C',str(omnivoice),'cat-file','-e',f'{OMNIVOICE_PIN}^{{commit}}'],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL).returncode==0
+        if not exists: subprocess.run(['git','-C',str(omnivoice),'fetch','--depth','1','https://github.com/ServeurpersoCom/omnivoice.cpp.git',OMNIVOICE_PIN],check=True)
+        subprocess.run(['git','-C',str(omnivoice),'checkout','--detach',OMNIVOICE_PIN],check=True)
+        # The ggml runtime is a git submodule; check it out at its own pin and verify it.
+        subprocess.run(['git','-C',str(omnivoice),'submodule','update','--init','--recursive'],check=True)
+        ggml=(omnivoice/'ggml')
+        ggml_pin=subprocess.check_output(['git','-C',str(ggml),'rev-parse','HEAD'],text=True).strip()
+        if ggml_pin!=OMNIVOICE_GGML_PIN: raise RuntimeError(f'omnivoice.cpp/ggml must be {OMNIVOICE_GGML_PIN}, found {ggml_pin}')
+        if subprocess.check_output(['git','-C',str(ggml),'status','--porcelain'],text=True).strip():
+            raise RuntimeError('omnivoice.cpp/ggml checkout has local changes')
     name,expected=ASSETS[key];archive=work/name
     if not archive.exists() or digest(archive)!=expected:
         partial=archive.with_suffix(archive.suffix+'.part')
@@ -130,6 +151,7 @@ def main():
         else: shutil.move(str(source),str(ort))
     if (ort/'VERSION_NUMBER').read_text().strip()!='1.20.1': raise ValueError('Unexpected ONNX Runtime version')
     paths={'HEARTH_LLAMA_ROOT':str(llama),'HEARTH_SHERPA_ROOT':str(sherpa),'HEARTH_ORT_ROOT':str(ort)}
+    if omnivoice is not None: paths['HEARTH_OMNIVOICE_ROOT']=str(omnivoice)
     if args.github_env:
         with open(os.environ['GITHUB_ENV'],'a',encoding='utf-8') as output:
             for key,value in paths.items(): output.write(f'{key}={value}\n')

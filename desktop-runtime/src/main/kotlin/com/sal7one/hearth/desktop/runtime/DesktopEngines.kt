@@ -9,6 +9,8 @@ import com.sal7one.hearth.core.*
 import com.sal7one.hearth.desktop.media.DesktopMediaDecoder
 import com.sal7one.hearth.tts.moss.MossCatalog
 import com.sal7one.hearth.tts.moss.MossSpeechEngine
+import com.sal7one.hearth.tts.omnivoice.OmniVoiceCatalog
+import com.sal7one.hearth.tts.omnivoice.OmniVoiceSpeechEngine
 import com.sal7one.hearth.tts.supertonic.SupertonicCatalog
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
@@ -51,6 +53,14 @@ class DesktopEngines(
         defaultVoice = "Ava",
         assetNames = MossCatalog.assets.map { it.filename },
         engineFactory = { path, threads -> MossSpeechEngine(path.toFile(), threads) },
+    )
+    private val omnivoiceVoices = DesktopVoiceCache(
+        appDataDirectory,
+        engineId = "omnivoice-tts-local",
+        sampleRate = 24_000,
+        defaultVoice = "design-female",
+        assetNames = OmniVoiceCatalog.assets.map { it.filename },
+        engineFactory = { path, _ -> OmniVoiceSpeechEngine(path.toFile()) },
     )
     private val translationGate = Mutex()
     private val ct2Gate = Mutex()
@@ -109,11 +119,12 @@ class DesktopEngines(
             local(QwenSpeechModel.ENGINE_ID, "Qwen3-ASR 0.6B", PipelineStage.STT, QwenSpeechModel.LIBRARY, QwenSpeechModel.languages),
             local("transcribepsy-local", "TranscribePsy 250M", PipelineStage.STT, "hearth_desktop_backend_speech", TRANSCRIBEPSY_LANGUAGES),
             local("nemotron-asr-local", "Nemotron 3.5 ASR", PipelineStage.STT, "hearth_desktop_backend_speech", NEMOTRON_LANGUAGES),
-            local("moonshine-local", "Moonshine tiny.en", PipelineStage.STT, "hearth_desktop_backend_speech", setOf("en")),
+            local(MoonshineSpeechModel.ENGINE_ID, "Moonshine", PipelineStage.STT, "hearth_desktop_backend_speech", MoonshineSpeechModel.languages),
             local("vosk-local", "Vosk (Kaldi)", PipelineStage.STT, "hearth_vosk", VOSK_LANGUAGES),
             local("omnilingual-local", "Omnilingual CTC 300M", PipelineStage.STT, "hearth_desktop_backend_speech", OMNILINGUAL_LANGUAGES),
             local("phonon-local", "Phonon 2", PipelineStage.STT, "hearth_desktop_backend_speech", PHONON_LANGUAGES),
             local("moss-tts-local", "MOSS-TTS Nano 100M", PipelineStage.TTS, "hearth_desktop_moss", setOf("ar", "en")),
+            local("omnivoice-tts-local", "OmniVoice (voice design)", PipelineStage.TTS, "hearth_desktop_omnivoice", setOf("ar", "en")),
             local("ming-local", "Ming-3.0 TTS 0.5B (local)", PipelineStage.TTS, "ming_jni", setOf("en", "zh")),
             local("llama-translation-local", "Local GGUF translation", PipelineStage.TRANSLATION, "transiber_translation"),
             local("marian-local", "CTranslate2 · Marian/OPUS", PipelineStage.TRANSLATION, "hearth_desktop_ct2"),
@@ -177,15 +188,18 @@ class DesktopEngines(
                         error("Qwen3-ASR engine was already published")
                     }
                 }
-            } else if (selection.engineId == "moonshine-local") {
+            } else if (selection.engineId == MoonshineSpeechModel.ENGINE_ID) {
+                // The selected card's language, not the app's source hint: Moonshine has
+                // no language conditioning, so Auto resolves to the package's language.
+                val language = MoonshineSpeechModel.language(selection.modelId, sourceLanguage)
                 val root = verifiedMoonshineModel(selection)
                 val owner = currentCoroutineContext()
                 joinedBlocking({ backendEngine.get()?.cancel() }) {
                     owner.ensureActive()
                     val opened = DesktopBackendSpeechEngine.open(
-                        "hearth_desktop_qwen3_asr", "moonshine", root.resolve("tokens.txt"),
-                        sourceLanguage, threads(selection),
-                        entrySymbol = "hearth_moonshine_backend_v1",
+                        MoonshineSpeechModel.LIBRARY, MoonshineSpeechModel.BACKEND_ID, root.resolve("tokens.txt"),
+                        language, threads(selection),
+                        entrySymbol = MoonshineSpeechModel.ENTRY_SYMBOL,
                         encoder = root.resolve("encoder_model.ort"),
                         decoder = root.resolve("decoder_model_merged.ort"),
                     )
@@ -433,8 +447,13 @@ class DesktopEngines(
         }
     }
 
-    private suspend fun verifiedMoonshineModel(selection: EngineSelection): Path =
-        verifiedSherpaPackage(selection, MOONSHINE_FILES, "Moonshine")
+    /** The selected catalog card chooses the variant; every component comes from its engine-owned pins. */
+    private suspend fun verifiedMoonshineModel(selection: EngineSelection): Path = withContext(Dispatchers.IO) {
+        val root = Path.of(selection.modelPath).toRealPath()
+        val context = currentCoroutineContext()
+        MoonshineSpeechModel.verify(root, selection.modelId) { context.ensureActive() }
+        root
+    }
 
     /** Every sherpa family package is a directory whose components carry individual pins. */
     private suspend fun verifiedSherpaPackage(selection: EngineSelection, pins: Map<String, String>, label: String): Path = withContext(Dispatchers.IO) {
@@ -476,6 +495,10 @@ class DesktopEngines(
             require(!metal(selection)) { "MOSS desktop currently supports CPU acceleration only" }
             return mossVoices.read(text, selection, language, voiceId)
         }
+        if (selection.engineId == "omnivoice-tts-local") {
+            require(!metal(selection)) { "OmniVoice desktop supports CPU acceleration only" }
+            return omnivoiceVoices.read(text, selection, language, voiceId)
+        }
         if (selection.engineId == "ming-local") {
             require(!metal(selection)) { "Ming local supports CPU acceleration only" }
             return mingVoices.read(text, selection, language, voiceId)
@@ -494,7 +517,7 @@ class DesktopEngines(
         engine?.close()
     }
     override fun close() {
-        if (closed.compareAndSet(false, true)) try { clearTranslation(); clearCt2() } finally { voices.close(); mossVoices.close(); mingVoices.close() }
+        if (closed.compareAndSet(false, true)) try { clearTranslation(); clearCt2() } finally { voices.close(); mossVoices.close(); omnivoiceVoices.close(); mingVoices.close() }
     }
 /** Vosk models are extracted directories whose model-tree-sha256-v1 digest is the pin.
  *  The desktop library verifies it on install/refresh and the adapter re-derives and
@@ -540,11 +563,6 @@ internal fun outputFile(directory: Path): Path = directory.resolve("generated-au
 // Exactly the six models pinned in the Android catalog; Vosk has no code-switching or detection.
 private val TRANSCRIBEPSY_LANGUAGES = setOf("en", "nl", "fr", "de", "it", "pl", "pt", "es")
 private val VOSK_LANGUAGES = setOf("en", "de", "fr", "es", "ru", "zh")
-private val MOONSHINE_FILES = mapOf(
-    "tokens.txt" to "2870d843e14c1e187bf1913a521562a63b53933814bd7f2145120468f494a049",
-    "encoder_model.ort" to "94e90a4654fc45cdfedb77c4c08e1739f48862998e58fada384b25118134f221",
-    "decoder_model_merged.ort" to "cf524c4862d36e9e5ab032eddc73637efd822d70e868ac575cf1a46e1e4708a0",
-)
 private val PHONON_LANGUAGES = setOf("en")
 // Mirrors Android SpeechProfile.OMNILINGUAL_CTC_300M_V2 capabilities; the checkpoint
 // covers more languages, but only this reviewed subset may be declared to the user.

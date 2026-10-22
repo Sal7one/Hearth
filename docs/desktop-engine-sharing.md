@@ -40,7 +40,7 @@ Kotlin has one `DesktopBackendSpeechNative` binding and one
 | Kotlin engine + verification | yes, once | `DesktopBackendSpeechEngine` |
 | SDK / dylib | per family | sherpa-onnx, parakeet, NeMo-Speech.cpp, Vosk, one TTS runtime |
 | Entry point | per family | `hearth_moonshine_backend_v1`, `hearth_speech_backend_v1` |
-| Model package, pins, catalog card, UI id | per model | Moonshine tiny.en, Nemotron 3.5, Vosk en/de/… |
+| Model package, pins, catalog card, UI id | per model | Moonshine ×10, Nemotron 3.5, Vosk en/de/… |
 
 The current sherpa family is the clearest example. `qwen_backend.cpp` already
 contains the Qwen, Moonshine, Omnilingual and Phonon adapters. The desktop dylib is
@@ -54,8 +54,9 @@ hearth_desktop_qwen3_asr.dylib
   └─ hearth_phonon_backend_v1      → Phonon
 ```
 
-Moonshine tiny.en was added with **zero new C++ engine code**: one export, one
-catalog archive card, one engine branch and a real-audio smoke.
+Moonshine was added with **zero new C++ engine code**: one export, ten catalog
+archive cards, one engine branch and a real-audio smoke per variant. The engine
+verifies the selected card's four component pins (tokens/encoder/decoder/LICENSE).
 
 ## 3. Why not one dylib for everything
 

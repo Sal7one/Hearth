@@ -58,15 +58,16 @@ class DesktopSettingsTest {
             val qwen = if (macosArm) 1 else 0
             val transcribepsy = if (macosArm) 1 else 0
             val nemotron = if (macosArm) 1 else 0
-            val moonshine = if (macosArm) 1 else 0
+            val moonshine = if (macosArm) 10 else 0
             val omnilingual = if (macosArm) 1 else 0
             val phonon = if (macosArm) 1 else 0
             val vosk = if (macosArm) 6 else 0
             val ct2 = if (macosArm) 3 else 0
             val moss = if (macosArm) 1 else 0
+            val omnivoice = if (macosArm) 1 else 0
             val ming = if (macosArm) 1 else 0
             val byStage = library.catalog.groupingBy { it.stage.name }.eachCount()
-            assertEquals(mapOf("STT" to 27 + qwen + transcribepsy + nemotron + moonshine + omnilingual + phonon + vosk, "TRANSLATION" to 14 + ct2, "TTS" to 1 + moss + ming), byStage)
+            assertEquals(mapOf("STT" to 27 + qwen + transcribepsy + nemotron + moonshine + omnilingual + phonon + vosk, "TRANSLATION" to 14 + ct2, "TTS" to 1 + moss + omnivoice + ming), byStage)
             assertEquals(if (qwen + transcribepsy + nemotron + moonshine + omnilingual + phonon + vosk > 0) 8 else 1, library.catalog.filter { it.stage.name == "STT" }.map { it.family }.distinct().size)
             if (qwen == 1) {
                 val card = library.catalog.single { it.id == "qwen3-asr-0.6b" }
@@ -93,11 +94,30 @@ class DesktopSettingsTest {
                 assertEquals("OpenMDW-1.1", card.license)
                 assertEquals(null, card.archive)
             }
-            if (moonshine == 1) {
-                val card = library.catalog.single { it.id == "moonshine-tiny-en-v2" }
-                assertEquals("moonshine-local", card.engineId)
-                assertEquals(4, card.archive?.files?.size)
-                assertEquals("9ec31b342d8fa3240c3b81b8f82e1cf7e3ac467c93ca5a999b741d5887164f8d", card.artifacts.single().sha256)
+            if (moonshine == 10) {
+                val cards = library.catalog.filter { it.engineId == "moonshine-local" }
+                assertEquals(10, cards.size, cards.map { it.id }.toString())
+                assertEquals(setOf("en", "ar", "es", "ja", "ko", "uk", "vi", "zh"), cards.flatMap { it.languages }.toSet())
+                for (card in cards) {
+                    assertEquals(setOf("macos-arm64"), card.platforms)
+                    val archive = requireNotNull(card.archive) { card.id }
+                    assertEquals("tar.bz2", archive.format)
+                    assertEquals(archive.root, card.artifacts.single().filename.removeSuffix(".tar.bz2"))
+                    assertEquals(4, archive.files.size, card.id)
+                    assertEquals(archive.expandedBytes, archive.files.sumOf { it.bytes }, card.id)
+                    assertEquals(archive.expandedBytes, card.installedBytes, card.id)
+                    assertEquals(1, card.languages.size, card.id)
+                    assertTrue(archive.files.all { it.bytes > 0 && it.sha256.length == 64 }, card.id)
+                    assertTrue(card.options.isEmpty(), card.id)
+                }
+                val tiny = cards.single { it.id == "moonshine-tiny-en-v2" }
+                assertEquals(44_256_550L, tiny.installedBytes)
+                assertEquals("MIT", tiny.license)
+                assertEquals("9ec31b342d8fa3240c3b81b8f82e1cf7e3ac467c93ca5a999b741d5887164f8d", tiny.artifacts.single().sha256)
+                val zh = cards.single { it.id == "moonshine-base-zh-v2" }
+                assertEquals(setOf("zh"), zh.languages)
+                assertEquals("Moonshine Community License", zh.license)
+                assertEquals("6495d4240f66bcdd2bbbbfefaa687c463150d467854001270934e88940b733c1", zh.artifacts.single().sha256)
             }
             if (vosk == 6) {
                 val card = library.catalog.single { it.id == "vosk-model-small-en-us-0.15" }
@@ -131,6 +151,18 @@ class DesktopSettingsTest {
                 assertEquals(14, card.artifacts.size)
                 assertEquals(717_868_602L, card.bytes)
                 assertEquals("Ava", card.options["voice"])
+            }
+            if (omnivoice == 1) {
+                val card = library.catalog.single { it.id == "omnivoice-tts" }
+                assertEquals("omnivoice-tts-local", card.engineId)
+                assertEquals(setOf("macos-arm64"), card.platforms)
+                assertEquals(2, card.artifacts.size)
+                assertEquals(945_284_608L, card.bytes)
+                assertEquals("design-female", card.options["voice"])
+                assertEquals(setOf("ar", "en"), card.languages.toSet())
+                assertTrue(card.artifacts.all { it.sha256.length == 64 && it.bytes > 0 })
+                assertEquals("omnivoice-base-Q8_0.gguf", card.artifacts[0].filename)
+                assertEquals("2882d887921798aea13d45236556bdf8012842ab6f8cd2690943eead6289f298", card.artifacts[0].sha256)
             }
             // Every shipped llama translator must use a prompt family the desktop engine implements,
             // and the option the engine reads must be the catalog's own family, not a fallback.

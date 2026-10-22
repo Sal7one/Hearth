@@ -6,8 +6,10 @@ kotlin {
         kotlin.srcDir("../hearth-tts/src/main/java")
         kotlin.srcDir("../hearth-tts-supertonic/src/main/java")
         kotlin.srcDir("../hearth-tts-moss/src/main/java")
+        kotlin.srcDir("../hearth-tts-omnivoice/src/main/java")
         kotlin.exclude("**/SupertonicVoice.kt")
         kotlin.exclude("**/MossNative.kt")
+        kotlin.exclude("**/OmniVoiceNative.kt")
     }
 }
 dependencies {

@@ -1695,6 +1695,41 @@
       ]
     },
     {
+      "id": "omnivoice-tts",
+      "name": "OmniVoice · voice design",
+      "family": "OmniVoice",
+      "stage": "TTS",
+      "engineId": "omnivoice-tts-local",
+      "languages": [
+        "ar",
+        "en"
+      ],
+      "source": "https://huggingface.co/Serveurperso/OmniVoice-GGUF",
+      "license": "CC-BY-NC-4.0 (pretrained generator); MIT (runtime); Boson Higgs Audio 2 Community License with incorporated Meta Llama 3 terms (codec)",
+      "note": "Pinned OmniVoice Q8 GGUF generator and audio codec; CPU-only, 24 kHz mono, macOS Apple silicon. Both files are verified before loading. Voice designs are requested attributes, not fixed speaker identities.",
+      "options": {
+        "voice": "design-female",
+        "threads": "2"
+      },
+      "platforms": [
+        "macos-arm64"
+      ],
+      "artifacts": [
+        {
+          "filename": "omnivoice-base-Q8_0.gguf",
+          "bytes": 656395008,
+          "sha256": "2882d887921798aea13d45236556bdf8012842ab6f8cd2690943eead6289f298",
+          "url": "https://huggingface.co/Serveurperso/OmniVoice-GGUF/resolve/017094167b5c9ed565a5076ac9b3b93c5ecf5c73/omnivoice-base-Q8_0.gguf"
+        },
+        {
+          "filename": "omnivoice-tokenizer-Q8_0.gguf",
+          "bytes": 288889600,
+          "sha256": "75204fa566a8e30984e7a1066da6557184c9fd099c8f1bc0cb5b9415edfec255",
+          "url": "https://huggingface.co/Serveurperso/OmniVoice-GGUF/resolve/017094167b5c9ed565a5076ac9b3b93c5ecf5c73/omnivoice-tokenizer-Q8_0.gguf"
+        }
+      ]
+    },
+    {
       "id": "moonshine-tiny-en-v2",
       "name": "Moonshine tiny.en · q8",
       "family": "Moonshine",
@@ -1705,7 +1740,7 @@
       ],
       "source": "https://github.com/k2-fsa/sherpa-onnx/releases/tag/asr-models",
       "license": "MIT",
-      "note": "Pinned sherpa-onnx Moonshine package; CPU-only, macOS Apple silicon. The archive and each model file are verified before loading.",
+      "note": "Pinned sherpa-onnx Moonshine package; CPU-only, macOS Apple silicon. The archive, all four pinned files and the model LICENSE are verified before loading.",
       "options": {},
       "platforms": [
         "macos-arm64"
@@ -1737,6 +1772,474 @@
             "path": "decoder_model_merged.ort",
             "bytes": 30412256,
             "sha256": "cf524c4862d36e9e5ab032eddc73637efd822d70e868ac575cf1a46e1e4708a0"
+          },
+          {
+            "path": "LICENSE",
+            "bytes": 13344,
+            "sha256": "6148d7574a6554b7379b633cfd4c4fe5840c3f548d13bc83e00b52dc6fa00abd"
+          }
+        ]
+      }
+    },
+    {
+      "id": "moonshine-base-en-v2",
+      "name": "Moonshine base.en · q8",
+      "family": "Moonshine",
+      "stage": "STT",
+      "engineId": "moonshine-local",
+      "languages": [
+        "en"
+      ],
+      "source": "https://github.com/k2-fsa/sherpa-onnx/releases/tag/asr-models",
+      "license": "MIT",
+      "note": "Pinned sherpa-onnx Moonshine package; CPU-only, macOS Apple silicon. The archive, all four pinned files and the model LICENSE are verified before loading.",
+      "options": {},
+      "platforms": [
+        "macos-arm64"
+      ],
+      "artifacts": [
+        {
+          "filename": "sherpa-onnx-moonshine-base-en-quantized-2026-02-27.tar.bz2",
+          "bytes": 111266225,
+          "sha256": "43232c1d13013d37317163baec3135bd771a186a4356f28c889bab453bb0e891",
+          "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-moonshine-base-en-quantized-2026-02-27.tar.bz2"
+        }
+      ],
+      "archive": {
+        "format": "tar.bz2",
+        "root": "sherpa-onnx-moonshine-base-en-quantized-2026-02-27",
+        "expandedBytes": 141313910,
+        "files": [
+          {
+            "path": "tokens.txt",
+            "bytes": 549350,
+            "sha256": "2870d843e14c1e187bf1913a521562a63b53933814bd7f2145120468f494a049"
+          },
+          {
+            "path": "encoder_model.ort",
+            "bytes": 31326816,
+            "sha256": "7c66495948d0d08ec1af454cd4b5514862ae6511e94712a60e6d83eaec8dc8cf"
+          },
+          {
+            "path": "decoder_model_merged.ort",
+            "bytes": 109424400,
+            "sha256": "d9d7b333af34bc552580576ddcf248a1c6c839e0d3b43b09afb9376ed009899d"
+          },
+          {
+            "path": "LICENSE",
+            "bytes": 13344,
+            "sha256": "6148d7574a6554b7379b633cfd4c4fe5840c3f548d13bc83e00b52dc6fa00abd"
+          }
+        ]
+      }
+    },
+    {
+      "id": "moonshine-base-ar-v2",
+      "name": "Moonshine base.ar · q8",
+      "family": "Moonshine",
+      "stage": "STT",
+      "engineId": "moonshine-local",
+      "languages": [
+        "ar"
+      ],
+      "source": "https://github.com/k2-fsa/sherpa-onnx/releases/tag/asr-models",
+      "license": "Moonshine Community License",
+      "note": "Pinned sherpa-onnx Moonshine package; CPU-only, macOS Apple silicon. The archive, all four pinned files and the model LICENSE are verified before loading.",
+      "options": {},
+      "platforms": [
+        "macos-arm64"
+      ],
+      "artifacts": [
+        {
+          "filename": "sherpa-onnx-moonshine-base-ar-quantized-2026-02-27.tar.bz2",
+          "bytes": 119143068,
+          "sha256": "4d3f16fe354d8536d3323d3eaf4c12fafb1976b5dc0a12862ab25934da94285b",
+          "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-moonshine-base-ar-quantized-2026-02-27.tar.bz2"
+        }
+      ],
+      "archive": {
+        "format": "tar.bz2",
+        "root": "sherpa-onnx-moonshine-base-ar-quantized-2026-02-27",
+        "expandedBytes": 141314070,
+        "files": [
+          {
+            "path": "tokens.txt",
+            "bytes": 549350,
+            "sha256": "2870d843e14c1e187bf1913a521562a63b53933814bd7f2145120468f494a049"
+          },
+          {
+            "path": "encoder_model.ort",
+            "bytes": 31326824,
+            "sha256": "68e50ebe0317ce909f098044a5dda2a76e6b86dc882829a317771fbafc5826ae"
+          },
+          {
+            "path": "decoder_model_merged.ort",
+            "bytes": 109424552,
+            "sha256": "8f272cb50818e28ad86bbffc21e1450a4d57155e95f099ca6a236f38f4d9eafb"
+          },
+          {
+            "path": "LICENSE",
+            "bytes": 13344,
+            "sha256": "6148d7574a6554b7379b633cfd4c4fe5840c3f548d13bc83e00b52dc6fa00abd"
+          }
+        ]
+      }
+    },
+    {
+      "id": "moonshine-base-es-v2",
+      "name": "Moonshine base.es · q8",
+      "family": "Moonshine",
+      "stage": "STT",
+      "engineId": "moonshine-local",
+      "languages": [
+        "es"
+      ],
+      "source": "https://github.com/k2-fsa/sherpa-onnx/releases/tag/asr-models",
+      "license": "Moonshine Community License",
+      "note": "Pinned sherpa-onnx Moonshine package; CPU-only, macOS Apple silicon. The archive, all four pinned files and the model LICENSE are verified before loading.",
+      "options": {},
+      "platforms": [
+        "macos-arm64"
+      ],
+      "artifacts": [
+        {
+          "filename": "sherpa-onnx-moonshine-base-es-quantized-2026-02-27.tar.bz2",
+          "bytes": 50846902,
+          "sha256": "850c3dcc5dfccc8b1feb10bb221b11d6039b6f5c626241729f46863771016383",
+          "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-moonshine-base-es-quantized-2026-02-27.tar.bz2"
+        }
+      ],
+      "archive": {
+        "format": "tar.bz2",
+        "root": "sherpa-onnx-moonshine-base-es-quantized-2026-02-27",
+        "expandedBytes": 65121954,
+        "files": [
+          {
+            "path": "tokens.txt",
+            "bytes": 532090,
+            "sha256": "c6e35883ba038f70ceea8b4a21cf79742adbda7e6730cbff27460857e0667a02"
+          },
+          {
+            "path": "encoder_model.ort",
+            "bytes": 20964320,
+            "sha256": "331aafa2fc7f7e55ba28376eef08eaf919ae105bb719cd64ba6875505dca72b3"
+          },
+          {
+            "path": "decoder_model_merged.ort",
+            "bytes": 43612200,
+            "sha256": "8e6513ad66a3a71ca86824746a09051eeb60468940eaf8201ce758e8919e2b5d"
+          },
+          {
+            "path": "LICENSE",
+            "bytes": 13344,
+            "sha256": "6148d7574a6554b7379b633cfd4c4fe5840c3f548d13bc83e00b52dc6fa00abd"
+          }
+        ]
+      }
+    },
+    {
+      "id": "moonshine-tiny-ja-v2",
+      "name": "Moonshine tiny.ja · q8",
+      "family": "Moonshine",
+      "stage": "STT",
+      "engineId": "moonshine-local",
+      "languages": [
+        "ja"
+      ],
+      "source": "https://github.com/k2-fsa/sherpa-onnx/releases/tag/asr-models",
+      "license": "Moonshine Community License",
+      "note": "Pinned sherpa-onnx Moonshine package; CPU-only, macOS Apple silicon. The archive, all four pinned files and the model LICENSE are verified before loading.",
+      "options": {},
+      "platforms": [
+        "macos-arm64"
+      ],
+      "artifacts": [
+        {
+          "filename": "sherpa-onnx-moonshine-tiny-ja-quantized-2026-02-27.tar.bz2",
+          "bytes": 47889565,
+          "sha256": "880305c9a6c33572ab269ff9731977ea42ca34c8cffcdd5d99558a9ea2b47cc2",
+          "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-moonshine-tiny-ja-quantized-2026-02-27.tar.bz2"
+        }
+      ],
+      "archive": {
+        "format": "tar.bz2",
+        "root": "sherpa-onnx-moonshine-tiny-ja-quantized-2026-02-27",
+        "expandedBytes": 72128150,
+        "files": [
+          {
+            "path": "tokens.txt",
+            "bytes": 549350,
+            "sha256": "2870d843e14c1e187bf1913a521562a63b53933814bd7f2145120468f494a049"
+          },
+          {
+            "path": "encoder_model.ort",
+            "bytes": 13238184,
+            "sha256": "86ece73812604b9b5f1274b4d1e6eec0d783b96088ff46d49e30a53f881cad73"
+          },
+          {
+            "path": "decoder_model_merged.ort",
+            "bytes": 58327272,
+            "sha256": "9fcd9b71323a496b307e20dd305c4e9a1b533c7bedd6e4f660e974967dd60bb6"
+          },
+          {
+            "path": "LICENSE",
+            "bytes": 13344,
+            "sha256": "6148d7574a6554b7379b633cfd4c4fe5840c3f548d13bc83e00b52dc6fa00abd"
+          }
+        ]
+      }
+    },
+    {
+      "id": "moonshine-tiny-ko-v2",
+      "name": "Moonshine tiny.ko · q8",
+      "family": "Moonshine",
+      "stage": "STT",
+      "engineId": "moonshine-local",
+      "languages": [
+        "ko"
+      ],
+      "source": "https://github.com/k2-fsa/sherpa-onnx/releases/tag/asr-models",
+      "license": "Moonshine Community License",
+      "note": "Pinned sherpa-onnx Moonshine package; CPU-only, macOS Apple silicon. The archive, all four pinned files and the model LICENSE are verified before loading.",
+      "options": {},
+      "platforms": [
+        "macos-arm64"
+      ],
+      "artifacts": [
+        {
+          "filename": "sherpa-onnx-moonshine-tiny-ko-quantized-2026-02-27.tar.bz2",
+          "bytes": 49153415,
+          "sha256": "d3b6c5390a7859c9ef20ff4f20b0766fcbad1dc06c0f509fe4840a3a302112dc",
+          "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-moonshine-tiny-ko-quantized-2026-02-27.tar.bz2"
+        }
+      ],
+      "archive": {
+        "format": "tar.bz2",
+        "root": "sherpa-onnx-moonshine-tiny-ko-quantized-2026-02-27",
+        "expandedBytes": 72128206,
+        "files": [
+          {
+            "path": "tokens.txt",
+            "bytes": 549350,
+            "sha256": "2870d843e14c1e187bf1913a521562a63b53933814bd7f2145120468f494a049"
+          },
+          {
+            "path": "encoder_model.ort",
+            "bytes": 13238176,
+            "sha256": "947260d46252f48eada86a34986b3f70c01d68a343959949a77375b94debd055"
+          },
+          {
+            "path": "decoder_model_merged.ort",
+            "bytes": 58327336,
+            "sha256": "95aa9f2e764b80625d2889d6ec9f05c965808e540ac50c16abd10c7ea33fe44b"
+          },
+          {
+            "path": "LICENSE",
+            "bytes": 13344,
+            "sha256": "6148d7574a6554b7379b633cfd4c4fe5840c3f548d13bc83e00b52dc6fa00abd"
+          }
+        ]
+      }
+    },
+    {
+      "id": "moonshine-base-ja-v2",
+      "name": "Moonshine base.ja · q8",
+      "family": "Moonshine",
+      "stage": "STT",
+      "engineId": "moonshine-local",
+      "languages": [
+        "ja"
+      ],
+      "source": "https://github.com/k2-fsa/sherpa-onnx/releases/tag/asr-models",
+      "license": "Moonshine Community License",
+      "note": "Pinned sherpa-onnx Moonshine package; CPU-only, macOS Apple silicon. The archive, all four pinned files and the model LICENSE are verified before loading.",
+      "options": {},
+      "platforms": [
+        "macos-arm64"
+      ],
+      "artifacts": [
+        {
+          "filename": "sherpa-onnx-moonshine-base-ja-quantized-2026-02-27.tar.bz2",
+          "bytes": 104162109,
+          "sha256": "c66eb87d229a52d43bbe3b7c52a1d23f6208c0fd7c2e81802ecbda83b192798a",
+          "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-moonshine-base-ja-quantized-2026-02-27.tar.bz2"
+        }
+      ],
+      "archive": {
+        "format": "tar.bz2",
+        "root": "sherpa-onnx-moonshine-base-ja-quantized-2026-02-27",
+        "expandedBytes": 141313934,
+        "files": [
+          {
+            "path": "tokens.txt",
+            "bytes": 549350,
+            "sha256": "2870d843e14c1e187bf1913a521562a63b53933814bd7f2145120468f494a049"
+          },
+          {
+            "path": "encoder_model.ort",
+            "bytes": 31326816,
+            "sha256": "3230cafb84d5f08800e60de6f932aad7c69c649a37fa6997fe04fe25f808b56b"
+          },
+          {
+            "path": "decoder_model_merged.ort",
+            "bytes": 109424424,
+            "sha256": "35a522052d2d8695d0dd2870666f088d633111e08cfbed0418f61c4122b4ba25"
+          },
+          {
+            "path": "LICENSE",
+            "bytes": 13344,
+            "sha256": "6148d7574a6554b7379b633cfd4c4fe5840c3f548d13bc83e00b52dc6fa00abd"
+          }
+        ]
+      }
+    },
+    {
+      "id": "moonshine-base-uk-v2",
+      "name": "Moonshine base.uk · q8",
+      "family": "Moonshine",
+      "stage": "STT",
+      "engineId": "moonshine-local",
+      "languages": [
+        "uk"
+      ],
+      "source": "https://github.com/k2-fsa/sherpa-onnx/releases/tag/asr-models",
+      "license": "Moonshine Community License",
+      "note": "Pinned sherpa-onnx Moonshine package; CPU-only, macOS Apple silicon. The archive, all four pinned files and the model LICENSE are verified before loading.",
+      "options": {},
+      "platforms": [
+        "macos-arm64"
+      ],
+      "artifacts": [
+        {
+          "filename": "sherpa-onnx-moonshine-base-uk-quantized-2026-02-27.tar.bz2",
+          "bytes": 111037143,
+          "sha256": "d8489b159afabf4cfb734002ae8a5361781ff8a381fa18d284d32d1eeb1c0376",
+          "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-moonshine-base-uk-quantized-2026-02-27.tar.bz2"
+        }
+      ],
+      "archive": {
+        "format": "tar.bz2",
+        "root": "sherpa-onnx-moonshine-base-uk-quantized-2026-02-27",
+        "expandedBytes": 141313934,
+        "files": [
+          {
+            "path": "tokens.txt",
+            "bytes": 549350,
+            "sha256": "2870d843e14c1e187bf1913a521562a63b53933814bd7f2145120468f494a049"
+          },
+          {
+            "path": "encoder_model.ort",
+            "bytes": 31326816,
+            "sha256": "ea37ff7a2c308b566def1fd6e6860e23db4968590f192d5cc0fbc494666e30f9"
+          },
+          {
+            "path": "decoder_model_merged.ort",
+            "bytes": 109424424,
+            "sha256": "2c0c1ebc20ba75a21ff5315fd039e53d2fc9ba77a9ca9ad3bc4c7c1c1de93cbc"
+          },
+          {
+            "path": "LICENSE",
+            "bytes": 13344,
+            "sha256": "6148d7574a6554b7379b633cfd4c4fe5840c3f548d13bc83e00b52dc6fa00abd"
+          }
+        ]
+      }
+    },
+    {
+      "id": "moonshine-base-vi-v2",
+      "name": "Moonshine base.vi · q8",
+      "family": "Moonshine",
+      "stage": "STT",
+      "engineId": "moonshine-local",
+      "languages": [
+        "vi"
+      ],
+      "source": "https://github.com/k2-fsa/sherpa-onnx/releases/tag/asr-models",
+      "license": "Moonshine Community License",
+      "note": "Pinned sherpa-onnx Moonshine package; CPU-only, macOS Apple silicon. The archive, all four pinned files and the model LICENSE are verified before loading.",
+      "options": {},
+      "platforms": [
+        "macos-arm64"
+      ],
+      "artifacts": [
+        {
+          "filename": "sherpa-onnx-moonshine-base-vi-quantized-2026-02-27.tar.bz2",
+          "bytes": 106719129,
+          "sha256": "97b53f5fb75a2a9dd6327440a34f45fc06c927ed2fa7217e5ebe54058e269416",
+          "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-moonshine-base-vi-quantized-2026-02-27.tar.bz2"
+        }
+      ],
+      "archive": {
+        "format": "tar.bz2",
+        "root": "sherpa-onnx-moonshine-base-vi-quantized-2026-02-27",
+        "expandedBytes": 141314030,
+        "files": [
+          {
+            "path": "tokens.txt",
+            "bytes": 549350,
+            "sha256": "2870d843e14c1e187bf1913a521562a63b53933814bd7f2145120468f494a049"
+          },
+          {
+            "path": "encoder_model.ort",
+            "bytes": 31326816,
+            "sha256": "5a63cf0e248ef463776fbad50784813b4185eb73136f1fb062c5722e667130dc"
+          },
+          {
+            "path": "decoder_model_merged.ort",
+            "bytes": 109424520,
+            "sha256": "0a4f007e9d585348d94124d8de47f7aefbc3e2d3fa44152646af7b94c639770d"
+          },
+          {
+            "path": "LICENSE",
+            "bytes": 13344,
+            "sha256": "6148d7574a6554b7379b633cfd4c4fe5840c3f548d13bc83e00b52dc6fa00abd"
+          }
+        ]
+      }
+    },
+    {
+      "id": "moonshine-base-zh-v2",
+      "name": "Moonshine base.zh · q8",
+      "family": "Moonshine",
+      "stage": "STT",
+      "engineId": "moonshine-local",
+      "languages": [
+        "zh"
+      ],
+      "source": "https://github.com/k2-fsa/sherpa-onnx/releases/tag/asr-models",
+      "license": "Moonshine Community License",
+      "note": "Pinned sherpa-onnx Moonshine package; CPU-only, macOS Apple silicon. The archive, all four pinned files and the model LICENSE are verified before loading.",
+      "options": {},
+      "platforms": [
+        "macos-arm64"
+      ],
+      "artifacts": [
+        {
+          "filename": "sherpa-onnx-moonshine-base-zh-quantized-2026-02-27.tar.bz2",
+          "bytes": 99905420,
+          "sha256": "6495d4240f66bcdd2bbbbfefaa687c463150d467854001270934e88940b733c1",
+          "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-moonshine-base-zh-quantized-2026-02-27.tar.bz2"
+        }
+      ],
+      "archive": {
+        "format": "tar.bz2",
+        "root": "sherpa-onnx-moonshine-base-zh-quantized-2026-02-27",
+        "expandedBytes": 141314030,
+        "files": [
+          {
+            "path": "tokens.txt",
+            "bytes": 549350,
+            "sha256": "2870d843e14c1e187bf1913a521562a63b53933814bd7f2145120468f494a049"
+          },
+          {
+            "path": "encoder_model.ort",
+            "bytes": 31326816,
+            "sha256": "c725a24b58595905921ea2a47e2bcf0f18c78f4d171d96136f2dcbc8c77a58a6"
+          },
+          {
+            "path": "decoder_model_merged.ort",
+            "bytes": 109424520,
+            "sha256": "bf79fce626e123739ec37eceb2b2a010a93d720da266dd5d8ef9a47ef9a7dc36"
           },
           {
             "path": "LICENSE",

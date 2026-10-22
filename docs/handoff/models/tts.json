@@ -262,6 +262,16 @@
         "backend": "CPU",
         "bytes": 1373672,
         "sha256": "7a5042f47892b548d7079f86eb351189e519e366bf72aa5c8a0c2112a81b349b"
+      },
+      "desktopRuntime": {
+        "platform": "macos-arm64",
+        "file": "libhearth_desktop_omnivoice.dylib",
+        "bytes": 1894768,
+        "sha256": "fb24d50aab1a05fd17002d124afd9bfcb4cd7ce753b44e8521a91a7a400feff2",
+        "backend": "static CPU ggml; no ONNX Runtime",
+        "sampleRate": 24000,
+        "revision": "1a468d8b9d65b3544ca1004d2d7c05dfc65d1f3e",
+        "ggmlRevision": "cc5df49a6b878db2b68b9a7b45976e279594627d"
       }
     },
     {

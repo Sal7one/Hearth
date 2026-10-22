@@ -130,6 +130,48 @@ def vosk_models(models):
                 url=f"https://alphacephei.com/vosk/models/{pin['checkpoint']}.zip")],
             archive=dict(format='zip', root=pin['checkpoint'], expandedBytes=pin['expanded_bytes'], treeSha256=pin['tree_sha256'])))
 
+def moonshine_variants():
+    """Read the engine-owned Moonshine component pins so cards and engine cannot drift."""
+    text = (ROOT / 'desktop-runtime/src/main/kotlin/com/sal7one/hearth/desktop/runtime/MoonshineSpeechModel.kt').read_text(encoding='utf-8')
+    variants = []
+    for call in kotlin_calls(text, 'Variant'):
+        args = split_kotlin_args(call)
+        if len(args) != 6 or not args[0].lstrip().startswith('"'):
+            continue
+        files = []
+        for file_call in kotlin_calls(args[5], 'PinnedFile'):
+            parts = split_kotlin_args(file_call)
+            if len(parts) != 3 or not parts[0].lstrip().startswith('"'):
+                continue
+            files.append(dict(path=kotlin_string(parts[0]),
+                              bytes=int(parts[1].replace('_', '').removesuffix('L')),
+                              sha256=kotlin_string(parts[2])))
+        assert len(files) == 4, (kotlin_string(args[0]), files)
+        variants.append(dict(id=kotlin_string(args[0]), label=kotlin_string(args[1]),
+            language=kotlin_string(args[2]), license=kotlin_string(args[3]),
+            root=kotlin_string(args[4]), files=files))
+    assert len(variants) == 10, [variant['id'] for variant in variants]
+    assert len({variant['id'] for variant in variants}) == len(variants)
+    return variants
+
+
+def moonshine_models(models, audit):
+    for variant in moonshine_variants():
+        pin = next(a for a in audit['artifacts'] if a['id'] == variant['id'])
+        filename = pin['url'].rsplit('/', 1)[-1]
+        assert filename == f"{variant['root']}.tar.bz2", (variant['id'], filename)
+        assert pin['bytes'] > 0 and re.fullmatch(r'[a-f0-9]{64}', pin['sha256']), variant['id']
+        models.append(dict(id=variant['id'], name=variant['label'], family='Moonshine',
+            stage='STT', engineId='moonshine-local', languages=[variant['language']],
+            source='https://github.com/k2-fsa/sherpa-onnx/releases/tag/asr-models', license=variant['license'],
+            note='Pinned sherpa-onnx Moonshine package; CPU-only, macOS Apple silicon. '
+                 'The archive, all four pinned files and the model LICENSE are verified before loading.',
+            options={}, platforms=['macos-arm64'],
+            artifacts=[dict(filename=filename, bytes=pin['bytes'], sha256=pin['sha256'], url=pin['url'])],
+            archive=dict(format='tar.bz2', root=variant['root'],
+                expandedBytes=sum(file['bytes'] for file in variant['files']),
+                files=variant['files'])))
+
 MING_ARTIFACTS = [
     ('manifest.json', 88437, 'a50db3af1bfa6dfcbba12bfaca42c7d7d85fc440e76ee63b1a2a99f39cf36f05', 'https://huggingface.co/fusorlabs/ming-3.0-tts-0.5b-web/resolve/62588575d91dceb33822fe1e3925e748393c6b3e/manifest.json'),
     ('tokenizer.json', 11431389, '87d54ca3b44ea2f822ba39a0a45cb1b61644bd6606d9d3536dea75367bffb06d', 'https://huggingface.co/fusorlabs/ming-3.0-tts-0.5b-web/resolve/62588575d91dceb33822fe1e3925e748393c6b3e/tokenizer.json'),
@@ -224,22 +266,20 @@ def generate():
         note='Pinned MOSS-TTS Nano 100M ONNX package; CPU-only, 48 kHz mono, macOS Apple silicon. Every component is verified before loading; the default voice is Ava.',
         options={'voice': 'Ava', 'threads': '2'}, platforms=['macos-arm64'],
         artifacts=[dict(filename=name, bytes=int(size), sha256=digest, url=url) for name, size, digest, url in moss_assets]))
-    moonshine = next(a for a in audit['artifacts'] if a['id'] == 'moonshine-tiny-en-v2')
-    moonshine_files = [
-        ('tokens.txt', 549350, '2870d843e14c1e187bf1913a521562a63b53933814bd7f2145120468f494a049'),
-        ('encoder_model.ort', 13281600, '94e90a4654fc45cdfedb77c4c08e1739f48862998e58fada384b25118134f221'),
-        ('decoder_model_merged.ort', 30412256, 'cf524c4862d36e9e5ab032eddc73637efd822d70e868ac575cf1a46e1e4708a0'),
-        ('LICENSE', 13344, '6148d7574a6554b7379b633cfd4c4fe5840c3f548d13bc83e00b52dc6fa00abd'),
-    ]
-    models.append(dict(id='moonshine-tiny-en-v2', name='Moonshine tiny.en · q8', family='Moonshine',
-        stage='STT', engineId='moonshine-local', languages=['en'],
-        source='https://github.com/k2-fsa/sherpa-onnx/releases/tag/asr-models', license='MIT',
-        note='Pinned sherpa-onnx Moonshine package; CPU-only, macOS Apple silicon. The archive and each model file are verified before loading.',
-        options={}, platforms=['macos-arm64'],
-        artifacts=[dict(filename=moonshine['url'].rsplit('/', 1)[-1], bytes=moonshine['bytes'], sha256=moonshine['sha256'], url=moonshine['url'])],
-        archive=dict(format='tar.bz2', root='sherpa-onnx-moonshine-tiny-en-quantized-2026-02-27',
-            expandedBytes=sum(size for _, size, _ in moonshine_files),
-            files=[dict(path=path, bytes=size, sha256=digest) for path, size, digest in moonshine_files])))
+    omnivoice_source = (ROOT / 'hearth-tts-omnivoice/src/main/java/com/sal7one/hearth/tts/omnivoice/OmniVoiceCatalog.kt').read_text(encoding='utf-8')
+    omnivoice_revision = re.search(r'const val revision = "([a-f0-9]{40})"', omnivoice_source).group(1)
+    omnivoice_repo = re.search(r'const val source = "([^"]+)"', omnivoice_source).group(1)
+    omnivoice_assets = re.findall(r'OmniVoiceAsset\("([^"]+)",\s*(\d+),\s*"([a-f0-9]{64})"\)', omnivoice_source)
+    assert len(omnivoice_assets) == 2, len(omnivoice_assets)
+    models.append(dict(id='omnivoice-tts', name='OmniVoice · voice design', family='OmniVoice', stage='TTS', engineId='omnivoice-tts-local',
+        languages=['ar', 'en'], source=omnivoice_repo,
+        license='CC-BY-NC-4.0 (pretrained generator); MIT (runtime); Boson Higgs Audio 2 Community License with incorporated Meta Llama 3 terms (codec)',
+        note='Pinned OmniVoice Q8 GGUF generator and audio codec; CPU-only, 24 kHz mono, macOS Apple silicon. Both files are verified before loading. '
+             'Voice designs are requested attributes, not fixed speaker identities.',
+        options={'voice': 'design-female', 'threads': '2'}, platforms=['macos-arm64'],
+        artifacts=[dict(filename=name, bytes=int(size), sha256=digest,
+            url=f'{omnivoice_repo}/resolve/{omnivoice_revision}/{name}') for name, size, digest in omnivoice_assets]))
+    moonshine_models(models, audit)
     omnilingual = next(a for a in audit['artifacts'] if a['id'] == 'omnilingual-ctc-300m-v2-int8')
     omnilingual_files = [
         ('model.int8.onnx', 365841453, 'e3042b2f3b3ef0af2211bf99d2b4bf94a21f5ac0e9898827e7dd6d003a860e91'),
@@ -293,7 +333,7 @@ def generate():
         artifacts=[dict(filename=nemotron['url'].rsplit('/', 1)[-1], bytes=nemotron['bytes'], sha256=nemotron['sha256'], url=nemotron['url'])]))
     vosk_models(models)
     ming_models(models)
-    assert len(models) == 59, len(models)
+    assert len(models) == 69, len(models)
     return json.dumps({'schemaVersion':1,'provenance':'Generated from existing Android pins, the audited Qwen3-ASR release archive, reviewed CT2 catalog pins and reviewed desktop engine pins; run scripts/desktop/generate-catalog.py --check','models':models},ensure_ascii=False,indent=2)+'\n'
 
 

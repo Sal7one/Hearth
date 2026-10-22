@@ -3,7 +3,7 @@
 What each model family needs before it can run on macOS/Windows like it does on
 Android. Status is what has been *executed*, not what is planned.
 
-Last updated when Moonshine tiny.en passed through the shared speech backend bridge on macOS arm64.
+Last updated when all ten pinned Moonshine variants passed through the shared speech backend bridge on macOS arm64.
 
 ## Working today on desktop
 
@@ -16,12 +16,13 @@ Last updated when Moonshine tiny.en passed through the shared speech backend bri
 | CTranslate2 translation | 3 downloadable cards (7 pinned specs) | `hearth_desktop_ct2` (static CTranslate2 4.8.3 + SentencePiece 0.2.0 + Rust BPE) | QuickMT EN→AR real translation, `DesktopCt2RealSmokeTest`: `يفتح المتحف في الساعة التاسعة صباحًا.` (111 ms) |
 | TranscribePsy (ggml/parakeet) | 1 | `hearth_desktop_backend_speech` + `libhearth_transcribepsy.dylib` (static parakeet/ggml) | real speech → text, `DesktopTranscribePsyRealSmokeTest`: exact 4.65 s transcript, 75 ms warm decode |
 | Nemotron 3.5 (NeMo GGML) | 1 | `hearth_desktop_backend_speech` + `libhearth_nemotron.dylib` (static NeMo-Speech.cpp 0.1.0 + SentencePiece) | real speech → text, `DesktopNemotronRealSmokeTest`: exact 4.65 s transcript, 573 ms decode |
-| Moonshine tiny.en (sherpa-onnx) | 1 | `hearth_desktop_qwen3_asr` + the shared `hearth_desktop_backend_speech` bridge (`hearth_moonshine_backend_v1`) | real speech → text, `DesktopMoonshineRealSmokeTest`: exact 4.65 s transcript, 32 ms decode; no new engine code |
+| Moonshine (sherpa-onnx) | 10 | `hearth_desktop_qwen3_asr` + the shared `hearth_desktop_backend_speech` bridge (`hearth_moonshine_backend_v1`) | real speech → text, `DesktopMoonshineRealSmokeTest`: 10/10 variants through the bridge and the desktop engine; exact English transcript on tiny.en and base.en, non-empty native-script transcripts for ar/es/ja/ko/uk/vi/zh (33–618 ms decode, 143–244 ms load); no new engine code |
 | Omnilingual CTC 300M (sherpa-onnx) | 1 | same dylib/bridge (`hearth_omnilingual_backend_v1`) | real speech → text, `DesktopSherpaFamiliesRealSmokeTest`: exact 4.65 s transcript, 220 ms warm decode |
 | Phonon 2 (sherpa-onnx) | 1 | same dylib/bridge (`hearth_phonon_backend_v1`, joiner as `conv_frontend`) | real speech → text, same test: sentence-case transcript, 117 ms warm decode |
 | Vosk (Kaldi) | 6 | `hearth_vosk` + pinned official v0.3.42 `libvosk.dylib` (thin arm64), one `vosk-local` engine | EN exact transcript; six app-path language smokes (en/de/fr/es/ru/zh); Spanish quality/repeat stability unverified |
 | MOSS-TTS Nano 100M | 1 (14 pinned files) | `hearth_desktop_moss` (static SentencePiece 0.2.0 + the shipped ONNX Runtime 1.20.1) | real 48 kHz non-silent WAV, `DesktopMossRealSmokeTest`: 20,481 samples / peak 0.516 / RMS 0.0996 through the app path; direct JNI 61,440 samples |
 | Ming-3.0 TTS 0.5B (local) | 1 (17 pinned files) | `libming_jni.dylib` (pinned ming-ffi over fusor-ai 0.1.2) | real 44.1 kHz non-silent WAV, `DesktopMingLocalRealSmokeTest`: 61,740 frames / peak 14,658 / 87% non-zero; English/Chinese only; Android build-only |
+| OmniVoice | 1 (2 pinned GGUF files) | `hearth_desktop_omnivoice` (static omnivoice.cpp `1a468d8b` + ggml `cc5df49a`, CPU, 24 kHz) | real non-silent WAV through the desktop engine, `DesktopOmniVoiceRealSmokeTest`: EN 1.84 s / peak 0.936 / RMS 0.173 / 39,294 of 44,160 non-zero; AR 1.83 s / peak 0.905 / RMS 0.142 / 38,286 of 43,920 non-zero; 32 MaskGIT steps, RTF 5.25 cold EN (includes load) and 4.26 warm AR, 32 steps, on a busy host; repeats measured 4.1-5.3, with one 14.1 under heavy unrelated build load |
 
 ## Missing on desktop
 
@@ -30,9 +31,8 @@ The shared ABI and the family-versus-model rule are documented in
 
 | Family | Models | Android implementation | What a desktop port needs |
 | --- | --- | --- | --- |
-| sherpa-onnx speech — remaining Moonshine ×8 | 8 | `qwen_backend.cpp` already exports the entry point | one dylib and one bridge already exist; each remaining model needs only its pins, a card and a real-audio smoke |
 | CTranslate2 pair coverage | 3 desktop cards: QuickMT EN↔AR, SMaLL-100 (100 languages) | `common-jni/src/main/cpp/translation/ct2` + `Ct2Catalog.kt` | four Jisr 50M specs are pinned but `downloadEnabled=false`, and the requested EN↔DE/ES/FR/RU/ZH pair models are not present or pinned in this repo |
-| TTS — Chatterbox, Magpie, OmniVoice, Oute | 4 | `hearth-tts-*` modules | each family has its own architecture and runtime; MOSS and Ming local are the shared desktop TTS runtimes |
+| TTS — Chatterbox, Magpie, Oute | 3 | `hearth-tts-*` modules | each family has its own architecture and runtime; OmniVoice, MOSS and Ming local are the proven desktop TTS runtimes |
 
 ## What Qwen3-ASR proved
 
@@ -47,9 +47,9 @@ The shared ABI and the family-versus-model rule are documented in
   the same lease/retire handle discipline as Whisper.
 - parakeet.cpp (TranscribePsy), NeMo-Speech.cpp (Nemotron) and the sherpa family
   all run through one lease-based backend bridge that dlopens a hash-verified
-  backend dylib and dlsyms an explicit entry symbol. Moonshine tiny.en is proven;
-  Omnilingual and Phonon already export their entry points and need model cards and
-  smokes, not new C++ engines.
+  backend dylib and dlsyms an explicit entry symbol. The sherpa family runs ten
+  Moonshine variants, Omnilingual and Phonon through that one bridge; a new model
+  is pins, a card and a smoke, not a new C++ engine.
 
 ## Port checklist for one external-SDK family
 
@@ -68,9 +68,35 @@ The shared ABI and the family-versus-model rule are documented in
 Each family ships as its own commit with its own proof; no engine is added to the
 catalog before it has a passing smoke.
 
+## What the OmniVoice proof shows
+
+- `hearth-tts-omnivoice` shipped a C ABI (`ov_*`, ABI v4) and a JNI adapter; the
+  desktop stage links the same pinned runtime sources and adds one direct-link
+  `omnivoice_jni.cpp` with no model or Python dependency.
+- OmniVoice statically owns its own ggml build (`cc5df49a`) in
+  `libhearth_desktop_omnivoice.dylib`. It is not linked into whisper, parakeet,
+  NeMo or sherpa, and those dylibs are not linked into it. No ONNX Runtime is
+  involved.
+- Every asset is a direct pinned download (2 files, 945,284,608 B); there are no
+  derived assets. The generator is noncommercial and the codec has separate
+  community terms; both are recorded in the card and notices.
+- Audio is natively 24 kHz mono. The smoke also writes an explicitly derived
+  48 kHz compatibility WAV with 2x linear interpolation; it is never reported as
+  native engine output.
+
 ## Not claimed
 
 - Windows for any of the above. No Windows host has run this code.
+- OmniVoice quality, pronunciation, fixed speaker identity or gender. Voice designs
+  are requested attributes; the default is `design-female`. RTF is ~4-5 at the
+  upstream default of 32 MaskGIT steps on Apple M4 Pro, so it is not a real-time
+  reader; the 8-step path measured RTF ~0.83 in the scratch probe but is not the
+  shipped default.
+- Moonshine word accuracy. All ten variants produced non-empty transcripts from real
+  speech, but the Japanese and Chinese outputs are spaced per token, the Korean
+  output carried the tokenizer's `▁` prefix, and the Arabic output contained
+  recognition errors. The language on each card is what the package transcribes,
+  not a measured word error rate.
 - Qwen3-ASR auto language detection. The upstream C API does not populate the
   detected language without the Android build patch; the desktop engine reports an
   explicit source language and leaves Auto unknown. Transcription still works.
