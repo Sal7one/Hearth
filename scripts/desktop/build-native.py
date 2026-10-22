@@ -649,8 +649,12 @@ def main():
         if rust_host is None: raise RuntimeError("Could not determine the Rust host target")
         bpe_environment = os.environ.copy()
         bpe_environment["MACOSX_DEPLOYMENT_TARGET"] = "13.0"
+        # A fresh CI runner starts with an empty Cargo registry. Keep --locked so Cargo.lock
+        # pins resolution, but fetch missing crates on demand: --offline turned the cold
+        # cache into a misleading "no matching package" error. This matches the CT2 stage,
+        # which builds the same manifest through scripts/translation/ct2/build-runtime.sh.
         subprocess.run(["cargo", "build", "--manifest-path", str(ROOT / "common-jni/src/main/cpp/translation/bpe-rust/Cargo.toml"),
-                        "--locked", "--offline", "--release", "--target", rust_host, "--target-dir", str(ROOT / "build/ct2-runtime/rust")],
+                        "--locked", "--release", "--target", rust_host, "--target-dir", str(ROOT / "build/ct2-runtime/rust")],
                        check=True, env=bpe_environment)
         chatterbox_bpe = ROOT / "build/ct2-runtime/rust" / rust_host / "release/libhearth_byte_bpe.a"
         if not chatterbox_bpe.is_file(): raise RuntimeError("The Chatterbox stage did not build the pinned Rust byte-BPE library")
