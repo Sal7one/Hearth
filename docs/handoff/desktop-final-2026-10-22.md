@@ -8,12 +8,18 @@ superseded by this file.
 ## Merge position
 
 - **macOS arm64: feature-complete and release-verified.**
-- **Windows: parked by the owner.** Do not block a macOS merge on the Windows job,
-  and do not describe Windows as working.
+- **macOS arm64, macOS Intel and Android CI are green** on the code commit
+  (`macos-15` 20m38s, `macos-15-intel` 16m36s, Android 19m13s). Windows is the only
+  red job and is **parked by the owner**; do not block a macOS merge on it or
+  describe Windows as working.
+- A **0.28.0 / code 94 Android QA APK draft** exists (10 signed APKs + source,
+  checksums, provenance and validation evidence); it is not published. Publish it
+  after the desktop overlay check if desired.
 - **Owner acceptance still required:** open the real always-on-top overlay window.
   All 17 screens and the overlay caption layer are headless-rendered; the actual
   window is the only desktop visual check not performed.
-- No desktop tag or release was created. Models are downloads, never committed.
+- No desktop tag or release was created. The Android 0.28.0 QA draft is separate
+  and unpublished. Models are downloads, never committed.
 
 ## What is in the branch
 
@@ -84,11 +90,19 @@ download or play audio by default.
   engine default voice, and caps steps at 2–12.
 - `DesktopIntegrationServerTest.regularFiles` tolerates the intentional deletion
   race during media-upload admission/cleanup, removing the Linux CI flake.
+- The CPU MOSS stage is excluded from the shared Metal probe; the macOS
+  `--metal` build no longer tries to link `metal_device.mm` into a target that
+  does not link Metal/Foundation.
+- Optional desktop libraries absent from a platform bundle (Intel macOS has no
+  Qwen3-ASR/CT2/backend bridge) now skip their handle tests; a present-but-broken
+  library still fails.
+- The handoff validator accepts the expanded 17-entry translation inventory
+  (minimum five families, research-only entries carry an explicit no-runtime block).
 
 **Verification:** Android host tests/QA compiles, both QA APK sets,
 `verify-release.py` (10 APKs), the full desktop suite, `generate-catalog.py
---check`, and the desktop script unittests pass. CI is being re-run; Windows is
-still expected to be red and is parked.
+--check`, and the desktop script unittests pass. CI is green for macOS arm64,
+macOS Intel and the Android build; Windows remains red by design and parked.
 
 ## Owner checks before merge
 
