@@ -35,6 +35,12 @@ live capture and protected-content behavior; the noncapturing probe proves only
 helper/framework packaging. An OBS native plugin remains separate; the Browser
 Source and external-app PCM API work without one.
 
+The floating toolbar uses the Hearth icon; click it to bring the main window back
+to Overlay settings. Diagnostic `--overlay-preview` windows are explicitly marked
+as sample captions and use focused-window shortcuts only, so they cannot take
+the real application's system shortcut registrations. Close diagnostic previews
+and restart an older running app after replacing its packaged build.
+
 Mac builds now compile Metal by default for Whisper and GGUF translation;
 `--no-metal` creates an explicit CPU build. Both engines expose CPU/Metal choices
 only when supported by their actual native adapter and device. Fresh routes
@@ -200,6 +206,12 @@ notarization identities are not checked into the repository; local/CI installers
 are unsigned development builds unless signing is explicitly configured. Matching
 host CI builds and tests each architecture; configuring a Windows installer on a
 Mac does not cross-build it.
+
+macOS and Windows packages use the existing Hearth artwork through explicit
+ICNS/ICO assets in `desktopApp/packaging/icons`. Regenerate them on macOS with
+`python3 scripts/desktop/generate-icons.py` (Apple's `sips`/`iconutil`; no new
+artwork or runtime dependency). The macOS packaged check verifies that the icon
+referenced by Info.plist matches the Hearth asset, preventing a default Java icon.
 
 The native libraries and required licenses are packaged inside the runtime JAR,
 extracted to an application-private hash-addressed cache and verified before

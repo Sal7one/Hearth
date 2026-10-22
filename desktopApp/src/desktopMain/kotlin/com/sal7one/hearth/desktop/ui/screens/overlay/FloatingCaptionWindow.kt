@@ -1,6 +1,7 @@
 package com.sal7one.hearth.desktop.ui.screens.overlay
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
@@ -12,6 +13,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.awt.ComposeWindow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.input.pointer.*
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
@@ -51,6 +55,7 @@ internal fun FloatingCaptionWindow(
     onChange: (OverlaySettings) -> Unit,
     onNativeError: (String) -> Unit,
     onNativeApplied: (Boolean) -> Unit = {},
+    onOpenSettings: () -> Unit = {},
 ) {
     val latest by rememberUpdatedState(state.settings)
     val change by rememberUpdatedState(onChange)
@@ -59,8 +64,8 @@ internal fun FloatingCaptionWindow(
     val windowState = rememberWindowState(position = WindowPosition.Absolute(initial.x.dp, initial.y.dp),
         width = initial.width.dp, height = initial.height.dp)
     // Unique within the process; the native bridge only resolves this window.
-    val title = "Hearth captions"
-    Window(onCloseRequest = onClose, title = title, alwaysOnTop = true, undecorated = true,
+    val title = if (state.preview) "Hearth preview captions" else "Hearth captions"
+    Window(onCloseRequest = onClose, title = title, icon = painterResource("hearth.png"), alwaysOnTop = true, undecorated = true,
         transparent = true, resizable = true, state = windowState) {
         var moved by remember { mutableStateOf<OverlayBounds?>(null) }
         var hovered by remember { mutableStateOf(false) }
@@ -135,15 +140,19 @@ internal fun FloatingCaptionWindow(
                     contentAlignment = Alignment.BottomCenter) {
                     CaptionLayer(state, Modifier.fillMaxWidth())
                 }
+                if (state.preview) LiveBadge("Preview · sample captions", Modifier.align(Alignment.TopStart).padding(10.dp))
                 if (controls) {
                     val density = LocalDensity.current
-                    val toolbarScale = latest.toolbarScale.coerceAtMost(((moved?.width ?: initial.width) - 20) / 360f)
+                    val toolbarScale = latest.toolbarScale.coerceAtMost(((moved?.width ?: initial.width) - 20) / 400f)
                     CompositionLocalProvider(LocalDensity provides Density(density.density * toolbarScale, density.fontScale)) {
                     Row(Modifier.align(Alignment.TopCenter).padding(top = 7.dp)
                         .background(Color(0xF21A222D), RoundedCornerShape(30.dp))
                         .windowDrag(window, activity = { interacting = it }).padding(horizontal = 8.dp, vertical = 3.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                        Image(painterResource("hearth.png"), contentDescription = "Hearth · Open overlay settings",
+                            modifier = Modifier.padding(horizontal = 3.dp).size(26.dp).clip(RoundedCornerShape(8.dp))
+                                .clickable(role = Role.Button, onClickLabel = "Open overlay settings", onClick = onOpenSettings))
                         Text("⠿", color = Color.White.copy(alpha = 0.65f), modifier = Modifier.padding(horizontal = 6.dp), fontSize = 18.sp)
                         OverlayTool("A−", "Smaller text") { change(reduceOverlayCommand(latest, OverlayCommand.SMALLER)) }
                         OverlayTool("A+", "Larger text") { change(reduceOverlayCommand(latest, OverlayCommand.BIGGER)) }
@@ -177,7 +186,7 @@ private fun OverlayControlWindow(settings: OverlaySettings, preset: AccentPreset
         val base = settings.bounds ?: anchoredOverlayBounds(settings, overlayDisplayFor(null, overlayDisplays()))
         clampOverlayBounds(OverlayBounds(base.x + base.width - 320, base.y - 310, 340, 310), area)
     }
-    Window(onCloseRequest = onClose, title = "Hearth caption controls", alwaysOnTop = true,
+    Window(onCloseRequest = onClose, title = "Hearth caption controls", icon = painterResource("hearth.png"), alwaysOnTop = true,
         undecorated = true, transparent = true, resizable = false,
         state = rememberWindowState(position = WindowPosition.Absolute(initial.x.dp, initial.y.dp), width = 340.dp, height = 310.dp),
         onPreviewKeyEvent = { event ->
@@ -198,6 +207,8 @@ private fun OverlayControlWindow(settings: OverlaySettings, preset: AccentPreset
             Column(Modifier.fillMaxSize().background(Color(0xF51A2029), RoundedCornerShape(16.dp))
                 .border(1.dp, Color.White.copy(alpha = 0.16f), RoundedCornerShape(16.dp)).padding(18.dp)) {
                 Row(Modifier.fillMaxWidth().windowDrag(window, activity = {}), verticalAlignment = Alignment.CenterVertically) {
+                    Image(painterResource("hearth.png"), "Hearth", Modifier.size(24.dp).clip(RoundedCornerShape(7.dp)))
+                    Spacer(Modifier.width(8.dp))
                     Text("Caption controls", color = Color.White, fontSize = 13.sp, modifier = Modifier.weight(1f))
                     OverlayTool("×", "Close caption controls", onClick = onClose)
                 }

@@ -60,6 +60,8 @@ internal data class OverlayState(
     val shortcutStatus: String = "System shortcuts are starting…",
     val nativeControlsAvailable: Boolean = false,
     val controlIssue: String? = null,
+    /** Diagnostic sample output is always marked; never persisted with production settings. */
+    val preview: Boolean = false,
 ) {
     val widthPercentLabel: String get() = "${(settings.widthFraction * 100).toInt()}%"
     val backdropPercentLabel: String get() = "${(settings.backdropFraction * 100).toInt()}%"

@@ -2,6 +2,7 @@
 """Exercise the actual packaged launcher/JRE/native resources without opening a window."""
 from pathlib import Path
 import platform
+import plistlib
 import subprocess
 
 ROOT=Path(__file__).resolve().parents[2]
@@ -11,6 +12,14 @@ if platform.system()=='Darwin':
 else:
     launchers=list(base.glob('*/Hearth.exe'))
 if len(launchers)!=1: raise SystemExit(f'Expected one packaged launcher: {launchers}')
+if platform.system()=='Darwin':
+    contents=launchers[0].parents[1]
+    info=plistlib.loads((contents/'Info.plist').read_bytes())
+    icon=info.get('CFBundleIconFile', '')
+    if not icon or Path(icon).name!=icon: raise SystemExit('Missing or invalid packaged app icon')
+    if not icon.endswith('.icns'): icon += '.icns'
+    if (contents/'Resources'/icon).read_bytes() != (ROOT/'desktopApp/packaging/icons/hearth.icns').read_bytes():
+        raise SystemExit('Packaged app does not use the Hearth icon')
 report=ROOT/'build/desktop-packaged-self-check.properties'
 report.unlink(missing_ok=True)
 result=subprocess.run([str(launchers[0]),'--self-check',str(report)],timeout=120)

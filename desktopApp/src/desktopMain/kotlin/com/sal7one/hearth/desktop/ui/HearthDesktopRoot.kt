@@ -99,6 +99,7 @@ internal fun HearthDesktopRoot(
     saveUi: (Map<String, String>) -> Unit,
     closing: Boolean,
     rememberedEngine: (String) -> com.sal7one.hearth.core.PipelineConfig? = { null },
+    onShowWindow: () -> Unit = {},
 ) {
     val scope = rememberCoroutineScope()
     var screen by remember { mutableStateOf(DesktopScreen.fromId(initialUi["screen"] ?: "home")) }
@@ -756,6 +757,7 @@ internal fun HearthDesktopRoot(
                 preset = preset,
                 onClose = { applyOverlay(overlaySettings.copy(visible = false)) },
                 onChange = ::applyOverlay,
+                onOpenSettings = { navigate(DesktopScreen.OVERLAY); onShowWindow() },
                 onNativeApplied = { overlayControlIssue = null },
                 onNativeError = { message ->
                     overlayControlIssue = message

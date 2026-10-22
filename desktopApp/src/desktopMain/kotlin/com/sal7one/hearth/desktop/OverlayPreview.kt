@@ -2,6 +2,7 @@ package com.sal7one.hearth.desktop
 
 import androidx.compose.runtime.*
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
@@ -24,15 +25,17 @@ internal fun launchOverlayPreview(directory: Path) = application {
             val values = Properties().apply { Files.newInputStream(saved).use(::load) }
             overlaySettingsFrom(values.stringPropertyNames().associateWith { values.getProperty(it) }).copy(visible = true)
         } else OverlaySettings(visible = true)
-        mutableStateOf(prefs)
+        mutableStateOf(prefs.copy(shortcutsEnabled = false))
     }
     var issue by remember { mutableStateOf<String?>(null) }
     var nativeApplied by remember { mutableStateOf<Boolean?>(null) }
-    val shortcuts = OverlayShortcutBinding(settings.shortcutsEnabled) { settings = reduceOverlayCommand(settings, it) }
+    // A test window must not take the real app's global shortcut registrations.
+    val shortcuts = OverlayShortcutBinding(false) { settings = reduceOverlayCommand(settings, it) }
     val overlay = OverlayState(settings = settings, targetRtl = true, translationEnabled = true,
         caption = OverlayCaptionView("صوتك، بلغتك. حرّك الترجمة إلى المكان الذي يناسبك.",
             if (settings.showOriginal) "Your audio. Your language. Captions that fit your screen." else null, partial = false),
-        shortcutStatus = shortcuts, nativeControlsAvailable = NativeOverlayWindow.supported, controlIssue = issue)
+        shortcutStatus = "Preview: focused-window shortcuts only", nativeControlsAvailable = NativeOverlayWindow.supported,
+        controlIssue = issue, preview = true)
     LaunchedEffect(settings, shortcuts, nativeApplied, issue) {
         delay(400)
         withContext(Dispatchers.IO) {
@@ -45,8 +48,11 @@ internal fun launchOverlayPreview(directory: Path) = application {
             Files.newOutputStream(directory.resolve("preview.properties")).use { values.store(it, "Isolated overlay preview") }
         }
     }
-    Window(title = "Hearth overlay preview", state = rememberWindowState(width = 1200.dp, height = 900.dp),
+    var settingsWindow by remember { mutableStateOf<androidx.compose.ui.awt.ComposeWindow?>(null) }
+    Window(title = "Hearth overlay preview", icon = painterResource("hearth.png"),
+        state = rememberWindowState(width = 1200.dp, height = 900.dp),
         onCloseRequest = ::exitApplication) {
+        DisposableEffect(window) { settingsWindow = window; onDispose { settingsWindow = null } }
         HearthTheme {
             OverlayScreen(overlay, OverlayActions(onChange = { settings = it },
                 onToggleVisible = { settings = settings.copy(visible = it) },
@@ -55,6 +61,7 @@ internal fun launchOverlayPreview(directory: Path) = application {
     }
     if (settings.visible) FloatingCaptionWindow(overlay, dark = true, preset = AccentPreset.SKY,
         onClose = { settings = settings.copy(visible = false) }, onChange = { settings = it },
+        onOpenSettings = { settingsWindow?.apply { toFront(); requestFocus() } },
         onNativeError = { issue = it; settings = settings.copy(clickThrough = false) },
         onNativeApplied = { nativeApplied = it; issue = null })
 }

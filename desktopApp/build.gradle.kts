@@ -52,6 +52,7 @@ compose.desktop {
             vendor = "Hearth"
             modules("java.desktop", "java.net.http", "jdk.httpserver", "jdk.crypto.ec", "java.logging", "java.prefs", "jdk.unsupported")
             macOS {
+                iconFile.set(project.file("packaging/icons/hearth.icns"))
                 bundleID = "com.sal7one.hearth.desktop"
                 infoPlist {
                     extraKeysRawXml = """
@@ -63,6 +64,7 @@ compose.desktop {
                 }
             }
             windows {
+                iconFile.set(project.file("packaging/icons/hearth.ico"))
                 menuGroup = "Hearth"
                 shortcut = true
                 dirChooser = true

@@ -158,6 +158,7 @@ private fun launchDesktop() = application {
                 saveUi = { loaded.controller.saveUi(it) },
                 closing = closing,
                 rememberedEngine = { loaded.settings.engineSetups.value[it] },
+                onShowWindow = { window.isVisible = true; window.toFront(); window.requestFocus() },
             )
         } else {
             StartupScreen(startupError) { retry++ }

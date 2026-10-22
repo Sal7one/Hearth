@@ -107,3 +107,35 @@ Ignored evidence/logs are in `/tmp/hearth-overlay-*.log`,
 The preview harness is explicitly invoked with
 `Hearth --overlay-preview <isolated-directory>` and writes only its own
 `preview.properties`; normal application startup does not enter that mode.
+
+## Owner follow-up: stale processes and Hearth identity
+
+The owner's later screenshot showed two processes: the old production PID 11381
+and the disposable preview PID 33353. Both were quit through their UI, their
+exit was checked, and one rebuilt production instance was launched. The preview
+is no longer left running. No capture, model inference, download or voice playback
+was started during this UI check.
+
+The floating toolbar and caption-control window now use `hearth.png`. The toolbar
+icon brings the real main window to Overlay settings; that action was exercised
+in the live packaged app. Diagnostic sample captions have a distinct native
+window title and a persistent Preview label. The preview never registers global
+hotkeys, leaving those registrations to the production application.
+
+The AppKit bridge explicitly clears the NSWindow's background, opaque bit and
+window shadow, then reads back opacity/alpha before reporting success. The live
+app completed those readbacks without an error and remained responsive. This
+does not establish Windows native behavior or full-screen/monitor hot-plug cases.
+
+Native distribution icons were previously unspecified. Explicit macOS ICNS and
+Windows ICO assets now come from the existing Hearth artwork. Regenerate with
+`scripts/desktop/generate-icons.py`; the macOS packaged checker verifies the actual
+Info.plist icon and bytes. The ICO contains 16/32/48/64/128/256 pixel frames; Windows
+installer execution still requires its matching host.
+
+Final local checks: all six desktop suites plus createDistributable PASS (35 tasks,
+36s), required Android tests/QA Kotlin compilations PASS (357 tasks, 2s), packaged
+launcher/native/media/authenticated-loopback/icon check PASS. No C++ inference,
+Android module/ABI configuration, production preferences schema or model data was
+changed. Logs use `/tmp/hearth-overlay-branding-*`; generated UI evidence stays
+under ignored `build/overlay-branding`. No GitHub Actions commands were used.
