@@ -146,3 +146,13 @@ Runtime licenses do not replace these model licenses. See
 ## Standalone MOSS Nano and Chatterbox V3 TTS providers
 
 `hearth-tts-moss` contains the Apache-2.0 MOSS orchestration and privately linked SentencePiece (including its original third-party notices), plus MIT JSON. Model/codec weights are separately downloaded under their exact pinned Apache-2.0 model terms. `hearth-tts-chatterbox` uses MIT chatterboxcpp audio/Perth code, real Hugging Face tokenizers0.22.2 with locked dependency notices, and MIT JSON. The native Perth converter operates only on the separately downloaded official MIT checkpoint; no pickle execution or checkpoint redistribution is included. Chatterbox V3 model/export is MIT, and the adapter always applies native Perth before publishing audio. Both optional providers share the single official ONNX Runtime AAR; neither links the broad STT/translation `common-jni` binary. Full source/binary provenance and dependency notices ship under each module's `assets/licenses/` folder.
+
+## Desktop window controls and keyboard shortcuts
+
+The desktop app includes Java Native Access (JNA and JNA Platform) 5.17.0,
+Copyright (c) 2007–2025 JNA contributors. Hearth uses JNA under its Apache
+License 2.0 option. The upstream dual-license notice ships in
+`desktopApp/src/desktopMain/resources/licenses/jna/LICENSE.txt`; source is at
+https://github.com/java-native-access/jna/tree/5.17.0. JNA calls the macOS and
+Windows window/hotkey APIs; it does not add a keyboard hook or inspect other
+applications.

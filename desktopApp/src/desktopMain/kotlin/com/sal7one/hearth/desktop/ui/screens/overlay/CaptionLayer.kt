@@ -37,73 +37,52 @@ internal fun CaptionLayer(
     state: OverlayState,
     modifier: Modifier = Modifier,
     scale: Float = 1f,
-    maxLines: Int = 3,
+    maxLines: Int = state.settings.maxLines,
 ) {
     val colors = HearthTheme.colors
     val settings = state.settings
     val caption = state.caption
-    val alpha = settings.backdropFraction.coerceIn(0f, 1f)
-
-    val (background, border, radius) = when (settings.style) {
-        OverlayStyle.GLASS -> Triple(Color.Black.copy(alpha = 0.35f + 0.45f * alpha), Color.White.copy(alpha = 0.10f), 14.dp)
-        OverlayStyle.BAR -> Triple(Color.Black.copy(alpha = 0.55f + 0.4f * alpha), Color.Transparent, 6.dp)
-        OverlayStyle.CLEAR -> Triple(Color.Transparent, Color.Transparent, 0.dp)
-    }
-
+    val opacity = settings.backdropFraction.coerceIn(0f, 1f)
+    val background = if (settings.style == OverlayStyle.CLEAR) Color.Transparent else Color.Black.copy(alpha = opacity)
+    val radius = if (settings.style == OverlayStyle.BAR) 5.dp else 14.dp
+    val base = settings.textSize.baseSp * settings.textScale.coerceIn(0.65f, 2f) * scale
+    val alignment = if (settings.textAlign == OverlayTextAlign.CENTER) androidx.compose.ui.text.style.TextAlign.Center
+        else androidx.compose.ui.text.style.TextAlign.Start
+    val shadow = androidx.compose.ui.graphics.Shadow(Color.Black.copy(alpha = 0.95f), androidx.compose.ui.geometry.Offset(0f, 2f), 7f)
     Column(
-        modifier
-            .background(background, RoundedCornerShape(radius))
-            .border(1.dp, border, RoundedCornerShape(radius))
-            .padding(horizontal = (18 * scale).dp, vertical = (13 * scale).dp),
-        verticalArrangement = Arrangement.spacedBy((4 * scale).dp),
+        modifier.background(background, RoundedCornerShape(radius))
+            .border(if (settings.style == OverlayStyle.GLASS) 1.dp else 0.dp,
+                if (settings.style == OverlayStyle.GLASS) Color.White.copy(alpha = opacity * 0.14f) else Color.Transparent,
+                RoundedCornerShape(radius))
+            .padding(horizontal = (16 * scale).dp, vertical = (10 * scale).dp),
+        verticalArrangement = Arrangement.spacedBy((5 * scale).dp),
     ) {
         if (caption == null) {
-            Text(
-                if (state.translationEnabled) OverlayCopy.EMPTY else OverlayCopy.EMPTY,
-                style = HearthType.small.copy(fontSize = (13 * scale).sp),
-                color = Color.White.copy(alpha = 0.55f),
-            )
+            Text(OverlayCopy.EMPTY, modifier = Modifier.fillMaxWidth(),
+                style = HearthType.small.copy(fontSize = (15 * scale).sp, shadow = shadow, textAlign = alignment),
+                color = Color.White.copy(alpha = 0.7f))
             return@Column
         }
-
         caption.original?.let { original ->
-            Text(
-                original,
-                style = HearthType.small.copy(fontSize = (12.5f * scale).sp),
-                color = Color.White.copy(alpha = if (settings.style == OverlayStyle.CLEAR) 0.78f else 0.62f),
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-            )
+            Text(original, modifier = Modifier.fillMaxWidth(),
+                style = HearthType.transcriptOriginal.copy(fontSize = (base * 0.65f).sp,
+                    lineHeight = (base * 0.9f).sp, letterSpacing = 0.sp, shadow = shadow,
+                    textDirection = TextDirection.ContentOrLtr, textAlign = alignment),
+                color = Color.White.copy(alpha = 0.78f), maxLines = 2, overflow = TextOverflow.Ellipsis)
         }
-
-        Text(
-            caption.primary,
-            style = HearthType.transcriptTranslation.copy(
-                fontSize = (settings.textSize.baseSp * scale).sp,
-                lineHeight = (settings.textSize.baseSp * 1.34f * scale).sp,
-                fontWeight = FontWeight.SemiBold,
-                textDirection = if (state.targetRtl) TextDirection.Rtl else TextDirection.Ltr,
-            ),
-            color = Color.White,
-            maxLines = maxLines,
-            overflow = TextOverflow.Ellipsis,
-        )
-
+        Text(caption.primary, modifier = Modifier.fillMaxWidth(),
+            style = HearthType.transcriptTranslation.copy(fontSize = base.sp, lineHeight = (base * 1.38f).sp,
+                fontWeight = FontWeight.Medium, letterSpacing = 0.sp, shadow = shadow, textAlign = alignment,
+                textDirection = if (state.targetRtl) TextDirection.ContentOrRtl else TextDirection.ContentOrLtr),
+            color = Color.White.copy(alpha = if (caption.partial) 0.88f else 1f),
+            maxLines = maxLines.coerceIn(1, 6), overflow = TextOverflow.Ellipsis)
         if (caption.partial && settings.showPartials) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(Modifier.size((6 * scale).dp).background(colors.accent, CircleShape))
-                Spacer(Modifier.width((6 * scale).dp))
-                Text(
-                    OverlayCopy.PARTIAL,
-                    style = HearthType.rowSub.copy(fontSize = (11 * scale).sp),
-                    color = colors.accent,
-                )
-            }
+            Box(Modifier.align(Alignment.CenterHorizontally).size((4 * scale).dp).background(colors.accent, CircleShape))
         }
     }
 }
 
-/** Text shadow for the clear style is approximated with a translucent backing bar. */
+/** Optional preview scrim; live subtitles use the text shadow in CaptionLayer. */
 @Composable
 internal fun CaptionScrim(state: OverlayState, modifier: Modifier = Modifier) {
     if (state.settings.style != OverlayStyle.CLEAR) {

@@ -12,7 +12,7 @@ internal object OverlayCopy {
     const val SHOW = "Show on screen"
     const val HIDE = "Hide from screen"
 
-    const val WINDOW_LABEL = "Safari · youtube.com/watch"
+    const val WINDOW_LABEL = "Caption preview"
     const val LIVE = "Live"
 
     const val PLACEMENT = "Placement"
@@ -28,17 +28,17 @@ internal object OverlayCopy {
     const val PARTIALS = "Partial utterances"
     const val PARTIALS_DETAIL = "Show words as they are recognised."
     const val CLICK_THROUGH = "Click-through"
-    const val CLICK_THROUGH_DETAIL = "Needs the native window adapter; not applied in this build."
+    const val CLICK_THROUGH_DETAIL = "Send clicks to the video below. Unlock from here or with the keyboard shortcut."
 
     const val STYLE = "Style"
     const val STYLE_DETAIL = "Three looks. The room decides which reads best."
 
     const val WHERE = "Where it goes"
-    const val WHERE_DETAIL = "Follows the window you are watching, or pinned to one display."
+    const val WHERE_DETAIL = "Drag anywhere on the caption window. Resize from an edge or corner."
     const val SHORTCUT = "Shortcut"
-    const val SHORTCUT_VALUE = "⌘ ⇧ O"
+    val SHORTCUT_VALUE get() = OverlayCommand.TOGGLE.shortcutLabel()
     const val SHORTCUT_DETAIL = "Shows or hides it without leaving the other app."
-    const val CLICK_STATE = "Click-through"
+    const val CLICK_STATE = "Caption window"
     const val CLICK_STATE_VALUE = "Off"
 
     const val EMPTY = "Waiting for speech or text…"

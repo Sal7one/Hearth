@@ -57,6 +57,8 @@ internal fun OverlayScreen(
                 OverlayScene(state)
                 Spacer(Modifier.height(14.dp))
                 OverlayFacts(state)
+                Spacer(Modifier.height(14.dp))
+                OverlayShortcutCard(state, actions.onChange)
             }
             Column(
                 Modifier.width(Space.sideColumn),
@@ -68,8 +70,9 @@ internal fun OverlayScreen(
                     backdropPercentLabel = state.backdropPercentLabel,
                     onChange = actions.onChange,
                 )
-                OverlayDisplayCard(settings = state.settings, onChange = actions.onChange)
+                OverlayDisplayCard(settings = state.settings, onChange = actions.onChange, nativeAvailable = state.nativeControlsAvailable)
                 OverlayStyleCard(settings = state.settings, onChange = actions.onChange)
+                OverlayHoverCard(state.settings, actions.onChange)
             }
         }
     }

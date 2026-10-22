@@ -105,6 +105,40 @@ limits are documented in the integration module.
 
 See [owner-test repairs and evidence](handoff/desktop-owner-feedback-2026-10-22.md).
 
+## Floating captions
+
+Drag the caption text or the grip to move the window. Drag an edge or corner to
+resize it. Hover to reveal the compact toolbar; move away for subtitles only.
+The **⋯** button opens a small control window with **Toolbar size** (75–150%),
+**Area height** (90–720 logical points), and optional hover-area shading. The
+control window remains usable when the caption window is very short. The same
+choices are on the Overlay page, alongside display, position, width, font,
+line limit, alignment, background opacity and subtitle style.
+
+Position, size, display and appearance use the existing desktop DataStore.
+Changing width preserves the dragged window's center; changing height preserves
+its bottom edge. Disconnected-display positions are clamped to a current work
+area when the overlay opens. **Reset position** unlocks and recenters the window
+at the bottom while retaining caption appearance and language preferences.
+
+| Action | macOS | Windows |
+| --- | --- | --- |
+| Show/hide | Command+Option+O | Ctrl+Alt+O |
+| Click-through/unlock | Command+Option+L | Ctrl+Alt+L |
+| Larger/smaller text | Command+Option+Up/Down | Ctrl+Alt+Up/Down |
+| Reset position | Command+Option+R | Ctrl+Alt+R |
+| Show/hide original line | Command+Option+T | Ctrl+Alt+T |
+| Cycle style | Command+Option+S | Ctrl+Alt+S |
+
+When the caption window has focus, arrows move it, Shift increases the movement
+step, Alt+arrows resize it, and Escape hides it. System hotkeys can be disabled
+on the Overlay page; the focused-app fallback remains registered. Hotkey
+registration conflicts and native window errors are shown instead of claiming
+success. Click-through can also be disabled from the main Overlay page.
+The OS bridge registers these specific chords; it installs no keyboard hook.
+
+[Implementation, checks and remaining platform verification](handoff/desktop-overlay-2026-10-23.md).
+
 ## Build and run
 
 Use JDK 17, Python 3, CMake 3.22 or newer, and Rust 1.99 (Ming). `hearthDesktopOnly=true`

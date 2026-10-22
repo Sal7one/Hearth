@@ -32,12 +32,13 @@ import com.sal7one.hearth.desktop.ui.components.SwitchRow
 import com.sal7one.hearth.desktop.ui.theme.HearthTheme
 import com.sal7one.hearth.desktop.ui.theme.HearthType
 
-/** What the window says, and what it does not. The last switch is honestly disabled. */
+/** What the window says, and what it does not. Native click-through can always be reversed from this page. */
 @Composable
 internal fun OverlayDisplayCard(
     settings: OverlaySettings,
     onChange: (OverlaySettings) -> Unit,
     modifier: Modifier = Modifier,
+    nativeAvailable: Boolean = false,
 ) {
     val colors = HearthTheme.colors
     HearthCard(modifier, padding = 16.dp) {
@@ -63,7 +64,7 @@ internal fun OverlayDisplayCard(
                 OverlayCopy.CLICK_THROUGH_DETAIL,
                 settings.clickThrough,
                 { onChange(settings.copy(clickThrough = it)) },
-                enabled = false,
+                enabled = nativeAvailable,
             )
         }
     }

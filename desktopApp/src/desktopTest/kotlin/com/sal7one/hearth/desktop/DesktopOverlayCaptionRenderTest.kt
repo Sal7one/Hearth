@@ -1,6 +1,9 @@
 package com.sal7one.hearth.desktop
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -9,6 +12,7 @@ import androidx.compose.ui.ImageComposeScene
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Density
+import com.sal7one.hearth.desktop.ui.screens.overlay.OverlayQuickControls
 import com.sal7one.hearth.desktop.ui.screens.overlay.CaptionLayer
 import com.sal7one.hearth.desktop.ui.screens.overlay.OverlayCaptionView
 import com.sal7one.hearth.desktop.ui.screens.overlay.OverlaySettings
@@ -32,6 +36,19 @@ import kotlin.test.assertTrue
  */
 @OptIn(ExperimentalComposeUiApi::class)
 class DesktopOverlayCaptionRenderTest {
+
+    @Test fun quickMenuCanMeasureItsSlidersInsideAnIntrinsicPopupLayout() {
+        val scene = ImageComposeScene(width = 320, height = 300, density = Density(1f)) {
+            HearthTheme {
+                // Same intrinsic-width query that Material DropdownMenu uses.
+                Row(Modifier.width(IntrinsicSize.Min)) { OverlayQuickControls(OverlaySettings(), {}) }
+            }
+        }
+        try {
+            repeat(3) { scene.render(System.nanoTime()).close() }
+            scene.render(System.nanoTime()).use { assertTrue(it.width > 0) }
+        } finally { scene.close() }
+    }
 
     private val original = "The museum opens at nine in the morning."
     private val translation = "يبدأ المتحف في التاسعة صباحًا."

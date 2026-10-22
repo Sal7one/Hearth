@@ -73,6 +73,10 @@ import com.sal7one.hearth.desktop.ui.screens.home.homeState
 import com.sal7one.hearth.desktop.ui.screens.overlay.FloatingCaptionWindow
 import com.sal7one.hearth.desktop.ui.screens.overlay.OverlayActions
 import com.sal7one.hearth.desktop.ui.screens.overlay.OverlayScreen
+import com.sal7one.hearth.desktop.ui.screens.overlay.OverlayShortcutBinding
+import com.sal7one.hearth.desktop.ui.screens.overlay.OverlayCommand
+import com.sal7one.hearth.desktop.ui.screens.overlay.reduceOverlayCommand
+import com.sal7one.hearth.desktop.platform.NativeOverlayWindow
 import com.sal7one.hearth.desktop.ui.screens.overlay.OverlaySettings
 import com.sal7one.hearth.desktop.ui.screens.overlay.overlayPrefs
 import com.sal7one.hearth.desktop.ui.screens.overlay.overlaySettingsFrom
@@ -518,26 +522,24 @@ internal fun HearthDesktopRoot(
         onNavigate = ::navigate,
     )
 
+    var overlayControlIssue by remember { mutableStateOf<String?>(null) }
+    val shortcutStatus = OverlayShortcutBinding(overlaySettings.shortcutsEnabled) { command ->
+        if (command != OverlayCommand.LOCK || NativeOverlayWindow.supported) {
+            applyOverlay(reduceOverlayCommand(overlaySettings, command))
+        }
+    }
     val overlay = overlayState(
         snapshot = workspace.snapshot,
         translationEnabled = activeConfig.translation != null,
         targetLanguage = activeConfig.targetLanguage,
         settings = overlaySettings,
         showOriginalWhilePending = showPendingOriginal,
-    )
+    ).copy(shortcutStatus = shortcutStatus, nativeControlsAvailable = NativeOverlayWindow.supported, controlIssue = overlayControlIssue)
 
     val overlayActions = OverlayActions(
         onChange = ::applyOverlay,
         onToggleVisible = { visible -> applyOverlay(overlaySettings.copy(visible = visible)) },
-        onReset = {
-            applyOverlay(
-                OverlaySettings(
-                    showOriginal = overlaySettings.showOriginal,
-                    showPartials = overlaySettings.showPartials,
-                    visible = overlaySettings.visible,
-                ),
-            )
-        },
+        onReset = { applyOverlay(reduceOverlayCommand(overlaySettings, OverlayCommand.RESET)) },
     )
 
     val captions: CaptionsState = captionsState(
@@ -753,6 +755,13 @@ internal fun HearthDesktopRoot(
                 dark = dark,
                 preset = preset,
                 onClose = { applyOverlay(overlaySettings.copy(visible = false)) },
+                onChange = ::applyOverlay,
+                onNativeApplied = { overlayControlIssue = null },
+                onNativeError = { message ->
+                    overlayControlIssue = message
+                    if (overlaySettings.clickThrough) applyOverlay(overlaySettings.copy(clickThrough = false))
+                    controller.showError("Caption window: $message")
+                },
             )
         }
     }

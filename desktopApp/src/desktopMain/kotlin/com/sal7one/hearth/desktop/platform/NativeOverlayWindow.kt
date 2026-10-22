@@ -1,0 +1,75 @@
+package com.sal7one.hearth.desktop.platform
+
+import com.sun.jna.Callback
+import com.sun.jna.Library
+import com.sun.jna.Native
+import com.sun.jna.NativeLibrary
+import com.sun.jna.Pointer
+import com.sun.jna.platform.win32.User32
+import com.sun.jna.platform.win32.WinDef.HWND
+import java.awt.Window
+import java.util.concurrent.atomic.AtomicReference
+
+internal object MacMainQueue {
+    private val objc by lazy { NativeLibrary.getInstance("objc") }
+    private val send by lazy { objc.getFunction("objc_msgSend") }
+    private val selectors = java.util.concurrent.ConcurrentHashMap<String, Pointer>()
+    fun selector(name: String): Pointer = selectors.getOrPut(name) { objc.getFunction("sel_registerName").invokePointer(arrayOf(name)) }
+    fun cls(name: String): Pointer = objc.getFunction("objc_getClass").invokePointer(arrayOf(name))
+    fun pointer(target: Pointer?, name: String, vararg arguments: Any?): Pointer? = send.invokePointer(arrayOf(target, selector(name), *arguments))
+    fun number(target: Pointer?, name: String): Long = send.invokeLong(arrayOf(target, selector(name)))
+    fun set(target: Pointer, name: String, value: Any) { send.invokeVoid(arrayOf(target, selector(name), value)) }
+    interface Dispatch : Library { fun dispatch_sync_f(queue: Pointer, context: Pointer?, callback: Work) }
+    interface Work : Callback { fun invoke(context: Pointer?) }
+    private val dispatch by lazy { Native.load("System", Dispatch::class.java) }
+    private val queue by lazy { NativeLibrary.getInstance("System").getGlobalVariableAddress("_dispatch_main_q") }
+    fun <T> run(block: () -> T): T {
+        check(!java.awt.EventQueue.isDispatchThread()) {
+            "AppKit bridge must run off AWT's event thread to avoid accessibility deadlocks"
+        }
+        if (number(cls("NSThread"), "isMainThread") != 0L) return block()
+        val result = AtomicReference<Result<T>>()
+        val callback = object : Work { override fun invoke(context: Pointer?) { result.set(runCatching(block)) } }
+        try { dispatch.dispatch_sync_f(queue, null, callback) }
+        finally { java.lang.ref.Reference.reachabilityFence(callback) }
+        return result.get().getOrThrow()
+    }
+}
+
+/** Native operations affect only Hearth's own caption window; no external app is inspected. */
+internal object NativeOverlayWindow {
+    val supported: Boolean get() = System.getProperty("os.name").let { it.contains("Mac", true) || it.startsWith("Windows", true) }
+    fun apply(window: Window, title: String, clickThrough: Boolean) {
+        check(window.isDisplayable) { "The caption window is not ready" }
+        when {
+            System.getProperty("os.name").contains("Mac", true) -> MacMainQueue.run {
+                val app = MacMainQueue.pointer(MacMainQueue.cls("NSApplication"), "sharedApplication")
+                val windows = MacMainQueue.pointer(app, "windows")
+                val count = MacMainQueue.number(windows, "count").coerceAtMost(500)
+                val target = (0 until count).asSequence().map { index -> MacMainQueue.pointer(windows, "objectAtIndex:", index) }
+                    .firstOrNull { candidate ->
+                        val text = MacMainQueue.pointer(MacMainQueue.pointer(candidate, "title"), "UTF8String")?.getString(0, "UTF-8")
+                        text == title
+                    } ?: error("Cannot find Hearth's native caption window")
+                // Compatible utility/full-screen flags; avoid contradictory primary/auxiliary bits.
+                MacMainQueue.set(target, "setCollectionBehavior:", 1L or 8L or 64L or 256L or 4096L or (1L shl 18))
+                MacMainQueue.set(target, "setLevel:", 3L)
+                MacMainQueue.set(target, "setHidesOnDeactivate:", 0.toByte())
+                MacMainQueue.set(target, "setIgnoresMouseEvents:", if (clickThrough) 1.toByte() else 0.toByte())
+                check((MacMainQueue.number(target, "ignoresMouseEvents") != 0L) == clickThrough) { "macOS did not apply click-through" }
+            }
+            System.getProperty("os.name").startsWith("Windows", true) -> {
+                val api = User32.INSTANCE
+                val hwnd = HWND(Native.getComponentPointer(window))
+                val old = api.GetWindowLong(hwnd, -20)
+                val transparent = 0x20; val noActivate = 0x08000000
+                val next = if (clickThrough) old or transparent or noActivate or 0x80000 else old and transparent.inv() and noActivate.inv()
+                Native.setLastError(0)
+                val previous = api.SetWindowLong(hwnd, -20, next)
+                check(previous != 0 || Native.getLastError() == 0) { "Windows click-through failed: ${Native.getLastError()}" }
+                check((api.GetWindowLong(hwnd, -20) and transparent != 0) == clickThrough) { "Windows did not apply click-through" }
+            }
+            else -> check(!clickThrough) { "Native click-through is available on macOS and Windows" }
+        }
+    }
+}

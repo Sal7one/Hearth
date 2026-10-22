@@ -21,6 +21,8 @@ kotlin {
                 implementation(project(":desktop-data"))
                 implementation(project(":desktop-integration"))
                 implementation(compose.desktop.currentOs)
+                implementation("net.java.dev.jna:jna:5.17.0")
+                implementation("net.java.dev.jna:jna-platform:5.17.0")
                 implementation(compose.material3)
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-swing:1.8.1")
             }

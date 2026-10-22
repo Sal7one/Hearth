@@ -61,6 +61,11 @@ private class DesktopServices(
 }
 
 fun main(args: Array<String>) {
+    if (args.firstOrNull() == "--overlay-preview") {
+        require(args.size == 2) { "Usage: Hearth --overlay-preview <isolated-preview-directory>" }
+        launchOverlayPreview(Path.of(args[1]))
+        return
+    }
     if (args.firstOrNull() == "--gpu-check") {
         require(args.size == 6) { "Usage: Hearth --gpu-check <metal|cuda> <whisper-model> <EuroLLM-model> <wav> <receipt-json>" }
         com.sal7one.hearth.desktop.runtime.DesktopGpuValidation.run(args[1], Path.of(args[2]), Path.of(args[3]), Path.of(args[4]), Path.of(args[5]))

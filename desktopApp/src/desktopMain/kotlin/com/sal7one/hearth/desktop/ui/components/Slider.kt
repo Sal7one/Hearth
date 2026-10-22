@@ -12,6 +12,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.PointerIcon
@@ -32,6 +34,7 @@ internal fun HearthSlider(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
 ) {
+    val updateValue by rememberUpdatedState(onValueChange)
     val colors = HearthTheme.colors
     val density = LocalDensity.current
     val thumb = 16.dp
@@ -44,13 +47,13 @@ internal fun HearthSlider(
             .pointerInput(enabled) {
                 if (!enabled) return@pointerInput
                 detectTapGestures { offset ->
-                    onValueChange((offset.x / size.width.toFloat()).coerceIn(0f, 1f))
+                    updateValue((offset.x / size.width.toFloat()).coerceIn(0f, 1f))
                 }
             }
             .pointerInput(enabled) {
                 if (!enabled) return@pointerInput
-                detectHorizontalDragGestures { change, _ ->
-                    onValueChange((change.position.x / size.width.toFloat()).coerceIn(0f, 1f))
+                detectHorizontalDragGestures { pointer, _ ->
+                    updateValue((pointer.position.x / size.width.toFloat()).coerceIn(0f, 1f))
                 }
             },
         contentAlignment = Alignment.CenterStart,
