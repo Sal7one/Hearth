@@ -136,7 +136,9 @@ from the pinned `ming-ffi`/`ming-jni` Rust source over fusor-ai 0.1.2. It downlo
 catalog layout into the runtime's `parts/` layout, and writes 44.1 kHz mono WAV through
 JNI. It advertises **English and Chinese only**, because the shipped runtime hardcodes
 `language: None`; the other five published languages need a library-level wrapper.
-Peak RSS is ~1 GB and each one-shot call reloads the bundle (~0.9 s). `DesktopMingLocalRealSmokeTest`
+Peak RSS is ~1 GB and each one-shot call reloads the bundle (~0.9 s). Desktop allows
+1–8 worker threads (catalog default 6); Android caps at 4 and accepts locale tags
+(`en-US`, `zh-Hans`) after normalization. `DesktopMingLocalRealSmokeTest`
 is owner-opt-in. Android now has an in-app JNI proof on a Galaxy S20 FE (RTF ~2.1 with the `+dotprod`
 build and 4 threads, ~1.02 GB peak RSS); the engine is registered behind an
 off-by-default feature flag. The default scalar build measured RTF 34 on that phone

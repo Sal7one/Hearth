@@ -63,6 +63,31 @@ The opt-in real-model smokes are documented in
 [desktop-native-verification.md](../desktop-native-verification.md); they never
 download or play audio by default.
 
+## Post-audit fixes and pipeline hardening
+
+- `DesktopNativeOwnershipTest` now skips cleanly on hosts without a staged desktop
+  native bundle (Linux Android CI) and fails loudly if a staged bundle cannot load.
+- The Chatterbox pinned byte-BPE build no longer uses `--offline`, so a fresh CI
+  runner fetches its locked crates instead of failing with a misleading
+  "no matching package" error. `--locked` still pins `Cargo.lock`.
+- `build-native.py --stage all` was verified end to end on macOS arm64, including
+  Magpie, Ming, Vosk, OmniVoice and Chatterbox; Magpie's NeMo/llama.cpp pins are
+  provisioned by `prepare-dependencies.py`.
+- Desktop Ming staging now uses absolute symlinks when hardlinks are unavailable,
+  relinks replaced/stale parts, normalizes `en-US`/`zh-Hans`, verifies the 17
+  SHA-256 pins once at the engine boundary, and has a host test for replacement
+  and pin mismatch. Android already had the equivalent checks.
+- The desktop backend JNI releases its `dlopen` handle and any session when the
+  constructor throws; previously a failed backend load leaked the library.
+- Desktop TTS controls no longer pass Supertonic speed/steps/voice IDs to other
+  local engines; the voice picker hides Supertonic-only controls, defaults to the
+  engine default voice, and caps steps at 2–12.
+
+**Verification:** Android host tests/QA compiles, both QA APK sets,
+`verify-release.py` (10 APKs), the full desktop suite, `generate-catalog.py
+--check`, and the desktop script unittests pass. CI is being re-run; Windows is
+still expected to be red and is parked.
+
 ## Owner checks before merge
 
 1. Open the desktop overlay window and confirm always-on-top, undecorated,

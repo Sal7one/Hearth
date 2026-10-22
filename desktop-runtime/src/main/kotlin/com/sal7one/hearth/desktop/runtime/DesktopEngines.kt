@@ -44,6 +44,7 @@ class DesktopEngines(
 ) : PipelineEngines, AutoCloseable {
     private val cloud = DesktopCloud(credentials, appDataDirectory)
     private val voices = DesktopVoiceCache(appDataDirectory)
+    private val mingVerified = mutableSetOf<String>()
     private val mingVoices = DesktopVoiceCache(
         appDataDirectory,
         engineId = "ming-local",
@@ -535,6 +536,14 @@ class DesktopEngines(
         }
         if (selection.engineId == "ming-local") {
             require(!metal(selection)) { "Ming local supports CPU acceleration only" }
+            val key = selection.modelPath + "|" + selection.options.filterKeys { it.startsWith("sha256.") }
+                .entries.sortedBy { it.key }.joinToString("&") { "${it.key}=${it.value}" }
+            synchronized(mingVerified) {
+                if (key !in mingVerified) {
+                    MingLocalModel.verify(selection)
+                    mingVerified += key
+                }
+            }
             return mingVoices.read(text, selection, language, voiceId)
         }
         require(selection.engineId == "supertonic-local") { "Unknown voice engine: ${selection.engineId}" }
@@ -551,7 +560,7 @@ class DesktopEngines(
         engine?.close()
     }
     override fun close() {
-        if (closed.compareAndSet(false, true)) try { clearTranslation(); clearCt2() } finally { voices.close(); mossVoices.close(); omnivoiceVoices.close(); magpieVoices.close(); chatterboxVoices.close(); mingVoices.close() }
+        if (closed.compareAndSet(false, true)) try { clearTranslation(); clearCt2() } finally { synchronized(mingVerified) { mingVerified.clear() }; voices.close(); mossVoices.close(); omnivoiceVoices.close(); magpieVoices.close(); chatterboxVoices.close(); mingVoices.close() }
     }
 /** Vosk models are extracted directories whose model-tree-sha256-v1 digest is the pin.
  *  The desktop library verifies it on install/refresh and the adapter re-derives and

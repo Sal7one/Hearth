@@ -60,10 +60,13 @@ verifies the selected card's four component pins (tokens/encoder/decoder/LICENSE
 
 ## 3. Why not one dylib for everything
 
-Parakeet, NeMo, sherpa and Supertonic each statically embed their own ggml or ONNX
-Runtime. Linking them into one dylib duplicates symbols, versions and memory, and
-makes a license audit harder. One dylib per SDK family, one C ABI between them, is
-the stable shape. The bridge can load any number of backends in one process.
+Parakeet, NeMo and sherpa statically embed their own ggml or ONNX Runtime copies.
+Supertonic, Chatterbox, MOSS and Qwen3-ASR use the **shared** ONNX Runtime 1.20.1 on
+desktop (Android uses the shared `libonnxruntime.so`; the Android Qwen build embeds
+its own ORT/sherpa). Linking everything into one dylib duplicates symbols, versions
+and memory, and makes a license audit harder. One dylib per SDK family, one C ABI
+between them, is the stable shape. The bridge can load any number of backends in one
+process.
 
 NeMo-Speech.cpp now has two desktop consumers: Nemotron ASR and Magpie TTS. They
 share a repository, not a dylib. Magpie's adapter builds the pinned TTS C ABI and

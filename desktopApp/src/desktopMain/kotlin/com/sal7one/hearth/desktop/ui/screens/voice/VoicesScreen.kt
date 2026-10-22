@@ -86,7 +86,7 @@ internal fun VoicesScreen(
                     }
                 }
 
-                HearthCard(padding = 20.dp) {
+                if (state.supertonicSelected) HearthCard(padding = 20.dp) {
                     Text(VoicesCopy.STYLE, style = HearthType.h3.copy(fontSize = 15.sp), color = colors.text)
                     Spacer(Modifier.height(3.dp))
                     Text(VoicesCopy.STYLE_DETAIL, style = HearthType.small, color = colors.muted)
@@ -118,7 +118,7 @@ internal fun VoicesScreen(
                             modifier = Modifier.width(280.dp),
                         )
                     }
-                    FormRow(label = VoicesCopy.SPEED, hint = VoicesCopy.SPEED_HINT) {
+                    if (state.supertonicSelected) FormRow(label = VoicesCopy.SPEED, hint = VoicesCopy.SPEED_HINT) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             HearthSlider(
                                 value = ((state.speed.coerceIn(0.5f, 2f) - 0.5f) / 1.5f),
@@ -133,11 +133,11 @@ internal fun VoicesScreen(
                             )
                         }
                     }
-                    FormRow(label = VoicesCopy.STEPS, hint = VoicesCopy.STEPS_HINT, showDivider = false) {
+                    if (state.supertonicSelected) FormRow(label = VoicesCopy.STEPS, hint = VoicesCopy.STEPS_HINT, showDivider = false) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             HearthSlider(
-                                value = (state.steps - 1) / 15f,
-                                onValueChange = { fraction -> actions.onSteps((1 + fraction * 15).toInt().coerceIn(1, 16)) },
+                                value = (state.steps.coerceIn(2, 12) - 2) / 10f,
+                                onValueChange = { fraction -> actions.onSteps((2 + fraction * 10).toInt().coerceIn(2, 12)) },
                                 modifier = Modifier.width(240.dp),
                             )
                             Spacer(Modifier.width(12.dp))

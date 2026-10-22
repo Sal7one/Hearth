@@ -278,6 +278,12 @@ internal fun HearthDesktopRoot(
         current.copy(voice = selected.copy(options = selected.options + (key to value)))
     }
 
+    // Speed/steps are Supertonic-only controls; strip them when switching to another local voice.
+    fun voiceSelection(engine: com.sal7one.hearth.core.EngineDescriptor): com.sal7one.hearth.core.EngineSelection {
+        val base = engineSelection(engine)
+        return if (engine.id == "supertonic-local") base else base.copy(options = base.options - "speed" - "steps")
+    }
+
     val voicesActions = VoicesActions(
         onNavigate = ::navigate,
         onSelectEngine = { id ->
@@ -286,7 +292,7 @@ internal fun HearthDesktopRoot(
             } else {
                 controller.capabilities.firstOrNull { it.id == id && it.stage == PipelineStage.TTS }?.let { engine ->
                     controller.updateConfig { current ->
-                        current.copy(voice = engineSelection(engine), voiceId = current.voiceId.ifBlank { "F1" })
+                        current.copy(voice = voiceSelection(engine), voiceId = "")
                     }
                 }
             }
@@ -297,7 +303,7 @@ internal fun HearthDesktopRoot(
             if (aloud) {
                 controller.capabilities.firstOrNull { it.id == "supertonic-local" || it.stage == PipelineStage.TTS }?.let { engine ->
                     controller.updateConfig { current ->
-                        current.copy(voice = current.voice ?: engineSelection(engine), voiceId = current.voiceId.ifBlank { "F1" })
+                        current.copy(voice = current.voice ?: voiceSelection(engine), voiceId = "")
                     }
                 }
             } else {

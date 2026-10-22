@@ -32,7 +32,10 @@ internal class MingLocalEngine(private val bundle: File, threads: Int) : SpeechE
     override fun synthesize(text: String, language: String, voice: SpeechVoice, options: SpeechOptions, cancellation: SpeechCancellation, emit: (PcmAudio) -> Unit) {
         check(!closed) { "Ming local engine is closed" }
         require(text.length in 1..maximumTextCharacters) { "Ming local accepts 1–300 characters per request" }
-        require(language in setOf("en", "zh")) { "Ming local built-in voices support English and Chinese only" }
+        val normalized = MingLocalModel.language(language)
+            ?: throw IllegalArgumentException("Ming local built-in voices support English and Chinese only")
+        require(voice.supports(normalized)) { "Unsupported Ming voice or language" }
+        require(options.rate == 1f) { "Ming local synthesis requires normal speed; apply speed in playback" }
         require(voice in voices) { "Unsupported Ming voice" }
         cancellation.throwIfCancelled()
         if (cancelled.getAndSet(false)) throw CancellationException("Ming speech stopped")

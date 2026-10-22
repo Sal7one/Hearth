@@ -59,9 +59,12 @@ internal class DesktopVoiceCache(
             require(selection.engineId == engineId) { "Desktop voice cache supports $engineId only" }
             require(text.isNotBlank()) { "Read aloud needs text" }
             require(selection.options["acceleration"] in setOf(null, "cpu")) { "Local desktop voices currently support CPU acceleration only" }
+            // Speed/steps are Supertonic controls. Other local engines require normal speed and
+            // do not consume quality steps; ignore stale setup values instead of failing at synth.
+            val supertonic = engineId == "supertonic-local"
             val options = SpeechOptions(
-                rate = selection.options["speed"]?.toFloatOrNull() ?: 1f,
-                qualitySteps = selection.options["steps"]?.toIntOrNull() ?: 5,
+                rate = if (supertonic) selection.options["speed"]?.toFloatOrNull() ?: 1f else 1f,
+                qualitySteps = if (supertonic) selection.options["steps"]?.toIntOrNull() ?: 5 else 5,
             )
             val threadCount = (selection.options["threads"]?.toIntOrNull() ?: 2).also { require(it in 1..8) { "Voice threads must be 1–8" } }
             val key = withContext(Dispatchers.IO) {

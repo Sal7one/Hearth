@@ -31,6 +31,7 @@ struct Backend {
     Backend(const std::string& libraryPath, const std::string& expectedId, const std::string& entrySymbol,
             const std::string& model, const std::string& encoder, const std::string& decoder, const std::string& tokenizer,
             const std::string& convFrontend, const std::string& language, int threads, int rightContext, int maximumMs, int silenceMs, float thresholdDb) {
+        try {
         if (threads < 1 || threads > 32) throw std::invalid_argument("Speech threads must be 1–32");
         if (language.size() > 32) throw std::invalid_argument("Speech language is too long");
         if (entrySymbol.empty() || entrySymbol.size() > 128) throw std::invalid_argument("Speech backend entry symbol is invalid");
@@ -72,6 +73,12 @@ struct Backend {
         const char* info = api->execution_info(session);
         executionInfo = info ? info : "CPU";
         lastLanguage = language == "auto" ? "" : language;
+        } catch (...) {
+            // A throwing constructor does not run ~Backend(); release dlopen/create here.
+            if (api && session) { api->destroy(session); session = nullptr; }
+            if (library) { dlclose(library); library = nullptr; }
+            throw;
+        }
     }
 
     ~Backend() {
