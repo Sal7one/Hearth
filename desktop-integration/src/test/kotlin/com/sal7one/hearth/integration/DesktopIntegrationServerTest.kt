@@ -367,8 +367,13 @@ class DesktopIntegrationServerTest {
             "Authorization: Bearer ${server.apiToken}\r\nContent-Type: video/mp4\r\nContent-Length: $length\r\nConnection: close\r\n\r\n").toByteArray())
     }
 
-    private fun regularFiles(directory: java.nio.file.Path): List<java.nio.file.Path> = Files.walk(directory).use { entries ->
-        entries.filter { Files.isRegularFile(it) }.toList()
+    private fun regularFiles(directory: java.nio.file.Path): List<java.nio.file.Path> = try {
+        Files.walk(directory).use { entries -> entries.filter { Files.isRegularFile(it) }.toList() }
+    } catch (_: java.io.UncheckedIOException) {
+        // A disconnect/close races this wait; the server is allowed to delete its partial file.
+        emptyList()
+    } catch (_: java.nio.file.NoSuchFileException) {
+        emptyList()
     }
 
     private fun readUntil(reader: java.io.BufferedReader, predicate: (String) -> Boolean): String {

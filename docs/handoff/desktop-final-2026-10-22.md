@@ -82,6 +82,8 @@ download or play audio by default.
 - Desktop TTS controls no longer pass Supertonic speed/steps/voice IDs to other
   local engines; the voice picker hides Supertonic-only controls, defaults to the
   engine default voice, and caps steps at 2–12.
+- `DesktopIntegrationServerTest.regularFiles` tolerates the intentional deletion
+  race during media-upload admission/cleanup, removing the Linux CI flake.
 
 **Verification:** Android host tests/QA compiles, both QA APK sets,
 `verify-release.py` (10 APKs), the full desktop suite, `generate-catalog.py
