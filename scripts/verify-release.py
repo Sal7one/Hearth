@@ -236,7 +236,15 @@ manga = json.loads((ocr_assets/'manga-provenance.json').read_text())
 assert hashlib.sha256((ocr_assets/'manga.json').read_bytes()).hexdigest() == manga['dictionary_sha256']
 assert len(json.loads((ocr_assets/'manga.json').read_text())) == manga['classes'] == 6144
 
-expected_libs = {'libhearth_chatterbox_jni.so','libhearth_oute_jni.so','libhearth_moss_jni.so','libhearth_supertonic_jni.so','libhearth_omnivoice_jni.so','libhearth_magpie_jni.so','libtransiber_translation.so','libcommon_jni.so','libc++_shared.so','libvosk.so','libonnxruntime.so','libhearth_qwen.so','libhearth_nemotron.so','libhearth_transcribepsy.so','libandroidx.graphics.path.so','libdatastore_shared_counter.so','libimage_processing_util_jni.so'}
+expected_libs = {'libhearth_supertonic_jni.so','libtransiber_translation.so','libcommon_jni.so','libc++_shared.so','libvosk.so','libonnxruntime.so','libhearth_qwen.so','libhearth_nemotron.so','libhearth_transcribepsy.so','libandroidx.graphics.path.so','libdatastore_shared_counter.so','libimage_processing_util_jni.so'}
+# Prebuilt TTS families are ARM64-only: their wrappers and runtime DSOs travel together.
+arm64_only_libs = {
+    'libhearth_chatterbox_jni.so', 'libhearth_chatterbox.so',
+    'libhearth_magpie_jni.so', 'libhearth_magpie.so',
+    'libhearth_moss_jni.so', 'libhearth_moss.so',
+    'libhearth_omnivoice_jni.so', 'libhearth_omnivoice.so',
+    'libhearth_oute_jni.so', 'libhearth_oute.so',
+}
 platform = {'liblog.so','libandroid.so','libjnigraphics.so','libm.so','libdl.so','libc.so','libz.so'}
 delivery_signers = None
 unsigned_inputs = 0
@@ -259,10 +267,15 @@ for flavor, architecture in [(f, a) for f in ('play','foss') for a in (*ABIS, 'u
     with zipfile.ZipFile(apk) as archive, tempfile.TemporaryDirectory() as tmp:
         native = [n for n in archive.namelist() if n.startswith('lib/') and n.endswith('.so')]
         packaged_abis = set(ABIS) if architecture == 'universal' else {architecture}
-        all_expected = flavor_libs | {name for name, (abi, _) in gpu_artifacts.items() if abi in packaged_abis}
+        all_expected = (flavor_libs
+                        | {name for name, (abi, _) in gpu_artifacts.items() if abi in packaged_abis}
+                        | (arm64_only_libs if 'arm64-v8a' in packaged_abis else set()))
         assert {Path(n).name for n in native} == all_expected, native
         assert {n.split('/')[1] for n in native} == packaged_abis
-        assert all({Path(n).name for n in native if n.startswith('lib/' + abi + '/')} == flavor_libs | {name for name, (target_abi, _) in gpu_artifacts.items() if abi == target_abi} for abi in packaged_abis)
+        assert all({Path(n).name for n in native if n.startswith('lib/' + abi + '/')}
+                   == flavor_libs
+                   | {name for name, (target_abi, _) in gpu_artifacts.items() if abi == target_abi}
+                   | (arm64_only_libs if abi == 'arm64-v8a' else set()) for abi in packaged_abis)
         for name in native:
             abi = name.split('/')[1]
             file = Path(tmp)/abi/Path(name).name

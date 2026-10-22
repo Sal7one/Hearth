@@ -5,6 +5,9 @@ android {
     ndkVersion = "27.0.12077973"
     defaultConfig {
         minSdk = 28
+        // These families ship ARM64 prebuilt runtimes only; do not package JNI wrappers
+        // into x86/ARMv7 APKs where the runtime library cannot exist.
+        ndk { abiFilters += "arm64-v8a" }
         consumerProguardFiles("consumer-rules.pro")
         externalNativeBuild { cmake { arguments += listOf("-DANDROID_STL=c++_shared", "-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON") } }
     }
