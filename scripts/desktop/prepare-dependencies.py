@@ -18,6 +18,8 @@ LLAMA_PIN = '64e9bceb2c3a856efed96feda784a50947049feb'
 SHERPA_PIN = '210f340bcfdfd5b9ad6b24245e77a934d6c28f1b'
 OMNIVOICE_PIN = '1a468d8b9d65b3544ca1004d2d7c05dfc65d1f3e'
 CHATTERBOX_PIN = '1a9a4fc00a6caa8c8bb9bee533225f40661e4220'
+MAGPIE_NEMO_PIN = 'caa3f47c7c75fa2e9e6340272ebad57c1647dd44'
+MAGPIE_NEMO_GGML_PIN = 'bd4f514db14d87fded667787a7a963bfbaa98e89'
 OMNIVOICE_GGML_PIN = 'cc5df49a6b878db2b68b9a7b45976e279594627d'
 ASSETS = {
     'macos-arm64': ('onnxruntime-osx-arm64-1.20.1.tgz', 'b678fc3c2354c771fea4fba420edeccfba205140088334df801e7fc40e83a57a'),
@@ -134,6 +136,22 @@ def main():
         exists=subprocess.run(['git','-C',str(chatterbox),'cat-file','-e',f'{CHATTERBOX_PIN}^{{commit}}'],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL).returncode==0
         if not exists: subprocess.run(['git','-C',str(chatterbox),'fetch','--depth','1','https://github.com/birdup000/chatterboxcpp.git',CHATTERBOX_PIN],check=True)
         subprocess.run(['git','-C',str(chatterbox),'checkout','--detach',CHATTERBOX_PIN],check=True)
+        nemo=work/'NeMo-Speech.cpp'
+        if not (nemo/'.git').is_dir():
+            if nemo.exists(): raise RuntimeError('Refusing to overwrite a non-checkout NeMo-Speech.cpp directory')
+            subprocess.run(['git','init',str(nemo)],check=True)
+            subprocess.run(['git','-C',str(nemo),'remote','add','origin','https://github.com/NVIDIA/NeMo-Speech.cpp.git'],check=True)
+        status=subprocess.check_output(['git','-C',str(nemo),'status','--porcelain'],text=True)
+        if status.strip(): raise RuntimeError('NeMo-Speech.cpp checkout has local changes; not resetting it')
+        exists=subprocess.run(['git','-C',str(nemo),'cat-file','-e',f'{MAGPIE_NEMO_PIN}^{{commit}}'],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL).returncode==0
+        if not exists: subprocess.run(['git','-C',str(nemo),'fetch','--depth','1','https://github.com/NVIDIA/NeMo-Speech.cpp.git',MAGPIE_NEMO_PIN],check=True)
+        subprocess.run(['git','-C',str(nemo),'checkout','--detach',MAGPIE_NEMO_PIN],check=True)
+        subprocess.run(['git','-C',str(nemo),'submodule','update','--init','--recursive'],check=True)
+        ggml=nemo/'llama.cpp'
+        ggml_pin=subprocess.check_output(['git','-C',str(ggml),'rev-parse','HEAD'],text=True).strip()
+        if ggml_pin!=MAGPIE_NEMO_GGML_PIN: raise RuntimeError(f'NeMo-Speech.cpp/llama.cpp must be {MAGPIE_NEMO_GGML_PIN}, found {ggml_pin}')
+        if subprocess.check_output(['git','-C',str(ggml),'status','--porcelain'],text=True).strip():
+            raise RuntimeError('NeMo-Speech.cpp/llama.cpp checkout has local changes')
     name,expected=ASSETS[key];archive=work/name
     if not archive.exists() or digest(archive)!=expected:
         partial=archive.with_suffix(archive.suffix+'.part')
@@ -163,7 +181,9 @@ def main():
     if (ort/'VERSION_NUMBER').read_text().strip()!='1.20.1': raise ValueError('Unexpected ONNX Runtime version')
     paths={'HEARTH_LLAMA_ROOT':str(llama),'HEARTH_SHERPA_ROOT':str(sherpa),'HEARTH_ORT_ROOT':str(ort)}
     if omnivoice is not None: paths['HEARTH_OMNIVOICE_ROOT']=str(omnivoice)
-    if key=='macos-arm64': paths['HEARTH_CHATTERBOX_ROOT']=str(work/'chatterboxcpp')
+    if key=='macos-arm64':
+        paths['HEARTH_CHATTERBOX_ROOT']=str(work/'chatterboxcpp')
+        paths['HEARTH_NEMO_ROOT']=str(work/'NeMo-Speech.cpp')
     if args.github_env:
         with open(os.environ['GITHUB_ENV'],'a',encoding='utf-8') as output:
             for key,value in paths.items(): output.write(f'{key}={value}\n')

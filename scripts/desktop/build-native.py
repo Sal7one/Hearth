@@ -577,9 +577,9 @@ def main():
     stages = ["whisper", "translation", "supertonic"] if args.stage == "all" else [args.stage]
     if args.stage == "all":
         if (system, arch) == ("macos", "arm64"):
-            stages.extend(["onnx", "ct2", "backend", "moss", "omnivoice", "chatterbox", "vosk", "ming"])
+            stages.extend(["onnx", "ct2", "backend", "moss", "omnivoice", "chatterbox", "magpie", "vosk", "ming"])
         else:
-            print(f"Skipping Qwen3-ASR (onnx), CTranslate2 (ct2), speech backends (backend), MOSS TTS (moss), OmniVoice TTS (omnivoice) and Chatterbox TTS (chatterbox): built only for macos-arm64; host is {target}", file=sys.stderr)
+            print(f"Skipping Qwen3-ASR (onnx), CTranslate2 (ct2), speech backends (backend), MOSS TTS (moss), OmniVoice TTS (omnivoice), Chatterbox TTS (chatterbox) and Magpie TTS (magpie): built only for macos-arm64; host is {target}", file=sys.stderr)
     if "onnx" in stages and system != "macos":
         parser.error("The Qwen3-ASR (sherpa-onnx) stage is built for macOS arm64 only")
     if "onnx" in stages and arch != "arm64":
