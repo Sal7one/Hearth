@@ -19,6 +19,7 @@ import com.sal7one.hearth.desktop.ui.components.HearthButton
 import com.sal7one.hearth.desktop.ui.components.PageHeader
 import com.sal7one.hearth.desktop.ui.icons.HearthIcons
 import com.sal7one.hearth.desktop.ui.shell.PageScaffold
+import com.sal7one.hearth.desktop.ui.language.LanguagePairPicker
 
 /**
  * Typed translation. The draft is local; the result is the last text session the
@@ -38,16 +39,27 @@ internal fun TranslateScreen(
             title = TranslateCopy.TITLE,
             lede = TranslateCopy.LEDE,
             actions = {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Chip(state.sourceLabel, tone = ChipTone.Neutral)
-                    HearthButton("", actions.onSwapLanguages, tone = ButtonTone.Ghost, size = ButtonSize.Small, icon = HearthIcons.Swap)
-                    Chip(state.targetLabel, tone = ChipTone.Neutral)
-                }
+                LanguagePairPicker(state.languages, actions.onSourceLanguage, actions.onTargetLanguage, actions.onSwapLanguages, enabled = !state.busy)
             },
         )
 
         state.error?.let { message ->
             Banner(message, tone = BannerTone.Err)
+            Spacer(Modifier.height(14.dp))
+        }
+        if (state.otherSessionActive) {
+            Banner("A live or file session is running. Finish it before translating typed text.", tone = BannerTone.Neutral,
+                action = { HearthButton("Open live captions", actions.onOpenCaptions, tone = ButtonTone.Ghost, size = ButtonSize.Small) })
+            Spacer(Modifier.height(14.dp))
+        }
+        state.readinessIssue?.let { message ->
+            Banner(message, tone = BannerTone.Warn, action = {
+                HearthButton("Finish setup", actions.onOpenSetup, tone = ButtonTone.Secondary, size = ButtonSize.Small)
+            })
+            Spacer(Modifier.height(14.dp))
+        }
+        state.languages.issue?.let { message ->
+            Banner(message, tone = BannerTone.Warn)
             Spacer(Modifier.height(14.dp))
         }
 
@@ -57,6 +69,7 @@ internal fun TranslateScreen(
         }
 
         Spacer(Modifier.height(14.dp))
-        Banner(TranslateCopy.LISTEN_NOTE, tone = BannerTone.Neutral)
+        Banner(if (state.voiceEnabled) "Speech is generated using your selected voice. Play it from the captions output when ready."
+            else "Voice is optional. Translation works without setting up speech recognition or a voice.", tone = BannerTone.Neutral)
     }
 }

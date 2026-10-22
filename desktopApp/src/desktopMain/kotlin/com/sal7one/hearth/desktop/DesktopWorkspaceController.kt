@@ -4,6 +4,8 @@ import com.sal7one.hearth.core.*
 import com.sal7one.hearth.desktop.runtime.AudioCaptureDevice
 import com.sal7one.hearth.desktop.runtime.DesktopAudioCapture
 import com.sal7one.hearth.desktop.runtime.DesktopAudioPlayback
+import com.sal7one.hearth.desktop.runtime.DesktopPcmCapture
+import com.sal7one.hearth.desktop.runtime.DesktopSystemAudioCapture
 import com.sal7one.hearth.integration.DesktopIntegrationServer
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
@@ -21,6 +23,9 @@ internal data class DesktopUiState(
     val cancelling: Boolean = false,
     val playingAudio: Boolean = false,
     val microphone: Boolean = false,
+    val systemAudio: Boolean = false,
+    val input: WorkspaceInput? = null,
+    val sessionConfig: PipelineConfig? = null,
     val error: String? = null,
     val notice: String? = null,
     val devices: List<AudioCaptureDevice> = emptyList(),
@@ -44,6 +49,13 @@ internal class DesktopWorkspaceController(
     private val importSetup: suspend (Path) -> Unit,
     private val persistUi: suspend (Map<String, String>) -> Unit = {},
     val capabilities: List<EngineDescriptor> = pipeline.capabilities(),
+    private val captureFactory: (WorkspaceInput, String?) -> DesktopPcmCapture = { input, device ->
+        when (input) {
+            WorkspaceInput.MICROPHONE -> DesktopAudioCapture(device)
+            WorkspaceInput.SYSTEM_AUDIO -> DesktopSystemAudioCapture(dataDirectory)
+            else -> error("This input is not a live audio source")
+        }
+    },
 ) {
     private val owner = SupervisorJob(scope.coroutineContext[Job])
     private val scope = CoroutineScope(scope.coroutineContext + owner)
@@ -52,7 +64,7 @@ internal class DesktopWorkspaceController(
     private var session: PipelineSession? = null
     private var startJob: Job? = null
     private var observation: Job? = null
-    private var microphone: DesktopAudioCapture? = null
+    private var capture: DesktopPcmCapture? = null
     private val playback = DesktopAudioPlayback()
     private var playbackJob: Job? = null
     private var server: DesktopIntegrationServer? = null
@@ -98,8 +110,10 @@ internal class DesktopWorkspaceController(
         if (state.value.importingSetup) { showError("Wait for setup verification to finish"); return }
         if (state.value.active) { showError("Finish or cancel the current session first"); return }
         retryRequest = WorkspaceRequest(input, text, audioPath, deviceId)
+        val requestConfig = config.value
         startFailed = false
-        mutableState.update { it.copy(starting = true, error = null, notice = null, finishing = false, cancelling = false) }
+        mutableState.update { it.copy(starting = true, error = null, notice = null, finishing = false, cancelling = false,
+            microphone = false, systemAudio = false, input = input, sessionConfig = requestConfig) }
         startJob = scope.launch {
             try {
                 val requestInput = when (input) {
@@ -113,23 +127,24 @@ internal class DesktopWorkspaceController(
                         require(withContext(Dispatchers.IO) { Files.isRegularFile(path) }) { "Audio file does not exist: $audioPath" }
                         PipelineInput.AudioFile(path.toAbsolutePath().toString())
                     }
-                    WorkspaceInput.MICROPHONE -> {
-                        val capture = DesktopAudioCapture(deviceId)
-                        microphone = capture
-                        PipelineInput.AudioStream(capture.start())
+                    WorkspaceInput.MICROPHONE, WorkspaceInput.SYSTEM_AUDIO -> {
+                        val opened = captureFactory(input, deviceId)
+                        capture = opened
+                        PipelineInput.AudioStream(opened.start())
                     }
                 }
-                val next = pipeline.start(PipelineRequest(requestInput, config.value))
+                val next = pipeline.start(PipelineRequest(requestInput, requestConfig))
                 observation?.cancel()
                 session = next
-                mutableState.update { it.copy(starting = false, snapshot = next.state.value, microphone = input == WorkspaceInput.MICROPHONE) }
+                mutableState.update { it.copy(starting = false, snapshot = next.state.value, microphone = input == WorkspaceInput.MICROPHONE,
+                    systemAudio = input == WorkspaceInput.SYSTEM_AUDIO, input = input) }
                 observation = scope.launch {
                     next.state.collect { snapshot ->
                         mutableState.update { it.copy(snapshot = snapshot) }
                         if (snapshot.terminal) {
-                            microphone?.cancel()
-                            microphone = null
-                            mutableState.update { it.copy(finishing = false, microphone = false) }
+                            capture?.cancel()
+                            capture = null
+                            mutableState.update { it.copy(finishing = false, microphone = false, systemAudio = false) }
                         }
                     }
                 }
@@ -144,8 +159,8 @@ internal class DesktopWorkspaceController(
             } catch (e: CancellationException) { throw e }
             catch (e: Exception) {
                 startFailed = true
-                microphone?.cancel(); microphone = null
-                mutableState.update { it.copy(starting = false, microphone = false, error = e.message ?: e.toString()) }
+                capture?.cancel(); capture = null
+                mutableState.update { it.copy(starting = false, microphone = false, systemAudio = false, error = e.message ?: e.toString()) }
             }
         }
     }
@@ -163,8 +178,8 @@ internal class DesktopWorkspaceController(
         start(request.input, request.text, request.audioPath, request.deviceId)
     }
 
-    fun finishMicrophone() = action {
-        val capture = microphone ?: error("No microphone recording is active")
+    fun finishCapture() = action {
+        val capture = capture ?: error("No live audio recording is active")
         mutableState.update { it.copy(finishing = true) }
         try { capture.finish() }
         catch (e: Exception) {
@@ -172,17 +187,18 @@ internal class DesktopWorkspaceController(
             throw e
         }
     }
+    fun finishMicrophone() = finishCapture()
 
     fun cancel() = action {
         mutableState.update { it.copy(cancelling = true) }
         try {
             startJob?.cancelAndJoin()
-            microphone?.cancel()
+            capture?.cancel()
             playback.cancel()
             session?.cancel()
         } finally {
-            microphone = null
-            mutableState.update { it.copy(starting = false, cancelling = false, finishing = false, microphone = false) }
+            capture = null
+            mutableState.update { it.copy(starting = false, cancelling = false, finishing = false, microphone = false, systemAudio = false) }
         }
     }
 
@@ -275,7 +291,7 @@ internal class DesktopWorkspaceController(
                     if (failure == null) failure = e else failure!!.addSuppressed(e)
                 }
             }
-            release { microphone?.cancel(); microphone = null }
+            release { capture?.cancel(); capture = null }
             release { playback.cancel() }
             release { session?.cancel() }
             release { externalObservation?.close(); externalObservation = null }

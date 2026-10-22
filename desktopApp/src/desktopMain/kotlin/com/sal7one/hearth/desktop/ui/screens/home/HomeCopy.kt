@@ -16,10 +16,10 @@ internal object HomeCopy {
         "Speech, translation and voice are separate stages. Turn on the ones you need — on this Mac, " +
             "or through a provider you already use."
     const val START = "Start listening"
-    const val MAP_EYEBROW = "The map"
-    const val MAP_TITLE = "Everything Hearth does"
+    const val MAP_EYEBROW = "Workspace"
+    const val MAP_TITLE = "Use your saved setup"
     const val MAP_LEDE =
-        "Six ways in, one pipeline underneath. Entries marked Mobile live on the phone today, in the same design language."
+        "Translate text or connect OBS and other apps. Everything uses the same saved setup."
     const val OPEN_WORKSPACE = "Open workspace"
 
     val features: List<HomeFeature> = listOf(

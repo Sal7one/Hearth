@@ -72,8 +72,8 @@ internal fun TranslateInputCard(
         Spacer(Modifier.height(12.dp))
         Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
             Chip(
-                if (state.translationEnabled) "Translation on" else "Translation off",
-                tone = if (state.translationEnabled) ChipTone.Ok else ChipTone.Warn,
+                state.translationEngine ?: if (state.translationEnabled) "Engine unavailable" else "Translation off",
+                tone = if (state.ready) ChipTone.Ok else ChipTone.Warn,
             )
             Spacer(Modifier.weight(1f))
             HearthButton(
@@ -82,7 +82,7 @@ internal fun TranslateInputCard(
                 tone = ButtonTone.Primary,
                 icon = HearthIcons.ArrowRight,
                 iconAfter = true,
-                enabled = draft.isNotBlank() && !state.busy,
+                enabled = draft.isNotBlank() && !state.busy && state.ready,
             )
         }
     }

@@ -10,7 +10,7 @@ internal object VoicesCopy {
     const val STOP_ALL = "Stop all audio"
 
     const val ENGINE = "Engine"
-    const val ENGINE_DETAIL = "Supertonic runs here; a system voice needs no model at all."
+    const val ENGINE_DETAIL = "Choose a local model, an installed system voice, or a provider connection."
     const val STYLE = "Style"
     const val STYLE_DETAIL = "Female F1–F5, male M1–M5."
     const val PREVIEW = "Preview"

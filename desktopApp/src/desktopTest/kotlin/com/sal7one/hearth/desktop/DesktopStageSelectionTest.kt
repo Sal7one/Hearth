@@ -14,6 +14,22 @@ import kotlin.test.assertTrue
 import kotlin.test.assertFailsWith
 
 class DesktopStageSelectionTest {
+    @Test fun choosingAnEngineRestoresItsRememberedRouteWithoutChangingAnotherStageOrLanguages() {
+        val rememberedVoice = EngineSelection("supertonic-local", "voice", "/verified/voice", options = mapOf("speed" to "1.2"))
+        val original = PipelineConfig(speech = EngineSelection("qwen3-asr-local", "qwen", "/verified/qwen"),
+            translation = EngineSelection("marian-local", "quickmt", "/verified/quickmt"), sourceLanguage = "en", targetLanguage = "ar")
+        val descriptor = EngineDescriptor("supertonic-local", "Supertonic", PipelineStage.TTS, EngineKind.LOCAL, requiresModel = true)
+        val next = original.chooseEngine(descriptor, PipelineConfig(voice = rememberedVoice, voiceId = "M1", speakTranslatedText = false))
+        assertEquals(rememberedVoice, next.voice)
+        assertEquals("M1", next.voiceId)
+        assertFalse(next.speakTranslatedText)
+        assertEquals(original.speech, next.speech)
+        assertEquals(original.translation, next.translation)
+        assertEquals("en", next.sourceLanguage)
+        assertEquals("ar", next.targetLanguage)
+        assertEquals(rememberedVoice, original.chooseEngine(descriptor, installed = rememberedVoice).voice)
+    }
+
     @Test fun enablingReadAloudPrefersAvailableSupertonicAndNeverResetsAnExistingVoice() {
         val moss = EngineDescriptor("moss-tts-local", "MOSS", PipelineStage.TTS, EngineKind.LOCAL)
         val supertonic = EngineDescriptor("supertonic-local", "Supertonic", PipelineStage.TTS, EngineKind.LOCAL)

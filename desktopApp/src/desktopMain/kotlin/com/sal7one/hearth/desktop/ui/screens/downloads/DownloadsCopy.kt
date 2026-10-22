@@ -10,7 +10,7 @@ internal object DownloadsCopy {
     const val RECHECK = "Re-check files"
     const val RECHECKING = "Checking…"
     const val IN_PROGRESS = "In progress"
-    const val DOWNLOADING = "Downloading"
+    const val DOWNLOADING = "Downloads and imports"
     const val AVAILABLE = "Available"
     const val INSTALLED = "Installed"
     const val NEEDS_ATTENTION = "Needs attention"
@@ -23,7 +23,7 @@ internal object DownloadsCopy {
     const val BROWSE = "Browse the library"
     const val OPEN_FOLDER = "Open folder"
     const val PARALLEL = "Two at a time"
-    const val PARALLEL_DETAIL = "More parallel downloads share the same bandwidth."
+    const val PARALLEL_DETAIL = "Two downloads run together; additional downloads queue. Existing model imports stay available."
     const val VERIFY_AFTER = "Verify after download"
     const val VERIFY_AFTER_DETAIL = "Cannot be turned off for pinned catalog models."
 }

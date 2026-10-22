@@ -30,6 +30,7 @@ internal fun AppShell(
     dark: Boolean,
     onToggleTheme: () -> Unit,
     onNavigate: (DesktopScreen) -> Unit,
+    activity: @Composable () -> Unit = {},
     content: @Composable () -> Unit,
 ) {
     Column(Modifier.fillMaxSize().background(HearthTheme.colors.bg)) {
@@ -41,7 +42,8 @@ internal fun AppShell(
             onToggleTheme = onToggleTheme,
             onNavigate = onNavigate,
         )
-        Box(Modifier.fillMaxSize()) { content() }
+        activity()
+        Box(Modifier.weight(1f).fillMaxWidth()) { content() }
     }
 }
 

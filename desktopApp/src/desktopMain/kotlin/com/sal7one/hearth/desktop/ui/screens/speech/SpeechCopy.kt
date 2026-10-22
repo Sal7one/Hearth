@@ -17,10 +17,10 @@ internal object SpeechCopy {
     const val LIBRARY = "Library"
     const val LANGUAGE = "Language"
     const val LANGUAGE_HINT = "Explicit is more accurate; auto costs a moment."
-    const val INPUT = "Input"
-    const val INPUT_HINT = "A microphone, a virtual device, or another app."
+    const val INPUT = "Microphone device"
+    const val INPUT_HINT = "For microphone input. Choose Mac audio in Captions to capture streams and videos."
     const val REFRESH = "Refresh"
-    const val INPUT_NOTE = "Level is live while a session runs. Nothing is recorded outside a session."
+    const val INPUT_NOTE = "Mac audio uses the system output instead of this microphone device."
     const val RESPONSIVENESS = "Responsiveness"
     const val RESPONSIVENESS_HINT = "How long Hearth waits before committing a line."
 
@@ -29,7 +29,7 @@ internal object SpeechCopy {
     const val COMPUTE = "Compute"
     const val COMPUTE_HINT = "A GPU request that fails is an error, not a fallback."
     const val THREADS = "Threads"
-    const val THREADS_HINT = "Ignored when the GPU is used."
+    const val THREADS_HINT = "CPU worker threads; GPU backends may still use CPU work."
 
     const val STATUS = "Status"
     const val READY = "Ready"

@@ -48,7 +48,7 @@ internal fun StageStatusBar(
             text = "${state.sourceCodeLabel} → ${state.targetCodeLabel}",
             tone = ChipTone.Outline,
         )
-        if (state.microphone && state.active) {
+        if (state.liveCapture && state.active) {
             Spacer(Modifier.width(2.dp))
             HearthButton(
                 text = CaptionsCopy.FINISH,

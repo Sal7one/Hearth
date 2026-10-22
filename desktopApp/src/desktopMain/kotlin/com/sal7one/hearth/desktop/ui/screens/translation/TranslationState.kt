@@ -1,5 +1,6 @@
 package com.sal7one.hearth.desktop.ui.screens.translation
 
+import com.sal7one.hearth.core.EngineKind
 import com.sal7one.hearth.desktop.ui.screens.settings.ChoiceOption
 import com.sal7one.hearth.desktop.ui.screens.settings.SelectOption
 import com.sal7one.hearth.desktop.ui.screens.speech.Compute
@@ -19,12 +20,16 @@ internal enum class PromptMode(val key: String, val label: String, val detail: S
 internal data class TranslationState(
     val engines: List<ChoiceOption> = emptyList(),
     val selectedEngineId: String? = null,
+    val selectedKind: EngineKind? = null,
     val models: List<SelectOption> = emptyList(),
     val selectedModelId: String? = null,
     val verified: Boolean = false,
     val sourceLanguage: String = "en",
     val targetLanguage: String = "ar",
     val languageOptions: List<SelectOption> = emptyList(),
+    val sourceOptions: List<SelectOption> = emptyList(),
+    val targetOptions: List<SelectOption> = emptyList(),
+    val languageIssue: String? = null,
     val promptMode: PromptMode = PromptMode.DEFAULT,
     val compute: Compute = Compute.CPU,
     val computeOptions: List<Compute> = listOf(Compute.CPU),
@@ -34,4 +39,7 @@ internal data class TranslationState(
     val placementLabel: String = "CPU",
 ) {
     val translationOff: Boolean get() = selectedEngineId == null
+    val localSelected: Boolean get() = selectedKind == EngineKind.LOCAL
+    val cloudSelected: Boolean get() = selectedKind == EngineKind.CLOUD
+    val supportsPromptMode: Boolean get() = selectedEngineId == "llama-translation-local"
 }

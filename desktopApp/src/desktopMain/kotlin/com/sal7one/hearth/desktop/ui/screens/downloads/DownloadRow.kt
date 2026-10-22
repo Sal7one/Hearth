@@ -83,7 +83,7 @@ internal fun DownloadRow(
         }
         Spacer(Modifier.width(12.dp))
         when (item.bucket) {
-            DownloadBucket.DOWNLOADING -> HearthButton(DownloadsCopy.CANCEL, onCancel, tone = ButtonTone.Secondary, size = ButtonSize.Small)
+            DownloadBucket.DOWNLOADING -> HearthButton(if (item.cancellable) DownloadsCopy.CANCEL else "Cancelling…", onCancel, enabled = item.cancellable, tone = ButtonTone.Secondary, size = ButtonSize.Small)
             DownloadBucket.AVAILABLE -> HearthButton(DownloadsCopy.DOWNLOAD, onDownload, tone = ButtonTone.Secondary, size = ButtonSize.Small)
             DownloadBucket.BROKEN -> HearthButton("Retry", onDownload, tone = ButtonTone.Secondary, size = ButtonSize.Small)
             DownloadBucket.INSTALLED -> Text("Verified", style = HearthType.monoSmall, color = colors.muted)

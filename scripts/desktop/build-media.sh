@@ -9,4 +9,6 @@ cmake --build "$build_dir" --parallel 2
 ctest --test-dir "$build_dir" --output-on-failure
 stage="$root/desktop-media/native-libs/macos-$arch"
 mkdir -p "$stage"
-cp "$build_dir/hearth-media-decode" "$build_dir/hearth-keychain" "$stage/"
+cp "$build_dir/hearth-media-decode" "$build_dir/hearth-keychain" "$build_dir/hearth-system-audio" "$stage/"
+# Probe loads the actual framework/executable without enumerating content, requesting permission or capturing audio.
+"$stage/hearth-system-audio" --probe

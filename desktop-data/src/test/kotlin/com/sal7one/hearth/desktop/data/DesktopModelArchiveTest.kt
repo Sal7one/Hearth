@@ -10,6 +10,8 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.security.MessageDigest
 import kotlin.test.*
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.runBlocking
 
 class DesktopModelArchiveTest {
     private val tarball = "qwen-test.tar.bz2"
@@ -31,6 +33,45 @@ class DesktopModelArchiveTest {
             assertContentEquals(frontend, Files.readAllBytes(root.resolve("conv_frontend.onnx")))
             assertContentEquals(vocab, Files.readAllBytes(root.resolve("tokenizer/vocab.json")))
             assertFalse(Files.exists(root.resolve("test_wavs/extra.wav")))
+            assertFalse(Files.exists(root.resolve(tarball)))
+        }
+    }
+
+    @Test fun extractionReportsActualExpandedBytesAndCanCancelWithoutPublishingOrLosingTheArchive() {
+        withDirectory { directory ->
+            val library = DesktopModelLibrary(directory)
+            val root = directory.resolve("models/qwen3-asr-0.6b"); Files.createDirectories(root)
+            val bytes = ByteArray(256 * 1024) { (it % 251).toByte() }
+            archive(root.resolve(tarball), listOf("model/conv_frontend.onnx" to bytes))
+            val progress = mutableListOf<ModelInstallProgress>()
+            var cancelled = false
+            assertFailsWith<CancellationException> {
+                library.installArchive(card(listOf(pin("conv_frontend.onnx", bytes))), root, {
+                    progress += it
+                    if (it.completed > 0) cancelled = true
+                }) { if (cancelled) throw CancellationException("owner cancelled") }
+            }
+            assertTrue(progress.any { it.phase == ModelInstallPhase.EXTRACTING && it.completed in 1 until bytes.size })
+            assertFalse(Files.exists(root.resolve("conv_frontend.onnx")))
+            assertTrue(Files.exists(root.resolve(tarball)))
+            assertFalse(Files.list(root).use { it.anyMatch { path -> path.fileName.toString().startsWith(".extract-") } })
+            library.installArchive(card(listOf(pin("conv_frontend.onnx", bytes))), root, progress::add)
+            assertEquals(bytes.size.toLong(), progress.last().completed)
+            assertEquals("conv_frontend.onnx", progress.last().component)
+        }
+    }
+
+    @Test fun anInstalledArchiveIsVerifiedAndReusedWithoutDownloadingItsDeletedTransportFile() = runBlocking {
+        withDirectory { directory ->
+            val bytes = byteArrayOf(1, 2, 3, 4)
+            val model = card(listOf(pin("conv_frontend.onnx", bytes)))
+            val root = directory.resolve("models/${model.id}"); Files.createDirectories(root)
+            Files.write(root.resolve("conv_frontend.onnx"), bytes)
+            val library = DesktopModelLibrary(directory, listOf(model))
+            val phases = mutableListOf<ModelInstallProgress>()
+            runBlocking { library.download(model.id, activity = phases::add) }
+            assertTrue(library.installations.value.getValue(model.id).ready)
+            assertEquals(setOf(ModelInstallPhase.CHECKING), phases.map { it.phase }.toSet())
             assertFalse(Files.exists(root.resolve(tarball)))
         }
     }

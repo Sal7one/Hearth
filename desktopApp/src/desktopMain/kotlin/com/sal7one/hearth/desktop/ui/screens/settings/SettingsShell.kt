@@ -2,6 +2,7 @@ package com.sal7one.hearth.desktop.ui.screens.settings
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
@@ -56,16 +57,27 @@ internal fun FormRow(
 ) {
     val colors = HearthTheme.colors
     Column(modifier.fillMaxWidth()) {
-        Row(Modifier.fillMaxWidth().padding(vertical = 16.dp)) {
-            Column(Modifier.width(208.dp)) {
+        BoxWithConstraints(Modifier.fillMaxWidth().padding(vertical = 16.dp)) {
+            val labelContent: @Composable () -> Unit = {
                 Text(label, style = HearthType.label, color = colors.text)
                 if (hint != null) {
                     Spacer(Modifier.height(4.dp))
                     Text(hint, style = HearthType.rowSub, color = colors.muted)
                 }
             }
-            Spacer(Modifier.width(24.dp))
-            Column(Modifier.weight(1f), content = content)
+            if (maxWidth < 640.dp) {
+                Column {
+                    labelContent()
+                    Spacer(Modifier.height(10.dp))
+                    Column(Modifier.fillMaxWidth(), content = content)
+                }
+            } else {
+                Row {
+                    Column(Modifier.width(208.dp)) { labelContent() }
+                    Spacer(Modifier.width(24.dp))
+                    Column(Modifier.weight(1f), content = content)
+                }
+            }
         }
         if (showDivider) {
             Box(Modifier.fillMaxWidth().height(1.dp).background(colors.border))

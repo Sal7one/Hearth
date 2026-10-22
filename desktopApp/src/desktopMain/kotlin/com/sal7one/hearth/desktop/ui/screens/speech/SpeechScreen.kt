@@ -83,6 +83,6 @@ internal fun SpeechScreen(
         }
 
         Spacer(Modifier.height(16.dp))
-        SpeechAdvancedCard(state, actions)
+        if (state.localSelected) SpeechAdvancedCard(state, actions)
     }
 }

@@ -18,7 +18,7 @@ internal fun modelsState(
     catalog: List<DesktopModelCard>,
     installations: Map<String, DesktopModelStatus>,
     config: PipelineConfig,
-    transfer: ModelTransfer?,
+    transfers: Collection<ModelTransfer>,
     filter: ModelsFilter,
     freeBytes: Long,
     verifiedImports: Map<String, EngineSelection> = emptyMap(),
@@ -31,7 +31,7 @@ internal fun modelsState(
         }
     }
     issues.forEach { (id, issue) -> verified[id] = (verified[id] ?: DesktopModelStatus(false, null)).copy(issue = issue) }
-    val rows = catalog.map { card -> modelRow(card, verified[card.id], config) }
+    val rows = catalog.map { card -> modelRow(card, verified[card.id], config).copy(activity = transfers.firstOrNull { it.id == card.id }?.label) }
 
     val filtered = rows.filter { row ->
         val card = catalog.first { it.id == row.id }
@@ -55,14 +55,14 @@ internal fun modelsState(
     val installedCards = catalog.filter { verified[it.id]?.ready == true }
     val installedBytes = installedCards.sumOf { it.installedBytes }
     val catalogBytes = catalog.sumOf { it.installedBytes }
-    val activeTransfer = transfer?.let { current ->
+    val activeTransfers = transfers.map { current ->
         val card = catalog.firstOrNull { it.id == current.id }
         TransferView(
             modelName = card?.name ?: current.id,
-            fraction = if (current.total > 0) (current.downloaded.toFloat() / current.total) else 0f,
-            detail = when {
-                current.checking -> "Verifying file…"
-                current.total > 0 -> "${formatBytes(current.downloaded)} of ${formatBytes(current.total)}"
+            fraction = if (current.total > 0) (current.downloaded.toFloat() / current.total).coerceIn(0f, 1f) else 0f,
+            detail = "${current.label} · " + when {
+                current.queued -> "Waiting for a slot"
+                current.total > 0 -> "${formatBytes(current.downloaded)} of ${formatBytes(current.total)}" + current.component.takeIf { it.isNotBlank() }?.let { " · $it" }.orEmpty()
                 else -> "Starting…"
             },
             checking = current.checking,
@@ -78,7 +78,7 @@ internal fun modelsState(
         catalogLabel = formatBytes(catalogBytes),
         storageFraction = if (catalogBytes > 0) installedBytes.toFloat() / catalogBytes else 0f,
         freeDiskLabel = if (freeBytes > 0) formatBytes(freeBytes) else "—",
-        transfer = activeTransfer,
+        transfers = activeTransfers,
         refreshing = false,
         issues = verified.values.mapNotNull { it.issue }.distinct(),
     )
@@ -108,9 +108,12 @@ private fun modelRow(card: DesktopModelCard, status: DesktopModelStatus?, config
 /** 1_674_000_000 → "1.55 GB"; whole megabytes below a gigabyte. */
 internal fun formatBytes(bytes: Long): String {
     if (bytes <= 0) return "0 MB"
+    if (bytes < 1000) return "$bytes B"
+    if (bytes < 1_000_000) return String.format(Locale.ENGLISH, "%.0f KB", bytes / 1000.0)
     val gb = bytes / 1_000_000_000.0
     if (gb >= 1) return String.format(Locale.ENGLISH, "%.2f GB", gb)
     val mb = bytes / 1_000_000.0
+    if (mb < 10) return String.format(Locale.ENGLISH, "%.1f MB", mb)
     return String.format(Locale.ENGLISH, "%.0f MB", mb)
 }
 

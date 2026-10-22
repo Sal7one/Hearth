@@ -30,27 +30,29 @@ internal fun SpeechSidebar(state: SpeechState, modifier: Modifier = Modifier) {
                 Text(SpeechCopy.STATUS, style = HearthType.h3.copy(fontSize = 14.sp), color = colors.text)
                 Spacer(Modifier.weight(1f))
                 Chip(
-                    text = if (state.ready) SpeechCopy.READY else SpeechCopy.NOT_CONFIGURED,
+                    text = if (state.ready && state.cloudSelected) "Connection configured" else if (state.ready) SpeechCopy.READY else SpeechCopy.NOT_CONFIGURED,
                     tone = if (state.ready) ChipTone.Ok else ChipTone.Warn,
                 )
             }
             Spacer(Modifier.height(10.dp))
             KeyValueRow("Model", state.modelDetail)
             KeyValueRow("Placement", state.placementLabel)
-            KeyValueRow("Window", state.windowLabel)
-            KeyValueRow("Threads", state.threads.toString())
+            if (state.localSelected) {
+                KeyValueRow("Window", state.windowLabel)
+                KeyValueRow("Threads", state.threads.toString())
+            }
             state.unavailableReason?.let { reason ->
                 Spacer(Modifier.height(10.dp))
                 Banner(reason, tone = BannerTone.Err)
             }
         }
 
-        HearthCard(padding = 16.dp) {
+        if (state.localSelected) HearthCard(padding = 16.dp) {
             Text(SpeechCopy.HOW_IT_LISTENS, style = HearthType.h3.copy(fontSize = 14.sp), color = colors.text)
             Spacer(Modifier.height(4.dp))
             Text(SpeechCopy.HOW_IT_LISTENS_DETAIL, style = HearthType.small, color = colors.muted)
             Spacer(Modifier.height(12.dp))
-            Banner(SpeechCopy.ENGLISH_ONLY_WARNING, tone = BannerTone.Warn)
+            if (state.selectedEngineId == "whisper-local") Banner(SpeechCopy.ENGLISH_ONLY_WARNING, tone = BannerTone.Warn)
         }
     }
 }

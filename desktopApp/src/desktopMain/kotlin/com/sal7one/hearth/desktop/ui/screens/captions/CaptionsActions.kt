@@ -26,4 +26,8 @@ internal class CaptionsActions(
     val onPickAudioFile: () -> Unit = {},
     val onPickText: () -> Unit = {},
     val onRetry: () -> Unit = {},
+    val onSourceLanguage: (String) -> Unit = {},
+    val onTargetLanguage: (String) -> Unit = {},
+    val onOpenOverlay: () -> Unit = {},
+    val onPickSystemAudio: () -> Unit = {},
 )

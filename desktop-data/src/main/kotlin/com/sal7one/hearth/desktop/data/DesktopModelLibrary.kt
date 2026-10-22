@@ -5,6 +5,7 @@ import com.sal7one.hearth.core.PipelineStage
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.json.*
@@ -64,41 +65,60 @@ data class DesktopModelCard(
         ?: (artifacts.sumOf { it.bytes } + (rangePackage?.members?.sumOf { it.bytes } ?: 0L))
 }
 data class DesktopModelStatus(val ready: Boolean, val path: Path?, val issue: String? = null)
+enum class ModelInstallPhase { CHECKING, DOWNLOADING, EXTRACTING, VERIFYING }
+data class ModelInstallProgress(val phase: ModelInstallPhase, val completed: Long, val total: Long, val component: String = "")
 
 /** Downloads only pinned catalog artifacts. Requests contain no provider headers or credentials. */
-class DesktopModelLibrary(private val directory: Path) {
-    val catalog: List<DesktopModelCard> = readCatalog().filter { it.platforms == null || desktopPlatform() in it.platforms }
+class DesktopModelLibrary internal constructor(private val directory: Path, val catalog: List<DesktopModelCard>) {
+    constructor(directory: Path) : this(directory, readCatalog().filter { it.platforms == null || desktopPlatform() in it.platforms })
     private val mutableInstallations = MutableStateFlow<Map<String, DesktopModelStatus>>(emptyMap())
     val installations = mutableInstallations.asStateFlow()
-    private val installer = Mutex()
+    private val installers = catalog.associate { it.id to Mutex() }
     private val client = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(20))
         .followRedirects(HttpClient.Redirect.NEVER).build()
 
     /** Full content verification is repeated at launch; filename/existence alone never marks a model ready. */
     suspend fun refresh(): Unit = withContext(Dispatchers.IO) {
-        val result = mutableMapOf<String, DesktopModelStatus>()
         for (card in catalog) {
             currentCoroutineContext().ensureActive()
-            val root = modelDirectory(card)
-            if (Files.isDirectory(root)) {
-                try { verifyFiles(card, root); result[card.id] = DesktopModelStatus(true, runtimePath(card, root)) }
-                catch (failure: Exception) { currentCoroutineContext().ensureActive(); result[card.id] = DesktopModelStatus(false, null, failure.message) }
-            } else result[card.id] = DesktopModelStatus(false, null)
+            installers.getValue(card.id).withLock {
+                val root = modelDirectory(card)
+                val result = if (Files.isDirectory(root)) {
+                    try { verifyFiles(card, root); DesktopModelStatus(true, runtimePath(card, root)) }
+                    catch (failure: Exception) { currentCoroutineContext().ensureActive(); DesktopModelStatus(false, null, failure.message) }
+                } else DesktopModelStatus(false, null)
+                mutableInstallations.update { it + (card.id to result) }
+            }
         }
-        mutableInstallations.value = result
     }
-    suspend fun download(id: String, progress: (downloaded: Long, total: Long) -> Unit = { _, _ -> }): EngineSelection = installer.withLock {
+    suspend fun download(id: String, progress: (downloaded: Long, total: Long) -> Unit = { _, _ -> },
+        activity: (ModelInstallProgress) -> Unit = {}): EngineSelection = installers.getValue(find(id).id).withLock {
         withContext(Dispatchers.IO) {
             val card = find(id)
             val root = modelDirectory(card)
             Files.createDirectories(root)
+            // An already unpacked, verified archive must never be downloaded again just
+            // because its compressed transport file was deleted after installation.
+            try {
+                verifyFiles(card, root, activity, ModelInstallPhase.CHECKING)
+                mutableInstallations.update { it + (id to DesktopModelStatus(true, runtimePath(card, root))) }
+                return@withContext selection(card, runtimePath(card, root))
+            } catch (e: CancellationException) { throw e }
+            catch (e: Exception) {
+                mutableInstallations.update { it + (id to DesktopModelStatus(false, null, e.message ?: e.toString())) }
+            }
+            fun transfer(done: Long) {
+                progress(done, card.bytes)
+                activity(ModelInstallProgress(ModelInstallPhase.DOWNLOADING, done, card.bytes))
+            }
+            transfer(0)
             var completed = 0L
             for (artifact in card.artifacts) {
                 currentCoroutineContext().ensureActive()
                 val target = root.resolve(artifact.filename).normalize()
                 require(target.startsWith(root.normalize())) { "Model component escapes its directory: ${artifact.filename}" }
                 if (Files.isRegularFile(target) && Files.size(target) == artifact.bytes && digest(target) == artifact.sha256) {
-                    completed += artifact.bytes; progress(completed, card.bytes); continue
+                    completed += artifact.bytes; transfer(completed); continue
                 }
                 target.parent?.let { Files.createDirectories(it) }
                 val temporary = Files.createTempFile(root, ".download-", ".part")
@@ -117,7 +137,7 @@ class DesktopModelLibrary(private val directory: Path) {
                                     while (true) {
                                         ensureActive(); val size = runInterruptible { input.read(buffer) }; if (size < 0) break
                                         count += size; check(count <= artifact.bytes) { "Model download exceeds pinned size" }
-                                        output.write(buffer, 0, size); hash.update(buffer, 0, size); progress(completed + count, card.bytes)
+                                        output.write(buffer, 0, size); hash.update(buffer, 0, size); transfer(completed + count)
                                     }
                                     check(count == artifact.bytes && hash.digest().hex() == artifact.sha256) { "Model integrity verification failed" }
                                 }
@@ -129,24 +149,27 @@ class DesktopModelLibrary(private val directory: Path) {
                     completed += artifact.bytes
                 } finally { Files.deleteIfExists(temporary) }
             }
-            if (card.archive != null) installArchive(card, root)
-            if (card.rangePackage != null) installRanges(card, root) { done -> progress(completed + done, card.bytes) }
-            verifyFiles(card, root)
+            val context = currentCoroutineContext()
+            if (card.archive != null) installArchive(card, root, activity) { context.ensureActive() }
+            if (card.rangePackage != null) installRanges(card, root) { done -> transfer(completed + done) }
+            verifyFiles(card, root, activity)
             val selected = selection(card, runtimePath(card, root))
-            mutableInstallations.value = mutableInstallations.value + (card.id to DesktopModelStatus(true, runtimePath(card, root)))
+            mutableInstallations.update { it + (card.id to DesktopModelStatus(true, runtimePath(card, root))) }
             selected
         }
     }
-    suspend fun verify(id: String, path: Path): EngineSelection = withContext(Dispatchers.IO) {
+    suspend fun verify(id: String, path: Path, activity: (ModelInstallProgress) -> Unit = {}): EngineSelection = installers.getValue(find(id).id).withLock { withContext(Dispatchers.IO) {
         val card = find(id)
         val single = card.artifacts.size == 1 && card.archive == null && card.rangePackage == null
         val root = if (single) path.toAbsolutePath().parent else path.toAbsolutePath()
         if (single) {
             val artifact = card.artifacts.single()
-            check(Files.isRegularFile(path) && Files.size(path) == artifact.bytes && digest(path) == artifact.sha256) { "Selected file does not match the pinned model" }
-        } else verifyFiles(card, root)
+            check(Files.isRegularFile(path) && Files.size(path) == artifact.bytes && digest(path) { done, total ->
+                activity(ModelInstallProgress(ModelInstallPhase.VERIFYING, done, total, artifact.filename))
+            } == artifact.sha256) { "Selected file does not match the pinned model" }
+        } else verifyFiles(card, root, activity)
         selection(card, if (single) path.toAbsolutePath() else root)
-    }
+    } }
     fun installedSelection(id: String): EngineSelection? = mutableInstallations.value[id]?.takeIf { it.ready }?.path?.let { selection(find(id), it) }
     fun find(id: String): DesktopModelCard = catalog.singleOrNull { it.id == id } ?: error("Unknown desktop model: $id")
     private fun selection(card: DesktopModelCard, path: Path): EngineSelection {
@@ -158,42 +181,58 @@ class DesktopModelLibrary(private val directory: Path) {
     private fun modelDirectory(card: DesktopModelCard): Path = directory.resolve("models").resolve(card.id)
     private fun runtimePath(card: DesktopModelCard, root: Path) =
         if (card.artifacts.size == 1 && card.archive == null && card.rangePackage == null) root.resolve(card.artifacts.single().filename) else root
-    private suspend fun verifyFiles(card: DesktopModelCard, root: Path) {
+    private suspend fun verifyFiles(card: DesktopModelCard, root: Path, activity: (ModelInstallProgress) -> Unit = {},
+        phase: ModelInstallPhase = ModelInstallPhase.VERIFYING) {
         val archive = card.archive
         if (archive != null) {
             if (!archive.hasComponentPins) {
                 requireNotNull(archive.treeSha256) { "Model archive has no tree pin" }
-                check(modelTreeSha256(root) == archive.treeSha256) { "Missing or modified model tree: ${card.id}" }
+                val context = currentCoroutineContext()
+                check(modelTreeSha256(root, { done, total, file -> activity(ModelInstallProgress(phase, done, total, file)) },
+                    { context.ensureActive() }) == archive.treeSha256) { "Missing or modified model tree: ${card.id}" }
                 return
             }
+            var completed = 0L
             for (file in archive.files) {
                 val target = root.resolve(file.path).normalize()
                 check(target.startsWith(root.normalize())) { "Model component escapes its directory: ${file.path}" }
-                check(Files.isRegularFile(target) && Files.size(target) == file.bytes && digest(target) == file.sha256) {
+                check(Files.isRegularFile(target) && Files.size(target) == file.bytes && digest(target) { done, _ ->
+                    activity(ModelInstallProgress(phase, completed + done, archive.expandedBytes, file.path))
+                } == file.sha256) {
                     "Missing or modified model component: ${file.path}"
                 }
+                completed += file.bytes
             }
             return
         }
+        var completed = 0L
+        val total = card.installedBytes
         for (asset in card.artifacts) {
             val file = root.resolve(asset.filename).normalize()
-            check(file.startsWith(root.normalize()) && Files.isRegularFile(file) && Files.size(file) == asset.bytes && digest(file) == asset.sha256) { "Missing or modified model component: ${asset.filename}" }
+            check(file.startsWith(root.normalize()) && Files.isRegularFile(file) && Files.size(file) == asset.bytes && digest(file) { done, _ ->
+                activity(ModelInstallProgress(phase, completed + done, total, asset.filename))
+            } == asset.sha256) { "Missing or modified model component: ${asset.filename}" }
+            completed += asset.bytes
         }
         val rangePackage = card.rangePackage
         if (rangePackage != null) {
             for (member in rangePackage.members) {
                 val file = root.resolve("tokenizer").resolve(member.path)
-                check(Files.isRegularFile(file) && Files.size(file) == member.bytes && digest(file) == member.sha256) {
+                check(Files.isRegularFile(file) && Files.size(file) == member.bytes && digest(file) { done, _ ->
+                    activity(ModelInstallProgress(phase, completed + done, total, "tokenizer/${member.path}"))
+                } == member.sha256) {
                     "Missing or modified model component: tokenizer/${member.path}"
                 }
+                completed += member.bytes
             }
         }
     }
 
     /** Unpack the verified archive into the model directory, keeping only pinned components. */
-    internal fun installArchive(card: DesktopModelCard, root: Path) {
+    internal fun installArchive(card: DesktopModelCard, root: Path, activity: (ModelInstallProgress) -> Unit = {}, checkActive: () -> Unit = {}) {
         val archive = card.archive ?: return
-        if (archive.format == "zip") { installZip(card, root); return }
+        if (archive.format == "zip") { installZip(card, root, activity, checkActive); return }
+        activity(ModelInstallProgress(ModelInstallPhase.EXTRACTING, 0, archive.expandedBytes))
         val tarball = root.resolve(card.artifacts.single().filename)
         check(Files.isRegularFile(tarball)) { "Model archive is missing: ${tarball.fileName}" }
         val staging = Files.createTempDirectory(root, ".extract-")
@@ -205,6 +244,7 @@ class DesktopModelLibrary(private val directory: Path) {
                 TarArchiveInputStream(compressed).use { tar ->
                     var entries = 0
                     while (true) {
+                        checkActive()
                         val entry = tar.nextEntry ?: break
                         check(++entries <= 2000) { "Model archive exceeds 2000 entries" }
                         require(!entry.isSymbolicLink && !entry.isLink && !entry.isSparse && (entry.isDirectory || entry.isFile)) {
@@ -228,12 +268,14 @@ class DesktopModelLibrary(private val directory: Path) {
                         Files.newOutputStream(target).use { output ->
                             val buffer = ByteArray(1 shl 16)
                             while (true) {
+                                checkActive()
                                 val read = tar.read(buffer)
                                 if (read < 0) break
                                 count += read
                                 require(count <= file.bytes) { "Model archive component exceeds its pinned size: $relative" }
                                 hash.update(buffer, 0, read)
                                 output.write(buffer, 0, read)
+                                activity(ModelInstallProgress(ModelInstallPhase.EXTRACTING, expanded - file.bytes + count, archive.expandedBytes, relative))
                             }
                         }
                         require(count == file.bytes && hash.digest().hex() == file.sha256) { "Model archive component failed verification: $relative" }
@@ -243,6 +285,7 @@ class DesktopModelLibrary(private val directory: Path) {
             require(seen == expected.keys) { "Model archive is missing components: ${expected.keys - seen}" }
             require(expanded == archive.expandedBytes) { "Model archive expanded size differs from its pin" }
             for (relative in expected.keys) {
+                checkActive()
                 val target = root.resolve(relative)
                 Files.createDirectories(target.parent)
                 Files.move(staging.resolve(relative), target, StandardCopyOption.REPLACE_EXISTING)
@@ -382,7 +425,7 @@ class DesktopModelLibrary(private val directory: Path) {
      * expanded model-tree-sha256-v1 digest before publishing. The verified archive is kept
      * on failure so a retry does not download it again.
      */
-    internal fun installZip(card: DesktopModelCard, root: Path) {
+    internal fun installZip(card: DesktopModelCard, root: Path, activity: (ModelInstallProgress) -> Unit = {}, checkActive: () -> Unit = {}) {
         val archive = card.archive ?: return
         val expectedTree = requireNotNull(archive.treeSha256) { "A ZIP model archive requires a tree digest pin" }
         val zip = root.resolve(card.artifacts.single().filename)
@@ -390,10 +433,12 @@ class DesktopModelLibrary(private val directory: Path) {
         val staging = Files.createTempDirectory(root, ".extract-")
         val seen = mutableSetOf<String>()
         var expanded = 0L
+        activity(ModelInstallProgress(ModelInstallPhase.EXTRACTING, 0, archive.expandedBytes))
         try {
             ZipInputStream(BufferedInputStream(Files.newInputStream(zip), 1 shl 16)).use { input ->
                 var entries = 0
                 while (true) {
+                    checkActive()
                     val entry = input.nextEntry ?: break
                     check(++entries <= 2000) { "Model archive exceeds 2000 entries" }
                     val full = entry.name.trimEnd('/')
@@ -408,23 +453,26 @@ class DesktopModelLibrary(private val directory: Path) {
                     Files.newOutputStream(target).use { output ->
                         val buffer = ByteArray(1 shl 16)
                         while (true) {
+                            checkActive()
                             val read = input.read(buffer)
                             if (read < 0) break
                             expanded = Math.addExact(expanded, read.toLong())
                             require(expanded <= archive.expandedBytes) { "Model archive exceeds its pinned expanded size" }
                             output.write(buffer, 0, read)
+                            activity(ModelInstallProgress(ModelInstallPhase.EXTRACTING, expanded, archive.expandedBytes, relative))
                         }
                     }
                 }
             }
             require(expanded == archive.expandedBytes) { "Model archive expanded size differs from its pin" }
-            check(modelTreeSha256(staging) == expectedTree) { "Model tree checksum mismatch after extraction" }
+            check(modelTreeSha256(staging, { done, total, file -> activity(ModelInstallProgress(ModelInstallPhase.VERIFYING, done, total, file)) }, checkActive) == expectedTree) { "Model tree checksum mismatch after extraction" }
             // Collect first: moving files while walking the same staging tree mutates
             // the directory stream mid-iteration.
             val published = Files.walk(staging).use { stream ->
                 stream.filter { Files.isRegularFile(it) }.map { staging.relativize(it).toString() }.toList()
             }
             for (relative in published) {
+                checkActive()
                 val target = root.resolve(relative)
                 Files.createDirectories(target.parent)
                 Files.move(staging.resolve(relative), target, StandardCopyOption.REPLACE_EXISTING)
@@ -575,11 +623,15 @@ class DesktopModelLibrary(private val directory: Path) {
                     m.getValue("options").jsonObject.mapValues { it.value.jsonPrimitive.content }, assets, archive, rangePackage, platforms)
             }
         }
-        internal suspend fun digest(path: Path): String {
+        internal suspend fun digest(path: Path, progress: (Long, Long) -> Unit = { _, _ -> }): String {
             val hash = MessageDigest.getInstance("SHA-256")
+            val total = Files.size(path)
+            var completed = 0L
+            progress(0, total)
             Files.newInputStream(path).use { input ->
                 val buffer = ByteArray(256 * 1024)
-                while (true) { currentCoroutineContext().ensureActive(); val size = input.read(buffer); if (size < 0) break; hash.update(buffer, 0, size) }
+                while (true) { currentCoroutineContext().ensureActive(); val size = input.read(buffer); if (size < 0) break; hash.update(buffer, 0, size)
+                    completed += size; progress(completed, total) }
             }
             return hash.digest().hex()
         }
@@ -608,18 +660,22 @@ internal fun checkedRangeResponse(
  * UTF-8 path bytes as u64be(pathBytes) + path + u64be(size) + SHA-256(content).
  * Byte-for-byte compatible with common-jni's native ModelIntegrity/computeModelTreeSha256.
  */
-internal fun modelTreeSha256(root: Path): String {
+internal fun modelTreeSha256(root: Path, progress: (Long, Long, String) -> Unit = { _, _, _ -> }, checkActive: () -> Unit = {}): String {
     val digest = MessageDigest.getInstance("SHA-256")
     digest.update("model-tree-sha256-v1\u0000".toByteArray(Charsets.US_ASCII))
     val files = mutableListOf<Pair<ByteArray, Path>>()
     Files.walk(root).use { stream ->
         stream.filter { Files.isRegularFile(it, java.nio.file.LinkOption.NOFOLLOW_LINKS) }.forEach { path ->
+            checkActive()
             files += root.relativize(path).joinToString("/").toByteArray(Charsets.UTF_8) to path
         }
     }
     check(files.isNotEmpty()) { "Model tree is empty" }
     files.sortWith { first, second -> comparePathBytes(first.first, second.first) }
+    val total = files.sumOf { Files.size(it.second) }
+    var completed = 0L
     for ((relative, path) in files) {
+        checkActive()
         digest.update(longBytes(relative.size.toLong()))
         digest.update(relative)
         digest.update(longBytes(Files.size(path)))
@@ -627,7 +683,8 @@ internal fun modelTreeSha256(root: Path): String {
         val content = MessageDigest.getInstance("SHA-256")
         Files.newInputStream(path).use { input ->
             val buffer = ByteArray(1 shl 16)
-            while (true) { val read = input.read(buffer); if (read < 0) break; content.update(buffer, 0, read) }
+            while (true) { checkActive(); val read = input.read(buffer); if (read < 0) break; content.update(buffer, 0, read)
+                completed += read; progress(completed, total, relative.toString(Charsets.UTF_8)) }
         }
         digest.update(content.digest())
     }

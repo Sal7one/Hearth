@@ -35,15 +35,16 @@ internal fun TranscriptLine(
     showOriginal: Boolean,
     showPendingOriginal: Boolean,
     modifier: Modifier = Modifier,
+    translationFailed: Boolean = false,
 ) {
     val colors = HearthTheme.colors
     val translation = line.translation?.takeIf { it.isNotBlank() }
     val primary = when {
         translation != null -> translation
-        translationEnabled && !showPendingOriginal -> null
+        translationEnabled && (!showPendingOriginal || translationFailed) -> null
         else -> line.original
     }
-    val secondary = line.original.takeIf { translation != null && showOriginal }
+    val secondary = line.original.takeIf { (translation != null || translationFailed) && showOriginal }
 
     Column(modifier) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -76,7 +77,7 @@ internal fun TranscriptLine(
             )
         } else {
             Text(
-                CaptionsCopy.WAITING_TRANSLATION,
+                if (translationFailed) "Translation unavailable" else CaptionsCopy.WAITING_TRANSLATION,
                 style = HearthType.small,
                 color = colors.muted,
             )

@@ -949,3 +949,15 @@ model-tree-sha256-v1 contract and no-follow bounded reads. Their host fixtures
 reject missing pins, changed tokenizers, wrong trees, links and cancellation; a
 real catalog Vosk tree was also checked. `closeOwners` is consumed by desktop
 engine teardown and tested with multiple failing owners to preserve all cleanup.
+
+
+Desktop owner-test repairs (2026-10-22): `SettingsChoiceGrid` is consumed by all
+three engine settings pages and measured with eleven real-named cards at four
+widths. `PipelineLanguages` feeds Home/Translate/Captions/settings and has nine
+checkpoint/direction/readiness/result tests. `SystemAudioPcm`/`SystemAudioQueue`
+feed the ScreenCaptureKit helper; CTest covers conversion, bounded overflow and
+normal tail drain. `readSystemAudioFrame` is consumed by the joined helper
+recorder, with eight fake-process/probe tests covering malformed frames,
+permission diagnostics, graceful finish, cancellation and broken-control cleanup.
+Desktop model progress feeds the persistent activity bar and per-job controls;
+real archive fixtures cover progress, cancellation, retry preservation and reuse.

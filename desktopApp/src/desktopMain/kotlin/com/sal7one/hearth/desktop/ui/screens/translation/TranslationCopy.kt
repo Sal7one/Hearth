@@ -10,7 +10,7 @@ internal object TranslationCopy {
     const val TRY = "Try a sentence"
 
     const val ENGINE = "Engine"
-    const val ENGINE_DETAIL = "A local GGUF model, a connection you already have, or nothing."
+    const val ENGINE_DETAIL = "Local GGUF or CTranslate2 models, a provider connection, or Off."
     const val MODEL = "Model"
     const val MODEL_HINT = "Pinned size and SHA-256."
     const val LIBRARY = "Library"
@@ -26,7 +26,7 @@ internal object TranslationCopy {
     const val COMPUTE = "Compute"
     const val COMPUTE_HINT = "A GPU request that fails is an error, not a fallback."
     const val THREADS = "Threads"
-    const val THREADS_HINT = "Ignored when the GPU is used."
+    const val THREADS_HINT = "CPU worker threads; GPU backends may still use CPU work."
 
     const val STATUS = "Status"
     const val READY = "Ready"

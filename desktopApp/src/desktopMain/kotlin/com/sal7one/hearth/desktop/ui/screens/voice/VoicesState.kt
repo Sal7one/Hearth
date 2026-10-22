@@ -18,6 +18,11 @@ internal data class VoicesState(
     val engineDetail: String = "Not configured",
     val placementLabel: String = "CPU",
     val outputLabel: String = "Engine WAV output",
+    val requiresModel: Boolean = false,
+    val modelDetail: String = "Choose a verified model",
+    val modelVerified: Boolean = false,
+    val statusLabel: String = "Off",
+    val preparationNote: String = "First-use preparation and memory use vary by engine. Try a short line before live captions.",
 ) {
     val voiceOff: Boolean get() = selectedEngineId == null
     val supertonicSelected: Boolean get() = selectedEngineId == "supertonic-local"

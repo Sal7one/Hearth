@@ -10,6 +10,10 @@ import com.sal7one.hearth.desktop.runtime.AudioCaptureDevice
 import com.sal7one.hearth.desktop.selection
 import com.sal7one.hearth.desktop.ui.screens.settings.ChoiceOption
 import com.sal7one.hearth.desktop.ui.screens.settings.SelectOption
+import com.sal7one.hearth.desktop.ui.screens.settings.connectionConfigured
+import com.sal7one.hearth.desktop.ui.screens.settings.engineRuntimeLabel
+import com.sal7one.hearth.desktop.ui.screens.settings.verifiedSelectionMatches
+import com.sal7one.hearth.desktop.ui.language.pipelineLanguages
 
 /**
  * Resolves the speech page from the real descriptors, catalog, saved configuration
@@ -27,12 +31,13 @@ internal fun speechState(
     val speechEngines = capabilities.filter { it.stage == PipelineStage.STT }
     val chosen = config.selection(PipelineStage.STT)
     val descriptor = speechEngines.firstOrNull { it.id == chosen?.engineId }
+    val languages = pipelineLanguages(config, capabilities, catalog)
 
     fun engineOption(engine: EngineDescriptor): ChoiceOption = ChoiceOption(
         id = engine.id,
         badge = if (engine.kind == EngineKind.LOCAL) "L" else "C",
-        name = if (engine.kind == EngineKind.LOCAL) "On this Mac" else engine.name,
-        detail = if (engine.kind == EngineKind.LOCAL) "whisper.cpp · ${engine.acceleration.joinToString("/")}" else "OpenAI-compatible",
+        name = engine.name,
+        detail = engineRuntimeLabel(engine),
         note = if (engine.available) {
             if (engine.kind == EngineKind.LOCAL) "Audio never leaves the machine." else "Sends audio to an endpoint you control."
         } else {
@@ -42,7 +47,8 @@ internal fun speechState(
         unavailableReason = engine.unavailableReason,
     )
 
-    val models = catalog.filter { it.stage == PipelineStage.STT }.map { card ->
+    val compatibleModels = catalog.filter { it.stage == PipelineStage.STT && it.engineId == descriptor?.id }
+    val models = compatibleModels.map { card ->
         SpeechModelOption(
             id = card.id,
             label = card.name,
@@ -50,9 +56,9 @@ internal fun speechState(
         )
     }
 
-    val selectedModelId = chosen?.modelId?.takeIf { it.isNotBlank() }
-    val modelCard = catalog.firstOrNull { it.id == selectedModelId }
-    val verified = selectedModelId != null && installations[selectedModelId]?.ready == true
+    val modelCard = compatibleModels.firstOrNull { it.id == chosen?.modelId }
+    val selectedModelId = modelCard?.id
+    val verified = verifiedSelectionMatches(chosen, modelCard, modelCard?.let { installations[it.id] })
 
     val accelerationKeys = descriptor?.acceleration.orEmpty()
     val computeOptions = buildList {
@@ -76,21 +82,24 @@ internal fun speechState(
     return SpeechState(
         engines = speechEngines.map(::engineOption),
         selectedEngineId = descriptor?.id,
+        selectedKind = descriptor?.kind,
         models = models,
         selectedModelId = selectedModelId,
         modelVerified = verified,
         language = config.sourceLanguage,
-        languageOptions = languageOptions(),
+        languageOptions = languages.sources.map { SelectOption(it.code, it.label) },
+        languageIssue = languages.issue,
         devices = deviceOptions,
         selectedDevice = deviceId ?: "",
         responsiveness = responsiveness,
         compute = compute,
         computeOptions = computeOptions,
         threads = threads,
-        ready = descriptor?.available == true && verified,
-        placementLabel = compute.label,
+        ready = descriptor?.available == true && languages.issue == null &&
+            if (descriptor.kind == EngineKind.CLOUD) connectionConfigured(descriptor, chosen) else verified,
+        placementLabel = if (descriptor?.kind == EngineKind.CLOUD) "Provider" else compute.label,
         windowLabel = "${responsiveness.windowMs / 1000} s windows",
-        modelDetail = modelCard?.name ?: SpeechCopy.NOT_CONFIGURED,
+        modelDetail = modelCard?.name ?: if (descriptor?.kind == EngineKind.CLOUD) chosen?.modelId?.ifBlank { descriptor.defaultModel }.orEmpty() else SpeechCopy.NOT_CONFIGURED,
         unavailableReason = descriptor?.takeIf { !it.available }?.unavailableReason,
     )
 }

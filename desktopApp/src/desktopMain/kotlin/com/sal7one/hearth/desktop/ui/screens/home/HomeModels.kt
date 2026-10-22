@@ -2,6 +2,8 @@ package com.sal7one.hearth.desktop.ui.screens.home
 
 import com.sal7one.hearth.desktop.ui.DesktopScreen
 import com.sal7one.hearth.desktop.ui.art.HearthArt
+import com.sal7one.hearth.core.PipelineStage
+import com.sal7one.hearth.desktop.ui.language.PipelineLanguageState
 
 /** Whether a capability exists on this build today. Drives the tile footnote. */
 internal enum class Availability(val label: String) { DESKTOP("Desktop"), MOBILE("Mobile") }
@@ -34,6 +36,11 @@ internal data class HomeState(
     val recognitionReady: Boolean = false,
     val statusText: String = "Not configured",
     val statusLive: Boolean = false,
+    val languages: PipelineLanguageState = PipelineLanguageState(sourceLanguage, targetLanguage, emptyList(), emptyList(), false),
+    val setupIssue: String? = null,
+    val setupStage: PipelineStage? = null,
+    val onDevice: Boolean = true,
+    val inputLabel: String = "Microphone",
 ) {
     val subtitleChips: List<String>
         get() = buildList {

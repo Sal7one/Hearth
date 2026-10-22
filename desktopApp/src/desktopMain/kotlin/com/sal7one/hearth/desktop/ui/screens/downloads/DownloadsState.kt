@@ -13,6 +13,7 @@ internal data class DownloadItem(
     val bucket: DownloadBucket,
     val progress: Float? = null,
     val issue: String? = null,
+    val cancellable: Boolean = true,
 )
 
 internal data class DownloadsState(

@@ -147,6 +147,7 @@ private fun launchDesktop() = application {
                 initialUi = prefs,
                 saveUi = { loaded.controller.saveUi(it) },
                 closing = closing,
+                rememberedEngine = { loaded.settings.engineSetups.value[it] },
             )
         } else {
             StartupScreen(startupError) { retry++ }

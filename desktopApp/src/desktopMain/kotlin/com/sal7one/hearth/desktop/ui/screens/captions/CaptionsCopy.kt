@@ -42,7 +42,8 @@ internal object CaptionsCopy {
     const val STOP = "Stop"
     const val FINISH = "Finish recording"
     const val DEVICE = "Input"
-    const val MICROPHONE = "MacBook Pro Microphone"
+    const val MICROPHONE = "Microphone"
+    const val SYSTEM_AUDIO = "Mac audio"
     const val AUDIO_FILE = "Audio or video file…"
     const val TEXT_INPUT = "Typed text"
 }

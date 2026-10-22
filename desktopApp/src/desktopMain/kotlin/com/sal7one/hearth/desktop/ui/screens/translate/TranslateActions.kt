@@ -6,4 +6,8 @@ internal class TranslateActions(
     val onSwapLanguages: () -> Unit = {},
     val onCopyResult: () -> Unit = {},
     val onOpenVoice: () -> Unit = {},
+    val onSourceLanguage: (String) -> Unit = {},
+    val onTargetLanguage: (String) -> Unit = {},
+    val onOpenSetup: () -> Unit = {},
+    val onOpenCaptions: () -> Unit = {},
 )

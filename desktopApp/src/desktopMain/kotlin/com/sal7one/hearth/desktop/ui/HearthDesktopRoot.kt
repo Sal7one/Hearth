@@ -24,6 +24,7 @@ import com.sal7one.hearth.desktop.ui.screens.models.ModelsFilter
 import com.sal7one.hearth.desktop.ui.screens.models.ModelsScreen
 import com.sal7one.hearth.desktop.ui.screens.models.modelsState
 import com.sal7one.hearth.desktop.chooseEngine
+import com.sal7one.hearth.desktop.selection
 import com.sal7one.hearth.desktop.enableReadAloud
 import com.sal7one.hearth.desktop.ui.screens.speech.Compute
 import com.sal7one.hearth.desktop.ui.screens.speech.Responsiveness
@@ -92,6 +93,7 @@ internal fun HearthDesktopRoot(
     initialUi: Map<String, String>,
     saveUi: (Map<String, String>) -> Unit,
     closing: Boolean,
+    rememberedEngine: (String) -> com.sal7one.hearth.core.PipelineConfig? = { null },
 ) {
     val scope = rememberCoroutineScope()
     var screen by remember { mutableStateOf(DesktopScreen.fromId(initialUi["screen"] ?: "home")) }
@@ -102,6 +104,11 @@ internal fun HearthDesktopRoot(
     var showPendingOriginal by remember { mutableStateOf(initialUi["overlay-pending"] != "false") }
     var overlaySettings by remember { mutableStateOf(overlaySettingsFrom(initialUi)) }
     var reduceMotion by remember { mutableStateOf(initialUi["reduce-motion"] == "true") }
+    val systemAudioAvailable = remember { com.sal7one.hearth.desktop.runtime.DesktopSystemAudioCapture.available }
+    val systemAudioReason = remember { com.sal7one.hearth.desktop.runtime.DesktopSystemAudioCapture.availabilityReason }
+    var captureSource by remember { mutableStateOf(
+        if (initialUi["audio-source"] == "microphone" || !systemAudioAvailable) WorkspaceInput.MICROPHONE else WorkspaceInput.SYSTEM_AUDIO
+    ) }
     var deviceId by remember { mutableStateOf<String?>(null) }
     var translationDraft by remember { mutableStateOf("") }
     var modelFilter by remember {
@@ -115,6 +122,7 @@ internal fun HearthDesktopRoot(
 
     val config by controller.config.collectAsState()
     val workspace by controller.state.collectAsState()
+    val activeConfig = if (workspace.active) workspace.sessionConfig ?: config else config
     val library by models.state.collectAsState()
     val managedInstallations by models.library.installations.collectAsState()
     val installations = managedInstallations + library.verifiedImports.mapValues { (_, route) ->
@@ -140,8 +148,42 @@ internal fun HearthDesktopRoot(
 
     fun failure(message: String) = controller.showError(message)
 
+    fun sourceLanguage(code: String) = controller.updateConfig { it.copy(sourceLanguage = code) }
+    fun targetLanguage(code: String) = controller.updateConfig { it.copy(targetLanguage = code) }
+    fun swapLanguages() = controller.updateConfig { current ->
+        val choices = com.sal7one.hearth.desktop.ui.language.pipelineLanguages(current, controller.capabilities, models.library.catalog,
+            typedText = screen == DesktopScreen.TRANSLATE)
+        if (choices.canSwap) current.copy(sourceLanguage = current.targetLanguage, targetLanguage = current.sourceLanguage) else current
+    }
+    fun pickCaptureSource(source: WorkspaceInput) {
+        if (workspace.active) return
+        captureSource = source
+        saveUi(mapOf("audio-source" to if (source == WorkspaceInput.SYSTEM_AUDIO) "system" else "microphone"))
+    }
+
+    fun installedForEngine(engineId: String): EngineSelection? = models.library.catalog
+        .asSequence().filter { it.engineId == engineId }.mapNotNull { models.verifiedSelection(it.id) }.firstOrNull()
+
+    fun normalize(current: com.sal7one.hearth.core.PipelineConfig) =
+        com.sal7one.hearth.desktop.ui.language.normalizePipelineLanguages(current, controller.capabilities, models.library.catalog)
+
+    fun chooseStageEngine(current: com.sal7one.hearth.core.PipelineConfig, engine: com.sal7one.hearth.core.EngineDescriptor) =
+        normalize(current.chooseEngine(engine, rememberedEngine(engine.id), installedForEngine(engine.id)))
+
+    fun selectEngine(engine: com.sal7one.hearth.core.EngineDescriptor) {
+        scope.launch {
+            controller.updateConfig { current -> chooseStageEngine(current, engine) }.join()
+            val route = controller.config.value.selection(engine.stage)
+            if (route?.engineId == engine.id && route.modelPath.isNotBlank() &&
+                models.library.catalog.any { it.id == route.modelId && it.engineId == route.engineId } &&
+                models.verifiedSelection(route.modelId)?.modelPath != route.modelPath) {
+                models.verify(route.modelId, java.nio.file.Path.of(route.modelPath))
+            }
+        }
+    }
+
     val home = homeState(
-        config = config,
+        config = activeConfig,
         capabilities = controller.capabilities,
         installedModels = installed,
         verifiedModels = installed,
@@ -152,13 +194,15 @@ internal fun HearthDesktopRoot(
             else -> if (installed > 0) "Ready" else "Setup needed"
         },
         statusLive = workspace.active && !closing,
-    )
+        catalog = models.library.catalog,
+        installations = installations,
+    ).copy(inputLabel = if ((if (workspace.active) workspace.input ?: captureSource else captureSource) == WorkspaceInput.SYSTEM_AUDIO) "Mac audio" else "Microphone")
 
     val libraryState = modelsState(
         catalog = models.library.catalog,
         installations = installations,
         config = config,
-        transfer = library.transfer,
+        transfers = library.transfers.values,
         filter = modelFilter,
         freeBytes = freeBytes,
         verifiedImports = library.verifiedImports,
@@ -179,14 +223,14 @@ internal fun HearthDesktopRoot(
             val card = models.library.find(id)
             val installed = models.verifiedSelection(id)
             if (installed != null) {
-                controller.updateConfig { it.useVerifiedModel(card.stage, installed) }
+                controller.updateConfig { normalize(it.useVerifiedModel(card.stage, installed)) }
             } else {
                 models.download(id)
             }
         },
         onImport = { id ->
-            if (workspace.importingSetup || library.refreshing || library.transfer != null) {
-                failure("Wait for the current model check or transfer to finish")
+            if (workspace.importingSetup || id in library.transfers) {
+                failure("This model is already being checked or downloaded")
             } else {
                 val card = models.library.find(id)
                 val folder = card.artifacts.size != 1 || card.archive != null || card.rangePackage != null
@@ -221,13 +265,13 @@ internal fun HearthDesktopRoot(
         onNavigate = ::navigate,
         onSelectEngine = { id ->
             controller.capabilities.firstOrNull { it.id == id && it.stage == PipelineStage.STT }?.let { engine ->
-                controller.updateConfig { current -> current.chooseEngine(engine) }
+                selectEngine(engine)
             }
         },
         onSelectModel = { id ->
             val verified = models.verifiedSelection(id)
             if (verified != null) {
-                controller.updateConfig { current -> current.useVerifiedModel(PipelineStage.STT, verified) }
+                controller.updateConfig { current -> normalize(current.useVerifiedModel(PipelineStage.STT, verified)) }
             } else {
                 navigate(DesktopScreen.DOWNLOADS)
             }
@@ -240,6 +284,8 @@ internal fun HearthDesktopRoot(
         onThreads = { threads -> withSpeechOptions("threads", threads.coerceIn(1, 32).toString()) },
         onTestMicrophone = {
             if (speech.ready) {
+                pickCaptureSource(WorkspaceInput.MICROPHONE)
+                applyOverlay(overlaySettings.copy(visible = true))
                 controller.start(WorkspaceInput.MICROPHONE, "", "", deviceId)
                 navigate(DesktopScreen.CAPTIONS)
             } else {
@@ -267,14 +313,14 @@ internal fun HearthDesktopRoot(
                 controller.updateConfig { current -> current.copy(translation = null) }
             } else {
                 controller.capabilities.firstOrNull { it.id == id && it.stage == PipelineStage.TRANSLATION }?.let { engine ->
-                    controller.updateConfig { current -> current.chooseEngine(engine) }
+                    selectEngine(engine)
                 }
             }
         },
         onSelectModel = { id ->
             val verified = models.verifiedSelection(id)
             if (verified != null) {
-                controller.updateConfig { current -> current.useVerifiedModel(PipelineStage.TRANSLATION, verified) }
+                controller.updateConfig { current -> normalize(current.useVerifiedModel(PipelineStage.TRANSLATION, verified)) }
             } else {
                 navigate(DesktopScreen.DOWNLOADS)
             }
@@ -286,7 +332,7 @@ internal fun HearthDesktopRoot(
         onThreads = { threads -> withTranslationOption("threads", threads.coerceIn(1, 32).toString()) },
     )
 
-    val voices = voicesState(controller.capabilities, config)
+    val voices = voicesState(controller.capabilities, config, models.library.catalog, installations)
 
     fun withVoiceOption(key: String, value: String) = controller.updateConfig { current ->
         val selected = current.voice ?: return@updateConfig current
@@ -300,9 +346,7 @@ internal fun HearthDesktopRoot(
                 controller.updateConfig { current -> current.copy(voice = null, voiceId = "") }
             } else {
                 controller.capabilities.firstOrNull { it.id == id && it.stage == PipelineStage.TTS }?.let { engine ->
-                    controller.updateConfig { current ->
-                        current.chooseEngine(engine)
-                    }
+                    selectEngine(engine)
                 }
             }
         },
@@ -310,7 +354,7 @@ internal fun HearthDesktopRoot(
         onSpeakTranslation = { spoken -> controller.updateConfig { current -> current.copy(speakTranslatedText = spoken) } },
         onToggleReadAloud = { aloud ->
             if (aloud) {
-                controller.updateConfig { current -> current.enableReadAloud(controller.capabilities) }
+                controller.updateConfig { current -> current.enableReadAloud(controller.capabilities, rememberedEngine, ::installedForEngine) }
             } else {
                 controller.updateConfig { current -> current.copy(voice = null) }
             }
@@ -332,7 +376,7 @@ internal fun HearthDesktopRoot(
         onCopyApiToken = { controller.copyApiToken(::copyToClipboard) },
     )
 
-    val translate = translateState(config, workspace)
+    val translate = translateState(config, workspace, controller.capabilities, models.library.catalog, installations)
 
     val connections = connectionsState(
         capabilities = controller.capabilities,
@@ -344,9 +388,7 @@ internal fun HearthDesktopRoot(
         onNavigate = ::navigate,
         onActivate = { engineId ->
             controller.capabilities.firstOrNull { it.id == engineId }?.let { engine ->
-                controller.updateConfig { current ->
-                    current.chooseEngine(engine)
-                }
+                selectEngine(engine)
             }
         },
         onSave = { engineId, endpoint, model, credentialId ->
@@ -449,13 +491,14 @@ internal fun HearthDesktopRoot(
     val downloads = downloadsState(
         catalog = models.library.catalog,
         installations = installations,
-        transfer = library.transfer,
+        transfers = library.transfers.values,
         freeBytes = freeBytes,
+        issues = library.issues,
     ).copy(refreshing = library.refreshing)
 
     val downloadsActions = DownloadsActions(
         onDownload = { id -> models.download(id) },
-        onCancel = { models.cancel() },
+        onCancel = models::cancel,
         onRefresh = { models.refresh(config) },
         onOpenFolder = {
             runCatching { openPath(controller.dataDirectory) }
@@ -466,8 +509,8 @@ internal fun HearthDesktopRoot(
 
     val overlay = overlayState(
         snapshot = workspace.snapshot,
-        translationEnabled = config.translation != null,
-        targetLanguage = config.targetLanguage,
+        translationEnabled = activeConfig.translation != null,
+        targetLanguage = activeConfig.targetLanguage,
         settings = overlaySettings,
         showOriginalWhilePending = showPendingOriginal,
     )
@@ -488,14 +531,41 @@ internal fun HearthDesktopRoot(
 
     val captions: CaptionsState = captionsState(
         workspace = workspace,
-        config = config,
+        config = activeConfig,
         capabilities = controller.capabilities,
         showOriginal = overlaySettings.showOriginal,
         showPendingOriginal = showPendingOriginal,
         overlayVisible = overlaySettings.visible,
         deviceName = workspace.devices.firstOrNull { it.id == deviceId }?.name,
-        inputLabel = "Microphone",
+        inputLabel = when (if (workspace.active) workspace.input ?: captureSource else captureSource) {
+            WorkspaceInput.SYSTEM_AUDIO -> "Mac audio"
+            WorkspaceInput.MICROPHONE -> "Microphone"
+            WorkspaceInput.AUDIO_FILE -> "Audio file"
+            WorkspaceInput.TEXT -> "Text"
+        },
+        catalog = models.library.catalog,
+        installations = installations,
+        systemAudioAvailable = systemAudioAvailable,
+        systemAudioUnavailableReason = systemAudioReason,
     )
+
+    fun startLiveCapture() {
+        navigate(DesktopScreen.CAPTIONS)
+        if (workspace.active) {
+            applyOverlay(overlaySettings.copy(visible = true))
+            return
+        }
+        if (!captions.readyToStart) {
+            failure(captions.readinessIssue ?: captions.languages.issue ?: "Complete the speech setup first")
+            return
+        }
+        if (captureSource == WorkspaceInput.SYSTEM_AUDIO && !systemAudioAvailable) {
+            failure(systemAudioReason ?: "Mac audio capture is unavailable")
+            return
+        }
+        applyOverlay(overlaySettings.copy(visible = true))
+        controller.start(captureSource, "", "", if (captureSource == WorkspaceInput.MICROPHONE) deviceId else null)
+    }
 
     val captionsActions = CaptionsActions(
         onToggleOverlay = { visible -> applyOverlay(overlaySettings.copy(visible = visible)) },
@@ -504,7 +574,17 @@ internal fun HearthDesktopRoot(
             showPendingOriginal = it
             saveUi(mapOf("overlay-pending" to it.toString()))
         },
-        onOpenStages = { navigate(DesktopScreen.MODELS) },
+        onOpenStages = {
+            val stage = PipelineStage.entries.filter { it == PipelineStage.STT || config.selection(it) != null }.firstOrNull {
+                com.sal7one.hearth.desktop.ui.language.stageSetupIssue(config, it, controller.capabilities, installations, models.library.catalog) != null
+            }
+            navigate(when (stage) {
+                PipelineStage.STT -> DesktopScreen.SPEECH
+                PipelineStage.TRANSLATION -> DesktopScreen.TRANSLATION_SETTINGS
+                PipelineStage.TTS -> DesktopScreen.VOICES
+                null -> DesktopScreen.MODELS
+            })
+        },
         onChangeStage = { slot ->
             navigate(
                 when (slot) {
@@ -531,20 +611,14 @@ internal fun HearthDesktopRoot(
             if (audio != null) controller.play(audio) else failure("This session has not produced any speech yet")
         },
         onStopSpeech = { controller.stopPlayback() },
-        onStart = {
-            if (!captions.speechReady) {
-                navigate(DesktopScreen.MODELS)
-            } else {
-                controller.start(WorkspaceInput.MICROPHONE, "", "", deviceId)
-            }
-        },
+        onStart = ::startLiveCapture,
         onStop = { controller.cancel() },
-        onFinishMicrophone = { controller.finishMicrophone() },
-        onSwapLanguages = {
-            controller.updateConfig {
-                it.copy(sourceLanguage = it.targetLanguage, targetLanguage = it.sourceLanguage)
-            }
-        },
+        onFinishMicrophone = { controller.finishCapture() },
+        onSwapLanguages = ::swapLanguages,
+        onSourceLanguage = ::sourceLanguage,
+        onTargetLanguage = ::targetLanguage,
+        onOpenOverlay = { applyOverlay(overlaySettings.copy(visible = true)); navigate(DesktopScreen.OVERLAY) },
+        onPickSystemAudio = { pickCaptureSource(WorkspaceInput.SYSTEM_AUDIO) },
         onToggleTranslate = {
             if (config.translation == null) navigate(DesktopScreen.TRANSLATION_SETTINGS)
             else controller.updateConfig { it.copy(translation = null) }
@@ -553,7 +627,7 @@ internal fun HearthDesktopRoot(
             if (config.voice == null) navigate(DesktopScreen.VOICES)
             else controller.updateConfig { it.copy(voice = null) }
         },
-        onPickMicrophone = { /* already the active input; the label is the menu anchor */ },
+        onPickMicrophone = { pickCaptureSource(WorkspaceInput.MICROPHONE) },
         onPickAudioFile = {
             val path = chooseFile(null, "Choose audio or video", listOf("wav", "mp4", "mov", "m4a", "mp3", "aac"))
             if (path != null) {
@@ -579,16 +653,32 @@ internal fun HearthDesktopRoot(
                 saveUi(mapOf("theme" to if (dark) "dark" else "light"))
             },
             onNavigate = ::navigate,
+            activity = {
+                com.sal7one.hearth.desktop.ui.shell.ModelActivityBar(
+                    library, models.library.catalog,
+                    onOpenDownloads = { navigate(DesktopScreen.DOWNLOADS) },
+                    onDismiss = models::dismissNotice,
+                )
+                if (workspace.active && config != activeConfig) {
+                    com.sal7one.hearth.desktop.ui.components.Banner(
+                        "Settings saved for the next session. Stop and restart live captions to apply them.",
+                        tone = com.sal7one.hearth.desktop.ui.components.BannerTone.Neutral,
+                    )
+                }
+            },
         ) {
             when (screen) {
                 DesktopScreen.HOME -> HomeScreen(
                     state = home,
-                    onStart = { navigate(DesktopScreen.CAPTIONS) },
-                    onSwapLanguages = {
-                        controller.updateConfig {
-                            it.copy(sourceLanguage = it.targetLanguage, targetLanguage = it.sourceLanguage)
-                        }
-                    },
+                    onStart = ::startLiveCapture,
+                    onSwapLanguages = ::swapLanguages,
+                    onSourceLanguage = ::sourceLanguage,
+                    onTargetLanguage = ::targetLanguage,
+                    onOpenSetup = { navigate(when (home.setupStage) {
+                        PipelineStage.TRANSLATION -> DesktopScreen.TRANSLATION_SETTINGS
+                        PipelineStage.TTS -> DesktopScreen.VOICES
+                        else -> DesktopScreen.SPEECH
+                    }) },
                     onOpen = ::navigate,
                     onOpenWorkspace = { navigate(DesktopScreen.CAPTIONS) },
                 )
@@ -602,15 +692,20 @@ internal fun HearthDesktopRoot(
                     onDraftChange = { translationDraft = it },
                     actions = TranslateActions(
                         onTranslate = { text ->
-                            if (text.isNotBlank()) controller.start(WorkspaceInput.TEXT, text, "", null)
+                            if (text.isNotBlank() && translate.ready) controller.start(WorkspaceInput.TEXT, text, "", null)
+                            else failure(translate.readinessIssue ?: translate.languages.issue ?: "Configure translation first")
                         },
-                        onSwapLanguages = {
-                            controller.updateConfig {
-                                it.copy(sourceLanguage = it.targetLanguage, targetLanguage = it.sourceLanguage)
-                            }
+                        onSwapLanguages = ::swapLanguages,
+                        onSourceLanguage = ::sourceLanguage,
+                        onTargetLanguage = ::targetLanguage,
+                        onOpenSetup = {
+                            navigate(if (com.sal7one.hearth.desktop.ui.language.stageSetupIssue(config, PipelineStage.TRANSLATION,
+                                controller.capabilities, installations, models.library.catalog) == null && config.voice != null)
+                                DesktopScreen.VOICES else DesktopScreen.TRANSLATION_SETTINGS)
                         },
+                        onOpenCaptions = { navigate(DesktopScreen.CAPTIONS) },
                         onCopyResult = {
-                            runCatching { copyToClipboard(translate.translated.ifBlank { translate.original }) }
+                            runCatching { copyToClipboard(translate.translated) }
                                 .onFailure { failure(it.message ?: it.toString()) }
                         },
                         onOpenVoice = { navigate(DesktopScreen.VOICES) },

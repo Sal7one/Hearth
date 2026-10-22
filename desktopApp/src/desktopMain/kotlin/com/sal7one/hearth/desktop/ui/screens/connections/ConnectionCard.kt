@@ -40,9 +40,9 @@ internal fun ConnectionCard(
     modifier: Modifier = Modifier,
 ) {
     val colors = HearthTheme.colors
-    var endpoint by remember(row.engineId, row.selected) { mutableStateOf(row.endpoint) }
-    var model by remember(row.engineId, row.selected) { mutableStateOf(row.model) }
-    var credentialId by remember(row.engineId, row.selected) { mutableStateOf(row.credentialId) }
+    var endpoint by remember(row.engineId, row.selected, row.endpoint) { mutableStateOf(row.endpoint) }
+    var model by remember(row.engineId, row.selected, row.model) { mutableStateOf(row.model) }
+    var credentialId by remember(row.engineId, row.selected, row.credentialId) { mutableStateOf(row.credentialId) }
     var key by remember(row.engineId) { mutableStateOf("") }
 
     HearthCard(modifier, padding = 0.dp) {
@@ -51,8 +51,9 @@ internal fun ConnectionCard(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(Modifier.weight(1f)) {
+                Text(row.name, style = HearthType.h3.copy(fontSize = 15.sp), color = colors.text)
+                Spacer(Modifier.height(4.dp))
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(row.name, style = HearthType.h3.copy(fontSize = 15.sp), color = colors.text)
                     Chip(row.stageLabel, tone = ChipTone.Neutral)
                     Chip(
                         if (row.selected) ConnectionsCopy.IN_USE else ConnectionsCopy.NOT_IN_USE,
@@ -64,10 +65,11 @@ internal fun ConnectionCard(
                     row.unavailableReason ?: if (row.selected) row.endpoint else row.endpoint,
                     style = HearthType.monoSmall,
                     color = if (row.available) colors.muted else colors.err,
-                    maxLines = 1,
+                    maxLines = if (row.available) 1 else 4,
                 )
             }
             if (!row.selected) {
+                Spacer(Modifier.width(10.dp))
                 HearthButton(
                     ConnectionsCopy.USE,
                     onClick = { actions.onActivate(row.engineId) },

@@ -24,6 +24,7 @@ import com.sal7one.hearth.desktop.ui.components.Segmented
 import com.sal7one.hearth.desktop.ui.components.SwitchRow
 import com.sal7one.hearth.desktop.ui.screens.settings.ChoiceCard
 import com.sal7one.hearth.desktop.ui.screens.settings.ChoiceOption
+import com.sal7one.hearth.desktop.ui.screens.settings.SettingsChoiceGrid
 import com.sal7one.hearth.desktop.ui.screens.settings.FormRow
 import com.sal7one.hearth.desktop.ui.screens.settings.SettingsSubnav
 import com.sal7one.hearth.desktop.ui.shell.PageScaffold
@@ -68,21 +69,18 @@ internal fun VoicesScreen(
                     Spacer(Modifier.height(3.dp))
                     Text(VoicesCopy.ENGINE_DETAIL, style = HearthType.small, color = colors.muted)
                     Spacer(Modifier.height(14.dp))
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        state.engines.forEach { engine ->
+                    SettingsChoiceGrid(state.engines + ChoiceOption("", "—", "Off", "Captions only", "Nothing is spoken.", true)) { engine, cardModifier ->
                             ChoiceCard(
                                 option = engine,
-                                selected = engine.id == state.selectedEngineId,
-                                onClick = { actions.onSelectEngine(engine.id) },
-                                modifier = Modifier.weight(1f),
+                                selected = if (engine.id.isEmpty()) state.voiceOff else engine.id == state.selectedEngineId,
+                                onClick = { actions.onSelectEngine(engine.id.takeIf(String::isNotEmpty)) },
+                                modifier = cardModifier,
                             )
-                        }
-                        ChoiceCard(
-                            option = ChoiceOption("", "—", "Off", "Captions only", "Nothing is spoken.", true),
-                            selected = state.voiceOff,
-                            onClick = { actions.onSelectEngine(null) },
-                            modifier = Modifier.weight(1f),
-                        )
+                    }
+                    if (state.requiresModel) FormRow(label = "Model", hint = "Use the verified model for this voice engine.", showDivider = false) {
+                        Text(state.modelDetail, style = HearthType.small, color = colors.text)
+                        HearthButton(if (state.modelVerified) "Open model library" else "Choose or import a model",
+                            { actions.onNavigate(DesktopScreen.MODELS) }, tone = ButtonTone.Secondary, size = ButtonSize.Small)
                     }
                 }
 

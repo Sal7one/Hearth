@@ -30,7 +30,7 @@ import javax.sound.sampled.TargetDataLine
 data class AudioCaptureDevice(val id: String, val name: String)
 
 /** One capture owner, 16 queued 100 ms frames plus in-flight producer/emitter/consumer frames. */
-class DesktopAudioCapture private constructor(private val deviceId: String?, private val lineFactory: ((AudioFormat) -> TargetDataLine)?) : Closeable {
+class DesktopAudioCapture private constructor(private val deviceId: String?, private val lineFactory: ((AudioFormat) -> TargetDataLine)?) : DesktopPcmCapture {
     constructor(deviceId: String? = null) : this(deviceId?.takeIf(String::isNotBlank), null)
     internal constructor(lineFactory: (AudioFormat) -> TargetDataLine) : this(null, lineFactory)
     private val started = AtomicBoolean()
@@ -40,7 +40,7 @@ class DesktopAudioCapture private constructor(private val deviceId: String?, pri
     private val done = kotlinx.coroutines.CompletableDeferred<Unit>()
     private val producer = AtomicReference<Thread?>()
 
-    fun start(): Flow<PcmFrame> = flow {
+    override fun start(): Flow<PcmFrame> = flow {
         check(started.compareAndSet(false, true)) { "Microphone capture can only be started once" }
         val format = AudioFormat(16000f, 16, 1, true, false)
         val info = DataLine.Info(TargetDataLine::class.java, format)
@@ -89,14 +89,14 @@ class DesktopAudioCapture private constructor(private val deviceId: String?, pri
     }.flowOn(Dispatchers.IO).buffer(0) // Rendezvous the dispatcher boundary; never add flowOn's default 64-frame queue.
 
     /** Stop recording normally; already queued frames remain available to recognition. */
-    suspend fun finish() {
+    override suspend fun finish() {
         stop.set(true); line.get()?.let { it.stop(); it.close() }
         if (started.get()) {
             done.await()
             withContext(NonCancellable + Dispatchers.IO) { producer.get()?.join() }
         } else { events.close(); done.complete(Unit) }
     }
-    fun cancel() {
+    override fun cancel() {
         stop.set(true); events.cancel(CancellationException("Microphone capture cancelled"))
         line.getAndSet(null)?.close()
         if (!started.get()) done.complete(Unit)

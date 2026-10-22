@@ -6,25 +6,28 @@ import com.sal7one.hearth.desktop.data.DesktopModelStatus
 import com.sal7one.hearth.desktop.ui.screens.models.formatBytes
 
 /**
- * Turns catalog + installation state + the single in-flight transfer into four
+ * Turns catalog + installation state + the per-model transfers into four
  * buckets. A transfer is shown even when the library has not refreshed yet, so a
  * download started from the library is visible here immediately.
  */
 internal fun downloadsState(
     catalog: List<DesktopModelCard>,
     installations: Map<String, DesktopModelStatus>,
-    transfer: ModelTransfer?,
+    transfers: Collection<ModelTransfer>,
     freeBytes: Long,
+    issues: Map<String, String> = emptyMap(),
 ): DownloadsState {
-    val activeId = transfer?.id
+    val byId = transfers.associateBy { it.id }
 
     val items = catalog.map { card ->
         val status = installations[card.id]
-        val active = card.id == activeId && transfer != null
+        val issue = issues[card.id] ?: status?.issue
+        val transfer = byId[card.id]
+        val active = transfer != null
         val bucket = when {
             active -> DownloadBucket.DOWNLOADING
             status?.ready == true -> DownloadBucket.INSTALLED
-            status?.issue != null -> DownloadBucket.BROKEN
+            issue != null -> DownloadBucket.BROKEN
             else -> DownloadBucket.AVAILABLE
         }
         DownloadItem(
@@ -33,22 +36,24 @@ internal fun downloadsState(
             stageLabel = stageLabel(card.stage),
             sizeLabel = formatBytes(card.bytes),
             detail = when (bucket) {
-                DownloadBucket.DOWNLOADING -> if (transfer?.checking == true) {
-                    DownloadsCopy.VERIFYING
-                } else if (transfer != null && transfer.total > 0) {
-                    "${formatBytes(transfer.downloaded)} of ${formatBytes(transfer.total)}"
-                } else {
-                    DownloadsCopy.STARTING
+                DownloadBucket.DOWNLOADING -> requireNotNull(transfer).let { current ->
+                    current.label + when {
+                        current.queued -> " · Waiting for a slot"
+                        current.total > 0 -> " · ${formatBytes(current.downloaded)} of ${formatBytes(current.total)}" +
+                            current.component.takeIf { it.isNotBlank() }?.let { " · $it" }.orEmpty()
+                        else -> "…"
+                    }
                 }
                 DownloadBucket.INSTALLED -> "Verified on this Mac"
-                DownloadBucket.BROKEN -> status?.issue ?: "Failed verification"
+                DownloadBucket.BROKEN -> issue ?: "Failed verification"
                 DownloadBucket.AVAILABLE -> "Ready to download"
             },
             bucket = bucket,
-            progress = if (active && transfer != null && transfer.total > 0) {
+            progress = if (transfer != null && !transfer.queued && transfer.total > 0) {
                 (transfer.downloaded.toFloat() / transfer.total).coerceIn(0f, 1f)
             } else null,
-            issue = status?.issue,
+            issue = issue,
+            cancellable = transfer?.cancelling != true,
         )
     }
 

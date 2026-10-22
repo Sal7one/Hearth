@@ -124,12 +124,15 @@ internal fun ModelRowView(
                 row.issue?.let {
                     Text(it, style = HearthType.rowSub, color = colors.err, maxLines = 2)
                 }
+                if (row.status == ModelStatus.BROKEN && row.activity == null) {
+                    Text("Repair downloads missing or changed files.", style = HearthType.rowSub, color = colors.muted)
+                }
             }
         }
         HearthButton(
             text = "Import existing…",
             onClick = onImport,
-            enabled = importEnabled,
+            enabled = importEnabled && row.activity == null,
             tone = ButtonTone.Ghost,
             size = ButtonSize.Small,
         )

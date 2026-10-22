@@ -47,7 +47,7 @@ internal fun HomeReadiness(state: HomeState, modifier: Modifier = Modifier) {
             value = "${state.installedModels} model" + if (state.installedModels == 1) "" else "s",
             chip = if (state.verifiedModels > 0) "Verified" to ChipTone.Ok else null,
             detail = if (state.installedModels == 0) {
-                "Nothing installed yet — the library has everything you need."
+                "Install local models or connect a provider."
             } else {
                 "${state.verifiedModels} checked against their pinned hash."
             },
@@ -56,21 +56,17 @@ internal fun HomeReadiness(state: HomeState, modifier: Modifier = Modifier) {
         )
         ReadinessCell(
             eyebrow = "Pipeline",
-            value = if (state.recognitionReady) "Recognition" else "Not set up",
-            chip = if (state.recognitionReady) "Ready" to ChipTone.Ok else "Needs a model" to ChipTone.Warn,
-            detail = if (state.recognitionReady) {
-                "Translation and voice stay off until you choose them."
-            } else {
-                "Choose a speech model to start captioning."
-            },
+            value = if (state.setupIssue == null && state.languages.issue == null) "Configured" else "Needs attention",
+            chip = if (state.setupIssue == null && state.languages.issue == null) "Ready" to ChipTone.Ok else "Check settings" to ChipTone.Warn,
+            detail = state.setupIssue ?: state.languages.issue ?: "Live captions use the stages selected above.",
             modifier = Modifier.weight(1f),
             showDivider = true,
         )
         ReadinessCell(
             eyebrow = "Privacy",
-            value = "On device",
+            value = if (state.onDevice) "On device" else "Cloud selected",
             chip = null,
-            detail = "Audio and text stay here unless a cloud engine is selected.",
+            detail = if (state.onDevice) "Selected engines process audio and text locally." else "Selected cloud stages send input to your configured providers.",
             modifier = Modifier.weight(1f),
             showDivider = false,
         )

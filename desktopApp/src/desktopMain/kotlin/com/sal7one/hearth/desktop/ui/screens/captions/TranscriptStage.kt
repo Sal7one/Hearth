@@ -65,6 +65,7 @@ internal fun TranscriptStage(
                         translationEnabled = state.translationEnabled,
                         showOriginal = state.showOriginal,
                         showPendingOriginal = state.showPendingOriginal,
+                        translationFailed = state.error != null && line.translation.isNullOrBlank() && !line.partial,
                     )
                     Spacer(Modifier.height(22.dp))
                 }

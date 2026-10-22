@@ -8,7 +8,7 @@ import com.sal7one.hearth.desktop.ui.DesktopScreen
  */
 internal class DownloadsActions(
     val onDownload: (String) -> Unit = {},
-    val onCancel: () -> Unit = {},
+    val onCancel: (String) -> Unit = {},
     val onRefresh: () -> Unit = {},
     val onOpenFolder: () -> Unit = {},
     val onNavigate: (DesktopScreen) -> Unit = {},

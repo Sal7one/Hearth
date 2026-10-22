@@ -70,7 +70,7 @@ internal fun TranslationScreen(
                     TranslationEngineSection(state, actions)
                 }
                 HearthCard(padding = 20.dp) { TranslationFormSection(state, actions) }
-                Text(
+                if (state.supportsPromptMode) Text(
                     TranslationCopy.PROMPT_NOTE,
                     style = HearthType.small,
                     color = colors.muted,
@@ -83,15 +83,15 @@ internal fun TranslationScreen(
                             Text(TranslationCopy.STATUS, style = HearthType.h3.copy(fontSize = 14.sp), color = colors.text)
                             Spacer(Modifier.weight(1f))
                             Chip(
-                                if (state.ready) TranslationCopy.READY else TranslationCopy.NOT_CONFIGURED,
+                                if (state.ready && state.cloudSelected) "Connection configured" else if (state.ready) TranslationCopy.READY else TranslationCopy.NOT_CONFIGURED,
                                 tone = if (state.ready) ChipTone.Ok else ChipTone.Warn,
                             )
                         }
                         Spacer(Modifier.height(10.dp))
                         KeyValueRow("Model", state.modelDetail)
                         KeyValueRow("Placement", state.placementLabel)
-                        KeyValueRow("Prompt", state.promptMode.label)
-                        KeyValueRow("Threads", state.threads.toString())
+                        if (state.supportsPromptMode) KeyValueRow("Prompt", state.promptMode.label)
+                        if (state.localSelected) KeyValueRow("Threads", state.threads.toString())
                     }
                     HearthCard(padding = 16.dp) {
                         Text(TranslationCopy.ORDER, style = HearthType.h3.copy(fontSize = 14.sp), color = colors.text)
@@ -117,6 +117,6 @@ internal fun TranslationScreen(
         }
 
         Spacer(Modifier.height(16.dp))
-        TranslationAdvancedCard(state, actions)
+        if (state.localSelected) TranslationAdvancedCard(state, actions)
     }
 }

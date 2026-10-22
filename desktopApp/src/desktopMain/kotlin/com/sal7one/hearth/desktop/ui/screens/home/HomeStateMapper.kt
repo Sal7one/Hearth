@@ -5,6 +5,11 @@ import com.sal7one.hearth.core.PipelineConfig
 import com.sal7one.hearth.core.PipelineStage
 import com.sal7one.hearth.desktop.selection
 import java.util.Locale
+import com.sal7one.hearth.core.EngineKind
+import com.sal7one.hearth.desktop.data.DesktopModelCard
+import com.sal7one.hearth.desktop.data.DesktopModelStatus
+import com.sal7one.hearth.desktop.ui.language.pipelineLanguages
+import com.sal7one.hearth.desktop.ui.language.stageSetupIssue
 
 /**
  * Resolves the Home screen's state from the real configuration and engine
@@ -18,6 +23,8 @@ internal fun homeState(
     verifiedModels: Int,
     statusText: String,
     statusLive: Boolean,
+    catalog: List<DesktopModelCard> = emptyList(),
+    installations: Map<String, DesktopModelStatus> = emptyMap(),
 ): HomeState {
     fun descriptor(stage: PipelineStage): EngineDescriptor? {
         val id = config.selection(stage)?.engineId ?: return null
@@ -27,7 +34,9 @@ internal fun homeState(
     val speech = descriptor(PipelineStage.STT)
     val translation = descriptor(PipelineStage.TRANSLATION)
     val voice = descriptor(PipelineStage.TTS)
-    val recognitionReady = speech != null && speech.available
+    val recognitionReady = stageSetupIssue(config, PipelineStage.STT, capabilities, installations, catalog) == null
+    val setup = PipelineStage.entries.filter { it == PipelineStage.STT || config.selection(it) != null }
+        .mapNotNull { stage -> stageSetupIssue(config, stage, capabilities, installations, catalog)?.let { stage to it } }.firstOrNull()
 
     return HomeState(
         sourceLanguage = config.sourceLanguage,
@@ -42,6 +51,10 @@ internal fun homeState(
         recognitionReady = recognitionReady,
         statusText = statusText,
         statusLive = statusLive,
+        languages = pipelineLanguages(config, capabilities, catalog),
+        setupIssue = setup?.second,
+        setupStage = setup?.first,
+        onDevice = listOfNotNull(speech, translation, voice).none { it.kind == EngineKind.CLOUD },
     )
 }
 

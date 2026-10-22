@@ -29,8 +29,8 @@ class DesktopModelImportFlowTest {
                 voice = EngineSelection("system-tts"), sourceLanguage = "ar", targetLanguage = "en")
             try {
                 controller.verify(card.id, picked)
-                controller.state.first { it.transfer == null }
-                val beforeUse = modelsState(listOf(card), emptyMap(), original, null, ModelsFilter(onlyInstalled = true), 0,
+                controller.state.first { it.transfers.isEmpty() }
+                val beforeUse = modelsState(listOf(card), emptyMap(), original, emptyList(), ModelsFilter(onlyInstalled = true), 0,
                     controller.state.value.verifiedImports, controller.state.value.issues)
                 val row = beforeUse.groups.flatMap { it.rows }.single()
                 assertEquals(ModelStatus.INSTALLED, row.status)
@@ -47,7 +47,7 @@ class DesktopModelImportFlowTest {
                 controller.refresh(selected)
                 controller.state.first { !it.refreshing }
                 assertEquals(listOf(picked, picked), checkedPaths)
-                val afterUse = modelsState(listOf(card), emptyMap(), selected, null, ModelsFilter(), 0,
+                val afterUse = modelsState(listOf(card), emptyMap(), selected, emptyList(), ModelsFilter(), 0,
                     controller.state.value.verifiedImports, controller.state.value.issues)
                 assertTrue(afterUse.groups.flatMap { it.rows }.single().inUse)
             } finally { controller.close() }
@@ -64,9 +64,9 @@ class DesktopModelImportFlowTest {
             val controller = DesktopModelController(library, backgroundScope, errors::add)
             try {
                 controller.verify(card.id, bad)
-                controller.state.first { it.transfer == null }
+                controller.state.first { it.transfers.isEmpty() }
                 assertNull(controller.verifiedSelection(card.id))
-                val view = modelsState(listOf(card), emptyMap(), PipelineConfig(), null, ModelsFilter(), 0,
+                val view = modelsState(listOf(card), emptyMap(), PipelineConfig(), emptyList(), ModelsFilter(), 0,
                     controller.state.value.verifiedImports, controller.state.value.issues)
                 val row = view.groups.flatMap { it.rows }.single()
                 assertEquals(ModelStatus.BROKEN, row.status)

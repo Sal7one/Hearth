@@ -28,6 +28,7 @@ class DesktopSettingsStore(val directory: Path) : AutoCloseable {
     private val updates = Mutex()
     private val key = stringPreferencesKey("pipeline_v1")
     private val uiKey = stringPreferencesKey("ui_v1")
+    private val enginesKey = stringPreferencesKey("engine_setups_v1")
     private val store = PreferenceDataStoreFactory.createWithPath(scope = scope) {
         directory.resolve("settings.preferences_pb").toAbsolutePath().toString().toPath()
     }
@@ -35,16 +36,18 @@ class DesktopSettingsStore(val directory: Path) : AutoCloseable {
     val config: StateFlow<PipelineConfig> = mutableConfig.asStateFlow()
     private val mutableUi = MutableStateFlow<Map<String, String>>(emptyMap())
     val ui: StateFlow<Map<String, String>> = mutableUi.asStateFlow()
+    private val mutableEngineSetups = MutableStateFlow<Map<String, PipelineConfig>>(emptyMap())
+    /** Last configured route per engine, independent of which stage is currently on. */
+    val engineSetups: StateFlow<Map<String, PipelineConfig>> = mutableEngineSetups.asStateFlow()
     private val mutableError = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = mutableError.asStateFlow()
     init {
         Files.createDirectories(directory)
         scope.launch {
             try {
-                store.data.collect { prefs ->
-                    prefs[key]?.let { mutableConfig.value = SetupCodec.decode(it) }
-                    prefs[uiKey]?.let { mutableUi.value = Json.parseToJsonElement(it).jsonObject.mapValues { value -> value.value.jsonPrimitive.content } }
-                }
+                // load/save/saveUi own the published snapshot under updates. Replaying
+                // an older async DataStore emission here could overwrite a newer save.
+                store.data.collect { /* Keep reporting storage-read errors. */ }
             } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
             catch (failure: Exception) { mutableError.value = "Cannot read desktop settings: ${failure.message}" }
         }
@@ -52,12 +55,22 @@ class DesktopSettingsStore(val directory: Path) : AutoCloseable {
     suspend fun load(): PipelineConfig = updates.withLock {
         val preferences = store.data.first()
         preferences[key]?.let { mutableConfig.value = SetupCodec.decode(it) }
+        mutableEngineSetups.value = decodeEngineSetups(preferences[enginesKey]) + snapshots(mutableConfig.value)
         preferences[uiKey]?.let { mutableUi.value = Json.parseToJsonElement(it).jsonObject.mapValues { value -> value.value.jsonPrimitive.content } }
         mutableConfig.value
     }
     suspend fun save(config: PipelineConfig) = updates.withLock {
         val encoded = SetupCodec.encode(config)
-        store.edit { it[key] = encoded }
+        var remembered = emptyMap<String, PipelineConfig>()
+        store.edit {
+            remembered = decodeEngineSetups(it[enginesKey]) + it[key]?.let { previous -> snapshots(SetupCodec.decode(previous)) }.orEmpty() + snapshots(config)
+            require(remembered.size <= 64) { "At most 64 engine setups are allowed" }
+            val history = JsonObject(remembered.mapValues { (_, setup) -> Json.parseToJsonElement(SetupCodec.encode(setup)) }).toString()
+            require(history.length <= 2 * 1024 * 1024) { "Saved engine setups exceed their limit" }
+            it[enginesKey] = history
+            it[key] = encoded
+        }
+        mutableEngineSetups.value = remembered
         mutableConfig.value = config.copy(
             speech = config.speech?.let { it.copy(options = it.options.toMap()) },
             translation = config.translation?.let { it.copy(options = it.options.toMap()) },
@@ -92,6 +105,23 @@ class DesktopSettingsStore(val directory: Path) : AutoCloseable {
     }
     suspend fun closeAndJoin() { scope.coroutineContext[kotlinx.coroutines.Job]?.cancel(); scope.coroutineContext[kotlinx.coroutines.Job]?.join() }
     override fun close() { scope.cancel() }
+    private fun snapshots(config: PipelineConfig): Map<String, PipelineConfig> = buildMap {
+        config.speech?.let { put(it.engineId, PipelineConfig(speech = it.copy(options = it.options.toMap()))) }
+        config.translation?.let { put(it.engineId, PipelineConfig(translation = it.copy(options = it.options.toMap()))) }
+        config.voice?.let { put(it.engineId, PipelineConfig(voice = it.copy(options = it.options.toMap()), voiceId = config.voiceId, speakTranslatedText = config.speakTranslatedText)) }
+    }
+    private fun decodeEngineSetups(encoded: String?): Map<String, PipelineConfig> {
+        if (encoded == null) return emptyMap()
+        require(encoded.length <= 2 * 1024 * 1024) { "Saved engine setups exceed their limit" }
+        val entries = Json.parseToJsonElement(encoded).jsonObject
+        require(entries.size <= 64) { "Too many saved engine setups" }
+        return entries.mapValues { (id, value) ->
+            SetupCodec.decode(value.toString()).also { setup ->
+                val routes = listOfNotNull(setup.speech, setup.translation, setup.voice)
+                require(routes.size == 1 && routes.single().engineId == id) { "Saved engine setup identity mismatch" }
+            }
+        }
+    }
     companion object {
         fun defaultDirectory(): Path {
             val os = System.getProperty("os.name").lowercase()

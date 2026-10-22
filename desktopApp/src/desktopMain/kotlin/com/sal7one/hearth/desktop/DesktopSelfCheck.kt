@@ -5,6 +5,7 @@ import com.sal7one.hearth.core.HearthPipeline
 import com.sal7one.hearth.core.PipelineConfig
 import com.sal7one.hearth.desktop.media.DesktopMediaDecoder
 import com.sal7one.hearth.desktop.runtime.DesktopEngines
+import com.sal7one.hearth.desktop.runtime.DesktopSystemAudioCapture
 import com.sal7one.hearth.integration.DesktopIntegrationServer
 import kotlinx.coroutines.*
 import java.net.URI
@@ -30,6 +31,11 @@ internal object DesktopSelfCheck {
             check(KeyPairGenerator.getInstance("EC").provider != null) { "Packaged runtime lacks EC cryptography for HTTPS" }
             check(AudioSystem.getAudioFileTypes().isNotEmpty()) { "Packaged runtime lacks sampled audio services" }
             check(DesktopMediaDecoder.available) { "Native media adapter is missing from the packaged runtime" }
+            if (System.getProperty("os.name").startsWith("Mac", true)) {
+                check(DesktopSystemAudioCapture.available) { DesktopSystemAudioCapture.availabilityReason ?: "Native Mac system audio helper is missing" }
+                DesktopSystemAudioCapture.probe(profile)
+                report.setProperty("system-audio", "helper protocol1 passed; permission not requested; live capture not tested")
+            }
             val mediaInput = Files.createTempFile(profile, "media-check-", ".wav")
             var mediaOutput: Path? = null
             try {

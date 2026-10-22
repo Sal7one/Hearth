@@ -11,6 +11,9 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
@@ -37,25 +40,31 @@ import com.sal7one.hearth.desktop.ui.components.ButtonTone
 import com.sal7one.hearth.desktop.ui.icons.HearthIcons
 import com.sal7one.hearth.desktop.ui.theme.HearthTheme
 import com.sal7one.hearth.desktop.ui.theme.HearthType
+import com.sal7one.hearth.desktop.ui.language.LanguagePairPicker
 
 /**
  * Home's single hero: the captions artwork, the product's one sentence, the
  * language pair and the action that starts a session. Everything else on the page
  * is quieter than this block on purpose.
  */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 internal fun HomeHero(
     state: HomeState,
     onStart: () -> Unit,
     onSwapLanguages: () -> Unit,
     modifier: Modifier = Modifier,
+    onSourceLanguage: (String) -> Unit = {},
+    onTargetLanguage: (String) -> Unit = {},
+    onOpenSetup: () -> Unit = {},
+    onOpenInput: () -> Unit = {},
 ) {
     val colors = HearthTheme.colors
     val artwork = rememberArtwork(HearthArt.CAPTIONS)
     Box(
         modifier
             .fillMaxWidth()
-            .height(420.dp)
+            .heightIn(min = 420.dp)
             .clip(RoundedCornerShape(28.dp))
             .background(colors.surface)
             .border(1.dp, colors.border, RoundedCornerShape(28.dp)),
@@ -107,23 +116,27 @@ internal fun HomeHero(
                 modifier = Modifier.widthIn(max = 470.dp),
             )
 
-            Spacer(Modifier.height(26.dp))
-            Row(
+            Spacer(Modifier.height(12.dp))
+            HearthButton("Input: ${state.inputLabel}", onOpenInput, tone = ButtonTone.Ghost, size = ButtonSize.Small)
+            Spacer(Modifier.height(12.dp))
+            FlowRow(
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
-                verticalAlignment = Alignment.CenterVertically,
+                verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                HeroLanguagePair(
-                    sourceLabel = state.sourceLabel,
-                    targetLabel = state.targetLabel,
-                    onSwap = onSwapLanguages,
-                )
+                LanguagePairPicker(state.languages, onSourceLanguage, onTargetLanguage, onSwapLanguages, enabled = !state.statusLive)
                 HearthButton(
-                    text = HomeCopy.START,
-                    onClick = onStart,
+                    text = if (state.statusLive) "Open live captions" else if (state.setupIssue != null) "Finish setup" else "Start live captions",
+                    onClick = if (state.setupIssue != null && !state.statusLive) onOpenSetup else onStart,
                     tone = ButtonTone.Primary,
                     size = ButtonSize.Large,
                     icon = HearthIcons.Microphone,
+                    enabled = state.statusLive || state.setupIssue != null || state.languages.issue == null,
                 )
+            }
+
+            (state.setupIssue ?: state.languages.issue)?.let { issue ->
+                Spacer(Modifier.height(8.dp))
+                Text(issue, style = HearthType.small, color = colors.warn)
             }
 
             Spacer(Modifier.height(22.dp))

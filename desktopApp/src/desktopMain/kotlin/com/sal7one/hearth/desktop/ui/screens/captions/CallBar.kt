@@ -8,6 +8,7 @@ import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -35,6 +36,7 @@ import androidx.compose.ui.unit.sp
 import com.sal7one.hearth.desktop.ui.icons.HearthIcons
 import com.sal7one.hearth.desktop.ui.theme.HearthTheme
 import com.sal7one.hearth.desktop.ui.theme.HearthType
+import com.sal7one.hearth.desktop.ui.language.LanguagePairPicker
 
 /**
  * The one control surface for a live session: what it listens to, which pair, which
@@ -63,36 +65,45 @@ internal fun CallBar(
         Box {
             BarItem(
                 label = if (state.inputLabel == CaptionsCopy.MICROPHONE) state.deviceName ?: CaptionsCopy.MICROPHONE else state.inputLabel,
-                active = state.microphone,
-                icon = HearthIcons.Microphone,
+                active = state.liveCapture,
+                icon = if (state.inputLabel == CaptionsCopy.SYSTEM_AUDIO) HearthIcons.Speaker else HearthIcons.Microphone,
                 onClick = { inputMenu = true },
             )
             DropdownMenu(inputMenu, { inputMenu = false }) {
                 DropdownMenuItem(
+                    text = { Column {
+                        Text(CaptionsCopy.SYSTEM_AUDIO)
+                        if (!state.systemAudioAvailable) Text(state.systemAudioUnavailableReason ?: "System audio is unavailable on this platform", style = HearthType.rowSub)
+                    } },
+                    onClick = { inputMenu = false; actions.onPickSystemAudio() },
+                    enabled = !state.active && state.systemAudioAvailable,
+                )
+                DropdownMenuItem(
                     text = { Text(state.deviceName ?: CaptionsCopy.MICROPHONE) },
                     onClick = { inputMenu = false; actions.onPickMicrophone() },
+                    enabled = !state.active,
                 )
                 DropdownMenuItem(
                     text = { Text(CaptionsCopy.AUDIO_FILE) },
                     onClick = { inputMenu = false; actions.onPickAudioFile() },
+                    enabled = !state.active,
                 )
                 DropdownMenuItem(
                     text = { Text(CaptionsCopy.TEXT_INPUT) },
                     onClick = { inputMenu = false; actions.onPickText() },
+                    enabled = !state.active,
                 )
             }
         }
 
         BarDivider()
 
-        BarItem(label = state.sourceLabel, active = false, onClick = actions.onSwapLanguages, mono = true)
-        BarIcon(HearthIcons.Swap, "Swap languages", actions.onSwapLanguages)
-        BarItem(label = state.targetLabel, active = false, onClick = actions.onSwapLanguages, mono = true)
+        LanguagePairPicker(state.languages, actions.onSourceLanguage, actions.onTargetLanguage, actions.onSwapLanguages, enabled = !state.active, compact = true)
 
         BarDivider()
 
-        BarToggle(CaptionsCopy.TRANSLATE, state.translationEnabled, actions.onToggleTranslate)
-        BarToggle("Voice", state.voiceEnabled, actions.onToggleVoice)
+        BarToggle(CaptionsCopy.TRANSLATE, state.translationEnabled, actions.onToggleTranslate, enabled = !state.active)
+        BarToggle("Voice", state.voiceEnabled, actions.onToggleVoice, enabled = !state.active)
 
         BarDivider()
 
@@ -102,11 +113,11 @@ internal fun CallBar(
                 .size(44.dp)
                 .background(if (state.active) colors.err else colors.text, CircleShape)
                 .pointerHoverIcon(PointerIcon.Hand)
-                .clickable(enabled = !busy) { if (state.active) actions.onStop() else actions.onStart() },
+                .clickable(enabled = !busy && (state.active || state.readyToStart)) { if (state.active) actions.onStop() else actions.onStart() },
             contentAlignment = Alignment.Center,
         ) {
             Icon(
-                if (state.active) HearthIcons.Stop else HearthIcons.Microphone,
+                if (state.active) HearthIcons.Stop else if (state.inputLabel == CaptionsCopy.SYSTEM_AUDIO) HearthIcons.Speaker else HearthIcons.Microphone,
                 contentDescription = if (state.active) CaptionsCopy.STOP else CaptionsCopy.START,
                 modifier = Modifier.size(18.dp),
                 tint = if (state.active) colors.bg else colors.bg,
@@ -167,7 +178,7 @@ private fun BarIcon(
 }
 
 @Composable
-private fun BarToggle(label: String, on: Boolean, onClick: () -> Unit) {
+private fun BarToggle(label: String, on: Boolean, onClick: () -> Unit, enabled: Boolean = true) {
     val colors = HearthTheme.colors
     val interaction = remember { MutableInteractionSource() }
     val hovered by interaction.collectIsHoveredAsState()
@@ -182,8 +193,8 @@ private fun BarToggle(label: String, on: Boolean, onClick: () -> Unit) {
                 },
                 RoundedCornerShape(999.dp),
             )
-            .pointerHoverIcon(PointerIcon.Hand)
-            .clickable(interactionSource = interaction, indication = null, onClick = onClick)
+            .pointerHoverIcon(if (enabled) PointerIcon.Hand else PointerIcon.Default)
+            .clickable(interactionSource = interaction, indication = null, onClick = onClick, enabled = enabled)
             .padding(horizontal = 13.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -193,7 +204,7 @@ private fun BarToggle(label: String, on: Boolean, onClick: () -> Unit) {
                 .background(if (on) colors.accent else colors.faint, CircleShape),
         )
         Spacer(Modifier.width(7.dp))
-        Text(label, style = HearthType.small.copy(fontSize = 12.5.sp), color = if (on) colors.text else colors.muted)
+        Text(label, style = HearthType.small.copy(fontSize = 12.5.sp), color = if (!enabled) colors.faint else if (on) colors.text else colors.muted)
     }
 }
 

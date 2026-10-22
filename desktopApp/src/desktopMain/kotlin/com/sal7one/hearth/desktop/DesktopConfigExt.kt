@@ -36,13 +36,21 @@ internal fun engineSelection(engine: EngineDescriptor) = EngineSelection(
 )
 
 /** Clicking the current engine must preserve its verified model, credentials and tuning. */
-internal fun PipelineConfig.chooseEngine(engine: EngineDescriptor): PipelineConfig =
-    if (selection(engine.stage)?.engineId == engine.id) this else select(engine.stage, engineSelection(engine))
+internal fun PipelineConfig.chooseEngine(engine: EngineDescriptor, remembered: PipelineConfig? = null,
+    installed: EngineSelection? = null): PipelineConfig {
+    if (selection(engine.stage)?.engineId == engine.id) return this
+    val previous = remembered?.selection(engine.stage)?.takeIf { it.engineId == engine.id }
+    val route = previous ?: installed?.takeIf { it.engineId == engine.id } ?: engineSelection(engine)
+    val next = select(engine.stage, route)
+    return if (engine.stage == PipelineStage.TTS && previous != null) next.copy(voiceId = remembered.voiceId,
+        speakTranslatedText = remembered.speakTranslatedText) else next
+}
 
-internal fun PipelineConfig.enableReadAloud(engines: List<EngineDescriptor>): PipelineConfig {
+internal fun PipelineConfig.enableReadAloud(engines: List<EngineDescriptor>,
+    remembered: (String) -> PipelineConfig? = { null }, installed: (String) -> EngineSelection? = { null }): PipelineConfig {
     if (voice != null) return this
     val available = engines.filter { it.stage == PipelineStage.TTS && it.available }
     val preferred = available.firstOrNull { it.id == "supertonic-local" } ?: available.firstOrNull()
     check(preferred != null) { "No voice engine is available. Configure a voice engine before enabling read aloud." }
-    return chooseEngine(preferred)
+    return chooseEngine(preferred, remembered(preferred.id), installed(preferred.id))
 }

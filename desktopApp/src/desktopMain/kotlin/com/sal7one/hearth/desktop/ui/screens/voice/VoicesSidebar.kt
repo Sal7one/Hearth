@@ -37,7 +37,7 @@ internal fun VoicesSidebar(state: VoicesState, actions: VoicesActions, modifier:
                 Text(VoicesCopy.STATUS, style = HearthType.h3.copy(fontSize = 14.sp), color = colors.text)
                 Spacer(Modifier.weight(1f))
                 Chip(
-                    if (state.ready) VoicesCopy.READY else VoicesCopy.OFF,
+                    state.statusLabel,
                     tone = if (state.ready) ChipTone.Ok else ChipTone.Neutral,
                 )
             }
@@ -53,7 +53,7 @@ internal fun VoicesSidebar(state: VoicesState, actions: VoicesActions, modifier:
             Spacer(Modifier.height(4.dp))
             Text(VoicesCopy.NEEDS_LISTEN_DETAIL, style = HearthType.small, color = colors.muted)
             Spacer(Modifier.height(12.dp))
-            Banner("One resident engine is reused across lines, so switching style does not reload the model.", tone = BannerTone.Neutral)
+            Banner(state.preparationNote, tone = BannerTone.Neutral)
         }
 
         HearthCard(padding = 16.dp) {

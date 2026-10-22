@@ -15,10 +15,7 @@ import com.sal7one.hearth.desktop.ui.components.ButtonSize
 import com.sal7one.hearth.desktop.ui.components.ButtonTone
 import com.sal7one.hearth.desktop.ui.icons.HearthIcons
 
-/**
- * The map: three tiles per row, two rows. Tiles without a desktop destination are
- * still shown — the map is the product, not only this build.
- */
+/** Show actions that this desktop build can actually perform. */
 @Composable
 internal fun HomeFeatureMap(
     features: List<HomeFeature>,
@@ -44,7 +41,7 @@ internal fun HomeFeatureMap(
         )
         Spacer(Modifier.height(22.dp))
 
-        features.chunked(3).forEachIndexed { index, row ->
+        features.filter { it.available == Availability.DESKTOP && it.destination != null }.chunked(3).forEachIndexed { index, row ->
             if (index > 0) Spacer(Modifier.height(16.dp))
             Row(
                 Modifier.fillMaxWidth(),
@@ -57,7 +54,6 @@ internal fun HomeFeatureMap(
                         modifier = Modifier.weight(1f),
                     )
                 }
-                repeat(3 - row.size) { Spacer(Modifier.weight(1f)) }
             }
         }
     }

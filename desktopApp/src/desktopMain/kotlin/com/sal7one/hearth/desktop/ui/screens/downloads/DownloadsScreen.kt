@@ -95,6 +95,10 @@ internal fun DownloadsScreen(
             }
             Column(Modifier.width(Space.sideColumn), verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 HearthCard(padding = 16.dp) {
+                    androidx.compose.material3.Text(DownloadsCopy.PARALLEL, style = com.sal7one.hearth.desktop.ui.theme.HearthType.rowTitle)
+                    Spacer(Modifier.height(6.dp))
+                    androidx.compose.material3.Text(DownloadsCopy.PARALLEL_DETAIL, style = com.sal7one.hearth.desktop.ui.theme.HearthType.small)
+                    Spacer(Modifier.height(14.dp))
                     SwitchRow(
                         DownloadsCopy.VERIFY_AFTER,
                         DownloadsCopy.VERIFY_AFTER_DETAIL,

@@ -66,7 +66,7 @@ internal fun ModelsScreen(
                     onToggleInstalled = actions.onToggleInstalledOnly,
                 )
 
-                state.transfer?.let { transfer -> TransferCard(transfer) }
+                state.transfers.forEach { transfer -> TransferCard(transfer) }
 
                 if (state.isEmpty) {
                     Banner(
@@ -78,7 +78,7 @@ internal fun ModelsScreen(
 
                 state.groups.forEach { group ->
                     ModelGroupCard(group = group, onAction = actions.onAction, onImport = actions.onImport,
-                        importEnabled = !state.refreshing && state.transfer == null)
+                        importEnabled = true)
                 }
             }
             ModelsSidebar(
@@ -97,7 +97,7 @@ private fun TransferCard(transfer: TransferView) {
     val colors = HearthTheme.colors
     Column {
         Text(
-            if (transfer.checking) "Verifying ${transfer.modelName}" else "Downloading ${transfer.modelName}",
+            transfer.modelName,
             style = HearthType.rowTitle,
             color = colors.text,
         )

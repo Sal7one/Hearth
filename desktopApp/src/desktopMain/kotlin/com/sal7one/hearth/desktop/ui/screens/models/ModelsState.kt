@@ -14,16 +14,18 @@ internal data class ModelRow(
     val status: ModelStatus,
     val inUse: Boolean,
     val issue: String? = null,
+    val activity: String? = null,
 ) {
     val actionLabel: String
         get() = when {
+            activity != null -> activity
             inUse -> "In use"
             status == ModelStatus.INSTALLED -> "Use"
             status == ModelStatus.BROKEN -> "Repair"
             else -> "Download"
         }
 
-    val actionEnabled: Boolean get() = !inUse
+    val actionEnabled: Boolean get() = !inUse && activity == null
 }
 
 internal data class ModelGroup(
@@ -32,7 +34,7 @@ internal data class ModelGroup(
     val detail: String,
     val rows: List<ModelRow>,
 ) {
-    val installedCount: Int get() = rows.count { it.status != ModelStatus.AVAILABLE }
+    val installedCount: Int get() = rows.count { it.status == ModelStatus.INSTALLED }
 }
 
 internal data class ModelsFilter(
@@ -62,7 +64,7 @@ internal data class ModelsState(
     val catalogLabel: String = "0 MB",
     val storageFraction: Float = 0f,
     val freeDiskLabel: String = "—",
-    val transfer: TransferView? = null,
+    val transfers: List<TransferView> = emptyList(),
     val refreshing: Boolean = false,
     val issues: List<String> = emptyList(),
 ) {

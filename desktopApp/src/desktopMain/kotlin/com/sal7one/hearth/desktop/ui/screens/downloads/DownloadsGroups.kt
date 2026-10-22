@@ -30,7 +30,7 @@ internal fun DownloadGroupCard(
     emptyText: String,
     tone: ChipTone = ChipTone.Neutral,
     onDownload: (String) -> Unit,
-    onCancel: () -> Unit,
+    onCancel: (String) -> Unit,
     showWhenEmpty: Boolean = true,
     modifier: Modifier = Modifier,
 ) {
@@ -61,7 +61,7 @@ internal fun DownloadGroupCard(
                     DownloadRow(
                         item = item,
                         onDownload = { onDownload(item.id) },
-                        onCancel = onCancel,
+                        onCancel = { onCancel(item.id) },
                     )
                 }
             }

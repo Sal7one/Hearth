@@ -10,7 +10,7 @@ conditions through the Android application.
 
 | Area | Desktop implementation |
 | --- | --- |
-| Inputs | Typed text, a chosen microphone/virtual audio device, PCM WAV and native-system-supported audio/video files. |
+| Inputs | Mac system audio through ScreenCaptureKit, typed text, a chosen microphone/virtual audio device, PCM WAV and native-system-supported audio/video files. |
 | Local recognition | Pinned whisper.cpp, Qwen3-ASR, Moonshine/Omnilingual/Phonon (sherpa-onnx), Vosk (Kaldi), TranscribePsy (parakeet/ggml) and Nemotron 3.5 (NeMo ggml) on macOS arm64, all CPU. Live recognition uses utterance windows; it is not a token-streaming decoder. |
 | Local translation | Hearth's existing llama.cpp translation model/prompt protocol plus pinned CTranslate2 QuickMT/SMaLL-100 packages, with pinned EuroLLM/Riva catalog entries and explicit verified custom model paths. |
 | Local voice | Supertonic 3 (F1–F5/M1–M5), MOSS-TTS Nano, Ming-3.0 local (experimental, English/Chinese), OmniVoice (24 kHz), Magpie (22.05 kHz) and Chatterbox V3 (24 kHz, experimental). |
@@ -27,9 +27,13 @@ Engine sharing rules (one C ABI, one bridge, one dylib per SDK family) are in
 [docs/desktop-engine-sharing.md](desktop-engine-sharing.md).
 Android's other ASR/TTS families, camera OCR, MediaProjection capture, TV pairing
 and Android-specific screens have not been presented as desktop implementations.
-Select a virtual input device or submit PCM from another app for a live audio
-source. Automatic system-audio capture and an OBS native plugin are separate
-platform adapters; the Browser Source and external-app API work without a plugin.
+On macOS 13.3+, choose **Mac audio** in Captions to caption streams/videos through
+ScreenCaptureKit, or choose Microphone/virtual input. The first live Start may
+require Screen & System Audio Recording permission. No screen/video output or
+microphone is attached by the system-audio helper. The owner must still validate
+live capture and protected-content behavior; the noncapturing probe proves only
+helper/framework packaging. An OBS native plugin remains separate; the Browser
+Source and external-app PCM API work without one.
 
 On macOS, Whisper and GGUF translation offer explicit CPU or Metal selection.
 Supertonic and Qwen3-ASR stay on CPU. **Windows is parked:** its adapters are
@@ -62,6 +66,25 @@ pipeline; there is no video editor or FFmpeg dependency. OS codec support varies
 and unsupported input fails with the actual decoder error. Local file decoding
 is bounded to one hour; canonical WAV can stream up to two hours. HTTP transport
 limits are documented in the integration module.
+
+## Owner test flow
+
+1. Download/import a speech model and a translation model, then choose **Use** for
+   each. Switching engines retains their previous settings. Downloads have separate
+   queues from imports and remain visible while navigating.
+2. Pick the same saved source/output languages from Home, Captions, Translate or
+   Settings. QuickMT English→Arabic needs explicit English input and Arabic output;
+   the opposite direction needs its matching checkpoint. Output cannot be Auto.
+3. On Home, **Input: Mac audio** opens Captions to inspect/change the source.
+   **Start live captions** starts the selected source and shows the floating overlay.
+   For typed text, use Translate; it has its own editable language pair backed by
+   the same saved configuration and does not start an audio capture.
+4. On macOS, grant the requested recording permission yourself if prompted. Start
+   a YouTube/stream playback and test live captions. **Finish** drains speech normally;
+   Stop cancels. Native permission/capture errors remain visible. Changes to active
+   engine settings apply to the next session.
+
+See [owner-test repairs and evidence](handoff/desktop-owner-feedback-2026-10-22.md).
 
 ## Build and run
 

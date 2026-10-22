@@ -7,6 +7,9 @@ import com.sal7one.hearth.core.PipelineStage
 import com.sal7one.hearth.desktop.DesktopUiState
 import com.sal7one.hearth.desktop.selection
 import com.sal7one.hearth.desktop.ui.screens.home.languageName
+import com.sal7one.hearth.desktop.data.DesktopModelCard
+import com.sal7one.hearth.desktop.data.DesktopModelStatus
+import com.sal7one.hearth.desktop.ui.language.*
 
 /**
  * Maps controller state onto the workspace. A partial line stays partial; a
@@ -22,6 +25,10 @@ internal fun captionsState(
     overlayVisible: Boolean,
     deviceName: String?,
     inputLabel: String,
+    catalog: List<DesktopModelCard> = emptyList(),
+    installations: Map<String, DesktopModelStatus> = emptyMap(),
+    systemAudioAvailable: Boolean = false,
+    systemAudioUnavailableReason: String? = null,
 ): CaptionsState {
     fun descriptor(stage: PipelineStage): EngineDescriptor? {
         val id = config.selection(stage)?.engineId ?: return null
@@ -41,7 +48,7 @@ internal fun captionsState(
         speechEngine = speech?.name,
         translationEngine = translation?.name,
         voiceEngine = voice?.name,
-        speechReady = speech != null && speech.available,
+        speechReady = stageSetupIssue(config, PipelineStage.STT, capabilities, installations, catalog) == null,
         translationEnabled = config.translation != null,
         voiceEnabled = config.voice != null,
         active = workspace.active,
@@ -59,6 +66,12 @@ internal fun captionsState(
         overlayVisible = overlayVisible,
         deviceName = deviceName,
         inputLabel = inputLabel,
+        languages = pipelineLanguages(config, capabilities, catalog),
+        readinessIssue = PipelineStage.entries.filter { it == PipelineStage.STT || config.selection(it) != null }
+            .firstNotNullOfOrNull { stageSetupIssue(config, it, capabilities, installations, catalog) },
+        systemAudioAvailable = systemAudioAvailable,
+        systemAudioUnavailableReason = systemAudioUnavailableReason,
+        systemAudio = workspace.systemAudio,
     )
 }
 

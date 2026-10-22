@@ -36,7 +36,7 @@ internal fun SpeechFormSection(
 ) {
     val colors = HearthTheme.colors
     Column(modifier.fillMaxWidth()) {
-        FormRow(
+        if (state.localSelected) FormRow(
             label = SpeechCopy.MODEL,
             hint = SpeechCopy.MODEL_HINT,
         ) {
@@ -77,6 +77,12 @@ internal fun SpeechFormSection(
             }
         }
 
+        if (state.cloudSelected) FormRow(label = "Connection", hint = "Transcription uses the saved provider endpoint and model.") {
+            Text(state.modelDetail, style = HearthType.small, color = colors.text)
+            HearthButton("Configure connection", { actions.onNavigate(com.sal7one.hearth.desktop.ui.DesktopScreen.CONNECTIONS) },
+                tone = ButtonTone.Secondary, size = ButtonSize.Small)
+        }
+
         FormRow(
             label = SpeechCopy.LANGUAGE,
             hint = SpeechCopy.LANGUAGE_HINT,
@@ -86,6 +92,7 @@ internal fun SpeechFormSection(
                 options = state.languageOptions,
                 onSelect = actions.onLanguage,
             )
+            state.languageIssue?.let { Text(it, style = HearthType.small, color = colors.err) }
             Text(
                 "Local translation needs an explicit language. Whisper passes its detected language on; cloud recognition does not.",
                 style = HearthType.small,
@@ -111,7 +118,7 @@ internal fun SpeechFormSection(
             Text(SpeechCopy.INPUT_NOTE, style = HearthType.small, color = colors.muted)
         }
 
-        FormRow(
+        if (state.localSelected) FormRow(
             label = SpeechCopy.RESPONSIVENESS,
             hint = SpeechCopy.RESPONSIVENESS_HINT,
             showDivider = false,

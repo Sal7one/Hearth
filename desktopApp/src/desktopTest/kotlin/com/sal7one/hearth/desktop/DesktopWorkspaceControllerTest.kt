@@ -4,6 +4,7 @@ import com.sal7one.hearth.core.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.test.*
+import com.sal7one.hearth.desktop.runtime.DesktopPcmCapture
 import java.io.IOException
 import java.nio.file.Files
 import java.nio.file.Path
@@ -145,14 +146,66 @@ class DesktopWorkspaceControllerTest {
         controller.close()
     }
 
+    @Test fun systemAudioUsesItsOwnCaptureAndFinishKeepsTheSourceHonest() = runTest {
+        val pipeline = FakePipeline()
+        val source = FakeCapture()
+        val controller = controller(pipeline, captureFactory = { input, device ->
+            assertEquals(WorkspaceInput.SYSTEM_AUDIO, input); assertNull(device); source
+        })
+        controller.start(WorkspaceInput.SYSTEM_AUDIO, "", "", null)
+        runCurrent()
+        assertIs<PipelineInput.AudioStream>(pipeline.requests.single().input)
+        assertTrue(controller.state.value.systemAudio); assertFalse(controller.state.value.microphone)
+        assertEquals(WorkspaceInput.SYSTEM_AUDIO, controller.state.value.input)
+        controller.finishCapture(); runCurrent()
+        assertTrue(source.finishCalled); assertTrue(controller.state.value.finishing)
+        pipeline.session.state.value = pipeline.session.state.value.copy(status = PipelineStatus.COMPLETED)
+        runCurrent()
+        assertTrue(source.cancelCalled)
+        assertFalse(controller.state.value.systemAudio); assertFalse(controller.state.value.finishing)
+        assertEquals(WorkspaceInput.SYSTEM_AUDIO, controller.state.value.input)
+        pipeline.session.releaseCancellation.complete(Unit)
+        controller.close()
+    }
+
+    @Test fun sessionRetainsExactlyTheConfigurationCapturedWhenStartWasPressed() = runTest {
+        val pipeline = FakePipeline()
+        val original = PipelineConfig(translation = EngineSelection("first"), sourceLanguage = "en", targetLanguage = "ar")
+        val config = MutableStateFlow(original)
+        val controller = controller(pipeline, config)
+        controller.start(WorkspaceInput.TEXT, "Original input", "", null)
+        config.value = original.copy(targetLanguage = "fr", translation = EngineSelection("next"))
+        runCurrent()
+        assertEquals(original, pipeline.requests.single().config)
+        assertEquals(original, controller.state.value.sessionConfig)
+        pipeline.session.releaseCancellation.complete(Unit)
+        controller.close()
+    }
+
     private fun TestScope.controller(
         pipeline: PipelineService,
         config: MutableStateFlow<PipelineConfig> = MutableStateFlow(PipelineConfig(translation = EngineSelection("translation"))),
         persist: suspend (PipelineConfig) -> Unit = { config.value = it },
         putSecret: suspend (String, String) -> Unit = { _, _ -> },
         importSetup: suspend (Path) -> Unit = {},
+        captureFactory: ((WorkspaceInput, String?) -> DesktopPcmCapture)? = null,
     ) = DesktopWorkspaceController(pipeline, config, Path.of("."), backgroundScope,
-        persist, putSecret, removeSecret = {}, exportSetup = {}, importSetup = importSetup)
+        persist, putSecret, removeSecret = {}, exportSetup = {}, importSetup = importSetup,
+        captureFactory = captureFactory ?: { input, device ->
+            when (input) {
+                WorkspaceInput.MICROPHONE -> com.sal7one.hearth.desktop.runtime.DesktopAudioCapture(device)
+                WorkspaceInput.SYSTEM_AUDIO -> error("Tests must provide a fake system audio capture")
+                else -> error("Not a live source")
+            }
+        })
+
+    private class FakeCapture : DesktopPcmCapture {
+        var finishCalled = false
+        var cancelCalled = false
+        override fun start(): Flow<PcmFrame> = emptyFlow()
+        override suspend fun finish() { finishCalled = true }
+        override fun cancel() { cancelCalled = true }
+    }
 
     private class FakePipeline : PipelineService {
         val requests = mutableListOf<PipelineRequest>()

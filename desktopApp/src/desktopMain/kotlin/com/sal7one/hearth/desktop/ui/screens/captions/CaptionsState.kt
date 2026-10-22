@@ -1,5 +1,7 @@
 package com.sal7one.hearth.desktop.ui.screens.captions
 
+import com.sal7one.hearth.desktop.ui.language.PipelineLanguageState
+
 /**
  * One rendered caption. `partial` is the difference between a line the engine is
  * still revising and a line that is done — the UI never treats them the same.
@@ -44,7 +46,15 @@ internal data class CaptionsState(
     val overlayVisible: Boolean = false,
     val deviceName: String? = null,
     val inputLabel: String = "Microphone",
+    val languages: PipelineLanguageState = PipelineLanguageState(sourceCode, targetLanguage, emptyList(), emptyList(), false),
+    val readinessIssue: String? = null,
+    val systemAudioAvailable: Boolean = false,
+    val systemAudioUnavailableReason: String? = null,
+    val systemAudio: Boolean = false,
 ) {
+    val liveCapture: Boolean get() = microphone || systemAudio
+    val readyToStart: Boolean get() = speechReady && readinessIssue == null && languages.issue == null &&
+        (inputLabel != CaptionsCopy.SYSTEM_AUDIO || systemAudioAvailable)
     val hasFinalTranscript: Boolean get() = lines.any { !it.partial && it.original.isNotBlank() }
     val hasTranslation: Boolean get() = lines.any { !it.translation.isNullOrBlank() }
     val livePartial: CaptionLine? get() = lines.lastOrNull { it.partial }
@@ -63,8 +73,9 @@ internal data class CaptionsState(
             starting -> "Starting"
             cancelling -> "Stopping"
             finishing -> "Finishing"
-            active -> "Listening"
+            active -> if (liveCapture) "Listening" else "Processing"
             error != null -> "Needs attention"
+            readinessIssue != null || languages.issue != null -> "Needs attention"
             speechReady -> "Ready"
             else -> "Not configured"
         }

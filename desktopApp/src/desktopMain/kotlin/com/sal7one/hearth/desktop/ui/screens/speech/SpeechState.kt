@@ -1,5 +1,6 @@
 package com.sal7one.hearth.desktop.ui.screens.speech
 
+import com.sal7one.hearth.core.EngineKind
 import com.sal7one.hearth.desktop.ui.screens.settings.ChoiceOption
 import com.sal7one.hearth.desktop.ui.screens.settings.SelectOption
 
@@ -30,11 +31,13 @@ internal data class SpeechModelOption(val id: String, val label: String, val ins
 internal data class SpeechState(
     val engines: List<ChoiceOption> = emptyList(),
     val selectedEngineId: String? = null,
+    val selectedKind: EngineKind? = null,
     val models: List<SpeechModelOption> = emptyList(),
     val selectedModelId: String? = null,
     val modelVerified: Boolean = false,
     val language: String = "auto",
     val languageOptions: List<SelectOption> = emptyList(),
+    val languageIssue: String? = null,
     val devices: List<SelectOption> = emptyList(),
     val selectedDevice: String? = null,
     val responsiveness: Responsiveness = Responsiveness.STANDARD,
@@ -47,7 +50,7 @@ internal data class SpeechState(
     val modelDetail: String = "No model selected",
     val unavailableReason: String? = null,
 ) {
-    val localSelected: Boolean get() = selectedEngineId == "whisper-local"
-    val cloudSelected: Boolean get() = selectedEngineId == "openai-stt"
+    val localSelected: Boolean get() = selectedKind == EngineKind.LOCAL
+    val cloudSelected: Boolean get() = selectedKind == EngineKind.CLOUD
     val selectedModel: SpeechModelOption? get() = models.firstOrNull { it.id == selectedModelId }
 }

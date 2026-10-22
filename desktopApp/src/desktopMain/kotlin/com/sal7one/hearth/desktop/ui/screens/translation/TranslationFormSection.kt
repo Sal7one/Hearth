@@ -31,7 +31,7 @@ internal fun TranslationFormSection(
 ) {
     val colors = HearthTheme.colors
     Column(modifier.fillMaxWidth()) {
-        FormRow(label = TranslationCopy.MODEL, hint = TranslationCopy.MODEL_HINT) {
+        if (state.localSelected) FormRow(label = TranslationCopy.MODEL, hint = TranslationCopy.MODEL_HINT) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 SettingsSelect(
                     value = state.selectedModelId,
@@ -56,27 +56,34 @@ internal fun TranslationFormSection(
             }
         }
 
+        if (state.cloudSelected) FormRow(label = "Connection", hint = "Translation uses the saved provider endpoint and model.") {
+            Text(state.modelDetail, style = HearthType.small, color = colors.text)
+            HearthButton("Configure connection", { actions.onNavigate(DesktopScreen.CONNECTIONS) },
+                tone = ButtonTone.Secondary, size = ButtonSize.Small)
+        }
+
         FormRow(label = TranslationCopy.PAIR, hint = TranslationCopy.PAIR_HINT) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 SettingsSelect(
                     value = state.sourceLanguage,
-                    options = state.languageOptions,
+                    options = state.sourceOptions,
                     onSelect = actions.onSourceLanguage,
-                    modifier = Modifier.width(190.dp),
+                    modifier = Modifier.weight(1f),
                 )
                 Spacer(Modifier.width(8.dp))
                 Text("→", style = HearthType.body, color = colors.muted)
                 Spacer(Modifier.width(8.dp))
                 SettingsSelect(
                     value = state.targetLanguage,
-                    options = state.languageOptions,
+                    options = state.targetOptions,
                     onSelect = actions.onTargetLanguage,
-                    modifier = Modifier.width(190.dp),
+                    modifier = Modifier.weight(1f),
                 )
             }
+            state.languageIssue?.let { Text(it, style = HearthType.small, color = colors.err) }
         }
 
-        FormRow(label = TranslationCopy.PROMPT, hint = TranslationCopy.PROMPT_HINT, showDivider = false) {
+        if (state.supportsPromptMode) FormRow(label = TranslationCopy.PROMPT, hint = TranslationCopy.PROMPT_HINT, showDivider = false) {
             SettingsSelect(
                 value = state.promptMode.key,
                 options = PromptMode.entries.map { SelectOption(it.key, it.label, it.detail) },

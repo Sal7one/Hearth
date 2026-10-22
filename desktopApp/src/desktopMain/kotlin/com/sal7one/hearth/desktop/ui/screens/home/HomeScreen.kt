@@ -20,12 +20,19 @@ internal fun HomeScreen(
     onOpen: (DesktopScreen) -> Unit,
     onOpenWorkspace: () -> Unit,
     modifier: Modifier = Modifier,
+    onSourceLanguage: (String) -> Unit = {},
+    onTargetLanguage: (String) -> Unit = {},
+    onOpenSetup: () -> Unit = {},
 ) {
     PageScaffold(modifier) {
         HomeHero(
             state = state,
             onStart = onStart,
             onSwapLanguages = onSwapLanguages,
+            onSourceLanguage = onSourceLanguage,
+            onTargetLanguage = onTargetLanguage,
+            onOpenSetup = onOpenSetup,
+            onOpenInput = onOpenWorkspace,
         )
         Spacer(Modifier.height(44.dp))
         HomeFeatureMap(

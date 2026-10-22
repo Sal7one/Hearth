@@ -193,7 +193,7 @@ class DesignPreviewRenderTest {
         name = name,
         family = name.substringBefore(' '),
         stage = stage,
-        engineId = "${stage.name.lowercase()}-local",
+        engineId = when (stage) { PipelineStage.STT -> "whisper-local"; PipelineStage.TRANSLATION -> "llama-translation-local"; PipelineStage.TTS -> "supertonic-local" },
         languages = languages,
         source = "Pinned catalog",
         license = "MIT",
@@ -219,10 +219,10 @@ class DesignPreviewRenderTest {
     )
 
     private val previewInstallations = mapOf(
-        "whisper-large-v3-turbo-q5_0" to DesktopModelStatus(true, null),
-        "whisper-small-q5_1" to DesktopModelStatus(true, null),
-        "eurollm-17b-q4" to DesktopModelStatus(true, null),
-        "supertonic-3" to DesktopModelStatus(true, null),
+        "whisper-large-v3-turbo-q5_0" to DesktopModelStatus(true, Path.of("/preview/models/whisper-large-v3-turbo-q5_0")),
+        "whisper-small-q5_1" to DesktopModelStatus(true, Path.of("/preview/models/whisper-small-q5_1")),
+        "eurollm-17b-q4" to DesktopModelStatus(true, Path.of("/preview/models/eurollm-17b-q4")),
+        "supertonic-3" to DesktopModelStatus(true, Path.of("/preview/models/supertonic-3")),
         "riva-translate-4b-v2-q4" to DesktopModelStatus(
             false,
             null,
@@ -279,6 +279,22 @@ class DesignPreviewRenderTest {
             streaming = true,
             requiresCredential = true,
         ),
+    ) + listOf(
+        EngineDescriptor("qwen3-asr-local", "Qwen3-ASR 0.6B", PipelineStage.STT, EngineKind.LOCAL, requiresModel = true),
+        EngineDescriptor("transcribepsy-local", "TranscribePsy 250M", PipelineStage.STT, EngineKind.LOCAL, requiresModel = true),
+        EngineDescriptor("nemotron-asr-local", "Nemotron 3.5 ASR", PipelineStage.STT, EngineKind.LOCAL, requiresModel = true),
+        EngineDescriptor("moonshine-local", "Moonshine", PipelineStage.STT, EngineKind.LOCAL, requiresModel = true),
+        EngineDescriptor("vosk-local", "Vosk (Kaldi)", PipelineStage.STT, EngineKind.LOCAL, requiresModel = true),
+        EngineDescriptor("omnilingual-local", "Omnilingual CTC 300M", PipelineStage.STT, EngineKind.LOCAL, requiresModel = true),
+        EngineDescriptor("phonon-local", "Phonon 2", PipelineStage.STT, EngineKind.LOCAL, requiresModel = true),
+        EngineDescriptor("marian-local", "CTranslate2 · Marian/OPUS", PipelineStage.TRANSLATION, EngineKind.LOCAL, requiresModel = true),
+        EngineDescriptor("moss-tts-local", "MOSS-TTS Nano 100M", PipelineStage.TTS, EngineKind.LOCAL, requiresModel = true),
+        EngineDescriptor("omnivoice-tts-local", "OmniVoice (voice design)", PipelineStage.TTS, EngineKind.LOCAL, requiresModel = true),
+        EngineDescriptor("magpie-tts-local", "MagpieTTS Multilingual 357M", PipelineStage.TTS, EngineKind.LOCAL, requiresModel = true),
+        EngineDescriptor("chatterbox-tts-local", "Chatterbox Multilingual V3", PipelineStage.TTS, EngineKind.LOCAL, requiresModel = true),
+        EngineDescriptor("ming-local", "Ming-3.0 TTS 0.5B (local)", PipelineStage.TTS, EngineKind.LOCAL, requiresModel = true),
+        EngineDescriptor("openai-tts", "OpenAI-compatible speech", PipelineStage.TTS, EngineKind.CLOUD, requiresCredential = true),
+        EngineDescriptor("ming-tts", "Ming-3.0 TTS (self-hosted)", PipelineStage.TTS, EngineKind.CLOUD),
     )
 
     private val speechFixture = speechState(
@@ -287,6 +303,7 @@ class DesignPreviewRenderTest {
             speech = EngineSelection(
                 engineId = "whisper-local",
                 modelId = "whisper-large-v3-turbo-q5_0",
+                modelPath = "/preview/models/whisper-large-v3-turbo-q5_0",
                 options = mapOf("windowMs" to "4000", "acceleration" to "metal"),
             ),
             sourceLanguage = "en",
@@ -303,6 +320,7 @@ class DesignPreviewRenderTest {
             translation = EngineSelection(
                 engineId = "llama-translation-local",
                 modelId = "eurollm-17b-q4",
+                modelPath = "/preview/models/eurollm-17b-q4",
                 options = mapOf("promptMode" to "euro", "acceleration" to "metal", "threads" to "6"),
             ),
             sourceLanguage = "en",
@@ -315,10 +333,12 @@ class DesignPreviewRenderTest {
     private val voicesFixture = voicesState(
         capabilities = previewEngines,
         config = PipelineConfig(
-            voice = EngineSelection(engineId = "supertonic-local", modelId = "supertonic-3"),
+            voice = EngineSelection(engineId = "supertonic-local", modelId = "supertonic-3", modelPath = "/preview/models/supertonic-3"),
             voiceId = "F2",
             speakTranslatedText = true,
         ),
+        catalog = previewCatalog,
+        installations = previewInstallations,
     )
 
     private val previewOverlay = OverlayState(
@@ -363,7 +383,7 @@ class DesignPreviewRenderTest {
         catalog = previewCatalog,
         installations = previewInstallations,
         config = PipelineConfig(),
-        transfer = previewTransfer,
+        transfers = listOf(previewTransfer),
         filter = ModelsFilter(),
         freeBytes = 214_000_000_000,
     )
@@ -378,16 +398,23 @@ class DesignPreviewRenderTest {
     private val downloadsFixture = downloadsState(
         catalog = previewCatalog,
         installations = previewInstallations,
-        transfer = previewTransfer,
+        transfers = listOf(previewTransfer),
         freeBytes = 214_000_000_000,
     )
 
-    private val translateFixture = TranslateState(
-        sourceLabel = "English",
-        targetLabel = "العربية",
-        translationEnabled = true,
-        translated = "يفتح المتحف في التاسعة، لكن الجناح الشرقي يبقى مغلقاً حتى الظهر.",
-        original = "The museum opens at nine, but the east wing stays closed until noon.",
+    private val typedConfig = PipelineConfig(
+        translation = EngineSelection("llama-translation-local", "eurollm-17b-q4", "/preview/models/eurollm-17b-q4"),
+        sourceLanguage = "en", targetLanguage = "ar",
+    )
+    private val translateFixture = com.sal7one.hearth.desktop.ui.screens.translate.translateState(
+        typedConfig,
+        DesktopUiState(input = WorkspaceInput.TEXT, sessionConfig = typedConfig, snapshot = com.sal7one.hearth.core.PipelineSnapshot(
+            "preview-text", status = com.sal7one.hearth.core.PipelineStatus.COMPLETED,
+            segments = listOf(com.sal7one.hearth.core.CaptionSegment("text-1",
+                "The museum opens at nine, but the east wing stays closed until noon.",
+                "يفتح المتحف في التاسعة، لكن الجناح الشرقي يبقى مغلقاً حتى الظهر.")),
+        )),
+        previewEngines, previewCatalog, previewInstallations,
     )
 
     private val integrationsLimits = listOf(
@@ -421,7 +448,7 @@ class DesignPreviewRenderTest {
         catalog = emptyList(),
         installations = emptyMap(),
         config = PipelineConfig(),
-        transfer = null,
+        transfers = emptyList(),
         filter = ModelsFilter(),
         freeBytes = 0,
     )
@@ -430,7 +457,7 @@ class DesignPreviewRenderTest {
         catalog = previewCatalog,
         installations = previewInstallations,
         config = PipelineConfig(),
-        transfer = null,
+        transfers = emptyList(),
         filter = ModelsFilter(query = "does-not-exist"),
         freeBytes = 214_000_000_000,
     )
@@ -445,7 +472,7 @@ class DesignPreviewRenderTest {
     private val emptyDownloads = downloadsState(
         catalog = emptyList(),
         installations = emptyMap(),
-        transfer = null,
+        transfers = emptyList(),
         freeBytes = 0,
     )
 
@@ -508,7 +535,7 @@ class DesignPreviewRenderTest {
         catalog = previewCatalog.filter { it.id == "riva-translate-4b-v2-q4" },
         installations = previewInstallations.filterKeys { it == "riva-translate-4b-v2-q4" },
         config = PipelineConfig(),
-        transfer = null,
+        transfers = emptyList(),
         filter = ModelsFilter(),
         freeBytes = 214_000_000_000,
     )
@@ -516,7 +543,7 @@ class DesignPreviewRenderTest {
     private val brokenDownloads = downloadsState(
         catalog = previewCatalog,
         installations = previewInstallations,
-        transfer = null,
+        transfers = emptyList(),
         freeBytes = 214_000_000_000,
     )
 

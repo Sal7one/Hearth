@@ -33,13 +33,13 @@ internal fun TranslateResultCard(
     HearthCard(modifier, padding = 18.dp) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
-                state.targetLabel,
+                state.resultTargetLabel,
                 style = HearthType.h3.copy(fontSize = 15.sp),
                 color = colors.text,
                 modifier = Modifier.weight(1f),
             )
             Chip(
-                if (state.busy) "Working" else "Last result",
+                if (state.busy) "Working" else if (state.hasResult) "Translated" else "No translation",
                 tone = if (state.busy) ChipTone.Info else ChipTone.Neutral,
             )
         }
@@ -47,12 +47,13 @@ internal fun TranslateResultCard(
         Box(Modifier.fillMaxWidth().heightIn(min = 260.dp)) {
             if (state.hasResult) {
                 Text(
-                    state.translated.ifBlank { state.original },
+                    state.translated,
                     style = HearthType.h2.copy(fontSize = 20.sp, lineHeight = 30.sp),
                     color = colors.text,
                 )
             } else {
-                Text(TranslateCopy.EMPTY, style = HearthType.small, color = colors.faint)
+                Text(if (state.error != null) "Translation failed. Your original text remains in the input."
+                    else TranslateCopy.EMPTY, style = HearthType.small, color = colors.faint)
             }
         }
         Spacer(Modifier.height(12.dp))
@@ -64,7 +65,7 @@ internal fun TranslateResultCard(
                 size = ButtonSize.Small,
                 enabled = state.translated.isNotBlank(),
             )
-            HearthButton("Voice settings", actions.onOpenVoice, tone = ButtonTone.Ghost, size = ButtonSize.Small)
+            if (state.voiceEnabled) HearthButton("Voice settings", actions.onOpenVoice, tone = ButtonTone.Ghost, size = ButtonSize.Small)
         }
     }
 }

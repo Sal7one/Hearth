@@ -56,13 +56,18 @@ internal fun CaptionsScreen(
                 .padding(top = Space.pageTop),
         ) {
             PageHeader(
-                eyebrow = if (state.microphone) "Session · microphone" else CaptionsCopy.EYEBROW,
+                eyebrow = if (state.liveCapture) "Session · ${state.inputLabel}" else CaptionsCopy.EYEBROW,
                 title = CaptionsCopy.TITLE,
-                lede = if (state.speechReady) CaptionsCopy.LEDE else CaptionsCopy.LEDE_SETUP,
+                lede = when {
+                    !state.speechReady -> CaptionsCopy.LEDE_SETUP
+                    state.translationEnabled -> "${state.inputLabel} · ${state.sourceLabel} → ${state.targetLabel}"
+                    else -> "${state.inputLabel} · ${state.sourceLabel} · original captions"
+                },
                 actions = {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text(CaptionsCopy.FLOATING, style = HearthType.small, color = colors.textDim)
                         HearthSwitch(state.overlayVisible, actions.onToggleOverlay)
+                        HearthButton("Overlay settings", actions.onOpenOverlay, tone = ButtonTone.Ghost, size = ButtonSize.Small)
                         HearthButton(
                             CaptionsCopy.SAVE,
                             actions.onSaveTranscript,
@@ -81,12 +86,15 @@ internal fun CaptionsScreen(
                     action = { HearthButton("Retry", actions.onRetry, tone = ButtonTone.Ghost, size = ButtonSize.Small) },
                 )
                 Spacer(Modifier.height(14.dp))
-            } else if (!state.speechReady) {
+            } else if (state.readinessIssue != null) {
                 Banner(
-                    text = "No speech engine is selected. Captions need a recognition stage before anything else can run.",
+                    text = state.readinessIssue,
                     tone = BannerTone.Warn,
-                    action = { HearthButton("Choose a model", onOpenModels, tone = ButtonTone.Secondary, size = ButtonSize.Small) },
+                    action = { HearthButton("Finish setup", actions.onOpenStages, tone = ButtonTone.Secondary, size = ButtonSize.Small) },
                 )
+                Spacer(Modifier.height(14.dp))
+            } else if (state.languages.issue != null) {
+                Banner(state.languages.issue, tone = BannerTone.Warn)
                 Spacer(Modifier.height(14.dp))
             } else if (state.notice != null) {
                 Banner(text = state.notice, tone = BannerTone.Ok)
