@@ -134,6 +134,19 @@ assert hashlib.sha256((root/'scripts/voice/magpie.map').read_bytes()).hexdigest(
 vendor_hashes['lib/arm64-v8a/libhearth_magpie.so'] = magpie['runtime']['sha256']
 gpu_artifacts['libhearth_magpie.so'] = ('arm64-v8a', False)
 
+# Experimental Ming local TTS: two prebuilt ARM64 DSOs pinned in hearth-tts-ming.
+ming_root = root/'hearth-tts-ming/src/main/jniLibs/arm64-v8a'
+ming_libs = {
+    'libming_jni.so': '3c45361ee6e7d297a470b5b43ac34378407e45f8d4ce6d661cbf561cc52f0178',
+    'libming_jni_scalar.so': '2703bb050a7dc3e33162ac7aaadbbfc856dbe5dc0d44b2d0fbd3de7023380744',
+}
+for name, digest in ming_libs.items():
+    binary = ming_root/name
+    assert binary.is_file(), f'Missing pinned Ming JNI: {binary}'
+    assert hashlib.sha256(binary.read_bytes()).hexdigest() == digest, f'Pinned Ming JNI changed: {name}'
+    vendor_hashes[f'lib/arm64-v8a/{name}'] = digest
+    gpu_artifacts[name] = ('arm64-v8a', False)
+
 # Independently packaged OmniVoice CPU provider; trained language IDs and models are pinned.
 omnivoice_root = root/'hearth-tts-omnivoice/src/main'
 omnivoice = json.loads((omnivoice_root/'assets/licenses/omnivoice/runtime-build.json').read_text())
@@ -317,6 +330,12 @@ for flavor, architecture in [(f, a) for f in ('play','foss') for a in (*ABIS, 'u
                     assert exports == {'hearth_moss_' + name for name in ('create','destroy','cancel','voice_count','voice_name','synthesize','last_error')}, exports
                     assert 'libonnxruntime.so' in needed, needed
                 assert not needed & {'libcommon_jni.so','libvulkan.so','libOpenCL.so'}, needed
+            if file.name in ming_libs:
+                symbols = subprocess.check_output([readelf, '--dyn-syms', '-W', file], text=True)
+                exports = {line.split()[-1] for line in symbols.splitlines() if re.search(r'\b(?:GLOBAL|WEAK)\s+DEFAULT\s+\d+\s+', line)}
+                required = {'Java_com_sal7one_common_1jni_MingNative_' + method for method in ('abiVersion', 'modelName', 'synthesizeWav')}
+                assert required <= exports, (file.name, sorted(required - exports))
+                assert not needed - platform, (file.name, needed)
             if file.name in {'libhearth_magpie.so', 'libhearth_magpie_jni.so'}:
                 symbols = subprocess.check_output([readelf, '--dyn-syms', '-W', file], text=True)
                 exports = {line.split()[-1] for line in symbols.splitlines() if re.search(r'\b(?:GLOBAL|WEAK)\s+DEFAULT\s+\d+\s+', line)}
