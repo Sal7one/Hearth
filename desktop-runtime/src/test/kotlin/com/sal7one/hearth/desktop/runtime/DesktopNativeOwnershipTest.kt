@@ -183,12 +183,17 @@ class DesktopNativeOwnershipTest {
 private fun requireNativeBundle(library: String) {
     val problem = DesktopNativeLibraries.readiness(library) ?: return
     val platform = DesktopNativeLibraries.platform
-    if (hostNativeBundleStaged(platform)) {
+    // Some platform bundles are intentionally partial (Intel macOS omits Qwen3-ASR,
+    // CT2 and the backend bridge). A library absent from the manifest is optional;
+    // a staged library that fails checksum/load is a real defect.
+    val absentFromBundle = problem.contains("does not include", ignoreCase = true)
+    if (hostNativeBundleStaged(platform) && !absentFromBundle) {
         fail("The $platform native bundle is staged, but $library failed to load: $problem")
     }
     assumeTrue(
-        "Skipping $library tests: no $platform native bundle is staged on this host ($problem). " +
-            "Build it with scripts/desktop/build-native.py to run the native-handle coverage.",
+        "Skipping $library tests: no $platform native bundle is staged or this optional library " +
+            "is not part of it ($problem). Build it with scripts/desktop/build-native.py to run " +
+            "the native-handle coverage.",
         false,
     )
 }
