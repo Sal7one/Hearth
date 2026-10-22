@@ -11,7 +11,7 @@
     <string name="ming_no_runtime">محرك Ming المحلي غير متاح: %1$s</string>
     <string name="ming_select_voice">استخدام صوت Ming</string>
     <string name="ming_voice">صوت Ming</string>
-    <string name="ming_ready">حزمة Ming الكاملة مثبّتة وتخطيط parts/ جاهز</string>
+    <string name="ming_ready">حزمة Ming الكاملة مثبّتة، ويُنشأ تخطيط parts/ عند أول توليد</string>
     <string name="ming_install_note">نزّل أو استورد حزمة بنحو 850 ميغابايت (%1$d من %2$d مكوّنات مفقودة). اترك نحو 1.7 غيغابايت فارغة أثناء التنزيل والتثبيت.</string>
     <string name="ming_limits">دفعة واحدة: تُولّد العبارة كاملة قبل بدء التشغيل. 300 حرف لكل طلب، ويقسّم القارئ النص الأطول. الإنجليزية والصينية فقط. لا بث ولا إلغاء أصلي. على هاتف arm64 واحد، قاس تشغيل خارج التطبيق عبر app_process قيمة RTF نحو 2.1 وذاكرة قصوى نحو 1.02 غيغابايت، ونجح بعد ذلك اختبار أجهزة داخل التطبيق.</string>
     <string name="ming_download">تنزيل حزمة Ming (850 ميغابايت)</string>

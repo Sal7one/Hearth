@@ -11,7 +11,7 @@
     <string name="ming_no_runtime">Ming local runtime unavailable: %1$s</string>
     <string name="ming_select_voice">Use the Ming voice</string>
     <string name="ming_voice">Ming voice</string>
-    <string name="ming_ready">The complete Ming bundle is installed and its parts/ layout is ready</string>
+    <string name="ming_ready">The complete Ming bundle is installed; its parts/ layout is created on first synthesis</string>
     <string name="ming_install_note">Download or import the roughly 850 MB bundle (%1$d of %2$d components missing). Keep about 1.7 GB free while downloading and installing.</string>
     <string name="ming_limits">One-shot: the whole utterance is generated before playback starts. 300 characters per request; longer text is split by the reader. English and Chinese only. No streaming or native cancellation. On one arm64 phone, an external app_process run measured RTF about 2.1 and about 1.02 GB peak memory; an in-app instrumentation test has since passed.</string>
     <string name="ming_download">Download the Ming bundle (850 MB)</string>
