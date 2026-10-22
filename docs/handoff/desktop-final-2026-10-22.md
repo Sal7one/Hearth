@@ -1,6 +1,9 @@
 # Hearth desktop — final handoff (2026-10-22)
 
 This is the authoritative state of `codex/hearth-desktop-kmp` / PR #4.
+For the complete two-day work ledger — desktop, engines, Android 0.28.0, the TTS
+one-module collapse, active-ABI fix, release and CI history — read the
+[two-day handover](two-day-handover-2026-10-22.md).
 The older [desktop KMP handoff](desktop-kmp-2026-10-21.md) is historical; its
 "work stopped / owner rejected UI / Windows needs validation" header is
 superseded by this file.
