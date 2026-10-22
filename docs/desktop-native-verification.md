@@ -297,9 +297,10 @@ Expected: `QWEN_SMOKE language=en text=The museum opens at nine in the morning. 
 and a `QWEN_ENGINE_SMOKE ... segments=1` line. The test verifies all six model-file pins,
 loads the packaged dylib, and never downloads or plays audio.
 
-## Windows: not executed
+## Windows: parked (not verified)
 
-No Windows host was available, so nothing below is a claim that Windows runs.
+Windows is deliberately parked by the owner for this merge. Nothing below is a
+claim that Windows runs; a macOS merge must not depend on the Windows job.
 
 What exists and was checked:
 

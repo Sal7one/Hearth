@@ -34,7 +34,7 @@ The shared ABI and the family-versus-model rule are documented in
 | Family | Models | Android implementation | What a desktop port needs |
 | --- | --- | --- | --- |
 | CTranslate2 pair coverage | 3 desktop cards: QuickMT EN↔AR, SMaLL-100 (100 languages) | `common-jni/src/main/cpp/translation/ct2` + `Ct2Catalog.kt` | four Jisr 50M specs are pinned but `downloadEnabled=false`, and the requested EN↔DE/ES/FR/RU/ZH pair models are not present or pinned in this repo |
-| TTS — Oute | 1 | `hearth-tts-*` modules | Oute has its own architecture and runtime; OmniVoice, MOSS, Ming local, Magpie and Chatterbox are the proven desktop TTS runtimes |
+| TTS — Oute | 1 hold | `hearth-tts-*` modules | OuteTTS 1B was proven technically but is **not shipped** (NC-SA + Llama terms and missing required attribution). The 0.6B Apache-2.0 variant is a separate future conversion. |
 
 ## What Qwen3-ASR proved
 

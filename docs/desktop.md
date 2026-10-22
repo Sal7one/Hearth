@@ -13,16 +13,16 @@ conditions through the Android application.
 | Inputs | Typed text, a chosen microphone/virtual audio device, PCM WAV and native-system-supported audio/video files. |
 | Local recognition | Pinned whisper.cpp, Qwen3-ASR, Moonshine/Omnilingual/Phonon (sherpa-onnx), Vosk (Kaldi), TranscribePsy (parakeet/ggml) and Nemotron 3.5 (NeMo ggml) on macOS arm64, all CPU. Live recognition uses utterance windows; it is not a token-streaming decoder. |
 | Local translation | Hearth's existing llama.cpp translation model/prompt protocol plus pinned CTranslate2 QuickMT/SMaLL-100 packages, with pinned EuroLLM/Riva catalog entries and explicit verified custom model paths. |
-| Local voice | The same model-free article-speech SDK, Supertonic 3 model verification, F1–F5/M1–M5 voices and native inference sources used on Android. |
+| Local voice | Supertonic 3 (F1–F5/M1–M5), MOSS-TTS Nano, Ming-3.0 local (experimental, English/Chinese), OmniVoice (24 kHz), Magpie (22.05 kHz) and Chatterbox V3 (24 kHz, experimental). |
 | Cloud stages | Independently configured OpenAI-compatible STT, chat translation and WAV TTS endpoints; local compatible servers may omit credentials. Provider keys never enter the model downloader. |
 | System voice | Installed macOS/Windows voices, enumerated by language; no automatic voice installation or assumption that every OS has Arabic voices. |
 | Captions | A movable, always-on-top desktop caption window and an OBS Browser Source. Translation and voice remain optional independent stages. |
 | Files/results | Original/translated text export, generated-WAV playback/export and authenticated integration output downloads. |
-| Models | Search/filter, exact sizes/provenance/licenses, SHA-256-verified installs/imports, explicit Use and revalidation on launch. The initial catalog has 30 file/package choices, not 30 distinct model families. |
+| Models | Search/filter, exact sizes/provenance/licenses, SHA-256-verified installs/imports, explicit Use and revalidation on launch. The catalog has **71 pinned cards** (models remain downloads; no weights are committed). |
 | Settings | DataStore preferences, portable JSON setups, macOS Keychain and Windows current-user DPAPI for provider secrets. |
 | Integrations | Authenticated loopback HTTP jobs, live bounded PCM input, SSE results/cancellation and read-only OBS caption access. |
 
-The initial native desktop ports are Whisper, Qwen3-ASR, TranscribePsy and Nemotron 3.5 (macOS arm64 speech), llama translation, CTranslate2 translation (macOS arm64) and Supertonic.
+The native desktop ports are Whisper, Qwen3-ASR, TranscribePsy, Nemotron 3.5, Vosk, Moonshine ×10, Omnilingual, Phonon, llama.cpp and CTranslate2 translation, and local voice engines Supertonic, MOSS, Ming, OmniVoice, Magpie and Chatterbox. Ming is also exposed on Android behind an off-by-default flag.
 Engine sharing rules (one C ABI, one bridge, one dylib per SDK family) are in
 [docs/desktop-engine-sharing.md](desktop-engine-sharing.md).
 Android's other ASR/TTS families, camera OCR, MediaProjection capture, TV pairing
@@ -32,8 +32,9 @@ source. Automatic system-audio capture and an OBS native plugin are separate
 platform adapters; the Browser Source and external-app API work without a plugin.
 
 On macOS, Whisper and GGUF translation offer explicit CPU or Metal selection.
-Supertonic and Qwen3-ASR stay on CPU. Windows currently uses CPU native adapters;
-the Qwen3-ASR stage is macOS arm64 only and is skipped on Windows. GPU selection
+Supertonic and Qwen3-ASR stay on CPU. **Windows is parked:** its adapters are
+build-wired and unit-tested but no Windows host has run them; do not infer Windows
+support from the macOS result. The Qwen3-ASR stage is macOS arm64 only. GPU selection
 fails if the requested backend cannot initialize or place the model; it never
 silently reports GPU while executing a CPU fallback. The [real-model smoke receipt](research/desktop-real-smoke-2026-10-20.json)
 records a completed local Whisper → Arabic translation → English system-voice
@@ -64,19 +65,20 @@ limits are documented in the integration module.
 
 ## Build and run
 
-Use JDK 17, Python 3 and CMake 3.22 or newer. `hearthDesktopOnly=true` avoids
-requiring an Android SDK for a desktop build. Without that property, the ordinary
-Android project and all its checks remain enabled.
+Use JDK 17, Python 3, CMake 3.22 or newer, and Rust 1.99 (Ming). `hearthDesktopOnly=true`
+avoids requiring an Android SDK for a desktop build. Without that property, the
+ordinary Android project and all its checks remain enabled.
 
 ```sh
 python3 scripts/desktop/prepare-dependencies.py
-# Use the HEARTH_LLAMA_ROOT / HEARTH_ORT_ROOT paths printed by that command:
-python3 scripts/desktop/build-native.py \
-  --llama-root build/desktop-dependencies/llama.cpp \
-  --ort-root build/desktop-dependencies/onnxruntime-osx-arm64-1.20.1
+python3 scripts/desktop/build-native.py --stage all
 bash scripts/desktop/build-media.sh
 ./gradlew -PhearthDesktopOnly=true :desktopApp:run
 ```
+
+`--stage all` now provisions NeMo/llama.cpp and builds Magpie on macOS arm64.
+Chatterbox and Magpie are experimental, not live-readers. The final acceptance
+matrix is in [the final handoff](handoff/desktop-final-2026-10-22.md).
 
 On Windows, run `python` and `scripts/desktop/build-media.ps1` instead of the Bash
 media script. The official host SDK directory is

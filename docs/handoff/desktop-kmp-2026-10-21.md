@@ -1,3 +1,5 @@
+> **Historical handoff.** Superseded by [desktop-final-2026-10-22.md](desktop-final-2026-10-22.md). Do not use this file for merge status.
+
 # Desktop KMP handover — 21 October 2026
 
 ## Owner instruction and stopping point

@@ -124,7 +124,9 @@ exact contract with a loopback mock; a real CUDA server is not run in CI.
 
 The upstream `fusor-rs/ming-wasm` project has a **desktop-only** native CLI for
 macOS arm64 (experimental v0.1, 850 MB bundle, ~2 GB memory, phones unmeasured).
-There is no Android runtime for it; Android uses the hosted bridge above.
+Android also has the same local runtime behind an off-by-default experimental flag
+(`:hearth-tts-ming`); it is a separate Android engine, so the hosted bridge above
+remains an independent fallback and is not used by the local path.
 
 ### Desktop local engine (experimental)
 
@@ -138,7 +140,9 @@ Peak RSS is ~1 GB and each one-shot call reloads the bundle (~0.9 s). `DesktopMi
 is owner-opt-in. Android now has an in-app JNI proof on a Galaxy S20 FE (RTF ~2.1 with the `+dotprod`
 build and 4 threads, ~1.02 GB peak RSS); the engine is registered behind an
 off-by-default feature flag. The default scalar build measured RTF 34 on that phone
-and is only a fallback. No UI select/enable flow or human listening test yet.
+and is only a fallback. The Android settings enable/select flow was exercised on a
+Galaxy S20 FE with four real AudioTrack syntheses, including Chinese; a FOSS-on-device
+run and human listening/quality remain unverified.
 
 ## ASR Tiny: direct connection
 

@@ -1,8 +1,9 @@
 # Hearth model expansion: implementation and acceptance status
 
-For the current Windows/macOS work and the owner-requested stopping point, read
-[the desktop KMP handover](desktop-kmp-2026-10-21.md). The owner rejected the
-desktop UI; cross-platform validation and release remain unfinished.
+For the current desktop state, read
+[the final desktop handoff](desktop-final-2026-10-22.md). macOS arm64 is
+feature-complete and release-verified; Windows is parked by the owner. The older
+[desktop KMP handover](desktop-kmp-2026-10-21.md) is historical.
 
 This is the current implementation and acceptance record for five Arabic/English STT models, five translation families and five TTS models, plus a reusable TTS SDK. The owner targets Galaxy S25 Ultra and S22 Ultra; Android TVs use explicit cloud connections and cannot execute or install local models. No owner phone or TV testing has been performed by the agents.
 
