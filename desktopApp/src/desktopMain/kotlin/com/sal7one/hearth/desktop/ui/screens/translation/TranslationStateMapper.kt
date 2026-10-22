@@ -13,6 +13,7 @@ import com.sal7one.hearth.desktop.ui.screens.speech.Compute
 import com.sal7one.hearth.desktop.ui.screens.settings.connectionConfigured
 import com.sal7one.hearth.desktop.ui.screens.settings.engineRuntimeLabel
 import com.sal7one.hearth.desktop.ui.screens.settings.verifiedSelectionMatches
+import com.sal7one.hearth.desktop.ui.screens.settings.computeSettings
 import com.sal7one.hearth.desktop.ui.language.pipelineLanguages
 
 /**
@@ -43,16 +44,7 @@ internal fun translationState(
     val selectedModelId = modelCard?.id
     val verified = verifiedSelectionMatches(chosen, modelCard, modelCard?.let { installations[it.id] })
 
-    val accelerationKeys = descriptor?.acceleration.orEmpty()
-    val computeOptions = buildList {
-        if (accelerationKeys.any { it.equals("metal", ignoreCase = true) }) add(Compute.METAL)
-        add(Compute.CPU)
-    }
-    val compute = if (chosen?.options?.get("acceleration")?.equals("metal", ignoreCase = true) == true) {
-        Compute.METAL
-    } else {
-        Compute.CPU
-    }
+    val compute = computeSettings(descriptor, chosen)
 
     return TranslationState(
         engines = engines.map { engine ->
@@ -82,12 +74,13 @@ internal fun translationState(
         targetOptions = languages.targets.map { SelectOption(it.code, it.label) },
         languageIssue = languages.issue,
         promptMode = PromptMode.fromKey(chosen?.options?.get("promptMode")),
-        compute = compute,
-        computeOptions = computeOptions,
+        compute = compute.selected,
+        computeOptions = compute.options,
+        computeIssue = compute.issue,
         threads = chosen?.options?.get("threads")?.toIntOrNull() ?: 4,
-        ready = descriptor?.available == true && languages.issue == null &&
+        ready = descriptor?.available == true && languages.issue == null && compute.issue == null &&
             if (descriptor.kind == EngineKind.CLOUD) connectionConfigured(descriptor, chosen) else verified,
         modelDetail = modelCard?.name ?: if (descriptor?.kind == EngineKind.CLOUD) chosen?.modelId?.ifBlank { descriptor.defaultModel }.orEmpty() else TranslationCopy.NOT_CONFIGURED,
-        placementLabel = if (descriptor?.kind == EngineKind.CLOUD) "Provider" else compute.label,
+        placementLabel = if (descriptor?.kind == EngineKind.CLOUD) "Provider" else compute.selected.label + if (compute.issue != null) " unavailable" else "",
     )
 }

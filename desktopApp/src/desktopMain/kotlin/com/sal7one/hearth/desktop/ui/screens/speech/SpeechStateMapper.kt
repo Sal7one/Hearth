@@ -13,6 +13,7 @@ import com.sal7one.hearth.desktop.ui.screens.settings.SelectOption
 import com.sal7one.hearth.desktop.ui.screens.settings.connectionConfigured
 import com.sal7one.hearth.desktop.ui.screens.settings.engineRuntimeLabel
 import com.sal7one.hearth.desktop.ui.screens.settings.verifiedSelectionMatches
+import com.sal7one.hearth.desktop.ui.screens.settings.computeSettings
 import com.sal7one.hearth.desktop.ui.language.pipelineLanguages
 
 /**
@@ -60,15 +61,7 @@ internal fun speechState(
     val selectedModelId = modelCard?.id
     val verified = verifiedSelectionMatches(chosen, modelCard, modelCard?.let { installations[it.id] })
 
-    val accelerationKeys = descriptor?.acceleration.orEmpty()
-    val computeOptions = buildList {
-        if (accelerationKeys.any { it.equals("metal", ignoreCase = true) }) add(Compute.METAL)
-        add(Compute.CPU)
-    }
-    val compute = when {
-        chosen?.options?.get("acceleration")?.equals("metal", ignoreCase = true) == true -> Compute.METAL
-        else -> Compute.CPU
-    }
+    val compute = computeSettings(descriptor, chosen)
 
     val windowMs = chosen?.options?.get("windowMs")?.toIntOrNull()
     val responsiveness = Responsiveness.fromWindow(windowMs)
@@ -92,12 +85,13 @@ internal fun speechState(
         devices = deviceOptions,
         selectedDevice = deviceId ?: "",
         responsiveness = responsiveness,
-        compute = compute,
-        computeOptions = computeOptions,
+        compute = compute.selected,
+        computeOptions = compute.options,
+        computeIssue = compute.issue,
         threads = threads,
-        ready = descriptor?.available == true && languages.issue == null &&
+        ready = descriptor?.available == true && languages.issue == null && compute.issue == null &&
             if (descriptor.kind == EngineKind.CLOUD) connectionConfigured(descriptor, chosen) else verified,
-        placementLabel = if (descriptor?.kind == EngineKind.CLOUD) "Provider" else compute.label,
+        placementLabel = if (descriptor?.kind == EngineKind.CLOUD) "Provider" else compute.selected.label + if (compute.issue != null) " unavailable" else "",
         windowLabel = "${responsiveness.windowMs / 1000} s windows",
         modelDetail = modelCard?.name ?: if (descriptor?.kind == EngineKind.CLOUD) chosen?.modelId?.ifBlank { descriptor.defaultModel }.orEmpty() else SpeechCopy.NOT_CONFIGURED,
         unavailableReason = descriptor?.takeIf { !it.available }?.unavailableReason,

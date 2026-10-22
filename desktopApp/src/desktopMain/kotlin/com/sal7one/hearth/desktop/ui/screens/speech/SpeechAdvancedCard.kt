@@ -34,6 +34,10 @@ internal fun SpeechAdvancedCard(
             Text(SpeechCopy.ADVANCED, style = HearthType.h3.copy(fontSize = 15.sp), color = colors.text)
             Spacer(Modifier.height(3.dp))
             Text(SpeechCopy.ADVANCED_DETAIL, style = HearthType.small, color = colors.muted)
+            state.computeIssue?.let {
+                Spacer(Modifier.height(8.dp))
+                Text(it, style = HearthType.small, color = colors.warn)
+            }
 
             FormRow(
                 label = SpeechCopy.COMPUTE,
@@ -41,9 +45,9 @@ internal fun SpeechAdvancedCard(
             ) {
                 Segmented(
                     options = state.computeOptions.map { it.label },
-                    selected = state.computeOptions.indexOf(state.compute).coerceAtLeast(0),
+                    selected = if (state.computeIssue == null) state.computeOptions.indexOf(state.compute) else -1,
                     onSelect = { index -> actions.onCompute(state.computeOptions[index]) },
-                    modifier = Modifier.width(260.dp),
+                    modifier = Modifier.width(if (state.computeOptions.size > 2) 330.dp else 260.dp),
                 )
             }
 

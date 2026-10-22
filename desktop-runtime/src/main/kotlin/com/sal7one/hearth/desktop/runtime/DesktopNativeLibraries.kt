@@ -1,9 +1,6 @@
 package com.sal7one.hearth.desktop.runtime
 
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.*
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.LinkOption
@@ -65,7 +62,13 @@ internal object DesktopNativeLibraries {
         check(Files.isRegularFile(folder.resolve(filename), LinkOption.NOFOLLOW_LINKS)) { "Desktop native library is not a regular file: $filename" }
         check(sha256(folder.resolve(filename)) == expected) { "Desktop native checksum failed: $filename" }
         // Preflight all declared dependencies before loading any, never scan a model directory or PATH.
-        val dependencies = nativeDependencyOrder(name, platform, files.keys)
+        val dependencies = nativeDependencyOrder(name, platform, files.keys, manifest)
+        if (name in setOf("hearth_desktop_whisper", "transiber_translation") && dependencies.any { it.startsWith("cublas") }) {
+            check(!Files.exists(folder.resolve("nvcuda.dll"), LinkOption.NOFOLLOW_LINKS)) { "The NVIDIA driver must not be app-local" }
+            val cudaFiles = manifest.getValue("cudaRuntime").jsonObject.getValue("sha256").jsonObject.keys.toList()
+            // Notices/provenance and all code dependencies must match before loading the first DLL.
+            verifiedNativeDependencies(folder, cudaFiles, files)
+        }
         verifiedNativeDependencies(folder, dependencies, files).forEach { dependency -> System.load(dependency.toAbsolutePath().toString()) }
         System.load(folder.resolve(filename).toAbsolutePath().toString())
         locations[name] = folder.resolve(filename).toAbsolutePath()
@@ -94,7 +97,9 @@ internal fun verifiedNativeDependencies(directory: Path, orderedFiles: List<Stri
 }
 
 /** Windows ORT links the Microsoft DLL CRT even though Hearth's own JNI targets use /MT. */
-internal fun nativeDependencyOrder(library: String, platform: String, files: Set<String>): List<String> {
+internal fun nativeDependencyOrder(library: String, platform: String, files: Set<String>, manifest: JsonObject? = null): List<String> {
+    if (manifest != null && library in setOf("hearth_desktop_whisper", "transiber_translation"))
+        return nativeCudaDependencyOrder(library, platform, files, manifest)
     // The Vosk adapter dlopens its sibling at create() time. Verify and load the pinned
     // runtime first so the path the adapter resolves is the file this manifest approved,
     // never a post-extraction swap or a DYLD fallback.
@@ -116,6 +121,64 @@ internal fun nativeDependencyOrder(library: String, platform: String, files: Set
     }
     val candidates = if (platform.startsWith("macos-")) listOf("libonnxruntime.1.20.1.dylib", "libonnxruntime.dylib") else listOf("libonnxruntime.so")
     return listOf(candidates.firstOrNull { it in files } ?: error("$library bundle is missing its host ONNX Runtime"))
+}
+
+/** Cross-check the binary's recorded native export probe, not a requested build flag. */
+private fun compiledBackends(filename: String, files: Set<String>, manifest: JsonObject): Set<String> {
+    val entries = manifest["libraries"]?.jsonObject ?: return emptySet() // Legacy CPU/Metal bundle: JNI protocol validation still applies.
+    val entry = entries[filename]?.jsonObject ?: return emptySet()
+    check(filename in files && entry["sha256"]?.jsonPrimitive?.content == manifest.getValue("files").jsonObject[filename]?.jsonPrimitive?.content) { "Native compiled-backend evidence does not match $filename" }
+    if (entry["backendProbe"]?.jsonPrimitive?.content != "native-export-v1") return emptySet()
+    check(entry["sourceSetSha256"]?.jsonPrimitive?.content?.matches(Regex("[0-9a-f]{64}")) == true) { "Native backend evidence has no source pin: $filename" }
+    val backends = entry.getValue("compiledBackends").jsonArray.map { it.jsonPrimitive.content }
+    check(backends.isNotEmpty() && backends.distinct().size == backends.size && "cpu" in backends && backends.all { it in setOf("cpu", "metal", "cuda") }) { "Invalid native backend evidence: $filename" }
+    return backends.toSet()
+}
+
+/** CUDA redistributables are app-local, pinned and loaded in dependency order. The NVIDIA driver is never bundled. */
+internal fun nativeCudaDependencyOrder(library: String, platform: String, files: Set<String>, manifest: JsonObject): List<String> {
+    val filename = when (library) {
+        "hearth_desktop_whisper" -> if (platform.startsWith("windows-")) "hearth_desktop_whisper.dll" else System.mapLibraryName(library)
+        "transiber_translation" -> if (platform.startsWith("windows-")) "transiber_translation.dll" else System.mapLibraryName(library)
+        else -> return emptyList()
+    }
+    val backends = compiledBackends(filename, files, manifest)
+    val receipt = manifest["cudaRuntime"]?.jsonObject
+    if ("cuda" !in backends) {
+        check(receipt?.get("entries")?.jsonArray?.none { it.jsonPrimitive.content == filename } != false) { "CUDA dependency receipt names a binary without compiled CUDA: $filename" }
+        return emptyList()
+    }
+    check(platform == "windows-x64") { "Packaged CUDA runtime currently supports Windows x64 only" }
+    check(receipt != null) { "$filename was compiled with CUDA but its pinned NVIDIA redistributables are missing" }
+    check(receipt.getValue("schemaVersion").jsonPrimitive.int == 1 &&
+        receipt.getValue("requiresSystemDriver").jsonPrimitive.boolean &&
+        receipt.getValue("driver").jsonPrimitive.content == "nvcuda.dll") { "Invalid CUDA runtime dependency policy" }
+    check(files.none { it.equals("nvcuda.dll", true) }) { "The NVIDIA driver must come from Windows, never the app-local bundle" }
+    val toolkit = receipt.getValue("toolkitVersion").jsonPrimitive.content
+    check(toolkit.matches(Regex("(?:12|13)\\.[0-9]+(?:\\.[0-9]+)?"))) { "Unsupported CUDA redistributable toolkit version" }
+    val major = toolkit.substringBefore('.')
+    fun list(name: String): List<String> = receipt.getValue(name).jsonArray.map { it.jsonPrimitive.content }
+    val entries = list("entries")
+    val knownEntries = setOf("hearth_desktop_whisper.dll", "transiber_translation.dll")
+    val cudaEntries = knownEntries.filter { "cuda" in compiledBackends(it, files, manifest) }.toSet()
+    check(entries.distinct().size == entries.size && entries.toSet() == cudaEntries) { "CUDA receipt does not match the actual CUDA JNI binaries" }
+    val dependencies = list("files")
+    val ordered = list("loadOrder")
+    check(dependencies.isNotEmpty() && dependencies.size <= 16 && dependencies.distinct().size == dependencies.size &&
+        ordered.distinct().size == ordered.size && ordered.toSet() == dependencies.toSet() &&
+        dependencies.all { it.matches(Regex("(?:cudart|cublas|cublaslt)64_$major\\.dll")) }) { "Invalid CUDA dependency inventory/order" }
+    check(dependencies.containsAll(listOf("cublas64_$major.dll", "cublaslt64_$major.dll")) &&
+        ordered.indexOf("cublaslt64_$major.dll") < ordered.indexOf("cublas64_$major.dll")) { "CUDA cuBLAS/Lt dependency order is incomplete" }
+    val provenance = receipt.getValue("provenance").jsonPrimitive.content
+    val license = receipt.getValue("license").jsonPrimitive.content
+    check(provenance == "nvidia-cuda-provenance.json" && license == "NVIDIA-CUDA-EULA.txt") { "CUDA provenance/license record is missing" }
+    val recorded = receipt.getValue("sha256").jsonObject.mapValues { it.value.jsonPrimitive.content }
+    check(recorded.keys == (dependencies + provenance + license + "NVIDIA-CUDA-NOTICE.txt").toSet()) { "CUDA receipt hashes do not cover the exact installed inventory" }
+    val hashes = nativeBundleFiles(manifest)
+    for ((file, hash) in recorded) check(file in files && hash.matches(Regex("[0-9a-f]{64}")) && hashes[file] == hash) { "CUDA dependency has no matching bundle checksum: $file" }
+    val microsoft = listOf("vcruntime140.dll", "vcruntime140_1.dll", "msvcp140.dll", "msvcp140_1.dll")
+    for (file in microsoft) check(file in files) { "CUDA clean-PC runtime is missing its pinned Microsoft dependency: $file" }
+    return microsoft + ordered
 }
 
 internal fun nativeResourceFilename(filename: String): String {

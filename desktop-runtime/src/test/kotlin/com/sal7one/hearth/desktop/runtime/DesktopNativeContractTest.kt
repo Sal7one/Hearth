@@ -45,18 +45,26 @@ class DesktopNativeContractTest {
                 assertNull(DesktopNativeLibraries.readiness(QwenSpeechModel.LIBRARY))
                 assertEquals(QwenSpeechModel.PROTOCOL_VERSION, DesktopQwenNative.protocolVersion())
             }
-            assertEquals(2, DesktopWhisperNative.protocolVersion())
-            assertEquals(4, LocalTranslationNative.promptProtocolVersion())
+            assertEquals(3, DesktopWhisperNative.protocolVersion())
+            assertEquals(5, LocalTranslationNative.promptProtocolVersion())
             val model = directory.resolve("غير صالح🙂.ggml")
             Files.write(model, ByteArray(64))
             val error = assertFailsWith<IllegalStateException> { DesktopWhisperNative.create(model.toString().toByteArray(), "ar".toByteArray(), 2, false) }
             assertContains(error.message.orEmpty(), "غير صالح🙂")
             val threadError = assertFailsWith<IllegalStateException> { DesktopWhisperNative.create(model.toString().toByteArray(), "ar".toByteArray(), 0, false) }
             assertContains(threadError.message.orEmpty(), "threads")
+            val invalidBackend = assertFailsWith<IllegalStateException> { DesktopWhisperNative.createWithBackend(model.toString().toByteArray(), "en".toByteArray(), 2, 9, 0) }
+            assertContains(invalidBackend.message.orEmpty(), "backend")
+            val invalidDevice = assertFailsWith<IllegalStateException> { DesktopWhisperNative.createWithBackend(model.toString().toByteArray(), "en".toByteArray(), 2, 0, 1) }
+            assertContains(invalidDevice.message.orEmpty(), "device index")
             val translationThreads = assertFailsWith<RuntimeException> { LocalTranslationNative.create(model.toString().toByteArray(), 0, 0, 0) }
             assertContains(translationThreads.message.orEmpty(), "threads")
             val translationPlacement = assertFailsWith<RuntimeException> { LocalTranslationNative.create(model.toString().toByteArray(), 0, 2, 1) }
             assertContains(translationPlacement.message.orEmpty(), "layer policy")
+            val invalidTranslationBackend = assertFailsWith<RuntimeException> { LocalTranslationNative.createWithBackend(model.toString().toByteArray(), 0, 2, 9, 0) }
+            assertContains(invalidTranslationBackend.message.orEmpty(), "backend")
+            val invalidTranslationDevice = assertFailsWith<RuntimeException> { LocalTranslationNative.createWithBackend(model.toString().toByteArray(), 0, 2, 0, -1) }
+            assertContains(invalidTranslationDevice.message.orEmpty(), "index")
             if (!DesktopWhisperNative.metalAvailable()) {
                 val unavailable = assertFailsWith<IllegalStateException> { DesktopWhisperNative.create(model.toString().toByteArray(), "ar".toByteArray(), 2, true) }
                 assertContains(unavailable.message.orEmpty(), "Metal acceleration requested")
@@ -65,10 +73,17 @@ class DesktopNativeContractTest {
                 val unavailable = assertFailsWith<RuntimeException> { LocalTranslationNative.create(model.toString().toByteArray(), 0, 2, 99) }
                 assertContains(unavailable.message.orEmpty(), "Metal acceleration requested")
             }
+            for ((available, create) in listOf(
+                DesktopWhisperNative.gpuAvailable(DesktopCompute.CUDA, -1) to { DesktopWhisperNative.createWithBackend(model.toString().toByteArray(), "en".toByteArray(), 2, DesktopCompute.CUDA, 0) },
+                LocalTranslationNative.gpuAvailable(DesktopCompute.CUDA, -1) to { LocalTranslationNative.createWithBackend(model.toString().toByteArray(), 0, 2, DesktopCompute.CUDA, 0) },
+            )) if (!available) assertContains(assertFailsWith<RuntimeException> { create() }.message.orEmpty(), "CUDA acceleration requested")
             DesktopEngines(com.sal7one.hearth.core.CredentialResolver { null }, directory).use { engines ->
                 val descriptors = engines.capabilities().associateBy { it.id }
                 assertEquals(DesktopWhisperNative.metalAvailable(), "metal" in descriptors.getValue("whisper-local").acceleration)
                 assertEquals(LocalTranslationNative.metalAvailable(), "metal" in descriptors.getValue("llama-translation-local").acceleration)
+                assertEquals(DesktopWhisperNative.gpuAvailable(DesktopCompute.CUDA, -1), "cuda" in descriptors.getValue("whisper-local").acceleration)
+                assertEquals(LocalTranslationNative.gpuAvailable(DesktopCompute.CUDA, -1), "cuda" in descriptors.getValue("llama-translation-local").acceleration)
+                assertEquals(decodeGpuDevices("cuda", DesktopWhisperNative.gpuDevices(DesktopCompute.CUDA)), engines.gpuDevices("whisper-local", "cuda"))
                 assertEquals(setOf("cpu"), descriptors.getValue("supertonic-local").acceleration)
                 assertEquals(setOf("cpu"), descriptors.getValue("omnivoice-tts-local").acceleration)
                 if (qwenStaged) assertEquals(setOf("cpu"), descriptors.getValue(QwenSpeechModel.ENGINE_ID).acceleration)

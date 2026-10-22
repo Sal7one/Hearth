@@ -35,16 +35,26 @@ live capture and protected-content behavior; the noncapturing probe proves only
 helper/framework packaging. An OBS native plugin remains separate; the Browser
 Source and external-app PCM API work without one.
 
-On macOS, Whisper and GGUF translation offer explicit CPU or Metal selection.
-Supertonic and Qwen3-ASR stay on CPU. **Windows is parked:** its adapters are
-build-wired and unit-tested but no Windows host has run them; do not infer Windows
-support from the macOS result. The Qwen3-ASR stage is macOS arm64 only. GPU selection
-fails if the requested backend cannot initialize or place the model; it never
-silently reports GPU while executing a CPU fallback. The [real-model smoke receipt](research/desktop-real-smoke-2026-10-20.json)
-records a completed local Whisper → Arabic translation → English system-voice
-pipeline on an Apple M4 Pro, including actual Metal layer placement. This single
-fixture proves execution, not broad translation quality or Windows performance.
-NVIDIA CUDA is not bundled or exposed by the initial Windows adapters.
+Mac builds now compile Metal by default for Whisper and GGUF translation;
+`--no-metal` creates an explicit CPU build. Both engines expose CPU/Metal choices
+only when supported by their actual native adapter and device. Fresh routes
+prefer an available GPU, and saved CPU choices remain intact. Qwen3-ASR,
+CTranslate2 and local TTS adapters currently use CPU. Qwen3-ASR is macOS arm64 only.
+
+The [October 22 hardware receipt](research/desktop-metal-inference-2026-10-22.json)
+records real Whisper and English→Arabic GGUF inference on an Apple M4 Pro,
+positive GPU model allocations, all 25 translation layers offloaded, completed
+inference counters and CPU/GPU outputs. The packaged launcher can repeat this
+with `scripts/desktop/validate-gpu.py --backend metal` and explicit model/WAV paths.
+These single-fixture timings do not establish broad quality or performance.
+
+An opt-in [Windows NVIDIA CUDA build and validation path](desktop-cuda.md) now
+covers these same two adapters, explicit device indices and verified app-local
+CUDA redistributables. **NVIDIA hardware execution is pending the owner's local
+Windows run.** Mac results and mocked Windows loader tests do not establish it.
+An explicit GPU request fails if initialization, model placement or inference
+fails; it cannot silently become CPU success. Bundle metadata records the actual
+compiled native export per binary and checksum, including across partial builds.
 
 A separate [Supertonic smoke receipt](research/desktop-supertonic-smoke-2026-10-21.json)
 records real Arabic and English F1/M1 synthesis through the shared pipeline with

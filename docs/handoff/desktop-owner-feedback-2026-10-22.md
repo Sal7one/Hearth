@@ -1,5 +1,7 @@
 # Desktop owner-test repairs — 22 October 2026
 
+Later checkpoint: [Metal inference and Windows CUDA preparation](desktop-gpu-2026-10-22.md).
+
 This follows the [post-handover audit](post-handover-audit-2026-10-22.md).
 The owner's live Mac test exposed important gaps that the earlier small render
 fixtures missed. The earlier desktop “feature-complete” description is not an

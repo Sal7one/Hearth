@@ -4,6 +4,7 @@ import com.sal7one.hearth.core.EngineDescriptor
 import com.sal7one.hearth.core.EngineSelection
 import com.sal7one.hearth.core.PipelineConfig
 import com.sal7one.hearth.core.PipelineStage
+import com.sal7one.hearth.desktop.ui.screens.settings.preferDetectedCompute
 
 /**
  * Small, tested-by-use helpers for moving a stage selection through
@@ -40,7 +41,8 @@ internal fun PipelineConfig.chooseEngine(engine: EngineDescriptor, remembered: P
     installed: EngineSelection? = null): PipelineConfig {
     if (selection(engine.stage)?.engineId == engine.id) return this
     val previous = remembered?.selection(engine.stage)?.takeIf { it.engineId == engine.id }
-    val route = previous ?: installed?.takeIf { it.engineId == engine.id } ?: engineSelection(engine)
+    val route = previous ?: preferDetectedCompute(engine,
+        installed?.takeIf { it.engineId == engine.id } ?: engineSelection(engine))
     val next = select(engine.stage, route)
     return if (engine.stage == PipelineStage.TTS && previous != null) next.copy(voiceId = remembered.voiceId,
         speakTranslatedText = remembered.speakTranslatedText) else next

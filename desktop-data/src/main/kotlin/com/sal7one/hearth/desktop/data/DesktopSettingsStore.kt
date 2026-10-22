@@ -148,7 +148,7 @@ class DesktopSettingsStore(val directory: Path) : AutoCloseable {
 private fun EngineSelection.portable() = copy(modelPath = "", credentialId = "", options = options.filterKeys { it in SetupCodec.allowedOptions || it.startsWith("sha256.") })
 
 object SetupCodec {
-    internal val allowedOptions = setOf("sha256", "threads", "acceleration", "voice", "speed", "steps", "temperature", "maxTokens", "profile", "backend", "family", "promptMode", "sources", "targets", "treeSha256", "windowMs")
+    internal val allowedOptions = setOf("sha256", "threads", "acceleration", "gpuDevice", "voice", "speed", "steps", "temperature", "maxTokens", "profile", "backend", "family", "promptMode", "sources", "targets", "treeSha256", "windowMs")
     private val json = Json { prettyPrint = true }
     fun encode(config: PipelineConfig): String = json.encodeToString(JsonElement.serializer(), buildJsonObject {
         put("format", "hearth.desktop.setup"); put("schemaVersion", 1)
@@ -176,6 +176,12 @@ object SetupCodec {
             options["windowMs"]?.let {
                 val milliseconds = it.toIntOrNull()
                 require(milliseconds != null && milliseconds in 1_000..30_000) { "Speech window must be 1000–30000 ms" }
+            }
+            options["acceleration"]?.let {
+                require(it in setOf("cpu", "metal", "cuda")) { "Desktop compute must be cpu, metal or cuda" }
+            }
+            options["gpuDevice"]?.let {
+                require(it.toIntOrNull()?.let { index -> index >= 0 } == true) { "GPU device must be a non-negative integer index" }
             }
             require(get("engineId").matches(Regex("[A-Za-z0-9._-]{1,100}"))) { "Invalid engine identity" }
             val endpoint = get("endpoint")

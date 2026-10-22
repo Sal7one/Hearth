@@ -8,6 +8,7 @@ import java.util.Locale
 import java.net.URI
 import java.nio.file.Path
 import java.util.concurrent.ConcurrentHashMap
+import com.sal7one.hearth.desktop.ui.screens.settings.computeSettings
 
 internal data class LanguageOption(val code: String, val label: String)
 internal data class PipelineLanguageState(
@@ -106,6 +107,7 @@ internal fun stageSetupIssue(config: PipelineConfig, stage: PipelineStage, capab
     val route = config.selection(stage) ?: return "Choose a ${when(stage) { PipelineStage.STT -> "speech"; PipelineStage.TRANSLATION -> "translation"; PipelineStage.TTS -> "voice" }} engine."
     val engine = capabilities.firstOrNull { it.id == route.engineId && it.stage == stage } ?: return "The selected engine is unavailable in this app."
     if (!engine.available) return engine.unavailableReason ?: "${engine.name} is unavailable on this computer."
+    computeSettings(engine, route).issue?.let { return it }
     if (engine.requiresModel) {
         val card = selectedCard(route, catalog)?.takeIf { it.stage == stage }
         val status = installations[route.modelId]

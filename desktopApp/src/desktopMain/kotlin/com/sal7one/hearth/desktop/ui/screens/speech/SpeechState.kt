@@ -22,8 +22,13 @@ internal enum class Responsiveness(val label: String, val windowMs: Int, val det
 
 /** Mirrors the runtime's `acceleration` option. */
 internal enum class Compute(val label: String, val key: String) {
+    CUDA("NVIDIA CUDA", "cuda"),
     METAL("Metal", "metal"),
-    CPU("CPU", "cpu"),
+    CPU("CPU", "cpu");
+
+    companion object {
+        fun fromKey(key: String?): Compute? = entries.firstOrNull { it.key.equals(key, ignoreCase = true) }
+    }
 }
 
 internal data class SpeechModelOption(val id: String, val label: String, val installed: Boolean)
@@ -49,6 +54,7 @@ internal data class SpeechState(
     val windowLabel: String = "4 s windows",
     val modelDetail: String = "No model selected",
     val unavailableReason: String? = null,
+    val computeIssue: String? = null,
 ) {
     val localSelected: Boolean get() = selectedKind == EngineKind.LOCAL
     val cloudSelected: Boolean get() = selectedKind == EngineKind.CLOUD

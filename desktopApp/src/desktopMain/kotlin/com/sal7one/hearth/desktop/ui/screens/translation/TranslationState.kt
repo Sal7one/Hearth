@@ -37,6 +37,7 @@ internal data class TranslationState(
     val ready: Boolean = false,
     val modelDetail: String = "No model selected",
     val placementLabel: String = "CPU",
+    val computeIssue: String? = null,
 ) {
     val translationOff: Boolean get() = selectedEngineId == null
     val localSelected: Boolean get() = selectedKind == EngineKind.LOCAL

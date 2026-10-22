@@ -94,6 +94,66 @@ def sha(path):
     return digest.hexdigest()
 
 
+GPU_LIBRARIES = {
+    "hearth_desktop_whisper": "whisper",
+    "transiber_translation": "translation",
+}
+
+
+def probe_compiled_backends(path):
+    """Read the adapter's compiled ABI in an isolated process, never CLI flags.
+
+    The export does not create a device or load a model. A legacy binary without
+    it has unknown support, rather than inheriting another stage's build flags.
+    """
+    script = '''import ctypes, json, os, sys
+from pathlib import Path
+path = Path(sys.argv[1]).resolve()
+directory = os.add_dll_directory(str(path.parent)) if os.name == "nt" else None
+try:
+    library = ctypes.CDLL(str(path))
+    probe = library.hearth_desktop_compiled_backends
+except (OSError, AttributeError):
+    print("null")
+    sys.exit(0)
+probe.argtypes = []
+probe.restype = ctypes.c_int
+mask = probe()
+if mask & ~7 or not mask & 1:
+    raise ValueError("Invalid compiled-backend mask")
+print(json.dumps([name for bit, name in ((1,"cpu"),(2,"metal"),(4,"cuda")) if mask & bit]))
+'''
+    return json.loads(subprocess.check_output([sys.executable, "-c", script, str(path)], text=True, timeout=30))
+
+
+def library_backend_metadata(output, previous, rebuilt_stages, source_digest, source_inputs=None):
+    libraries = {}
+    all_backends = {"cpu"}
+    for stem, stage in GPU_LIBRARIES.items():
+        candidates = [output / f"lib{stem}.dylib", output / f"{stem}.dll", output / f"lib{stem}.so"]
+        for path in candidates:
+            if not path.is_file():
+                continue
+            digest = sha(path)
+            backends = probe_compiled_backends(path)
+            if backends is None and stage in rebuilt_stages:
+                raise RuntimeError(f"New {stage} adapter has no usable compiled-backend ABI probe: {path}")
+            record = {"sha256": digest, "compiledBackends": backends or ["cpu"],
+                      "backendProbe": "native-export-v1" if backends else "unavailable"}
+            old = previous.get("libraries", {}).get(path.name, {})
+            if stage in rebuilt_stages:
+                record["sourceSetSha256"] = source_digest
+                if source_inputs is not None: record["sources"] = source_inputs
+            elif old.get("sha256") == digest and "sourceSetSha256" in old:
+                record["sourceSetSha256"] = old["sourceSetSha256"]
+                if "sources" in old: record["sources"] = old["sources"]
+            libraries[path.name] = record
+            all_backends.update(backends or [])
+    return {"libraries": libraries, "backends": [name for name in ("cpu", "metal", "cuda") if name in all_backends],
+            "compiledMetalSupport": "metal" in all_backends, "compiledCudaSupport": "cuda" in all_backends,
+            "gpuSelectionRequiresUsableDevice": True, "metalSelectionRequiresUsableDevice": True}
+
+
 def source_tree_sha(root):
     """Content digest of a pinned checkout's tracked files; never follows symlinks."""
     names = subprocess.check_output(["git", "-C", str(root), "ls-files", "-z"], text=False).split(b"\0")
@@ -116,6 +176,8 @@ def require_exports(dylib, prefix, expected):
 
 def snapshot():
     paths = [ROOT / "scripts/desktop/build-native.py"]
+    cuda_stager = ROOT / "scripts/desktop/stage-cuda-runtime.py"
+    if cuda_stager.is_file(): paths.append(cuda_stager)
     for folder in ["scripts/desktop/native", "desktop-runtime/src/main/cpp"]:
         paths.extend(p for p in (ROOT / folder).rglob("*") if p.is_file())
     for name in ["common-jni/src/main/cpp/translation/text_model.h", "common-jni/src/main/cpp/translation/translation_jni.cpp",
@@ -194,6 +256,16 @@ def source_tree_sha_files(root):
     return hashlib.sha256(json.dumps(entries, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
 
 
+def prepare_translation_header(source):
+    """Bind desktop requests to one selected device without editing Android sources."""
+    old = "int gpuLayers = 0, int promptMode = 0) :"
+    if source.count(old) != 1 or source.count("        mp.n_gpu_layers = gpuLayers;") != 1:
+        raise RuntimeError("Translation model device preparation changed; review the pinned constructor")
+    return source.replace(old, "int gpuLayers = 0, int promptMode = 0, ggml_backend_dev_t* devices = nullptr) :").replace(
+        "        mp.n_gpu_layers = gpuLayers;",
+        "        mp.n_gpu_layers = gpuLayers;\n        mp.devices = devices;\n        mp.split_mode = LLAMA_SPLIT_MODE_NONE;\n        mp.main_gpu = 0;")
+
+
 def prepare_translation(source):
     """Versioned desktop ABI; Android's two-argument JNI and sources stay untouched."""
     def replace(old, new):
@@ -201,34 +273,53 @@ def prepare_translation(source):
         if source.count(old) != 1:
             raise RuntimeError(f"Translation desktop preparation changed; review exact source adaptation: {old[:100]}")
         source = source.replace(old, new)
-    replace('#include "text_model.h"', '#include "text_model.h"\n#include "desktop_metal.h"\n#include "desktop_jni.h"\n#include <cstdio>')
+    replace('#include "text_model.h"', '#include "text_model.h"\n#include "desktop_gpu.h"\n#include "desktop_gpu_policy.h"\n#include "desktop_jni.h"')
     replace('#include "../common/lease_registry.h"', '#include "lease_registry.h"')
-    replace('stt::concurrency::LeaseRegistry<transiber::TextModel> models;', '''class DesktopTextModel final : public transiber::TextModel {
+    replace('stt::concurrency::LeaseRegistry<transiber::TextModel> models;', '''class DesktopTextModel final : private DesktopGpuPlacement, public transiber::TextModel {
     std::string placement;
+    std::atomic<int> completed{0};
 public:
-    DesktopTextModel(const std::string& path, int threads, int layers, int mode)
-        : transiber::TextModel(path, threads, layers, mode) {
-        if (layers > 0) {
-            int offloaded = 0, total = 0;
-            const auto marker = transiber::nativeOffloadSummary.find("offloaded ");
-            if (marker == std::string::npos || std::sscanf(transiber::nativeOffloadSummary.c_str() + marker,
-                    "offloaded %d/%d layers to GPU", &offloaded, &total) != 2 || offloaded <= 0)
-                throw std::runtime_error("Metal requested, but the translation model did not offload any layers to the GPU");
-            placement = "Metal GPU; " + transiber::nativeOffloadSummary + transiber::nativeModelBufferSummary;
+    DesktopTextModel(const std::string& path, int threads, int promptMode, int backend, int index)
+        : DesktopGpuPlacement(backend, index), transiber::TextModel(path, threads,
+            DesktopGpuPlacement::layers(), promptMode, DesktopGpuPlacement::devices()) {
+        if (backend != 0) {
+            placement = desktopGpuExecutionInfo(DesktopGpuPlacement::description(),
+                ggml_backend_dev_name(DesktopGpuPlacement::device()),
+                transiber::nativeOffloadSummary, transiber::nativeModelBufferSummary);
         } else placement = "CPU";
         placement += "; threads=" + std::to_string(threads);
     }
-    const std::string& executionInfo() const { return placement; }
+    std::string translate(const std::string& prompt) {
+        auto result = transiber::TextModel::translate(prompt);
+        completed.fetch_add(1);
+        return result;
+    }
+    std::string executionInfo() const { return placement + "; completedInference=" + std::to_string(completed.load()); }
 };
 stt::concurrency::LeaseRegistry<DesktopTextModel> models;''')
-    replace('    return 3;\n}', '    return 4;\n}')
+    replace('    return 3;\n}', '    return 5;\n}')
     replace('jbyteArray path, jint promptMode) {', 'jbyteArray path, jint promptMode, jint threads, jint gpuLayers) {')
     replace('return models.insert(std::make_unique<transiber::TextModel>(bytes(env, path), 2, 0, promptMode));', '''if (threads < 1 || threads > 32) throw std::invalid_argument("Translation threads must be 1–32");
-        if (gpuLayers != 0 && gpuLayers != 99) throw std::invalid_argument("Desktop GPU layer policy must be CPU (0) or Metal (99)");
-        if (gpuLayers > 0) desktopRequireMetal();
-        return models.insert(std::make_unique<DesktopTextModel>(bytes(env, path), threads, gpuLayers, promptMode));''')
-    replace('#if defined(HEARTH_TRANSLATION_VULKAN) || defined(HEARTH_TRANSLATION_OPENCL)\nextern "C" JNIEXPORT jbyteArray JNICALL HEARTH_TRANSLATION_JNI(executionInfo)', '#if 1 // Desktop exposes actual CPU/Metal placement.\nextern "C" JNIEXPORT jbyteArray JNICALL HEARTH_TRANSLATION_JNI(executionInfo)')
-    source += '\nextern "C" JNIEXPORT jboolean JNICALL HEARTH_TRANSLATION_JNI(metalAvailable)(JNIEnv*, jobject) { return desktopMetalAvailable(); }\n'
+        if (gpuLayers != 0 && gpuLayers != 99) throw std::invalid_argument("Legacy desktop GPU layer policy must be CPU (0) or Metal (99)");
+        return models.insert(std::make_unique<DesktopTextModel>(bytes(env, path), threads, promptMode, gpuLayers ? 1 : 0, 0));''')
+    replace('#if defined(HEARTH_TRANSLATION_VULKAN) || defined(HEARTH_TRANSLATION_OPENCL)\nextern "C" JNIEXPORT jbyteArray JNICALL HEARTH_TRANSLATION_JNI(executionInfo)', '#if 1 // Desktop exposes actual CPU/Metal/CUDA placement.\nextern "C" JNIEXPORT jbyteArray JNICALL HEARTH_TRANSLATION_JNI(executionInfo)')
+    source += '''
+extern "C" JNIEXPORT int hearth_desktop_compiled_backends() { return desktopCompiledBackends(); }
+extern "C" JNIEXPORT jboolean JNICALL HEARTH_TRANSLATION_JNI(metalAvailable)(JNIEnv*, jobject) { return desktopGpuAvailable(DesktopGpuMode::METAL, 0); }
+extern "C" JNIEXPORT jboolean JNICALL HEARTH_TRANSLATION_JNI(gpuAvailable)(JNIEnv*, jobject, jint backend, jint index) { try { return desktopGpuAvailable(desktopGpuMode(backend), index); } catch (...) { return false; } }
+extern "C" JNIEXPORT jbyteArray JNICALL HEARTH_TRANSLATION_JNI(gpuDevices)(JNIEnv* env, jobject, jint backend) {
+    try { return desktopBytes(env, desktopGpuDeviceListJson(desktopGpuMode(backend))); }
+    catch (const std::exception& error) { fail(env, error.what()); return nullptr; }
+}
+extern "C" JNIEXPORT jlong JNICALL HEARTH_TRANSLATION_JNI(createWithBackend)(JNIEnv* env, jobject,
+        jbyteArray path, jint promptMode, jint threads, jint backend, jint index) {
+    try {
+        if (threads < 1 || threads > 32) throw std::invalid_argument("Translation threads must be 1–32");
+        return models.insert(std::make_unique<DesktopTextModel>(bytes(env, path), threads, promptMode, backend, index));
+    } catch (const std::exception& error) { fail(env, error.what()); return 0; }
+    catch (...) { fail(env, "Unknown desktop translation initialization failure"); return 0; }
+}
+'''
     return source
 
 
@@ -564,7 +655,13 @@ def main():
     parser.add_argument("--build-dir", type=Path, default=ROOT / "build/desktop-native")
     parser.add_argument("--output", type=Path)
     parser.add_argument("--jobs", type=int, default=2)
-    parser.add_argument("--metal", action="store_true", help="Compile optional runtime-selected Metal using embedded kernels (macOS)")
+    metal = parser.add_mutually_exclusive_group()
+    metal.add_argument("--metal", dest="metal", action="store_true", help="Compile runtime-selected Metal with embedded kernels (the macOS default)")
+    metal.add_argument("--no-metal", dest="metal", action="store_false", help="Explicit CPU-only macOS build")
+    parser.set_defaults(metal=None)
+    parser.add_argument("--cuda", action="store_true", help="Build NVIDIA CUDA for Whisper/GGUF translation (Windows x64)")
+    parser.add_argument("--cuda-toolkit", type=Path, help="Installed official NVIDIA CUDA Toolkit root")
+    parser.add_argument("--cuda-architectures", help="Optional CMake CUDA architecture list; upstream portable defaults otherwise")
     args = parser.parse_args()
     system = {"Darwin": "macos", "Windows": "windows", "Linux": "linux"}.get(platform.system())
     arch = {"arm64": "arm64", "aarch64": "arm64", "x86_64": "x64", "amd64": "x64"}.get(platform.machine().lower())
@@ -573,6 +670,7 @@ def main():
     target = f"{system}-{arch}"
     output = (args.output or ROOT / "desktop-runtime/native-libs" / target).resolve()
     output.mkdir(parents=True, exist_ok=True)
+    previous_manifest = json.loads((output / "manifest.json").read_text()) if (output / "manifest.json").is_file() else {}
     args.build_dir.mkdir(parents=True, exist_ok=True)
     stages = ["whisper", "translation", "supertonic"] if args.stage == "all" else [args.stage]
     if args.stage == "all":
@@ -605,7 +703,13 @@ def main():
         parser.error("--speech-backends accepts transcribepsy and/or nemotron")
     if "backend" in stages and not speech_backends:
         parser.error("--speech-backends must name at least one backend")
+    if args.metal is None: args.metal = system == "macos"
     if args.metal and system != "macos": parser.error("Metal requires macOS")
+    if args.cuda and target != "windows-x64": parser.error("Packaged NVIDIA CUDA requires Windows x64")
+    if args.cuda and not {"whisper", "translation"}.intersection(stages):
+        parser.error("CUDA is supported by the Whisper and GGUF translation stages only")
+    if (args.cuda_toolkit or args.cuda_architectures) and not args.cuda:
+        parser.error("CUDA toolkit/architecture options require --cuda")
     before = snapshot()
     subprocess.run([sys.executable, str(ROOT / "scripts/whisper/source-pin.py"),
                     str(ROOT / "common-jni/src/main/cpp/whisper/upstream"),
@@ -700,6 +804,8 @@ def main():
     prepared_jni = args.build_dir.resolve() / "supertonic-jni-desktop.cpp"
     prepared_jni.write_text('#include "desktop_jni.h"\n' + jni_source.replace(old_error, 'void fail(JNIEnv* env,const char* message){desktopFail(env,message);}'), encoding="utf-8")
     translation_jni = args.build_dir.resolve() / "translation-jni-desktop.cpp"
+    translation_header = args.build_dir.resolve() / "text_model.h"
+    translation_header.write_text(prepare_translation_header((ROOT / "common-jni/src/main/cpp/translation/text_model.h").read_text(encoding="utf-8")), encoding="utf-8")
     translation_jni.write_text(prepare_translation((ROOT / "common-jni/src/main/cpp/translation/translation_jni.cpp").read_text(encoding="utf-8")), encoding="utf-8")
     for stage in [value for value in stages if value not in ("ct2", "ming", "magpie")]:
         cache = args.build_dir.resolve() / target / stage
@@ -709,7 +815,11 @@ def main():
                    f"-DHEARTH_SUPERTONIC_SOURCE={prepared}",
                    f"-DHEARTH_SUPERTONIC_JNI_SOURCE={prepared_jni}",
                    f"-DHEARTH_TRANSLATION_JNI_SOURCE={translation_jni}",
-                   f"-DHEARTH_DESKTOP_METAL={'ON' if args.metal else 'OFF'}"]
+                   f"-DHEARTH_DESKTOP_METAL={'ON' if args.metal and stage in ('whisper', 'translation') else 'OFF'}",
+                   f"-DHEARTH_DESKTOP_CUDA={'ON' if args.cuda and stage in ('whisper', 'translation') else 'OFF'}"]
+        if args.cuda and stage in ("whisper", "translation"):
+            if args.cuda_toolkit: command.append(f"-DCUDAToolkit_ROOT={args.cuda_toolkit.resolve()}")
+            if args.cuda_architectures: command.append(f"-DCMAKE_CUDA_ARCHITECTURES={args.cuda_architectures}")
         if args.ort_root: command.append(f"-DHEARTH_ORT_ROOT={args.ort_root.resolve()}")
         if stage == "onnx": command.append(f"-DHEARTH_SHERPA_ROOT={sherpa}")
         if stage == "omnivoice":
@@ -850,8 +960,26 @@ def main():
     if "translation" in stages: shutil.copyfile(args.llama_root / "LICENSE", output / "llama-LICENSE.txt")
     shutil.copyfile(ROOT / "hearth-tts-supertonic/src/main/assets/licenses/voice/Supertonic-MIT.txt", output / "Supertonic-LICENSE.txt")
     if before != snapshot(): raise RuntimeError("Desktop native sources changed during compilation; rebuild the complete bundle")
+    cuda_receipt = previous_manifest.get("cudaRuntime")
+    if args.cuda:
+        receipt_path = args.build_dir.resolve() / target / "cuda-runtime-receipt.json"
+        command = [sys.executable, str(ROOT / "scripts/desktop/stage-cuda-runtime.py"),
+                   "--bundle", str(output), "--receipt-json", str(receipt_path)]
+        if args.cuda_toolkit: command.extend(["--toolkit", str(args.cuda_toolkit.resolve())])
+        for stem, stage in GPU_LIBRARIES.items():
+            name = f"{stem}.dll"
+            old = previous_manifest.get("libraries", {}).get(name, {})
+            preserved_cuda = stage not in stages and "cuda" in old.get("compiledBackends", []) and \
+                (output / name).is_file() and old.get("sha256") == sha(output / name)
+            if stage in stages or preserved_cuda: command.extend(["--entry", name])
+        subprocess.run(command, check=True)
+        cuda_receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
     files = {p.name: sha(p) for p in sorted(output.iterdir()) if p.is_file() and p.name != "manifest.json"}
-    upstreams = {"whisperSourceTreeSha256": WHISPER_PIN, "llamaRevision": LLAMA_PIN, "onnxRuntime": "1.20.1"}
+    # Unrelated incremental builds must retain their existing upstream receipts.
+    upstreams = dict(previous_manifest.get("upstreams", {}))
+    if "whisper" in stages: upstreams["whisperSourceTreeSha256"] = WHISPER_PIN
+    if "translation" in stages: upstreams["llamaRevision"] = LLAMA_PIN
+    if any(stage in stages for stage in ("supertonic", "onnx", "moss", "chatterbox")): upstreams["onnxRuntime"] = "1.20.1"
     if "onnx" in stages:
         upstreams.update({
             "sherpaRevision": SHERPA_PIN,
@@ -896,12 +1024,22 @@ def main():
             "omnivoiceGgmlTreeSha256": omnivoice_ggml_tree,
             "omnivoiceJniSha256": sha(output / "libhearth_desktop_omnivoice.dylib"),
         })
+    source_digest = hashlib.sha256(json.dumps(before, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
     manifest = {"schemaVersion": 1, "platform": target, "files": files, "sources": before,
-                "sourceSetSha256": hashlib.sha256(json.dumps(before, sort_keys=True, separators=(",", ":")).encode()).hexdigest(),
+                "sourceSetSha256": source_digest, "sourceReceiptScope": "most-recent-build",
                 "upstreams": upstreams,
-                "backends": ["cpu", "metal"] if args.metal else ["cpu"],
-                "compiledMetalSupport": args.metal, "metalSelectionRequiresUsableDevice": True,
                 "modelWeightsIncluded": False}
+    manifest.update(library_backend_metadata(output, previous_manifest, stages, source_digest, before))
+    cuda_entries = {name for name, entry in manifest["libraries"].items() if "cuda" in entry["compiledBackends"]}
+    if cuda_entries:
+        if not cuda_receipt or set(cuda_receipt.get("entries", [])) != cuda_entries:
+            raise RuntimeError("CUDA binaries changed without a matching runtime receipt; rebuild the CUDA stages with --cuda")
+        if any(files.get(name) != digest for name, digest in cuda_receipt.get("sha256", {}).items()):
+            raise RuntimeError("CUDA runtime receipt no longer matches its bundled files; restage with --cuda")
+        manifest["cudaRuntime"] = cuda_receipt
+    crt = previous_manifest.get("microsoftCrt")
+    if crt and all(files.get(name) == previous_manifest.get("files", {}).get(name) for name in crt.get("dlls", [])):
+        manifest["microsoftCrt"] = crt
     (output / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
     print(f"Desktop native bundle staged at {output}")
 

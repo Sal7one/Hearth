@@ -111,13 +111,16 @@ class DesktopEngines(
             var acceleration = setOf("cpu")
             if (error == null) {
                 runCatching {
+                    var cuda = false
                     val metal = when (id) {
                         "whisper-local" -> {
-                            check(DesktopWhisperNative.protocolVersion() == 2) { "Desktop Whisper protocol mismatch; rebuild the native bundle" }
+                            check(DesktopWhisperNative.protocolVersion() == DesktopWhisperNative.PROTOCOL_VERSION) { "Desktop Whisper protocol mismatch; rebuild the native bundle" }
+                            cuda = DesktopWhisperNative.gpuAvailable(DesktopCompute.CUDA, -1)
                             DesktopWhisperNative.metalAvailable()
                         }
                         "llama-translation-local" -> {
-                            check(LocalTranslationNative.promptProtocolVersion() == 4) { "Desktop translation protocol mismatch; rebuild the native bundle" }
+                            check(LocalTranslationNative.promptProtocolVersion() == LocalTranslationNative.PROTOCOL_VERSION) { "Desktop translation protocol mismatch; rebuild the native bundle" }
+                            cuda = LocalTranslationNative.gpuAvailable(DesktopCompute.CUDA, -1)
                             LocalTranslationNative.metalAvailable()
                         }
                         QwenSpeechModel.ENGINE_ID -> {
@@ -135,6 +138,7 @@ class DesktopEngines(
                         else -> false
                     }
                     if (metal) acceleration = setOf("cpu", "metal")
+                    if (cuda) acceleration = acceleration + "cuda"
                 }.onFailure { error = it.message ?: it.javaClass.simpleName }
             }
             return EngineDescriptor(id, name, stage, EngineKind.LOCAL, languages, streaming,
@@ -174,6 +178,7 @@ class DesktopEngines(
     override suspend fun recognize(input: PipelineInput, selection: EngineSelection, sourceLanguage: String, emit: suspend (SpeechSegment) -> Unit) {
         check(!closed.get()) { "Desktop engines are closed" }
         require(selection.engineId in setOf("whisper-local", QwenSpeechModel.ENGINE_ID, "transcribepsy-local", "nemotron-asr-local", "moonshine-local", "vosk-local", "omnilingual-local", "phonon-local", "openai-stt")) { "Unknown speech engine: ${selection.engineId}" }
+        if (selection.engineId !in setOf("whisper-local", "openai-stt")) requireCpuAcceleration(selection)
         var decoded: Path? = null
         val frames: Flow<PcmFrame> = when (input) {
             is PipelineInput.AudioStream -> input.frames
@@ -195,12 +200,12 @@ class DesktopEngines(
         try {
             if (selection.engineId == "whisper-local") {
                 val path = verifiedModel(selection)
-                check(DesktopWhisperNative.protocolVersion() == 2) { "Desktop Whisper protocol mismatch" }
-                val metal = metal(selection)
+                check(DesktopWhisperNative.protocolVersion() == DesktopWhisperNative.PROTOCOL_VERSION) { "Desktop Whisper protocol mismatch" }
+                val compute = desktopCompute(selection)
                 val owner = currentCoroutineContext()
                 joinedBlocking({ handle.get().takeIf { it != 0L }?.let(DesktopWhisperNative::cancel) }) {
                     owner.ensureActive()
-                    handle.set(DesktopWhisperNative.create(path.toString().toByteArray(), sourceLanguage.toByteArray(), threads(selection), metal))
+                    handle.set(DesktopWhisperNative.createWithBackend(path.toString().toByteArray(), sourceLanguage.toByteArray(), threads(selection), compute.backend, compute.gpuDevice))
                     check(handle.get() != 0L) { "Whisper returned an invalid model handle" }
                 }
             } else if (selection.engineId == QwenSpeechModel.ENGINE_ID) {
@@ -390,15 +395,15 @@ class DesktopEngines(
         check(!closed.get()) { "Desktop engines are closed" }
         require(text.isNotBlank() && text.length <= TextChunks.MAX_TEXT_CHARACTERS) { "Translation accepts 1–32000 characters" }
         if (selection.engineId == "openai-translation") return cloud.translate(text, selection, sourceLanguage, targetLanguage)
-        if (selection.engineId == "marian-local") return translateCt2(text, selection, sourceLanguage, targetLanguage)
+        if (selection.engineId == "marian-local") { requireCpuAcceleration(selection); return translateCt2(text, selection, sourceLanguage, targetLanguage) }
         require(selection.engineId == "llama-translation-local") { "Unknown translation engine: ${selection.engineId}" }
         return translationGate.withLock {
             val path = Path.of(selection.modelPath).toAbsolutePath().normalize()
             val mode = when (selection.options["promptMode"] ?: "default") { "default" -> 0; "raw" -> 1; "euro" -> 2; "riva" -> 3; else -> error("Unknown local translation prompt mode") }
             val hash = selection.options["sha256"].orEmpty()
-            val metal = metal(selection)
+            val compute = desktopCompute(selection)
             val threads = threads(selection)
-            val key = "$path|$hash|$mode|$metal|$threads|${Files.size(path)}|${Files.getLastModifiedTime(path)}"
+            val key = "$path|$hash|$mode|$compute|$threads|${Files.size(path)}|${Files.getLastModifiedTime(path)}"
             try {
                 if (synchronized(lifecycle) { translationKey != key || translationHandle == 0L }) {
                     verifiedModel(selection)
@@ -412,8 +417,9 @@ class DesktopEngines(
                     val owner = currentCoroutineContext()
                     joinedBlocking({ synchronized(lifecycle) { translationHandle.takeIf { it != 0L }?.let(LocalTranslationNative::cancel) } }) {
                         owner.ensureActive()
-                        check(LocalTranslationNative.promptProtocolVersion() == 4) { "Local translation native prompt protocol mismatch" }
-                        val created = LocalTranslationNative.create(path.toString().toByteArray(), mode, threads, if (metal) 99 else 0)
+                        check(LocalTranslationNative.promptProtocolVersion() == LocalTranslationNative.PROTOCOL_VERSION) { "Local translation native prompt protocol mismatch" }
+                        val created = LocalTranslationNative.createWithBackend(path.toString().toByteArray(), mode, threads, compute.backend, compute.gpuDevice)
+                        check(created != 0L) { "Translation returned an invalid model handle" }
                         synchronized(lifecycle) {
                             if (closed.get()) { LocalTranslationNative.destroy(created); error("Desktop engines are closed") }
                             translationHandle = created; translationKey = key
@@ -514,23 +520,23 @@ class DesktopEngines(
         if (selection.engineId == "ming-tts") return cloud.synthesizeMing(text, selection, language, voiceId)
         if (selection.engineId == "system-tts") return DesktopSystemSpeech.synthesize(text, language, voiceId, appDataDirectory)
         if (selection.engineId == "moss-tts-local") {
-            require(!metal(selection)) { "MOSS desktop currently supports CPU acceleration only" }
+            requireCpuAcceleration(selection)
             return mossVoices.read(text, selection, language, voiceId)
         }
         if (selection.engineId == "omnivoice-tts-local") {
-            require(!metal(selection)) { "OmniVoice desktop supports CPU acceleration only" }
+            requireCpuAcceleration(selection)
             return omnivoiceVoices.read(text, selection, language, voiceId)
         }
         if (selection.engineId == "magpie-tts-local") {
-            require(!metal(selection)) { "Magpie desktop supports CPU acceleration only" }
+            requireCpuAcceleration(selection)
             return magpieVoices.read(text, selection, language, voiceId)
         }
         if (selection.engineId == "chatterbox-tts-local") {
-            require(!metal(selection)) { "Chatterbox desktop supports CPU acceleration only" }
+            requireCpuAcceleration(selection)
             return chatterboxVoices.read(text, selection, language, voiceId)
         }
         if (selection.engineId == "ming-local") {
-            require(!metal(selection)) { "Ming local supports CPU acceleration only" }
+            requireCpuAcceleration(selection)
             withContext(Dispatchers.IO) {
                 val context = currentCoroutineContext()
                 synchronized(mingVerification) {
@@ -545,7 +551,7 @@ class DesktopEngines(
             return mingVoices.read(text, selection, language, voiceId)
         }
         require(selection.engineId == "supertonic-local") { "Unknown voice engine: ${selection.engineId}" }
-        require(!metal(selection)) { "Supertonic desktop currently supports CPU acceleration only" }
+        requireCpuAcceleration(selection)
         return voices.read(text, selection, language, voiceId)
     }
 
@@ -592,10 +598,22 @@ private suspend fun verifiedModel(selection: EngineSelection): Path = withContex
     }
 
     private fun threads(selection: EngineSelection) = (selection.options["threads"]?.toIntOrNull() ?: minOf(4, Runtime.getRuntime().availableProcessors())).also { require(it in 1..32) { "Threads must be 1–32" } }
-    private fun metal(selection: EngineSelection): Boolean = when (selection.options["acceleration"] ?: "cpu") {
-        "cpu" -> false
-        "metal" -> true
-        else -> error("Unsupported desktop acceleration: ${selection.options["acceleration"]}")
+    /** Call off the UI thread: CUDA inventory validates the installed driver and device contexts. */
+    fun gpuDevices(engineId: String, acceleration: String): List<DesktopGpuDevice> {
+        val compute = desktopCompute(EngineSelection(engineId, options = mapOf("acceleration" to acceleration)))
+        if (compute.backend == DesktopCompute.CPU) return emptyList()
+        val bytes = when (engineId) {
+            "whisper-local" -> {
+                check(DesktopWhisperNative.protocolVersion() == DesktopWhisperNative.PROTOCOL_VERSION) { "Desktop Whisper protocol mismatch" }
+                DesktopWhisperNative.gpuDevices(compute.backend)
+            }
+            "llama-translation-local" -> {
+                check(LocalTranslationNative.promptProtocolVersion() == LocalTranslationNative.PROTOCOL_VERSION) { "Desktop translation protocol mismatch" }
+                LocalTranslationNative.gpuDevices(compute.backend)
+            }
+            else -> error("$engineId currently supports CPU acceleration only")
+        }
+        return decodeGpuDevices(acceleration, bytes)
     }
 }
 
