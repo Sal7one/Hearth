@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_directory_search">Search settings</string>
+    <string name="settings_directory_search_hint">Benchmark, models, voices, appearance…</string>
+    <string name="settings_directory_clear_search">Clear settings search</string>
+    <string name="settings_directory_no_results">No matching settings. Try a model, feature or task name.</string>
+    <string name="settings_directory_models">Models &amp; testing</string>
+    <string name="settings_directory_models_detail">Find models, compare them on your device, then choose your setup.</string>
+    <string name="settings_directory_benchmark">Benchmark models</string>
+    <string name="settings_directory_benchmark_detail">Compare speech, translation and voices in a results table, including available CPU and GPU paths.</string>
+    <string name="settings_directory_downloads_detail">Browse models, manage downloads and import your own files.</string>
+    <string name="settings_directory_bundles_detail">Start with a recommended setup, or import a shared configuration.</string>
+    <string name="settings_directory_speech_detail">Choose speech recognition engines, languages and model options.</string>
+    <string name="settings_directory_translation_detail">Choose your translator, language pair and model options.</string>
+    <string name="settings_directory_voices_detail">Choose system voices, downloaded speech models or a voice connection.</string>
+    <string name="settings_directory_camera_detail">Manage the OCR models used for camera and screen text.</string>
+    <string name="settings_directory_language">App language</string>
+    <string name="settings_directory_language_detail">Change the language used in Hearth menus and settings.</string>
+    <string name="settings_directory_all_settings">All settings</string>
+</resources>

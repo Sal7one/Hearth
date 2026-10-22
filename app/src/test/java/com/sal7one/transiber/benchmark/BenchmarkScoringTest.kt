@@ -26,4 +26,19 @@ class BenchmarkScoringTest {
         assertEquals(0.0, BenchmarkScoring.wordErrors("مرحبا، بالعالم!", "مرحبا بالعالم").rate!!, 0.0)
         assertEquals(0.0, BenchmarkScoring.wordErrors("Привет, мир!", "привет мир").rate!!, 0.0)
     }
+    @Test fun longMixedScriptsUseBoundedScoringRowsAndPreserveEditCounts() {
+        val reference = (1..500).joinToString(" ") { "كلمة$it" }
+        val hypothesis = (1..500).joinToString(" ") { if (it == 250) "different" else "كلمة$it" }
+        val errors = BenchmarkScoring.wordErrors(reference, hypothesis)
+        assertEquals(1, errors.substitutions)
+        assertEquals(0, errors.insertions)
+        assertEquals(0, errors.deletions)
+        assertEquals(500, errors.referenceUnits)
+    }
+
+    @Test fun editComponentsPreserveSubstitutionDeletionInsertionTieOrder() {
+        assertEquals(BenchmarkScoring.Errors(1, 1, 0, 3), BenchmarkScoring.wordErrors("a b c", "a x"))
+        assertEquals(BenchmarkScoring.Errors(0, 0, 1, 2), BenchmarkScoring.wordErrors("a b", "a x b"))
+        assertEquals(BenchmarkScoring.Errors(0, 2, 0, 2), BenchmarkScoring.wordErrors("a b", ""))
+    }
 }

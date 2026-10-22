@@ -74,20 +74,20 @@ internal fun SpeechArtifactBrowser(config: CaptionOverlayConfig, onManage: (Capt
     val languages = listOf("" to uiText(UiR.string.model_browser_all_languages)) + catalog.flatMap { it.languages }.distinct()
         .map { it to uiText.languageName(it) }.sortedBy { it.second }
 
-    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(SettingsLayout.cardGap)) {
         currentArtifact?.let { ModelStatusLabel(uiText(UiR.string.model_browser_current, speechCheckpointTitle(it)), selected = true) }
         ModelSearchField(query, { query = it })
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            ModelFilterPicker(uiText(UiR.string.model_browser_language), language, languages, { language = it }, Modifier.weight(1f))
-            ModelFilterPicker(uiText(UiR.string.model_browser_engine), family, families, { family = it }, Modifier.weight(1f))
-        }
+        SettingsFieldPair(
+            first = { ModelFilterPicker(uiText(UiR.string.model_browser_language), language, languages, { language = it }, it) },
+            second = { ModelFilterPicker(uiText(UiR.string.model_browser_engine), family, families, { family = it }, it) },
+        )
         ModelHardwarePicker(hardware, { hardwareId = it })
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             FilterChip(selected = !installedOnly, onClick = { installedOnly = false }, label = { Text(uiText(UiR.string.model_browser_all)) })
             FilterChip(selected = installedOnly, onClick = { installedOnly = true }, label = { Text(uiText(UiR.string.model_browser_installed)) })
         }
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween) {
+        FlowRow(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp), itemVerticalAlignment = Alignment.CenterVertically) {
             Text(uiText(UiR.string.model_browser_results, groups.size), style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
             TextButton(onClick = { onManage(config.engine) }) { Text(uiText(UiR.string.library_import)) }
@@ -103,7 +103,7 @@ internal fun SpeechArtifactBrowser(config: CaptionOverlayConfig, onManage: (Capt
         if (verificationIssues.isNotEmpty()) {
             var showIssues by rememberSaveable { mutableStateOf(false) }
             OutlinedCard(Modifier.fillMaxWidth()) {
-                Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Column(Modifier.padding(SettingsLayout.cardPadding), verticalArrangement = Arrangement.spacedBy(SettingsLayout.contentGap)) {
                     TextButton(onClick = { showIssues = !showIssues }) {
                         Text(uiText(UiR.string.model_explorer_verification_issue), color = MaterialTheme.colorScheme.error)
                     }
@@ -133,7 +133,7 @@ internal fun SpeechArtifactBrowser(config: CaptionOverlayConfig, onManage: (Capt
                 border = BorderStroke(1.dp, if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant),
                 colors = CardDefaults.outlinedCardColors(containerColor = if (selected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.16f)
                     else MaterialTheme.colorScheme.surface)) {
-                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Column(Modifier.padding(SettingsLayout.cardPadding), verticalArrangement = Arrangement.spacedBy(SettingsLayout.contentGap)) {
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.Top) {
                         Text(speechCheckpointTitle(item), style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
                         if (selected || installed || stage != null) ModelStatusLabel(when {

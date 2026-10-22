@@ -27,9 +27,13 @@ class BenchmarkAccelerationPlanTest {
         assertEquals(listOf(vosk), BenchmarkAccelerationPlan.expand(listOf(vosk), false))
     }
 
-    @Test fun whisperHasNoOpenClAndInputBoundIsRetained() {
+    @Test fun whisperHasNoOpenClAndHundredsOfSelectedModelsRemainAvailable() {
         val whisper = BenchmarkCandidate("w", "Whisper", "Whisper / batch", setOf("en"))
         assertEquals(listOf("cpu", "vulkan"), BenchmarkAccelerationPlan.expand(listOf(whisper), true).map { it.acceleration })
-        assertThrows(IllegalArgumentException::class.java) { BenchmarkAccelerationPlan.expand(List(13) { whisper }, true) }
+        val hundreds = List(500) { whisper.copy(id = "model-$it") }
+        assertEquals(1000, BenchmarkAccelerationPlan.expand(hundreds, true).size)
+        assertEquals(500, BenchmarkAccelerationPlan.expand(hundreds, false).size)
+        assertEquals(2, BenchmarkAccelerationPlan.expand(listOf(whisper, whisper), true).size)
+        assertEquals(2, BenchmarkAccelerationPlan.expand(listOf(whisper.copy(acceleration = "cpu"), whisper.copy(acceleration = "vulkan")), true).size)
     }
 }

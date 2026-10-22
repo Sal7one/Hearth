@@ -1,6 +1,14 @@
 # Local and Cloud settings
 
-Settings now starts with the saved caption pipeline: **Recognize speech → Translate
+Settings starts with **Search settings** and **Models & testing**. **Benchmark
+models** is a visible, one-tap entry in both Basic and Advanced mode, followed by
+downloads/imports and recommended bundles. The toolbar settings sheet also puts
+the benchmark first, so it is reachable directly from Home or any feature. Local
+benchmarking and model transfers are hidden on TVs; built-in device voices remain
+available there. FOSS retains offline benchmarking and imports without network
+delegation.
+
+Below this is the saved caption pipeline: **Recognize speech → Translate
 captions → Read captions aloud**. Each stage shows its current choice and opens its
 matching editor directly. Translation and read-aloud switches are available on the
 directory and toolbar sheet; preparing an engine does not start capture or playback.
@@ -15,13 +23,24 @@ models. Browsing an editor never selects an engine, uploads content or starts a
 download.
 
 - **Local:** speech, translation, voices, camera/screen OCR, downloads/imports,
-  and the installed-model benchmark.
+  and model benchmarking.
 - **Cloud:** speech providers, text translation connections, and self-hosted voices.
 - **App preferences:** appearance, advanced caption controls, and help are shared.
   Since 0.18.0 they are direct directory links, also reachable from the toolbar
   settings sheet; appearance and phone shortcuts have their own pages. App
-  preferences appear once below the pipeline. History/recording and benchmark
-  tools are secondary disclosures instead of preceding the engine choices.
+  preferences appear once below the pipeline. History is a direct link; Advanced
+  mode also exposes its recording preferences. Benchmarks require no collapsed
+  tools section and no mode switch.
+
+Search matches localized titles/details and common English, Arabic and Chinese
+task terms (for example GPU, speed, بنشمارك and 导入). Results open the same saved
+stage editor rather than selecting another engine. The query lives in the shared
+DataStore under `settings-directory`; clearing it restores the full directory's
+separate saved scroll position. Search never exposes an unavailable local/TV or
+cloud/FOSS destination. Advanced-only caption tuning remains Advanced-only.
+
+Settings use shared page, section and card spacing. Phone controls stack when
+needed; large screens use a centered column with a maximum width of 840 dp.
 
 Speech, translation and voice setup use the same Local/Cloud tab layout. Settings links
 open the matching tab. Model management contains only local categories. A model
@@ -55,6 +74,8 @@ The `app/src/main/java/com/sal7one/transiber/settings/` directory contains:
 | `settings_voice_model_card.kt` | Shared voice source/license card |
 | `settings_voice_picker_ui.kt` | Shared voice/language picker |
 | `SettingsDestination.kt` | Flavor-aware settings destinations |
+| `SettingsDirectory.kt` | Search matching and mode/flavor/device-aware directory entries |
+| `SettingsDirectoryPreferences.kt` | Persisted search query in the shared user DataStore |
 
 `TranslationHub`, `ModelsScreen`, and `VoiceSetup` orchestrate their existing stores
 and the focused editors. `TranslatorChooser` remains the shared selector used in

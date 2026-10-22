@@ -20,21 +20,43 @@ internal object BenchmarkScoring {
     private fun words(value: String) = if (value.isBlank()) emptyList() else value.split(' ')
     private fun <T> edits(reference: List<T>, hypothesis: List<T>): Errors {
         require(reference.size <= 8000 && hypothesis.size <= 8000) { "Reference scoring text exceeds 8000 units" }
-        // Two rows keep memory bounded even for a poor model's long output.
-        var previous = Array(hypothesis.size + 1) { Errors(0, 0, it, reference.size) }
+        // Primitive rolling rows avoid allocating several Errors objects per edit cell. This
+        // matters when hundreds of phone runs score long transcripts (up to 64M cells).
+        var previousS = IntArray(hypothesis.size + 1)
+        var previousD = IntArray(hypothesis.size + 1)
+        var previousI = IntArray(hypothesis.size + 1) { it }
+        var currentS = IntArray(hypothesis.size + 1)
+        var currentD = IntArray(hypothesis.size + 1)
+        var currentI = IntArray(hypothesis.size + 1)
         reference.forEachIndexed { ri, expected ->
-            val current = Array(hypothesis.size + 1) { Errors(0, ri + 1, 0, reference.size) }
+            currentS[0] = 0; currentD[0] = ri + 1; currentI[0] = 0
             hypothesis.forEachIndexed { hi, actual ->
-                val diagonal = previous[hi]
-                current[hi + 1] = if (expected == actual) diagonal else listOf(
-                    diagonal.copy(substitutions = diagonal.substitutions + 1),
-                    previous[hi + 1].copy(deletions = previous[hi + 1].deletions + 1),
-                    current[hi].copy(insertions = current[hi].insertions + 1),
-                ).minBy { it.substitutions + it.deletions + it.insertions }
+                val column = hi + 1
+                if (expected == actual) {
+                    currentS[column] = previousS[hi]; currentD[column] = previousD[hi]; currentI[column] = previousI[hi]
+                } else {
+                    val substitution = previousS[hi] + previousD[hi] + previousI[hi] + 1
+                    val deletion = previousS[column] + previousD[column] + previousI[column] + 1
+                    val insertion = currentS[hi] + currentD[hi] + currentI[hi] + 1
+                    // Preserve the original deterministic tie order: substitute, delete, insert.
+                    when {
+                        substitution <= deletion && substitution <= insertion -> {
+                            currentS[column] = previousS[hi] + 1; currentD[column] = previousD[hi]; currentI[column] = previousI[hi]
+                        }
+                        deletion <= insertion -> {
+                            currentS[column] = previousS[column]; currentD[column] = previousD[column] + 1; currentI[column] = previousI[column]
+                        }
+                        else -> {
+                            currentS[column] = currentS[hi]; currentD[column] = currentD[hi]; currentI[column] = currentI[hi] + 1
+                        }
+                    }
+                }
             }
-            previous = current
+            var swap = previousS; previousS = currentS; currentS = swap
+            swap = previousD; previousD = currentD; currentD = swap
+            swap = previousI; previousI = currentI; currentI = swap
         }
-        return previous.last()
+        return Errors(previousS.last(), previousD.last(), previousI.last(), reference.size)
     }
     /** Sentence chrF++ with effective order, matching SacreBLEU word_order=2 defaults. */
     fun chrf(reference: String, hypothesis: String): Double {

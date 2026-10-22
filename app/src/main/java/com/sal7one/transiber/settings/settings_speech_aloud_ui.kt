@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
@@ -63,67 +64,72 @@ internal fun SettingsSpeechAloudUi(
     }
     val voiceReady = com.sal7one.transiber.voice.VoiceSettings.localReady(context, config.speakerGender.toVoiceGender())
 
-    Text(uiText(UiR.string.ui_read_captions_aloud_title_e5b31), style = MaterialTheme.typography.titleSmall)
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
-        Column(Modifier.weight(1f)) {
-            Text(uiText(UiR.string.ui_speak_captions_47294), style = MaterialTheme.typography.bodyLarge)
-            Text(uiText(UiR.string.ui_speak_captions_setting_note_4c1a9), style = MaterialTheme.typography.bodySmall)
+    SettingsSection {
+        Text(uiText(UiR.string.ui_read_captions_aloud_title_e5b31), style = MaterialTheme.typography.titleMedium)
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(uiText(UiR.string.ui_speak_captions_47294), style = MaterialTheme.typography.bodyLarge)
+                Text(uiText(UiR.string.ui_speak_captions_setting_note_4c1a9), style = MaterialTheme.typography.bodySmall)
+            }
+            Switch(checked = config.speakCaptions, onCheckedChange = { checked -> update { it.copy(speakCaptions = checked) } })
         }
-        Switch(checked = config.speakCaptions, onCheckedChange = { checked -> update { it.copy(speakCaptions = checked) } })
-    }
-    // Choosing or preparing a voice does not start playback.
-    Text(uiText(UiR.string.ui_speaker_engine_label_7f2c6), style = MaterialTheme.typography.labelLarge)
-    var engineMenu by remember { mutableStateOf(false) }
-    Box(Modifier.fillMaxWidth()) {
-        OutlinedButton(onClick = { engineMenu = true }, modifier = Modifier.fillMaxWidth()) {
-            Text(uiText.label(config.speakerChoice))
-        }
-        DropdownMenu(engineMenu, onDismissRequest = { engineMenu = false }) {
-            CaptionSpeakerChoice.entries.filter { it != CaptionSpeakerChoice.CLOUD || ByokPolicy.FEATURE_BYOK }.forEach { choice ->
-                DropdownMenuItem(text = { Text(uiText.label(choice)) },
-                    enabled = (localAllowed || !needsDownloadedModel(choice)) && (!needsDownloadedModel(choice) || voiceReady),
-                    onClick = { update { it.copy(speakerChoice = choice) }; engineMenu = false })
+        // Choosing or preparing a voice does not start playback.
+        Text(uiText(UiR.string.ui_speaker_engine_label_7f2c6), style = MaterialTheme.typography.labelLarge)
+        var engineMenu by remember { mutableStateOf(false) }
+        Box(Modifier.fillMaxWidth()) {
+            OutlinedButton(onClick = { engineMenu = true }, modifier = Modifier.fillMaxWidth().heightIn(min = SettingsLayout.touchTarget)) {
+                Text(uiText.label(config.speakerChoice))
+            }
+            DropdownMenu(engineMenu, onDismissRequest = { engineMenu = false }) {
+                CaptionSpeakerChoice.entries.filter { it != CaptionSpeakerChoice.CLOUD || ByokPolicy.FEATURE_BYOK }.forEach { choice ->
+                    DropdownMenuItem(text = { Text(uiText.label(choice)) },
+                        enabled = (localAllowed || !needsDownloadedModel(choice)) && (!needsDownloadedModel(choice) || voiceReady),
+                        onClick = { update { it.copy(speakerChoice = choice) }; engineMenu = false })
+                }
             }
         }
-    }
-    onOpenVoices?.let { open -> TextButton(onClick = open) { Text(uiText(UiR.string.ui_read_aloud_voices_downloads_7b18c)) } }
-    // Preferences remain editable while off; preparing them must not start TTS.
-    var volume by remember(config.speakerVolume) { mutableStateOf(config.speakerVolume.toFloat()) }
-    Text(uiText(UiR.string.ui_speaker_volume_label_b31f0, volume.toInt()), style = MaterialTheme.typography.labelLarge)
-    Slider(
-        value = volume,
-        onValueChange = { volume = it },
-        onValueChangeFinished = { update { it.copy(speakerVolume = volume.toInt().coerceIn(0, 100)) } },
-        valueRange = 0f..100f,
-        modifier = Modifier.fillMaxWidth(),
-    )
-    if (showDeviceMediaVolume) DeviceMediaVolumeUi()
-    val advanced = com.sal7one.transiber.preferences.rememberSetupMode() == com.sal7one.transiber.preferences.SetupMode.ADVANCED
-    var preferences by rememberSaveable { mutableStateOf(false) }
-    if (!advanced) TextButton(onClick = { preferences = !preferences }) { Text(uiText(UiR.string.settings_flow_voice_options)) }
-    if (advanced || preferences) {
-    Text(uiText(UiR.string.ui_speaker_live_settings_note), style = MaterialTheme.typography.bodySmall)
-    Text(uiText(UiR.string.ui_speaker_gender_label_3d84e), style = MaterialTheme.typography.labelLarge)
-    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        SpeakerGender.entries.forEach { gender ->
-            FilterChip(
-                selected = config.speakerGender == gender,
-                onClick = { update { it.copy(speakerGender = gender) } },
-                label = { Text(uiText.label(gender)) },
+        onOpenVoices?.let { open -> TextButton(onClick = open) { Text(uiText(UiR.string.ui_read_aloud_voices_downloads_7b18c)) } }
+        // Preferences remain editable while off; preparing them must not start TTS.
+        var volume by remember(config.speakerVolume) { mutableStateOf(config.speakerVolume.toFloat()) }
+        Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(uiText(UiR.string.ui_speaker_volume_label_b31f0, volume.toInt()), style = MaterialTheme.typography.labelLarge)
+            Slider(
+                value = volume,
+                onValueChange = { volume = it },
+                onValueChangeFinished = { update { it.copy(speakerVolume = volume.toInt().coerceIn(0, 100)) } },
+                valueRange = 0f..100f,
+                modifier = Modifier.fillMaxWidth(),
             )
         }
-    }
-    if (!localAllowed && needsDownloadedModel(config.speakerChoice))
-        com.sal7one.transiber.ui.components.LocalModelPolicyNotice()
-    else Text(if (needsDownloadedModel(config.speakerChoice) && !voiceReady)
-        if (!com.sal7one.transiber.voice.LocalVoiceFamilies.verifiedGender(localVoice.family) && config.speakerGender != SpeakerGender.ANY)
-            if (localVoice.family == "magpie") uiText(UiR.string.magpie_gender_unverified)
-            else uiText(UiR.string.local_voice_gender_unverified, familyLabel)
-        else uiText(UiR.string.local_voice_not_ready, familyLabel)
-        else uiText.explanation(config.speakerChoice), style = MaterialTheme.typography.bodySmall)
-    Text(if (needsDownloadedModel(config.speakerChoice) && !com.sal7one.transiber.voice.LocalVoiceFamilies.verifiedGender(localVoice.family)) {
-        if (localVoice.family == "magpie") uiText(UiR.string.magpie_voice_note)
-        else uiText(UiR.string.local_voice_gender_unverified, familyLabel)
-    } else uiText(UiR.string.ui_speaker_gender_note_9a25c), style = MaterialTheme.typography.bodySmall)
+        if (showDeviceMediaVolume) DeviceMediaVolumeUi()
+        val advanced = com.sal7one.transiber.preferences.rememberSetupMode() == com.sal7one.transiber.preferences.SetupMode.ADVANCED
+        var preferences by rememberSaveable { mutableStateOf(false) }
+        if (!advanced) TextButton(onClick = { preferences = !preferences }) { Text(uiText(UiR.string.settings_flow_voice_options)) }
+        if (advanced || preferences) {
+            Text(uiText(UiR.string.ui_speaker_live_settings_note), style = MaterialTheme.typography.bodySmall)
+            Text(uiText(UiR.string.ui_speaker_gender_label_3d84e), style = MaterialTheme.typography.labelLarge)
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                SpeakerGender.entries.forEach { gender ->
+                    FilterChip(
+                        selected = config.speakerGender == gender,
+                        onClick = { update { it.copy(speakerGender = gender) } },
+                        label = { Text(uiText.label(gender)) },
+                        modifier = Modifier.heightIn(min = SettingsLayout.touchTarget),
+                    )
+                }
+            }
+            if (!localAllowed && needsDownloadedModel(config.speakerChoice))
+                com.sal7one.transiber.ui.components.LocalModelPolicyNotice()
+            else Text(if (needsDownloadedModel(config.speakerChoice) && !voiceReady)
+                if (!com.sal7one.transiber.voice.LocalVoiceFamilies.verifiedGender(localVoice.family) && config.speakerGender != SpeakerGender.ANY)
+                    if (localVoice.family == "magpie") uiText(UiR.string.magpie_gender_unverified)
+                    else uiText(UiR.string.local_voice_gender_unverified, familyLabel)
+                else uiText(UiR.string.local_voice_not_ready, familyLabel)
+                else uiText.explanation(config.speakerChoice), style = MaterialTheme.typography.bodySmall)
+            Text(if (needsDownloadedModel(config.speakerChoice) && !com.sal7one.transiber.voice.LocalVoiceFamilies.verifiedGender(localVoice.family)) {
+                if (localVoice.family == "magpie") uiText(UiR.string.magpie_voice_note)
+                else uiText(UiR.string.local_voice_gender_unverified, familyLabel)
+            } else uiText(UiR.string.ui_speaker_gender_note_9a25c), style = MaterialTheme.typography.bodySmall)
+        }
     }
 }

@@ -91,7 +91,7 @@ internal fun Ct2ModelsUi(query: String,source: String,target: String,kind: Strin
             val parts=Ct2Package.parts(spec)
             val status=translationDownloadState(parts.map { it.id }.toSet(),records)
             OutlinedCard(Modifier.fillMaxWidth()) {
-                Column(Modifier.padding(14.dp),verticalArrangement=Arrangement.spacedBy(8.dp)) {
+                Column(Modifier.padding(SettingsLayout.cardPadding),verticalArrangement=Arrangement.spacedBy(SettingsLayout.contentGap)) {
                     Text(spec.label,style=MaterialTheme.typography.titleMedium)
                     Text(android.text.format.Formatter.formatShortFileSize(context,spec.bytes) + " · CPU" + spec.precisionLabel.takeIf { it.isNotBlank() }?.let { " · $it" }.orEmpty())
                     if(!Ct2Package.runtimeSupported()) Text(text(UiR.string.ct2_runtime_hint),style=MaterialTheme.typography.bodySmall)
@@ -101,7 +101,7 @@ internal fun Ct2ModelsUi(query: String,source: String,target: String,kind: Strin
                     else if(status.total>0 && status.completed>0) Text(text(UiR.string.model_files_downloaded,status.completed,status.total))
                     status.failure?.let { Text(it.error, color=MaterialTheme.colorScheme.error) }
                     if(status.active) LinearProgressIndicator(Modifier.fillMaxWidth())
-                    if (!ready || selectedId!=spec.id) Button(enabled=Ct2Package.runtimeSupported() && !busy && !status.active,onClick={
+                    if (!ready || selectedId!=spec.id) Button(modifier=Modifier.heightIn(min=SettingsLayout.touchTarget),enabled=Ct2Package.runtimeSupported() && !busy && !status.active,onClick={
                         if(!ready && (!ByokPolicy.FEATURE_BYOK || !spec.downloadEnabled)) importer.launch(arrayOf("application/zip","application/octet-stream"))
                         else scope.launch {
                             busy=true

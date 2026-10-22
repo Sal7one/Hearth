@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_directory_search">البحث في الإعدادات</string>
+    <string name="settings_directory_search_hint">اختبار النماذج، الأصوات، المظهر…</string>
+    <string name="settings_directory_clear_search">مسح البحث في الإعدادات</string>
+    <string name="settings_directory_no_results">لا توجد إعدادات مطابقة. جرّب اسم نموذج أو ميزة أو مهمة.</string>
+    <string name="settings_directory_models">النماذج والاختبارات</string>
+    <string name="settings_directory_models_detail">اعثر على النماذج وقارن أداءها على جهازك، ثم اختر إعدادك.</string>
+    <string name="settings_directory_benchmark">اختبار أداء النماذج</string>
+    <string name="settings_directory_benchmark_detail">قارن التعرف على الكلام والترجمة والأصوات في جدول نتائج، بما يشمل مسارات المعالج والرسوميات المتاحة.</string>
+    <string name="settings_directory_downloads_detail">تصفّح النماذج وأدر التنزيلات واستورد ملفاتك.</string>
+    <string name="settings_directory_bundles_detail">ابدأ بإعداد مقترح أو استورد إعدادًا مشتركًا.</string>
+    <string name="settings_directory_speech_detail">اختر محركات التعرف على الكلام واللغات وخيارات النماذج.</string>
+    <string name="settings_directory_translation_detail">اختر المترجم وزوج اللغات وخيارات النموذج.</string>
+    <string name="settings_directory_voices_detail">اختر أصوات النظام أو نماذج النطق المنزلة أو خدمة صوت.</string>
+    <string name="settings_directory_camera_detail">أدر نماذج التعرف على النص المستخدمة للكاميرا والشاشة.</string>
+    <string name="settings_directory_language">لغة التطبيق</string>
+    <string name="settings_directory_language_detail">غيّر اللغة المستخدمة في قوائم Hearth وإعداداته.</string>
+    <string name="settings_directory_all_settings">كل الإعدادات</string>
+</resources>

@@ -44,10 +44,12 @@ internal fun SettingsTranslateLocalUi(
         return
     }
     if (!showFullLibrary && rememberSetupMode() == SetupMode.BASIC) {
-        Text(uiText(UiR.string.setup_basic_selected_translation, TranslationOptions.label(config.localTranslationModelId)),
-            style = MaterialTheme.typography.labelLarge)
-        LocalBundleUi(config, translationOnly = true)
-        AdvancedSetupLink()
+        SettingsSection {
+            Text(uiText(UiR.string.setup_basic_selected_translation, TranslationOptions.label(config.localTranslationModelId)),
+                style = MaterialTheme.typography.labelLarge)
+            LocalBundleUi(config, translationOnly = true)
+            AdvancedSetupLink()
+        }
         return
     }
     val context = LocalContext.current
@@ -172,14 +174,15 @@ internal fun SettingsTranslateLocalUi(
         ct2BrowserMatches(it, query, source, target, kind, hardware) && (!installedOnly || Ct2Package.installed(context, it))
     }.map { it.groupId }.distinct().size
 
-    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        if (showCaptionControls) Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(SettingsLayout.cardGap)) {
+        if (showCaptionControls) Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(SettingsLayout.contentGap),
+            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
             Switch(config.localTranslationEnabled, { enabled -> update { it.copy(localTranslationEnabled = enabled,
                 mode = if (enabled) CaptionMode.TRANSLATE else CaptionMode.CAPTIONS) } })
-            Text(uiText(if (config.localTranslationEnabled) UiR.string.ui_translation_enabled_8b961 else UiR.string.ui_disabled_cc_only_9fa78))
+            Text(uiText(if (config.localTranslationEnabled) UiR.string.ui_translation_enabled_8b961 else UiR.string.ui_disabled_cc_only_9fa78), Modifier.weight(1f))
         }
         Surface(color = MaterialTheme.colorScheme.secondaryContainer, shape = MaterialTheme.shapes.large) {
-            Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Column(Modifier.fillMaxWidth().padding(SettingsLayout.cardPadding), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(uiText(UiR.string.model_browser_selected), style = MaterialTheme.typography.labelMedium)
                 Text(TranslationOptions.label(config.localTranslationModelId), style = MaterialTheme.typography.titleSmall)
             }
@@ -193,16 +196,16 @@ internal fun SettingsTranslateLocalUi(
             Tab(installedOnly, onClick = { installedOnly = true }, text = { Text(uiText(UiR.string.model_browser_manage)) })
         }
         ModelSearchField(query, { query = it })
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            ModelFilterPicker(uiText(UiR.string.model_translation_source), source, options, { source = it }, Modifier.weight(1f))
-            ModelFilterPicker(uiText(UiR.string.translation_browser_target), target, options, { target = it }, Modifier.weight(1f))
-        }
+        SettingsFieldPair(
+            first = { ModelFilterPicker(uiText(UiR.string.model_translation_source), source, options, { source = it }, it) },
+            second = { ModelFilterPicker(uiText(UiR.string.translation_browser_target), target, options, { target = it }, it) },
+        )
         ModelFilterPicker(uiText(UiR.string.translation_browser_type), kind, listOf(
             "any" to uiText(UiR.string.translation_browser_type_all),
             "compact" to uiText(UiR.string.translation_browser_type_compact),
             "text" to uiText(UiR.string.translation_browser_type_text)), { kind = it })
         ModelHardwarePicker(hardware, { hardwareId = it })
-        if (kind != "text") Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        if (kind != "text") Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
             Checkbox(showPivots, { showPivots = it })
             Text(uiText(UiR.string.translation_browser_pivots), style = MaterialTheme.typography.bodyMedium)
         }
@@ -245,7 +248,7 @@ internal fun SettingsTranslateLocalUi(
             OutlinedCard(Modifier.fillMaxWidth(), colors = CardDefaults.outlinedCardColors(
                 containerColor = if (selected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
                     else MaterialTheme.colorScheme.surfaceContainerLow)) {
-                Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(Modifier.padding(SettingsLayout.cardPadding), verticalArrangement = Arrangement.spacedBy(SettingsLayout.contentGap)) {
                     Text(item.title, style = MaterialTheme.typography.titleMedium)
                     ModelGpuPaths(translationGpuPaths(item.variants.isNotEmpty()))
                     Text(uiText(if (item.compact) {
@@ -273,7 +276,7 @@ internal fun SettingsTranslateLocalUi(
                         if (stage in setOf(DownloadStage.VERIFYING, DownloadStage.INSTALLING)) Text(uiText(UiR.string.model_download_processing_hint), style = MaterialTheme.typography.bodySmall)
                     }
                     failed?.let { Text(it.error.ifBlank { uiText(UiR.string.ui_download_failed_reason_1_s_8bb99, it.reason) }, color = MaterialTheme.colorScheme.error) }
-                    if (!selected) Button(modifier = Modifier.fillMaxWidth(), enabled = !busy && !active, onClick = {
+                    if (!selected) Button(modifier = Modifier.fillMaxWidth().heightIn(min = SettingsLayout.touchTarget), enabled = !busy && !active, onClick = {
                         if (!ready && !ByokPolicy.FEATURE_BYOK) {
                             if (spec != null) { importingId = spec.id; importer.launch(arrayOf("*/*")) }
                             else { installedOnly = true; message = uiText(UiR.string.translation_browser_import_pair_hint) }

@@ -1,43 +1,108 @@
 package com.sal7one.transiber.benchmark
 
-/** Sorting never mixes benchmark cohorts; callers supply one comparable input/device set. */
-internal enum class BenchmarkTableSort { WARM, LOAD, QUALITY, RECENT }
+import java.util.Locale
+
+internal enum class BenchmarkTableSort { WARM, AUDIO_SPEED, LOAD, QUALITY, FIRST_TEXT, SIZE, MODEL, RECENT }
+internal enum class BenchmarkResultStatus { ALL, COMPLETED, FAILED, EMPTY }
+
+/** Different recordings, phones, language pairs and scoring protocols must never share a winner. */
+internal data class BenchmarkCohort(
+    val task: String, val source: String, val target: String, val inputHash: String, val device: String,
+    val protocolVersion: Int, val scoringNormalization: String?,
+)
 
 internal object BenchmarkTableModel {
-    /** Speech audio seconds processed per second of accelerated replay. */
-    fun audioSpeed(result: BenchmarkResult): Double? = warmMs(result)?.takeIf { it > 0 && result.audioMs > 0 }
-        ?.let { result.audioMs / it }
+    fun cohort(result: BenchmarkResult) = BenchmarkCohort(result.task, result.source, result.target, result.inputHash,
+        result.device, result.protocolVersion, result.scoringNormalization)
+
+    fun latestCohort(rows: List<BenchmarkResult>, source: String, target: String): BenchmarkCohort? =
+        rows.asSequence().filter { it.source == source && it.target == target }
+            .maxByOrNull { it.timestamp }?.let(::cohort)
+
+    fun filtered(
+        rows: List<BenchmarkResult>, query: String = "", status: BenchmarkResultStatus = BenchmarkResultStatus.ALL,
+        cohort: BenchmarkCohort? = null,
+    ): List<BenchmarkResult> {
+        val terms = query.lowercase(Locale.ROOT).trim().split(Regex("\\s+")).filter(String::isNotEmpty)
+        return rows.filter { row ->
+            (cohort == null || BenchmarkTableModel.cohort(row) == cohort) && when (status) {
+                BenchmarkResultStatus.ALL -> true
+                BenchmarkResultStatus.COMPLETED -> completed(row)
+                BenchmarkResultStatus.FAILED -> row.error != null
+                BenchmarkResultStatus.EMPTY -> row.error == null && row.texts.lastOrNull().isNullOrBlank()
+            } && (terms.isEmpty() || listOf(row.model, row.identity, row.route, row.runtime, row.device,
+                row.source, row.target, row.error.orEmpty(), row.inputHash, row.requestedAcceleration.orEmpty(), row.actualAcceleration.orEmpty()).joinToString(" ")
+                .lowercase(Locale.ROOT).let { haystack -> terms.all(haystack::contains) })
+        }
+    }
+
+    fun completed(result: BenchmarkResult): Boolean = result.error == null && result.computeMs.size >= 3 &&
+        result.computeMs.all { it.isFinite() && it >= 0 } && result.texts.lastOrNull()?.isNotBlank() == true
+
+    /** Paired warmed generated/replayed audio seconds per compute second; not live caption latency. */
+    fun audioSpeed(result: BenchmarkResult): Double? {
+        if (result.task == "voice") {
+            val times = result.computeMs.drop(1)
+            val durations = result.audioMsByPass.drop(1)
+            if (result.error != null || times.isEmpty() || times.size != durations.size ||
+                times.any { !it.isFinite() || it <= 0 } || durations.any { it <= 0 }) return null
+            return BenchmarkMetrics.median(times.zip(durations) { time, duration -> duration / time })
+        }
+        return warmMs(result)?.takeIf { it > 0 && result.audioMs > 0 }?.let { result.audioMs / it }
+    }
 
     fun translationMsPerSentence(result: BenchmarkResult): Double? = warmMs(result)?.takeIf { result.target.isNotBlank() }
         ?.let { total -> result.samples.count { !it.silence }.takeIf { it > 0 }?.let { total / it } }
 
     fun warmMs(result: BenchmarkResult): Double? = result.computeMs.drop(1)
-        .takeIf { it.isNotEmpty() && it.all { time -> time.isFinite() && time >= 0 } }
+        .takeIf { result.error == null && it.isNotEmpty() && it.all { time -> time.isFinite() && time >= 0 } }
         ?.let(BenchmarkMetrics::median)
 
-    fun qualityValue(result: BenchmarkResult): Double? = if (result.target.isNotBlank()) {
+    /** Includes final-result fallback for engines that do not stream; the detail view labels this. */
+    fun firstTextMs(result: BenchmarkResult): Double? = result.firstTextMs.drop(1)
+        .takeIf { result.error == null && it.isNotEmpty() && it.all { time -> time.isFinite() && time >= 0 } }
+        ?.let(BenchmarkMetrics::median)
+
+    fun qualityValue(result: BenchmarkResult): Double? = (if (result.task == "voice") {
+        null
+    } else if (result.target.isNotBlank()) {
         result.translationChrf
     } else if (result.source == "zh" || result.wordErrorRate == null) {
         result.characterErrorRate
     } else {
         result.wordErrorRate
-    }?.takeIf(Double::isFinite)
+    })?.takeIf { result.error == null && it.isFinite() }
 
     /** Higher is better. Speech error rates are inverted only for ranking. */
     fun qualityScore(result: BenchmarkResult): Double? = qualityValue(result)?.let { value ->
         if (result.target.isNotBlank()) value else 1.0 - value
     }
 
+    /** Requested placement is an experiment setting, never proof that a GPU was used. */
+    fun requestedBackend(result: BenchmarkResult): String? = result.requestedAcceleration ?: result.identity.substringAfterLast('@', "")
+        .takeIf { it in setOf("cpu", "vulkan", "opencl", "metal", "cuda", "auto") }
+
     fun sorted(rows: List<BenchmarkResult>, sort: BenchmarkTableSort): List<BenchmarkResult> = when (sort) {
         BenchmarkTableSort.WARM -> rows.sortedWith(compareBy<BenchmarkResult> {
             warmMs(it) ?: Double.POSITIVE_INFINITY
         }.thenBy { it.model })
+        BenchmarkTableSort.AUDIO_SPEED -> rows.sortedWith(compareByDescending<BenchmarkResult> {
+            audioSpeed(it) ?: Double.NEGATIVE_INFINITY
+        }.thenBy { it.model })
         BenchmarkTableSort.LOAD -> rows.sortedWith(compareBy<BenchmarkResult> {
-            it.loadMs.takeIf { ms -> ms.isFinite() && ms >= 0 } ?: Double.POSITIVE_INFINITY
+            it.loadMs.takeIf { ms -> it.error == null && ms.isFinite() && ms >= 0 } ?: Double.POSITIVE_INFINITY
         }.thenBy { it.model })
         BenchmarkTableSort.QUALITY -> rows.sortedWith(compareByDescending<BenchmarkResult> {
             qualityScore(it) ?: Double.NEGATIVE_INFINITY
         }.thenBy { warmMs(it) ?: Double.POSITIVE_INFINITY })
+        BenchmarkTableSort.FIRST_TEXT -> rows.sortedWith(compareBy<BenchmarkResult> {
+            firstTextMs(it) ?: Double.POSITIVE_INFINITY
+        }.thenBy { it.model })
+        BenchmarkTableSort.SIZE -> rows.sortedWith(compareBy<BenchmarkResult> {
+            it.modelBytes?.takeIf { bytes -> bytes >= 0 } ?: Long.MAX_VALUE
+        }.thenBy { it.model })
+        BenchmarkTableSort.MODEL -> rows.sortedWith(compareBy<BenchmarkResult> { it.model.lowercase(Locale.ROOT) }
+            .thenByDescending { it.timestamp })
         BenchmarkTableSort.RECENT -> rows.sortedByDescending { it.timestamp }
     }
 }

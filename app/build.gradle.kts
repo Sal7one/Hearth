@@ -13,8 +13,8 @@ android {
   applicationId = "com.sal7one.transiber"
   minSdk = 28
   targetSdk = 36
-  versionCode = 95
-  versionName = "0.28.1"
+  versionCode = 96
+  versionName = "0.29.0"
   testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   ndk { abiFilters += activeHearthAbis }
  }
@@ -76,8 +76,8 @@ dependencies {
  implementation(libs.androidx.ui.tooling.preview)
  implementation(libs.androidx.material3)
  implementation("androidx.compose.material:material-icons-extended")
- implementation("androidx.lifecycle:lifecycle-runtime-compose:2.9.2")
- implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.9.2")
+ implementation(libs.androidx.lifecycle.runtime.compose)
+ implementation(libs.androidx.lifecycle.viewmodel.compose)
  implementation("androidx.datastore:datastore-preferences:1.1.7")
  implementation("androidx.documentfile:documentfile:1.1.0")
  implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")

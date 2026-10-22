@@ -44,9 +44,9 @@ internal fun SettingsTranslateCloudUi(initialProvider: String? = null, allowSele
     var failure by remember { mutableStateOf(false) }
     var transport by remember { mutableStateOf<TranslationHttpTransport?>(null) }
     DisposableEffect(Unit) { onDispose { transport?.close() } }
-    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text(uiText(UiR.string.ui_translation_connections_4a282), style = MaterialTheme.typography.titleLarge)
-        Text(uiText(UiR.string.ui_one_connection_library_for_captions_typed_text_conversations_came_a2ee8), style = MaterialTheme.typography.bodySmall)
+    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(SettingsLayout.cardGap)) {
+        SettingsHeading(uiText(UiR.string.ui_translation_connections_4a282),
+            uiText(UiR.string.ui_one_connection_library_for_captions_typed_text_conversations_came_a2ee8))
         if (allowSelection) Text(uiText(UiR.string.ui_conversation_typed_text_use_1_s_dc9f7, ConversationTranslationSettings.label(context, ConversationTranslationSettings.localModel(context, config.localTranslationModelId))), style = MaterialTheme.typography.titleSmall)
         com.sal7one.transiber.ui.components.ModelFilterPicker(uiText(UiR.string.ui_provider_7ceee), editing.id,
             TextTranslationProvider.entries.map { it.id to it.label },
@@ -74,7 +74,7 @@ internal fun SettingsTranslateCloudUi(initialProvider: String? = null, allowSele
             if (provider == TextTranslationProvider.AZURE) OutlinedTextField(region, { region = it }, enabled = !working, label = { Text(uiText(UiR.string.ui_resource_region_blank_for_global_64f7b)) }, modifier = Modifier.fillMaxWidth().padding(top = 2.dp), singleLine = true, textStyle = MaterialTheme.typography.bodyLarge.copy(textDirection = androidx.compose.ui.text.style.TextDirection.Ltr))
             OutlinedTextField(secret, { secret = it }, enabled = !working, label = { Text(if (savedKey && sameEndpoint) uiText(UiR.string.ui_replace_saved_api_key_c2dc3) else if (provider == TextTranslationProvider.LIBRETRANSLATE) uiText(UiR.string.ui_api_key_if_required_49a3c) else uiText(UiR.string.ui_api_key_cf678)) }, visualTransformation = PasswordVisualTransformation(), modifier = Modifier.fillMaxWidth().padding(top = 2.dp), singleLine = true, textStyle = MaterialTheme.typography.bodyLarge.copy(textDirection = androidx.compose.ui.text.style.TextDirection.Ltr))
             if (savedKey && sameEndpoint) Text(uiText(UiR.string.ui_a_key_is_encrypted_on_this_device_leave_the_field_empty_to_keep_i_2c064), style = MaterialTheme.typography.bodySmall)
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Button(enabled = !working, onClick = {
                     working = true; status = null; failure = false
                     val nextEndpoint = endpoint.trim(); val nextRegion = region.trim(); val replacement = secret.takeIf { it.isNotBlank() } ?: if (sameEndpoint) null else ""
