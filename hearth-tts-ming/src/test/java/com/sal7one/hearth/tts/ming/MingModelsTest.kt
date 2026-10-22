@@ -46,6 +46,30 @@ class MingModelsTest {
         }
     }
 
+    @Test fun aReplacedFlatPartIsRelinkedInsteadOfReusingTheStaleInode() {
+        val directory = MingTestSupport.tempDirectory("ming-relink-")
+        try {
+            val assets = MingTestSupport.bundle(directory)
+            val models = MingModels(directory, assets)
+            models.verify()
+            val flat = File(directory, "part-000.bin")
+            val linked = File(directory, "parts/000.bin")
+            assertEquals(flat.readBytes().toList(), linked.readBytes().toList())
+
+            // A model reinstall can replace the flat file with a new inode of the same length.
+            val replacement = "new-partx".toByteArray()
+            assertEquals(flat.length(), replacement.size.toLong())
+            assertTrue(flat.delete())
+            flat.writeBytes(replacement)
+            assertFalse(Files.isSameFile(flat.toPath(), linked.toPath()))
+            models.prepare()
+            assertTrue(Files.isSameFile(flat.toPath(), linked.toPath()))
+            assertEquals(replacement.toList(), linked.readBytes().toList())
+        } finally {
+            directory.deleteRecursively()
+        }
+    }
+
     @Test fun anyChangedByteOrSizeBlocksTheNativeLoad() {
         val directory = MingTestSupport.tempDirectory("ming-corrupt-")
         try {

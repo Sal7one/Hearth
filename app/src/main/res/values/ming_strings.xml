@@ -3,4 +3,17 @@
     <string name="ming_asr_hosted_detail">Chinese and English, with dialect and context support. Use your SGLang-Omni /v1 server. Utterance transcription; no live partial captions or speech translation endpoint. CUDA server required.</string>
     <string name="ming_audio_hosted_detail">Chinese and English audio models. Use the Hearth Ming transcription bridge in front of your SGLang server. Utterance transcription; no live partial captions. CUDA server required.</string>
     <string name="ming_official_model_card">Official model card</string>
+    <string name="ming_local_runtime">Experimental on-device Ming-3.0 TTS runtime</string>
+    <string name="ming_local_coverage">English and Chinese · ~850 MB bundle · CPU · 44.1 kHz · 300 characters</string>
+    <string name="ming_experimental_title">Enable experimental Ming local TTS</string>
+    <string name="ming_experimental_detail">Off by default. Uses the arm64 CPU JNI and needs about 1 GB of memory at runtime. The JNI has no streaming and no native cancel. In-app device performance is not verified.</string>
+    <string name="ming_enable_first">Enable the experimental engine first. It stays off until you turn it on here.</string>
+    <string name="ming_no_runtime">Ming local runtime unavailable: %1$s</string>
+    <string name="ming_select_voice">Use the Ming voice</string>
+    <string name="ming_voice">Ming voice</string>
+    <string name="ming_ready">The complete Ming bundle is installed and its parts/ layout is ready</string>
+    <string name="ming_install_note">Download or import the roughly 850 MB bundle (%1$d of %2$d components missing). Keep about 1.7 GB free while downloading and installing.</string>
+    <string name="ming_limits">One-shot: the whole utterance is generated before playback starts. 300 characters per request; longer text is split by the reader. English and Chinese only. No streaming or native cancellation. On one arm64 phone, an external app_process run measured RTF about 2.1 and about 1.02 GB peak memory; an in-app instrumentation test has since passed.</string>
+    <string name="ming_download">Download the Ming bundle (850 MB)</string>
+    <string name="ming_import">Import Ming bundle files or ZIP</string>
 </resources>

@@ -50,7 +50,7 @@ object MingNative {
                     loaded = true,
                     library = name,
                     dotprod = dotprod,
-                    reason = "Ming JNI $name loaded (${if (dotprod) "asimddp" else "scalar"} build)",
+                    reason = "Ming JNI $name loaded (${if (name == MingCpu.PRIMARY_LIBRARY) "asimddp" else "scalar"} build)",
                 )
             } catch (error: UnsatisfiedLinkError) {
                 failures += "$name: ${error.message}"

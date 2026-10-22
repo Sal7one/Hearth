@@ -52,7 +52,11 @@ class MingModels(
                 "Install the complete Ming bundle first: missing or truncated ${asset.filename}"
             }
             val target = File(parts, asset.filename.removePrefix("part-"))
-            if (target.isFile && target.length() == asset.bytes) return@forEach
+            // Length alone is not enough: an app reinstall/upgrade may replace a flat part with
+            // a different inode, leaving an old hard link in parts/. Re-link unless it is the same file.
+            if (target.isFile && target.length() == asset.bytes &&
+                runCatching { Files.isSameFile(target.toPath(), source.toPath()) }.getOrDefault(false)
+            ) return@forEach
             if (target.exists() || Files.isSymbolicLink(target.toPath())) {
                 check(target.delete()) { "Could not replace the Ming parts entry: ${target.name}" }
             }

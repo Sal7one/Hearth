@@ -3,4 +3,17 @@
     <string name="ming_asr_hosted_detail">الصينية والإنجليزية مع دعم اللهجات والسياق. استخدم خادم SGLang-Omni الخاص بك عبر ‎/v1. تفريغ المقاطع دون نص جزئي مباشر أو واجهة ترجمة صوتية. يتطلب خادم CUDA.</string>
     <string name="ming_audio_hosted_detail">نماذج صوتية للصينية والإنجليزية. استخدم جسر Hearth لتفريغ Ming أمام خادم SGLang الخاص بك. تفريغ المقاطع دون نص جزئي مباشر. يتطلب خادم CUDA.</string>
     <string name="ming_official_model_card">بطاقة النموذج الرسمية</string>
+    <string name="ming_local_runtime">محرك Ming-3.0 محلي تجريبي على الجهاز</string>
+    <string name="ming_local_coverage">الإنجليزية والصينية · حزمة بنحو 850 ميغابايت · المعالج · 44.1 كيلوهرتز · 300 حرف</string>
+    <string name="ming_experimental_title">تفعيل Ming المحلي التجريبي للنطق</string>
+    <string name="ming_experimental_detail">معطّل افتراضيًا. يستخدم JNI لمعالج arm64 ويحتاج نحو 1 غيغابايت من الذاكرة عند التشغيل. لا يوفر JNI بثًا ولا إلغاءً أصليًا. أداء الجهاز داخل التطبيق غير مُتحقَّق منه.</string>
+    <string name="ming_enable_first">فعّل المحرك التجريبي أولًا. يبقى معطّلًا حتى تفعّله هنا.</string>
+    <string name="ming_no_runtime">محرك Ming المحلي غير متاح: %1$s</string>
+    <string name="ming_select_voice">استخدام صوت Ming</string>
+    <string name="ming_voice">صوت Ming</string>
+    <string name="ming_ready">حزمة Ming الكاملة مثبّتة وتخطيط parts/ جاهز</string>
+    <string name="ming_install_note">نزّل أو استورد حزمة بنحو 850 ميغابايت (%1$d من %2$d مكوّنات مفقودة). اترك نحو 1.7 غيغابايت فارغة أثناء التنزيل والتثبيت.</string>
+    <string name="ming_limits">دفعة واحدة: تُولّد العبارة كاملة قبل بدء التشغيل. 300 حرف لكل طلب، ويقسّم القارئ النص الأطول. الإنجليزية والصينية فقط. لا بث ولا إلغاء أصلي. على هاتف arm64 واحد، قاس تشغيل خارج التطبيق عبر app_process قيمة RTF نحو 2.1 وذاكرة قصوى نحو 1.02 غيغابايت، ونجح بعد ذلك اختبار أجهزة داخل التطبيق.</string>
+    <string name="ming_download">تنزيل حزمة Ming (850 ميغابايت)</string>
+    <string name="ming_import">استيراد ملفات Ming أو ZIP</string>
 </resources>

@@ -27,11 +27,20 @@ class MingLocalDeviceTest {
     @Test
     fun synthesizesInsideTheAppProcess() = runBlocking {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
-        val bundle = context.getExternalFilesDir(null)?.resolve("ming-bundle")
-        assertTrue("Push the 17-file Ming bundle to $bundle", bundle?.isDirectory == true)
-        val engine = MingSpeechEngine(bundle!!)
+        val external = context.getExternalFilesDir(null)?.resolve("ming-bundle")
+        assertTrue("Push the 17-file Ming bundle to $external", external?.isDirectory == true)
+        // The production install root is internal app storage; /sdcard FUSE rejects hardlinks/symlinks.
+        val bundle = context.filesDir.resolve("ming-bundle-device-test")
+        if (!bundle.resolve("manifest.json").isFile) {
+            bundle.mkdirs()
+            external!!.listFiles().orEmpty().filter { it.isFile }.forEach { source ->
+                source.copyTo(bundle.resolve(source.name), overwrite = true)
+            }
+        }
+        val engine = MingSpeechEngine(bundle)
         assertTrue("Ming must expose US_Emma", engine.voices.any { it.id == "US_Emma" })
         val frames = mutableListOf<PcmAudio>()
+        try {
         ArticleReader(engine).use { reader ->
             reader.read(
                 "Hello from Hearth on Android.",
@@ -46,5 +55,8 @@ class MingLocalDeviceTest {
         println("MING_ANDROID_APP frames=$samples peak=$peak")
         assertTrue("Ming produced too little audio: $samples", samples > 22_050)
         assertTrue("Ming produced silent audio", peak > 0.01f)
+        } finally {
+            bundle.deleteRecursively()
+        }
     }
 }

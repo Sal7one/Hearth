@@ -17,11 +17,13 @@ internal object VoiceSettings {
     fun prefs(context: Context)=com.sal7one.transiber.preferences.UserPreferences.store(context, "voice-output")
     fun choice(context: Context): VoiceChoice = prefs(context).let {p ->
         val savedFamily = p.getString("local-family","supertonic").orEmpty().takeIf {it in LocalVoiceFamilies.ids} ?: "supertonic"
-        // A deliberately disabled experimental engine must not remain the saved selection.
+        // A deliberately disabled experimental engine must not remain the saved selection, and
+        // its voice must not leak into Supertonic when the family falls back.
         val family = if(savedFamily == MingCatalog.FAMILY && !MingLocalFeature.enabled(context)) "supertonic" else savedFamily
+        val voice = if(savedFamily != family) familyVoice(context, family) else p.getString("voice","F1").orEmpty()
         VoiceChoice(
             p.getString("backend","system").orEmpty().let {if(it=="remote" && !ByokPolicy.FEATURE_BYOK)"system" else it},
-            p.getString("voice","F1").orEmpty(),p.getFloat("rate",1f).coerceIn(.5f,2f),p.getInt("steps",5).coerceIn(2,12),family)}
+            voice,p.getFloat("rate",1f).coerceIn(.5f,2f),p.getInt("steps",5).coerceIn(2,12),family)}
     fun familyVoice(context: Context,family: String): String = prefs(context).getString("family-voice-$family",null)
         ?: when(family) { "magpie" -> "John"; "omnivoice" -> "auto"; "moss-nano" -> "Ava"; "chatterbox-v3" -> "default"; "oute" -> "EN-FEMALE-1-NEUTRAL"; MingCatalog.FAMILY -> "US_Emma"; else -> "F1" }
     fun localReady(context: Context, gender: VoiceGender = VoiceGender.ANY): Boolean {

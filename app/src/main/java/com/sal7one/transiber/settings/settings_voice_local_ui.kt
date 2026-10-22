@@ -13,6 +13,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.sal7one.common_jni.language.LanguageCatalog
+import com.sal7one.hearth.tts.ming.MingCatalog
 import com.sal7one.transiber.byok.ByokPolicy
 import com.sal7one.transiber.downloads.*
 import com.sal7one.transiber.voice.*
@@ -44,7 +45,10 @@ internal fun SettingsVoiceLocalUi(
     val localModelsAllowed = com.sal7one.transiber.runtime.LocalModelPolicy.allowed(context)
     val advanced = rememberSetupMode() == SetupMode.ADVANCED
     var showMoreEngines by rememberSaveable { mutableStateOf(false) }
-    val visibleFamilies = LocalVoiceFamilies.ids.filter { advanced || showMoreEngines || it == choice.family || it in setOf("supertonic", "magpie") }
+    val visibleFamilies = LocalVoiceFamilies.ids.filter {
+        advanced || showMoreEngines || it == choice.family || it in setOf("supertonic", "magpie") ||
+            (it == MingCatalog.FAMILY && MingLocalFeature.enabled(context))
+    }
     val scope = rememberCoroutineScope()
     var queuing by remember { mutableStateOf(false) }
     VoiceMenu(uiText(UiR.string.ui_speaker_engine_label_7f2c6),
@@ -72,6 +76,10 @@ internal fun SettingsVoiceLocalUi(
             }
             "supertonic" -> {
                 if (!localModelsAllowed) { LocalModelPolicyNotice(); return }
+                if(choice.family==MingCatalog.FAMILY) {
+                    SettingsVoiceMingUi(choice,save,language,onLanguage,onError,onImport,onDownloads,revision,onRevision)
+                    return
+                }
                 if(choice.family=="omnivoice") {
                     SettingsVoiceOmniVoiceUi(choice,save,language,onLanguage,onError,onImport,onDownloads,revision,onRevision)
                     return
