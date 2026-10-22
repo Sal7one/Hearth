@@ -28,12 +28,10 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.WindowPosition
 import androidx.compose.ui.window.rememberWindowState
-import com.sal7one.hearth.desktop.platform.NativeOverlayWindow
+import com.sal7one.hearth.desktop.platform.OverlayWindowPresentation
 import com.sal7one.hearth.desktop.ui.theme.AccentPreset
 import com.sal7one.hearth.desktop.ui.theme.HearthTheme
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import java.awt.Cursor
 import java.awt.MouseInfo
 import java.awt.event.ComponentAdapter
@@ -63,7 +61,7 @@ internal fun FloatingCaptionWindow(
     val initial = remember { initialOverlayBounds(state.settings, overlayDisplays()) }
     val windowState = rememberWindowState(position = WindowPosition.Absolute(initial.x.dp, initial.y.dp),
         width = initial.width.dp, height = initial.height.dp)
-    // Unique within the process; the native bridge only resolves this window.
+    // Distinguish diagnostic samples from the real caption window in app/window switchers.
     val title = if (state.preview) "Hearth preview captions" else "Hearth captions"
     Window(onCloseRequest = onClose, title = title, icon = painterResource("hearth.png"), alwaysOnTop = true, undecorated = true,
         transparent = true, resizable = true, state = windowState) {
@@ -95,20 +93,7 @@ internal fun FloatingCaptionWindow(
             if (safe != latest.bounds) change(latest.copy(bounds = safe, pinnedDisplay = display.id, windowHeight = safe.height,
                 widthFraction = (safe.width.toFloat() / display.area.width).coerceIn(0.25f, 1f)))
         }
-        LaunchedEffect(state.settings.clickThrough) {
-            // Compose may create its peer after this effect starts. Wait a bounded interval.
-            try {
-                repeat(20) { if (!window.isDisplayable) delay(25) }
-                // AppKit can synchronously query AWT for accessibility. Never wait
-                // for AppKit from AWT's event thread or while painting/tree-locked.
-                withContext(Dispatchers.IO) { NativeOverlayWindow.apply(window, title, state.settings.clickThrough) }
-                window.focusableWindowState = !state.settings.clickThrough
-                onNativeApplied(state.settings.clickThrough)
-            } catch (error: Exception) {
-                if (error is kotlinx.coroutines.CancellationException) throw error
-                onNativeError(error.message ?: error.toString())
-            }
-        }
+        OverlayWindowPresentation(window, state.settings.clickThrough, onNativeError, onNativeApplied)
         DisposableEffect(window) {
             val manager = KeyboardFocusManager.getCurrentKeyboardFocusManager()
             val keys = KeyEventDispatcher { event ->
@@ -194,15 +179,7 @@ private fun OverlayControlWindow(settings: OverlaySettings, preset: AccentPreset
                 onClose(); true
             } else false
         }) {
-        LaunchedEffect(Unit) {
-            try {
-                repeat(20) { if (!window.isDisplayable) delay(25) }
-                withContext(Dispatchers.IO) { NativeOverlayWindow.apply(window, "Hearth caption controls", false) }
-            } catch (error: Exception) {
-                if (error is kotlinx.coroutines.CancellationException) throw error
-                onNativeError(error.message ?: error.toString())
-            }
-        }
+        OverlayWindowPresentation(window, false, onNativeError)
         HearthTheme(preset = preset, dark = dark) {
             Column(Modifier.fillMaxSize().background(Color(0xF51A2029), RoundedCornerShape(16.dp))
                 .border(1.dp, Color.White.copy(alpha = 0.16f), RoundedCornerShape(16.dp)).padding(18.dp)) {

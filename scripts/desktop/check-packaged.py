@@ -1,12 +1,16 @@
 #!/usr/bin/env python3
 """Exercise the actual packaged launcher/JRE/native resources without opening a window."""
 from pathlib import Path
+import argparse
 import platform
 import plistlib
 import subprocess
 
 ROOT=Path(__file__).resolve().parents[2]
-base=ROOT/'desktopApp/build/compose/binaries/main/app'
+parser=argparse.ArgumentParser(description=__doc__)
+parser.add_argument('--app-dir', type=Path, default=ROOT/'desktopApp/build/compose/binaries/main/app',
+                    help='Directory containing the packaged .app or Windows application folder')
+base=parser.parse_args().app_dir
 if platform.system()=='Darwin':
     launchers=list(base.glob('*.app/Contents/MacOS/Hearth'))
 else:

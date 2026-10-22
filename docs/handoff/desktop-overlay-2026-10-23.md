@@ -139,3 +139,56 @@ launcher/native/media/authenticated-loopback/icon check PASS. No C++ inference,
 Android module/ABI configuration, production preferences schema or model data was
 changed. Logs use `/tmp/hearth-overlay-branding-*`; generated UI evidence stays
 under ignored `build/overlay-branding`. No GitHub Actions commands were used.
+
+## White backing after a focus/render transition
+
+The owner reported a solid white caption rectangle, grey when the hover shade
+was visible, which disappeared after resizing its bottom-right corner. Caption
+text is not selectable and the overlay has no Ctrl+A action or white panel style.
+The resize recovery suggests stale backing/redraw state; the original triggering
+sequence has not been reproduced, so this is not proof of its exact cause.
+
+The former AppKit clear ran only on opening or changing click-through and used a
+title lookup. `OverlayWindowPresentation` now coalesces focus, show, resize,
+display, backing-property and renderer changes. It prepares Mac Swing backing
+panes, sets focusability before taking the current Compose native handle, applies
+AppKit transparency after presentation attributes, and requests a fresh frame.
+All AppKit work still runs off AWT via the AppKit main queue. The native bridge
+checks the exact handle against this process's window registry before messaging
+it; two windows with the same title cannot redirect a repair. Windows retains its
+renderer-specific transparency mechanism and receives the actual Compose HWND.
+Windows native behavior has not been exercised by this Mac fix.
+
+An opt-in real Mac window regression deliberately sets both native and Swing
+backing opaque/white, then checks recovery without changing window size. It also
+checks focus-transition recovery, click-through/unlock, a second same-title
+window remaining untouched, and rejection of a missing native handle. This
+tests actual AppKit/Swing state, not a mocked native flag or a screenshot's JPEG
+background. It does not simulate a Metal device loss or establish every macOS
+full-screen/monitor transition.
+
+```sh
+HEARTH_OVERLAY_WINDOW_TEST=1 JAVA_TOOL_OPTIONS=-Djava.awt.headless=false \
+  ./gradlew -PhearthDesktopOnly=true :desktopApp:desktopTest \
+  --tests '*DesktopOverlayWindowPresentationTest*'
+```
+
+The owner's running production app was Ready with its loopback server running.
+It was left open. The corrected app was built separately at
+`desktopApp/build/overlay-transparency/binaries/main/app/Hearth.app`; quit the
+current instance before opening that build. No models, provider settings or
+production preference files were replaced. The existing Android release/tag
+and its assets were not modified.
+
+`scripts/desktop/check-packaged.py --app-dir <directory-containing-Hearth.app>`
+now supports validating an isolated package without overwriting the active app.
+The default package path remains unchanged. Local checks: required Android tests
+and QA compilations plus common-JNI/TTS native debug builds, all six desktop
+suites (including the opted-in real Mac window regression), and the corrected
+packaged launcher/native/media/loopback/icon check. Final logs use
+`/tmp/hearth-overlay-recovery-*`; evidence is copied to ignored
+`build/overlay-transparency/evidence`. No GitHub Actions commands were used.
+The C++ host suites use `CXX=/opt/homebrew/opt/llvm@22/bin/clang++` with
+ASan/UBSan, matching the previous ABI audit. The first attempt with the system
+Apple compiler stalled inside its sanitizer test binaries; only those test
+processes were terminated before rerunning with LLVM 22.

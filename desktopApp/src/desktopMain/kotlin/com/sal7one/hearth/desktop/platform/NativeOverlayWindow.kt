@@ -7,7 +7,6 @@ import com.sun.jna.NativeLibrary
 import com.sun.jna.Pointer
 import com.sun.jna.platform.win32.User32
 import com.sun.jna.platform.win32.WinDef.HWND
-import java.awt.Window
 import java.util.concurrent.atomic.AtomicReference
 
 internal object MacMainQueue {
@@ -40,38 +39,39 @@ internal object MacMainQueue {
 /** Native operations affect only Hearth's own caption window; no external app is inspected. */
 internal object NativeOverlayWindow {
     val supported: Boolean get() = System.getProperty("os.name").let { it.contains("Mac", true) || it.startsWith("Windows", true) }
-    fun apply(window: Window, title: String, clickThrough: Boolean) {
-        check(window.isDisplayable) { "The caption window is not ready" }
+    /** Handle captured from ComposeWindow.windowHandle on AWT, never a title-based lookup. */
+    fun apply(handle: Long, clickThrough: Boolean) {
+        check(handle != 0L) { "The caption window is not ready" }
         when {
             System.getProperty("os.name").contains("Mac", true) -> MacMainQueue.run {
-                val app = MacMainQueue.pointer(MacMainQueue.cls("NSApplication"), "sharedApplication")
-                val windows = MacMainQueue.pointer(app, "windows")
-                val count = MacMainQueue.number(windows, "count").coerceAtMost(500)
-                val target = (0 until count).asSequence().map { index -> MacMainQueue.pointer(windows, "objectAtIndex:", index) }
-                    .firstOrNull { candidate ->
-                        val text = MacMainQueue.pointer(MacMainQueue.pointer(candidate, "title"), "UTF8String")?.getString(0, "UTF-8")
-                        text == title
-                    } ?: error("Cannot find Hearth's native caption window")
-                // Keep the native window clear too: an opaque AppKit backing
-                // can otherwise turn the transparent Compose area into white.
-                val clear = requireNotNull(MacMainQueue.pointer(MacMainQueue.cls("NSColor"), "clearColor"))
-                MacMainQueue.set(target, "setOpaque:", 0.toByte())
-                MacMainQueue.set(target, "setBackgroundColor:", clear)
-                MacMainQueue.set(target, "setHasShadow:", 0.toByte())
-                check(MacMainQueue.number(target, "isOpaque") == 0L &&
-                    MacMainQueue.decimal(MacMainQueue.pointer(target, "backgroundColor"), "alphaComponent") == 0.0) {
-                    "macOS did not apply caption window transparency"
-                }
+                // The window may have closed while this call was queued. Resolve the exact
+                // live handle on AppKit before dereferencing it; duplicate titles are valid.
+                val windows = MacMainQueue.pointer(MacMainQueue.pointer(MacMainQueue.cls("NSApplication"), "sharedApplication"), "windows")
+                val target = (0 until MacMainQueue.number(windows, "count").coerceIn(0, 500)).firstNotNullOfOrNull { index ->
+                    MacMainQueue.pointer(windows, "objectAtIndex:", index)?.takeIf { Pointer.nativeValue(it) == handle }
+                } ?: error("The caption window has closed")
                 // Compatible utility/full-screen flags; avoid contradictory primary/auxiliary bits.
                 MacMainQueue.set(target, "setCollectionBehavior:", 1L or 8L or 64L or 256L or 4096L or (1L shl 18))
                 MacMainQueue.set(target, "setLevel:", 3L)
                 MacMainQueue.set(target, "setHidesOnDeactivate:", 0.toByte())
                 MacMainQueue.set(target, "setIgnoresMouseEvents:", if (clickThrough) 1.toByte() else 0.toByte())
+                // Apply transparency AFTER native presentation/focus changes. AWT/AppKit
+                // can rebuild backing state when those attributes or the renderer change.
+                val clear = requireNotNull(MacMainQueue.pointer(MacMainQueue.cls("NSColor"), "clearColor"))
+                MacMainQueue.set(target, "setOpaque:", 0.toByte())
+                MacMainQueue.set(target, "setBackgroundColor:", clear)
+                MacMainQueue.set(target, "setHasShadow:", 0.toByte())
+                MacMainQueue.pointer(target, "contentView")?.let { MacMainQueue.set(it, "setNeedsDisplay:", 1.toByte()) }
+                check(MacMainQueue.number(target, "isOpaque") == 0L &&
+                    MacMainQueue.decimal(MacMainQueue.pointer(target, "backgroundColor"), "alphaComponent") == 0.0) {
+                    "macOS did not apply caption window transparency"
+                }
                 check((MacMainQueue.number(target, "ignoresMouseEvents") != 0L) == clickThrough) { "macOS did not apply click-through" }
             }
             System.getProperty("os.name").startsWith("Windows", true) -> {
                 val api = User32.INSTANCE
-                val hwnd = HWND(Native.getComponentPointer(window))
+                val hwnd = HWND(Pointer(handle))
+                check(api.IsWindow(hwnd)) { "The caption window has closed" }
                 val old = api.GetWindowLong(hwnd, -20)
                 val transparent = 0x20; val noActivate = 0x08000000
                 val next = if (clickThrough) old or transparent or noActivate or 0x80000 else old and transparent.inv() and noActivate.inv()
