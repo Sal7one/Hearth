@@ -4,6 +4,9 @@ from pathlib import Path
 import argparse, hashlib, json, os, re, subprocess, tempfile, zipfile
 from native_abis import ABIS, source_set_digest, verify_elf
 from apk_delivery import configured_identity, verify_delivery
+if not __debug__:
+    raise SystemExit("Verification requires Python assertions enabled; remove -O or PYTHONOPTIMIZE")
+
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument("--build-type", choices=["qa", "release"], default="qa")
 parser.add_argument("--allow-unsigned-for-signing", action="store_true",
@@ -117,7 +120,7 @@ assert ct2['sentencepieceRevision'] == '17d7580d6407802f85855d2cc9190634e2c95624
 assert set(ct2['binaries']) == {'arm64-v8a'}
 verify_optional_snapshot(dict(ct2, artifacts=[dict(item, abi=abi) for abi, item in ct2['binaries'].items()]),
                          'sources', {'libtransiber_ct2.so': False})
-# Independently packaged Magpie CPU provider; its JNI shim remains available on every app ABI.
+# Magpie CPU provider: both its runtime and JNI shim ship only on ARM64.
 magpie_root = root/'hearth-tts-magpie/src/main'
 magpie = json.loads((magpie_root/'assets/licenses/magpie/runtime-build.json').read_text())
 for path, digest in magpie['sources'].items():

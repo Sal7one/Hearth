@@ -14,9 +14,9 @@ android {
     defaultConfig {
         minSdk = 28
         consumerProguardFiles("consumer-rules.pro")
+        ndk { abiFilters += ttsAbis.ifEmpty { activeHearthAbis } }
         if (ttsAbis.isNotEmpty()) {
-            ndk { abiFilters += ttsAbis }
-            externalNativeBuild { cmake { arguments += listOf("-DANDROID_STL=c++_shared", "-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON") } }
+            externalNativeBuild { cmake { abiFilters += ttsAbis; arguments += listOf("-DANDROID_STL=c++_shared", "-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON") } }
         }
     }
     if (ttsAbis.isNotEmpty()) {
@@ -37,7 +37,7 @@ android {
                 "../hearth-tts-ming/src/main/java",
             )
             if (ttsAbis.isNotEmpty()) {
-                jniLibs.srcDirs(
+                jniLibs.setSrcDirs(listOf(
                     "src/main/jniLibs",
                     "../hearth-tts-magpie/src/main/jniLibs",
                     "../hearth-tts-omnivoice/src/main/jniLibs",
@@ -45,7 +45,11 @@ android {
                     "../hearth-tts-oute/src/main/jniLibs",
                     "../hearth-tts-chatterbox/src/main/jniLibs",
                     "../hearth-tts-ming/src/main/jniLibs",
-                )
+                ))
+            } else {
+                // Empty ndk filters mean ALL ABIs in AGP. Explicitly remove the
+                // prebuilt source roots as well as disabling CMake on non-ARM64.
+                jniLibs.setSrcDirs(emptyList<String>())
             }
             assets.srcDirs(
                 "src/main/assets",

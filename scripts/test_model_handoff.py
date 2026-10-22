@@ -1,6 +1,7 @@
 import copy
 import importlib.util
 import json
+import re
 import unittest
 from pathlib import Path
 
@@ -13,12 +14,15 @@ class ModelHandoffTest(unittest.TestCase):
     def setUp(self):
         self.data = json.loads((handoff.CARDS / "stt.json").read_text())
 
-    def test_all_fifteen_cards_validate_and_render(self):
+    def test_every_validated_card_renders_once_with_its_identity(self):
         inventories = {}
         for category in ("stt", "translation", "tts"):
             inventories[category] = handoff.validate_inventory(json.loads((handoff.CARDS / f"{category}.json").read_text()), category)
         text = handoff.render(inventories)
-        self.assertEqual(text.count("\n### "), 15)
+        models = [model for group in inventories.values() for model in group]
+        self.assertCountEqual(re.findall(r"^### (.+)$", text, re.MULTILINE), [model["label"] for model in models])
+        for model in models:
+            self.assertEqual(text.count(f'ID: `{model["id"]}`.'), 1)
         self.assertIn("No S25 results", text)
 
     def test_primary_non_hf_sources_require_exact_pins_and_no_credentials(self):
