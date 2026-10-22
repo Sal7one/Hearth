@@ -83,6 +83,8 @@ internal fun GroupCountChip(count: Int) {
 internal fun ModelRowView(
     row: ModelRow,
     onAction: () -> Unit,
+    onImport: () -> Unit,
+    importEnabled: Boolean,
 ) {
     val colors = HearthTheme.colors
     Row(
@@ -124,6 +126,14 @@ internal fun ModelRowView(
                 }
             }
         }
+        HearthButton(
+            text = "Import existing…",
+            onClick = onImport,
+            enabled = importEnabled,
+            tone = ButtonTone.Ghost,
+            size = ButtonSize.Small,
+        )
+        Spacer(Modifier.width(8.dp))
         HearthButton(
             text = row.actionLabel,
             onClick = onAction,

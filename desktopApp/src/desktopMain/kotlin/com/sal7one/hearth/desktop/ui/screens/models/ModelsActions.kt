@@ -12,7 +12,7 @@ internal class ModelsActions(
     val onFilterStage: (PipelineStage?) -> Unit = {},
     val onToggleInstalledOnly: () -> Unit = {},
     val onAction: (String) -> Unit = {},
-    val onImport: () -> Unit = {},
+    val onImport: (String) -> Unit = {},
     val onRefresh: () -> Unit = {},
     val onOpenFolder: () -> Unit = {},
     val onNavigate: (DesktopScreen) -> Unit = {},

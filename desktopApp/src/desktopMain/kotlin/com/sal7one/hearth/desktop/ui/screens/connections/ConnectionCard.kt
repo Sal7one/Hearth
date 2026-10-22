@@ -107,6 +107,7 @@ internal fun ConnectionCard(
                             onValueChange = { key = it },
                             placeholder = "sk-…",
                             modifier = Modifier.weight(1f),
+                            secret = true,
                         )
                         Spacer(Modifier.width(8.dp))
                         HearthButton(

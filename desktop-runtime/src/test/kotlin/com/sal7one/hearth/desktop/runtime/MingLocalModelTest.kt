@@ -9,6 +9,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import java.security.MessageDigest
 
 class MingLocalModelTest {
     @Test
@@ -58,10 +59,42 @@ class MingLocalModelTest {
         try {
             val selection = EngineSelection(
                 "ming-local", "ming-3.0-tts-0.5b-web", root.toString(),
-                options = mapOf("sha256.part-000.bin" to "0".repeat(64)),
+                options = pins(root) + ("sha256.part-000.bin" to "0".repeat(64)),
             )
             assertFailsWith<IllegalStateException> { MingLocalModel.verify(selection) }
         } finally { root.toFile().deleteRecursively() }
+    }
+
+    @Test fun allSeventeenPinsAreRequiredAndVerified() {
+        val root = bundle()
+        try {
+            val selection = EngineSelection("ming-local", modelPath = root.toString(), options = pins(root))
+            assertEquals(root.toRealPath(), MingLocalModel.verify(selection))
+            for (filename in MingLocalModel.assets) {
+                assertFailsWith<IllegalArgumentException>(filename) { MingLocalModel.verify(selection.copy(options = selection.options - "sha256.$filename")) }
+            }
+            assertFailsWith<IllegalArgumentException> { MingLocalModel.verify(selection.copy(options = emptyMap())) }
+            assertFailsWith<IllegalArgumentException> { MingLocalModel.verify(selection.copy(options = selection.options + ("sha256.tokenizer.json" to "bad-hash"))) }
+            assertFailsWith<IllegalArgumentException> { MingLocalModel.verify(selection.copy(options = selection.options + ("sha256../outside" to "0".repeat(64)))) }
+            val before = MingLocalModel.stamp(selection)
+            Files.writeString(root.resolve("tokenizer.json"), "modified tokenizer")
+            assertTrue(before != MingLocalModel.stamp(selection), "Changed tokenizers must invalidate the resident verification cache")
+            assertFailsWith<IllegalStateException> { MingLocalModel.verify(selection) }
+        } finally { root.toFile().deleteRecursively() }
+    }
+
+    @Test fun nativePartsLayoutUsesTheSameCompletePinInventory() {
+        val root = bundle()
+        try {
+            val selection = EngineSelection("ming-local", modelPath = root.toString(), options = pins(root))
+            Files.createDirectory(root.resolve("parts"))
+            for (index in 0..14) Files.move(root.resolve("part-%03d.bin".format(index)), root.resolve("parts/%03d.bin".format(index)))
+            assertEquals(root.toRealPath(), MingLocalModel.verify(selection))
+        } finally { root.toFile().deleteRecursively() }
+    }
+
+    private fun pins(root: Path) = MingLocalModel.assets.associate { name ->
+        "sha256.$name" to MessageDigest.getInstance("SHA-256").digest(Files.readAllBytes(root.resolve(name))).joinToString("") { "%02x".format(it) }
     }
 
     private fun bundle(): Path {

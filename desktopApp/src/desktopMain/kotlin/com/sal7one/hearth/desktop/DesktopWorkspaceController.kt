@@ -13,6 +13,7 @@ import java.nio.file.Files
 import java.nio.file.Path
 
 internal data class IntegrationView(val baseUrl: String, val overlayUrl: String)
+private data class WorkspaceRequest(val input: WorkspaceInput, val text: String, val audioPath: String, val deviceId: String?)
 internal data class DesktopUiState(
     val snapshot: PipelineSnapshot? = null,
     val starting: Boolean = false,
@@ -59,6 +60,8 @@ internal class DesktopWorkspaceController(
     private val configWrites = Mutex()
     private val integrationWrites = Mutex()
     private val playbackWrites = Mutex()
+    private var retryRequest: WorkspaceRequest? = null
+    private var startFailed = false
 
     fun refreshDevices() = action {
         val devices = withContext(Dispatchers.IO) { DesktopAudioCapture.devices() }
@@ -94,6 +97,8 @@ internal class DesktopWorkspaceController(
         if (!owner.isActive) return
         if (state.value.importingSetup) { showError("Wait for setup verification to finish"); return }
         if (state.value.active) { showError("Finish or cancel the current session first"); return }
+        retryRequest = WorkspaceRequest(input, text, audioPath, deviceId)
+        startFailed = false
         mutableState.update { it.copy(starting = true, error = null, notice = null, finishing = false, cancelling = false) }
         startJob = scope.launch {
             try {
@@ -138,10 +143,24 @@ internal class DesktopWorkspaceController(
                 catch (e: Exception) { showError("Caption integration: ${e.message ?: e}") }
             } catch (e: CancellationException) { throw e }
             catch (e: Exception) {
+                startFailed = true
                 microphone?.cancel(); microphone = null
                 mutableState.update { it.copy(starting = false, microphone = false, error = e.message ?: e.toString()) }
             }
         }
+    }
+
+    /** Explicitly resend the original input using the currently repaired configuration. */
+    fun retry() {
+        if (!owner.isActive) return
+        if (state.value.active) { showError("Finish or cancel the current session first"); return }
+        val request = retryRequest
+        if (request == null || (!startFailed && state.value.snapshot?.status != PipelineStatus.FAILED)) {
+            clearNotice()
+            return
+        }
+        // start constructs a fresh capture/flow for microphones; never reuse a consumed stream.
+        start(request.input, request.text, request.audioPath, request.deviceId)
     }
 
     fun finishMicrophone() = action {
@@ -246,6 +265,7 @@ internal class DesktopWorkspaceController(
 
     suspend fun close() {
         owner.cancelAndJoin()
+        retryRequest = null
         // Every resource gets its cleanup attempt, including after a transport/native close fails.
         withContext(NonCancellable) {
             var failure: Exception? = null

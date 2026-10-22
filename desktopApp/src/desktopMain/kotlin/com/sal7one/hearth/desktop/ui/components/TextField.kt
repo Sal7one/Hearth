@@ -25,6 +25,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.sal7one.hearth.desktop.ui.theme.HearthTheme
@@ -42,6 +45,7 @@ internal fun HearthTextField(
     modifier: Modifier = Modifier,
     leading: ImageVector? = null,
     enabled: Boolean = true,
+    secret: Boolean = false,
 ) {
     val colors = HearthTheme.colors
     val shapes = HearthTheme.shapes
@@ -55,7 +59,11 @@ internal fun HearthTextField(
         singleLine = true,
         textStyle = HearthType.label.copy(color = colors.text, fontSize = 13.5.sp),
         cursorBrush = SolidColor(colors.accent),
-        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+        keyboardOptions = KeyboardOptions(
+            keyboardType = if (secret) KeyboardType.Password else KeyboardType.Text,
+            imeAction = if (secret) ImeAction.Done else ImeAction.Search,
+        ),
+        visualTransformation = if (secret) PasswordVisualTransformation() else VisualTransformation.None,
         interactionSource = interaction,
         modifier = modifier
             .fillMaxWidth()

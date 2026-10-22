@@ -78,7 +78,7 @@ internal fun CaptionsScreen(
                 Banner(
                     text = state.error,
                     tone = BannerTone.Err,
-                    action = { HearthButton("Dismiss", actions.onRetry, tone = ButtonTone.Ghost, size = ButtonSize.Small) },
+                    action = { HearthButton("Retry", actions.onRetry, tone = ButtonTone.Ghost, size = ButtonSize.Small) },
                 )
                 Spacer(Modifier.height(14.dp))
             } else if (!state.speechReady) {

@@ -15,6 +15,7 @@ internal fun overlayState(
     translationEnabled: Boolean,
     targetLanguage: String,
     settings: OverlaySettings,
+    showOriginalWhilePending: Boolean = true,
 ): OverlayState {
     val segments: List<CaptionSegment> = when {
         settings.showPartials -> snapshot?.segments.orEmpty()
@@ -24,7 +25,7 @@ internal fun overlayState(
         segments = segments,
         showOriginal = settings.showOriginal,
         translationEnabled = translationEnabled,
-        showOriginalWhilePending = true,
+        showOriginalWhilePending = showOriginalWhilePending,
     )
     return OverlayState(
         settings = settings,

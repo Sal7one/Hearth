@@ -1,6 +1,7 @@
 package com.sal7one.hearth.desktop.ui.screens.models
 
 import com.sal7one.hearth.core.PipelineConfig
+import com.sal7one.hearth.core.EngineSelection
 import com.sal7one.hearth.core.PipelineStage
 import com.sal7one.hearth.desktop.ModelTransfer
 import com.sal7one.hearth.desktop.data.DesktopModelCard
@@ -20,8 +21,17 @@ internal fun modelsState(
     transfer: ModelTransfer?,
     filter: ModelsFilter,
     freeBytes: Long,
+    verifiedImports: Map<String, EngineSelection> = emptyMap(),
+    issues: Map<String, String> = emptyMap(),
 ): ModelsState {
-    val rows = catalog.map { card -> modelRow(card, installations[card.id], config) }
+    val verified = installations.toMutableMap()
+    verifiedImports.forEach { (id, route) ->
+        if (catalog.any { it.id == id && it.engineId == route.engineId } && route.modelPath.isNotBlank()) {
+            verified[id] = DesktopModelStatus(true, java.nio.file.Path.of(route.modelPath))
+        }
+    }
+    issues.forEach { (id, issue) -> verified[id] = (verified[id] ?: DesktopModelStatus(false, null)).copy(issue = issue) }
+    val rows = catalog.map { card -> modelRow(card, verified[card.id], config) }
 
     val filtered = rows.filter { row ->
         val card = catalog.first { it.id == row.id }
@@ -42,7 +52,7 @@ internal fun modelsState(
         )
     }
 
-    val installedCards = catalog.filter { installations[it.id]?.ready == true }
+    val installedCards = catalog.filter { verified[it.id]?.ready == true }
     val installedBytes = installedCards.sumOf { it.installedBytes }
     val catalogBytes = catalog.sumOf { it.installedBytes }
     val activeTransfer = transfer?.let { current ->
@@ -70,12 +80,14 @@ internal fun modelsState(
         freeDiskLabel = if (freeBytes > 0) formatBytes(freeBytes) else "—",
         transfer = activeTransfer,
         refreshing = false,
-        issues = installations.values.mapNotNull { it.issue }.distinct(),
+        issues = verified.values.mapNotNull { it.issue }.distinct(),
     )
 }
 
 private fun modelRow(card: DesktopModelCard, status: DesktopModelStatus?, config: PipelineConfig): ModelRow {
-    val inUse = config.selection(card.stage)?.modelId == card.id
+    val chosen = config.selection(card.stage)
+    val inUse = status?.ready == true && chosen?.modelId == card.id && chosen.engineId == card.engineId &&
+        chosen.modelPath == status.path?.toString()
     val modelStatus = when {
         status?.ready == true -> ModelStatus.INSTALLED
         status != null && status.issue != null -> ModelStatus.BROKEN

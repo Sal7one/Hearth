@@ -27,6 +27,8 @@ import com.sal7one.hearth.desktop.ui.shell.PageScaffold
 @Composable
 internal fun TranslateScreen(
     state: TranslateState,
+    draft: String = "",
+    onDraftChange: (String) -> Unit = {},
     actions: TranslateActions,
     modifier: Modifier = Modifier,
 ) {
@@ -50,7 +52,7 @@ internal fun TranslateScreen(
         }
 
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-            TranslateInputCard(state, actions.onTranslate, Modifier.weight(1f))
+            TranslateInputCard(state, draft, onDraftChange, actions.onTranslate, Modifier.weight(1f))
             TranslateResultCard(state, actions, Modifier.weight(1f))
         }
 

@@ -1,5 +1,9 @@
 # Hearth desktop — final handoff (2026-10-22)
 
+**Subsequent audit:** read [post-handover audit](post-handover-audit-2026-10-22.md)
+for confirmed regressions, fixes and new validation. Earlier feature-complete/CI
+statements below describe the historical checkpoint.
+
 This is the authoritative state of `codex/hearth-desktop-kmp` / PR #4.
 For the complete two-day work ledger — desktop, engines, Android 0.28.0, the TTS
 one-module collapse, active-ABI fix, release and CI history — read the

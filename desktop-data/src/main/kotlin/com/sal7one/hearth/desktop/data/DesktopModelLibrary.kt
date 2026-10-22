@@ -483,10 +483,7 @@ class DesktopModelLibrary(private val directory: Path) {
                 check(redirects < 5) { "Too many model range redirects" }
                 current = current.resolve(response.headers().firstValue("Location").orElseThrow { IllegalStateException("Model range redirect has no destination") })
             } else {
-                check(response.statusCode() == 206) { "Model host did not honor the pinned byte range (HTTP ${response.statusCode()})" }
-                val expected = "bytes $start-$end/$sourceBytes"
-                check(response.headers().firstValue("Content-Range").orElse("") == expected) { "Model range response differs from its pin" }
-                return response
+                return checkedRangeResponse(response, start, end, sourceBytes)
             }
         }
         error("Too many model range redirects")
@@ -588,6 +585,21 @@ class DesktopModelLibrary(private val directory: Path) {
         }
         internal fun digest(bytes: ByteArray): String = MessageDigest.getInstance("SHA-256").digest(bytes).hex()
         private fun ByteArray.hex() = joinToString("") { "%02x".format(it) }
+    }
+}
+
+/** A rejected response still owns a live HTTP body; release it before surfacing the error. */
+internal fun checkedRangeResponse(
+    response: HttpResponse<java.io.InputStream>, start: Long, end: Long, sourceBytes: Long,
+): HttpResponse<java.io.InputStream> {
+    try {
+        check(response.statusCode() == 206) { "Model host did not honor the pinned byte range (HTTP ${response.statusCode()})" }
+        val expected = "bytes $start-$end/$sourceBytes"
+        check(response.headers().firstValue("Content-Range").orElse("") == expected) { "Model range response differs from its pin" }
+        return response
+    } catch (failure: Throwable) {
+        try { response.body().close() } catch (cleanup: Throwable) { failure.addSuppressed(cleanup) }
+        throw failure
     }
 }
 

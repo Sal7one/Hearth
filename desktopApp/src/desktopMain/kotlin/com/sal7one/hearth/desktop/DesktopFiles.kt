@@ -10,10 +10,15 @@ import javax.swing.JFileChooser
 import javax.swing.JOptionPane
 import javax.swing.filechooser.FileNameExtensionFilter
 
-internal fun chooseFile(parent: Component?, title: String, extensions: List<String> = emptyList(), directories: Boolean = false): Path? {
+internal fun chooseFile(parent: Component?, title: String, extensions: List<String> = emptyList(), directories: Boolean = false,
+    directoriesOnly: Boolean = false): Path? {
     val chooser = JFileChooser().apply {
         dialogTitle = title
-        fileSelectionMode = if (directories) JFileChooser.FILES_AND_DIRECTORIES else JFileChooser.FILES_ONLY
+        fileSelectionMode = when {
+            directoriesOnly -> JFileChooser.DIRECTORIES_ONLY
+            directories -> JFileChooser.FILES_AND_DIRECTORIES
+            else -> JFileChooser.FILES_ONLY
+        }
         if (extensions.isNotEmpty()) fileFilter = FileNameExtensionFilter(extensions.joinToString(", ") { "*.$it" }, *extensions.toTypedArray())
     }
     return if (chooser.showOpenDialog(parent) == JFileChooser.APPROVE_OPTION) chooser.selectedFile.toPath() else null

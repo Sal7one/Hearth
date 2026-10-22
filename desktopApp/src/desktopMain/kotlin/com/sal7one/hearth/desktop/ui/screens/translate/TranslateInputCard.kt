@@ -15,10 +15,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.unit.dp
@@ -32,15 +28,16 @@ import com.sal7one.hearth.desktop.ui.icons.HearthIcons
 import com.sal7one.hearth.desktop.ui.theme.HearthTheme
 import com.sal7one.hearth.desktop.ui.theme.HearthType
 
-/** The draft is local to this card; it is not persisted and not a session. */
+/** The root retains the draft in RAM while the user visits setup screens. */
 @Composable
 internal fun TranslateInputCard(
     state: TranslateState,
+    draft: String,
+    onDraftChange: (String) -> Unit,
     onTranslate: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val colors = HearthTheme.colors
-    var draft by remember { mutableStateOf("") }
 
     HearthCard(modifier, padding = 18.dp) {
         Column(Modifier.fillMaxWidth()) {
@@ -54,7 +51,7 @@ internal fun TranslateInputCard(
         Spacer(Modifier.height(12.dp))
         BasicTextField(
             value = draft,
-            onValueChange = { if (it.length <= TranslateCopy.MAX_CHARS) draft = it },
+            onValueChange = { if (it.length <= TranslateCopy.MAX_CHARS) onDraftChange(it) },
             textStyle = HearthType.body.copy(color = colors.text, fontSize = 15.sp),
             cursorBrush = SolidColor(colors.accent),
             modifier = Modifier

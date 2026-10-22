@@ -77,7 +77,8 @@ internal fun ModelsScreen(
                 }
 
                 state.groups.forEach { group ->
-                    ModelGroupCard(group = group, onAction = actions.onAction)
+                    ModelGroupCard(group = group, onAction = actions.onAction, onImport = actions.onImport,
+                        importEnabled = !state.refreshing && state.transfer == null)
                 }
             }
             ModelsSidebar(

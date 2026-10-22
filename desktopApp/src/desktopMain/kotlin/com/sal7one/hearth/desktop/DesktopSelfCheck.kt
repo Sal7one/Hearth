@@ -47,7 +47,29 @@ internal object DesktopSelfCheck {
             val owned = DesktopEngines(CredentialResolver { null }, profile)
             engines = owned
             val descriptors = owned.capabilities()
-            for (id in listOf("whisper-local", "llama-translation-local", "supertonic-local")) {
+            val platform = (if (System.getProperty("os.name").contains("Mac", true)) "macos" else "windows") +
+                "-" + (if (System.getProperty("os.arch").lowercase() in setOf("aarch64", "arm64")) "arm64" else "x64")
+            // Optional ports differ by host. A bundled port must load successfully; absence
+            // on an unsupported host is distinct from a broken library shipped in its JAR.
+            val optionalPorts = mapOf(
+                "qwen3-asr-local" to listOf("hearth_desktop_qwen3_asr"),
+                "transcribepsy-local" to listOf("hearth_desktop_backend_speech", "hearth_transcribepsy"),
+                "nemotron-asr-local" to listOf("hearth_desktop_backend_speech", "hearth_nemotron"),
+                "moonshine-local" to listOf("hearth_desktop_backend_speech", "hearth_desktop_qwen3_asr"),
+                "vosk-local" to listOf("hearth_desktop_backend_speech", "hearth_vosk"),
+                "omnilingual-local" to listOf("hearth_desktop_backend_speech", "hearth_desktop_qwen3_asr"),
+                "phonon-local" to listOf("hearth_desktop_backend_speech", "hearth_desktop_qwen3_asr"),
+                "marian-local" to listOf("hearth_desktop_ct2"),
+                "moss-tts-local" to listOf("hearth_desktop_moss"),
+                "omnivoice-tts-local" to listOf("hearth_desktop_omnivoice"),
+                "magpie-tts-local" to listOf("hearth_desktop_magpie"),
+                "chatterbox-tts-local" to listOf("hearth_desktop_chatterbox"),
+                "ming-local" to listOf("ming_jni"),
+            )
+            val bundledPorts = optionalPorts.filterValues { libraries -> libraries.all { library ->
+                javaClass.getResource("/native/$platform/${System.mapLibraryName(library)}.payload") != null
+            } }.keys
+            for (id in listOf("whisper-local", "llama-translation-local", "supertonic-local") + bundledPorts) {
                 val descriptor = descriptors.single { it.id == id }
                 check(descriptor.available) { "$id: ${descriptor.unavailableReason}" }
                 report.setProperty(id, "available; acceleration=" + descriptor.acceleration.sorted().joinToString(","))

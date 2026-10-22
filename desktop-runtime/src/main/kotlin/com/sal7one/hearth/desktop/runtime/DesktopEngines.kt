@@ -44,7 +44,8 @@ class DesktopEngines(
 ) : PipelineEngines, AutoCloseable {
     private val cloud = DesktopCloud(credentials, appDataDirectory)
     private val voices = DesktopVoiceCache(appDataDirectory)
-    private val mingVerified = mutableSetOf<String>()
+    private val mingVerification = Any()
+    private var mingVerified: ComponentModelStamp? = null
     private val mingVoices = DesktopVoiceCache(
         appDataDirectory,
         engineId = "ming-local",
@@ -94,7 +95,7 @@ class DesktopEngines(
     private var translationHandle = 0L
     private var translationKey = ""
     private var ct2Engine: DesktopCt2TranslationEngine? = null
-    private var ct2Key = ""
+    private var ct2Key: Pair<Int, ComponentModelStamp>? = null
     init { DesktopNativeLibraries.configure(appDataDirectory) }
 
     override fun capabilities(): List<EngineDescriptor> {
@@ -257,15 +258,15 @@ class DesktopEngines(
                 val owner = currentCoroutineContext()
                 joinedBlocking({ backendEngine.get()?.cancel() }) {
                     owner.ensureActive()
-                    val opened = DesktopBackendSpeechEngine.open(
+                    val opened = withSupportedSpeechLanguage(sourceLanguage, PHONON_LANGUAGES, "Phonon 2") { language -> DesktopBackendSpeechEngine.open(
                         "hearth_desktop_qwen3_asr", "phonon", root.resolve("tokens.txt"),
-                        sourceLanguage, threads(selection),
+                        language, threads(selection),
                         entrySymbol = "hearth_phonon_backend_v1",
                         encoder = root.resolve("encoder.int8.onnx"),
                         decoder = root.resolve("decoder.int8.onnx"),
                         convFrontend = root.resolve("joiner.int8.onnx"),
                         maximumMs = 15000,
-                    )
+                    ) }
                     if (!backendEngine.compareAndSet(null, opened)) {
                         opened.close()
                         error("Speech backend engine was already published")
@@ -277,11 +278,13 @@ class DesktopEngines(
                 val owner = currentCoroutineContext()
                 joinedBlocking({ backendEngine.get()?.cancel() }) {
                     owner.ensureActive()
-                    val opened = DesktopBackendSpeechEngine.open(
+                    val opened = withSupportedSpeechLanguage(sourceLanguage,
+                        if (transcribepsy) TRANSCRIBEPSY_LANGUAGES else NEMOTRON_LANGUAGES,
+                        if (transcribepsy) "TranscribePsy" else "Nemotron ASR") { language -> DesktopBackendSpeechEngine.open(
                         if (transcribepsy) "hearth_transcribepsy" else "hearth_nemotron",
                         if (transcribepsy) "transcribepsy" else "nemotron_3_5",
-                        path, sourceLanguage, threads(selection),
-                    )
+                        path, language, threads(selection),
+                    ) }
                     if (!backendEngine.compareAndSet(null, opened)) {
                         opened.close()
                         error("Speech backend engine was already published")
@@ -447,9 +450,17 @@ class DesktopEngines(
         val targets = selection.options["targets"].orEmpty().split(',').filter { it.isNotBlank() }.toSet()
         require(sources.isEmpty() || sourceLanguage in sources) { "This CTranslate2 model does not support $sourceLanguage → $targetLanguage" }
         require(targets.isEmpty() || targetLanguage in targets) { "This CTranslate2 model does not support $sourceLanguage → $targetLanguage" }
-        val key = "$root|$mode|${Files.getLastModifiedTime(root.resolve("model.bin"))}"
+        val key = withContext(Dispatchers.IO) {
+            val context = currentCoroutineContext()
+            mode to Ct2ModelIntegrity.stamp(root, mode, selection) { context.ensureActive() }
+        }
         if (synchronized(lifecycle) { ct2Key != key || ct2Engine == null }) {
-            verifiedCt2Model(root, selection)
+            withContext(Dispatchers.IO) {
+                val context = currentCoroutineContext()
+                check(Ct2ModelIntegrity.verify(root, mode, selection) { context.ensureActive() } == key.second) {
+                    "CTranslate2 components changed before model loading"
+                }
+            }
             withContext(Dispatchers.IO) {
                 synchronized(lifecycle) {
                     check(!closed.get()) { "Desktop engines are closed" }
@@ -496,22 +507,6 @@ class DesktopEngines(
         root
     }
 
-    private suspend fun verifiedCt2Model(root: Path, selection: EngineSelection) = withContext(Dispatchers.IO) {
-        val pins = selection.options.filterKeys { it.startsWith("sha256.") }
-        require(pins.isNotEmpty()) { "A pinned SHA-256 is required for every CTranslate2 component" }
-        for ((key, expected) in pins) {
-            require(expected.matches(Regex("[0-9a-f]{64}"))) { "A pinned SHA-256 is required for every CTranslate2 component" }
-            val relative = key.removePrefix("sha256.")
-            require(relative.isNotBlank() && !relative.startsWith("/") && relative.split('/').none { it == ".." || it.isEmpty() }) { "Invalid CTranslate2 component: $relative" }
-            val file = root.resolve(relative).normalize()
-            require(file.startsWith(root)) { "CTranslate2 component escapes its directory: $relative" }
-            check(Files.isRegularFile(file) && Files.size(file) > 0) { "Missing CTranslate2 component: $relative" }
-            currentCoroutineContext().ensureActive()
-            check(sha256(file) == expected) { "CTranslate2 component checksum mismatch: $relative" }
-        }
-        root
-    }
-
     override suspend fun synthesize(text: String, selection: EngineSelection, language: String, voiceId: String): GeneratedAudio {
         check(!closed.get()) { "Desktop engines are closed" }
         require(text.isNotBlank()) { "Read aloud needs text" }
@@ -536,12 +531,15 @@ class DesktopEngines(
         }
         if (selection.engineId == "ming-local") {
             require(!metal(selection)) { "Ming local supports CPU acceleration only" }
-            val key = selection.modelPath + "|" + selection.options.filterKeys { it.startsWith("sha256.") }
-                .entries.sortedBy { it.key }.joinToString("&") { "${it.key}=${it.value}" }
-            synchronized(mingVerified) {
-                if (key !in mingVerified) {
-                    MingLocalModel.verify(selection)
-                    mingVerified += key
+            withContext(Dispatchers.IO) {
+                val context = currentCoroutineContext()
+                synchronized(mingVerification) {
+                    val key = MingLocalModel.stamp(selection) { context.ensureActive() }
+                    if (mingVerified != key) {
+                        MingLocalModel.verify(selection) { context.ensureActive() }
+                        check(MingLocalModel.stamp(selection) { context.ensureActive() } == key) { "Ming components changed before model loading" }
+                        mingVerified = key
+                    }
                 }
             }
             return mingVoices.read(text, selection, language, voiceId)
@@ -556,21 +554,22 @@ class DesktopEngines(
         if (id != 0L) LocalTranslationNative.destroy(id)
     }
     private fun clearCt2() = synchronized(lifecycle) {
-        val engine = ct2Engine; ct2Engine = null; ct2Key = ""
+        val engine = ct2Engine; ct2Engine = null; ct2Key = null
         engine?.close()
     }
     override fun close() {
-        if (closed.compareAndSet(false, true)) try { clearTranslation(); clearCt2() } finally { synchronized(mingVerified) { mingVerified.clear() }; voices.close(); mossVoices.close(); omnivoiceVoices.close(); magpieVoices.close(); chatterboxVoices.close(); mingVoices.close() }
+        if (closed.compareAndSet(false, true)) closeOwners(
+            { clearTranslation() }, { clearCt2() }, { synchronized(mingVerification) { mingVerified = null } },
+            { voices.close() }, { mossVoices.close() }, { omnivoiceVoices.close() },
+            { magpieVoices.close() }, { chatterboxVoices.close() }, { mingVoices.close() },
+        )
     }
 /** Vosk models are extracted directories whose model-tree-sha256-v1 digest is the pin.
  *  The desktop library verifies it on install/refresh and the adapter re-derives and
  *  verifies the same digest immediately before loading the model. */
 private suspend fun verifiedVoskModel(selection: EngineSelection): Path = withContext(Dispatchers.IO) {
-    val root = Path.of(selection.modelPath).toRealPath()
-    require(Files.isDirectory(root)) { "Select a complete Vosk model directory" }
-    val expected = selection.options["treeSha256"].orEmpty().lowercase()
-    require(expected.matches(Regex("[0-9a-f]{64}"))) { "A pinned model tree SHA-256 is required for Vosk" }
-    root
+    val context = currentCoroutineContext()
+    ModelTreeIntegrity.verify(Path.of(selection.modelPath), selection.options["treeSha256"].orEmpty()) { context.ensureActive() }
 }
 
 private suspend fun verifiedModel(selection: EngineSelection): Path = withContext(Dispatchers.IO) {

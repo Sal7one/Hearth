@@ -17,6 +17,7 @@ internal data class VoicesState(
     val ready: Boolean = false,
     val engineDetail: String = "Not configured",
     val placementLabel: String = "CPU",
+    val outputLabel: String = "Engine WAV output",
 ) {
     val voiceOff: Boolean get() = selectedEngineId == null
     val supertonicSelected: Boolean get() = selectedEngineId == "supertonic-local"

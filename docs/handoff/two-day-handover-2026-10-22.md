@@ -1,5 +1,9 @@
 # Hearth — two-day handover (2026-10-20 → 2026-10-22)
 
+**Subsequent audit:** read [post-handover audit](post-handover-audit-2026-10-22.md)
+for confirmed regressions, fixes and new validation. Earlier feature-complete/CI
+statements below describe the historical checkpoint.
+
 **Written:** 2026-10-22 21:40 Asia/Riyadh  
 **Branch:** `codex/hearth-desktop-kmp`  
 **Code/release subject:** `9f2b93675adb1afc81bbe288fcce62867736b42e`  

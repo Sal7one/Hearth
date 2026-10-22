@@ -34,3 +34,15 @@ internal fun engineSelection(engine: EngineDescriptor) = EngineSelection(
     endpoint = engine.defaultEndpoint,
     credentialId = if (engine.requiresCredential) "${engine.stage.name.lowercase()}-${engine.id}" else "",
 )
+
+/** Clicking the current engine must preserve its verified model, credentials and tuning. */
+internal fun PipelineConfig.chooseEngine(engine: EngineDescriptor): PipelineConfig =
+    if (selection(engine.stage)?.engineId == engine.id) this else select(engine.stage, engineSelection(engine))
+
+internal fun PipelineConfig.enableReadAloud(engines: List<EngineDescriptor>): PipelineConfig {
+    if (voice != null) return this
+    val available = engines.filter { it.stage == PipelineStage.TTS && it.available }
+    val preferred = available.firstOrNull { it.id == "supertonic-local" } ?: available.firstOrNull()
+    check(preferred != null) { "No voice engine is available. Configure a voice engine before enabling read aloud." }
+    return chooseEngine(preferred)
+}

@@ -4,7 +4,8 @@ Hearth's reusable API is `:hearth-tts`. It contains article splitting, voice
 selection, bounded PCM delivery and lifecycle handling. It contains no model,
 network client, Android audio player, app settings or automatic download code.
 The 0.28.0 build prepares one `hearth-tts` AAR containing the core and every
-adapter, plus the shared `hearth-onnx-runtime` AAR. This is not a Maven publication
+adapter, plus the shared `hearth-onnx-runtime` AAR. There are no per-family TTS
+Gradle projects or separate adapter AARs. This is not a Maven publication
 or an Android system TTS service.
 First-party source follows the repository's [Apache-2.0 license](../LICENSE);
 model and native dependency licenses remain separate.
@@ -27,7 +28,7 @@ compile SDK 36 and minimum Android API 28. Native bindings remain in
 `com.sal7one.common_jni`; retain the AAR's consumer ProGuard rules. Do not copy
 or rename JNI classes, or package a second conflicting native library.
 
-`The merged AAR carries Supertonic, Magpie, OmniVoice, MOSS, Oute, Chatterbox and
+The merged AAR carries Supertonic, Magpie, OmniVoice, MOSS, Oute, Chatterbox and
 Ming adapters. All TTS native code is **ARM64-only**; the AAR contains both the
 JNI wrappers and the prebuilt family runtimes. The separate
 `hearth-onnx-runtime` AAR owns the one shared ONNX Runtime 1.20.0 binary set.
@@ -140,7 +141,7 @@ contain no weights, server addresses, keys or executable workflow nodes.
 
 ## OmniVoice experimental provider
 
-`:hearth-tts-omnivoice` supplies a separately packaged CPU ARM64 runtime,
+The OmniVoice adapter in `:hearth-tts` supplies an isolated CPU ARM64 runtime,
 with no model/network/app dependency. Install the two exact pinned GGUF files
 from `OmniVoiceCatalog.assets` using `OmniVoiceModels.importWeight`, call
 `verify()`, and create `OmniVoiceSpeechEngine(directory)`. The package is
@@ -161,8 +162,8 @@ unrestricted commercial default for the Arabic-app SDK.
 
 ## OuteTTS 1.0 experimental provider
 
-`:hearth-tts-oute` depends only on the core API and packages an isolated ARM64 CPU
-runtime. Use `OuteCatalog.assets`, `OuteModels.importWeight`, `verify()` and
+The OuteTTS adapter in `:hearth-tts` uses the shared core API and an isolated
+ARM64 CPU runtime. Use `OuteCatalog.assets`, `OuteModels.importWeight`, `verify()` and
 `OuteSpeechEngine(directory)`. Install **both** `oute-tts-1b.bin` and
 `en-female-1-neutral.json`: 1,438,441,535 bytes total. The `.bin` is ChatLLM's
 GGMM format containing the Q8 generator and IBM DAC speech **v1.0** codec;
@@ -203,7 +204,8 @@ ranges and full final hashes, and is never called by Gradle or the SDK.
 
 ## MOSS Nano experimental provider
 
-`:hearth-tts-moss` uses the core API and shared `:hearth-onnx-runtime` AAR,
+The MOSS adapter in `:hearth-tts` uses the core API and the shared
+`:hearth-onnx-runtime` AAR,
 without STT/translation binaries. Install the14 pinned `MossCatalog.assets`
 (717,868,602 bytes) with `MossModels.importWeight`, verify the package, and
 construct `MossSpeechEngine(directory)`. No SDK call downloads files.
@@ -224,7 +226,8 @@ the runtime. These remain experimental CPU results, without phone/GPU claims.
 
 ## Chatterbox Multilingual V3 experimental provider
 
-`:hearth-tts-chatterbox` needs the core plus the shared ONNX AAR. Check
+The Chatterbox adapter is included in `:hearth-tts` alongside the core; it uses
+the shared ONNX AAR. Check
 `ChatterboxSpeechEngine.available()` before installation or playback. Its current
 native frontends expose Arabic/English and one pinned `default` reference with
 UNKNOWN gender. It does not import arbitrary voice-cloning references. Other

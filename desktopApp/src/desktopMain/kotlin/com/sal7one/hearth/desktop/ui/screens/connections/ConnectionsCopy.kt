@@ -25,7 +25,7 @@ internal object ConnectionsCopy {
     const val SAVE = "Save"
     const val SAVE_KEY = "Save key"
     const val FORGET_KEY = "Forget key"
-    const val KEY_SAVED = "A key is stored for this reference."
+    const val KEY_SAVED = "Key configured"
 
     const val WHERE_KEYS = "Where keys live"
     const val WHERE_KEYS_DETAIL =

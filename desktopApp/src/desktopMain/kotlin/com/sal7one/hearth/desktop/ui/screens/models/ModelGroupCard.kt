@@ -24,6 +24,8 @@ import com.sal7one.hearth.desktop.ui.theme.HearthType
 internal fun ModelGroupCard(
     group: ModelGroup,
     onAction: (String) -> Unit,
+    onImport: (String) -> Unit,
+    importEnabled: Boolean,
     modifier: Modifier = Modifier,
 ) {
     val colors = HearthTheme.colors
@@ -51,7 +53,7 @@ internal fun ModelGroupCard(
             Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp)) {
                 group.rows.forEachIndexed { index, row ->
                     if (index > 0) ModelsDivider()
-                    ModelRowView(row, onAction = { onAction(row.id) })
+                    ModelRowView(row, onAction = { onAction(row.id) }, onImport = { onImport(row.id) }, importEnabled = importEnabled)
                 }
             }
         }

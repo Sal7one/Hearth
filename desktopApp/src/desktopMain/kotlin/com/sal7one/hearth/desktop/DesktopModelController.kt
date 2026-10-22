@@ -59,6 +59,9 @@ internal class DesktopModelController(
         mutableState.update { it.copy(verifiedImports = it.verifiedImports + (id to verified)) }
     }
 
+    /** Verification and activation remain separate; imports take precedence after an explicit pick. */
+    fun verifiedSelection(id: String): EngineSelection? = state.value.verifiedImports[id] ?: library.installedSelection(id)
+
     fun cancel() {
         mutableState.update { it.copy(transfer = it.transfer?.copy(cancelling = true)) }
         operation?.cancel()

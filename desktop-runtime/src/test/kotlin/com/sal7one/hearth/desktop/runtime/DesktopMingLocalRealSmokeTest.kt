@@ -11,6 +11,7 @@ import java.nio.file.Path
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
+import kotlinx.serialization.json.*
 
 /**
  * Owner opt-in only: the experimental local Ming JNI engine through DesktopEngines.
@@ -29,7 +30,7 @@ class DesktopMingLocalRealSmokeTest {
         val directory = Files.createTempDirectory("hearth-ming-local-")
         val selection = EngineSelection(
             "ming-local", "ming-3.0-tts-0.5b-web", bundle.toString(),
-            options = mapOf("voice" to "US_Emma", "threads" to "4"),
+            options = catalogPins() + mapOf("voice" to "US_Emma", "threads" to "4"),
         )
         try {
             val started = System.nanoTime()
@@ -57,6 +58,18 @@ class DesktopMingLocalRealSmokeTest {
             assertTrue(peak > 100, "Ming returned silent audio")
         } finally {
             directory.toFile().deleteRecursively()
+        }
+    }
+
+    /** Use reviewed catalog hashes, never a digest computed from the files under test. */
+    private fun catalogPins(): Map<String, String> {
+        val repository = generateSequence(Path.of("").toAbsolutePath()) { it.parent }
+            .first { Files.isRegularFile(it.resolve("desktop-data/src/main/resources/desktop-models.json")) }
+        val catalog = Json.parseToJsonElement(Files.readString(repository.resolve("desktop-data/src/main/resources/desktop-models.json"))).jsonObject
+        val model = catalog.getValue("models").jsonArray.single { it.jsonObject["id"]?.jsonPrimitive?.content == "ming-3.0-tts-0.5b-web" }.jsonObject
+        return model.getValue("artifacts").jsonArray.associate { entry ->
+            val artifact = entry.jsonObject
+            "sha256.${artifact.getValue("filename").jsonPrimitive.content}" to artifact.getValue("sha256").jsonPrimitive.content
         }
     }
 }

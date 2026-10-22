@@ -44,7 +44,7 @@ internal fun VoicesSidebar(state: VoicesState, actions: VoicesActions, modifier:
             Spacer(Modifier.height(10.dp))
             KeyValueRow("Engine", state.engineDetail)
             KeyValueRow("Style", state.selectedStyle)
-            KeyValueRow("Output", "44.1 kHz WAV")
+            KeyValueRow("Output", state.outputLabel)
             KeyValueRow("Placement", state.placementLabel)
         }
 

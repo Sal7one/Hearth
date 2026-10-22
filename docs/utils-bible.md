@@ -13,7 +13,7 @@ language/name search without bypassing that availability policy.
 `hearth-tts` exposes the network-free `SpeechEngine` contract, strict
 `SpeechVoices.resolve`, bounded `PcmAudio`, lazy `ArticleText` splitting and
 `ArticleReader` lifecycle. Its production consumer is `VoicePlayer` through the
-`hearth-tts-supertonic` adapter. `ArticleReaderTest` covers Arabic/supplementary
+Supertonic adapter inside the single `:hearth-tts` module. `ArticleReaderTest` covers Arabic/supplementary
 Unicode preservation, strict gender/fallback, sequential reuse, concurrent
 ownership, real/empty inference failures, bounded backpressure, borrowed PCM
 copying and cancellation/close while a full channel blocks the producer. Cleanup
@@ -933,3 +933,19 @@ values. `voiceImportSources` is consumed by VoiceSetup's SAF import recording;
 it maps authenticated Magpie range imports to their final tokenizer members and
 ordinary optional-family imports to their own catalog paths. Two host cases
 prevent recording the deleted range staging file or another family's directory.
+
+## Post-consolidation SDK verification
+
+`scripts/verify-tts-aars.py` is consumed by Android release CI to verify the two
+actual SDK archives. It requires all fourteen ARM64 TTS libraries, all adapter/API
+classes and exported JNI/callback consumer rules; the shared ONNX AAR owns its four
+runtime ABIs. `test_verify_tts_aars.py` rejects lost shrinker rules, missing family
+runtimes/classes, wrapper-only unsupported ABIs and leaked application classes.
+
+`ComponentModelIntegrity` is used by the desktop Ming and CTranslate2 owners to
+require every actual model input pin and invalidate caches on component changes.
+`ModelTreeIntegrity` verifies the selected Vosk directory with the existing
+model-tree-sha256-v1 contract and no-follow bounded reads. Their host fixtures
+reject missing pins, changed tokenizers, wrong trees, links and cancellation; a
+real catalog Vosk tree was also checked. `closeOwners` is consumed by desktop
+engine teardown and tested with multiple failing owners to preserve all cleanup.

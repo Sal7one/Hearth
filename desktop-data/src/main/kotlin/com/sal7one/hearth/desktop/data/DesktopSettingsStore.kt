@@ -66,8 +66,18 @@ class DesktopSettingsStore(val directory: Path) : AutoCloseable {
     }
     suspend fun saveUi(values: Map<String, String>) = updates.withLock {
         require(values.size <= 64 && values.all { it.key.length <= 64 && it.value.length <= 4096 })
-        val encoded = JsonObject(values.mapValues { JsonPrimitive(it.value) }).toString()
-        store.edit { it[uiKey] = encoded }; mutableUi.value = values.toMap()
+        // Screens submit independent patches. Merge inside the DataStore transaction,
+        // using persisted values rather than a potentially delayed collector snapshot.
+        var merged = emptyMap<String, String>()
+        store.edit { preferences ->
+            val previous = preferences[uiKey]?.let { encoded ->
+                Json.parseToJsonElement(encoded).jsonObject.mapValues { it.value.jsonPrimitive.content }
+            }.orEmpty()
+            merged = previous + values
+            require(merged.size <= 64) { "At most 64 desktop UI preferences are allowed" }
+            preferences[uiKey] = JsonObject(merged.mapValues { JsonPrimitive(it.value) }).toString()
+        }
+        mutableUi.value = merged
     }
     suspend fun exportSetup(path: Path) {
         val portable = load().let { it.copy(
@@ -108,7 +118,7 @@ class DesktopSettingsStore(val directory: Path) : AutoCloseable {
 private fun EngineSelection.portable() = copy(modelPath = "", credentialId = "", options = options.filterKeys { it in SetupCodec.allowedOptions || it.startsWith("sha256.") })
 
 object SetupCodec {
-    internal val allowedOptions = setOf("sha256", "threads", "acceleration", "voice", "speed", "steps", "temperature", "maxTokens", "profile", "backend", "family", "promptMode", "sources", "targets", "treeSha256")
+    internal val allowedOptions = setOf("sha256", "threads", "acceleration", "voice", "speed", "steps", "temperature", "maxTokens", "profile", "backend", "family", "promptMode", "sources", "targets", "treeSha256", "windowMs")
     private val json = Json { prettyPrint = true }
     fun encode(config: PipelineConfig): String = json.encodeToString(JsonElement.serializer(), buildJsonObject {
         put("format", "hearth.desktop.setup"); put("schemaVersion", 1)
@@ -133,6 +143,10 @@ object SetupCodec {
             fun get(key: String) = value[key]?.jsonPrimitive?.content ?: ""
             val options = value["options"]?.jsonObject?.mapValues { it.value.jsonPrimitive.content } ?: emptyMap()
             require(options.size <= 24 && options.all { (it.key in allowedOptions || it.key.startsWith("sha256.")) && it.value.length <= 4096 }) { "Unsupported engine option" }
+            options["windowMs"]?.let {
+                val milliseconds = it.toIntOrNull()
+                require(milliseconds != null && milliseconds in 1_000..30_000) { "Speech window must be 1000–30000 ms" }
+            }
             require(get("engineId").matches(Regex("[A-Za-z0-9._-]{1,100}"))) { "Invalid engine identity" }
             val endpoint = get("endpoint")
             require(endpoint.length <= 2048 && (endpoint.isEmpty() || java.net.URI(endpoint).let {

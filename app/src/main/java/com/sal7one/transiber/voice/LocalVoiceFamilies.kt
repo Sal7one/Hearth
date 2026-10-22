@@ -31,7 +31,7 @@ internal data class LocalVoiceFamily(
 internal object LocalVoiceFamilies {
     val providers: List<LocalVoiceFamily> by lazy { listOf(
         LocalVoiceFamily("supertonic", "Supertonic 3", VoiceCatalog.voices, VoiceCatalog.languages, true,
-            runtimeAvailable = { true },
+            runtimeAvailable = SupertonicSpeechEngine::available,
             packageReady = { root, voice, gender -> VoiceModels(root).ready(voice, gender) },
             verifyPackage = { root, voice, cancel -> VoiceModels(root).verify(voice, cancel) },
             createEngine = ::SupertonicSpeechEngine),

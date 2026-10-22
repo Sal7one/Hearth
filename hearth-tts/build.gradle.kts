@@ -1,3 +1,5 @@
+import java.security.MessageDigest
+
 plugins { alias(libs.plugins.android.library); alias(libs.plugins.kotlin.android) }
 
 // The app, common-jni and TTS share one active ABI. TTS supports ARM64 only;
@@ -77,3 +79,67 @@ dependencies {
     implementation(project(":hearth-onnx-runtime"))
     testImplementation("junit:junit:4.13.2")
 }
+
+fun verifyPinnedNativeInventory(directory: File, pins: Map<String, String>) {
+    val packaged = directory.listFiles().orEmpty().filter { it.isFile && it.extension == "so" }.map { it.name }.toSet()
+    check(packaged == pins.keys) { "Ming arm64 JNI set is incomplete or unexpected: $packaged" }
+    pins.forEach { (name, expected) ->
+        val digest = MessageDigest.getInstance("SHA-256")
+        directory.resolve(name).inputStream().use { input ->
+            val buffer = ByteArray(1 shl 20)
+            while (true) {
+                val count = input.read(buffer)
+                if (count < 0) break
+                digest.update(buffer, 0, count)
+            }
+        }
+        val actual = digest.digest().joinToString("") { "%02x".format(it) }
+        check(actual == expected) { "Staged Ming JNI changed: $name ($actual); rebuild and review the provenance pins" }
+    }
+}
+
+// Restore the pre-collapse fail-closed guard. Other app ABIs package no TTS JNI.
+if (ttsAbis.isNotEmpty()) {
+    val mingJniDirectory = layout.projectDirectory.dir("../hearth-tts-ming/src/main/jniLibs/arm64-v8a")
+    val mingJniPinFile = layout.projectDirectory.file("provenance/jniLibs/ming-SHA256SUMS")
+    val verifyMingAndroidLibs = tasks.register("verifyMingAndroidLibs") {
+        inputs.dir(mingJniDirectory)
+        inputs.file(mingJniPinFile)
+        doLast {
+            val entries = mingJniPinFile.asFile.readLines().filter(String::isNotBlank).map { line ->
+                val fields = line.trim().split(Regex("\\s+"), limit = 2)
+                check(fields.size == 2 && fields[0].matches(Regex("[a-f0-9]{64}"))) { "Invalid Ming JNI provenance pin" }
+                fields[1] to fields[0]
+            }
+            val pins = entries.toMap()
+            check(entries.size == 2 && pins.keys == setOf("libming_jni.so", "libming_jni_scalar.so")) {
+                "Ming JNI provenance must pin exactly the dotprod and scalar libraries"
+            }
+            verifyPinnedNativeInventory(mingJniDirectory.asFile, pins)
+        }
+    }
+    tasks.matching { it.name == "preBuild" }.configureEach { dependsOn(verifyMingAndroidLibs) }
+}
+
+// Exercise the same preBuild verifier against healthy, changed, missing and extra staged files.
+val testMingNativeIntegrity = tasks.register("testMingNativeIntegrity") {
+    group = "verification"
+    doLast {
+        val directory = temporaryDir.resolve("staged").apply { deleteRecursively(); mkdirs() }
+        val binary = directory.resolve("libfixture.so")
+        binary.writeText("authenticated native fixture")
+        val pins = mapOf(binary.name to MessageDigest.getInstance("SHA-256")
+            .digest(binary.readBytes()).joinToString("") { "%02x".format(it) })
+        verifyPinnedNativeInventory(directory, pins)
+        fun rejects(action: () -> Unit) {
+            action()
+            var rejected = false
+            try { verifyPinnedNativeInventory(directory, pins) } catch (_: IllegalStateException) { rejected = true }
+            check(rejected) { "Native integrity verification accepted an invalid staged inventory" }
+        }
+        rejects { binary.appendText("changed") }
+        rejects { binary.delete() }
+        rejects { binary.writeText("authenticated native fixture"); directory.resolve("libunreviewed.so").writeText("extra") }
+    }
+}
+tasks.matching { it.name == "check" || it.name == "test" }.configureEach { dependsOn(testMingNativeIntegrity) }

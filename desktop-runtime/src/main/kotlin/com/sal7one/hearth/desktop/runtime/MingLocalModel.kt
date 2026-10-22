@@ -4,30 +4,28 @@ import com.sal7one.hearth.core.EngineSelection
 import java.nio.file.Files
 import java.nio.file.LinkOption
 import java.nio.file.Path
-import java.security.MessageDigest
 import java.util.Locale
 
 /** The flat catalog files and the parts/ layout expected by the fusor-ai runtime. */
 internal object MingLocalModel {
     val assets: List<String> = listOf("manifest.json", "tokenizer.json") + (0..14).map { "part-%03d.bin".format(it) }
     private val languages = setOf("en", "zh")
+    private val integrity = ComponentModelIntegrity("Ming", assets.toSet(), component = { root, name ->
+        val flat = root.resolve(name)
+        if (name.startsWith("part-") && !Files.exists(flat, LinkOption.NOFOLLOW_LINKS)) {
+            root.resolve("parts/${name.removePrefix("part-")}")
+        } else flat
+    })
 
     /** Match Android's locale normalization: en-US/zh-Hans are accepted, unsupported tags are not. */
     fun language(tag: String): String? =
         Locale.forLanguageTag(tag).language.lowercase(Locale.ROOT).takeIf { it in languages }
 
-    fun verify(selection: EngineSelection): Path {
-        val root = Path.of(selection.modelPath).toRealPath()
-        require(Files.isDirectory(root)) { "Select the complete Ming bundle directory" }
-        for ((key, expected) in selection.options.filterKeys { it.startsWith("sha256.") }) {
-            val name = key.removePrefix("sha256.")
-            require(name in assets) { "Unexpected Ming component: $name" }
-            val file = root.resolve(name).normalize()
-            require(file.startsWith(root) && Files.isRegularFile(file)) { "Missing Ming component: $name" }
-            check(sha256(file) == expected) { "Ming component checksum mismatch: $name" }
-        }
-        return prepare(root)
-    }
+    fun stamp(selection: EngineSelection, keepActive: () -> Unit = {}) =
+        integrity.stamp(Path.of(selection.modelPath), selection.options, keepActive)
+
+    fun verify(selection: EngineSelection, keepActive: () -> Unit = {}): Path =
+        prepare(integrity.verify(Path.of(selection.modelPath), selection.options, keepActive).root)
 
     /**
      * Materialize the runtime's parts/ layout from the flat catalog files. Always verify that an
@@ -63,12 +61,4 @@ internal object MingLocalModel {
         return root
     }
 
-    private fun sha256(path: Path): String {
-        val digest = MessageDigest.getInstance("SHA-256")
-        Files.newInputStream(path).use { input ->
-            val buffer = ByteArray(1 shl 20)
-            while (true) { val read = input.read(buffer); if (read < 0) break; digest.update(buffer, 0, read) }
-        }
-        return digest.digest().joinToString("") { "%02x".format(it) }
-    }
 }

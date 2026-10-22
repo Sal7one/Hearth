@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "asOf": "2026-10-22",
+  "baselineCommit": "b020548639121bef4e4a8db67eeb0ab98ba3bbd3",
+  "platform": "macos-arm64",
+  "status": "PASS",
+  "nativeSourceSetSha256": "6d8061ddf3cc67d92b40ddfd36c6298ee3326357f4bdec25427c39f9232f7334",
+  "modelDownloadsPerformed": false,
+  "providerCallsPerformed": false,
+  "microphoneUsed": false,
+  "audioPlayed": false,
+  "cases": [
+    {
+      "engine": "CTranslate2 QuickMT EN to AR",
+      "path": "DesktopEngines.translate",
+      "requiredComponentsPinned": 6,
+      "elapsedMs": 10323,
+      "translation": "يفتح المتحف في الساعة التاسعة صباحًا."
+    },
+    {
+      "engine": "Ming-3.0 local 0.5B",
+      "path": "DesktopEngines.synthesize",
+      "requiredComponentsPinned": 17,
+      "elapsedMs": 3762,
+      "sampleRate": 44100,
+      "frames": 61740,
+      "peakPcm16": 14658,
+      "nonZeroFrames": 53949,
+      "voice": "US_Emma",
+      "language": "en"
+    },
+    {
+      "engine": "Vosk small English US 0.15",
+      "path": "DesktopEngines.recognize",
+      "elapsedMs": 2035,
+      "segments": 1,
+      "transcript": "the museum opens at nine in the morning please bring your ticket to the east entrance",
+      "integrity": "Selected catalog tree SHA verified at runtime and again by native whitelist"
+    }
+  ],
+  "limits": [
+    "One synthetic fixture per engine; performance was measured during parallel Android QA compilation and is not a benchmark.",
+    "Ming generated speech was not played or evaluated for pronunciation.",
+    "These checks do not establish S25/S22 behavior, corpus accuracy or Windows/GPU performance."
+  ]
+}

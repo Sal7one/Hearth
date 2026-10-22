@@ -31,7 +31,7 @@ data class AudioCaptureDevice(val id: String, val name: String)
 
 /** One capture owner, 16 queued 100 ms frames plus in-flight producer/emitter/consumer frames. */
 class DesktopAudioCapture private constructor(private val deviceId: String?, private val lineFactory: ((AudioFormat) -> TargetDataLine)?) : Closeable {
-    constructor(deviceId: String? = null) : this(deviceId, null)
+    constructor(deviceId: String? = null) : this(deviceId?.takeIf(String::isNotBlank), null)
     internal constructor(lineFactory: (AudioFormat) -> TargetDataLine) : this(null, lineFactory)
     private val started = AtomicBoolean()
     private val stop = AtomicBoolean()

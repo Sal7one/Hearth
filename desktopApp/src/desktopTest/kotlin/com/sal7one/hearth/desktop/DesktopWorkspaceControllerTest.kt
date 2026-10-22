@@ -5,6 +5,7 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.test.*
 import java.io.IOException
+import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.test.*
 
@@ -42,6 +43,7 @@ class DesktopWorkspaceControllerTest {
         assertTrue(controller.state.value.cancelling)
         assertTrue(controller.state.value.active, "A terminal notification does not mean native work has joined")
         controller.start(WorkspaceInput.TEXT, "Another request", "", null)
+        controller.retry()
         assertEquals(1, pipeline.requests.size)
         pipeline.session.releaseCancellation.complete(Unit)
         runCurrent()
@@ -92,6 +94,57 @@ class DesktopWorkspaceControllerTest {
         controller.close()
     }
 
+    @Test fun retryUsesOriginalTextAndCurrentRepairedConfiguration() = runTest {
+        val pipeline = RetryPipeline()
+        val config = MutableStateFlow(PipelineConfig(translation = EngineSelection("broken-provider")))
+        val controller = controller(pipeline, config)
+        controller.start(WorkspaceInput.TEXT, "مرحبا بالعالم", "", null)
+        runCurrent()
+        assertEquals(PipelineStatus.FAILED, controller.state.value.snapshot?.status)
+        config.value = config.value.copy(translation = EngineSelection("repaired-provider"), targetLanguage = "fr")
+        controller.retry()
+        runCurrent()
+        assertEquals(2, pipeline.requests.size)
+        assertEquals(PipelineInput.Text("مرحبا بالعالم"), pipeline.requests.last().input)
+        assertEquals(config.value, pipeline.requests.last().config)
+        assertTrue(controller.state.value.active)
+        controller.retry()
+        assertEquals(2, pipeline.requests.size, "Retry cannot submit a second active request")
+        controller.close()
+        controller.retry()
+        assertEquals(2, pipeline.requests.size, "Closed controllers cannot resend private input")
+    }
+
+    @Test fun retryReopensTheSameAudioFileAfterFailure() = runTest {
+        val path = Files.createTempFile("hearth-retry-", ".wav")
+        val pipeline = RetryPipeline()
+        val controller = controller(pipeline)
+        try {
+            controller.start(WorkspaceInput.AUDIO_FILE, "", path.toString(), null)
+            controller.state.first { !it.starting && it.snapshot != null }
+            controller.retry()
+            controller.state.first { !it.starting && pipeline.requests.size == 2 }
+            assertEquals(PipelineInput.AudioFile(path.toAbsolutePath().toString()), pipeline.requests.last().input)
+        } finally {
+            controller.close()
+            Files.deleteIfExists(path)
+        }
+    }
+
+    @Test fun microphoneRetryCreatesAFreshUncollectedCaptureFlowWithoutOpeningADevice() = runTest {
+        val pipeline = RetryPipeline()
+        val controller = controller(pipeline)
+        controller.start(WorkspaceInput.MICROPHONE, "", "", "selected-device")
+        runCurrent()
+        controller.retry()
+        runCurrent()
+        val first = assertIs<PipelineInput.AudioStream>(pipeline.requests.first().input)
+        val second = assertIs<PipelineInput.AudioStream>(pipeline.requests.last().input)
+        assertNotSame(first.frames, second.frames, "A consumed/failed microphone flow cannot be reused")
+        assertTrue(controller.state.value.microphone)
+        controller.close()
+    }
+
     private fun TestScope.controller(
         pipeline: PipelineService,
         config: MutableStateFlow<PipelineConfig> = MutableStateFlow(PipelineConfig(translation = EngineSelection("translation"))),
@@ -108,6 +161,22 @@ class DesktopWorkspaceControllerTest {
         override fun start(request: PipelineRequest): PipelineSession {
             requests += request
             return session
+        }
+    }
+
+    private class RetryPipeline : PipelineService {
+        val requests = mutableListOf<PipelineRequest>()
+        override fun capabilities() = emptyList<EngineDescriptor>()
+        override fun start(request: PipelineRequest): PipelineSession {
+            requests += request
+            val initial = if (requests.size == 1) PipelineStatus.FAILED else PipelineStatus.RUNNING
+            return object : PipelineSession {
+                override val id = "retry-${requests.size}"
+                override val state = MutableStateFlow(PipelineSnapshot(id, initial,
+                    error = if (initial == PipelineStatus.FAILED) "Repair the selected provider" else null))
+                override val events = MutableSharedFlow<PipelineEvent>()
+                override suspend fun cancel() { state.value = state.value.copy(status = PipelineStatus.CANCELLED) }
+            }
         }
     }
 

@@ -9,6 +9,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import com.sal7one.hearth.desktop.DesktopModelController
 import com.sal7one.hearth.desktop.DesktopWorkspaceController
+import com.sal7one.hearth.desktop.data.DesktopModelStatus
 import com.sal7one.hearth.desktop.WorkspaceInput
 import com.sal7one.hearth.desktop.chooseFile
 import com.sal7one.hearth.desktop.chooseSaveFile
@@ -22,7 +23,8 @@ import com.sal7one.hearth.desktop.ui.screens.models.ModelsActions
 import com.sal7one.hearth.desktop.ui.screens.models.ModelsFilter
 import com.sal7one.hearth.desktop.ui.screens.models.ModelsScreen
 import com.sal7one.hearth.desktop.ui.screens.models.modelsState
-import com.sal7one.hearth.desktop.engineSelection
+import com.sal7one.hearth.desktop.chooseEngine
+import com.sal7one.hearth.desktop.enableReadAloud
 import com.sal7one.hearth.desktop.ui.screens.speech.Compute
 import com.sal7one.hearth.desktop.ui.screens.speech.Responsiveness
 import com.sal7one.hearth.desktop.ui.screens.speech.SpeechActions
@@ -101,6 +103,7 @@ internal fun HearthDesktopRoot(
     var overlaySettings by remember { mutableStateOf(overlaySettingsFrom(initialUi)) }
     var reduceMotion by remember { mutableStateOf(initialUi["reduce-motion"] == "true") }
     var deviceId by remember { mutableStateOf<String?>(null) }
+    var translationDraft by remember { mutableStateOf("") }
     var modelFilter by remember {
         mutableStateOf(
             ModelsFilter(
@@ -113,16 +116,15 @@ internal fun HearthDesktopRoot(
     val config by controller.config.collectAsState()
     val workspace by controller.state.collectAsState()
     val library by models.state.collectAsState()
-    val installations by models.library.installations.collectAsState()
+    val managedInstallations by models.library.installations.collectAsState()
+    val installations = managedInstallations + library.verifiedImports.mapValues { (_, route) ->
+        DesktopModelStatus(true, java.nio.file.Path.of(route.modelPath))
+    }
     val freeBytes = remember {
         runCatching { java.io.File(controller.dataDirectory.toFile(), ".").usableSpace }.getOrDefault(0L)
     }
 
-    val installed = remember(library.refreshing) {
-        runCatching {
-            models.library.catalog.count { models.library.installedSelection(it.id) != null }
-        }.getOrDefault(0)
-    }
+    val installed = remember(installations) { installations.values.count { it.ready } }
 
     fun applyOverlay(next: OverlaySettings) {
         overlaySettings = next
@@ -159,6 +161,8 @@ internal fun HearthDesktopRoot(
         transfer = library.transfer,
         filter = modelFilter,
         freeBytes = freeBytes,
+        verifiedImports = library.verifiedImports,
+        issues = library.issues,
     ).copy(refreshing = library.refreshing)
 
     val modelsActions = ModelsActions(
@@ -173,11 +177,22 @@ internal fun HearthDesktopRoot(
         },
         onAction = { id ->
             val card = models.library.find(id)
-            val installed = models.library.installedSelection(id)
+            val installed = models.verifiedSelection(id)
             if (installed != null) {
                 controller.updateConfig { it.useVerifiedModel(card.stage, installed) }
             } else {
                 models.download(id)
+            }
+        },
+        onImport = { id ->
+            if (workspace.importingSetup || library.refreshing || library.transfer != null) {
+                failure("Wait for the current model check or transfer to finish")
+            } else {
+                val card = models.library.find(id)
+                val folder = card.artifacts.size != 1 || card.archive != null || card.rangePackage != null
+                val path = chooseFile(null, if (folder) "Locate complete ${card.name} folder" else "Locate ${card.artifacts.single().filename}",
+                    directoriesOnly = folder)
+                if (path != null) models.verify(id, path)
             }
         },
         onRefresh = { models.refresh(config) },
@@ -206,11 +221,11 @@ internal fun HearthDesktopRoot(
         onNavigate = ::navigate,
         onSelectEngine = { id ->
             controller.capabilities.firstOrNull { it.id == id && it.stage == PipelineStage.STT }?.let { engine ->
-                controller.updateConfig { current -> current.copy(speech = engineSelection(engine)) }
+                controller.updateConfig { current -> current.chooseEngine(engine) }
             }
         },
         onSelectModel = { id ->
-            val verified = models.library.installedSelection(id)
+            val verified = models.verifiedSelection(id)
             if (verified != null) {
                 controller.updateConfig { current -> current.useVerifiedModel(PipelineStage.STT, verified) }
             } else {
@@ -218,7 +233,7 @@ internal fun HearthDesktopRoot(
             }
         },
         onLanguage = { code -> controller.updateConfig { current -> current.copy(sourceLanguage = code) } },
-        onDevice = { id -> deviceId = id },
+        onDevice = { id -> deviceId = id?.takeIf(String::isNotBlank) },
         onRefreshDevices = { controller.refreshDevices() },
         onResponsiveness = { level -> withSpeechOptions("windowMs", level.windowMs.toString()) },
         onCompute = { compute -> withSpeechOptions("acceleration", compute.key) },
@@ -252,12 +267,12 @@ internal fun HearthDesktopRoot(
                 controller.updateConfig { current -> current.copy(translation = null) }
             } else {
                 controller.capabilities.firstOrNull { it.id == id && it.stage == PipelineStage.TRANSLATION }?.let { engine ->
-                    controller.updateConfig { current -> current.copy(translation = engineSelection(engine)) }
+                    controller.updateConfig { current -> current.chooseEngine(engine) }
                 }
             }
         },
         onSelectModel = { id ->
-            val verified = models.library.installedSelection(id)
+            val verified = models.verifiedSelection(id)
             if (verified != null) {
                 controller.updateConfig { current -> current.useVerifiedModel(PipelineStage.TRANSLATION, verified) }
             } else {
@@ -278,12 +293,6 @@ internal fun HearthDesktopRoot(
         current.copy(voice = selected.copy(options = selected.options + (key to value)))
     }
 
-    // Speed/steps are Supertonic-only controls; strip them when switching to another local voice.
-    fun voiceSelection(engine: com.sal7one.hearth.core.EngineDescriptor): com.sal7one.hearth.core.EngineSelection {
-        val base = engineSelection(engine)
-        return if (engine.id == "supertonic-local") base else base.copy(options = base.options - "speed" - "steps")
-    }
-
     val voicesActions = VoicesActions(
         onNavigate = ::navigate,
         onSelectEngine = { id ->
@@ -292,7 +301,7 @@ internal fun HearthDesktopRoot(
             } else {
                 controller.capabilities.firstOrNull { it.id == id && it.stage == PipelineStage.TTS }?.let { engine ->
                     controller.updateConfig { current ->
-                        current.copy(voice = voiceSelection(engine), voiceId = "")
+                        current.chooseEngine(engine)
                     }
                 }
             }
@@ -301,11 +310,7 @@ internal fun HearthDesktopRoot(
         onSpeakTranslation = { spoken -> controller.updateConfig { current -> current.copy(speakTranslatedText = spoken) } },
         onToggleReadAloud = { aloud ->
             if (aloud) {
-                controller.capabilities.firstOrNull { it.id == "supertonic-local" || it.stage == PipelineStage.TTS }?.let { engine ->
-                    controller.updateConfig { current ->
-                        current.copy(voice = current.voice ?: voiceSelection(engine), voiceId = "")
-                    }
-                }
+                controller.updateConfig { current -> current.enableReadAloud(controller.capabilities) }
             } else {
                 controller.updateConfig { current -> current.copy(voice = null) }
             }
@@ -340,11 +345,7 @@ internal fun HearthDesktopRoot(
         onActivate = { engineId ->
             controller.capabilities.firstOrNull { it.id == engineId }?.let { engine ->
                 controller.updateConfig { current ->
-                    when (engine.stage) {
-                        PipelineStage.STT -> current.copy(speech = engineSelection(engine))
-                        PipelineStage.TRANSLATION -> current.copy(translation = engineSelection(engine))
-                        PipelineStage.TTS -> current.copy(voice = engineSelection(engine))
-                    }
+                    current.chooseEngine(engine)
                 }
             }
         },
@@ -420,9 +421,9 @@ internal fun HearthDesktopRoot(
     val presetsActions = PresetsActions(
         onApply = { id ->
             val definition = BuiltInPresets.all.first { it.id == id }
-            val speech = definition.speechId?.let(models.library::installedSelection)
-            val translation = definition.translationId?.let(models.library::installedSelection)
-            val voice = definition.voiceId?.let(models.library::installedSelection)
+            val speech = definition.speechId?.let(models::verifiedSelection)
+            val translation = definition.translationId?.let(models::verifiedSelection)
+            val voice = definition.voiceId?.let(models::verifiedSelection)
             val missing = buildList {
                 if (definition.speechId != null && speech == null) add(definition.speechId)
                 if (definition.translationId != null && translation == null) add(definition.translationId)
@@ -468,6 +469,7 @@ internal fun HearthDesktopRoot(
         translationEnabled = config.translation != null,
         targetLanguage = config.targetLanguage,
         settings = overlaySettings,
+        showOriginalWhilePending = showPendingOriginal,
     )
 
     val overlayActions = OverlayActions(
@@ -563,7 +565,7 @@ internal fun HearthDesktopRoot(
             }
         },
         onPickText = { navigate(DesktopScreen.TRANSLATE) },
-        onRetry = { controller.clearNotice() },
+        onRetry = { controller.retry() },
     )
 
     HearthTheme(preset = preset, dark = dark, reduceMotion = reduceMotion) {
@@ -596,6 +598,8 @@ internal fun HearthDesktopRoot(
                 DesktopScreen.INTEGRATIONS -> IntegrationsScreen(state = integrations, actions = integrationsActions)
                 DesktopScreen.TRANSLATE -> TranslateScreen(
                     state = translate,
+                    draft = translationDraft,
+                    onDraftChange = { translationDraft = it },
                     actions = TranslateActions(
                         onTranslate = { text ->
                             if (text.isNotBlank()) controller.start(WorkspaceInput.TEXT, text, "", null)

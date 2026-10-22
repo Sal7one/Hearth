@@ -26,11 +26,7 @@ internal fun voicesState(capabilities: List<EngineDescriptor>, config: PipelineC
                     EngineKind.SYSTEM -> "S"
                     EngineKind.CLOUD -> "C"
                 },
-                name = when (engine.kind) {
-                    EngineKind.LOCAL -> "Supertonic 3"
-                    EngineKind.SYSTEM -> "System voice"
-                    EngineKind.CLOUD -> engine.name
-                },
+                name = engine.name,
                 detail = when (engine.kind) {
                     EngineKind.LOCAL -> "On this Mac · CPU"
                     EngineKind.SYSTEM -> "Installed OS voices"
@@ -38,7 +34,8 @@ internal fun voicesState(capabilities: List<EngineDescriptor>, config: PipelineC
                 },
                 note = when {
                     !engine.available -> ""
-                    engine.kind == EngineKind.LOCAL -> "Ten styles, Arabic and English."
+                    engine.id == "supertonic-local" -> "Ten styles, Arabic and English."
+                    engine.kind == EngineKind.LOCAL -> "Uses this engine's downloaded model and voice."
                     engine.kind == EngineKind.SYSTEM -> "No model needed. Quality depends on the OS."
                     else -> "Needs an endpoint and a key."
                 },
@@ -47,18 +44,15 @@ internal fun voicesState(capabilities: List<EngineDescriptor>, config: PipelineC
             )
         },
         selectedEngineId = descriptor?.id,
-        selectedStyle = config.voiceId.ifBlank { "F1" },
+        styles = if (descriptor?.id == "supertonic-local") VOICE_STYLES else emptyList(),
+        selectedStyle = config.voiceId.ifBlank { if (descriptor?.id == "supertonic-local") "F1" else "Engine default" },
         speed = chosen?.options?.get("speed")?.toFloatOrNull() ?: 1f,
         steps = chosen?.options?.get("steps")?.toIntOrNull() ?: 5,
         readAloud = config.voice != null,
         speakTranslation = config.speakTranslatedText,
-        ready = descriptor?.available == true,
-        engineDetail = when {
-            descriptor == null -> VoicesCopy.OFF
-            descriptor.kind == EngineKind.LOCAL -> "Supertonic 3"
-            descriptor.kind == EngineKind.SYSTEM -> "System voice"
-            else -> descriptor.name
-        },
+        ready = descriptor?.available == true && (!descriptor.requiresModel || !chosen?.modelPath.isNullOrBlank()),
+        engineDetail = descriptor?.name ?: VoicesCopy.OFF,
         placementLabel = if (descriptor == null) "—" else "CPU",
+        outputLabel = if (descriptor?.id == "supertonic-local") "44.1 kHz WAV" else "Engine WAV output",
     )
 }

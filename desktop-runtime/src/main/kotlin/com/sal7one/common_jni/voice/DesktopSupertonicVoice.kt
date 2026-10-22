@@ -13,7 +13,12 @@ class SupertonicVoice(directory: File) : AutoCloseable {
     }
     fun cancel() { handle.get().takeIf { it != 0L }?.let(SupertonicNative::cancel) }
     override fun close() { handle.getAndSet(0).takeIf { it != 0L }?.let(SupertonicNative::destroy) }
-    companion object { const val SAMPLE_RATE = 44100 }
+    companion object {
+        const val SAMPLE_RATE = 44100
+        fun available(): Boolean = DesktopNativeLibraries.readiness("hearth_supertonic_jni") == null
+        fun availabilityReason(): String = DesktopNativeLibraries.readiness("hearth_supertonic_jni")
+            ?: "Supertonic JNI loaded"
+    }
 }
 data class VoiceStyle(val ttl: FloatArray, val dp: FloatArray)
 internal object SupertonicNative {

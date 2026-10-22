@@ -1,5 +1,9 @@
 # Hearth model expansion: implementation and acceptance status
 
+**Subsequent audit:** read [post-handover audit](post-handover-audit-2026-10-22.md)
+for confirmed regressions, fixes and new validation. Earlier feature-complete/CI
+statements below describe the historical checkpoint.
+
 For the current desktop state, read
 [the final desktop handoff](desktop-final-2026-10-22.md). macOS arm64 is
 feature-complete and release-verified; Windows is parked by the owner. The older

@@ -40,6 +40,7 @@ jobs:
       - name: Assemble standalone article SDK artifacts
         run: ./gradlew :hearth-tts:assembleRelease :hearth-onnx-runtime:assembleRelease
       - run: python3 scripts/verify-tts-aars.py
+      - run: python3 -m unittest discover -s scripts -p 'test_verify_tts_aars.py'
       - run: bash common-jni/src/main/cpp/ocr/tests/run_ocr_tests.sh
       - run: bash common-jni/src/main/cpp/common/tests/run_common_utils_tests.sh
       - name: Speech host checks with Clang
