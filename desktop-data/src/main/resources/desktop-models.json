@@ -1842,6 +1842,95 @@
       }
     },
     {
+      "id": "chatterbox-multilingual-v3",
+      "name": "Chatterbox Multilingual V3",
+      "family": "Chatterbox",
+      "stage": "TTS",
+      "engineId": "chatterbox-tts-local",
+      "languages": [
+        "ar",
+        "en"
+      ],
+      "source": "https://huggingface.co/Masterx/chatterbox-multilingual-v3-ONNX",
+      "license": "MIT (model, export and Perth); MIT/Apache-2.0/Unicode runtime notices",
+      "note": "Pinned Chatterbox V3 Q4 ONNX stack and the official MIT Perth watermark checkpoint, CPU-only, 24 kHz mono, macOS Apple silicon. All 11 downloaded components are verified before loading. The ORT-compatible graph and the native watermark format are derived locally from those pinned sources by the pinned converters; no download, no pickle execution and no Python runtime are required. Every output is watermarked before it is published.",
+      "options": {
+        "voice": "default",
+        "threads": "2"
+      },
+      "platforms": [
+        "macos-arm64"
+      ],
+      "artifacts": [
+        {
+          "filename": "onnx/speech_encoder.onnx",
+          "bytes": 1204600,
+          "sha256": "012a9583c0a9560afa11307b585f1e799fca0e1701bdae53fa34766da78f8eae",
+          "url": "https://huggingface.co/Masterx/chatterbox-multilingual-v3-ONNX/resolve/19b94afe41de738624b2f3afc75b4cd56221fbeb/onnx/speech_encoder.onnx"
+        },
+        {
+          "filename": "onnx/speech_encoder.onnx_data",
+          "bytes": 591274880,
+          "sha256": "f1f663a1a03aa885f8f0fcaa730dd8dfbce8caad514093b13c9682a4a2842990",
+          "url": "https://huggingface.co/Masterx/chatterbox-multilingual-v3-ONNX/resolve/19b94afe41de738624b2f3afc75b4cd56221fbeb/onnx/speech_encoder.onnx_data"
+        },
+        {
+          "filename": "onnx/embed_tokens.onnx",
+          "bytes": 17616,
+          "sha256": "c8dd692ee8dfc9099baf39c8074e9bcc0a760e8c25ae1cac4a8c62c7cf4536bc",
+          "url": "https://huggingface.co/Masterx/chatterbox-multilingual-v3-ONNX/resolve/19b94afe41de738624b2f3afc75b4cd56221fbeb/onnx/embed_tokens.onnx"
+        },
+        {
+          "filename": "onnx/embed_tokens.onnx_data",
+          "bytes": 68808704,
+          "sha256": "d263116bec8ae582953c99bdffa9ecd53914d1ae2732da8455e361ed5baa2a9a",
+          "url": "https://huggingface.co/Masterx/chatterbox-multilingual-v3-ONNX/resolve/19b94afe41de738624b2f3afc75b4cd56221fbeb/onnx/embed_tokens.onnx_data"
+        },
+        {
+          "filename": "onnx/language_model_q4.onnx",
+          "bytes": 228633,
+          "sha256": "91846c24706116f87b39aac5b13aa1a67243b6f973bc433327d143b8eff9fde6",
+          "url": "https://huggingface.co/Masterx/chatterbox-multilingual-v3-ONNX/resolve/19b94afe41de738624b2f3afc75b4cd56221fbeb/onnx/language_model_q4.onnx"
+        },
+        {
+          "filename": "onnx/language_model_q4.onnx_data",
+          "bytes": 353621248,
+          "sha256": "621a963492f871ccc841592c6ca117bf88dbea4c0c25d61be4391197c8b878b0",
+          "url": "https://huggingface.co/Masterx/chatterbox-multilingual-v3-ONNX/resolve/19b94afe41de738624b2f3afc75b4cd56221fbeb/onnx/language_model_q4.onnx_data"
+        },
+        {
+          "filename": "onnx/conditional_decoder.onnx",
+          "bytes": 6371670,
+          "sha256": "f494d8fed14f269e969a58ccbd627cdfb5eb889d0816c7fde09621fdcb160128",
+          "url": "https://huggingface.co/Masterx/chatterbox-multilingual-v3-ONNX/resolve/19b94afe41de738624b2f3afc75b4cd56221fbeb/onnx/conditional_decoder.onnx"
+        },
+        {
+          "filename": "onnx/conditional_decoder.onnx_data",
+          "bytes": 533970816,
+          "sha256": "f41f149c1a30c273133739e873294e28dbc3c4ae6376b0a501e9cd21de286835",
+          "url": "https://huggingface.co/Masterx/chatterbox-multilingual-v3-ONNX/resolve/19b94afe41de738624b2f3afc75b4cd56221fbeb/onnx/conditional_decoder.onnx_data"
+        },
+        {
+          "filename": "tokenizer.json",
+          "bytes": 72765,
+          "sha256": "8763bb615f5e0ad49fbb53b65d371e37961f64bb0a55b96c0205f4a59ba5be13",
+          "url": "https://huggingface.co/Masterx/chatterbox-multilingual-v3-ONNX/resolve/19b94afe41de738624b2f3afc75b4cd56221fbeb/tokenizer.json"
+        },
+        {
+          "filename": "default_voice.wav",
+          "bytes": 714320,
+          "sha256": "3ebc531cdaba358a327099c1c4f0448026719957bcf4d8e9868767f227e02f4e",
+          "url": "https://huggingface.co/Masterx/chatterbox-multilingual-v3-ONNX/resolve/19b94afe41de738624b2f3afc75b4cd56221fbeb/default_voice.wav"
+        },
+        {
+          "filename": "perth_net_250000.pth.tar",
+          "bytes": 37429684,
+          "sha256": "a15bce457ebc53ce5e6c9c3f11df78cf7ee2bf9cdab0a798902135b4c4027670",
+          "url": "https://raw.githubusercontent.com/resemble-ai/Perth/ff1c8ac55a976971245cdd53c18d6131ca00d993/src/perth/perth_net/pretrained/implicit/perth_net_250000.pth.tar"
+        }
+      ]
+    },
+    {
       "id": "moonshine-tiny-en-v2",
       "name": "Moonshine tiny.en · q8",
       "family": "Moonshine",

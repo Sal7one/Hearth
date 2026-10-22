@@ -7,6 +7,10 @@ import com.sal7one.common_jni.translation.Ct2Native
 import com.sal7one.common_jni.translation.LocalTranslationNative
 import com.sal7one.hearth.core.*
 import com.sal7one.hearth.desktop.media.DesktopMediaDecoder
+import com.sal7one.hearth.tts.chatterbox.ChatterboxCatalog
+import com.sal7one.hearth.tts.chatterbox.ChatterboxGraph
+import com.sal7one.hearth.tts.chatterbox.ChatterboxPerth
+import com.sal7one.hearth.tts.chatterbox.ChatterboxSpeechEngine
 import com.sal7one.hearth.tts.magpie.MagpieCatalog
 import com.sal7one.hearth.tts.magpie.MagpieSpeechEngine
 import com.sal7one.hearth.tts.moss.MossCatalog
@@ -72,6 +76,16 @@ class DesktopEngines(
         assetNames = MagpieCatalog.weights.map { it.filename } + MagpieCatalog.tokenizer.map { "tokenizer/${it.filename}" },
         engineFactory = { path, threads -> MagpieSpeechEngine(path.toFile(), threads) },
     )
+    /** Chatterbox fingerprints the derived graph and watermark, not the raw downloadable sources. */
+    private val chatterboxVoices = DesktopVoiceCache(
+        appDataDirectory,
+        engineId = "chatterbox-tts-local",
+        sampleRate = 24_000,
+        defaultVoice = "default",
+        assetNames = ChatterboxCatalog.assets.map { if (it.filename == ChatterboxGraph.SOURCE_FILENAME) ChatterboxGraph.FILENAME else it.filename } + ChatterboxPerth.FILENAME,
+        engineFactory = { path, threads -> ChatterboxSpeechEngine(path.toFile(), threads) },
+        prepare = ::prepareChatterbox,
+    )
     private val translationGate = Mutex()
     private val ct2Gate = Mutex()
     private val lifecycle = Any()
@@ -136,6 +150,7 @@ class DesktopEngines(
             local("moss-tts-local", "MOSS-TTS Nano 100M", PipelineStage.TTS, "hearth_desktop_moss", setOf("ar", "en")),
             local("omnivoice-tts-local", "OmniVoice (voice design)", PipelineStage.TTS, "hearth_desktop_omnivoice", setOf("ar", "en")),
             local("magpie-tts-local", "MagpieTTS Multilingual 357M", PipelineStage.TTS, "hearth_desktop_magpie", MagpieCatalog.languages),
+            local("chatterbox-tts-local", "Chatterbox Multilingual V3", PipelineStage.TTS, "hearth_desktop_chatterbox", setOf("ar", "en")),
             local("ming-local", "Ming-3.0 TTS 0.5B (local)", PipelineStage.TTS, "ming_jni", setOf("en", "zh")),
             local("llama-translation-local", "Local GGUF translation", PipelineStage.TRANSLATION, "transiber_translation"),
             local("marian-local", "CTranslate2 · Marian/OPUS", PipelineStage.TRANSLATION, "hearth_desktop_ct2"),
@@ -514,6 +529,10 @@ class DesktopEngines(
             require(!metal(selection)) { "Magpie desktop supports CPU acceleration only" }
             return magpieVoices.read(text, selection, language, voiceId)
         }
+        if (selection.engineId == "chatterbox-tts-local") {
+            require(!metal(selection)) { "Chatterbox desktop supports CPU acceleration only" }
+            return chatterboxVoices.read(text, selection, language, voiceId)
+        }
         if (selection.engineId == "ming-local") {
             require(!metal(selection)) { "Ming local supports CPU acceleration only" }
             return mingVoices.read(text, selection, language, voiceId)
@@ -532,7 +551,7 @@ class DesktopEngines(
         engine?.close()
     }
     override fun close() {
-        if (closed.compareAndSet(false, true)) try { clearTranslation(); clearCt2() } finally { voices.close(); mossVoices.close(); omnivoiceVoices.close(); magpieVoices.close(); mingVoices.close() }
+        if (closed.compareAndSet(false, true)) try { clearTranslation(); clearCt2() } finally { voices.close(); mossVoices.close(); omnivoiceVoices.close(); magpieVoices.close(); chatterboxVoices.close(); mingVoices.close() }
     }
 /** Vosk models are extracted directories whose model-tree-sha256-v1 digest is the pin.
  *  The desktop library verifies it on install/refresh and the adapter re-derives and

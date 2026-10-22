@@ -3,7 +3,7 @@
 What each model family needs before it can run on macOS/Windows like it does on
 Android. Status is what has been *executed*, not what is planned.
 
-Last updated after the MagpieTTS desktop family passed real non-silent C ABI/JNI/catalog-install proofs on macOS arm64.
+Last updated after the MagpieTTS and Chatterbox Multilingual V3 desktop families passed real non-silent proofs on macOS arm64.
 
 ## Working today on desktop
 
@@ -24,6 +24,7 @@ Last updated after the MagpieTTS desktop family passed real non-silent C ABI/JNI
 | Ming-3.0 TTS 0.5B (local) | 1 (17 pinned files) | `libming_jni.dylib` (pinned ming-ffi over fusor-ai 0.1.2) | real 44.1 kHz non-silent WAV, `DesktopMingLocalRealSmokeTest`: 61,740 frames / peak 14,658 / 87% non-zero; English/Chinese only; Android build-only |
 | OmniVoice | 1 (2 pinned GGUF files) | `hearth_desktop_omnivoice` (static omnivoice.cpp `1a468d8b` + ggml `cc5df49a`, CPU, 24 kHz) | real non-silent WAV through the desktop engine, `DesktopOmniVoiceRealSmokeTest`: EN 1.84 s / peak 0.936 / RMS 0.173 / 39,294 of 44,160 non-zero; AR 1.83 s / peak 0.905 / RMS 0.142 / 38,286 of 43,920 non-zero; 32 MaskGIT steps, RTF 5.25 cold EN (includes load) and 4.26 warm AR, 32 steps, on a busy host; repeats measured 4.1-5.3, with one 14.1 under heavy unrelated build load |
 | MagpieTTS Multilingual 357M | 1 (2 pinned GGUF files + 31,076,864 B authenticated tokenizer ranges) | `hearth_desktop_magpie` (static NeMo-Speech.cpp `caa3f47c` + llama.cpp/ggml `bd4f514d`, CPU, 22.05 kHz) | real non-silent WAV through the C ABI, `magpie_probe`: EN 1.393 s / peak 0.5549 / RMS 0.0942 / 30,503 of 30,720 non-zero / RTF 1.91; AR 2.508 s / peak 0.3139 / RMS 0.0433 / 54,716 of 55,296 non-zero / RTF 1.10 (4 threads, includes first-call load); desktop engine `DesktopMagpieRealSmokeTest`: EN 1.486 s / peak 0.441 / RMS 0.0805 / 4.15 cold, AR 2.229 s / peak 0.486 / RMS 0.0606 / 0.97 warm at 2 threads; catalog install `DesktopMagpieCatalogInstallTest` verifies the two GGUF files (local cache in this run) plus the downloaded range-extracted tokenizer and synthesizes non-silent 22.05 kHz WAV |
+| Chatterbox Multilingual V3 (TTS) | 1 (11 pinned files, 1,593,714,936 B) | `hearth_desktop_chatterbox` (static Rust byte-BPE 0.22.2 + pinned chatterboxcpp `1a9a4fc0`, shared ONNX Runtime 1.20.1, mandatory native Perth) | real 24 kHz non-silent WAV through the desktop engine, `DesktopChatterboxRealSmokeTest`: EN 1.16 s / 27,840 samples / peak 0.827 / RMS 0.132 / 26,959 non-zero; AR 1.92 s / 46,080 / peak 0.818 / RMS 0.132 / 38,282 non-zero; RTF 28.9 cold EN (includes load) and 4.83 warm AR; direct C ABI probe EN peak 0.74-0.93 / RMS 0.130-0.132, AR peak 0.64-1.05 raw float (the WAV writer clamps) / RMS 0.108-0.109; direct JNI PASS |
 
 ## Missing on desktop
 
@@ -33,7 +34,7 @@ The shared ABI and the family-versus-model rule are documented in
 | Family | Models | Android implementation | What a desktop port needs |
 | --- | --- | --- | --- |
 | CTranslate2 pair coverage | 3 desktop cards: QuickMT EN↔AR, SMaLL-100 (100 languages) | `common-jni/src/main/cpp/translation/ct2` + `Ct2Catalog.kt` | four Jisr 50M specs are pinned but `downloadEnabled=false`, and the requested EN↔DE/ES/FR/RU/ZH pair models are not present or pinned in this repo |
-| TTS — Chatterbox, Oute | 2 | `hearth-tts-*` modules | each family has its own architecture and runtime; OmniVoice, MOSS, Ming local and Magpie are the proven desktop TTS runtimes |
+| TTS — Oute | 1 | `hearth-tts-*` modules | Oute has its own architecture and runtime; OmniVoice, MOSS, Ming local, Magpie and Chatterbox are the proven desktop TTS runtimes |
 
 ## What Qwen3-ASR proved
 
@@ -104,9 +105,39 @@ catalog before it has a passing smoke.
 - CPU only. The direct 4-thread probe measured RTF 1.91 (EN) and 1.10 (AR) including
   first-call load; the 2-thread desktop engine path measured 4.15 cold and 0.97 warm.
 
+## What the Chatterbox proof shows
+
+- The prior rejection rationale was a toolchain observation, not a hard blocker:
+  the mandatory Perth watermark is a PyTorch `.pth.tar`, and this host's default
+  `python3` (3.15) has no `torch`. `python3.14` has torch 2.12.0, and
+  `scripts/voice/export-perth.py` converted the pinned checkpoint to the exact
+  recorded `perth-encoder.bin` (37,387,276 B, sha256 `02101c6f…`). On the desktop
+  product this step is not a runtime dependency at all: the pinned pure-JVM
+  `ChatterboxPerth` converter performs the same non-pickle conversion, and the
+  desktop engine derives the watermark from the downloaded source on first use.
+- `scripts/voice/chatterbox/prepare-graph.py` reproduces the Android graph
+  rewrite byte-for-byte: 228,633 B source (`91846c24…`) to 228,453 B
+  (`60f14516…`) by removing only the 90 empty trailing GQA inputs. No ONNX
+  Python tooling is involved.
+- The dylib statically owns the Rust byte-BPE (tokenizers 0.22.2, built from the
+  repo's pinned crate) and links only `libonnxruntime.1.20.1.dylib`, `libc++`
+  and `libSystem`. It does not dlopen a second Chatterbox runtime, ship Python,
+  or copy another engine's runtime into itself.
+- The generated WAV is real and non-silent, and the engine always applies Perth
+  before the first PCM callback; there is no raw-vocoder fallback.
+- The publisher conditional decoder contains random-noise nodes, so PCM and the
+  derived peak/RMS are not bit-reproducible run to run; the speech-token sequence
+  was stable for the same text, and every run stayed non-silent.
+- It is slow: the C ABI probe measured RTF 15.4 for 1.16 s of English and 8.25
+  for 1.6 s of Arabic with 2 threads, and the app-path cold English runs measured
+  25.6-28.9 because they include the ~22-27 s session load. This is not a real-time
+  reader and no throughput claim is made.
+
 ## Not claimed
 
-- Windows for any of the above. No Windows host has run this code.
+- Windows for any of the above. No Windows host has run this code. The Chatterbox stage is macOS arm64 only.
+- Chatterbox quality, pronunciation, speaker preference or watermark detectability. Non-silence only proves execution. The engine applies Perth, but this work did not run Perth detection on the output.
+- Chatterbox real-time use. RTF measured 4.8-28.9 through the app path and 8.2-15.4 through the direct C ABI on an Apple M4 Pro; it is not claimed as a live reader. Only Arabic and English frontends are exposed; the other upstream languages are not advertised.
 - OmniVoice quality, pronunciation, fixed speaker identity or gender. Voice designs
   are requested attributes; the default is `design-female`. RTF is ~4-5 at the
   upstream default of 32 MaskGIT steps on Apple M4 Pro, so it is not a real-time

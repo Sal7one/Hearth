@@ -301,6 +301,23 @@ def generate():
             bytes=magpie_range['bytes'], sha256=magpie_range['sha256'],
             ranges=[[start, end] for start, end in magpie_range['ranges']],
             members=[dict(path=m['name'], bytes=m['size'], sha256=m['sha256']) for m in magpie_tokenizer['members']])))
+    # Chatterbox V3: the Android handoff is the reviewed pin source because the card needs
+    # both the publisher ONNX stack and the official Perth watermark checkpoint.
+    handoff = json.loads((ROOT / 'docs/handoff/models/tts.json').read_text(encoding='utf-8'))
+    chatterbox = next(model for model in handoff['models'] if model['id'] == 'chatterbox-multilingual-v3')
+    chatterbox_components = [component for component in chatterbox['components'] if component.get('required')]
+    assert len(chatterbox_components) == 11, len(chatterbox_components)
+    assert sum(component['bytes'] for component in chatterbox_components) == 1_593_714_936
+    assert all(re.fullmatch(r'[a-f0-9]{64}', component['sha256']) for component in chatterbox_components)
+    models.append(dict(id='chatterbox-multilingual-v3', name='Chatterbox Multilingual V3', family='Chatterbox', stage='TTS',
+        engineId='chatterbox-tts-local', languages=['ar', 'en'],
+        source='https://huggingface.co/Masterx/chatterbox-multilingual-v3-ONNX', license='MIT (model, export and Perth); MIT/Apache-2.0/Unicode runtime notices',
+        note='Pinned Chatterbox V3 Q4 ONNX stack and the official MIT Perth watermark checkpoint, CPU-only, 24 kHz mono, macOS Apple silicon. '
+             'All 11 downloaded components are verified before loading. The ORT-compatible graph and the native watermark format are derived locally from those pinned sources by the pinned converters; '
+             'no download, no pickle execution and no Python runtime are required. Every output is watermarked before it is published.',
+        options={'voice': 'default', 'threads': '2'}, platforms=['macos-arm64'],
+        artifacts=[dict(filename=component['filename'], bytes=component['bytes'], sha256=component['sha256'], url=component['url'])
+                   for component in chatterbox_components]))
     moonshine_models(models, audit)
     omnilingual = next(a for a in audit['artifacts'] if a['id'] == 'omnilingual-ctc-300m-v2-int8')
     omnilingual_files = [
@@ -355,7 +372,7 @@ def generate():
         artifacts=[dict(filename=nemotron['url'].rsplit('/', 1)[-1], bytes=nemotron['bytes'], sha256=nemotron['sha256'], url=nemotron['url'])]))
     vosk_models(models)
     ming_models(models)
-    assert len(models) == 70, len(models)
+    assert len(models) == 71, len(models)
     return json.dumps({'schemaVersion':1,'provenance':'Generated from existing Android pins, the audited Qwen3-ASR release archive, reviewed CT2 catalog pins and reviewed desktop engine pins; run scripts/desktop/generate-catalog.py --check','models':models},ensure_ascii=False,indent=2)+'\n'
 
 

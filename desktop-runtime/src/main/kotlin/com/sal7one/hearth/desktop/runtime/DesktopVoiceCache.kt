@@ -34,6 +34,7 @@ internal class DesktopVoiceCache(
     private val sampleRate: Int = 44_100,
     private val defaultVoice: String = "F1",
     private val assetNames: List<String> = SupertonicCatalog.assets.map { it.filename },
+    private val prepare: ((Path) -> Unit)? = null,
     private val engineFactory: (Path, Int) -> SpeechEngine = { path, _ -> SupertonicSpeechEngine(path.toFile()) },
 ) : AutoCloseable {
     private val voiceGate = Mutex()
@@ -63,7 +64,11 @@ internal class DesktopVoiceCache(
                 qualitySteps = selection.options["steps"]?.toIntOrNull() ?: 5,
             )
             val threadCount = (selection.options["threads"]?.toIntOrNull() ?: 2).also { require(it in 1..8) { "Voice threads must be 1–8" } }
-            val key = withContext(Dispatchers.IO) { fingerprint(Path.of(selection.modelPath), threadCount) }
+            val key = withContext(Dispatchers.IO) {
+                val root = Path.of(selection.modelPath)
+                prepare?.invoke(root)
+                fingerprint(root, threadCount)
+            }
             if (cached?.key != key) {
                 retire()
                 withContext(Dispatchers.IO) {

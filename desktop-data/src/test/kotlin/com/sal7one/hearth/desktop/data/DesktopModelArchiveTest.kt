@@ -35,6 +35,17 @@ class DesktopModelArchiveTest {
         }
     }
 
+    @Test fun directArtifactPathsAreNestedAndStayInsideTheModelDirectory() {
+        assertTrue(validArtifactPath("onnx/speech_encoder.onnx"))
+        assertTrue(validArtifactPath("perth-encoder.bin"))
+        assertFalse(validArtifactPath("../escape.onnx"))
+        assertFalse(validArtifactPath("/absolute.onnx"))
+        assertFalse(validArtifactPath("onnx/../escape.onnx"))
+        assertFalse(validArtifactPath("onnx//empty.onnx"))
+        assertFalse(validArtifactPath("onnx/"))
+        assertFalse(validArtifactPath(""))
+    }
+
     @Test fun aMissingPinnedComponentFailsAndKeepsTheArchiveForRetry() {
         withDirectory { directory ->
             val library = DesktopModelLibrary(directory)

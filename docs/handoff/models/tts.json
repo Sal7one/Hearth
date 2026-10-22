@@ -842,6 +842,26 @@
         ],
         "evidence": "docs/research/chatterbox-native-smoke-2026-10-20.json"
       },
+      "desktopRuntime": {
+        "platform": "macos-arm64",
+        "engine": "chatterbox-tts-local",
+        "file": "libhearth_desktop_chatterbox.dylib",
+        "bytes": 3626912,
+        "sha256": "297a3000cac5000dae5a3abcf09b395db7d81d9fb1873207a042e98636c8f3f1",
+        "backend": "static CPU Rust byte-BPE 0.22.2 + shared ONNX Runtime 1.20.1; mandatory native Perth",
+        "sampleRate": 24000,
+        "revision": "1a9a4fc00a6caa8c8bb9bee533225f40661e4220",
+        "tokenizersVersion": "0.22.2",
+        "perthRevision": "ff1c8ac55a976971245cdd53c18d6131ca00d993",
+        "graphPreparation": "Remove only the 90 empty trailing GQA inputs from the pinned publisher graph; derived 228453 B sha256 60f1451649fcef2014208084f546328f3a4e32c635d57983da7dcf75e9e3dbe8.",
+        "watermarkPreparation": "Pinned non-pickle ZIP-storage converter (JVM on desktop, no Python at runtime); derived 37387276 B sha256 02101c6f48e5f928ef25169f04d7d60373fd22028faf58b105c4d7a6e010916f.",
+        "blockers": [
+          "Owner Arabic/English listening, pronunciation and speaker preference unmeasured.",
+          "Measured RTF 4.8-28.9 in the desktop app path and 6.0-15.4 through the direct C ABI; not a real-time reader.",
+          "Only ar/en frontends are exposed; the other upstream languages are not advertised.",
+          "Windows has not been built or run."
+        ]
+      },
       "license": {
         "name": "MIT model/export; upstream watermarking policy and reference rights must be preserved",
         "url": "https://huggingface.co/Masterx/chatterbox-multilingual-v3-ONNX/blob/19b94afe41de738624b2f3afc75b4cd56221fbeb/LICENSE"

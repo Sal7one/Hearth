@@ -22,6 +22,7 @@ do not have. Keep this file honest: do not add a row you have not run.
 | OmniVoice TTS | `:desktop-runtime:test --tests "*DesktopOmniVoiceRealSmokeTest*"` | 24 kHz WAV through the desktop engine: EN 44,160 samples / peak 0.936 / RMS 0.173 / 39,294 non-zero / RTF 5.25 cold; AR 43,920 samples / peak 0.905 / RMS 0.142 / 38,286 non-zero / RTF 4.26 warm (repeats measured 4.1-5.3, and 14.1 once under heavy unrelated host load; the smoke asserts audio validity, not throughput); derived 48 kHz copies 88,320 / 87,840 samples; direct JNI Arabic 22,320 and English 44,160 samples |
 | MagpieTTS Multilingual 357M | `:desktop-runtime:test --tests "*DesktopMagpieRealSmokeTest*"` | 22.05 kHz WAV through the desktop engine: EN 1.486 s / peak 0.441 / RMS 0.0805 / RTF 4.15 cold (2 threads, includes load); AR 2.229 s / peak 0.486 / RMS 0.0606 / RTF 0.97 warm. Direct C ABI probe: EN 1.393 s / peak 0.5549 / RMS 0.0942 / 30,503 of 30,720 non-zero / RTF 1.91; AR 2.508 s / peak 0.3139 / RMS 0.0433 / 54,716 of 55,296 non-zero / RTF 1.10 (4 threads, includes first-call load). Real-model JNI smoke PASS (Arabic 79,872 bounded samples, cancellation, speaker inventory, closed handles) |
 | Magpie catalog install | `:desktopApp:desktopTest --tests "*DesktopMagpieCatalogInstallTest*"` | verifies the two pinned GGUF files (served from the local cache in this run; a missing file is downloaded by the same pinned installer) and downloads the 31,076,864 B authenticated tokenizer ranges, extracts and verifies 10 tokenizer members, then synthesizes 22.05 kHz non-silent audio: 1.115 s / peak 0.5146 / RMS 0.0759 / 24,414 of 24,576 non-zero |
+| Chatterbox Multilingual V3 | `:desktop-runtime:test --tests "*DesktopChatterboxRealSmokeTest*"` | 24 kHz WAV through the desktop engine: EN 27,840 samples / peak 0.827 / RMS 0.132 / 26,959 non-zero / RTF 28.9 cold (includes load); AR 46,080 / peak 0.818 / RMS 0.132 / 38,282 non-zero / RTF 4.83 warm; direct C ABI probe EN peak 0.74-0.93 / RMS 0.130-0.132 / RTF 14.8-15.4, AR peak 0.64-1.05 raw float (WAV clamps) / RMS 0.108-0.109 / RTF 6.0-8.3; direct JNI PASS (finite bounded PCM, callback identity, cancellation, lifetime) |
 | Omnilingual CTC 300M | `:desktop-runtime:test --tests "*DesktopSherpaFamiliesRealSmokeTest*"` | `the museum opens at nine in the morning please bring your ticket to the east entrance` (220 ms warm) |
 | Phonon 2 | same test | `The museum opens at nine in the morning. Please bring your ticket to the East Entrance.` (117 ms warm) |
 | Vosk English | `:desktop-runtime:test --tests "*DesktopVoskRealSmokeTest*"` | exact lower-case transcript, 586 ms decode |
@@ -160,6 +161,39 @@ attaches Hearth's desktop JNI and restricts exports. It stages one self-containe
 `Magpie-Dependencies-NOTICES.txt`. The two GGUF files are user downloads; the
 tokenizer dictionaries are extracted from authenticated byte ranges of the pinned
 `.nemo` archive and its embedded 1.44 GB `model_weights.ckpt` is never installed.
+
+### Reproducing the Chatterbox smoke
+
+```bash
+# 11 pinned downloads (ONNX stack + official Perth checkpoint); never committed
+python3 scripts/voice/fetch-chatterbox-test-assets.py --directory build/agents/chatterbox/models
+# host twin of the Android graph converter; verifies source/output SHA-256
+python3 scripts/voice/chatterbox/prepare-graph.py \
+  build/agents/chatterbox/models/onnx/language_model_q4.onnx \
+  build/agents/chatterbox/models/onnx/language_model_q4.ort20.onnx
+# host-only proof that the Perth checkpoint converts (python3.14 has torch 2.12.0;
+# the default python3.15 does not). The desktop product uses the pinned JVM
+# ChatterboxPerth converter instead and never ships Python.
+/opt/homebrew/bin/python3.14 scripts/voice/export-perth.py \
+  build/agents/chatterbox/models/perth_net_250000.pth.tar \
+  --output build/agents/chatterbox/models/perth-encoder.bin \
+  --recipe build/agents/chatterbox/perth-conversion-host.json \
+  --kotlin build/agents/chatterbox/ChatterboxPerthRecipe.host.kt
+python3 scripts/desktop/build-native.py --stage chatterbox \
+  --chatterbox-root research/tts-expansion/chatterboxcpp
+HEARTH_CHATTERBOX_SMOKE=1 HEARTH_SMOKE_CHATTERBOX="$PWD/build/agents/chatterbox/models" \
+  HEARTH_CHATTERBOX_SMOKE_RECEIPT="$PWD/build/agents/chatterbox/out/desktop-engine-receipt.json" \
+  ./gradlew -PhearthDesktopOnly=true :desktop-runtime:test --tests "*DesktopChatterboxRealSmokeTest*"
+```
+
+The `chatterbox` stage verifies the `chatterboxcpp` checkout at
+`1a9a4fc00a6caa8c8bb9bee533225f40661e4220`, applies the pinned cancellation patch to
+`watermark.cpp`, builds the locked Rust byte-BPE static library, and compiles the
+runtime against the already-shipped ONNX Runtime 1.20.1. It stages
+`libhearth_desktop_chatterbox.dylib` and `Chatterbox-Dependencies-NOTICES.txt`; no
+model weights and no Python runtime are staged. The downloaded graph and Perth
+checkpoint are converted on the desktop by the pinned Kotlin converters before the
+first synthesis; the engine verifies every input and derived output hash.
 
 ### Reproducing the Moonshine smoke
 

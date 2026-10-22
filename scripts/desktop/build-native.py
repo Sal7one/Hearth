@@ -38,6 +38,9 @@ OMNIVOICE_GGML_PIN = "cc5df49a6b878db2b68b9a7b45976e279594627d"
 # llama.cpp submodule pin, and is staged as one self-contained dylib (codec included).
 MAGPIE_NEMO_PIN = "caa3f47c7c75fa2e9e6340272ebad57c1647dd44"
 MAGPIE_NEMO_GGML_PIN = "bd4f514db14d87fded667787a7a963bfbaa98e89"
+CHATTERBOX_PIN = "1a9a4fc00a6caa8c8bb9bee533225f40661e4220"
+CHATTERBOX_TOKENIZERS_VERSION = "0.22.2"
+CHATTERBOX_PERTH_PIN = "ff1c8ac55a976971245cdd53c18d6131ca00d993"
 # Pinned official Vosk macOS release. The app never downloads a native runtime:
 # this runs at build time only, verifies the release ZIP and each member, thins
 # the universal2 slice to arm64 and records both digests in the manifest.
@@ -154,6 +157,13 @@ def snapshot():
                  "hearth-tts-moss/src/main/cpp/moss.cpp",
                  "hearth-tts-moss/src/main/cpp/vendor/moss.h",
                  "hearth-tts-omnivoice/src/main/cpp/vendor/omnivoice.h",
+                 "hearth-tts-chatterbox/src/main/cpp/chatterbox.cpp",
+                 "hearth-tts-chatterbox/src/main/cpp/chatterbox_jni.cpp",
+                 "hearth-tts-chatterbox/src/main/cpp/frontend.h",
+                 "hearth-tts-chatterbox/src/main/cpp/ort_values.h",
+                 "hearth-tts-chatterbox/src/main/cpp/vendor/chatterbox.h",
+                 "scripts/voice/chatterbox/prepare-watermark.py",
+                 "desktop-runtime/src/main/cpp/chatterbox_jni.cpp",
                  "common-jni/src/main/cpp/ming/ffi/Cargo.toml",
                  "common-jni/src/main/cpp/ming/ffi/Cargo.lock",
                  "common-jni/src/main/cpp/ming/ffi/src/lib.rs",
@@ -543,12 +553,13 @@ def magpie_install(output, nemo_root, build_dir, jobs):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--stage", choices=["all", "whisper", "translation", "supertonic", "onnx", "ct2", "moss", "omnivoice", "magpie", "backend", "vosk", "ming"], default="all")
+    parser.add_argument("--stage", choices=["all", "whisper", "translation", "supertonic", "onnx", "ct2", "moss", "omnivoice", "magpie", "chatterbox", "backend", "vosk", "ming"], default="all")
     parser.add_argument("--speech-backends", default="transcribepsy,nemotron", help="Comma-separated speech backends to stage (transcribepsy, nemotron)")
     parser.add_argument("--llama-root", type=Path, default=ROOT / "build/translation-runtime/llama.cpp")
     parser.add_argument("--sherpa-root", type=Path, default=ROOT / "build/desktop-dependencies/sherpa-onnx")
     parser.add_argument("--omnivoice-root", type=Path, default=Path(os.environ.get("HEARTH_OMNIVOICE_ROOT", str(ROOT / "build/desktop-dependencies/omnivoice.cpp"))))
     parser.add_argument("--nemo-root", type=Path, default=Path(os.environ.get("HEARTH_NEMO_ROOT", str(ROOT / "build/desktop-dependencies/NeMo-Speech.cpp"))))
+    parser.add_argument("--chatterbox-root", type=Path, default=Path(os.environ.get("HEARTH_CHATTERBOX_ROOT", str(ROOT / "build/desktop-dependencies/chatterboxcpp"))))
     parser.add_argument("--ort-root", type=Path, default=os.environ.get("HEARTH_ORT_ROOT"))
     parser.add_argument("--build-dir", type=Path, default=ROOT / "build/desktop-native")
     parser.add_argument("--output", type=Path)
@@ -566,9 +577,9 @@ def main():
     stages = ["whisper", "translation", "supertonic"] if args.stage == "all" else [args.stage]
     if args.stage == "all":
         if (system, arch) == ("macos", "arm64"):
-            stages.extend(["onnx", "ct2", "backend", "moss", "omnivoice", "vosk", "ming"])
+            stages.extend(["onnx", "ct2", "backend", "moss", "omnivoice", "chatterbox", "vosk", "ming"])
         else:
-            print(f"Skipping Qwen3-ASR (onnx), CTranslate2 (ct2), speech backends (backend), MOSS TTS (moss) and OmniVoice TTS (omnivoice): built only for macos-arm64; host is {target}", file=sys.stderr)
+            print(f"Skipping Qwen3-ASR (onnx), CTranslate2 (ct2), speech backends (backend), MOSS TTS (moss), OmniVoice TTS (omnivoice) and Chatterbox TTS (chatterbox): built only for macos-arm64; host is {target}", file=sys.stderr)
     if "onnx" in stages and system != "macos":
         parser.error("The Qwen3-ASR (sherpa-onnx) stage is built for macOS arm64 only")
     if "onnx" in stages and arch != "arm64":
@@ -583,6 +594,8 @@ def main():
         parser.error("The OmniVoice TTS stage is built for macOS arm64 only")
     if "magpie" in stages and (system, arch) != ("macos", "arm64"):
         parser.error("The Magpie TTS stage is built for macOS arm64 only")
+    if "chatterbox" in stages and (system, arch) != ("macos", "arm64"):
+        parser.error("The Chatterbox TTS stage is built for macOS arm64 only")
     if "ming" in stages and (system, arch) != ("macos", "arm64"):
         parser.error("The Ming TTS runtime is built for macOS arm64 in this stage")
     if "vosk" in stages and (system, arch) != ("macos", "arm64"):
@@ -617,7 +630,35 @@ def main():
             if changes.strip(): raise RuntimeError(f"{label} source checkout has local changes")
         omnivoice_tree = source_tree_sha_files(root)
         omnivoice_ggml_tree = source_tree_sha_files(root / "ggml")
-    if ("supertonic" in stages or "onnx" in stages) and (not args.ort_root or not args.ort_root.is_dir()):
+    chatterbox_tree = None
+    chatterbox_watermark = None
+    chatterbox_bpe = None
+    if "chatterbox" in stages:
+        root = args.chatterbox_root.resolve()
+        if not (root / "src/audio.cpp").is_file() or not (root / "include/chatterbox/watermark.hpp").is_file():
+            raise RuntimeError(f"--chatterbox-root must name a clean chatterboxcpp checkout at {CHATTERBOX_PIN}; {root} is incomplete")
+        pin = subprocess.check_output(["git", "-C", str(root), "rev-parse", "HEAD"], text=True).strip()
+        if pin != CHATTERBOX_PIN: raise RuntimeError(f"chatterboxcpp must be checked out at {CHATTERBOX_PIN}, found {pin}")
+        changes = subprocess.check_output(["git", "-C", str(root), "status", "--porcelain"], text=True)
+        if changes.strip(): raise RuntimeError("chatterboxcpp source checkout has local changes")
+        chatterbox_tree = source_tree_sha_files(root)
+        if not shutil.which("cargo") or not shutil.which("rustc"):
+            raise RuntimeError("The Chatterbox stage requires cargo and rustc")
+        rust_target = subprocess.check_output(["rustc", "-vV"], text=True)
+        rust_host = next((line.split()[1] for line in rust_target.splitlines() if line.startswith("host:")), None)
+        if rust_host is None: raise RuntimeError("Could not determine the Rust host target")
+        bpe_environment = os.environ.copy()
+        bpe_environment["MACOSX_DEPLOYMENT_TARGET"] = "13.0"
+        subprocess.run(["cargo", "build", "--manifest-path", str(ROOT / "common-jni/src/main/cpp/translation/bpe-rust/Cargo.toml"),
+                        "--locked", "--offline", "--release", "--target", rust_host, "--target-dir", str(ROOT / "build/ct2-runtime/rust")],
+                       check=True, env=bpe_environment)
+        chatterbox_bpe = ROOT / "build/ct2-runtime/rust" / rust_host / "release/libhearth_byte_bpe.a"
+        if not chatterbox_bpe.is_file(): raise RuntimeError("The Chatterbox stage did not build the pinned Rust byte-BPE library")
+        chatterbox_watermark = args.build_dir.resolve() / "chatterbox" / "watermark.cpp"
+        chatterbox_watermark.parent.mkdir(parents=True, exist_ok=True)
+        subprocess.run([sys.executable, str(ROOT / "scripts/voice/chatterbox/prepare-watermark.py"),
+                        str(root / "src/watermark.cpp"), str(chatterbox_watermark)], check=True)
+    if ("supertonic" in stages or "onnx" in stages or "chatterbox" in stages) and (not args.ort_root or not args.ort_root.is_dir()):
         parser.error("--ort-root/HEARTH_ORT_ROOT must name the official extracted ONNX Runtime 1.20.1 host SDK")
     sherpa = None
     sherpa_version = None
@@ -669,6 +710,10 @@ def main():
         if stage == "onnx": command.append(f"-DHEARTH_SHERPA_ROOT={sherpa}")
         if stage == "omnivoice":
             command.append(f"-DHEARTH_OMNIVOICE_SOURCE={args.omnivoice_root.resolve()}")
+        if stage == "chatterbox":
+            command.append(f"-DHEARTH_CHATTERBOX_SOURCE={args.chatterbox_root.resolve()}")
+            command.append(f"-DHEARTH_CHATTERBOX_WATERMARK={chatterbox_watermark}")
+            command.append(f"-DHEARTH_BPE_LIBRARY={chatterbox_bpe}")
         if stage == "moss":
             sentencepiece = ROOT / "build/ct2-runtime/src/sentencepiece"
             if not (sentencepiece / "src/sentencepiece_processor.h").is_file():
@@ -734,6 +779,39 @@ def main():
                 if not path.is_file(): raise RuntimeError(f"Missing pinned {label} notice: {path}")
                 notices.append(f"===== {label} ({name}) =====\n{path.read_text(encoding='utf-8').rstrip()}\n")
             (output / "OmniVoice-Dependencies-NOTICES.txt").write_text("\n".join(notices), encoding="utf-8", newline="\n")
+        if stage == "chatterbox":
+            installed_chatterbox = output / "libhearth_desktop_chatterbox.dylib"
+            if not installed_chatterbox.is_file():
+                raise RuntimeError("The Chatterbox desktop voice dylib was not staged")
+            require_exports(installed_chatterbox, "_Java_com_sal7one_common_1jni_voice_ChatterboxNative_", 6)
+            require_exports(installed_chatterbox, "_hearth_chatterbox_", 7)
+            linked = subprocess.check_output(["otool", "-L", str(installed_chatterbox)], text=True).splitlines()[1:]
+            for line in linked:
+                entry = line.strip().split(" ")[0] if line.strip() else ""
+                if not entry: continue
+                if entry.startswith(("/usr/lib/", "/System/Library/Frameworks/", "@rpath/libhearth_desktop_chatterbox.dylib", "@rpath/libonnxruntime.1.20.1.dylib")):
+                    continue
+                raise RuntimeError(f"The Chatterbox dylib has a non-system dependency: {entry}")
+            if "@rpath/libonnxruntime.1.20.1.dylib" not in "\n".join(linked):
+                raise RuntimeError("The Chatterbox dylib does not link the staged ONNX Runtime 1.20.1")
+            if "libhearth_byte_bpe" in "\n".join(linked) or "libchatterbox" in "\n".join(linked):
+                raise RuntimeError("The Chatterbox dylib must statically embed its BPE and runtime")
+            notices = ["===== Hearth Chatterbox desktop runtime =====",
+                       "Chatterbox Multilingual V3 weights and ONNX export: Masterx/chatterbox-multilingual-v3-ONNX@19b94afe41de738624b2f3afc75b4cd56221fbeb, MIT.",
+                       f"Runtime: birdup000/chatterboxcpp@{CHATTERBOX_PIN} (MIT), Perth@{CHATTERBOX_PERTH_PIN} (MIT), nlohmann/json 3.11.2 (MIT), Hugging Face tokenizers {CHATTERBOX_TOKENIZERS_VERSION} and its locked Rust dependencies.",
+                       "No model weights, generated audio or Python runtime are included in the native bundle.",
+                       "",
+                       "The Perth checkpoint source (perth_net_250000.pth.tar) is a separately downloaded MIT asset; Hearth converts only its exact F32 ZIP storages and never executes pickle data.", ""]
+            licenses = ROOT / "hearth-tts-chatterbox/src/main/assets/licenses/chatterbox"
+            for name, label in (("ChatterboxCpp-LICENSE", "chatterboxcpp LICENSE (MIT)"), ("Perth-LICENSE", "Perth LICENSE (MIT)"), ("JSON-LICENSE", "nlohmann/json LICENSE (MIT)")):
+                path = licenses / name
+                if not path.is_file(): raise RuntimeError(f"Missing pinned Chatterbox notice: {path}")
+                notices.append(f"===== {label} =====\n{path.read_text(encoding='utf-8').rstrip()}\n")
+            dependency_inventory = licenses / "HuggingFaceTokenizers/dependencies.json"
+            if not dependency_inventory.is_file(): raise RuntimeError("Missing pinned tokenizer dependency inventory")
+            notices.append("===== Hugging Face tokenizers dependency inventory (full texts under assets/licenses/chatterbox/HuggingFaceTokenizers) =====")
+            notices.append(dependency_inventory.read_text(encoding='utf-8').rstrip())
+            (output / "Chatterbox-Dependencies-NOTICES.txt").write_text("\n".join(notices) + "\n", encoding="utf-8", newline="\n")
         if stage == "onnx":
             installed = output / "libhearth_desktop_qwen3_asr.dylib"
             if not installed.is_file():
@@ -747,7 +825,7 @@ def main():
             linked = subprocess.check_output(["otool", "-L", str(installed)], text=True)
             if "@rpath/libonnxruntime.1.20.1.dylib" not in linked:
                 raise RuntimeError("The Qwen3-ASR dylib does not link the staged ONNX Runtime 1.20.1")
-    if "supertonic" in stages or "onnx" in stages:
+    if "supertonic" in stages or "onnx" in stages or "chatterbox" in stages:
         ort = args.ort_root.resolve()
         if system == "macos":
             # JAR resources cannot preserve symlinks. The linked versioned install name is sufficient.
@@ -796,6 +874,15 @@ def main():
         upstreams.update({
             "mossRuntimeSourceSha256": sha(ROOT / "hearth-tts-moss/src/main/cpp/moss.cpp"),
             "sentencepieceRevision": SENTENCEPIECE_PIN,
+        })
+    if "chatterbox" in stages:
+        upstreams.update({
+            "chatterboxRevision": CHATTERBOX_PIN,
+            "chatterboxSourceTreeSha256": chatterbox_tree,
+            "chatterboxTokenizersVersion": CHATTERBOX_TOKENIZERS_VERSION,
+            "chatterboxPerthRevision": CHATTERBOX_PERTH_PIN,
+            "chatterboxWatermarkSourceSha256": sha(chatterbox_watermark),
+            "chatterboxBpeCargoLockSha256": sha(ROOT / "common-jni/src/main/cpp/translation/bpe-rust/Cargo.lock"),
         })
     if "omnivoice" in stages:
         upstreams.update({

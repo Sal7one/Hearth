@@ -26,6 +26,11 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
 data class DesktopModelArtifact(val filename: String, val url: String, val bytes: Long, val sha256: String)
+private val ARTIFACT_SEGMENT = Regex("[A-Za-z0-9_.-]{1,180}")
+
+/** Direct-download components may live in a subdirectory, but never escape the model root. */
+internal fun validArtifactPath(filename: String): Boolean =
+    filename.length in 1..1024 && filename.split('/').let { parts -> parts.isNotEmpty() && parts.all { it != "." && it != ".." && ARTIFACT_SEGMENT.matches(it) } }
 data class DesktopModelArchiveFile(val path: String, val bytes: Long, val sha256: String)
 data class DesktopModelArchive(
     val format: String, val root: String, val expandedBytes: Long, val files: List<DesktopModelArchiveFile> = emptyList(),
@@ -90,10 +95,12 @@ class DesktopModelLibrary(private val directory: Path) {
             var completed = 0L
             for (artifact in card.artifacts) {
                 currentCoroutineContext().ensureActive()
-                val target = root.resolve(artifact.filename)
+                val target = root.resolve(artifact.filename).normalize()
+                require(target.startsWith(root.normalize())) { "Model component escapes its directory: ${artifact.filename}" }
                 if (Files.isRegularFile(target) && Files.size(target) == artifact.bytes && digest(target) == artifact.sha256) {
                     completed += artifact.bytes; progress(completed, card.bytes); continue
                 }
+                target.parent?.let { Files.createDirectories(it) }
                 val temporary = Files.createTempFile(root, ".download-", ".part")
                 try {
                     val response = openArtifact(URI(artifact.url))
@@ -169,8 +176,8 @@ class DesktopModelLibrary(private val directory: Path) {
             return
         }
         for (asset in card.artifacts) {
-            val file = root.resolve(asset.filename)
-            check(Files.isRegularFile(file) && Files.size(file) == asset.bytes && digest(file) == asset.sha256) { "Missing or modified model component: ${asset.filename}" }
+            val file = root.resolve(asset.filename).normalize()
+            check(file.startsWith(root.normalize()) && Files.isRegularFile(file) && Files.size(file) == asset.bytes && digest(file) == asset.sha256) { "Missing or modified model component: ${asset.filename}" }
         }
         val rangePackage = card.rangePackage
         if (rangePackage != null) {
@@ -496,7 +503,7 @@ class DesktopModelLibrary(private val directory: Path) {
                     val digest = f.getValue("sha256").jsonPrimitive.content
                     val bytes = f.getValue("bytes").jsonPrimitive.long
                     val url = f.getValue("url").jsonPrimitive.content
-                    require(filename.matches(Regex("[A-Za-z0-9_.-]{1,180}")) && filename != ".." && digest.matches(Regex("[a-f0-9]{64}")) && bytes > 0)
+                    require(validArtifactPath(filename) && digest.matches(Regex("[a-f0-9]{64}")) && bytes > 0)
                     require(URI(url).scheme == "https")
                     DesktopModelArtifact(filename, url, bytes, digest)
                 }

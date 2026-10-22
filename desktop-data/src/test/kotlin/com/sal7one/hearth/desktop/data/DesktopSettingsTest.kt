@@ -67,8 +67,9 @@ class DesktopSettingsTest {
             val omnivoice = if (macosArm) 1 else 0
             val magpie = if (macosArm) 1 else 0
             val ming = if (macosArm) 1 else 0
+            val chatterbox = if (macosArm) 1 else 0
             val byStage = library.catalog.groupingBy { it.stage.name }.eachCount()
-            assertEquals(mapOf("STT" to 27 + qwen + transcribepsy + nemotron + moonshine + omnilingual + phonon + vosk, "TRANSLATION" to 14 + ct2, "TTS" to 1 + moss + omnivoice + magpie + ming), byStage)
+            assertEquals(mapOf("STT" to 27 + qwen + transcribepsy + nemotron + moonshine + omnilingual + phonon + vosk, "TRANSLATION" to 14 + ct2, "TTS" to 1 + moss + omnivoice + magpie + ming + chatterbox), byStage)
             assertEquals(if (qwen + transcribepsy + nemotron + moonshine + omnilingual + phonon + vosk > 0) 8 else 1, library.catalog.filter { it.stage.name == "STT" }.map { it.family }.distinct().size)
             if (qwen == 1) {
                 val card = library.catalog.single { it.id == "qwen3-asr-0.6b" }
@@ -180,6 +181,19 @@ class DesktopSettingsTest {
                 assertTrue(card.artifacts.all { it.sha256.length == 64 && it.bytes > 0 })
                 assertEquals("magpie_tts_multilingual_357m.v2607.f16.gguf", card.artifacts[0].filename)
                 assertEquals("fb8e9297138dcc7b5fc51332f361e3cddfd433d4e0bc1d87e16e6aed21f618fc", card.artifacts[0].sha256)
+            }
+            if (chatterbox == 1) {
+                val card = library.catalog.single { it.id == "chatterbox-multilingual-v3" }
+                assertEquals("chatterbox-tts-local", card.engineId)
+                assertEquals(setOf("macos-arm64"), card.platforms)
+                assertEquals(11, card.artifacts.size)
+                assertEquals(1_593_714_936L, card.bytes)
+                assertEquals("default", card.options["voice"])
+                assertEquals(setOf("ar", "en"), card.languages.toSet())
+                assertEquals("onnx/speech_encoder.onnx", card.artifacts[0].filename)
+                assertEquals("012a9583c0a9560afa11307b585f1e799fca0e1701bdae53fa34766da78f8eae", card.artifacts[0].sha256)
+                assertEquals("perth_net_250000.pth.tar", card.artifacts.last().filename)
+                assertEquals("a15bce457ebc53ce5e6c9c3f11df78cf7ee2bf9cdab0a798902135b4c4027670", card.artifacts.last().sha256)
             }
             // Every shipped llama translator must use a prompt family the desktop engine implements,
             // and the option the engine reads must be the catalog's own family, not a fallback.
