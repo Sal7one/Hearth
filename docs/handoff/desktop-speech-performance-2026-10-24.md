@@ -5,6 +5,15 @@ Source branch: `codex/desktop-speech-performance`. Installer: macOS arm64
 no GitHub Actions were dispatched, inspected or awaited. No owner device,
 microphone or live desktop UI was driven.
 
+Completed: [PR #6](https://github.com/Sal7one/Hearth/pull/6) merged as
+`67102d712244d2fc4009ad0736d67aeaf4690f06`. The
+[public Desktop 1.0.4 RC1 release](https://github.com/Sal7one/Hearth/releases/tag/desktop-v1.0.4-rc.1)
+uses tag `desktop-v1.0.4-rc.1` at that exact commit. Its five individual assets
+were size-checked and SHA-256 matched against GitHub's server digests before
+publication. Installer: `hearth-1.0.4-macos-arm64.dmg`, 109,322,820 bytes,
+SHA-256 `3576ebc7a4142ed0b6f98e07fcdf8aa0571b13314d4b072f349826e44f3860b5`.
+The feature branch was removed after merging; the working checkout is on main.
+
 ## Causes and changes
 
 - The owner's saved Whisper Large-v3-turbo Q8 route contained a hash but no
@@ -81,8 +90,9 @@ ownership/cancellation semantics remain unchanged.
 
 - Required `./gradlew test :app:compilePlayQaKotlin :app:compileFossQaKotlin`: PASS.
 - Required six desktop suites: 338 cases, zero failures/errors, 39 deliberate
-  opt-in/fixture skips. Focused real Qwen/Nemotron and Whisper tests separately
-  passed 8 and 4 cases. Loader/CUDA/language focused tests passed 10 cases.
+  opt-in/fixture skips. The Qwen/Nemotron/language focused run passed 8 cases
+  (5 real-model cases); Whisper separately passed 4 real-model cases.
+  Loader/CUDA/language focused tests passed 10 cases.
 - Desktop Python build/dependency suites: 23 PASS.
 - Common and speech C++ ASan/UBSan host suites: PASS.
 - `:common-jni:externalNativeBuildDebug`: PASS; Android sources/ABI inputs unchanged.
