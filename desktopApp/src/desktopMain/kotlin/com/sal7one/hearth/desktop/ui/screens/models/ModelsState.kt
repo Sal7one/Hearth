@@ -8,7 +8,7 @@ internal enum class ModelStatus { INSTALLED, AVAILABLE, BROKEN }
 internal data class ModelRow(
     val id: String,
     val name: String,
-    val stage: PipelineStage,
+    val stage: PipelineStage?,
     val sizeLabel: String,
     val metaLabel: String,
     val status: ModelStatus,
@@ -30,7 +30,7 @@ internal data class ModelRow(
 }
 
 internal data class ModelGroup(
-    val stage: PipelineStage,
+    val stage: PipelineStage?,
     val title: String,
     val detail: String,
     val rows: List<ModelRow>,
@@ -43,6 +43,7 @@ internal data class ModelsFilter(
     val stage: PipelineStage? = null,
     val onlyInstalled: Boolean = false,
     val hardware: ModelHardwareFilter = ModelHardwareFilter.ALL,
+    val readingOnly: Boolean = false,
 )
 
 /** A real transfer, already resolved to display strings by the mapper. */
@@ -71,5 +72,5 @@ internal data class ModelsState(
     val issues: List<String> = emptyList(),
 ) {
     val isEmpty: Boolean get() = groups.all { it.rows.isEmpty() }
-    val isEmptyBecauseOfFilter: Boolean get() = isEmpty && (filter.query.isNotBlank() || filter.onlyInstalled || filter.stage != null || filter.hardware != ModelHardwareFilter.ALL)
+    val isEmptyBecauseOfFilter: Boolean get() = isEmpty && (filter.query.isNotBlank() || filter.onlyInstalled || filter.stage != null || filter.readingOnly || filter.hardware != ModelHardwareFilter.ALL)
 }

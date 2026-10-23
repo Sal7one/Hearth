@@ -698,7 +698,7 @@ class DesignPreviewRenderTest {
         case(DesktopScreen.CAMERA, status = "On your phone", height = 1000) {
             CameraScreen()
         },
-        case(DesktopScreen.READING, status = "On your phone", height = 1000) {
+        case(DesktopScreen.READING, status = "Ready", height = 1000) {
             ReadingScreen()
         },
     )
@@ -840,6 +840,31 @@ class DesignPreviewRenderTest {
             case(DesktopScreen.MODELS, name = "models-hardware-${hardware.key}", status = "Ready", width = 1100, height = 1150) {
                 ModelsScreen(state, ModelsActions())
             }.render()
+        }
+    }
+
+    @Test fun mangaPageRegionsAndArabicTranslationsRenderAtBothWidths() {
+        val image = java.awt.image.BufferedImage(600,800,java.awt.image.BufferedImage.TYPE_INT_RGB)
+        image.createGraphics().let {g ->
+            try {
+                g.color = java.awt.Color(242,239,230);g.fillRect(0,0,600,800)
+                g.color = java.awt.Color(50,65,78);g.fillRect(25,25,550,350);g.fillRect(25,400,550,375)
+                g.color = java.awt.Color.WHITE;g.fillOval(335,55,210,250);g.fillOval(55,455,240,260)
+            } finally {g.dispose()}
+        }
+        val first = com.sal7one.hearth.core.vision.OcrRegion(com.sal7one.hearth.core.vision.OcrRect(375,105,130,150),.9f)
+        val second = com.sal7one.hearth.core.vision.OcrRegion(com.sal7one.hearth.core.vision.OcrRect(90,515,170,140),.9f)
+        val state = DesktopReadingState(image=image,name="Synthetic page",phase="2 regions read · 1 translated",regions=listOf(first,second),
+            text=listOf(com.sal7one.hearth.core.vision.PageText(first,"こんにちは"),com.sal7one.hearth.core.vision.PageText(second,"ありがとう")),
+            translations=mapOf(first.bounds to "مرحبًا بكم في عالم القصص"))
+        for(width in listOf(1100,1500)) {
+            val translated = case(DesktopScreen.READING,name="reading-arabic-$width",status="Ready",width=width,height=1150) {
+                ReadingScreen(state,modelReady=true,targets=listOf(com.sal7one.hearth.desktop.ui.language.LanguageOption("ar","Arabic")))
+            }.render()
+            val original = case(DesktopScreen.READING,name="reading-original-$width",status="Ready",width=width,height=1150) {
+                ReadingScreen(state,modelReady=true,showOriginal=true)
+            }.render()
+            assertFalse(translated.contentEquals(original),"Original-image toggle must actually change the page")
         }
     }
 

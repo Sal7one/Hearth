@@ -40,16 +40,16 @@ internal fun modelsState(
 
     val filtered = rows.filter { row ->
         val card = cardsById.getValue(row.id)
-        val matchesQuery = filter.query.isBlank() || listOf(card.name, card.family, card.stage.name, row.gpuLabel.orEmpty(), "CPU", modelGpuLabel(desktopModelGpuPaths(card), emptySet()).orEmpty())
+        val matchesQuery = filter.query.isBlank() || listOf(card.name, card.family, card.stage?.name ?: "OCR reading manga", row.gpuLabel.orEmpty(), "CPU", modelGpuLabel(desktopModelGpuPaths(card), emptySet()).orEmpty())
             .any { it.contains(filter.query, ignoreCase = true) } ||
             card.languages.any { it.contains(filter.query, ignoreCase = true) }
-        val matchesStage = filter.stage == null || card.stage == filter.stage
+        val matchesStage = if(filter.readingOnly) card.stage==null else filter.stage == null || card.stage == filter.stage
         val matchesInstalled = !filter.onlyInstalled || row.status != ModelStatus.AVAILABLE
         matchesQuery && matchesStage && matchesInstalled &&
             filter.hardware.matches(desktopModelGpuPaths(card), availableModelGpuPaths(card, engines))
     }
 
-    val groups = listOf(PipelineStage.STT, PipelineStage.TRANSLATION, PipelineStage.TTS).map { stage ->
+    val groups = listOf(PipelineStage.STT, PipelineStage.TRANSLATION, PipelineStage.TTS,null).map { stage ->
         ModelGroup(
             stage = stage,
             title = ModelsCopy.groupTitle(stage),
@@ -91,7 +91,7 @@ internal fun modelsState(
 }
 
 private fun modelRow(card: DesktopModelCard, status: DesktopModelStatus?, config: PipelineConfig): ModelRow {
-    val chosen = config.selection(card.stage)
+    val chosen = card.stage?.let(config::selection)
     val inUse = status?.ready == true && chosen?.modelId == card.id && chosen.engineId == card.engineId &&
         chosen.modelPath == status.path?.toString()
     val modelStatus = when {

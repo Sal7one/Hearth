@@ -12,6 +12,13 @@ Source: https://huggingface.co/kha-white/manga-ocr-base
 Exact revision and original/packaged hashes: assets/ocr/manga-provenance.json.
 Manga OCR ONNX exports: https://huggingface.co/onnx-community/manga-ocr-base-ONNX
 Model-card license: Apache-2.0; weights downloaded separately.
+Automatic manga pages add ogkalu/comic-text-and-bubble-detector, Apache-2.0.
+Source: https://huggingface.co/ogkalu/comic-text-and-bubble-detector
+Pinned revision: 16e8a622f91fabc6b5b65c96d32d1183f8843546
+Export: detector-v4-s_int8.onnx. Weights are a separate user download.
+The staged layout/OCR design was researched against koharu-rs/koharu (MIT OR Apache-2.0),
+revision 73abcafab1507e1c228c36ed54ba84e5e1cd6ff8. Its full Rust engine is not included.
+No GPL comic-text-detector postprocessing code is incorporated.
 Manga OCR acknowledges training data from Manga109-s (http://www.manga109.org).
 
 Meiki preprocessing and character suppression follow the published model contract

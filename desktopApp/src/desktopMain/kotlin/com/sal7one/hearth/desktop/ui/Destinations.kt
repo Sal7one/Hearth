@@ -28,7 +28,7 @@ internal enum class DesktopScreen(
     APPEARANCE("appearance", "Appearance", section = DesktopSection.SETTINGS),
     CONVERSATION("conversation", "Conversation"),
     CAMERA("camera", "Camera & photos"),
-    READING("reading", "Screen & manga");
+    READING("reading", "Image & manga");
 
     companion object {
         val topLevel: List<DesktopScreen> = entries.filter { it.navLabel != null }

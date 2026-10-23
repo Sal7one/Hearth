@@ -43,6 +43,7 @@ import java.nio.file.Path
 private class DesktopServices(
     val settings: DesktopSettingsStore, val credentials: DesktopCredentialStore,
     val engines: DesktopEngines, val models: DesktopModelController, val controller: DesktopWorkspaceController,
+    val reading: DesktopReadingController,
 ) {
     suspend fun close() {
         withContext(NonCancellable) {
@@ -51,6 +52,7 @@ private class DesktopServices(
                 try { block() }
                 catch (e: Exception) { if (failure == null) failure = e else failure!!.addSuppressed(e) }
             }
+            release { reading.close() }
             release { models.close() }
             release { controller.close() }
             release { withContext(Dispatchers.IO) { engines.close() } }
@@ -112,11 +114,15 @@ private fun launchDesktop() = application {
                         store.save(modelController.reconnectImportedSetup(store.config.value))
                     }, persistUi = { store.saveUi(it) }, capabilities = capabilities)
                 modelController = DesktopModelController(models, scope, controller::showError)
-                DesktopServices(store, credentials, runtime, modelController, controller)
+                val reading = DesktopReadingController(pipeline, store.config, scope)
+                DesktopServices(store, credentials, runtime, modelController, controller, reading)
                     .also { candidate = it }
             }
             services = loaded
             loaded.models.refresh(loaded.settings.config.value)
+            loaded.settings.ui.value["reading-model-path"]?.takeIf(String::isNotBlank)?.let {
+                loaded.models.verify("manga-page", Path.of(it))
+            }
         } catch(e: Exception) {
             withContext(NonCancellable) {
                 try {
@@ -154,6 +160,7 @@ private fun launchDesktop() = application {
             HearthDesktopRoot(
                 controller = loaded.controller,
                 models = loaded.models,
+                reading = loaded.reading,
                 initialUi = prefs,
                 saveUi = { loaded.controller.saveUi(it) },
                 closing = closing,

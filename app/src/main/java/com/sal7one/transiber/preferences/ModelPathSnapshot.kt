@@ -13,10 +13,20 @@ internal object ModelPathSnapshots {
     private fun checkedRoot(privateRoot: File, file: File): File {
         val root = privateRoot.canonicalFile
         require(file.isAbsolute && file.canonicalPath.startsWith(root.path + File.separator)) { "Model binding must stay in app-private model storage" }
-        val boundary = privateRoot.absoluteFile.toPath().normalize()
-        require(file.toPath().normalize().startsWith(boundary)) { "Model binding must use the app-private storage path" }
-        var path = file.toPath()
-        while (path.normalize() != boundary) {
+        val lexicalRoot = privateRoot.absoluteFile.toPath().normalize()
+        val canonicalRoot = root.toPath()
+        val candidate = file.toPath().normalize()
+        require(candidate == file.toPath()) { "Model binding path contains traversal segments" }
+        // Context.filesDir may use /data/user/0, while pinned installers return
+        // /data/data via canonicalFile. Both identify the same OS-owned root.
+        // Arbitrary aliases and links *inside* model storage remain forbidden.
+        val boundary = when {
+            candidate.startsWith(lexicalRoot) -> lexicalRoot
+            candidate.startsWith(canonicalRoot) -> canonicalRoot
+            else -> error("Model binding must use the app-private storage path")
+        }
+        var path = candidate
+        while (path != boundary) {
             require(!Files.isSymbolicLink(path)) { "Symbolic link in model binding: $file" }
             path = path.parent ?: error("Model binding has no private parent")
         }

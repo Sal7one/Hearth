@@ -24,7 +24,7 @@ androidComponents.onVariants { variant ->
 }
 kotlin { jvmToolchain(17) }
 dependencies {
- implementation(project(":hearth-core"))
+ api(project(":hearth-core"))
  implementation(project(":hearth-onnx-runtime"))
  implementation("androidx.core:core-ktx:1.17.0")
  implementation("androidx.documentfile:documentfile:1.1.0")

@@ -26,7 +26,7 @@ internal fun LanguagePairPicker(state: PipelineLanguageState, onSource: (String)
 }
 
 @Composable
-private fun LanguagePicker(title: String, value: String, options: List<LanguageOption>, onSelect: (String) -> Unit, enabled: Boolean, compact: Boolean) {
+internal fun LanguagePicker(title: String, value: String, options: List<LanguageOption>, onSelect: (String) -> Unit, enabled: Boolean = true, compact: Boolean = false) {
     var expanded by remember { mutableStateOf(false) }
     var query by remember { mutableStateOf("") }
     Box {

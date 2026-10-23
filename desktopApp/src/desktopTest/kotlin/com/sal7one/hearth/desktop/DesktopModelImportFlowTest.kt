@@ -40,7 +40,7 @@ class DesktopModelImportFlowTest {
                 assertEquals(verified, controller.verifiedSelection(card.id))
 
                 // This is the same explicit Use transition the production action invokes.
-                val selected = original.useVerifiedModel(card.stage, requireNotNull(controller.verifiedSelection(card.id)))
+                val selected = original.useVerifiedModel(requireNotNull(card.stage), requireNotNull(controller.verifiedSelection(card.id)))
                 assertEquals(verified, selected.speech)
                 assertEquals(original.translation, selected.translation)
                 assertEquals(original.voice, selected.voice)

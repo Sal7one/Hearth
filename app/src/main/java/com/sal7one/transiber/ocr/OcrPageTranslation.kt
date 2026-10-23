@@ -1,6 +1,7 @@
 package com.sal7one.transiber.ocr
 
 import com.sal7one.common_jni.ocr.OcrLine
+import com.sal7one.hearth.core.vision.OcrRegion
 
 internal data class TranslatedOcrBox(val line: OcrLine, val translation: String)
 
@@ -93,6 +94,10 @@ internal object OcrPageTranslation {
 
 /** Maps crop-local OCR geometry onto a fitted full-page image, including its letterbox offsets. */
 internal object OcrPageLayout {
+    fun box(region: OcrRegion, crop: PixelCrop, imageWidth: Int, imageHeight: Int,
+            viewWidth: Int, viewHeight: Int): PixelCrop? = region.bounds.let {
+        box(OcrLine(it.x,it.y,it.width,it.height,"",region.confidence),crop,imageWidth,imageHeight,viewWidth,viewHeight)
+    }
     fun box(line: OcrLine, crop: PixelCrop, imageWidth: Int, imageHeight: Int,
             viewWidth: Int, viewHeight: Int, coverEdges: Boolean = false): PixelCrop? {
         if (imageWidth <= 0 || imageHeight <= 0 || viewWidth <= 0 || viewHeight <= 0 ||

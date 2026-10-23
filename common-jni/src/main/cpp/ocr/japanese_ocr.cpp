@@ -1,6 +1,7 @@
 // Model contracts: docs/manga-ocr-adapters.md. No Python runtime is required.
 #include "japanese_ocr.h"
 #include "japanese_geometry.h"
+#include "model_path.h"
 #include "../onnx/include/onnxruntime/onnxruntime_c_api.h"
 #include <atomic>
 #include <chrono>
@@ -59,8 +60,8 @@ struct JapaneseOcr::Impl {
         check(api()->AddSessionConfigEntry(options,"session.intra_op.allow_spinning","0"));
         check(api()->AddSessionConfigEntry(options,"session.inter_op.allow_spinning","0"));
         check(api()->CreateCpuMemoryInfo(OrtArenaAllocator,OrtMemTypeDefault,&memory));check(api()->CreateRunOptions(&run));
-        check(api()->CreateSession(env,a.c_str(),options,&first));check(api()->CreateSession(env,b.c_str(),options,&second));
-        if(kind==2)check(api()->CreateSession(env,c.c_str(),options,&third));
+        check(api()->CreateSession(env,nativeModelPath(a).c_str(),options,&first));check(api()->CreateSession(env,nativeModelPath(b).c_str(),options,&second));
+        if(kind==2)check(api()->CreateSession(env,nativeModelPath(c).c_str(),options,&third));
     }
     void active(){if(cancelled.load())throw std::runtime_error("OCR cancelled");if(std::chrono::steady_clock::now()>deadline)throw std::runtime_error("OCR exceeded 45 seconds. Select a smaller region.");}
     template<class T> Value tensor(std::vector<T>& data,std::vector<int64_t> dims,ONNXTensorElementDataType type){

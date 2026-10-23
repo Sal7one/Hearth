@@ -81,6 +81,10 @@ internal object DesktopSelfCheck {
                 report.setProperty(id, "available; acceleration=" + descriptor.acceleration.sorted().joinToString(","))
             }
             val pipeline = HearthPipeline(owned, scope)
+            if (javaClass.getResource("/native/$platform/${System.mapLibraryName("hearth_desktop_ocr")}.payload") != null) {
+                com.sal7one.hearth.desktop.runtime.DesktopMangaOcr.verifyRuntimeContract()
+                report.setProperty("manga-ocr", "CPU runtime and both JNI adapters loaded; retired handles rejected; no model inference in self-check")
+            }
             DesktopIntegrationServer(pipeline, { PipelineConfig() }, profile).use { server ->
                 server.start()
                 val response = HttpClient.newHttpClient().send(

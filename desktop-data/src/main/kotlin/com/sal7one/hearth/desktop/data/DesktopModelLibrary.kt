@@ -50,7 +50,7 @@ data class DesktopRangePackage(
     val memberByPath: Map<String, DesktopModelArchiveFile> = members.associateBy { it.path },
 )
 data class DesktopModelCard(
-    val id: String, val name: String, val family: String, val stage: PipelineStage,
+    val id: String, val name: String, val family: String, val stage: PipelineStage?,
     val engineId: String, val languages: Set<String>, val source: String, val license: String,
     val note: String, val options: Map<String, String>, val artifacts: List<DesktopModelArtifact>,
     val archive: DesktopModelArchive? = null,
@@ -70,7 +70,7 @@ data class ModelInstallProgress(val phase: ModelInstallPhase, val completed: Lon
 
 /** Downloads only pinned catalog artifacts. Requests contain no provider headers or credentials. */
 class DesktopModelLibrary internal constructor(private val directory: Path, val catalog: List<DesktopModelCard>) {
-    constructor(directory: Path) : this(directory, readCatalog().filter { it.platforms == null || desktopPlatform() in it.platforms })
+    constructor(directory: Path) : this(directory, (readCatalog()+mangaPageCard()).filter { it.platforms == null || desktopPlatform() in it.platforms })
     private val mutableInstallations = MutableStateFlow<Map<String, DesktopModelStatus>>(emptyMap())
     val installations = mutableInstallations.asStateFlow()
     private val installers = catalog.associate { it.id to Mutex() }

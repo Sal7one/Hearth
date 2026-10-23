@@ -27,6 +27,9 @@ dependencies {
 }
 // The desktop build script stages only the current host architecture, without model weights.
 tasks.processResources {
+    from("../common-jni/src/main/assets/ocr") { include("manga.json","manga-provenance.json");into("ocr") }
+    from("../common-jni/src/main/assets/licenses/ocr") { into("licenses/ocr") }
+    from("../common-jni/src/main/assets/licenses/android/Apache-2.0.txt") { into("licenses/ocr") }
     from(layout.projectDirectory.dir("native-libs")) {
         into("native")
         // Compose's macOS JAR processor re-signs .dylib entries even for unsigned apps.

@@ -23,7 +23,8 @@ import kotlinx.coroutines.*
 /** One library: bundles are the simple entry, the same model cards serve both setup modes. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ModelsScreen(onDownloads: () -> Unit = {}, onVoices: () -> Unit = {}, initialSection: String = "Speech") {
+fun ModelsScreen(onDownloads: () -> Unit = {}, onVoices: () -> Unit = {}, initialSection: String = "Speech",
+    openIntegrity: Boolean = false, onIntegrityOpened: () -> Unit = {}) {
     val text = rememberUiText()
     val context = LocalContext.current
     if (!com.sal7one.transiber.runtime.LocalModelPolicy.allowed(context)) {
@@ -44,6 +45,9 @@ fun ModelsScreen(onDownloads: () -> Unit = {}, onVoices: () -> Unit = {}, initia
     var browseAll by rememberModelBrowseBoolean("browse-all", false)
     var tools by remember { mutableStateOf(false) }
     var sheet by rememberSaveable { mutableStateOf("") }
+    LaunchedEffect(openIntegrity) {
+        if (openIntegrity) { sheet = "integrity"; onIntegrityOpened() }
+    }
     LaunchedEffect(Unit) {
         try { CaptionConfigStore.config(context).collect { config = it; loaded = true } }
         catch (e: CancellationException) { throw e }
@@ -115,6 +119,9 @@ fun ModelsScreen(onDownloads: () -> Unit = {}, onVoices: () -> Unit = {}, initia
                     try {
                     if (com.sal7one.transiber.voice.VoiceCatalog.find(id) != null || id.startsWith("voice-magpie-tokenizer")) {
                         sheet = ""; onVoices(); return@launch
+                    }
+                    if (com.sal7one.transiber.ocr.OcrCatalog.find(id) != null) {
+                        section = "Camera"; sheet = ""; repairRevision++; return@launch
                     }
                     val registered = registry.getModel(id)
                     val translator = com.sal7one.common_jni.translation.TranslationCatalog.models.firstOrNull { it.id == id }

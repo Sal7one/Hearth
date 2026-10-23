@@ -64,6 +64,8 @@ fun LocalBenchmarkScreen(onModels: (String) -> Unit = {}, onDownloads: () -> Uni
     val scope = rememberCoroutineScope()
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     val runner = remember { LocalBenchmarkRunner(context.applicationContext) }
+    val discoveryIssues by runner.discoveryIssues.collectAsState()
+    var showDiscoveryIssues by rememberSaveable { mutableStateOf(false) }
     val store = remember { BenchmarkResults(context.applicationContext) }
     val saudiStore = remember { SaudiBenchmarkPack(java.io.File(context.filesDir, "benchmark-saudi")) }
     val downloads = remember { FileDownloads(context.applicationContext) }
@@ -167,7 +169,7 @@ fun LocalBenchmarkScreen(onModels: (String) -> Unit = {}, onDownloads: () -> Uni
             candidates = runner.candidates()
             val catalogueState = withContext(Dispatchers.IO) {
                 val registry = com.sal7one.transiber.models.ModelRegistry.getInstance(context).registeredModels.value
-                val publisher = com.sal7one.transiber.caption.LocalSpeechModels(java.io.File(context.filesDir, "speech-models")).list()
+                val publisher = com.sal7one.transiber.caption.LocalSpeechModels(java.io.File(context.filesDir, "speech-models")).inspect().models
                 val snapshot = com.sal7one.transiber.models.SpeechCatalogInstallations(java.io.File(context.filesDir, "speech-models"))
                     .scan(SpeechArtifactCatalog.all, registry, publisher)
                 val mapped = snapshot.registered.mapValues { listOf(it.value.id) } + snapshot.publisher.mapValues { listOf(it.value.id) }
@@ -333,6 +335,15 @@ fun LocalBenchmarkScreen(onModels: (String) -> Unit = {}, onDownloads: () -> Uni
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 listOf("Speech", "Translation", "Voices").forEach { label ->
                     FilterChip(mode == label, { mode = label; if (mode == "Translation" && source == target) target = if (source == "en") "ar" else "en" }, enabled = !running && !busy, label = { Text(uiText.modelSection(label)) })
+                }
+            }
+        }
+        if (discoveryIssues.isNotEmpty()) item {
+            OutlinedCard(Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(uiText(UiR.string.benchmark_discovery_summary, discoveryIssues.size), style = MaterialTheme.typography.titleSmall)
+                    Text(uiText(UiR.string.benchmark_discovery_continue), style = MaterialTheme.typography.bodySmall)
+                    TextButton({ showDiscoveryIssues = true }) { Text(uiText(UiR.string.benchmark_discovery_review)) }
                 }
             }
         }
@@ -763,6 +774,13 @@ fun LocalBenchmarkScreen(onModels: (String) -> Unit = {}, onDownloads: () -> Uni
             }
         }
     }
+    if (showDiscoveryIssues) AlertDialog(onDismissRequest = { showDiscoveryIssues = false },
+        title = { Text(uiText(UiR.string.benchmark_discovery_review)) },
+        text = { LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            items(discoveryIssues) { issue -> SelectionContainer { Text(issue) } }
+        } },
+        confirmButton = { TextButton({ showDiscoveryIssues = false }) { Text(uiText(UiR.string.benchmark_lab_close)) } },
+        dismissButton = { TextButton({ showDiscoveryIssues = false; onModels(mode) }) { Text(uiText(UiR.string.benchmark_lab_import_details)) } })
     if (catalogueOpen) BenchmarkCatalogueDialog(catalogue, source, target, catalogCandidates.keys, downloadRecords,
         catalogueSelection, { catalogueSelection = it }, freeBytes, queueing, queueStatus, queueState.errors, ::queueModels,
         onPause = { records -> scope.launch {

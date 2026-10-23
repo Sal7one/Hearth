@@ -49,6 +49,7 @@ internal fun ModelsToolbar(
     onHardware: (ModelHardwareFilter) -> Unit,
     onReset: () -> Unit,
     modifier: Modifier = Modifier,
+    onReading: () -> Unit = {},
 ) {
     val colors = HearthTheme.colors
     Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -60,10 +61,11 @@ internal fun ModelsToolbar(
             modifier = Modifier.fillMaxWidth(),
         )
         FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            FilterPill("All stages", filter.stage == null) { onStage(null) }
+            FilterPill("All models", filter.stage == null && !filter.readingOnly) { onStage(null) }
             FilterPill("Speech", filter.stage == PipelineStage.STT) { onStage(PipelineStage.STT) }
             FilterPill("Translation", filter.stage == PipelineStage.TRANSLATION) { onStage(PipelineStage.TRANSLATION) }
             FilterPill("Voice", filter.stage == PipelineStage.TTS) { onStage(PipelineStage.TTS) }
+            FilterPill("Reading", filter.readingOnly) { onReading() }
             FilterPill("Installed", filter.onlyInstalled) { onToggleInstalled() }
             SettingsSelect(
                 value = filter.hardware.key,
@@ -106,6 +108,7 @@ internal fun ModelRowView(
         ) {
             Icon(
                 imageVector = when (row.stage) {
+                    null -> HearthIcons.Search
                     PipelineStage.STT -> HearthIcons.Microphone
                     PipelineStage.TRANSLATION -> HearthIcons.Swap
                     PipelineStage.TTS -> HearthIcons.Speaker

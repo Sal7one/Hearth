@@ -6,6 +6,16 @@ import java.io.ByteArrayInputStream
 import java.nio.file.Files
 
 class OcrPolicyTest {
+    @Test fun automaticMangaAddsOnlyTheDetectorAndRetainsTheManualProfile() {
+        val manual = OcrCatalog.profile("manga")
+        val page = OcrCatalog.profile("manga-page")
+        assertEquals("manga",page.family)
+        assertFalse(page.live)
+        assertEquals(2,manual.assets.size)
+        assertEquals(3,page.assets.size)
+        assertTrue(page.assets.containsAll(manual.assets))
+        assertEquals(11120765L,(page.assets.toSet()-manual.assets.toSet()).single().bytes)
+    }
     @Test fun arabicRestoresLogicalOrderWithoutReversingNumbersOrLatinRuns() {
         assertEquals("مرحبا بكم",OcrText.logical("مكب ابحرم",true))
         assertEquals("مرحبا 123",OcrText.logical("123 ابحرم",true))

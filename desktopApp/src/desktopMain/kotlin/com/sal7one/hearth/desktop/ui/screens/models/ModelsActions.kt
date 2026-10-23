@@ -10,6 +10,7 @@ import com.sal7one.hearth.desktop.ui.DesktopScreen
 internal class ModelsActions(
     val onSearch: (String) -> Unit = {},
     val onFilterStage: (PipelineStage?) -> Unit = {},
+    val onFilterReading: () -> Unit = {},
     val onToggleInstalledOnly: () -> Unit = {},
     val onFilterHardware: (ModelHardwareFilter) -> Unit = {},
     val onResetFilters: () -> Unit = {},

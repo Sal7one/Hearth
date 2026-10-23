@@ -178,10 +178,12 @@ def snapshot():
     paths = [ROOT / "scripts/desktop/build-native.py"]
     cuda_stager = ROOT / "scripts/desktop/stage-cuda-runtime.py"
     if cuda_stager.is_file(): paths.append(cuda_stager)
-    for folder in ["scripts/desktop/native", "desktop-runtime/src/main/cpp"]:
+    for folder in ["scripts/desktop/native", "desktop-runtime/src/main/cpp", "common-jni/src/main/cpp/ocr"]:
         paths.extend(p for p in (ROOT / folder).rglob("*") if p.is_file())
     for name in ["common-jni/src/main/cpp/translation/text_model.h", "common-jni/src/main/cpp/translation/translation_jni.cpp",
-                 "common-jni/src/main/cpp/common/lease_registry.h", "hearth-tts-supertonic/src/main/cpp/voice/voice_bounds.h",
+                 "common-jni/src/main/cpp/common/lease_registry.h",
+                 "common-jni/src/main/cpp/jni/jni_helper.h", "common-jni/src/main/cpp/jni/jni_attachment.h",
+                 "common-jni/src/main/cpp/common/utf8_utils.h", "hearth-tts-supertonic/src/main/cpp/voice/voice_bounds.h",
                  "common-jni/src/main/cpp/onnx/include/onnxruntime/onnxruntime_c_api.h",
                  "common-jni/src/main/cpp/speech/backends/qwen_backend.cpp",
                  "common-jni/src/main/cpp/speech/backends/vosk_backend.cpp",
@@ -644,7 +646,7 @@ def magpie_install(output, nemo_root, build_dir, jobs):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--stage", choices=["all", "whisper", "translation", "supertonic", "onnx", "ct2", "moss", "omnivoice", "magpie", "chatterbox", "backend", "vosk", "ming"], default="all")
+    parser.add_argument("--stage", choices=["all", "whisper", "translation", "supertonic", "ocr", "onnx", "ct2", "moss", "omnivoice", "magpie", "chatterbox", "backend", "vosk", "ming"], default="all")
     parser.add_argument("--speech-backends", default="transcribepsy,nemotron", help="Comma-separated speech backends to stage (transcribepsy, nemotron)")
     parser.add_argument("--llama-root", type=Path, default=ROOT / "build/translation-runtime/llama.cpp")
     parser.add_argument("--sherpa-root", type=Path, default=ROOT / "build/desktop-dependencies/sherpa-onnx")
@@ -672,7 +674,7 @@ def main():
     output.mkdir(parents=True, exist_ok=True)
     previous_manifest = json.loads((output / "manifest.json").read_text()) if (output / "manifest.json").is_file() else {}
     args.build_dir.mkdir(parents=True, exist_ok=True)
-    stages = ["whisper", "translation", "supertonic"] if args.stage == "all" else [args.stage]
+    stages = ["whisper", "translation", "supertonic", "ocr"] if args.stage == "all" else [args.stage]
     if args.stage == "all":
         if (system, arch) == ("macos", "arm64"):
             stages.extend(["onnx", "ct2", "backend", "moss", "omnivoice", "chatterbox", "magpie", "vosk", "ming"])
@@ -766,7 +768,7 @@ def main():
         chatterbox_watermark.parent.mkdir(parents=True, exist_ok=True)
         subprocess.run([sys.executable, str(ROOT / "scripts/voice/chatterbox/prepare-watermark.py"),
                         str(root / "src/watermark.cpp"), str(chatterbox_watermark)], check=True)
-    if ("supertonic" in stages or "onnx" in stages or "chatterbox" in stages) and (not args.ort_root or not args.ort_root.is_dir()):
+    if ("supertonic" in stages or "ocr" in stages or "onnx" in stages or "chatterbox" in stages) and (not args.ort_root or not args.ort_root.is_dir()):
         parser.error("--ort-root/HEARTH_ORT_ROOT must name the official extracted ONNX Runtime 1.20.1 host SDK")
     sherpa = None
     sherpa_version = None
@@ -834,7 +836,7 @@ def main():
                 raise RuntimeError("The MOSS stage needs the pinned SentencePiece source from the CT2 build; run --stage ct2 first")
             command.append(f"-DHEARTH_MOSS_CPP={ROOT / 'hearth-tts-moss/src/main/cpp'}")
             command.append(f"-DHEARTH_SENTENCEPIECE_SOURCE={sentencepiece}")
-        if system == "macos": command.append(f"-DCMAKE_OSX_DEPLOYMENT_TARGET={'13.3' if stage == 'onnx' else '13.0'}")
+        if system == "macos": command.append(f"-DCMAKE_OSX_DEPLOYMENT_TARGET={'13.3' if stage in ('onnx', 'ocr') else '13.0'}")
         stage_env = dict(os.environ)
         if stage == "omnivoice":
             # ggml embeds `git rev-parse --short HEAD`; without a fixed abbreviation the
@@ -843,6 +845,10 @@ def main():
         subprocess.run(command, check=True, env=stage_env)
         subprocess.run(["cmake", "--build", str(cache), "--config", "Release", "--parallel", str(args.jobs)], check=True, env=stage_env)
         subprocess.run(["cmake", "--install", str(cache), "--config", "Release", "--component", "hearth-desktop", "--prefix", str(output)], check=True)
+        if stage == "ocr" and system == "macos":
+            installed_ocr = output / "libhearth_desktop_ocr.dylib"
+            require_exports(installed_ocr, "_Java_com_sal7one_common_1jni_ocr_ComicNative_", 4)
+            require_exports(installed_ocr, "_Java_com_sal7one_common_1jni_ocr_JapaneseNative_", 4)
         if stage == "backend":
             installed_backend = output / "libhearth_desktop_backend_speech.dylib"
             if not installed_backend.is_file():
@@ -939,7 +945,7 @@ def main():
             linked = subprocess.check_output(["otool", "-L", str(installed)], text=True)
             if "@rpath/libonnxruntime.1.20.1.dylib" not in linked:
                 raise RuntimeError("The Qwen3-ASR dylib does not link the staged ONNX Runtime 1.20.1")
-    if "supertonic" in stages or "onnx" in stages or "chatterbox" in stages:
+    if "supertonic" in stages or "ocr" in stages or "onnx" in stages or "chatterbox" in stages:
         ort = args.ort_root.resolve()
         if system == "macos":
             # JAR resources cannot preserve symlinks. The linked versioned install name is sufficient.
@@ -979,7 +985,7 @@ def main():
     upstreams = dict(previous_manifest.get("upstreams", {}))
     if "whisper" in stages: upstreams["whisperSourceTreeSha256"] = WHISPER_PIN
     if "translation" in stages: upstreams["llamaRevision"] = LLAMA_PIN
-    if any(stage in stages for stage in ("supertonic", "onnx", "moss", "chatterbox")): upstreams["onnxRuntime"] = "1.20.1"
+    if any(stage in stages for stage in ("supertonic", "ocr", "onnx", "moss", "chatterbox")): upstreams["onnxRuntime"] = "1.20.1"
     if "onnx" in stages:
         upstreams.update({
             "sherpaRevision": SHERPA_PIN,

@@ -17,7 +17,9 @@ import kotlinx.coroutines.launch
 internal fun ModelBindingRepairNotice(onRepair: () -> Unit, launchError: String? = null) {
     val text = rememberUiText()
     val checks by ModelSourceBindings.checks.collectAsState()
-    val affected = checks.count { !it.available || it.changedSinceImport }
+    // An mtime change is informational, not evidence of missing/corrupt bytes.
+    // Pinned runtime initialization still hashes the actual model before use.
+    val affected = checks.count { !it.available }
     if (affected == 0 && launchError == null) return
     Card(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)) {
@@ -62,7 +64,7 @@ internal fun ManagedModelSourcesUi(initialExpanded: Boolean = false, onImport: (
                         !check.available -> R.string.setup_sources_copy_missing
                         check.changedSinceImport -> R.string.setup_sources_copy_changed
                         else -> R.string.setup_sources_copy_ready
-                    }), color = if (!check.available || check.changedSinceImport) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary)
+                    }), color = if (!check.available) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary)
                     check.paths.forEach { Text(it, style = MaterialTheme.typography.bodySmall) }
                     check.error?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
                     Text(text(when (check.sourceAccess) {
@@ -83,7 +85,7 @@ internal fun ManagedModelSourcesUi(initialExpanded: Boolean = false, onImport: (
                             style = MaterialTheme.typography.bodySmall,
                             color = if (result.readable) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.error)
                     }
-                    if (!check.available || check.changedSinceImport) TextButton(onClick = { onImport(check.modelId) }) { Text(text(R.string.setup_sources_import_again)) }
+                    if (!check.available) TextButton(onClick = { onImport(check.modelId) }) { Text(text(R.string.setup_sources_import_again)) }
                 }
             }
         }

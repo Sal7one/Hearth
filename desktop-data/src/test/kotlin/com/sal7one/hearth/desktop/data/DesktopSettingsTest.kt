@@ -68,9 +68,9 @@ class DesktopSettingsTest {
             val magpie = if (macosArm) 1 else 0
             val ming = if (macosArm) 1 else 0
             val chatterbox = if (macosArm) 1 else 0
-            val byStage = library.catalog.groupingBy { it.stage.name }.eachCount()
-            assertEquals(mapOf("STT" to 27 + qwen + transcribepsy + nemotron + moonshine + omnilingual + phonon + vosk, "TRANSLATION" to 14 + ct2, "TTS" to 1 + moss + omnivoice + magpie + ming + chatterbox), byStage)
-            assertEquals(if (qwen + transcribepsy + nemotron + moonshine + omnilingual + phonon + vosk > 0) 8 else 1, library.catalog.filter { it.stage.name == "STT" }.map { it.family }.distinct().size)
+            val byStage = library.catalog.groupingBy { it.stage?.name ?: "OCR" }.eachCount()
+            assertEquals(mapOf("STT" to 27 + qwen + transcribepsy + nemotron + moonshine + omnilingual + phonon + vosk, "TRANSLATION" to 14 + ct2, "TTS" to 1 + moss + omnivoice + magpie + ming + chatterbox, "OCR" to 1), byStage)
+            assertEquals(if (qwen + transcribepsy + nemotron + moonshine + omnilingual + phonon + vosk > 0) 8 else 1, library.catalog.filter { it.stage == com.sal7one.hearth.core.PipelineStage.STT }.map { it.family }.distinct().size)
             if (qwen == 1) {
                 val card = library.catalog.single { it.id == "qwen3-asr-0.6b" }
                 assertEquals("qwen3-asr-local", card.engineId)

@@ -2,6 +2,8 @@ package com.sal7one.transiber.reading
 
 import android.content.Context
 import android.graphics.Color
+import android.graphics.Canvas
+import android.graphics.Paint
 import android.text.TextUtils
 import android.util.TypedValue
 import android.view.Gravity
@@ -10,6 +12,7 @@ import android.widget.FrameLayout
 import android.widget.TextView
 import androidx.core.widget.TextViewCompat
 import com.sal7one.transiber.ocr.*
+import com.sal7one.hearth.core.vision.OcrRegion
 
 /** Transparent live replacement layer. Window flags control touch pass-through; the handle is separate. */
 internal class ReadingTranslationView(
@@ -17,13 +20,35 @@ internal class ReadingTranslationView(
     private val onBox: (TranslatedOcrBox) -> Unit,
 ) : FrameLayout(context) {
     private var boxes=emptyList<TranslatedOcrBox>()
+    private var regions=emptyList<OcrRegion>()
+    private val outline=Paint(Paint.ANTI_ALIAS_FLAG)
     private val labels=LinkedHashMap<TranslatedOcrBox, TextView>()
     private var imageWidth=1
     private var imageHeight=1
     private var crop=PixelCrop(0,0,1,1)
     var showOriginal=false
         set(value) { if(field!=value) { field=value; render(true) } }
-    init { setBackgroundColor(Color.TRANSPARENT) }
+    init { setBackgroundColor(Color.TRANSPARENT);setWillNotDraw(false) }
+    fun updateRegions(value: List<OcrRegion>, width: Int=imageWidth, height: Int=imageHeight, area: PixelCrop=crop) {
+        val changed=imageWidth!=width || imageHeight!=height || crop!=area
+        regions=value;imageWidth=width;imageHeight=height;crop=area
+        if(changed)render(true)
+        invalidate()
+    }
+    override fun onDraw(canvas: Canvas) {
+        super.onDraw(canvas)
+        if(showOriginal)return
+        val density=resources.displayMetrics.density
+        regions.forEach { region ->
+            val rect=region.bounds
+            if(boxes.any {it.line.x==rect.x && it.line.y==rect.y && it.line.width==rect.width && it.line.height==rect.height})return@forEach
+            val bounds=OcrPageLayout.box(region,crop,imageWidth,imageHeight,width,height) ?: return@forEach
+            outline.style=Paint.Style.FILL;outline.color=Color.argb(22,45,212,191)
+            canvas.drawRoundRect(bounds.left.toFloat(),bounds.top.toFloat(),bounds.right.toFloat(),bounds.bottom.toFloat(),4*density,4*density,outline)
+            outline.style=Paint.Style.STROKE;outline.strokeWidth=2*density;outline.color=Color.rgb(45,212,191)
+            canvas.drawRoundRect(bounds.left.toFloat(),bounds.top.toFloat(),bounds.right.toFloat(),bounds.bottom.toFloat(),4*density,4*density,outline)
+        }
+    }
     fun update(value: List<TranslatedOcrBox>, width: Int=imageWidth, height: Int=imageHeight, area: PixelCrop=crop) {
         if(boxes!=value || imageWidth!=width || imageHeight!=height || crop!=area) {
             val layoutChanged=imageWidth!=width || imageHeight!=height || crop!=area
@@ -36,6 +61,7 @@ internal class ReadingTranslationView(
         post { if(isAttachedToWindow)render(true) }
     }
     private fun render(layoutChanged: Boolean) {
+        invalidate()
         if(showOriginal) {
             if(labels.isNotEmpty()) { removeAllViews();labels.clear() }
             return

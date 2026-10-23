@@ -241,11 +241,13 @@ internal fun UiText.label(profile: com.sal7one.transiber.ocr.OcrProfile): String
     "arabic" -> this(R.string.ocr_arabic)
     "cyrillic" -> this(R.string.ocr_cyrillic)
     "manga" -> this(R.string.ocr_manga)
+    "manga-page" -> this(R.string.ocr_manga_page)
     "meiki" -> this(R.string.ocr_meiki)
     else -> profile.label
 }
 internal fun UiText.description(profile: com.sal7one.transiber.ocr.OcrProfile): String = when(profile.id) {
     "manga" -> this(R.string.ocr_manga_details)
+    "manga-page" -> this(R.string.ocr_manga_page_details)
     "meiki" -> this(R.string.ocr_meiki_details)
     "latin", "cjk", "arabic", "cyrillic" -> this(R.string.ocr_printed)
     else -> profile.description

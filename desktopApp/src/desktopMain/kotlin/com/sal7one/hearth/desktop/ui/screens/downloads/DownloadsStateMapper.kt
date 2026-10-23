@@ -33,7 +33,7 @@ internal fun downloadsState(
         DownloadItem(
             id = card.id,
             name = card.name,
-            stageLabel = stageLabel(card.stage),
+            stageLabel = card.stage?.let(::stageLabel) ?: "Reading",
             sizeLabel = formatBytes(card.bytes),
             detail = when (bucket) {
                 DownloadBucket.DOWNLOADING -> requireNotNull(transfer).let { current ->

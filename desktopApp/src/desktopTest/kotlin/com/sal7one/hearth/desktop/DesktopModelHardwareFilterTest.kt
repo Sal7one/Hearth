@@ -16,7 +16,7 @@ class DesktopModelHardwareFilterTest {
     private val tts = card("tts", "supertonic-local", PipelineStage.TTS)
     private val cards = listOf(whisper, gguf, qwen, ct2, tts)
     private fun engine(card: DesktopModelCard, acceleration: Set<String>, available: Boolean = true) =
-        EngineDescriptor(card.engineId, card.name, card.stage, EngineKind.LOCAL, acceleration = acceleration, available = available)
+        EngineDescriptor(card.engineId, card.name, requireNotNull(card.stage), EngineKind.LOCAL, acceleration = acceleration, available = available)
     private fun shown(filter: ModelsFilter, engines: List<EngineDescriptor> = emptyList(), installed: Map<String, DesktopModelStatus> = emptyMap()) =
         modelsState(cards, installed, PipelineConfig(), emptyList(), filter, 0, engines = engines)
 

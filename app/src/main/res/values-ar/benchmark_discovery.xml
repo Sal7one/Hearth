@@ -1,0 +1,5 @@
+<resources>
+    <string name="benchmark_discovery_summary">تعذرت قراءة %1$d من النماذج المثبتة</string>
+    <string name="benchmark_discovery_continue">يمكنك اختبار النماذج المثبتة الأخرى. راجع الملفات المتأثرة بشكل منفصل.</string>
+    <string name="benchmark_discovery_review">مراجعة مشاكل النماذج</string>
+</resources>

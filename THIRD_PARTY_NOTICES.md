@@ -147,6 +147,17 @@ Runtime licenses do not replace these model licenses. See
 
 `hearth-tts-moss` contains the Apache-2.0 MOSS orchestration and privately linked SentencePiece (including its original third-party notices), plus MIT JSON. Model/codec weights are separately downloaded under their exact pinned Apache-2.0 model terms. `hearth-tts-chatterbox` uses MIT chatterboxcpp audio/Perth code, real Hugging Face tokenizers0.22.2 with locked dependency notices, and MIT JSON. The native Perth converter operates only on the separately downloaded official MIT checkpoint; no pickle execution or checkpoint redistribution is included. Chatterbox V3 model/export is MIT, and the adapter always applies native Perth before publishing audio. Both optional providers share the single official ONNX Runtime AAR; neither links the broad STT/translation `common-jni` binary. Full source/binary provenance and dependency notices ship under each module's `assets/licenses/` folder.
 
+## Automatic manga page detection
+
+The separately downloaded [ogkalu comic text/bubble detector](https://huggingface.co/ogkalu/comic-text-and-bubble-detector)
+declares Apache-2.0. Hearth pins the INT8 RT-DETR-v2 export, revision
+`16e8a622f91fabc6b5b65c96d32d1183f8843546`; shared artifact identities are in
+`hearth-core/.../vision/MangaArtifacts.kt`. Android and desktop use the same
+original Hearth geometry and owned-handle adapters. Architecture research used
+[Koharu](https://github.com/koharu-rs/koharu), MIT OR Apache-2.0, revision
+`73abcafab1507e1c228c36ed54ba84e5e1cd6ff8`. Its full engine and GPL-derived CTD
+postprocessing are not bundled. Model weights are not included in app packages.
+
 ## Desktop window controls and keyboard shortcuts
 
 The desktop app includes Java Native Access (JNA and JNA Platform) 5.17.0,

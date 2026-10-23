@@ -9,6 +9,21 @@ import java.nio.file.Files
 
 class ModelPathSnapshotTest {
     @get:Rule val temporary = TemporaryFolder()
+    @Test fun systemAliasForThePrivateRootAcceptsCanonicalInstallerPaths() {
+        // Android exposes /data/user/0 while installers publish canonical /data/data paths.
+        val actual = temporary.newFolder("data-data").canonicalFile
+        val alias = File(temporary.root,"data-user-0")
+        Files.createSymbolicLink(alias.toPath(),actual.toPath())
+        val installed = File(actual,"models/whisper.bin").apply {parentFile!!.mkdirs();writeText("pinned model")}
+        val canonical = ModelPathSnapshots.capture(alias,installed,installed.length())
+        val lexical = ModelPathSnapshots.capture(alias,File(alias,"models/whisper.bin"),installed.length())
+        assertTrue(ModelPathSnapshots.check(alias,canonical).available)
+        assertTrue(ModelPathSnapshots.check(alias,lexical).available)
+        // An extra link inside that root is still forbidden, even when it points to a valid model.
+        val nested = File(actual,"models/alias.bin")
+        Files.createSymbolicLink(nested.toPath(),installed.toPath())
+        assertThrows(IllegalArgumentException::class.java) {ModelPathSnapshots.capture(alias,nested)}
+    }
     @Test fun availabilityChecksMissingSizeAndModificationsWithoutHashing() {
         val root = temporary.newFolder("private")
         val file = File(root, "models/test.gguf").apply { parentFile!!.mkdirs(); writeText("model") }

@@ -36,7 +36,7 @@ internal fun SettingsOcrLocalUi(onDownloads: () -> Unit = {}, selected: String? 
     var importing by remember { mutableStateOf(false) }
     var queuing by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
-    var family by com.sal7one.transiber.models.rememberModelBrowseString("ocr-family", OcrCatalog.profiles.firstOrNull { it.id == selected }?.engine ?: "any")
+    var family by com.sal7one.transiber.models.rememberModelBrowseString("ocr-family", OcrCatalog.profiles.firstOrNull { it.id == selected }?.family ?: "any")
     var query by com.sal7one.transiber.models.rememberModelBrowseString("ocr-query", "")
     var installedOnly by com.sal7one.transiber.models.rememberModelBrowseBoolean("ocr-installed")
     var installed by remember { mutableStateOf<Set<String>>(emptySet()) }

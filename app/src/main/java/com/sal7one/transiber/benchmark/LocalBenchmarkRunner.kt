@@ -129,20 +129,25 @@ internal data class BenchmarkResult(
 }
 /** Sequential production runtimes. A fresh session is closed before the next model is loaded. */
 internal class LocalBenchmarkRunner(private val context: Context) {
+    private val mutableDiscoveryIssues = kotlinx.coroutines.flow.MutableStateFlow<List<String>>(emptyList())
+    val discoveryIssues: kotlinx.coroutines.flow.StateFlow<List<String>> = mutableDiscoveryIssues
     @Volatile private var cancelNative: (() -> Unit)? = null
     fun cancel() { cancelNative?.invoke() }
 
     suspend fun candidates(): List<BenchmarkCandidate> = withContext(Dispatchers.IO) {
         if (!com.sal7one.transiber.runtime.LocalModelPolicy.allowed(context)) return@withContext emptyList()
-        val speech = LocalSpeechModels(File(context.filesDir, "speech-models")).list().map { model ->
+        val discovery = BenchmarkDiscovery()
+        val packages = LocalSpeechModels(File(context.filesDir, "speech-models")).inspect()
+        packages.issues.forEach(discovery::report)
+        val speech = packages.models.mapNotNull { model -> discovery.inspect(model.profile.label) {
             BenchmarkCandidate(model.id, model.profile.label + " · " + model.id.takeLast(6),
                 "Speech / ${model.profile.capabilities.streaming}", model.profile.capabilities.sourceLanguages + (if (model.profile.capabilities.sourceLanguages.size > 1) setOf("auto") else emptySet()),
                 file = model.root, profile = model.profile,
                 artifactFingerprint = benchmarkHash(File(model.root, SpeechModelPackage.MANIFEST).readBytes()))
-        }
+        } }
         val legacy = ModelRegistry.getInstance(context).registeredModels.value.filter {
             it.isValid && it.engineType in setOf(ModelEngineType.WHISPER, ModelEngineType.VOSK)
-        }.map { model ->
+        }.mapNotNull { model -> discovery.inspect(model.name) {
             val whisper = model.engineType == ModelEngineType.WHISPER
             val vocab = if (whisper) File(model.path).inputStream().use { com.sal7one.transiber.caption.whisperVocabulary(it) } else null
             val codes = if (!whisper) setOf("model") else when (vocab) {
@@ -153,7 +158,7 @@ internal class LocalBenchmarkRunner(private val context: Context) {
             }
             BenchmarkCandidate(model.id, model.name, if (whisper) "Whisper / batch" else "Vosk / batch", codes, file = File(model.path),
                 artifactFingerprint = model.digest?.hex)
-        }
+        } }
         val translations = LocalTranslationModels(File(context.filesDir, "translation-models"))
         val gguf = translations.installed().map { spec ->
             BenchmarkCandidate(spec.id, spec.label, "Translation / GGUF", spec.sourceLanguages, spec.targetLanguages,
@@ -175,7 +180,7 @@ internal class LocalBenchmarkRunner(private val context: Context) {
             BenchmarkCandidate(it.id,it.selectionLabel,"Translation / CTranslate2 CPU",it.sources,it.targets,file=com.sal7one.transiber.translation.Ct2Package.directory(context,it),
                 artifactFingerprint=it.files.joinToString(":") { file -> file.sha256 })
         }
-        val voices = LocalVoiceFamilies.providers.flatMap { family ->
+        val voices = LocalVoiceFamilies.providers.flatMap { family -> discovery.inspect(family.label) {
             family.voices.filter { voice -> LocalVoiceFamilies.ready(context, VoiceChoice(voice = voice, family = family.id)) }
                 .map { voice -> BenchmarkCandidate("voice:${family.id}:$voice", "${family.label} · $voice", "Voice / local CPU",
                     family.languages, file = LocalVoiceFamilies.directory(context, family.id), voiceFamily = family.id, voiceId = voice,
@@ -183,7 +188,8 @@ internal class LocalBenchmarkRunner(private val context: Context) {
                     artifactBytes = if (family.id == "supertonic") (VoiceCatalog.core + VoiceCatalog.file("$voice.json")).sumOf { asset ->
                         File(context.filesDir, "voice-models/${asset.filename}").length()
                     } else null) }
-        }
+        }.orEmpty() }
+        mutableDiscoveryIssues.value = discovery.issues
         speech + legacy + gguf + mlKit + marian + cascades + ct2 + voices
     }
 

@@ -37,13 +37,15 @@ internal object ModelsCopy {
     const val REFRESH = "Re-check installed files"
     const val REFRESHING = "Checking installed files…"
 
-    fun groupTitle(stage: PipelineStage): String = when (stage) {
+    fun groupTitle(stage: PipelineStage?): String = when (stage) {
+        null -> "Image & manga reading"
         PipelineStage.STT -> GROUP_SPEECH
         PipelineStage.TRANSLATION -> GROUP_TRANSLATION
         PipelineStage.TTS -> GROUP_VOICE
     }
 
-    fun groupDetail(stage: PipelineStage): String = when (stage) {
+    fun groupDetail(stage: PipelineStage?): String = when (stage) {
+        null -> "Text-region detection and Japanese OCR · translation uses your selected engine"
         PipelineStage.STT -> GROUP_SPEECH_DETAIL
         PipelineStage.TRANSLATION -> GROUP_TRANSLATION_DETAIL
         PipelineStage.TTS -> GROUP_VOICE_DETAIL

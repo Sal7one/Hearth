@@ -41,13 +41,13 @@
     <string name="setup_bundle_compact_translation_only">مترجم مخصص لزوج لغات واحد. تبقى اختيارات الكلام والصوت كما هي.</string>
     <string name="setup_bundle_broad_translation_only">Index-Translate 2B للغات متعددة. تبقى اختيارات الكلام والصوت كما هي.</string>
     <string name="setup_sources_attention">تحتاج بعض ملفات النماذج إلى مراجعة</string>
-    <string name="setup_sources_repair_detail">هناك %1$d نسخ نماذج مفقودة أو متغيرة. استوردها أو نزّلها مجددًا قبل الاستخدام.</string>
+    <string name="setup_sources_repair_detail">تحتاج %1$d نسخة من النماذج إلى مراجعة. يمكنك استخدام النماذج المثبتة الأخرى. افتح المراجعة لمعرفة الملفات المتأثرة والأخطاء المحددة.</string>
     <string name="setup_sources_review">مراجعة</string>
     <string name="setup_sources_title">ملفات النماذج ومصادرها</string>
     <string name="setup_sources_detail">يشغّل Hearth نسخًا خاصة متحققًا منها. يُتابع الوصول إلى المصدر الأصلي بشكل منفصل؛ ولا يؤدي فحص المصدر إلى استبدال الملفات أو الثقة بالتغييرات.</string>
     <string name="setup_sources_recheck">فحص النسخ المثبتة</string>
     <string name="setup_sources_copy_missing">النسخة الخاصة غير متاحة</string>
-    <string name="setup_sources_copy_changed">تغيرت النسخة الخاصة؛ يلزم التحقق</string>
+    <string name="setup_sources_copy_changed">تغير وقت الملف؛ يُتحقق من محتواه عند التحميل</string>
     <string name="setup_sources_copy_ready">النسخة الخاصة متاحة؛ يجري التحقق من سلامتها مجددًا قبل الاستدلال</string>
     <string name="setup_sources_original_unknown">لم يُسجّل المصدر الأصلي</string>
     <string name="setup_sources_grant_retained">إذن قراءة المصدر محفوظ؛ لم يُفحص المصدر</string>

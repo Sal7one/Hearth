@@ -144,10 +144,11 @@ class ReadingOverlayService : Service() {
                     controller.state.collect {value->
                         latest=value
                         if(!viewingBox && value.text.isNotBlank()) original?.text=value.text
+                        if(working && value.regions.isNotEmpty() && value.error==null)showRegions()
                         if(working && value.boxTranslations.isNotEmpty() && value.error==null)showTranslations(value.boxTranslations,automatic=true)
                         if(!viewingBox && value.translation.isNotBlank())translated?.text=value.translation
                         if(value.error!=null)showError(value.error)
-                        else status?.text=when {value.loading->uiText(UiR.string.service_loading_1_s_aba14, uiText.label(profile));value.processing->uiText(UiR.string.service_reading_text_b6863);value.translating->uiText(UiR.string.service_translating_ae47b);value.text.isNotBlank()->uiText(UiR.string.service_1_s_2_s_ms_ocr_87c9c, uiText.label(profile), value.ocrMs);else->uiText(UiR.string.service_open_a_reader_then_tap_translate_or_draw_area_a9c06)}
+                        else status?.text=when {value.loading->uiText(UiR.string.service_loading_1_s_aba14, uiText.label(profile));value.detecting->uiText(UiR.string.ocr_detecting_regions);value.processing && value.regions.isNotEmpty()->uiText(UiR.string.ocr_reading_regions,value.lines.size,value.regions.size);value.processing->uiText(UiR.string.service_reading_text_b6863);value.translating->uiText(UiR.string.service_translating_ae47b);value.text.isNotBlank()->uiText(UiR.string.service_1_s_2_s_ms_ocr_87c9c, uiText.label(profile), value.ocrMs);else->uiText(UiR.string.service_open_a_reader_then_tap_translate_or_draw_area_a9c06)}
                         if(working && !value.loading && !value.processing && !value.translating) {
                             working=false
                             handleLabel?.text=uiText(UiR.string.service_translate_2be17)
@@ -258,6 +259,9 @@ class ReadingOverlayService : Service() {
                     if(pageView?.visibility==View.VISIBLE)latest.boxTranslations.forEach {box->
                         OcrPageLayout.box(box.line,crop,pageWidth,pageHeight,frame.width,frame.height,coverEdges=true)?.let {masks+=it}
                     }
+                    if(pageView?.visibility==View.VISIBLE)latest.regions.forEach {region->
+                        OcrPageLayout.box(region,crop,pageWidth,pageHeight,frame.width,frame.height)?.let {masks+=it}
+                    }
                 }
                 if(motion.observe(frame.pixels,frame.width,frame.height,masks)) {
                     // observe() already advanced the baseline. Keeping it measures every
@@ -326,7 +330,7 @@ class ReadingOverlayService : Service() {
         }
     }
     private fun clearPage() {
-        pageView?.update(emptyList());pageView?.visibility=View.INVISIBLE;pageCrop=null
+        pageView?.update(emptyList());pageView?.updateRegions(emptyList());pageView?.visibility=View.INVISIBLE;pageCrop=null
     }
     private fun resumeReader() {
         panel?.visibility=View.GONE;handle?.visibility=View.VISIBLE
@@ -360,6 +364,12 @@ class ReadingOverlayService : Service() {
         pageView?.visibility=if(automatic && panel?.visibility==View.VISIBLE)View.INVISIBLE else View.VISIBLE
         if(!automatic)panel?.visibility=View.GONE
         handle?.visibility=View.VISIBLE
+    }
+    private fun showRegions() {
+        if(setupSuppressed)return
+        val crop=pageCrop ?: return
+        pageView?.updateRegions(latest.regions,pageWidth,pageHeight,crop)
+        pageView?.visibility=if(panel?.visibility==View.VISIBLE)View.INVISIBLE else View.VISIBLE
     }
     private fun params(width: Int,height: Int)=WindowManager.LayoutParams(width,height,WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
         WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,PixelFormat.TRANSLUCENT).apply {gravity=Gravity.TOP or Gravity.LEFT}

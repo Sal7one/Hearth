@@ -145,10 +145,15 @@ internal fun CameraTranslateScreen(onModels: () -> Unit,onConnections: () -> Uni
                 onFrame={controller.offer(it)},onCaptureReady={capture=it},onPhoto={photo(it)},onError=controller::error)
             else if(!permission && frozen==null)Button(onClick={permissionRequest.launch(Manifest.permission.CAMERA)}){Text(uiText(UiR.string.ui_open_camera_672b0))}
             frozen?.let {Image(it.asImageBitmap(),uiText(UiR.string.ui_captured_image_7fc88),Modifier.fillMaxSize().background(Color.Black),contentScale=ContentScale.Fit)}
-            if(state.lines.isNotEmpty() && (frozen!=null || state.live))Canvas(Modifier.fillMaxSize().clearAndSetSemantics {}) {
+            if((state.regions.isNotEmpty() || state.lines.isNotEmpty()) && (frozen!=null || state.live))Canvas(Modifier.fillMaxSize().clearAndSetSemantics {}) {
                 val scale=minOf(size.width/state.width,size.height/state.height)
                 val dx=(size.width-state.width*scale)/2;val dy=(size.height-state.height*scale)/2
-                state.lines.forEach {line -> drawRect(Color(0xFFFFD54F),Offset(dx+line.x*scale,dy+line.y*scale),Size(line.width*scale,line.height*scale),style=Stroke(2.dp.toPx()))}
+                val bounds=if(state.regions.isNotEmpty())state.regions.map {it.bounds} else state.lines.map {com.sal7one.hearth.core.vision.OcrRect(it.x,it.y,it.width,it.height)}
+                bounds.forEach {rect ->
+                    val origin=Offset(dx+rect.x*scale,dy+rect.y*scale);val area=Size(rect.width*scale,rect.height*scale)
+                    drawRect(Color(0x1A2DD4BF),origin,area)
+                    drawRect(Color(0xFF2DD4BF),origin,area,style=Stroke(2.dp.toPx()))
+                }
             }
         }
         if(!ready) {

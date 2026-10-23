@@ -1,0 +1,5 @@
+<resources>
+    <string name="benchmark_discovery_summary">无法读取 %1$d 个已安装模型</string>
+    <string name="benchmark_discovery_continue">仍可对其他已安装模型运行基准测试。请单独检查受影响的文件。</string>
+    <string name="benchmark_discovery_review">查看模型问题</string>
+</resources>

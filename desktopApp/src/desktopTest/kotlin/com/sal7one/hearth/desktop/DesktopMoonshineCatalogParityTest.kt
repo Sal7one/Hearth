@@ -21,7 +21,7 @@ class DesktopMoonshineCatalogParityTest {
                 assertEquals(setOf(variant.language), card.languages)
                 assertEquals(variant.license, card.license)
                 assertEquals(setOf("macos-arm64"), card.platforms)
-                assertEquals("STT", card.stage.name)
+                assertEquals("STT", card.stage?.name)
                 assertEquals(variant.archiveName, card.artifacts.single().filename)
                 val archive = requireNotNull(card.archive) { card.id }
                 assertEquals("tar.bz2", archive.format)

@@ -14,10 +14,11 @@ class OcrBrowserPresentationTest {
         assertFalse(arabic.matchesBrowser("", "manga"))
     }
 
-    @Test fun familyAndSearchBothConstrainResultsAcrossAllSixProfiles() {
+    @Test fun familyAndSearchBothConstrainResultsIncludingAutomaticPages() {
         assertEquals(OcrCatalog.profiles.size, OcrCatalog.profiles.count { it.matchesBrowser("", "any") })
-        assertEquals(setOf("manga", "meiki"), OcrCatalog.profiles.filter { it.matchesBrowser("experimental Japanese", "any") }.map { it.id }.toSet())
-        assertEquals(listOf("manga"), OcrCatalog.profiles.filter { it.matchesBrowser("encoder_model_uint8", "manga") }.map { it.id })
+        assertEquals(setOf("manga-page", "manga", "meiki"), OcrCatalog.profiles.filter { it.matchesBrowser("experimental Japanese", "any") }.map { it.id }.toSet())
+        assertEquals(listOf("manga-page", "manga"), OcrCatalog.profiles.filter { it.matchesBrowser("encoder_model_uint8", "manga") }.map { it.id })
+        assertEquals(listOf("manga-page"), OcrCatalog.profiles.filter { it.matchesBrowser("detector-v4-s", "manga") }.map { it.id })
         assertTrue(OcrCatalog.profiles.none { it.matchesBrowser("does-not-exist", "any") })
     }
 }

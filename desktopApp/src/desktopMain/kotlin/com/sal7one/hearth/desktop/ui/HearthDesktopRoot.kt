@@ -8,6 +8,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import com.sal7one.hearth.desktop.DesktopModelController
+import com.sal7one.hearth.desktop.DesktopReadingController
 import com.sal7one.hearth.desktop.DesktopWorkspaceController
 import com.sal7one.hearth.desktop.data.DesktopModelStatus
 import com.sal7one.hearth.desktop.WorkspaceInput
@@ -95,6 +96,7 @@ import kotlinx.coroutines.launch
 internal fun HearthDesktopRoot(
     controller: DesktopWorkspaceController,
     models: DesktopModelController,
+    reading: DesktopReadingController,
     initialUi: Map<String, String>,
     saveUi: (Map<String, String>) -> Unit,
     closing: Boolean,
@@ -117,17 +119,21 @@ internal fun HearthDesktopRoot(
     ) }
     var deviceId by remember { mutableStateOf<String?>(null) }
     var translationDraft by remember { mutableStateOf("") }
+    var readingTranslate by remember { mutableStateOf(initialUi["reading-translate"] != "false") }
+    var readingOriginal by remember { mutableStateOf(initialUi["reading-original"] == "true") }
     var modelFilter by remember {
         mutableStateOf(
             ModelsFilter(
                 stage = initialUi["model-stage"]?.let { stored -> PipelineStage.entries.firstOrNull { it.name == stored } },
                 onlyInstalled = initialUi["model-installed"] == "true",
                 hardware = ModelHardwareFilter.fromKey(initialUi["model-hardware"]),
+                readingOnly = initialUi["model-stage"] == "OCR",
             ),
         )
     }
 
     val config by controller.config.collectAsState()
+    val readingState by reading.state.collectAsState()
     val workspace by controller.state.collectAsState()
     val activeConfig = if (workspace.active) workspace.sessionConfig ?: config else config
     val library by models.state.collectAsState()
@@ -220,8 +226,12 @@ internal fun HearthDesktopRoot(
     val modelsActions = ModelsActions(
         onSearch = { query -> modelFilter = modelFilter.copy(query = query) },
         onFilterStage = { stage ->
-            modelFilter = modelFilter.copy(stage = stage)
+            modelFilter = modelFilter.copy(stage = stage,readingOnly=false)
             saveUi(mapOf("model-stage" to stage?.name.orEmpty()))
+        },
+        onFilterReading = {
+            modelFilter=modelFilter.copy(stage=null,readingOnly=true)
+            saveUi(mapOf("model-stage" to "OCR"))
         },
         onToggleInstalledOnly = {
             modelFilter = modelFilter.copy(onlyInstalled = !modelFilter.onlyInstalled)
@@ -239,7 +249,12 @@ internal fun HearthDesktopRoot(
             val card = models.library.find(id)
             val installed = models.verifiedSelection(id)
             if (installed != null) {
-                controller.updateConfig { normalize(it.useVerifiedModel(card.stage, installed)) }
+                val stage=card.stage
+                if(stage==null) {
+                    saveUi(mapOf("reading-model-path" to installed.modelPath))
+                    navigate(DesktopScreen.READING)
+                }
+                else controller.updateConfig { normalize(it.useVerifiedModel(stage, installed)) }
             } else {
                 models.download(id)
             }
@@ -698,7 +713,38 @@ internal fun HearthDesktopRoot(
                 )
                 DesktopScreen.CONVERSATION -> ConversationScreen()
                 DesktopScreen.CAMERA -> CameraScreen()
-                DesktopScreen.READING -> ReadingScreen()
+                DesktopScreen.READING -> {
+                    val readingConfig = config.copy(sourceLanguage = "ja", speech = null, voice = null)
+                    val languages = com.sal7one.hearth.desktop.ui.language.pipelineLanguages(readingConfig,
+                        controller.capabilities, models.library.catalog, typedText = true)
+                    val issue = if (workspace.active) "Finish the active caption or file session before translating a page. OCR-only reading is available."
+                        else com.sal7one.hearth.desktop.ui.language.stageSetupIssue(readingConfig,
+                            PipelineStage.TRANSLATION, controller.capabilities, installations, models.library.catalog) ?: languages.issue
+                    val model = models.verifiedSelection("manga-page")
+                    ReadingScreen(
+                        state = readingState, modelReady = model != null,
+                        modelActivity = library.transfers["manga-page"]?.label,
+                        target = config.targetLanguage, targets = languages.targets,
+                        translate = readingTranslate, showOriginal = readingOriginal, translationIssue = issue,
+                        onOpen = { runCatching {
+                            chooseFile(null, "Open manga image", listOf("png", "jpg", "jpeg"))?.let(reading::openImage)
+                        }.onFailure { failure(it.message ?: it.toString()) } },
+                        onRead = { model?.modelPath?.let {
+                            saveUi(mapOf("reading-model-path" to it))
+                            reading.read(java.nio.file.Path.of(it), readingTranslate)
+                        } },
+                        onCancel = reading::cancel, onCrop = reading::selectArea,
+                        onDownload = { saveUi(mapOf("reading-model-path" to "")); models.download("manga-page") },
+                        onSetup = { navigate(DesktopScreen.TRANSLATION_SETTINGS) }, onTarget = ::targetLanguage,
+                        onTranslate = { readingTranslate = it; saveUi(mapOf("reading-translate" to it.toString())) },
+                        onOriginal = { readingOriginal = it; saveUi(mapOf("reading-original" to it.toString())) },
+                        onCopy = { runCatching {
+                            copyToClipboard(readingState.text.joinToString("\n\n") {
+                                readingState.translations[it.region.bounds] ?: it.text
+                            })
+                        }.onFailure { failure(it.message ?: it.toString()) } },
+                    )
+                }
                 DesktopScreen.INTEGRATIONS -> IntegrationsScreen(state = integrations, actions = integrationsActions)
                 DesktopScreen.TRANSLATE -> TranslateScreen(
                     state = translate,
