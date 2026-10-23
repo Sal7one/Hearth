@@ -1,6 +1,7 @@
 package com.sal7one.transiber.downloads
 
 import android.content.Context
+import com.sal7one.hearth.core.downloads.Aria2Transfer
 import com.sal7one.transiber.byok.ByokPolicy
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -59,7 +60,11 @@ internal object Aria2Backend {
                 } }
                 Files.move(temporary.toPath(),certificates.toPath(), StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)
             } finally { temporary.delete() }
-            Aria2Runtime(binary, mapOf("SSL_CERT_FILE" to certificates.absolutePath)).also { cached=identity to it }
+            val runtime = Aria2Runtime(binary, mapOf("SSL_CERT_FILE" to certificates.absolutePath))
+            // Integrity is checked above and is never treated as a missing capability.
+            // Only publish a cached runtime after it can execute and explicitly advertises HTTPS.
+            Aria2Transfer.probe(runtime.executable, runtime.environment)
+            runtime.also { cached=identity to it }
         }
     }
 }

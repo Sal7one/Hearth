@@ -73,6 +73,7 @@ class ReadingStartActivity : AppCompatActivity() {
         val (selection,selectionStore)=rememberOcrPreferences()
         val scope=rememberCoroutineScope()
         var options by rememberSaveable {mutableStateOf(false)}
+        var editingTranslator by rememberSaveable {mutableStateOf(false)}
         val optionsScroll=rememberScrollState()
         val config by remember {CaptionConfigStore.config(this)}.collectAsState(initial=CaptionOverlayConfig())
         val revision by ConversationTranslationSettings.revision.collectAsState()
@@ -172,7 +173,8 @@ class ReadingStartActivity : AppCompatActivity() {
                             FilterChip(selected=mode==id,onClick={mode=id},label={Text(label)})
                         }
                     }
-                    OcrLanguageControls(selection,targets,translator,{next->selectionStore.update {next};error=null},{models=true},showMangaModes=content==ReadingContent.MANGA)
+                    OcrLanguageControls(selection,targets,translator,{next->selectionStore.update {next};error=null},{models=true},showMangaModes=content==ReadingContent.MANGA,
+                        onTranslator={editingTranslator=true;options=true},translationIssue=uiText.ocrTranslationIssue(selection,localModelId,cloud,ByokPolicy.FEATURE_BYOK))
                     Row(Modifier.fillMaxWidth(),verticalAlignment=androidx.compose.ui.Alignment.CenterVertically) {
                         Column(Modifier.weight(1f)) {
                             Text(uiText(UiR.string.reading_passthrough),style=MaterialTheme.typography.bodyMedium)
@@ -186,7 +188,7 @@ class ReadingStartActivity : AppCompatActivity() {
                         OutlinedButton(onClick={models=true}) {Text(uiText(UiR.string.ui_get_ocr_models_245d8))}
                     }
                     if(profile.family=="manga")Text(uiText(UiR.string.ocr_reader_capture_only),style=MaterialTheme.typography.bodySmall)
-                    FeatureAction(uiText(UiR.string.ui_reading_settings_8195d), Icons.Default.Tune, {options=true},
+                    FeatureAction(uiText(UiR.string.ui_reading_settings_8195d), Icons.Default.Tune, {editingTranslator=false;options=true},
                         detail=translator)
                     if(profile.engine=="manga")Text(uiText(UiR.string.ui_manga_ocr_needs_a_drawn_area_around_one_speech_bubble_214c9),style=MaterialTheme.typography.bodySmall)
                     Text(uiText(UiR.string.ui_images_stay_on_this_phone_cloud_translation_sends_recognized_text_1cbaa),style=MaterialTheme.typography.bodySmall)
@@ -201,7 +203,7 @@ class ReadingStartActivity : AppCompatActivity() {
                 Surface(shadowElevation=8.dp) {
                     Button(enabled=!starting,onClick={
                         if(!OcrModels(File(filesDir,"ocr-models")).ready(profile)) {error=uiText(UiR.string.ui_install_1_s_to_read_this_language_70476, uiText.label(profile));models=true}
-                        else if(selection.translate && selection.target !in targets) {error=uiText(UiR.string.ui_choose_a_supported_translation_destination_or_translator_24a0b);options=true}
+                        else if(uiText.ocrTranslationIssue(selection,localModelId,cloud,ByokPolicy.FEATURE_BYOK)!=null) {error=uiText.ocrTranslationIssue(selection,localModelId,cloud,ByokPolicy.FEATURE_BYOK);editingTranslator=true;options=true}
                         else if(Build.VERSION.SDK_INT>=33 && checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS)!=android.content.pm.PackageManager.PERMISSION_GRANTED)notifications.launch(android.Manifest.permission.POST_NOTIFICATIONS)
                         else launch()
                     },modifier=Modifier.fillMaxWidth().padding(20.dp).heightIn(min=56.dp)){Text(uiText(UiR.string.ui_start_reading_overlay_c2be1))}
@@ -216,9 +218,9 @@ class ReadingStartActivity : AppCompatActivity() {
         }
         if(options)FeatureOptionsSheet(uiText(UiR.string.ui_reading_settings_8195d), {options=false}, optionsScroll) {
             TranslatorChooser(provider,localModelId,"Used by Camera and the reading overlay.",selection.source,selection.target,
-                onModels={com.sal7one.transiber.preferences.UserPreferences.store(this@ReadingStartActivity, "translation-browser").edit().putBoolean("open",true).apply();startActivity(Intent(this@ReadingStartActivity,com.sal7one.transiber.MainActivity::class.java).putExtra("page",1).putExtra("returnToReading",true))},
-                onSelect={id,model->scope.launch {try {
-                    selectionStore.update {it.copy(providerId=id,localModelId=model)};error=null
+                onModels={com.sal7one.transiber.preferences.UserPreferences.store(this@ReadingStartActivity, "translation-browser").edit().putBoolean("open",true).apply();startActivity(Intent(this@ReadingStartActivity,com.sal7one.transiber.MainActivity::class.java).putExtra("page",1).putExtra("returnToReading",true).putExtra("ocrTranslationSelection",true))},
+                initiallyExpanded=editingTranslator,onSelect={id,model->scope.launch {try {
+                    selectionStore.update {it.withTranslator(id,model)};error=null
                 } catch(e: kotlinx.coroutines.CancellationException){throw e}
                 catch(e: Exception){error=e.message ?: e.toString()} }})
             if(mode!="manual") {

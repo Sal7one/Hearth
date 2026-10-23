@@ -1,0 +1,11 @@
+<resources>
+    <string name="ocr_translator_saved_for_both">Translator saved for Camera and Screen translation. Your image languages are unchanged.</string>
+    <string name="ocr_translation_choose_model">Choose a translator in Reading settings. No translation model is selected for Camera and Screen translation.</string>
+    <string name="ocr_translation_unknown_model">The saved translator %1$s is unavailable in this version. Choose a translator in Reading settings.</string>
+    <string name="ocr_translation_explicit_source">Choose the language of the text in the image. Speech language detection is not used for screen text.</string>
+    <string name="ocr_translator_change">Translator: %1$s · Change</string>
+    <string name="ocr_translation_unknown_provider">The saved provider %1$s is unavailable. Choose a translator in Reading settings.</string>
+    <string name="ocr_translation_cloud_needs_languages">Check the supported languages for %1$s in its connection settings before translating screen text.</string>
+    <string name="ocr_translation_offline_provider">This build cannot use %1$s translation. Choose an available offline translator.</string>
+    <string name="ocr_model_browser_pair">Selecting for Camera and Screen translation: %1$s → %2$s. Speech and caption translation settings are unchanged.</string>
+</resources>

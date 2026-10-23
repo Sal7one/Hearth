@@ -53,7 +53,7 @@ import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class,ExperimentalLayoutApi::class)
 @Composable
-internal fun CameraTranslateScreen(onModels: () -> Unit,onConnections: () -> Unit,onDownloads: () -> Unit, onVoices: () -> Unit = {}, sharedImage: android.net.Uri? = null, onShareConsumed: () -> Unit = {}, onReading: () -> Unit) {
+internal fun CameraTranslateScreen(onModels: () -> Unit,onConnections: () -> Unit,onDownloads: () -> Unit, onVoices: () -> Unit = {}, sharedImage: android.net.Uri? = null, onShareConsumed: () -> Unit = {}, onReading: () -> Unit, onTranslationModels: () -> Unit = onModels) {
     val uiText = rememberUiText()
 
     val context=LocalContext.current;val scope=rememberCoroutineScope();val lifecycle=LocalLifecycleOwner.current
@@ -79,6 +79,7 @@ internal fun CameraTranslateScreen(onModels: () -> Unit,onConnections: () -> Uni
     var permission by remember {mutableStateOf(ContextCompat.checkSelfPermission(context,Manifest.permission.CAMERA)==PackageManager.PERMISSION_GRANTED)}
     val settingsScroll=rememberScrollState()
     var settings by rememberSaveable {mutableStateOf(false)}
+    var editingTranslator by rememberSaveable {mutableStateOf(false)}
     var capture by remember {mutableStateOf<(() -> Unit)?>(null)}
     var selectionImage by remember {mutableStateOf<Bitmap?>(null)}
     var frozen by remember {mutableStateOf<Bitmap?>(null)}
@@ -102,9 +103,7 @@ internal fun CameraTranslateScreen(onModels: () -> Unit,onConnections: () -> Uni
         val selectedProvider=ConversationTranslationSettings.provider(selected.providerId)
         val capabilities=selectedProvider?.let {ConversationTranslationSettings.capabilities(context,it)}
         val localId=selected.translationModel(currentConfig.localTranslationModelId)
-        check(selected.target in ocrTranslationTargets(selected,localId,capabilities,ByokPolicy.FEATURE_BYOK)) {
-            uiText(UiR.string.ui_1_s_does_not_support_2_s_3_s_choose_a_supported_language_pair_or_c8a2b, selectedProvider?.label ?: TranslationOptions.label(localId), selected.source, selected.target)
-        }
+        uiText.ocrTranslationIssue(selected,localId,capabilities,ByokPolicy.FEATURE_BYOK)?.let {error(it)}
         return ConversationTranslationSettings.snapshot(context,localId,selected.providerId)
     }
     fun begin(live: Boolean, bitmap: Bitmap?=null) {
@@ -143,7 +142,8 @@ internal fun CameraTranslateScreen(onModels: () -> Unit,onConnections: () -> Uni
         onDispose {lifecycle.lifecycle.removeObserver(observer);controller.close();voice.close()}
     }
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
-        OcrLanguageControls(selection,targetCodes,providerLabel,::changeSelection,{settings=true},enabled=!state.closing)
+        OcrLanguageControls(selection,targetCodes,providerLabel,::changeSelection,{editingTranslator=false;settings=true},enabled=!state.closing,
+            onTranslator={editingTranslator=true;settings=true},translationIssue=uiText.ocrTranslationIssue(selection,localModelId,cloudLanguages,ByokPolicy.FEATURE_BYOK))
         if(frozen!=null && !state.running && state.text.isBlank())Text(uiText(UiR.string.ui_settings_changed_tap_translate_again_to_update_this_photo_f837e),style=MaterialTheme.typography.bodySmall)
         if(translate && provider != null)Text(uiText(UiR.string.ui_only_recognized_text_is_sent_to_1_s_camera_images_stay_on_your_ph_0beab, provider.label),style=MaterialTheme.typography.bodySmall)
         Box(Modifier.fillMaxWidth().height(280.dp).background(Color.Black),contentAlignment=Alignment.Center) {
@@ -230,8 +230,8 @@ internal fun CameraTranslateScreen(onModels: () -> Unit,onConnections: () -> Uni
     if(settings)FeatureOptionsSheet(uiText(UiR.string.ui_camera_reading_settings_a67f8), {settings=false}, settingsScroll) {
             OutlinedButton(onClick={voice.stop();onVoices()}){Text(uiText(UiR.string.ui_voices_read_aloud_64e95))}
             TranslatorChooser(providerId,localModelId,uiText(UiR.string.ui_used_by_camera_and_the_screen_reading_overlay_ef332),source,target,
-                enabled=!state.closing, onModels=onModels, onSelect={provider,model->scope.launch {
-                    try { controller.stop();controller.invalidate();voice.stop();selectionStore.update {it.copy(providerId=provider,localModelId=model)} }
+                enabled=!state.closing,initiallyExpanded=editingTranslator,onModels=onTranslationModels, onSelect={provider,model->scope.launch {
+                    try { controller.stop();controller.invalidate();voice.stop();selectionStore.update {it.withTranslator(provider,model)} }
                     catch(e: kotlinx.coroutines.CancellationException){throw e}
                 catch(e: Exception){controller.error(e)}
                 }})

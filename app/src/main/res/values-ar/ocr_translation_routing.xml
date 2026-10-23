@@ -1,0 +1,11 @@
+<resources>
+    <string name="ocr_translator_saved_for_both">تم حفظ المترجم للكاميرا وترجمة الشاشة. لم تتغير لغات الصورة.</string>
+    <string name="ocr_translation_choose_model">اختر مترجمًا من إعدادات القراءة. لم يتم اختيار نموذج ترجمة للكاميرا وترجمة الشاشة.</string>
+    <string name="ocr_translation_unknown_model">المترجم المحفوظ %1$s غير متاح في هذا الإصدار. اختر مترجمًا من إعدادات القراءة.</string>
+    <string name="ocr_translation_explicit_source">اختر لغة النص في الصورة. لا يُستخدم اكتشاف لغة الكلام لنص الشاشة.</string>
+    <string name="ocr_translator_change">المترجم: %1$s · تغيير</string>
+    <string name="ocr_translation_unknown_provider">المزوّد المحفوظ %1$s غير متاح. اختر مترجمًا من إعدادات القراءة.</string>
+    <string name="ocr_translation_cloud_needs_languages">تحقق من اللغات المدعومة لدى %1$s من إعدادات الاتصال قبل ترجمة نص الشاشة.</string>
+    <string name="ocr_translation_offline_provider">لا يمكن لهذا الإصدار استخدام ترجمة %1$s. اختر مترجمًا متاحًا يعمل دون اتصال.</string>
+    <string name="ocr_model_browser_pair">اختيار مترجم للكاميرا وترجمة الشاشة: %1$s ← %2$s. لم تتغير إعدادات الكلام وترجمة التسميات.</string>
+</resources>

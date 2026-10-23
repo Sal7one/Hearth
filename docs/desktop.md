@@ -196,7 +196,7 @@ Validate the actual packaged launcher with `python3 scripts/desktop/check-packag
 The `--self-check <report-file>` entry opens no window/microphone/model; it checks
 packaged native adapters, audio/crypto services and authenticated loopback HTTP.
 
-The current desktop installer version is `1.0.2`, independent of Android's version;
+The current desktop installer version is `1.0.3`, independent of Android's version;
 macOS installer versions require a nonzero major. Use
 `-PhearthDesktopVersion=MAJOR.MINOR.PATCH` to change it. Builds target Windows x64,
 macOS Apple Silicon and macOS Intel, but this branch's native artifacts and real

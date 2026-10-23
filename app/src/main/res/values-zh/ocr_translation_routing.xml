@@ -1,0 +1,11 @@
+<resources>
+    <string name="ocr_translator_saved_for_both">已为相机和屏幕翻译保存翻译器，图像语言保持不变。</string>
+    <string name="ocr_translation_choose_model">请在阅读设置中选择翻译器。相机和屏幕翻译尚未选择翻译模型。</string>
+    <string name="ocr_translation_unknown_model">此版本不支持已保存的翻译器 %1$s。请在阅读设置中重新选择。</string>
+    <string name="ocr_translation_explicit_source">请选择图像中文字的语言。屏幕文字不会使用语音语言检测。</string>
+    <string name="ocr_translator_change">翻译器：%1$s · 更改</string>
+    <string name="ocr_translation_unknown_provider">已保存的提供商 %1$s 不可用。请在阅读设置中选择翻译器。</string>
+    <string name="ocr_translation_cloud_needs_languages">请先在连接设置中检查 %1$s 支持的语言，再翻译屏幕文字。</string>
+    <string name="ocr_translation_offline_provider">此版本无法使用 %1$s 翻译，请选择可用的离线翻译器。</string>
+    <string name="ocr_model_browser_pair">为相机和屏幕翻译选择：%1$s → %2$s。语音和字幕翻译设置保持不变。</string>
+</resources>

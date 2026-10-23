@@ -77,11 +77,25 @@ internal fun SettingsOcrLocalUi(onDownloads: () -> Unit = {}, selected: String? 
             delay(1500)
         } while (isActive)
     }
-    val shown = OcrCatalog.profiles.filter { it.matchesBrowser(query, family) && (!installedOnly || it.id in installed) }
+    val profiles = OcrCatalog.profiles
+    val recommended = recommendedOcrReader(savedSelection.source, selectedProfile, profiles)
+    val shown = profiles.filter { it.matchesBrowser(query, family) && (!installedOnly || it.id in installed) }
+        .sortedBy { if (it.id == recommended?.id) 0 else if (it.id == selectedProfile) 1 else 2 }
+    val hiddenRelevant = hiddenRelevantOcrReaders(savedSelection.source, selectedProfile, shown, profiles)
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(SettingsLayout.cardGap)) {
         SettingsHeading(uiText(UiR.string.ui_ocr_camera_reading_12439),
             if (ByokPolicy.FEATURE_BYOK) uiText(UiR.string.ui_paddle_for_general_text_manga_for_japanese_bubbles_meiki_for_japa_76763)
             else uiText(UiR.string.ui_import_the_files_for_your_selected_ocr_engine_below_this_offline_7e9b3))
+        Text(uiText(UiR.string.ocr_browser_pack_coverage, profiles.size, profiles.flatMap { it.languages }.toSet().size),
+            style = MaterialTheme.typography.labelMedium, modifier = Modifier.testTag("ocr-pack-coverage"))
+        Text(uiText(UiR.string.ocr_browser_input_output,
+            uiText.languageName(savedSelection.source), uiText.languageName(savedSelection.target)),
+            style = MaterialTheme.typography.bodyMedium, modifier = Modifier.testTag("ocr-input-output"))
+        Text(uiText(UiR.string.ocr_browser_input_explainer), style = MaterialTheme.typography.bodySmall)
+        recommended?.let { reader ->
+            Text(uiText(UiR.string.ocr_browser_recommended_input, uiText.languageName(savedSelection.source), uiText.label(reader)),
+                style = MaterialTheme.typography.bodyMedium, modifier = Modifier.testTag("ocr-recommended-reader"))
+        }
         Text(uiText(UiR.string.ocr_reader_saved_for_both, uiText.label(OcrCatalog.profile(selectedProfile))),
             style = MaterialTheme.typography.bodyMedium, modifier = Modifier.testTag("ocr-selected-reader"))
         ModelSearchField(query, { query = it })
@@ -90,6 +104,13 @@ internal fun SettingsOcrLocalUi(onDownloads: () -> Unit = {}, selected: String? 
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             FilterChip(!installedOnly, { installedOnly = false }, label = { Text(uiText(UiR.string.model_browser_all)) }, modifier = Modifier.heightIn(min = SettingsLayout.touchTarget))
             FilterChip(installedOnly, { installedOnly = true }, label = { Text(uiText(UiR.string.model_browser_installed)) }, modifier = Modifier.heightIn(min = SettingsLayout.touchTarget))
+        }
+        if (hiddenRelevant > 0) {
+            Text(uiText(UiR.string.ocr_browser_hidden_readers, hiddenRelevant), style = MaterialTheme.typography.bodySmall)
+            OutlinedButton(onClick = { query = ""; family = "any"; installedOnly = false },
+                modifier = Modifier.heightIn(min = SettingsLayout.touchTarget).testTag("ocr-show-all-readers")) {
+                Text(uiText(UiR.string.ocr_browser_show_all_readers))
+            }
         }
         Text(uiText(UiR.string.model_browser_results, shown.size), style = MaterialTheme.typography.labelMedium)
         if (shown.isEmpty()) ModelBrowserEmptyState(onReset = { query = ""; family = "any"; installedOnly = false })

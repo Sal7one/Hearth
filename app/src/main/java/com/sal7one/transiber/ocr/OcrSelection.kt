@@ -9,7 +9,10 @@ internal data class OcrSelection(
     val providerId: String = "local", val translate: Boolean = true,
     val localModelId: String? = null,
 ) {
-    fun translationModel(fallback: String): String = localModelId ?: fallback
+    fun translationModel(fallback: String): String = localModelId?.trim()?.takeIf {it.isNotEmpty()} ?: fallback.trim()
+    /** Explicit translator choice is independent of OCR script, direction and speech settings. */
+    fun withTranslator(provider:String, model:String):OcrSelection = copy(providerId=provider,
+        localModelId=model.trim().takeIf {it.isNotEmpty()})
     val profile get() = OcrCatalog.profile(profileId)
     fun withProfile(id: String): OcrSelection {
         val next = OcrCatalog.profile(id)

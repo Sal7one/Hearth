@@ -1,0 +1,8 @@
+<resources>
+    <string name="ocr_browser_pack_coverage">%1$d حزم قراءة · %2$d لغة للنص الأصلي</string>
+    <string name="ocr_browser_input_output">قراءة %1$s ← الترجمة إلى %2$s</string>
+    <string name="ocr_browser_input_explainer">اختر قارئ النص بحسب لغة النص الأصلي. لغة الناتج تخص المترجم؛ الترجمة إلى العربية لا تتطلب قارئ الخط العربي.</string>
+    <string name="ocr_browser_recommended_input">الموصى به للنص %1$s: %2$s</string>
+    <string name="ocr_browser_hidden_readers">تخفي عوامل التصفية %1$d حزم قراءة متوافقة أو محددة.</string>
+    <string name="ocr_browser_show_all_readers">إظهار جميع القرّاء</string>
+</resources>
