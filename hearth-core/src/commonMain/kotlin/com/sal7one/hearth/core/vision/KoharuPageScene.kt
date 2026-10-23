@@ -12,16 +12,20 @@ class ComicMask(spans: IntArray, val width: Int, val height: Int) {
     private val runs = spans.copyOf()
     val spanCount get() = runs.size/3
     val area: Long
+    val bounds: OcrRect
     init {
         require(width in 1..2048 && height in 1..2048 && runs.size in 3..3_000_000 && runs.size%3 == 0) { "Invalid comic mask size" }
         var previousY = -1; var previousRight = 0; var sum = 0L
+        var left=width;var right=0
         for(i in runs.indices step 3) {
             val y=runs[i];val x=runs[i+1];val length=runs[i+2]
             require(y in 0 until height && x >= 0 && length > 0 && x.toLong()+length <= width &&
                 (y > previousY || y == previousY && x >= previousRight)) { "Comic mask contains invalid/overlapping spans" }
             previousY=y;previousRight=x+length;sum+=length
+            left=min(left,x);right=max(right,x+length)
         }
         area=sum
+        bounds=OcrRect(left,runs[0],right-left,runs[runs.size-3]-runs[0]+1)
     }
     fun forEachSpan(block: (y: Int,x: Int,length: Int)->Unit) { for(i in runs.indices step 3) block(runs[i],runs[i+1],runs[i+2]) }
     fun nativeSpans(): IntArray = runs.copyOf()
@@ -70,15 +74,30 @@ class ComicMask(spans: IntArray, val width: Int, val height: Int) {
             if(masks.isEmpty())return null
             val width=masks.first().width;val height=masks.first().height
             require(masks.all {it.width==width && it.height==height} && masks.sumOf {it.runs.size.toLong()} <= 3_000_000) { "Comic masks exceed safe page limits" }
-            val sorted=masks.flatMap { m -> (m.runs.indices step 3).map {Triple(m.runs[it],m.runs[it+1],m.runs[it+2])} }
-                .sortedWith(compareBy<Triple<Int,Int,Int>> {it.first}.thenBy {it.second})
-            val out=ArrayList<Int>(sorted.size*3)
-            for((y,x,length) in sorted) {
-                val i=out.size-3
-                if(i>=0 && out[i]==y && x<=out[i+1]+out[i+2])out[i+2]=max(out[i+1]+out[i+2],x+length)-out[i+1]
-                else {out+=y;out+=x;out+=length}
+            // Each coordinate/length fits 12 bits at the 2,048-pixel page bound.
+            // Sorting primitive keys avoids a Triple per run and boxed Int output
+            // lists, which otherwise dominate heap use on detailed page masks.
+            fun key(y: Int,x: Int,length: Int)=(y.toLong() shl 24) or (x.toLong() shl 12) or length.toLong()
+            val sorted=LongArray(masks.sumOf {it.runs.size}/3);var offset=0
+            masks.forEach {mask ->
+                for(i in mask.runs.indices step 3) sorted[offset++]=key(mask.runs[i],mask.runs[i+1],mask.runs[i+2])
             }
-            return ComicMask(out.toIntArray(),width,height)
+            sorted.sort()
+            var count=0
+            for(index in sorted.indices) {
+                val span=sorted[index];val y=(span ushr 24).toInt();val x=((span ushr 12) and 4095).toInt();val length=(span and 4095).toInt()
+                val previous=if(count==0)-1L else sorted[count-1]
+                val previousX=((previous ushr 12) and 4095).toInt();val previousLength=(previous and 4095).toInt()
+                if(count>0 && (previous ushr 24).toInt()==y && x<=previousX+previousLength)
+                    sorted[count-1]=key(y,previousX,max(previousX+previousLength,x+length)-previousX)
+                else sorted[count++]=span
+            }
+            val out=IntArray(count*3)
+            repeat(count) {index ->
+                val span=sorted[index];out[index*3]=(span ushr 24).toInt()
+                out[index*3+1]=((span ushr 12) and 4095).toInt();out[index*3+2]=(span and 4095).toInt()
+            }
+            return ComicMask(out,width,height)
         }
     }
 }
@@ -97,6 +116,22 @@ class MangaPatch(val bounds: OcrRect,pixels: IntArray) {
         argb.forEachIndexed { i,color -> if(color.ushr(24)!=0)block(bounds.x+i%bounds.width,bounds.y+i/bounds.width,color) }
     }
     fun translated(dx: Int,dy: Int)=MangaPatch(bounds.copy(x=bounds.x+dx,y=bounds.y+dy),argb)
+    /** Restrict a page cleanup to one independently translated text mask. */
+    fun clippedTo(mask: ComicMask): MangaPatch {
+        val target=mask.bounds
+        check(target.x>=bounds.x && target.y>=bounds.y && target.right<=bounds.right && target.bottom<=bounds.bottom) {
+            "Cleanup patch does not cover its text mask"
+        }
+        val pixels=IntArray(target.width*target.height)
+        mask.forEachSpan {y,x,length ->
+            repeat(length) { offset ->
+                val color=argb[(y-bounds.y)*bounds.width+x+offset-bounds.x]
+                check(color.ushr(24)==255) {"Cleanup left a requested text-mask pixel transparent"}
+                pixels[(y-target.y)*target.width+x+offset-target.x]=color
+            }
+        }
+        return MangaPatch(target,pixels)
+    }
     companion object {
         fun fromNative(row: IntArray): MangaPatch {
             check(row.size>=5 && row[2] in 1..2048 && row[3] in 1..2048 && row.size.toLong()==row[2].toLong()*row[3]+4) { "Invalid native cleanup patch" }
@@ -165,20 +200,28 @@ object KoharuPageScene {
         require(pixels.size==width*height)
         // Bounded samples from actual bubble foreground excluding text and a two-pixel
         // edge band. Median + deviation prevents painting patterned/gradient artwork.
-        val channels=Array(3){ArrayList<Int>()};var visited=0
+        // Pixel histograms preserve the exact median/deviation decision without
+        // boxing and sorting up to 49,152 channel samples for every bubble.
+        val channels=Array(3){IntArray(256)};var visited=0
         val step=max(1,ceil(sqrt(bubbleMask.area/16384.0)).toInt())
         bubbleMask.forEachSpan { y,x,length ->
             if(y%step==0)for(px in x until x+length step step) {
                 if(!textMask.contains(px,y) && bubbleMask.contains(px-2,y) && bubbleMask.contains(px+2,y) &&
                     bubbleMask.contains(px,y-2) && bubbleMask.contains(px,y+2)) {
-                    val color=pixels[y*width+px];for(c in 0..2)channels[c]+=color.ushr(16-c*8) and 255
+                    val color=pixels[y*width+px];for(c in 0..2)channels[c][color.ushr(16-c*8) and 255]++
                     visited++
                 }
             }
         }
         if(visited<16)return region
-        val medians=channels.map {it.sort();it[it.size/2]}
-        val deviations=channels.mapIndexed { i,values -> sqrt(values.sumOf {(it-medians[i]).toDouble().pow(2)}/values.size) }
+        val medians=channels.map {histogram ->
+            var count=0;var median=0
+            for(value in histogram.indices) {count+=histogram[value];if(count>visited/2){median=value;break}}
+            median
+        }
+        val deviations=channels.mapIndexed { i,histogram ->
+            sqrt(histogram.indices.sumOf {value -> val delta=(value-medians[i]).toDouble();histogram[value]*delta*delta}/visited)
+        }
         val average=deviations.average();val spread=sqrt(deviations.sumOf {(it-average).pow(2)}/3)
         if(deviations.max() >= if(spread>1)7 else 10)return region
         val color=(0xff shl 24) or (medians[0] shl 16) or (medians[1] shl 8) or medians[2]

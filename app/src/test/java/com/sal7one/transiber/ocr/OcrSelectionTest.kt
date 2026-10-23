@@ -17,13 +17,22 @@ class OcrSelectionTest {
         assertTrue(runCatching { original.withSource("not-a-language") }.isFailure)
     }
     @Test fun japaneseReaderChoiceSurvivesSourceSelectionAndKeepsArabicDestination() {
-        for(id in listOf("manga","meiki")) {
+        for(id in listOf("manga","manga-page","manga-koharu-page","manga-koharu-clean-page","meiki")) {
             val selection=OcrSelection(target="ar").withProfile(id).withSource("ja")
             assertEquals(id,selection.profileId)
             assertEquals("ja",selection.source)
             assertEquals("ar",selection.target)
             val targets=ocrTranslationTargets(selection,"hy-mt2-q4",null,true)
             assertTrue("ar" in targets);assertTrue("en" in targets);assertFalse("ja" in targets)
+        }
+    }
+    @Test fun mangaLayoutChoicesSelectTheRequestedBundleWithoutChangingDestination() {
+        val original=OcrSelection(target="ar").withProfile("manga-koharu-clean-page")
+        for(mode in MangaPageMode.entries) {
+            val next=original.withMangaPageMode(mode)
+            assertEquals(mode.profileId,next.profileId)
+            assertEquals(mode,next.profile.mangaPageMode)
+            assertEquals("ar",next.target);assertEquals("ja",next.source)
         }
     }
     @Test fun sourceWithinCurrentReaderPreservesIt() {

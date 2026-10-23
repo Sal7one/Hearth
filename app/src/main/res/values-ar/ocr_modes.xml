@@ -1,0 +1,15 @@
+<resources>
+    <string name="ocr_cleaning_background">جارٍ تنظيف خلفيات النص — النص المتعرّف عليه جاهز</string>
+    <string name="ocr_reader_saved_for_both">القارئ المحفوظ للكاميرا وشاشة المانغا: %1$s</string>
+    <string name="ocr_manga_page_mode">قارئ صفحة المانغا</string>
+    <string name="ocr_manga_mode_fast">مدمج</string>
+    <string name="ocr_manga_mode_koharu">Koharu</string>
+    <string name="ocr_manga_mode_cleanup">Koharu مع تنظيف</string>
+    <string name="ocr_manga_mode_explainer">يستخدم القارئ المدمج كاشف نص صغيرًا. يضيف Koharu أقنعة بكسل وترتيب اللوحات، ويزيل التنظيف الكتابة الأصلية. لكل اختيار ملفات نماذج مطلوبة.</string>
+    <string name="ocr_koharu_page">اليابانية · صفحة مانغا Koharu</string>
+    <string name="ocr_koharu_cleanup_page">اليابانية · صفحة مانغا Koharu مع تنظيف</string>
+    <string name="ocr_koharu_page_details">تقسيم Koharu RF-DETR وتجميع اللوحات والفقاعات وقراءة Manga OCR. صفحات يابانية ملتقطة · معالج مركزي · تجريبي · استهلاك مرتفع للذاكرة أثناء التشغيل. تخضع أوزان الكاشف لشروط بيانات Manga109 الأكاديمية؛ اقرأ بطاقة النموذج.</string>
+    <string name="ocr_koharu_cleanup_details">تقسيم صفحات Koharu وقراءة Manga OCR مع تنظيف LaMa للكتابة الأصلية. صفحات يابانية ملتقطة · معالج مركزي · تجريبي · أعلى تكلفة للذاكرة والمعالجة. تخضع أوزان الكاشف لشروط بيانات Manga109 الأكاديمية.</string>
+    <string name="ocr_reader_needs_files">يحتاج هذا القارئ إلى ملفات نماذج. افتح القارئ لتنزيلها أو استيرادها قبل البدء.</string>
+    <string name="ocr_reader_capture_only">تعمل قارئات المانغا على صفحة ملتقطة وثابتة. يوقف التمرير الصفحة الحالية؛ أبقها ثابتة أثناء القراءة والترجمة.</string>
+</resources>

@@ -36,7 +36,7 @@ internal class CameraOcrController(context: Context) : AutoCloseable {
     private val mutable = MutableStateFlow(CameraOcrState())
     val state = mutable.asStateFlow()
     private data class Frame(val bitmap: Bitmap, val captured: Boolean, val epoch: Long)
-    private data class TextRequest(val text: String, val revision: Long, val lines: List<OcrLine>)
+    private data class TextRequest(val text: String, val revision: Long, val lines: List<OcrLine>, val preservesRegions: Boolean = false)
     @Volatile private var frames: Channel<Frame>? = null
     @Volatile private var model: OcrEngine? = null
     @Volatile private var translator: CancellableTextTranslator? = null
@@ -71,7 +71,12 @@ internal class CameraOcrController(context: Context) : AutoCloseable {
                                 }.also { cache.put(text,it) }
                                 if(positioned) {
                                     OcrPageTranslation.run(request.lines, {request.revision == revision}, ::translate, { boxes ->
-                                        mutable.update { it.copy(boxTranslations=boxes,translation=boxes.joinToString("\n") {box->box.translation},error=null) }
+                                        mutable.update {
+                                            if(request.revision != revision) it else {
+                                                val refreshed=OcrPageTranslation.refreshGeometry(boxes,it.lines,request.preservesRegions)
+                                                it.copy(boxTranslations=refreshed,translation=refreshed.joinToString("\n") {box->box.translation},error=null)
+                                            }
+                                        }
                                     }, cached = { cache[it] })
                                 } else {
                                     val output=translate(request.text)
@@ -111,9 +116,10 @@ internal class CameraOcrController(context: Context) : AutoCloseable {
                                 if(!progressive || !isCurrent())return
                                 val recognized=text.map { it.toOcrLine() }
                                 val original=recognized.joinToString("\n") { it.text }
-                                mutable.update { if(frame.epoch!=frameEpoch.get())it else it.copy(lines=recognized,text=original) }
+                                mutable.update { if(frame.epoch!=frameEpoch.get())it else it.copy(lines=recognized,text=original,
+                                    boxTranslations=OcrPageTranslation.refreshGeometry(it.boxTranslations,recognized)) }
                                 if(positioned && original.isNotBlank() && snapshot!=null && source!=target && isCurrent())
-                                    textQueue.trySend(TextRequest(original,pageRevision,recognized))
+                                    textQueue.trySend(TextRequest(original,pageRevision,recognized,true))
                             }
                         }
                         val lines=withContext(Dispatchers.Default) {
@@ -129,7 +135,7 @@ internal class CameraOcrController(context: Context) : AutoCloseable {
                         if(text.isBlank() && !frame.captured && !settled) continue
                         if(!progressive && (positioned || text != mutable.value.text)) { revision++;mutable.update { it.copy(text=text,translation="",boxTranslations=emptyList()) } }
                         mutable.update { it.copy(processing=false,detecting=false,translating=settled && text.isNotBlank() && snapshot!=null && source!=target,lines=lines,width=bitmap.width,height=bitmap.height,ocrMs=(System.nanoTime()-begun)/1_000_000) }
-                        if(settled && text.isNotBlank() && snapshot != null && source != target) textQueue.trySend(TextRequest(text,revision,readingLines))
+                        if(settled && text.isNotBlank() && snapshot != null && source != target) textQueue.trySend(TextRequest(text,revision,readingLines,progressive))
                     } finally { frame.bitmap.recycle() }
                 }
             } catch(e: CancellationException) { throw e }

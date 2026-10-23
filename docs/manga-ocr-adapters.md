@@ -10,6 +10,13 @@ flat balloons use measured-color, mask-limited cleanup. Both retain Manga OCR,
 Hearth's selected translator, original-image comparison and Arabic/English text
 shaping. Existing manual/compact choices remain available.
 
+The follow-up performance port publishes text before cleanup and combines complex
+masks using Koharu's connected-component tiling. Android prepares mask bitmaps
+outside drawing, shares one saved reader across both entry points and exposes
+the three manga modes directly. Existing pinned files are reused; the slower
+cached FP16 reader experiment was rejected. See the integration document for
+measured evidence and the full boundary of the port.
+
 The segmentation bundle is 276,158,509 model bytes; the cleanup bundle is
 483,641,153 bytes. This is an opt-in CPU quality path with substantial memory use,
 not a GPU claim. See [the migration, exact pins and real runtime evidence](koharu-integration.md)

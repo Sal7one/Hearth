@@ -9,6 +9,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.*
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -18,6 +19,7 @@ import com.sal7one.transiber.caption.CaptionLanguageChoices
 import com.sal7one.transiber.caption.LanguagePickerContent
 
 /** Both entry points expose the same labelled controls, selected-row picker and capability explanation. */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable internal fun OcrLanguageControls(selection: OcrSelection, targets: Set<String>, translator: String,
     onChange: (OcrSelection) -> Unit, onModel: () -> Unit, enabled: Boolean = true) {
     val uiText = rememberUiText()
@@ -37,6 +39,19 @@ import com.sal7one.transiber.caption.LanguagePickerContent
             }
         }
         TextButton(onClick=onModel,enabled=enabled) { Text(uiText(UiR.string.ui_reader_1_s_change_f7947, uiText.label(selection.profile))) }
+        if(selection.source == "ja") {
+            Text(uiText(UiR.string.ocr_manga_page_mode), style=MaterialTheme.typography.labelMedium)
+            FlowRow(horizontalArrangement=Arrangement.spacedBy(8.dp),verticalArrangement=Arrangement.spacedBy(4.dp)) {
+                listOf(MangaPageMode.COMPACT to UiR.string.ocr_manga_mode_fast,
+                    MangaPageMode.KOHARU to UiR.string.ocr_manga_mode_koharu,
+                    MangaPageMode.CLEANUP to UiR.string.ocr_manga_mode_cleanup).forEach { (mode,label) ->
+                    FilterChip(selected=selection.profile.mangaPageMode==mode,enabled=enabled,
+                        onClick={onChange(selection.withMangaPageMode(mode))},label={Text(uiText(label))},
+                        modifier=Modifier.heightIn(min=48.dp).testTag("ocr-mode-${mode.profileId}"))
+                }
+            }
+            Text(uiText(UiR.string.ocr_manga_mode_explainer),style=MaterialTheme.typography.bodySmall)
+        }
         Row(verticalAlignment=Alignment.CenterVertically) {
             Switch(selection.translate,{onChange(selection.copy(translate=it))},enabled=enabled,
                 modifier=Modifier.semantics { contentDescription=uiText(UiR.string.ui_translate_recognized_text_f69ef) })
@@ -57,7 +72,14 @@ import com.sal7one.transiber.caption.LanguagePickerContent
                 if(which=="source") uiText(UiR.string.ui_changing_language_selects_a_compatible_ocr_reader_when_needed_man_87d2e)
                 else uiText(UiR.string.ui_1_s_translations_from_2_s_destinations_depend_on_the_translator_n_83b80, translator, uiText.languageName(selection.source))),
             selected=if(which=="source") selection.source else selection.target,
-            onSelect={ code -> onChange(if(which=="source") selection.withSource(code) else selection.copy(target=code,translate=true));picker=null },
+            onSelect={ code ->
+                val choosingJapaneseReader=which=="source" && code=="ja" && code !in selection.profile.languages
+                onChange(if(which=="source") selection.withSource(code) else selection.copy(target=code,translate=true))
+                picker=null
+                // Japanese is supported by several fundamentally different readers.
+                // Show their actual choice instead of silently implying Paddle is manga.
+                if(choosingJapaneseReader)onModel()
+            },
             onDismiss={picker=null}) }
     } }
 }

@@ -148,7 +148,7 @@ class ReadingOverlayService : Service() {
                         if(working && value.boxTranslations.isNotEmpty() && value.error==null)showTranslations(value.boxTranslations,automatic=true)
                         if(!viewingBox && value.translation.isNotBlank())translated?.text=value.translation
                         if(value.error!=null)showError(value.error)
-                        else status?.text=when {value.loading->uiText(UiR.string.service_loading_1_s_aba14, uiText.label(profile));value.processing && value.stage==com.sal7one.hearth.core.vision.PageOcrStage.SEGMENTATION->uiText(UiR.string.ocr_koharu_refining);value.detecting->uiText(UiR.string.ocr_detecting_regions);value.processing && value.regions.isNotEmpty()->uiText(UiR.string.ocr_reading_regions,value.lines.size,value.regions.size);value.processing->uiText(UiR.string.service_reading_text_b6863);value.translating->uiText(UiR.string.service_translating_ae47b);value.text.isNotBlank()->uiText(UiR.string.service_1_s_2_s_ms_ocr_87c9c, uiText.label(profile), value.ocrMs);else->uiText(UiR.string.service_open_a_reader_then_tap_translate_or_draw_area_a9c06)}
+                        else status?.text=when {value.loading->uiText(UiR.string.service_loading_1_s_aba14, uiText.label(profile));value.processing && value.stage==com.sal7one.hearth.core.vision.PageOcrStage.SEGMENTATION->uiText(UiR.string.ocr_koharu_refining);value.processing && value.stage==com.sal7one.hearth.core.vision.PageOcrStage.CLEANUP->uiText(UiR.string.ocr_cleaning_background);value.detecting->uiText(UiR.string.ocr_detecting_regions);value.processing && value.regions.isNotEmpty()->uiText(UiR.string.ocr_reading_regions,value.lines.size,value.regions.size);value.processing->uiText(UiR.string.service_reading_text_b6863);value.translating->uiText(UiR.string.service_translating_ae47b);value.text.isNotBlank()->uiText(UiR.string.service_1_s_2_s_ms_ocr_87c9c, uiText.label(profile), value.ocrMs);else->uiText(UiR.string.service_open_a_reader_then_tap_translate_or_draw_area_a9c06)}
                         if(working && !value.loading && !value.processing && !value.translating) {
                             working=false
                             handleLabel?.text=uiText(UiR.string.service_translate_2be17)
@@ -517,6 +517,12 @@ class ReadingOverlayService : Service() {
     companion object {
         private val runningState = kotlinx.coroutines.flow.MutableStateFlow(false)
         val running: kotlinx.coroutines.flow.StateFlow<Boolean> = runningState
+        /** A new projection must use the newly saved reader/translator selection.
+         * Wait for the old service to unpublish before awaiting its native lease. */
+        suspend fun stopAndAwait(context: android.content.Context) {
+            context.stopService(Intent(context, ReadingOverlayService::class.java))
+            withTimeout(30_000) { running.first { !it } }
+        }
         fun recover(context: android.content.Context) {
             context.startService(Intent(context, ReadingOverlayService::class.java).setAction("recover"))
         }

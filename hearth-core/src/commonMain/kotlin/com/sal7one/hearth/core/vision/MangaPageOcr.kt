@@ -65,16 +65,20 @@ class MangaPageOcr(private val detector: ComicRegionDetector, private val reader
             val preliminary=MangaPageLayout.regions(preview.detect(pixels,width,height),width,height)
             if(!progress.isCurrent())return emptyList()
             progress.detected(preliminary)
-            progress.stage(PageOcrStage.SEGMENTATION)
         }
-        val regions = MangaPageLayout.regions(detector.detect(pixels, width, height), width, height)
-            .map { KoharuPageScene.preparePaint(it,pixels,width,height) }
+        progress.stage(PageOcrStage.SEGMENTATION)
+        val detections=detector.detect(pixels,width,height)
+        if (!progress.isCurrent()) return emptyList()
+        val candidates=MangaPageLayout.regions(detections,width,height)
+        check(candidates.size <= 64) { "Page exceeds 64 text regions. Draw a smaller area." }
+        val regions=candidates.map {
+            if(!progress.isCurrent())return emptyList()
+            KoharuPageScene.preparePaint(it,pixels,width,height)
+        }
         if (!progress.isCurrent()) return emptyList()
         progress.detected(regions) // Highlight all geometry before the first slow OCR/translation call.
         progress.stage(PageOcrStage.RECOGNITION)
-        check(regions.size <= 64) { "Page exceeds 64 text regions. Draw a smaller area." }
         val results = ArrayList<PageText>(regions.size)
-        var cleanupPixels=0L
         for (region in regions) {
             if (!progress.isCurrent()) break
             check(begun.elapsedNow().inWholeMilliseconds < budgetMs) { "Manga page exceeded its ${budgetMs/1000}-second reading budget. Recognized regions are preserved; draw a smaller area." }
@@ -84,36 +88,61 @@ class MangaPageOcr(private val detector: ComicRegionDetector, private val reader
                 val start = (bounds.y + row) * width + bounds.x
                 pixels.copyInto(crop, row * bounds.width, start, start + bounds.width)
             }
-            val text = reader.read(crop, bounds.width, bounds.height).trim()
+            val text = normalizeMangaText(reader.read(crop, bounds.width, bounds.height))
             if (!progress.isCurrent()) break
             if (text.isNotEmpty()) {
-                var rendered=region
-                if(inpainter!=null && region.paint==null && region.textMask!=null) {
-                    try {
-                    progress.stage(PageOcrStage.CLEANUP)
-                    val patch=inpainter.inpaint(pixels,width,height,region.textMask)
-                    if(!progress.isCurrent())break
-                    cleanupPixels+=patch.bounds.area
-                    check(cleanupPixels<=4_194_304) { "Page cleanup exceeds its 16 MiB patch budget. Select a smaller area; completed regions are preserved." }
-                    var luminance=0.0;var count=0
-                    patch.forEachPixel {_,_,color -> luminance+=.2126*(color.ushr(16) and 255)+.7152*(color.ushr(8) and 255)+.0722*(color and 255);count++}
-                    check(count>0) {"Cleanup produced an empty patch"}
-                    rendered=region.copy(paint=MangaPaint(region.textMask,region.bounds,0,
-                        if(luminance/count>140)0xff111111.toInt() else 0xfff8f8f8.toInt(),patch))
-                    progress.stage(PageOcrStage.RECOGNITION)
-                    } catch(error: Throwable) {
-                        if(progress.isCurrent()) {results+=PageText(region,text);progress.recognized(results.toList())}
-                        throw error
-                    }
-                }
-                results += PageText(rendered, text)
+                // Koharu's OCR and cleanup are independent page stages. Publish each
+                // transcript immediately so translation can proceed while other text
+                // is read; background reconstruction must never delay the first line.
+                results += PageText(region, text)
                 progress.recognized(results.toList())
             }
+        }
+        if (!progress.isCurrent()) return results
+        val pending=results.indices.filter {results[it].region.paint==null && results[it].region.textMask!=null}
+        if(inpainter!=null && pending.isNotEmpty()) {
+            check(begun.elapsedNow().inWholeMilliseconds < budgetMs) { "Manga page exceeded its ${budgetMs/1000}-second reading budget. Recognized regions are preserved; draw a smaller area." }
+            val masks=pending.map {results[it].region.textMask!!}
+            // The native inpainter plans connected, nearby component tiles once for
+            // the complete page mask. Per-bubble calls repeat inference for the same
+            // context and serialize cleanup ahead of every transcript.
+            check(masks.sumOf {it.bounds.area}<=4_194_304) { "Page cleanup exceeds its 16 MiB patch budget. Select a smaller area; completed regions are preserved." }
+            val mask=checkNotNull(ComicMask.union(masks))
+            progress.stage(PageOcrStage.CLEANUP)
+            // Koharu fills uniform text backgrounds before neural reconstruction.
+            // Use a private context copy: neighboring original lettering must not
+            // contaminate a neural tile, and the captured original stays untouched.
+            val flat=results.mapNotNull {it.region.paint?.takeIf {paint -> paint.patch==null}}
+            val context=if(flat.isEmpty())pixels else pixels.copyOf().also {image ->
+                flat.forEach {paint -> paint.mask.forEachSpan {y,x,length -> image.fill(paint.background,y*width+x,y*width+x+length)} }
+            }
+            if(!progress.isCurrent())return results
+            val pagePatch=inpainter.inpaint(context,width,height,mask)
+            if (!progress.isCurrent()) return results
+            pending.forEach { index ->
+                if(!progress.isCurrent())return results
+                val recognized=results[index];val region=recognized.region;val textMask=region.textMask!!
+                // Publish only this transcript's glyphs. Sharing an unfiltered page
+                // patch would erase other bubbles before their translations arrive.
+                val patch=pagePatch.clippedTo(textMask)
+                var luminance=0.0;var count=0
+                patch.forEachPixel {_,_,color -> luminance+=.2126*(color.ushr(16) and 255)+.7152*(color.ushr(8) and 255)+.0722*(color and 255);count++}
+                check(count>0) {"Cleanup produced an empty patch"}
+                results[index]=recognized.copy(region=region.copy(paint=MangaPaint(textMask,region.bounds,0,
+                    if(luminance/count>140)0xff111111.toInt() else 0xfff8f8f8.toInt(),patch)))
+            }
+            if(progress.isCurrent())progress.recognized(results.toList())
         }
         return results
     }
     override fun cancel() { try { detector.cancel() } finally { try {preview?.cancel()} finally {try{reader.cancel()}finally{inpainter?.cancel()}} } }
     override fun close() { try { detector.close() } finally { try {preview?.close()} finally {try{reader.close()}finally{inpainter?.close()}} } }
+}
+
+/** Koharu normalizes an isolated run of placeholder boxes to the intended ellipsis. */
+internal fun normalizeMangaText(value: String): String {
+    val text=value.trim();val visible=text.filterNot(Char::isWhitespace)
+    return if(visible.length>=2 && visible.all {it=='☐' || it=='□' || it=='▢' || it=='▣' || it=='�'}) "…" else text
 }
 
 /** Bubble containment, duplicate suppression and spatial Japanese reading order. No recognition guesses. */

@@ -67,6 +67,18 @@ internal object OcrReadingGroups {
 
 /** Keeps each response attached to its source box; never guesses alignment from generated newlines. */
 internal object OcrPageTranslation {
+    /** OCR and cleanup publish independently. Keep a slow translation attached to
+     * the newest paint for its exact source box, without another model call. */
+    fun refreshGeometry(boxes: List<TranslatedOcrBox>, lines: List<OcrLine>, preservesRegions: Boolean = true): List<TranslatedOcrBox> {
+        // General OCR joins neighboring lines into reading blocks. Those boxes
+        // intentionally differ from the raw detections and receive no paint refinements.
+        if(!preservesRegions)return boxes
+        data class Key(val x: Int, val y: Int, val width: Int, val height: Int, val text: String)
+        fun OcrLine.key() = Key(x, y, width, height, text)
+        val current = lines.associateBy { it.key() }
+        return boxes.mapNotNull { box -> current[box.line.key()]?.let { box.copy(line = it) } }
+    }
+
     suspend fun run(
         lines: List<OcrLine>, current: () -> Boolean,
         translate: suspend (String) -> String, publish: (List<TranslatedOcrBox>) -> Unit,

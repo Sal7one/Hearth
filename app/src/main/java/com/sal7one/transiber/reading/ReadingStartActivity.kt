@@ -40,6 +40,10 @@ import com.sal7one.transiber.ui.theme.FFmpegStudioTheme
 import com.sal7one.transiber.ui.theme.rememberThemeMode
 import java.io.File
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.withContext
 import com.sal7one.transiber.caption.*
 import com.sal7one.transiber.translation.*
 import com.sal7one.transiber.byok.ByokPolicy
@@ -76,6 +80,14 @@ class ReadingStartActivity : AppCompatActivity() {
         val targets=ocrTranslationTargets(selection,localModelId,cloud,ByokPolicy.FEATURE_BYOK)
         val translator=ConversationTranslationSettings.provider(provider)?.label ?: TranslationOptions.label(localModelId)
         val profile=selection.profile
+        var readerReady by remember(profile.id) { mutableStateOf(false) }
+        LaunchedEffect(profile.id,currentSetup) {
+            val installed=OcrModels(File(filesDir,"ocr-models"))
+            while(isActive) {
+                readerReady=withContext(Dispatchers.IO) {installed.ready(profile)}
+                delay(1500)
+            }
+        }
         var models by rememberSaveable {mutableStateOf(false)}
         val modelsScroll=rememberScrollState()
         val savedMode=remember {prefs.getString("mode","page")}
@@ -91,6 +103,7 @@ class ReadingStartActivity : AppCompatActivity() {
                 scope.launch {
                     try {
                         CaptionCaptureService.stop(this@ReadingStartActivity)
+                        ReadingOverlayService.stopAndAwait(this@ReadingStartActivity)
                         // Stop unpublishes the overlay before its native model cleanup finishes.
                         com.sal7one.transiber.runtime.LocalWorkGate.awaitIdle()
                         androidx.core.content.ContextCompat.startForegroundService(this@ReadingStartActivity,
@@ -133,6 +146,11 @@ class ReadingStartActivity : AppCompatActivity() {
                         }
                     }
                     OcrLanguageControls(selection,targets,translator,{next->selectionStore.update {next};error=null},{models=true})
+                    if(!readerReady) {
+                        Text(uiText(UiR.string.ocr_reader_needs_files),style=MaterialTheme.typography.bodySmall)
+                        OutlinedButton(onClick={models=true}) {Text(uiText(UiR.string.ui_get_ocr_models_245d8))}
+                    }
+                    if(profile.family=="manga")Text(uiText(UiR.string.ocr_reader_capture_only),style=MaterialTheme.typography.bodySmall)
                     FeatureAction(uiText(UiR.string.ui_reading_settings_8195d), Icons.Default.Tune, {options=true},
                         detail=translator)
                     if(profile.engine=="manga")Text(uiText(UiR.string.ui_manga_ocr_needs_a_drawn_area_around_one_speech_bubble_214c9),style=MaterialTheme.typography.bodySmall)

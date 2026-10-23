@@ -39,20 +39,11 @@ std::vector<ComicDetection> ComicDetector::detectKoharu(const uint32_t* pixels,i
     }
     if(candidates.size()>128)throw std::runtime_error("Koharu page exceeds 128 layout elements. Select a smaller area.");
     std::vector<ComicDetection> found;size_t spanCount=0;constexpr int mapping[]={1,4,0,3};
+    const comic::MaskProjection projection(width,height,maskSide);
     for(const auto& candidate:candidates){
         if(impl->cancelled.load())throw std::runtime_error("Koharu segmentation cancelled");
-        const float* source=maskValues+candidate.query*maskPlane;std::vector<int32_t> spans;
-        for(int i=0;i<maskPlane;++i)if(!std::isfinite(source[i]))throw std::runtime_error("Non-finite Koharu mask");
-        // Project one instance at a time with align_corners=false, avoiding N×page RAM.
-        for(int y=0;y<height;++y){const float fy=std::clamp((y+.5f)*maskSide/height-.5f,0.f,float(maskSide-1));
-            const int y0=int(fy),y1=std::min(y0+1,maskSide-1);const float dy=fy-y0;int start=-1;
-            for(int x=0;x<=width;++x){bool foreground=false;if(x<width){
-                const float fx=std::clamp((x+.5f)*maskSide/width-.5f,0.f,float(maskSide-1));const int x0=int(fx),x1=std::min(x0+1,maskSide-1);const float dx=fx-x0;
-                foreground=((source[y0*maskSide+x0]*(1-dx)+source[y0*maskSide+x1]*dx)*(1-dy)+(source[y1*maskSide+x0]*(1-dx)+source[y1*maskSide+x1]*dx)*dy)>0;}
-                if(foreground && start<0)start=x;
-                if(!foreground && start>=0){spans.insert(spans.end(),{y,start,x-start});start=-1;if(++spanCount>1'000'000)throw std::runtime_error("Koharu mask complexity exceeds its safe page budget. Select a smaller area.");}
-            }
-        }
+        const float* source=maskValues+candidate.query*maskPlane;
+        auto spans=projection.project(source,1'000'000-spanCount);spanCount+=spans.size()/3;
         if(!spans.empty())found.push_back({candidate.box,mapping[candidate.label],std::move(spans)});
     }
     return found;

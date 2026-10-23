@@ -35,6 +35,8 @@ class DesktopMangaOcrTest {
         val pixels = image.getRGB(0,0,image.width,image.height,null,0,image.width)
         var detectedAt = 0L
         var firstDetectedAt = 0L
+        var firstTextAt = 0L
+        var cleanupAt = 0L
         var regions = emptyList<OcrRegion>()
         val start = System.nanoTime()
         val folder = Files.createTempDirectory("hearth-manga-native")
@@ -49,13 +51,19 @@ class DesktopMangaOcrTest {
                         assertTrue(found.isNotEmpty())
                     }
                     override fun recognized(text: List<PageText>) {
+                        if(text.isNotEmpty() && firstTextAt==0L)firstTextAt=System.nanoTime()
                         assertTrue(detectedAt > 0)
                         assertTrue(text.all {item -> regions.any {it.bounds==item.region.bounds}})
+                    }
+                    override fun stage(stage: PageOcrStage) {
+                        if(stage==PageOcrStage.CLEANUP && cleanupAt==0L)cleanupAt=System.nanoTime()
                     }
                 })
                 assertTrue(result.size >= 2,"Use a real multi-bubble Japanese page")
                 assertTrue(result.any {it.text.any {c -> c.code in 0x3040..0x9fff}})
-                println("MANGA_REAL load_ms=${(loaded-start)/1_000_000} first_outline_ms=${(firstDetectedAt-loaded)/1_000_000} detection_ms=${(detectedAt-loaded)/1_000_000} total_ms=${(System.nanoTime()-loaded)/1_000_000} regions=${regions.size} recognized=${result.size} mask_regions=${result.count {it.region.textMask!=null}} flat_cleanup=${result.count {it.region.paint!=null && it.region.paint?.patch==null}} neural_cleanup=${result.count {it.region.paint?.patch!=null}}")
+                assertTrue(firstTextAt > detectedAt)
+                if(cleanupAt>0L)assertTrue(firstTextAt < cleanupAt,"Cleanup must not delay first text")
+                println("MANGA_REAL load_ms=${(loaded-start)/1_000_000} first_outline_ms=${(firstDetectedAt-loaded)/1_000_000} detection_ms=${(detectedAt-loaded)/1_000_000} first_text_ms=${(firstTextAt-loaded)/1_000_000} cleanup_start_ms=${if(cleanupAt>0L)(cleanupAt-loaded)/1_000_000 else -1} total_ms=${(System.nanoTime()-loaded)/1_000_000} regions=${regions.size} recognized=${result.size} mask_regions=${result.count {it.region.textMask!=null}} flat_cleanup=${result.count {it.region.paint!=null && it.region.paint?.patch==null}} neural_cleanup=${result.count {it.region.paint?.patch!=null}}")
                 result.forEach {println("MANGA_TEXT ${it.region.bounds}: ${it.text}")}
                 assertTrue(reader.recognize(IntArray(640*640) {-1},640,640,object:PageOcrProgress{}).isEmpty())
                 reader.cancel()

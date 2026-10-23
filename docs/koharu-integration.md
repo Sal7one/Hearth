@@ -17,7 +17,12 @@ preferences are retained. TVs still cannot load local models. FOSS has no networ
 client or delegated downloader. Every artifact is size/hash verified before native
 initialization; repaired/downloaded models do not silently replace the active setup.
 
-Android: Camera → OCR → Manga. Choose the Koharu segmentation or cleanup profile.
+Android: Camera or Screen & manga → Japanese → **Compact**, **Koharu**, or
+**Koharu + cleanup**. These controls and Models → Camera use the same saved
+`OcrPreferences` selection. Downloading files does not activate another reader;
+Choose does. Missing files are explained before starting. Restarting an existing
+reading overlay stops its old projection and waits for native cleanup, then loads
+the newly saved reader and translator.
 Imported/captured still pages use per-region translation and display cleanup plus
 fitted text over the retained original bitmap. Original hides all cleanup/typeset
 layers; tapping a translated balloon opens its full source, translation, copy and
@@ -47,6 +52,15 @@ drop-in library. Adapted code retains the full upstream copyright/license notice
   only fill text-mask pixels inside the balloon. Patterned artwork is not flat
   filled. When the cleanup bundle is selected, LaMa reconstructs complex regions
   with source context; sparse-alpha patches modify only the requested mask.
+- The performance port follows Koharu's eight-connected mask components, nearby
+  component coalescing, 512-pixel tile cores and 128-pixel context. OCR publishes
+  every transcript before one page-wide cleanup request. Uniform fills prepare
+  the private neural context first; the captured original is never modified.
+  Each displayed patch is clipped to its own translated text mask, preserving
+  holes and leaving untranslated balloons visible.
+- Mask union sorts primitive packed spans instead of allocating a `Triple` and
+  boxed integers for every run. Flat-background statistics use exact histograms.
+  RF-DETR projection skips nonpositive support without changing mask pixels.
 - Android TextView and desktop Compose fit translations with content-direction
   bidi shaping, so Arabic and English use the platform's shaping/font fallback.
   Original-image comparison and full source/translation text remain available.
@@ -54,6 +68,12 @@ drop-in library. Adapted code retains the full upstream copyright/license notice
   retain LeaseRegistry ownership and cancellation. Old page work cannot publish
   into a replacement capture; cleanup failure preserves already recognized text
   and surfaces the actual engine error.
+- Android prepares a tight alpha mask or neural bitmap once per immutable paint.
+  Redraw does one bitmap operation per translated balloon, instead of thousands
+  of span draw calls or bitmap allocation inside `onDraw`. Detach recycles the
+  cache; reattach rebuilds it. Slow translations receive the latest exact-box
+  cleanup paint without another translation call. General OCR's grouped text
+  boxes retain their separate behavior.
 
 ## Artifact provenance and terms
 
@@ -71,8 +91,8 @@ Cleanup: `mayocream/lama-manga-onnx`, revision
 207,482,644 bytes, SHA-256
 `4512adab295ee5a5e02ccd1bdf8d45dccbac88309d9cff1532ffd5de876f02a4`,
 publisher model card Apache-2.0. Fixed input: RGB float32 image `[1,3,512,512]`
-and binary float32 mask `[1,1,512,512]`; output `[1,3,512,512]`. Each region gets
-64 source-pixel context, resizing and sparse compositing. The export is from the
+and binary float32 mask `[1,1,512,512]`; output `[1,3,512,512]`. Coalesced component
+tiles get 128 source-pixel context, resizing and sparse compositing. The export is from the
 same publisher as Koharu's LaMa family, but is an older ONNX model, not claimed
 byte-equivalent to the newer Rust safetensors checkpoint.
 
@@ -82,7 +102,8 @@ hashes and license distinctions. No model weights or third-party pages are in Gi
 
 ## Validation and limits
 
-Real model validation on this Mac (Apple M4 Pro, ONNX Runtime 1.20.1 CPU):
+Real model validation on this Mac (Apple M4 Pro, ONNX Runtime 1.20.1 CPU).
+The first three timings below describe the earlier RC1 implementation:
 
 - Optimized native RF-DETR with four intra-op threads: **4,910 ms** for a private
   770×1080 page, 31 layout instances spanning all four classes, real projected
@@ -97,6 +118,24 @@ Real model validation on this Mac (Apple M4 Pro, ONNX Runtime 1.20.1 CPU):
   1,080/1,080 masked pixels reconstructed; every unmasked pixel preserved;
   cancellation passed. This is runtime correctness evidence, not a broad image
   quality benchmark.
+- Performance port: nine synthetic regions using the real pinned LaMa model took
+  **26,585 ms** as separate calls and **6,298 ms** as a coalesced union request.
+  All 5,400 requested pixels were reconstructed and unmasked pixels were retained.
+  This is a cleanup-stage comparison, not an Android or end-to-end speed claim.
+  The reproducible model-free-source harness is
+  `common-jni/src/main/cpp/ocr/tests/lama_page_smoke.cpp`; pass the verified LaMa
+  file and `both`, `separate`, or `union`. It generates its own synthetic page.
+- Current full Kotlin/JNI page run: load **4,693 ms**, first outline **95 ms**,
+  full detection **4,975 ms**, first transcript **5,068 ms**, all OCR completed
+  before cleanup started at **5,923 ms**, full cleanup completed at **17,876 ms**.
+  All 10 regions were recognized (one flat fill, nine neural patches). The
+  previous recorded run took 32,703 ms. Times exclude translation and model load;
+  these are single runs on one private page, not a broad quality/speed ranking.
+- We tested a three-graph cached FP16 Manga OCR export before considering new
+  model cards. Across the ten private-page crops it took 3,333 ms versus 883 ms
+  for the current INT8 reader. An 88-token synthetic paragraph also ran slower
+  and changed the text. That experiment was removed from production; the existing
+  pinned INT8 reader and installed model files are retained.
 - Shared host scene tests cover invalid/overlapping spans, mask intersection and
   clipping, panel order, mask containment, patterned-background rejection,
   crop transforms, preliminary outlines, neural cleanup ownership and preserved
@@ -113,8 +152,8 @@ This migration does not implement Koharu's diffusion inpainters, font detector,
 specialized SFX OCR, scene editor, PDF/project/PSD/archive tooling, or all renderer
 polygon/rotation/typography features. Text currently fits axis-aligned regions;
 very long translations can be clipped in a small balloon, with full text retained
-in the text panel. LaMa's 512-pixel context resize can lose detail in a very large
-region. CPU is the only advertised backend; Android owner tests, Arabic/English
+in the text panel. LaMa's fixed 512-pixel input can lose detail within a large tile
+and its context. CPU is the only advertised backend; Android owner tests, Arabic/English
 visual acceptance and Windows native inference remain required. These limits are
 not hidden behind a claim of full upstream feature parity.
 

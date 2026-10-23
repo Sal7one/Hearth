@@ -44,6 +44,23 @@ class OcrPageTranslationTest {
         OcrPageTranslation.run(listOf(line("one"),line("two")),{current},{calls++;current=false;"stale"},{published++})
         assertEquals(1,calls);assertEquals(0,published)
     }
+    @Test fun cleanupRefinementKeepsTranslationAndUsesNewestExactBox() {
+        val before=line("駅",10,20)
+        val refined=before.copy(confidence=.95f)
+        val otherBalloon=line("駅",200,20)
+        val translated=listOf(TranslatedOcrBox(before,"المحطة"))
+        val result=OcrPageTranslation.refreshGeometry(translated,listOf(refined,otherBalloon))
+        assertEquals("المحطة",result.single().translation)
+        assertSame(refined,result.single().line)
+        assertTrue(OcrPageTranslation.refreshGeometry(translated,listOf(otherBalloon)).isEmpty())
+        assertTrue(OcrPageTranslation.refreshGeometry(translated,listOf(before.copy(text="新しいページ"))).isEmpty())
+    }
+    @Test fun generalOcrGroupedBlocksAreNotDroppedByMangaPaintRefresh() {
+        val raw=listOf(line("Good",10,10),line("morning",12,65))
+        val grouped=OcrReadingGroups.group(raw)
+        val translated=listOf(TranslatedOcrBox(grouped.single(),"صباح الخير"))
+        assertSame(translated,OcrPageTranslation.refreshGeometry(translated,raw,preservesRegions=false))
+    }
     @Test fun providerFailureKeepsEarlierBoxAndPreservesActualError()=runBlocking {
         val failure=IllegalStateException("HTTP 429: quota exhausted")
         var published=emptyList<TranslatedOcrBox>();var calls=0

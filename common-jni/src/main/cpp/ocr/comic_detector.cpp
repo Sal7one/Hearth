@@ -1,5 +1,6 @@
 #include "comic_detector.h"
 #include "model_path.h"
+#include "comic_vision_geometry.h"
 #include "../onnx/include/onnxruntime/onnxruntime_c_api.h"
 #include <atomic>
 #include <array>
