@@ -67,6 +67,29 @@ class DesktopQwenRealSmokeTest {
     }
 
     @Test
+    fun realQwenAutoPassesDetectedLanguageToThePipeline() = runBlocking<Unit> {
+        val (model, wav) = fixtures()
+        val directory = Files.createTempDirectory("hearth-qwen-auto-smoke-")
+        val segments = mutableListOf<SpeechSegment>()
+        try {
+            DesktopEngines(CredentialResolver { error("Local Qwen smoke must never resolve cloud credentials") }, directory).use { engines ->
+                engines.recognize(
+                    PipelineInput.AudioFile(wav.toString()),
+                    EngineSelection(QwenSpeechModel.ENGINE_ID, "qwen3-asr-0.6b", model.toString(), options = mapOf("threads" to "4")),
+                    "auto",
+                ) { segments += it }
+            }
+        } finally {
+            directory.toFile().deleteRecursively()
+        }
+        assertTrue(segments.isNotEmpty(), "Auto recognition must return speech")
+        for (segment in segments) assertEquals("en", segment.language, "Translation needs the detected source code")
+        val text = segments.joinToString(" ") { it.text }
+        for (phrase in expected) assertContains(text.lowercase(), phrase.lowercase())
+        println("QWEN_AUTO_SMOKE language=${segments.first().language} text=$text")
+    }
+
+    @Test
     fun realQwenCompletesTheDesktopEnginePath() = runBlocking<Unit> {
         val (model, wav) = fixtures()
         val directory = Files.createTempDirectory("hearth-qwen-smoke-")

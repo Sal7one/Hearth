@@ -106,18 +106,20 @@ private fun launchDesktop() = application {
                 engines = runtime
                 val pipeline = HearthPipeline(runtime, scope)
                 val capabilities = pipeline.capabilities()
+                val resolved = store.config.value.withDetectedCompute(capabilities)
+                if (resolved != store.config.value) store.save(resolved)
                 lateinit var modelController: DesktopModelController
                 val readingService = DesktopReadingService(pipeline, scope, selection = {
                     val id = selectedReadingModel(store.ui.value)
                     modelController.verifiedSelection(id)?.modelPath?.let { Path.of(it) to id }
                 })
                 val controller = DesktopWorkspaceController(pipeline, store.config, directory, scope,
-                    persist = { store.save(it) }, putSecret = { id, secret -> credentials.put(id, secret) },
+                    persist = { store.save(it.withDetectedCompute(capabilities)) }, putSecret = { id, secret -> credentials.put(id, secret) },
                     removeSecret = { credentials.remove(it) }, exportSetup = { store.exportSetup(it) },
                     importSetup = {
                         modelController.checkSetupImportAvailable()
                         store.importSetup(it)
-                        store.save(modelController.reconnectImportedSetup(store.config.value))
+                        store.save(modelController.reconnectImportedSetup(store.config.value).withDetectedCompute(capabilities))
                     }, persistUi = { store.saveUi(it) }, capabilities = capabilities,
                     readingService = readingService,
                     integrationOrigins = { setOfNotNull(store.ui.value["browser-extension-origin"]?.takeIf(String::isNotBlank)) })

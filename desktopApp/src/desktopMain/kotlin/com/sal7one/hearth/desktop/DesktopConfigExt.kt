@@ -39,14 +39,25 @@ internal fun engineSelection(engine: EngineDescriptor) = EngineSelection(
 /** Clicking the current engine must preserve its verified model, credentials and tuning. */
 internal fun PipelineConfig.chooseEngine(engine: EngineDescriptor, remembered: PipelineConfig? = null,
     installed: EngineSelection? = null): PipelineConfig {
-    if (selection(engine.stage)?.engineId == engine.id) return this
+    selection(engine.stage)?.takeIf { it.engineId == engine.id }?.let { current ->
+        val resolved = preferDetectedCompute(engine, current)
+        return if (resolved == current) this else select(engine.stage, resolved)
+    }
     val previous = remembered?.selection(engine.stage)?.takeIf { it.engineId == engine.id }
-    val route = previous ?: preferDetectedCompute(engine,
-        installed?.takeIf { it.engineId == engine.id } ?: engineSelection(engine))
+    val route = preferDetectedCompute(engine,
+        previous ?: installed?.takeIf { it.engineId == engine.id } ?: engineSelection(engine))
     val next = select(engine.stage, route)
     return if (engine.stage == PipelineStage.TTS && previous != null) next.copy(voiceId = remembered.voiceId,
         speakTranslatedText = remembered.speakTranslatedText) else next
 }
+
+/** Resolve legacy/imported routes without a compute choice after probing actual native devices. */
+internal fun PipelineConfig.withDetectedCompute(engines: List<EngineDescriptor>): PipelineConfig =
+    engines.fold(this) { config, engine ->
+        val current = config.selection(engine.stage)?.takeIf { it.engineId == engine.id }
+        val resolved = current?.let { preferDetectedCompute(engine, it) }
+        if (resolved == null || resolved == current) config else config.select(engine.stage, resolved)
+    }
 
 internal fun PipelineConfig.enableReadAloud(engines: List<EngineDescriptor>,
     remembered: (String) -> PipelineConfig? = { null }, installed: (String) -> EngineSelection? = { null }): PipelineConfig {

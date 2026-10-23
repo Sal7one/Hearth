@@ -40,17 +40,12 @@ internal object DesktopNativeLibraries {
             val digest = sha256(manifest)
             val target = dataDirectory.resolve("runtime/$platform/$digest")
             Files.createDirectories(target)
-            val files = nativeBundleFiles(Json.parseToJsonElement(manifest.toString(Charsets.UTF_8)).jsonObject)
-            for ((file, hash) in files) {
-                val destination = target.resolve(file)
-                if (!Files.isRegularFile(destination, LinkOption.NOFOLLOW_LINKS) || sha256(destination) != hash) {
-                    val bytes = readPackagedNative(platform, file, hash) { resource ->
-                        javaClass.getResourceAsStream(resource)?.use { it.readBytes() }
-                    }
-                    val temporary = destination.resolveSibling("$file.part")
-                    Files.write(temporary, bytes)
-                    Files.move(temporary, destination, java.nio.file.StandardCopyOption.REPLACE_EXISTING)
-                }
+            val packagedManifest = Json.parseToJsonElement(manifest.toString(Charsets.UTF_8)).jsonObject
+            check(packagedManifest.getValue("platform").jsonPrimitive.content == platform) { "Wrong desktop native architecture" }
+            val files = nativeBundleFiles(packagedManifest)
+            val required = nativeExtractionFiles(name, platform, files.keys, packagedManifest)
+            extractPackagedNativeFiles(platform, target, files, required) { resource ->
+                javaClass.getResourceAsStream(resource)?.use { it.readBytes() }
             }
             Files.write(target.resolve("manifest.json"), manifest)
             folder = target
@@ -86,6 +81,42 @@ internal object DesktopNativeLibraries {
         }
         load(name)
         return locations[name] ?: error("Desktop native library path is unavailable: $name")
+    }
+}
+
+/** Extract each requested adapter's closure, rather than rehashing every engine at each load. */
+internal fun nativeExtractionFiles(library: String, platform: String, files: Set<String>, manifest: JsonObject): Set<String> {
+    val filename = when {
+        platform.startsWith("windows-") -> "$library.dll"
+        platform.startsWith("macos-") -> "lib$library.dylib"
+        else -> "lib$library.so"
+    }
+    check(filename in files) { "This desktop bundle does not include $filename" }
+    val dependencies = nativeDependencyOrder(library, platform, files, manifest)
+    return linkedSetOf(filename).apply {
+        addAll(dependencies)
+        if (library in setOf("hearth_desktop_whisper", "transiber_translation") && dependencies.any { it.startsWith("cublas") }) {
+            // CUDA's license/provenance and every receipt hash remain mandatory,
+            // in addition to the ordered DLLs, before loading any native code.
+            addAll(manifest.getValue("cudaRuntime").jsonObject.getValue("sha256").jsonObject.keys)
+        }
+    }
+}
+
+internal fun extractPackagedNativeFiles(platform: String, directory: Path, hashes: Map<String, String>, required: Set<String>, readResource: (String) -> ByteArray?) {
+    for (filename in required) {
+        val hash = hashes.getValue(filename)
+        val destination = directory.resolve(filename)
+        if (!Files.isRegularFile(destination, LinkOption.NOFOLLOW_LINKS) || sha256(destination) != hash) {
+            val bytes = readPackagedNative(platform, filename, hash, readResource)
+            val temporary = Files.createTempFile(directory, "$filename.", ".part")
+            try {
+                Files.write(temporary, bytes)
+                Files.move(temporary, destination, java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+            } finally {
+                Files.deleteIfExists(temporary)
+            }
+        }
     }
 }
 

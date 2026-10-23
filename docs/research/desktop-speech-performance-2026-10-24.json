@@ -1,0 +1,512 @@
+{
+  "format": "hearth.desktop.speech-performance",
+  "schemaVersion": 1,
+  "asOf": "2026-10-24",
+  "host": "Apple M4 Pro, macOS arm64",
+  "audioSeconds": 4.65,
+  "fixtureSha256": "5d79aabd816a4c5e5566452c5ae5bd3a76f83f65522c3222dcfc8fe4b42a9ab0",
+  "recordedAudio": false,
+  "playedAudio": false,
+  "controlledBenchmark": false,
+  "androidDeviceComparisonPerformed": false,
+  "whisperBefore": {
+    "recordedAudio": false,
+    "playedAudio": false,
+    "measurement": "direct native baseline; no acquisition/pacing; before bounded live decoder; sequential inference without controlled-machine isolation",
+    "model": "Whisper large-v3-turbo Q8_0",
+    "modelSha256": "317eb69c11673c9de1e1f0d459b253999804ec71ac4c23c17ecf5fbe24e259a1",
+    "fixture": "hello.wav",
+    "fixtureSha256": "5d79aabd816a4c5e5566452c5ae5bd3a76f83f65522c3222dcfc8fe4b42a9ab0",
+    "results": [
+      {
+        "backend": "cpu",
+        "audioSeconds": 4.65,
+        "threads": 4,
+        "languageMode": "auto on each call",
+        "loadMs": 549.433583,
+        "passes": [
+          {
+            "pass": 0,
+            "inferenceMs": 31174.029916,
+            "language": "en",
+            "text": " The museum opens at 9 in the morning. Please bring your ticket to the east entrance."
+          },
+          {
+            "pass": 1,
+            "inferenceMs": 34122.478208,
+            "language": "en",
+            "text": " The museum opens at 9 in the morning. Please bring your ticket to the east entrance."
+          }
+        ],
+        "execution": "CPU; threads=4; completedInference=2"
+      },
+      {
+        "backend": "metal",
+        "audioSeconds": 4.65,
+        "threads": 4,
+        "languageMode": "auto on each call",
+        "loadMs": 380.7445,
+        "passes": [
+          {
+            "pass": 0,
+            "inferenceMs": 2893.503791,
+            "language": "en",
+            "text": " The museum opens at 9 in the morning. Please bring your ticket to the east entrance."
+          },
+          {
+            "pass": 1,
+            "inferenceMs": 2379.082416,
+            "language": "en",
+            "text": " The museum opens at 9 in the morning. Please bring your ticket to the east entrance."
+          }
+        ],
+        "execution": "Metal GPU; device=0; Metal (Apple M4 Pro); whisper_model_load:        Metal total size =   873.55 MB\n; threads=4; completedInference=2"
+      }
+    ]
+  },
+  "whisperLive": {
+    "asOfUtc": "2026-10-23T21:50:16.380391+00:00",
+    "platform": "macos-arm64",
+    "hardware": "Apple M4 Pro",
+    "javaTestWorker": "Temurin OpenJDK17 (Gradle JVM test toolchain)",
+    "speechInput": "existing hello.wav",
+    "fixtureSha256": "5d79aabd816a4c5e5566452c5ae5bd3a76f83f65522c3222dcfc8fe4b42a9ab0",
+    "recordedAudio": false,
+    "playedAudio": false,
+    "unpacedAudioStream": true,
+    "inputAcquisitionIncluded": false,
+    "productionTimingsIncludeModelVerificationAndLoading": true,
+    "nativeTimingsIncludeModelVerification": false,
+    "modelHashingBeforeTrialsWarmsFileCache": true,
+    "controlledBenchmark": false,
+    "notes": [
+      "Production replays PCM16 in 100ms frames through DesktopEngines AudioStream using the default live window. Wall-clock audio capture/pacing is excluded.",
+      "Resident native timings use the first 4 seconds of the same WAV and separate model loading from repeated decode.",
+      "Full-file baseline is in whisper-baseline.json; its 4.65-second one-call input differs from 4-second live windows. Do not present a live-policy speedup ratio between those modes.",
+      "The tiny and Turbo live paths preserve the source words; the forced window boundary changes punctuation. Turbo repeats East in both CPU and Metal output; this is not a quality-score benchmark."
+    ],
+    "whisperNativeLibrary": {
+      "sha256": "de6ebe629da8cf10f90702f7a5c46b8a79a9ad496f537b4b46fc2b9ca4c9d652",
+      "compiledBackends": [
+        "cpu",
+        "metal"
+      ],
+      "backendProbe": "native-export-v1",
+      "sourceSetSha256": "4db6a0a7838e049d62cf4725f3b0bbb26be77a18f16da063fc67594dac0c0ab3"
+    },
+    "models": [
+      {
+        "model": "Whisper tiny Q5_1",
+        "modelSha256": "818710568da3ca15689e31a743197b520007872ff9576237bda97bd1b469c3d7",
+        "productionRoute": [
+          {
+            "backend": "cpu",
+            "modelSha256": "818710568da3ca15689e31a743197b520007872ff9576237bda97bd1b469c3d7",
+            "audioMs": 4650,
+            "standaloneFullModelHashMs": 169,
+            "startupToFirstCaptionMs": 1096,
+            "totalSessionMs": 1526,
+            "segments": 2,
+            "transcript": "The museum opens at nine in the morning. Please bring your ticket to the east. entrance."
+          },
+          {
+            "backend": "metal",
+            "modelSha256": "818710568da3ca15689e31a743197b520007872ff9576237bda97bd1b469c3d7",
+            "audioMs": 4650,
+            "standaloneFullModelHashMs": 169,
+            "startupToFirstCaptionMs": 268,
+            "totalSessionMs": 295,
+            "segments": 2,
+            "transcript": "The museum opens at nine in the morning. Please bring your ticket to the east. entrance."
+          }
+        ],
+        "residentNative": {
+          "backend": "metal",
+          "loadMs": 42,
+          "inputSamples": 64000,
+          "inputRange": "first 4 seconds of the same WAV",
+          "passes": [
+            {
+              "pass": 0,
+              "nativeInferenceMs": 74,
+              "transcript": "The museum opens at nine in the morning. Please bring your ticket to the east.",
+              "execution": "Metal GPU; device=0; Metal (Apple M4 Pro); whisper_model_load:        Metal total size =    31.57 MB\n; threads=4; completedInference=1; decode=live; maxTokens=96; languageDetections=1; detectedLanguage=en",
+              "gpuWeightsAndCompletedInferenceProven": true,
+              "autoDetectionRequests": 1
+            },
+            {
+              "pass": 1,
+              "nativeInferenceMs": 44,
+              "transcript": "The museum opens at nine in the morning. Please bring your ticket to the east.",
+              "execution": "Metal GPU; device=0; Metal (Apple M4 Pro); whisper_model_load:        Metal total size =    31.57 MB\n; threads=4; completedInference=2; decode=live; maxTokens=96; languageDetections=1; detectedLanguage=en",
+              "gpuWeightsAndCompletedInferenceProven": true,
+              "autoDetectionRequests": 1
+            }
+          ]
+        },
+        "regressionTests": {
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "batchAutoDetectionRemainsIndependent": true
+        }
+      },
+      {
+        "model": "Whisper large-v3-turbo Q8_0",
+        "modelSha256": "317eb69c11673c9de1e1f0d459b253999804ec71ac4c23c17ecf5fbe24e259a1",
+        "productionRoute": [
+          {
+            "backend": "cpu",
+            "modelSha256": "317eb69c11673c9de1e1f0d459b253999804ec71ac4c23c17ecf5fbe24e259a1",
+            "audioMs": 4650,
+            "standaloneFullModelHashMs": 4039,
+            "startupToFirstCaptionMs": 38942,
+            "totalSessionMs": 57413,
+            "segments": 2,
+            "transcript": "The museum opens at 9 in the morning. Please bring your ticket to the East East. entrance."
+          },
+          {
+            "backend": "metal",
+            "modelSha256": "317eb69c11673c9de1e1f0d459b253999804ec71ac4c23c17ecf5fbe24e259a1",
+            "audioMs": 4650,
+            "standaloneFullModelHashMs": 4039,
+            "startupToFirstCaptionMs": 6072,
+            "totalSessionMs": 7438,
+            "segments": 2,
+            "transcript": "The museum opens at 9 in the morning. Please bring your ticket to the East East. entrance."
+          }
+        ],
+        "residentNative": {
+          "backend": "metal",
+          "loadMs": 339,
+          "inputSamples": 64000,
+          "inputRange": "first 4 seconds of the same WAV",
+          "passes": [
+            {
+              "pass": 0,
+              "nativeInferenceMs": 2564,
+              "transcript": "The museum opens at 9 in the morning. Please bring your ticket to the East East.",
+              "execution": "Metal GPU; device=0; Metal (Apple M4 Pro); whisper_model_load:        Metal total size =   873.55 MB\n; threads=4; completedInference=1; decode=live; maxTokens=96; languageDetections=1; detectedLanguage=en",
+              "gpuWeightsAndCompletedInferenceProven": true,
+              "autoDetectionRequests": 1
+            },
+            {
+              "pass": 1,
+              "nativeInferenceMs": 1324,
+              "transcript": "The museum opens at 9 in the morning. Please bring your ticket to the East East.",
+              "execution": "Metal GPU; device=0; Metal (Apple M4 Pro); whisper_model_load:        Metal total size =   873.55 MB\n; threads=4; completedInference=2; decode=live; maxTokens=96; languageDetections=1; detectedLanguage=en",
+              "gpuWeightsAndCompletedInferenceProven": true,
+              "autoDetectionRequests": 1
+            }
+          ]
+        },
+        "regressionTests": {
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "batchAutoDetectionRemainsIndependent": true
+        }
+      }
+    ]
+  },
+  "qwenNemotronAudit": {
+    "host": "macOS-26.5-arm64-arm-64bit-Mach-O",
+    "processor": "Apple M4 Pro",
+    "desktopOrtVersion": "1.20.1",
+    "androidQwenOrtVersion": "1.27.1",
+    "models": [
+      {
+        "filename": "conv_frontend.onnx",
+        "bytes": 44148281,
+        "sha256": "d22dc4423e0940e49884e903d2ea2f7e5567c14fc1aed97e4e26d6b8f208ef9e"
+      },
+      {
+        "filename": "encoder.int8.onnx",
+        "bytes": 182491662,
+        "sha256": "60748d3e6744a57c9c91e1b17424a6c2990567e8adceb0783940c03ed98fa9d9"
+      },
+      {
+        "filename": "decoder.int8.onnx",
+        "bytes": 755914231,
+        "sha256": "4f6885be5959ae26af3089d38ee7972c5fafbeeb1cf8d5e76eab6d8b61ca5771"
+      },
+      {
+        "filename": "nemotron-3.5-asr-streaming-0.6b.q8_0.gguf",
+        "bytes": 741548352,
+        "sha256": "a5c435f294eea8f88ce68dd27b8c3bfea7f777cb2fbba04fcd30eaa555f429ae"
+      }
+    ],
+    "clip": {
+      "path": "build/smoke/hello.wav",
+      "sha256": "5d79aabd816a4c5e5566452c5ae5bd3a76f83f65522c3222dcfc8fe4b42a9ab0",
+      "audioSeconds": 4.65
+    },
+    "decision": "Retain upstream ORT spin defaults; sleeping workers increased isolated Qwen latency and did not consistently improve concurrent inference. Keep desktop Auto-language retention/routing correction.",
+    "results": {
+      "baseline-qwen-concurrent": {
+        "passes": 9,
+        "medianMs": 604.771,
+        "maximumMs": 1098.449,
+        "receiptFiles": [
+          "baseline-qwen-paired-barrier-2.json",
+          "baseline-qwen-paired-barrier-3.json",
+          "baseline-qwen-paired-barrier.json"
+        ]
+      },
+      "after-qwen-concurrent": {
+        "passes": 9,
+        "medianMs": 747.406,
+        "maximumMs": 1408.057,
+        "receiptFiles": [
+          "after-qwen-paired-barrier-2.json",
+          "after-qwen-paired-barrier-3.json",
+          "after-qwen-paired-barrier.json"
+        ]
+      },
+      "baseline-nemotron-concurrent": {
+        "passes": 9,
+        "medianMs": 837.504,
+        "maximumMs": 1438.522,
+        "receiptFiles": [
+          "baseline-nemotron-paired-barrier-2.json",
+          "baseline-nemotron-paired-barrier-3.json",
+          "baseline-nemotron-paired-barrier.json"
+        ]
+      },
+      "after-nemotron-concurrent": {
+        "passes": 9,
+        "medianMs": 773.796,
+        "maximumMs": 1698.741,
+        "receiptFiles": [
+          "after-nemotron-paired-barrier-2.json",
+          "after-nemotron-paired-barrier-3.json",
+          "after-nemotron-paired-barrier.json"
+        ]
+      }
+    },
+    "experimentAfterLabel": "Idle-sleep experiment, rejected; after-* experiment receipts are not final shipped behavior.",
+    "finalNativeQwenReceipt": "final-qwen-single.json",
+    "finalJniQwenReceipt": "final-jni-qwen.json",
+    "finalSmokeSuites": [
+      {
+        "name": "com.sal7one.hearth.desktop.runtime.DesktopQwenRealSmokeTest",
+        "tests": "3",
+        "skipped": "0",
+        "failures": "0",
+        "errors": "0",
+        "timestamp": "2026-10-23T21:45:16.758Z",
+        "hostname": "Salehs-MacBook-Pro.local",
+        "time": "20.119"
+      },
+      {
+        "name": "com.sal7one.hearth.desktop.runtime.QwenSpeechModelTest",
+        "tests": "3",
+        "skipped": "0",
+        "failures": "0",
+        "errors": "0",
+        "timestamp": "2026-10-23T21:45:36.897Z",
+        "hostname": "Salehs-MacBook-Pro.local",
+        "time": "0.004"
+      },
+      {
+        "name": "com.sal7one.hearth.desktop.runtime.DesktopNemotronRealSmokeTest",
+        "tests": "2",
+        "skipped": "0",
+        "failures": "0",
+        "errors": "0",
+        "timestamp": "2026-10-23T21:44:58.648Z",
+        "hostname": "Salehs-MacBook-Pro.local",
+        "time": "18.105"
+      }
+    ],
+    "finalNativeManifestSha256": "03a81d1b4b798450a7e9d51a6d0bcbd6026be6ba1abd054ef4900a26b37714bb",
+    "nativeBuildLog": "/tmp/hearth-stt-native-build-final.log",
+    "smokeLog": "/tmp/hearth-stt-final-smoke.log",
+    "loaderProof": "loader-cold-proof.json",
+    "loaderTestReceipt": "loader-tests/receipt.json"
+  },
+  "nativeLoader": {
+    "status": "PASS",
+    "java": "Temurin17.0.20.1",
+    "scope": "Fresh test JVM + fresh app-data directory, capabilities for all engines then pinned Nemotron recognize; OS file cache warm, owner apps left running",
+    "beforeMs": 16497,
+    "afterMs": 9858,
+    "transcript": "NEMOTRON_ENGINE_SMOKE ms=9858 segments=1 text=museum opens at nine in the morning please bring your ticket to the east entrance",
+    "nativeComputeMsEarlier": 756,
+    "interpretation": "Requested/dependency-only extraction avoids repeated whole-bundle hashes. Pinned model verification still runs; Java21 hardware SHA packaging is a separate optimization.",
+    "testLog": "/tmp/hearth-stt-loader-cold-proof.log"
+  },
+  "modelHashing": {
+    "method": "Same Java SHA-256 implementation, 64 KiB buffer, same pinned 755914231-byte model file; warm OS file cache; standalone process per runtime",
+    "java17": [
+      {
+        "ms": 3377.923,
+        "sha256": "4f6885be5959ae26af3089d38ee7972c5fafbeeb1cf8d5e76eab6d8b61ca5771"
+      },
+      {
+        "ms": 3334.169,
+        "sha256": "4f6885be5959ae26af3089d38ee7972c5fafbeeb1cf8d5e76eab6d8b61ca5771"
+      },
+      {
+        "ms": 3329.897,
+        "sha256": "4f6885be5959ae26af3089d38ee7972c5fafbeeb1cf8d5e76eab6d8b61ca5771"
+      }
+    ],
+    "shippedJava21": [
+      {
+        "ms": 393.344,
+        "sha256": "4f6885be5959ae26af3089d38ee7972c5fafbeeb1cf8d5e76eab6d8b61ca5771"
+      },
+      {
+        "ms": 308.49,
+        "sha256": "4f6885be5959ae26af3089d38ee7972c5fafbeeb1cf8d5e76eab6d8b61ca5771"
+      },
+      {
+        "ms": 299.431,
+        "sha256": "4f6885be5959ae26af3089d38ee7972c5fafbeeb1cf8d5e76eab6d8b61ca5771"
+      }
+    ]
+  },
+  "packagingRuntime": {
+    "vendor": "Amazon Corretto",
+    "version": "21.0.13.0.10",
+    "architecture": "macOS aarch64",
+    "downloadUrl": "https://corretto.aws/downloads/resources/21.0.13.0.10/amazon-corretto-21.0.13.0.10-macosx-aarch64.tar.gz",
+    "releaseSource": "https://github.com/corretto/corretto-21/releases/tag/21.0.13.0.10",
+    "sha256": "1e36f0d857dab1b59579ee33674f1552444f40178f9485767872b16b5b1f3ece",
+    "bytes": 200325635,
+    "javaVersionOutput": "openjdk version \"21.0.13\" 2026-10-20 LTS\nOpenJDK Runtime Environment Corretto-21.0.13.0.10 (build 21.0.13+10-LTS)\nOpenJDK 64-Bit Server VM Corretto-21.0.13.0.10 (build 21.0.13+10-LTS, mixed mode, sharing)"
+  },
+  "packagedMetalInference": {
+    "backend": "metal",
+    "asOf": "2026-10-23T22:00:17.668907Z",
+    "platform": "macos-arm64",
+    "osVersion": "26.5",
+    "audioRecorded": false,
+    "audioPlayed": false,
+    "timingsAreBenchmark": false,
+    "whisperSha256": "818710568da3ca15689e31a743197b520007872ff9576237bda97bd1b469c3d7",
+    "translationSha256": "f22ab4b628f6e3cd12ec2e5aa6d1e460be2fa83f25cb6a8f5dd6d4d77b285b66",
+    "wavSha256": "5d79aabd816a4c5e5566452c5ae5bd3a76f83f65522c3222dcfc8fe4b42a9ab0",
+    "nativeLibraries": {
+      "libhearth_desktop_whisper.dylib": {
+        "sha256": "de6ebe629da8cf10f90702f7a5c46b8a79a9ad496f537b4b46fc2b9ca4c9d652",
+        "compiledBackends": [
+          "cpu",
+          "metal"
+        ],
+        "backendProbe": "native-export-v1",
+        "sourceSetSha256": "4db6a0a7838e049d62cf4725f3b0bbb26be77a18f16da063fc67594dac0c0ab3"
+      },
+      "libtransiber_translation.dylib": {
+        "sha256": "726eeb5c825974e84b5b875c1c668ae937231e24228fec432f02526d7dabdb45",
+        "compiledBackends": [
+          "cpu",
+          "metal"
+        ],
+        "backendProbe": "native-export-v1",
+        "sourceSetSha256": "0a273a4a1edac32a2ca9aa324e762a9527deff429978046acf7439cb3b37dced"
+      }
+    },
+    "nativeSourceSetSha256": "4db6a0a7838e049d62cf4725f3b0bbb26be77a18f16da063fc67594dac0c0ab3",
+    "speechDevices": [
+      {
+        "index": 0,
+        "name": "Metal",
+        "description": "Apple M4 Pro",
+        "memoryBytes": null
+      }
+    ],
+    "translationDevices": [
+      {
+        "index": 0,
+        "name": "Metal",
+        "description": "Apple M4 Pro",
+        "memoryBytes": null
+      }
+    ],
+    "cpuTranscript": "The museum opens at nine in the morning. Please bring your ticket to the East entrance.",
+    "cpuSpeechExecution": "CPU; threads=2; completedInference=1; decode=file; maxTokens=0; languageDetections=0; detectedLanguage=",
+    "cpuArabicTranslation": "لا ترسل الدفعة اليوم. يبلغ المجموع 42 دولارًا. حافظ على الباب مغلقًا.",
+    "cpuTranslationExecution": "CPU; threads=2; completedInference=1",
+    "metalTranscript": "The museum opens at nine in the morning. Please bring your ticket to the East entrance.",
+    "metalSpeechExecution": "Metal GPU; device=0; Metal (Apple M4 Pro); whisper_model_load:        Metal total size =    31.57 MB\n; threads=2; completedInference=1; decode=file; maxTokens=0; languageDetections=0; detectedLanguage=",
+    "metalArabicTranslation": "لا ترسل الدفعة اليوم. يبلغ المجموع 42 دولارًا. حافظ على الباب مغلقًا.",
+    "metalTranslationExecution": "MTL0 (Apple M4 Pro); load_tensors: offloaded 25/25 layers to GPU\nload_tensors:   CPU_Mapped model buffer size =   140.62 MiB\nload_tensors:  MTL0_Mapped model buffer size =   993.80 MiB\n; threads=2; completedInference=1",
+    "status": "PASS",
+    "timingsMs": {
+      "cpuSpeechLoadMs": 5280,
+      "cpuSpeechInferenceMs": 572,
+      "cpuTranslationLoadMs": 14214,
+      "cpuTranslationInferenceMs": 625,
+      "metalSpeechLoadMs": 29,
+      "metalSpeechInferenceMs": 373,
+      "metalTranslationLoadMs": 116,
+      "metalTranslationInferenceMs": 417
+    }
+  },
+  "desktopTestSuites": [
+    {
+      "module": "hearth-core",
+      "tests": 47,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "desktop-runtime",
+      "tests": 106,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 35
+    },
+    {
+      "module": "desktop-data",
+      "tests": 30,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 1
+    },
+    {
+      "module": "desktop-media",
+      "tests": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "desktop-integration",
+      "tests": 27,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "desktopApp",
+      "tests": 119,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 3
+    }
+  ],
+  "otherChecks": {
+    "requiredAndroidTestsAndQaCompilation": "PASS",
+    "commonAndSpeechAsanUbsanHostSuites": "PASS",
+    "externalNativeBuildDebug": "PASS",
+    "desktopPythonTests": "23 PASS",
+    "nativeMediaHelpers": "PASS",
+    "mountedDmgChecksum": "PASS",
+    "mountedAppStrictDeepCodesign": "PASS; ad hoc development signature",
+    "mountedAppPackagedSelfCheck": "PASS",
+    "githubActionsUsed": false
+  },
+  "limitations": [
+    "Recorded timing comparisons are replay/direct compute, not microphone or system-audio end-to-end latency.",
+    "Whisper live fixture tests used Java17; shipped package uses the separately verified Java21 runtime.",
+    "Short forced windows can split words and produce repetitions; the live fixture repeats East across a boundary. File decoding retains its prior fallback and per-window language detection.",
+    "Cold model/native initialization still costs time; source hashes are verified before native loading.",
+    "Qwen and Nemotron remain CPU adapters. No NVIDIA hardware execution or Windows installer validation was performed here."
+  ]
+}

@@ -23,7 +23,7 @@ internal fun computeSettings(engine: EngineDescriptor?, selection: EngineSelecti
     return ComputeSettings(selected ?: Compute.CPU, options, issue)
 }
 
-/** Apply only when creating a fresh route; persisted CPU/GPU choices and independent tuning always win. */
+/** Fill only an absent choice; explicit CPU/GPU choices and independent tuning always win. */
 internal fun preferDetectedCompute(engine: EngineDescriptor, selection: EngineSelection): EngineSelection {
     if (selection.engineId != engine.id || !engine.available || engine.kind != EngineKind.LOCAL ||
         engine.stage !in setOf(PipelineStage.STT, PipelineStage.TRANSLATION) || "acceleration" in selection.options) return selection

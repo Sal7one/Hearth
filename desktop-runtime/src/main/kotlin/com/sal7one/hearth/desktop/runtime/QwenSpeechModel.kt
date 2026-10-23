@@ -18,11 +18,18 @@ object QwenSpeechModel {
     const val LIBRARY = "hearth_desktop_qwen3_asr"
     const val PROTOCOL_VERSION = 1
 
-    /** Mirrors common-jni/src/main/cpp/speech/qwen_language.h. */
-    val languages: Set<String> = setOf(
-        "zh", "en", "yue", "ar", "de", "fr", "es", "pt", "id", "it", "ko", "ru", "th", "vi", "ja",
-        "tr", "hi", "ms", "nl", "sv", "da", "fi", "pl", "cs", "fil", "fa", "el", "hu", "mk", "ro",
+    /** Mirrors the model's prompt/output names in common-jni/src/main/cpp/speech/qwen_language.h. */
+    private val languageNames: Map<String, String> = mapOf(
+        "zh" to "Chinese", "en" to "English", "yue" to "Cantonese", "ar" to "Arabic",
+        "de" to "German", "fr" to "French", "es" to "Spanish", "pt" to "Portuguese",
+        "id" to "Indonesian", "it" to "Italian", "ko" to "Korean", "ru" to "Russian",
+        "th" to "Thai", "vi" to "Vietnamese", "ja" to "Japanese", "tr" to "Turkish",
+        "hi" to "Hindi", "ms" to "Malay", "nl" to "Dutch", "sv" to "Swedish",
+        "da" to "Danish", "fi" to "Finnish", "pl" to "Polish", "cs" to "Czech",
+        "fil" to "Filipino", "fa" to "Persian", "el" to "Greek", "hu" to "Hungarian",
+        "mk" to "Macedonian", "ro" to "Romanian",
     )
+    val languages: Set<String> = languageNames.keys
 
     data class PinnedFile(val path: String, val bytes: Long, val sha256: String)
 
@@ -42,10 +49,11 @@ object QwenSpeechModel {
         return code
     }
 
-    /** Accept only a recognized code; a display name or unknown value never reaches a translator. */
+    /** Normalize the model's known English language names; translators only receive codes. */
     fun detected(raw: String): String? {
         val text = raw.trim()
         if (text.isEmpty()) return null
+        languageNames.entries.firstOrNull { it.value.equals(text, ignoreCase = true) }?.let { return it.key }
         val code = text.lowercase().replace('_', '-').substringBefore('-')
         return code.takeIf { it in languages }
     }

@@ -20,7 +20,7 @@ import com.sal7one.hearth.desktop.ui.screens.settings.FormRow
 import com.sal7one.hearth.desktop.ui.theme.HearthTheme
 import com.sal7one.hearth.desktop.ui.theme.HearthType
 
-/** Compute and threads. Both map to keys the runtime reads, nothing decorative. */
+/** Show effective compute and worker controls supported by the selected runtime. */
 @Composable
 internal fun SpeechAdvancedCard(
     state: SpeechState,
@@ -53,7 +53,7 @@ internal fun SpeechAdvancedCard(
 
             FormRow(
                 label = SpeechCopy.THREADS,
-                hint = SpeechCopy.THREADS_HINT,
+                hint = state.fixedThreadsHint ?: SpeechCopy.THREADS_HINT,
                 showDivider = false,
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -61,6 +61,7 @@ internal fun SpeechAdvancedCard(
                         value = (state.threads - 1) / 15f,
                         onValueChange = { fraction -> actions.onThreads((1 + fraction * 15).toInt().coerceIn(1, 16)) },
                         modifier = Modifier.width(240.dp),
+                        enabled = state.fixedThreadsHint == null,
                     )
                     Spacer(Modifier.width(12.dp))
                     Text("${state.threads}", style = HearthType.monoSmall, color = colors.text)

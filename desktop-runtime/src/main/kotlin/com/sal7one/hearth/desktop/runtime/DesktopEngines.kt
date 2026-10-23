@@ -27,7 +27,6 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
-import java.io.ByteArrayOutputStream
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.file.Files
@@ -194,7 +193,6 @@ class DesktopEngines(
         val handle = AtomicLong()
         val qwenEngine = AtomicReference<DesktopQwenSpeechEngine?>(null)
         val backendEngine = AtomicReference<DesktopBackendSpeechEngine?>(null)
-        var offsetSamples = 0L
         var sequence = 0
         var recognized = false
         try {
@@ -312,21 +310,10 @@ class DesktopEngines(
                 }
             }
             val live = input is PipelineInput.AudioStream
-            val spokenWindow = selection.engineId == QwenSpeechModel.ENGINE_ID || selection.engineId == "transcribepsy-local" || selection.engineId == "nemotron-asr-local" || selection.engineId == "moonshine-local" || selection.engineId == "vosk-local"
-            val windowMs = selection.options["windowMs"]?.toIntOrNull()
-                ?: if (spokenWindow) 15000 else if (live) 4000 else 20000
-            require(windowMs in 1000..30000) { "Speech window must be 1000–30000 ms" }
-            val windowBytes = windowMs * 32
-            val buffered = ByteArrayOutputStream(windowBytes)
-            var speechSamples = 0
-            var silenceSamples = 0
-            suspend fun transcribe() {
-                val bytes = buffered.toByteArray(); buffered.reset()
-                if (bytes.isEmpty()) return
+            val windows = DesktopSpeechWindows(live, desktopSpeechWindowMs(selection, live))
+            suspend fun transcribe(window: DesktopSpeechWindow) {
+                val bytes = window.bytes
                 currentCoroutineContext().ensureActive()
-                val observedSpeech = speechSamples
-                speechSamples = 0; silenceSamples = 0
-                if (live && observedSpeech == 0) { offsetSamples += bytes.size / 2; return }
                 val text: String
                 var language: String? = sourceLanguage.takeUnless { it == "auto" }
                 val owner = currentCoroutineContext()
@@ -345,35 +332,25 @@ class DesktopEngines(
                         language = engine.language().ifBlank { language }
                     } else {
                         text = joinedBlocking({ DesktopWhisperNative.cancel(handle.get()) }) {
-                            owner.ensureActive(); DesktopWhisperNative.transcribe(handle.get(), samples).toString(Charsets.UTF_8).trim()
+                            owner.ensureActive()
+                            val result = if (live) DesktopWhisperNative.transcribeLive(handle.get(), samples)
+                                else DesktopWhisperNative.transcribe(handle.get(), samples)
+                            result.toString(Charsets.UTF_8).trim()
                         }
                         language = DesktopWhisperNative.language(handle.get()).toString(Charsets.UTF_8).ifBlank { language }
                     }
                 }
-                val end = offsetSamples + bytes.size / 2
                 if (text.isNotBlank()) {
-                    emit(SpeechSegment("speech-${sequence++}", text, true, offsetSamples / 16, end / 16, language))
+                    emit(SpeechSegment("speech-${sequence++}", text, true, window.startSample / 16, window.endSample / 16, language))
                     recognized = true
                 }
-                offsetSamples = end
             }
             // Utterance-windowed recognition, not a claim of token-by-token streaming.
             frames.collect { frame ->
-                var cursor = 0
-                while (cursor < frame.bytes.size) {
-                    val count = minOf(frame.bytes.size - cursor, windowBytes - buffered.size())
-                    buffered.write(frame.bytes, cursor, count); cursor += count
-                    if (live) {
-                        var energy = 0.0
-                        val samples = ByteBuffer.wrap(frame.bytes, cursor - count, count).order(ByteOrder.LITTLE_ENDIAN).asShortBuffer()
-                        while (samples.hasRemaining()) { val value = samples.get() / 32768.0; energy += value * value }
-                        if (kotlin.math.sqrt(energy / (count / 2)) >= 0.008) { speechSamples += count / 2; silenceSamples = 0 }
-                        else silenceSamples += count / 2
-                    }
-                    if (buffered.size() == windowBytes || live && speechSamples >= 4000 && silenceSamples >= 9600) transcribe()
-                }
+                currentCoroutineContext().ensureActive()
+                windows.push(frame, ::transcribe)
             }
-            transcribe()
+            windows.finish(::transcribe)
             check(recognized) { "No speech was recognized in the supplied audio" }
         } finally {
             try {

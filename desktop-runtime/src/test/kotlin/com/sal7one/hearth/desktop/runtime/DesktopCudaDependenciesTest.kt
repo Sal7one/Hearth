@@ -13,6 +13,11 @@ class DesktopCudaDependenciesTest {
             val major = version.substringBefore('.')
             assertEquals(microsoft + listOf("cudart64_$major.dll", "cublaslt64_$major.dll", "cublas64_$major.dll"), ordered)
             assertEquals(ordered, nativeDependencyOrder("transiber_translation", "windows-x64", files.keys, fixture))
+            val evidence = setOf("NVIDIA-CUDA-EULA.txt", "NVIDIA-CUDA-NOTICE.txt", "nvidia-cuda-provenance.json")
+            assertEquals(ordered.toSet() + evidence + "hearth_desktop_whisper.dll",
+                nativeExtractionFiles("hearth_desktop_whisper", "windows-x64", files.keys, fixture))
+            assertEquals(ordered.toSet() + evidence + "transiber_translation.dll",
+                nativeExtractionFiles("transiber_translation", "windows-x64", files.keys, fixture))
         }
     }
     @Test fun missingAlteredOrUnrecordedCudaCodeNeverLoadsAnEarlierDll() {
@@ -40,7 +45,10 @@ class DesktopCudaDependenciesTest {
             changedReceipt(valid, "entries", buildJsonArray { add("hearth_desktop_whisper.dll") }),
             changedReceipt(valid, "files", buildJsonArray { add("evil.dll") }),
             JsonObject(valid - "cudaRuntime"),
-        )) assertFailsWith<IllegalStateException> { nativeDependencyOrder("hearth_desktop_whisper", "windows-x64", files.keys, changed) }
+        )) {
+            assertFailsWith<IllegalStateException> { nativeDependencyOrder("hearth_desktop_whisper", "windows-x64", files.keys, changed) }
+            assertFailsWith<IllegalStateException> { nativeExtractionFiles("hearth_desktop_whisper", "windows-x64", files.keys, changed) }
+        }
         assertFailsWith<IllegalStateException> { nativeDependencyOrder("hearth_desktop_whisper", "windows-x64", files.keys + "nvcuda.dll", valid) }
         val badFiles = JsonObject(valid.getValue("files").jsonObject + ("cublas64_12.dll" to JsonPrimitive("0".repeat(64))))
         assertFailsWith<IllegalStateException> { nativeDependencyOrder("hearth_desktop_whisper", "windows-x64", files.keys, JsonObject(valid + ("files" to badFiles))) }

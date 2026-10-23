@@ -49,6 +49,7 @@ internal data class SpeechState(
     val compute: Compute = Compute.CPU,
     val computeOptions: List<Compute> = listOf(Compute.CPU),
     val threads: Int = 4,
+    val fixedThreadsHint: String? = null,
     val ready: Boolean = false,
     val checking: Boolean = false,
     val placementLabel: String = "CPU",

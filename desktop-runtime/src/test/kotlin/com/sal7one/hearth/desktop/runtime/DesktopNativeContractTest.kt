@@ -45,7 +45,7 @@ class DesktopNativeContractTest {
                 assertNull(DesktopNativeLibraries.readiness(QwenSpeechModel.LIBRARY))
                 assertEquals(QwenSpeechModel.PROTOCOL_VERSION, DesktopQwenNative.protocolVersion())
             }
-            assertEquals(3, DesktopWhisperNative.protocolVersion())
+            assertEquals(DesktopWhisperNative.PROTOCOL_VERSION, DesktopWhisperNative.protocolVersion())
             assertEquals(5, LocalTranslationNative.promptProtocolVersion())
             val model = directory.resolve("غير صالح🙂.ggml")
             Files.write(model, ByteArray(64))
@@ -89,6 +89,7 @@ class DesktopNativeContractTest {
                 if (qwenStaged) assertEquals(setOf("cpu"), descriptors.getValue(QwenSpeechModel.ENGINE_ID).acceleration)
             }
             assertFailsWith<IllegalStateException> { DesktopWhisperNative.transcribe(0, floatArrayOf(0f)) }
+            assertFailsWith<IllegalStateException> { DesktopWhisperNative.transcribeLive(0, floatArrayOf(0f)) }
             assertFailsWith<RuntimeException> { LocalTranslationNative.translate(0, "hello".toByteArray()) }
             assertFailsWith<IllegalStateException> { DesktopWhisperNative.executionInfo(0) }
             assertFailsWith<RuntimeException> { LocalTranslationNative.executionInfo(0) }
