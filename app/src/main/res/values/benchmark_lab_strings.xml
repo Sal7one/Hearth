@@ -5,8 +5,11 @@
     <string name="benchmark_lab_setup">Setup</string>
     <string name="benchmark_lab_models_count">Models · %1$d</string>
     <string name="benchmark_lab_results_count">Results · %1$d</string>
-    <string name="benchmark_lab_stopping">Stopping after the current native call…</string>
+    <string name="benchmark_lab_stopping">Stopping benchmark…</string>
     <string name="benchmark_lab_stop">Stop comparison</string>
+    <string name="benchmark_lab_retry_cleanup">Retry cleanup</string>
+    <string name="benchmark_lab_confirming_cleanup">Confirming cleanup…</string>
+    <string name="benchmark_lab_recovery_hint">Waiting for the previous worker to release its models. Saved results and recordings are kept. Another local model can start after cleanup is confirmed.</string>
     <string name="benchmark_lab_active_downloads">%1$d files downloading or verifying</string>
     <string name="benchmark_lab_download_queue">View download queue</string>
     <string name="benchmark_lab_input_heading">1. Input and languages</string>

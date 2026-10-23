@@ -20,6 +20,6 @@ internal object BenchmarkLanguageSweep {
 
     fun isBundled(result: BenchmarkResult, suite: BenchmarkSuite): Boolean {
         val expected = suite.selected(result.target.isBlank(), result.source, result.target, false).map(BenchmarkCase::id)
-        return result.protocolVersion in setOf(2,BenchmarkAttemptPolicy.PROTOCOL_VERSION) && expected.isNotEmpty() && result.samples.map(BenchmarkSampleResult::id) == expected
+        return result.protocolVersion in 2..BenchmarkAttemptPolicy.PROTOCOL_VERSION && expected.isNotEmpty() && result.samples.map(BenchmarkSampleResult::id) == expected
     }
 }

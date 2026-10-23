@@ -215,6 +215,7 @@ internal class LocalBenchmarkRunner(private val context: Context) {
         compareAcceleration: Boolean = false, resumeCompleted: Boolean = false, measuredPasses: Int = 3,
         persistResults: Boolean = true, workerJisrDialect: String? = null,
         workerVoiceApproved: Boolean = false, attemptTimeoutSeconds: Int = 20,
+        onPhase: (BenchmarkWorkerPhase) -> Unit = {},
         progress: (String) -> Unit, onResult: (BenchmarkResult) -> Unit,
     ) = withContext(Dispatchers.Default) {
         com.sal7one.transiber.runtime.LocalModelPolicy.requireAllowed(context, "model benchmarking")
@@ -265,8 +266,10 @@ internal class LocalBenchmarkRunner(private val context: Context) {
                 var actualAcceleration: String? = null
                 var recognition: BenchmarkRecognitionSetting? = null
                 var failure: String? = null
+                var terminationReason: String? = null
                 var executedAcceleration: String? = candidate.acceleration
                 val samples = mutableListOf<BenchmarkSampleResult>()
+                val sampleBudget = BenchmarkSampleBudget(attemptTimeoutSeconds)
                 val rawInputs = benchmarkInputs.ifEmpty {
                     listOf(BenchmarkInput("custom", text, referenceText, clip = clip.takeUnless { translating || synthesizing }))
                 }
@@ -283,6 +286,7 @@ internal class LocalBenchmarkRunner(private val context: Context) {
                 val combinedReference = allReferences.takeIf { it.isNotEmpty() }?.joinToString(" ")
                 val loading = System.nanoTime()
                 try {
+                    onPhase(BenchmarkWorkerPhase.LOAD)
                     require(source in candidate.sourceCodes || candidate.sourceCodes == setOf("model")) { "${candidate.label} cannot use spoken language $source" }
                     recognition = BenchmarkLanguagePlan.recognition(candidate, source)
                     val recognitionLanguage = candidate.recognitionLanguage ?: source
@@ -417,48 +421,56 @@ internal class LocalBenchmarkRunner(private val context: Context) {
                         currentCoroutineContext().ensureActive()
                         // Reset is a separate operation in the live overlay. Do not charge it to
                         // every replay clip, and feed the same 800-sample (50 ms) capture frames.
-                        if (speech != null && (pass > 0 || inputIndex > 0)) checkNotNull(speech).reset()
-                        if (legacy != null && (pass > 0 || inputIndex > 0)) checkNotNull(legacy).reset().getOrThrow()
+                        if ((speech != null || legacy != null) && (pass > 0 || inputIndex > 0)) {
+                            onPhase(BenchmarkWorkerPhase.RESET)
+                            speech?.reset()
+                            legacy?.reset()?.getOrThrow()
+                        }
                         step("pass ${pass + 1}/$measuredPasses · sample ${inputIndex + 1}/${inputs.size}")
-                        val start = System.nanoTime()
                         var firstMs: Double? = null
                         var sampleAudioMs = input.clip?.durationMs ?: 0L
-                        val output = when {
-                            voiceReader != null -> {
-                                val measured = BenchmarkVoiceProbe.measure(checkNotNull(voiceReader), input.text, source, candidate.voiceId, start)
-                                firstMs = measured.firstAudioMs
-                                sampleAudioMs = measured.audioMs.toLong()
-                                generatedAudioMs += measured.audioMs
-                                input.text
-                            }
-                            speech != null -> {
-                                val session = checkNotNull(speech)
-                                val finals = linkedMapOf<Long, String>()
-                                fun collect(update: SpeechUpdate) {
-                                    update.transcripts.forEach { t ->
-                                        if (firstMs == null && t.text.isNotBlank()) firstMs = (System.nanoTime() - start) / 1e6
-                                        if (t.isFinal) finals[t.utteranceId] = t.text
+                        // One deadline covers the complete sample, including every streamed
+                        // capture frame and finish(). Ordinary progress never extends it.
+                        onPhase(BenchmarkWorkerPhase.INFERENCE)
+                        val measured = sampleBudget.measure { start ->
+                            when {
+                                voiceReader != null -> {
+                                    val measured = BenchmarkVoiceProbe.measure(checkNotNull(voiceReader), input.text, source, candidate.voiceId, start)
+                                    firstMs = measured.firstAudioMs
+                                    sampleAudioMs = measured.audioMs.toLong()
+                                    generatedAudioMs += measured.audioMs
+                                    input.text
+                                }
+                                speech != null -> {
+                                    val session = checkNotNull(speech)
+                                    val finals = linkedMapOf<Long, String>()
+                                    fun collect(update: SpeechUpdate) {
+                                        update.transcripts.forEach { t ->
+                                            if (firstMs == null && t.text.isNotBlank()) firstMs = (System.nanoTime() - start) / 1e6
+                                            if (t.isFinal) finals[t.utteranceId] = t.text
+                                        }
                                     }
+                                    val samples = checkNotNull(input.clip).samples
+                                    var offset = 0
+                                    // Match CaptionCaptureService's 50 ms capture cadence.
+                                    while (offset < samples.size) {
+                                        currentCoroutineContext().ensureActive()
+                                        val end = minOf(offset + 800, samples.size)
+                                        collect(session.accept(samples.copyOfRange(offset, end), offset.toLong())); offset = end
+                                    }
+                                    collect(session.finish())
+                                    finals.values.filter { it.isNotBlank() }.joinToString(" ")
                                 }
-                                val samples = checkNotNull(input.clip).samples
-                                var offset = 0
-                                // Match CaptionCaptureService's 50 ms capture cadence.
-                                while (offset < samples.size) {
-                                    currentCoroutineContext().ensureActive()
-                                    val end = minOf(offset + 800, samples.size)
-                                    collect(session.accept(samples.copyOfRange(offset, end), offset.toLong())); offset = end
+                                translator != null -> checkNotNull(translator).translate(input.text, TranslationDirection(source, target))
+                                else -> {
+                                    val engine = checkNotNull(legacy)
+                                    engine.transcribeBatch(checkNotNull(input.clip).samples, 16000).getOrThrow().fullText
                                 }
-                                collect(session.finish())
-                                finals.values.filter { it.isNotBlank() }.joinToString(" ")
-                            }
-                            translator != null -> checkNotNull(translator).translate(input.text, TranslationDirection(source, target))
-                            else -> {
-                                val engine = checkNotNull(legacy)
-                                engine.transcribeBatch(checkNotNull(input.clip).samples, 16000).getOrThrow().fullText
                             }
                         }
+                        val output = measured.value
                         currentCoroutineContext().ensureActive()
-                        val sampleMs = (System.nanoTime() - start) / 1e6
+                        val sampleMs = measured.elapsedMs
                         val sampleFirstMs = if (input.silence) 0.0 else firstMs ?: sampleMs
                         passComputeMs += sampleMs
                         if (!input.silence) passFirstText += sampleFirstMs
@@ -474,9 +486,11 @@ internal class LocalBenchmarkRunner(private val context: Context) {
                     texts += passTexts.filterIndexed { index, _ -> !inputs[index].silence }.joinToString(" ").take(8000)
                 }
                 } catch (e: CancellationException) { throw e }
+                catch (e: BenchmarkSampleTimeoutException) { failure = e.message; terminationReason = "deadline" }
                 catch (e: Exception) { failure = e.message ?: e.toString() }
                 catch (e: LinkageError) { failure = e.message ?: e.toString() }
                 finally {
+                    onPhase(BenchmarkWorkerPhase.CLEANUP)
                     if (load == 0.0) load = (System.nanoTime() - loading) / 1e6
                     // Sample while the loaded model still exists, outside every inference timer.
                     environmentAfter = BenchmarkEnvironmentSnapshot.capture(context)
@@ -486,11 +500,18 @@ internal class LocalBenchmarkRunner(private val context: Context) {
                             { speech?.close() }, { legacy?.release() }, { translator?.close() }, { voiceReader?.closeAndJoin() })
                         cleanup.forEach { close ->
                             try { close() }
-                            catch (e: Exception) { failure = listOfNotNull(failure, "Model cleanup failed: ${e.message ?: e}").joinToString("; ") }
-                            catch (e: LinkageError) { failure = listOfNotNull(failure, "Model cleanup failed: ${e.message ?: e}").joinToString("; ") }
+                            catch (e: Exception) {
+                                failure = listOfNotNull(failure, "Model cleanup failed: ${e.message ?: e}").joinToString("; ")
+                                terminationReason = "cleanup_error"
+                            }
+                            catch (e: LinkageError) {
+                                failure = listOfNotNull(failure, "Model cleanup failed: ${e.message ?: e}").joinToString("; ")
+                                terminationReason = "cleanup_error"
+                            }
                         }
                     }
                 }
+                onPhase(BenchmarkWorkerPhase.RESULT)
                 if (!translating && !synthesizing) runtime += "; benchmark audio: ${BenchmarkAudio.NORMALIZATION}"
                 val actualCandidate = candidate.copy(acceleration = executedAcceleration)
                 val backendLabel = executedAcceleration?.uppercase(java.util.Locale.ROOT)
@@ -513,13 +534,14 @@ internal class LocalBenchmarkRunner(private val context: Context) {
                         if (file.isFile) file.length() else file.walkTopDown().filter(File::isFile).sumOf(File::length)
                     }, configurationHash = configurationHash, audioMsByPass = audioDurations,
                     environment = BenchmarkEnvironment(environmentBefore, environmentAfter),
-                    languageControl = recognition?.control, recognitionLanguage = recognition?.language)
+                    languageControl = recognition?.control, recognitionLanguage = recognition?.language,
+                    terminationReason = terminationReason)
                 if(persistResults)withContext(Dispatchers.IO) { BenchmarkResults(context).append(result) }
                 withContext(Dispatchers.Main.immediate) { onResult(result) }
                 completed++
             }
             reportProgress(if(persistResults)"$completed/${planned.size} completed · results saved"
-                else "$completed/${planned.size} attempt complete · releasing isolated process")
+                else "$completed/${planned.size} attempt complete · releasing model worker")
         } finally { cancelNative = null; lease.close() }
     }
 }

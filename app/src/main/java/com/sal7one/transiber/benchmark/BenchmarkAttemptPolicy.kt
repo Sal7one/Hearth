@@ -2,12 +2,12 @@ package com.sal7one.transiber.benchmark
 
 import java.util.Locale
 
-/** A bounded experiment includes verification, model load, every pass and native cleanup. */
+/** The live inference ceiling applies to one complete input, independently of corpus size. */
 internal object BenchmarkAttemptPolicy {
     const val MIN_SECONDS = 5
     const val MAX_SECONDS = 20
     const val DEFAULT_SECONDS = 20
-    const val PROTOCOL_VERSION = 3
+    const val PROTOCOL_VERSION = 4
 
     /** Older, imported or edited preferences may never disable the safety ceiling. */
     fun seconds(value: Int): Int = value.coerceIn(MIN_SECONDS, MAX_SECONDS)
@@ -29,7 +29,7 @@ internal object BenchmarkAttemptPolicy {
     }
 
     fun timeoutMessage(value: Int): String =
-        "Disqualified: exceeded ${seconds(value)} seconds for this model attempt (verification, loading, all passes and cleanup)."
+        "Disqualified: one input exceeded ${seconds(value)} seconds of inference. Model preparation and other samples have separate limits."
 
     /** Interrupted work may remain diagnostic metadata, but it cannot earn a speed or quality score. */
     fun failureResult(result: BenchmarkResult, message: String): BenchmarkResult {

@@ -23,6 +23,9 @@ internal object BenchmarkWorkerProtocol {
     const val FAILED = 6
     const val EXIT = 7
     const val TIMED_OUT = 8
+    const val PHASE = 9
+    const val RELEASE = 10
+    const val RELEASED = 11
     const val PROCESS_SUFFIX = ":benchmark_worker"
     const val MAX_JSON_BYTES = 1024 * 1024
     const val MAX_SAMPLES = 32

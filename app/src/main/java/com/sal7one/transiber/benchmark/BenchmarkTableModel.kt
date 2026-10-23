@@ -41,7 +41,7 @@ internal object BenchmarkTableModel {
     }
 
     fun disqualified(result: BenchmarkResult): Boolean = when (result.terminationReason) {
-        "deadline", "worker_crash", "disqualified" -> true
+        "deadline", "worker_crash", "cleanup_error", "worker_cleanup", "disqualified" -> true
         else -> false
     }
 

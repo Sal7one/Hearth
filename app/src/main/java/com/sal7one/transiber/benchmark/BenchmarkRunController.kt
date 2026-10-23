@@ -24,6 +24,7 @@ internal data class BenchmarkRunState(
     val runId: String? = null, val title: String = "Model comparison", val running: Boolean = false,
     val stopping: Boolean = false, val status: String = "", val error: String? = null,
     val completedRows: Int = 0, val failedRows: Int = 0, val revision: Long = 0,
+    val recovering: Boolean = false,
 )
 
 /** Application-owned work; navigating away never cancels a user-started comparison. */
@@ -35,7 +36,11 @@ internal object BenchmarkRunController {
     val state = mutableState.asStateFlow()
     private var pending: Plan? = null
     private var work: Job? = null
-    private var runner: BenchmarkIsolatedRunner? = null
+    internal var workerFactory: (Context) -> BenchmarkWorkerSession = BenchmarkWorkerSession::isolated
+    private var runner: BenchmarkWorkerSession? = null
+    private data class Recovery(val id: String, val engine: BenchmarkWorkerSession, val lease: LocalWorkGate.Lease)
+    private var quarantine: Recovery? = null
+    private var recoveryJob: Job? = null
 
     fun start(context: Context, batches: List<BenchmarkBatch>, title: String = "Model comparison") {
         val app = context.applicationContext
@@ -45,6 +50,7 @@ internal object BenchmarkRunController {
         val id = UUID.randomUUID().toString()
         synchronized(lock) {
             check(!state.value.running) { "A benchmark is already running. Stop it before starting another." }
+            check(!state.value.recovering) { "The previous benchmark worker is still releasing its model. Retry cleanup first." }
             check(LocalWorkGate.owner.value == null) { "${LocalWorkGate.owner.value} is still using the local engines" }
             pending = Plan(id, app, batches.map { it.copy(models = it.models.toList(), cases = it.cases.toList()) })
             mutableState.value = BenchmarkRunState(id, title, running = true, status = "Starting comparison…",
@@ -64,7 +70,7 @@ internal object BenchmarkRunController {
         synchronized(lock) {
             val plan = pending?.takeIf { it.id == id && state.value.running } ?: return false
             if (work != null) return false
-            val engine = BenchmarkIsolatedRunner(plan.app)
+            val engine = workerFactory(plan.app)
             runner = engine
             pending = null
             // Enter finally even if Stop arrives before the first dispatch.
@@ -105,17 +111,22 @@ internal object BenchmarkRunController {
                             }
                             val begun=android.os.SystemClock.elapsedRealtime()
                             val result=try {
-                                engine.run(candidate,batch.clip,batch.text,batch.referenceText,batch.source,batch.target,
-                                    benchmarkInputs=inputs,measuredPasses=batch.measuredPasses,
-                                    attemptTimeoutSeconds=BenchmarkAttemptPolicy.seconds(batch.attemptTimeoutSeconds),jisrDialect=dialect,
-                                    progress={message -> update(id) {it.copy(status="$prefix: $message")}}).copy(runId=id)
+                                val request=BenchmarkWorkerProtocol.Request(candidate,batch.clip,batch.text,batch.referenceText,
+                                    batch.source,batch.target,inputs,batch.measuredPasses,dialect,
+                                    attemptTimeoutSeconds=BenchmarkAttemptPolicy.seconds(batch.attemptTimeoutSeconds))
+                                engine.run(request,progress={message -> update(id) {it.copy(status="$prefix: $message")}}).copy(runId=id)
                             } catch(error: BenchmarkWorkerReapException) {
                                 // Do not permit another local workload when worker ownership is lost.
                                 releaseLease=false
+                                val failed=BenchmarkAttemptRecord.failed(plan.app,id,candidate,batch,inputs,dialect,
+                                    error.message ?: "Model worker cleanup could not be confirmed","worker_cleanup")
+                                    .copy(attemptElapsedMs=android.os.SystemClock.elapsedRealtime()-begun)
+                                withContext(NonCancellable+Dispatchers.IO) {results.append(failed)}
+                                update(id) {it.copy(completedRows=it.completedRows+1,failedRows=it.failedRows+1,revision=it.revision+1)}
                                 throw error
                             } catch(cancelled: CancellationException) {throw cancelled}
                             catch(error: BenchmarkWorkerTimeoutException) {
-                                val message=BenchmarkAttemptPolicy.timeoutMessage(batch.attemptTimeoutSeconds)
+                                val message=error.message ?: BenchmarkAttemptPolicy.timeoutMessage(batch.attemptTimeoutSeconds)
                                 disqualified[key]=message
                                 BenchmarkAttemptRecord.failed(plan.app,id,candidate,batch,inputs,dialect,message,"deadline")
                             } catch(error: BenchmarkWorkerException) {
@@ -127,15 +138,16 @@ internal object BenchmarkRunController {
                             } catch(error: LinkageError) {
                                 BenchmarkAttemptRecord.failed(plan.app,id,candidate,batch,inputs,dialect,error.message ?: error.toString(),"error")
                             }
-                            val measured=result.copy(runtime=result.runtime+"; disposable benchmark process; background worker priority; attempt cap ${BenchmarkAttemptPolicy.seconds(batch.attemptTimeoutSeconds)}s",
+                            if(result.terminationReason in setOf("deadline","cleanup_error"))disqualified[key]=result.error ?: "Model did not complete safely"
+                            val measured=result.copy(runtime=result.runtime+"; isolated benchmark service; normal worker priority; per-sample inference cap ${BenchmarkAttemptPolicy.seconds(batch.attemptTimeoutSeconds)}s",
                                 attemptTimeoutSeconds=BenchmarkAttemptPolicy.seconds(batch.attemptTimeoutSeconds),
                                 attemptElapsedMs=android.os.SystemClock.elapsedRealtime()-begun)
                             val accepted=if(measured.error!=null || measured.terminationReason!=null)
                                 BenchmarkAttemptPolicy.failureResult(measured,measured.error ?: "Disqualified: ${measured.terminationReason}") else measured
-                            // The worker has exited before any row is accepted or another model opens.
+                            // Native cleanup or worker death is confirmed before a row is accepted or another model opens.
                             withContext(Dispatchers.IO) {results.append(accepted)}
                             update(id) {it.copy(completedRows=it.completedRows+1,
-                                failedRows=it.failedRows+if(result.error!=null)1 else 0,revision=it.revision+1)}
+                                failedRows=it.failedRows+if(accepted.error!=null)1 else 0,revision=it.revision+1)}
                         }
                     }
                     update(id) { it.copy(status = if (it.failedRows == 0) "Comparison complete · results saved"
@@ -149,21 +161,49 @@ internal object BenchmarkRunController {
                     update(id) { it.copy(status = "Comparison stopped", error = error.message ?: error.toString()) }
                 } finally {
                     if(releaseLease)lease?.close()
-                    // A worker is reaped before the parent inference lease is released.
+                    // Keep ownership on an unconfirmed shutdown, but retain a path to verify
+                    // cleanup later instead of permanently poisoning the gate until restart.
                     synchronized(lock) {
                         if (state.value.runId == id) {
+                            if(!releaseLease && lease!=null)quarantine=Recovery(id,engine,lease)
                             work = null; runner = null
-                            mutableState.update { it.copy(running = false, stopping = false, revision = it.revision + 1) }
+                            mutableState.update { it.copy(running = false, stopping = false,
+                                recovering=quarantine?.id==id, revision = it.revision + 1) }
                         }
                     }
+                    if(!releaseLease)recover()
                 }
             }
             return true
         }
     }
 
+    /** Retry only ownership confirmation. Never force-unlock local inference after an arbitrary delay. */
+    fun recover() {
+        synchronized(lock) {
+            val recovery=quarantine ?: return
+            if(recoveryJob?.isActive==true)return
+            update(recovery.id) {it.copy(stopping=true,status="Confirming model worker cleanup…")}
+            recoveryJob=scope.launch(Dispatchers.IO,start=CoroutineStart.LAZY) {
+                val confirmed=runCatching {recovery.engine.recover()}.getOrDefault(false)
+                synchronized(lock) {
+                    if(quarantine===recovery) {
+                        if(confirmed) {
+                            recovery.lease.close()
+                            quarantine=null
+                            update(recovery.id) {it.copy(recovering=false,stopping=false,error=null,
+                                status="Worker cleanup confirmed · completed results saved; comparison can resume",revision=it.revision+1)}
+                        } else update(recovery.id) {it.copy(recovering=true,stopping=false,
+                            status="Worker cleanup is not confirmed · retry cleanup before another local model",revision=it.revision+1)}
+                    }
+                    recoveryJob=null
+                }
+            }.also {it.start()}
+        }
+    }
+
     fun stop(id: String? = state.value.runId) {
-        val engine: BenchmarkIsolatedRunner?
+        val engine: BenchmarkWorkerSession?
         synchronized(lock) {
             if (id == null || state.value.runId != id || !state.value.running) return
             mutableState.update { it.copy(stopping = true, status = "Stopping after native cleanup…") }

@@ -40,7 +40,7 @@ class BenchmarkExecutionMetadataTest {
         assertTrue(resume())
         assertFalse(resume(result.copy(protocolVersion=2)))
         assertFalse(resume(result.copy(error = "failed")))
-        listOf("deadline", "worker_crash", "disqualified").forEach { reason ->
+        listOf("deadline", "worker_crash", "cleanup_error", "worker_cleanup", "disqualified").forEach { reason ->
             assertFalse(resume(result.copy(terminationReason = reason)))
         }
         assertFalse(resume(result.copy(texts = emptyList())))

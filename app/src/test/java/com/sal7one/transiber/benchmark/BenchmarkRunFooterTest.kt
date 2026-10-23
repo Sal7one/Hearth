@@ -111,6 +111,42 @@ class BenchmarkRunFooterTest {
         compose.onNodeWithTag("benchmark-stop").assertIsNotEnabled()
     }
 
+    @Test fun unconfirmedWorkerCleanupStaysVisibleAndOffersRecoveryWithoutUnlockingRun() {
+        var retries = 0
+        var fixes = 0
+        val confirming = mutableStateOf(false)
+        compose.setContent {
+            MaterialTheme {
+                BenchmarkRunFooter(BenchmarkReadinessIssue.ENGINE_IN_USE, 20, 3, "Bundled samples · 20s/sample limit",
+                    false, false, confirming.value, "Worker still releasing…", "Benchmark",
+                    onRun = {}, onStop = {}, onFix = { fixes++ }, onEditInput = {},
+                    runError = "Benchmark worker termination could not be confirmed", recovering = true,
+                    onRecover = { retries++ })
+            }
+        }
+        compose.onNodeWithTag("benchmark-run-error").assertIsDisplayed()
+            .assertTextContains("termination could not be confirmed", substring = true)
+        compose.onNodeWithTag("benchmark-recovery-hint").assertIsDisplayed()
+            .assertTextContains("Saved results and recordings are kept", substring = true)
+        compose.onNodeWithTag("benchmark-retry-cleanup").assertIsDisplayed().assertIsEnabled().performClick()
+        compose.onNodeWithTag("benchmark-compare").assertIsNotEnabled()
+        compose.onNodeWithTag("benchmark-fix").assertDoesNotExist()
+        compose.runOnIdle { assertEquals(1, retries); assertEquals(0, fixes); confirming.value = true }
+        compose.onNodeWithTag("benchmark-retry-cleanup").assertIsNotEnabled().assertTextContains("Confirming cleanup", substring = true)
+    }
+
+    @Test fun startupFailureRemainsVisibleAtTheRunButton() {
+        compose.setContent {
+            MaterialTheme {
+                BenchmarkRunFooter(null, 20, 3, "Bundled samples", false, false, false, "", null,
+                    onRun = {}, onStop = {}, onFix = {}, onEditInput = {}, runError = "Foreground start rejected")
+            }
+        }
+        compose.onNodeWithTag("benchmark-run-error").assertIsDisplayed().assertTextContains("Foreground start rejected")
+        compose.onNodeWithTag("benchmark-retry-cleanup").assertDoesNotExist()
+        compose.onNodeWithTag("benchmark-compare").assertIsEnabled()
+    }
+
     class ActivityRule : TestRule {
         private lateinit var controller: ActivityController<ComponentActivity>
         val activity: ComponentActivity get() = controller.get()

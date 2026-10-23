@@ -18,6 +18,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.sal7one.transiber.R
 import com.sal7one.transiber.i18n.rememberUiText
@@ -39,6 +40,9 @@ internal fun BenchmarkRunFooter(
     onFix: (BenchmarkReadinessFix) -> Unit,
     onEditInput: () -> Unit,
     onUseBundledSpeech: (() -> Unit)? = null,
+    runError: String? = null,
+    recovering: Boolean = false,
+    onRecover: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val uiText = rememberUiText()
@@ -59,7 +63,18 @@ internal fun BenchmarkRunFooter(
                     contentPadding = PaddingValues(vertical = 0.dp, horizontal = 0.dp)) {
                     Text(uiText(R.string.benchmark_ready_input_summary, inputSummary), style = MaterialTheme.typography.bodySmall)
                 }
-                if (issue != null) {
+                if (runError != null) Text(runError, color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall, maxLines = 4, overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.testTag("benchmark-run-error").semantics { liveRegion = LiveRegionMode.Polite })
+                if (recovering) {
+                    Text(uiText(R.string.benchmark_lab_recovery_hint), style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.testTag("benchmark-recovery-hint"))
+                    TextButton(onRecover, enabled = !stopping, modifier = Modifier.testTag("benchmark-retry-cleanup"),
+                        contentPadding = PaddingValues(vertical = 0.dp, horizontal = 0.dp)) {
+                        Text(uiText(if (stopping) R.string.benchmark_lab_confirming_cleanup else R.string.benchmark_lab_retry_cleanup))
+                    }
+                }
+                if (issue != null && !(recovering && issue == BenchmarkReadinessIssue.ENGINE_IN_USE)) {
                     val reason = when (issue) {
                         BenchmarkReadinessIssue.INITIALIZING -> uiText(R.string.benchmark_ready_initializing)
                         BenchmarkReadinessIssue.PREPARING_INPUT -> uiText(R.string.benchmark_ready_preparing)
@@ -93,7 +108,7 @@ internal fun BenchmarkRunFooter(
                         }
                     }
                 }
-                Button(onRun, enabled = issue == null && !stopping,
+                Button(onRun, enabled = issue == null && !stopping && !recovering,
                     modifier = Modifier.fillMaxWidth().testTag("benchmark-compare")) {
                     Text(uiText(R.string.ui_compare_1_s_models_1916c, selectedCount))
                 }

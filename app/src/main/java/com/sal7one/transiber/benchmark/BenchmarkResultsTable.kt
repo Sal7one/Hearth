@@ -268,6 +268,15 @@ private fun BenchmarkResultDetails(result: BenchmarkResult, onDismiss: () -> Uni
                     color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
                 Text("${result.task} · ${result.source}${if (result.target.isBlank()) "" else " → ${result.target}"}\n${result.device}")
                 Text("${uiText.bench("Recognition language", "لغة التعرف", "识别语言")}: ${recognitionLabel(result)}")
+                result.attemptTimeoutSeconds?.let { seconds ->
+                    val cap = if (result.protocolVersion >= 4) uiText.bench("Per-sample inference limit", "مهلة الاستدلال لكل عينة", "每个样本的推理时限")
+                        else uiText.bench("Historical whole-attempt limit", "المهلة السابقة للمحاولة كاملة", "历史整次测试时限")
+                    Text("$cap: ${seconds}s", style = MaterialTheme.typography.bodySmall)
+                }
+                result.attemptElapsedMs?.let { duration ->
+                    Text("${uiText.bench("Total attempt including preparation and cleanup", "إجمالي المحاولة مع التحضير والتنظيف", "含准备和清理的测试总耗时")}: ${elapsed(duration.toDouble())}",
+                        style = MaterialTheme.typography.bodySmall)
+                }
                 Text("${uiText.bench("Runtime evidence", "معلومات التنفيذ", "运行时证据")}:\n${result.runtime}")
                 Text("${uiText.bench("Requested backend", "مسار التنفيذ المطلوب", "请求后端")}: ${BenchmarkTableModel.requestedBackend(result) ?: "—"}\n" +
                     "${uiText.bench("Actual backend", "مسار التنفيذ الفعلي", "实际后端")}: ${result.actualAcceleration ?: uiText.bench("Not confirmed", "غير مؤكد", "未确认")}")

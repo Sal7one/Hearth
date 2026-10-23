@@ -1,5 +1,13 @@
 # Hard limits for Android model benchmarks
 
+> Historical RC3 record. The phone reported that every model failed and worker
+> termination could not be confirmed. RC3's single 20-second budget included model
+> loading and all repeated corpus passes; this was not a valid per-sample live
+> latency test. The [RC4 recovery handover](benchmark-worker-recovery-2026-10-23.md)
+> and [Model Lab](../local-benchmark.md) describe the current implementation.
+> Timing protocol 4 uses a separate deadline
+> for each sample and bounded preparation/cleanup; it does not reuse RC3 results.
+
 Included with the combined **0.30.0 / code 100**, **v0.30.0-rc.3** candidate and
 the [Koharu processing improvements](manga-performance-2026-10-23.md). The owner
 changed the requested limit from 45 to **20 seconds maximum**. Setup offers

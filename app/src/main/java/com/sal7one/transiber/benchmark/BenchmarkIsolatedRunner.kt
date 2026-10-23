@@ -17,16 +17,27 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import java.security.SecureRandom
 
-/** Each candidate owns a separate process. Native hangs cannot hold the app or the next model. */
+/** Native work stays outside the UI process; cleanup or process death is confirmed per job. */
 internal class BenchmarkIsolatedRunner(context: Context) {
     private val app = context.applicationContext
     @Volatile private var active: Connection? = null
 
     fun cancel() { active?.requestTermination() }
+
+    /** A failed shutdown remains owned; retry never permits overlapping native model work. */
+    suspend fun recover(): Boolean {
+        val connection = active ?: return true
+        return try {
+            withContext(NonCancellable) { connection.terminateAndAwaitDeath() }
+            releaseConnection(connection)
+            true
+        } catch (_: BenchmarkWorkerReapException) { false }
+    }
 
     suspend fun run(
         candidate: BenchmarkCandidate, clip: BenchmarkAudio.Clip?, text: String, referenceText: String?,
@@ -35,79 +46,111 @@ internal class BenchmarkIsolatedRunner(context: Context) {
         progress: (String) -> Unit,
     ): BenchmarkResult {
         require(attemptTimeoutSeconds in 5..20)
-        check(active == null) { "A benchmark worker is already running" }
-        val started = SystemClock.elapsedRealtime()
+        check(active == null) { "The previous benchmark worker still needs recovery" }
         candidate.voiceFamily?.let { com.sal7one.transiber.voice.LocalVoiceFamilies.requireAllowed(app, it, "model benchmarking") }
         val request = BenchmarkWorkerProtocol.Request(candidate, clip, text, referenceText, source, target,
             benchmarkInputs, measuredPasses, jisrDialect, voiceApproved = candidate.voiceFamily != null,
             attemptTimeoutSeconds = attemptTimeoutSeconds)
-        val (id, directory) = withContext(Dispatchers.IO) { BenchmarkWorkerProtocol.create(app, request) }
+        val (id, _) = withContext(Dispatchers.IO) { BenchmarkWorkerProtocol.create(app, request) }
         val token = ByteArray(32).also(SecureRandom()::nextBytes).joinToString("") { "%02x".format(it.toInt() and 255) }
-        val connection = Connection(id, token, attemptTimeoutSeconds, started, progress)
+        val deadline = BenchmarkWorkerDeadline(attemptTimeoutSeconds, SystemClock::elapsedRealtime,
+            BenchmarkWorkerDeadline.maximumBoundaries(benchmarkInputs.size.coerceAtLeast(1), measuredPasses))
+        val connection = Connection(id, token, attemptTimeoutSeconds, deadline, progress)
         active = connection
         try {
             return BenchmarkWorkerWatchdog.run(attemptTimeoutSeconds, connection,
-                remainingMs = attemptTimeoutSeconds * 1000L - (SystemClock.elapsedRealtime() - started),
-                elapsedMs = { SystemClock.elapsedRealtime() - started }) {
+                elapsedMs = deadline::operationElapsedMillis, deadline = deadline) {
                 connection.bind()
                 connection.ready.await()
                 connection.start()
                 connection.finished.await()
-                withContext(Dispatchers.IO) { BenchmarkWorkerProtocol.readResult(directory) }
+                withContext(Dispatchers.IO) {
+                    BenchmarkWorkerProtocol.readResult(BenchmarkWorkerProtocol.directory(app, id)).also {
+                        // Native close failure cannot be released as an idle cached process.
+                        connection.requireProcessExit = it.terminationReason == "cleanup_error"
+                    }
+                }
             }
         } finally {
-            active = null
-            withContext(NonCancellable + Dispatchers.IO) { directory.deleteRecursively() }
+            if (connection.safeToRelease) releaseConnection(connection)
         }
     }
 
+    private suspend fun releaseConnection(connection: Connection) {
+        if (active === connection) active = null
+        withContext(NonCancellable + Dispatchers.IO) { BenchmarkWorkerProtocol.directory(app, connection.id).deleteRecursively() }
+    }
+
     private inner class Connection(
-        val id: String, val token: String, val timeoutSeconds: Int, val startedAt: Long, val progress: (String) -> Unit,
+        val id: String, val token: String, val timeoutSeconds: Int,
+        val deadline: BenchmarkWorkerDeadline, val progress: (String) -> Unit,
     ) : ServiceConnection, BenchmarkWorkerLifetime {
         val ready = CompletableDeferred<Unit>()
         val finished = CompletableDeferred<Unit>()
+        private val released = CompletableDeferred<Unit>()
         private val death = CompletableDeferred<Unit>()
+        private val startedAtEpoch = System.currentTimeMillis()
         @Volatile private var worker: Messenger? = null
         @Volatile private var binder: IBinder? = null
         @Volatile private var workerPid: Int? = null
         @Volatile private var bound = false
         @Volatile private var stopping = false
         @Volatile private var began = false
+        @Volatile private var completedNative = false
+        @Volatile var requireProcessExit = false
+        @Volatile var safeToRelease = false
         private val intent = Intent(app, BenchmarkWorkerService::class.java)
         private val deathRecipient = IBinder.DeathRecipient {
             death.complete(Unit)
-            fail(if (SystemClock.elapsedRealtime() - startedAt >= timeoutSeconds * 1000L)
-                BenchmarkWorkerTimeoutException(timeoutSeconds, SystemClock.elapsedRealtime() - startedAt)
-            else BenchmarkWorkerException("Isolated model process exited before returning a result (native crash or Android memory pressure)"))
+            val expired = deadline.expired()
+            if (!stopping && !completedNative) fail(if (expired != null)
+                BenchmarkWorkerTimeoutException(timeoutSeconds, expired.elapsedMillis, expired.phase)
+            else {
+                val detail = workerPid?.let { BenchmarkWorkerExitDiagnostics.describe(app, it, startedAtEpoch) }
+                BenchmarkWorkerException("Model worker exited before returning a result" +
+                    (detail?.let { ": $it" } ?: "; Android did not provide an exit reason"))
+            })
         }
         private val reply = Messenger(Handler(Looper.getMainLooper()) { message ->
             if (message.sendingUid != Process.myUid() || message.data.getString("job") != id || message.data.getString("token") != token) {
                 fail(BenchmarkWorkerException("Rejected unauthenticated benchmark worker response"))
                 return@Handler true
             }
-            when (message.what) {
-                BenchmarkWorkerProtocol.READY -> {
-                    val pid = message.data.getInt("pid", -1)
-                    if (!ownsWorker(pid)) {
-                        fail(BenchmarkWorkerException("Benchmark worker did not identify a separate app-owned process"))
-                    } else {
-                        workerPid = pid
-                        if (stopping) requestTermination() else ready.complete(Unit)
+            try {
+                when (message.what) {
+                    BenchmarkWorkerProtocol.READY -> {
+                        val pid = message.data.getInt("pid", -1)
+                        // Android process inventory is not complete on every vendor build.
+                        // The explicit non-exported service, same UID, and random job secret
+                        // authenticate this endpoint even when inventory has no matching row.
+                        if (!validHandshakePid(pid)) fail(BenchmarkWorkerException("Benchmark worker did not identify a separate app-owned process"))
+                        else { workerPid = pid; if (stopping) requestTermination() else ready.complete(Unit) }
                     }
+                    BenchmarkWorkerProtocol.PHASE -> if (!stopping) {
+                        val phase = BenchmarkWorkerPhase.valueOf(message.data.getString("phase").orEmpty())
+                        deadline.advance(phase, message.data.getLong("startedElapsedRealtime"))
+                    }
+                    BenchmarkWorkerProtocol.PROGRESS -> if (!stopping) progress(message.data.getString("message").orEmpty().take(1024))
+                    BenchmarkWorkerProtocol.FINISHED -> {
+                        requireProcessExit = message.data.getBoolean("requiresProcessExit")
+                        completedNative = true
+                        deadline.finish()
+                        finished.complete(Unit)
+                    }
+                    BenchmarkWorkerProtocol.RELEASED -> released.complete(Unit)
+                    BenchmarkWorkerProtocol.TIMED_OUT -> fail(BenchmarkWorkerTimeoutException(timeoutSeconds, deadline.operationElapsedMillis(), deadline.phase))
+                    BenchmarkWorkerProtocol.FAILED -> fail(BenchmarkWorkerException(message.data.getString("message").orEmpty().take(2048).ifBlank { "Model worker failed" }))
                 }
-                BenchmarkWorkerProtocol.PROGRESS -> if (!stopping) progress(message.data.getString("message").orEmpty().take(1024))
-                BenchmarkWorkerProtocol.FINISHED -> finished.complete(Unit)
-                BenchmarkWorkerProtocol.TIMED_OUT -> fail(BenchmarkWorkerTimeoutException(timeoutSeconds, SystemClock.elapsedRealtime() - startedAt))
-                BenchmarkWorkerProtocol.FAILED -> fail(BenchmarkWorkerException(message.data.getString("message").orEmpty().take(2048).ifBlank { "Isolated model process failed" }))
-            }
+            } catch (error: Exception) { fail(error) }
             true
         })
 
         suspend fun bind() = withContext(Dispatchers.Main.immediate) {
             if (stopping) throw CancellationException("Benchmark stopped")
-            // Do not let a large worker inherit the UI/foreground service's OOM priority.
-            // Android may discard this disposable process before sacrificing the app itself.
-            bound = app.bindService(intent, this@Connection, Context.BIND_AUTO_CREATE or Context.BIND_NOT_FOREGROUND or Context.BIND_WAIVE_PRIORITY)
+            // This is an explicit user benchmark. Use ordinary bound-service scheduling;
+            // WAIVE_PRIORITY would handicap live performance as background work. Do not
+            // promote the worker above its client with IMPORTANT or ABOVE_CLIENT flags.
+            bound = app.bindService(intent, this@Connection, Context.BIND_AUTO_CREATE)
             check(bound) { "Android could not bind the isolated benchmark service" }
         }
 
@@ -116,12 +159,17 @@ internal class BenchmarkIsolatedRunner(context: Context) {
             try {
                 service.linkToDeath(deathRecipient, 0)
                 worker = Messenger(service)
+                // Even cancellation must register this job/token before EXIT is accepted.
                 send(BenchmarkWorkerProtocol.HELLO)
             } catch (error: Exception) { fail(BenchmarkWorkerException("Benchmark worker connection failed", error)) }
         }
-        override fun onServiceDisconnected(name: ComponentName) { deathRecipient.binderDied() }
-        override fun onBindingDied(name: ComponentName) { deathRecipient.binderDied() }
+        override fun onServiceDisconnected(name: ComponentName) { disconnected() }
+        override fun onBindingDied(name: ComponentName) { disconnected() }
         override fun onNullBinding(name: ComponentName) { fail(BenchmarkWorkerException("Benchmark worker rejected its private binding")) }
+        private fun disconnected() {
+            if (binder?.isBinderAlive == false) deathRecipient.binderDied()
+            else if (!stopping) fail(BenchmarkWorkerException("Android disconnected the benchmark worker"))
+        }
 
         fun start() {
             check(!stopping) { "Benchmark stopped" }
@@ -132,10 +180,7 @@ internal class BenchmarkIsolatedRunner(context: Context) {
 
         private fun send(what: Int) {
             checkNotNull(worker).send(Message.obtain(null, what).apply {
-                data = Bundle().apply {
-                    putString("job", id); putString("token", token)
-                    putInt("timeoutSeconds", timeoutSeconds); putLong("deadlineElapsedRealtime", startedAt + timeoutSeconds * 1000L)
-                }
+                data = Bundle().apply { putString("job", id); putString("token", token); putInt("timeoutSeconds", timeoutSeconds) }
                 replyTo = reply
             })
         }
@@ -143,34 +188,82 @@ internal class BenchmarkIsolatedRunner(context: Context) {
 
         fun requestTermination() {
             stopping = true
-            // PID came from the explicit, non-exported service handshake. Recheck UID to
-            // reject a recycled/non-app PID, and never target the UI/foreground-service PID.
-            workerPid?.let { pid ->
-                if (binder?.isBinderAlive == true && ownsWorker(pid)) Process.killProcess(pid)
-            }
+            // Always ask the authenticated endpoint to exit, regardless of the optional
+            // ActivityManager inventory. Previously a missing PID row skipped both paths.
+            try { if (binder?.isBinderAlive == true) send(if (began) BenchmarkWorkerProtocol.EXIT else BenchmarkWorkerProtocol.RELEASE) } catch (_: Exception) { }
         }
 
         override suspend fun terminateAndAwaitDeath() {
-            requestTermination()
-            withContext(Dispatchers.Main.immediate) {
-                if (workerPid == null && binder?.isBinderAlive == true) {
-                    try { send(BenchmarkWorkerProtocol.EXIT) } catch (_: Exception) { /* death is checked below */ }
-                }
-                if (bound) {
-                    app.unbindService(this@Connection)
-                    bound = false
-                }
-                // onUnbind also self-terminates an idle worker whose handshake timed out.
-                app.stopService(intent)
+            try { releaseOwnedWorker() }
+            catch (error: Throwable) {
+                // Even vendor/Binder/ActivityManager failures must retain the ownership
+                // quarantine unless cleanup/death was already proved. Generic errors
+                // must never let the controller start an overlapping model.
+                if (safeToRelease) return
+                if (error is BenchmarkWorkerReapException) throw error
+                throw BenchmarkWorkerReapException("Android could not confirm model worker shutdown. Comparison is paused; use Retry cleanup before running another local model.", error)
             }
-            val endpoint = binder
-            if (endpoint != null && endpoint.isBinderAlive && withTimeoutOrNull(5_000) { death.await(); true } != true) {
-                throw BenchmarkWorkerReapException("Benchmark worker termination could not be confirmed; comparison stopped to avoid overlapping native work. Restart Hearth before running more local models.")
-            }
-            if (began && endpoint == null) throw BenchmarkWorkerReapException("Lost benchmark worker ownership before termination could be verified. Restart Hearth before running more local models.")
-            endpoint?.let { try { it.unlinkToDeath(deathRecipient, 0) } catch (_: Exception) { } }
         }
 
+        private suspend fun releaseOwnedWorker() {
+            if (safeToRelease) return
+            val endpoint = binder
+            if (!began) {
+                // No RUN was ever sent, so even a late/idle Binder cannot own native work.
+                stopping = true
+                safeToRelease = true
+                detach()
+                return
+            }
+            if (!stopping && !requireProcessExit && (completedNative || !began)) {
+                try { send(BenchmarkWorkerProtocol.RELEASE) } catch (_: Exception) { }
+                if (awaitProof(1_500, allowIdle = true)) { finishRelease(); return }
+            }
+            requestTermination()
+            if (!awaitProof(3_500, allowIdle = false)) {
+                // Fallback only targets a PID independently verified in public process
+                // inventory and still tied to this same live Binder, never a guessed PID.
+                workerPid?.let { pid -> if (endpoint?.isBinderAlive == true && ownsWorker(pid)) Process.killProcess(pid) }
+                if (!awaitProof(2_000, allowIdle = false)) {
+                    throw BenchmarkWorkerReapException("Android has not confirmed model worker shutdown. Comparison is paused; use Retry cleanup before running another local model.")
+                }
+            }
+            finishRelease()
+        }
+
+        private suspend fun awaitProof(milliseconds: Long, allowIdle: Boolean): Boolean =
+            withTimeoutOrNull(milliseconds) {
+                while (true) {
+                    if ((allowIdle && released.isCompleted) || death.isCompleted) return@withTimeoutOrNull true
+                    val endpoint = binder
+                    // pingBinder() is a synchronous remote transaction; a hung worker can
+                    // block it beyond this coroutine timeout. Query local liveness only.
+                    if (endpoint != null && !endpoint.isBinderAlive) {
+                        death.complete(Unit)
+                        return@withTimeoutOrNull true
+                    }
+                    delay(50)
+                }
+                @Suppress("UNREACHABLE_CODE") false
+            } == true
+
+        private suspend fun finishRelease() {
+            safeToRelease = true
+            stopping = true
+            detach()
+            binder?.let { try { it.unlinkToDeath(deathRecipient, 0) } catch (_: Exception) { } }
+        }
+
+        private suspend fun detach() = withContext(Dispatchers.Main.immediate) {
+            if (bound) { app.unbindService(this@Connection); bound = false }
+        }
+
+        private fun validHandshakePid(pid: Int): Boolean {
+            if (pid <= 0 || pid == Process.myPid()) return false
+            val manager = app.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+            val recorded = manager.runningAppProcesses.orEmpty().singleOrNull { it.pid == pid } ?: return true
+            return BenchmarkWorkerIdentity.matches(recorded.pid, recorded.uid, recorded.processName, app.packageName, pid, Process.myUid(), Process.myPid())
+        }
         private fun ownsWorker(pid: Int): Boolean {
             if (pid <= 0 || pid == Process.myPid()) return false
             val manager = app.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
@@ -181,7 +274,7 @@ internal class BenchmarkIsolatedRunner(context: Context) {
     }
 }
 
-/** Public Android process inventory plus the authenticated Binder handshake; never a guessed PID. */
+/** Process inventory is used for a forced PID kill, never required for normal Binder release. */
 internal object BenchmarkWorkerIdentity {
     fun matches(pid: Int, uid: Int, processName: String, packageName: String,
         expectedPid: Int, expectedUid: Int, parentPid: Int): Boolean =

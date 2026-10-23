@@ -525,7 +525,7 @@ fun LocalBenchmarkScreen(onModels: (String) -> Unit = {}, onDownloads: () -> Uni
             }
         }
         if (section == "Setup") item {
-            Text(uiText.bench("Time limit per model", "المهلة لكل نموذج", "每个模型的时间限制"), style = MaterialTheme.typography.titleMedium)
+            Text(uiText.bench("Time limit per sample", "المهلة لكل عينة", "每个样本的时间限制"), style = MaterialTheme.typography.titleMedium)
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 benchmarkAttemptTimeoutPresets.forEach { seconds ->
                     FilterChip(attemptTimeoutSeconds == seconds, { attemptTimeoutSeconds = seconds },
@@ -534,9 +534,9 @@ fun LocalBenchmarkScreen(onModels: (String) -> Unit = {}, onDownloads: () -> Uni
                 }
             }
             Text(uiText.bench(
-                "The limit covers loading, every sample, all $measuredPasses passes and cleanup for one model/backend/language attempt. Slow models are disqualified and skipped for the rest of this queue; no quality score is awarded.",
-                "تشمل المهلة التحميل وجميع العينات والمرورات البالغ عددها $measuredPasses والتنظيف لمحاولة نموذج/مسار/لغة واحدة. تُستبعد النماذج البطيئة من بقية الطابور دون منحها درجة جودة.",
-                "时限包含单个模型/后端/语言的加载、所有样本、全部 $measuredPasses 轮及清理。超时模型将被取消资格并跳过后续队列，不授予质量分数。"),
+                "Each recording, translation or voice sample gets its own limit in every pass. Model verification and loading have a separate 2-minute limit; reset and cleanup each have 10 seconds. The full set can take longer. A timed-out model/backend is skipped for the remaining queue without a speed or quality score.",
+                "لكل تسجيل أو ترجمة أو عينة صوتية مهلة مستقلة في كل مرور. للتحقق من النموذج وتحميله مهلة منفصلة مدتها دقيقتان، ولإعادة الضبط والتنظيف 10 ثوانٍ لكل منهما. قد تستغرق المجموعة كاملة وقتًا أطول. يُتخطى النموذج ومسار تنفيذه بعد انتهاء المهلة دون درجة سرعة أو جودة.",
+                "每轮中的每段录音、翻译或语音样本均有独立时限。模型校验和加载另限 2 分钟，重置和清理各限 10 秒。整组测试可用时更长。超时的模型/后端将跳过队列余下测试，不授予速度或质量分数。"),
                 style = MaterialTheme.typography.bodySmall, modifier = Modifier.testTag("benchmark-time-limit-description"))
             audioDurations?.takeIf { it.recordings.isNotEmpty() }?.let { durations ->
                 val range = if (durations.shortestMs == durations.longestMs) number(durations.shortestMs / 1000.0)
@@ -943,7 +943,7 @@ fun LocalBenchmarkScreen(onModels: (String) -> Unit = {}, onDownloads: () -> Uni
     error?.let { Text(it, Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 6.dp),
         color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall, maxLines = 4) }
     BenchmarkRunFooter(readiness, selectedCount, measuredPasses, inputSummary + " · " +
-        uiText.bench("${attemptTimeoutSeconds}s/model limit", "مهلة ${attemptTimeoutSeconds}ث/نموذج", "每个模型最多 ${attemptTimeoutSeconds} 秒"),
+        uiText.bench("${attemptTimeoutSeconds}s/sample limit", "مهلة ${attemptTimeoutSeconds}ث/عينة", "每个样本最多 ${attemptTimeoutSeconds} 秒"),
         compareAcceleration && task != BenchmarkTask.VOICE, running, runState.stopping, status, gateOwner,
         onRun = ::runComparison, onStop = ::stop,
         onFix = { fix -> when (fix) {
@@ -952,7 +952,8 @@ fun LocalBenchmarkScreen(onModels: (String) -> Unit = {}, onDownloads: () -> Uni
             BenchmarkReadinessFix.STOP_ACTIVITY -> if (gateOwner == "Captions") com.sal7one.transiber.caption.stopHearthSessions(context) else { showSessionHelp = true }
             BenchmarkReadinessFix.NONE -> Unit
         } }, onEditInput = ::editInput,
-        onUseBundledSpeech = { useBuiltInSet = true; useSaudiSet = false; useMatrix = false; source = "ar" })
+        onUseBundledSpeech = { useBuiltInSet = true; useSaudiSet = false; useMatrix = false; source = "ar" },
+        runError = runState.error, recovering = runState.recovering, onRecover = { BenchmarkRunController.recover() })
     }
     if (showSamples && suite != null) BenchmarkSamplePreview(checkNotNull(suite),
         if (mode == "Speech") BenchmarkTask.SPEECH else BenchmarkTask.TRANSLATION, onDismiss = { showSamples = false })

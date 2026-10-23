@@ -30,7 +30,7 @@ internal object BenchmarkAttemptRecord {
     fun configuration(context: Context,candidate: BenchmarkCandidate,passes: Int,dialect: String,seconds: Int): String? {
         val installed=context.packageManager.getPackageInfo(context.packageName,0).lastUpdateTime
         return BenchmarkExecutionMetadata.configurationHash(candidate,passes,
-            "jisr-dialect=$dialect;app-install=$installed;os=${Build.FINGERPRINT};isolated-attempt-v1;timeout-seconds=${BenchmarkAttemptPolicy.seconds(seconds)}")
+            "jisr-dialect=$dialect;app-install=$installed;os=${Build.FINGERPRINT};isolated-phases-v2;sample-timeout-seconds=${BenchmarkAttemptPolicy.seconds(seconds)};startup=30;load=120;cleanup=10")
     }
 
     fun failed(context: Context,runId: String,candidate: BenchmarkCandidate,batch: BenchmarkBatch,

@@ -37,21 +37,37 @@ catalogue labels does not lock already discovered models: installation mapping
 uses receipts and bounded metadata, while actual selected model weights are
 still verified before runtime initialization.
 
-Each model/backend attempt has a **20-second hard maximum**, with **5 / 10 / 20
-seconds** available on Setup and saved in preferences. The budget includes private
-input preparation, model verification/loading, all measured passes and cleanup;
-it is not multiplied by the pass or clip count. The screen shows the actual PCM
-duration range, set total and repeated workload. Normal publisher recordings are
-roughly 4–9 seconds, with optional long recordings up to 17.1 seconds. A larger
-set requires correspondingly faster inference to finish within the chosen cap.
+Each individual recording, translation or voice sample has a **20-second hard
+maximum**, with **5 / 10 / 20 seconds** available on Setup and saved in preferences.
+The limit starts again for each sample in each measured pass. It covers the
+complete sample, including recognition finalization, rather than allowing another
+20 seconds for every chunk or token. Model verification/loading is separately
+bounded at **120 seconds**; worker startup and private-request reading have **30 seconds**,
+and reset, cleanup and result transfer each have **10 seconds**. None of these
+budgets is renewed by progress text. Loading time remains a reported measurement;
+it does not consume a sample's inference allowance.
+
+Some providers defer native initialization until the first actual request. In
+particular, the shared TTS reader and ML Kit translation can include client/model
+initialization in their first sample's inference budget. Their runtime details
+say so; this is not an eager-load measurement. First and warmed passes remain
+separate so that setup costs are visible rather than silently removed.
+
+The screen shows the actual PCM duration range, set total and repeated workload.
+Normal publisher recordings are roughly 4–9 seconds, with optional long
+recordings up to 17.1 seconds. The full corpus and its repeated passes can take
+more than 20 seconds while each sample finishes within the live-inference cap.
+The earlier RC3 budget incorrectly applied one 20-second deadline to loading and
+the entire repeated corpus; those results do not establish a model's live latency.
 
 A timeout disqualifies that artifact/backend for the rest of the comparison,
 including later languages, decoder hints and voice styles. Other backends remain
 eligible. Results offer a Disqualified filter; interrupted rows receive no speed
 or quality score. JSON/CSV record the termination reason, chosen cap and elapsed
-attempt time. Existing history remains readable. Timing protocol **3** separates
-disposable-process measurements from older foreground-process timing, and resume
-also requires the same deadline/configuration.
+attempt time. Existing history remains readable. Timing protocol **4** records
+the per-sample deadline method separately from RC3's whole-attempt protocol **3**
+and older foreground timing. Resume also requires the same deadline/configuration;
+an old whole-attempt timeout is never reused as a completed per-sample result.
 
 The ready-to-run default is the bundled publisher reference set. For a Saudi
 speech comparison, select **Saudi speech**, record up to six private clips (or
@@ -235,15 +251,20 @@ Comparisons belong to an application-owned foreground service, so leaving this
 page or backgrounding the activity does not cancel them. Its visible progress
 notification opens Model Lab and provides Stop. A bounded, renewed partial wake
 lock keeps a user-started long comparison progressing with the screen off.
-Each attempt owns a non-exported disposable Android process. Parent and independent
-worker watchdogs terminate stuck native inference; Stop and parent-process death
-also terminate the worker. Binder death must be confirmed before another model
-opens or a result is accepted. If termination cannot be confirmed, comparison
-stops and local inference stays blocked until Hearth restarts. The parent retains
-the work lease for the full queue, and worker startup avoids competing preference
-migration/audit writers. Worker memory/CPU priority favors keeping the UI usable;
-it is reported as part of the timing protocol. Android process termination can
-still interrupt a run; completed rows are
+Each attempt owns a non-exported Android worker process. Parent and independent
+worker watchdogs bound native inference even if coroutine cancellation cannot
+interrupt a native call. Successful work closes native handles and uses an
+authenticated release acknowledgement; it does not deliberately kill the process
+after every model. An idle worker process may be cached or destroyed normally by
+Android. Timed-out or unconfirmed native work instead requires confirmed process
+death. A previous worker's native ownership must be released before another local
+model starts. If that cannot be confirmed, comparison stops
+and retains the local-work lease. The Run footer shows the actual error and a
+**Retry cleanup** action; it never offers a force-unlock that could overlap native
+work. Recovery only releases the lease after confirming worker cleanup/death.
+Saved results and recordings are retained. The parent keeps the work lease for
+the full queue, and worker startup avoids competing preference migration/audit
+writers. Android process termination can still interrupt a run; completed rows are
 already saved. There is no automatic boot/process-restart inference. Optional
 **Keep completed results** skips only successful, fully measured results matching
 the exact input, pinned artifact, device/app install, options, pass count and

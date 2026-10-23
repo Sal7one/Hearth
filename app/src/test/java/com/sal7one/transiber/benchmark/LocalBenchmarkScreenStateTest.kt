@@ -17,7 +17,7 @@ import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.hasScrollToIndexAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.hasTestTag
-import androidx.compose.ui.test.junit4.AndroidComposeTestRule
+import androidx.compose.ui.test.junit4.v2.AndroidComposeTestRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -179,11 +179,12 @@ class LocalBenchmarkScreenStateTest {
         awaitReason("No Saudi recordings")
         compose.onNode(hasScrollToIndexAction()).performScrollToNode(hasTestTag("benchmark-time-limit-5"))
         compose.onNodeWithTag("benchmark-time-limit-5").assertIsSelected()
-        compose.onNodeWithTag("benchmark-time-limit-description").assertTextContains("all 3 passes", substring = true)
-        compose.onNodeWithTag("benchmark-edit-input").assertTextContains("5s/model limit", substring = true)
+        compose.onNodeWithTag("benchmark-time-limit-description").assertTextContains("its own limit in every pass", substring = true)
+            .assertTextContains("separate 2-minute limit", substring = true)
+        compose.onNodeWithTag("benchmark-edit-input").assertTextContains("5s/sample limit", substring = true)
     }
 
-    @Test fun actualCustomAudioDurationIsVisibleBesideTheWholeAttemptDeadline() {
+    @Test fun actualCustomAudioDurationIsVisibleBesideThePerSampleDeadline() {
         val recording = BenchmarkAudio.fromPcm16(ShortArray(40_000) { (it % 100).toShort() })
         BenchmarkCustomAudioStore(File(context.filesDir, "benchmark-custom")).save(recording, "Two and a half seconds.wav")
         check(preferences.edit().putString("section", "Setup").putBoolean("useBuiltInSet", false)

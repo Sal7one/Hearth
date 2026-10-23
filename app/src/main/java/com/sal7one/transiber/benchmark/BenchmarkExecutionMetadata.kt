@@ -39,7 +39,7 @@ internal object BenchmarkExecutionMetadata {
     }
 
     fun configurationHash(candidate: BenchmarkCandidate, passes: Int, settings: String = ""): String? = candidate.artifactFingerprint?.let { pin ->
-        benchmarkHash(listOf("hearth-benchmark-v3", candidate.task.name, pin, candidate.acceleration.orEmpty(),
+        benchmarkHash(listOf("hearth-benchmark-v4", candidate.task.name, pin, candidate.acceleration.orEmpty(),
             candidate.voiceFamily.orEmpty(), candidate.voiceId.orEmpty(), "passes=$passes", settings, "voice-rate=1;voice-steps=5",
             "speech-threads=4;whisper-threads=8;vosk-threads=2;context=3;utterance-ms=4000",
             BenchmarkAudio.NORMALIZATION).let { fields ->

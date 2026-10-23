@@ -5,8 +5,11 @@
     <string name="benchmark_lab_setup">الإعداد</string>
     <string name="benchmark_lab_models_count">النماذج · %1$d</string>
     <string name="benchmark_lab_results_count">النتائج · %1$d</string>
-    <string name="benchmark_lab_stopping">جارٍ الإيقاف بعد اكتمال العملية الأصلية الحالية…</string>
+    <string name="benchmark_lab_stopping">جارٍ إيقاف الاختبار…</string>
     <string name="benchmark_lab_stop">إيقاف المقارنة</string>
+    <string name="benchmark_lab_retry_cleanup">إعادة محاولة التنظيف</string>
+    <string name="benchmark_lab_confirming_cleanup">جارٍ تأكيد اكتمال التنظيف…</string>
+    <string name="benchmark_lab_recovery_hint">ننتظر تحرير العامل السابق للنماذج. تبقى النتائج والتسجيلات محفوظة. يمكن تشغيل نموذج محلي آخر بعد تأكيد اكتمال التنظيف.</string>
     <string name="benchmark_lab_active_downloads">جارٍ تنزيل %1$d ملفات أو التحقق منها</string>
     <string name="benchmark_lab_download_queue">عرض قائمة التنزيلات</string>
     <string name="benchmark_lab_input_heading">١. المدخلات واللغات</string>

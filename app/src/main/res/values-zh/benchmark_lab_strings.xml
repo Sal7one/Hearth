@@ -5,8 +5,11 @@
     <string name="benchmark_lab_setup">设置</string>
     <string name="benchmark_lab_models_count">模型 · %1$d</string>
     <string name="benchmark_lab_results_count">结果 · %1$d</string>
-    <string name="benchmark_lab_stopping">当前原生调用完成后停止…</string>
+    <string name="benchmark_lab_stopping">正在停止基准测试…</string>
     <string name="benchmark_lab_stop">停止比较</string>
+    <string name="benchmark_lab_retry_cleanup">重试清理</string>
+    <string name="benchmark_lab_confirming_cleanup">正在确认清理…</string>
+    <string name="benchmark_lab_recovery_hint">正在等待上一个工作进程释放模型。已保存的结果和录音仍保留。确认清理完成后才能启动其他本地模型。</string>
     <string name="benchmark_lab_active_downloads">正在下载或校验 %1$d 个文件</string>
     <string name="benchmark_lab_download_queue">查看下载队列</string>
     <string name="benchmark_lab_input_heading">1. 输入和语言</string>
