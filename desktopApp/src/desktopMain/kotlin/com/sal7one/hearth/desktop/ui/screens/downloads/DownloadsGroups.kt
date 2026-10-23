@@ -7,7 +7,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
+import com.sal7one.hearth.desktop.ui.components.HearthButton
+import com.sal7one.hearth.desktop.ui.components.ButtonSize
+import com.sal7one.hearth.desktop.ui.components.ButtonTone
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -31,10 +35,13 @@ internal fun DownloadGroupCard(
     tone: ChipTone = ChipTone.Neutral,
     onDownload: (String) -> Unit,
     onCancel: (String) -> Unit,
+    onRemove: (String) -> Unit = {},
+    onRestart: (String) -> Unit = {},
     showWhenEmpty: Boolean = true,
     modifier: Modifier = Modifier,
 ) {
     val colors = HearthTheme.colors
+    var limit by rememberSaveable(title) { mutableStateOf(40) }
     if (items.isEmpty() && !showWhenEmpty) return
     HearthCard(modifier, padding = 0.dp) {
         Row(
@@ -56,13 +63,20 @@ internal fun DownloadGroupCard(
                     modifier = Modifier.padding(vertical = 16.dp),
                 )
             } else {
-                items.forEachIndexed { index, item ->
+                items.take(limit).forEachIndexed { index, item ->
                     if (index > 0) ModelsDivider()
                     DownloadRow(
                         item = item,
                         onDownload = { onDownload(item.id) },
                         onCancel = { onCancel(item.id) },
+                        onRemove = { onRemove(item.id) },
+                        onRestart = { onRestart(item.id) },
                     )
+                }
+                if (items.size > limit) {
+                    Spacer(Modifier.height(12.dp))
+                    HearthButton("Show ${minOf(40, items.size - limit)} more (${items.size} total)", { limit += 40 }, size = ButtonSize.Small, tone = ButtonTone.Ghost)
+                    Spacer(Modifier.height(12.dp))
                 }
             }
         }

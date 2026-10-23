@@ -11,9 +11,22 @@ data class OcrRect(val x: Int, val y: Int, val width: Int, val height: Int) {
     val area: Long get() = width.toLong() * height
 }
 /** RT-DETR export labels: 0 bubble, 1 text inside a bubble, 2 free-standing text. */
-data class ComicDetection(val bounds: OcrRect, val label: Int, val confidence: Float)
-data class OcrRegion(val bounds: OcrRect, val confidence: Float, val bubble: OcrRect? = null)
+data class ComicDetection(val bounds: OcrRect, val label: Int, val confidence: Float, val mask: ComicMask? = null) {
+    companion object {
+        /** Same bounded ABI on Android and desktop: six header integers, then (y,x,length) spans. */
+        fun fromNative(row: IntArray, width: Int, height: Int): ComicDetection {
+            check(row.size >= 6 && (row.size-6)%3 == 0 && row.size <= 3_000_006) { "Invalid comic detector mask/result" }
+            check(row[5] in 0..4 && row[4] in 0..10000) { "Invalid comic detector class/confidence" }
+            return ComicDetection(OcrRect(row[0],row[1],row[2],row[3]),row[5],row[4]/10000f,
+                if(row.size == 6) null else ComicMask(row.copyOfRange(6,row.size),width,height))
+        }
+    }
+}
+data class OcrRegion(val bounds: OcrRect, val confidence: Float, val bubble: OcrRect? = null,
+    val textMask: ComicMask? = null, val bubbleMask: ComicMask? = null, val panel: OcrRect? = null,
+    val paint: MangaPaint? = null)
 data class PageText(val region: OcrRegion, val text: String)
+enum class PageOcrStage { PREVIEW, SEGMENTATION, RECOGNITION, CLEANUP }
 
 interface ComicRegionDetector {
     fun detect(pixels: IntArray, width: Int, height: Int): List<ComicDetection>
@@ -28,6 +41,7 @@ interface MangaRegionReader {
 interface PageOcrProgress {
     /** False abandons an obsolete capture between calls, without poisoning a reusable native reader. */
     fun isCurrent(): Boolean = true
+    fun stage(stage: PageOcrStage) {}
     fun detected(regions: List<OcrRegion>) {}
     fun recognized(text: List<PageText>) {}
 }
@@ -38,19 +52,32 @@ interface PageOcrReader {
 }
 
 /** Portable detection -> bounded text crops -> recognition. Translation remains the caller's existing stage. */
-class MangaPageOcr(private val detector: ComicRegionDetector, private val reader: MangaRegionReader) : PageOcrReader {
+class MangaPageOcr(private val detector: ComicRegionDetector, private val reader: MangaRegionReader,
+    private val preview: ComicRegionDetector? = null, private val budgetMs: Long = 45_000,
+    private val inpainter: MangaPageInpainter? = null) : PageOcrReader {
+    init {require(budgetMs in 1..180_000)}
     override fun recognize(pixels: IntArray, width: Int, height: Int, progress: PageOcrProgress): List<PageText> {
         require(width in 1..2048 && height in 1..2048 && pixels.size == width * height) { "OCR page must be at most 2048 pixels per side" }
         if (!progress.isCurrent()) return emptyList()
         val begun = TimeSource.Monotonic.markNow()
+        if(preview!=null) {
+            progress.stage(PageOcrStage.PREVIEW)
+            val preliminary=MangaPageLayout.regions(preview.detect(pixels,width,height),width,height)
+            if(!progress.isCurrent())return emptyList()
+            progress.detected(preliminary)
+            progress.stage(PageOcrStage.SEGMENTATION)
+        }
         val regions = MangaPageLayout.regions(detector.detect(pixels, width, height), width, height)
+            .map { KoharuPageScene.preparePaint(it,pixels,width,height) }
         if (!progress.isCurrent()) return emptyList()
         progress.detected(regions) // Highlight all geometry before the first slow OCR/translation call.
+        progress.stage(PageOcrStage.RECOGNITION)
         check(regions.size <= 64) { "Page exceeds 64 text regions. Draw a smaller area." }
         val results = ArrayList<PageText>(regions.size)
+        var cleanupPixels=0L
         for (region in regions) {
             if (!progress.isCurrent()) break
-            check(begun.elapsedNow().inWholeMilliseconds < 45_000) { "Manga page exceeded its 45-second reading budget. Recognized regions are preserved; draw a smaller area." }
+            check(begun.elapsedNow().inWholeMilliseconds < budgetMs) { "Manga page exceeded its ${budgetMs/1000}-second reading budget. Recognized regions are preserved; draw a smaller area." }
             val bounds = region.bounds
             val crop = IntArray(bounds.width * bounds.height)
             repeat(bounds.height) { row ->
@@ -60,20 +87,40 @@ class MangaPageOcr(private val detector: ComicRegionDetector, private val reader
             val text = reader.read(crop, bounds.width, bounds.height).trim()
             if (!progress.isCurrent()) break
             if (text.isNotEmpty()) {
-                results += PageText(region, text)
+                var rendered=region
+                if(inpainter!=null && region.paint==null && region.textMask!=null) {
+                    try {
+                    progress.stage(PageOcrStage.CLEANUP)
+                    val patch=inpainter.inpaint(pixels,width,height,region.textMask)
+                    if(!progress.isCurrent())break
+                    cleanupPixels+=patch.bounds.area
+                    check(cleanupPixels<=4_194_304) { "Page cleanup exceeds its 16 MiB patch budget. Select a smaller area; completed regions are preserved." }
+                    var luminance=0.0;var count=0
+                    patch.forEachPixel {_,_,color -> luminance+=.2126*(color.ushr(16) and 255)+.7152*(color.ushr(8) and 255)+.0722*(color and 255);count++}
+                    check(count>0) {"Cleanup produced an empty patch"}
+                    rendered=region.copy(paint=MangaPaint(region.textMask,region.bounds,0,
+                        if(luminance/count>140)0xff111111.toInt() else 0xfff8f8f8.toInt(),patch))
+                    progress.stage(PageOcrStage.RECOGNITION)
+                    } catch(error: Throwable) {
+                        if(progress.isCurrent()) {results+=PageText(region,text);progress.recognized(results.toList())}
+                        throw error
+                    }
+                }
+                results += PageText(rendered, text)
                 progress.recognized(results.toList())
             }
         }
         return results
     }
-    override fun cancel() { try { detector.cancel() } finally { reader.cancel() } }
-    override fun close() { try { detector.close() } finally { reader.close() } }
+    override fun cancel() { try { detector.cancel() } finally { try {preview?.cancel()} finally {try{reader.cancel()}finally{inpainter?.cancel()}} } }
+    override fun close() { try { detector.close() } finally { try {preview?.close()} finally {try{reader.close()}finally{inpainter?.close()}} } }
 }
 
 /** Bubble containment, duplicate suppression and spatial Japanese reading order. No recognition guesses. */
 object MangaPageLayout {
     fun regions(detections: List<ComicDetection>, width: Int, height: Int): List<OcrRegion> {
         require(width in 1..2048 && height in 1..2048 && detections.size <= 300) { "Invalid comic detector page/output size" }
+        if(detections.any { it.mask != null }) return KoharuPageScene.regions(detections,width,height)
         val valid = detections.mapNotNull { detection ->
             require(detection.label in 0..2 && detection.confidence.isFinite() && detection.confidence in 0f..1f) { "Invalid comic detector class/confidence" }
             clipped(detection.bounds, width, height)?.takeIf { detection.confidence >= .3f }?.let { detection.copy(bounds = it) }

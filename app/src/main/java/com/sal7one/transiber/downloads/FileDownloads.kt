@@ -30,7 +30,11 @@ import java.io.File
 
 /** Positive IDs are existing system downloads; negative IDs use public-folder downloads. */
 data class FileDownload(val id: Long, val title: String, val status: Int, val reason: Int, val bytes: Long, val total: Long,
- val phase: String = "", val error: String = "", val location: String = "", val installedId: String = "", val modelId: String = "") {
+ val phase: String = "", val error: String = "", val location: String = "", val installedId: String = "", val modelId: String = "",
+ val backend: String = "", val connections: Int = 1, val bytesPerSecond: Long = 0, val transferMillis: Long = 0,
+ val transferredBytes: Long = 0, val retryCount: Int = 0, val networkWait: Boolean = false,
+ val verificationBytes: Long = 0, val verificationTotal: Long = 0, val preparingQueued: Boolean = false,
+ val preparationAction: String = "") {
  val complete: Boolean get() = status == DownloadManager.STATUS_SUCCESSFUL
  val failed: Boolean get() = status == DownloadManager.STATUS_FAILED
  val installing get() = phase in setOf("Installing", "Verifying")
@@ -88,6 +92,7 @@ class FileDownloads(private val context: Context) {
  fun enqueue(spec: DownloadSpec, modelPackage: Boolean = false, installModelId: String = "", duplicate: Boolean = false): Long {
   com.sal7one.transiber.caption.SpeechAbiPolicy.requireCatalogModel(installModelId)
   check(ByokPolicy.FEATURE_BYOK) { "Downloads are unavailable in the offline build" }
+  if (installModelId == DownloadAssets.MAGPIE_TOKENIZER) com.sal7one.transiber.voice.MagpiePolicy.requireAllowed(context, "Magpie tokenizer download")
   VoiceCatalog.find(installModelId)?.let { com.sal7one.transiber.voice.LocalVoiceFamilies.requireAllowed(context,it.family,"speech model download") }
   if (com.sal7one.transiber.translation.Ct2Package.part(installModelId) != null) com.sal7one.transiber.translation.Ct2Package.requireRuntime(context)
   if (modelPackage || installModelId.isNotBlank()) com.sal7one.transiber.runtime.LocalModelPolicy.requireAllowed(context, "model downloads")
@@ -112,7 +117,6 @@ class FileDownloads(private val context: Context) {
      }
      phase in setOf("Downloading", "Verifying", "Installing") && DownloadRunner.running -> existing.getLong("id") to false
      else -> {
-      DownloadStorage.requireSpace(context, DownloadAssets.find(installModelId), existing.optLong("bytes"), folderUri != null)
       existing.put("phase", "Waiting")
       existing.remove("error")
       check(prefs.edit().putString("download_${existing.getLong("id")}", existing.toString()).commit()) { "Cannot resume download" }
@@ -120,13 +124,12 @@ class FileDownloads(private val context: Context) {
      }
     }
    } else {
-    DownloadStorage.requireSpace(context, DownloadAssets.find(installModelId), 0, folderUri != null)
     var next = -System.currentTimeMillis()
     while (next.toString() in ids) next--
     val json = JSONObject().put("id", next).put("url", checked.url).put("title", checked.fileName)
      .put("model", installModelId).put("modelsFolder", modelPackage).put("tree", folderUri?.toString().orEmpty())
      .put("location", locationLabel + if (modelPackage) "/models" else "/files")
-     .put("phase", "Waiting").put("bytes", 0).put("total", -1)
+     .put("phase", "Waiting").put("bytes", 0).put("total", DownloadAssets.find(installModelId)?.bytes ?: -1)
     check(prefs.edit().putString("download_$next", json.toString()).putStringSet("public_ids", ids + next.toString()).commit()) { "Cannot save download" }
     next to true
    }
@@ -158,6 +161,41 @@ class FileDownloads(private val context: Context) {
   update(id) { if (it.optString("phase") in setOf("Waiting", "Downloading", "Verifying", "Installing")) it.put("phase", "Paused") }
   DownloadRunner.cancel(id)
  }
+ /** Pausing the queue never deletes partial files or verified installed copies. */
+ fun pauseAll() {
+  check(ByokPolicy.FEATURE_BYOK)
+  val ids = synchronized(lock) {
+   val active = newIds().mapNotNull(String::toLongOrNull).mapNotNull { id -> record(id)?.let { id to it } }
+    .filter { (_, saved) -> saved.optString("phase") in setOf("Waiting", "Downloading", "Verifying", "Installing") }
+   val editor = prefs.edit()
+   active.forEach { (id, saved) -> editor.putString("download_$id", saved.put("phase", "Paused").toString()) }
+   check(editor.commit()) { "Cannot pause download queue" }
+   active.map { it.first }
+  }
+  ids.forEach(DownloadRunner::cancel)
+ }
+ fun resumeAll() = resumePhases(setOf("Paused", "Interrupted", "Waiting"))
+ fun retryFailed() = resumePhases(setOf("Failed", "Interrupted"))
+ private fun resumePhases(phases: Set<String>) {
+  check(ByokPolicy.FEATURE_BYOK)
+  val ids = synchronized(lock) {
+   val candidates = newIds().mapNotNull(String::toLongOrNull).mapNotNull { id -> record(id)?.let { id to it } }
+    .filter { (_, saved) -> saved.optString("phase") in phases }.sortedByDescending { it.first }
+   candidates.forEach { (_, saved) ->
+    val modelId = saved.optString("model")
+    com.sal7one.transiber.caption.SpeechAbiPolicy.requireCatalogModel(modelId)
+    if (saved.optBoolean("modelsFolder") || modelId.isNotBlank()) com.sal7one.transiber.runtime.LocalModelPolicy.requireAllowed(context, "model downloads")
+    if (modelId == DownloadAssets.MAGPIE_TOKENIZER) com.sal7one.transiber.voice.MagpiePolicy.requireAllowed(context, "Magpie tokenizer retry")
+    VoiceCatalog.find(modelId)?.let { com.sal7one.transiber.voice.LocalVoiceFamilies.requireAllowed(context, it.family, "speech model download retry") }
+    if (com.sal7one.transiber.translation.Ct2Package.part(modelId) != null) com.sal7one.transiber.translation.Ct2Package.requireRuntime(context)
+   }
+   val editor = prefs.edit()
+   candidates.forEach { (id, saved) -> saved.put("phase", "Waiting").remove("error"); editor.putString("download_$id", saved.toString()) }
+   check(editor.commit()) { "Cannot resume download queue" }
+   candidates.map { it.first }
+  }
+  if (ids.isNotEmpty()) DownloadRunner.start(context)
+ }
  fun restart(id: Long) {
   check(ByokPolicy.FEATURE_BYOK)
   check(!list().any { it.id == id && it.active }) { "Pause the download before restarting" }
@@ -175,6 +213,7 @@ class FileDownloads(private val context: Context) {
  fun retry(id: Long) {
   com.sal7one.transiber.caption.SpeechAbiPolicy.requireCatalogModel(record(id)?.optString("model").orEmpty())
   check(ByokPolicy.FEATURE_BYOK)
+  if (record(id)?.optString("model") == DownloadAssets.MAGPIE_TOKENIZER) com.sal7one.transiber.voice.MagpiePolicy.requireAllowed(context, "Magpie tokenizer retry")
   VoiceCatalog.find(record(id)?.optString("model").orEmpty())?.let { com.sal7one.transiber.voice.LocalVoiceFamilies.requireAllowed(context,it.family,"speech model download retry") }
   if (com.sal7one.transiber.translation.Ct2Package.part(record(id)?.optString("model").orEmpty()) != null)
    com.sal7one.transiber.translation.Ct2Package.requireRuntime(context)
@@ -229,6 +268,14 @@ class FileDownloads(private val context: Context) {
      val spec = TranslationCatalog.models.first { it.id == modelId }
      com.sal7one.common_jni.model.ModelIntegrity.inspect(LocalTranslationModels(File(context.filesDir, "translation-models")).file(spec), spec.sha256)
     }
+    modelId == DownloadAssets.MAGPIE_TOKENIZER -> {
+     val job = currentCoroutineContext()
+     val root = File(context.filesDir, "voice-models/magpie/tokenizer")
+     com.sal7one.hearth.tts.magpie.MagpieCatalog.tokenizer.forEach { part ->
+      val actual = File(root, part.filename).inputStream().use { input -> DownloadIntegrity.fingerprint(input, part.bytes) { job.ensureActive() } }
+      check(actual == DownloadIntegrity.Fingerprint(part.bytes, part.sha256)) { "Installed Magpie tokenizer changed: ${part.filename}" }
+     }
+    }
     OcrCatalog.find(modelId) != null -> {
      val part = checkNotNull(OcrCatalog.find(modelId))
      val file = OcrModels(File(context.filesDir, "ocr-models")).file(part)
@@ -258,7 +305,9 @@ class FileDownloads(private val context: Context) {
     "Waiting" -> DownloadManager.STATUS_PENDING
     "Paused" -> DownloadManager.STATUS_PAUSED
     else -> DownloadManager.STATUS_RUNNING
-   }, 0, j.optLong("bytes"), j.optLong("total", -1), phase, if (interrupted) "Transfer interrupted. Tap Retry to finish." else j.optString("error"), j.optString("location"), j.optString("installed"), j.optString("model"))
+   }, 0, j.optLong("bytes"), j.optLong("total", -1), phase, if (interrupted) "Transfer interrupted. Tap Retry to finish." else listOf(j.optString("error"), j.optString("diagnosticError")).filter(String::isNotBlank).joinToString("\n"), j.optString("location"), j.optString("installed"), j.optString("model"), j.optString("backend"),
+    j.optInt("connections", 1), j.optLong("bytesPerSecond"), j.optLong("transferMillis"), j.optLong("transferredBytes"), j.optInt("retries"), j.optBoolean("networkWait"),
+    j.optLong("verificationBytes"), j.optLong("verificationTotal"), j.optBoolean("preparingQueued"), j.optString("preparationAction"))
   } }
   val ids = prefs.getStringSet("ids", emptySet()).orEmpty().mapNotNull { it.toLongOrNull() }
   val legacy = if (ids.isEmpty()) emptyList() else buildList {
@@ -275,6 +324,8 @@ class FileDownloads(private val context: Context) {
   DownloadRunner.cancel(id)
   record(id)?.optString("uri")?.takeIf(String::isNotBlank)?.let { context.contentResolver.delete(Uri.parse(it), null, null) }
   synchronized(lock) { check(prefs.edit().remove("download_$id").putStringSet("public_ids", newIds() - id.toString()).commit()) }
+  File(context.filesDir, "download-staging/$id.part").delete()
+  File(context.filesDir, "download-staging/$id.part.aria2").delete()
  }
  suspend fun installTranslation(id: Long, spec: TranslationModelSpec) = withContext(Dispatchers.IO) {
   check(ByokPolicy.FEATURE_BYOK) { "Downloads are unavailable in the offline build" }
@@ -296,6 +347,25 @@ class FileDownloads(private val context: Context) {
   }
   com.sal7one.transiber.models.SpeechComponents.forPart(modelId)?.let { group ->
    return@withContext com.sal7one.transiber.models.SpeechComponents.install(context, this@FileDownloads, group)?.id.orEmpty()
+  }
+  if (modelId == DownloadAssets.MAGPIE_TOKENIZER) {
+   com.sal7one.transiber.voice.MagpiePolicy.requireAllowed(context, "Magpie tokenizer installation")
+   val job = currentCoroutineContext()
+   val root = File(context.filesDir, "voice-models/magpie").apply { check(isDirectory || mkdirs()) }
+   val payload = File.createTempFile("tokenizer-ranges-", ".part", root)
+   try {
+    val expected = checkNotNull(DownloadAssets.find(modelId))
+    context.contentResolver.openInputStream(uri(id))?.use { input -> payload.outputStream().use { output ->
+     val buffer = ByteArray(65536); var bytes = 0L
+     while (true) { job.ensureActive(); val n = input.read(buffer); if (n < 0) break
+      bytes = Math.addExact(bytes, n.toLong()); check(bytes <= expected.bytes) { "Tokenizer payload exceeds its pin" }; output.write(buffer, 0, n) }
+     check(bytes == expected.bytes) { "Tokenizer payload is truncated" }
+    } } ?: error("Cannot open downloaded Magpie tokenizer ranges")
+    com.sal7one.hearth.tts.magpie.MagpieModels(root).installTokenizerSegments(payload) { job.ensureActive() }
+    for (part in com.sal7one.hearth.tts.magpie.MagpieCatalog.tokenizer)
+     com.sal7one.transiber.preferences.ModelSourceBindings.recordImported(context, "voice-magpie-tokenizer-${part.filename}", uri(id), listOf(File(root, "tokenizer/${part.filename}")))
+    return@withContext modelId
+   } finally { payload.delete() }
   }
   VoiceCatalog.find(modelId)?.let { asset ->
    val job = currentCoroutineContext()

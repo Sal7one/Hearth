@@ -9,6 +9,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import com.sal7one.hearth.desktop.DesktopModelController
 import com.sal7one.hearth.desktop.DesktopReadingController
+import com.sal7one.hearth.desktop.selectedReadingModel
 import com.sal7one.hearth.desktop.DesktopWorkspaceController
 import com.sal7one.hearth.desktop.data.DesktopModelStatus
 import com.sal7one.hearth.desktop.WorkspaceInput
@@ -121,6 +122,7 @@ internal fun HearthDesktopRoot(
     var translationDraft by remember { mutableStateOf("") }
     var readingTranslate by remember { mutableStateOf(initialUi["reading-translate"] != "false") }
     var readingOriginal by remember { mutableStateOf(initialUi["reading-original"] == "true") }
+    var readingModelId by remember { mutableStateOf(selectedReadingModel(initialUi)) }
     var modelFilter by remember {
         mutableStateOf(
             ModelsFilter(
@@ -251,7 +253,9 @@ internal fun HearthDesktopRoot(
             if (installed != null) {
                 val stage=card.stage
                 if(stage==null) {
-                    saveUi(mapOf("reading-model-path" to installed.modelPath))
+                    reading.resetResults()
+                    readingModelId=id
+                    saveUi(mapOf("reading-model-id" to id,"reading-model-path" to installed.modelPath))
                     navigate(DesktopScreen.READING)
                 }
                 else controller.updateConfig { normalize(it.useVerifiedModel(stage, installed)) }
@@ -260,7 +264,7 @@ internal fun HearthDesktopRoot(
             }
         },
         onImport = { id ->
-            if (workspace.importingSetup || id in library.transfers) {
+            if (workspace.importingSetup || library.transfers[id]?.let { !it.paused || it.cancelling } == true) {
                 failure("This model is already being checked or downloaded")
             } else {
                 val card = models.library.find(id)
@@ -525,11 +529,24 @@ internal fun HearthDesktopRoot(
         transfers = library.transfers.values,
         freeBytes = freeBytes,
         issues = library.issues,
-    ).copy(refreshing = library.refreshing)
+    ).copy(refreshing = library.refreshing, options = library.options, measurements = library.measurements)
 
     val downloadsActions = DownloadsActions(
         onDownload = { id -> models.download(id) },
-        onCancel = models::cancel,
+        onCancel = models::pause,
+        onPauseAll = models::pauseAll,
+        onResumeAll = models::resumeAll,
+        onRemove = models::forget,
+        onRestart = models::restart,
+        onDownloadAll = models::downloadAll,
+        onConfigure = models::configure,
+        onChooseAria2 = { chooseFile(null, "Choose aria2 executable")?.let { path ->
+            models.configure(library.options.copy(aria2Executable = path.toAbsolutePath().toString()))
+        } },
+        onExportMeasurements = {
+            runCatching { models.exportMeasurements() }.onSuccess { path -> openPath(path.parent) }
+                .onFailure { failure(it.message ?: it.toString()) }
+        },
         onRefresh = { models.refresh(config) },
         onOpenFolder = {
             runCatching { openPath(controller.dataDirectory) }
@@ -720,10 +737,16 @@ internal fun HearthDesktopRoot(
                     val issue = if (workspace.active) "Finish the active caption or file session before translating a page. OCR-only reading is available."
                         else com.sal7one.hearth.desktop.ui.language.stageSetupIssue(readingConfig,
                             PipelineStage.TRANSLATION, controller.capabilities, installations, models.library.catalog) ?: languages.issue
-                    val model = models.verifiedSelection("manga-page")
+                    val model = models.verifiedSelection(readingModelId)
                     ReadingScreen(
                         state = readingState, modelReady = model != null,
-                        modelActivity = library.transfers["manga-page"]?.label,
+                        modelId = readingModelId, modelBytes = models.library.find(readingModelId).bytes,
+                        onModel = { id ->
+                            reading.resetResults()
+                            readingModelId=id
+                            saveUi(mapOf("reading-model-id" to id,"reading-model-path" to models.verifiedSelection(id)?.modelPath.orEmpty()))
+                        },
+                        modelActivity = library.transfers[readingModelId]?.label,
                         target = config.targetLanguage, targets = languages.targets,
                         translate = readingTranslate, showOriginal = readingOriginal, translationIssue = issue,
                         onOpen = { runCatching {
@@ -731,10 +754,10 @@ internal fun HearthDesktopRoot(
                         }.onFailure { failure(it.message ?: it.toString()) } },
                         onRead = { model?.modelPath?.let {
                             saveUi(mapOf("reading-model-path" to it))
-                            reading.read(java.nio.file.Path.of(it), readingTranslate)
+                            reading.read(java.nio.file.Path.of(it), readingTranslate, readingModelId)
                         } },
                         onCancel = reading::cancel, onCrop = reading::selectArea,
-                        onDownload = { saveUi(mapOf("reading-model-path" to "")); models.download("manga-page") },
+                        onDownload = { saveUi(mapOf("reading-model-path" to "")); models.download(readingModelId) },
                         onSetup = { navigate(DesktopScreen.TRANSLATION_SETTINGS) }, onTarget = ::targetLanguage,
                         onTranslate = { readingTranslate = it; saveUi(mapOf("reading-translate" to it.toString())) },
                         onOriginal = { readingOriginal = it; saveUi(mapOf("reading-original" to it.toString())) },

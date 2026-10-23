@@ -17,10 +17,13 @@ class DesktopSettingsTest {
         )
         try {
             DesktopSettingsStore(directory).let { store ->
-                store.save(configured); store.saveUi(mapOf("inputMode" to "Text", "overlay" to "translation")); store.closeAndJoin()
+                store.save(configured); store.saveUi(mapOf("inputMode" to "Text", "overlay" to "translation"))
+                store.saveDownloadOptions(DesktopDownloadOptions.Fast.copy(backend = DesktopDownloadBackend.HTTP))
+                store.closeAndJoin()
             }
             DesktopSettingsStore(directory).let { store ->
                 assertEquals(configured, store.load())
+                assertEquals(DesktopDownloadOptions.Fast.copy(backend = DesktopDownloadBackend.HTTP), store.downloadOptions.value)
                 assertFalse(Files.readAllBytes(directory.resolve("settings.preferences_pb")).isEmpty())
                 store.closeAndJoin()
             }
@@ -69,7 +72,7 @@ class DesktopSettingsTest {
             val ming = if (macosArm) 1 else 0
             val chatterbox = if (macosArm) 1 else 0
             val byStage = library.catalog.groupingBy { it.stage?.name ?: "OCR" }.eachCount()
-            assertEquals(mapOf("STT" to 27 + qwen + transcribepsy + nemotron + moonshine + omnilingual + phonon + vosk, "TRANSLATION" to 14 + ct2, "TTS" to 1 + moss + omnivoice + magpie + ming + chatterbox, "OCR" to 1), byStage)
+            assertEquals(mapOf("STT" to 27 + qwen + transcribepsy + nemotron + moonshine + omnilingual + phonon + vosk, "TRANSLATION" to 14 + ct2, "TTS" to 1 + moss + omnivoice + magpie + ming + chatterbox, "OCR" to 3), byStage)
             assertEquals(if (qwen + transcribepsy + nemotron + moonshine + omnilingual + phonon + vosk > 0) 8 else 1, library.catalog.filter { it.stage == com.sal7one.hearth.core.PipelineStage.STT }.map { it.family }.distinct().size)
             if (qwen == 1) {
                 val card = library.catalog.single { it.id == "qwen3-asr-0.6b" }

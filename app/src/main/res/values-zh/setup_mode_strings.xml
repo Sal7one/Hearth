@@ -41,7 +41,7 @@
     <string name="setup_bundle_compact_translation_only">一个专用语言对翻译模型。保留现有语音识别和朗读选择。</string>
     <string name="setup_bundle_broad_translation_only">Index-Translate 2B 多语言翻译。保留现有语音识别和朗读选择。</string>
     <string name="setup_sources_attention">部分模型文件需要处理</string>
-    <string name="setup_sources_repair_detail">有 %1$d 个模型副本需要检查。其他已安装模型仍可使用。打开检查以查看受影响文件及具体错误。</string>
+    <string name="setup_sources_repair_detail">有 %1$d 个模型包需要修复。其他已安装模型仍可用。请检查相关组件，或从已保存的下载恢复。</string>
     <string name="setup_sources_review">查看</string>
     <string name="setup_sources_title">模型文件和来源</string>
     <string name="setup_sources_detail">Hearth 运行经过验证的私有副本。原始文档访问单独跟踪；检查来源不会替换模型，也不会信任已更改的内容。</string>

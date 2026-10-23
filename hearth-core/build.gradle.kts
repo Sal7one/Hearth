@@ -12,6 +12,14 @@ kotlin {
     jvmToolchain(17)
     sourceSets {
         commonMain.dependencies { api(libs.kotlinx.coroutines.core) }
+        val jvmSharedMain by creating { dependsOn(commonMain.get()) }
+        val jvmSharedTest by creating { dependsOn(commonTest.get()) }
+        getByName("desktopMain").dependsOn(jvmSharedMain)
+        getByName("desktopTest").dependsOn(jvmSharedTest)
+        if (!desktopOnly) {
+            getByName("androidMain").dependsOn(jvmSharedMain)
+            getByName("androidUnitTest").dependsOn(jvmSharedTest)
+        }
         commonTest.dependencies {
             implementation(kotlin("test"))
             implementation(libs.kotlinx.coroutines.test)

@@ -35,6 +35,8 @@ internal fun DownloadRow(
     item: DownloadItem,
     onDownload: () -> Unit,
     onCancel: () -> Unit,
+    onRemove: () -> Unit = {},
+    onRestart: () -> Unit = {},
 ) {
     val colors = HearthTheme.colors
     Row(
@@ -83,9 +85,16 @@ internal fun DownloadRow(
         }
         Spacer(Modifier.width(12.dp))
         when (item.bucket) {
-            DownloadBucket.DOWNLOADING -> HearthButton(if (item.cancellable) DownloadsCopy.CANCEL else "Cancelling…", onCancel, enabled = item.cancellable, tone = ButtonTone.Secondary, size = ButtonSize.Small)
+            DownloadBucket.DOWNLOADING -> Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                HearthButton(if (!item.cancellable) "Pausing…" else if (item.paused) "Resume" else "Pause",
+                    if (item.paused) onDownload else onCancel, enabled = item.cancellable, tone = ButtonTone.Secondary, size = ButtonSize.Small)
+                if (item.paused) HearthButton("Remove", onRemove, enabled = item.cancellable, tone = ButtonTone.Ghost, size = ButtonSize.Small)
+            }
             DownloadBucket.AVAILABLE -> HearthButton(DownloadsCopy.DOWNLOAD, onDownload, tone = ButtonTone.Secondary, size = ButtonSize.Small)
-            DownloadBucket.BROKEN -> HearthButton("Retry", onDownload, tone = ButtonTone.Secondary, size = ButtonSize.Small)
+            DownloadBucket.BROKEN -> Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                HearthButton("Resume", onDownload, tone = ButtonTone.Secondary, size = ButtonSize.Small)
+                HearthButton("Restart", onRestart, tone = ButtonTone.Ghost, size = ButtonSize.Small)
+            }
             DownloadBucket.INSTALLED -> Text("Verified", style = HearthType.monoSmall, color = colors.muted)
         }
     }

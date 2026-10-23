@@ -4,7 +4,8 @@ import java.io.File
 import java.util.concurrent.atomic.AtomicLong
 
 /** Capture-independent PaddleOCR: caller supplies upright ARGB pixels and a pinned dictionary. */
-data class OcrLine(val x: Int, val y: Int, val width: Int, val height: Int, val text: String, val confidence: Float)
+data class OcrLine(val x: Int, val y: Int, val width: Int, val height: Int, val text: String, val confidence: Float,
+    val region: com.sal7one.hearth.core.vision.OcrRegion? = null)
 class PaddleOcr(detector: File, recognizer: File, private val dictionary: List<String>) : OcrEngine {
     private val handle = AtomicLong(PaddleNative.create(detector.absolutePath.toByteArray(), recognizer.absolutePath.toByteArray(), dictionary.size))
     @Synchronized override fun recognize(pixels: IntArray, width: Int, height: Int, maxSide: Int): List<OcrLine> {

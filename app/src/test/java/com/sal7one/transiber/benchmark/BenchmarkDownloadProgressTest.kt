@@ -81,4 +81,14 @@ class BenchmarkDownloadProgressTest {
         assertTrue(requireNotNull(BenchmarkDownloadProgress.forModel(model, all)).complete)
     }
 
+    @Test fun magpieCannotReportCompleteWithOnlyItsTwoWeights() {
+        val assets = com.sal7one.transiber.voice.VoiceCatalog.familyAssets("magpie")
+        val model = SuggestedModel("magpie", "Magpie", com.sal7one.hearth.tts.magpie.MagpieCatalog.downloadBytes, "voice")
+        val weights = assets.mapIndexed { index, asset -> row(-index.toLong() - 1, asset.id, "Installed", asset.bytes) }
+        val partial = requireNotNull(BenchmarkDownloadProgress.forModel(model, weights))
+        assertEquals(3, partial.expectedFiles)
+        assertFalse(partial.complete)
+        val all = weights + row(-3, com.sal7one.transiber.downloads.DownloadAssets.MAGPIE_TOKENIZER, "Installed", com.sal7one.hearth.tts.magpie.MagpieCatalog.tokenizerSegmentsBytes)
+        assertTrue(requireNotNull(BenchmarkDownloadProgress.forModel(model, all)).complete)
+    }
 }

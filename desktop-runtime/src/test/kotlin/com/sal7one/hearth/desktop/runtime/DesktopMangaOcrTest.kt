@@ -17,8 +17,11 @@ class DesktopMangaOcrTest {
             val bad = folder.resolve("غير صالح🙂.onnx")
             Files.write(bad,byteArrayOf(0))
             assertFailsWith<IllegalStateException> { ComicNative.create(bad.toString().toByteArray()) }
+            assertFailsWith<IllegalStateException> { ComicNative.createKoharu(bad.toString().toByteArray()) }
+            assertFailsWith<IllegalStateException> { ComicNative.createInpainter(bad.toString().toByteArray()) }
             assertFailsWith<IllegalStateException> { JapaneseNative.create(1,bad.toString().toByteArray(),bad.toString().toByteArray(),byteArrayOf()) }
             assertFailsWith<IllegalStateException> { ComicNative.detect(0,intArrayOf(0),1,1) }
+            assertFailsWith<IllegalStateException> { ComicNative.inpaint(0,intArrayOf(0),1,1,intArrayOf(0,0,1)) }
             ComicNative.cancel(0); ComicNative.destroy(0)
         } finally { folder.toFile().deleteRecursively() }
     }
@@ -31,6 +34,7 @@ class DesktopMangaOcrTest {
         val image = ImageIO.read(Path.of(requireNotNull(pagePath)).toFile())
         val pixels = image.getRGB(0,0,image.width,image.height,null,0,image.width)
         var detectedAt = 0L
+        var firstDetectedAt = 0L
         var regions = emptyList<OcrRegion>()
         val start = System.nanoTime()
         val folder = Files.createTempDirectory("hearth-manga-native")
@@ -41,16 +45,17 @@ class DesktopMangaOcrTest {
                 val result = reader.recognize(pixels,image.width,image.height,object:PageOcrProgress {
                     override fun detected(found: List<OcrRegion>) {
                         regions = found; detectedAt = System.nanoTime()
+                        if(firstDetectedAt==0L)firstDetectedAt=detectedAt
                         assertTrue(found.isNotEmpty())
                     }
                     override fun recognized(text: List<PageText>) {
                         assertTrue(detectedAt > 0)
-                        assertTrue(text.all {it.region in regions})
+                        assertTrue(text.all {item -> regions.any {it.bounds==item.region.bounds}})
                     }
                 })
                 assertTrue(result.size >= 2,"Use a real multi-bubble Japanese page")
                 assertTrue(result.any {it.text.any {c -> c.code in 0x3040..0x9fff}})
-                println("MANGA_REAL load_ms=${(loaded-start)/1_000_000} detection_ms=${(detectedAt-loaded)/1_000_000} total_ms=${(System.nanoTime()-loaded)/1_000_000} regions=${regions.size} recognized=${result.size}")
+                println("MANGA_REAL load_ms=${(loaded-start)/1_000_000} first_outline_ms=${(firstDetectedAt-loaded)/1_000_000} detection_ms=${(detectedAt-loaded)/1_000_000} total_ms=${(System.nanoTime()-loaded)/1_000_000} regions=${regions.size} recognized=${result.size} mask_regions=${result.count {it.region.textMask!=null}} flat_cleanup=${result.count {it.region.paint!=null && it.region.paint?.patch==null}} neural_cleanup=${result.count {it.region.paint?.patch!=null}}")
                 result.forEach {println("MANGA_TEXT ${it.region.bounds}: ${it.text}")}
                 assertTrue(reader.recognize(IntArray(640*640) {-1},640,640,object:PageOcrProgress{}).isEmpty())
                 reader.cancel()

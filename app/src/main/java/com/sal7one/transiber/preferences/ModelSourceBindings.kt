@@ -34,7 +34,9 @@ import java.io.File
 enum class ModelSourceAccess { NOT_RECORDED, GRANT_RETAINED_NOT_PROBED, GRANT_MISSING }
 data class ModelBindingCheck(val modelId: String, val paths: List<String>, val available: Boolean,
     val error: String? = null, val changedSinceImport: Boolean = false, val sourceUri: String? = null,
-    val sourceAccess: ModelSourceAccess = ModelSourceAccess.NOT_RECORDED)
+    val sourceAccess: ModelSourceAccess = ModelSourceAccess.NOT_RECORDED,
+    /** Missing setup requirements are not evidence that an installed copy broke. */
+    val installationRecorded: Boolean = true)
 
 data class ModelSourceCheck(val readable: Boolean, val bytes: Long? = null, val error: String? = null)
 private data class SourceBinding(val id: String, val sourceUri: String?, val paths: List<BoundModelPath>, val error: String? = null)
@@ -76,9 +78,10 @@ object ModelSourceBindings {
             val ct2 = com.sal7one.common_jni.translation.Ct2Catalog.find(binding.id)
             val packageError = ct2?.takeUnless { com.sal7one.transiber.translation.Ct2Package.installed(context,it) }
                 ?.let { "CT2 translation package is missing or truncated. Import or download all required model files." }
-            ModelBindingCheck(binding.id, binding.paths.map { it.path }, packageError == null && states.isNotEmpty() && states.all { it.available },
+            ModelBindingCheck(binding.id, binding.paths.map { it.path }, packageError == null && binding.error == null && states.isNotEmpty() && states.all { it.available },
                 packageError ?: binding.error ?: states.firstOrNull { !it.available }?.error, states.any { it.changed }, binding.sourceUri,
-                when (binding.sourceUri) { null -> ModelSourceAccess.NOT_RECORDED; in grants -> ModelSourceAccess.GRANT_RETAINED_NOT_PROBED; else -> ModelSourceAccess.GRANT_MISSING })
+                when (binding.sourceUri) { null -> ModelSourceAccess.NOT_RECORDED; in grants -> ModelSourceAccess.GRANT_RETAINED_NOT_PROBED; else -> ModelSourceAccess.GRANT_MISSING },
+                installationRecorded = binding.sourceUri != null || binding.error != null || binding.paths.any { it.files.isNotEmpty() })
         }.toMutableList()
         val config = CaptionConfigStore.config(context).first()
         val registered = ModelRegistry.getInstance(context).registeredModels.value
@@ -130,7 +133,7 @@ object ModelSourceBindings {
         val additions = mutableListOf<SourceBinding>()
         fun add(id: String, path: File, bytes: Long? = null, directory: Boolean = path.isDirectory) {
             val previous = existing[id]
-            if (previous != null && previous.paths.all { it.files.isNotEmpty() }) return
+            if (previous != null && previous.error == null && previous.paths.isNotEmpty() && previous.paths.all { it.error == null && it.files.isNotEmpty() }) return
             val captured = try { ModelPathSnapshots.capture(context.filesDir, path, bytes, directory) }
             catch (error: Exception) { BoundModelPath(path.absolutePath, directory, bytes ?: 0, emptyList(), error.message ?: error.toString()) }
             SourceBinding(id, previous?.sourceUri, listOf(captured)).also { additions += it; existing[id] = it }

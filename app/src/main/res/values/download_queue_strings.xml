@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="download_queue_background">Your queue keeps working while you use Hearth</string>
+    <string name="download_queue_policy_summary">%1$d files at once · up to %2$d connections per file</string>
+    <string name="download_queue_pause_all">Pause all</string>
+    <string name="download_queue_resume_all">Resume all</string>
+    <string name="download_queue_retry_failed">Retry failed</string>
+    <string name="download_queue_settings">Download settings</string>
+    <string name="download_queue_results">Transfer results</string>
+    <string name="download_queue_results_hint">Sorted by observed network speed. Each row is the last successful transfer attempt; verification and installation time are excluded. Hosts and networks affect these results.</string>
+    <string name="download_queue_results_empty">Complete a download to compare backends and connection settings here.</string>
+    <string name="download_queue_copy_results">Copy CSV</string>
+    <string name="download_queue_done">Done</string>
+    <string name="download_queue_balanced">Balanced</string>
+    <string name="download_queue_fast">Fast</string>
+    <string name="download_queue_simultaneous">Simultaneous files: %1$d</string>
+    <string name="download_queue_unmetered">Unmetered networks only</string>
+    <string name="download_queue_advanced">Advanced controls</string>
+    <string name="download_queue_hide_advanced">Hide advanced controls</string>
+    <string name="download_queue_backend">Download backend</string>
+    <string name="download_queue_auto">Automatic</string>
+    <string name="download_queue_http">HTTP</string>
+    <string name="download_queue_aria">aria2</string>
+    <string name="download_queue_aria_available">aria2 can download model files using several connections. Verified files are saved to your chosen folder.</string>
+    <string name="download_queue_aria_unavailable">aria2 is not included for this device. HTTP supports resumable model downloads.</string>
+    <string name="download_queue_connections">Connections per file: %1$d</string>
+    <string name="download_queue_connection_hint">Used by aria2. HTTP uses one connection per file. More connections may not make every host faster.</string>
+    <string name="download_queue_bandwidth">Per-file speed limit (KiB/s)</string>
+    <string name="download_queue_unlimited">0 means unlimited</string>
+    <string name="download_queue_retries">Automatic network retries: %1$d</string>
+    <string name="download_queue_apply">Apply settings</string>
+    <string name="download_queue_apply_hint">New transfers use these settings. Changing concurrency lets current transfers finish safely.</string>
+    <string name="download_queue_independent_lanes">Downloading, verification and installation run separately. Large models do not block other actions, and installed models are selected only when you choose them.</string>
+    <string name="download_queue_waiting_network">Waiting for an unmetered network</string>
+    <string name="download_queue_queued_verification">Queued for verification</string>
+    <string name="download_queue_saving_verified">Saving verified file</string>
+</resources>

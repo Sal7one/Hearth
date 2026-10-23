@@ -25,7 +25,7 @@ internal class DesktopReadingController(
     private val pipeline: PipelineService,
     private val config: StateFlow<PipelineConfig>,
     parent: CoroutineScope,
-    private val openReader: (Path)->PageOcrReader = ::DesktopMangaOcr,
+    private val openReader: ((Path)->PageOcrReader)? = null,
 ) {
     private val owner=SupervisorJob(parent.coroutineContext[Job])
     private val scope=CoroutineScope(parent.coroutineContext+owner)
@@ -35,6 +35,7 @@ internal class DesktopReadingController(
     private var operation: Job?=null
     @Volatile private var reader: PageOcrReader?=null
     private var readerPath: Path?=null
+    private var readerProfile: String?=null
 
     fun openImage(path: Path) = replace { token ->
         val image=withContext(Dispatchers.IO) { decodeReadingImage(path) }
@@ -46,15 +47,18 @@ internal class DesktopReadingController(
         require(area==null || area.x>=0 && area.y>=0 && area.width>=8 && area.height>=8 && area.right<=image.width && area.bottom<=image.height)
         mutable.update {it.copy(crop=area,regions=emptyList(),text=emptyList(),translations=emptyMap(),error=null)}
     }
-    fun read(directory: Path, translate: Boolean) {
+    fun read(directory: Path, translate: Boolean,profileId: String?=null) {
         val image=state.value.image ?: return
         val area=state.value.crop ?: OcrRect(0,0,image.width,image.height)
         val settings=config.value.copy(sourceLanguage="ja",speech=null,voice=null)
         replace { token ->
             mutable.update {it.copy(busy=true,phase="Loading manga models…",regions=emptyList(),text=emptyList(),translations=emptyMap(),error=null)}
-            if(readerPath!=directory || reader==null) {
+            if(readerPath!=directory || readerProfile!=profileId || reader==null) {
                 releaseReader()
-                withContext(Dispatchers.IO+NonCancellable) {reader=openReader(directory);readerPath=directory}
+                withContext(Dispatchers.IO+NonCancellable) {
+                    reader=openReader?.invoke(directory) ?: DesktopMangaOcr(directory,profileId)
+                    readerPath=directory;readerProfile=profileId
+                }
             }
             currentCoroutineContext().ensureActive()
             val active=checkNotNull(reader)
@@ -81,8 +85,15 @@ internal class DesktopReadingController(
                     withContext(Dispatchers.Default) {
                         active.recognize(pixels,area.width,area.height,object:PageOcrProgress {
                             override fun isCurrent():Boolean {work.ensureActive();return epoch.get()==token}
-                            private fun OcrRegion.page()=copy(bounds=bounds.copy(x=bounds.x+area.x,y=bounds.y+area.y),
-                                bubble=bubble?.let {it.copy(x=it.x+area.x,y=it.y+area.y)})
+                            private fun OcrRegion.page()=translated(area.x,area.y,image.width,image.height)
+                            override fun stage(stage: PageOcrStage) {
+                                if(isCurrent())mutable.update {it.copy(phase=when(stage){
+                                    PageOcrStage.PREVIEW->"Finding a quick outline…"
+                                    PageOcrStage.SEGMENTATION->"Refining outlines with Koharu masks and panel layout… This CPU quality pass can take a minute."
+                                    PageOcrStage.RECOGNITION->"Reading Japanese text inside each region…"
+                                    PageOcrStage.CLEANUP->"Removing source text while preserving the page…"
+                                })}
+                            }
                             override fun detected(regions: List<OcrRegion>) {
                                 if(isCurrent())mutable.update {it.copy(regions=regions.map {r->r.page()},phase="Reading ${regions.size} text regions…")}
                             }
@@ -105,7 +116,14 @@ internal class DesktopReadingController(
     }
     fun cancel() {
         epoch.incrementAndGet();operation?.cancel();reader?.cancel()
+        // Native cancellation is terminal for an owned session. Even an idle
+        // cancel/reset must force reopening rather than reuse a poisoned reader.
+        readerPath=null;readerProfile=null
         mutable.update {it.copy(busy=false,phase="Cancelled · completed regions are preserved")}
+    }
+    fun resetResults() {
+        cancel()
+        mutable.update {it.copy(regions=emptyList(),text=emptyList(),translations=emptyMap(),error=null,phase="Ready · choose Read page to use the selected pipeline")}
     }
     @OptIn(ExperimentalCoroutinesApi::class)
     private fun replace(block: suspend (Long)->Unit) {
@@ -132,7 +150,7 @@ internal class DesktopReadingController(
         }
     }
     private suspend fun releaseReader()=withContext(Dispatchers.IO+NonCancellable) {
-        val old=reader;reader=null;readerPath=null;old?.close()
+        val old=reader;reader=null;readerPath=null;readerProfile=null;old?.close()
     }
     suspend fun close() {
         epoch.incrementAndGet();reader?.cancel();owner.cancelAndJoin();releaseReader()

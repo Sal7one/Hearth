@@ -28,6 +28,7 @@ class DesktopSettingsStore(val directory: Path) : AutoCloseable {
     private val updates = Mutex()
     private val key = stringPreferencesKey("pipeline_v1")
     private val uiKey = stringPreferencesKey("ui_v1")
+    private val downloadsKey = stringPreferencesKey("download_options_v1")
     private val enginesKey = stringPreferencesKey("engine_setups_v1")
     private val store = PreferenceDataStoreFactory.createWithPath(scope = scope) {
         directory.resolve("settings.preferences_pb").toAbsolutePath().toString().toPath()
@@ -39,6 +40,8 @@ class DesktopSettingsStore(val directory: Path) : AutoCloseable {
     private val mutableEngineSetups = MutableStateFlow<Map<String, PipelineConfig>>(emptyMap())
     /** Last configured route per engine, independent of which stage is currently on. */
     val engineSetups: StateFlow<Map<String, PipelineConfig>> = mutableEngineSetups.asStateFlow()
+    private val mutableDownloadOptions = MutableStateFlow<DesktopDownloadOptions?>(null)
+    val downloadOptions: StateFlow<DesktopDownloadOptions?> = mutableDownloadOptions.asStateFlow()
     private val mutableError = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = mutableError.asStateFlow()
     init {
@@ -54,6 +57,7 @@ class DesktopSettingsStore(val directory: Path) : AutoCloseable {
     }
     suspend fun load(): PipelineConfig = updates.withLock {
         val preferences = store.data.first()
+        mutableDownloadOptions.value = preferences[downloadsKey]?.let(::decodeDesktopDownloadOptions)
         preferences[key]?.let { mutableConfig.value = SetupCodec.decode(it) }
         mutableEngineSetups.value = decodeEngineSetups(preferences[enginesKey]) + snapshots(mutableConfig.value)
         preferences[uiKey]?.let { mutableUi.value = Json.parseToJsonElement(it).jsonObject.mapValues { value -> value.value.jsonPrimitive.content } }
@@ -91,6 +95,10 @@ class DesktopSettingsStore(val directory: Path) : AutoCloseable {
             preferences[uiKey] = JsonObject(merged.mapValues { JsonPrimitive(it.value) }).toString()
         }
         mutableUi.value = merged
+    }
+    suspend fun saveDownloadOptions(options: DesktopDownloadOptions) = updates.withLock {
+        store.edit { it[downloadsKey] = encodeDesktopDownloadOptions(options) }
+        mutableDownloadOptions.value = options
     }
     suspend fun exportSetup(path: Path) {
         val portable = load().let { it.copy(

@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.sync.withPermit
 import kotlinx.serialization.json.*
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream
@@ -69,10 +70,14 @@ enum class ModelInstallPhase { CHECKING, DOWNLOADING, EXTRACTING, VERIFYING }
 data class ModelInstallProgress(val phase: ModelInstallPhase, val completed: Long, val total: Long, val component: String = "")
 
 /** Downloads only pinned catalog artifacts. Requests contain no provider headers or credentials. */
-class DesktopModelLibrary internal constructor(private val directory: Path, val catalog: List<DesktopModelCard>) {
-    constructor(directory: Path) : this(directory, (readCatalog()+mangaPageCard()).filter { it.platforms == null || desktopPlatform() in it.platforms })
+class DesktopModelLibrary internal constructor(val directory: Path, val catalog: List<DesktopModelCard>, private val transferEngine: DesktopArtifactTransfer = DesktopArtifactTransfer()) {
+    constructor(directory: Path) : this(directory, (readCatalog()+mangaPageCard()+koharuMangaPageCard()+koharuCleanupMangaPageCard()).filter { it.platforms == null || desktopPlatform() in it.platforms })
     private val mutableInstallations = MutableStateFlow<Map<String, DesktopModelStatus>>(emptyMap())
     val installations = mutableInstallations.asStateFlow()
+    val downloads = DesktopDownloadStore(directory)
+    private val transfers = DesktopTransferSlots(downloads.state.value.options.simultaneousFiles)
+    private val verification = kotlinx.coroutines.sync.Semaphore(2)
+    fun configureDownloads(options: DesktopDownloadOptions) { downloads.options(options); transfers.resize(options.simultaneousFiles) }
     private val installers = catalog.associate { it.id to Mutex() }
     private val client = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(20))
         .followRedirects(HttpClient.Redirect.NEVER).build()
@@ -92,15 +97,17 @@ class DesktopModelLibrary internal constructor(private val directory: Path, val 
         }
     }
     suspend fun download(id: String, progress: (downloaded: Long, total: Long) -> Unit = { _, _ -> },
-        activity: (ModelInstallProgress) -> Unit = {}): EngineSelection = installers.getValue(find(id).id).withLock {
+        activity: (ModelInstallProgress) -> Unit = {}, options: DesktopDownloadOptions = downloads.state.value.options,
+        waiting: (Boolean) -> Unit = {}): EngineSelection = installers.getValue(find(id).id).withLock {
         withContext(Dispatchers.IO) {
             val card = find(id)
             val root = modelDirectory(card)
             Files.createDirectories(root)
-            // An already unpacked, verified archive must never be downloaded again just
-            // because its compressed transport file was deleted after installation.
+            require(!Files.isSymbolicLink(root)) { "Model install directory must not be a symbolic link" }
+            // Existing healthy files need no HTTP, including archives whose transport was removed after extraction.
             try {
-                verifyFiles(card, root, activity, ModelInstallPhase.CHECKING)
+                check(hasRuntimeInventory(card, root)) { "Model files are not installed" }
+                verification.withPermit { verifyFiles(card, root, activity, ModelInstallPhase.CHECKING) }
                 mutableInstallations.update { it + (id to DesktopModelStatus(true, runtimePath(card, root))) }
                 return@withContext selection(card, runtimePath(card, root))
             } catch (e: CancellationException) { throw e }
@@ -117,48 +124,60 @@ class DesktopModelLibrary internal constructor(private val directory: Path, val 
                 currentCoroutineContext().ensureActive()
                 val target = root.resolve(artifact.filename).normalize()
                 require(target.startsWith(root.normalize())) { "Model component escapes its directory: ${artifact.filename}" }
-                if (Files.isRegularFile(target) && Files.size(target) == artifact.bytes && digest(target) == artifact.sha256) {
-                    completed += artifact.bytes; transfer(completed); continue
-                }
+                val healthy = Files.isRegularFile(target) && !Files.isSymbolicLink(target) && Files.size(target) == artifact.bytes &&
+                    verification.withPermit { digest(target) == artifact.sha256 }
+                if (healthy) { completed += artifact.bytes; transfer(completed); continue }
                 target.parent?.let { Files.createDirectories(it) }
-                val temporary = Files.createTempFile(root, ".download-", ".part")
-                try {
-                    val response = openArtifact(URI(artifact.url))
-                    response.body().use { input ->
-                        check(response.statusCode() == 200) { "Model download returned HTTP ${response.statusCode()}" }
-                        val declared = response.headers().firstValueAsLong("Content-Length")
-                        check(!declared.isPresent || declared.asLong == artifact.bytes) { "Model server length differs from pinned size" }
-                        coroutineScope {
-                            val closer = launch(start = CoroutineStart.UNDISPATCHED) { try { awaitCancellation() } finally { input.close() } }
-                            try {
-                                Files.newOutputStream(temporary).use { output ->
-                                    val hash = MessageDigest.getInstance("SHA-256")
-                                    var count = 0L; val buffer = ByteArray(64 * 1024)
-                                    while (true) {
-                                        ensureActive(); val size = runInterruptible { input.read(buffer) }; if (size < 0) break
-                                        count += size; check(count <= artifact.bytes) { "Model download exceeds pinned size" }
-                                        output.write(buffer, 0, size); hash.update(buffer, 0, size); transfer(completed + count)
-                                    }
-                                    check(count == artifact.bytes && hash.digest().hex() == artifact.sha256) { "Model integrity verification failed" }
-                                }
-                            } finally { closer.cancelAndJoin() }
-                        }
+                var ancestor = target.parent
+                while (ancestor != null && ancestor.startsWith(root)) {
+                    require(!Files.isSymbolicLink(ancestor)) { "Model component directory is a symbolic link" }
+                    ancestor = ancestor.parent
+                }
+                val temporary = target.resolveSibling(".${target.fileName}.${artifact.sha256.take(16)}.part")
+                // Reserve only work that is starting, not the entire optional catalogue queue.
+                val partial = if (!Files.exists(Path.of(temporary.toString() + ".aria2")) && Files.isRegularFile(temporary) && !Files.isSymbolicLink(temporary)) Files.size(temporary).coerceAtMost(artifact.bytes) else 0
+                val remaining = artifact.bytes - partial
+                val expansion = card.archive?.expandedBytes ?: 0L
+                val reserve = 64L * 1024 * 1024
+                val available = Files.getFileStore(root).usableSpace
+                val required = Math.addExact(Math.addExact(remaining, expansion), reserve)
+                check(available >= required) { "Not enough disk space to download and install ${card.name}: need $required bytes, available $available" }
+                // Deterministic private staging survives pause, process exit and a failed network request.
+                val measurement = transfers.withSlot(waiting) {
+                    transferEngine.download(artifact, temporary, options) { done -> transfer(completed + done) }
+                }
+                verification.withPermit {
+                    activity(ModelInstallProgress(ModelInstallPhase.VERIFYING, 0, artifact.bytes, artifact.filename))
+                    val matches = Files.size(temporary) == artifact.bytes && digest(temporary) { done, total ->
+                        activity(ModelInstallProgress(ModelInstallPhase.VERIFYING, done, total, artifact.filename))
+                    } == artifact.sha256
+                    if (!matches) {
+                        Files.deleteIfExists(temporary)
+                        Files.deleteIfExists(Path.of(temporary.toString() + ".resume.json"))
+                        Files.deleteIfExists(Path.of(temporary.toString() + ".aria2"))
+                        error("Model integrity verification failed: ${artifact.filename}")
                     }
                     try { Files.move(temporary, target, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING) }
                     catch (_: java.nio.file.AtomicMoveNotSupportedException) { Files.move(temporary, target, StandardCopyOption.REPLACE_EXISTING) }
-                    completed += artifact.bytes
-                } finally { Files.deleteIfExists(temporary) }
+                    Files.deleteIfExists(Path.of(temporary.toString() + ".resume.json"))
+                    Files.deleteIfExists(Path.of(temporary.toString() + ".aria2"))
+                    if (measurement.networkBytes > 0) downloads.measured(DesktopTransferMeasurement(id, artifact.filename,
+                        measurement.backend, measurement.networkBytes, measurement.elapsedMillis, measurement.resumedBytes, measurement.connections))
+                }
+                completed += artifact.bytes
             }
             val context = currentCoroutineContext()
-            if (card.archive != null) installArchive(card, root, activity) { context.ensureActive() }
-            if (card.rangePackage != null) installRanges(card, root) { done -> transfer(completed + done) }
-            verifyFiles(card, root, activity)
+            if (card.rangePackage != null) transfers.withSlot(waiting) { installRanges(card, root) { done -> transfer(completed + done) } }
+            verification.withPermit {
+                if (card.archive != null) installArchive(card, root, activity) { context.ensureActive() }
+                verifyFiles(card, root, activity)
+            }
             val selected = selection(card, runtimePath(card, root))
             mutableInstallations.update { it + (card.id to DesktopModelStatus(true, runtimePath(card, root))) }
             selected
         }
     }
-    suspend fun verify(id: String, path: Path, activity: (ModelInstallProgress) -> Unit = {}): EngineSelection = installers.getValue(find(id).id).withLock { withContext(Dispatchers.IO) {
+    suspend fun verify(id: String, path: Path, activity: (ModelInstallProgress) -> Unit = {}): EngineSelection = installers.getValue(find(id).id).withLock { withContext(Dispatchers.IO) { verification.withPermit {
         val card = find(id)
         val single = card.artifacts.size == 1 && card.archive == null && card.rangePackage == null
         val root = if (single) path.toAbsolutePath().parent else path.toAbsolutePath()
@@ -169,7 +188,28 @@ class DesktopModelLibrary internal constructor(private val directory: Path, val 
             } == artifact.sha256) { "Selected file does not match the pinned model" }
         } else verifyFiles(card, root, activity)
         selection(card, if (single) path.toAbsolutePath() else root)
-    } }
+    } } }
+    suspend fun discardPartial(id: String) = installers.getValue(find(id).id).withLock {
+        withContext(Dispatchers.IO) {
+            val card = find(id)
+            val root = modelDirectory(card).normalize()
+            if (!Files.exists(root)) return@withContext
+            require(!Files.isSymbolicLink(root)) { "Unsafe model install directory" }
+            for (artifact in card.artifacts) {
+                val target = root.resolve(artifact.filename).normalize()
+                require(target.startsWith(root)) { "Model component escapes its directory" }
+                var ancestor = target.parent
+                while (ancestor != null && ancestor.startsWith(root)) {
+                    require(!Files.isSymbolicLink(ancestor)) { "Unsafe model component directory" }
+                    ancestor = ancestor.parent
+                }
+                val temporary = target.resolveSibling(".${target.fileName}.${artifact.sha256.take(16)}.part")
+                Files.deleteIfExists(temporary)
+                Files.deleteIfExists(Path.of(temporary.toString() + ".resume.json"))
+                Files.deleteIfExists(Path.of(temporary.toString() + ".aria2"))
+            }
+        }
+    }
     fun installedSelection(id: String): EngineSelection? = mutableInstallations.value[id]?.takeIf { it.ready }?.path?.let { selection(find(id), it) }
     fun find(id: String): DesktopModelCard = catalog.singleOrNull { it.id == id } ?: error("Unknown desktop model: $id")
     private fun selection(card: DesktopModelCard, path: Path): EngineSelection {
@@ -177,6 +217,16 @@ class DesktopModelLibrary internal constructor(private val directory: Path, val 
         // Multi-component engines verify each file; single-file engines keep the one sha256 pin.
         val components = if (card.artifacts.size > 1) card.artifacts.associate { "sha256.${it.filename}" to it.sha256 } else emptyMap()
         return EngineSelection(card.engineId, card.id, path.toString(), options = card.options + single + components)
+    }
+    private fun hasRuntimeInventory(card: DesktopModelCard, root: Path): Boolean {
+        val archive = card.archive
+        if (archive != null) {
+            if (archive.hasComponentPins) return archive.files.all { Files.isRegularFile(root.resolve(it.path)) && Files.size(root.resolve(it.path)) == it.bytes }
+            return Files.list(root).use { files -> files.anyMatch { !it.fileName.toString().startsWith(".") &&
+                it.fileName.toString() !in card.artifacts.map { artifact -> artifact.filename } } }
+        }
+        return card.artifacts.all { Files.isRegularFile(root.resolve(it.filename)) && Files.size(root.resolve(it.filename)) == it.bytes } &&
+            card.rangePackage?.members.orEmpty().all { Files.isRegularFile(root.resolve("tokenizer").resolve(it.path)) }
     }
     private fun modelDirectory(card: DesktopModelCard): Path = directory.resolve("models").resolve(card.id)
     private fun runtimePath(card: DesktopModelCard, root: Path) =
@@ -483,28 +533,6 @@ class DesktopModelLibrary internal constructor(private val directory: Path, val 
             throw error
         }
         staging.toFile().deleteRecursively()
-    }
-    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
-    private suspend fun openArtifact(initial: URI): HttpResponse<java.io.InputStream> {
-        var current = initial
-        repeat(6) { redirects ->
-            check(current.scheme == "https" && current.userInfo == null) { "Model download requires HTTPS" }
-            val request = HttpRequest.newBuilder(current).timeout(Duration.ofHours(2)).header("User-Agent", "Hearth-Desktop/1").GET().build()
-            val response = suspendCancellableCoroutine<HttpResponse<java.io.InputStream>> { continuation ->
-                val future = client.sendAsync(request, HttpResponse.BodyHandlers.ofInputStream())
-                continuation.invokeOnCancellation { future.cancel(true) }
-                future.whenComplete { value, error ->
-                    if (error != null) continuation.resumeWithException(error)
-                    else if (continuation.isActive) continuation.resume(value) { value.body().close() }
-                    else value.body().close()
-                }
-            }
-            if (response.statusCode() !in setOf(301, 302, 303, 307, 308)) return response
-            response.body().close()
-            check(redirects < 5) { "Too many model download redirects" }
-            current = current.resolve(response.headers().firstValue("Location").orElseThrow { IllegalStateException("Model redirect has no destination") })
-        }
-        error("Too many model redirects")
     }
     /** A single pinned byte range; the model host must answer 206 with the exact extent. */
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)

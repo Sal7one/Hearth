@@ -23,6 +23,8 @@ import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.foundation.rememberScrollState
@@ -115,12 +117,18 @@ fun DownloadsScreen(onBrowseModels: () -> Unit = {}, onVoices: () -> Unit = {}) 
    delay(1000)
   }
  }
- Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-  if (!ByokPolicy.FEATURE_BYOK) {
+ if (!ByokPolicy.FEATURE_BYOK) {
+  Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
    Text(uiText(UiR.string.ui_import_models_already_on_your_device_35a79))
    FeatureAction(uiText(UiR.string.ui_import_models_721f0), Icons.Default.ViewModule, onBrowseModels)
-   return@Column
   }
+  return
+ }
+ val groups = remember(records) { downloadQueueGroups(records) }
+ val visible = remember(groups, queueFilter) { groups.filter { when (queueFilter) { "active" -> it.priority == 0; "attention" -> it.priority == 1; "finished" -> it.priority >= 2; else -> true } }
+   .sortedWith(compareBy<DownloadQueueGroup> { it.priority }.thenByDescending { it.rows.maxOf { row -> row.id } }) }
+ LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+  item(key = "queue-controls") { Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
   Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
    Text(uiText(UiR.string.model_download_queue), Modifier.weight(1f), style = MaterialTheme.typography.headlineSmall)
    TextButton(onClick = onBrowseModels) { Text(uiText(UiR.string.library_browse_models)) }
@@ -136,16 +144,15 @@ fun DownloadsScreen(onBrowseModels: () -> Unit = {}, onVoices: () -> Unit = {}) 
   if (busy) LinearProgressIndicator(Modifier.fillMaxWidth())
   error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
   message?.let { Text(it) }
-  val groups = downloadQueueGroups(records)
   Text(uiText(UiR.string.model_download_summary, groups.count { it.priority == 0 }, groups.count { it.priority == 1 }), style = MaterialTheme.typography.bodySmall)
   ModelFilterPicker(uiText(UiR.string.model_download_filter), queueFilter, listOf(
    "all" to uiText(UiR.string.model_download_all), "active" to uiText(UiR.string.model_download_active),
    "attention" to uiText(UiR.string.model_download_attention), "finished" to uiText(UiR.string.model_download_finished)), { queueFilter = it })
-  val visible = groups.filter { when (queueFilter) { "active" -> it.priority == 0; "attention" -> it.priority == 1; "finished" -> it.priority >= 2; else -> true } }
-   .sortedWith(compareBy<DownloadQueueGroup> { it.priority }.thenBy { it.rows.minOf { row -> row.id } })
+  DownloadQueueToolbar(downloads, records, onChanged = { records = it }, onError = { error = it })
   if (records.isEmpty()) Text(uiText(UiR.string.ui_your_downloads_will_appear_here_1bc2a), Modifier.padding(vertical = 24.dp))
   else if (visible.isEmpty()) Text(uiText(UiR.string.model_download_no_filter_results), Modifier.padding(vertical = 24.dp))
-  visible.forEach { group -> key(group.key) {
+  } }
+  items(visible, key = { it.key }) { group -> Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
    var expanded by rememberSaveable { mutableStateOf(false) }
    if (group.multipart) GroupedDownloadCard(group, busy, expanded, { expanded = !expanded }, onAction = { scope.launch {
     busy = true; error = null; message = null
@@ -174,7 +181,8 @@ fun DownloadsScreen(onBrowseModels: () -> Unit = {}, onVoices: () -> Unit = {}) 
        group.representatives.filter { (it.failed || it.paused) && it.id < 0 }.forEach { downloads.retry(it.id) }
        if (group.voiceFamily != null) group.required.keys.filter { id -> group.rows.none { it.modelId == id } }.forEach { id ->
         val asset = checkNotNull(DownloadAssets.find(id)) { "Unknown voice component: $id" }
-        val filename = checkNotNull(com.sal7one.transiber.voice.VoiceCatalog.find(id)) { "Unknown voice component: $id" }.filename
+        val filename = if (id == DownloadAssets.MAGPIE_TOKENIZER) "magpie-tokenizer.ranges"
+         else checkNotNull(com.sal7one.transiber.voice.VoiceCatalog.find(id)) { "Unknown voice component: $id" }.filename
         downloads.enqueue(DownloadSpec.parse(asset.url, filename), true, id)
        }
        group.modelId?.let(com.sal7one.transiber.models.SpeechComponents::find)?.let { com.sal7one.transiber.models.SpeechComponents.enqueue(context, downloads, it) }
@@ -197,14 +205,22 @@ fun DownloadsScreen(onBrowseModels: () -> Unit = {}, onVoices: () -> Unit = {}) 
       ?: downloads.translationModel(item)?.id else null
    OutlinedCard(Modifier.fillMaxWidth()) { Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
     Text(title, style = MaterialTheme.typography.titleMedium)
-    ModelStatusLabel(uiText.downloadStage(stage))
+    ModelStatusLabel(when {
+     item.preparingQueued && stage == DownloadStage.VERIFYING -> uiText(UiR.string.download_queue_queued_verification)
+     item.preparationAction == "export" && stage == DownloadStage.VERIFYING -> uiText(UiR.string.download_queue_saving_verified)
+     else -> uiText.downloadStage(stage)
+    })
     if (stage in setOf(DownloadStage.WAITING, DownloadStage.TRANSFERRING, DownloadStage.PAUSED, DownloadStage.FAILED))
      Text("${formatDownloadMiB(item.bytes, uiText.locale)} MiB" + if (item.total > 0) " / ${formatDownloadMiB(item.total, uiText.locale)} MiB" else "", style = MaterialTheme.typography.bodyMedium)
     if (item.active) {
-     val progress = item.transferFraction()
+     val progress = item.transferFraction() ?: item.preparationFraction()
      if (progress != null) LinearProgressIndicator(progress = { progress }, modifier = Modifier.fillMaxWidth()) else LinearProgressIndicator(Modifier.fillMaxWidth())
+     if (stage == DownloadStage.VERIFYING && !item.preparingQueued && item.verificationTotal > 0)
+      Text("${formatDownloadMiB(item.verificationBytes, uiText.locale)} / ${formatDownloadMiB(item.verificationTotal, uiText.locale)} MiB", style = MaterialTheme.typography.bodySmall)
      if (stage in setOf(DownloadStage.VERIFYING, DownloadStage.INSTALLING)) Text(uiText(UiR.string.model_download_processing_hint), style = MaterialTheme.typography.bodySmall)
     }
+    if (item.networkWait) Text(uiText(UiR.string.download_queue_waiting_network), style = MaterialTheme.typography.bodySmall)
+    if (item.backend.isNotBlank() && item.active) Text("${item.backend} · ${item.connections}× · ${formatDownloadMiB(item.bytesPerSecond, uiText.locale)} MiB/s", style = MaterialTheme.typography.bodySmall)
     if (item.error.isNotBlank()) Text(item.error, color = MaterialTheme.colorScheme.error)
     else if (item.reason != 0 && stage in setOf(DownloadStage.FAILED, DownloadStage.PAUSED)) Text(
      uiText(if (stage == DownloadStage.FAILED) UiR.string.ui_downloadmanager_failed_reason_1_s_54785 else UiR.string.ui_paused_downloadmanager_reason_1_s_ea493, item.reason), color = MaterialTheme.colorScheme.error)
@@ -272,7 +288,7 @@ fun DownloadsScreen(onBrowseModels: () -> Unit = {}, onVoices: () -> Unit = {}) 
    } }
   } }
   } }
-  Text(uiText(UiR.string.ui_downloads_may_use_mobile_data_installed_models_keep_a_verified_ap_da870), style = MaterialTheme.typography.bodySmall)
+  item(key = "queue-footer") { Text(uiText(UiR.string.ui_downloads_may_use_mobile_data_installed_models_keep_a_verified_ap_da870), style = MaterialTheme.typography.bodySmall) }
  }
  if(folderSettings && ByokPolicy.FEATURE_BYOK) FeatureOptionsSheet(uiText(UiR.string.ui_download_folder_59317),{folderSettings=false},folderScroll) {
   OutlinedCard(Modifier.fillMaxWidth()) { Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -349,4 +365,4 @@ fun DownloadsScreen(onBrowseModels: () -> Unit = {}, onVoices: () -> Unit = {}) 
  }
 }
 
-private fun formatDownloadMiB(bytes: Long, locale: java.util.Locale): String = String.format(locale, "%,.1f", bytes.coerceAtLeast(0) / 1_048_576.0)
+internal fun formatDownloadMiB(bytes: Long, locale: java.util.Locale): String = String.format(locale, "%,.1f", bytes.coerceAtLeast(0) / 1_048_576.0)

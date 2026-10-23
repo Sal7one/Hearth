@@ -30,7 +30,8 @@ internal fun VoicePackageActions(family: String,ready: Boolean,available: Boolea
         if(ByokPolicy.FEATURE_BYOK)try {rows=withContext(Dispatchers.IO){FileDownloads(context).list()}}
         catch(e: CancellationException){throw e}catch(e: Exception){onError(e.message ?: e.toString())}
     }
-    val relevant=voicePackageRecords(rows,assets.map {it.id}.toSet())
+    val requiredIds = assets.map { it.id }.toSet() + if (family == "magpie") setOf(DownloadAssets.MAGPIE_TOKENIZER) else emptySet()
+    val relevant=voicePackageRecords(rows,requiredIds)
     val active=relevant.filter {it.active};val failure=relevant.firstOrNull {it.failed}
     if(!ready)failure?.let {Text(it.error.ifBlank {text(R.string.ui_download_failed_reason_1_s_8bb99,it.reason)},
         color=MaterialTheme.colorScheme.error,style=MaterialTheme.typography.bodySmall)}

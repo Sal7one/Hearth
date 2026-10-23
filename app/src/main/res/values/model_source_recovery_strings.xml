@@ -1,0 +1,8 @@
+<resources>
+    <string name="setup_sources_components">%1$d of %2$d components available</string>
+    <string name="setup_sources_setup_incomplete">Setup is incomplete. These components were never recorded as installed; other models remain usable.</string>
+    <string name="setup_sources_restore_downloads">Restore from saved downloads</string>
+    <string name="setup_sources_restore_queued">%1$d saved downloads queued for verification and restoration.</string>
+    <string name="setup_sources_component_details">Component and path details</string>
+    <string name="setup_sources_hide_details">Hide details</string>
+</resources>

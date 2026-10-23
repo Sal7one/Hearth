@@ -141,7 +141,7 @@ internal fun SettingsVoiceLocalUi(
                         uiText(UiR.string.ui_download_failed_reason_1_s_8bb99, it.reason)
                     }, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
                     if (active.isNotEmpty()) OutlinedButton(onClick = onDownloads) { Text(uiText(UiR.string.ui_download_progress_1_s_files_cdb9d, active.size)) }
-                    else if (!ready) Button(enabled = !busy && !queuing, onClick = {
+                    else if (!ready) Button(enabled = !queuing, onClick = {
                         scope.launch {
                             queuing = true; onError(null)
                             try {

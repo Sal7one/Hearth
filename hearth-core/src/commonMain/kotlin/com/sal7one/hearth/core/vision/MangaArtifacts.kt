@@ -6,6 +6,14 @@ data class VisionArtifact(val id: String, val owner: String, val repository: Str
     val url get() = "https://huggingface.co/$owner/$repository/resolve/$revision/$filename"
 }
 object MangaArtifacts {
+    /** Koharu's default full instance segmenter, exported without changing its source weights.
+     * Custom/other weight license; Manga109 academic-use data terms apply. */
+    val koharuDetector = VisionArtifact("ocr-koharu-rfdetr","ShiniShiho","koharu-layout-rfdetr-seg-2xl-1152-onnx",
+        "bfbbd4e5ab34a50459865074fa044da496cebb57","rfdetr-seg-2xlarge.onnx",148442003,
+        "7cc10d4316371946b8441da3512261a8e148b129abcdb0ea6235ed1d1d06d351")
+    val inpainter = VisionArtifact("ocr-manga-lama","mayocream","lama-manga-onnx",
+        "b55497aadbfcb9740e1ed16f008268d71b4f3f79","lama-manga.onnx",207482644,
+        "4512adab295ee5a5e02ccd1bdf8d45dccbac88309d9cff1532ffd5de876f02a4")
     val detector = VisionArtifact("ocr-comic-detector","ogkalu","comic-text-and-bubble-detector",
         "16e8a622f91fabc6b5b65c96d32d1183f8843546","detector-v4-s_int8.onnx",11120765,
         "5fe9e4f576e49d4e7e8b0e029d6d3cdc252abd4694113e1cae120e62c931ea79")
@@ -16,5 +24,7 @@ object MangaArtifacts {
         "f9023406bb2f6b17df67bc4a327c56ecd20611f0","onnx/decoder_model_int8.onnx",29627936,
         "2e7177d2b0a59f1c612b694ed70c13971bee765cc2b2bc7bc9376e4753652f27")
     val files = listOf(detector,encoder,decoder)
+    val filesForKoharu = listOf(koharuDetector,encoder,decoder,detector)
+    val filesForKoharuCleanup = filesForKoharu+inpainter
     const val vocabularySha256 = "edee83dd448425ef4de06704e0bc4e18ee8970a502a4b3a0913bd6e7085dc951"
 }

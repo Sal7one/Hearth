@@ -113,7 +113,7 @@ private fun launchDesktop() = application {
                         store.importSetup(it)
                         store.save(modelController.reconnectImportedSetup(store.config.value))
                     }, persistUi = { store.saveUi(it) }, capabilities = capabilities)
-                modelController = DesktopModelController(models, scope, controller::showError)
+                modelController = DesktopModelController(models, scope, controller::showError, settings = store)
                 val reading = DesktopReadingController(pipeline, store.config, scope)
                 DesktopServices(store, credentials, runtime, modelController, controller, reading)
                     .also { candidate = it }
@@ -121,7 +121,7 @@ private fun launchDesktop() = application {
             services = loaded
             loaded.models.refresh(loaded.settings.config.value)
             loaded.settings.ui.value["reading-model-path"]?.takeIf(String::isNotBlank)?.let {
-                loaded.models.verify("manga-page", Path.of(it))
+                loaded.models.verify(selectedReadingModel(loaded.settings.ui.value), Path.of(it))
             }
         } catch(e: Exception) {
             withContext(NonCancellable) {

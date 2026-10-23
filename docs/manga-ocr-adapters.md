@@ -1,5 +1,22 @@
 # Manga, Meiki and drawn regions
 
+## Koharu segmentation and neural cleanup — 2026-10-23
+
+Android and desktop now also support the full RF-DETR instance-segmentation model
+used by Koharu, via a pinned native ONNX export. A quick compact pass publishes
+outlines first, then the quality pass refines text/bubble/panel masks and reading
+order. A separate cleanup bundle adds actual LaMa inference for textured regions;
+flat balloons use measured-color, mask-limited cleanup. Both retain Manga OCR,
+Hearth's selected translator, original-image comparison and Arabic/English text
+shaping. Existing manual/compact choices remain available.
+
+The segmentation bundle is 276,158,509 model bytes; the cleanup bundle is
+483,641,153 bytes. This is an opt-in CPU quality path with substantial memory use,
+not a GPU claim. See [the migration, exact pins and real runtime evidence](koharu-integration.md)
+for supported stages and the remaining upstream feature differences. The older
+compact/manual implementation evidence below is historical and remains relevant
+to those retained choices.
+
 ## Automatic page update — 2026-10-23
 
 Android now offers **Japanese · Automatic manga page** beside the retained manual

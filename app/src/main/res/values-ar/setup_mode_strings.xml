@@ -41,7 +41,7 @@
     <string name="setup_bundle_compact_translation_only">مترجم مخصص لزوج لغات واحد. تبقى اختيارات الكلام والصوت كما هي.</string>
     <string name="setup_bundle_broad_translation_only">Index-Translate 2B للغات متعددة. تبقى اختيارات الكلام والصوت كما هي.</string>
     <string name="setup_sources_attention">تحتاج بعض ملفات النماذج إلى مراجعة</string>
-    <string name="setup_sources_repair_detail">تحتاج %1$d نسخة من النماذج إلى مراجعة. يمكنك استخدام النماذج المثبتة الأخرى. افتح المراجعة لمعرفة الملفات المتأثرة والأخطاء المحددة.</string>
+    <string name="setup_sources_repair_detail">تحتاج %1$d حزم نماذج إلى إصلاح. تبقى النماذج المثبتة الأخرى قابلة للاستخدام. راجع المكونات المتأثرة أو استعدها من التنزيلات المحفوظة.</string>
     <string name="setup_sources_review">مراجعة</string>
     <string name="setup_sources_title">ملفات النماذج ومصادرها</string>
     <string name="setup_sources_detail">يشغّل Hearth نسخًا خاصة متحققًا منها. يُتابع الوصول إلى المصدر الأصلي بشكل منفصل؛ ولا يؤدي فحص المصدر إلى استبدال الملفات أو الثقة بالتغييرات.</string>

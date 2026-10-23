@@ -36,7 +36,8 @@ internal data class BenchmarkDownloadProgress(
                 "ct2" -> com.sal7one.common_jni.translation.Ct2Catalog.find(model.id)?.let {
                     com.sal7one.transiber.translation.Ct2Package.parts(it).map { part -> part.id }
                 }
-                "voice" -> com.sal7one.transiber.voice.VoiceCatalog.familyAssets(model.id).map { it.id }
+                "voice" -> com.sal7one.transiber.voice.VoiceCatalog.familyAssets(model.id).map { it.id } +
+                    if (model.id == "magpie") listOf(com.sal7one.transiber.downloads.DownloadAssets.MAGPIE_TOKENIZER) else emptyList()
                 "mlkit" -> emptyList()
                 else -> listOf(model.id)
             }.orEmpty().distinct()

@@ -38,13 +38,14 @@ internal fun downloadsState(
             detail = when (bucket) {
                 DownloadBucket.DOWNLOADING -> requireNotNull(transfer).let { current ->
                     current.label + when {
-                        current.queued -> " · Waiting for a slot"
+                        current.paused -> " · Downloaded bytes retained"
+                        current.queued -> " · Waiting for a network slot"
                         current.total > 0 -> " · ${formatBytes(current.downloaded)} of ${formatBytes(current.total)}" +
                             current.component.takeIf { it.isNotBlank() }?.let { " · $it" }.orEmpty()
                         else -> "…"
                     }
                 }
-                DownloadBucket.INSTALLED -> "Verified on this Mac"
+                DownloadBucket.INSTALLED -> "Verified on this computer"
                 DownloadBucket.BROKEN -> issue ?: "Failed verification"
                 DownloadBucket.AVAILABLE -> "Ready to download"
             },
@@ -54,6 +55,7 @@ internal fun downloadsState(
             } else null,
             issue = issue,
             cancellable = transfer?.cancelling != true,
+            paused = transfer?.paused == true,
         )
     }
 
@@ -62,7 +64,7 @@ internal fun downloadsState(
         items = items,
         installedCount = installed.size,
         totalCount = items.size,
-        activeCount = items.count { it.bucket == DownloadBucket.DOWNLOADING },
+        activeCount = items.count { it.bucket == DownloadBucket.DOWNLOADING && !it.paused },
         storageLabel = formatBytes(installed.sumOf { item -> catalog.first { it.id == item.id }.installedBytes }),
         freeDiskLabel = if (freeBytes > 0) formatBytes(freeBytes) else "—",
     )

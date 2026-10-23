@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="model_import_batch_summary">تم استيراد %1$d · فشل %2$d · المحدد %3$d</string>
+    <string name="model_import_batch_current">%1$d/%2$d · %3$s</string>
+    <string name="model_import_batch_background">يمكنك مغادرة هذه الصفحة. يستمر الاستيراد بشكل مستقل، ولا يوقف الملف غير الصالح استيراد بقية الملفات.</string>
+    <string name="model_import_batch_choose">النسخ التي تم التحقق منها جاهزة. اختر النموذج الذي تريد استخدامه.</string>
+    <string name="model_import_batch_cancelled">توقف الاستيراد. يتم الاحتفاظ بالنسخ المكتملة التي تم التحقق منها.</string>
+    <string name="model_import_batch_cancel">إيقاف بقية الاستيراد</string>
+    <string name="model_import_batch_results">نتائج الاستيراد</string>
+    <string name="model_import_batch_pick">استيراد ملفات النماذج</string>
+    <string name="model_import_batch_translation">استيراد ملفات ترجمة GGUF</string>
+</resources>

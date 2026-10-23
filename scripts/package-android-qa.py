@@ -101,6 +101,9 @@ def main():
             "apks": [{k: v for k, v in item.items() if k != "source"} for item in apks],
             "abiConfiguration": abi_configuration}
         validation_name = f"hearth-{identity.version_name}-validation.zip"
+        aria_source = ROOT / 'build/aria2-corresponding-source.tar.gz'
+        if not aria_source.is_file(): raise SystemExit('Build the aria2 corresponding-source archive before APK delivery')
+        shutil.copyfile(aria_source, staging / 'aria2-corresponding-source.tar.gz')
         files = sorted(path for path in evidence.rglob("*") if path.is_file())
         if any(path.is_symlink() or not path.resolve().is_relative_to(evidence) for path in files):
             raise SystemExit("Validation evidence must contain ordinary files inside its staging directory")

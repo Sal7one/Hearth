@@ -1,6 +1,8 @@
 package com.sal7one.hearth.desktop.ui.screens.downloads
 
 import com.sal7one.hearth.core.PipelineStage
+import com.sal7one.hearth.desktop.data.DesktopDownloadOptions
+import com.sal7one.hearth.desktop.data.DesktopTransferMeasurement
 
 internal enum class DownloadBucket { DOWNLOADING, AVAILABLE, INSTALLED, BROKEN }
 
@@ -14,6 +16,7 @@ internal data class DownloadItem(
     val progress: Float? = null,
     val issue: String? = null,
     val cancellable: Boolean = true,
+    val paused: Boolean = false,
 )
 
 internal data class DownloadsState(
@@ -24,6 +27,9 @@ internal data class DownloadsState(
     val storageLabel: String = "0 MB",
     val freeDiskLabel: String = "—",
     val refreshing: Boolean = false,
+    val options: DesktopDownloadOptions = DesktopDownloadOptions(),
+    val measurements: List<DesktopTransferMeasurement> = emptyList(),
+    val query: String = "",
 ) {
     val downloading: List<DownloadItem> get() = items.filter { it.bucket == DownloadBucket.DOWNLOADING }
     val available: List<DownloadItem> get() = items.filter { it.bucket == DownloadBucket.AVAILABLE }

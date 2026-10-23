@@ -13,6 +13,23 @@ import javax.imageio.ImageIO
 import kotlin.test.*
 
 class DesktopReadingControllerTest {
+    @Test fun selectedProfileIsPartOfReaderIdentityAndResetKeepsTheImage() = runBlocking {
+        val readers=mutableListOf<FakeReader>()
+        val controller=DesktopReadingController(noPipeline(),MutableStateFlow(PipelineConfig()),this) {FakeReader().also(readers::add)}
+        val path=image();val directory=Path.of("same-model-folder")
+        try {
+            controller.openImage(path);controller.awaitIdle()
+            controller.read(directory,false,"manga-page");controller.awaitIdle()
+            controller.read(directory,false,"manga-page");controller.awaitIdle()
+            assertEquals(1,readers.size,"Same path and selected mode should reuse its resident reader")
+            controller.read(directory,false,"manga-koharu-page");controller.awaitIdle()
+            assertEquals(2,readers.size);assertTrue(readers.first().closed)
+            controller.resetResults()
+            assertNotNull(controller.state.value.image);assertTrue(controller.state.value.text.isEmpty())
+            controller.read(directory,false,"manga-koharu-page");controller.awaitIdle()
+            assertEquals(3,readers.size,"Reset cancellation must not reuse a cancelled native reader")
+        } finally {controller.close();Files.deleteIfExists(path)}
+    }
     @Test fun cropCoordinatesAndTranslationsUseTheSharedConfigurationWithoutVoice() = runBlocking {
         val config = MutableStateFlow(PipelineConfig(speech=EngineSelection("speech"),translation=EngineSelection("translator"),
             voice=EngineSelection("voice"),sourceLanguage="en",targetLanguage="ar"))

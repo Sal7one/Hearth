@@ -39,16 +39,19 @@ struct ComicDetector::Impl {
     OrtEnv* env=nullptr; OrtSessionOptions* options=nullptr; OrtMemoryInfo* memory=nullptr;
     OrtSession* session=nullptr; OrtRunOptions* run=nullptr;
     std::atomic<bool> cancelled{false}; std::mutex mutex;
+    bool koharu=false,inpainter=false;
     ~Impl() {
         if(session) api()->ReleaseSession(session); if(run) api()->ReleaseRunOptions(run);
         if(memory) api()->ReleaseMemoryInfo(memory); if(options) api()->ReleaseSessionOptions(options);
         if(env) api()->ReleaseEnv(env);
     }
 };
-ComicDetector::ComicDetector(const std::string& model):impl(std::make_unique<Impl>()) {
+ComicDetector::ComicDetector(const std::string& model,int mode):impl(std::make_unique<Impl>()) {
+    if(mode<0 || mode>2)throw std::invalid_argument("Unknown comic vision model kind");
+    const bool koharu=mode==1;impl->koharu=koharu;impl->inpainter=mode==2;
     checked(api()->CreateEnv(ORT_LOGGING_LEVEL_ERROR,"hearth-comic-detection",&impl->env));
     checked(api()->CreateSessionOptions(&impl->options));
-    checked(api()->SetIntraOpNumThreads(impl->options,2)); checked(api()->SetInterOpNumThreads(impl->options,1));
+    checked(api()->SetIntraOpNumThreads(impl->options,koharu?4:2)); checked(api()->SetInterOpNumThreads(impl->options,1));
     checked(api()->AddSessionConfigEntry(impl->options,"session.intra_op.allow_spinning","0"));
     checked(api()->SetSessionGraphOptimizationLevel(impl->options,ORT_ENABLE_ALL));
     checked(api()->CreateCpuMemoryInfo(OrtArenaAllocator,OrtMemTypeDefault,&impl->memory));
@@ -57,7 +60,7 @@ ComicDetector::ComicDetector(const std::string& model):impl(std::make_unique<Imp
     checked(api()->CreateSession(impl->env,path.c_str(),impl->options,&impl->session));
     size_t inputs=0,outputs=0;
     checked(api()->SessionGetInputCount(impl->session,&inputs)); checked(api()->SessionGetOutputCount(impl->session,&outputs));
-    if(inputs!=2 || outputs!=3) throw std::runtime_error("Comic detector must have two inputs and three outputs");
+    if(inputs!=(koharu?1:2) || outputs!=(impl->inpainter?1:3)) throw std::runtime_error("Comic model input/output count differs from its pinned export");
 }
 ComicDetector::~ComicDetector()=default;
 void ComicDetector::cancel() {
@@ -68,6 +71,8 @@ std::vector<ComicDetection> ComicDetector::detect(const uint32_t* pixels,int wid
     std::lock_guard<std::mutex> lock(impl->mutex);
     if(!pixels || width<1 || height<1 || width>2048 || height>2048) throw std::invalid_argument("Comic detector input must be at most 2048 pixels per side");
     if(impl->cancelled.load()) throw std::runtime_error("Comic detection cancelled");
+    if(impl->inpainter)throw std::runtime_error("LaMa is an inpainter, not a layout detector");
+    if(impl->koharu)return detectKoharu(pixels,width,height);
     constexpr int side=640,plane=side*side;
     std::vector<float> image(3*plane);
     // Export preprocessing: stretch to 640², bilinear RGB / 255. No letterbox or ImageNet normalization.
@@ -108,8 +113,10 @@ std::vector<ComicDetection> ComicDetector::detect(const uint32_t* pixels,int wid
         const int top=int(std::floor(std::clamp(coords[i*4+1],0.f,float(height))));
         const int right=int(std::ceil(std::clamp(coords[i*4+2],0.f,float(width))));
         const int bottom=int(std::ceil(std::clamp(coords[i*4+3],0.f,float(height))));
-        if(right-left>=3 && bottom-top>=3) detections.push_back({{left,top,right-left,bottom-top,confidences[i]},int(classes[i])});
+        if(right-left>=3 && bottom-top>=3) detections.push_back({{left,top,right-left,bottom-top,confidences[i]},int(classes[i]),{}});
     }
     return detections;
 }
+#include "comic_koharu.inc"
+#include "comic_inpainting.inc"
 }

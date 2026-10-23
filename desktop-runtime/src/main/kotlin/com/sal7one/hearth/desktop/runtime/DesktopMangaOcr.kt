@@ -11,17 +11,26 @@ import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
 
 /** Real CPU ORT adapters using the same model pins, geometry and page processing as Android. */
-class DesktopMangaOcr(directory: Path) : AutoCloseable, PageOcrReader {
+class DesktopMangaOcr(directory: Path,profileId: String?=null) : AutoCloseable, PageOcrReader {
     private val closed=AtomicBoolean(false)
     private val page: MangaPageOcr
     init {
-        for (asset in MangaArtifacts.files) {
+        require(profileId==null || profileId in setOf("manga-page","manga-koharu-page","manga-koharu-clean-page")) {"Unknown manga pipeline profile: $profileId"}
+        val koharu=if(profileId==null)Files.exists(directory.resolve("${MangaArtifacts.koharuDetector.id}.onnx")) else profileId!="manga-page"
+        val cleanup=if(profileId==null)koharu && Files.exists(directory.resolve("${MangaArtifacts.inpainter.id}.onnx")) else profileId=="manga-koharu-clean-page"
+        val artifacts=if(cleanup)MangaArtifacts.filesForKoharuCleanup else if(koharu)MangaArtifacts.filesForKoharu else MangaArtifacts.files
+        for (asset in artifacts) {
             val file=directory.resolve("${asset.id}.onnx")
             check(Files.isRegularFile(file) && Files.size(file)==asset.bytes && sha(file)==asset.sha256) { "Manga model checksum/size failed: ${asset.id}. Repair or import the pinned bundle." }
         }
-        val detector=DesktopComicRegionDetector(directory.resolve("${MangaArtifacts.detector.id}.onnx"))
-        page=try { MangaPageOcr(detector,DesktopMangaRegionReader(directory)) }
-        catch(error: Throwable) {detector.close();throw error}
+        val detector=DesktopComicRegionDetector(directory.resolve("${if(koharu)MangaArtifacts.koharuDetector.id else MangaArtifacts.detector.id}.onnx"),koharu)
+        var preview: DesktopComicRegionDetector?=null
+        var inpainter: DesktopMangaInpainter?=null
+        page=try {
+            if(koharu)preview=DesktopComicRegionDetector(directory.resolve("${MangaArtifacts.detector.id}.onnx"),false)
+            if(cleanup)inpainter=DesktopMangaInpainter(directory.resolve("${MangaArtifacts.inpainter.id}.onnx"))
+            MangaPageOcr(detector,DesktopMangaRegionReader(directory),preview,if(koharu)180_000 else 45_000,inpainter)
+        } catch(error: Throwable) {try{detector.close()}finally{try{preview?.close()}finally{inpainter?.close()}};throw error}
     }
     override fun recognize(pixels: IntArray,width: Int,height: Int,progress: PageOcrProgress): List<PageText> {
         check(!closed.get()) { "Manga OCR is closed" }
@@ -40,6 +49,7 @@ class DesktopMangaOcr(directory: Path) : AutoCloseable, PageOcrReader {
                 check(rejected) { "Packaged OCR JNI did not reject a retired handle" }
             }
             rejectsRetiredHandle { ComicNative.detect(0,intArrayOf(0),1,1) }
+            rejectsRetiredHandle { ComicNative.inpaint(0,intArrayOf(0),1,1,intArrayOf(0,0,1)) }
             rejectsRetiredHandle { JapaneseNative.recognize(0,intArrayOf(0),1,1) }
         }
         private fun sha(path: Path): String {
@@ -49,14 +59,20 @@ class DesktopMangaOcr(directory: Path) : AutoCloseable, PageOcrReader {
         }
     }
 }
-private class DesktopComicRegionDetector(model: Path): ComicRegionDetector {
-    private val handle=AtomicLong(ComicNative.create(model.toAbsolutePath().toString().toByteArray(Charsets.UTF_8)))
+private class DesktopMangaInpainter(model: Path): MangaPageInpainter {
+    private val handle=AtomicLong(ComicNative.createInpainter(model.toAbsolutePath().toString().toByteArray(Charsets.UTF_8)))
+    override fun inpaint(pixels: IntArray,width: Int,height: Int,mask: ComicMask): MangaPatch {
+        val id=handle.get();check(id!=0L){"Manga inpainter is closed"}
+        return MangaPatch.fromNative(ComicNative.inpaint(id,pixels,width,height,mask.nativeSpans()))
+    }
+    override fun cancel(){handle.get().takeIf {it!=0L}?.let(ComicNative::cancel)}
+    override fun close(){handle.getAndSet(0).takeIf {it!=0L}?.let(ComicNative::destroy)}
+}
+private class DesktopComicRegionDetector(model: Path,koharu: Boolean): ComicRegionDetector {
+    private val handle=AtomicLong(model.toAbsolutePath().toString().toByteArray(Charsets.UTF_8).let {if(koharu)ComicNative.createKoharu(it) else ComicNative.create(it)})
     override fun detect(pixels: IntArray,width: Int,height: Int): List<ComicDetection> {
         val id=handle.get();check(id!=0L) {"Comic detector is closed"}
-        return ComicNative.detect(id,pixels,width,height).map {
-            check(it.size==6) {"Invalid native comic detection"}
-            ComicDetection(OcrRect(it[0],it[1],it[2],it[3]),it[5],it[4]/10000f)
-        }
+        return ComicNative.detect(id,pixels,width,height).map { ComicDetection.fromNative(it,width,height) }
     }
     override fun cancel() {handle.get().takeIf {it!=0L}?.let(ComicNative::cancel)}
     override fun close() {handle.getAndSet(0L).takeIf {it!=0L}?.let(ComicNative::destroy)}

@@ -3,4 +3,5 @@
     <string name="ocr_manga_page_details">اكتشاف النص وفقاعات الكلام وتحديدها تلقائيًا، ثم قراءة كل منطقة وترجمتها. يضيف كاشفًا بحجم 11.1 ميغابايت إلى ملفات Manga OCR الحالية. معالج مركزي · تجريبي · Apache-2.0</string>
     <string name="ocr_detecting_regions">جارٍ اكتشاف النص وفقاعات الكلام…</string>
     <string name="ocr_reading_regions">تمت قراءة %1$d من %2$d مناطق نصية</string>
+    <string name="ocr_koharu_refining">التحديد المبدئي جاهز. جارٍ تحسين الأقنعة وترتيب اللوحات باستخدام Koharu… قد تستغرق معالجة الجودة على المعالج المركزي دقيقة.</string>
 </resources>

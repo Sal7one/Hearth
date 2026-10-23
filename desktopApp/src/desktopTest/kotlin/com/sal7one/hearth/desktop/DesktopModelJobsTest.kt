@@ -13,6 +13,56 @@ import kotlin.test.*
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class DesktopModelJobsTest {
+    @Test fun aPausedDownloadSurvivesControllerAndJournalRestartWithoutLosingItsPrefix() = runTest {
+        val directory = Files.createTempDirectory("hearth-durable-model-queue-")
+        try {
+            val library = DesktopModelLibrary(directory)
+            val card = library.catalog.first()
+            val first = DesktopModelController(library, backgroundScope, { fail(it) }, downloadModel = { _, progress ->
+                progress(ModelInstallProgress(ModelInstallPhase.DOWNLOADING, 50, 100))
+                awaitCancellation()
+            })
+            first.download(card.id); runCurrent()
+            first.pause(card.id); runCurrent()
+            assertTrue(first.state.value.transfers.getValue(card.id).paused)
+            first.close()
+            val restored = DesktopModelLibrary(directory)
+            val second = DesktopModelController(restored, backgroundScope, { fail(it) }, downloadModel = { id, _ ->
+                EngineSelection(card.engineId, id)
+            })
+            try {
+                assertTrue(second.state.value.transfers.getValue(card.id).paused)
+                assertEquals(50L, second.state.value.transfers.getValue(card.id).downloaded)
+                second.resumeAll(); runCurrent()
+                assertTrue(second.state.value.transfers.isEmpty())
+                assertEquals(DesktopQueuePhase.COMPLETE, restored.downloads.state.value.queue.single().phase)
+            } finally { second.close() }
+        } finally { directory.toFile().deleteRecursively() }
+    }
+
+    @Test fun unselectedExternalImportsAreRememberedAndReverifiedAtTheNextLaunch() = runTest {
+        val directory = Files.createTempDirectory("hearth-import-provenance-")
+        try {
+            val library = DesktopModelLibrary(directory)
+            val card = library.catalog.first()
+            val picked = directory.resolve("external-model.bin")
+            val verified = EngineSelection(card.engineId, card.id, picked.toString())
+            val first = DesktopModelController(library, backgroundScope, { fail(it) }, verifyModel = { _, _ -> verified })
+            first.verify(card.id, picked); runCurrent(); first.close()
+            val checked = mutableListOf<java.nio.file.Path>()
+            val second = DesktopModelController(DesktopModelLibrary(directory), backgroundScope, { fail(it) }, verifyModel = { _, path ->
+                checked.add(path); verified
+            })
+            try {
+                assertNull(second.verifiedSelection(card.id), "A saved path alone must never mark an import ready")
+                second.refresh(PipelineConfig())
+                second.state.first { !it.refreshing }
+                assertEquals(listOf(picked), checked)
+                assertEquals(verified, second.verifiedSelection(card.id))
+            } finally { second.close() }
+        } finally { directory.toFile().deleteRecursively() }
+    }
+
     @Test fun anOlderRefreshCannotEraseANewerSuccessfulImport() = runTest {
         val directory = Files.createTempDirectory("hearth-model-refresh-race-")
         try {

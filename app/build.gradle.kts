@@ -6,15 +6,24 @@ plugins {
 }
 
 val activeHearthAbis = rootProject.extra["hearthActiveAbis"] as List<String>
+val stageAria2Runtime = tasks.register<Exec>("stageAria2Runtime") {
+ inputs.file(rootProject.file("scripts/downloads/build-aria2-android.py"))
+ inputs.files("../scripts/native_abis.py", "../licenses/aria2/README.md", "../licenses/aria2/GPL-3.0.txt")
+ inputs.property("abis", activeHearthAbis.joinToString(","))
+ outputs.dir(layout.buildDirectory.dir("generated/aria2"))
+ outputs.file(rootProject.layout.buildDirectory.file("aria2-corresponding-source.tar.gz"))
+ commandLine("python3", rootProject.file("scripts/downloads/build-aria2-android.py"), "--abis", activeHearthAbis.joinToString(","))
+}
 android {
+ packaging.jniLibs.keepDebugSymbols += "**/libhearth_aria2c.so"
  namespace = "com.sal7one.transiber"
  compileSdk = 36
  defaultConfig {
   applicationId = "com.sal7one.transiber"
   minSdk = 28
   targetSdk = 36
-  versionCode = 97
-  versionName = "0.29.0"
+  versionCode = 98
+  versionName = "0.30.0"
   testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   ndk { abiFilters += activeHearthAbis }
  }
@@ -22,6 +31,10 @@ android {
  productFlavors {
   create("foss") { dimension = "distribution"; buildConfigField("boolean", "FEATURE_BYOK", "false") }
   create("play") { dimension = "distribution"; buildConfigField("boolean", "FEATURE_BYOK", "true") }
+ }
+ sourceSets.getByName("play") {
+  jniLibs.srcDir(files(layout.buildDirectory.dir("generated/aria2/jniLibs")).builtBy(stageAria2Runtime))
+  assets.srcDir(files(layout.buildDirectory.dir("generated/aria2/assets")).builtBy(stageAria2Runtime))
  }
  buildTypes {
   debug { applicationIdSuffix = ".debug" }
@@ -57,6 +70,10 @@ android {
   }
  }
  packaging { jniLibs.useLegacyPackaging = true; jniLibs.keepDebugSymbols += setOf("**/libming_jni.so", "**/libming_jni_scalar.so", "**/libonnxruntime.so", "**/libvosk.so", "**/libhearth_qwen.so", "**/libhearth_nemotron.so", "**/libhearth_transcribepsy.so", "**/libtransiber_translation.so", "**/libtransiber_translation_vulkan.so", "**/libtransiber_translation_opencl.so", "**/libhearth_transcribepsy_vulkan.so", "**/libhearth_transcribepsy_opencl.so", "**/libhearth_whisper_vulkan.so"); resources.excludes += "/META-INF/{AL2.0,LGPL2.1}" }
+}
+tasks.configureEach {
+ if (name.startsWith("mergePlay") && (name.endsWith("JniLibFolders") || name.endsWith("Assets"))) dependsOn(stageAria2Runtime)
+ if (name.contains("Play") && name.contains("Lint", ignoreCase = true)) dependsOn(stageAria2Runtime)
 }
 kotlin { jvmToolchain(17) }
 dependencies {

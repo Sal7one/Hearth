@@ -37,4 +37,15 @@ class DownloadIntegrityTest {
             DownloadIntegrity.fingerprint(ByteArrayInputStream(original + byteArrayOf(1)), original.size.toLong())
         }
     }
+    @org.junit.Test fun verificationReportsRealBytesAndStillRejectsOverrun() {
+        val bytes = ByteArray(180_000) { (it % 251).toByte() }
+        val progress = mutableListOf<Long>()
+        val result = DownloadIntegrity.fingerprintProgress(bytes.inputStream(), bytes.size.toLong(), progress::add)
+        org.junit.Assert.assertEquals(bytes.size.toLong(), progress.last())
+        org.junit.Assert.assertTrue(progress.zipWithNext().all { (a, b) -> b > a })
+        org.junit.Assert.assertEquals(DownloadIntegrity.fingerprint(bytes.inputStream(), bytes.size.toLong()), result)
+        org.junit.Assert.assertThrows(IllegalArgumentException::class.java) {
+            DownloadIntegrity.fingerprintProgress(bytes.inputStream(), bytes.size.toLong() - 1, {})
+        }
+    }
 }

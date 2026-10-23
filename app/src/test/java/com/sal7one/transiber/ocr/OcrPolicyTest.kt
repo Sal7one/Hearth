@@ -39,7 +39,26 @@ class OcrPolicyTest {
         assertTrue("ru" in OcrCatalog.profile("cyrillic").languages)
         assertFalse("ar" in OcrCatalog.profile("cjk").languages)
         assertEquals(OcrCatalog.assets.size,OcrCatalog.assets.map{it.id}.distinct().size)
-        OcrCatalog.assets.forEach {assertTrue(it.revision.matches(Regex("[a-f0-9]{40}")));assertTrue(it.sha256.matches(Regex("[a-f0-9]{64}")));assertTrue(it.url.contains(it.revision));assertTrue(it.bytes in 1..128L*1024*1024)}
+        // RF-DETR (148 MB) and LaMa (207 MB) are explicit quality artifacts; all
+        // acquisition remains bounded by the exact selected catalog byte count.
+        OcrCatalog.assets.forEach {assertTrue(it.revision.matches(Regex("[a-f0-9]{40}")));assertTrue(it.sha256.matches(Regex("[a-f0-9]{64}")));assertTrue(it.url.contains(it.revision));assertTrue(it.bytes in 1..256L*1024*1024)}
+    }
+    @Test fun koharuQualityAndCleanupAreSeparatePinnedProfilesWithHonestWeightTerms() {
+        val compact=OcrCatalog.profile("manga-page")
+        val quality=OcrCatalog.profile("manga-koharu-page")
+        val cleanup=OcrCatalog.profile("manga-koharu-clean-page")
+        assertEquals(setOf(OcrCatalog.koharuDetector),quality.assets.toSet()-compact.assets.toSet())
+        assertEquals(setOf(OcrCatalog.mangaInpainter),cleanup.assets.toSet()-quality.assets.toSet())
+        assertEquals(148442003L,OcrCatalog.koharuDetector.bytes)
+        assertEquals(207482644L,OcrCatalog.mangaInpainter.bytes)
+        assertTrue(OcrCatalog.koharuDetector.license.contains("Other"))
+        assertTrue(OcrCatalog.koharuDetector.license.contains("academic"))
+        assertEquals("Apache-2.0",OcrCatalog.mangaInpainter.license)
+        for(profile in listOf(quality,cleanup)) {
+            assertEquals("manga",profile.family);assertEquals(setOf("ja"),profile.languages);assertFalse(profile.live)
+            assertTrue(profile.description.contains("Manga109"));assertTrue(profile.description.contains("CPU"))
+            assertTrue(profile.assets.contains(OcrCatalog.comicDetector)) // fast outlines remain part of the complete bundle.
+        }
     }
     @Test fun invalidImportCannotPublishOrOverwriteExistingModel() {
         val root=Files.createTempDirectory("ocr-import-test").toFile()

@@ -100,6 +100,10 @@ internal object OcrPageLayout {
     }
     fun box(line: OcrLine, crop: PixelCrop, imageWidth: Int, imageHeight: Int,
             viewWidth: Int, viewHeight: Int, coverEdges: Boolean = false): PixelCrop? {
+        if(coverEdges)line.region?.paint?.layout?.let { rect ->
+            return box(OcrLine(rect.x,rect.y,rect.width,rect.height,line.text,line.confidence),
+                crop,imageWidth,imageHeight,viewWidth,viewHeight,false)
+        }
         if (imageWidth <= 0 || imageHeight <= 0 || viewWidth <= 0 || viewHeight <= 0 ||
             crop.left < 0 || crop.top < 0 || crop.right > imageWidth || crop.bottom > imageHeight ||
             crop.width <= 0 || crop.height <= 0 || line.width <= 0 || line.height <= 0) return null

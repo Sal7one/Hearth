@@ -89,8 +89,11 @@ internal object BenchmarkDownloadQueue {
             "marian" -> MarianPackage.enqueue(context, downloads, checkNotNull(MarianPackage.find(model.id)))
             "cascade" -> MarianCascade.enqueue(context, downloads, checkNotNull(MarianCascade.find(model.id)))
             "ct2" -> Ct2Package.enqueue(context, downloads, checkNotNull(Ct2Catalog.find(model.id)))
-            "voice" -> VoiceCatalog.familyAssets(model.id).also { require(it.isNotEmpty()) { "No pinned voice assets for ${model.label}" } }
-                .forEach { downloads.enqueue(DownloadSpec.parse(it.url, it.filename), true, it.id) }
+            "voice" -> {
+                VoiceCatalog.familyAssets(model.id).also { require(it.isNotEmpty()) { "No pinned voice assets for ${model.label}" } }
+                    .forEach { downloads.enqueue(DownloadSpec.parse(it.url, it.filename), true, it.id) }
+                if (model.id == "magpie") com.sal7one.transiber.voice.MagpieTokenizerDownload.enqueue(context, downloads)
+            }
             else -> error("${model.label} is configured from Models")
         }
     }

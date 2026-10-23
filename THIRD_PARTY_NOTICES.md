@@ -31,6 +31,7 @@ APK assets under `licenses/`.
 | Kotlin / coroutines | Kotlin 2.2.0, coroutines 1.8.1 | Apache-2.0 |
 | Apache Commons Compress / IO / Lang / Codec | Compress 1.28.0; IO 2.20.0; Lang 3.18.0; Codec 1.19.0 | Apache-2.0; upstream license and notice files in `licenses/downloads/` |
 | OkHttp / Okio | OkHttp 4.12.0 and resolved Okio dependency | Apache-2.0; OkHttp notice in `licenses/android/` |
+| Android Play aria2 download executable | aria2 1.37.0 `02f2d0d8472b3c38c29b4dba8c75ebd5fdd2899a`, statically linked OpenSSL 3.5.9 `45e844fa2a14ec92d146bd8f5778ac130b6625fb`, NDK 27 | aria2 GPL-2.0-or-later, this build distributed under GPL-3.0-or-later; OpenSSL Apache-2.0. Executable, manifest and notices are Play-only. Complete corresponding sources accompany each release; see `licenses/aria2/README.md`. No Sealplus/ytdlp application code is bundled. |
 
 Exact prebuilt library hashes and original Maven artifact URLs are in
 `scripts/supply-chain-artifacts.tsv`, `common-jni/src/main/jniLibs/SHA256SUMS`, and `hearth-onnx-runtime/src/main/jniLibs/SHA256SUMS`.
@@ -153,10 +154,23 @@ The separately downloaded [ogkalu comic text/bubble detector](https://huggingfac
 declares Apache-2.0. Hearth pins the INT8 RT-DETR-v2 export, revision
 `16e8a622f91fabc6b5b65c96d32d1183f8843546`; shared artifact identities are in
 `hearth-core/.../vision/MangaArtifacts.kt`. Android and desktop use the same
-original Hearth geometry and owned-handle adapters. Architecture research used
+geometry and owned-handle adapters. The optional full segmenter adapts RF-DETR
+preprocessing/mask projection and panel/bubble/text scene hierarchy from
 [Koharu](https://github.com/koharu-rs/koharu), MIT OR Apache-2.0, revision
-`73abcafab1507e1c228c36ed54ba84e5e1cd6ff8`. Its full engine and GPL-derived CTD
-postprocessing are not bundled. Model weights are not included in app packages.
+`73abcafab1507e1c228c36ed54ba84e5e1cd6ff8`, under its MIT option. Copyright
+(c) 2025-2026 Mayo Takanashi and Koharu contributors; the full MIT text ships as
+`licenses/ocr/koharu-MIT.txt`. The original Rust/Torch frontend and GPL-derived
+CTD postprocessing are not bundled.
+
+The separately downloaded [RF-DETR ONNX export](https://huggingface.co/ShiniShiho/koharu-layout-rfdetr-seg-2xl-1152-onnx)
+is pinned to `bfbbd4e5ab34a50459865074fa044da496cebb57`; its source weights are
+mayocream's `aed55fdb8ca953c6bec33cf6ed6dd52a9b72bfa2`. These weights declare a
+custom/other license with Manga109 academic-use data terms. The code's MIT or
+Apache license does not replace those terms. Optional [LaMa manga ONNX](https://huggingface.co/mayocream/lama-manga-onnx),
+revision `b55497aadbfcb9740e1ed16f008268d71b4f3f79`, declares Apache-2.0, following
+the [original LaMa](https://github.com/advimman/lama) implementation. Exact
+revisions, byte counts, hashes and tensor contracts ship in
+`ocr/koharu-provenance.json`. Model weights are not included in app packages.
 
 ## Desktop window controls and keyboard shortcuts
 

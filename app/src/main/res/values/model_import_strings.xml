@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="model_import_batch_summary">%1$d imported · %2$d failed · %3$d selected</string>
+    <string name="model_import_batch_current">%1$d/%2$d · %3$s</string>
+    <string name="model_import_batch_background">You can leave this page. Imports continue independently; one invalid file does not stop the batch.</string>
+    <string name="model_import_batch_choose">Verified copies are ready. Choose the model you want to use.</string>
+    <string name="model_import_batch_cancelled">Import stopped. Completed verified copies are kept.</string>
+    <string name="model_import_batch_cancel">Stop remaining imports</string>
+    <string name="model_import_batch_results">Import results</string>
+    <string name="model_import_batch_pick">Import model files</string>
+    <string name="model_import_batch_translation">Import translation GGUF files</string>
+</resources>

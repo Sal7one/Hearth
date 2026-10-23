@@ -271,7 +271,24 @@ for flavor, architecture in [(f, a) for f in ('play','foss') for a in (*ABIS, 'u
     with zipfile.ZipFile(apk) as archive, tempfile.TemporaryDirectory() as tmp:
         native = [n for n in archive.namelist() if n.startswith('lib/') and n.endswith('.so')]
         packaged_abis = set(ABIS) if architecture == 'universal' else {architecture}
+        aria_abis = packaged_abis & {'arm64-v8a', 'x86_64'} if flavor == 'play' else set()
+        aria_name = 'libhearth_aria2c.so'
+        if flavor == 'play':
+            aria_manifest = json.loads(archive.read('assets/downloads/aria2-runtime.json'))
+            assert aria_manifest['httpOnly'] is True
+            assert aria_manifest['signature']['scriptSha256'] == hashlib.sha256((root/'scripts/downloads/build-aria2-android.py').read_bytes()).hexdigest(), 'aria2 builder differs from the packaged binary provenance'
+            assert aria_manifest['signature']['helperSha256'] == hashlib.sha256((root/'scripts/native_abis.py').read_bytes()).hexdigest(), 'aria2 native verification helper changed'
+            assert aria_manifest['correspondingSourceSha256'] == hashlib.sha256((root/'build/aria2-corresponding-source.tar.gz').read_bytes()).hexdigest(), 'aria2 corresponding sources differ from the runtime build'
+            for notice in ('aria2-COPYING.txt', 'GPL-3.0.txt', 'OpenSSL-LICENSE.txt', 'NDK-NOTICE.txt', 'NDK-TOOLCHAIN-NOTICE.txt', 'NOTICE.txt'):
+                assert len(archive.read('assets/downloads/' + notice)) > 100, notice
+            for abi in aria_abis:
+                binary = archive.read(f'lib/{abi}/{aria_name}')
+                pin = aria_manifest['binaries'][abi]
+                assert len(binary) == pin['bytes'] and hashlib.sha256(binary).hexdigest() == pin['sha256'], 'aria2 build pin changed'
+        else:
+            assert not any(name.startswith('assets/downloads/') for name in archive.namelist()), 'Offline APK contains downloader runtime assets'
         all_expected = (flavor_libs
+                        | ({aria_name} if aria_abis else set())
                         | {name for name, (abi, _) in gpu_artifacts.items() if abi in packaged_abis}
                         | (arm64_only_libs if 'arm64-v8a' in packaged_abis else set()))
         assert {Path(n).name for n in native} == all_expected, native
@@ -279,6 +296,7 @@ for flavor, architecture in [(f, a) for f in ('play','foss') for a in (*ABIS, 'u
         assert all({Path(n).name for n in native if n.startswith('lib/' + abi + '/')}
                    == flavor_libs
                    | {name for name, (target_abi, _) in gpu_artifacts.items() if abi == target_abi}
+                   | ({aria_name} if abi in aria_abis else set())
                    | (arm64_only_libs if abi == 'arm64-v8a' else set()) for abi in packaged_abis)
         for name in native:
             abi = name.split('/')[1]

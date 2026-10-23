@@ -8,6 +8,7 @@ import com.sal7one.common_jni.ocr.toOcrLine
 import com.sal7one.hearth.core.vision.OcrRegion
 import com.sal7one.hearth.core.vision.PageOcrProgress
 import com.sal7one.hearth.core.vision.PageText
+import com.sal7one.hearth.core.vision.PageOcrStage
 import com.sal7one.common_jni.speech.TranslationDirection
 import com.sal7one.common_jni.translation.CancellableTextTranslator
 import com.sal7one.transiber.runtime.LocalWorkGate
@@ -24,6 +25,7 @@ internal data class CameraOcrState(
     val processing: Boolean = false, val closing: Boolean = false, val text: String = "", val translation: String = "",
     val lines: List<OcrLine> = emptyList(), val width: Int = 1, val height: Int = 1,
     val regions: List<OcrRegion> = emptyList(), val detecting: Boolean = false,
+    val stage: PageOcrStage? = null,
     val boxTranslations: List<TranslatedOcrBox> = emptyList(),
     val ocrMs: Long = 0, val translating: Boolean = false, val error: String? = null,
 )
@@ -91,7 +93,7 @@ internal class CameraOcrController(context: Context) : AutoCloseable {
                         val engine=checkNotNull(model)
                         val progressive=engine.preservesRegions
                         val pageRevision=if(progressive) ++revision else revision
-                        if(progressive) mutable.update { it.copy(detecting=true,regions=emptyList(),lines=emptyList(),text="",translation="",boxTranslations=emptyList()) }
+                        if(progressive) mutable.update { it.copy(detecting=true,stage=null,regions=emptyList(),lines=emptyList(),text="",translation="",boxTranslations=emptyList()) }
                         val work=currentCoroutineContext()
                         val progress=object : PageOcrProgress {
                             override fun isCurrent(): Boolean {
@@ -101,6 +103,9 @@ internal class CameraOcrController(context: Context) : AutoCloseable {
                             override fun detected(regions: List<OcrRegion>) {
                                 if(!isCurrent())return
                                 mutable.update { if(frame.epoch!=frameEpoch.get())it else it.copy(regions=regions,detecting=false,width=bitmap.width,height=bitmap.height) }
+                            }
+                            override fun stage(stage: PageOcrStage) {
+                                if(isCurrent())mutable.update {it.copy(stage=stage)}
                             }
                             override fun recognized(text: List<PageText>) {
                                 if(!progressive || !isCurrent())return

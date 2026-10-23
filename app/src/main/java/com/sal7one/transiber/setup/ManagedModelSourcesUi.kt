@@ -11,6 +11,11 @@ import com.sal7one.transiber.i18n.rememberUiText
 import com.sal7one.transiber.preferences.*
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import com.sal7one.transiber.byok.ByokPolicy
+import com.sal7one.transiber.downloads.FileDownloads
+import com.sal7one.transiber.downloads.FileDownload
 
 /** Repair affordance is available in Basic; paths and grant diagnostics stay Advanced. */
 @Composable
@@ -19,7 +24,7 @@ internal fun ModelBindingRepairNotice(onRepair: () -> Unit, launchError: String?
     val checks by ModelSourceBindings.checks.collectAsState()
     // An mtime change is informational, not evidence of missing/corrupt bytes.
     // Pinned runtime initialization still hashes the actual model before use.
-    val affected = checks.count { !it.available }
+    val affected = modelSourceGroups(checks).count { it.needsRepair }
     if (affected == 0 && launchError == null) return
     Card(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)) {
@@ -44,6 +49,10 @@ internal fun ManagedModelSourcesUi(initialExpanded: Boolean = false, onImport: (
     var busy by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
     var sourceResults by remember { mutableStateOf<Map<String, ModelSourceCheck>>(emptyMap()) }
+    var details by remember { mutableStateOf(emptySet<String>()) }
+    var savedDownloads by remember { mutableStateOf(emptyList<FileDownload>()) }
+    var restored by remember { mutableStateOf<Int?>(null) }
+    LaunchedEffect(checks) { savedDownloads=withContext(Dispatchers.IO) { FileDownloads(context).list() } }
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         TextButton(onClick = { expanded = !expanded }) { Text(text(R.string.setup_sources_title)) }
         if (!expanded) return@Column
@@ -56,9 +65,32 @@ internal fun ManagedModelSourcesUi(initialExpanded: Boolean = false, onImport: (
             finally { busy = false }
         } }) { Text(text(R.string.setup_sources_recheck)) }
         if (busy) LinearProgressIndicator(Modifier.fillMaxWidth())
-        checks.forEach { check ->
+        restored?.let { Text(text(R.string.setup_sources_restore_queued,it),style=MaterialTheme.typography.bodySmall) }
+        modelSourceGroups(checks).forEach { group ->
             OutlinedCard(Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(group.label,style=MaterialTheme.typography.titleMedium)
+                    Text(text(R.string.setup_sources_components,group.components.size-group.missing.size,group.components.size),
+                        color=if(group.needsRepair)MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant)
+                    if(group.missing.isNotEmpty()) {
+                        if(!group.needsRepair) Text(text(R.string.setup_sources_setup_incomplete),style=MaterialTheme.typography.bodySmall)
+                        val recoverable=recoverableModelDownloads(group.components,savedDownloads)
+                        if(ByokPolicy.FEATURE_BYOK && recoverable.isNotEmpty()) OutlinedButton(enabled=!busy,onClick={scope.launch {
+                            busy=true;error=null;var accepted=0;val failures=mutableListOf<String>()
+                            try {withContext(Dispatchers.IO) {
+                                val downloads=FileDownloads(context)
+                                recoverable.forEach { id -> try {downloads.reinstall(id);accepted++}
+                                    catch(e:CancellationException){throw e}
+                                    catch(e:Exception){failures+=e.message?:e.toString()} }
+                            };restored=accepted;if(failures.isNotEmpty())error=failures.joinToString("\n")}
+                            finally {busy=false}
+                        }}) {Text(text(R.string.setup_sources_restore_downloads))}
+                        TextButton(onClick={onImport(group.missing.first().modelId)}) {Text(text(R.string.setup_sources_import_again))}
+                    }
+                    TextButton(onClick={details=if(group.id in details)details-group.id else details+group.id}) {
+                        Text(text(if(group.id in details)R.string.setup_sources_hide_details else R.string.setup_sources_component_details))
+                    }
+                    if(group.id in details) group.components.forEach { check ->
                     Text(check.modelId, style = MaterialTheme.typography.titleSmall)
                     Text(text(when {
                         !check.available -> R.string.setup_sources_copy_missing
@@ -85,7 +117,8 @@ internal fun ManagedModelSourcesUi(initialExpanded: Boolean = false, onImport: (
                             style = MaterialTheme.typography.bodySmall,
                             color = if (result.readable) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.error)
                     }
-                    if (!check.available) TextButton(onClick = { onImport(check.modelId) }) { Text(text(R.string.setup_sources_import_again)) }
+                    HorizontalDivider()
+                    }
                 }
             }
         }

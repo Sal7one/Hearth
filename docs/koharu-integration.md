@@ -1,104 +1,125 @@
-# Koharu integration boundary and implementation status
+# Koharu vision migration
 
-Owner authorization: Android and desktop reading improvements, Android first;
-using Koharu's full project is allowed where it improves Hearth. The compact
-automatic-page implementation is a first working backend, not the full port.
+Android and desktop now have a real Koharu segmentation/cleanup path alongside the
+small automatic-page reader. This is a native ONNX migration of the image pipeline;
+it does not embed Koharu's Tauri frontend or its Rust/Torch process runtime.
 
-## Evidence
+## Available pipelines
 
-Research checkout: `koharu-rs/koharu` revision
-`73abcafab1507e1c228c36ed54ba84e5e1cd6ff8` (workspace 0.83.5), under ignored
-`build/research/koharu`. Source is MIT OR Apache-2.0. Its source files and dependency
-manifests, rather than UI screenshots, were inspected. No upstream AGENTS file
-was treated as Hearth instructions.
+| Choice | Required model bytes | Processing |
+| --- | ---: | --- |
+| Automatic manga page | 127,716,506 | Compact RT-DETR rectangles → Manga OCR → Hearth translation |
+| Koharu manga segmentation | 276,158,509 | Quick compact outlines → full RF-DETR instance masks → panel/bubble/text scene order → Manga OCR → Hearth translation → measured flat-bubble cleanup and fitted text |
+| Koharu manga + cleanup | 483,641,153 | The segmentation path plus real LaMa neural reconstruction for textured/non-uniform regions |
 
-- `crates/koharu-pipeline/src/stages/detection.rs`: current default RF-DETR instance
-  segmentation, distinct text/bubble/panel/SFX output and scene mapping.
-- `crates/koharu-pipeline/src/bin/run.rs`: real headless example runs the full
-  detection/OCR/translation/inpainting workflow and renders an output image.
-  It currently selects its own local translator; it is not a drop-in Hearth CLI.
-- `crates/koharu-pipeline/README.md`: page-local stage commits, bounded scheduling,
-  lazy model residency, immutable per-run configuration and cooperative stop.
-- `crates/koharu-ml/src/lib.rs`: process-wide Torch, llama and diffusion runtimes.
-  This is not an Android-ready ONNX library. Its runtime packages enumerate
-  desktop hosts, with no supplied Android package/NDK integration.
-- `crates/koharu-renderer`: scene-based layout, font shaping/fallback and rendering;
-  `koharu-rasterizer` uses a separate native rendering backend.
-- A locked upstream `cargo check -p koharu-pipeline --bin run` was attempted.
-  Installed Rust 1.90 is below `sysinfo 0.39.6`'s Rust 1.95 minimum; no full-runtime
-  inference or full-project build is claimed. Metadata resolution succeeded.
+Models remain explicit downloads/imports. Existing manual and compact profile
+preferences are retained. TVs still cannot load local models. FOSS has no network
+client or delegated downloader. Every artifact is size/hash verified before native
+initialization; repaired/downloaded models do not silently replace the active setup.
 
-The current RF-DETR weight pin is
-`mayocream/koharu-layout-rfdetr-seg-2xl-1152` at
-`aed55fdb8ca953c6bec33cf6ed6dd52a9b72bfa2`. Its model card labels the weights
-`other` and describes Manga109 academic-use training-data terms. The permissive
-code license must not be presented as blanket Apache-2.0 weight licensing.
-The model predicts masks and classes, not OCR or reading order.
+Android: Camera → OCR → Manga. Choose the Koharu segmentation or cleanup profile.
+Imported/captured still pages use per-region translation and display cleanup plus
+fitted text over the retained original bitmap. Original hides all cleanup/typeset
+layers; tapping a translated balloon opens its full source, translation, copy and
+read-aloud controls. The cross-app reading overlay uses the same selected profile
+and publishes quick outlines before the full quality pass. Desktop exposes the bundles in Models →
+Reading, with verified folder imports supported by the same reader runtime.
 
-## Delivered first backend
+## What was migrated
 
-Shared KMP detection/region/progress contracts, exact artifact pins, small
-RT-DETR-v2 detector, resident Manga OCR reader, progressive Android camera/reading
-outlines, per-bubble translation, desktop image import/cropping/overlays, verified
-model-library downloads/imports, and cancellation/error ownership. CPU only.
-The old manual reader remains selectable. The speech/translation/TTS pipeline
-still has its original three stages; OCR is an auxiliary image feature.
+Source: `koharu-rs/koharu` revision
+`73abcafab1507e1c228c36ed54ba84e5e1cd6ff8`, MIT option. We inspected the pipeline,
+scene hierarchy, renderer and ML processors rather than treating its CLI as a
+drop-in library. Adapted code retains the full upstream copyright/license notice.
 
-The compact detector is from a family supported by Koharu; this does not mean
-Hearth uses its current default model or full Rust pipeline. Geometry and JNI code
-are original Hearth implementations. GPL-derived legacy CTD postprocessing was
-not copied. Weights and third-party manga test images are not committed.
+- RF-DETR RGB/ImageNet preprocessing, 1152×1152 bilinear resize, exact ONNX output
+  validation, global top-300 query/class selection, per-class thresholds and NMS.
+- Real instance masks: each 288×288 mask is bilinearly projected onto the source
+  page and thresholded at zero. Bounded ordered RLE retains masks without an
+  N×page allocation. Panels, balloons, dialogue and SFX classes remain distinct.
+- Mask-based dialogue membership and panel → bubble → text scene ordering.
+  Adjacent balloons stay separate. SFX are detected but are not fed into the
+  dialogue OCR model as if it were a specialized SFX recognizer.
+- The existing pinned Manga OCR encoder/decoder read each dialogue crop; Hearth's
+  selected translator remains authoritative. No Koharu model downloader, default
+  Gemma translator or API-key configuration bypasses Hearth's policy.
+- Flat bubbles use measured median background color with a deviation check and
+  only fill text-mask pixels inside the balloon. Patterned artwork is not flat
+  filled. When the cleanup bundle is selected, LaMa reconstructs complex regions
+  with source context; sparse-alpha patches modify only the requested mask.
+- Android TextView and desktop Compose fit translations with content-direction
+  bidi shaping, so Arabic and English use the platform's shaping/font fallback.
+  Original-image comparison and full source/translation text remain available.
+- Preview, full segmentation, OCR and cleanup are visible stages. Native handles
+  retain LeaseRegistry ownership and cancellation. Old page work cannot publish
+  into a replacement capture; cleanup failure preserves already recognized text
+  and surfaces the actual engine error.
 
-## Full backend implementation work
+## Artifact provenance and terms
 
-1. **Pin and isolate the engine.** Build the reusable scene, pipeline, ML and
-   renderer crates from the exact upstream revision with an explicit Rust >=1.95
-   toolchain. Exclude Tauri/CEF frontend, project/archive/PDF/editor/PSD features
-   outside Hearth's image OCR scope. Retain source and dependency notices. Keep
-   LibTorch/llama/diffusion loading outside Hearth's existing speech JNI process
-   on desktop to avoid symbol/runtime collisions.
-2. **Add a bounded local worker protocol.** A desktop child process receives an
-   isolated page job, selected local model paths, thresholds and cancellation ID;
-   emits typed stage/region/mask/error events; persists only job-local scene data.
-   Use framed messages with byte, image, region and output limits. No shell
-   commands assembled from filenames. Stop/join workers and remove temporary
-   artifacts on completion/shutdown. A protocol handshake must reject version
-   mismatches. Do not advertise this provider until its real runtime is staged.
-3. **Keep Hearth translation authoritative.** Execute detection/OCR and inpainting
-   through Koharu, commit their scene outputs, return source-region text to
-   Hearth's selected text pipeline, then apply returned translations to the
-   scene before invoking Koharu's renderer. Do not use the example CLI's default
-   Gemma translator or copy Hearth API keys into its config/model downloader.
-   Freeze the chosen Hearth configuration for the job; retain manual correction
-   and original-image comparison. Validate Arabic shaping, bidi and font fitting
-   with real exported images.
-4. **Model management.** Add independently selectable detection, OCR and cleanup
-   families with pinned size/hash/revision/license cards. Keep model acquisition
-   under Hearth's downloader/importer and explicit user selection. Upstream's
-   lazy runtime/model downloading cannot bypass Play/FOSS policy or silently
-   fetch multi-gigabyte translation/painting models. Support imported complete
-   runtime/model bundles for offline builds. No arbitrary model scripts/pickle
-   execution. Public download and private usable-copy status are distinct facts.
-5. **Android full vision port.** Do not label the desktop LibTorch crate an NDK
-   backend. Export and validate the larger detector/masks into a supported mobile
-   runtime, or prove an Android native backend with its complete ABI/library
-   matrix. Validate tensor and mask transforms on identical pages first. Adapt
-   scene regions/masks into the shared contracts; keep desktop-only runtimes out
-   of ARMv7/x86 APKs. Start with S25 Ultra CPU, then only advertise GPU after actual
-   inference evidence. TVs still cannot use local models.
-6. **Acceptance.** Compare compact versus full segmentation on multiple crowded,
-   vertical, furigana and decorative/SFX pages. Measure cold/warm model load,
-   first highlight, full OCR and full translated rendering separately. Verify
-   cancellation mid-kernel, later-stage failure with earlier outputs retained,
-   crop/page changes, missing/corrupt weights, duplicate jobs, provider errors,
-   RTL typesetting and original restoration. Run both desktop OS package checks
-   and owner Android tests before calling the full backend supported.
+Segmentation: `ShiniShiho/koharu-layout-rfdetr-seg-2xl-1152-onnx`, revision
+`bfbbd4e5ab34a50459865074fa044da496cebb57`, `rfdetr-seg-2xlarge.onnx`,
+148,442,003 bytes, SHA-256
+`7cc10d4316371946b8441da3512261a8e148b129abcdb0ea6235ed1d1d06d351`.
+Source model: `mayocream/koharu-layout-rfdetr-seg-2xl-1152` revision
+`aed55fdb8ca953c6bec33cf6ed6dd52a9b72bfa2`. The weights declare custom/other
+terms and retain Manga109 academic-use data conditions. Permissive code licenses
+must not be presented as permissive weight/data licensing.
 
-Unimplemented: full Rust-worker provider, default RF-DETR mask inference, text
-removal/inpainting, Koharu scene renderer/typesetting, and Android export/port.
-These must not be described as shipped by the compact backend.
+Cleanup: `mayocream/lama-manga-onnx`, revision
+`b55497aadbfcb9740e1ed16f008268d71b4f3f79`, `lama-manga.onnx`,
+207,482,644 bytes, SHA-256
+`4512adab295ee5a5e02ccd1bdf8d45dccbac88309d9cff1532ffd5de876f02a4`,
+publisher model card Apache-2.0. Fixed input: RGB float32 image `[1,3,512,512]`
+and binary float32 mask `[1,1,512,512]`; output `[1,3,512,512]`. Each region gets
+64 source-pixel context, resizing and sparse compositing. The export is from the
+same publisher as Koharu's LaMa family, but is an older ONNX model, not claimed
+byte-equivalent to the newer Rust safetensors checkpoint.
+
+Pins are shared in `MangaArtifacts.kt`. Packaged
+`ocr/koharu-provenance.json` records graph signatures, source/export revisions,
+hashes and license distinctions. No model weights or third-party pages are in Git.
+
+## Validation and limits
+
+Real model validation on this Mac (Apple M4 Pro, ONNX Runtime 1.20.1 CPU):
+
+- Optimized native RF-DETR with four intra-op threads: **4,910 ms** for a private
+  770×1080 page, 31 layout instances spanning all four classes, real projected
+  masks with valid geometry. Blank-page text rejection and cancellation passed.
+- An earlier unoptimized smoke binary took 42,563 ms; this is not the Release
+  performance number. Desktop/Android Release builds use optimized C++.
+- Full Kotlin/JNI reader with all five pinned files: load **4,709 ms**, full
+  mask publication **4,918 ms** after loading, **10/10 regions recognized in
+  32,683 ms** including cleanup. The quick preview is published first. This is
+  one integration page, not a broad quality benchmark.
+- LaMa: **3,018 ms** for a synthetic gradient with three glyph-like strokes.
+  1,080/1,080 masked pixels reconstructed; every unmasked pixel preserved;
+  cancellation passed. This is runtime correctness evidence, not a broad image
+  quality benchmark.
+- Shared host scene tests cover invalid/overlapping spans, mask intersection and
+  clipping, panel order, mask containment, patterned-background rejection,
+  crop transforms, preliminary outlines, neural cleanup ownership and preserved
+  source text on cleanup failure. Existing compact-reader tests remain intact.
+
+RF-DETR can use around 2 GiB of process memory during inference. Cleanup adds
+another resident model. These are opt-in quality bundles; compact remains the
+small default. A page is limited to 2048 pixels per side, 128 layout elements,
+64 dialogue regions, bounded mask complexity, 16 MiB of cleanup patches and an
+explicit 180-second cooperative budget. A native kernel can outlast the budget;
+close waits for its owned lease. Recognition/translation limits remain intact.
+
+This migration does not implement Koharu's diffusion inpainters, font detector,
+specialized SFX OCR, scene editor, PDF/project/PSD/archive tooling, or all renderer
+polygon/rotation/typography features. Text currently fits axis-aligned regions;
+very long translations can be clipped in a small balloon, with full text retained
+in the text panel. LaMa's 512-pixel context resize can lose detail in a very large
+region. CPU is the only advertised backend; Android owner tests, Arabic/English
+visual acceptance and Windows native inference remain required. These limits are
+not hidden behind a claim of full upstream feature parity.
 
 Sources: [Koharu](https://github.com/koharu-rs/koharu),
-[pinned pipeline example](https://github.com/koharu-rs/koharu/blob/73abcafab1507e1c228c36ed54ba84e5e1cd6ff8/crates/koharu-pipeline/src/bin/run.rs),
-[RF-DETR model card](https://huggingface.co/mayocream/koharu-layout-rfdetr-seg-2xl-1152/blob/aed55fdb8ca953c6bec33cf6ed6dd52a9b72bfa2/README.md),
-[compact detector](https://huggingface.co/ogkalu/comic-text-and-bubble-detector).
+[RF-DETR ONNX export](https://huggingface.co/ShiniShiho/koharu-layout-rfdetr-seg-2xl-1152-onnx),
+[source RF-DETR model](https://huggingface.co/mayocream/koharu-layout-rfdetr-seg-2xl-1152),
+[LaMa manga ONNX](https://huggingface.co/mayocream/lama-manga-onnx),
+[original LaMa](https://github.com/advimman/lama).

@@ -3,4 +3,5 @@
     <string name="ocr_manga_page_details">Find text and speech bubbles automatically, highlight them, then read and translate each region. Adds an 11.1 MB detector to the existing Manga OCR files. CPU · Experimental · Apache-2.0</string>
     <string name="ocr_detecting_regions">Finding text and speech bubbles…</string>
     <string name="ocr_reading_regions">Read %1$d of %2$d text regions</string>
+    <string name="ocr_koharu_refining">Quick outlines ready. Refining masks and panel order with Koharu… This CPU quality pass can take a minute.</string>
 </resources>

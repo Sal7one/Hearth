@@ -41,7 +41,7 @@
     <string name="setup_bundle_compact_translation_only">One dedicated language-pair translator. Your speech and voice choices stay as they are.</string>
     <string name="setup_bundle_broad_translation_only">Index-Translate 2B for many languages. Your speech and voice choices stay as they are.</string>
     <string name="setup_sources_attention">Some model files need attention</string>
-    <string name="setup_sources_repair_detail">%1$d model copies need review. Other installed models remain usable. Open Review for the affected files and exact errors.</string>
+    <string name="setup_sources_repair_detail">%1$d model bundles need repair. Other installed models remain usable. Review the affected components or restore them from saved downloads.</string>
     <string name="setup_sources_review">Review</string>
     <string name="setup_sources_title">Model files and sources</string>
     <string name="setup_sources_detail">Hearth runs verified private copies. Original document access is tracked separately; checking a source does not replace or trust changed model bytes.</string>
