@@ -114,7 +114,8 @@ class BenchmarkLanguagePlanTest {
         val automatic = base.copy(recognitionLanguage = "auto")
         val hash = checkNotNull(BenchmarkExecutionMetadata.configurationHash(forced, 3))
         val row = result().copy(identity = BenchmarkAccelerationPlan.identity(forced), configurationHash = hash,
-            actualAcceleration = "cpu", languageControl = "forced", recognitionLanguage = "en")
+            actualAcceleration = "cpu", languageControl = "forced", recognitionLanguage = "en",
+            protocolVersion=BenchmarkAttemptPolicy.PROTOCOL_VERSION)
         fun resume(candidate: BenchmarkCandidate) = BenchmarkExecutionMetadata.canResume(row, candidate, "input",
             BenchmarkExecutionMetadata.configurationHash(candidate, 3), "en", "", "phone", 3)
         assertTrue(resume(forced))

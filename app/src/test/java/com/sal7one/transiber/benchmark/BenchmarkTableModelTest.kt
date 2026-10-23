@@ -34,6 +34,27 @@ class BenchmarkTableModelTest {
         assertNull(BenchmarkTableModel.qualityValue(passed.copy(task = "voice")))
     }
 
+    @Test fun disqualifiedAttemptsHaveTheirOwnFilterAndNeverRetainMeasuredRankings() {
+        val success = result("finished", 300.0)
+        val timeout = result("slow", 1.0).copy(terminationReason = "deadline", error = "Disqualified: exceeded 20 seconds")
+        val crash = timeout.copy(identity = "crashed", terminationReason = "worker_crash", error = "Worker exited before finishing")
+        val skipped = timeout.copy(identity = "skipped", terminationReason = "disqualified")
+        val failed = timeout.copy(identity = "failed", terminationReason = null, error = "Unsupported input")
+        val all = listOf(success, timeout, crash, skipped, failed)
+        assertEquals(listOf(timeout, crash, skipped), BenchmarkTableModel.filtered(all, status = BenchmarkResultStatus.DISQUALIFIED))
+        assertEquals(listOf(failed), BenchmarkTableModel.filtered(all, status = BenchmarkResultStatus.FAILED))
+        assertEquals(listOf(success), BenchmarkTableModel.filtered(all, status = BenchmarkResultStatus.COMPLETED))
+        assertEquals(listOf(timeout, crash, skipped), BenchmarkTableModel.filtered(all, "disqualified"))
+        // A historical or malformed interrupted row must not resurrect cached quality/timing metrics.
+        val interrupted = timeout.copy(error = null)
+        assertFalse(BenchmarkTableModel.completed(interrupted))
+        assertNull(BenchmarkTableModel.referenceScore100(interrupted))
+        assertNull(BenchmarkTableModel.qualityValue(interrupted))
+        assertNull(BenchmarkTableModel.audioSpeed(interrupted))
+        assertNull(BenchmarkTableModel.firstTextMs(interrupted))
+        assertEquals(listOf(success, interrupted), BenchmarkTableModel.sorted(listOf(interrupted, success), BenchmarkTableSort.LOAD))
+    }
+
     @Test fun firstOutputUsesWarmMedianAndDoesNotInventStreamingEvidence() {
         val row = result("one", 100.0).copy(firstTextMs = listOf(500.0, 40.0, 60.0))
         assertEquals(50.0, BenchmarkTableModel.firstTextMs(row)!!, 0.0)

@@ -124,6 +124,7 @@ internal fun BenchmarkResultsTable(
                     FilterChip(status == choice, { status = choice }, label = { Text(when (choice) {
                         BenchmarkResultStatus.ALL -> uiText.bench("All statuses", "كل الحالات", "所有状态")
                         BenchmarkResultStatus.COMPLETED -> uiText.bench("Completed", "مكتمل", "已完成")
+                        BenchmarkResultStatus.DISQUALIFIED -> uiText.bench("Disqualified", "مستبعد", "已取消资格")
                         BenchmarkResultStatus.FAILED -> uiText.bench("Failed", "فشل", "失败")
                         BenchmarkResultStatus.EMPTY -> uiText.bench("Empty output", "مخرجات فارغة", "空输出")
                     }) })
@@ -202,7 +203,7 @@ internal fun BenchmarkResultsTable(
                             TableCell(elapsed(BenchmarkTableModel.warmMs(result)), 100.dp)
                             TableCell(BenchmarkTableModel.audioSpeed(result)?.let { String.format(Locale.getDefault(), "%.2f×", it) }
                                 ?: BenchmarkTableModel.translationMsPerSentence(result)?.let(::elapsed) ?: "—", 120.dp)
-                            TableCell(elapsed(result.loadMs.takeIf { result.error == null }), 90.dp)
+                            TableCell(elapsed(result.loadMs.takeIf { result.error == null && !BenchmarkTableModel.disqualified(result) }), 90.dp)
                             TableCell(elapsed(BenchmarkTableModel.firstTextMs(result)), 100.dp)
                             TableCell(BenchmarkTableModel.qualityValue(result)?.let {
                                 String.format(Locale.getDefault(), "%.1f%%", it * 100) + when {
@@ -213,10 +214,11 @@ internal fun BenchmarkResultsTable(
                             } ?: "—", 120.dp)
                             TableCell(result.modelBytes?.let(::fileSize) ?: "—", 90.dp)
                             TableCell(when {
+                                BenchmarkTableModel.disqualified(result) -> uiText.bench("Disqualified", "مستبعد", "已取消资格")
                                 result.error != null -> uiText.bench("Failed", "فشل", "失败")
                                 BenchmarkTableModel.completed(result) -> uiText.bench("Completed", "مكتمل", "已完成")
                                 else -> uiText.bench("Empty / incomplete", "فارغ / غير مكتمل", "空 / 未完成")
-                            }, 120.dp, error = result.error != null)
+                            }, 120.dp, error = result.error != null || BenchmarkTableModel.disqualified(result))
                         }
                         HorizontalDivider()
                     }
@@ -259,6 +261,11 @@ private fun BenchmarkResultDetails(result: BenchmarkResult, onDismiss: () -> Uni
             Column(Modifier.heightIn(max = 560.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text(DateFormat.getDateTimeInstance().format(Date(result.timestamp)), style = MaterialTheme.typography.labelMedium)
                 result.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+                if (BenchmarkTableModel.disqualified(result)) Text(uiText.bench(
+                    "Disqualified. This model/backend is skipped for the rest of its queue. Interrupted work does not receive speed or quality scores.",
+                    "مستبعد. يُتخطى هذا النموذج ومسار تنفيذه في بقية الطابور. لا تحصل المحاولة المتوقفة على درجات سرعة أو جودة.",
+                    "已取消资格。该模型/后端将跳过队列后续测试。中断的工作不会获得速度或质量分数。"),
+                    color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
                 Text("${result.task} · ${result.source}${if (result.target.isBlank()) "" else " → ${result.target}"}\n${result.device}")
                 Text("${uiText.bench("Recognition language", "لغة التعرف", "识别语言")}: ${recognitionLabel(result)}")
                 Text("${uiText.bench("Runtime evidence", "معلومات التنفيذ", "运行时证据")}:\n${result.runtime}")

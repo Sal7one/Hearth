@@ -3,7 +3,7 @@ package com.sal7one.transiber.benchmark
 import java.util.Locale
 
 internal enum class BenchmarkTableSort { WARM, AUDIO_SPEED, LOAD, QUALITY, FIRST_TEXT, SIZE, MODEL, RECENT }
-internal enum class BenchmarkResultStatus { ALL, COMPLETED, FAILED, EMPTY }
+internal enum class BenchmarkResultStatus { ALL, COMPLETED, DISQUALIFIED, FAILED, EMPTY }
 
 /** Different recordings, phones, language pairs and scoring protocols must never share a winner. */
 internal data class BenchmarkCohort(
@@ -28,17 +28,24 @@ internal object BenchmarkTableModel {
             (cohort == null || BenchmarkTableModel.cohort(row) == cohort) && when (status) {
                 BenchmarkResultStatus.ALL -> true
                 BenchmarkResultStatus.COMPLETED -> completed(row)
-                BenchmarkResultStatus.FAILED -> row.error != null
-                BenchmarkResultStatus.EMPTY -> row.error == null && row.texts.lastOrNull().isNullOrBlank()
+                BenchmarkResultStatus.DISQUALIFIED -> disqualified(row)
+                BenchmarkResultStatus.FAILED -> row.error != null && !disqualified(row)
+                BenchmarkResultStatus.EMPTY -> row.error == null && !disqualified(row) && row.texts.lastOrNull().isNullOrBlank()
             } && (terms.isEmpty() || listOf(row.model, row.identity, row.route, row.runtime, row.device,
                 row.source, row.target, row.error.orEmpty(), row.inputHash, row.requestedAcceleration.orEmpty(), row.actualAcceleration.orEmpty(),
                 row.languageControl.orEmpty(), row.recognitionLanguage.orEmpty(),
+                row.terminationReason.orEmpty(), if (disqualified(row)) "disqualified" else "",
                 if (row.languageControl == "forced") "language hint" else "").joinToString(" ")
                 .lowercase(Locale.ROOT).let { haystack -> terms.all(haystack::contains) })
         }
     }
 
-    fun completed(result: BenchmarkResult): Boolean = result.error == null && result.computeMs.size >= 3 &&
+    fun disqualified(result: BenchmarkResult): Boolean = when (result.terminationReason) {
+        "deadline", "worker_crash", "disqualified" -> true
+        else -> false
+    }
+
+    fun completed(result: BenchmarkResult): Boolean = result.error == null && !disqualified(result) && result.computeMs.size >= 3 &&
         result.computeMs.all { it.isFinite() && it >= 0 } && result.texts.lastOrNull()?.isNotBlank() == true
 
     /** All history remains inside one task; the language matrix uses its latest exact cohort per pair. */
@@ -77,7 +84,7 @@ internal object BenchmarkTableModel {
         if (result.task == "voice") {
             val times = result.computeMs.drop(1)
             val durations = result.audioMsByPass.drop(1)
-            if (result.error != null || times.isEmpty() || times.size != durations.size ||
+            if (result.error != null || disqualified(result) || times.isEmpty() || times.size != durations.size ||
                 times.any { !it.isFinite() || it <= 0 } || durations.any { it <= 0 }) return null
             return BenchmarkMetrics.median(times.zip(durations) { time, duration -> duration / time })
         }
@@ -88,12 +95,12 @@ internal object BenchmarkTableModel {
         ?.let { total -> result.samples.count { !it.silence }.takeIf { it > 0 }?.let { total / it } }
 
     fun warmMs(result: BenchmarkResult): Double? = result.computeMs.drop(1)
-        .takeIf { result.error == null && it.isNotEmpty() && it.all { time -> time.isFinite() && time >= 0 } }
+        .takeIf { result.error == null && !disqualified(result) && it.isNotEmpty() && it.all { time -> time.isFinite() && time >= 0 } }
         ?.let(BenchmarkMetrics::median)
 
     /** Includes final-result fallback for engines that do not stream; the detail view labels this. */
     fun firstTextMs(result: BenchmarkResult): Double? = result.firstTextMs.drop(1)
-        .takeIf { result.error == null && it.isNotEmpty() && it.all { time -> time.isFinite() && time >= 0 } }
+        .takeIf { result.error == null && !disqualified(result) && it.isNotEmpty() && it.all { time -> time.isFinite() && time >= 0 } }
         ?.let(BenchmarkMetrics::median)
 
     fun qualityValue(result: BenchmarkResult): Double? = (if (result.task == "voice") {
@@ -104,7 +111,7 @@ internal object BenchmarkTableModel {
         result.characterErrorRate
     } else {
         result.wordErrorRate
-    })?.takeIf { result.error == null && it.isFinite() }
+    })?.takeIf { result.error == null && !disqualified(result) && it.isFinite() }
 
     /** Higher is better. Speech error rates are inverted only for ranking. */
     fun qualityScore(result: BenchmarkResult): Double? = qualityValue(result)?.let { value ->
@@ -135,7 +142,7 @@ internal object BenchmarkTableModel {
             audioSpeed(it) ?: Double.NEGATIVE_INFINITY
         }.thenBy { it.model })
         BenchmarkTableSort.LOAD -> rows.sortedWith(compareBy<BenchmarkResult> {
-            it.loadMs.takeIf { ms -> it.error == null && ms.isFinite() && ms >= 0 } ?: Double.POSITIVE_INFINITY
+            it.loadMs.takeIf { ms -> it.error == null && !disqualified(it) && ms.isFinite() && ms >= 0 } ?: Double.POSITIVE_INFINITY
         }.thenBy { it.model })
         BenchmarkTableSort.QUALITY -> rows.sortedWith(compareByDescending<BenchmarkResult> {
             referenceScore100(it) ?: Double.NEGATIVE_INFINITY

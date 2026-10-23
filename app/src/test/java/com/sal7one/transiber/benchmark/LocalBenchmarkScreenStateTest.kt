@@ -12,9 +12,11 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsOn
+import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.hasScrollToIndexAction
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.AndroidComposeTestRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
@@ -159,6 +161,39 @@ class LocalBenchmarkScreenStateTest {
             assertEquals(selectedIds, preferences.getStringSet("selected-Speech", null))
             assertEquals(saved.clip.sha256, BenchmarkCustomAudioStore(File(context.filesDir, "benchmark-custom")).load()!!.clip.sha256)
         }
+    }
+
+    @Test fun deadlineChoicePersistsAndAnOldPreferenceCannotExceedTwentySeconds() {
+        check(preferences.edit().putString("section", "Setup").putInt("attempt-timeout-seconds", 999).commit())
+        openScreen()
+        awaitReason("No Saudi recordings")
+        compose.onNode(hasScrollToIndexAction()).performScrollToNode(hasTestTag("benchmark-time-limit-20"))
+        compose.onNodeWithTag("benchmark-time-limit-20").assertIsSelected()
+        compose.onNodeWithTag("benchmark-time-limit-5").assertIsEnabled().performClick()
+        compose.runOnIdle {
+            assertEquals(5, preferences.getInt("attempt-timeout-seconds", -1))
+            show.value = false
+        }
+        compose.onNodeWithTag("benchmark-run-footer").assertDoesNotExist()
+        compose.runOnIdle { show.value = true }
+        awaitReason("No Saudi recordings")
+        compose.onNode(hasScrollToIndexAction()).performScrollToNode(hasTestTag("benchmark-time-limit-5"))
+        compose.onNodeWithTag("benchmark-time-limit-5").assertIsSelected()
+        compose.onNodeWithTag("benchmark-time-limit-description").assertTextContains("all 3 passes", substring = true)
+        compose.onNodeWithTag("benchmark-edit-input").assertTextContains("5s/model limit", substring = true)
+    }
+
+    @Test fun actualCustomAudioDurationIsVisibleBesideTheWholeAttemptDeadline() {
+        val recording = BenchmarkAudio.fromPcm16(ShortArray(40_000) { (it % 100).toShort() })
+        BenchmarkCustomAudioStore(File(context.filesDir, "benchmark-custom")).save(recording, "Two and a half seconds.wav")
+        check(preferences.edit().putString("section", "Setup").putBoolean("useBuiltInSet", false)
+            .putBoolean("useSaudiSet", false).commit())
+        openScreen()
+        awaitInput("Two and a half seconds.wav")
+        compose.onNode(hasScrollToIndexAction()).performScrollToNode(hasTestTag("benchmark-audio-duration"))
+        compose.onNodeWithTag("benchmark-audio-duration").assertTextContains("2.50 s each", substring = true)
+            .assertTextContains("3 passes: first + 2 warm", substring = true)
+        compose.onNodeWithTag("benchmark-time-limit-description").assertTextContains("loading", substring = true)
     }
 
     @Test fun matrixTranslationTargetIgnoresTheHiddenSingleInputSource() {

@@ -93,6 +93,8 @@ internal data class BenchmarkResult(
     val audioMsByPass: List<Long> = emptyList(), val environment: BenchmarkEnvironment? = null,
     /** Recognizer control, independently of [source], which always identifies the sample. */
     val languageControl: String? = null, val recognitionLanguage: String? = null,
+    val terminationReason: String? = null,
+    val attemptTimeoutSeconds: Int? = null, val attemptElapsedMs: Long? = null,
 ) {
     fun json() = JSONObject().put("runId", runId).put("timestamp", timestamp).put("model", model)
         .put("identity", identity).put("route", route).put("inputHash", inputHash).put("source", source).put("target", target)
@@ -109,6 +111,9 @@ internal data class BenchmarkResult(
         .put("audioMsByPass", JSONArray(audioMsByPass)).put("environment", environment?.json() ?: JSONObject.NULL)
         .put("languageControl", languageControl ?: JSONObject.NULL)
         .put("recognitionLanguage", recognitionLanguage ?: JSONObject.NULL)
+        .put("terminationReason", terminationReason ?: JSONObject.NULL)
+        .put("attemptTimeoutSeconds", attemptTimeoutSeconds ?: JSONObject.NULL)
+        .put("attemptElapsedMs", attemptElapsedMs ?: JSONObject.NULL)
     companion object {
         fun from(j: JSONObject) = BenchmarkResult(
             j.getString("runId"), j.getLong("timestamp"), j.getString("model"), j.getString("identity"), j.getString("route"),
@@ -132,7 +137,10 @@ internal data class BenchmarkResult(
             j.optJSONArray("audioMsByPass")?.let { a -> (0 until a.length()).map(a::getLong) }.orEmpty(),
             j.optJSONObject("environment")?.let(BenchmarkEnvironment::from),
             if (j.has("languageControl") && !j.isNull("languageControl")) j.getString("languageControl") else null,
-            if (j.has("recognitionLanguage") && !j.isNull("recognitionLanguage")) j.getString("recognitionLanguage") else null)
+            if (j.has("recognitionLanguage") && !j.isNull("recognitionLanguage")) j.getString("recognitionLanguage") else null,
+            if (j.has("terminationReason") && !j.isNull("terminationReason")) j.getString("terminationReason") else null,
+            if(j.has("attemptTimeoutSeconds") && !j.isNull("attemptTimeoutSeconds"))j.getInt("attemptTimeoutSeconds") else null,
+            if(j.has("attemptElapsedMs") && !j.isNull("attemptElapsedMs"))j.getLong("attemptElapsedMs") else null)
     }
 }
 /** Sequential production runtimes. A fresh session is closed before the next model is loaded. */
@@ -205,6 +213,8 @@ internal class LocalBenchmarkRunner(private val context: Context) {
         selected: List<BenchmarkCandidate>, clip: BenchmarkAudio.Clip?, text: String, referenceText: String?,
         source: String, target: String, benchmarkInputs: List<BenchmarkInput> = emptyList(),
         compareAcceleration: Boolean = false, resumeCompleted: Boolean = false, measuredPasses: Int = 3,
+        persistResults: Boolean = true, workerJisrDialect: String? = null,
+        workerVoiceApproved: Boolean = false, attemptTimeoutSeconds: Int = 20,
         progress: (String) -> Unit, onResult: (BenchmarkResult) -> Unit,
     ) = withContext(Dispatchers.Default) {
         com.sal7one.transiber.runtime.LocalModelPolicy.requireAllowed(context, "model benchmarking")
@@ -215,14 +225,7 @@ internal class LocalBenchmarkRunner(private val context: Context) {
         val translating = task == BenchmarkTask.TRANSLATION
         val synthesizing = task == BenchmarkTask.VOICE
         require(selected.all { it.task == task }) { "Compare speech, translation and voices separately" }
-        val planned = BenchmarkAccelerationPlan.expand(selected, compareAcceleration).map { candidate ->
-            if (candidate.acceleration != null) candidate else candidate.copy(acceleration = when {
-                candidate.translation != null -> ConversationTranslationSettings.acceleration(context).id
-                candidate.profile != null -> SpeechAccelerationStore.current(context, candidate.profile.captionEngine)
-                candidate.route.startsWith("Whisper /") -> SpeechAccelerationStore.current(context, CaptionEngineChoice.WHISPER)
-                else -> "cpu"
-            })
-        }.distinctBy(BenchmarkAccelerationPlan::identity)
+        val planned = BenchmarkAccelerationPlan.resolve(context,selected,compareAcceleration)
         if (benchmarkInputs.isNotEmpty()) {
             require(benchmarkInputs.size <= 32) { "Choose a benchmark set with no more than 32 samples" }
             require(benchmarkInputs.all { if (translating || synthesizing) it.text.isNotBlank() && it.text.length <= 500 && it.clip == null else it.clip != null }) {
@@ -233,26 +236,18 @@ internal class LocalBenchmarkRunner(private val context: Context) {
             if (translating) require(source != target) { "Choose different source and translation languages" }
         } else require(clip != null) { "Choose a WAV recording first" }
         require(referenceText == null || referenceText.length <= 8000) { "Reference text must be 8,000 characters or fewer" }
-        val jisrDialect = ConversationTranslationSettings.jisrDialect(context)
-        val runtimeBuild = context.packageManager.getPackageInfo(context.packageName, 0).lastUpdateTime.toString()
+        val jisrDialect = workerJisrDialect ?: ConversationTranslationSettings.jisrDialect(context)
         val lease = LocalWorkGate.acquire("Benchmark")
         try {
             val runId = UUID.randomUUID().toString()
-            val hash = if (benchmarkInputs.isNotEmpty()) MessageDigest.getInstance("SHA-256")
-                .digest(benchmarkInputs.joinToString("\u0000") {
-                    listOf(it.id, it.clip?.sha256 ?: it.text, it.reference.orEmpty(), it.silence.toString()).joinToString("\u0001")
-                }.toByteArray())
-                .joinToString("") { "%02x".format(it.toInt() and 255) }
-            else MessageDigest.getInstance("SHA-256")
-                .digest("$source\u0000$target\u0000${clip?.takeUnless { translating || synthesizing }?.sha256.orEmpty()}\u0000$text\u0000${referenceText.orEmpty()}".toByteArray())
-                .joinToString("") { "%02x".format(it.toInt() and 255) }
-            val device = "${Build.MANUFACTURER} ${Build.MODEL}; Android ${Build.VERSION.RELEASE}; API ${Build.VERSION.SDK_INT}; app ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})"
+            val hash = BenchmarkAttemptRecord.inputHash(benchmarkInputs,clip,text,referenceText,source,target,task)
+            val device = BenchmarkAttemptRecord.device()
             val history = if (resumeCompleted) withContext(Dispatchers.IO) { BenchmarkResults(context).load() } else emptyList()
             val resultTarget = if (translating) target else ""
             var completed = 0
             for ((modelIndex, candidate) in planned.withIndex()) {
                 currentCoroutineContext().ensureActive()
-                val configurationHash = BenchmarkExecutionMetadata.configurationHash(candidate, measuredPasses, "jisr-dialect=$jisrDialect;app-install=$runtimeBuild;os=${Build.FINGERPRINT}")
+                val configurationHash = BenchmarkAttemptRecord.configuration(context,candidate,measuredPasses,jisrDialect,attemptTimeoutSeconds)
                 if (history.any { BenchmarkExecutionMetadata.canResume(it, candidate, hash, configurationHash, source, resultTarget, device, measuredPasses) }) {
                     completed++
                     reportProgress("$completed/${planned.size} · ${candidate.label}: kept completed result")
@@ -297,7 +292,16 @@ internal class LocalBenchmarkRunner(private val context: Context) {
                             val choice = VoiceChoice(voice = checkNotNull(candidate.voiceId), family = family)
                             val coroutineContext = currentCoroutineContext()
                             withContext(Dispatchers.IO) {
-                                LocalVoiceFamilies.verify(context, choice) { coroutineContext.ensureActive() }
+                                if(workerVoiceApproved) {
+                                    // The parent checked the experimental opt-in before IPC.
+                                    // Verify the same pinned package without opening a second
+                                    // process-local DataStore writer in the native worker.
+                                    com.sal7one.transiber.runtime.LocalModelPolicy.requireAllowed(context,"model benchmarking")
+                                    val provider=checkNotNull(LocalVoiceFamilies.find(family))
+                                    check(provider.runtimeAvailable()) {"${provider.label} runtime is unavailable"}
+                                    require(choice.voice in provider.voices) {"Unsupported voice: ${choice.voice}"}
+                                    provider.verifyPackage(LocalVoiceFamilies.directory(context,family),choice.voice) {coroutineContext.ensureActive()}
+                                } else LocalVoiceFamilies.verify(context, choice) { coroutineContext.ensureActive() }
                                 voiceReader = ArticleReader(LocalVoiceFamilies.engine(context, family))
                             }
                             cancelNative = { voiceReader?.stop() }
@@ -314,6 +318,9 @@ internal class LocalBenchmarkRunner(private val context: Context) {
                                 require(manifest.length() in 1..65536) { "Missing or oversized speech manifest" }
                                 val bytes = manifest.readBytes()
                                 MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it.toInt() and 255) }
+                            }
+                            check(candidate.artifactFingerprint==null || manifestHash.equals(candidate.artifactFingerprint,true)) {
+                                "The installed speech package changed while queued. Refresh models before benchmarking it."
                             }
                             runtime += "; ${candidate.profile.id}; package manifest SHA-256 $manifestHash; defaults: threads 4 where supported, right context 3, utterance 4000 ms"
                             val acceleration = candidate.acceleration ?: SpeechAccelerationStore.current(context, candidate.profile.captionEngine)
@@ -366,22 +373,26 @@ internal class LocalBenchmarkRunner(private val context: Context) {
                             runtime = "ML Kit SDK; first call includes deferred client/model initialization"
                         }
                         else -> {
-                            val registry = ModelRegistry.getInstance(context)
-                            val model = checkNotNull(registry.getModel(candidate.id)) { "Model registration is missing" }
-                            val engine: SttEngine = if (model.engineType == ModelEngineType.WHISPER) WhisperEngine() else VoskEngine()
+                            // Candidate path and pin were snapshotted by the parent. Native
+                            // initialization still verifies the complete digest. Rediscovery
+                            // here would initialize preference/audit writers in the worker.
+                            val whisper=candidate.route.startsWith("Whisper /")
+                            require(whisper || candidate.route.startsWith("Vosk /")) {"Unknown local speech route: ${candidate.route}"}
+                            val modelFile=checkNotNull(candidate.file) {"Model file is missing"}
+                            val modelPin=checkNotNull(candidate.artifactFingerprint) {"Model digest is missing"}
+                            val engine: SttEngine = if (whisper) WhisperEngine() else VoskEngine()
                             legacy = engine
                             cancelNative = { (engine as? CancellableSttEngine)?.cancel() }
-                            val provider = checkNotNull(registry.getProvider(candidate.id))
                             val acceleration = if (engine is WhisperEngine) candidate.acceleration
                                 ?: SpeechAccelerationStore.current(context, CaptionEngineChoice.WHISPER) else "cpu"
                             executedAcceleration = acceleration
                             runtime = "Requested $acceleration; initialization did not complete"
                             withContext(Dispatchers.IO) {
-                                val path = provider.getModelPath()
+                                val path = modelFile.absolutePath
                                 engine.initialize(path, SttConfig.forBatch().copy(
                                     numThreads = if (engine is WhisperEngine) 8 else 2,
                                     language = if (recognitionLanguage in setOf("auto", "model")) LanguageConfig.Auto else LanguageConfig.Specific(recognitionLanguage),
-                                    modelSha256 = checkNotNull(provider.getModelDigest()).hex,
+                                    modelSha256 = modelPin,
                                     whisperAcceleration = if (engine is WhisperEngine &&
                                         acceleration == "vulkan")
                                         WhisperAcceleration.VULKAN else WhisperAcceleration.CPU,
@@ -389,7 +400,7 @@ internal class LocalBenchmarkRunner(private val context: Context) {
                             }
                             val executionInfo = (engine as? WhisperEngine)?.runtimeDescription ?: "CPU · Vosk"
                             actualAcceleration = BenchmarkExecutionMetadata.actualAcceleration(executionInfo)
-                            runtime = "Model SHA-256 ${model.digest?.hex}; ${if (engine is WhisperEngine) 8 else 2} threads; $executionInfo" +
+                            runtime = "Model SHA-256 $modelPin; ${if (engine is WhisperEngine) 8 else 2} threads; $executionInfo" +
                                 if (engine is WhisperEngine && acceleration == "vulkan" && actualAcceleration == null)
                                     "; GPU device probe succeeded; actual model placement is not reported by this native API" else ""
                         }
@@ -490,24 +501,25 @@ internal class LocalBenchmarkRunner(private val context: Context) {
                     device, failure,
                     combinedReference, combinedReference?.takeIf { failure == null && !translating && !synthesizing && source != "zh" }?.let { BenchmarkScoring.wordErrors(it, texts.lastOrNull().orEmpty()).rate },
                     combinedReference?.takeIf { failure == null && !translating && !synthesizing }?.let { BenchmarkScoring.characterErrors(it, texts.lastOrNull().orEmpty()).rate },
-                    combinedReference?.takeIf { failure == null && !synthesizing }?.let {
+                    combinedReference?.takeIf { !synthesizing }?.let {
                         if (translating) BenchmarkScoring.CHRF_PARAMETERS else BenchmarkScoring.NORMALIZATION
                     },
                     if (translating && failure == null) samples.mapNotNull { sample ->
                         sample.reference?.let { expected -> BenchmarkScoring.chrf(expected, sample.text) }
                     }.takeIf { it.isNotEmpty() }?.average()?.div(100.0) else null,
-                    samples, protocolVersion = 2, task = task.name.lowercase(java.util.Locale.ROOT),
+                    samples, protocolVersion = BenchmarkAttemptPolicy.PROTOCOL_VERSION, task = task.name.lowercase(java.util.Locale.ROOT),
                     requestedAcceleration = executedAcceleration, actualAcceleration = actualAcceleration,
                     modelBytes = candidate.artifactBytes ?: candidate.file?.takeIf(File::exists)?.let { file ->
                         if (file.isFile) file.length() else file.walkTopDown().filter(File::isFile).sumOf(File::length)
                     }, configurationHash = configurationHash, audioMsByPass = audioDurations,
                     environment = BenchmarkEnvironment(environmentBefore, environmentAfter),
                     languageControl = recognition?.control, recognitionLanguage = recognition?.language)
-                withContext(Dispatchers.IO) { BenchmarkResults(context).append(result) }
+                if(persistResults)withContext(Dispatchers.IO) { BenchmarkResults(context).append(result) }
                 withContext(Dispatchers.Main.immediate) { onResult(result) }
                 completed++
             }
-            reportProgress("$completed/${planned.size} completed · results saved")
+            reportProgress(if(persistResults)"$completed/${planned.size} completed · results saved"
+                else "$completed/${planned.size} attempt complete · releasing isolated process")
         } finally { cancelNative = null; lease.close() }
     }
 }

@@ -37,6 +37,22 @@ catalogue labels does not lock already discovered models: installation mapping
 uses receipts and bounded metadata, while actual selected model weights are
 still verified before runtime initialization.
 
+Each model/backend attempt has a **20-second hard maximum**, with **5 / 10 / 20
+seconds** available on Setup and saved in preferences. The budget includes private
+input preparation, model verification/loading, all measured passes and cleanup;
+it is not multiplied by the pass or clip count. The screen shows the actual PCM
+duration range, set total and repeated workload. Normal publisher recordings are
+roughly 4–9 seconds, with optional long recordings up to 17.1 seconds. A larger
+set requires correspondingly faster inference to finish within the chosen cap.
+
+A timeout disqualifies that artifact/backend for the rest of the comparison,
+including later languages, decoder hints and voice styles. Other backends remain
+eligible. Results offer a Disqualified filter; interrupted rows receive no speed
+or quality score. JSON/CSV record the termination reason, chosen cap and elapsed
+attempt time. Existing history remains readable. Timing protocol **3** separates
+disposable-process measurements from older foreground-process timing, and resume
+also requires the same deadline/configuration.
+
 The ready-to-run default is the bundled publisher reference set. For a Saudi
 speech comparison, select **Saudi speech**, record up to six private clips (or
 import PCM16 WAV files), correct each transcript, and save. References and
@@ -219,8 +235,15 @@ Comparisons belong to an application-owned foreground service, so leaving this
 page or backgrounding the activity does not cancel them. Its visible progress
 notification opens Model Lab and provides Stop. A bounded, renewed partial wake
 lock keeps a user-started long comparison progressing with the screen off.
-Stopping cooperates with the native operation, then releases the model and work
-lease. Android process termination can still interrupt a run; completed rows are
+Each attempt owns a non-exported disposable Android process. Parent and independent
+worker watchdogs terminate stuck native inference; Stop and parent-process death
+also terminate the worker. Binder death must be confirmed before another model
+opens or a result is accepted. If termination cannot be confirmed, comparison
+stops and local inference stays blocked until Hearth restarts. The parent retains
+the work lease for the full queue, and worker startup avoids competing preference
+migration/audit writers. Worker memory/CPU priority favors keeping the UI usable;
+it is reported as part of the timing protocol. Android process termination can
+still interrupt a run; completed rows are
 already saved. There is no automatic boot/process-restart inference. Optional
 **Keep completed results** skips only successful, fully measured results matching
 the exact input, pinned artifact, device/app install, options, pass count and
@@ -308,9 +331,11 @@ promising result with representative recordings and bilingual review. No
 unmeasured model is called faster or more accurate based on model-card claims.
 
 `BenchmarkAudio` bounds WAV parsing and decodes selected samples once for equal
-inputs. **Stop comparison** cancels cooperatively; a current native operation
-may need to finish before model resources close. Native crashes
-and process-level OOM cannot be converted into managed benchmark results.
+inputs. **Stop comparison** terminates the disposable model process and waits for
+confirmed death, including when C++ ignores cooperative cancellation. Native
+crashes or Android memory-pressure termination become disqualified rows when the
+parent survives. Host watchdog/IPC coverage does not replace owner device checks
+of real process termination, GPU drivers, scheduling and thermal behavior.
 
 ### Comparing CPU and GPU backends
 

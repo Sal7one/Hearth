@@ -21,6 +21,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.*
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -122,6 +123,8 @@ fun LocalBenchmarkScreen(onModels: (String) -> Unit = {}, onDownloads: () -> Uni
     var freeBytes by remember { mutableLongStateOf(0L) }
     var resumeCompleted by rememberBenchmarkBoolean("resumeCompleted", false)
     var measuredPasses by rememberBenchmarkInt("measuredPasses", 3)
+    var attemptTimeoutSeconds by rememberBenchmarkAttemptTimeout()
+    var audioDurations by remember { mutableStateOf<BenchmarkAudioDurations?>(null) }
     var tableSort by rememberBenchmarkEnum("tableSort", BenchmarkTableSort.WARM)
     var picker by remember { mutableStateOf<String?>(null) }
     var busy by remember { mutableStateOf(false) }
@@ -144,7 +147,7 @@ fun LocalBenchmarkScreen(onModels: (String) -> Unit = {}, onDownloads: () -> Uni
             error = null
             feedback = ""
             val omissions = mutableListOf<String>()
-            val executable = batches.mapNotNull { batch ->
+            val executable = batches.map { it.copy(attemptTimeoutSeconds = attemptTimeoutSeconds) }.mapNotNull { batch ->
                 if (batch.models.firstOrNull()?.task != BenchmarkTask.SPEECH) batch else {
                     val expanded = BenchmarkLanguagePlan.expand(batch.models, batch.source, languageMode)
                     omissions += expanded.omitted
@@ -318,6 +321,28 @@ fun LocalBenchmarkScreen(onModels: (String) -> Unit = {}, onDownloads: () -> Uni
         if (startBatches(batches)) section = "Results"
     }
     val matrixActive = useMatrix && task != BenchmarkTask.VOICE
+    val durationSuite = if (matrixActive) suite else activeSpeechSuite
+    val durationCases = remember(durationSuite, matrixActive, matrixLanguages, builtInCases, extendedSpeech) {
+        if (matrixActive) matrixLanguages.sorted().flatMap { code ->
+            durationSuite?.selected(true, code, "", full = extendedSpeech).orEmpty()
+        } else builtInCases
+    }
+    LaunchedEffect(task, matrixActive, useBuiltInSet, durationSuite, durationCases, clip?.sha256) {
+        audioDurations = null
+        if (task == BenchmarkTask.SPEECH) {
+            try {
+                audioDurations = withContext(Dispatchers.IO) {
+                    if (!matrixActive && !useBuiltInSet) clip?.let { BenchmarkAudioDurations(listOf(it.durationMs), emptyList()) }
+                    else durationSuite?.let { selectedSuite ->
+                        val durations = durationCases.map { sample -> sample to selectedSuite.audio(context, sample).durationMs }
+                        BenchmarkAudioDurations(durations.filter { it.first.silenceMs == 0 }.map { it.second },
+                            durations.filter { it.first.silenceMs > 0 }.map { it.second })
+                    }
+                }
+            } catch (cancelled: CancellationException) { throw cancelled }
+            catch (failure: Exception) { error = failure.message ?: failure.toString() }
+        }
+    }
     val readiness = benchmarkReadinessIssue(task, selectedCount, !discovered, busy || recordingStop != null,
         gateOwner, running, matrixActive || useBuiltInSet,
         if (matrixActive) matrixPlan?.groups?.sumOf { it.cases.size } ?: 0 else builtInCases.size,
@@ -500,6 +525,29 @@ fun LocalBenchmarkScreen(onModels: (String) -> Unit = {}, onDownloads: () -> Uni
             }
         }
         if (section == "Setup") item {
+            Text(uiText.bench("Time limit per model", "المهلة لكل نموذج", "每个模型的时间限制"), style = MaterialTheme.typography.titleMedium)
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                benchmarkAttemptTimeoutPresets.forEach { seconds ->
+                    FilterChip(attemptTimeoutSeconds == seconds, { attemptTimeoutSeconds = seconds },
+                        enabled = !running && !busy, modifier = Modifier.testTag("benchmark-time-limit-$seconds"),
+                        label = { Text(uiText.bench("$seconds seconds", "$seconds ثانية", "$seconds 秒")) })
+                }
+            }
+            Text(uiText.bench(
+                "The limit covers loading, every sample, all $measuredPasses passes and cleanup for one model/backend/language attempt. Slow models are disqualified and skipped for the rest of this queue; no quality score is awarded.",
+                "تشمل المهلة التحميل وجميع العينات والمرورات البالغ عددها $measuredPasses والتنظيف لمحاولة نموذج/مسار/لغة واحدة. تُستبعد النماذج البطيئة من بقية الطابور دون منحها درجة جودة.",
+                "时限包含单个模型/后端/语言的加载、所有样本、全部 $measuredPasses 轮及清理。超时模型将被取消资格并跳过后续队列，不授予质量分数。"),
+                style = MaterialTheme.typography.bodySmall, modifier = Modifier.testTag("benchmark-time-limit-description"))
+            audioDurations?.takeIf { it.recordings.isNotEmpty() }?.let { durations ->
+                val range = if (durations.shortestMs == durations.longestMs) number(durations.shortestMs / 1000.0)
+                    else "${number(durations.shortestMs / 1000.0)}–${number(durations.longestMs / 1000.0)}"
+                Text(uiText.bench(
+                    "${durations.recordings.size} recordings · $range s each · ${number(durations.totalMs / 1000.0)} s ${if (matrixActive) "across selected languages (tested separately)" else "input per pass"}${if (durations.silenceChecks.isNotEmpty()) " (includes ${durations.silenceChecks.size} silence checks)" else ""}. $measuredPasses passes: first + ${measuredPasses - 1} warm.",
+                    "${durations.recordings.size} تسجيلات · $range ث لكل تسجيل · ${number(durations.totalMs / 1000.0)} ث ${if (matrixActive) "لمجموع اللغات المختارة (تُختبر كل لغة منفصلة)" else "من المدخلات لكل مرور"}${if (durations.silenceChecks.isNotEmpty()) " (تشمل ${durations.silenceChecks.size} فحوص صمت)" else ""}. $measuredPasses مرورات: الأولى + ${measuredPasses - 1} بعد الإحماء.",
+                    "${durations.recordings.size} 段录音 · 每段 $range 秒 · ${number(durations.totalMs / 1000.0)} 秒${if (matrixActive) "所选语言的总输入（每种语言单独测试）" else "每轮输入"}${if (durations.silenceChecks.isNotEmpty()) "（包括 ${durations.silenceChecks.size} 次静音检查）" else ""}。共 $measuredPasses 轮：首次 + ${measuredPasses - 1} 次预热后测量。"),
+                    style = MaterialTheme.typography.bodySmall, modifier = Modifier.testTag("benchmark-audio-duration"))
+            }
+            Spacer(Modifier.height(12.dp))
             if (mode != "Voices") Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
                 Checkbox(compareAcceleration, { compareAcceleration = it }, enabled = !running && !busy)
                 Text(uiText(UiR.string.benchmark_compare_acceleration), style = MaterialTheme.typography.bodyMedium)
@@ -894,7 +942,8 @@ fun LocalBenchmarkScreen(onModels: (String) -> Unit = {}, onDownloads: () -> Uni
     }
     error?.let { Text(it, Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 6.dp),
         color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall, maxLines = 4) }
-    BenchmarkRunFooter(readiness, selectedCount, measuredPasses, inputSummary,
+    BenchmarkRunFooter(readiness, selectedCount, measuredPasses, inputSummary + " · " +
+        uiText.bench("${attemptTimeoutSeconds}s/model limit", "مهلة ${attemptTimeoutSeconds}ث/نموذج", "每个模型最多 ${attemptTimeoutSeconds} 秒"),
         compareAcceleration && task != BenchmarkTask.VOICE, running, runState.stopping, status, gateOwner,
         onRun = ::runComparison, onStop = ::stop,
         onFix = { fix -> when (fix) {

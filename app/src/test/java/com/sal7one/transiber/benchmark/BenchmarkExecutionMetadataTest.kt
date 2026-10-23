@@ -34,11 +34,15 @@ class BenchmarkExecutionMetadataTest {
         val configuration = BenchmarkExecutionMetadata.configurationHash(model, 3, "settings")!!
         val result = BenchmarkResult("batch", 1, "Model", "model@cpu", "Whisper / batch", "input", "en", "", 1000,
             10.0, listOf(30.0, 20.0, 20.0), listOf("hello"), "CPU", listOf(10.0, 9.0, 9.0), "phone",
-            protocolVersion = 2, configurationHash = configuration, actualAcceleration = "cpu")
+            protocolVersion = BenchmarkAttemptPolicy.PROTOCOL_VERSION, configurationHash = configuration, actualAcceleration = "cpu")
         fun resume(row: BenchmarkResult = result, candidate: BenchmarkCandidate = model, settings: String? = configuration) =
             BenchmarkExecutionMetadata.canResume(row, candidate, "input", settings, "en", "", "phone", 3)
         assertTrue(resume())
+        assertFalse(resume(result.copy(protocolVersion=2)))
         assertFalse(resume(result.copy(error = "failed")))
+        listOf("deadline", "worker_crash", "disqualified").forEach { reason ->
+            assertFalse(resume(result.copy(terminationReason = reason)))
+        }
         assertFalse(resume(result.copy(texts = emptyList())))
         assertFalse(resume(result.copy(texts = listOf("", "", "  "))))
         assertFalse(resume(result.copy(actualAcceleration = null)))

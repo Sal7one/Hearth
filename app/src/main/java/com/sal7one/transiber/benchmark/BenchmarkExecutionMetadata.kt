@@ -49,8 +49,8 @@ internal object BenchmarkExecutionMetadata {
 
     fun canResume(result: BenchmarkResult, candidate: BenchmarkCandidate, hash: String, configurationHash: String?,
         source: String, target: String, device: String, passes: Int): Boolean = configurationHash != null &&
-        result.error == null && result.texts.lastOrNull()?.isNotBlank() == true &&
-        result.protocolVersion == 2 && result.task == candidate.task.name.lowercase(java.util.Locale.ROOT) &&
+        result.error == null && result.terminationReason == null && result.texts.lastOrNull()?.isNotBlank() == true &&
+        result.protocolVersion == BenchmarkAttemptPolicy.PROTOCOL_VERSION && result.task == candidate.task.name.lowercase(java.util.Locale.ROOT) &&
         result.identity == BenchmarkAccelerationPlan.identity(candidate) && result.inputHash == hash &&
         result.actualAcceleration == candidate.acceleration &&
         result.configurationHash == configurationHash && result.source == source && result.target == target &&

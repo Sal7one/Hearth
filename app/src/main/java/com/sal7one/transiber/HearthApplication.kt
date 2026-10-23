@@ -7,6 +7,9 @@ import com.sal7one.transiber.preferences.StartupModelAudit
 class HearthApplication : Application() {
     override fun onCreate() {
         super.onCreate()
+        // A benchmark worker owns only a disposable native session. Starting migration,
+        // DataStore or download/model audits here would race the main application's stores.
+        if (com.sal7one.transiber.benchmark.BenchmarkWorkerService.isWorkerProcess(packageName)) return
         StartupModelAudit.start(this)
     }
 }

@@ -30,6 +30,30 @@ private fun <T> rememberBenchmarkPreference(key: String, read: (SharedPreference
     { it.getBoolean(key, initial) }, { putBoolean(key, it) })
 @Composable internal fun rememberBenchmarkInt(key: String, initial: Int) = rememberBenchmarkPreference(key,
     { it.getInt(key, initial) }, { putInt(key, it) })
+internal val benchmarkAttemptTimeoutPresets = listOf(5, 10, 20)
+
+/** A stricter preset preserves the ceiling when migrating older 15/30/45-second choices. */
+internal fun benchmarkAttemptPresetSeconds(value: Int): Int = benchmarkAttemptTimeoutPresets
+    .lastOrNull { it <= BenchmarkAttemptPolicy.seconds(value) } ?: benchmarkAttemptTimeoutPresets.first()
+
+/** Clamp both restored and newly selected budgets; stale preferences cannot lift the ceiling. */
+@Composable internal fun rememberBenchmarkAttemptTimeout(): MutableState<Int> {
+    val persisted = rememberBenchmarkInt("attempt-timeout-seconds", BenchmarkAttemptPolicy.DEFAULT_SECONDS)
+    LaunchedEffect(persisted.value) {
+        val bounded = benchmarkAttemptPresetSeconds(persisted.value)
+        if (persisted.value != bounded) persisted.value = bounded
+    }
+    // Saveable state from an older app version also passes through this getter.
+    return remember(persisted) {
+        object : MutableState<Int> {
+            override var value: Int
+                get() = benchmarkAttemptPresetSeconds(persisted.value)
+                set(value) { persisted.value = benchmarkAttemptPresetSeconds(value) }
+            override fun component1() = value
+            override fun component2(): (Int) -> Unit = { value = it }
+        }
+    }
+}
 @Composable internal fun rememberBenchmarkSelection(key: String) = rememberBenchmarkPreference(key,
     { it.getStringSet(key, emptySet())?.sorted().orEmpty() }, { putStringSet(key, it.toSet()) })
 @Composable internal inline fun <reified E : Enum<E>> rememberBenchmarkEnum(key: String, initial: E): MutableState<E> {

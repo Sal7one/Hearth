@@ -15,6 +15,7 @@ internal object BenchmarkExport {
             .put("notes", "Accelerated replay/synthesis measurements, not live capture latency. Requested GPU placement is not proof of actual offload. Reference similarity is not a human listening score.")
             .put("reference_score_notes", "0–100 reference agreement only: speech=max(0,100*(1-WER)); Chinese uses CER; translation=100*chrF++. Failed, incomplete, unreferenced and voice runs are unscored. Compare identical language/input/device/protocol cohorts; speed is separate.")
             .put("recognition_language_notes", "source identifies the sample language used for scoring. languageControl=forced records a decoder language hint, not guaranteed language or recognition accuracy; automatic records detection; fixed records the model language. recognitionLanguage records the decoder selection (language code, auto or model). Legacy null fields are unrecorded, never inferred from source.")
+            .put("deadline_notes", "Model attempts run in a disposable process with a hard maximum of 20 seconds including loading, all passes and cleanup. A deadline or process failure disqualifies that artifact/backend for the rest of the comparison. Interrupted work has no timing or quality score.")
             .put("results", JSONArray(rows.map { it.json().put("referenceScore100", BenchmarkTableModel.referenceScore100(it) ?: JSONObject.NULL) })).toString(2)
         BenchmarkExportFormat.CSV -> csv(rows)
     }
@@ -28,14 +29,14 @@ internal object BenchmarkExport {
             "battery_percent_before", "battery_percent_after", "battery_celsius_before", "battery_celsius_after",
             "thermal_status_before", "thermal_status_after", "available_system_memory_bytes_before", "available_system_memory_bytes_after",
             "process_pss_bytes_before", "process_pss_bytes_after", "system_low_memory_before", "system_low_memory_after",
-            "language_control", "recognition_language")
+            "language_control", "recognition_language", "termination_reason", "attempt_timeout_seconds", "attempt_elapsed_ms")
         val values = rows.map { row -> listOf(
             row.model, row.task, row.source, row.target, BenchmarkTableModel.requestedBackend(row), row.actualAcceleration,
-            when { row.error != null -> "failed"; BenchmarkTableModel.completed(row) -> "completed"; else -> "incomplete_or_empty" },
-            BenchmarkTableModel.warmMs(row), row.loadMs.takeIf { it.isFinite() && it >= 0 && row.error == null },
+            when { BenchmarkTableModel.disqualified(row) -> "disqualified"; row.error != null -> "failed"; BenchmarkTableModel.completed(row) -> "completed"; else -> "incomplete_or_empty" },
+            BenchmarkTableModel.warmMs(row), row.loadMs.takeIf { it.isFinite() && it >= 0 && row.error == null && !BenchmarkTableModel.disqualified(row) },
             BenchmarkTableModel.firstTextMs(row), BenchmarkTableModel.audioSpeed(row),
-            BenchmarkTableModel.translationMsPerSentence(row), row.wordErrorRate, row.characterErrorRate,
-            row.translationChrf, BenchmarkTableModel.referenceScore100(row), row.modelBytes, row.audioMs, (row.computeMs.size - 1).coerceAtLeast(0),
+            BenchmarkTableModel.translationMsPerSentence(row), row.wordErrorRate.takeIf {row.error==null && !BenchmarkTableModel.disqualified(row)}, row.characterErrorRate.takeIf {row.error==null && !BenchmarkTableModel.disqualified(row)},
+            row.translationChrf.takeIf {row.error==null && !BenchmarkTableModel.disqualified(row)}, BenchmarkTableModel.referenceScore100(row), row.modelBytes, row.audioMs, (row.computeMs.size - 1).coerceAtLeast(0),
             row.scoringNormalization, row.protocolVersion, row.device, row.runtime, row.inputHash, row.identity,
             row.configurationHash, row.runId, row.timestamp, row.error, row.texts.lastOrNull(), row.referenceText,
             row.environment?.before?.batteryPercent, row.environment?.after?.batteryPercent,
@@ -44,7 +45,7 @@ internal object BenchmarkExport {
             row.environment?.before?.availableSystemMemoryBytes, row.environment?.after?.availableSystemMemoryBytes,
             row.environment?.before?.processPssBytes, row.environment?.after?.processPssBytes,
             row.environment?.before?.systemLowMemory, row.environment?.after?.systemLowMemory,
-            row.languageControl, row.recognitionLanguage,
+            row.languageControl, row.recognitionLanguage, row.terminationReason, row.attemptTimeoutSeconds, row.attemptElapsedMs,
         ) }
         return (listOf(headers) + values).joinToString("\r\n", postfix = "\r\n") { row ->
             row.joinToString(",") { cell -> csvCell(cell) }

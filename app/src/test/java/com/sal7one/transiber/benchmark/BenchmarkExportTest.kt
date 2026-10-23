@@ -74,9 +74,21 @@ class BenchmarkExportTest {
         assertTrue(historical.isNull("recognitionLanguage"))
         assertTrue(json.getString("recognition_language_notes").contains("decoder language hint"))
         val lines = BenchmarkExport.render(listOf(recorded, result()), BenchmarkExportFormat.CSV).lineSequence().toList()
-        assertTrue(lines[0].endsWith("\"language_control\",\"recognition_language\""))
-        assertTrue(lines[1].endsWith("\"automatic\",\"auto\""))
-        assertTrue(lines[2].endsWith("\"\",\"\""))
+        assertTrue(lines[0].endsWith("\"language_control\",\"recognition_language\",\"termination_reason\",\"attempt_timeout_seconds\",\"attempt_elapsed_ms\""))
+        assertTrue(lines[1].endsWith("\"automatic\",\"auto\",\"\",\"\",\"\""))
+        assertTrue(lines[2].endsWith("\"\",\"\",\"\",\"\",\"\""))
+    }
+
+    @Test fun timeoutExportsAsDisqualifiedWithMeasuredCapAndNoFabricatedScore() {
+        val row=BenchmarkAttemptPolicy.failureResult(result().copy(terminationReason="deadline",attemptTimeoutSeconds=20,attemptElapsedMs=20012),"Disqualified: exceeded 20 seconds")
+        val json=JSONObject(BenchmarkExport.render(listOf(row),BenchmarkExportFormat.JSON)).getJSONArray("results").getJSONObject(0)
+        assertEquals(row,BenchmarkResult.from(json))
+        assertTrue(json.isNull("referenceScore100"))
+        val csv=BenchmarkExport.render(listOf(row),BenchmarkExportFormat.CSV)
+        assertTrue(csv.contains("\"disqualified\""));assertTrue(csv.contains("\"deadline\",\"20\",\"20012\""))
+        val partial=BenchmarkExport.render(listOf(result().copy(terminationReason="deadline",wordErrorRate=.25)),BenchmarkExportFormat.CSV)
+        assertFalse(partial.lineSequence().drop(1).first().contains("\"10.0\""))
+        assertFalse(partial.lineSequence().drop(1).first().contains("\"0.25\""))
     }
 
     private fun result() = BenchmarkResult(
