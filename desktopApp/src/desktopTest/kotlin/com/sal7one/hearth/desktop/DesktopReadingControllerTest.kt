@@ -108,6 +108,55 @@ class DesktopReadingControllerTest {
         } finally {controller.close();Files.deleteIfExists(path)}
     }
 
+    @Test fun cleanupRepublishingTranslatesEveryNewTranscriptOnlyOnceAndCachesAcrossFrames() = runBlocking {
+        val config=MutableStateFlow(PipelineConfig(translation=EngineSelection("translator"),targetLanguage="ar"))
+        val requests=mutableListOf<PipelineRequest>()
+        val pipeline=object:PipelineService {
+            override fun capabilities()=emptyList<EngineDescriptor>()
+            override fun start(request: PipelineRequest):PipelineSession {
+                requests+=request
+                return session(PipelineSnapshot("ok",PipelineStatus.COMPLETED,segments=listOf(CaptionSegment("1","source","translated")))) {}
+            }
+        }
+        val reader=FakeReader {progress ->
+            val page=listOf(PageText(OcrRegion(OcrRect(1,1,10,10),1f),"one"),PageText(OcrRegion(OcrRect(20,20,10,10),1f),"two"))
+            progress.detected(page.map {it.region})
+            progress.recognized(emptyList())
+            progress.recognized(page)
+            progress.recognized(page) // Cleanup republishes geometry/paints after all OCR.
+        }
+        val controller=DesktopReadingController(pipeline,config,this) {reader}
+        try {
+            val frame=BufferedImage(120,160,BufferedImage.TYPE_INT_RGB)
+            controller.readFrame(frame,Path.of("models"),true)?.join()
+            assertNull(controller.state.value.error)
+            assertEquals(2,requests.size)
+            assertEquals(2,controller.state.value.translations.size)
+            controller.readFrame(frame,Path.of("models"),true)?.join()
+            assertEquals(2,requests.size,"Unchanged transcript/config should reuse successful translations")
+            config.value=config.value.copy(targetLanguage="en")
+            controller.readFrame(frame,Path.of("models"),true)?.join()
+            assertEquals(4,requests.size,"Changing the shared translator configuration invalidates cache identity")
+        } finally {controller.close()}
+    }
+
+    @Test fun separateUiAndServiceControllersNeverOverlapNativeRecognition() = runBlocking {
+        val entered=CountDownLatch(1);val release=CountDownLatch(1);val second=CountDownLatch(1)
+        val first=DesktopReadingController(noPipeline(),MutableStateFlow(PipelineConfig()),this) {FakeReader {
+            entered.countDown();check(release.await(10,TimeUnit.SECONDS))
+        }}
+        val other=DesktopReadingController(noPipeline(),MutableStateFlow(PipelineConfig()),this) {FakeReader {second.countDown()}}
+        val frame=BufferedImage(40,40,BufferedImage.TYPE_INT_RGB)
+        try {
+            val a=first.readFrame(frame,Path.of("a"),false)
+            withContext(Dispatchers.IO) {assertTrue(entered.await(10,TimeUnit.SECONDS))}
+            val b=other.readFrame(frame,Path.of("b"),false)
+            withContext(Dispatchers.IO) {assertFalse(second.await(100,TimeUnit.MILLISECONDS))}
+            release.countDown();a?.join();b?.join()
+            assertEquals(0,second.count)
+        } finally {release.countDown();first.close();other.close()}
+    }
+
     @Test fun largeImagesAreSubsampledBeforeNativePixelAllocation() {
         val path = Files.createTempFile("hearth-reading-large",".png")
         try {

@@ -1,7 +1,7 @@
 package com.sal7one.hearth.desktop.ui
 
 /**
- * Every screen the desktop app can show. `navLabel` marks the six top-bar entries;
+ * Every screen the desktop app can show. `navLabel` marks the top-bar entries;
  * the rest are reached through the Models and Settings section sub-navigation.
  */
 internal enum class DesktopSection { MODELS, SETTINGS }
@@ -28,7 +28,7 @@ internal enum class DesktopScreen(
     APPEARANCE("appearance", "Appearance", section = DesktopSection.SETTINGS),
     CONVERSATION("conversation", "Conversation"),
     CAMERA("camera", "Camera & photos"),
-    READING("reading", "Image & manga");
+    READING("reading", "Screen translation", navLabel = "Screen");
 
     companion object {
         val topLevel: List<DesktopScreen> = entries.filter { it.navLabel != null }

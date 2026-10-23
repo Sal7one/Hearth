@@ -1,7 +1,11 @@
 package com.sal7one.hearth.core.vision
 
 import kotlin.test.*
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.ExperimentalTime
+import kotlin.time.TestTimeSource
 
+@OptIn(ExperimentalTime::class)
 class MangaPageOcrTest {
     private fun hit(x: Int,y: Int,w: Int,h: Int,label: Int=1,score: Float=.9f) = ComicDetection(OcrRect(x,y,w,h),label,score)
     @Test fun separateBubblesStaySeparateAndColumnsInsideOneBubbleShareACrop() {
@@ -77,5 +81,105 @@ class MangaPageOcrTest {
                 override fun recognized(text: List<PageText>) {retained=text}
             })}.exceptionOrNull()
         assertSame(failure,actual);assertEquals("first",retained.single().text)
+    }
+
+    @Test fun finalNativeReadOverrunIsReportedWhileUsefulTextIsPreserved() {
+        for(transcript in listOf("日本語", "")) {
+            val clock=TestTimeSource();var retained=emptyList<PageText>();var reads=0
+            val reader=object:MangaRegionReader {
+                override fun read(pixels: IntArray,width: Int,height: Int): String {
+                    reads++;clock+=100.milliseconds;return transcript
+                }
+                override fun cancel() {};override fun close() {}
+            }
+            val ocr=MangaPageOcr(Detector(listOf(hit(5,5,20,30,2))),reader,budgetMs=100,timeSource=clock)
+            val error=assertFailsWith<IllegalStateException> {
+                ocr.recognize(IntArray(10000),100,100,object:PageOcrProgress {
+                    override fun recognized(text: List<PageText>) {retained=text}
+                })
+            }
+            assertTrue(error.message.orEmpty().contains("reading budget"));assertEquals(1,reads)
+            assertEquals(if(transcript.isEmpty())emptyList() else listOf(transcript),retained.map {it.text})
+        }
+    }
+
+    @Test fun blankSegmentationCannotReturnSuccessAfterItsBudgetExpires() {
+        val clock=TestTimeSource();var read=false;var geometry=false
+        val detector=object:ComicRegionDetector {
+            override fun detect(pixels: IntArray,width: Int,height: Int): List<ComicDetection> {
+                clock+=101.milliseconds;return emptyList()
+            }
+            override fun cancel() {};override fun close() {}
+        }
+        val reader=object:MangaRegionReader {
+            override fun read(pixels: IntArray,width: Int,height: Int): String {read=true;return "unexpected"}
+            override fun cancel() {};override fun close() {}
+        }
+        assertFailsWith<IllegalStateException> {
+            MangaPageOcr(detector,reader,budgetMs=100,timeSource=clock).recognize(IntArray(10000),100,100,object:PageOcrProgress {
+                override fun detected(regions: List<OcrRegion>) {geometry=true}
+            })
+        }
+        assertFalse(read);assertFalse(geometry)
+    }
+
+    @Test fun captureReplacementDuringStageStopsNativeWorkBeforeItBegins() {
+        for(stoppedAt in listOf(PageOcrStage.PREVIEW,PageOcrStage.SEGMENTATION,PageOcrStage.RECOGNITION)) {
+            var current=true;val calls=mutableListOf<String>()
+            fun detector(name: String)=object:ComicRegionDetector {
+                override fun detect(pixels: IntArray,width: Int,height: Int): List<ComicDetection> {
+                    calls+=name;return listOf(hit(5,5,20,30,2))
+                }
+                override fun cancel() {};override fun close() {}
+            }
+            val reader=object:MangaRegionReader {
+                override fun read(pixels: IntArray,width: Int,height: Int): String {calls+="read";return "unexpected"}
+                override fun cancel() {};override fun close() {}
+            }
+            val result=MangaPageOcr(detector("full"),reader,detector("preview"))
+                .recognize(IntArray(10000),100,100,object:PageOcrProgress {
+                    override fun isCurrent()=current
+                    override fun stage(stage: PageOcrStage) {if(stage==stoppedAt)current=false}
+                })
+            assertTrue(result.isEmpty())
+            assertEquals(when(stoppedAt) {
+                PageOcrStage.PREVIEW->emptyList()
+                PageOcrStage.SEGMENTATION->listOf("preview")
+                else->listOf("preview","full")
+            },calls)
+        }
+    }
+
+    @Test fun cleanupStageReplacementSkipsInferenceAndLateCleanupStillReportsOverrun() {
+        for(replace in listOf(false,true)) {
+            val clock=TestTimeSource();var current=true;var cleaned=false;var retained=emptyList<PageText>()
+            val mask=ComicMask(IntArray(20*3).also {runs ->
+                repeat(20){runs[it*3]=it+10;runs[it*3+1]=10;runs[it*3+2]=10}
+            },100,100)
+            val detector=Detector(listOf(ComicDetection(mask.bounds,1,.9f,mask)))
+            val reader=object:MangaRegionReader {
+                override fun read(pixels: IntArray,width: Int,height: Int)="recognized"
+                override fun cancel() {};override fun close() {}
+            }
+            val cleanup=object:MangaPageInpainter {
+                override fun inpaint(pixels: IntArray,width: Int,height: Int,mask: ComicMask): MangaPatch {
+                    cleaned=true;clock+=101.milliseconds
+                    return MangaPatch(mask.bounds,IntArray(mask.bounds.area.toInt()){-1})
+                }
+                override fun cancel() {};override fun close() {}
+            }
+            val action={
+                MangaPageOcr(detector,reader,budgetMs=100,inpainter=cleanup,timeSource=clock)
+                    .recognize(IntArray(10000),100,100,object:PageOcrProgress {
+                        override fun isCurrent()=current
+                        override fun recognized(text: List<PageText>) {retained=text}
+                        override fun stage(stage: PageOcrStage) {if(stage==PageOcrStage.CLEANUP && replace)current=false}
+                    })
+            }
+            if(replace)action() else assertFailsWith<IllegalStateException> {action()}
+            assertEquals(!replace,cleaned)
+            assertEquals("recognized",retained.single().text)
+            assertEquals(!replace,retained.single().region.paint?.patch!=null)
+        }
     }
 }

@@ -146,7 +146,10 @@ another resident model. These are opt-in quality bundles; compact remains the
 small default. A page is limited to 2048 pixels per side, 128 layout elements,
 64 dialogue regions, bounded mask complexity, 16 MiB of cleanup patches and an
 explicit 180-second cooperative budget. A native kernel can outlast the budget;
-close waits for its owned lease. Recognition/translation limits remain intact.
+the next boundary reports the overrun even when it was the last or an empty
+recognition call. Completed transcripts and cleanup paints remain available.
+Replacing a capture from a stage callback prevents the next native call from
+starting. Close waits for its owned lease. Recognition/translation limits remain intact.
 
 This migration does not implement Koharu's diffusion inpainters, font detector,
 specialized SFX OCR, scene editor, PDF/project/PSD/archive tooling, or all renderer

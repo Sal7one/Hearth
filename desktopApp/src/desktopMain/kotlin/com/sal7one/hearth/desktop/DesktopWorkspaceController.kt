@@ -7,6 +7,7 @@ import com.sal7one.hearth.desktop.runtime.DesktopAudioPlayback
 import com.sal7one.hearth.desktop.runtime.DesktopPcmCapture
 import com.sal7one.hearth.desktop.runtime.DesktopSystemAudioCapture
 import com.sal7one.hearth.integration.DesktopIntegrationServer
+import com.sal7one.hearth.integration.IntegrationReadingService
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.sync.Mutex
@@ -56,6 +57,8 @@ internal class DesktopWorkspaceController(
             else -> error("This input is not a live audio source")
         }
     },
+    private val readingService: IntegrationReadingService? = null,
+    private val integrationOrigins: () -> Set<String> = { emptySet() },
 ) {
     private val owner = SupervisorJob(scope.coroutineContext[Job])
     private val scope = CoroutineScope(scope.coroutineContext + owner)
@@ -224,18 +227,16 @@ internal class DesktopWorkspaceController(
             try {
                 // Assign inside IO: cancellation at the dispatcher handoff must not lose a bound server.
                 withContext(Dispatchers.IO) {
-                    server = DesktopIntegrationServer(pipeline, { config.value }, dataDirectory).start()
+                    server = DesktopIntegrationServer(pipeline, { config.value }, dataDirectory,
+                        reading = readingService, extensionOrigins = integrationOrigins()).start()
                 }
                 val next = checkNotNull(server)
-                try {
-                    externalObservation = session?.let(next::observe)
-                    mutableState.update { it.copy(integration = IntegrationView(next.baseUrl, next.overlayUrl)) }
-                } catch (e: Exception) {
-                    try { withContext(Dispatchers.IO + NonCancellable) { next.close() } }
-                    catch (cleanup: Exception) { e.addSuppressed(cleanup) }
-                    finally { server = null; externalObservation = null }
-                    throw e
-                }
+                externalObservation = session?.let(next::observe)
+                mutableState.update { it.copy(integration = IntegrationView(next.baseUrl, next.overlayUrl)) }
+            } catch (e: Exception) {
+                try { closeIntegration() }
+                catch (cleanup: Exception) { e.addSuppressed(cleanup) }
+                throw e
             } finally { mutableState.update { it.copy(integrationBusy = false) } }
         }
     }
@@ -244,12 +245,7 @@ internal class DesktopWorkspaceController(
         integrationWrites.withLock {
             mutableState.update { it.copy(integrationBusy = true) }
             try {
-                externalObservation?.close(); externalObservation = null
-                val previous = server
-                // Finish closing even if application shutdown cancels this UI action.
-                withContext(Dispatchers.IO + NonCancellable) { previous?.close() }
-                server = null
-                mutableState.update { it.copy(integration = null) }
+                closeIntegration()
             } finally { mutableState.update { it.copy(integrationBusy = false) } }
         }
     }
@@ -258,6 +254,32 @@ internal class DesktopWorkspaceController(
         val running = server ?: error("Start the local integration first")
         copy(running.apiToken)
         mutableState.update { it.copy(notice = "API token copied. Keep it private; it can start and cancel requests.") }
+    }
+
+    fun saveBrowserExtensionOrigin(origin: String) = action {
+        val value = origin.trim()
+        require(value.isEmpty() || DesktopIntegrationServer.validExtensionOrigin(value)) {
+            "Enter an exact chrome-extension://ID or moz-extension://UUID origin from the Hearth extension"
+        }
+        integrationWrites.withLock {
+            // A running server has an immutable allowlist. Close it before publishing trust changes.
+            closeIntegration()
+            persistUi(mapOf("browser-extension-origin" to value))
+            mutableState.update { it.copy(notice = "Browser access saved. Start the local integration and reconnect the extension.") }
+        }
+    }
+
+    private suspend fun closeIntegration() = withContext(NonCancellable) {
+        try {
+            try { externalObservation?.close() }
+            finally { withContext(Dispatchers.IO) { server?.close() } }
+        } finally {
+            // Publish closure inside NonCancellable too: dispatcher return cancellation
+            // must not strand a revoked server as a running UI entry.
+            externalObservation = null
+            server = null
+            mutableState.update { it.copy(integration = null) }
+        }
     }
 
     fun exportSetup(path: Path) = action { exportSetup.invoke(path); mutableState.update { it.copy(notice = "Setup exported without provider keys") } }
@@ -294,8 +316,7 @@ internal class DesktopWorkspaceController(
             release { capture?.cancel(); capture = null }
             release { playback.cancel() }
             release { session?.cancel() }
-            release { externalObservation?.close(); externalObservation = null }
-            release { withContext(Dispatchers.IO) { server?.close() }; server = null }
+            release { closeIntegration() }
             release { playback.close() }
             failure?.let { throw it }
         }

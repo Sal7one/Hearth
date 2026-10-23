@@ -33,6 +33,7 @@ import androidx.lifecycle.withResumed
 import com.sal7one.transiber.MainActivity
 import com.sal7one.transiber.caption.*
 import com.sal7one.transiber.reading.ReadingOverlayService
+import com.sal7one.transiber.reading.ReadingStartActivity
 import com.sal7one.transiber.runtime.LocalWorkGate
 import com.sal7one.transiber.ui.theme.HearthTheme
 import kotlinx.coroutines.CancellationException
@@ -117,6 +118,13 @@ class OverlayLaunchActivity : AppCompatActivity() {
         checkJob = lifecycleScope.launch {
             try {
                 if (recoverRunning()) { finish(); return@launch }
+                if (shortcut == OverlayShortcut.READING) {
+                    // Widgets/older shortcut intents use the same visible chooser as
+                    // Home and the current tile; none may skip the content selection.
+                    startActivity(Intent(this@OverlayLaunchActivity, ReadingStartActivity::class.java)
+                        .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP))
+                    finish(); return@launch
+                }
                 val checked = overlayPreflight(this@OverlayLaunchActivity, shortcut)
                 results = checked.results
                 if (!results.ready) { phase = "diagnostics"; return@launch }

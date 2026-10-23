@@ -7,7 +7,7 @@ internal enum class HomeService(val id: String, val title: String, val descripti
     FACE("face", "Face to face", "Share one phone with two people, each facing their own translation.", "Open face to face"),
     TEXT("text", "Type to translate", "Write or paste something. Read the translation or hear it aloud.", "Translate text"),
     CAMERA("camera", "Camera & photos", "Point at a sign, a menu or a page. Or choose an image from your phone.", "Open camera"),
-    SCREEN("screen", "Screen & manga", "Read manga, books and other apps with translation over the page.", "Open screen translator");
+    SCREEN("screen", "Screen translation", "Translate websites, other apps and Japanese manga over the screen. Keep scrolling through the translations.", "Open screen translator");
 
     companion object {
         fun restore(id: String?): HomeService = entries.firstOrNull { it.id == id } ?: CAPTIONS

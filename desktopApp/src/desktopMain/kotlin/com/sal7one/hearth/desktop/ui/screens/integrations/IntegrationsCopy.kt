@@ -3,9 +3,9 @@ package com.sal7one.hearth.desktop.ui.screens.integrations
 /** Copy for the integration page. Limits are stated as limits. */
 internal object IntegrationsCopy {
     const val EYEBROW = "Integrations"
-    const val TITLE = "Send captions anywhere"
+    const val TITLE = "Connect Hearth to your apps"
     const val LEDE =
-        "One live session, read by OBS or any app on this machine. Nothing is exposed to the network."
+        "Share captions with OBS, translate website text, or send images and audio through your saved pipeline. The service listens only on this computer."
     const val START = "Start server"
     const val STARTING = "Starting…"
     const val STOP = "Stop server"
@@ -28,7 +28,7 @@ internal object IntegrationsCopy {
     const val SHOW_ORIGINAL_DETAIL = "Smaller text above the translation."
 
     const val API = "External apps"
-    const val API_DETAIL = "Send text or audio in, get captions and speech back."
+    const val API_DETAIL = "Send text, images or audio through your saved pipeline."
     const val BETA = "Beta"
     const val API_TOKEN = "API token"
     const val COPY_TOKEN = "Copy token"

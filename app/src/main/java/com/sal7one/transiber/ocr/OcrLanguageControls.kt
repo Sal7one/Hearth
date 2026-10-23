@@ -21,7 +21,7 @@ import com.sal7one.transiber.caption.LanguagePickerContent
 /** Both entry points expose the same labelled controls, selected-row picker and capability explanation. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable internal fun OcrLanguageControls(selection: OcrSelection, targets: Set<String>, translator: String,
-    onChange: (OcrSelection) -> Unit, onModel: () -> Unit, enabled: Boolean = true) {
+    onChange: (OcrSelection) -> Unit, onModel: () -> Unit, enabled: Boolean = true, showMangaModes: Boolean = true) {
     val uiText = rememberUiText()
 
     var picker by rememberSaveable { mutableStateOf<String?>(null) }
@@ -39,7 +39,7 @@ import com.sal7one.transiber.caption.LanguagePickerContent
             }
         }
         TextButton(onClick=onModel,enabled=enabled) { Text(uiText(UiR.string.ui_reader_1_s_change_f7947, uiText.label(selection.profile))) }
-        if(selection.source == "ja") {
+        if(selection.source == "ja" && showMangaModes) {
             Text(uiText(UiR.string.ocr_manga_page_mode), style=MaterialTheme.typography.labelMedium)
             FlowRow(horizontalArrangement=Arrangement.spacedBy(8.dp),verticalArrangement=Arrangement.spacedBy(4.dp)) {
                 listOf(MangaPageMode.COMPACT to UiR.string.ocr_manga_mode_fast,
@@ -73,7 +73,7 @@ import com.sal7one.transiber.caption.LanguagePickerContent
                 else uiText(UiR.string.ui_1_s_translations_from_2_s_destinations_depend_on_the_translator_n_83b80, translator, uiText.languageName(selection.source))),
             selected=if(which=="source") selection.source else selection.target,
             onSelect={ code ->
-                val choosingJapaneseReader=which=="source" && code=="ja" && code !in selection.profile.languages
+                val choosingJapaneseReader=showMangaModes && which=="source" && code=="ja" && code !in selection.profile.languages
                 onChange(if(which=="source") selection.withSource(code) else selection.copy(target=code,translate=true))
                 picker=null
                 // Japanese is supported by several fundamentally different readers.

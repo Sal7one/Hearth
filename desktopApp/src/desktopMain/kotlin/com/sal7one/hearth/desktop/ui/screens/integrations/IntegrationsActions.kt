@@ -6,4 +6,6 @@ internal class IntegrationsActions(
     val onStop: () -> Unit = {},
     val onCopyOverlayUrl: () -> Unit = {},
     val onCopyApiToken: () -> Unit = {},
+    val onSaveBrowserOrigin: (String) -> Unit = {},
+    val onCopyApiAddress: () -> Unit = {},
 )

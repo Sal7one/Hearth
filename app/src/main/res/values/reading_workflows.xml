@@ -1,0 +1,10 @@
+<resources>
+    <string name="reading_content_kind">What are you reading?</string>
+    <string name="reading_content_websites">Websites &amp; apps</string>
+    <string name="reading_content_manga">Japanese manga</string>
+    <string name="reading_websites_help">Translate visible text in a browser or another app. Scroll and tap through the translations with the lock closed. Choose Page changes to update after scrolling stops.</string>
+    <string name="reading_manga_help">Read Japanese speech bubbles with a manga reader. Compact gives faster highlights; Koharu adds detailed masks and optional cleanup. Your previous manga reader is remembered.</string>
+    <string name="reading_passthrough">Let taps and scrolling pass through</string>
+    <string name="reading_passthrough_help">The small lock button stays accessible. Open it to move the handle, select translated text or open controls.</string>
+    <string name="reading_capture_limits">Allow screen sharing and display over other apps. No accessibility service, camera or microphone is needed. Protected video, banking screens and apps that block screenshots cannot be translated.</string>
+</resources>

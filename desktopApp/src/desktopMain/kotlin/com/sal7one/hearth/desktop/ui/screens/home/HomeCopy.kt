@@ -57,8 +57,8 @@ internal object HomeCopy {
         ),
         HomeFeature(
             id = "reading",
-            title = "Image & manga",
-            description = "Open a Japanese manga page and translate detected text regions.",
+            title = "Screen translation",
+            description = "Read Japanese manga over another app, or connect website text through the browser.",
             available = Availability.DESKTOP,
             art = HearthArt.SCREEN,
             destination = DesktopScreen.READING,

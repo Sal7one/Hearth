@@ -14,6 +14,10 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -26,6 +30,7 @@ import com.sal7one.hearth.desktop.ui.components.Chip
 import com.sal7one.hearth.desktop.ui.components.ChipTone
 import com.sal7one.hearth.desktop.ui.components.HearthButton
 import com.sal7one.hearth.desktop.ui.components.HearthCard
+import com.sal7one.hearth.desktop.ui.components.HearthTextField
 import com.sal7one.hearth.desktop.ui.theme.HearthTheme
 import com.sal7one.hearth.desktop.ui.theme.HearthType
 
@@ -121,6 +126,13 @@ internal fun ApiIntegrationCard(
             Chip(IntegrationsCopy.BETA, tone = ChipTone.Neutral)
         }
         Spacer(Modifier.height(14.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(if (state.running) state.baseUrl else "API address available after Start",
+                style = HearthType.monoSmall, color = colors.textDim, modifier = Modifier.weight(1f))
+            HearthButton("Copy address", actions.onCopyApiAddress, tone = ButtonTone.Secondary,
+                size = ButtonSize.Small, enabled = state.running)
+        }
+        Spacer(Modifier.height(12.dp))
         Text(IntegrationsCopy.API_TOKEN.uppercase(), style = HearthType.micro, color = colors.muted)
         Spacer(Modifier.height(6.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -163,6 +175,7 @@ internal fun ApiIntegrationCard(
                 "Audio" to "WAV or PCM16, up to 120 seconds",
                 "Media" to "MP4, MOV, M4A, MP3, AAC — 64 MiB",
                 "Live" to "Streaming PCM frames, 200 ms each",
+                "Images" to "PNG or JPEG, up to 16 MiB · Japanese OCR",
             ).forEach { (label, detail) ->
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Chip(label, tone = ChipTone.Outline)
@@ -171,5 +184,34 @@ internal fun ApiIntegrationCard(
                 }
             }
         }
+    }
+}
+
+@Composable
+internal fun BrowserIntegrationCard(state: IntegrationsState, actions: IntegrationsActions) {
+    val colors = HearthTheme.colors
+    var origin by remember(state.browserOrigin) { mutableStateOf(state.browserOrigin) }
+    HearthCard(Modifier.fillMaxWidth(), padding = 18.dp) {
+        Text("Translate websites", style = HearthType.h3, color = colors.text)
+        Spacer(Modifier.height(8.dp))
+        Text("Use the Hearth browser extension for selectable website text. Links and controls keep working. " +
+            "For manga images or another app, use Reading → Screen translation.", style = HearthType.small, color = colors.muted)
+        Spacer(Modifier.height(12.dp))
+        Text("Paste the extension origin shown in its popup, save access, then start the service. " +
+            "Copy this service address and API token into the extension. Website origins cannot be trusted here.",
+            style = HearthType.small, color = colors.muted)
+        Spacer(Modifier.height(12.dp))
+        HearthTextField(origin, { origin = it }, "chrome-extension://… or moz-extension://…")
+        Spacer(Modifier.height(12.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            HearthButton("Save browser access", { actions.onSaveBrowserOrigin(origin) },
+                size = ButtonSize.Small, enabled = !state.busy)
+            HearthButton("Remove access", { origin = ""; actions.onSaveBrowserOrigin("") },
+                tone = ButtonTone.Secondary, size = ButtonSize.Small, enabled = !state.busy && state.browserOrigin.isNotEmpty())
+        }
+        Spacer(Modifier.height(10.dp))
+        Text("Saving or removing access stops the service and invalidates its old token. " +
+            "Provider keys stay in Hearth. The extension translates only after you start it for a tab.",
+            style = HearthType.small, color = colors.muted)
     }
 }

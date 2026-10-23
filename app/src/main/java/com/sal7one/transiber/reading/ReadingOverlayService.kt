@@ -127,6 +127,7 @@ class ReadingOverlayService : Service() {
             display=projection!!.createVirtualDisplay("Hearth reading",reader!!.width,reader!!.height,resources.configuration.densityDpi,DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR,null,null,handler)
             val selection=OcrPreferences(this).read()
             profile=selection.profile;source=selection.source;target=selection.target
+            locked=prefs.getBoolean("pass-through",true)
             trigger.mode=ReadingTrigger.supportedMode(prefs.getString("mode","page"));trigger.settleMs=prefs.getLong("settle",500);scanMs=prefs.getLong("scan",250).coerceIn(200,1000);if(trigger.mode=="page")trigger.movement(now())
             createWindows()
             scope.launch {
@@ -141,6 +142,9 @@ class ReadingOverlayService : Service() {
                         snapshot=ConversationTranslationSettings.snapshot(this@ReadingOverlayService,selection.translationModel(config.localTranslationModelId),selection.providerId)
                     }
                     setupReady=true
+                    // Initial capture must wait for the actual saved translator snapshot.
+                    // Startup/disk delays can exceed the page-settle interval.
+                    if(trigger.mode=="page")trigger.movement(now())
                     controller.state.collect {value->
                         latest=value
                         if(!viewingBox && value.text.isNotBlank()) original?.text=value.text
@@ -164,7 +168,7 @@ class ReadingOverlayService : Service() {
             scope.launch {
                 while(isActive) {
                     delay(scanMs)
-                    if(setupSuppressed || paused || selector!=null || panel?.visibility==View.VISIBLE || captureJob?.isActive==true)continue
+                    if(!setupReady || setupError!=null || setupSuppressed || paused || selector!=null || panel?.visibility==View.VISIBLE || captureJob?.isActive==true)continue
                     if(profile.engine=="manga" && region==null)continue
                     if(trigger.mode=="manual" && pageCrop==null && !working)continue
                     captureJob=scope.launch { samplePage() }
@@ -181,7 +185,8 @@ class ReadingOverlayService : Service() {
             .addAction(0,uiText(UiR.string.service_translate_2be17),action(41,"translate")).addAction(0,if(paused)uiText(UiR.string.service_resume_b3bd0) else uiText(UiR.string.service_pause_78196),action(42,"pause")).addAction(0,uiText(UiR.string.service_stop_9e253),action(43,"stop")).build()
     }
     private fun togglePause() {
-        paused=!paused;clearPage();trigger.reset();generation++;working=false;controller.invalidate();voice.stop()
+        paused=!paused;clearPage();trigger.reset();motion.reset();generation++;working=false;controller.invalidate();voice.stop()
+        if(!paused && trigger.mode=="page")trigger.movement(now())
         panel?.visibility=View.GONE;handle?.visibility=View.VISIBLE
         handleLabel?.text=if(paused)uiText(UiR.string.service_paused_read_989d4) else uiText(UiR.string.service_translate_2be17)
         pauseButton?.text=if(paused)uiText(UiR.string.service_resume_auto_f5626) else uiText(UiR.string.service_pause_auto_e2a61)
@@ -326,6 +331,7 @@ class ReadingOverlayService : Service() {
         } else if(!stopping) {
             if(selector!=null)selector?.visibility=View.VISIBLE else handle?.visibility=View.VISIBLE
             motion.reset();trigger.reset()
+            if(trigger.mode=="page")trigger.movement(now())
             if(recoverAfterSetup){recoverAfterSetup=false;showPanel()}
         }
     }
@@ -334,7 +340,7 @@ class ReadingOverlayService : Service() {
     }
     private fun resumeReader() {
         panel?.visibility=View.GONE;handle?.visibility=View.VISIBLE
-        locked=true;applyLayerTouch()
+        applyLayerTouch()
         // The reader may have moved while controls were open: capture again instead of
         // restoring coordinates from history or a previously visible page.
         requestCapture(false)
@@ -407,7 +413,7 @@ class ReadingOverlayService : Service() {
             controls.addView(button("⋯"){showPanel()}.apply {contentDescription=uiText(UiR.string.service_reading_controls_83fa7)},LinearLayout.LayoutParams(0,-2,1f))
             handleControls=controls;root.addView(controls)
             lockButton=ImageButton(this).apply {
-                setOnClickListener {locked=!locked;applyLayerTouch()}
+                setOnClickListener {locked=!locked;prefs.edit().putBoolean("pass-through",locked).apply();applyLayerTouch()}
                 minimumWidth=0;minimumHeight=0
                 scaleType=ImageView.ScaleType.FIT_CENTER
                 background=android.graphics.drawable.InsetDrawable(android.graphics.drawable.GradientDrawable().apply {shape=android.graphics.drawable.GradientDrawable.OVAL;setColor(paper)},dp(8))

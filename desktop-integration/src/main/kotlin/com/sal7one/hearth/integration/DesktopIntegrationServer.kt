@@ -37,12 +37,17 @@ class DesktopIntegrationServer(
     private val configuration: () -> PipelineConfig,
     private val directory: Path? = null,
     private val requestedPort: Int = 0,
+    private val reading: IntegrationReadingService? = null,
+    extensionOrigins: Set<String> = emptySet(),
 ) : AutoCloseable {
+    private val extensionOrigins = extensionOrigins.toSet()
     private val closed = AtomicBoolean()
     private val started = AtomicBoolean()
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val events = IntegrationEvents()
+    private val readingEvents = IntegrationEvents()
     private val records = ConcurrentHashMap<String, Record>()
+    private val readingRecords = ConcurrentHashMap<String, ReadingRecord>()
     private val jobsLock = Any()
     private var pendingMediaUploads = 0 // Guarded by jobsLock; uploads share the four-job admission limit.
     private val streamSlots = Semaphore(4)
@@ -68,7 +73,12 @@ class DesktopIntegrationServer(
     /** The fragment is a separate read-only caption capability; fragments are not HTTP request paths. */
     val overlayUrl: String get() = "$baseUrl/overlay/#$overlayCapability"
 
-    init { require(requestedPort in 0..65535) { "Invalid integration port" } }
+    init {
+        require(requestedPort in 0..65535) { "Invalid integration port" }
+        require(this.extensionOrigins.size <= 8 && this.extensionOrigins.all(::validExtensionOrigin)) {
+            "Trust at most eight exact chrome-extension://IDs or moz-extension://UUIDs; website origins and wildcards are unavailable"
+        }
+    }
 
     @Synchronized fun start(): DesktopIntegrationServer {
         check(!closed.get()) { "Integration server is closed" }
@@ -121,6 +131,16 @@ class DesktopIntegrationServer(
         var observationFailure: String? = null // Guarded by jobsLock, alongside event publication.
         val createdAt = System.nanoTime()
     }
+
+    private class ReadingRecord(val session: IntegrationReadingSession, val sourceWidth: Int, val sourceHeight: Int,
+        val width: Int, val height: Int) {
+        @Volatile var latest = session.state.value
+        @Volatile var observer: Job? = null
+        val createdAt = System.nanoTime()
+    }
+
+    private fun activeOwnedJobs(): Int = records.values.count { it.owned && !it.latest.terminal } +
+        readingRecords.values.count { !it.latest.terminal }
 
     private fun register(session: PipelineSession, owned: Boolean, input: Path?, live: LiveInput? = null): Record {
         require(session.id.matches(Regex("[A-Za-z0-9_-]{1,128}"))) { "Unsafe pipeline session ID" }
@@ -182,7 +202,7 @@ class DesktopIntegrationServer(
 
     private fun reserveUpload(): UploadReservation = synchronized(jobsLock) {
         check(running) { "Integration server is closed" }
-        check(records.values.count { it.owned && !it.latest.terminal } + pendingMediaUploads < 4) {
+        check(activeOwnedJobs() + pendingMediaUploads < 4) {
             "At most four integration sessions or uploads may be active"
         }
         pendingMediaUploads++
@@ -197,7 +217,7 @@ class DesktopIntegrationServer(
         reservation: UploadReservation? = null): Record = synchronized(jobsLock) {
         check(running) { "Integration server is closed" }
         reservation?.let(::releaseUpload)
-        check(records.values.count { it.owned && !it.latest.terminal } + pendingMediaUploads < 4) {
+        check(activeOwnedJobs() + pendingMediaUploads < 4) {
             "At most four integration sessions or uploads may be active"
         }
         prune()
@@ -211,6 +231,7 @@ class DesktopIntegrationServer(
         val deadline = deadlines.schedule({ exchange.close() }, 30, TimeUnit.SECONDS)
         try {
             security(exchange)
+            if (exchange.requestMethod == "OPTIONS") { extensionPreflight(exchange); return }
             val path = exchange.requestURI.rawPath
             when {
                 path == "/overlay/" || path == "/overlay" -> { method(exchange, "GET"); noQuery(exchange); send(exchange, 200, OverlayPage.html, "text/html; charset=utf-8") }
@@ -223,7 +244,8 @@ class DesktopIntegrationServer(
                 path.startsWith("/v1/") -> {
                     authenticate(exchange)
                     when {
-                        path == "/v1/capabilities" -> { method(exchange, "GET"); noQuery(exchange); json(exchange, 200, IntegrationJson.capabilities(pipeline.capabilities())) }
+                        path == "/v1/capabilities" -> { method(exchange, "GET"); noQuery(exchange)
+                            json(exchange, 200, IntegrationJson.capabilities(pipeline.capabilities(), reading?.capabilities())) }
                         path == "/v1/events" -> {
                             method(exchange, "GET")
                             val fields = query(exchange, setOf("session"))
@@ -237,6 +259,9 @@ class DesktopIntegrationServer(
                         path == "/v1/sessions/audio" -> audio(exchange)
                         path == "/v1/sessions/media" -> media(exchange)
                         path.startsWith("/v1/sessions/") -> session(exchange, path.removePrefix("/v1/sessions/"))
+                        path == "/v1/reading/image" -> readImage(exchange)
+                        path == "/v1/reading" -> { method(exchange, "GET"); noQuery(exchange); json(exchange, 200, readingSnapshots()) }
+                        path.startsWith("/v1/reading/") -> readingSession(exchange, path.removePrefix("/v1/reading/"), deadline)
                         else -> throw HttpFailure(404, "Unknown integration endpoint")
                     }
                 }
@@ -248,6 +273,118 @@ class DesktopIntegrationServer(
         catch (error: LinkageError) { failure(exchange, 500, safeError(error)) }
         catch (error: Exception) { failure(exchange, 500, safeError(error)) }
         finally { deadline.cancel(false); exchange.close() }
+    }
+
+    private fun readImage(exchange: HttpExchange) {
+        method(exchange, "POST")
+        val service = reading ?: throw HttpFailure(503, "Image reading is unavailable in this host")
+        val capability = service.capabilities()
+        if (!capability.available) throw HttpFailure(409, capability.unavailableReason ?: "Choose installed image reading models in Hearth first")
+        val fields = query(exchange, setOf("sourceLanguage", "targetLanguage", "translationEnabled"))
+        val config = IntegrationJson.overrides(configuration().copy(sourceLanguage = "ja", speech = null, voice = null), fields)
+        require(config.sourceLanguage in capability.sourceLanguages) {
+            "The selected image reader does not support ${config.sourceLanguage}; supported languages: ${capability.sourceLanguages.sorted().joinToString()}"
+        }
+        val type = exchange.requestHeaders.getFirst("Content-Type")?.substringBefore(';')?.trim()?.lowercase()
+        if (type !in IntegrationImage.contentTypes) throw HttpFailure(415, "Upload image/png or image/jpeg")
+        validateContentLength(exchange, IntegrationImage.MAX_BYTES)
+        val reservation = reserveUpload()
+        var accepted: ReadingRecord? = null
+        var responded = false
+        try {
+            val image = try { IntegrationImage.decode(body(exchange, IntegrationImage.MAX_BYTES), checkNotNull(type)) }
+            catch (error: IOException) { throw HttpFailure(400, "Cannot decode image: ${safeError(error)}") }
+            accepted = synchronized(jobsLock) {
+                check(running) { "Integration server is closed" }
+                releaseUpload(reservation)
+                check(activeOwnedJobs() + pendingMediaUploads < 4) { "At most four integration sessions or uploads may be active" }
+                pruneReading()
+                check(readingRecords.size < 32) { "Image reading session history is full" }
+                val session = service.start(IntegrationReadingRequest(image.image, config, config.translation != null))
+                try { registerReading(session, image) }
+                catch (error: Throwable) { runBlocking { session.cancel() }; throw error }
+            }
+            json(exchange, 202, safeReadingSnapshot(accepted))
+            responded = true
+        } finally {
+            releaseUpload(reservation)
+            // A client losing its creation response must not leave an undiscoverable native job.
+            if (!responded) accepted?.let { runBlocking { it.session.cancel() } }
+        }
+    }
+
+    private fun registerReading(session: IntegrationReadingSession, image: IntegrationImage.Decoded): ReadingRecord {
+        require(session.id.matches(Regex("[A-Za-z0-9_-]{1,128}"))) { "Unsafe image reading session ID" }
+        check(readingRecords[session.id] == null) { "Duplicate image reading session ID" }
+        val record = ReadingRecord(session, image.sourceWidth, image.sourceHeight, image.image.width, image.image.height)
+        check(record.latest.id == session.id && record.latest.width == image.image.width && record.latest.height == image.image.height) {
+            "Image reading session identity or dimensions changed"
+        }
+        readingRecords[session.id] = record
+        record.observer = scope.launch {
+            try {
+                session.state.first { snapshot ->
+                    synchronized(jobsLock) {
+                        if (readingRecords[session.id] !== record) true else {
+                            record.latest = snapshot
+                            readingEvents.publish(session.id, safeReadingSnapshot(record).toString())
+                            snapshot.terminal
+                        }
+                    }
+                }
+            } catch (error: CancellationException) { throw error }
+            catch (error: Exception) {
+                readingEvents.publish(session.id, buildJsonObject {
+                    put("id", session.id); put("type", "image-reading"); put("status", "observation_failed"); put("error", safeError(error))
+                }.toString())
+            }
+        }
+        return record
+    }
+
+    private fun safeReadingSnapshot(record: ReadingRecord): JsonObject = try {
+        require(record.latest.id == record.session.id && record.latest.width == record.width && record.latest.height == record.height) {
+            "Image reading session identity or dimensions changed"
+        }
+        IntegrationJson.reading(record.latest.copy(error = record.latest.error?.let(::sanitize)), record.sourceWidth, record.sourceHeight)
+    } catch (error: IllegalArgumentException) {
+        buildJsonObject {
+            put("id", record.session.id); put("type", "image-reading"); put("status", "observation_failed")
+            put("readingStatus", record.latest.status.name.lowercase()); put("terminal", record.latest.terminal)
+            put("error", safeError(error))
+        }
+    }
+
+    private fun readingSnapshots(): JsonObject = buildJsonObject {
+        putJsonArray("readings") { readingRecords.values.sortedBy { it.createdAt }.forEach { add(safeReadingSnapshot(it)) } }
+    }
+
+    private fun pruneReading() {
+        if (readingRecords.size < 32) return
+        readingRecords.values.filter { it.latest.terminal }.sortedBy { it.createdAt }.take(readingRecords.size - 31).forEach {
+            if (readingRecords.remove(it.session.id, it)) { it.observer?.cancel(); readingEvents.forget(it.session.id) }
+        }
+    }
+
+    private fun readingSession(exchange: HttpExchange, path: String, deadline: java.util.concurrent.ScheduledFuture<*>) {
+        noQuery(exchange)
+        val parts = path.split('/')
+        val id = parts.first()
+        require(id.matches(Regex("[A-Za-z0-9_-]{1,128}"))) { "Invalid image reading session ID" }
+        val record = readingRecords[id] ?: throw HttpFailure(404, "Unknown image reading session")
+        when {
+            parts.size == 1 && exchange.requestMethod == "GET" -> json(exchange, 200, safeReadingSnapshot(record))
+            parts.size == 1 && exchange.requestMethod == "DELETE" -> {
+                runBlocking { record.session.cancel() }
+                record.latest = record.session.state.value
+                json(exchange, 200, safeReadingSnapshot(record))
+            }
+            parts.size == 2 && parts[1] == "events" -> {
+                method(exchange, "GET"); deadline.cancel(false)
+                stream(exchange, id, readingEvents, "readings", "reading")
+            }
+            else -> throw HttpFailure(405, "Use GET for status/events or DELETE to cancel image reading")
+        }
     }
 
     private fun text(exchange: HttpExchange) {
@@ -415,12 +552,35 @@ class DesktopIntegrationServer(
         val hosts = exchange.requestHeaders["Host"].orEmpty()
         if (hosts.size != 1 || hosts.single() != "127.0.0.1:$port") throw HttpFailure(403, "Invalid loopback Host")
         val origins = exchange.requestHeaders["Origin"].orEmpty()
-        if (origins.size > 1 || origins.any { it != baseUrl }) throw HttpFailure(403, "Cross-origin requests are unavailable")
-        if (exchange.requestMethod == "OPTIONS") throw HttpFailure(403, "Cross-origin integration is unavailable")
+        if (origins.size > 1 || origins.any { it != baseUrl && it !in extensionOrigins }) throw HttpFailure(403, "Cross-origin requests are unavailable")
+        val extension = origins.singleOrNull()?.takeIf { it in extensionOrigins }
+        if (extension != null) {
+            // Explicitly paired extensions can use the authenticated API, never the cookie/read-only OBS capability.
+            if (!exchange.requestURI.rawPath.startsWith("/v1/")) throw HttpFailure(403, "Extensions may access the authenticated API only")
+            exchange.responseHeaders.set("Access-Control-Allow-Origin", extension)
+            exchange.responseHeaders.set("Vary", "Origin")
+        }
+        if (exchange.requestMethod == "OPTIONS" && extension == null) throw HttpFailure(403, "Cross-origin integration is unavailable")
         exchange.responseHeaders.set("Cache-Control", "no-store")
         exchange.responseHeaders.set("X-Content-Type-Options", "nosniff")
         exchange.responseHeaders.set("Referrer-Policy", "no-referrer")
         exchange.responseHeaders.set("Content-Security-Policy", "default-src 'none'; script-src 'self'; style-src 'unsafe-inline'; connect-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'")
+    }
+
+    private fun extensionPreflight(exchange: HttpExchange) {
+        val requestedMethod = exchange.requestHeaders["Access-Control-Request-Method"].orEmpty()
+        require(requestedMethod.size == 1 && requestedMethod.single() in setOf("GET", "POST", "PUT", "DELETE")) {
+            "Extension preflight requested an unsupported method"
+        }
+        val requestedHeaders = exchange.requestHeaders["Access-Control-Request-Headers"].orEmpty()
+            .flatMap { it.split(',') }.map { it.trim().lowercase() }
+        require(requestedHeaders.isNotEmpty() && requestedHeaders.all {
+            it in setOf("authorization", "content-type", "last-event-id", "x-hearth-audio-format")
+        }) { "Extension preflight requested unsupported headers" }
+        exchange.responseHeaders.set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE")
+        exchange.responseHeaders.set("Access-Control-Allow-Headers", "Authorization, Content-Type, Last-Event-ID, X-Hearth-Audio-Format")
+        exchange.responseHeaders.set("Access-Control-Max-Age", "600")
+        exchange.sendResponseHeaders(204, -1)
     }
 
     private fun authenticate(exchange: HttpExchange) {
@@ -444,21 +604,22 @@ class DesktopIntegrationServer(
         if (cookies.size != 1 || !secretEquals(cookies.single()[1], overlayCookie)) throw HttpFailure(401, "Connect an OBS overlay first")
     }
 
-    private fun stream(exchange: HttpExchange, session: String?) {
+    private fun stream(exchange: HttpExchange, session: String?, source: IntegrationEvents = events,
+        snapshotField: String = "sessions", eventType: String = "session") {
         if (!streamSlots.tryAcquire()) throw HttpFailure(429, "At most four event streams may be open")
         var subscription: IntegrationEvents.Subscription? = null
         try {
             val after = exchange.requestHeaders.getFirst("Last-Event-ID")?.let { value ->
                 value.toLongOrNull()?.takeIf { it >= 0 } ?: throw HttpFailure(400, "Invalid Last-Event-ID")
             }
-            val active = events.subscribe(session, after)
+            val active = source.subscribe(session, after)
             subscription = active
             exchange.responseHeaders.set("Content-Type", "text/event-stream; charset=utf-8")
             exchange.responseHeaders.set("X-Accel-Buffering", "no")
             exchange.sendResponseHeaders(200, 0)
             exchange.responseBody.bufferedWriter(Charsets.UTF_8).use { out ->
                 fun initial(kind: String, values: List<IntegrationEvent>) {
-                    val value = buildJsonObject { putJsonArray("sessions") { values.forEach { add(IntegrationJson.codec.parseToJsonElement(it.json)) } } }
+                    val value = buildJsonObject { putJsonArray(snapshotField) { values.forEach { add(IntegrationJson.codec.parseToJsonElement(it.json)) } } }
                     // Reconnect from the snapshot's watermark, never replay an older caption over it.
                     values.maxOfOrNull { it.sequence }?.let { out.write("id: $it\n") }
                     out.write("event: $kind\ndata: $value\n\n"); out.flush()
@@ -468,17 +629,17 @@ class DesktopIntegrationServer(
                 while (running && !active.closed) {
                     val event = active.poll()
                     if (active.resync) {
-                        initial("resync", events.snapshot(session)); active.resync = false
+                        initial("resync", source.snapshot(session)); active.resync = false
                         continue // An older queued event must never overwrite the fresh snapshot.
                     }
                     if (event == null) out.write(": keep-alive\n\n")
-                    else out.write("id: ${event.sequence}\nevent: session\ndata: ${event.json}\n\n")
+                    else out.write("id: ${event.sequence}\nevent: $eventType\ndata: ${event.json}\n\n")
                     out.flush()
                 }
-                if (active.resync && running) initial("resync", events.snapshot(session))
+                if (active.resync && running) initial("resync", source.snapshot(session))
             }
         } catch (_: IOException) { /* The client disconnected; do not cancel shared/native work. */ }
-        finally { subscription?.let(events::remove); streamSlots.release(); exchange.close() }
+        finally { subscription?.let(source::remove); streamSlots.release(); exchange.close() }
     }
 
     private fun snapshots(session: String? = null): JsonObject = buildJsonObject {
@@ -573,14 +734,18 @@ class DesktopIntegrationServer(
             closing.filter { it.owned && !it.session.state.value.terminal }.forEach { record ->
                 try { record.session.cancel() } catch (error: Exception) { if (failure == null) failure = error else failure?.addSuppressed(error) }
             }
+            readingRecords.values.filter { !it.session.state.value.terminal }.forEach { record ->
+                try { record.session.cancel() } catch (error: Exception) { if (failure == null) failure = error else failure?.addSuppressed(error) }
+            }
         }
-        events.close(); scope.cancel(); executor.shutdownNow(); deadlines.shutdownNow()
+        events.close(); readingEvents.close(); scope.cancel(); executor.shutdownNow(); deadlines.shutdownNow()
         if (!executor.awaitTermination(5, TimeUnit.SECONDS)) {
             val error = IllegalStateException("Integration HTTP handlers did not finish during shutdown")
             if (failure == null) failure = error else failure?.addSuppressed(error)
         }
         closing.forEach { record -> record.input?.let { try { Files.deleteIfExists(it) } catch (error: IOException) { if (failure == null) failure = error else failure?.addSuppressed(error) } } }
         records.clear()
+        readingRecords.clear()
         temporaryDirectory?.let { try { Files.deleteIfExists(it) } catch (error: IOException) { if (failure == null) failure = error else failure?.addSuppressed(error) } }
         failure?.let { throw it }
     }
@@ -588,4 +753,10 @@ class DesktopIntegrationServer(
     private class HttpFailure(val status: Int, message: String) : RuntimeException(message)
     private fun token(): String = Base64.getUrlEncoder().withoutPadding().encodeToString(ByteArray(32).also(SecureRandom()::nextBytes))
     private fun secretEquals(left: String, right: String): Boolean = MessageDigest.isEqual(left.toByteArray(Charsets.UTF_8), right.toByteArray(Charsets.UTF_8))
+
+    companion object {
+        /** Browser-generated extension identities only. The desktop must ask the owner before persisting trust. */
+        fun validExtensionOrigin(origin: String): Boolean = origin.matches(Regex("chrome-extension://[a-p]{32}")) ||
+            origin.matches(Regex("moz-extension://[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"))
+    }
 }

@@ -1,6 +1,7 @@
 package com.sal7one.hearth.desktop.ui.screens.reading
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.*
@@ -21,6 +22,7 @@ import androidx.compose.ui.graphics.toComposeImageBitmap
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDirection
@@ -28,6 +30,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
 import com.sal7one.hearth.core.vision.OcrRect
 import com.sal7one.hearth.desktop.DesktopReadingState
+import com.sal7one.hearth.desktop.DesktopScreenReadingState
 import com.sal7one.hearth.desktop.ui.components.*
 import com.sal7one.hearth.desktop.ui.language.LanguageOption
 import com.sal7one.hearth.desktop.ui.language.LanguagePicker
@@ -51,21 +54,42 @@ internal fun ReadingScreen(
     onTarget: (String) -> Unit = {}, onTranslate: (Boolean) -> Unit = {},
     onOriginal: (Boolean) -> Unit = {}, onCopy: () -> Unit = {}, modifier: Modifier = Modifier,
     onModel: (String) -> Unit = {},
+    screenState: DesktopScreenReadingState = DesktopScreenReadingState(), screenAvailable: Boolean = false,
+    screenPollMs: Long = 2000, onScreenPoll: (Long)->Unit = {},
+    onScreenStart: ()->Unit = {}, onScreenStop: ()->Unit = {}, onWebsiteSetup: ()->Unit = {},
 ) {
     var selecting by remember(state.image) { mutableStateOf(false) }
+    val working=state.busy || screenState.active
     PageScaffold(modifier, bottom = 40) {
-        PageHeader("Image & manga", "Read the page, in your language",
-            "Open a Japanese manga image. Hearth finds the text and bubbles, then uses your selected translator.",
-            actions = {
-                HearthButton("Open image", onOpen, tone = ButtonTone.Secondary, enabled = !state.busy)
-                if (state.busy) HearthButton("Cancel", onCancel)
-                else HearthButton(if(state.crop == null) "Read page" else "Read selected area", onRead,
-                    enabled = state.image != null && modelReady && (!translate || translationIssue == null))
-            })
+        PageHeader("Screen translation", "Read across apps and manga",
+            "Translate Japanese pages over another app, or open an image. Website text can use the browser connection.")
+        FlowRow(horizontalArrangement=Arrangement.spacedBy(8.dp),verticalArrangement=Arrangement.spacedBy(8.dp)) {
+            HearthButton("Open image", onOpen, tone = ButtonTone.Secondary, enabled = !working)
+            if(screenState.active) HearthButton("Stop screen reading",onScreenStop,tone=ButtonTone.Secondary)
+            else if(screenAvailable) HearthButton("Watch screen area",onScreenStart,
+                enabled=!working && modelReady && (!translate || translationIssue==null))
+            HearthButton("Website text",onWebsiteSetup,tone=ButtonTone.Secondary,enabled=!working)
+            if(state.busy && !screenState.active) HearthButton("Cancel",onCancel)
+            else if(state.image!=null && !screenState.active) HearthButton(if(state.crop==null)"Read page" else "Read selected area",onRead,
+                enabled=!working && modelReady && (!translate || translationIssue==null))
+        }
+        Spacer(Modifier.height(20.dp))
+        if(state.image==null) {
+            HearthCard(Modifier.fillMaxWidth(),padding=16.dp) {
+                Row(verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(20.dp)) {
+                    Image(painterResource("screen-translation-hero.png"),contentDescription=null,modifier=Modifier.width(220.dp).height(120.dp))
+                    Column(Modifier.weight(1f),verticalArrangement=Arrangement.spacedBy(8.dp)) {
+                        Text("Your page. Your language.",style=HearthType.h3,color=HearthTheme.colors.text)
+                        Text("Select an area for Japanese manga and screenshots. The translation floats in place while your mouse reaches the app beneath. For selectable website text, connect the browser in Integrations.",style=HearthType.small,color=HearthTheme.colors.muted)
+                    }
+                }
+            }
+            Spacer(Modifier.height(22.dp))
+        }
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             listOf("manga-page" to "Fast", "manga-koharu-page" to "Koharu", "manga-koharu-clean-page" to "Koharu + cleanup").forEach { (id,label) ->
                 HearthButton(label,{onModel(id)},tone=if(id==modelId)ButtonTone.Primary else ButtonTone.Secondary,
-                    size=ButtonSize.Small,enabled=!state.busy)
+                    size=ButtonSize.Small,enabled=!working)
             }
         }
         Spacer(Modifier.height(8.dp))
@@ -78,14 +102,27 @@ internal fun ReadingScreen(
         FlowRow(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("Japanese →", color = HearthTheme.colors.textDim, style = HearthType.small)
-                LanguagePicker("Output", target, targets, onTarget, enabled = !state.busy)
+                LanguagePicker("Output", target, targets, onTarget, enabled = !working)
             }
-            Toggle("Translate", translate, !state.busy, onTranslate)
+            Toggle("Translate", translate, !working, onTranslate)
             Toggle("Original image", showOriginal, true, onOriginal)
             HearthButton(if(selecting) "Draw on the page…" else "Draw an area", { selecting = !selecting },
-                tone = ButtonTone.Secondary, size = ButtonSize.Small, enabled = state.image != null && !state.busy)
+                tone = ButtonTone.Secondary, size = ButtonSize.Small, enabled = state.image != null && !working)
             if(state.crop != null) HearthButton("Whole page", { onCrop(null) }, tone = ButtonTone.Ghost,
-                size = ButtonSize.Small, enabled = !state.busy)
+                size = ButtonSize.Small, enabled = !working)
+        }
+        if(screenAvailable) {
+            Spacer(Modifier.height(16.dp))
+            Row(verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(8.dp)) {
+                Text("Screen checks",style=HearthType.small,color=HearthTheme.colors.muted)
+                listOf(1000L,2000L,5000L).forEach {ms ->
+                    HearthButton("${ms/1000}s",{onScreenPoll(ms)},size=ButtonSize.Small,
+                        tone=if(ms==screenPollMs)ButtonTone.Primary else ButtonTone.Secondary,enabled=!working)
+                }
+            }
+            Spacer(Modifier.height(8.dp))
+            Text("Screen reading watches changed, steady pages and lets clicks reach the app underneath. It is Japanese OCR, not general website text extraction or video subtitles. Koharu quality passes take longer; Fast is best for frequent changes. macOS requires Screen Recording permission.",
+                style=HearthType.small,color=HearthTheme.colors.muted)
         }
         Spacer(Modifier.height(22.dp))
         if(!modelReady) {

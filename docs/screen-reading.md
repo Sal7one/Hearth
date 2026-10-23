@@ -1,29 +1,37 @@
-# Manga and book screen reading
+# Screen translation for websites, apps and manga
 
-Added in Hearth 0.13.0; permission reduction in 0.13.1; positioned translations in 0.14.0. Open **Home → Screen & manga** (or the Camera shortcut). This is a distinct
+Added in Hearth 0.13.0; permission reduction in 0.13.1; positioned translations in 0.14.0. Open **Home → Screen translation**, the **Screen translation** Quick Settings tile or the Camera shortcut. This is a distinct
 cross-app overlay, separate from live audio captions. Starting either capture
 feature stops the other; Android's projection session is never reused after stop.
 
 ## Use it
 
-1. Choose **Text in image** and **Translate to** directly in Screen & manga.
+1. In **Screen translation**, choose **Websites & apps** or **Japanese manga**.
+   Websites/apps uses a generic PaddleOCR reader matching the chosen script
+   (Latin, Arabic, CJK or Cyrillic); it does not silently run a Koharu model.
+   Manga provides the compact detector, Koharu masks or Koharu with cleanup.
+   Each workflow remembers its last reader and source language in DataStore;
+   switching workflows is an explicit action. Translator, destination and the
+   translate toggle remain shared with Camera. Then choose **Text in image** and
+   **Translate to**.
    Changing the text language selects a compatible OCR reader if needed. **Reader · Change**
    chooses/downloads Paddle, Manga or Meiki without a detour into Camera. Manga and
    Meiki read Japanese; translation destinations come from the selected translator.
    **Reading settings** selects the local/cloud translator and timing. Camera and
    reading share these saved choices.
-2. Choose **I tap** or **Page changes**, then **Start reading overlay**. Grant display-over-apps and screen-sharing access.
+2. Choose **I tap** or **Page changes**, then **Start screen translation**. Grant display-over-apps and screen-sharing access.
    Reading does not request the camera or microphone.
-3. Open your reader. **Translate** reads the page; **Draw area** captures a still
-   page and lets you circle/drag a bounding rectangle. Manga requires a selected
-   bubble before automatic reading starts. Center/Whole image offer button
+3. Open the website, app or manga reader. **Translate** reads the visible page; **Draw area** captures a still
+   page and lets you circle/drag a bounding rectangle. The standalone Manga OCR bubble reader requires a selected
+   bubble; the compact/Koharu page bundles find regions automatically. Center/Whole image offer button
    alternatives to drawing. The area is reused for this session; rotation clears it.
 4. Translations appear **over detected text in the actual reader**, with a transparent
    background outside the text boxes. The reader remains live; no screenshot viewer
    replaces it. With **🔒 Scroll through** enabled, touches pass through the text layer.
    The separate movable lock stays touchable: 20 dp glyph, 32 dp visible circle,
    48 dp touch target. Tapping it reveals the expanded controls. Open the lock to tap a box for its
-   full text/read-aloud controls; close it again to scroll.
+   full text/read-aloud controls; close it again to scroll. The pass-through choice is saved and is also
+   available directly on the setup page.
 5. Page-change mode checks visual movement at an adjustable interval (250 ms by
    default; 200–1,000 ms). Movement clears old placements and invalidates translation
    work. After the adjustable settling delay, OCR finds new box positions and the
@@ -62,14 +70,17 @@ Screenshots live in memory and are not saved or sent to an OCR server. Models ru
 locally; cloud translation sends recognized text through the existing BYOK
 connection. FOSS has no networking or delegated downloads. The screenshot surface
 is detached between captures; each OCR capture hides Hearth windows and waits for a
-fresh frame, avoiding OCR of its own output. Protected/black captures, model errors
+fresh frame, avoiding OCR of its own output. Protected video, banking screens and applications that prohibit screen capture
+cannot be translated; the service surfaces a black/protected-capture error. Model errors
 and provider errors are surfaced. Projection revocation stops the service and
 releases capture resources. A session cannot restart without fresh consent.
 
 ## Current limits
 
-- Replacements are translucent white text covers over OCR boxes, without artwork
-  inpainting. Android limits pass-through overlay opacity (normally 80%); the app
+- Generic OCR uses text covers over line boxes. Koharu with cleanup supplies
+  clipped background patches using the shared manga pipeline; its quality pass
+  and model memory cost are higher. Android limits pass-through overlay opacity
+  (normally 80%); the app
   respects the device's maximum, so some original text can remain faintly visible.
 - Meiki/Paddle return line boxes; Manga uses the drawn bubble. Nearby consecutive
   lines in a single horizontal or vertical reading block are grouped before
@@ -85,9 +96,11 @@ releases capture resources. A session cannot restart without fresh consent.
   after settling; the app does not claim frame-perfect tracking while scrolling.
 - Text fits down to 10 sp and may ellipsize inside tiny boxes. Unlock and tap a box,
   or use the full-text panel, for the complete result and accessible voice controls.
-- Manga reads one selected bubble and can hallucinate on non-text; it is not a page
-  detector. Meiki recognizes Japanese lines; vertical punctuation can be missed.
-- Settings are global, not stored per reader. History is bounded and session-only.
+- The standalone Manga OCR reader reads one selected bubble and can hallucinate
+  on non-text. Automatic manga bundles add a region detector before that reader.
+  Meiki recognizes Japanese lines; vertical punctuation can be missed.
+- Translator/destination settings are shared. Reader/source bookmarks are saved
+  separately for websites/apps and manga; history is bounded and session-only.
   There is no persistent book library or glossary.
 - The model cards remain experimental. Small generated fixtures and browser pages
   establish runtime integration, not broad manga-quality or thermal benchmarks.
@@ -126,3 +139,11 @@ See [0.14.0 validation](validation-v28.md) for positioned-page checks.
 Whole-page capture excludes Android status/navigation insets. Empty views clear
 translations without opening controls, so scrolling through a blank page remains
 uninterrupted. A drawn region stays at the same screen position until changed.
+
+The inactive Quick Settings tile opens the same content chooser as Home; it no
+longer bypasses setup to start a previously selected manga model on a website. An
+active tile or notification recovers the existing controls. Automatic capture
+waits for saved translator initialization, and pause/resume re-arms the settle
+trigger even if the underlying page has not changed. Host tests/compilation cover
+these changes; screen permission behavior and GPU/model throughput remain owner
+device checks. No accessibility service or browser extension is required on Android.

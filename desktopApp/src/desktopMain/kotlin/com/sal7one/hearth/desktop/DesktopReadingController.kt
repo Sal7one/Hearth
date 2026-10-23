@@ -6,6 +6,8 @@ import com.sal7one.hearth.desktop.runtime.DesktopMangaOcr
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import java.awt.image.BufferedImage
 import java.nio.file.Files
 import java.nio.file.Path
@@ -19,6 +21,9 @@ internal data class DesktopReadingState(
     val regions: List<OcrRegion> = emptyList(),val text: List<PageText> = emptyList(),
     val translations: Map<OcrRect,String> = emptyMap(),val error: String?=null,
 )
+
+/** Shared by UI and loopback image sessions: cancellation joins native work before admission passes. */
+internal object DesktopReadingAdmission { val mutex=Mutex() }
 
 /** Owns image OCR separately, then submits bounded text jobs to the existing serialized translation pipeline. */
 internal class DesktopReadingController(
@@ -36,6 +41,10 @@ internal class DesktopReadingController(
     @Volatile private var reader: PageOcrReader?=null
     private var readerPath: Path?=null
     private var readerProfile: String?=null
+    private data class TranslationKey(val config: PipelineConfig, val text: String)
+    private val translationCache = object : LinkedHashMap<TranslationKey, String>(128, .75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<TranslationKey, String>?) = size > 256
+    }
 
     fun openImage(path: Path) = replace { token ->
         val image=withContext(Dispatchers.IO) { decodeReadingImage(path) }
@@ -47,11 +56,19 @@ internal class DesktopReadingController(
         require(area==null || area.x>=0 && area.y>=0 && area.width>=8 && area.height>=8 && area.right<=image.width && area.bottom<=image.height)
         mutable.update {it.copy(crop=area,regions=emptyList(),text=emptyList(),translations=emptyMap(),error=null)}
     }
-    fun read(directory: Path, translate: Boolean,profileId: String?=null) {
-        val image=state.value.image ?: return
-        val area=state.value.crop ?: OcrRect(0,0,image.width,image.height)
+    fun read(directory: Path, translate: Boolean,profileId: String?=null): Job? {
+        val image=state.value.image ?: return null
+        return readImage(image, state.value.crop ?: OcrRect(0,0,image.width,image.height), directory, translate, profileId)
+    }
+    /** Screen frames use the same resident reader and translator as imported pages. No frame queue is retained. */
+    fun readFrame(image: BufferedImage, directory: Path, translate: Boolean, profileId: String?=null): Job? {
+        require(image.width in 1..2048 && image.height in 1..2048) { "Screen frame exceeds the 2048-pixel OCR bound" }
+        return readImage(image, OcrRect(0,0,image.width,image.height), directory, translate, profileId, "Selected screen region")
+    }
+    private fun readImage(image: BufferedImage, area: OcrRect, directory: Path, translate: Boolean, profileId: String?, name: String?=null): Job? {
         val settings=config.value.copy(sourceLanguage="ja",speech=null,voice=null)
-        replace { token ->
+        return replace { token ->
+            if(name != null) mutable.value=DesktopReadingState(image=image,name=name,busy=true)
             mutable.update {it.copy(busy=true,phase="Loading manga models…",regions=emptyList(),text=emptyList(),translations=emptyMap(),error=null)}
             if(readerPath!=directory || readerProfile!=profileId || reader==null) {
                 releaseReader()
@@ -66,17 +83,25 @@ internal class DesktopReadingController(
             mutable.update {it.copy(phase="Finding text and speech bubbles…")}
             coroutineScope {
                 val pending=Channel<PageText>(64)
+                val queued=HashSet<Pair<OcrRect,String>>()
                 val work=currentCoroutineContext()
                 val translation=launch {
                     if(!translate)return@launch
                     check(settings.translation!=null) {"Choose a translation engine in Settings first"}
                     for(item in pending) {
+                        val key=TranslationKey(settings,item.text)
+                        val cached=translationCache[key]
+                        if(cached!=null) {
+                            if(epoch.get()==token) mutable.update {it.copy(translations=it.translations+(item.region.bounds to cached))}
+                            continue
+                        }
                         val session=pipeline.start(PipelineRequest(PipelineInput.Text(item.text),settings))
                         try {
                             val result=session.state.first {it.terminal}
                             check(result.status==PipelineStatus.COMPLETED) {result.error ?: "Page translation ${result.status.name.lowercase()}"}
                             val text=result.translatedText.trim()
                             check(text.isNotBlank()) {"Translation engine returned empty text for: ${item.text}"}
+                            translationCache[key]=text
                             if(epoch.get()==token)mutable.update {it.copy(translations=it.translations+(item.region.bounds to text))}
                         } finally {withContext(NonCancellable) {session.cancel()}}
                     }
@@ -102,7 +127,12 @@ internal class DesktopReadingController(
                                 val page=text.map {it.copy(region=it.region.page())}
                                 check(page.sumOf {it.text.length.toLong()}<=3000) {"Page exceeds 3,000 characters. Draw a smaller area; recognized regions are preserved."}
                                 mutable.update {it.copy(text=page,phase="Read ${page.size} of ${it.regions.size} regions")}
-                                if(translate)check(pending.trySend(page.last()).isSuccess) {"Page translation queue is full"}
+                                // Cleanup republishes the complete list with new paints. Only new
+                                // transcripts need translation; every paint still reaches the UI.
+                                if(translate) page.forEach {item ->
+                                    if(queued.add(item.region.bounds to item.text))
+                                        check(pending.trySend(item).isSuccess) {"Page translation queue is full"}
+                                }
                             }
                         })
                     }
@@ -126,34 +156,41 @@ internal class DesktopReadingController(
         mutable.update {it.copy(regions=emptyList(),text=emptyList(),translations=emptyMap(),error=null,phase="Ready · choose Read page to use the selected pipeline")}
     }
     @OptIn(ExperimentalCoroutinesApi::class)
-    private fun replace(block: suspend (Long)->Unit) {
-        if(!owner.isActive)return
+    private fun replace(block: suspend (Long)->Unit): Job? {
+        if(!owner.isActive)return null
         val token=epoch.incrementAndGet()
         val previous=operation
         if(previous?.isActive==true) {previous.cancel();reader?.cancel()}
         mutable.update {it.copy(busy=true,error=null,phase="Preparing…")}
-        operation=scope.launch(start = CoroutineStart.ATOMIC) {
+        return scope.launch(start = CoroutineStart.ATOMIC) {
             try {
                 // Rapid replacement must preserve the whole join chain, including
                 // a cancelled intermediate request that was still awaiting native cleanup.
                 withContext(NonCancellable) {previous?.join()}
                 ensureActive()
-                block(token)
+                DesktopReadingAdmission.mutex.withLock {
+                    try { block(token) }
+                    finally { if(!isActive) releaseReader() }
+                }
             }
             catch(error: CancellationException) {throw error}
             catch(error: Throwable) {
                 if(epoch.get()==token)mutable.update {it.copy(error=error.message ?: error.toString(),phase="Reading failed")}
             } finally {
-                if(!isActive)releaseReader()
                 if(epoch.get()==token)mutable.update {it.copy(busy=false)}
             }
-        }
+        }.also {operation=it}
     }
     private suspend fun releaseReader()=withContext(Dispatchers.IO+NonCancellable) {
         val old=reader;reader=null;readerPath=null;readerProfile=null;old?.close()
     }
+    suspend fun releaseWhenIdle() {
+        operation?.join()
+        withContext(NonCancellable) {DesktopReadingAdmission.mutex.withLock {releaseReader()}}
+    }
     suspend fun close() {
-        epoch.incrementAndGet();reader?.cancel();owner.cancelAndJoin();releaseReader()
+        epoch.incrementAndGet();reader?.cancel();owner.cancelAndJoin()
+        withContext(NonCancellable) {DesktopReadingAdmission.mutex.withLock {releaseReader()}}
     }
 }
 

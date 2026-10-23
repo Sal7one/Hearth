@@ -1,0 +1,10 @@
+<resources>
+    <string name="reading_content_kind">ماذا تقرأ؟</string>
+    <string name="reading_content_websites">المواقع والتطبيقات</string>
+    <string name="reading_content_manga">المانغا اليابانية</string>
+    <string name="reading_websites_help">ترجم النص الظاهر في المتصفح أو أي تطبيق آخر. مرّر واضغط عبر الترجمة عندما يكون القفل مغلقًا. اختر «تغيّر الصفحة» للتحديث بعد توقف التمرير.</string>
+    <string name="reading_manga_help">اقرأ فقاعات الحوار اليابانية بقارئ المانغا. الوضع السريع يُظهر التحديدات أسرع، ويضيف كوهارو أقنعة دقيقة وتنظيفًا اختياريًا. يتذكر التطبيق قارئ المانغا السابق.</string>
+    <string name="reading_passthrough">السماح بمرور اللمس والتمرير</string>
+    <string name="reading_passthrough_help">يبقى زر القفل الصغير متاحًا. افتحه لتحريك الأداة أو تحديد النص المترجم أو فتح عناصر التحكم.</string>
+    <string name="reading_capture_limits">اسمح بمشاركة الشاشة والظهور فوق التطبيقات. لا تحتاج إلى خدمة تسهيل استخدام أو كاميرا أو ميكروفون. لا يمكن ترجمة الفيديو المحمي أو شاشات البنوك أو التطبيقات التي تمنع لقطات الشاشة.</string>
+</resources>

@@ -14,8 +14,8 @@
     <string name="label_homeservice_camera_title" formatted="false">"相机与照片"</string>
     <string name="label_homeservice_camera_description" formatted="false">"对准标牌、菜单或页面，也可选择手机上的图片。"</string>
     <string name="label_homeservice_camera_action" formatted="false">"打开相机"</string>
-    <string name="label_homeservice_screen_title" formatted="false">"屏幕与漫画"</string>
-    <string name="label_homeservice_screen_description" formatted="false">"在漫画、书籍与其他应用页面上显示翻译。"</string>
+    <string name="label_homeservice_screen_title" formatted="false">"屏幕翻译"</string>
+    <string name="label_homeservice_screen_description" formatted="false">"在屏幕上翻译网站、其他应用和日语漫画，并可穿过译文继续滚动。"</string>
     <string name="label_homeservice_screen_action" formatted="false">"打开屏幕翻译"</string>
     <string name="label_maintab_captions_label" formatted="false">"字幕"</string>
     <string name="label_maintab_captions_title" formatted="false">"实时字幕"</string>

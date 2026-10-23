@@ -52,9 +52,9 @@
     <string name="ui_screen_sharing_was_cancelled_tap_start_reading_when_ready_b7b72" formatted="false">"Screen sharing was cancelled. Tap Start reading when ready."</string>
     <string name="ui_allow_hearth_to_display_over_other_apps_return_here_then_tap_star_1c196" formatted="false">"Allow Hearth to display over other apps, return here, then tap Start reading."</string>
     <string name="ui_back_b52b3" formatted="false">"Back"</string>
-    <string name="ui_screen_manga_6c45b" formatted="false">"Screen &amp; manga"</string>
+    <string name="ui_screen_manga_6c45b" formatted="false">"Screen translation"</string>
     <string name="ui_translate_as_you_read_7ee96" formatted="false">"Translate as you read"</string>
-    <string name="ui_open_your_reader_after_starting_translate_the_page_or_draw_around_c74fc" formatted="false">"Open your reader after starting. Translate the page or draw around one bubble."</string>
+    <string name="ui_open_your_reader_after_starting_translate_the_page_or_draw_around_c74fc" formatted="false">"Choose websites and apps or Japanese manga, then open the app you want to read. Translate the screen or draw a smaller area."</string>
     <string name="ui_translate_when_b5cd2" formatted="false">"Translate when"</string>
     <string name="ui_i_tap_96db1" formatted="false">"I tap"</string>
     <string name="ui_page_changes_25675" formatted="false">"Page changes"</string>
@@ -64,7 +64,7 @@
     <string name="ui_starting_screen_translation_stops_live_audio_captions_17e29" formatted="false">"Starting screen translation stops live audio captions."</string>
     <string name="ui_install_1_s_to_read_this_language_70476">"Install %1$s to read this language."</string>
     <string name="ui_choose_a_supported_translation_destination_or_translator_24a0b" formatted="false">"Choose a supported translation destination or translator."</string>
-    <string name="ui_start_reading_overlay_c2be1" formatted="false">"Start reading overlay"</string>
+    <string name="ui_start_reading_overlay_c2be1" formatted="false">"Start screen translation"</string>
     <string name="ui_ocr_reader_2de99" formatted="false">"OCR reader"</string>
     <string name="ui_wait_after_movement_1_s_ms_25f21">"Wait after movement: %1$s ms"</string>
     <string name="ui_wait_after_movement_milliseconds_ed502" formatted="false">"Wait after movement, milliseconds"</string>

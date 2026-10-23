@@ -57,6 +57,8 @@ internal fun IntegrationsScreen(
             ApiIntegrationCard(state, actions, Modifier.weight(1f))
         }
         Spacer(Modifier.height(16.dp))
+        BrowserIntegrationCard(state, actions)
+        Spacer(Modifier.height(16.dp))
         Banner(
             if (state.running) IntegrationsCopy.STOP_NOTE else IntegrationsCopy.NOT_RUNNING_NOTE,
             tone = BannerTone.Neutral,

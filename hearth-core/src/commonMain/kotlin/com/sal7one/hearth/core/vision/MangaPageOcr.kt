@@ -54,21 +54,34 @@ interface PageOcrReader {
 /** Portable detection -> bounded text crops -> recognition. Translation remains the caller's existing stage. */
 class MangaPageOcr(private val detector: ComicRegionDetector, private val reader: MangaRegionReader,
     private val preview: ComicRegionDetector? = null, private val budgetMs: Long = 45_000,
-    private val inpainter: MangaPageInpainter? = null) : PageOcrReader {
+    private val inpainter: MangaPageInpainter? = null,
+    private val timeSource: TimeSource = TimeSource.Monotonic) : PageOcrReader {
     init {require(budgetMs in 1..180_000)}
     override fun recognize(pixels: IntArray, width: Int, height: Int, progress: PageOcrProgress): List<PageText> {
         require(width in 1..2048 && height in 1..2048 && pixels.size == width * height) { "OCR page must be at most 2048 pixels per side" }
         if (!progress.isCurrent()) return emptyList()
-        val begun = TimeSource.Monotonic.markNow()
+        val begun = timeSource.markNow()
+        fun checkBudget() {
+            check(begun.elapsedNow().inWholeMilliseconds < budgetMs) { "Manga page exceeded its ${budgetMs/1000}-second reading budget. Recognized regions are preserved; draw a smaller area." }
+        }
+        // Stage notifications may replace a capture. Check again before native
+        // work so an obsolete page cannot start another expensive inference.
+        fun stage(value: PageOcrStage): Boolean {
+            if(!progress.isCurrent())return false
+            checkBudget()
+            progress.stage(value)
+            return progress.isCurrent().also {if(it)checkBudget()}
+        }
         if(preview!=null) {
-            progress.stage(PageOcrStage.PREVIEW)
+            if(!stage(PageOcrStage.PREVIEW))return emptyList()
             val preliminary=MangaPageLayout.regions(preview.detect(pixels,width,height),width,height)
             if(!progress.isCurrent())return emptyList()
             progress.detected(preliminary)
         }
-        progress.stage(PageOcrStage.SEGMENTATION)
+        if(!stage(PageOcrStage.SEGMENTATION))return emptyList()
         val detections=detector.detect(pixels,width,height)
         if (!progress.isCurrent()) return emptyList()
+        checkBudget()
         val candidates=MangaPageLayout.regions(detections,width,height)
         check(candidates.size <= 64) { "Page exceeds 64 text regions. Draw a smaller area." }
         val regions=candidates.map {
@@ -77,11 +90,11 @@ class MangaPageOcr(private val detector: ComicRegionDetector, private val reader
         }
         if (!progress.isCurrent()) return emptyList()
         progress.detected(regions) // Highlight all geometry before the first slow OCR/translation call.
-        progress.stage(PageOcrStage.RECOGNITION)
+        if(!stage(PageOcrStage.RECOGNITION))return emptyList()
         val results = ArrayList<PageText>(regions.size)
         for (region in regions) {
             if (!progress.isCurrent()) break
-            check(begun.elapsedNow().inWholeMilliseconds < budgetMs) { "Manga page exceeded its ${budgetMs/1000}-second reading budget. Recognized regions are preserved; draw a smaller area." }
+            checkBudget()
             val bounds = region.bounds
             val crop = IntArray(bounds.width * bounds.height)
             repeat(bounds.height) { row ->
@@ -97,18 +110,22 @@ class MangaPageOcr(private val detector: ComicRegionDetector, private val reader
                 results += PageText(region, text)
                 progress.recognized(results.toList())
             }
+            // A native call is cooperative and can finish after the budget.
+            // Keep its useful transcript, but report the overrun even for the
+            // last (or blank) region instead of returning a false fast success.
+            if(progress.isCurrent())checkBudget()
         }
         if (!progress.isCurrent()) return results
         val pending=results.indices.filter {results[it].region.paint==null && results[it].region.textMask!=null}
         if(inpainter!=null && pending.isNotEmpty()) {
-            check(begun.elapsedNow().inWholeMilliseconds < budgetMs) { "Manga page exceeded its ${budgetMs/1000}-second reading budget. Recognized regions are preserved; draw a smaller area." }
+            checkBudget()
             val masks=pending.map {results[it].region.textMask!!}
             // The native inpainter plans connected, nearby component tiles once for
             // the complete page mask. Per-bubble calls repeat inference for the same
             // context and serialize cleanup ahead of every transcript.
             check(masks.sumOf {it.bounds.area}<=4_194_304) { "Page cleanup exceeds its 16 MiB patch budget. Select a smaller area; completed regions are preserved." }
             val mask=checkNotNull(ComicMask.union(masks))
-            progress.stage(PageOcrStage.CLEANUP)
+            if(!stage(PageOcrStage.CLEANUP))return results
             // Koharu fills uniform text backgrounds before neural reconstruction.
             // Use a private context copy: neighboring original lettering must not
             // contaminate a neural tile, and the captured original stays untouched.
@@ -132,6 +149,7 @@ class MangaPageOcr(private val detector: ComicRegionDetector, private val reader
                     if(luminance/count>140)0xff111111.toInt() else 0xfff8f8f8.toInt(),patch)))
             }
             if(progress.isCurrent())progress.recognized(results.toList())
+            if(progress.isCurrent())checkBudget()
         }
         return results
     }

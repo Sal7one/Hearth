@@ -44,6 +44,7 @@ private class DesktopServices(
     val settings: DesktopSettingsStore, val credentials: DesktopCredentialStore,
     val engines: DesktopEngines, val models: DesktopModelController, val controller: DesktopWorkspaceController,
     val reading: DesktopReadingController,
+    val readingService: DesktopReadingService,
 ) {
     suspend fun close() {
         withContext(NonCancellable) {
@@ -52,9 +53,10 @@ private class DesktopServices(
                 try { block() }
                 catch (e: Exception) { if (failure == null) failure = e else failure!!.addSuppressed(e) }
             }
+            release { controller.close() }
+            release { readingService.close() }
             release { reading.close() }
             release { models.close() }
-            release { controller.close() }
             release { withContext(Dispatchers.IO) { engines.close() } }
             release { settings.closeAndJoin() }
             failure?.let { throw it }
@@ -105,6 +107,10 @@ private fun launchDesktop() = application {
                 val pipeline = HearthPipeline(runtime, scope)
                 val capabilities = pipeline.capabilities()
                 lateinit var modelController: DesktopModelController
+                val readingService = DesktopReadingService(pipeline, scope, selection = {
+                    val id = selectedReadingModel(store.ui.value)
+                    modelController.verifiedSelection(id)?.modelPath?.let { Path.of(it) to id }
+                })
                 val controller = DesktopWorkspaceController(pipeline, store.config, directory, scope,
                     persist = { store.save(it) }, putSecret = { id, secret -> credentials.put(id, secret) },
                     removeSecret = { credentials.remove(it) }, exportSetup = { store.exportSetup(it) },
@@ -112,10 +118,12 @@ private fun launchDesktop() = application {
                         modelController.checkSetupImportAvailable()
                         store.importSetup(it)
                         store.save(modelController.reconnectImportedSetup(store.config.value))
-                    }, persistUi = { store.saveUi(it) }, capabilities = capabilities)
+                    }, persistUi = { store.saveUi(it) }, capabilities = capabilities,
+                    readingService = readingService,
+                    integrationOrigins = { setOfNotNull(store.ui.value["browser-extension-origin"]?.takeIf(String::isNotBlank)) })
                 modelController = DesktopModelController(models, scope, controller::showError, settings = store)
                 val reading = DesktopReadingController(pipeline, store.config, scope)
-                DesktopServices(store, credentials, runtime, modelController, controller, reading)
+                DesktopServices(store, credentials, runtime, modelController, controller, reading, readingService)
                     .also { candidate = it }
             }
             services = loaded
@@ -166,6 +174,7 @@ private fun launchDesktop() = application {
                 closing = closing,
                 rememberedEngine = { loaded.settings.engineSetups.value[it] },
                 onShowWindow = { window.isVisible = true; window.toFront(); window.requestFocus() },
+                onHideWindow = { window.isVisible = false },
             )
         } else {
             StartupScreen(startupError) { retry++ }

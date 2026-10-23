@@ -5,6 +5,8 @@ import androidx.compose.ui.ImageComposeScene
 import androidx.compose.ui.unit.Density
 import com.sal7one.hearth.core.vision.*
 import com.sal7one.hearth.desktop.ui.screens.reading.ReadingScreen
+import com.sal7one.hearth.desktop.ui.screens.reading.ScreenReadingLayer
+import com.sal7one.hearth.desktop.ui.screens.reading.readingCleanupLayer
 import com.sal7one.hearth.desktop.ui.theme.HearthTheme
 import java.awt.Color
 import java.awt.image.BufferedImage
@@ -43,7 +45,7 @@ class DesktopMangaReadingRenderTest {
         for(width in listOf(820,1500)) {
             val scene=ImageComposeScene(width=width,height=1300,density=Density(1f)) {
                 HearthTheme {ReadingScreen(state=state,modelReady=true,modelId="manga-koharu-clean-page",
-                    modelBytes=MangaArtifacts.filesForKoharuCleanup.sumOf {it.bytes})}
+                    modelBytes=MangaArtifacts.filesForKoharuCleanup.sumOf {it.bytes},screenAvailable=true)}
             }
             try {
                 repeat(3){scene.render(System.nanoTime()).close()}
@@ -57,4 +59,40 @@ class DesktopMangaReadingRenderTest {
             } finally {scene.close()}
         }
     }
+    @Test fun screenTranslationLandingRendersWithItsNewArtworkInBothThemes() {
+        val directory=Path.of("build/reading-visual-qa");Files.createDirectories(directory)
+        for(dark in listOf(true,false)) {
+            val scene=ImageComposeScene(width=1200,height=1100,density=Density(1f)) {
+                HearthTheme(dark=dark) {ReadingScreen(modelReady=false,screenAvailable=true)}
+            }
+            try {
+                repeat(3){scene.render(System.nanoTime()).close()}
+                val bytes=scene.render(System.nanoTime()).use {it.encodeToData(EncodedImageFormat.PNG)?.bytes ?: error("Landing encoding failed")}
+                Files.write(directory.resolve("screen-translation-${if(dark)"dark" else "light"}.png"),bytes)
+                assertTrue(bytes.size>10000)
+            } finally {scene.close()}
+        }
+    }
+
+    @Test fun screenOverlayContainsOnlyTranslatedPatchesAndTransparentSurroundings() {
+        val image=BufferedImage(400,300,BufferedImage.TYPE_INT_RGB)
+        val mask=ComicMask(intArrayOf(100,100,40,101,100,40),400,300)
+        val region=OcrRegion(OcrRect(90,90,100,100),1f,paint=MangaPaint(mask,OcrRect(90,90,100,100),-1,0xff111111.toInt()))
+        val state=DesktopReadingState(image=image,text=listOf(PageText(region,"source")),translations=mapOf(region.bounds to "مرحبا / Hello"))
+        val cleanup=readingCleanupLayer(state)
+        assertEquals(0,cleanup.getRGB(0,0),"The transparent screen overlay must never become a solid white desktop window")
+        assertEquals(-1,cleanup.getRGB(110,100))
+        assertEquals(0,readingCleanupLayer(state.copy(translations=emptyMap())).getRGB(110,100),"Original text is retained until its translation exists")
+        val scene=ImageComposeScene(width=800,height=600,density=Density(1f)) {ScreenReadingLayer(state)}
+        try {
+            repeat(3){scene.render(System.nanoTime()).close()}
+            val bytes=scene.render(System.nanoTime()).use {it.encodeToData(EncodedImageFormat.PNG)?.bytes ?: error("Overlay encoding failed")}
+            val directory=Path.of("build/reading-visual-qa");Files.createDirectories(directory)
+            val output=directory.resolve("screen-reading-transparent.png");Files.write(output,bytes)
+            val rendered=ImageIO.read(output.toFile())
+            assertEquals(0,rendered.getRGB(0,0) ushr 24)
+            assertTrue(bytes.size>1000)
+        } finally {scene.close()}
+    }
+
 }

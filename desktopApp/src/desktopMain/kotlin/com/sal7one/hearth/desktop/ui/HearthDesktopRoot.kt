@@ -1,6 +1,8 @@
 package com.sal7one.hearth.desktop.ui
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -9,6 +11,9 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import com.sal7one.hearth.desktop.DesktopModelController
 import com.sal7one.hearth.desktop.DesktopReadingController
+import com.sal7one.hearth.desktop.DesktopScreenReadingController
+import com.sal7one.hearth.desktop.platform.DesktopScreenCapture
+import com.sal7one.hearth.desktop.ui.screens.reading.ScreenReadingWindow
 import com.sal7one.hearth.desktop.selectedReadingModel
 import com.sal7one.hearth.desktop.DesktopWorkspaceController
 import com.sal7one.hearth.desktop.data.DesktopModelStatus
@@ -103,6 +108,7 @@ internal fun HearthDesktopRoot(
     closing: Boolean,
     rememberedEngine: (String) -> com.sal7one.hearth.core.PipelineConfig? = { null },
     onShowWindow: () -> Unit = {},
+    onHideWindow: () -> Unit = {},
 ) {
     val scope = rememberCoroutineScope()
     var screen by remember { mutableStateOf(DesktopScreen.fromId(initialUi["screen"] ?: "home")) }
@@ -113,6 +119,7 @@ internal fun HearthDesktopRoot(
     var showPendingOriginal by remember { mutableStateOf(initialUi["overlay-pending"] != "false") }
     var overlaySettings by remember { mutableStateOf(overlaySettingsFrom(initialUi)) }
     var reduceMotion by remember { mutableStateOf(initialUi["reduce-motion"] == "true") }
+    val systemAudioLabel=remember {if(System.getProperty("os.name").startsWith("Windows",true))"PC audio" else "Mac audio"}
     val systemAudioAvailable = remember { com.sal7one.hearth.desktop.runtime.DesktopSystemAudioCapture.available }
     val systemAudioReason = remember { com.sal7one.hearth.desktop.runtime.DesktopSystemAudioCapture.availabilityReason }
     var captureSource by remember { mutableStateOf(
@@ -120,9 +127,16 @@ internal fun HearthDesktopRoot(
     ) }
     var deviceId by remember { mutableStateOf<String?>(null) }
     var translationDraft by remember { mutableStateOf("") }
+    var choosingScreen by remember { mutableStateOf(false) }
     var readingTranslate by remember { mutableStateOf(initialUi["reading-translate"] != "false") }
     var readingOriginal by remember { mutableStateOf(initialUi["reading-original"] == "true") }
     var readingModelId by remember { mutableStateOf(selectedReadingModel(initialUi)) }
+    var readingPollMs by remember { mutableStateOf(initialUi["reading-screen-poll-ms"]?.toLongOrNull()?.takeIf {it in setOf(1000L,2000L,5000L)} ?: 2000L) }
+    val screenReading=remember(reading,readingPollMs) {DesktopScreenReadingController(reading,scope,DesktopScreenCapture::capture,readingPollMs)}
+    val screenReadingState by screenReading.state.collectAsState()
+    DisposableEffect(screenReading) {onDispose {screenReading.stop()}}
+    LaunchedEffect(closing) {if(closing)screenReading.close()}
+    LaunchedEffect(screenReadingState.error) {screenReadingState.error?.let {controller.showError(it);onShowWindow()}}
     var modelFilter by remember {
         mutableStateOf(
             ModelsFilter(
@@ -148,6 +162,16 @@ internal fun HearthDesktopRoot(
     }
 
     val installed = remember(installations) { installations.values.count { it.ready } }
+    val screenSetup=listOf(readingModelId,models.verifiedSelection(readingModelId)?.modelPath,
+        readingTranslate,config.translation,config.targetLanguage)
+    var watchedSetup by remember {mutableStateOf<List<Any?>?>(null)}
+    LaunchedEffect(screenSetup,screenReadingState.active) {
+        if(screenReadingState.active && watchedSetup!=null && watchedSetup!=screenSetup) {
+            screenReading.stop()
+            onShowWindow()
+            controller.showError("Screen reading stopped because its reader or translation settings changed. Start it again to use the saved setup.")
+        }
+    }
 
     fun applyOverlay(next: OverlaySettings) {
         overlaySettings = next
@@ -211,7 +235,7 @@ internal fun HearthDesktopRoot(
         statusLive = workspace.active && !closing,
         catalog = models.library.catalog,
         installations = installations,
-    ).copy(inputLabel = if ((if (workspace.active) workspace.input ?: captureSource else captureSource) == WorkspaceInput.SYSTEM_AUDIO) "Mac audio" else "Microphone")
+    ).copy(inputLabel = if ((if (workspace.active) workspace.input ?: captureSource else captureSource) == WorkspaceInput.SYSTEM_AUDIO) systemAudioLabel else "Microphone")
 
     val libraryState = modelsState(
         catalog = models.library.catalog,
@@ -399,7 +423,7 @@ internal fun HearthDesktopRoot(
         onStopAudio = { controller.stopPlayback() },
     )
 
-    val integrations = integrationsState(workspace)
+    val integrations = integrationsState(workspace,initialUi["browser-extension-origin"].orEmpty())
 
     val integrationsActions = IntegrationsActions(
         onStart = { controller.startIntegration() },
@@ -409,6 +433,11 @@ internal fun HearthDesktopRoot(
                 .onFailure { failure(it.message ?: it.toString()) }
         },
         onCopyApiToken = { controller.copyApiToken(::copyToClipboard) },
+        onCopyApiAddress = {
+            runCatching { copyToClipboard(workspace.integration?.baseUrl.orEmpty()) }
+                .onFailure { failure(it.message ?: it.toString()) }
+        },
+        onSaveBrowserOrigin = controller::saveBrowserExtensionOrigin,
     )
 
     val translate = translateState(config, workspace, controller.capabilities, models.library.catalog, installations)
@@ -584,7 +613,7 @@ internal fun HearthDesktopRoot(
         overlayVisible = overlaySettings.visible,
         deviceName = workspace.devices.firstOrNull { it.id == deviceId }?.name,
         inputLabel = when (if (workspace.active) workspace.input ?: captureSource else captureSource) {
-            WorkspaceInput.SYSTEM_AUDIO -> "Mac audio"
+            WorkspaceInput.SYSTEM_AUDIO -> systemAudioLabel
             WorkspaceInput.MICROPHONE -> "Microphone"
             WorkspaceInput.AUDIO_FILE -> "Audio file"
             WorkspaceInput.TEXT -> "Text"
@@ -606,7 +635,7 @@ internal fun HearthDesktopRoot(
             return
         }
         if (captureSource == WorkspaceInput.SYSTEM_AUDIO && !systemAudioAvailable) {
-            failure(systemAudioReason ?: "Mac audio capture is unavailable")
+            failure(systemAudioReason ?: "$systemAudioLabel capture is unavailable")
             return
         }
         applyOverlay(overlaySettings.copy(visible = true))
@@ -742,6 +771,7 @@ internal fun HearthDesktopRoot(
                         state = readingState, modelReady = model != null,
                         modelId = readingModelId, modelBytes = models.library.find(readingModelId).bytes,
                         onModel = { id ->
+                            screenReading.stop()
                             reading.resetResults()
                             readingModelId=id
                             saveUi(mapOf("reading-model-id" to id,"reading-model-path" to models.verifiedSelection(id)?.modelPath.orEmpty()))
@@ -749,7 +779,7 @@ internal fun HearthDesktopRoot(
                         modelActivity = library.transfers[readingModelId]?.label,
                         target = config.targetLanguage, targets = languages.targets,
                         translate = readingTranslate, showOriginal = readingOriginal, translationIssue = issue,
-                        onOpen = { runCatching {
+                        onOpen = { screenReading.stop(); runCatching {
                             chooseFile(null, "Open manga image", listOf("png", "jpg", "jpeg"))?.let(reading::openImage)
                         }.onFailure { failure(it.message ?: it.toString()) } },
                         onRead = { model?.modelPath?.let {
@@ -757,6 +787,30 @@ internal fun HearthDesktopRoot(
                             reading.read(java.nio.file.Path.of(it), readingTranslate, readingModelId)
                         } },
                         onCancel = reading::cancel, onCrop = reading::selectArea,
+                        screenState = screenReadingState, screenAvailable = DesktopScreenCapture.available,
+                        onWebsiteSetup = {navigate(DesktopScreen.INTEGRATIONS)},
+                        screenPollMs = readingPollMs,
+                        onScreenPoll = {readingPollMs=it;saveUi(mapOf("reading-screen-poll-ms" to it.toString()))},
+                        onScreenStop = {screenReading.stop();onShowWindow()},
+                        onScreenStart = { model?.modelPath?.let { path ->
+                            scope.launch {
+                                screenReading.stop()
+                                choosingScreen=true
+                                try {
+                                    onHideWindow()
+                                    kotlinx.coroutines.delay(180)
+                                    val region=DesktopScreenCapture.selectRegion()
+                                    if(region==null)onShowWindow()
+                                    else {
+                                        saveUi(mapOf("reading-model-path" to path))
+                                        watchedSetup=screenSetup
+                                        screenReading.start(region,java.nio.file.Path.of(path),readingTranslate,readingModelId)
+                                    }
+                                } catch(cancelled: kotlinx.coroutines.CancellationException) {throw cancelled}
+                                catch(error: Exception) {onShowWindow();failure(error.message ?: error.toString())}
+                                finally {choosingScreen=false}
+                            }
+                        } },
                         onDownload = { saveUi(mapOf("reading-model-path" to "")); models.download(readingModelId) },
                         onSetup = { navigate(DesktopScreen.TRANSLATION_SETTINGS) }, onTarget = ::targetLanguage,
                         onTranslate = { readingTranslate = it; saveUi(mapOf("reading-translate" to it.toString())) },
@@ -819,7 +873,17 @@ internal fun HearthDesktopRoot(
             }
         }
 
-        if (overlaySettings.visible) {
+
+        if(screenReadingState.active) {
+            ScreenReadingWindow(screenReadingState,readingState,readingOriginal,dark,preset,
+                onPause={if(screenReadingState.paused)onHideWindow();screenReading.pause()},
+                onStop={screenReading.stop();onShowWindow()},
+                onShowApp={if(!screenReadingState.paused)screenReading.pause();onShowWindow()},
+                onOriginal={readingOriginal=!readingOriginal;saveUi(mapOf("reading-original" to readingOriginal.toString()))},
+                onNativeError={message ->screenReading.stop();failure("Screen translation window: $message");onShowWindow()})
+        }
+
+        if (overlaySettings.visible && !screenReadingState.active && !choosingScreen) {
             FloatingCaptionWindow(
                 state = overlay,
                 dark = dark,

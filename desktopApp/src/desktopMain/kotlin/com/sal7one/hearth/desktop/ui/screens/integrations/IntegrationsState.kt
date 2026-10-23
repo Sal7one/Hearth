@@ -9,22 +9,24 @@ internal data class IntegrationsState(
     val baseUrl: String = "",
     val overlayUrl: String = "",
     val limits: List<Pair<String, String>> = emptyList(),
+    val browserOrigin: String = "",
 ) {
     val overlayUrlDisplay: String
         get() = if (overlayUrl.isBlank()) "Not running" else overlayUrl.substringBefore("#") + "#…"
 }
 
-internal fun integrationsState(workspace: DesktopUiState): IntegrationsState {
+internal fun integrationsState(workspace: DesktopUiState, browserOrigin: String = ""): IntegrationsState {
     val view = workspace.integration
     return IntegrationsState(
         running = view != null,
         busy = workspace.integrationBusy,
         baseUrl = view?.baseUrl.orEmpty(),
         overlayUrl = view?.overlayUrl.orEmpty(),
+        browserOrigin = browserOrigin,
         limits = listOf(
             "Concurrency" to "Four sessions",
             "Size" to "64 MiB per file",
-            "Access" to "This Mac only",
+            "Access" to "This computer only",
         ),
     )
 }

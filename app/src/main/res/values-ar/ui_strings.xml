@@ -52,9 +52,9 @@
     <string name="ui_screen_sharing_was_cancelled_tap_start_reading_when_ready_b7b72" formatted="false">"أُلغيت مشاركة الشاشة. اضغط بدء القراءة عندما تكون جاهزًا."</string>
     <string name="ui_allow_hearth_to_display_over_other_apps_return_here_then_tap_star_1c196" formatted="false">"اسمح لـ Hearth بالظهور فوق التطبيقات، ثم عُد واضغط بدء القراءة."</string>
     <string name="ui_back_b52b3" formatted="false">"رجوع"</string>
-    <string name="ui_screen_manga_6c45b" formatted="false">"الشاشة والمانغا"</string>
+    <string name="ui_screen_manga_6c45b" formatted="false">"ترجمة الشاشة"</string>
     <string name="ui_translate_as_you_read_7ee96" formatted="false">"ترجم أثناء القراءة"</string>
-    <string name="ui_open_your_reader_after_starting_translate_the_page_or_draw_around_c74fc" formatted="false">"افتح تطبيق القراءة بعد البدء. ترجم الصفحة أو حدّد فقاعة واحدة بالرسم."</string>
+    <string name="ui_open_your_reader_after_starting_translate_the_page_or_draw_around_c74fc" formatted="false">"اختر المواقع والتطبيقات أو المانغا اليابانية، ثم افتح التطبيق الذي تريد قراءته. ترجم الشاشة أو حدّد مساحة أصغر."</string>
     <string name="ui_translate_when_b5cd2" formatted="false">"الترجمة عند"</string>
     <string name="ui_i_tap_96db1" formatted="false">"الضغط"</string>
     <string name="ui_page_changes_25675" formatted="false">"تغيّر الصفحة"</string>
@@ -64,7 +64,7 @@
     <string name="ui_starting_screen_translation_stops_live_audio_captions_17e29" formatted="false">"بدء ترجمة الشاشة يوقف الترجمة النصية للصوت."</string>
     <string name="ui_install_1_s_to_read_this_language_70476">"ثبّت %1$s لقراءة هذه اللغة."</string>
     <string name="ui_choose_a_supported_translation_destination_or_translator_24a0b" formatted="false">"اختر لغة ترجمة أو مترجمًا مدعومًا."</string>
-    <string name="ui_start_reading_overlay_c2be1" formatted="false">"بدء نافذة القراءة"</string>
+    <string name="ui_start_reading_overlay_c2be1" formatted="false">"بدء ترجمة الشاشة"</string>
     <string name="ui_ocr_reader_2de99" formatted="false">"محرك التعرف على النص"</string>
     <string name="ui_wait_after_movement_1_s_ms_25f21">"الانتظار بعد الحركة: %1$s مللي ثانية"</string>
     <string name="ui_wait_after_movement_milliseconds_ed502" formatted="false">"الانتظار بعد الحركة، بالمللي ثانية"</string>
