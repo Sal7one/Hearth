@@ -110,6 +110,7 @@ class BenchmarkRunControllerRecoveryTest {
             worker.requests.map { "${it.candidate.acceleration}/${it.source}" })
         assertEquals(3, completed.completedRows)
         assertEquals(1, completed.failedRows)
+        assertNull("A failed CPU route must not present successful GPU results as a global failure", completed.error)
         assertNull(LocalWorkGate.owner.value)
         val rows = BenchmarkResults(context).load().filter { it.runId == id }
         assertEquals(3, rows.size)
@@ -122,13 +123,37 @@ class BenchmarkRunControllerRecoveryTest {
     @Test fun preparationTimeoutRetainsItsActualPhaseAndBudgetInsteadOfBlamingSampleInference() = runBlocking {
         worker.runFailure = BenchmarkWorkerTimeoutException(20, 120_001, BenchmarkWorkerPhase.LOAD)
         val id = start(listOf(batch()))
-        awaitState { !it.running && !it.recovering && it.runId == id }
+        val completed = awaitState { !it.running && !it.recovering && it.runId == id }
         val failed = BenchmarkResults(context).load().single { it.runId == id }
         assertTrue(failed.error.orEmpty().contains("load"))
         assertTrue(failed.error.orEmpty().contains("120s"))
         assertFalse(failed.error.orEmpty().contains("one input exceeded"))
         assertEquals("deadline", failed.terminationReason)
         assertTrue(failed.computeMs.isEmpty())
+        assertTrue(completed.error.orEmpty().contains("Fixture"))
+        assertTrue(completed.error.orEmpty().contains("120s"))
+        assertNull(LocalWorkGate.owner.value)
+    }
+
+    @Test fun allFailedComparisonShowsTheFirstModelErrorAndStillAllowsANewRun() = runBlocking {
+        val second = candidate.copy(id = "another-fixture", label = "Second model")
+        worker.result = { request -> result(request, deadline = false).copy(error =
+            if (request.candidate.id == candidate.id) "CommonJni context was not initialized" else "Unsupported model format") }
+        val id = start(listOf(batch(models = listOf(candidate, second))))
+        val completed = awaitState { !it.running && !it.recovering && it.runId == id }
+        assertEquals(2, completed.completedRows)
+        assertEquals(2, completed.failedRows)
+        assertEquals("Fixture: CommonJni context was not initialized", completed.error)
+        assertTrue(completed.status.startsWith("Comparison complete"))
+        assertNull(LocalWorkGate.owner.value)
+        val saved = BenchmarkResults(context).load().filter { it.runId == id }
+        assertEquals(2, saved.size)
+        assertEquals(setOf("CommonJni context was not initialized", "Unsupported model format"), saved.map { it.error }.toSet())
+
+        // Error reporting must not create a cleanup quarantine or block another user action.
+        BenchmarkRunController.start(context, listOf(batch()))
+        assertTrue(BenchmarkRunController.state.value.running)
+        assertNull(BenchmarkRunController.state.value.error)
     }
 
     private fun batch(source: String = "en", models: List<BenchmarkCandidate> = listOf(candidate)) =

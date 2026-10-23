@@ -77,7 +77,7 @@ internal class BenchmarkWorkerService : Service() {
     private fun execute(id: String) = scope.launch {
         try {
             val request = BenchmarkWorkerProtocol.read(applicationContext, id)
-            initializeBenchmarkPlatform(applicationContext, request.candidate)
+            BenchmarkWorkerInitialization.initialize(applicationContext, request.candidate)
             var result: BenchmarkResult? = null
             LocalBenchmarkRunner(applicationContext).run(listOf(request.candidate), request.clip, request.text,
                 request.referenceText, request.source, request.target, benchmarkInputs = request.inputs,

@@ -77,6 +77,7 @@ internal object BenchmarkRunController {
             work = scope.launch(start = CoroutineStart.ATOMIC) {
                 var lease: LocalWorkGate.Lease? = null
                 var releaseLease = true
+                var firstFailure: String? = null
                 try {
                     lease=LocalWorkGate.acquire("Benchmark")
                     val disqualified=mutableMapOf<String,String>()
@@ -146,12 +147,15 @@ internal object BenchmarkRunController {
                                 BenchmarkAttemptPolicy.failureResult(measured,measured.error ?: "Disqualified: ${measured.terminationReason}") else measured
                             // Native cleanup or worker death is confirmed before a row is accepted or another model opens.
                             withContext(Dispatchers.IO) {results.append(accepted)}
+                            if (accepted.error != null && firstFailure == null)
+                                firstFailure = "${accepted.model}: ${accepted.error}"
                             update(id) {it.copy(completedRows=it.completedRows+1,
                                 failedRows=it.failedRows+if(accepted.error!=null)1 else 0,revision=it.revision+1)}
                         }
                     }
                     update(id) { it.copy(status = if (it.failedRows == 0) "Comparison complete · results saved"
-                        else "Comparison complete · ${it.failedRows} failed rows; see Results") }
+                        else "Comparison complete · ${it.failedRows} failed rows; see Results",
+                        error = if (it.completedRows > 0 && it.failedRows == it.completedRows) firstFailure else null) }
                 } catch (cancelled: CancellationException) {
                     update(id) { it.copy(status = "Comparison stopped · completed results saved") }
                     throw cancelled

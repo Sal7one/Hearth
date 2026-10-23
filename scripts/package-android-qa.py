@@ -36,6 +36,9 @@ def main():
     identity = configured_identity((ROOT / "app/build.gradle.kts").read_text(), "qa")
     if not re.fullmatch(r"v" + re.escape(identity.version_name) + r"-rc\.[1-9]\d*", args.tag):
         parser.error("Tag must match the configured Android version and an RC number")
+    # Keep candidate downloads distinguishable on a phone even when Android's
+    # versionName remains stable across QA builds. The install identity is unchanged.
+    asset_version = args.tag.removeprefix("v")
     if git("status", "--porcelain"):
         raise SystemExit("Commit the reviewed source before binding release artifacts to it")
     commit = git("rev-parse", "HEAD")
@@ -76,13 +79,13 @@ def main():
         for flavor in ("play", "foss"):
             for abi in ABIS:
                 source = ROOT / f"app/build/outputs/apk/{flavor}/qa/app-{flavor}-{abi}-qa.apk"
-                name = f"hearth-{identity.version_name}-{flavor}-{abi}-qa.apk"
+                name = f"hearth-{asset_version}-{flavor}-{abi}-qa.apk"
                 apks.append({"flavor": flavor, "abi": abi, "name": name, "bytes": source.stat().st_size,
                              "sha256": digest(source), "source": source})
                 if abi == "arm64-v8a":
                     shutil.copyfile(source, staging / name)
                     if digest(staging / name) != apks[-1]["sha256"]: raise SystemExit("APK changed while being packaged")
-        other_name = f"hearth-{identity.version_name}-other-android-abis-qa.zip"
+        other_name = f"hearth-{asset_version}-other-android-abis-qa.zip"
         with zipfile.ZipFile(staging / other_name, "w", compression=zipfile.ZIP_STORED) as archive:
             others = [item for item in apks if item["abi"] != "arm64-v8a"]
             for item in others: archive.write(item["source"], item["name"])
@@ -100,7 +103,7 @@ def main():
             "androidDeviceInferenceVerified": False, "upgradeIdentity": upgrades,
             "apks": [{k: v for k, v in item.items() if k != "source"} for item in apks],
             "abiConfiguration": abi_configuration}
-        validation_name = f"hearth-{identity.version_name}-validation.zip"
+        validation_name = f"hearth-{asset_version}-validation.zip"
         aria_source = ROOT / 'build/aria2-corresponding-source.tar.gz'
         if not aria_source.is_file(): raise SystemExit('Build the aria2 corresponding-source archive before APK delivery')
         shutil.copyfile(aria_source, staging / 'aria2-corresponding-source.tar.gz')

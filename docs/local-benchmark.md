@@ -37,6 +37,11 @@ catalogue labels does not lock already discovered models: installation mapping
 uses receipts and bounded metadata, while actual selected model weights are
 still verified before runtime initialization.
 
+The isolated worker initializes `CommonJni` with its own application context
+before opening model engines. MainActivity initialization belongs to another
+process and cannot supply Vosk's private model/staging roots to this worker.
+Worker initialization does not start preference migration or model audits.
+
 Each individual recording, translation or voice sample has a **20-second hard
 maximum**, with **5 / 10 / 20 seconds** available on Setup and saved in preferences.
 The limit starts again for each sample in each measured pass. It covers the
