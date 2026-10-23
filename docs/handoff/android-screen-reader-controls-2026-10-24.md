@@ -1,6 +1,11 @@
 # Android Screen translation controls — 2026-10-24
 
-Release target: `v0.30.0-rc.9`, Android **0.30.0 / code 105**. Preserve the
+Published QA prerelease: [`v0.30.0-rc.9`](https://github.com/Sal7one/Hearth/releases/tag/v0.30.0-rc.9), Android **0.30.0 / code 105**.
+Code/tag subject: `98b29ce01ec9e692285e263e73f29aa33df19d17`;
+[PR #7](https://github.com/Sal7one/Hearth/pull/7) merged into `main` at `6b7bff6`.
+All 13 individual uploaded assets (ten APKs, source, checksum, receipt) have
+matching GitHub SHA-256 digests and sizes. Packaged APK VCS records match the
+code/tag subject. The feature branch was removed locally and remotely. Preserve the
 existing QA application ID and signing identity. Deliver each APK separately;
 no combined release ZIP. The desktop speech release remains
 [`desktop-v1.0.4-rc.1`](https://github.com/Sal7one/Hearth/releases/tag/desktop-v1.0.4-rc.1).
