@@ -24,7 +24,9 @@ import kotlinx.coroutines.*
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ModelsScreen(onDownloads: () -> Unit = {}, onVoices: () -> Unit = {}, initialSection: String = "Speech",
-    openIntegrity: Boolean = false, onIntegrityOpened: () -> Unit = {}) {
+    openIntegrity: Boolean = false, onIntegrityOpened: () -> Unit = {},
+    scopedTranslationModelId: String? = null, onTranslationSelected: ((String)->Unit)? = null,
+    scopedTranslationSource:String? = null,scopedTranslationTarget:String? = null) {
     val text = rememberUiText()
     val context = LocalContext.current
     if (!com.sal7one.transiber.runtime.LocalModelPolicy.allowed(context)) {
@@ -45,6 +47,9 @@ fun ModelsScreen(onDownloads: () -> Unit = {}, onVoices: () -> Unit = {}, initia
     var browseAll by rememberModelBrowseBoolean("browse-all", false)
     var tools by remember { mutableStateOf(false) }
     var sheet by rememberSaveable { mutableStateOf("") }
+    LaunchedEffect(onTranslationSelected != null) {
+        if (onTranslationSelected != null && sheet == "bundles") sheet = ""
+    }
     LaunchedEffect(openIntegrity) {
         if (openIntegrity) { sheet = "integrity"; onIntegrityOpened() }
     }
@@ -73,7 +78,7 @@ fun ModelsScreen(onDownloads: () -> Unit = {}, onVoices: () -> Unit = {}, initia
             Box {
                 IconButton(onClick = { tools = true }) { Icon(Icons.Default.MoreVert, text(UiR.string.library_tools)) }
                 DropdownMenu(tools, onDismissRequest = { tools = false }) {
-                    DropdownMenuItem(text = { Text(text(UiR.string.library_recommended)) }, onClick = { tools = false; sheet = "bundles" })
+                    if (onTranslationSelected == null) DropdownMenuItem(text = { Text(text(UiR.string.library_recommended)) }, onClick = { tools = false; sheet = "bundles" })
                     DropdownMenuItem(text = { Text(text(UiR.string.library_portable)) }, onClick = { tools = false; sheet = "portable" })
                     DropdownMenuItem(text = { Text(text(UiR.string.library_integrity)) }, onClick = { tools = false; sheet = "integrity" })
                 }
@@ -88,7 +93,7 @@ fun ModelsScreen(onDownloads: () -> Unit = {}, onVoices: () -> Unit = {}, initia
             Column(Modifier.weight(1f).verticalScroll(scroll).padding(18.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
                 error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
                 if (!loaded) { if (error == null) LinearProgressIndicator(Modifier.fillMaxWidth()); return@Column }
-                val simpleTask = section == "Speech" || section == "Translation"
+                val simpleTask = (section == "Speech" || section == "Translation") && onTranslationSelected == null
                 if (setupMode == SetupMode.BASIC && simpleTask) Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     FilterChip(!browseAll, onClick = { browseAll = false }, label = { Text(text(UiR.string.library_recommended)) })
                     FilterChip(browseAll, onClick = { browseAll = true }, label = { Text(text(UiR.string.library_all_models)) })
@@ -97,9 +102,9 @@ fun ModelsScreen(onDownloads: () -> Unit = {}, onVoices: () -> Unit = {}, initia
                     LocalBundleUi(config, onDownloads = onDownloads, translationOnly = section == "Translation", showHeading = false)
                 } else when (section) {
                     "Speech" -> com.sal7one.transiber.settings.SettingsSpeechLocalUi(config, repairRevision, repairEngine, showFullLibrary = true, update = update)
-                    "Translation" -> com.sal7one.transiber.settings.SettingsTranslateLocalUi(config,
+                    "Translation" -> com.sal7one.transiber.settings.SettingsTranslateLocalUi(config.copy(localTranslationModelId=scopedTranslationModelId ?: config.localTranslationModelId),
                         { change -> update { current -> change(current).copy(mode = current.mode, localTranslationEnabled = current.localTranslationEnabled) } },
-                        includeLegacy = true, showCaptionControls = false, repairRevision = repairRevision, repairModelId = repairModelId, showFullLibrary = true)
+                        includeLegacy = true, showCaptionControls = false, repairRevision = repairRevision, repairModelId = repairModelId, showFullLibrary = true,onLocalModelSelected=onTranslationSelected,selectionSource=scopedTranslationSource,selectionTarget=scopedTranslationTarget)
                     "Camera" -> com.sal7one.transiber.settings.SettingsOcrLocalUi(onDownloads)
                     "Voices" -> com.sal7one.transiber.settings.SettingsSpeechAloudUi(config, update, onOpenVoices = onVoices)
                 }
@@ -110,7 +115,7 @@ fun ModelsScreen(onDownloads: () -> Unit = {}, onVoices: () -> Unit = {}, initia
         Column(Modifier.fillMaxWidth().heightIn(max = 680.dp).verticalScroll(rememberScrollState()).padding(18.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)) {
             when (sheet) {
-                "bundles" -> LocalBundleUi(config, onDownloads = onDownloads, translationOnly = section == "Translation")
+                "bundles" -> if (onTranslationSelected == null) LocalBundleUi(config, onDownloads = onDownloads, translationOnly = section == "Translation")
                 "portable" -> PortableSetupUi(
                     onSpeechModels = { browseAll = true; section = "Speech"; sheet = "" },
                     onTranslationModels = { browseAll = true; section = "Translation"; sheet = "" },

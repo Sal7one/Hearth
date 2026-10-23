@@ -61,4 +61,45 @@ class OcrSelectionTest {
         assertEquals("hy-mt2-q4",selected.withSource("ja").withProfile("manga").translationModel("different-caption-model"))
         assertEquals("hy-mt2-q4",selected.copy(providerId="libretranslate").translationModel("different-caption-model"))
     }
+    @Test fun blankLegacyOverrideFollowsTheSavedSharedModelAndAnExplicitChoiceRemainsIndependent() {
+        for(blank in listOf(null,""," ","  ")) {
+            val legacy=OcrSelection(source="en",target="ar",localModelId=blank)
+            assertEquals("hy-mt2-q4",legacy.translationModel("hy-mt2-q4"))
+            assertEquals("marian-en-ar",legacy.translationModel("marian-en-ar"))
+            assertNull(ocrTranslationProblem(legacy,legacy.translationModel("hy-mt2-q4"),null,true))
+        }
+        val explicit=OcrSelection(source="en",target="ar").withTranslator("local","marian-en-ar")
+        assertEquals("marian-en-ar",explicit.translationModel("hy-mt2-q4"))
+        assertEquals("en",explicit.source);assertEquals("ar",explicit.target);assertEquals("latin",explicit.profileId)
+        assertEquals("hy-mt2-q4",explicit.withTranslator("local","").translationModel("hy-mt2-q4"))
+        val unknown=explicit.withTranslator("local","removed-custom-model")
+        assertEquals("removed-custom-model",unknown.translationModel("hy-mt2-q4"))
+        assertEquals(OcrTranslationProblem.UNKNOWN_MODEL,ocrTranslationProblem(unknown,unknown.translationModel("hy-mt2-q4"),null,true))
+    }
+
+    @Test fun englishArabicUsesTheImageDirectionForEveryAdvertisedLocalFamily() {
+        val selection=OcrSelection(source="en",target="ar")
+        val advertised=com.sal7one.common_jni.translation.TranslationCatalog.models.filter {it.supports("en","ar")}.map {it.id}+
+            com.sal7one.common_jni.translation.Ct2Catalog.models.filter {it.supports("en","ar")}.map {it.id}+TranslationOptions.MARIAN_EN_AR
+        assertTrue(advertised.size>5)
+        for(id in advertised) {
+            assertTrue("$id must offer its published English→Arabic direction","ar" in ocrTranslationTargets(selection,id,null,true))
+            assertNull("$id must use the chosen image source, independent of speech auto detection",ocrTranslationProblem(selection,id,null,true))
+        }
+        assertEquals(OcrTranslationProblem.EXPLICIT_SOURCE,ocrTranslationProblem(selection.copy(source="auto"),"hy-mt2-q4",null,true))
+        assertEquals(OcrTranslationProblem.UNSUPPORTED_PAIR,ocrTranslationProblem(selection,TranslationOptions.MARIAN_RU_EN,null,true))
+    }
+
+    @Test fun missingConfigurationIsExplainedSeparatelyFromAnUnsupportedDirection() {
+        val selected=OcrSelection(source="en",target="ar")
+        assertEquals(OcrTranslationProblem.CHOOSE_MODEL,ocrTranslationProblem(selected,"",null,true))
+        assertEquals(OcrTranslationProblem.CLOUD_LANGUAGES,ocrTranslationProblem(selected.copy(providerId="libretranslate"),"hy-mt2-q4",null,true))
+        assertEquals(OcrTranslationProblem.UNKNOWN_PROVIDER,ocrTranslationProblem(selected.copy(providerId="deleted-server"),"hy-mt2-q4",null,true))
+        assertEquals(OcrTranslationProblem.OFFLINE_PROVIDER,ocrTranslationProblem(selected.copy(providerId="libretranslate"),"hy-mt2-q4",null,false))
+        assertEquals(OcrTranslationProblem.SAME_LANGUAGE,ocrTranslationProblem(selected.copy(target="en"),"hy-mt2-q4",null,true))
+        assertNull(ocrTranslationProblem(selected.copy(translate=false,providerId="deleted-server"),"",null,false))
+        val cloud=CloudTranslationLanguages(mapOf("en" to "en"),mapOf("ar" to "ar"))
+        assertNull(ocrTranslationProblem(selected.copy(providerId="libretranslate"),"unknown-unused-local",cloud,true))
+    }
+
 }

@@ -1,0 +1,8 @@
+<resources>
+    <string name="ocr_browser_pack_coverage">%1$d reader packs · %2$d input languages</string>
+    <string name="ocr_browser_input_output">Read %1$s → translate to %2$s</string>
+    <string name="ocr_browser_input_explainer">Choose an OCR reader for the original text. The output language belongs to your translator; translating into Arabic does not require the Arabic-script reader.</string>
+    <string name="ocr_browser_recommended_input">Recommended for %1$s input: %2$s</string>
+    <string name="ocr_browser_hidden_readers">Your filters hide %1$d compatible or selected reader packs.</string>
+    <string name="ocr_browser_show_all_readers">Show all readers</string>
+</resources>

@@ -1,0 +1,8 @@
+<resources>
+    <string name="ocr_browser_pack_coverage">%1$d 个识别包 · %2$d 种输入语言</string>
+    <string name="ocr_browser_input_output">识别%1$s → 翻译为%2$s</string>
+    <string name="ocr_browser_input_explainer">根据原文选择 OCR 识别器。输出语言由翻译器决定；翻译为阿拉伯语并不需要阿拉伯文字识别器。</string>
+    <string name="ocr_browser_recommended_input">推荐的%1$s原文识别器：%2$s</string>
+    <string name="ocr_browser_hidden_readers">当前筛选条件隐藏了 %1$d 个兼容或已选的识别包。</string>
+    <string name="ocr_browser_show_all_readers">显示全部识别器</string>
+</resources>

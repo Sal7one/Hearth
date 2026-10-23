@@ -2,11 +2,71 @@ package com.sal7one.hearth.core.downloads
 
 import kotlinx.coroutines.*
 import java.io.File
+import java.io.ByteArrayInputStream
 import java.nio.file.Files
 import kotlin.test.*
 
 class Aria2TransferTest {
     private val versionStub="if [ \"${'$'}1\" = \"--version\" ]; then echo 'aria2 version 1.37.0'; echo 'Enabled Features: HTTPS'; exit 0; fi\n"
+    @Test fun exitedProcessPipeIsDrainedEvenWhenAvailableAlwaysReportsZero() = runBlocking {
+        val expected = "WARNING: linker: ignored Android metadata\naria2 version 1.37.0\nEnabled Features: HTTP, HTTPS"
+        val pipe = object : ByteArrayInputStream(expected.toByteArray()) { override fun available() = 0 }
+        val actual = Aria2Transfer.readVersionOutput(pipe)
+        assertEquals(expected, actual)
+        assertEquals("aria2 version 1.37.0", Aria2Transfer.validateVersion(actual, 0))
+    }
+
+    @Test fun capabilityValidationRequiresActualAriaVersionAndExactHttpsFeature() {
+        for (output in listOf("not aria2\nEnabled Features: HTTPS", "aria2 version 1.37.0\nEnabled Features: HTTP\nHTTPS unavailable",
+            "aria2 version 1.37.0\nEnabled Features: NOT_HTTPS")) {
+            assertFailsWith<Aria2ProbeException> { Aria2Transfer.validateVersion(output, 0) }
+        }
+        val failed = assertFailsWith<Aria2ProbeException> {
+            Aria2Transfer.validateVersion("CANNOT LINK EXECUTABLE: required native symbol is missing", 127)
+        }
+        assertTrue(failed.message.orEmpty().contains("exited 127"))
+        assertTrue(failed.message.orEmpty().contains("required native symbol is missing"))
+    }
+
+    @Test fun probeOutputRetainsItsBoundAndDownloadReaderFlushesUtf8WithoutFinalNewline() = runBlocking {
+        assertFailsWith<Aria2ProbeException> { Aria2Transfer.readVersionOutput(ByteArrayInputStream(ByteArray(16_385) { 65 })) }
+        val lines = mutableListOf<String>()
+        val pipe = object : ByteArrayInputStream("الملف غير متاح\rfirst\nlast diagnostic".toByteArray()) { override fun available() = 0 }
+        Aria2Transfer.readDownloadOutput(pipe, lines::add)
+        assertEquals(listOf("الملف غير متاح", "first", "last diagnostic"), lines)
+        lines.clear()
+        Aria2Transfer.readDownloadOutput(ByteArrayInputStream(("x".repeat(20_000) + "\nafter").toByteArray()), lines::add)
+        assertEquals(listOf("x".repeat(8_192), "after"), lines)
+    }
+
+    @Test fun warningBeforeVersionIsAcceptedAndProbeUsesItsOwnStableLocale() = runBlocking {
+        if (File.separatorChar == '\\') return@runBlocking
+        val root = Files.createTempDirectory("hearth-aria-probe-").toFile()
+        try {
+            val executable = File(root, "aria2c").apply {
+                writeText("#!/bin/sh\n[ \"${'$'}LC_ALL\" = C ] && [ \"${'$'}LANG\" = C ] || exit 15\n" +
+                    "printf 'WARNING: linker: additional Android diagnostic\\n' >&2\n" + versionStub)
+                setExecutable(true)
+            }
+            assertEquals("aria2 version 1.37.0", Aria2Transfer.probe(executable))
+        } finally { root.deleteRecursively() }
+    }
+
+    @Test fun cancellingSilentProbeReapsItsOwnedChildBeforeJoiningTheBlockedReader() = runBlocking {
+        if (File.separatorChar == '\\') return@runBlocking
+        val root = Files.createTempDirectory("hearth-aria-probe-cancel-").toFile()
+        try {
+            val marker = File(root, "owned.pid")
+            val executable = File(root, "aria2c").apply {
+                writeText("#!/bin/sh\nprintf '%s' \"${'$'}${'$'}\" > '${marker.path}'\nexec sleep 30\n")
+                setExecutable(true)
+            }
+            val task = launch(Dispatchers.IO) { Aria2Transfer.probe(executable) }
+            withTimeout(3_000) { while (!marker.isFile) delay(10) }
+            withTimeout(3_000) { task.cancelAndJoin() }
+            assertTrue(marker.readText().toLong() > 0)
+        } finally { root.deleteRecursively() }
+    }
     @Test fun argumentsSeparateFileAndConnectionConcurrencyAndDisableAmbientConfiguration() {
         val request = Aria2Request(File("/opt/aria2c"),File("/tmp/models/a model.part"),"https://example.org/model?revision=pinned",12,connections=8)
         val args = Aria2Transfer.arguments(request)
@@ -52,7 +112,7 @@ class Aria2TransferTest {
         if(File.separatorChar == '\\') return@runBlocking
         val root=Files.createTempDirectory("hearth-aria-fail-").toFile()
         try {
-            val executable=File(root,"aria2c").apply { writeText("#!/bin/sh\n"+versionStub+"echo 'TLS certificate verification failed'\nexit 60\n");setExecutable(true) }
+            val executable=File(root,"aria2c").apply { writeText("#!/bin/sh\n"+versionStub+"printf 'TLS certificate verification failed'\nexit 60\n");setExecutable(true) }
             val failure=assertFailsWith<IllegalStateException> { Aria2Transfer.download(Aria2Request(executable,File(root,"model.part"),"https://example.org/model",100)) }
             assertTrue(failure.message.orEmpty().contains("TLS certificate verification failed"))
         } finally {root.deleteRecursively()}

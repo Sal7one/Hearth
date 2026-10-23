@@ -41,6 +41,7 @@ internal fun TranslatorChooser(
     onModels: () -> Unit,
     automaticLabel: String? = null,
     location: SettingsLocation? = null,
+    initiallyExpanded: Boolean = false,
 ) {
     val uiText = rememberUiText()
 
@@ -49,7 +50,7 @@ internal fun TranslatorChooser(
     val localAllowed = com.sal7one.transiber.runtime.LocalModelPolicy.allowed(context)
     val advanced = com.sal7one.transiber.preferences.rememberSetupMode() == com.sal7one.transiber.preferences.SetupMode.ADVANCED
     val revision by ConversationTranslationSettings.revision.collectAsState()
-    var expanded by rememberSaveable { mutableStateOf(location != null) }
+    var expanded by rememberSaveable { mutableStateOf(location != null || initiallyExpanded) }
     var cloudTab by rememberSaveable { mutableStateOf(providerId !in setOf("", "local")) }
     val showCloud = !localAllowed || (location?.let { it == SettingsLocation.CLOUD } ?: cloudTab)
     var editing by remember { mutableStateOf<TextTranslationProvider?>(null) }

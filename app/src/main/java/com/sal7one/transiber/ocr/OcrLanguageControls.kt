@@ -21,7 +21,7 @@ import com.sal7one.transiber.caption.LanguagePickerContent
 /** Both entry points expose the same labelled controls, selected-row picker and capability explanation. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable internal fun OcrLanguageControls(selection: OcrSelection, targets: Set<String>, translator: String,
-    onChange: (OcrSelection) -> Unit, onModel: () -> Unit, enabled: Boolean = true, showMangaModes: Boolean = true) {
+    onChange: (OcrSelection) -> Unit, onModel: () -> Unit, enabled: Boolean = true, showMangaModes: Boolean = true, onTranslator: ()->Unit = {}, translationIssue: String? = null) {
     val uiText = rememberUiText()
 
     var picker by rememberSaveable { mutableStateOf<String?>(null) }
@@ -57,13 +57,17 @@ import com.sal7one.transiber.caption.LanguagePickerContent
                 modifier=Modifier.semantics { contentDescription=uiText(UiR.string.ui_translate_recognized_text_f69ef) })
             Column(Modifier.padding(start=8.dp)) {
                 Text(if(selection.translate) uiText(UiR.string.ui_translate_recognized_text_f69ef) else uiText(UiR.string.ui_original_text_only_7381b),style=MaterialTheme.typography.bodyMedium)
-                if(selection.translate)Text(translator,style=MaterialTheme.typography.bodySmall)
+
             }
         }
-        if(selection.translate && selection.target !in targets) Text(
-            if(selection.source==selection.target) uiText(UiR.string.ui_choose_a_different_destination_to_translate_or_turn_translation_o_55817)
+        TextButton(onClick=onTranslator,enabled=enabled && selection.translate,modifier=Modifier.fillMaxWidth().heightIn(min=48.dp)) {
+            Text(uiText(UiR.string.ocr_translator_change,translator))
+        }
+        if(selection.translate && (translationIssue!=null || selection.target !in targets)) Text(
+            translationIssue ?: if(selection.source==selection.target) uiText(UiR.string.ui_choose_a_different_destination_to_translate_or_turn_translation_o_55817)
             else uiText(UiR.string.ui_1_s_does_not_support_this_pair_yet_change_translate_to_or_choose_3834f, translator),
             style=MaterialTheme.typography.bodySmall,color=MaterialTheme.colorScheme.error)
+
     }
     picker?.let { which -> Dialog(onDismissRequest={picker=null},properties=DialogProperties(usePlatformDefaultWidth=false)) {
         Surface(Modifier.fillMaxSize().systemBarsPadding()) { LanguagePickerContent(

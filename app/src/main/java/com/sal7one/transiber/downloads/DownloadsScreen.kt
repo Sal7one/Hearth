@@ -221,6 +221,8 @@ fun DownloadsScreen(onBrowseModels: () -> Unit = {}, onVoices: () -> Unit = {}) 
     }
     if (item.networkWait) Text(uiText(UiR.string.download_queue_waiting_network), style = MaterialTheme.typography.bodySmall)
     if (item.backend.isNotBlank() && item.active) Text("${item.backend} · ${item.connections}× · ${formatDownloadMiB(item.bytesPerSecond, uiText.locale)} MiB/s", style = MaterialTheme.typography.bodySmall)
+    if (item.backendNotice.isNotBlank()) Text(item.backendNotice, style = MaterialTheme.typography.bodySmall,
+     maxLines = if (details) Int.MAX_VALUE else 3, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
     if (item.error.isNotBlank()) Text(item.error, color = MaterialTheme.colorScheme.error)
     else if (item.reason != 0 && stage in setOf(DownloadStage.FAILED, DownloadStage.PAUSED)) Text(
      uiText(if (stage == DownloadStage.FAILED) UiR.string.ui_downloadmanager_failed_reason_1_s_54785 else UiR.string.ui_paused_downloadmanager_reason_1_s_ea493, item.reason), color = MaterialTheme.colorScheme.error)

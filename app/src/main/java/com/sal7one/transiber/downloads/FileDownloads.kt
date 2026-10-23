@@ -34,7 +34,7 @@ data class FileDownload(val id: Long, val title: String, val status: Int, val re
  val backend: String = "", val connections: Int = 1, val bytesPerSecond: Long = 0, val transferMillis: Long = 0,
  val transferredBytes: Long = 0, val retryCount: Int = 0, val networkWait: Boolean = false,
  val verificationBytes: Long = 0, val verificationTotal: Long = 0, val preparingQueued: Boolean = false,
- val preparationAction: String = "") {
+ val preparationAction: String = "", val backendNotice: String = "") {
  val complete: Boolean get() = status == DownloadManager.STATUS_SUCCESSFUL
  val failed: Boolean get() = status == DownloadManager.STATUS_FAILED
  val installing get() = phase in setOf("Installing", "Verifying")
@@ -307,7 +307,7 @@ class FileDownloads(private val context: Context) {
     else -> DownloadManager.STATUS_RUNNING
    }, 0, j.optLong("bytes"), j.optLong("total", -1), phase, if (interrupted) "Transfer interrupted. Tap Retry to finish." else listOf(j.optString("error"), j.optString("diagnosticError")).filter(String::isNotBlank).joinToString("\n"), j.optString("location"), j.optString("installed"), j.optString("model"), j.optString("backend"),
     j.optInt("connections", 1), j.optLong("bytesPerSecond"), j.optLong("transferMillis"), j.optLong("transferredBytes"), j.optInt("retries"), j.optBoolean("networkWait"),
-    j.optLong("verificationBytes"), j.optLong("verificationTotal"), j.optBoolean("preparingQueued"), j.optString("preparationAction"))
+    j.optLong("verificationBytes"), j.optLong("verificationTotal"), j.optBoolean("preparingQueued"), j.optString("preparationAction"), j.optString("backendNotice"))
   } }
   val ids = prefs.getStringSet("ids", emptySet()).orEmpty().mapNotNull { it.toLongOrNull() }
   val legacy = if (ids.isEmpty()) emptyList() else buildList {

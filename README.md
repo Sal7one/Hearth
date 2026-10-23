@@ -25,21 +25,22 @@ provides a private caption link, a browser preview and separate controls for ext
 
 ## Download
 
-**[Hearth 0.30.0 RC7 — Android and Mac test release](https://github.com/Sal7one/Hearth/releases/tag/v0.30.0-rc.7)**
+**[Hearth 0.30.0 RC8 — Android and Mac test release](https://github.com/Sal7one/Hearth/releases/tag/v0.30.0-rc.8)**
 
 Includes the modern benchmark lab, model downloads/imports, separate website/manga
-screen translation, and the KMP desktop app with illustrated OBS setup. No model
+screen translation, and the KMP desktop app with illustrated OBS setup. RC8 repairs
+the screen translator chooser and aria2 HTTPS detection/download fallback. No model
 weights are bundled.
 
 | Download | Choose this for |
 | --- | --- |
-| **[Android Play ARM64 QA](https://github.com/Sal7one/Hearth/releases/download/v0.30.0-rc.7/hearth-0.30.0-rc.7-play-arm64-v8a-qa.apk)** | Galaxy S25 Ultra, S22 Ultra and most modern phones; cloud connections and local models |
-| [Android FOSS ARM64 QA](https://github.com/Sal7one/Hearth/releases/download/v0.30.0-rc.7/hearth-0.30.0-rc.7-foss-arm64-v8a-qa.apk) | Network-free edition; import models from files |
-| [Other Android APKs · individual downloads](https://github.com/Sal7one/Hearth/releases/tag/v0.30.0-rc.7) | Separate Play/FOSS APKs for ARMv7, x86, x86-64 and Universal; TVs use cloud connections |
-| [Mac Apple Silicon DMG](https://github.com/Sal7one/Hearth/releases/download/v0.30.0-rc.7/hearth-1.0.2-macos-arm64.dmg) | Desktop 1.0.2; ad hoc signed, not notarized |
-| [Website text extension](https://github.com/Sal7one/Hearth/releases/download/v0.30.0-rc.7/hearth-browser-extension-0.1.0.zip) | Chrome/Edge/Firefox; extract and load unpacked, then pair with Hearth |
+| **[Android Play ARM64 QA](https://github.com/Sal7one/Hearth/releases/download/v0.30.0-rc.8/hearth-0.30.0-rc.8-play-arm64-v8a-qa.apk)** | Galaxy S25 Ultra, S22 Ultra and most modern phones; cloud connections and local models |
+| [Android FOSS ARM64 QA](https://github.com/Sal7one/Hearth/releases/download/v0.30.0-rc.8/hearth-0.30.0-rc.8-foss-arm64-v8a-qa.apk) | Network-free edition; import models from files |
+| [Other Android APKs · individual downloads](https://github.com/Sal7one/Hearth/releases/tag/v0.30.0-rc.8) | Separate Play/FOSS APKs for ARMv7, x86, x86-64 and Universal; TVs use cloud connections |
+| [Mac Apple Silicon DMG](https://github.com/Sal7one/Hearth/releases/download/v0.30.0-rc.8/hearth-1.0.3-macos-arm64.dmg) | Desktop 1.0.3; ad hoc signed, not notarized |
+| [Website text extension](https://github.com/Sal7one/Hearth/releases/download/v0.30.0-rc.8/hearth-browser-extension-0.1.0.zip) | Chrome/Edge/Firefox; extract and load unpacked, then pair with Hearth |
 
-The [release page](https://github.com/Sal7one/Hearth/releases/tag/v0.30.0-rc.7)
+The [release page](https://github.com/Sal7one/Hearth/releases/tag/v0.30.0-rc.8)
 lists all ten Android APKs, the Mac installer, validation JSON/logs and checksums
 as individual downloads. The browser extension ZIP is its installable format;
 the downloader source archive is provided separately for license compliance. Windows
@@ -49,7 +50,7 @@ installer is presented as verified here. [Previous releases](https://github.com/
 Android 9+; device-audio capture requires Android 10+. The FOSS edition has **no
 network permission**. These are test-signed QA builds; Play and FOSS replace each
 other. **Update without uninstalling** to retain models, keys, settings and history.
-Version code 103 preserves the prior QA identity/signing. Android device acceptance
+Version code 104 preserves the prior QA identity/signing. Android device acceptance
 belongs to the owner. [CPU and TV support](docs/android-abi-support.md).
 
 ## Screenshots

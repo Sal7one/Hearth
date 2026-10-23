@@ -156,7 +156,13 @@ class DownloadService : Service() {
         downloads.progress(id) { it.remove("networkWait") }
         transferSlots.withSlot {
             val policy = settings.read()
-            val runtime = if (policy.backend != "http" && asset != null && asset.ranges.isEmpty()) Aria2Backend.prepare(this) else null
+            val selection = if (asset != null && asset.ranges.isEmpty()) selectAria2Runtime(policy.backend) { Aria2Backend.prepare(this) }
+                else Aria2RuntimeSelection(null)
+            val runtime = selection.runtime
+            downloads.progress(id) {
+                it.remove("backendNotice")
+                selection.notice?.let { notice -> it.put("backendNotice", notice) }
+            }
             check(policy.backend != "aria2" || runtime != null || asset?.ranges?.isNotEmpty() == true) { "aria2 is unavailable for this device or file. Select HTTP or Automatic in download settings." }
             val started = SystemClock.elapsedRealtime()
             if (runtime != null) {
@@ -231,6 +237,11 @@ class DownloadService : Service() {
             downloads.progress(id) { it.put("downloadComplete", true).put("sha256", actual.sha256).put("verifiedBytes", actual.bytes).put("uri", destination.toString()) }
             staged?.delete()
             staged?.let { File(it.path + ".aria2").delete() }
+            if (staged == null) {
+                // HTTP must never interpret aria2's sparse pieces as a contiguous prefix.
+                // Retain those pieces until the replacement payload is actually verified.
+                stagingFile(id).delete(); File(stagingFile(id).path + ".aria2").delete()
+            }
             install(id, modelId, asset)
         }
     }

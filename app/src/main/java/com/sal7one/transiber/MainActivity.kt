@@ -202,7 +202,10 @@ class MainActivity : AppCompatActivity() {
     val screenState = androidx.compose.runtime.saveable.rememberSaveableStateHolder()
     var tvSetupFeature by rememberSaveable { mutableStateOf<com.sal7one.transiber.setup.TvSetupFeature?>(null) }
     var setupStep by rememberSaveable { mutableStateOf(EasySetupStep.CHOICE) }
+    var translationForOcr by rememberSaveable {mutableStateOf(intent.getBooleanExtra("ocrTranslationSelection",false))}
+    val (ocrTranslationSelection,ocrTranslationStore)=com.sal7one.transiber.ocr.rememberOcrPreferences()
     fun go(next: Int) {
+     if(next!=1 && next!=2)translationForOcr=false
      focus.clearFocus()
      if (next == 15) {
       setupStep = EasySetupStep.CHOICE
@@ -224,7 +227,7 @@ class MainActivity : AppCompatActivity() {
     LaunchedEffect(Unit) { if (intent.getIntExtra("page", 0) == 12) { voiceLocation = captionVoiceLocation(); voiceEntry++ } }
     val requestedPage by navigation.collectAsState()
     LaunchedEffect(requestedPage) {
-     requestedPage?.let { if (it == 15) setupStep = EasySetupStep.CHOICE; if (it == 4) { speechLocation = SettingsLocation.CLOUD; speechEntry++ }; if (it == 12) { voiceLocation = captionVoiceLocation(); voiceEntry++ }; focus.clearFocus(); quickSettings = false; settingsReturns = emptyList(); route = AppNavigation.initial(it); homeDestination = null; showHome = false; navigation.value = null }
+     requestedPage?.let { translationForOcr = false; if (it == 15) setupStep = EasySetupStep.CHOICE; if (it == 4) { speechLocation = SettingsLocation.CLOUD; speechEntry++ }; if (it == 12) { voiceLocation = captionVoiceLocation(); voiceEntry++ }; focus.clearFocus(); quickSettings = false; settingsReturns = emptyList(); route = AppNavigation.initial(it); homeDestination = null; showHome = false; navigation.value = null }
     }
     var faceLayout by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(page, atHome, faceLayout) {
@@ -232,16 +235,16 @@ class MainActivity : AppCompatActivity() {
       com.sal7one.transiber.home.HomeServiceStore.remember(this@MainActivity, it)
      }
     }
-    var modelsSection by rememberSaveable { mutableStateOf("Speech") }
+    var modelsSection by rememberSaveable { mutableStateOf(if(translationForOcr)"Translation" else "Speech") }
     var reviewModelFiles by rememberSaveable { mutableStateOf(false) }
-    fun localModels(section: String) { modelsSection = section; go(1) }
+    fun localModels(section: String,forOcr:Boolean=false) {translationForOcr=forOcr;modelsSection = section;go(1)}
     fun speechSettings(location: SettingsLocation) { speechLocation = location; speechEntry++; go(4) }
     fun translationSettings(location: SettingsLocation) { translationLocation = location; translationEntry++; go(9) }
     fun voiceSettings(location: SettingsLocation? = null) {
      voiceLocation = location ?: if (com.sal7one.transiber.voice.VoiceSettings.choice(this@MainActivity).backend == "remote") SettingsLocation.CLOUD else SettingsLocation.LOCAL
      voiceEntry++; go(12)
     }
-    fun home() { focus.clearFocus(); quickSettings = false; settingsReturns = emptyList(); homeDestination = null; showHome = true }
+    fun home() { translationForOcr = false; focus.clearFocus(); quickSettings = false; settingsReturns = emptyList(); homeDestination = null; showHome = true }
     fun back() {
      focus.clearFocus()
      if (page == 15 && !tvUi && setupStep.back() != null) {
@@ -249,6 +252,7 @@ class MainActivity : AppCompatActivity() {
       return
      }
      settingsReturns.lastOrNull()?.takeIf { !tvUi && it.reachedFrom(route) }?.let { origin ->
+      if (origin.home || origin.origin.page !in setOf(1, 2)) translationForOcr = false
       route = origin.origin
       showHome = origin.home
       homeDestination = origin.homeDestination
@@ -259,7 +263,11 @@ class MainActivity : AppCompatActivity() {
      if (intent.action == android.content.Intent.ACTION_PROCESS_TEXT && page == 11 && route.isRoot) { finish(); return }
      if (tvUi) { home(); return }
      if (intent.getBooleanExtra("returnToReading", false) && (route.isRoot || page == intent.getIntExtra("page", 0))) finish()
-     else if (simple && (route.isRoot || page == homeDestination)) home() else route = route.back()
+     else if (simple && (route.isRoot || page == homeDestination)) home() else {
+      val previous = route.back()
+      if (previous.page !in setOf(1, 2)) translationForOcr = false
+      route = previous
+     }
     }
     fun settingsFeature(location: SettingsLocation, feature: SettingsFeature) {
      when (feature) {
@@ -326,7 +334,7 @@ class MainActivity : AppCompatActivity() {
       MainTab.entries.forEach { tab ->
        NavigationBarItem(
         selected = route.tab == tab,
-        onClick = { focus.clearFocus(); quickSettings = false; settingsReturns = emptyList(); route = route.select(tab) },
+        onClick = { translationForOcr = false; focus.clearFocus(); quickSettings = false; settingsReturns = emptyList(); route = route.select(tab) },
         icon = { Icon(when(tab) {
          MainTab.CAPTIONS -> Icons.Default.ClosedCaption
          MainTab.TALK -> Icons.Default.Forum
@@ -372,7 +380,11 @@ class MainActivity : AppCompatActivity() {
        ) else when(page) {
         0 -> CaptionHome(onModels = { go(1) }, onCloud = { speechSettings(SettingsLocation.CLOUD) }, onHistory = { go(16) })
         1 -> ModelsScreen(onDownloads = { go(2) }, onVoices = { voiceSettings(SettingsLocation.LOCAL) }, initialSection = modelsSection,
-            openIntegrity = reviewModelFiles, onIntegrityOpened = { reviewModelFiles = false })
+            openIntegrity = reviewModelFiles, onIntegrityOpened = { reviewModelFiles = false },
+            scopedTranslationModelId=if(translationForOcr)ocrTranslationSelection.localModelId else null,
+            onTranslationSelected=if(translationForOcr)({id ->ocrTranslationStore.update {it.withTranslator("local",id)}}) else null,
+            scopedTranslationSource=if(translationForOcr)ocrTranslationSelection.source else null,
+            scopedTranslationTarget=if(translationForOcr)ocrTranslationSelection.target else null)
         2 -> DownloadsScreen(onBrowseModels = { go(1) }, onVoices = { voiceSettings(SettingsLocation.LOCAL) })
         3 -> if (readySettings != null) SettingsScreen(
             initialConfig = readySettings,
@@ -393,7 +405,10 @@ class MainActivity : AppCompatActivity() {
         4 -> SettingsSpeechScreen(speechLocation, speechEntry, onHistory = { go(16) })
         5 -> CaptionScreen(onBrowseModels = { go(1) })
         7 -> ConversationScreen(onModels = { go(1) }, onCloud = { speechSettings(SettingsLocation.CLOUD) }, onLayoutChanged = { faceLayout = it }, initialFaceToFace = faceLayout, onVoices={voiceSettings()})
-        10 -> com.sal7one.transiber.ocr.CameraTranslateScreen(onModels = { localModels("Camera") }, onConnections = { translationSettings(SettingsLocation.CLOUD) }, onDownloads = { go(2) },onVoices={voiceSettings()},sharedImage=sharedImage,onShareConsumed={sharedImage=null},onReading={reading(preserveOrigin = true)})
+        10 -> com.sal7one.transiber.ocr.CameraTranslateScreen(onModels = { localModels("Camera") }, onConnections = { translationSettings(SettingsLocation.CLOUD) }, onDownloads = { go(2) },onVoices={voiceSettings()},sharedImage=sharedImage,onShareConsumed={sharedImage=null},onReading={reading(preserveOrigin = true)},onTranslationModels={
+            com.sal7one.transiber.preferences.UserPreferences.store(this@MainActivity,"translation-browser").edit().putBoolean("open",true).apply()
+            localModels("Translation",forOcr=true)
+        })
         11 -> com.sal7one.transiber.translation.TypedTranslateScreen(onModels={localModels("Translation")},onConnections={translationSettings(SettingsLocation.CLOUD)},onVoices={voiceSettings()},sharedText=sharedText,translateSharedTextImmediately=translateSharedTextImmediately,onShareConsumed={sharedText=null;translateSharedTextImmediately=false})
         12 -> com.sal7one.transiber.voice.VoiceSetup(onDownloads={go(2)}, initialLocation=voiceLocation, entryRevision=voiceEntry)
         16 -> com.sal7one.transiber.caption.history.CaptionHistoryScreen()

@@ -37,6 +37,8 @@ internal fun SettingsTranslateLocalUi(
     showCaptionControls: Boolean = true,
     repairRevision: Int = 0, repairModelId: String? = null,
     showFullLibrary: Boolean = false,
+    onLocalModelSelected: ((String)->Unit)? = null,
+    selectionSource:String? = null,selectionTarget:String? = null,
 ) {
     val uiText = rememberUiText()
     if (!com.sal7one.transiber.runtime.LocalModelPolicy.allowed(LocalContext.current)) {
@@ -61,8 +63,12 @@ internal fun SettingsTranslateLocalUi(
     val catalog = remember { translationBrowserItems() }
     val languageModel = rememberCaptionLanguageModel(config)
     val spoken = CaptionLanguages.effectiveSource(config, CloudConfigStore.sttMode(context), languageModel)
-    var source by com.sal7one.transiber.models.rememberModelBrowseString("translation-source", spoken.takeIf { it in catalog.flatMap { model -> model.sourceLanguages } } ?: "any")
-    var target by com.sal7one.transiber.models.rememberModelBrowseString("translation-target", config.target.languageTag)
+    val browsePrefix=if(onLocalModelSelected!=null)"ocr-translation" else "translation"
+    var source by com.sal7one.transiber.models.rememberModelBrowseString("$browsePrefix-source",selectionSource ?: spoken.takeIf {it in catalog.flatMap {model ->model.sourceLanguages}} ?: "any")
+    var target by com.sal7one.transiber.models.rememberModelBrowseString("$browsePrefix-target",selectionTarget ?: config.target.languageTag)
+    LaunchedEffect(selectionSource,selectionTarget) {
+        if(onLocalModelSelected!=null) {selectionSource?.let {source=it};selectionTarget?.let {target=it}}
+    }
     var query by com.sal7one.transiber.models.rememberModelBrowseString("translation-query", "")
     var kind by com.sal7one.transiber.models.rememberModelBrowseString("translation-kind", "any")
     var installedOnly by com.sal7one.transiber.models.rememberModelBrowseBoolean("translation-installed")
@@ -133,6 +139,13 @@ internal fun SettingsTranslateLocalUi(
         }
     }
     fun select(id: String, fixedTarget: String? = null) {
+        if(onLocalModelSelected!=null) {
+            onLocalModelSelected(id)
+            message=uiText(UiR.string.ocr_translator_saved_for_both)
+            error=if(selectionSource!=null && selectionTarget!=null && !TranslationOptions.supports(id,selectionSource,selectionTarget))
+                uiText(UiR.string.ui_1_s_does_not_support_2_s_3_s_choose_a_supported_language_pair_or_c8a2b,TranslationOptions.label(id),selectionSource,selectionTarget) else null
+            return
+        }
         update { current ->
             val requestedTarget = fixedTarget ?: target.takeIf { it != "any" && it in TranslationOptions.targetLanguages(id, source) }
             val next = current.copy(localTranslationModelId = id, textTranslationProviderId = "local",
@@ -209,6 +222,8 @@ internal fun SettingsTranslateLocalUi(
         OutlinedButton(enabled = importBatch?.active != true, onClick = { importer.launch(arrayOf("*/*")) }) { Text(uiText(UiR.string.model_import_batch_translation)) }
         com.sal7one.transiber.models.ModelImportStatus("translation-gguf")
         if (busy) LinearProgressIndicator(Modifier.fillMaxWidth())
+        if(onLocalModelSelected!=null && selectionSource!=null && selectionTarget!=null)Text(uiText(UiR.string.ocr_model_browser_pair,
+            TranslationLanguages.label(selectionSource),TranslationLanguages.label(selectionTarget)),style=MaterialTheme.typography.bodySmall)
         message?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
         error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween,
