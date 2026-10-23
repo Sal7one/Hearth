@@ -33,4 +33,17 @@ class ReadingTriggerTest {
     @Test fun acceptedPageDoesNotRepeat() {
         val p=ReadingTrigger().apply{mode="page"};p.movement(1000);assertTrue(p.ready(9000));p.accepted(9000);assertFalse(p.ready(15000))
     }
+    @Test fun movementFromControlsCanBeCancelledWithoutStartingAnotherCapture() {
+        val p=ReadingTrigger().apply {mode="page"}
+        p.movement(1000);p.accepted(2000)
+        p.movement(2500);p.reset()
+        assertFalse(p.ready(9000))
+    }
+    @Test fun rateLimitUsesElapsedTimeAndDoesNotAutoRetryDuringCooldown() {
+        val p=ReadingTrigger().apply {mode="page";settleMs=900;intervalMs=4000}
+        p.movement(0);assertTrue(p.ready(900));p.accepted(900)
+        p.movement(1000)
+        assertFalse(p.ready(1900));assertFalse(p.ready(4899));assertTrue(p.ready(4900))
+        assertFalse(p.ready(-1))
+    }
 }

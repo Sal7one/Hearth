@@ -1,5 +1,7 @@
 # Hearth model expansion: implementation and acceptance status
 
+**Android Screen translation update:** [reader controls and refresh fixes](android-screen-reader-controls-2026-10-24.md) covers the new overlay/setup, DataStore choices, unchanged-page detection, Back handling and validation.
+
 **Latest owner-test fixes:** [desktop feedback repairs](desktop-owner-feedback-2026-10-22.md)
 cover download concurrency/progress, settings and languages, and native Mac audio.
 

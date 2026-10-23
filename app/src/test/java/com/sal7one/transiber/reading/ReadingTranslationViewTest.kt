@@ -5,9 +5,12 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
 import android.os.Looper
+import android.util.TypedValue
 import android.view.View
 import android.widget.FrameLayout
 import android.widget.ImageView
+import android.widget.TextView
+import androidx.core.widget.TextViewCompat
 import com.sal7one.common_jni.ocr.OcrLine
 import com.sal7one.hearth.core.vision.*
 import com.sal7one.transiber.ocr.PixelCrop
@@ -56,6 +59,7 @@ class ReadingTranslationViewTest {
                 }finally{image.recycle()}
             }
             layout();view.updateRegions(listOf(region,untranslated),100,100,PixelCrop(0,0,100,100));view.update(listOf(box));layout()
+            assertTrue(view.motionExclusions().contains(PixelCrop(10,10,22,20))) // Tight RLE cleanup bounds, not its full page size.
             repeat(5) {checkPixels()}
             host.removeView(view);host.addView(view,FrameLayout.LayoutParams(100,100));layout();checkPixels()
             view.showOriginal=true;layout()
@@ -96,6 +100,84 @@ class ReadingTranslationViewTest {
             assertEquals(Color.BLACK,source.getPixel(15,15))
             view.showOriginal=false;layout()
             assertEquals(Color.WHITE,pixel());assertEquals(1,view.childCount)
+        } finally {activity.pause().stop().destroy();source.recycle()}
+    }
+
+    @Test fun motionMasksIncludeActualCleanupOutsideTextAndCropOffsetsButOriginalHasNone() {
+        val activity=Robolectric.buildActivity(Activity::class.java).setup().visible()
+        val source=Bitmap.createBitmap(200,200,Bitmap.Config.ARGB_8888).apply {eraseColor(Color.BLACK)}
+        val view=ReadingTranslationView(activity.get()){}
+        val host=FrameLayout(activity.get()).apply {
+            addView(ImageView(context).apply {setImageBitmap(source)},FrameLayout.LayoutParams(200,200))
+            addView(view,FrameLayout.LayoutParams(200,200))
+        }
+        activity.get().setContentView(host)
+        val mask=ComicMask(intArrayOf(50,50,20),100,100)
+        val paint=MangaPaint(mask,OcrRect(4,4,20,20),Color.WHITE,Color.BLACK,
+            MangaPatch(OcrRect(50,50,20,20),IntArray(400){Color.WHITE}))
+        val region=OcrRegion(OcrRect(5,5,15,10),.9f,paint=paint)
+        val pending=OcrRegion(OcrRect(75,10,10,10),.9f)
+        val box=TranslatedOcrBox(OcrLine(5,5,15,10,"source",.9f,region),"read")
+        fun layout() {
+            host.measure(View.MeasureSpec.makeMeasureSpec(200,View.MeasureSpec.EXACTLY),View.MeasureSpec.makeMeasureSpec(200,View.MeasureSpec.EXACTLY))
+            host.layout(0,0,200,200);shadowOf(Looper.getMainLooper()).idle()
+        }
+        try {
+            layout();view.updateRegions(listOf(region,pending),200,200,PixelCrop(40,60,140,160));view.update(listOf(box));layout()
+            val exclusions=view.motionExclusions()
+            assertTrue(exclusions.contains(PixelCrop(90,110,110,130))) // Cleanup is separate from the source line and label.
+            assertTrue(exclusions.any {it.left<=44 && it.top<=64 && it.right>=64 && it.bottom>=84})
+            assertTrue(exclusions.any {it.left<115 && it.top<70 && it.right>125 && it.bottom>80}) // Outline stroke too.
+            val drawn=Bitmap.createBitmap(200,200,Bitmap.Config.ARGB_8888)
+            try {host.draw(Canvas(drawn));assertEquals(Color.WHITE,drawn.getPixel(100,120))}finally{drawn.recycle()}
+            assertEquals(Color.BLACK,source.getPixel(100,120))
+            view.showOriginal=true
+            assertTrue(view.motionExclusions().isEmpty())
+            view.showOriginal=false
+            assertEquals(exclusions,view.motionExclusions())
+        } finally {activity.pause().stop().destroy();source.recycle()}
+    }
+
+    @Test fun textSizeControlsUpdateExistingLabelsOnceWithoutChangingCleanupOrSourcePixels() {
+        val activity=Robolectric.buildActivity(Activity::class.java).setup().visible()
+        val source=Bitmap.createBitmap(100,100,Bitmap.Config.ARGB_8888).apply {eraseColor(Color.BLACK)}
+        val view=ReadingTranslationView(activity.get()){}
+        val host=FrameLayout(activity.get()).apply {
+            addView(ImageView(context).apply {setImageBitmap(source)},FrameLayout.LayoutParams(100,100))
+            addView(view,FrameLayout.LayoutParams(100,100))
+        }
+        activity.get().setContentView(host)
+        val mask=ComicMask(intArrayOf(95,95,3),100,100)
+        val paint=MangaPaint(mask,OcrRect(5,5,80,70),Color.WHITE,Color.BLACK,
+            MangaPatch(OcrRect(90,90,10,10),IntArray(100){Color.WHITE}))
+        val region=OcrRegion(OcrRect(10,10,30,30),.9f,paint=paint)
+        val box=TranslatedOcrBox(OcrLine(10,10,30,30,"source",.9f,region),"Hi")
+        fun layout() {
+            host.measure(View.MeasureSpec.makeMeasureSpec(100,View.MeasureSpec.EXACTLY),View.MeasureSpec.makeMeasureSpec(100,View.MeasureSpec.EXACTLY))
+            host.layout(0,0,100,100);shadowOf(Looper.getMainLooper()).idle()
+        }
+        fun sp(value: Float)=TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP,value,view.resources.displayMetrics).toInt()
+        try {
+            layout();view.update(listOf(box),100,100,PixelCrop(0,0,100,100));layout()
+            val label=view.getChildAt(0) as TextView
+            assertEquals(sp(10f),TextViewCompat.getAutoSizeMinTextSize(label))
+            assertEquals(sp(24f),TextViewCompat.getAutoSizeMaxTextSize(label))
+            val exclusions=view.motionExclusions()
+            view.textSizeSp=28f;layout()
+            assertSame(label,view.getChildAt(0))
+            assertEquals(sp(34f),TextViewCompat.getAutoSizeMaxTextSize(label))
+            assertFalse(label.isLayoutRequested)
+            view.textSizeSp=28f
+            assertFalse(label.isLayoutRequested) // Re-emitting the same preference does no UI work.
+            assertEquals(exclusions,view.motionExclusions())
+            view.textSizeSp=0f;assertEquals(14f,view.textSizeSp)
+            assertEquals(sp(17f),TextViewCompat.getAutoSizeMaxTextSize(label))
+            view.textSizeSp=Float.NaN;assertEquals(20f,view.textSizeSp)
+            view.textSizeSp=100f;assertEquals(34f,view.textSizeSp)
+            layout()
+            val drawn=Bitmap.createBitmap(100,100,Bitmap.Config.ARGB_8888)
+            try {host.draw(Canvas(drawn));assertEquals(Color.WHITE,drawn.getPixel(95,95))}finally{drawn.recycle()}
+            assertEquals(Color.BLACK,source.getPixel(95,95))
         } finally {activity.pause().stop().destroy();source.recycle()}
     }
 }
