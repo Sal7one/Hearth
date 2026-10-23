@@ -65,7 +65,11 @@ internal fun speechState(
 
     val windowMs = chosen?.options?.get("windowMs")?.toIntOrNull()
     val responsiveness = Responsiveness.fromWindow(windowMs)
-    val threads = chosen?.options?.get("threads")?.toIntOrNull() ?: 4
+    val effectiveWindowMs = windowMs ?: Responsiveness.STANDARD.windowMs
+    val seconds = if (effectiveWindowMs % 1000 == 0) (effectiveWindowMs / 1000).toString() else (effectiveWindowMs / 1000.0).toString()
+    val fixedThreadsHint = if (chosen?.engineId == "nemotron-asr-local")
+        "This Nemotron runtime uses 4 GGML workers. Its current API cannot change that count." else null
+    val threads = if (fixedThreadsHint != null) 4 else chosen?.options?.get("threads")?.toIntOrNull() ?: 4
 
     val deviceOptions = buildList {
         add(SelectOption("", "System default"))
@@ -90,10 +94,11 @@ internal fun speechState(
         computeOptions = compute.options,
         computeIssue = compute.issue,
         threads = threads,
+        fixedThreadsHint = fixedThreadsHint,
         ready = descriptor?.available == true && languages.issue == null && compute.issue == null &&
             if (descriptor.kind == EngineKind.CLOUD) connectionConfigured(descriptor, chosen) else verified,
         placementLabel = if (descriptor?.kind == EngineKind.CLOUD) "Provider" else compute.selected.label + if (compute.issue != null) " unavailable" else "",
-        windowLabel = "${responsiveness.windowMs / 1000} s windows",
+        windowLabel = "$seconds s windows",
         modelDetail = modelCard?.name ?: if (descriptor?.kind == EngineKind.CLOUD) chosen?.modelId?.ifBlank { descriptor.defaultModel }.orEmpty() else SpeechCopy.NOT_CONFIGURED,
         unavailableReason = descriptor?.takeIf { !it.available }?.unavailableReason,
     )

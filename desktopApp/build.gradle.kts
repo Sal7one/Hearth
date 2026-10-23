@@ -36,9 +36,11 @@ kotlin {
 
 compose.desktop {
     application {
-        // Android Studio's Gradle daemon JBR can omit jpackage; use the full application toolchain.
+        // Keep Java 17 bytecode, but package Java 21: its Apple Silicon SHA intrinsics
+        // avoid seconds of software hashing while preserving every model integrity check.
+        // Android Studio's daemon JBR can also omit jpackage; use a full application JDK.
         val packagingJdk = project.extensions.getByType<JavaToolchainService>().launcherFor {
-            languageVersion.set(JavaLanguageVersion.of(17))
+            languageVersion.set(JavaLanguageVersion.of(21))
         }
         javaHome = providers.gradleProperty("hearthDesktopJavaHome")
             .orElse(packagingJdk.map { it.metadata.installationPath.asFile.absolutePath }).get()
@@ -47,7 +49,7 @@ compose.desktop {
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Exe)
             packageName = "Hearth"
-            packageVersion = providers.gradleProperty("hearthDesktopVersion").orElse("1.0.3").get()
+            packageVersion = providers.gradleProperty("hearthDesktopVersion").orElse("1.0.4").get()
             description = "Independent speech recognition, translation and voice pipelines"
             vendor = "Hearth"
             modules("java.desktop", "java.net.http", "jdk.httpserver", "jdk.crypto.ec", "java.logging", "java.prefs", "jdk.unsupported")

@@ -325,6 +325,15 @@ extern "C" JNIEXPORT jlong JNICALL HEARTH_TRANSLATION_JNI(createWithBackend)(JNI
     return source
 
 
+def prepare_sherpa_qwen_language(source):
+    """Match Android's retained Auto-language metadata before ASR scaffold removal."""
+    anchor = '        cleaned_ids.assign(std::next(asr_text_it), generated_ids.end());'
+    if source.count(anchor) != 1:
+        raise RuntimeError("Pinned sherpa Qwen language scaffold changed; review detected-language retention")
+    return source.replace(anchor,
+        '        if (prefix_text.size() > 19) result.lang = prefix_text.substr(9, prefix_text.size() - 19);\n' + anchor)
+
+
 def sherpa_install(source, ort_root, cache, jobs):
     """Build the pinned static sherpa-onnx C API for macOS arm64 and combine its archives."""
     pin = subprocess.check_output(["git", "-C", str(source), "rev-parse", "HEAD"], text=True).strip()
@@ -339,7 +348,15 @@ def sherpa_install(source, ort_root, cache, jobs):
                       (source / "sherpa-onnx/csrc/version.cc").read_text(encoding="utf-8"))
     if not match:
         raise RuntimeError("Unable to read the pinned sherpa-onnx version")
-    build = cache / "sherpa-build"
+    # Compile a disposable mirror so the upstream pin/clean-checkout checks keep
+    # their meaning. copy2 preserves unchanged input mtimes for incremental builds.
+    prepared_source = cache / "sherpa-source"
+    if prepared_source.exists():
+        shutil.rmtree(prepared_source)
+    shutil.copytree(source, prepared_source, symlinks=True, ignore=shutil.ignore_patterns(".git"))
+    decoder = prepared_source / "sherpa-onnx/csrc/offline-recognizer-qwen3-asr-impl.cc"
+    decoder.write_text(prepare_sherpa_qwen_language(decoder.read_text(encoding="utf-8")), encoding="utf-8")
+    build = cache / "sherpa-build-prepared"
     install = cache / "sherpa-install"
     # sherpa's pre-installed ORT probe looks for the unversioned dylib name.
     ort_lib = cache / "sherpa-ort-lib"
@@ -352,7 +369,7 @@ def sherpa_install(source, ort_root, cache, jobs):
     environment["SHERPA_ONNXRUNTIME_INCLUDE_DIR"] = str((ort_root / "include").resolve())
     environment["SHERPA_ONNXRUNTIME_LIB_DIR"] = str(ort_lib.resolve())
     configure = [
-        "cmake", "-S", str(source), "-B", str(build),
+        "cmake", "-S", str(prepared_source), "-B", str(build),
         "-DCMAKE_BUILD_TYPE=Release", f"-DCMAKE_INSTALL_PREFIX={install}",
         "-DCMAKE_OSX_ARCHITECTURES=arm64", "-DCMAKE_OSX_DEPLOYMENT_TARGET=13.0",
         "-DBUILD_SHARED_LIBS=OFF", "-DSHERPA_ONNX_ENABLE_C_API=ON",
@@ -993,6 +1010,9 @@ def main():
             "sherpaSourceTreeSha256": sherpa_source_tree,
             "sherpaInputsSha256": hashlib.sha256(json.dumps(SHERPA_INPUTS, sort_keys=True, separators=(",", ":")).encode()).hexdigest(),
             "sherpaVersion": sherpa_version,
+            "sherpaIdleWorkerPolicy": "upstream-defaults",
+            "sherpaPreparedSessionSha256": sha(args.build_dir.resolve() / target / "onnx/sherpa-source/sherpa-onnx/csrc/session.cc"),
+            "sherpaPreparedQwenDecoderSha256": sha(args.build_dir.resolve() / target / "onnx/sherpa-source/sherpa-onnx/csrc/offline-recognizer-qwen3-asr-impl.cc"),
         })
     if "ct2" in stages:
         upstreams.update({

@@ -39,7 +39,7 @@ object DesktopGpuValidation {
                 JsonObject(value.jsonObject.filterKeys { it != "sources" })
             })
             put("nativeSourceSetSha256", nativeManifest.getValue("sourceSetSha256").jsonPrimitive.content)
-            check(DesktopWhisperNative.protocolVersion() == 3 && LocalTranslationNative.promptProtocolVersion() == 5) { "GPU native protocol mismatch" }
+            check(DesktopWhisperNative.protocolVersion() == DesktopWhisperNative.PROTOCOL_VERSION && LocalTranslationNative.promptProtocolVersion() == 5) { "GPU native protocol mismatch" }
             check(DesktopWhisperNative.gpuAvailable(mode, 0)) { "Whisper cannot initialize $backend device 0" }
             check(LocalTranslationNative.gpuAvailable(mode, 0)) { "Translation cannot initialize $backend device 0" }
             report["speechDevices"] = Json.parseToJsonElement(DesktopWhisperNative.gpuDevices(mode).toString(Charsets.UTF_8))

@@ -28,10 +28,13 @@ class QwenSpeechModelTest {
         assertFailsWith<IllegalArgumentException> { QwenSpeechModel.language("") }
     }
 
-    @Test fun detectedLanguageOnlyAcceptsCodes() {
+    @Test fun detectedLanguageNormalizesKnownModelNamesToCodes() {
         assertEquals("en", QwenSpeechModel.detected("en-US"))
         assertEquals("ar", QwenSpeechModel.detected("AR"))
-        assertNull(QwenSpeechModel.detected("English"))
+        assertEquals("en", QwenSpeechModel.detected("English"))
+        assertEquals("ar", QwenSpeechModel.detected("Arabic"))
+        assertEquals("zh", QwenSpeechModel.detected("Chinese"))
+        assertNull(QwenSpeechModel.detected("unknown language"))
         assertNull(QwenSpeechModel.detected(""))
     }
 }

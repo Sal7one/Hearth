@@ -10,6 +10,15 @@ spec.loader.exec_module(module)
 
 
 class NativeBundleMetadataTests(unittest.TestCase):
+    def test_qwen_auto_language_is_retained_before_scaffold_is_removed(self):
+        anchor = '        cleaned_ids.assign(std::next(asr_text_it), generated_ids.end());'
+        prepared = module.prepare_sherpa_qwen_language(anchor)
+        self.assertLess(prepared.index('result.lang = prefix_text.substr'), prepared.index('cleaned_ids.assign'))
+        self.assertIn('if (prefix_text.size() > 19)', prepared)
+        self.assertNotIn('result.lang', anchor)
+        with self.assertRaisesRegex(RuntimeError, 'language scaffold changed'):
+            module.prepare_sherpa_qwen_language('changed upstream')
+
     def test_incremental_cpu_stage_does_not_relabel_metal_binary(self):
         with tempfile.TemporaryDirectory() as temp:
             bundle = Path(temp)

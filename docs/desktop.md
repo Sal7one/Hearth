@@ -11,7 +11,7 @@ conditions through the Android application.
 | Area | Desktop implementation |
 | --- | --- |
 | Inputs | Mac system audio through ScreenCaptureKit, typed text, a chosen microphone/virtual audio device, PCM WAV and native-system-supported audio/video files. |
-| Local recognition | Pinned whisper.cpp, Qwen3-ASR, Moonshine/Omnilingual/Phonon (sherpa-onnx), Vosk (Kaldi), TranscribePsy (parakeet/ggml) and Nemotron 3.5 (NeMo ggml) on macOS arm64, all CPU. Live recognition uses utterance windows; it is not a token-streaming decoder. |
+| Local recognition | Pinned whisper.cpp with CPU/Metal and an opt-in Windows CUDA build; Qwen3-ASR, Moonshine/Omnilingual/Phonon (sherpa-onnx), Vosk (Kaldi), TranscribePsy (parakeet/ggml) and Nemotron 3.5 (NeMo ggml) use CPU on macOS arm64. Live recognition uses utterance windows; it is not a token-streaming decoder. |
 | Local translation | Hearth's existing llama.cpp translation model/prompt protocol plus pinned CTranslate2 QuickMT/SMaLL-100 packages, with pinned EuroLLM/Riva catalog entries and explicit verified custom model paths. |
 | Local voice | Supertonic 3 (F1–F5/M1–M5), MOSS-TTS Nano, Ming-3.0 local (experimental, English/Chinese), OmniVoice (24 kHz), Magpie (22.05 kHz) and Chatterbox V3 (24 kHz, experimental). |
 | Cloud stages | Independently configured OpenAI-compatible STT, chat translation and WAV TTS endpoints; local compatible servers may omit credentials. Provider keys never enter the model downloader. |
@@ -43,9 +43,26 @@ and restart an older running app after replacing its packaged build.
 
 Mac builds now compile Metal by default for Whisper and GGUF translation;
 `--no-metal` creates an explicit CPU build. Both engines expose CPU/Metal choices
-only when supported by their actual native adapter and device. Fresh routes
-prefer an available GPU, and saved CPU choices remain intact. Qwen3-ASR,
+only when supported by their actual native adapter and device. Fresh routes and
+older/imported setups without a compute choice prefer an available GPU; explicit
+saved CPU/GPU choices remain intact. The resolved choice is saved before a session starts. Qwen3-ASR,
 CTranslate2 and local TTS adapters currently use CPU. Qwen3-ASR is macOS arm64 only.
+
+Live speech uses the displayed four-second Standard window for every engine,
+or the explicitly selected window. A 600 ms trailing pause can finish a shorter
+utterance. Only 200 ms of leading silence is retained, with caption timestamps
+still referring to the original audio. File transcription retains its longer
+15/20-second defaults and all audio samples. Whisper live sessions use one greedy
+decode with a bounded token budget and remember the first detected language;
+file Auto mode continues detecting each window. A live token-limit failure is
+reported instead of publishing a truncated final. Qwen Auto results retain the
+detected language and normalize it to a source code for translation.
+
+Installers bundle Java 21 while shared bytecode and Android remain on Java 17.
+On the tested Apple M4 Pro, Java 21 enabled hardware SHA hashing and verified the
+same 756 MB model file in about 0.5 seconds versus 3.3 seconds on Java 17, with
+identical hashes. Native extraction also verifies only each requested library and
+its dependencies, avoiding repeated full-bundle scans during startup.
 
 The [October 22 hardware receipt](research/desktop-metal-inference-2026-10-22.json)
 records real Whisper and English→Arabic GGUF inference on an Apple M4 Pro,
@@ -53,6 +70,10 @@ positive GPU model allocations, all 25 translation layers offloaded, completed
 inference counters and CPU/GPU outputs. The packaged launcher can repeat this
 with `scripts/desktop/validate-gpu.py --backend metal` and explicit model/WAV paths.
 These single-fixture timings do not establish broad quality or performance.
+
+The [24 October performance handover](handoff/desktop-speech-performance-2026-10-24.md)
+records the restored Metal default, live buffering and startup fixes, actual
+Turbo/Qwen/Nemotron timings, and their remaining latency/quality limits.
 
 In **Models**, the hardware menu combines with stage, search and installed filters.
 Choose **GPU available here** for the current computer, **All GPU paths** for the
@@ -147,7 +168,8 @@ The OS bridge registers these specific chords; it installs no keyboard hook.
 
 ## Build and run
 
-Use JDK 17, Python 3, CMake 3.22 or newer, and Rust 1.99 (Ming). `hearthDesktopOnly=true`
+Use JDK 17 for compilation and JDK 21 for installer packaging, Python 3,
+CMake 3.22 or newer, and Rust 1.99 (Ming). `hearthDesktopOnly=true`
 avoids requiring an Android SDK for a desktop build. Without that property, the
 ordinary Android project and all its checks remain enabled.
 
@@ -196,7 +218,7 @@ Validate the actual packaged launcher with `python3 scripts/desktop/check-packag
 The `--self-check <report-file>` entry opens no window/microphone/model; it checks
 packaged native adapters, audio/crypto services and authenticated loopback HTTP.
 
-The current desktop installer version is `1.0.3`, independent of Android's version;
+The current desktop installer version is `1.0.4`, independent of Android's version;
 macOS installer versions require a nonzero major. Use
 `-PhearthDesktopVersion=MAJOR.MINOR.PATCH` to change it. Builds target Windows x64,
 macOS Apple Silicon and macOS Intel, but this branch's native artifacts and real

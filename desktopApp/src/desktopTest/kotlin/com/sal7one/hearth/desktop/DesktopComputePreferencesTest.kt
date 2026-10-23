@@ -6,6 +6,8 @@ import com.sal7one.hearth.desktop.ui.language.stageSetupIssue
 import com.sal7one.hearth.desktop.ui.screens.settings.*
 import com.sal7one.hearth.desktop.ui.screens.speech.*
 import com.sal7one.hearth.desktop.ui.screens.translation.translationState
+import kotlinx.coroutines.runBlocking
+import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.test.*
 
@@ -48,6 +50,47 @@ class DesktopComputePreferencesTest {
         assertNotNull(stageSetupIssue(PipelineConfig(speech = route), PipelineStage.STT, listOf(engine), emptyMap()))
     }
 
+    @Test fun legacyActiveAndRememberedRoutesResolveOnlyMissingComputeChoices() {
+        val speech = engine(acceleration = setOf("cpu", "metal"))
+        val translation = engine(PipelineStage.TRANSLATION, setOf("cpu", "metal"))
+        val legacy = EngineSelection(speech.id, "large-turbo", "/verified/speech",
+            options = mapOf("sha256" to "pinned", "threads" to "6", "windowMs" to "2000"))
+        val explicitCpu = EngineSelection(translation.id, "translator", "/verified/translation",
+            options = mapOf("acceleration" to "cpu"))
+        val config = PipelineConfig(sourceLanguage = "en", targetLanguage = "ar", speech = legacy, translation = explicitCpu)
+        val resolved = config.withDetectedCompute(listOf(speech, translation))
+        assertEquals(legacy.copy(options = legacy.options + ("acceleration" to "metal")), resolved.speech)
+        assertEquals(explicitCpu, resolved.translation)
+        assertEquals("en", resolved.sourceLanguage)
+        assertEquals(resolved, resolved.withDetectedCompute(listOf(speech, translation)))
+        assertEquals(resolved, config.chooseEngine(speech))
+        assertEquals(resolved.speech, PipelineConfig().chooseEngine(speech, config).speech)
+        assertSame(config, config.withDetectedCompute(listOf(speech.copy(available = false), translation)))
+        assertSame(config, config.withDetectedCompute(listOf(speech.copy(acceleration = setOf("cpu")), translation)))
+    }
+
+    @Test fun resolvedLegacyComputeSurvivesRestartAndRemainsInRememberedRoute() = runBlocking {
+        val directory = Files.createTempDirectory("hearth-compute-migration-")
+        val descriptor = engine(acceleration = setOf("cpu", "metal"))
+        val legacy = PipelineConfig(speech = EngineSelection(descriptor.id, "pinned", "/verified/model",
+            options = mapOf("sha256" to "integrity-pin", "threads" to "6")))
+        try {
+            val initial = DesktopSettingsStore(directory)
+            try {
+                initial.save(legacy)
+                initial.save(initial.load().withDetectedCompute(listOf(descriptor)))
+            } finally { initial.closeAndJoin() }
+            val reopened = DesktopSettingsStore(directory)
+            try {
+                val saved = reopened.load()
+                assertEquals("metal", saved.speech?.options?.get("acceleration"))
+                assertEquals("integrity-pin", saved.speech?.options?.get("sha256"))
+                assertEquals("6", saved.speech?.options?.get("threads"))
+                assertEquals(saved.speech, reopened.engineSetups.value[descriptor.id]?.speech)
+            } finally { reopened.closeAndJoin() }
+        } finally { directory.toFile().deleteRecursively() }
+    }
+
     @Test fun speechAndTranslationMappersKeepTheirOwnComputeSelectionsAndReadiness() {
         val speech = engine(acceleration = setOf("cpu", "cuda"))
         val translation = engine(PipelineStage.TRANSLATION, setOf("cpu", "metal"))
@@ -70,5 +113,28 @@ class DesktopComputePreferencesTest {
         assertEquals(Compute.CUDA, withoutCuda.compute)
         assertFalse(withoutCuda.ready)
         assertNotNull(withoutCuda.computeIssue)
+    }
+
+    @Test fun nemotronShowsItsEffectiveWorkersInsteadOfAnIgnoredSavedPreference() {
+        val descriptor = engine().copy(id = "nemotron-asr-local")
+        val config = PipelineConfig(speech = EngineSelection(descriptor.id, options = mapOf("threads" to "12")))
+        val state = speechState(listOf(descriptor), config, emptyList(), emptyMap(), emptyList(), null)
+        assertEquals(4, state.threads)
+        assertNotNull(state.fixedThreadsHint)
+        assertEquals("12", config.speech?.options?.get("threads"))
+        val whisper = descriptor.copy(id = "whisper-local")
+        val adjustable = speechState(listOf(whisper), config.copy(speech = config.speech?.copy(engineId = whisper.id)),
+            emptyList(), emptyMap(), emptyList(), null)
+        assertEquals(12, adjustable.threads)
+        assertNull(adjustable.fixedThreadsHint)
+    }
+
+    @Test fun customImportedSpeechWindowDisplaysItsActualDuration() {
+        val descriptor = engine()
+        for ((milliseconds, label) in listOf("7000" to "7 s windows", "1500" to "1.5 s windows")) {
+            val config = PipelineConfig(speech = EngineSelection(descriptor.id, options = mapOf("windowMs" to milliseconds)))
+            val state = speechState(listOf(descriptor), config, emptyList(), emptyMap(), emptyList(), null)
+            assertEquals(label, state.windowLabel)
+        }
     }
 }
