@@ -70,6 +70,7 @@ internal fun voicesState(capabilities: List<EngineDescriptor>, config: PipelineC
         statusLabel = when {
             descriptor == null -> "Off"
             !descriptor.available -> "Unavailable"
+            descriptor.requiresModel && chosen?.modelId?.let {installations[it]?.checking}==true -> "Checking saved model"
             descriptor.requiresModel && !verified -> "Choose a model"
             descriptor.kind == EngineKind.CLOUD -> if (ready) "Connection configured" else "Configure connection"
             else -> "Ready"

@@ -35,6 +35,7 @@ internal data class TranslationState(
     val computeOptions: List<Compute> = listOf(Compute.CPU),
     val threads: Int = 4,
     val ready: Boolean = false,
+    val checking: Boolean = false,
     val modelDetail: String = "No model selected",
     val placementLabel: String = "CPU",
     val computeIssue: String? = null,

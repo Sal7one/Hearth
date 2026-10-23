@@ -34,80 +34,6 @@ import com.sal7one.hearth.desktop.ui.components.HearthTextField
 import com.sal7one.hearth.desktop.ui.theme.HearthTheme
 import com.sal7one.hearth.desktop.ui.theme.HearthType
 
-/** OBS overlay: a real URL while running, a plain statement when it is not. */
-@Composable
-internal fun OverlayIntegrationCard(
-    state: IntegrationsState,
-    actions: IntegrationsActions,
-    modifier: Modifier = Modifier,
-) {
-    val colors = HearthTheme.colors
-    HearthCard(modifier, padding = 18.dp) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Column(Modifier.weight(1f)) {
-                Text(IntegrationsCopy.OBS, style = HearthType.h3.copy(fontSize = 15.sp), color = colors.text)
-                Spacer(Modifier.height(3.dp))
-                Text(IntegrationsCopy.OBS_DETAIL, style = HearthType.small, color = colors.muted)
-            }
-            Chip(IntegrationsCopy.RECOMMENDED, tone = ChipTone.Accent)
-        }
-        Spacer(Modifier.height(14.dp))
-
-        Box(
-            Modifier
-                .fillMaxWidth()
-                .height(150.dp)
-                .background(
-                    Brush.linearGradient(listOf(colors.surface3, colors.bg)),
-                    RoundedCornerShape(12.dp),
-                )
-                .border(1.dp, colors.border, RoundedCornerShape(12.dp)),
-            contentAlignment = Alignment.BottomCenter,
-        ) {
-            Box(
-                Modifier
-                    .fillMaxWidth()
-                    .padding(14.dp)
-                    .background(Color.Black.copy(alpha = 0.6f), RoundedCornerShape(8.dp))
-                    .padding(horizontal = 12.dp, vertical = 9.dp),
-            ) {
-                Text(
-                    if (state.running) "Captions appear here, over any scene." else IntegrationsCopy.NOT_RUNNING_NOTE,
-                    style = HearthType.small,
-                    color = Color.White.copy(alpha = 0.75f),
-                )
-            }
-        }
-
-        Spacer(Modifier.height(12.dp))
-        Text(IntegrationsCopy.OVERLAY_URL.uppercase(), style = HearthType.micro, color = colors.muted)
-        Spacer(Modifier.height(6.dp))
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                state.overlayUrlDisplay,
-                style = HearthType.monoSmall,
-                color = colors.textDim,
-                maxLines = 1,
-                modifier = Modifier
-                    .weight(1f)
-                    .background(colors.surface2, RoundedCornerShape(10.dp))
-                    .border(1.dp, colors.border, RoundedCornerShape(10.dp))
-                    .padding(horizontal = 12.dp, vertical = 10.dp),
-            )
-            Spacer(Modifier.width(8.dp))
-            HearthButton(
-                IntegrationsCopy.COPY,
-                actions.onCopyOverlayUrl,
-                tone = ButtonTone.Secondary,
-                size = ButtonSize.Small,
-                enabled = state.running,
-            )
-        }
-        Spacer(Modifier.height(10.dp))
-        Text(IntegrationsCopy.OVERLAY_NOTE, style = HearthType.small, color = colors.muted)
-    }
-}
-
 /** External-app API: endpoint, token, and the limits the server actually enforces. */
 @Composable
 internal fun ApiIntegrationCard(
@@ -126,37 +52,11 @@ internal fun ApiIntegrationCard(
             Chip(IntegrationsCopy.BETA, tone = ChipTone.Neutral)
         }
         Spacer(Modifier.height(14.dp))
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(if (state.running) state.baseUrl else "API address available after Start",
-                style = HearthType.monoSmall, color = colors.textDim, modifier = Modifier.weight(1f))
-            HearthButton("Copy address", actions.onCopyApiAddress, tone = ButtonTone.Secondary,
-                size = ButtonSize.Small, enabled = state.running)
-        }
-        Spacer(Modifier.height(12.dp))
-        Text(IntegrationsCopy.API_TOKEN.uppercase(), style = HearthType.micro, color = colors.muted)
-        Spacer(Modifier.height(6.dp))
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                if (state.running) "hrth_live_••••••••••••" else "Not issued yet",
-                style = HearthType.monoSmall,
-                color = if (state.running) colors.textDim else colors.faint,
-                modifier = Modifier.weight(1f),
-            )
-            HearthButton(
-                IntegrationsCopy.COPY_TOKEN,
-                actions.onCopyApiToken,
-                tone = ButtonTone.Secondary,
-                size = ButtonSize.Small,
-                enabled = state.running,
-            )
-        }
-
-        Spacer(Modifier.height(14.dp))
         Text(IntegrationsCopy.SEND.uppercase(), style = HearthType.micro, color = colors.muted)
         Spacer(Modifier.height(6.dp))
         val base = if (state.running) state.baseUrl else "http://127.0.0.1:—"
         Text(
-            "curl -X POST $base/v1/sessions \\\n  -H \"Authorization: Bearer \$TOKEN\" \\\n  -d '{\"text\":\"Good evening\",\"targetLanguage\":\"ar\"}'",
+            "curl -X POST $base/v1/sessions \\\n  -H \"Authorization: Bearer \$TOKEN\" \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\"text\":\"Good evening\",\"targetLanguage\":\"ar\",\"voiceEnabled\":false}'",
             style = HearthType.monoSmall,
             color = colors.textDim,
             modifier = Modifier
@@ -198,7 +98,7 @@ internal fun BrowserIntegrationCard(state: IntegrationsState, actions: Integrati
             "For manga images or another app, use Reading → Screen translation.", style = HearthType.small, color = colors.muted)
         Spacer(Modifier.height(12.dp))
         Text("Paste the extension origin shown in its popup, save access, then start the service. " +
-            "Copy this service address and API token into the extension. Website origins cannot be trusted here.",
+            "Use the shared connection details above to copy the address and API token into the extension. Website origins cannot be trusted here.",
             style = HearthType.small, color = colors.muted)
         Spacer(Modifier.height(12.dp))
         HearthTextField(origin, { origin = it }, "chrome-extension://… or moz-extension://…")
@@ -213,5 +113,31 @@ internal fun BrowserIntegrationCard(state: IntegrationsState, actions: Integrati
         Text("Saving or removing access stops the service and invalidates its old token. " +
             "Provider keys stay in Hearth. The extension translates only after you start it for a tab.",
             style = HearthType.small, color = colors.muted)
+    }
+}
+
+/** One shared credential row serves browser extensions and developer API clients. OBS uses its separate read-only link. */
+@Composable
+internal fun IntegrationConnectionDetails(state: IntegrationsState, actions: IntegrationsActions) {
+    val colors = HearthTheme.colors
+    HearthCard(Modifier.fillMaxWidth(), padding = 18.dp) {
+        Text("Connection details for your apps", style = HearthType.h3, color = colors.text)
+        Spacer(Modifier.height(6.dp))
+        Text("Use these for the browser extension or another trusted app. OBS only needs its caption link above.",
+            style = HearthType.small, color = colors.muted)
+        Spacer(Modifier.height(14.dp))
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Text(if (state.running) state.baseUrl else "Start the connection to get an address", style = HearthType.monoSmall,
+                color = colors.textDim, modifier = Modifier.weight(1f))
+            HearthButton("Copy address", actions.onCopyApiAddress, tone = ButtonTone.Secondary, size = ButtonSize.Small,
+                enabled = state.running && !state.busy)
+        }
+        Spacer(Modifier.height(12.dp))
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Text(if (state.running) "API token is hidden · copy only for a trusted app" else "A private API token is created when you start",
+                style = HearthType.small, color = colors.muted, modifier = Modifier.weight(1f))
+            HearthButton("Copy API token", actions.onCopyApiToken, tone = ButtonTone.Secondary, size = ButtonSize.Small,
+                enabled = state.running && !state.busy)
+        }
     }
 }

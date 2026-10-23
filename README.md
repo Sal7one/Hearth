@@ -20,32 +20,37 @@ independent STT, translation and voice stages, floating captions and an OBS/exte
 app interface. Models and provider keys are managed separately.
 [Desktop implementation, build targets and current coverage](docs/desktop.md).
 
+[Set up OBS captions in four steps](docs/obs-setup.md). The Integrations page
+provides a private caption link, a browser preview and separate controls for external apps.
+
 ## Download
 
-**[Hearth 0.27.3 — release notes and downloads](https://github.com/Sal7one/Hearth/releases/tag/v0.27.3)**
+**[Hearth 0.30.0 RC7 — Android and Mac test release](https://github.com/Sal7one/Hearth/releases/tag/v0.30.0-rc.7)**
 
-Simpler speech, translation and voice setup, searchable model downloads, shared
-JSON setups, expanded model families and an Arabic/English article-speech SDK.
-Back returns directly to your settings sheet, keeping its position and options.
+Includes the modern benchmark lab, model downloads/imports, separate website/manga
+screen translation, and the KMP desktop app with illustrated OBS setup. No model
+weights are bundled.
 
-Choose **ARM64** for Galaxy S25 Ultra, S22 Ultra and most modern phones.
-Choose **Universal** if you do not know your phone or TV's CPU.
+| Download | Choose this for |
+| --- | --- |
+| **[Android Play ARM64 QA](https://github.com/Sal7one/Hearth/releases/download/v0.30.0-rc.7/hearth-0.30.0-rc.7-play-arm64-v8a-qa.apk)** | Galaxy S25 Ultra, S22 Ultra and most modern phones; cloud connections and local models |
+| [Android FOSS ARM64 QA](https://github.com/Sal7one/Hearth/releases/download/v0.30.0-rc.7/hearth-0.30.0-rc.7-foss-arm64-v8a-qa.apk) | Network-free edition; import models from files |
+| [Other Android APKs · individual downloads](https://github.com/Sal7one/Hearth/releases/tag/v0.30.0-rc.7) | Separate Play/FOSS APKs for ARMv7, x86, x86-64 and Universal; TVs use cloud connections |
+| [Mac Apple Silicon DMG](https://github.com/Sal7one/Hearth/releases/download/v0.30.0-rc.7/hearth-1.0.2-macos-arm64.dmg) | Desktop 1.0.2; ad hoc signed, not notarized |
+| [Website text extension](https://github.com/Sal7one/Hearth/releases/download/v0.30.0-rc.7/hearth-browser-extension-0.1.0.zip) | Chrome/Edge/Firefox; extract and load unpacked, then pair with Hearth |
 
-| Device / edition | Cloud connections and local models | Offline imports only |
-| --- | --- | --- |
-| **Modern phone · ARM64** | **[Download APK](https://github.com/Sal7one/Hearth/releases/download/v0.27.3/hearth-0.27.3-play-qa-arm64-v8a.apk)** | [Download APK](https://github.com/Sal7one/Hearth/releases/download/v0.27.3/hearth-0.27.3-foss-qa-arm64-v8a.apk) |
-| **TV or unknown CPU · Universal** | [Download APK](https://github.com/Sal7one/Hearth/releases/download/v0.27.3/hearth-0.27.3-play-qa-universal.apk) | [Download APK](https://github.com/Sal7one/Hearth/releases/download/v0.27.3/hearth-0.27.3-foss-qa-universal.apk) |
+The [release page](https://github.com/Sal7one/Hearth/releases/tag/v0.30.0-rc.7)
+lists all ten Android APKs, the Mac installer, validation JSON/logs and checksums
+as individual downloads. The browser extension ZIP is its installable format;
+the downloader source archive is provided separately for license compliance. Windows
+builds and NVIDIA execution still require matching-hardware validation; no Windows
+installer is presented as verified here. [Previous releases](https://github.com/Sal7one/Hearth/releases).
 
-Older ARMv7 and Intel builds, optional translation packs, SDK libraries, source and
-checksums are grouped on the [release page](https://github.com/Sal7one/Hearth/releases/tag/v0.27.3).
-
-Android 9+; device-audio capture requires Android 10+. Cloud + local includes
-optional provider connections and model downloads. Offline only has **no network
-permission** and imports models from files. Model weights are separate from the APK.
-
-These are test-signed QA builds. Both flavors replace each other. **Update without
-uninstalling** to retain models, keys, settings and history. CPU support does not
-remove a 32-bit device's memory limits. [CPU and TV support](docs/android-abi-support.md).
+Android 9+; device-audio capture requires Android 10+. The FOSS edition has **no
+network permission**. These are test-signed QA builds; Play and FOSS replace each
+other. **Update without uninstalling** to retain models, keys, settings and history.
+Version code 103 preserves the prior QA identity/signing. Android device acceptance
+belongs to the owner. [CPU and TV support](docs/android-abi-support.md).
 
 ## Screenshots
 

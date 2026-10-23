@@ -196,14 +196,15 @@ Validate the actual packaged launcher with `python3 scripts/desktop/check-packag
 The `--self-check <report-file>` entry opens no window/microphone/model; it checks
 packaged native adapters, audio/crypto services and authenticated loopback HTTP.
 
-The first desktop installer version is `1.0.0`, independent of Android's version;
+The current desktop installer version is `1.0.2`, independent of Android's version;
 macOS installer versions require a nonzero major. Use
 `-PhearthDesktopVersion=MAJOR.MINOR.PATCH` to change it. Builds target Windows x64,
 macOS Apple Silicon and macOS Intel, but this branch's native artifacts and real
 proofs are **macOS arm64 only**; Intel/Windows are build-wired, not staged/proven.
 macOS minimum deployment is 13.3 (the pinned ONNX Runtime requirement). Signing and
 notarization identities are not checked into the repository; local/CI installers
-are unsigned development builds unless signing is explicitly configured. Matching
+are development builds; the verified Apple Silicon app is ad hoc signed and not
+notarized. Matching
 host CI builds and tests each architecture; configuring a Windows installer on a
 Mac does not cross-build it.
 

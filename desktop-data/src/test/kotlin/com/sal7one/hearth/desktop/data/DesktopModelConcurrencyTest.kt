@@ -28,6 +28,31 @@ class DesktopModelConcurrencyTest {
         } finally { directory.toFile().deleteRecursively() }
     }
 
+    @Test fun launchAuditChecksSelectedModelsFirstAndReleasesTheirLockBeforeTheCallback() = runBlocking {
+        val directory=Files.createTempDirectory("hearth-selected-model-audit-")
+        try {
+            val bytes=byteArrayOf(1,2,3)
+            val cards=listOf("unrelated","selected").map {id ->
+                DesktopModelCard(id,id,"test",PipelineStage.STT,"whisper",setOf("en"),"https://example.invalid","test","",emptyMap(),
+                    listOf(DesktopModelArtifact("model.bin","https://example.invalid/model.bin",3,DesktopModelLibrary.digest(bytes))))
+            }
+            cards.forEach {card ->Files.createDirectories(directory.resolve("models/${card.id}"));Files.write(directory.resolve("models/${card.id}/model.bin"),bytes)}
+            val library=DesktopModelLibrary(directory,cards)
+            val order=mutableListOf<String>()
+            withTimeout(5000) {
+                library.refresh(setOf("selected")) {id ->
+                    order+=id
+                    // External-route recovery must be able to acquire this model's
+                    // verifier without deadlocking behind refresh's installer lock.
+                    library.verify(id,directory.resolve("models/$id/model.bin"))
+                    if(id=="selected")assertFalse("unrelated" in library.installations.value)
+                }
+            }
+            assertEquals(listOf("selected","unrelated"),order)
+            assertTrue(library.installations.value.values.all {it.ready})
+        } finally {directory.toFile().deleteRecursively()}
+    }
+
     @Test fun aDifferentImportAndDownloadCompleteWhileOneModelOwnsItsInstaller() = runBlocking {
         val directory = Files.createTempDirectory("hearth-model-locks-")
         val release = CountDownLatch(1)

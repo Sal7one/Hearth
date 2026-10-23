@@ -151,12 +151,19 @@ internal fun HearthDesktopRoot(
     val config by controller.config.collectAsState()
     val readingState by reading.state.collectAsState()
     val workspace by controller.state.collectAsState()
+    LaunchedEffect(config.speech,config.translation,config.voice) {
+        val selected=listOfNotNull(config.speech,config.translation,config.voice)
+        if(selected.any {route ->route.modelPath.isNotBlank() && models.library.catalog.any {it.id==route.modelId && it.engineId==route.engineId} &&
+                models.verifiedSelection(route.modelId)?.modelPath!=route.modelPath}) models.refresh(config)
+    }
     val activeConfig = if (workspace.active) workspace.sessionConfig ?: config else config
     val library by models.state.collectAsState()
     val managedInstallations by models.library.installations.collectAsState()
-    val installations = managedInstallations + library.verifiedImports.mapValues { (_, route) ->
+    val installations = (managedInstallations + library.verifiedImports.mapValues { (_, route) ->
         DesktopModelStatus(true, java.nio.file.Path.of(route.modelPath))
-    }
+    }) + listOfNotNull(config.speech,config.translation,config.voice).mapNotNull {route ->
+        models.selectedStatus(route.modelId,route.modelPath)?.let {route.modelId to it}
+    }.toMap()
     val freeBytes = remember {
         runCatching { java.io.File(controller.dataDirectory.toFile(), ".").usableSpace }.getOrDefault(0L)
     }
@@ -226,11 +233,12 @@ internal fun HearthDesktopRoot(
         capabilities = controller.capabilities,
         installedModels = installed,
         verifiedModels = installed,
+        verifyingSelections = library.verifyingSelections, verificationIssues = library.issues,
         statusText = when {
             closing -> "Closing"
             workspace.error != null -> "Needs attention"
             workspace.active -> "Listening"
-            else -> if (installed > 0) "Ready" else "Setup needed"
+            else -> "Ready" // Home resolves readiness from the selected pipeline, not unrelated installed models.
         },
         statusLive = workspace.active && !closing,
         catalog = models.library.catalog,
@@ -438,6 +446,11 @@ internal fun HearthDesktopRoot(
                 .onFailure { failure(it.message ?: it.toString()) }
         },
         onSaveBrowserOrigin = controller::saveBrowserExtensionOrigin,
+        onPreviewOverlay = {runCatching {
+            val url=workspace.integration?.overlayUrl ?: error("Start the integration service first")
+            java.awt.Desktop.getDesktop().browse(java.net.URI(url))
+        }.onFailure {failure(it.message ?: it.toString())}},
+        onOpenCaptions = {navigate(DesktopScreen.CAPTIONS)},
     )
 
     val translate = translateState(config, workspace, controller.capabilities, models.library.catalog, installations)
@@ -628,6 +641,10 @@ internal fun HearthDesktopRoot(
         navigate(DesktopScreen.CAPTIONS)
         if (workspace.active) {
             applyOverlay(overlaySettings.copy(visible = true))
+            return
+        }
+        if(home.setupVerifying) {
+            failure(home.verificationMessage ?: "The saved model files are still being verified. Wait for the check to finish.")
             return
         }
         if (!captions.readyToStart) {

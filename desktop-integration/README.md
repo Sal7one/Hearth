@@ -1,5 +1,8 @@
 # Desktop integration and OBS captions
 
+For a visual, step-by-step streaming setup, see [Put Hearth captions in OBS](../docs/obs-setup.md).
+The API guide below is for external-app developers.
+
 This optional JVM module connects real `hearth-core` pipeline sessions to external
 apps. It binds **127.0.0.1 only**, starts only when requested, and has no Android
 dependency. Starting the server does not start recognition, select a provider or
@@ -94,11 +97,21 @@ use its native `AudioStream` producer and `observe()` directly.
 
 ## OBS Browser Source
 
-Start integration in Hearth and copy **OBS overlay URL**, then paste it into an
-OBS Browser Source. Use a viewport such as 1920×1080 with a transparent background.
+In Hearth, open **Integrations → Start connection → Copy OBS URL**. In OBS,
+choose **Sources → + → Browser → Create new**, leave **Local file** off and paste
+the complete link into URL. Match Width/Height to the scene canvas (for example,
+1920×1080). Keep the default transparent Custom CSS and place the source above
+video sources. For continuous connections across scene changes, leave Shutdown
+source when not visible off. Then start a real microphone/system-audio session in
+Hearth's **Captions** page. Starting the connection alone does not capture sound.
+The [official OBS guide](https://obsproject.com/kb/browser-source) describes these source properties.
 The page uses the actual session's original and translated text, including partial
 segments when the selected recognition engine emits them. Inference latency and
-quality still depend on the selected engines and device.
+quality still depend on the selected engines and device. This browser caption
+layout is independent of Hearth's floating desktop overlay style settings. OBS
+and Hearth must run on the same computer; no network exposure is required. Copy
+a new OBS URL after restarting the connection because both the local port and
+caption capability can change.
 
 The copied URL's fragment contains a **separate, read-only caption capability**.
 It is not the write API bearer token and is never a provider API key. The page

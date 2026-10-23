@@ -47,7 +47,7 @@ compose.desktop {
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Exe)
             packageName = "Hearth"
-            packageVersion = providers.gradleProperty("hearthDesktopVersion").orElse("1.0.1").get()
+            packageVersion = providers.gradleProperty("hearthDesktopVersion").orElse("1.0.2").get()
             description = "Independent speech recognition, translation and voice pipelines"
             vendor = "Hearth"
             modules("java.desktop", "java.net.http", "jdk.httpserver", "jdk.crypto.ec", "java.logging", "java.prefs", "jdk.unsupported")

@@ -102,25 +102,36 @@ internal fun normalizePipelineLanguages(config: PipelineConfig, capabilities: Li
     )
 }
 
-/** No disk IO or inferred credentials: readiness is based on actual verified model state and explicit configuration. */
-internal fun stageSetupIssue(config: PipelineConfig, stage: PipelineStage, capabilities: List<EngineDescriptor>, installations: Map<String, DesktopModelStatus>, catalog: List<DesktopModelCard> = emptyList()): String? {
-    val route = config.selection(stage) ?: return "Choose a ${when(stage) { PipelineStage.STT -> "speech"; PipelineStage.TRANSLATION -> "translation"; PipelineStage.TTS -> "voice" }} engine."
-    val engine = capabilities.firstOrNull { it.id == route.engineId && it.stage == stage } ?: return "The selected engine is unavailable in this app."
-    if (!engine.available) return engine.unavailableReason ?: "${engine.name} is unavailable on this computer."
-    computeSettings(engine, route).issue?.let { return it }
+/** Verification is a temporary runtime state; the saved route remains authoritative. */
+internal data class StageSetupState(val issue: String? = null, val verifying: Boolean = false, val message: String? = null)
+
+/** No disk IO or inferred credentials: readiness uses the current pinned audit, never filename existence. */
+internal fun stageSetupState(config: PipelineConfig, stage: PipelineStage, capabilities: List<EngineDescriptor>,
+    installations: Map<String, DesktopModelStatus>, catalog: List<DesktopModelCard> = emptyList(),
+    verifyingSelections: Map<String,String> = emptyMap(), verificationIssues: Map<String,String> = emptyMap()): StageSetupState {
+    val route = config.selection(stage) ?: return StageSetupState("Choose a ${when(stage) { PipelineStage.STT -> "speech"; PipelineStage.TRANSLATION -> "translation"; PipelineStage.TTS -> "voice" }} engine.")
+    val engine = capabilities.firstOrNull { it.id == route.engineId && it.stage == stage } ?: return StageSetupState("The selected engine is unavailable in this app.")
+    if (!engine.available) return StageSetupState(engine.unavailableReason ?: "${engine.name} is unavailable on this computer.")
+    computeSettings(engine, route).issue?.let { return StageSetupState(it) }
     if (engine.requiresModel) {
         val card = selectedCard(route, catalog)?.takeIf { it.stage == stage }
         val status = installations[route.modelId]
-        val installedPath = status?.path
-        val matchesPath = route.modelPath.isNotBlank() && installedPath != null && runCatching {
-            Path.of(route.modelPath).toAbsolutePath().normalize() == installedPath.toAbsolutePath().normalize()
+        fun matches(path: String?): Boolean = route.modelPath.isNotBlank() && !path.isNullOrBlank() && runCatching {
+            Path.of(route.modelPath).toAbsolutePath().normalize() == Path.of(path).toAbsolutePath().normalize()
         }.getOrDefault(false)
-        if (card == null || status?.ready != true || !matchesPath) return "Choose a verified installed model for ${engine.name}."
+        if(card!=null && (matches(verifyingSelections[route.modelId]) || status?.checking==true && matches(status.path?.toString())))
+            return StageSetupState(verifying=true,message="Checking the saved ${card.name} files against their pinned hashes. Your selection is preserved.")
+        if (card == null || status?.ready != true || !matches(status.path?.toString())) {
+            val issue=status?.issue ?: verificationIssues[route.modelId]
+            return StageSetupState(issue?.let {"${engine.name}: $it"} ?: "Choose a verified installed model for ${engine.name}.")
+        }
     }
     if (engine.requiresCredential) {
         val host = runCatching { URI(route.endpoint).host }.getOrNull()
         val local = host in setOf("localhost", "127.0.0.1", "::1", "[::1]")
-        if (route.endpoint.isBlank() || route.credentialId.isBlank() && !local) return "Configure the endpoint and credential for ${engine.name}."
+        if (route.endpoint.isBlank() || route.credentialId.isBlank() && !local) return StageSetupState("Configure the endpoint and credential for ${engine.name}.")
     }
-    return null
+    return StageSetupState()
 }
+internal fun stageSetupIssue(config: PipelineConfig, stage: PipelineStage, capabilities: List<EngineDescriptor>, installations: Map<String, DesktopModelStatus>, catalog: List<DesktopModelCard> = emptyList()): String? =
+    stageSetupState(config,stage,capabilities,installations,catalog).let {if(it.verifying)it.message else it.issue}

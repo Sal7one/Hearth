@@ -1,11 +1,9 @@
 package com.sal7one.hearth.desktop.ui.screens.integrations
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.sal7one.hearth.desktop.ui.components.Banner
@@ -28,6 +26,7 @@ internal fun IntegrationsScreen(
     actions: IntegrationsActions,
     modifier: Modifier = Modifier,
 ) {
+    var advanced by remember { mutableStateOf(false) }
     PageScaffold(modifier, bottom = 40) {
         PageHeader(
             eyebrow = IntegrationsCopy.EYEBROW,
@@ -52,10 +51,9 @@ internal fun IntegrationsScreen(
 
         IntegrationsStatusCard(state)
         Spacer(Modifier.height(16.dp))
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-            OverlayIntegrationCard(state, actions, Modifier.weight(1f))
-            ApiIntegrationCard(state, actions, Modifier.weight(1f))
-        }
+        OverlayIntegrationCard(state, actions, Modifier.fillMaxWidth())
+        Spacer(Modifier.height(16.dp))
+        IntegrationConnectionDetails(state, actions)
         Spacer(Modifier.height(16.dp))
         BrowserIntegrationCard(state, actions)
         Spacer(Modifier.height(16.dp))
@@ -64,6 +62,13 @@ internal fun IntegrationsScreen(
             tone = BannerTone.Neutral,
         )
         Spacer(Modifier.height(16.dp))
-        IntegrationLimits(state)
+        HearthButton(if (advanced) "Hide developer API" else "Developer API & upload limits", { advanced = !advanced },
+            tone = ButtonTone.Ghost, size = ButtonSize.Small)
+        if (advanced) {
+            Spacer(Modifier.height(12.dp))
+            ApiIntegrationCard(state, actions, Modifier.fillMaxWidth())
+            Spacer(Modifier.height(16.dp))
+            IntegrationLimits(state)
+        }
     }
 }

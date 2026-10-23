@@ -9,7 +9,7 @@ import com.sal7one.hearth.core.EngineKind
 import com.sal7one.hearth.desktop.data.DesktopModelCard
 import com.sal7one.hearth.desktop.data.DesktopModelStatus
 import com.sal7one.hearth.desktop.ui.language.pipelineLanguages
-import com.sal7one.hearth.desktop.ui.language.stageSetupIssue
+import com.sal7one.hearth.desktop.ui.language.stageSetupState
 
 /**
  * Resolves the Home screen's state from the real configuration and engine
@@ -25,6 +25,7 @@ internal fun homeState(
     statusLive: Boolean,
     catalog: List<DesktopModelCard> = emptyList(),
     installations: Map<String, DesktopModelStatus> = emptyMap(),
+    verifyingSelections: Map<String,String> = emptyMap(), verificationIssues: Map<String,String> = emptyMap(),
 ): HomeState {
     fun descriptor(stage: PipelineStage): EngineDescriptor? {
         val id = config.selection(stage)?.engineId ?: return null
@@ -34,9 +35,14 @@ internal fun homeState(
     val speech = descriptor(PipelineStage.STT)
     val translation = descriptor(PipelineStage.TRANSLATION)
     val voice = descriptor(PipelineStage.TTS)
-    val recognitionReady = stageSetupIssue(config, PipelineStage.STT, capabilities, installations, catalog) == null
-    val setup = PipelineStage.entries.filter { it == PipelineStage.STT || config.selection(it) != null }
-        .mapNotNull { stage -> stageSetupIssue(config, stage, capabilities, installations, catalog)?.let { stage to it } }.firstOrNull()
+    val states=PipelineStage.entries.filter {it==PipelineStage.STT || config.selection(it)!=null}.associateWith {stage ->
+        stageSetupState(config,stage,capabilities,installations,catalog,verifyingSelections,verificationIssues)
+    }
+    val recognitionReady=states[PipelineStage.STT]?.let {it.issue==null && !it.verifying}==true
+    val setup=states.entries.firstOrNull {it.value.issue!=null}
+    val pending=states.entries.firstOrNull {it.value.verifying}
+    val verifying=setup==null && pending!=null
+    val languages=pipelineLanguages(config,capabilities,catalog)
 
     return HomeState(
         sourceLanguage = config.sourceLanguage,
@@ -49,11 +55,18 @@ internal fun homeState(
         installedModels = installedModels,
         verifiedModels = verifiedModels,
         recognitionReady = recognitionReady,
-        statusText = statusText,
+        statusText = when {
+            statusLive || statusText in setOf("Closing","Needs attention") -> statusText
+            verifying -> "Checking saved setup"
+            (setup!=null || languages.issue!=null) && statusText=="Ready" -> "Setup needed"
+            else -> statusText
+        },
         statusLive = statusLive,
-        languages = pipelineLanguages(config, capabilities, catalog),
-        setupIssue = setup?.second,
-        setupStage = setup?.first,
+        languages = languages,
+        setupIssue = setup?.value?.issue,
+        setupStage = setup?.key ?: pending?.key,
+        setupVerifying = verifying,
+        verificationMessage = pending?.value?.message,
         onDevice = listOfNotNull(speech, translation, voice).none { it.kind == EngineKind.CLOUD },
     )
 }

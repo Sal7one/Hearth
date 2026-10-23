@@ -56,9 +56,9 @@ internal fun HomeReadiness(state: HomeState, modifier: Modifier = Modifier) {
         )
         ReadinessCell(
             eyebrow = "Pipeline",
-            value = if (state.setupIssue == null && state.languages.issue == null) "Configured" else "Needs attention",
-            chip = if (state.setupIssue == null && state.languages.issue == null) "Ready" to ChipTone.Ok else "Check settings" to ChipTone.Warn,
-            detail = state.setupIssue ?: state.languages.issue ?: "Live captions use the stages selected above.",
+            value = if(state.setupVerifying) "Checking saved setup" else if (state.setupIssue == null && state.languages.issue == null) "Configured" else "Needs attention",
+            chip = if(state.setupVerifying) "Verifying" to ChipTone.Neutral else if (state.setupIssue == null && state.languages.issue == null) "Ready" to ChipTone.Ok else "Check settings" to ChipTone.Warn,
+            detail = state.setupIssue ?: state.verificationMessage ?: state.languages.issue ?: "Live captions use the stages selected above.",
             modifier = Modifier.weight(1f),
             showDivider = true,
         )

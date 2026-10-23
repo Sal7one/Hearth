@@ -8,4 +8,6 @@ internal class IntegrationsActions(
     val onCopyApiToken: () -> Unit = {},
     val onSaveBrowserOrigin: (String) -> Unit = {},
     val onCopyApiAddress: () -> Unit = {},
+    val onPreviewOverlay: () -> Unit = {},
+    val onOpenCaptions: () -> Unit = {},
 )

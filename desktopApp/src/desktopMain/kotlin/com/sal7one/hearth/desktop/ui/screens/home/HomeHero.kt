@@ -101,7 +101,7 @@ internal fun HomeHero(
                 .widthIn(max = 620.dp),
             verticalArrangement = Arrangement.Center,
         ) {
-            Eyebrow(if (state.recognitionReady) HomeCopy.EYEBROW else "Live captions · setup needed")
+            Eyebrow(when {state.setupVerifying -> "Live captions · checking saved setup";state.recognitionReady -> HomeCopy.EYEBROW;else -> "Live captions · setup needed"})
             Spacer(Modifier.height(14.dp))
             Text(
                 text = HomeCopy.HEADLINE_LINE_ONE + "\n" + HomeCopy.HEADLINE_LINE_TWO,
@@ -125,18 +125,18 @@ internal fun HomeHero(
             ) {
                 LanguagePairPicker(state.languages, onSourceLanguage, onTargetLanguage, onSwapLanguages, enabled = !state.statusLive)
                 HearthButton(
-                    text = if (state.statusLive) "Open live captions" else if (state.setupIssue != null) "Finish setup" else "Start live captions",
+                    text = if (state.statusLive) "Open live captions" else if(state.setupVerifying) "Checking saved models…" else if (state.setupIssue != null) "Finish setup" else "Start live captions",
                     onClick = if (state.setupIssue != null && !state.statusLive) onOpenSetup else onStart,
                     tone = ButtonTone.Primary,
                     size = ButtonSize.Large,
                     icon = HearthIcons.Microphone,
-                    enabled = state.statusLive || state.setupIssue != null || state.languages.issue == null,
+                    enabled = state.statusLive || !state.setupVerifying && (state.setupIssue != null || state.languages.issue == null),
                 )
             }
 
-            (state.setupIssue ?: state.languages.issue)?.let { issue ->
+            (state.setupIssue ?: state.verificationMessage ?: state.languages.issue)?.let { issue ->
                 Spacer(Modifier.height(8.dp))
-                Text(issue, style = HearthType.small, color = colors.warn)
+                Text(issue, style = HearthType.small, color = if(state.setupVerifying)colors.muted else colors.warn)
             }
 
             Spacer(Modifier.height(22.dp))

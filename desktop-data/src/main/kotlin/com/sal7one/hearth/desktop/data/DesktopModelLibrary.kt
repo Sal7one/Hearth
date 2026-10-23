@@ -65,7 +65,7 @@ data class DesktopModelCard(
     val installedBytes: Long get() = archive?.expandedBytes
         ?: (artifacts.sumOf { it.bytes } + (rangePackage?.members?.sumOf { it.bytes } ?: 0L))
 }
-data class DesktopModelStatus(val ready: Boolean, val path: Path?, val issue: String? = null)
+data class DesktopModelStatus(val ready: Boolean, val path: Path?, val issue: String? = null, val checking: Boolean = false)
 enum class ModelInstallPhase { CHECKING, DOWNLOADING, EXTRACTING, VERIFYING }
 data class ModelInstallProgress(val phase: ModelInstallPhase, val completed: Long, val total: Long, val component: String = "")
 
@@ -83,8 +83,10 @@ class DesktopModelLibrary internal constructor(val directory: Path, val catalog:
         .followRedirects(HttpClient.Redirect.NEVER).build()
 
     /** Full content verification is repeated at launch; filename/existence alone never marks a model ready. */
-    suspend fun refresh(): Unit = withContext(Dispatchers.IO) {
-        for (card in catalog) {
+    suspend fun refresh(priorityIds: Set<String> = emptySet(), checked: suspend (String) -> Unit = {}): Unit = withContext(Dispatchers.IO) {
+        // Saved active routes become usable without waiting for unrelated multi-GB
+        // models. Every installed artifact still receives its full pinned audit.
+        for (card in catalog.sortedBy { if(it.id in priorityIds) 0 else 1 }) {
             currentCoroutineContext().ensureActive()
             installers.getValue(card.id).withLock {
                 val root = modelDirectory(card)
@@ -94,6 +96,9 @@ class DesktopModelLibrary internal constructor(val directory: Path, val catalog:
                 } else DesktopModelStatus(false, null)
                 mutableInstallations.update { it + (card.id to result) }
             }
+            // Release the per-model lock first: an external saved route for this ID
+            // may need its own pinned verification rather than the managed folder.
+            checked(card.id)
         }
     }
     suspend fun download(id: String, progress: (downloaded: Long, total: Long) -> Unit = { _, _ -> },

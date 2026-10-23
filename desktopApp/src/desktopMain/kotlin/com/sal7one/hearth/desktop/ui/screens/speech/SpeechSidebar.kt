@@ -30,8 +30,8 @@ internal fun SpeechSidebar(state: SpeechState, modifier: Modifier = Modifier) {
                 Text(SpeechCopy.STATUS, style = HearthType.h3.copy(fontSize = 14.sp), color = colors.text)
                 Spacer(Modifier.weight(1f))
                 Chip(
-                    text = if (state.ready && state.cloudSelected) "Connection configured" else if (state.ready) SpeechCopy.READY else SpeechCopy.NOT_CONFIGURED,
-                    tone = if (state.ready) ChipTone.Ok else ChipTone.Warn,
+                    text = if(state.checking) "Checking saved model" else if (state.ready && state.cloudSelected) "Connection configured" else if (state.ready) SpeechCopy.READY else SpeechCopy.NOT_CONFIGURED,
+                    tone = if(state.checking)ChipTone.Neutral else if (state.ready) ChipTone.Ok else ChipTone.Warn,
                 )
             }
             Spacer(Modifier.height(10.dp))

@@ -33,7 +33,7 @@ internal fun IntegrationsStatusCard(state: IntegrationsState, modifier: Modifier
                     color = colors.text,
                 )
                 Text(
-                    if (state.running) state.baseUrl else "No port is bound",
+                    if (state.running) "Ready on ${state.baseUrl} · Start captions separately" else "Start the connection when you want to use OBS or another app",
                     style = HearthType.monoSmall,
                     color = colors.muted,
                 )

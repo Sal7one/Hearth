@@ -83,8 +83,8 @@ internal fun TranslationScreen(
                             Text(TranslationCopy.STATUS, style = HearthType.h3.copy(fontSize = 14.sp), color = colors.text)
                             Spacer(Modifier.weight(1f))
                             Chip(
-                                if (state.ready && state.cloudSelected) "Connection configured" else if (state.ready) TranslationCopy.READY else TranslationCopy.NOT_CONFIGURED,
-                                tone = if (state.ready) ChipTone.Ok else ChipTone.Warn,
+                                if(state.checking) "Checking saved model" else if (state.ready && state.cloudSelected) "Connection configured" else if (state.ready) TranslationCopy.READY else TranslationCopy.NOT_CONFIGURED,
+                                tone = if(state.checking)ChipTone.Neutral else if (state.ready) ChipTone.Ok else ChipTone.Warn,
                             )
                         }
                         Spacer(Modifier.height(10.dp))

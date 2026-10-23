@@ -79,6 +79,7 @@ internal fun speechState(
         models = models,
         selectedModelId = selectedModelId,
         modelVerified = verified,
+        checking = chosen?.modelId?.let {installations[it]?.checking}==true,
         language = config.sourceLanguage,
         languageOptions = languages.sources.map { SelectOption(it.code, it.label) },
         languageIssue = languages.issue,

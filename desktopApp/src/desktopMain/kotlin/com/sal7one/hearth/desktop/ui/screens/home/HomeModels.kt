@@ -39,6 +39,8 @@ internal data class HomeState(
     val languages: PipelineLanguageState = PipelineLanguageState(sourceLanguage, targetLanguage, emptyList(), emptyList(), false),
     val setupIssue: String? = null,
     val setupStage: PipelineStage? = null,
+    val setupVerifying: Boolean = false,
+    val verificationMessage: String? = null,
     val onDevice: Boolean = true,
     val inputLabel: String = "Microphone",
 ) {
