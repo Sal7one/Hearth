@@ -15,6 +15,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.dp
 
 /** Keep the sheet's position and inline options while a child page replaces its content.
  *
@@ -45,8 +46,11 @@ internal fun RetainedSettingsSheet(
         }
         if (interruptedByChild) {
             val density = LocalDensity.current
-            rememberSaveable(saver = SheetState.Saver(true, { true }, density, false)) {
-                SheetState(skipPartiallyExpanded = true, density = density, initialValue = SheetValue.Expanded)
+            val positionalThreshold = { with(density) { 56.dp.toPx() } }
+            val velocityThreshold = { with(density) { 125.dp.toPx() } }
+            rememberSaveable(saver = SheetState.Saver(true, positionalThreshold, velocityThreshold, { true }, false)) {
+                SheetState(skipPartiallyExpanded = true, positionalThreshold = positionalThreshold,
+                    velocityThreshold = velocityThreshold, initialValue = SheetValue.Expanded)
             }
         } else opening
     }

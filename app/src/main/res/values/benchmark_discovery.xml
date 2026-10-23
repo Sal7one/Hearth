@@ -1,0 +1,5 @@
+<resources>
+    <string name="benchmark_discovery_summary">%1$d model installs could not be read</string>
+    <string name="benchmark_discovery_continue">Your other installed models are available for benchmarking. Review the affected files separately.</string>
+    <string name="benchmark_discovery_review">Review model issues</string>
+</resources>

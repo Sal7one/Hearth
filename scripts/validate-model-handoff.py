@@ -95,7 +95,7 @@ def validate_inventory(data, expected_category):
     require(data.get("category") == expected_category, "Inventory category mismatch")
     require(bool(re.fullmatch(r"\d{4}-\d{2}-\d{2}", data.get("asOf", ""))), "Missing evidence date")
     models = data.get("models")
-    require(isinstance(models, list) and len(models) == 5, "Each category must contain exactly five trained model entries")
+    require(isinstance(models, list) and len(models) >= 5, "Each category must contain at least five trained model entries")
     ids = set()
     for model in models:
         label = model.get("id", "unknown")

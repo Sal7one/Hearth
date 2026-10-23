@@ -1,6 +1,7 @@
 package com.sal7one.transiber.ocr
 
 import com.sal7one.common_jni.ocr.OcrLine
+import com.sal7one.hearth.core.vision.OcrRegion
 
 internal data class TranslatedOcrBox(val line: OcrLine, val translation: String)
 
@@ -66,6 +67,18 @@ internal object OcrReadingGroups {
 
 /** Keeps each response attached to its source box; never guesses alignment from generated newlines. */
 internal object OcrPageTranslation {
+    /** OCR and cleanup publish independently. Keep a slow translation attached to
+     * the newest paint for its exact source box, without another model call. */
+    fun refreshGeometry(boxes: List<TranslatedOcrBox>, lines: List<OcrLine>, preservesRegions: Boolean = true): List<TranslatedOcrBox> {
+        // General OCR joins neighboring lines into reading blocks. Those boxes
+        // intentionally differ from the raw detections and receive no paint refinements.
+        if(!preservesRegions)return boxes
+        data class Key(val x: Int, val y: Int, val width: Int, val height: Int, val text: String)
+        fun OcrLine.key() = Key(x, y, width, height, text)
+        val current = lines.associateBy { it.key() }
+        return boxes.mapNotNull { box -> current[box.line.key()]?.let { box.copy(line = it) } }
+    }
+
     suspend fun run(
         lines: List<OcrLine>, current: () -> Boolean,
         translate: suspend (String) -> String, publish: (List<TranslatedOcrBox>) -> Unit,
@@ -93,8 +106,16 @@ internal object OcrPageTranslation {
 
 /** Maps crop-local OCR geometry onto a fitted full-page image, including its letterbox offsets. */
 internal object OcrPageLayout {
+    fun box(region: OcrRegion, crop: PixelCrop, imageWidth: Int, imageHeight: Int,
+            viewWidth: Int, viewHeight: Int): PixelCrop? = region.bounds.let {
+        box(OcrLine(it.x,it.y,it.width,it.height,"",region.confidence),crop,imageWidth,imageHeight,viewWidth,viewHeight)
+    }
     fun box(line: OcrLine, crop: PixelCrop, imageWidth: Int, imageHeight: Int,
             viewWidth: Int, viewHeight: Int, coverEdges: Boolean = false): PixelCrop? {
+        if(coverEdges)line.region?.paint?.layout?.let { rect ->
+            return box(OcrLine(rect.x,rect.y,rect.width,rect.height,line.text,line.confidence),
+                crop,imageWidth,imageHeight,viewWidth,viewHeight,false)
+        }
         if (imageWidth <= 0 || imageHeight <= 0 || viewWidth <= 0 || viewHeight <= 0 ||
             crop.left < 0 || crop.top < 0 || crop.right > imageWidth || crop.bottom > imageHeight ||
             crop.width <= 0 || crop.height <= 0 || line.width <= 0 || line.height <= 0) return null

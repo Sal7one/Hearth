@@ -33,3 +33,8 @@ internal fun FileDownload.queuePriority(): Int = when (displayStage()) {
     DownloadStage.READY -> 2
     DownloadStage.INSTALLED -> 3
 }
+
+/** Hash/export progress has its own scale; network bytes never imply an installation percentage. */
+internal fun FileDownload.preparationFraction(): Float? =
+    if (phase == "Verifying" && !preparingQueued && verificationTotal > 0)
+        (verificationBytes.toDouble() / verificationTotal).coerceIn(0.0, 1.0).toFloat() else null

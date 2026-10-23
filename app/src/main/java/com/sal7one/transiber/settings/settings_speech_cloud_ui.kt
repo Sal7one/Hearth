@@ -11,9 +11,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
@@ -81,14 +79,13 @@ fun SettingsSpeechCloudUi(onStoredChange: (Boolean) -> Unit = {}, onModeChange: 
         keyStored = ApiKeyStore.hasOpenAiKey(context)
     }
 
-    Column(Modifier.fillMaxWidth().padding(top = 2.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(SettingsLayout.cardGap)) {
     // ── STT mode: batch vs TRUE streaming (WebSocket interim results) ────
     // Streaming is the investor-facing path: interim text lands while the
     // speaker is still talking and utterances finalize in real time, instead
     // of one round-trip per audio chunk. Groq is deliberately not a
     // streaming option — verified 2026-08 their STT is REST-only; their
     // OpenAI-compatible endpoint works as a Batch provider via Custom URL.
-    Spacer(Modifier.height(10.dp))
     // FlowRow: four mode chips would squash the last one flat in a Row.
     com.sal7one.transiber.ui.components.ModelFilterPicker(
         uiText(UiR.string.ui_cloud_provider_connection_49770), currentSttMode.name,
@@ -108,7 +105,6 @@ fun SettingsSpeechCloudUi(onStoredChange: (Boolean) -> Unit = {}, onModeChange: 
                 finally { selectingMode = false }
             }
         })
-    Spacer(Modifier.height(4.dp))
     if (advanced) Text(
         when (currentSttMode) {
             CloudConfigStore.SttMode.STREAMING_SONIOX -> uiText(UiR.string.ui_soniox_stt_rt_v5_streaming_cc_and_optional_integrated_translation_7d848)
@@ -135,7 +131,6 @@ fun SettingsSpeechCloudUi(onStoredChange: (Boolean) -> Unit = {}, onModeChange: 
         uiText(UiR.string.ui_cloud_engine_your_api_key_ad35b),
         style = MaterialTheme.typography.labelLarge,
     )
-    Spacer(Modifier.height(8.dp))
     OutlinedTextField(
         value = keyDraft,
         visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
@@ -146,7 +141,7 @@ fun SettingsSpeechCloudUi(onStoredChange: (Boolean) -> Unit = {}, onModeChange: 
         },
         modifier = Modifier.fillMaxWidth(),
     )
-    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Button(
             onClick = {
                 val stored = ApiKeyStore.setOpenAiKey(context, keyDraft)
@@ -208,8 +203,7 @@ fun SettingsSpeechCloudUi(onStoredChange: (Boolean) -> Unit = {}, onModeChange: 
             { ApiKeyStore.setElevenLabsKey(context, ""); elevenStored = false })
     }
     if (currentSttMode == CloudConfigStore.SttMode.STREAMING_DEEPGRAM) {
-        Spacer(Modifier.height(8.dp))
-        StreamingKeyField(
+            StreamingKeyField(
             label = uiText(UiR.string.ui_deepgram_api_key_05f53),
             placeholder = uiText(UiR.string.ui_paste_the_key_from_console_deepgram_com_e16ea),
             stored = deepgramStored,
@@ -224,8 +218,7 @@ fun SettingsSpeechCloudUi(onStoredChange: (Boolean) -> Unit = {}, onModeChange: 
         )
     }
     if (currentSttMode == CloudConfigStore.SttMode.STREAMING_ASSEMBLYAI) {
-        Spacer(Modifier.height(8.dp))
-        StreamingKeyField(
+            StreamingKeyField(
             label = uiText(UiR.string.ui_assemblyai_api_key_da25e),
             placeholder = uiText(UiR.string.ui_paste_the_key_from_assemblyai_com_app_account_9d6b7),
             stored = assemblyStored,
@@ -249,9 +242,8 @@ fun SettingsSpeechCloudUi(onStoredChange: (Boolean) -> Unit = {}, onModeChange: 
     // Endpoint-agnostic: OpenAI keys go to OpenAI, OpenRouter keys to
     // OpenRouter, anything OpenAI-compatible to a custom URL. The model
     // ids are editable — the cloud engine reads them at session start.
-    Spacer(Modifier.height(10.dp))
     Text(uiText(UiR.string.ui_provider_7ceee), style = MaterialTheme.typography.labelMedium)
-    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         CloudConfigStore.Provider.entries.forEach { provider ->
             androidx.compose.material3.FilterChip(
                 selected = currentProvider == provider,
@@ -369,7 +361,6 @@ fun SettingsSpeechCloudUi(onStoredChange: (Boolean) -> Unit = {}, onModeChange: 
         }
     }
     Text(uiText(UiR.string.cloud_voice_separate), style = MaterialTheme.typography.bodySmall)
-    Spacer(Modifier.height(6.dp))
     Text(
         text = keyStoreError ?: if (keyStored) {
             uiText(UiR.string.ui_key_stored_encrypted_on_this_device_android_keystore_ef846) +
@@ -411,7 +402,7 @@ private fun StreamingKeyField(
         placeholder = { Text(if (stored) uiText(UiR.string.ui_key_stored_type_to_replace_d9e13) else placeholder) },
         modifier = Modifier.fillMaxWidth(),
     )
-    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Button(
             onClick = {
                 onSave(draft)

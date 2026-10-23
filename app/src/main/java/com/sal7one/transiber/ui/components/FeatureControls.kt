@@ -39,7 +39,7 @@ internal fun FeatureAction(
     Card(onClick = onClick, enabled = enabled, modifier = modifier.fillMaxWidth().heightIn(min = 72.dp).glassPanel(),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = Color.Transparent, contentColor = MaterialTheme.colorScheme.onSurface)) {
-        Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically,
+        Row(Modifier.fillMaxWidth().padding(20.dp), verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             Icon(icon, null, Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary)
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -69,10 +69,14 @@ internal fun FeatureOptionsSheet(
 @Composable
 private fun rememberFeatureSheetPresentation(): SheetState {
     val density = LocalDensity.current
+    val positionalThreshold = { with(density) { 56.dp.toPx() } }
+    val velocityThreshold = { with(density) { 125.dp.toPx() } }
     return rememberSaveable(saver = Saver<SheetState, SheetValue>(
         save = { SheetValue.Expanded },
-        restore = { SheetState(skipPartiallyExpanded = true, density = density, initialValue = it) },
-    )) { SheetState(skipPartiallyExpanded = true, density = density) }
+        restore = { SheetState(skipPartiallyExpanded = true, positionalThreshold = positionalThreshold,
+            velocityThreshold = velocityThreshold, initialValue = it) },
+    )) { SheetState(skipPartiallyExpanded = true, positionalThreshold = positionalThreshold,
+        velocityThreshold = velocityThreshold) }
 }
 
 /** The navigation owner may retain this presentation while a child page is visible. */
@@ -93,7 +97,7 @@ internal fun FeatureOptionsSheet(
         sheetState = sheetState) {
         Row(Modifier.fillMaxWidth().padding(start = 20.dp, end = 8.dp), verticalAlignment = Alignment.CenterVertically) {
             Text(title, Modifier.weight(1f).semantics { heading() }, style = MaterialTheme.typography.titleLarge)
-            IconButton(onClick = {
+            IconButton(modifier = Modifier.sizeIn(minWidth = 48.dp, minHeight = 48.dp), onClick = {
                 scope.launch {
                     sheetState.hide()
                     if (!sheetState.isVisible) onDismiss()
@@ -101,6 +105,6 @@ internal fun FeatureOptionsSheet(
             }) { Icon(Icons.Default.Close, uiText(UiR.string.ui_close_1_s_93864, title)) }
         }
         Column(modifier.fillMaxWidth().verticalScroll(scroll).imePadding().padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp), content = content)
+            verticalArrangement = Arrangement.spacedBy(24.dp), content = content)
     }
 }

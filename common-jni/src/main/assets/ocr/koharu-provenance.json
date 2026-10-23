@@ -1,0 +1,43 @@
+{
+  "code": {
+    "repository": "https://github.com/koharu-rs/koharu",
+    "revision": "73abcafab1507e1c228c36ed54ba84e5e1cd6ff8",
+    "license": "MIT",
+    "license_asset": "licenses/ocr/koharu-MIT.txt",
+    "adapted_components": [
+      "RF-DETR preprocessing and mask projection",
+      "panel/bubble/text hierarchy",
+      "mask containment",
+      "eight-connected component cleanup tiling and coalescing (512-pixel cores, 128-pixel context)",
+      "page-wide OCR publication before union-mask cleanup"
+    ]
+  },
+  "segmentation": {
+    "repository": "ShiniShiho/koharu-layout-rfdetr-seg-2xl-1152-onnx",
+    "revision": "bfbbd4e5ab34a50459865074fa044da496cebb57",
+    "filename": "rfdetr-seg-2xlarge.onnx",
+    "bytes": 148442003,
+    "sha256": "7cc10d4316371946b8441da3512261a8e148b129abcdb0ea6235ed1d1d06d351",
+    "source_repository": "mayocream/koharu-layout-rfdetr-seg-2xl-1152",
+    "source_revision": "aed55fdb8ca953c6bec33cf6ed6dd52a9b72bfa2",
+    "source_weights_sha256": "9bf6d2cbd7793c956d8c857bb1672a396eb7f100eb0682f86830d05e31168efb",
+    "license": "other; source Manga109 academic-use data terms apply",
+    "input": "float32 input[1,3,1152,1152], RGB ImageNet normalization, bilinear align_corners=false",
+    "outputs": "dets[1,300,4] normalized cxcywh; labels[1,300,5] logits; masks[1,300,288,288] logits",
+    "projection": "bilinear mask projection to source pixels, threshold greater than zero; bounded RLE spans"
+  },
+  "inpainting": {
+    "repository": "mayocream/lama-manga-onnx",
+    "revision": "b55497aadbfcb9740e1ed16f008268d71b4f3f79",
+    "filename": "lama-manga.onnx",
+    "bytes": 207482644,
+    "sha256": "4512adab295ee5a5e02ccd1bdf8d45dccbac88309d9cff1532ffd5de876f02a4",
+    "license": "Apache-2.0",
+    "input": "float32 image[1,3,512,512] RGB/255 and mask[1,1,512,512] binary",
+    "output": "float32 output[1,3,512,512] RGB/255",
+    "publication": "One union of recognized complex text masks per page; eight-connected components coalesced into bounded 512-pixel cores with 128-pixel context; bilinear resize; composite only each translated region's requested mask pixels"
+  },
+  "weights_bundled": false,
+  "network_policy": "All acquisition uses Hearth's existing pinned downloader/importer; FOSS imports only",
+  "runtime": "ONNX Runtime CPU; GPU inference is not advertised"
+}

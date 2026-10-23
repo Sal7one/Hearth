@@ -57,12 +57,15 @@ internal fun preferredSpeechVariant(variants: List<SpeechArtifact>, installedIds
 internal fun speechArtifactMatches(item: SpeechArtifact, query: String): Boolean = ModelSearch.matches(query,
     item.label, item.family, speechFamilyTitle(item.family), item.checkpoint, item.quant, item.license,
     speechDecodeMode(item).name, ModelSearch.languageTerms(item.languages),
+    com.sal7one.transiber.models.speechGpuPaths(item).let { if (it.isEmpty()) "CPU only" else "CPU GPU ${it.joinToString(" ")}" },
     if (item.languages == setOf("en")) "English only" else "")
 
 internal fun speechCheckpointGroups(artifacts: List<SpeechArtifact>, family: String, language: String,
-    query: String, installedOnly: Boolean, installedIds: Set<String>): List<List<SpeechArtifact>> = artifacts.asSequence()
+    query: String, installedOnly: Boolean, installedIds: Set<String>,
+    hardware: com.sal7one.transiber.models.ModelHardwareFilter = com.sal7one.transiber.models.ModelHardwareFilter.ALL): List<List<SpeechArtifact>> = artifacts.asSequence()
     .filter { family.isBlank() || it.family == family }
     .filter { language.isBlank() || language in it.languages }
+    .filter { hardware.matches(com.sal7one.transiber.models.speechGpuPaths(it)) }
     .groupBy { it.family to it.checkpoint }.values
     .map { group -> if (installedOnly) group.filter { it.id in installedIds } else group }
     .filter { it.isNotEmpty() }

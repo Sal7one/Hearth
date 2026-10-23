@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="download_queue_background">تستمر قائمة التنزيل أثناء استخدامك Hearth</string>
+    <string name="download_queue_policy_summary">%1$d ملفات في الوقت نفسه · حتى %2$d اتصالات لكل ملف</string>
+    <string name="download_queue_pause_all">إيقاف الكل مؤقتًا</string>
+    <string name="download_queue_resume_all">استئناف الكل</string>
+    <string name="download_queue_retry_failed">إعادة محاولة التنزيلات الفاشلة</string>
+    <string name="download_queue_settings">إعدادات التنزيل</string>
+    <string name="download_queue_results">نتائج التنزيل</string>
+    <string name="download_queue_results_hint">مرتبة حسب سرعة الشبكة المقاسة. كل صف يعرض آخر عملية نقل ناجحة دون وقت التحقق والتثبيت. تتأثر النتائج بالخوادم والشبكة.</string>
+    <string name="download_queue_results_empty">أكمل تنزيلًا لمقارنة طرق التنزيل وإعدادات الاتصال هنا.</string>
+    <string name="download_queue_copy_results">نسخ CSV</string>
+    <string name="download_queue_done">تم</string>
+    <string name="download_queue_balanced">متوازن</string>
+    <string name="download_queue_fast">سريع</string>
+    <string name="download_queue_simultaneous">الملفات المتزامنة: %1$d</string>
+    <string name="download_queue_unmetered">الشبكات غير المحدودة فقط</string>
+    <string name="download_queue_advanced">الخيارات المتقدمة</string>
+    <string name="download_queue_hide_advanced">إخفاء الخيارات المتقدمة</string>
+    <string name="download_queue_backend">طريقة التنزيل</string>
+    <string name="download_queue_auto">تلقائي</string>
+    <string name="download_queue_http">HTTP</string>
+    <string name="download_queue_aria">aria2</string>
+    <string name="download_queue_aria_available">يمكن لـ aria2 تنزيل النماذج باتصالات متعددة. تُحفظ الملفات بعد التحقق منها في المجلد الذي اخترته.</string>
+    <string name="download_queue_aria_unavailable">aria2 غير متوفر لهذا الجهاز. يدعم HTTP استئناف تنزيل النماذج.</string>
+    <string name="download_queue_connections">الاتصالات لكل ملف: %1$d</string>
+    <string name="download_queue_connection_hint">تُستخدم مع aria2. يستخدم HTTP اتصالًا واحدًا لكل ملف. زيادة الاتصالات لا تضمن سرعة أكبر من كل خادم.</string>
+    <string name="download_queue_bandwidth">حد السرعة لكل ملف (KiB/s)</string>
+    <string name="download_queue_unlimited">0 يعني دون حد</string>
+    <string name="download_queue_retries">محاولات الشبكة التلقائية: %1$d</string>
+    <string name="download_queue_apply">تطبيق الإعدادات</string>
+    <string name="download_queue_apply_hint">تستخدم التنزيلات الجديدة هذه الإعدادات. عند تغيير عدد التنزيلات المتزامنة تستمر العمليات الحالية حتى تنتهي بأمان.</string>
+    <string name="download_queue_independent_lanes">يعمل التنزيل بشكل مستقل عن التحقق والتثبيت. لا تمنع النماذج الكبيرة الإجراءات الأخرى، ولا يتم اختيار نموذج مثبت إلا بطلب منك.</string>
+    <string name="download_queue_waiting_network">بانتظار شبكة غير محدودة</string>
+    <string name="download_queue_queued_verification">بانتظار التحقق</string>
+    <string name="download_queue_saving_verified">حفظ الملف الذي تم التحقق منه</string>
+</resources>

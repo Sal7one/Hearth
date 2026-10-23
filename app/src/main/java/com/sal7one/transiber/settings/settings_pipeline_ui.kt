@@ -12,7 +12,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.unit.dp
@@ -51,51 +50,50 @@ internal fun SettingsPipelineUi(onFeature: (SettingsLocation, SettingsFeature) -
             catch (e: Exception) { error = e.message ?: e.toString() }
         }
     }
-    Text(text(R.string.settings_flow_pipeline), style = MaterialTheme.typography.titleLarge,
-        modifier = Modifier.semantics { heading() })
-    Text(text(R.string.settings_flow_independent), style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant)
-    val current = config
-    if (current == null) {
-        if (error == null) LinearProgressIndicator(Modifier.fillMaxWidth())
-    } else {
-        val speechLocation = if (current.effectiveEngine == CaptionEngineChoice.CLOUD) SettingsLocation.CLOUD else SettingsLocation.LOCAL
-        val translator = ConversationTranslationSettings.provider(current.textTranslationProviderId)?.label
-            ?: current.localTranslationModelId.takeIf { it.isNotBlank() }?.let(TranslationOptions::label)
-            ?: text(R.string.settings_flow_integrated_translation)
-        val translationLocation = if (current.textTranslationProviderId in setOf("", "local")) SettingsLocation.LOCAL else SettingsLocation.CLOUD
-        val voiceRemote = when (current.speakerChoice) {
-            CaptionSpeakerChoice.CLOUD -> true
-            CaptionSpeakerChoice.CUSTOM -> com.sal7one.transiber.voice.VoiceSettings.customBackend(context) == "remote"
-            CaptionSpeakerChoice.SHARED -> com.sal7one.transiber.voice.VoiceSettings.choice(context).backend == "remote"
-            else -> false
-        }
-        val voiceLocation = if (voiceRemote) SettingsLocation.CLOUD else SettingsLocation.LOCAL
-        SettingsStageCard(SettingsFeature.SPEECH, text(R.string.settings_flow_speech), Icons.Default.Mic,
-            if (speechLocation == SettingsLocation.CLOUD) text.label(CloudConfigStore.sttMode(context)) else text.label(current.engine),
-            speechLocation, localAllowed, onFeature)
-        SettingsStageCard(SettingsFeature.TRANSLATION, text(R.string.settings_flow_translation), Icons.Default.Translate,
-            translator, translationLocation, localAllowed, onFeature,
-            checked = current.mode == CaptionMode.TRANSLATE, onCheckedChange = { enabled ->
-                update { it.withCaptionMode(if (enabled) CaptionMode.TRANSLATE else CaptionMode.CAPTIONS) }
-            }, onEdit = { translationEditor = it })
-        translationEditor?.let { location ->
-            OutlinedCard(Modifier.fillMaxWidth()) {
-                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    TextButton(onClick = { translationEditor = null }) { Text(text(R.string.ui_close_bbfa7)) }
-                    TranslatorChooser(current.textTranslationProviderId.ifBlank { "local" }, current.localTranslationModelId,
-                        text(R.string.settings_flow_caption_translation_scope), location = location,
-                        source = current.streamLanguage, target = current.target.languageTag,
-                        onModels = onTranslationModels,
-                        onSelect = { provider, model -> update { it.copy(textTranslationProviderId = provider, localTranslationModelId = model) } })
+    SettingsSection {
+        SettingsHeading(text(R.string.settings_flow_pipeline), text(R.string.settings_flow_independent))
+        val current = config
+        if (current == null) {
+            if (error == null) LinearProgressIndicator(Modifier.fillMaxWidth())
+        } else {
+            val speechLocation = if (current.effectiveEngine == CaptionEngineChoice.CLOUD) SettingsLocation.CLOUD else SettingsLocation.LOCAL
+            val translator = ConversationTranslationSettings.provider(current.textTranslationProviderId)?.label
+                ?: current.localTranslationModelId.takeIf { it.isNotBlank() }?.let(TranslationOptions::label)
+                ?: text(R.string.settings_flow_integrated_translation)
+            val translationLocation = if (current.textTranslationProviderId in setOf("", "local")) SettingsLocation.LOCAL else SettingsLocation.CLOUD
+            val voiceRemote = when (current.speakerChoice) {
+                CaptionSpeakerChoice.CLOUD -> true
+                CaptionSpeakerChoice.CUSTOM -> com.sal7one.transiber.voice.VoiceSettings.customBackend(context) == "remote"
+                CaptionSpeakerChoice.SHARED -> com.sal7one.transiber.voice.VoiceSettings.choice(context).backend == "remote"
+                else -> false
+            }
+            val voiceLocation = if (voiceRemote) SettingsLocation.CLOUD else SettingsLocation.LOCAL
+            SettingsStageCard(SettingsFeature.SPEECH, text(R.string.settings_flow_speech), Icons.Default.Mic,
+                if (speechLocation == SettingsLocation.CLOUD) text.label(CloudConfigStore.sttMode(context)) else text.label(current.engine),
+                speechLocation, localAllowed, onFeature)
+            SettingsStageCard(SettingsFeature.TRANSLATION, text(R.string.settings_flow_translation), Icons.Default.Translate,
+                translator, translationLocation, localAllowed, onFeature,
+                checked = current.mode == CaptionMode.TRANSLATE, onCheckedChange = { enabled ->
+                    update { it.withCaptionMode(if (enabled) CaptionMode.TRANSLATE else CaptionMode.CAPTIONS) }
+                }, onEdit = { translationEditor = it })
+            translationEditor?.let { location ->
+                OutlinedCard(Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(SettingsLayout.cardPadding), verticalArrangement = Arrangement.spacedBy(SettingsLayout.contentGap)) {
+                        TextButton(onClick = { translationEditor = null }, modifier = Modifier.heightIn(min = SettingsLayout.touchTarget)) { Text(text(R.string.ui_close_bbfa7)) }
+                        TranslatorChooser(current.textTranslationProviderId.ifBlank { "local" }, current.localTranslationModelId,
+                            text(R.string.settings_flow_caption_translation_scope), location = location,
+                            source = current.streamLanguage, target = current.target.languageTag,
+                            onModels = onTranslationModels,
+                            onSelect = { provider, model -> update { it.copy(textTranslationProviderId = provider, localTranslationModelId = model) } })
+                    }
                 }
             }
+            SettingsStageCard(SettingsFeature.VOICES, text(R.string.settings_flow_voice), Icons.Default.RecordVoiceOver,
+                text.label(current.speakerChoice), voiceLocation, localAllowed, onFeature,
+                checked = current.speakCaptions, onCheckedChange = { enabled -> update { it.copy(speakCaptions = enabled) } })
         }
-        SettingsStageCard(SettingsFeature.VOICES, text(R.string.settings_flow_voice), Icons.Default.RecordVoiceOver,
-            text.label(current.speakerChoice), voiceLocation, localAllowed, onFeature,
-            checked = current.speakCaptions, onCheckedChange = { enabled -> update { it.copy(speakCaptions = enabled) } })
+        error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
     }
-    error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
 }
 
 @Composable
@@ -108,7 +106,7 @@ private fun SettingsStageCard(feature: SettingsFeature, title: String, icon: Ima
     val destination = settingsStageDestination(preferred, feature, ByokPolicy.FEATURE_BYOK, localAllowed)
     OutlinedCard(Modifier.fillMaxWidth(), colors = CardDefaults.outlinedCardColors(
         containerColor = MaterialTheme.colorScheme.surfaceContainerLow)) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Column(Modifier.padding(SettingsLayout.cardPadding), verticalArrangement = Arrangement.spacedBy(SettingsLayout.cardGap)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Icon(icon, null, tint = MaterialTheme.colorScheme.primary)
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
@@ -118,12 +116,12 @@ private fun SettingsStageCard(feature: SettingsFeature, title: String, icon: Ima
                 if (checked != null && onCheckedChange != null) Switch(checked, onCheckedChange,
                     modifier = Modifier.semantics { contentDescription = title })
             }
-            if (destination != null) FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Button(onClick = { onEdit?.invoke(destination) ?: onFeature(destination, feature) }) {
+            if (destination != null) FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Button(onClick = { onEdit?.invoke(destination) ?: onFeature(destination, feature) }, modifier = Modifier.heightIn(min = SettingsLayout.touchTarget)) {
                     Text(text(R.string.settings_flow_edit, text.label(destination)))
                 }
                 locations.filter { it != destination }.forEach { location ->
-                    TextButton(onClick = { onEdit?.invoke(location) ?: onFeature(location, feature) }) { Text(text(R.string.settings_flow_other, text.label(location))) }
+                    TextButton(onClick = { onEdit?.invoke(location) ?: onFeature(location, feature) }, modifier = Modifier.heightIn(min = SettingsLayout.touchTarget)) { Text(text(R.string.settings_flow_other, text.label(location))) }
                 }
             } else Text(text(R.string.settings_flow_unavailable), style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.error)

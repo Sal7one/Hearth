@@ -1,0 +1,10 @@
+<resources>
+    <string name="reading_content_kind">你在阅读什么？</string>
+    <string name="reading_content_websites">网站和应用</string>
+    <string name="reading_content_manga">日语漫画</string>
+    <string name="reading_websites_help">翻译浏览器或其他应用中可见的文字。锁定时可穿过译文点击和滚动。选择“页面变化”，停止滚动后自动更新。</string>
+    <string name="reading_manga_help">使用漫画识别器读取日语气泡。快速模式更快显示区域，Koharu 提供精细蒙版和可选清理，并记住上次选择。</string>
+    <string name="reading_passthrough">允许点击和滚动穿透</string>
+    <string name="reading_passthrough_help">小锁按钮始终可用。解锁后可移动控制柄、选择译文或打开控制面板。</string>
+    <string name="reading_capture_limits">需要屏幕共享和悬浮窗权限，不需要无障碍服务、相机或麦克风。无法翻译受保护的视频、银行页面或禁止截图的应用。</string>
+</resources>

@@ -1,0 +1,15 @@
+<resources>
+    <string name="ocr_cleaning_background">正在清理文字背景 — 已识别文本就绪</string>
+    <string name="ocr_reader_saved_for_both">相机与屏幕漫画共用的已保存识别器：%1$s</string>
+    <string name="ocr_manga_page_mode">漫画页面识别器</string>
+    <string name="ocr_manga_mode_fast">精简版</string>
+    <string name="ocr_manga_mode_koharu">Koharu</string>
+    <string name="ocr_manga_mode_cleanup">Koharu + 清理</string>
+    <string name="ocr_manga_mode_explainer">精简版使用小型文字检测器。Koharu 增加像素蒙版和分镜排序；清理模式会移除原文。每种模式都有各自必需的模型文件。</string>
+    <string name="ocr_koharu_page">日语 · Koharu 漫画页面</string>
+    <string name="ocr_koharu_cleanup_page">日语 · Koharu 漫画页面 + 清理</string>
+    <string name="ocr_koharu_page_details">Koharu RF-DETR 分割、分镜与气泡分组，以及 Manga OCR。用于截取的日语页面 · CPU · 实验性 · 运行内存需求较高。检测器权重受 Manga109 学术数据条款约束，请阅读模型卡。</string>
+    <string name="ocr_koharu_cleanup_details">Koharu 页面分割和 Manga OCR，加上 LaMa 原文清理。用于截取的日语页面 · CPU · 实验性 · 内存与处理成本最高。检测器权重受 Manga109 学术数据条款约束。</string>
+    <string name="ocr_reader_needs_files">此识别器需要模型文件。请先打开识别器下载或导入，再开始。</string>
+    <string name="ocr_reader_capture_only">漫画识别器处理截取且静止的页面。滚动会中断当前页面，请在识别和翻译期间保持页面静止。</string>
+</resources>

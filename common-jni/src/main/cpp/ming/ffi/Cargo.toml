@@ -1,0 +1,25 @@
+[package]
+name = "ming-ffi"
+version = "0.1.0"
+edition = "2021"
+publish = false
+description = "A C ABI over the Ming-3.0-tts-0.5B runtime from fusor-ai 0.1.2 (experimental)."
+license = "MIT"
+
+[lib]
+name = "ming_ffi"
+crate-type = ["rlib", "staticlib", "cdylib"]
+
+[dependencies]
+ming = { package = "fusor-ai-ming", version = "=0.1.2", features = ["threads"] }
+bundle = { package = "fusor-ai-bundle", version = "=0.1.2", features = ["tokenizer"] }
+rayon = "=1.12.0"
+
+[profile.release]
+opt-level = 3
+lto = "thin"
+codegen-units = 1
+panic = "abort"
+
+# Standalone: do not join the ming-wasm workspace above this directory.
+[workspace]

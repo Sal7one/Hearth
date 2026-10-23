@@ -1,5 +1,17 @@
 # Hearth model expansion: implementation and acceptance status
 
+**Latest owner-test fixes:** [desktop feedback repairs](desktop-owner-feedback-2026-10-22.md)
+cover download concurrency/progress, settings and languages, and native Mac audio.
+
+**Subsequent audit:** read [post-handover audit](post-handover-audit-2026-10-22.md)
+for confirmed regressions, fixes and new validation. Earlier feature-complete/CI
+statements below describe the historical checkpoint.
+
+For the current desktop state, read
+[the final desktop handoff](desktop-final-2026-10-22.md). macOS arm64 has local build/runtime evidence and still needs owner acceptance;
+Windows is parked by the owner. The older
+[desktop KMP handover](desktop-kmp-2026-10-21.md) is historical.
+
 This is the current implementation and acceptance record for five Arabic/English STT models, five translation families and five TTS models, plus a reusable TTS SDK. The owner targets Galaxy S25 Ultra and S22 Ultra; Android TVs use explicit cloud connections and cannot execute or install local models. No owner phone or TV testing has been performed by the agents.
 
 Read this file first, then the specialist plan for your task. Work through the acceptance checks before enabling a model in the app. A model card, a downloadable GGUF, a successful native build, and verified phone inference are four different milestones.

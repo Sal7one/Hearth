@@ -1,4 +1,86 @@
-# Manga, Meiki and drawn regions — 0.12.0
+# Manga, Meiki and drawn regions
+
+## Koharu segmentation and neural cleanup — 2026-10-23
+
+Android and desktop now also support the full RF-DETR instance-segmentation model
+used by Koharu, via a pinned native ONNX export. A quick compact pass publishes
+outlines first, then the quality pass refines text/bubble/panel masks and reading
+order. A separate cleanup bundle adds actual LaMa inference for textured regions;
+flat balloons use measured-color, mask-limited cleanup. Both retain Manga OCR,
+Hearth's selected translator, original-image comparison and Arabic/English text
+shaping. Existing manual/compact choices remain available.
+
+The follow-up performance port publishes text before cleanup and combines complex
+masks using Koharu's connected-component tiling. Android prepares mask bitmaps
+outside drawing, shares one saved reader across both entry points and exposes
+the three manga modes directly. Existing pinned files are reused; the slower
+cached FP16 reader experiment was rejected. See the integration document for
+measured evidence and the full boundary of the port.
+
+The segmentation bundle is 276,158,509 model bytes; the cleanup bundle is
+483,641,153 bytes. This is an opt-in CPU quality path with substantial memory use,
+not a GPU claim. See [the migration, exact pins and real runtime evidence](koharu-integration.md)
+for supported stages and the remaining upstream feature differences. The older
+compact/manual implementation evidence below is historical and remains relevant
+to those retained choices.
+
+## Automatic page update — 2026-10-23
+
+Android now offers **Japanese · Automatic manga page** beside the retained manual
+Manga bubble profile. Camera still images and the cross-app reading overlay use
+the same detector → per-bubble OCR → existing translation flow. The detector
+publishes outlines before OCR starts and each recognized region can translate
+while later regions are being read. Adjacent text from separate speech bubbles
+is never joined just because the rectangles are close. Live camera video remains
+a Paddle feature. Selecting the automatic profile does not replace saved manual
+profile choices.
+
+The automatic bundle reuses both Manga OCR weights and adds
+`ogkalu/comic-text-and-bubble-detector`, revision
+`16e8a622f91fabc6b5b65c96d32d1183f8843546`, `detector-v4-s_int8.onnx`,
+11,120,765 bytes, SHA-256
+`5fe9e4f576e49d4e7e8b0e029d6d3cdc252abd4694113e1cae120e62c931ea79`.
+It declares Apache-2.0. Both platforms consume the pins in
+`hearth-core/.../vision/MangaArtifacts.kt`. Downloads/imports keep existing content
+verification, private copies and atomic publication. FOSS imports work without
+network/download delegation.
+
+Desktop **Home → Image & manga** opens PNG/JPEG still images, supports whole-page
+and drawn-area recognition, shows pending outlines and translated labels, and has
+an original-image toggle plus a full-text/copy pane. Models appear under the
+Reading library filter, with the normal downloader and verified-folder import.
+The selected output language and translator come from the shared configuration.
+Reading pins its source to Japanese for that request and disables STT/voice for
+page jobs; it does not rewrite saved speech/voice settings. External model-folder
+choices are saved and reverified on launch. Desktop does not capture another app's
+display in this change.
+
+Native detection uses RGB/255, bilinear stretch to 640×640, original sizes
+`[width,height]`, and validates the exact `[1,300]` labels/scores and
+`[1,300,4]` source-pixel XYXY boxes. Labels are bubble, text-in-bubble and free text.
+Hearth applies duplicate suppression, containment grouping, bounded padding and
+spatial Japanese reading order. These are rectangles, not pixel segmentation or
+semantic panel order. CPU ORT is the only advertised OCR backend.
+
+The page limit is 2,048 pixels per side, 64 regions, and 45 seconds checked between
+native calls. Desktop additionally bounds input to 64 MiB/100 megapixels before
+subsampling and 3,000 recognized characters before queuing translation. A single
+native kernel can outlast the cooperative budget. Cancellation joins owned work;
+obsolete captures cannot publish into a newer page. Completed text is retained
+when a later OCR/translation call fails, and the actual error is shown.
+
+Real pinned-weight Mac ARM64 validation with ORT 1.20.1: load 2,711 ms, first
+region publication 143 ms after loading, 16/16 regions recognized in 2,481 ms
+after loading. The reviewed page contains eight dialogue bubbles plus headings,
+labels and credits; several small decorative labels were misread. Blank input
+returned no text and cancellation rejected a later call. This is one integration
+fixture, not a quality benchmark or Android performance claim. Android retains
+ORT 1.20.0 and requires owner device tests. Real-model checks are opt-in via
+`HEARTH_MANGA_MODELS` and `HEARTH_MANGA_PAGE` in `DesktopMangaOcrTest`.
+
+See [the full Koharu integration boundary](koharu-integration.md) for the larger
+segmentation, cleanup and typesetting work. The historical manual-reader details
+below remain relevant to that retained profile.
 
 This first reading implementation adds two native OCR adapters and drawing on a
 captured/imported page. It reuses Hearth's local/cloud text translation, model

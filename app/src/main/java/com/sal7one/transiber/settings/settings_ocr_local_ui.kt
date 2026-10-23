@@ -9,6 +9,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import com.sal7one.transiber.R as UiR
 import com.sal7one.transiber.byok.ByokPolicy
@@ -30,13 +31,18 @@ internal fun SettingsOcrLocalUi(onDownloads: () -> Unit = {}, selected: String? 
         return
     }
     val scope = rememberCoroutineScope()
+    // The library is also a model chooser. The same persisted reader is consumed
+    // by Camera and by the screen-reading service when its session starts.
+    val (savedSelection, selectionStore) = rememberOcrPreferences()
+    val selectedProfile = selected ?: savedSelection.profileId
+    val selectProfile: (String) -> Unit = onSelect ?: { id -> selectionStore.update { it.withProfile(id) } }
     val models = remember { OcrModels(File(context.filesDir, "ocr-models")) }
     val downloads = remember { FileDownloads(context.applicationContext) }
     var revision by remember { mutableIntStateOf(0) }
     var importing by remember { mutableStateOf(false) }
     var queuing by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
-    var family by com.sal7one.transiber.models.rememberModelBrowseString("ocr-family", OcrCatalog.profiles.firstOrNull { it.id == selected }?.engine ?: "any")
+    var family by com.sal7one.transiber.models.rememberModelBrowseString("ocr-family", OcrCatalog.profiles.firstOrNull { it.id == selected }?.family ?: "any")
     var query by com.sal7one.transiber.models.rememberModelBrowseString("ocr-query", "")
     var installedOnly by com.sal7one.transiber.models.rememberModelBrowseBoolean("ocr-installed")
     var installed by remember { mutableStateOf<Set<String>>(emptySet()) }
@@ -72,17 +78,18 @@ internal fun SettingsOcrLocalUi(onDownloads: () -> Unit = {}, selected: String? 
         } while (isActive)
     }
     val shown = OcrCatalog.profiles.filter { it.matchesBrowser(query, family) && (!installedOnly || it.id in installed) }
-    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text(uiText(UiR.string.ui_ocr_camera_reading_12439), style = MaterialTheme.typography.titleLarge)
-        Text(if (ByokPolicy.FEATURE_BYOK) uiText(UiR.string.ui_paddle_for_general_text_manga_for_japanese_bubbles_meiki_for_japa_76763)
-            else uiText(UiR.string.ui_import_the_files_for_your_selected_ocr_engine_below_this_offline_7e9b3),
-            style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(SettingsLayout.cardGap)) {
+        SettingsHeading(uiText(UiR.string.ui_ocr_camera_reading_12439),
+            if (ByokPolicy.FEATURE_BYOK) uiText(UiR.string.ui_paddle_for_general_text_manga_for_japanese_bubbles_meiki_for_japa_76763)
+            else uiText(UiR.string.ui_import_the_files_for_your_selected_ocr_engine_below_this_offline_7e9b3))
+        Text(uiText(UiR.string.ocr_reader_saved_for_both, uiText.label(OcrCatalog.profile(selectedProfile))),
+            style = MaterialTheme.typography.bodyMedium, modifier = Modifier.testTag("ocr-selected-reader"))
         ModelSearchField(query, { query = it })
         ModelFilterPicker(uiText(UiR.string.model_browser_engine), family, listOf(
             "any" to uiText(UiR.string.model_browser_all_engines), "paddle" to "PaddleOCR", "manga" to "Manga OCR", "meiki" to "Meiki"), { family = it })
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            FilterChip(!installedOnly, { installedOnly = false }, label = { Text(uiText(UiR.string.model_browser_all)) })
-            FilterChip(installedOnly, { installedOnly = true }, label = { Text(uiText(UiR.string.model_browser_installed)) })
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            FilterChip(!installedOnly, { installedOnly = false }, label = { Text(uiText(UiR.string.model_browser_all)) }, modifier = Modifier.heightIn(min = SettingsLayout.touchTarget))
+            FilterChip(installedOnly, { installedOnly = true }, label = { Text(uiText(UiR.string.model_browser_installed)) }, modifier = Modifier.heightIn(min = SettingsLayout.touchTarget))
         }
         Text(uiText(UiR.string.model_browser_results, shown.size), style = MaterialTheme.typography.labelMedium)
         if (shown.isEmpty()) ModelBrowserEmptyState(onReset = { query = ""; family = "any"; installedOnly = false })
@@ -96,11 +103,11 @@ internal fun SettingsOcrLocalUi(onDownloads: () -> Unit = {}, selected: String? 
                     other.modelId == it.modelId && (other.active || other.complete)
                 }
             } }
-            val isSelected = selected == profile.id
+            val isSelected = selectedProfile == profile.id
             OutlinedCard(Modifier.fillMaxWidth(), colors = CardDefaults.outlinedCardColors(
                 containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
                     else MaterialTheme.colorScheme.surfaceContainerLow)) {
-                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(Modifier.padding(SettingsLayout.cardPadding), verticalArrangement = Arrangement.spacedBy(SettingsLayout.contentGap)) {
                     Text(uiText.label(profile), style = MaterialTheme.typography.titleMedium)
                     Text(uiText.description(profile), style = MaterialTheme.typography.bodyMedium)
                     Text(uiText(UiR.string.ui_1_s_mib_total_2_s_cee22,
@@ -115,10 +122,10 @@ internal fun SettingsOcrLocalUi(onDownloads: () -> Unit = {}, selected: String? 
                     if (!ready) failed?.let { Text(it.error.ifBlank {
                         uiText(UiR.string.ui_download_failed_reason_1_s_8bb99, it.reason)
                     }, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
-                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        if (onSelect != null) FilterChip(isSelected, { onSelect(profile.id) }, label = {
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        FilterChip(isSelected, { selectProfile(profile.id) }, label = {
                             Text(uiText(if (isSelected) UiR.string.ui_selected_9a976 else UiR.string.ui_choose_78b7c))
-                        })
+                        }, modifier = Modifier.heightIn(min = SettingsLayout.touchTarget).testTag("ocr-profile-choose-${profile.id}"))
                         if (pending.isNotEmpty()) OutlinedButton(onClick = onDownloads) { Text(uiText(UiR.string.ui_view_download_progress_fb5a1)) }
                         if (ByokPolicy.FEATURE_BYOK && !ready && pending.isEmpty()) Button(enabled = !importing && !queuing, onClick = {
                             scope.launch {
@@ -154,7 +161,7 @@ internal fun SettingsOcrLocalUi(onDownloads: () -> Unit = {}, selected: String? 
             }
         } }
         HorizontalDivider()
-        OutlinedButton(onClick = { importer.launch(arrayOf("*/*")) }, enabled = !importing && !queuing, modifier = Modifier.fillMaxWidth()) {
+        OutlinedButton(onClick = { importer.launch(arrayOf("*/*")) }, enabled = !importing && !queuing, modifier = Modifier.fillMaxWidth().heightIn(min = SettingsLayout.touchTarget)) {
             Text(uiText(if (importing) UiR.string.ui_verifying_model_fa771 else UiR.string.ui_import_downloaded_onnx_files_1f3bd))
         }
         Text(uiText(UiR.string.ui_select_all_onnx_files_for_the_selected_engine_together_file_names_c1ec6), style = MaterialTheme.typography.bodySmall)

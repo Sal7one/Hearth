@@ -1,0 +1,2958 @@
+{
+  "schemaVersion": 1,
+  "provenance": "Generated from existing Android pins, the audited Qwen3-ASR release archive, reviewed CT2 catalog pins and reviewed desktop engine pins; run scripts/desktop/generate-catalog.py --check",
+  "models": [
+    {
+      "id": "whisper-tiny-q5_1",
+      "name": "Whisper tiny · Q5_1",
+      "family": "Whisper",
+      "stage": "STT",
+      "engineId": "whisper-local",
+      "languages": [
+        "multilingual",
+        "ar",
+        "en"
+      ],
+      "source": "https://huggingface.co/ggerganov/whisper.cpp",
+      "license": "MIT",
+      "note": "Pinned Android artifact; desktop uses the same whisper.cpp model format. Quantizations are file options within the Whisper family.",
+      "options": {},
+      "artifacts": [
+        {
+          "filename": "ggml-tiny-q5_1.bin",
+          "bytes": 32152673,
+          "sha256": "818710568da3ca15689e31a743197b520007872ff9576237bda97bd1b469c3d7",
+          "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-tiny-q5_1.bin"
+        }
+      ]
+    },
+    {
+      "id": "whisper-tiny-q8_0",
+      "name": "Whisper tiny · Q8_0",
+      "family": "Whisper",
+      "stage": "STT",
+      "engineId": "whisper-local",
+      "languages": [
+        "multilingual",
+        "ar",
+        "en"
+      ],
+      "source": "https://huggingface.co/ggerganov/whisper.cpp",
+      "license": "MIT",
+      "note": "Pinned Android artifact; desktop uses the same whisper.cpp model format. Quantizations are file options within the Whisper family.",
+      "options": {},
+      "artifacts": [
+        {
+          "filename": "ggml-tiny-q8_0.bin",
+          "bytes": 43537433,
+          "sha256": "c2085835d3f50733e2ff6e4b41ae8a2b8d8110461e18821b09a15c40c42d1cca",
+          "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-tiny-q8_0.bin"
+        }
+      ]
+    },
+    {
+      "id": "whisper-tiny-f16",
+      "name": "Whisper tiny · F16",
+      "family": "Whisper",
+      "stage": "STT",
+      "engineId": "whisper-local",
+      "languages": [
+        "multilingual",
+        "ar",
+        "en"
+      ],
+      "source": "https://huggingface.co/ggerganov/whisper.cpp",
+      "license": "MIT",
+      "note": "Pinned Android artifact; desktop uses the same whisper.cpp model format. Quantizations are file options within the Whisper family.",
+      "options": {},
+      "artifacts": [
+        {
+          "filename": "ggml-tiny.bin",
+          "bytes": 77691713,
+          "sha256": "be07e048e1e599ad46341c8d2a135645097a538221678b7acdd1b1919c6e1b21",
+          "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-tiny.bin"
+        }
+      ]
+    },
+    {
+      "id": "whisper-tiny.en-q5_1",
+      "name": "Whisper tiny.en · Q5_1",
+      "family": "Whisper",
+      "stage": "STT",
+      "engineId": "whisper-local",
+      "languages": [
+        "en"
+      ],
+      "source": "https://huggingface.co/ggerganov/whisper.cpp",
+      "license": "MIT",
+      "note": "Pinned Android artifact; desktop uses the same whisper.cpp model format. Quantizations are file options within the Whisper family.",
+      "options": {},
+      "artifacts": [
+        {
+          "filename": "ggml-tiny.en-q5_1.bin",
+          "bytes": 32166155,
+          "sha256": "c77c5766f1cef09b6b7d47f21b546cbddd4157886b3b5d6d4f709e91e66c7c2b",
+          "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-tiny.en-q5_1.bin"
+        }
+      ]
+    },
+    {
+      "id": "whisper-tiny.en-q8_0",
+      "name": "Whisper tiny.en · Q8_0",
+      "family": "Whisper",
+      "stage": "STT",
+      "engineId": "whisper-local",
+      "languages": [
+        "en"
+      ],
+      "source": "https://huggingface.co/ggerganov/whisper.cpp",
+      "license": "MIT",
+      "note": "Pinned Android artifact; desktop uses the same whisper.cpp model format. Quantizations are file options within the Whisper family.",
+      "options": {},
+      "artifacts": [
+        {
+          "filename": "ggml-tiny.en-q8_0.bin",
+          "bytes": 43550795,
+          "sha256": "5bc2b3860aa151a4c6e7bb095e1fcce7cf12c7b020ca08dcec0c6d018bb7dd94",
+          "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-tiny.en-q8_0.bin"
+        }
+      ]
+    },
+    {
+      "id": "whisper-tiny.en-f16",
+      "name": "Whisper tiny.en · F16",
+      "family": "Whisper",
+      "stage": "STT",
+      "engineId": "whisper-local",
+      "languages": [
+        "en"
+      ],
+      "source": "https://huggingface.co/ggerganov/whisper.cpp",
+      "license": "MIT",
+      "note": "Pinned Android artifact; desktop uses the same whisper.cpp model format. Quantizations are file options within the Whisper family.",
+      "options": {},
+      "artifacts": [
+        {
+          "filename": "ggml-tiny.en.bin",
+          "bytes": 77704715,
+          "sha256": "921e4cf8686fdd993dcd081a5da5b6c365bfde1162e72b08d75ac75289920b1f",
+          "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-tiny.en.bin"
+        }
+      ]
+    },
+    {
+      "id": "whisper-base-q5_1",
+      "name": "Whisper base · Q5_1",
+      "family": "Whisper",
+      "stage": "STT",
+      "engineId": "whisper-local",
+      "languages": [
+        "multilingual",
+        "ar",
+        "en"
+      ],
+      "source": "https://huggingface.co/ggerganov/whisper.cpp",
+      "license": "MIT",
+      "note": "Pinned Android artifact; desktop uses the same whisper.cpp model format. Quantizations are file options within the Whisper family.",
+      "options": {},
+      "artifacts": [
+        {
+          "filename": "ggml-base-q5_1.bin",
+          "bytes": 59707625,
+          "sha256": "422f1ae452ade6f30a004d7e5c6a43195e4433bc370bf23fac9cc591f01a8898",
+          "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-base-q5_1.bin"
+        }
+      ]
+    },
+    {
+      "id": "whisper-base-q8_0",
+      "name": "Whisper base · Q8_0",
+      "family": "Whisper",
+      "stage": "STT",
+      "engineId": "whisper-local",
+      "languages": [
+        "multilingual",
+        "ar",
+        "en"
+      ],
+      "source": "https://huggingface.co/ggerganov/whisper.cpp",
+      "license": "MIT",
+      "note": "Pinned Android artifact; desktop uses the same whisper.cpp model format. Quantizations are file options within the Whisper family.",
+      "options": {},
+      "artifacts": [
+        {
+          "filename": "ggml-base-q8_0.bin",
+          "bytes": 81768585,
+          "sha256": "c577b9a86e7e048a0b7eada054f4dd79a56bbfa911fbdacf900ac5b567cbb7d9",
+          "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-base-q8_0.bin"
+        }
+      ]
+    },
+    {
+      "id": "whisper-base-f16",
+      "name": "Whisper base · F16",
+      "family": "Whisper",
+      "stage": "STT",
+      "engineId": "whisper-local",
+      "languages": [
+        "multilingual",
+        "ar",
+        "en"
+      ],
+      "source": "https://huggingface.co/ggerganov/whisper.cpp",
+      "license": "MIT",
+      "note": "Pinned Android artifact; desktop uses the same whisper.cpp model format. Quantizations are file options within the Whisper family.",
+      "options": {},
+      "artifacts": [
+        {
+          "filename": "ggml-base.bin",
+          "bytes": 147951465,
+          "sha256": "60ed5bc3dd14eea856493d334349b405782ddcaf0028d4b5df4088345fba2efe",
+          "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-base.bin"
+        }
+      ]
+    },
+    {
+      "id": "whisper-base.en-q5_1",
+      "name": "Whisper base.en · Q5_1",
+      "family": "Whisper",
+      "stage": "STT",
+      "engineId": "whisper-local",
+      "languages": [
+        "en"
+      ],
+      "source": "https://huggingface.co/ggerganov/whisper.cpp",
+      "license": "MIT",
+      "note": "Pinned Android artifact; desktop uses the same whisper.cpp model format. Quantizations are file options within the Whisper family.",
+      "options": {},
+      "artifacts": [
+        {
+          "filename": "ggml-base.en-q5_1.bin",
+          "bytes": 59721011,
+          "sha256": "4baf70dd0d7c4247ba2b81fafd9c01005ac77c2f9ef064e00dcf195d0e2fdd2f",
+          "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-base.en-q5_1.bin"
+        }
+      ]
+    },
+    {
+      "id": "whisper-base.en-q8_0",
+      "name": "Whisper base.en · Q8_0",
+      "family": "Whisper",
+      "stage": "STT",
+      "engineId": "whisper-local",
+      "languages": [
+        "en"
+      ],
+      "source": "https://huggingface.co/ggerganov/whisper.cpp",
+      "license": "MIT",
+      "note": "Pinned Android artifact; desktop uses the same whisper.cpp model format. Quantizations are file options within the Whisper family.",
+      "options": {},
+      "artifacts": [
+        {
+          "filename": "ggml-base.en-q8_0.bin",
+          "bytes": 81781811,
+          "sha256": "a4d4a0768075e13cfd7e19df3ae2dbc4a68d37d36a7dad45e8410c9a34f8c87e",
+          "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-base.en-q8_0.bin"
+        }
+      ]
+    },
+    {
+      "id": "whisper-base.en-f16",
+      "name": "Whisper base.en · F16",
+      "family": "Whisper",
+      "stage": "STT",
+      "engineId": "whisper-local",
+      "languages": [
+        "en"
+      ],
+      "source": "https://huggingface.co/ggerganov/whisper.cpp",
+      "license": "MIT",
+      "note": "Pinned Android artifact; desktop uses the same whisper.cpp model format. Quantizations are file options within the Whisper family.",
+      "options": {},
+      "artifacts": [
+        {
+          "filename": "ggml-base.en.bin",
+          "bytes": 147964211,
+          "sha256": "a03779c86df3323075f5e796cb2ce5029f00ec8869eee3fdfb897afe36c6d002",
+          "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-base.en.bin"
+        }
+      ]
+    },
+    {
+      "id": "whisper-small-q5_1",
+      "name": "Whisper small · Q5_1",
+      "family": "Whisper",
+      "stage": "STT",
+      "engineId": "whisper-local",
+      "languages": [
+        "multilingual",
+        "ar",
+        "en"
+      ],
+      "source": "https://huggingface.co/ggerganov/whisper.cpp",
+      "license": "MIT",
+      "note": "Pinned Android artifact; desktop uses the same whisper.cpp model format. Quantizations are file options within the Whisper family.",
+      "options": {},
+      "artifacts": [
+        {
+          "filename": "ggml-small-q5_1.bin",
+          "bytes": 190085487,
+          "sha256": "ae85e4a935d7a567bd102fe55afc16bb595bdb618e11b2fc7591bc08120411bb",
+          "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-small-q5_1.bin"
+        }
+      ]
+    },
+    {
+      "id": "whisper-small-q8_0",
+      "name": "Whisper small · Q8_0",
+      "family": "Whisper",
+      "stage": "STT",
+      "engineId": "whisper-local",
+      "languages": [
+        "multilingual",
+        "ar",
+        "en"
+      ],
+      "source": "https://huggingface.co/ggerganov/whisper.cpp",
+      "license": "MIT",
+      "note": "Pinned Android artifact; desktop uses the same whisper.cpp model format. Quantizations are file options within the Whisper family.",
+      "options": {},
+      "artifacts": [
+        {
+          "filename": "ggml-small-q8_0.bin",
+          "bytes": 264464607,
+          "sha256": "49c8fb02b65e6049d5fa6c04f81f53b867b5ec9540406812c643f177317f779f",
+          "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-small-q8_0.bin"
+        }
+      ]
+    },
+    {
+      "id": "whisper-small-f16",
+      "name": "Whisper small · F16",
+      "family": "Whisper",
+      "stage": "STT",
+      "engineId": "whisper-local",
+      "languages": [
+        "multilingual",
+        "ar",
+        "en"
+      ],
+      "source": "https://huggingface.co/ggerganov/whisper.cpp",
+      "license": "MIT",
+      "note": "Pinned Android artifact; desktop uses the same whisper.cpp model format. Quantizations are file options within the Whisper family.",
+      "options": {},
+      "artifacts": [
+        {
+          "filename": "ggml-small.bin",
+          "bytes": 487601967,
+          "sha256": "1be3a9b2063867b937e64e2ec7483364a79917e157fa98c5d94b5c1fffea987b",
+          "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-small.bin"
+        }
+      ]
+    },
+    {
+      "id": "whisper-small.en-q5_1",
+      "name": "Whisper small.en · Q5_1",
+      "family": "Whisper",
+      "stage": "STT",
+      "engineId": "whisper-local",
+      "languages": [
+        "en"
+      ],
+      "source": "https://huggingface.co/ggerganov/whisper.cpp",
+      "license": "MIT",
+      "note": "Pinned Android artifact; desktop uses the same whisper.cpp model format. Quantizations are file options within the Whisper family.",
+      "options": {},
+      "artifacts": [
+        {
+          "filename": "ggml-small.en-q5_1.bin",
+          "bytes": 190098681,
+          "sha256": "bfdff4894dcb76bbf647d56263ea2a96645423f1669176f4844a1bf8e478ad30",
+          "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-small.en-q5_1.bin"
+        }
+      ]
+    },
+    {
+      "id": "whisper-small.en-q8_0",
+      "name": "Whisper small.en · Q8_0",
+      "family": "Whisper",
+      "stage": "STT",
+      "engineId": "whisper-local",
+      "languages": [
+        "en"
+      ],
+      "source": "https://huggingface.co/ggerganov/whisper.cpp",
+      "license": "MIT",
+      "note": "Pinned Android artifact; desktop uses the same whisper.cpp model format. Quantizations are file options within the Whisper family.",
+      "options": {},
+      "artifacts": [
+        {
+          "filename": "ggml-small.en-q8_0.bin",
+          "bytes": 264477561,
+          "sha256": "67a179f608ea6114bd3fdb9060e762b588a3fb3bd00c4387971be4d177958067",
+          "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-small.en-q8_0.bin"
+        }
+      ]
+    },
+    {
+      "id": "whisper-small.en-f16",
+      "name": "Whisper small.en · F16",
+      "family": "Whisper",
+      "stage": "STT",
+      "engineId": "whisper-local",
+      "languages": [
+        "en"
+      ],
+      "source": "https://huggingface.co/ggerganov/whisper.cpp",
+      "license": "MIT",
+      "note": "Pinned Android artifact; desktop uses the same whisper.cpp model format. Quantizations are file options within the Whisper family.",
+      "options": {},
+      "artifacts": [
+        {
+          "filename": "ggml-small.en.bin",
+          "bytes": 487614201,
+          "sha256": "c6138d6d58ecc8322097e0f987c32f1be8bb0a18532a3f88f734d1bbf9c41e5d",
+          "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-small.en.bin"
+        }
+      ]
+    },
+    {
+      "id": "whisper-medium-q5_0",
+      "name": "Whisper medium · Q5_0",
+      "family": "Whisper",
+      "stage": "STT",
+      "engineId": "whisper-local",
+      "languages": [
+        "multilingual",
+        "ar",
+        "en"
+      ],
+      "source": "https://huggingface.co/ggerganov/whisper.cpp",
+      "license": "MIT",
+      "note": "Pinned Android artifact; desktop uses the same whisper.cpp model format. Quantizations are file options within the Whisper family.",
+      "options": {},
+      "artifacts": [
+        {
+          "filename": "ggml-medium-q5_0.bin",
+          "bytes": 539212467,
+          "sha256": "19fea4b380c3a618ec4723c3eef2eb785ffba0d0538cf43f8f235e7b3b34220f",
+          "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-medium-q5_0.bin"
+        }
+      ]
+    },
+    {
+      "id": "whisper-medium-q8_0",
+      "name": "Whisper medium · Q8_0",
+      "family": "Whisper",
+      "stage": "STT",
+      "engineId": "whisper-local",
+      "languages": [
+        "multilingual",
+        "ar",
+        "en"
+      ],
+      "source": "https://huggingface.co/ggerganov/whisper.cpp",
+      "license": "MIT",
+      "note": "Pinned Android artifact; desktop uses the same whisper.cpp model format. Quantizations are file options within the Whisper family.",
+      "options": {},
+      "artifacts": [
+        {
+          "filename": "ggml-medium-q8_0.bin",
+          "bytes": 823369779,
+          "sha256": "42a1ffcbe4167d224232443396968db4d02d4e8e87e213d3ee2e03095dea6502",
+          "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-medium-q8_0.bin"
+        }
+      ]
+    },
+    {
+      "id": "whisper-medium-f16",
+      "name": "Whisper medium · F16",
+      "family": "Whisper",
+      "stage": "STT",
+      "engineId": "whisper-local",
+      "languages": [
+        "multilingual",
+        "ar",
+        "en"
+      ],
+      "source": "https://huggingface.co/ggerganov/whisper.cpp",
+      "license": "MIT",
+      "note": "Pinned Android artifact; desktop uses the same whisper.cpp model format. Quantizations are file options within the Whisper family.",
+      "options": {},
+      "artifacts": [
+        {
+          "filename": "ggml-medium.bin",
+          "bytes": 1533763059,
+          "sha256": "6c14d5adee5f86394037b4e4e8b59f1673b6cee10e3cf0b11bbdbee79c156208",
+          "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-medium.bin"
+        }
+      ]
+    },
+    {
+      "id": "whisper-medium.en-q5_0",
+      "name": "Whisper medium.en · Q5_0",
+      "family": "Whisper",
+      "stage": "STT",
+      "engineId": "whisper-local",
+      "languages": [
+        "en"
+      ],
+      "source": "https://huggingface.co/ggerganov/whisper.cpp",
+      "license": "MIT",
+      "note": "Pinned Android artifact; desktop uses the same whisper.cpp model format. Quantizations are file options within the Whisper family.",
+      "options": {},
+      "artifacts": [
+        {
+          "filename": "ggml-medium.en-q5_0.bin",
+          "bytes": 539225533,
+          "sha256": "76733e26ad8fe1c7a5bf7531a9d41917b2adc0f20f2e4f5531688a8c6cd88eb0",
+          "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-medium.en-q5_0.bin"
+        }
+      ]
+    },
+    {
+      "id": "whisper-medium.en-q8_0",
+      "name": "Whisper medium.en · Q8_0",
+      "family": "Whisper",
+      "stage": "STT",
+      "engineId": "whisper-local",
+      "languages": [
+        "en"
+      ],
+      "source": "https://huggingface.co/ggerganov/whisper.cpp",
+      "license": "MIT",
+      "note": "Pinned Android artifact; desktop uses the same whisper.cpp model format. Quantizations are file options within the Whisper family.",
+      "options": {},
+      "artifacts": [
+        {
+          "filename": "ggml-medium.en-q8_0.bin",
+          "bytes": 823382461,
+          "sha256": "43fa2cd084de5a04399a896a9a7a786064e221365c01700cea4666005218f11c",
+          "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-medium.en-q8_0.bin"
+        }
+      ]
+    },
+    {
+      "id": "whisper-medium.en-f16",
+      "name": "Whisper medium.en · F16",
+      "family": "Whisper",
+      "stage": "STT",
+      "engineId": "whisper-local",
+      "languages": [
+        "en"
+      ],
+      "source": "https://huggingface.co/ggerganov/whisper.cpp",
+      "license": "MIT",
+      "note": "Pinned Android artifact; desktop uses the same whisper.cpp model format. Quantizations are file options within the Whisper family.",
+      "options": {},
+      "artifacts": [
+        {
+          "filename": "ggml-medium.en.bin",
+          "bytes": 1533774781,
+          "sha256": "cc37e93478338ec7700281a7ac30a10128929eb8f427dda2e865faa8f6da4356",
+          "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-medium.en.bin"
+        }
+      ]
+    },
+    {
+      "id": "whisper-large-v3-turbo-q5_0",
+      "name": "Whisper large-v3-turbo · Q5_0",
+      "family": "Whisper",
+      "stage": "STT",
+      "engineId": "whisper-local",
+      "languages": [
+        "multilingual",
+        "ar",
+        "en"
+      ],
+      "source": "https://huggingface.co/ggerganov/whisper.cpp",
+      "license": "MIT",
+      "note": "Pinned Android artifact; desktop uses the same whisper.cpp model format. Quantizations are file options within the Whisper family.",
+      "options": {},
+      "artifacts": [
+        {
+          "filename": "ggml-large-v3-turbo-q5_0.bin",
+          "bytes": 574041195,
+          "sha256": "394221709cd5ad1f40c46e6031ca61bce88931e6e088c188294c6d5a55ffa7e2",
+          "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-large-v3-turbo-q5_0.bin"
+        }
+      ]
+    },
+    {
+      "id": "whisper-large-v3-turbo-q8_0",
+      "name": "Whisper large-v3-turbo · Q8_0",
+      "family": "Whisper",
+      "stage": "STT",
+      "engineId": "whisper-local",
+      "languages": [
+        "multilingual",
+        "ar",
+        "en"
+      ],
+      "source": "https://huggingface.co/ggerganov/whisper.cpp",
+      "license": "MIT",
+      "note": "Pinned Android artifact; desktop uses the same whisper.cpp model format. Quantizations are file options within the Whisper family.",
+      "options": {},
+      "artifacts": [
+        {
+          "filename": "ggml-large-v3-turbo-q8_0.bin",
+          "bytes": 874188075,
+          "sha256": "317eb69c11673c9de1e1f0d459b253999804ec71ac4c23c17ecf5fbe24e259a1",
+          "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-large-v3-turbo-q8_0.bin"
+        }
+      ]
+    },
+    {
+      "id": "whisper-large-v3-turbo-f16",
+      "name": "Whisper large-v3-turbo · F16",
+      "family": "Whisper",
+      "stage": "STT",
+      "engineId": "whisper-local",
+      "languages": [
+        "multilingual",
+        "ar",
+        "en"
+      ],
+      "source": "https://huggingface.co/ggerganov/whisper.cpp",
+      "license": "MIT",
+      "note": "Pinned Android artifact; desktop uses the same whisper.cpp model format. Quantizations are file options within the Whisper family.",
+      "options": {},
+      "artifacts": [
+        {
+          "filename": "ggml-large-v3-turbo.bin",
+          "bytes": 1624555275,
+          "sha256": "1fc70f774d38eb169993ac391eea357ef47c88757ef72ee5943879b7e8e2bc69",
+          "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-large-v3-turbo.bin"
+        }
+      ]
+    },
+    {
+      "id": "eurollm-17b-q4",
+      "name": "EuroLLM 1.7B Instruct",
+      "family": "eurollm",
+      "stage": "TRANSLATION",
+      "engineId": "llama-translation-local",
+      "languages": [
+        "bg",
+        "hr",
+        "cs",
+        "da",
+        "nl",
+        "en",
+        "et",
+        "fi",
+        "fr",
+        "de",
+        "el",
+        "hu",
+        "ga",
+        "it",
+        "lv",
+        "lt",
+        "mt",
+        "pl",
+        "pt",
+        "ro",
+        "sk",
+        "sl",
+        "es",
+        "sv",
+        "ar",
+        "ca",
+        "zh",
+        "gl",
+        "hi",
+        "ja",
+        "ko",
+        "no",
+        "ru",
+        "tr",
+        "uk"
+      ],
+      "source": "https://huggingface.co/utter-project/EuroLLM-1.7B-Instruct/blob/a25c7fa65fc2a644e6270b8940dbe295b51da681/README.md",
+      "license": "Apache-2.0",
+      "note": "Uses the existing Hearth translation prompt protocol. Quality varies by direction; see linked model evidence.",
+      "options": {
+        "promptMode": "euro",
+        "family": "eurollm"
+      },
+      "artifacts": [
+        {
+          "filename": "EuroLLM-1.7B-Instruct.Q4_K_M.gguf",
+          "bytes": 1045156992,
+          "sha256": "f22ab4b628f6e3cd12ec2e5aa6d1e460be2fa83f25cb6a8f5dd6d4d77b285b66",
+          "url": "https://huggingface.co/QuantFactory/EuroLLM-1.7B-Instruct-GGUF/resolve/4126f034ddfe7fd39ca3378ae58d3b1d74065315/EuroLLM-1.7B-Instruct.Q4_K_M.gguf"
+        }
+      ]
+    },
+    {
+      "id": "riva-translate-4b-v2-q4",
+      "name": "Riva-Translate 4B Instruct v2",
+      "family": "riva-translate",
+      "stage": "TRANSLATION",
+      "engineId": "llama-translation-local",
+      "languages": [
+        "en",
+        "cs",
+        "da",
+        "de",
+        "el",
+        "es",
+        "fi",
+        "fr",
+        "hu",
+        "it",
+        "lt",
+        "lv",
+        "nl",
+        "no",
+        "pl",
+        "pt",
+        "ro",
+        "ru",
+        "sk",
+        "sv",
+        "zh",
+        "ja",
+        "hi",
+        "ko",
+        "et",
+        "sl",
+        "bg",
+        "uk",
+        "hr",
+        "ar",
+        "vi",
+        "tr",
+        "id",
+        "th"
+      ],
+      "source": "https://huggingface.co/nvidia/Riva-Translate-4B-Instruct-v2/blob/040d958b128018ff0bed2542a7b51005e9ea563c/tokenizer_config.json",
+      "license": "NVIDIA Open Model License",
+      "note": "Uses the existing Hearth translation prompt protocol. Quality varies by direction; see linked model evidence.",
+      "options": {
+        "promptMode": "riva",
+        "family": "riva-translate"
+      },
+      "artifacts": [
+        {
+          "filename": "Riva-Translate-4B-Instruct-v2-Q4_K_M.gguf",
+          "bytes": 2759302720,
+          "sha256": "90c2f48ff5549b770d9aaecb7eea603548bcca035a970a800d9c17781991804d",
+          "url": "https://huggingface.co/liodon-ai/Riva-Translate-4B-Instruct-v2-imatrix-GGUF/resolve/aa8cc2e72e2f97e07b021e4afbc612cff3bf9ae9/Riva-Translate-4B-Instruct-v2-Q4_K_M.gguf"
+        }
+      ]
+    },
+    {
+      "id": "milmmt-46-1b-q4",
+      "name": "MiLMMT-46 1B · Q4_K_M",
+      "family": "milmmt-46",
+      "stage": "TRANSLATION",
+      "engineId": "llama-translation-local",
+      "languages": [
+        "ar",
+        "en"
+      ],
+      "source": "https://huggingface.co/mradermacher/MiLMMT-46-1B-v1.0-GGUF",
+      "license": "Gemma terms",
+      "note": "Uses the existing Hearth translation prompt protocol. Quality varies by direction; see linked model evidence.",
+      "options": {
+        "promptMode": "raw",
+        "family": "milmmt-46"
+      },
+      "artifacts": [
+        {
+          "filename": "MiLMMT-46-1B-v1.0.Q4_K_M.gguf",
+          "bytes": 806057408,
+          "sha256": "74d38ba75108d455326e9deeaf9ab01bb266dfa665eae9c4aa84e84485d4fdf9",
+          "url": "https://huggingface.co/mradermacher/MiLMMT-46-1B-v1.0-GGUF/resolve/34df5efbe6592773ec168cc7b307728c08623472/MiLMMT-46-1B-v1.0.Q4_K_M.gguf"
+        }
+      ]
+    },
+    {
+      "id": "hy-mt2-q2",
+      "name": "Hy-MT2 1.8B · Q2_K",
+      "family": "hy-mt2",
+      "stage": "TRANSLATION",
+      "engineId": "llama-translation-local",
+      "languages": [
+        "ar",
+        "en",
+        "de",
+        "es",
+        "fr",
+        "ru",
+        "zh"
+      ],
+      "source": "https://huggingface.co/mradermacher/Hy-MT2-1.8B-GGUF",
+      "license": "Apache-2.0",
+      "note": "Uses the existing Hearth translation prompt protocol. Quality varies by direction; see linked model evidence.",
+      "options": {
+        "promptMode": "default",
+        "family": "hy-mt2"
+      },
+      "artifacts": [
+        {
+          "filename": "Hy-MT2-1.8B.Q2_K.gguf",
+          "bytes": 777483008,
+          "sha256": "dced2d16784aaf339cab86a469ec3a6963111b200d863ed345a2380842b88ce7",
+          "url": "https://huggingface.co/mradermacher/Hy-MT2-1.8B-GGUF/resolve/d760e9708bbded7cee9aa135b4f1dedb42ed2fc4/Hy-MT2-1.8B.Q2_K.gguf"
+        }
+      ]
+    },
+    {
+      "id": "hy-mt2-q4",
+      "name": "Hy-MT2 1.8B · Q4_K_M",
+      "family": "hy-mt2",
+      "stage": "TRANSLATION",
+      "engineId": "llama-translation-local",
+      "languages": [
+        "ar",
+        "en",
+        "de",
+        "es",
+        "fr",
+        "ru",
+        "zh"
+      ],
+      "source": "https://huggingface.co/tencent/Hy-MT2-1.8B-GGUF",
+      "license": "Apache-2.0",
+      "note": "Uses the existing Hearth translation prompt protocol. Quality varies by direction; see linked model evidence.",
+      "options": {
+        "promptMode": "default",
+        "family": "hy-mt2"
+      },
+      "artifacts": [
+        {
+          "filename": "Hy-MT2-1.8B-Q4_K_M.gguf",
+          "bytes": 1133080448,
+          "sha256": "dc5f44fcf1fa496ee7ad725982c0c8c553a4de00259b53af84c4b89fb0c06699",
+          "url": "https://huggingface.co/tencent/Hy-MT2-1.8B-GGUF/resolve/a0c709d9fac510f2c807aa3af52872340dc37a4a/Hy-MT2-1.8B-Q4_K_M.gguf"
+        }
+      ]
+    },
+    {
+      "id": "hy-mt15-q4",
+      "name": "Hy-MT1.5 1.8B · Q4_K_M",
+      "family": "hy-mt2",
+      "stage": "TRANSLATION",
+      "engineId": "llama-translation-local",
+      "languages": [
+        "ar",
+        "en",
+        "de",
+        "es",
+        "fr",
+        "ru",
+        "zh"
+      ],
+      "source": "https://huggingface.co/tencent/HY-MT1.5-1.8B-GGUF",
+      "license": "Tencent Hunyuan community license",
+      "note": "Uses the existing Hearth translation prompt protocol. Quality varies by direction; see linked model evidence.",
+      "options": {
+        "promptMode": "default",
+        "family": "hy-mt2"
+      },
+      "artifacts": [
+        {
+          "filename": "HY-MT1.5-1.8B-Q4_K_M.gguf",
+          "bytes": 1133080512,
+          "sha256": "4383ac0c3c8e476de98ff979c2a3f069f8c4fb385e7860cf2d28da896cc477c7",
+          "url": "https://huggingface.co/tencent/HY-MT1.5-1.8B-GGUF/resolve/265b2e615a7dc9b06c435dc878829ad99a512ba2/HY-MT1.5-1.8B-Q4_K_M.gguf"
+        }
+      ]
+    },
+    {
+      "id": "index-translate-2b-q4",
+      "name": "Index-Translate 2B · Q4_K_M",
+      "family": "index-translate",
+      "stage": "TRANSLATION",
+      "engineId": "llama-translation-local",
+      "languages": [
+        "ar",
+        "en",
+        "de",
+        "es",
+        "fr",
+        "ru",
+        "zh"
+      ],
+      "source": "https://huggingface.co/IndexTeam/Index-Translate-2B-GGUF",
+      "license": "Apache-2.0",
+      "note": "Uses the existing Hearth translation prompt protocol. Quality varies by direction; see linked model evidence.",
+      "options": {
+        "promptMode": "default",
+        "family": "index-translate"
+      },
+      "artifacts": [
+        {
+          "filename": "Index-Translate-2B.Q4_K_M.gguf",
+          "bytes": 1312164352,
+          "sha256": "044b313d29342bd3b2c77cbb64023ca0d209bd9b3247763f9d162767ef2d746a",
+          "url": "https://huggingface.co/IndexTeam/Index-Translate-2B-GGUF/resolve/3a0eca6ce931d88d00614d427ab3ed8ff0743902/Index-Translate-2B.Q4_K_M.gguf"
+        }
+      ]
+    },
+    {
+      "id": "translategemma-4b-q4",
+      "name": "TranslateGemma 4B · Q4_K_M",
+      "family": "translategemma",
+      "stage": "TRANSLATION",
+      "engineId": "llama-translation-local",
+      "languages": [
+        "ar",
+        "en",
+        "de",
+        "es",
+        "fr",
+        "ru",
+        "zh"
+      ],
+      "source": "https://huggingface.co/mradermacher/translategemma-4b-it-GGUF",
+      "license": "Gemma terms",
+      "note": "Uses the existing Hearth translation prompt protocol. Quality varies by direction; see linked model evidence.",
+      "options": {
+        "promptMode": "default",
+        "family": "translategemma"
+      },
+      "artifacts": [
+        {
+          "filename": "translategemma-4b-it.Q4_K_M.gguf",
+          "bytes": 2489909760,
+          "sha256": "81200d03e843d2ec1ece6eeafe7d13cb6e5211e1fcd336ade55790b683a08330",
+          "url": "https://huggingface.co/mradermacher/translategemma-4b-it-GGUF/resolve/35a7486e128b19642cdc72d7b91b21ba388aaf42/translategemma-4b-it.Q4_K_M.gguf"
+        }
+      ]
+    },
+    {
+      "id": "hy-mt15-q6",
+      "name": "Hy Mt15 Q6",
+      "family": "hy-mt2",
+      "stage": "TRANSLATION",
+      "engineId": "llama-translation-local",
+      "languages": [
+        "ar",
+        "en",
+        "de",
+        "es",
+        "fr",
+        "ru",
+        "zh"
+      ],
+      "source": "https://huggingface.co/tencent/HY-MT1.5-1.8B-GGUF",
+      "license": "Apache-2.0",
+      "note": "Uses the existing Hearth translation prompt protocol. Quality varies by direction; see linked model evidence.",
+      "options": {
+        "promptMode": "default",
+        "family": "hy-mt2"
+      },
+      "artifacts": [
+        {
+          "filename": "HY-MT1.5-1.8B-Q6_K.gguf",
+          "bytes": 1474785216,
+          "sha256": "c3819200ab9a79cb29b9a05ce8920e2eb01ae7ce520094fc5b57356494f3c641",
+          "url": "https://huggingface.co/tencent/HY-MT1.5-1.8B-GGUF/resolve/265b2e615a7dc9b06c435dc878829ad99a512ba2/HY-MT1.5-1.8B-Q6_K.gguf"
+        }
+      ]
+    },
+    {
+      "id": "hy-mt15-q8",
+      "name": "Hy Mt15 Q8",
+      "family": "hy-mt2",
+      "stage": "TRANSLATION",
+      "engineId": "llama-translation-local",
+      "languages": [
+        "ar",
+        "en",
+        "de",
+        "es",
+        "fr",
+        "ru",
+        "zh"
+      ],
+      "source": "https://huggingface.co/tencent/HY-MT1.5-1.8B-GGUF",
+      "license": "Apache-2.0",
+      "note": "Uses the existing Hearth translation prompt protocol. Quality varies by direction; see linked model evidence.",
+      "options": {
+        "promptMode": "default",
+        "family": "hy-mt2"
+      },
+      "artifacts": [
+        {
+          "filename": "HY-MT1.5-1.8B-Q8_0.gguf",
+          "bytes": 1908528288,
+          "sha256": "6789b06d0902f2f5312c0e1703d56ccbddfcfb6c653d22519b7c720f7db9a98e",
+          "url": "https://huggingface.co/tencent/HY-MT1.5-1.8B-GGUF/resolve/265b2e615a7dc9b06c435dc878829ad99a512ba2/HY-MT1.5-1.8B-Q8_0.gguf"
+        }
+      ]
+    },
+    {
+      "id": "hy-mt2-q3km",
+      "name": "Hy Mt2 Q3Km",
+      "family": "hy-mt2",
+      "stage": "TRANSLATION",
+      "engineId": "llama-translation-local",
+      "languages": [
+        "ar",
+        "en",
+        "de",
+        "es",
+        "fr",
+        "ru",
+        "zh"
+      ],
+      "source": "https://huggingface.co/mradermacher/Hy-MT2-1.8B-GGUF",
+      "license": "Apache-2.0",
+      "note": "Uses the existing Hearth translation prompt protocol. Quality varies by direction; see linked model evidence.",
+      "options": {
+        "promptMode": "default",
+        "family": "hy-mt2"
+      },
+      "artifacts": [
+        {
+          "filename": "Hy-MT2-1.8B.Q3_K_M.gguf",
+          "bytes": 951022336,
+          "sha256": "11a4e50e70bdb876d4cdf158b47a895fd1bc8173d6ba63d4d6c8261d7cc63756",
+          "url": "https://huggingface.co/mradermacher/Hy-MT2-1.8B-GGUF/resolve/d760e9708bbded7cee9aa135b4f1dedb42ed2fc4/Hy-MT2-1.8B.Q3_K_M.gguf"
+        }
+      ]
+    },
+    {
+      "id": "hy-mt2-q6",
+      "name": "Hy Mt2 Q6",
+      "family": "hy-mt2",
+      "stage": "TRANSLATION",
+      "engineId": "llama-translation-local",
+      "languages": [
+        "ar",
+        "en",
+        "de",
+        "es",
+        "fr",
+        "ru",
+        "zh"
+      ],
+      "source": "https://huggingface.co/tencent/Hy-MT2-1.8B-GGUF",
+      "license": "Apache-2.0",
+      "note": "Uses the existing Hearth translation prompt protocol. Quality varies by direction; see linked model evidence.",
+      "options": {
+        "promptMode": "default",
+        "family": "hy-mt2"
+      },
+      "artifacts": [
+        {
+          "filename": "Hy-MT2-1.8B-Q6_K.gguf",
+          "bytes": 1474785120,
+          "sha256": "d98fe604dec1f28f58f80d7d560f7177e584d3b8e5835862687660e5ff97cb40",
+          "url": "https://huggingface.co/tencent/Hy-MT2-1.8B-GGUF/resolve/a0c709d9fac510f2c807aa3af52872340dc37a4a/Hy-MT2-1.8B-Q6_K.gguf"
+        }
+      ]
+    },
+    {
+      "id": "hy-mt2-q8",
+      "name": "Hy Mt2 Q8",
+      "family": "hy-mt2",
+      "stage": "TRANSLATION",
+      "engineId": "llama-translation-local",
+      "languages": [
+        "ar",
+        "en",
+        "de",
+        "es",
+        "fr",
+        "ru",
+        "zh"
+      ],
+      "source": "https://huggingface.co/tencent/Hy-MT2-1.8B-GGUF",
+      "license": "Apache-2.0",
+      "note": "Uses the existing Hearth translation prompt protocol. Quality varies by direction; see linked model evidence.",
+      "options": {
+        "promptMode": "default",
+        "family": "hy-mt2"
+      },
+      "artifacts": [
+        {
+          "filename": "Hy-MT2-1.8B-Q8_0.gguf",
+          "bytes": 1908528192,
+          "sha256": "5c3fe0b1408a5ceb0143184ef247b11b579c525f4b02b060e6c851bb76fef1a4",
+          "url": "https://huggingface.co/tencent/Hy-MT2-1.8B-GGUF/resolve/a0c709d9fac510f2c807aa3af52872340dc37a4a/Hy-MT2-1.8B-Q8_0.gguf"
+        }
+      ]
+    },
+    {
+      "id": "milmmt-46-1b-q5",
+      "name": "Milmmt 46 1B Q5",
+      "family": "milmmt-46",
+      "stage": "TRANSLATION",
+      "engineId": "llama-translation-local",
+      "languages": [
+        "ar",
+        "en",
+        "de",
+        "es",
+        "fr",
+        "ru",
+        "zh"
+      ],
+      "source": "https://huggingface.co/mradermacher/MiLMMT-46-1B-v1.0-GGUF",
+      "license": "Gemma terms",
+      "note": "Uses the existing Hearth translation prompt protocol. Quality varies by direction; see linked model evidence.",
+      "options": {
+        "promptMode": "raw",
+        "family": "milmmt-46"
+      },
+      "artifacts": [
+        {
+          "filename": "MiLMMT-46-1B-v1.0.Q5_K_M.gguf",
+          "bytes": 851344832,
+          "sha256": "3ae19dabf326ce42eca36d52a9dbd769ed34ffab744f18b4f45822117681e50b",
+          "url": "https://huggingface.co/mradermacher/MiLMMT-46-1B-v1.0-GGUF/resolve/34df5efbe6592773ec168cc7b307728c08623472/MiLMMT-46-1B-v1.0.Q5_K_M.gguf"
+        }
+      ]
+    },
+    {
+      "id": "ct2-quickmt-en-ar",
+      "name": "QuickMT · English → Arabic",
+      "family": "ct2",
+      "stage": "TRANSLATION",
+      "engineId": "marian-local",
+      "languages": [
+        "ar",
+        "en"
+      ],
+      "source": "https://huggingface.co/quickmt/quickmt-en-ar",
+      "license": "CC-BY-4.0",
+      "note": "Pinned CTranslate2 package (6 components); CPU-only, macOS Apple silicon. Component hashes are verified at install and before translation.",
+      "options": {
+        "profile": "0",
+        "backend": "ct2",
+        "family": "ct2",
+        "sources": "en",
+        "targets": "ar"
+      },
+      "artifacts": [
+        {
+          "filename": "model.bin",
+          "bytes": 360843109,
+          "sha256": "2b053bf9e989a3685f902eafac1d8128f8fcf833b90fdd142254f08bd73ca5af",
+          "url": "https://huggingface.co/quickmt/quickmt-en-ar/resolve/37f2b37486c29b457971295d7711b5ac1869775d/model.bin"
+        },
+        {
+          "filename": "config.json",
+          "bytes": 223,
+          "sha256": "66edc5d58ceb812a41b4b784497001f815c35400884f40984b19de29e1bc3d69",
+          "url": "https://huggingface.co/quickmt/quickmt-en-ar/resolve/37f2b37486c29b457971295d7711b5ac1869775d/config.json"
+        },
+        {
+          "filename": "source_vocabulary.json",
+          "bytes": 339573,
+          "sha256": "59b2accfaba2b0a8171deed0cce56afdf41d5d724da68c63057b2035c512cbbe",
+          "url": "https://huggingface.co/quickmt/quickmt-en-ar/resolve/37f2b37486c29b457971295d7711b5ac1869775d/source_vocabulary.json"
+        },
+        {
+          "filename": "target_vocabulary.json",
+          "bytes": 731023,
+          "sha256": "5437c4de92543211144f9319f234bf2bcacda2ea454c3b26453da97d4d76e833",
+          "url": "https://huggingface.co/quickmt/quickmt-en-ar/resolve/37f2b37486c29b457971295d7711b5ac1869775d/target_vocabulary.json"
+        },
+        {
+          "filename": "src.spm.model",
+          "bytes": 589684,
+          "sha256": "acf054421b5ed52bd6aee14564fb8595b9a6b492df669e971d43fba9edb33c16",
+          "url": "https://huggingface.co/quickmt/quickmt-en-ar/resolve/37f2b37486c29b457971295d7711b5ac1869775d/src.spm.model"
+        },
+        {
+          "filename": "tgt.spm.model",
+          "bytes": 642429,
+          "sha256": "c7b8bf117088a901628696f60ddd15e047057ccbdcf9b0996ca19e2779a234c7",
+          "url": "https://huggingface.co/quickmt/quickmt-en-ar/resolve/37f2b37486c29b457971295d7711b5ac1869775d/tgt.spm.model"
+        }
+      ],
+      "platforms": [
+        "macos-arm64"
+      ]
+    },
+    {
+      "id": "ct2-quickmt-ar-en",
+      "name": "QuickMT · Arabic → English",
+      "family": "ct2",
+      "stage": "TRANSLATION",
+      "engineId": "marian-local",
+      "languages": [
+        "ar",
+        "en"
+      ],
+      "source": "https://huggingface.co/quickmt/quickmt-ar-en",
+      "license": "CC-BY-4.0",
+      "note": "Pinned CTranslate2 package (6 components); CPU-only, macOS Apple silicon. Component hashes are verified at install and before translation.",
+      "options": {
+        "profile": "0",
+        "backend": "ct2",
+        "family": "ct2",
+        "sources": "ar",
+        "targets": "en"
+      },
+      "artifacts": [
+        {
+          "filename": "model.bin",
+          "bytes": 407101843,
+          "sha256": "2c4e6f5d86de0d9d6c23c54768d7ab6bd20fb7a36099c987368d6a9f45c32da1",
+          "url": "https://huggingface.co/quickmt/quickmt-ar-en/resolve/a1542c88d817d641a2acf2b8952bc892144882c0/model.bin"
+        },
+        {
+          "filename": "config.json",
+          "bytes": 223,
+          "sha256": "66edc5d58ceb812a41b4b784497001f815c35400884f40984b19de29e1bc3d69",
+          "url": "https://huggingface.co/quickmt/quickmt-ar-en/resolve/a1542c88d817d641a2acf2b8952bc892144882c0/config.json"
+        },
+        {
+          "filename": "source_vocabulary.json",
+          "bytes": 1205230,
+          "sha256": "1d31fe3264650f0e839b072f0d55059934fdd01b016b2616cf5afc66bd4ba8a4",
+          "url": "https://huggingface.co/quickmt/quickmt-ar-en/resolve/a1542c88d817d641a2acf2b8952bc892144882c0/source_vocabulary.json"
+        },
+        {
+          "filename": "target_vocabulary.json",
+          "bytes": 546670,
+          "sha256": "b099813467f7c6dbf00414324904782d55dac0f4c4635e440c4d36cb0f383825",
+          "url": "https://huggingface.co/quickmt/quickmt-ar-en/resolve/a1542c88d817d641a2acf2b8952bc892144882c0/target_vocabulary.json"
+        },
+        {
+          "filename": "src.spm.model",
+          "bytes": 901383,
+          "sha256": "1a510ccfeb5cf06584327b9c2482ed0a4111d06348a56e28d165165b6dabe520",
+          "url": "https://huggingface.co/quickmt/quickmt-ar-en/resolve/a1542c88d817d641a2acf2b8952bc892144882c0/src.spm.model"
+        },
+        {
+          "filename": "tgt.spm.model",
+          "bytes": 806180,
+          "sha256": "8c793ee4a6d01a8b3fcd24d246a1580febf053747e44eefe99606974957cfdaa",
+          "url": "https://huggingface.co/quickmt/quickmt-ar-en/resolve/a1542c88d817d641a2acf2b8952bc892144882c0/tgt.spm.model"
+        }
+      ],
+      "platforms": [
+        "macos-arm64"
+      ]
+    },
+    {
+      "id": "ct2-small100-int8",
+      "name": "SMaLL-100 · INT8",
+      "family": "ct2",
+      "stage": "TRANSLATION",
+      "engineId": "marian-local",
+      "languages": [
+        "af",
+        "am",
+        "ar",
+        "ast",
+        "az",
+        "ba",
+        "be",
+        "bg",
+        "bn",
+        "br",
+        "bs",
+        "ca",
+        "ceb",
+        "cs",
+        "cy",
+        "da",
+        "de",
+        "el",
+        "en",
+        "es",
+        "et",
+        "fa",
+        "ff",
+        "fi",
+        "fil",
+        "fr",
+        "fy",
+        "ga",
+        "gd",
+        "gl",
+        "gu",
+        "ha",
+        "he",
+        "hi",
+        "hr",
+        "ht",
+        "hu",
+        "hy",
+        "id",
+        "ig",
+        "ilo",
+        "is",
+        "it",
+        "ja",
+        "jv",
+        "ka",
+        "kk",
+        "km",
+        "kn",
+        "ko",
+        "lb",
+        "lg",
+        "ln",
+        "lo",
+        "lt",
+        "lv",
+        "mg",
+        "mk",
+        "ml",
+        "mn",
+        "mr",
+        "ms",
+        "my",
+        "ne",
+        "nl",
+        "no",
+        "ns",
+        "oc",
+        "or",
+        "pa",
+        "pl",
+        "ps",
+        "pt",
+        "ro",
+        "ru",
+        "sd",
+        "si",
+        "sk",
+        "sl",
+        "so",
+        "sq",
+        "sr",
+        "ss",
+        "su",
+        "sv",
+        "sw",
+        "ta",
+        "th",
+        "tn",
+        "tr",
+        "uk",
+        "ur",
+        "uz",
+        "vi",
+        "wo",
+        "xh",
+        "yi",
+        "yo",
+        "zh",
+        "zu"
+      ],
+      "source": "https://huggingface.co/alirezamsh/small100",
+      "license": "MIT",
+      "note": "Pinned CTranslate2 package (4 components); CPU-only, macOS Apple silicon. Component hashes are verified at install and before translation.",
+      "options": {
+        "profile": "1",
+        "backend": "ct2",
+        "family": "ct2",
+        "sources": "af,am,ar,ast,az,ba,be,bg,bn,br,bs,ca,ceb,cs,cy,da,de,el,en,es,et,fa,ff,fi,fil,fr,fy,ga,gd,gl,gu,ha,he,hi,hr,ht,hu,hy,id,ig,ilo,is,it,ja,jv,ka,kk,km,kn,ko,lb,lg,ln,lo,lt,lv,mg,mk,ml,mn,mr,ms,my,ne,nl,no,ns,oc,or,pa,pl,ps,pt,ro,ru,sd,si,sk,sl,so,sq,sr,ss,su,sv,sw,ta,th,tn,tr,uk,ur,uz,vi,wo,xh,yi,yo,zh,zu",
+        "targets": "af,am,ar,ast,az,ba,be,bg,bn,br,bs,ca,ceb,cs,cy,da,de,el,en,es,et,fa,ff,fi,fil,fr,fy,ga,gd,gl,gu,ha,he,hi,hr,ht,hu,hy,id,ig,ilo,is,it,ja,jv,ka,kk,km,kn,ko,lb,lg,ln,lo,lt,lv,mg,mk,ml,mn,mr,ms,my,ne,nl,no,ns,oc,or,pa,pl,ps,pt,ro,ru,sd,si,sk,sl,so,sq,sr,ss,su,sv,sw,ta,th,tn,tr,uk,ur,uz,vi,wo,xh,yi,yo,zh,zu"
+      },
+      "artifacts": [
+        {
+          "filename": "model.bin",
+          "bytes": 338727246,
+          "sha256": "24e8b51720b7267cfd8faacedce50128bf11c4327f039632a494deb5e1c421f6",
+          "url": "https://huggingface.co/solavr/small100-ctranslate2-int8/resolve/3c5af8e17d5c4f35bda849b7ffceaa1dfc62eb84/model.bin"
+        },
+        {
+          "filename": "config.json",
+          "bytes": 233,
+          "sha256": "72901fbd8abd89fb5cf4a388f26fc681f5c4c58a1e1a88b30b879f107270e7ee",
+          "url": "https://huggingface.co/solavr/small100-ctranslate2-int8/resolve/3c5af8e17d5c4f35bda849b7ffceaa1dfc62eb84/config.json"
+        },
+        {
+          "filename": "sentencepiece.bpe.model",
+          "bytes": 2423393,
+          "sha256": "d8f7c76ed2a5e0822be39f0a4f95a55eb19c78f4593ce609e2edbc2aea4d380a",
+          "url": "https://huggingface.co/solavr/small100-ctranslate2-int8/resolve/3c5af8e17d5c4f35bda849b7ffceaa1dfc62eb84/sentencepiece.bpe.model"
+        },
+        {
+          "filename": "shared_vocabulary.json",
+          "bytes": 2924622,
+          "sha256": "18916ac68f9ac8fbd5250ca603dcb3861aac8672924d93a8dadc82eb3147f941",
+          "url": "https://huggingface.co/solavr/small100-ctranslate2-int8/resolve/3c5af8e17d5c4f35bda849b7ffceaa1dfc62eb84/shared_vocabulary.json"
+        }
+      ],
+      "platforms": [
+        "macos-arm64"
+      ]
+    },
+    {
+      "id": "supertonic-3",
+      "name": "Supertonic 3 · ten voices",
+      "family": "Supertonic",
+      "stage": "TTS",
+      "engineId": "supertonic-local",
+      "languages": [
+        "multilingual",
+        "ar",
+        "en"
+      ],
+      "source": "https://huggingface.co/Supertone/supertonic-3",
+      "license": "OpenRAIL-M (weights); MIT (runtime)",
+      "note": "Includes verified F1–F5 and M1–M5 voice styles. Desktop CPU adapter; Arabic/English listening still requires owner testing.",
+      "options": {},
+      "artifacts": [
+        {
+          "filename": "duration_predictor.onnx",
+          "bytes": 3700147,
+          "sha256": "c3eb91414d5ff8a7a239b7fe9e34e7e2bf8a8140d8375ffb14718b1c639325db",
+          "url": "https://huggingface.co/Supertone/supertonic-3/resolve/3cadd1ee6394adea1bd021217a0e650ede09a323/onnx/duration_predictor.onnx"
+        },
+        {
+          "filename": "text_encoder.onnx",
+          "bytes": 36416150,
+          "sha256": "c7befd5ea8c3119769e8a6c1486c4edc6a3bc8365c67621c881bbb774b9902ff",
+          "url": "https://huggingface.co/Supertone/supertonic-3/resolve/3cadd1ee6394adea1bd021217a0e650ede09a323/onnx/text_encoder.onnx"
+        },
+        {
+          "filename": "tts.json",
+          "bytes": 8253,
+          "sha256": "42078d3aef1cd43ab43021f3c54f47d2d75ceb4e75f627f118890128b06a0d09",
+          "url": "https://huggingface.co/Supertone/supertonic-3/resolve/3cadd1ee6394adea1bd021217a0e650ede09a323/onnx/tts.json"
+        },
+        {
+          "filename": "unicode_indexer.json",
+          "bytes": 277676,
+          "sha256": "9bf7346e43883a81f8645c81224f786d43c5b57f3641f6e7671a7d6c493cb24f",
+          "url": "https://huggingface.co/Supertone/supertonic-3/resolve/3cadd1ee6394adea1bd021217a0e650ede09a323/onnx/unicode_indexer.json"
+        },
+        {
+          "filename": "vector_estimator.onnx",
+          "bytes": 256534781,
+          "sha256": "883ac868ea0275ef0e991524dc64f16b3c0376efd7c320af6b53f5b780d7c61c",
+          "url": "https://huggingface.co/Supertone/supertonic-3/resolve/3cadd1ee6394adea1bd021217a0e650ede09a323/onnx/vector_estimator.onnx"
+        },
+        {
+          "filename": "vocoder.onnx",
+          "bytes": 101424195,
+          "sha256": "085de76dd8e8d5836d6ca66826601f615939218f90e519f70ee8a36ed2a4c4ba",
+          "url": "https://huggingface.co/Supertone/supertonic-3/resolve/3cadd1ee6394adea1bd021217a0e650ede09a323/onnx/vocoder.onnx"
+        },
+        {
+          "filename": "F1.json",
+          "bytes": 292046,
+          "sha256": "bbdec6ee00231c2c742ad05483df5334cab3b52fda3ba38e6a07059c4563dbc2",
+          "url": "https://huggingface.co/Supertone/supertonic-3/resolve/3cadd1ee6394adea1bd021217a0e650ede09a323/voice_styles/F1.json"
+        },
+        {
+          "filename": "F2.json",
+          "bytes": 292423,
+          "sha256": "7c722c6a72707b1a77f035d67f0d1351ba187738e06f7683e8c72b1df3477fc6",
+          "url": "https://huggingface.co/Supertone/supertonic-3/resolve/3cadd1ee6394adea1bd021217a0e650ede09a323/voice_styles/F2.json"
+        },
+        {
+          "filename": "F3.json",
+          "bytes": 290794,
+          "sha256": "12f6ef2573baa2defa1128069cb59f203e3ab67c92af77b42df8a0e3a2f7c6ab",
+          "url": "https://huggingface.co/Supertone/supertonic-3/resolve/3cadd1ee6394adea1bd021217a0e650ede09a323/voice_styles/F3.json"
+        },
+        {
+          "filename": "F4.json",
+          "bytes": 291808,
+          "sha256": "c2fa764c1225a76dfc3e2c73e8aa4f70d9ee48793860eb34c295fff01c2e032b",
+          "url": "https://huggingface.co/Supertone/supertonic-3/resolve/3cadd1ee6394adea1bd021217a0e650ede09a323/voice_styles/F4.json"
+        },
+        {
+          "filename": "F5.json",
+          "bytes": 291479,
+          "sha256": "45966e73316415626cf41a7d1c6f3b4c70dbc1ba2bee5c1978ef0ce33244fc8d",
+          "url": "https://huggingface.co/Supertone/supertonic-3/resolve/3cadd1ee6394adea1bd021217a0e650ede09a323/voice_styles/F5.json"
+        },
+        {
+          "filename": "M1.json",
+          "bytes": 291748,
+          "sha256": "e35604687f5d23694b8e91593a93eec0e4eca6c0b02bb8ed69139ab2ea6b0a5b",
+          "url": "https://huggingface.co/Supertone/supertonic-3/resolve/3cadd1ee6394adea1bd021217a0e650ede09a323/voice_styles/M1.json"
+        },
+        {
+          "filename": "M2.json",
+          "bytes": 292055,
+          "sha256": "b76cbf62bac707c710cf0ae5aba5e31eea1a6339a9734bfae33ab98499534a50",
+          "url": "https://huggingface.co/Supertone/supertonic-3/resolve/3cadd1ee6394adea1bd021217a0e650ede09a323/voice_styles/M2.json"
+        },
+        {
+          "filename": "M3.json",
+          "bytes": 290198,
+          "sha256": "ea1ac35ccb91b0d7ecad533a2fbd0eec10c91513d8951e3b25fbba99954e159b",
+          "url": "https://huggingface.co/Supertone/supertonic-3/resolve/3cadd1ee6394adea1bd021217a0e650ede09a323/voice_styles/M3.json"
+        },
+        {
+          "filename": "M4.json",
+          "bytes": 291522,
+          "sha256": "ca8eefad4fcd989c9379032ff3e50738adc547eeb5e221b82593a6d7b3bac303",
+          "url": "https://huggingface.co/Supertone/supertonic-3/resolve/3cadd1ee6394adea1bd021217a0e650ede09a323/voice_styles/M4.json"
+        },
+        {
+          "filename": "M5.json",
+          "bytes": 291469,
+          "sha256": "dd22b92740314321f8ae11c5e87f8dd60d060f15dd3a632b5adf77f471f77af2",
+          "url": "https://huggingface.co/Supertone/supertonic-3/resolve/3cadd1ee6394adea1bd021217a0e650ede09a323/voice_styles/M5.json"
+        }
+      ]
+    },
+    {
+      "id": "qwen3-asr-0.6b",
+      "name": "Qwen3-ASR 0.6B · int8",
+      "family": "Qwen3-ASR",
+      "stage": "STT",
+      "engineId": "qwen3-asr-local",
+      "languages": [
+        "zh",
+        "en",
+        "yue",
+        "ar",
+        "de",
+        "fr",
+        "es",
+        "pt",
+        "id",
+        "it",
+        "ko",
+        "ru",
+        "th",
+        "vi",
+        "ja",
+        "tr",
+        "hi",
+        "ms",
+        "nl",
+        "sv",
+        "da",
+        "fi",
+        "pl",
+        "cs",
+        "fil",
+        "fa",
+        "el",
+        "hu",
+        "mk",
+        "ro"
+      ],
+      "source": "https://github.com/k2-fsa/sherpa-onnx/releases/tag/asr-models",
+      "license": "Apache-2.0",
+      "note": "Pinned sherpa-onnx Qwen3-ASR package; CPU-only, utterance-windowed, macOS Apple silicon. Six model files are verified individually before loading; the archive hash is the audited release pin.",
+      "options": {},
+      "platforms": [
+        "macos-arm64"
+      ],
+      "artifacts": [
+        {
+          "filename": "sherpa-onnx-qwen3-asr-0.6B-int8-2026-03-25.tar.bz2",
+          "bytes": 878702423,
+          "sha256": "393f8a14e2f5fb96746aaab342997a40641001fbd5bf9592a080a8329178ee96",
+          "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-qwen3-asr-0.6B-int8-2026-03-25.tar.bz2"
+        }
+      ],
+      "archive": {
+        "format": "tar.bz2",
+        "root": "sherpa-onnx-qwen3-asr-0.6B-int8-2026-03-25",
+        "expandedBytes": 987015347,
+        "files": [
+          {
+            "path": "conv_frontend.onnx",
+            "bytes": 44148281,
+            "sha256": "d22dc4423e0940e49884e903d2ea2f7e5567c14fc1aed97e4e26d6b8f208ef9e"
+          },
+          {
+            "path": "encoder.int8.onnx",
+            "bytes": 182491662,
+            "sha256": "60748d3e6744a57c9c91e1b17424a6c2990567e8adceb0783940c03ed98fa9d9"
+          },
+          {
+            "path": "decoder.int8.onnx",
+            "bytes": 755914231,
+            "sha256": "4f6885be5959ae26af3089d38ee7972c5fafbeeb1cf8d5e76eab6d8b61ca5771"
+          },
+          {
+            "path": "tokenizer/merges.txt",
+            "bytes": 1671853,
+            "sha256": "8831e4f1a044471340f7c0a83d7bd71306a5b867e95fd870f74d0c5308a904d5"
+          },
+          {
+            "path": "tokenizer/vocab.json",
+            "bytes": 2776833,
+            "sha256": "ca10d7e9fb3ed18575dd1e277a2579c16d108e32f27439684afa0e10b1440910"
+          },
+          {
+            "path": "tokenizer/tokenizer_config.json",
+            "bytes": 12487,
+            "sha256": "4942d005604266809309cabc9f4e9cb89ce855d59b14681fdc0e1cc62ea26c4c"
+          }
+        ]
+      }
+    },
+    {
+      "id": "moss-tts-nano",
+      "name": "MOSS-TTS Nano 100M",
+      "family": "MOSS",
+      "stage": "TTS",
+      "engineId": "moss-tts-local",
+      "languages": [
+        "ar",
+        "en"
+      ],
+      "source": "https://huggingface.co/OpenMOSS-Team/MOSS-TTS-Nano-100M-ONNX",
+      "license": "Apache-2.0",
+      "note": "Pinned MOSS-TTS Nano 100M ONNX package; CPU-only, 48 kHz mono, macOS Apple silicon. Every component is verified before loading; the default voice is Ava.",
+      "options": {
+        "voice": "Ava",
+        "threads": "2"
+      },
+      "platforms": [
+        "macos-arm64"
+      ],
+      "artifacts": [
+        {
+          "filename": "moss_tts_prefill.onnx",
+          "bytes": 283305,
+          "sha256": "d56126dcd0574c2f15d98fc6b35eda68d0386b5bd9c5e38e28548d6f2ea8f3db",
+          "url": "https://huggingface.co/OpenMOSS-Team/MOSS-TTS-Nano-100M-ONNX/resolve/f52645cb467506d8e18e746ddd59482685b74e58/moss_tts_prefill.onnx"
+        },
+        {
+          "filename": "moss_tts_decode_step.onnx",
+          "bytes": 291483,
+          "sha256": "698cbc2fc1c2feca16e5895614ed52bbb32ded10f236c076f477b2e69abf32d8",
+          "url": "https://huggingface.co/OpenMOSS-Team/MOSS-TTS-Nano-100M-ONNX/resolve/f52645cb467506d8e18e746ddd59482685b74e58/moss_tts_decode_step.onnx"
+        },
+        {
+          "filename": "moss_tts_local_decoder.onnx",
+          "bytes": 49231,
+          "sha256": "51aa754301b38550a5f9adda0ad93bd3dc95819afb511e6dcabf4a90b345a454",
+          "url": "https://huggingface.co/OpenMOSS-Team/MOSS-TTS-Nano-100M-ONNX/resolve/f52645cb467506d8e18e746ddd59482685b74e58/moss_tts_local_decoder.onnx"
+        },
+        {
+          "filename": "moss_tts_local_cached_step.onnx",
+          "bytes": 53685,
+          "sha256": "aa9035fefc1c138a951a8bcfc0374fb03a25f1ece67f7f7f53bce349b84a1dd5",
+          "url": "https://huggingface.co/OpenMOSS-Team/MOSS-TTS-Nano-100M-ONNX/resolve/f52645cb467506d8e18e746ddd59482685b74e58/moss_tts_local_cached_step.onnx"
+        },
+        {
+          "filename": "moss_tts_local_fixed_sampled_frame.onnx",
+          "bytes": 471262,
+          "sha256": "40cdb00efc171c450cf91468e01429caa41b0252222cd308e978f58fe354afa8",
+          "url": "https://huggingface.co/OpenMOSS-Team/MOSS-TTS-Nano-100M-ONNX/resolve/f52645cb467506d8e18e746ddd59482685b74e58/moss_tts_local_fixed_sampled_frame.onnx"
+        },
+        {
+          "filename": "moss_tts_global_shared.data",
+          "bytes": 440813568,
+          "sha256": "bce8312c3df6a44545302cae229b61054fe0672e0b252ba59cba47adeed831dc",
+          "url": "https://huggingface.co/OpenMOSS-Team/MOSS-TTS-Nano-100M-ONNX/resolve/f52645cb467506d8e18e746ddd59482685b74e58/moss_tts_global_shared.data"
+        },
+        {
+          "filename": "moss_tts_local_shared.data",
+          "bytes": 229678080,
+          "sha256": "bae7782032c0fb12490ab42afe009f87ae6c75a0f0596fc7b5c08e4d5ee93916",
+          "url": "https://huggingface.co/OpenMOSS-Team/MOSS-TTS-Nano-100M-ONNX/resolve/f52645cb467506d8e18e746ddd59482685b74e58/moss_tts_local_shared.data"
+        },
+        {
+          "filename": "tokenizer.model",
+          "bytes": 470897,
+          "sha256": "c353ee1479b536bf414c1b247f5542b6607fb8ae91320e5af1781fee200fddff",
+          "url": "https://huggingface.co/OpenMOSS-Team/MOSS-TTS-Nano-100M-ONNX/resolve/f52645cb467506d8e18e746ddd59482685b74e58/tokenizer.model"
+        },
+        {
+          "filename": "tts_browser_onnx_meta.json",
+          "bytes": 4487,
+          "sha256": "3edf25232dcd0af3d061c837e9a968a39e2f8592e06777d740503c4f2244f95c",
+          "url": "https://huggingface.co/OpenMOSS-Team/MOSS-TTS-Nano-100M-ONNX/resolve/f52645cb467506d8e18e746ddd59482685b74e58/tts_browser_onnx_meta.json"
+        },
+        {
+          "filename": "browser_poc_manifest.json",
+          "bytes": 503354,
+          "sha256": "097d80e993dc29f0bae427590b4f77084a161cb578b50d82c29f455d5faa9eee",
+          "url": "https://huggingface.co/OpenMOSS-Team/MOSS-TTS-Nano-100M-ONNX/resolve/f52645cb467506d8e18e746ddd59482685b74e58/browser_poc_manifest.json"
+        },
+        {
+          "filename": "moss_audio_tokenizer_decode_full.onnx",
+          "bytes": 681902,
+          "sha256": "0fbbafe3fd4afa2a019af5c5ced204af6e2d1db044fa40f021525d2aee95b4ac",
+          "url": "https://huggingface.co/OpenMOSS-Team/MOSS-Audio-Tokenizer-Nano-ONNX/resolve/ceff0d0749bfb3fa2d61149794ec6feef0d1e1ae/moss_audio_tokenizer_decode_full.onnx"
+        },
+        {
+          "filename": "moss_audio_tokenizer_decode_step.onnx",
+          "bytes": 351400,
+          "sha256": "9527c86a29e1837edec1f74db57d5eeaadb3a715af3382703566460afed25855",
+          "url": "https://huggingface.co/OpenMOSS-Team/MOSS-Audio-Tokenizer-Nano-ONNX/resolve/ceff0d0749bfb3fa2d61149794ec6feef0d1e1ae/moss_audio_tokenizer_decode_step.onnx"
+        },
+        {
+          "filename": "moss_audio_tokenizer_decode_shared.data",
+          "bytes": 44198912,
+          "sha256": "e69d52e0f4e84ca27850557ee54face46632d3a5a16c89bd246c7c408466dcad",
+          "url": "https://huggingface.co/OpenMOSS-Team/MOSS-Audio-Tokenizer-Nano-ONNX/resolve/ceff0d0749bfb3fa2d61149794ec6feef0d1e1ae/moss_audio_tokenizer_decode_shared.data"
+        },
+        {
+          "filename": "codec_browser_onnx_meta.json",
+          "bytes": 17036,
+          "sha256": "3e291c883bb7d11ff2fe8e964e3e495519760358859f35c951254c7741592731",
+          "url": "https://huggingface.co/OpenMOSS-Team/MOSS-Audio-Tokenizer-Nano-ONNX/resolve/ceff0d0749bfb3fa2d61149794ec6feef0d1e1ae/codec_browser_onnx_meta.json"
+        }
+      ]
+    },
+    {
+      "id": "omnivoice-tts",
+      "name": "OmniVoice · voice design",
+      "family": "OmniVoice",
+      "stage": "TTS",
+      "engineId": "omnivoice-tts-local",
+      "languages": [
+        "ar",
+        "en"
+      ],
+      "source": "https://huggingface.co/Serveurperso/OmniVoice-GGUF",
+      "license": "CC-BY-NC-4.0 (pretrained generator); MIT (runtime); Boson Higgs Audio 2 Community License with incorporated Meta Llama 3 terms (codec)",
+      "note": "Pinned OmniVoice Q8 GGUF generator and audio codec; CPU-only, 24 kHz mono, macOS Apple silicon. Both files are verified before loading. Voice designs are requested attributes, not fixed speaker identities.",
+      "options": {
+        "voice": "design-female",
+        "threads": "2"
+      },
+      "platforms": [
+        "macos-arm64"
+      ],
+      "artifacts": [
+        {
+          "filename": "omnivoice-base-Q8_0.gguf",
+          "bytes": 656395008,
+          "sha256": "2882d887921798aea13d45236556bdf8012842ab6f8cd2690943eead6289f298",
+          "url": "https://huggingface.co/Serveurperso/OmniVoice-GGUF/resolve/017094167b5c9ed565a5076ac9b3b93c5ecf5c73/omnivoice-base-Q8_0.gguf"
+        },
+        {
+          "filename": "omnivoice-tokenizer-Q8_0.gguf",
+          "bytes": 288889600,
+          "sha256": "75204fa566a8e30984e7a1066da6557184c9fd099c8f1bc0cb5b9415edfec255",
+          "url": "https://huggingface.co/Serveurperso/OmniVoice-GGUF/resolve/017094167b5c9ed565a5076ac9b3b93c5ecf5c73/omnivoice-tokenizer-Q8_0.gguf"
+        }
+      ]
+    },
+    {
+      "id": "magpie-tts",
+      "name": "MagpieTTS Multilingual 357M",
+      "family": "MagpieTTS",
+      "stage": "TTS",
+      "engineId": "magpie-tts-local",
+      "languages": [
+        "ar",
+        "en",
+        "fr",
+        "de",
+        "hi",
+        "it",
+        "ko",
+        "pt",
+        "es",
+        "vi"
+      ],
+      "source": "https://huggingface.co/nvidia/magpie_tts_multilingual_357m",
+      "license": "NVIDIA Open Model License; runtime Apache-2.0; companion codec license must accompany distribution",
+      "note": "Pinned MagpieTTS v2607 F16 generator and NanoCodec plus the authenticated tokenizer package; CPU-only, 22.05 kHz mono, macOS Apple silicon. Two GGUF files are downloaded directly and the tokenizer dictionaries are extracted from pinned append-only byte ranges of the .nemo archive; model_weights.ckpt is discarded. Every weight and tokenizer member is verified before loading. Languages are the runtime set supported by this build (Chinese and Japanese frontends are excluded).",
+      "options": {
+        "voice": "Aria",
+        "threads": "2"
+      },
+      "platforms": [
+        "macos-arm64"
+      ],
+      "artifacts": [
+        {
+          "filename": "magpie_tts_multilingual_357m.v2607.f16.gguf",
+          "bytes": 568663392,
+          "sha256": "fb8e9297138dcc7b5fc51332f361e3cddfd433d4e0bc1d87e16e6aed21f618fc",
+          "url": "https://huggingface.co/nvidia/magpie_tts_multilingual_357m/resolve/446bff55e1fe3d3aa29c771574e7d2b0fa322990/magpie_tts_multilingual_357m.v2607.f16.gguf"
+        },
+        {
+          "filename": "nemo_nano_codec_22khz_1.89kbps_21.5fps.decoder.f16.gguf",
+          "bytes": 78823104,
+          "sha256": "cc86d36d821a27cdc1d4ef600a3e2b0dabe76e88fcc2a8652d9543134c07ef2d",
+          "url": "https://huggingface.co/nvidia/nemo-nano-codec-22khz-1.89kbps-21.5fps/resolve/fc00890b604aa2de298d2641ffc6c5f6caf8c4d7/nemo_nano_codec_22khz_1.89kbps_21.5fps.decoder.f16.gguf"
+        }
+      ],
+      "rangePackage": {
+        "sourceUrl": "https://huggingface.co/nvidia/magpie_tts_multilingual_357m/resolve/446bff55e1fe3d3aa29c771574e7d2b0fa322990/magpie_tts_multilingual_357m.nemo",
+        "sourceBytes": 1470208000,
+        "sourceSha256": "ec675fa8c02b9c1d5382c5c2b5a6acec6492c1e8344866c07cf3892185d18953",
+        "bytes": 31076864,
+        "sha256": "169144a64f6d775178696914e5aad8282db44820e73341d5f9a4e7865fac1f26",
+        "ranges": [
+          [
+            0,
+            20619263
+          ],
+          [
+            1459750400,
+            1470207999
+          ]
+        ],
+        "members": [
+          {
+            "path": "05adc40366e149b69319acd4b28a4919_pt_br_prondict-v1.0.dict",
+            "bytes": 3580284,
+            "sha256": "6492abc404db16bbad83dd9d7f9a60eb617699f0a3ff54b3be6184e14507b745"
+          },
+          {
+            "path": "339da71c54b046f98cbcf38ef6d4ff67_hindi_phoneme_merged_phoneme_dict.dict",
+            "bytes": 7319864,
+            "sha256": "3b50cc2c21cd8d34983d8492c91308e9db4a58c1194d6506fdbb2b97aead75fc"
+          },
+          {
+            "path": "41913ebaa70342058574da74293b7630_magpie_tts_multilingual_357m.nemo.speakers.json",
+            "bytes": 68,
+            "sha256": "36cdcf01ebc0afb506660ac71f2d0a211236374ad5c872d7d8d985a3f9f6ccaf"
+          },
+          {
+            "path": "61d57a4ccb064d1e8e3d9f871c571932_heteronyms-052722",
+            "bytes": 1606,
+            "sha256": "b701909aedf753172eff223950f8859cd4b9b4c80199cf0a6e9ac4a307c8f8ec"
+          },
+          {
+            "path": "74b3e832fe914a569fcd42b51d06b2f1_ipa_dict_nv23.05.txt",
+            "bytes": 5419,
+            "sha256": "252e8eaf60dfd891520759913dc8534393eebfa8d57192365f76f9229f294e9e"
+          },
+          {
+            "path": "7dbc31751f224f2486090d59dc95b9f7_es_ES_nv230301.dict",
+            "bytes": 2230910,
+            "sha256": "94c9a25bb359f733cd863c887d0112e7ae19a744b0333ef64b6a88e576428669"
+          },
+          {
+            "path": "c5e4ec2af5a14ce294f4b9edcc936535_de_nv230119.heteronym",
+            "bytes": 44566,
+            "sha256": "771cc585a574fd35bd14f4ce6108edf1e0e512a8dbc810db7de4c1165ba9d0ef"
+          },
+          {
+            "path": "cf01ab5c48c84f3282ef7888263361e5_de_nv230119.dict",
+            "bytes": 4313907,
+            "sha256": "5c7bbf3346ebd6dc57769b5cc805124215cb1bcc3b8174c4254e9e928c5d6094"
+          },
+          {
+            "path": "dc7d60d6b15a4651b21c9ca2932b62c6_ipa_cmudict-0.7b_nv23.01.txt",
+            "bytes": 3093097,
+            "sha256": "7ea5c4c2c59cc780748b24d4ab60bd689779c4ac4ea7e27c0a8c3e20f300c0fa"
+          },
+          {
+            "path": "model_config.yaml",
+            "bytes": 8358,
+            "sha256": "9577bfa4769981849feccd6a54d38425d81fff41ac16c282f60be97faf46ebe4"
+          }
+        ]
+      }
+    },
+    {
+      "id": "chatterbox-multilingual-v3",
+      "name": "Chatterbox Multilingual V3",
+      "family": "Chatterbox",
+      "stage": "TTS",
+      "engineId": "chatterbox-tts-local",
+      "languages": [
+        "ar",
+        "en"
+      ],
+      "source": "https://huggingface.co/Masterx/chatterbox-multilingual-v3-ONNX",
+      "license": "MIT (model, export and Perth); MIT/Apache-2.0/Unicode runtime notices",
+      "note": "Pinned Chatterbox V3 Q4 ONNX stack and the official MIT Perth watermark checkpoint, CPU-only, 24 kHz mono, macOS Apple silicon. All 11 downloaded components are verified before loading. The ORT-compatible graph and the native watermark format are derived locally from those pinned sources by the pinned converters; no download, no pickle execution and no Python runtime are required. Every output is watermarked before it is published.",
+      "options": {
+        "voice": "default",
+        "threads": "2"
+      },
+      "platforms": [
+        "macos-arm64"
+      ],
+      "artifacts": [
+        {
+          "filename": "onnx/speech_encoder.onnx",
+          "bytes": 1204600,
+          "sha256": "012a9583c0a9560afa11307b585f1e799fca0e1701bdae53fa34766da78f8eae",
+          "url": "https://huggingface.co/Masterx/chatterbox-multilingual-v3-ONNX/resolve/19b94afe41de738624b2f3afc75b4cd56221fbeb/onnx/speech_encoder.onnx"
+        },
+        {
+          "filename": "onnx/speech_encoder.onnx_data",
+          "bytes": 591274880,
+          "sha256": "f1f663a1a03aa885f8f0fcaa730dd8dfbce8caad514093b13c9682a4a2842990",
+          "url": "https://huggingface.co/Masterx/chatterbox-multilingual-v3-ONNX/resolve/19b94afe41de738624b2f3afc75b4cd56221fbeb/onnx/speech_encoder.onnx_data"
+        },
+        {
+          "filename": "onnx/embed_tokens.onnx",
+          "bytes": 17616,
+          "sha256": "c8dd692ee8dfc9099baf39c8074e9bcc0a760e8c25ae1cac4a8c62c7cf4536bc",
+          "url": "https://huggingface.co/Masterx/chatterbox-multilingual-v3-ONNX/resolve/19b94afe41de738624b2f3afc75b4cd56221fbeb/onnx/embed_tokens.onnx"
+        },
+        {
+          "filename": "onnx/embed_tokens.onnx_data",
+          "bytes": 68808704,
+          "sha256": "d263116bec8ae582953c99bdffa9ecd53914d1ae2732da8455e361ed5baa2a9a",
+          "url": "https://huggingface.co/Masterx/chatterbox-multilingual-v3-ONNX/resolve/19b94afe41de738624b2f3afc75b4cd56221fbeb/onnx/embed_tokens.onnx_data"
+        },
+        {
+          "filename": "onnx/language_model_q4.onnx",
+          "bytes": 228633,
+          "sha256": "91846c24706116f87b39aac5b13aa1a67243b6f973bc433327d143b8eff9fde6",
+          "url": "https://huggingface.co/Masterx/chatterbox-multilingual-v3-ONNX/resolve/19b94afe41de738624b2f3afc75b4cd56221fbeb/onnx/language_model_q4.onnx"
+        },
+        {
+          "filename": "onnx/language_model_q4.onnx_data",
+          "bytes": 353621248,
+          "sha256": "621a963492f871ccc841592c6ca117bf88dbea4c0c25d61be4391197c8b878b0",
+          "url": "https://huggingface.co/Masterx/chatterbox-multilingual-v3-ONNX/resolve/19b94afe41de738624b2f3afc75b4cd56221fbeb/onnx/language_model_q4.onnx_data"
+        },
+        {
+          "filename": "onnx/conditional_decoder.onnx",
+          "bytes": 6371670,
+          "sha256": "f494d8fed14f269e969a58ccbd627cdfb5eb889d0816c7fde09621fdcb160128",
+          "url": "https://huggingface.co/Masterx/chatterbox-multilingual-v3-ONNX/resolve/19b94afe41de738624b2f3afc75b4cd56221fbeb/onnx/conditional_decoder.onnx"
+        },
+        {
+          "filename": "onnx/conditional_decoder.onnx_data",
+          "bytes": 533970816,
+          "sha256": "f41f149c1a30c273133739e873294e28dbc3c4ae6376b0a501e9cd21de286835",
+          "url": "https://huggingface.co/Masterx/chatterbox-multilingual-v3-ONNX/resolve/19b94afe41de738624b2f3afc75b4cd56221fbeb/onnx/conditional_decoder.onnx_data"
+        },
+        {
+          "filename": "tokenizer.json",
+          "bytes": 72765,
+          "sha256": "8763bb615f5e0ad49fbb53b65d371e37961f64bb0a55b96c0205f4a59ba5be13",
+          "url": "https://huggingface.co/Masterx/chatterbox-multilingual-v3-ONNX/resolve/19b94afe41de738624b2f3afc75b4cd56221fbeb/tokenizer.json"
+        },
+        {
+          "filename": "default_voice.wav",
+          "bytes": 714320,
+          "sha256": "3ebc531cdaba358a327099c1c4f0448026719957bcf4d8e9868767f227e02f4e",
+          "url": "https://huggingface.co/Masterx/chatterbox-multilingual-v3-ONNX/resolve/19b94afe41de738624b2f3afc75b4cd56221fbeb/default_voice.wav"
+        },
+        {
+          "filename": "perth_net_250000.pth.tar",
+          "bytes": 37429684,
+          "sha256": "a15bce457ebc53ce5e6c9c3f11df78cf7ee2bf9cdab0a798902135b4c4027670",
+          "url": "https://raw.githubusercontent.com/resemble-ai/Perth/ff1c8ac55a976971245cdd53c18d6131ca00d993/src/perth/perth_net/pretrained/implicit/perth_net_250000.pth.tar"
+        }
+      ]
+    },
+    {
+      "id": "moonshine-tiny-en-v2",
+      "name": "Moonshine tiny.en · q8",
+      "family": "Moonshine",
+      "stage": "STT",
+      "engineId": "moonshine-local",
+      "languages": [
+        "en"
+      ],
+      "source": "https://github.com/k2-fsa/sherpa-onnx/releases/tag/asr-models",
+      "license": "MIT",
+      "note": "Pinned sherpa-onnx Moonshine package; CPU-only, macOS Apple silicon. The archive, all four pinned files and the model LICENSE are verified before loading.",
+      "options": {},
+      "platforms": [
+        "macos-arm64"
+      ],
+      "artifacts": [
+        {
+          "filename": "sherpa-onnx-moonshine-tiny-en-quantized-2026-02-27.tar.bz2",
+          "bytes": 29858559,
+          "sha256": "9ec31b342d8fa3240c3b81b8f82e1cf7e3ac467c93ca5a999b741d5887164f8d",
+          "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-moonshine-tiny-en-quantized-2026-02-27.tar.bz2"
+        }
+      ],
+      "archive": {
+        "format": "tar.bz2",
+        "root": "sherpa-onnx-moonshine-tiny-en-quantized-2026-02-27",
+        "expandedBytes": 44256550,
+        "files": [
+          {
+            "path": "tokens.txt",
+            "bytes": 549350,
+            "sha256": "2870d843e14c1e187bf1913a521562a63b53933814bd7f2145120468f494a049"
+          },
+          {
+            "path": "encoder_model.ort",
+            "bytes": 13281600,
+            "sha256": "94e90a4654fc45cdfedb77c4c08e1739f48862998e58fada384b25118134f221"
+          },
+          {
+            "path": "decoder_model_merged.ort",
+            "bytes": 30412256,
+            "sha256": "cf524c4862d36e9e5ab032eddc73637efd822d70e868ac575cf1a46e1e4708a0"
+          },
+          {
+            "path": "LICENSE",
+            "bytes": 13344,
+            "sha256": "6148d7574a6554b7379b633cfd4c4fe5840c3f548d13bc83e00b52dc6fa00abd"
+          }
+        ]
+      }
+    },
+    {
+      "id": "moonshine-base-en-v2",
+      "name": "Moonshine base.en · q8",
+      "family": "Moonshine",
+      "stage": "STT",
+      "engineId": "moonshine-local",
+      "languages": [
+        "en"
+      ],
+      "source": "https://github.com/k2-fsa/sherpa-onnx/releases/tag/asr-models",
+      "license": "MIT",
+      "note": "Pinned sherpa-onnx Moonshine package; CPU-only, macOS Apple silicon. The archive, all four pinned files and the model LICENSE are verified before loading.",
+      "options": {},
+      "platforms": [
+        "macos-arm64"
+      ],
+      "artifacts": [
+        {
+          "filename": "sherpa-onnx-moonshine-base-en-quantized-2026-02-27.tar.bz2",
+          "bytes": 111266225,
+          "sha256": "43232c1d13013d37317163baec3135bd771a186a4356f28c889bab453bb0e891",
+          "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-moonshine-base-en-quantized-2026-02-27.tar.bz2"
+        }
+      ],
+      "archive": {
+        "format": "tar.bz2",
+        "root": "sherpa-onnx-moonshine-base-en-quantized-2026-02-27",
+        "expandedBytes": 141313910,
+        "files": [
+          {
+            "path": "tokens.txt",
+            "bytes": 549350,
+            "sha256": "2870d843e14c1e187bf1913a521562a63b53933814bd7f2145120468f494a049"
+          },
+          {
+            "path": "encoder_model.ort",
+            "bytes": 31326816,
+            "sha256": "7c66495948d0d08ec1af454cd4b5514862ae6511e94712a60e6d83eaec8dc8cf"
+          },
+          {
+            "path": "decoder_model_merged.ort",
+            "bytes": 109424400,
+            "sha256": "d9d7b333af34bc552580576ddcf248a1c6c839e0d3b43b09afb9376ed009899d"
+          },
+          {
+            "path": "LICENSE",
+            "bytes": 13344,
+            "sha256": "6148d7574a6554b7379b633cfd4c4fe5840c3f548d13bc83e00b52dc6fa00abd"
+          }
+        ]
+      }
+    },
+    {
+      "id": "moonshine-base-ar-v2",
+      "name": "Moonshine base.ar · q8",
+      "family": "Moonshine",
+      "stage": "STT",
+      "engineId": "moonshine-local",
+      "languages": [
+        "ar"
+      ],
+      "source": "https://github.com/k2-fsa/sherpa-onnx/releases/tag/asr-models",
+      "license": "Moonshine Community License",
+      "note": "Pinned sherpa-onnx Moonshine package; CPU-only, macOS Apple silicon. The archive, all four pinned files and the model LICENSE are verified before loading.",
+      "options": {},
+      "platforms": [
+        "macos-arm64"
+      ],
+      "artifacts": [
+        {
+          "filename": "sherpa-onnx-moonshine-base-ar-quantized-2026-02-27.tar.bz2",
+          "bytes": 119143068,
+          "sha256": "4d3f16fe354d8536d3323d3eaf4c12fafb1976b5dc0a12862ab25934da94285b",
+          "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-moonshine-base-ar-quantized-2026-02-27.tar.bz2"
+        }
+      ],
+      "archive": {
+        "format": "tar.bz2",
+        "root": "sherpa-onnx-moonshine-base-ar-quantized-2026-02-27",
+        "expandedBytes": 141314070,
+        "files": [
+          {
+            "path": "tokens.txt",
+            "bytes": 549350,
+            "sha256": "2870d843e14c1e187bf1913a521562a63b53933814bd7f2145120468f494a049"
+          },
+          {
+            "path": "encoder_model.ort",
+            "bytes": 31326824,
+            "sha256": "68e50ebe0317ce909f098044a5dda2a76e6b86dc882829a317771fbafc5826ae"
+          },
+          {
+            "path": "decoder_model_merged.ort",
+            "bytes": 109424552,
+            "sha256": "8f272cb50818e28ad86bbffc21e1450a4d57155e95f099ca6a236f38f4d9eafb"
+          },
+          {
+            "path": "LICENSE",
+            "bytes": 13344,
+            "sha256": "6148d7574a6554b7379b633cfd4c4fe5840c3f548d13bc83e00b52dc6fa00abd"
+          }
+        ]
+      }
+    },
+    {
+      "id": "moonshine-base-es-v2",
+      "name": "Moonshine base.es · q8",
+      "family": "Moonshine",
+      "stage": "STT",
+      "engineId": "moonshine-local",
+      "languages": [
+        "es"
+      ],
+      "source": "https://github.com/k2-fsa/sherpa-onnx/releases/tag/asr-models",
+      "license": "Moonshine Community License",
+      "note": "Pinned sherpa-onnx Moonshine package; CPU-only, macOS Apple silicon. The archive, all four pinned files and the model LICENSE are verified before loading.",
+      "options": {},
+      "platforms": [
+        "macos-arm64"
+      ],
+      "artifacts": [
+        {
+          "filename": "sherpa-onnx-moonshine-base-es-quantized-2026-02-27.tar.bz2",
+          "bytes": 50846902,
+          "sha256": "850c3dcc5dfccc8b1feb10bb221b11d6039b6f5c626241729f46863771016383",
+          "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-moonshine-base-es-quantized-2026-02-27.tar.bz2"
+        }
+      ],
+      "archive": {
+        "format": "tar.bz2",
+        "root": "sherpa-onnx-moonshine-base-es-quantized-2026-02-27",
+        "expandedBytes": 65121954,
+        "files": [
+          {
+            "path": "tokens.txt",
+            "bytes": 532090,
+            "sha256": "c6e35883ba038f70ceea8b4a21cf79742adbda7e6730cbff27460857e0667a02"
+          },
+          {
+            "path": "encoder_model.ort",
+            "bytes": 20964320,
+            "sha256": "331aafa2fc7f7e55ba28376eef08eaf919ae105bb719cd64ba6875505dca72b3"
+          },
+          {
+            "path": "decoder_model_merged.ort",
+            "bytes": 43612200,
+            "sha256": "8e6513ad66a3a71ca86824746a09051eeb60468940eaf8201ce758e8919e2b5d"
+          },
+          {
+            "path": "LICENSE",
+            "bytes": 13344,
+            "sha256": "6148d7574a6554b7379b633cfd4c4fe5840c3f548d13bc83e00b52dc6fa00abd"
+          }
+        ]
+      }
+    },
+    {
+      "id": "moonshine-tiny-ja-v2",
+      "name": "Moonshine tiny.ja · q8",
+      "family": "Moonshine",
+      "stage": "STT",
+      "engineId": "moonshine-local",
+      "languages": [
+        "ja"
+      ],
+      "source": "https://github.com/k2-fsa/sherpa-onnx/releases/tag/asr-models",
+      "license": "Moonshine Community License",
+      "note": "Pinned sherpa-onnx Moonshine package; CPU-only, macOS Apple silicon. The archive, all four pinned files and the model LICENSE are verified before loading.",
+      "options": {},
+      "platforms": [
+        "macos-arm64"
+      ],
+      "artifacts": [
+        {
+          "filename": "sherpa-onnx-moonshine-tiny-ja-quantized-2026-02-27.tar.bz2",
+          "bytes": 47889565,
+          "sha256": "880305c9a6c33572ab269ff9731977ea42ca34c8cffcdd5d99558a9ea2b47cc2",
+          "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-moonshine-tiny-ja-quantized-2026-02-27.tar.bz2"
+        }
+      ],
+      "archive": {
+        "format": "tar.bz2",
+        "root": "sherpa-onnx-moonshine-tiny-ja-quantized-2026-02-27",
+        "expandedBytes": 72128150,
+        "files": [
+          {
+            "path": "tokens.txt",
+            "bytes": 549350,
+            "sha256": "2870d843e14c1e187bf1913a521562a63b53933814bd7f2145120468f494a049"
+          },
+          {
+            "path": "encoder_model.ort",
+            "bytes": 13238184,
+            "sha256": "86ece73812604b9b5f1274b4d1e6eec0d783b96088ff46d49e30a53f881cad73"
+          },
+          {
+            "path": "decoder_model_merged.ort",
+            "bytes": 58327272,
+            "sha256": "9fcd9b71323a496b307e20dd305c4e9a1b533c7bedd6e4f660e974967dd60bb6"
+          },
+          {
+            "path": "LICENSE",
+            "bytes": 13344,
+            "sha256": "6148d7574a6554b7379b633cfd4c4fe5840c3f548d13bc83e00b52dc6fa00abd"
+          }
+        ]
+      }
+    },
+    {
+      "id": "moonshine-tiny-ko-v2",
+      "name": "Moonshine tiny.ko · q8",
+      "family": "Moonshine",
+      "stage": "STT",
+      "engineId": "moonshine-local",
+      "languages": [
+        "ko"
+      ],
+      "source": "https://github.com/k2-fsa/sherpa-onnx/releases/tag/asr-models",
+      "license": "Moonshine Community License",
+      "note": "Pinned sherpa-onnx Moonshine package; CPU-only, macOS Apple silicon. The archive, all four pinned files and the model LICENSE are verified before loading.",
+      "options": {},
+      "platforms": [
+        "macos-arm64"
+      ],
+      "artifacts": [
+        {
+          "filename": "sherpa-onnx-moonshine-tiny-ko-quantized-2026-02-27.tar.bz2",
+          "bytes": 49153415,
+          "sha256": "d3b6c5390a7859c9ef20ff4f20b0766fcbad1dc06c0f509fe4840a3a302112dc",
+          "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-moonshine-tiny-ko-quantized-2026-02-27.tar.bz2"
+        }
+      ],
+      "archive": {
+        "format": "tar.bz2",
+        "root": "sherpa-onnx-moonshine-tiny-ko-quantized-2026-02-27",
+        "expandedBytes": 72128206,
+        "files": [
+          {
+            "path": "tokens.txt",
+            "bytes": 549350,
+            "sha256": "2870d843e14c1e187bf1913a521562a63b53933814bd7f2145120468f494a049"
+          },
+          {
+            "path": "encoder_model.ort",
+            "bytes": 13238176,
+            "sha256": "947260d46252f48eada86a34986b3f70c01d68a343959949a77375b94debd055"
+          },
+          {
+            "path": "decoder_model_merged.ort",
+            "bytes": 58327336,
+            "sha256": "95aa9f2e764b80625d2889d6ec9f05c965808e540ac50c16abd10c7ea33fe44b"
+          },
+          {
+            "path": "LICENSE",
+            "bytes": 13344,
+            "sha256": "6148d7574a6554b7379b633cfd4c4fe5840c3f548d13bc83e00b52dc6fa00abd"
+          }
+        ]
+      }
+    },
+    {
+      "id": "moonshine-base-ja-v2",
+      "name": "Moonshine base.ja · q8",
+      "family": "Moonshine",
+      "stage": "STT",
+      "engineId": "moonshine-local",
+      "languages": [
+        "ja"
+      ],
+      "source": "https://github.com/k2-fsa/sherpa-onnx/releases/tag/asr-models",
+      "license": "Moonshine Community License",
+      "note": "Pinned sherpa-onnx Moonshine package; CPU-only, macOS Apple silicon. The archive, all four pinned files and the model LICENSE are verified before loading.",
+      "options": {},
+      "platforms": [
+        "macos-arm64"
+      ],
+      "artifacts": [
+        {
+          "filename": "sherpa-onnx-moonshine-base-ja-quantized-2026-02-27.tar.bz2",
+          "bytes": 104162109,
+          "sha256": "c66eb87d229a52d43bbe3b7c52a1d23f6208c0fd7c2e81802ecbda83b192798a",
+          "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-moonshine-base-ja-quantized-2026-02-27.tar.bz2"
+        }
+      ],
+      "archive": {
+        "format": "tar.bz2",
+        "root": "sherpa-onnx-moonshine-base-ja-quantized-2026-02-27",
+        "expandedBytes": 141313934,
+        "files": [
+          {
+            "path": "tokens.txt",
+            "bytes": 549350,
+            "sha256": "2870d843e14c1e187bf1913a521562a63b53933814bd7f2145120468f494a049"
+          },
+          {
+            "path": "encoder_model.ort",
+            "bytes": 31326816,
+            "sha256": "3230cafb84d5f08800e60de6f932aad7c69c649a37fa6997fe04fe25f808b56b"
+          },
+          {
+            "path": "decoder_model_merged.ort",
+            "bytes": 109424424,
+            "sha256": "35a522052d2d8695d0dd2870666f088d633111e08cfbed0418f61c4122b4ba25"
+          },
+          {
+            "path": "LICENSE",
+            "bytes": 13344,
+            "sha256": "6148d7574a6554b7379b633cfd4c4fe5840c3f548d13bc83e00b52dc6fa00abd"
+          }
+        ]
+      }
+    },
+    {
+      "id": "moonshine-base-uk-v2",
+      "name": "Moonshine base.uk · q8",
+      "family": "Moonshine",
+      "stage": "STT",
+      "engineId": "moonshine-local",
+      "languages": [
+        "uk"
+      ],
+      "source": "https://github.com/k2-fsa/sherpa-onnx/releases/tag/asr-models",
+      "license": "Moonshine Community License",
+      "note": "Pinned sherpa-onnx Moonshine package; CPU-only, macOS Apple silicon. The archive, all four pinned files and the model LICENSE are verified before loading.",
+      "options": {},
+      "platforms": [
+        "macos-arm64"
+      ],
+      "artifacts": [
+        {
+          "filename": "sherpa-onnx-moonshine-base-uk-quantized-2026-02-27.tar.bz2",
+          "bytes": 111037143,
+          "sha256": "d8489b159afabf4cfb734002ae8a5361781ff8a381fa18d284d32d1eeb1c0376",
+          "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-moonshine-base-uk-quantized-2026-02-27.tar.bz2"
+        }
+      ],
+      "archive": {
+        "format": "tar.bz2",
+        "root": "sherpa-onnx-moonshine-base-uk-quantized-2026-02-27",
+        "expandedBytes": 141313934,
+        "files": [
+          {
+            "path": "tokens.txt",
+            "bytes": 549350,
+            "sha256": "2870d843e14c1e187bf1913a521562a63b53933814bd7f2145120468f494a049"
+          },
+          {
+            "path": "encoder_model.ort",
+            "bytes": 31326816,
+            "sha256": "ea37ff7a2c308b566def1fd6e6860e23db4968590f192d5cc0fbc494666e30f9"
+          },
+          {
+            "path": "decoder_model_merged.ort",
+            "bytes": 109424424,
+            "sha256": "2c0c1ebc20ba75a21ff5315fd039e53d2fc9ba77a9ca9ad3bc4c7c1c1de93cbc"
+          },
+          {
+            "path": "LICENSE",
+            "bytes": 13344,
+            "sha256": "6148d7574a6554b7379b633cfd4c4fe5840c3f548d13bc83e00b52dc6fa00abd"
+          }
+        ]
+      }
+    },
+    {
+      "id": "moonshine-base-vi-v2",
+      "name": "Moonshine base.vi · q8",
+      "family": "Moonshine",
+      "stage": "STT",
+      "engineId": "moonshine-local",
+      "languages": [
+        "vi"
+      ],
+      "source": "https://github.com/k2-fsa/sherpa-onnx/releases/tag/asr-models",
+      "license": "Moonshine Community License",
+      "note": "Pinned sherpa-onnx Moonshine package; CPU-only, macOS Apple silicon. The archive, all four pinned files and the model LICENSE are verified before loading.",
+      "options": {},
+      "platforms": [
+        "macos-arm64"
+      ],
+      "artifacts": [
+        {
+          "filename": "sherpa-onnx-moonshine-base-vi-quantized-2026-02-27.tar.bz2",
+          "bytes": 106719129,
+          "sha256": "97b53f5fb75a2a9dd6327440a34f45fc06c927ed2fa7217e5ebe54058e269416",
+          "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-moonshine-base-vi-quantized-2026-02-27.tar.bz2"
+        }
+      ],
+      "archive": {
+        "format": "tar.bz2",
+        "root": "sherpa-onnx-moonshine-base-vi-quantized-2026-02-27",
+        "expandedBytes": 141314030,
+        "files": [
+          {
+            "path": "tokens.txt",
+            "bytes": 549350,
+            "sha256": "2870d843e14c1e187bf1913a521562a63b53933814bd7f2145120468f494a049"
+          },
+          {
+            "path": "encoder_model.ort",
+            "bytes": 31326816,
+            "sha256": "5a63cf0e248ef463776fbad50784813b4185eb73136f1fb062c5722e667130dc"
+          },
+          {
+            "path": "decoder_model_merged.ort",
+            "bytes": 109424520,
+            "sha256": "0a4f007e9d585348d94124d8de47f7aefbc3e2d3fa44152646af7b94c639770d"
+          },
+          {
+            "path": "LICENSE",
+            "bytes": 13344,
+            "sha256": "6148d7574a6554b7379b633cfd4c4fe5840c3f548d13bc83e00b52dc6fa00abd"
+          }
+        ]
+      }
+    },
+    {
+      "id": "moonshine-base-zh-v2",
+      "name": "Moonshine base.zh · q8",
+      "family": "Moonshine",
+      "stage": "STT",
+      "engineId": "moonshine-local",
+      "languages": [
+        "zh"
+      ],
+      "source": "https://github.com/k2-fsa/sherpa-onnx/releases/tag/asr-models",
+      "license": "Moonshine Community License",
+      "note": "Pinned sherpa-onnx Moonshine package; CPU-only, macOS Apple silicon. The archive, all four pinned files and the model LICENSE are verified before loading.",
+      "options": {},
+      "platforms": [
+        "macos-arm64"
+      ],
+      "artifacts": [
+        {
+          "filename": "sherpa-onnx-moonshine-base-zh-quantized-2026-02-27.tar.bz2",
+          "bytes": 99905420,
+          "sha256": "6495d4240f66bcdd2bbbbfefaa687c463150d467854001270934e88940b733c1",
+          "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-moonshine-base-zh-quantized-2026-02-27.tar.bz2"
+        }
+      ],
+      "archive": {
+        "format": "tar.bz2",
+        "root": "sherpa-onnx-moonshine-base-zh-quantized-2026-02-27",
+        "expandedBytes": 141314030,
+        "files": [
+          {
+            "path": "tokens.txt",
+            "bytes": 549350,
+            "sha256": "2870d843e14c1e187bf1913a521562a63b53933814bd7f2145120468f494a049"
+          },
+          {
+            "path": "encoder_model.ort",
+            "bytes": 31326816,
+            "sha256": "c725a24b58595905921ea2a47e2bcf0f18c78f4d171d96136f2dcbc8c77a58a6"
+          },
+          {
+            "path": "decoder_model_merged.ort",
+            "bytes": 109424520,
+            "sha256": "bf79fce626e123739ec37eceb2b2a010a93d720da266dd5d8ef9a47ef9a7dc36"
+          },
+          {
+            "path": "LICENSE",
+            "bytes": 13344,
+            "sha256": "6148d7574a6554b7379b633cfd4c4fe5840c3f548d13bc83e00b52dc6fa00abd"
+          }
+        ]
+      }
+    },
+    {
+      "id": "omnilingual-ctc-300m-v2-int8",
+      "name": "Omnilingual CTC 300M · int8",
+      "family": "Omnilingual CTC",
+      "stage": "STT",
+      "engineId": "omnilingual-local",
+      "languages": [
+        "en",
+        "ar",
+        "ru",
+        "zh"
+      ],
+      "source": "https://huggingface.co/facebook/omniASR-CTC-300M",
+      "license": "Apache-2.0",
+      "note": "Pinned sherpa-onnx Omnilingual CTC 300M package; CPU-only, utterance-windowed, macOS Apple silicon. The archive and both model files are verified before loading. CTC recognition; the source language labels captions for translation and is never a decoder hint.",
+      "options": {},
+      "platforms": [
+        "macos-arm64"
+      ],
+      "artifacts": [
+        {
+          "filename": "sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-v2-int8-2026-02-05.tar.bz2",
+          "bytes": 292313120,
+          "sha256": "951b32409aade32bd525310bb39e9666773ba3fc611a39e817f620936d76c631",
+          "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-v2-int8-2026-02-05.tar.bz2"
+        }
+      ],
+      "archive": {
+        "format": "tar.bz2",
+        "root": "sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-v2-int8-2026-02-05",
+        "expandedBytes": 365932083,
+        "files": [
+          {
+            "path": "model.int8.onnx",
+            "bytes": 365841453,
+            "sha256": "e3042b2f3b3ef0af2211bf99d2b4bf94a21f5ac0e9898827e7dd6d003a860e91"
+          },
+          {
+            "path": "tokens.txt",
+            "bytes": 90630,
+            "sha256": "7d99997ef207ff14c2cfe825f2aa037528ea250113cc3c6392bfe49326884ba6"
+          }
+        ]
+      }
+    },
+    {
+      "id": "phonon-2",
+      "name": "Phonon 2 · int8",
+      "family": "Phonon 2",
+      "stage": "STT",
+      "engineId": "phonon-local",
+      "languages": [
+        "en"
+      ],
+      "source": "https://huggingface.co/FermionResearch/Phonon-2",
+      "license": "CC-BY-4.0",
+      "note": "Pinned Phonon 2 (NeMo TDT transducer) int8 package; CPU-only, utterance-windowed, macOS Apple silicon. The archive and all four files are verified before loading. English only; the joiner is passed to the backend conv_frontend slot.",
+      "options": {},
+      "platforms": [
+        "macos-arm64"
+      ],
+      "artifacts": [
+        {
+          "filename": "phonon-2-hearth-int8.tar.bz2",
+          "bytes": 339918748,
+          "sha256": "6b6cd464a3271f25f0bcbde0c12839516cd1e9b49f8292368da6a1931a2fa805",
+          "url": "https://github.com/Sal7one/Hearth/releases/download/v0.23.0/phonon-2-hearth-int8.tar.bz2"
+        }
+      ],
+      "archive": {
+        "format": "tar.bz2",
+        "root": "phonon-2-hearth-int8",
+        "expandedBytes": 629526848,
+        "files": [
+          {
+            "path": "tokens.txt",
+            "bytes": 93939,
+            "sha256": "d58544679ea4bc6ac563d1f545eb7d474bd6cfa467f0a6e2c1dc1c7d37e3c35d"
+          },
+          {
+            "path": "encoder.int8.onnx",
+            "bytes": 611893758,
+            "sha256": "953ae3bd0b635e4d0929e53cdc1d4757629099b99dee9b88e0812cb6ee6f670a"
+          },
+          {
+            "path": "decoder.int8.onnx",
+            "bytes": 12257659,
+            "sha256": "d92e2d8fc9c99ef9faf0a2cf1728af4ec08c0a83b99ece29a46037c4a5a757bf"
+          },
+          {
+            "path": "joiner.int8.onnx",
+            "bytes": 5281492,
+            "sha256": "b848103db33b89be7167d218587ea59e772e40ba6ba1cd787230e7e754839633"
+          }
+        ]
+      }
+    },
+    {
+      "id": "transcribepsy-250m-eu-sub-q8",
+      "name": "TranscribePsy 250M · EU (q8)",
+      "family": "TranscribePsy",
+      "stage": "STT",
+      "engineId": "transcribepsy-local",
+      "languages": [
+        "en",
+        "nl",
+        "fr",
+        "de",
+        "it",
+        "pl",
+        "pt",
+        "es"
+      ],
+      "source": "https://huggingface.co/qvac/TranscribePsy-250M-EU-sub-gguf",
+      "license": "Apache-2.0",
+      "note": "Pinned TranscribePsy 250M EU q8 GGUF; CPU-only, macOS Apple silicon. The single GGUF hash is verified before loading.",
+      "options": {},
+      "platforms": [
+        "macos-arm64"
+      ],
+      "artifacts": [
+        {
+          "filename": "transcribepsy-250m-eu-sub.gguf",
+          "bytes": 304879584,
+          "sha256": "a93ef324d38e410b5e49389db95d06364eddbb890b74a69f311e482d2fda6f4b",
+          "url": "https://huggingface.co/qvac/TranscribePsy-250M-EU-sub-gguf/resolve/92460e0a8e7dc20f2fb126198bdd9eebb9ba2dc7/transcribepsy-250m-eu-sub.gguf"
+        }
+      ]
+    },
+    {
+      "id": "nemotron-3.5-asr-0.6b",
+      "name": "Nemotron 3.5 ASR · 0.6B (q8)",
+      "family": "Nemotron 3.5",
+      "stage": "STT",
+      "engineId": "nemotron-asr-local",
+      "languages": [
+        "en",
+        "es",
+        "fr",
+        "it",
+        "pt",
+        "nl",
+        "de",
+        "tr",
+        "ru",
+        "ar",
+        "hi",
+        "ja",
+        "ko",
+        "vi",
+        "uk",
+        "pl",
+        "sv",
+        "cs",
+        "nb",
+        "da",
+        "bg",
+        "fi",
+        "hr",
+        "sk",
+        "zh",
+        "hu",
+        "ro",
+        "et"
+      ],
+      "source": "https://huggingface.co/nvidia/nemotron-3.5-asr-streaming-0.6b",
+      "license": "OpenMDW-1.1",
+      "note": "Pinned Nemotron 3.5 ASR streaming q8 GGUF; CPU-only, macOS Apple silicon. The single GGUF hash is verified before loading.",
+      "options": {},
+      "platforms": [
+        "macos-arm64"
+      ],
+      "artifacts": [
+        {
+          "filename": "nemotron-3.5-asr-streaming-0.6b.q8_0.gguf",
+          "bytes": 741548352,
+          "sha256": "a5c435f294eea8f88ce68dd27b8c3bfea7f777cb2fbba04fcd30eaa555f429ae",
+          "url": "https://huggingface.co/nvidia/nemotron-3.5-asr-streaming-0.6b/resolve/1c8deaecc64b91f034d73e08dd8b64625eb3395d/nemotron-3.5-asr-streaming-0.6b.q8_0.gguf"
+        }
+      ]
+    },
+    {
+      "id": "vosk-model-small-en-us-0.15",
+      "name": "Vosk · US English Small 0.15",
+      "family": "Vosk",
+      "stage": "STT",
+      "engineId": "vosk-local",
+      "languages": [
+        "en"
+      ],
+      "source": "https://alphacephei.com/vosk/models",
+      "license": "Apache-2.0",
+      "note": "Pinned Vosk Kaldi model; the ZIP is hash-verified before extraction and the expanded model-tree SHA-256 is verified before loading. One desktop engine id (vosk-local) serves all six models.",
+      "options": {
+        "treeSha256": "1855931c4d84fa0f731a5a7906c1356837335d49ee7f2ca6a6a32389bac7f8e8"
+      },
+      "platforms": [
+        "macos-arm64"
+      ],
+      "artifacts": [
+        {
+          "filename": "vosk-model-small-en-us-0.15.zip",
+          "bytes": 41205931,
+          "sha256": "30f26242c4eb449f948e42cb302dd7a686cb29a3423a8367f99ff41780942498",
+          "url": "https://alphacephei.com/vosk/models/vosk-model-small-en-us-0.15.zip"
+        }
+      ],
+      "archive": {
+        "format": "zip",
+        "root": "vosk-model-small-en-us-0.15",
+        "expandedBytes": 70898967,
+        "treeSha256": "1855931c4d84fa0f731a5a7906c1356837335d49ee7f2ca6a6a32389bac7f8e8"
+      }
+    },
+    {
+      "id": "vosk-model-small-de-0.15",
+      "name": "Vosk · German Small 0.15",
+      "family": "Vosk",
+      "stage": "STT",
+      "engineId": "vosk-local",
+      "languages": [
+        "de"
+      ],
+      "source": "https://alphacephei.com/vosk/models",
+      "license": "Apache-2.0",
+      "note": "Pinned Vosk Kaldi model; the ZIP is hash-verified before extraction and the expanded model-tree SHA-256 is verified before loading. One desktop engine id (vosk-local) serves all six models.",
+      "options": {
+        "treeSha256": "b8a470cd032c88ea1bad4b173071a30c014ffa345f45a41499747fdac69a8743"
+      },
+      "platforms": [
+        "macos-arm64"
+      ],
+      "artifacts": [
+        {
+          "filename": "vosk-model-small-de-0.15.zip",
+          "bytes": 46499967,
+          "sha256": "b7e53c90b1f0a38456f4cd62b366ecd58803cd97cd42b06438e2c131713d5e43",
+          "url": "https://alphacephei.com/vosk/models/vosk-model-small-de-0.15.zip"
+        }
+      ],
+      "archive": {
+        "format": "zip",
+        "root": "vosk-model-small-de-0.15",
+        "expandedBytes": 95621761,
+        "treeSha256": "b8a470cd032c88ea1bad4b173071a30c014ffa345f45a41499747fdac69a8743"
+      }
+    },
+    {
+      "id": "vosk-model-small-fr-0.22",
+      "name": "Vosk · French Small 0.22",
+      "family": "Vosk",
+      "stage": "STT",
+      "engineId": "vosk-local",
+      "languages": [
+        "fr"
+      ],
+      "source": "https://alphacephei.com/vosk/models",
+      "license": "Apache-2.0",
+      "note": "Pinned Vosk Kaldi model; the ZIP is hash-verified before extraction and the expanded model-tree SHA-256 is verified before loading. One desktop engine id (vosk-local) serves all six models.",
+      "options": {
+        "treeSha256": "42427727ea015131d1f3f54c21bfeb772945b8682a87b6165dc61d9aa3d4d3c4"
+      },
+      "platforms": [
+        "macos-arm64"
+      ],
+      "artifacts": [
+        {
+          "filename": "vosk-model-small-fr-0.22.zip",
+          "bytes": 42233323,
+          "sha256": "cabf6180e177eb9b3a9a9d43a437bd5e549f3a7d09525e5d69a3fed787be12ad",
+          "url": "https://alphacephei.com/vosk/models/vosk-model-small-fr-0.22.zip"
+        }
+      ],
+      "archive": {
+        "format": "zip",
+        "root": "vosk-model-small-fr-0.22",
+        "expandedBytes": 68483807,
+        "treeSha256": "42427727ea015131d1f3f54c21bfeb772945b8682a87b6165dc61d9aa3d4d3c4"
+      }
+    },
+    {
+      "id": "vosk-model-small-es-0.42",
+      "name": "Vosk · Spanish Small 0.42",
+      "family": "Vosk",
+      "stage": "STT",
+      "engineId": "vosk-local",
+      "languages": [
+        "es"
+      ],
+      "source": "https://alphacephei.com/vosk/models",
+      "license": "Apache-2.0",
+      "note": "Pinned Vosk Kaldi model; the ZIP is hash-verified before extraction and the expanded model-tree SHA-256 is verified before loading. One desktop engine id (vosk-local) serves all six models.",
+      "options": {
+        "treeSha256": "aaf9b97e2b0efadfdbaabb97900e620884908a554fd1f5072339d3f1458ad129"
+      },
+      "platforms": [
+        "macos-arm64"
+      ],
+      "artifacts": [
+        {
+          "filename": "vosk-model-small-es-0.42.zip",
+          "bytes": 39817833,
+          "sha256": "09b239888f633ef2f0b4e09736e3d9936acfd810bc65d53fad45261762c6511f",
+          "url": "https://alphacephei.com/vosk/models/vosk-model-small-es-0.42.zip"
+        }
+      ],
+      "archive": {
+        "format": "zip",
+        "root": "vosk-model-small-es-0.42",
+        "expandedBytes": 60286598,
+        "treeSha256": "aaf9b97e2b0efadfdbaabb97900e620884908a554fd1f5072339d3f1458ad129"
+      }
+    },
+    {
+      "id": "vosk-model-small-ru-0.22",
+      "name": "Vosk · Russian Small 0.22",
+      "family": "Vosk",
+      "stage": "STT",
+      "engineId": "vosk-local",
+      "languages": [
+        "ru"
+      ],
+      "source": "https://alphacephei.com/vosk/models",
+      "license": "Apache-2.0",
+      "note": "Pinned Vosk Kaldi model; the ZIP is hash-verified before extraction and the expanded model-tree SHA-256 is verified before loading. One desktop engine id (vosk-local) serves all six models.",
+      "options": {
+        "treeSha256": "4f1bd9e45f0a1c1fd669b6cb75ae1bcded09ed9e22de60247bb57a40814f0f07"
+      },
+      "platforms": [
+        "macos-arm64"
+      ],
+      "artifacts": [
+        {
+          "filename": "vosk-model-small-ru-0.22.zip",
+          "bytes": 46236750,
+          "sha256": "961d5ff98a17f4aa6de69864d0aa71fa5bac682301d2b5d17a3f24c5c99a46d4",
+          "url": "https://alphacephei.com/vosk/models/vosk-model-small-ru-0.22.zip"
+        }
+      ],
+      "archive": {
+        "format": "zip",
+        "root": "vosk-model-small-ru-0.22",
+        "expandedBytes": 91289240,
+        "treeSha256": "4f1bd9e45f0a1c1fd669b6cb75ae1bcded09ed9e22de60247bb57a40814f0f07"
+      }
+    },
+    {
+      "id": "vosk-model-small-cn-0.22",
+      "name": "Vosk · Chinese Small 0.22",
+      "family": "Vosk",
+      "stage": "STT",
+      "engineId": "vosk-local",
+      "languages": [
+        "zh"
+      ],
+      "source": "https://alphacephei.com/vosk/models",
+      "license": "Apache-2.0",
+      "note": "Pinned Vosk Kaldi model; the ZIP is hash-verified before extraction and the expanded model-tree SHA-256 is verified before loading. One desktop engine id (vosk-local) serves all six models.",
+      "options": {
+        "treeSha256": "ebbc20212be98c8cf0c5076915ebf2854106a7bf5ca376b11110f28b042e4555"
+      },
+      "platforms": [
+        "macos-arm64"
+      ],
+      "artifacts": [
+        {
+          "filename": "vosk-model-small-cn-0.22.zip",
+          "bytes": 43898754,
+          "sha256": "3af8b0e7e0f835ae9d414ce5df580237a3cfb08d586c9fbbb0f7ff29ad5b14ba",
+          "url": "https://alphacephei.com/vosk/models/vosk-model-small-cn-0.22.zip"
+        }
+      ],
+      "archive": {
+        "format": "zip",
+        "root": "vosk-model-small-cn-0.22",
+        "expandedBytes": 68292271,
+        "treeSha256": "ebbc20212be98c8cf0c5076915ebf2854106a7bf5ca376b11110f28b042e4555"
+      }
+    },
+    {
+      "id": "ming-3.0-tts-0.5b-web",
+      "name": "Ming-3.0 TTS 0.5B · local",
+      "family": "Ming-3.0",
+      "stage": "TTS",
+      "engineId": "ming-local",
+      "languages": [
+        "en",
+        "zh"
+      ],
+      "source": "https://huggingface.co/fusorlabs/ming-3.0-tts-0.5b-web",
+      "license": "MIT",
+      "note": "Experimental local Ming runtime; 850 MB fusor-ai bundle, CPU, 44.1 kHz, English/Chinese built-in voices. The flat files are verified and linked into the parts/ layout the runtime expects. Synthetic speech must be labelled.",
+      "options": {
+        "voice": "US_Emma",
+        "threads": "6"
+      },
+      "platforms": [
+        "macos-arm64"
+      ],
+      "artifacts": [
+        {
+          "filename": "manifest.json",
+          "bytes": 88437,
+          "sha256": "a50db3af1bfa6dfcbba12bfaca42c7d7d85fc440e76ee63b1a2a99f39cf36f05",
+          "url": "https://huggingface.co/fusorlabs/ming-3.0-tts-0.5b-web/resolve/62588575d91dceb33822fe1e3925e748393c6b3e/manifest.json"
+        },
+        {
+          "filename": "tokenizer.json",
+          "bytes": 11431389,
+          "sha256": "87d54ca3b44ea2f822ba39a0a45cb1b61644bd6606d9d3536dea75367bffb06d",
+          "url": "https://huggingface.co/fusorlabs/ming-3.0-tts-0.5b-web/resolve/62588575d91dceb33822fe1e3925e748393c6b3e/tokenizer.json"
+        },
+        {
+          "filename": "part-000.bin",
+          "bytes": 153151488,
+          "sha256": "018d43eaf832edfa69ba0096a60473850ac2d53019dd7e7102e10e9d69a8a58e",
+          "url": "https://huggingface.co/fusorlabs/ming-3.0-tts-0.5b-web/resolve/62588575d91dceb33822fe1e3925e748393c6b3e/parts/000.bin"
+        },
+        {
+          "filename": "part-001.bin",
+          "bytes": 47809536,
+          "sha256": "79e273bc0c6b078c4571a86131eb9ed382daf24a5b5f58edf0a3c90b00da5fc6",
+          "url": "https://huggingface.co/fusorlabs/ming-3.0-tts-0.5b-web/resolve/62588575d91dceb33822fe1e3925e748393c6b3e/parts/001.bin"
+        },
+        {
+          "filename": "part-002.bin",
+          "bytes": 49374720,
+          "sha256": "221d0161d1007ae8e8c8de3d02f5c87002a5dcedbc38fe46e392a1467c45b5c0",
+          "url": "https://huggingface.co/fusorlabs/ming-3.0-tts-0.5b-web/resolve/62588575d91dceb33822fe1e3925e748393c6b3e/parts/002.bin"
+        },
+        {
+          "filename": "part-003.bin",
+          "bytes": 49374720,
+          "sha256": "317cb4dc946ed5ed4fca4a059099c2ced5f19c8a30d183a6dd6df4b27cf4b281",
+          "url": "https://huggingface.co/fusorlabs/ming-3.0-tts-0.5b-web/resolve/62588575d91dceb33822fe1e3925e748393c6b3e/parts/003.bin"
+        },
+        {
+          "filename": "part-004.bin",
+          "bytes": 50028032,
+          "sha256": "bb3b243dc4648a01db1aaf6bd08c680a8ef49880076b51681d90339f79e2c971",
+          "url": "https://huggingface.co/fusorlabs/ming-3.0-tts-0.5b-web/resolve/62588575d91dceb33822fe1e3925e748393c6b3e/parts/004.bin"
+        },
+        {
+          "filename": "part-005.bin",
+          "bytes": 49883648,
+          "sha256": "138c06bfbac9059121dfbbf4f25993c0fb6c589f670bd8299e2d74033ef0c640",
+          "url": "https://huggingface.co/fusorlabs/ming-3.0-tts-0.5b-web/resolve/62588575d91dceb33822fe1e3925e748393c6b3e/parts/005.bin"
+        },
+        {
+          "filename": "part-006.bin",
+          "bytes": 49374720,
+          "sha256": "e460bd70b20ec14a6d603aaf075a2e275ad0aea1ee7c89d6299220fd0f6c8b33",
+          "url": "https://huggingface.co/fusorlabs/ming-3.0-tts-0.5b-web/resolve/62588575d91dceb33822fe1e3925e748393c6b3e/parts/006.bin"
+        },
+        {
+          "filename": "part-007.bin",
+          "bytes": 50028032,
+          "sha256": "ddf4c79abf8aa8a7df88f23820d591718aa1344cc4c0184b8f13b65fff7c4660",
+          "url": "https://huggingface.co/fusorlabs/ming-3.0-tts-0.5b-web/resolve/62588575d91dceb33822fe1e3925e748393c6b3e/parts/007.bin"
+        },
+        {
+          "filename": "part-008.bin",
+          "bytes": 49880064,
+          "sha256": "2ae3893f08712067981d29dfff3f754c7c0944522bd8f0cb04d251c5e592e1af",
+          "url": "https://huggingface.co/fusorlabs/ming-3.0-tts-0.5b-web/resolve/62588575d91dceb33822fe1e3925e748393c6b3e/parts/008.bin"
+        },
+        {
+          "filename": "part-009.bin",
+          "bytes": 49374720,
+          "sha256": "429b0551b819e339e12f7f8134e64c2cd79c137b01df9ed6bb4facffc25188ca",
+          "url": "https://huggingface.co/fusorlabs/ming-3.0-tts-0.5b-web/resolve/62588575d91dceb33822fe1e3925e748393c6b3e/parts/009.bin"
+        },
+        {
+          "filename": "part-010.bin",
+          "bytes": 47382272,
+          "sha256": "091292f51b1d33b2f34bfe886bae8b3076dd855ba4122604fdb04df84c49e334",
+          "url": "https://huggingface.co/fusorlabs/ming-3.0-tts-0.5b-web/resolve/62588575d91dceb33822fe1e3925e748393c6b3e/parts/010.bin"
+        },
+        {
+          "filename": "part-011.bin",
+          "bytes": 47366144,
+          "sha256": "543b01946f9455d87569c27bf3167c1c9271499fd2dfb732b5724a6cb15a9c90",
+          "url": "https://huggingface.co/fusorlabs/ming-3.0-tts-0.5b-web/resolve/62588575d91dceb33822fe1e3925e748393c6b3e/parts/011.bin"
+        },
+        {
+          "filename": "part-012.bin",
+          "bytes": 48627200,
+          "sha256": "316d6fce01f71a016a60013f335aab496e77aae13324ee32737acb7f0abf819d",
+          "url": "https://huggingface.co/fusorlabs/ming-3.0-tts-0.5b-web/resolve/62588575d91dceb33822fe1e3925e748393c6b3e/parts/012.bin"
+        },
+        {
+          "filename": "part-013.bin",
+          "bytes": 47321088,
+          "sha256": "3f55b8b32511799a0863ee567d033874a81ca4e627e0ef7e33dbe02cbc55722f",
+          "url": "https://huggingface.co/fusorlabs/ming-3.0-tts-0.5b-web/resolve/62588575d91dceb33822fe1e3925e748393c6b3e/parts/013.bin"
+        },
+        {
+          "filename": "part-014.bin",
+          "bytes": 49619520,
+          "sha256": "ee8cd2ff0385c4b99b6dfe4556be7326e53b30cf93258d52028c5af0f3550a1c",
+          "url": "https://huggingface.co/fusorlabs/ming-3.0-tts-0.5b-web/resolve/62588575d91dceb33822fe1e3925e748393c6b3e/parts/014.bin"
+        }
+      ]
+    }
+  ]
+}

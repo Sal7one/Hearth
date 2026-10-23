@@ -1,0 +1,643 @@
+package com.sal7one.hearth.desktop.runtime
+
+import com.sal7one.common_jni.desktop.DesktopBackendSpeechNative
+import com.sal7one.common_jni.desktop.DesktopQwenNative
+import com.sal7one.common_jni.desktop.DesktopWhisperNative
+import com.sal7one.common_jni.translation.Ct2Native
+import com.sal7one.common_jni.translation.LocalTranslationNative
+import com.sal7one.hearth.core.*
+import com.sal7one.hearth.desktop.media.DesktopMediaDecoder
+import com.sal7one.hearth.tts.chatterbox.ChatterboxCatalog
+import com.sal7one.hearth.tts.chatterbox.ChatterboxGraph
+import com.sal7one.hearth.tts.chatterbox.ChatterboxPerth
+import com.sal7one.hearth.tts.chatterbox.ChatterboxSpeechEngine
+import com.sal7one.hearth.tts.magpie.MagpieCatalog
+import com.sal7one.hearth.tts.magpie.MagpieSpeechEngine
+import com.sal7one.hearth.tts.moss.MossCatalog
+import com.sal7one.hearth.tts.moss.MossSpeechEngine
+import com.sal7one.hearth.tts.omnivoice.OmniVoiceCatalog
+import com.sal7one.hearth.tts.omnivoice.OmniVoiceSpeechEngine
+import com.sal7one.hearth.tts.supertonic.SupertonicCatalog
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
+import java.io.ByteArrayOutputStream
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
+import java.nio.file.Files
+import java.nio.file.Path
+import java.util.UUID
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicLong
+import java.util.concurrent.atomic.AtomicReference
+
+/** Independent desktop adapters. Native handles are private to this owner, never shared with Android. */
+class DesktopEngines(
+    credentials: CredentialResolver,
+    val appDataDirectory: Path = defaultDataDirectory(),
+) : PipelineEngines, AutoCloseable {
+    private val cloud = DesktopCloud(credentials, appDataDirectory)
+    private val voices = DesktopVoiceCache(appDataDirectory)
+    private val mingVerification = Any()
+    private var mingVerified: ComponentModelStamp? = null
+    private val mingVoices = DesktopVoiceCache(
+        appDataDirectory,
+        engineId = "ming-local",
+        sampleRate = 44_100,
+        defaultVoice = "US_Emma",
+        assetNames = MingLocalModel.assets,
+        engineFactory = { path, threads -> MingLocalEngine(path.toFile(), threads) },
+    )
+    private val mossVoices = DesktopVoiceCache(
+        appDataDirectory,
+        engineId = "moss-tts-local",
+        sampleRate = 48_000,
+        defaultVoice = "Ava",
+        assetNames = MossCatalog.assets.map { it.filename },
+        engineFactory = { path, threads -> MossSpeechEngine(path.toFile(), threads) },
+    )
+    private val omnivoiceVoices = DesktopVoiceCache(
+        appDataDirectory,
+        engineId = "omnivoice-tts-local",
+        sampleRate = 24_000,
+        defaultVoice = "design-female",
+        assetNames = OmniVoiceCatalog.assets.map { it.filename },
+        engineFactory = { path, _ -> OmniVoiceSpeechEngine(path.toFile()) },
+    )
+    private val magpieVoices = DesktopVoiceCache(
+        appDataDirectory,
+        engineId = "magpie-tts-local",
+        sampleRate = 22_050,
+        defaultVoice = "Aria",
+        assetNames = MagpieCatalog.weights.map { it.filename } + MagpieCatalog.tokenizer.map { "tokenizer/${it.filename}" },
+        engineFactory = { path, threads -> MagpieSpeechEngine(path.toFile(), threads) },
+    )
+    /** Chatterbox fingerprints the derived graph and watermark, not the raw downloadable sources. */
+    private val chatterboxVoices = DesktopVoiceCache(
+        appDataDirectory,
+        engineId = "chatterbox-tts-local",
+        sampleRate = 24_000,
+        defaultVoice = "default",
+        assetNames = ChatterboxCatalog.assets.map { if (it.filename == ChatterboxGraph.SOURCE_FILENAME) ChatterboxGraph.FILENAME else it.filename } + ChatterboxPerth.FILENAME,
+        engineFactory = { path, threads -> ChatterboxSpeechEngine(path.toFile(), threads) },
+        prepare = ::prepareChatterbox,
+    )
+    private val translationGate = Mutex()
+    private val ct2Gate = Mutex()
+    private val lifecycle = Any()
+    private val closed = AtomicBoolean()
+    private var translationHandle = 0L
+    private var translationKey = ""
+    private var ct2Engine: DesktopCt2TranslationEngine? = null
+    private var ct2Key: Pair<Int, ComponentModelStamp>? = null
+    init { DesktopNativeLibraries.configure(appDataDirectory) }
+
+    override fun capabilities(): List<EngineDescriptor> {
+        fun local(id: String, name: String, stage: PipelineStage, library: String, languages: Set<String> = emptySet(), streaming: Boolean = false): EngineDescriptor {
+            var error = DesktopNativeLibraries.readiness(library)
+            val backendLibrary = when (id) {
+                "transcribepsy-local" -> "hearth_transcribepsy"
+                "nemotron-asr-local" -> "hearth_nemotron"
+                "moonshine-local", "omnilingual-local", "phonon-local" -> "hearth_desktop_qwen3_asr"
+                else -> null
+            }
+            if (backendLibrary != null && error == null) error = DesktopNativeLibraries.readiness(backendLibrary)
+            var acceleration = setOf("cpu")
+            if (error == null) {
+                runCatching {
+                    var cuda = false
+                    val metal = when (id) {
+                        "whisper-local" -> {
+                            check(DesktopWhisperNative.protocolVersion() == DesktopWhisperNative.PROTOCOL_VERSION) { "Desktop Whisper protocol mismatch; rebuild the native bundle" }
+                            cuda = DesktopWhisperNative.gpuAvailable(DesktopCompute.CUDA, -1)
+                            DesktopWhisperNative.metalAvailable()
+                        }
+                        "llama-translation-local" -> {
+                            check(LocalTranslationNative.promptProtocolVersion() == LocalTranslationNative.PROTOCOL_VERSION) { "Desktop translation protocol mismatch; rebuild the native bundle" }
+                            cuda = LocalTranslationNative.gpuAvailable(DesktopCompute.CUDA, -1)
+                            LocalTranslationNative.metalAvailable()
+                        }
+                        QwenSpeechModel.ENGINE_ID -> {
+                            check(DesktopQwenNative.protocolVersion() == QwenSpeechModel.PROTOCOL_VERSION) { "Desktop Qwen3-ASR protocol mismatch; rebuild the native bundle" }
+                            false
+                        }
+                        "marian-local" -> {
+                            check(Ct2Native.protocolVersion() == DesktopCt2TranslationEngine.PROTOCOL_VERSION) { "Desktop CTranslate2 protocol mismatch; rebuild the native bundle" }
+                            false
+                        }
+                        "transcribepsy-local", "nemotron-asr-local", "moonshine-local", "omnilingual-local", "phonon-local", "vosk-local" -> {
+                            check(DesktopBackendSpeechNative.protocolVersion() == DesktopBackendSpeechEngine.PROTOCOL_VERSION) { "Desktop speech backend protocol mismatch; rebuild the native bundle" }
+                            false
+                        }
+                        else -> false
+                    }
+                    if (metal) acceleration = setOf("cpu", "metal")
+                    if (cuda) acceleration = acceleration + "cuda"
+                }.onFailure { error = it.message ?: it.javaClass.simpleName }
+            }
+            return EngineDescriptor(id, name, stage, EngineKind.LOCAL, languages, streaming,
+                acceleration = acceleration, available = error == null, unavailableReason = error, requiresModel = true)
+        }
+        return listOf(
+            local("whisper-local", "Whisper.cpp", PipelineStage.STT, "hearth_desktop_whisper", streaming = true),
+            local(QwenSpeechModel.ENGINE_ID, "Qwen3-ASR 0.6B", PipelineStage.STT, QwenSpeechModel.LIBRARY, QwenSpeechModel.languages),
+            local("transcribepsy-local", "TranscribePsy 250M", PipelineStage.STT, "hearth_desktop_backend_speech", TRANSCRIBEPSY_LANGUAGES),
+            local("nemotron-asr-local", "Nemotron 3.5 ASR", PipelineStage.STT, "hearth_desktop_backend_speech", NEMOTRON_LANGUAGES),
+            local(MoonshineSpeechModel.ENGINE_ID, "Moonshine", PipelineStage.STT, "hearth_desktop_backend_speech", MoonshineSpeechModel.languages),
+            local("vosk-local", "Vosk (Kaldi)", PipelineStage.STT, "hearth_vosk", VOSK_LANGUAGES),
+            local("omnilingual-local", "Omnilingual CTC 300M", PipelineStage.STT, "hearth_desktop_backend_speech", OMNILINGUAL_LANGUAGES),
+            local("phonon-local", "Phonon 2", PipelineStage.STT, "hearth_desktop_backend_speech", PHONON_LANGUAGES),
+            local("moss-tts-local", "MOSS-TTS Nano 100M", PipelineStage.TTS, "hearth_desktop_moss", setOf("ar", "en")),
+            local("omnivoice-tts-local", "OmniVoice (voice design)", PipelineStage.TTS, "hearth_desktop_omnivoice", setOf("ar", "en")),
+            local("magpie-tts-local", "MagpieTTS Multilingual 357M", PipelineStage.TTS, "hearth_desktop_magpie", MagpieCatalog.languages),
+            local("chatterbox-tts-local", "Chatterbox Multilingual V3", PipelineStage.TTS, "hearth_desktop_chatterbox", setOf("ar", "en")),
+            local("ming-local", "Ming-3.0 TTS 0.5B (local)", PipelineStage.TTS, "ming_jni", setOf("en", "zh")),
+            local("llama-translation-local", "Local GGUF translation", PipelineStage.TRANSLATION, "transiber_translation"),
+            local("marian-local", "CTranslate2 · Marian/OPUS", PipelineStage.TRANSLATION, "hearth_desktop_ct2"),
+            local("supertonic-local", "Supertonic 3", PipelineStage.TTS, "hearth_supertonic_jni", SupertonicCatalog.languages),
+            EngineDescriptor("openai-stt", "OpenAI-compatible transcription", PipelineStage.STT, EngineKind.CLOUD,
+                streaming = true, requiresCredential = true, defaultEndpoint = "https://api.openai.com/v1/audio/transcriptions", defaultModel = "gpt-4o-mini-transcribe"),
+            EngineDescriptor("openai-translation", "OpenAI-compatible translation", PipelineStage.TRANSLATION, EngineKind.CLOUD,
+                requiresCredential = true, defaultEndpoint = "https://api.openai.com/v1/chat/completions", defaultModel = "gpt-4.1-mini"),
+            EngineDescriptor("openai-tts", "OpenAI-compatible speech", PipelineStage.TTS, EngineKind.CLOUD,
+                requiresCredential = true, defaultEndpoint = "https://api.openai.com/v1/audio/speech", defaultModel = "gpt-4o-mini-tts"),
+            EngineDescriptor("ming-tts", "Ming-3.0 TTS (self-hosted)", PipelineStage.TTS, EngineKind.CLOUD,
+                languages = MING_LANGUAGES, requiresCredential = true,
+                defaultEndpoint = "http://127.0.0.1:8787/speech", defaultModel = "inclusionAI/Ming-3.0-tts-0.5B"),
+            EngineDescriptor("system-tts", "Installed system voices", PipelineStage.TTS, EngineKind.SYSTEM,
+                available = DesktopSystemSpeech.available, unavailableReason = if (DesktopSystemSpeech.available) null else "System speech is available on Windows and macOS"),
+        )
+    }
+
+    override suspend fun recognize(input: PipelineInput, selection: EngineSelection, sourceLanguage: String, emit: suspend (SpeechSegment) -> Unit) {
+        check(!closed.get()) { "Desktop engines are closed" }
+        require(selection.engineId in setOf("whisper-local", QwenSpeechModel.ENGINE_ID, "transcribepsy-local", "nemotron-asr-local", "moonshine-local", "vosk-local", "omnilingual-local", "phonon-local", "openai-stt")) { "Unknown speech engine: ${selection.engineId}" }
+        if (selection.engineId !in setOf("whisper-local", "openai-stt")) requireCpuAcceleration(selection)
+        var decoded: Path? = null
+        val frames: Flow<PcmFrame> = when (input) {
+            is PipelineInput.AudioStream -> input.frames
+            is PipelineInput.AudioFile -> {
+                val path = Path.of(input.path)
+                if (!withContext(Dispatchers.IO) { DesktopAudioFiles.supports(path) }) {
+                    decoded = DesktopMediaDecoder.decode(path, appDataDirectory.resolve("decoded-audio"))
+                    DesktopAudioFiles.frames(decoded.toString())
+                } else DesktopAudioFiles.frames(input.path)
+            }
+            is PipelineInput.Text -> error("Speech recognition needs an audio file or microphone")
+        }
+        val handle = AtomicLong()
+        val qwenEngine = AtomicReference<DesktopQwenSpeechEngine?>(null)
+        val backendEngine = AtomicReference<DesktopBackendSpeechEngine?>(null)
+        var offsetSamples = 0L
+        var sequence = 0
+        var recognized = false
+        try {
+            if (selection.engineId == "whisper-local") {
+                val path = verifiedModel(selection)
+                check(DesktopWhisperNative.protocolVersion() == DesktopWhisperNative.PROTOCOL_VERSION) { "Desktop Whisper protocol mismatch" }
+                val compute = desktopCompute(selection)
+                val owner = currentCoroutineContext()
+                joinedBlocking({ handle.get().takeIf { it != 0L }?.let(DesktopWhisperNative::cancel) }) {
+                    owner.ensureActive()
+                    handle.set(DesktopWhisperNative.createWithBackend(path.toString().toByteArray(), sourceLanguage.toByteArray(), threads(selection), compute.backend, compute.gpuDevice))
+                    check(handle.get() != 0L) { "Whisper returned an invalid model handle" }
+                }
+            } else if (selection.engineId == QwenSpeechModel.ENGINE_ID) {
+                val directory = verifiedQwenModel(selection)
+                val language = QwenSpeechModel.language(sourceLanguage)
+                val threadCount = threads(selection)
+                val owner = currentCoroutineContext()
+                joinedBlocking({ qwenEngine.get()?.cancel() }) {
+                    owner.ensureActive()
+                    val opened = DesktopQwenSpeechEngine.open(directory, language, threadCount)
+                    if (!qwenEngine.compareAndSet(null, opened)) {
+                        opened.close()
+                        error("Qwen3-ASR engine was already published")
+                    }
+                }
+            } else if (selection.engineId == MoonshineSpeechModel.ENGINE_ID) {
+                // The selected card's language, not the app's source hint: Moonshine has
+                // no language conditioning, so Auto resolves to the package's language.
+                val language = MoonshineSpeechModel.language(selection.modelId, sourceLanguage)
+                val root = verifiedMoonshineModel(selection)
+                val owner = currentCoroutineContext()
+                joinedBlocking({ backendEngine.get()?.cancel() }) {
+                    owner.ensureActive()
+                    val opened = DesktopBackendSpeechEngine.open(
+                        MoonshineSpeechModel.LIBRARY, MoonshineSpeechModel.BACKEND_ID, root.resolve("tokens.txt"),
+                        language, threads(selection),
+                        entrySymbol = MoonshineSpeechModel.ENTRY_SYMBOL,
+                        encoder = root.resolve("encoder_model.ort"),
+                        decoder = root.resolve("decoder_model_merged.ort"),
+                    )
+                    if (!backendEngine.compareAndSet(null, opened)) {
+                        opened.close()
+                        error("Speech backend engine was already published")
+                    }
+                }
+            } else if (selection.engineId == "omnilingual-local") {
+                val root = verifiedSherpaPackage(selection, OMNILINGUAL_FILES, "Omnilingual CTC")
+                val owner = currentCoroutineContext()
+                joinedBlocking({ backendEngine.get()?.cancel() }) {
+                    owner.ensureActive()
+                    val opened = DesktopBackendSpeechEngine.open(
+                        "hearth_desktop_qwen3_asr", "omnilingual_ctc", root.resolve("model.int8.onnx"),
+                        sourceLanguage, threads(selection),
+                        entrySymbol = "hearth_omnilingual_backend_v1",
+                        tokenizer = root.resolve("tokens.txt"),
+                        maximumMs = 15000,
+                    )
+                    if (!backendEngine.compareAndSet(null, opened)) {
+                        opened.close()
+                        error("Speech backend engine was already published")
+                    }
+                }
+            } else if (selection.engineId == "phonon-local") {
+                val root = verifiedSherpaPackage(selection, PHONON_FILES, "Phonon 2")
+                val owner = currentCoroutineContext()
+                joinedBlocking({ backendEngine.get()?.cancel() }) {
+                    owner.ensureActive()
+                    val opened = withSupportedSpeechLanguage(sourceLanguage, PHONON_LANGUAGES, "Phonon 2") { language -> DesktopBackendSpeechEngine.open(
+                        "hearth_desktop_qwen3_asr", "phonon", root.resolve("tokens.txt"),
+                        language, threads(selection),
+                        entrySymbol = "hearth_phonon_backend_v1",
+                        encoder = root.resolve("encoder.int8.onnx"),
+                        decoder = root.resolve("decoder.int8.onnx"),
+                        convFrontend = root.resolve("joiner.int8.onnx"),
+                        maximumMs = 15000,
+                    ) }
+                    if (!backendEngine.compareAndSet(null, opened)) {
+                        opened.close()
+                        error("Speech backend engine was already published")
+                    }
+                }
+            } else if (selection.engineId == "transcribepsy-local" || selection.engineId == "nemotron-asr-local") {
+                val path = verifiedModel(selection)
+                val transcribepsy = selection.engineId == "transcribepsy-local"
+                val owner = currentCoroutineContext()
+                joinedBlocking({ backendEngine.get()?.cancel() }) {
+                    owner.ensureActive()
+                    val opened = withSupportedSpeechLanguage(sourceLanguage,
+                        if (transcribepsy) TRANSCRIBEPSY_LANGUAGES else NEMOTRON_LANGUAGES,
+                        if (transcribepsy) "TranscribePsy" else "Nemotron ASR") { language -> DesktopBackendSpeechEngine.open(
+                        if (transcribepsy) "hearth_transcribepsy" else "hearth_nemotron",
+                        if (transcribepsy) "transcribepsy" else "nemotron_3_5",
+                        path, language, threads(selection),
+                    ) }
+                    if (!backendEngine.compareAndSet(null, opened)) {
+                        opened.close()
+                        error("Speech backend engine was already published")
+                    }
+                }
+            } else if (selection.engineId == "vosk-local") {
+                val path = verifiedVoskModel(selection)
+                val owner = currentCoroutineContext()
+                joinedBlocking({ backendEngine.get()?.cancel() }) {
+                    owner.ensureActive()
+                    // One engine id for all six models: the model directory chooses the
+                    // language and the adapter verifies its pinned tree digest.
+                    val opened = DesktopBackendSpeechEngine.open(
+                        "hearth_vosk", "vosk", path, sourceLanguage, threads(selection),
+                    )
+                    if (!backendEngine.compareAndSet(null, opened)) {
+                        opened.close()
+                        error("Speech backend engine was already published")
+                    }
+                }
+            }
+            val live = input is PipelineInput.AudioStream
+            val spokenWindow = selection.engineId == QwenSpeechModel.ENGINE_ID || selection.engineId == "transcribepsy-local" || selection.engineId == "nemotron-asr-local" || selection.engineId == "moonshine-local" || selection.engineId == "vosk-local"
+            val windowMs = selection.options["windowMs"]?.toIntOrNull()
+                ?: if (spokenWindow) 15000 else if (live) 4000 else 20000
+            require(windowMs in 1000..30000) { "Speech window must be 1000–30000 ms" }
+            val windowBytes = windowMs * 32
+            val buffered = ByteArrayOutputStream(windowBytes)
+            var speechSamples = 0
+            var silenceSamples = 0
+            suspend fun transcribe() {
+                val bytes = buffered.toByteArray(); buffered.reset()
+                if (bytes.isEmpty()) return
+                currentCoroutineContext().ensureActive()
+                val observedSpeech = speechSamples
+                speechSamples = 0; silenceSamples = 0
+                if (live && observedSpeech == 0) { offsetSamples += bytes.size / 2; return }
+                val text: String
+                var language: String? = sourceLanguage.takeUnless { it == "auto" }
+                val owner = currentCoroutineContext()
+                if (selection.engineId == "openai-stt") {
+                    text = cloud.recognize(bytes, selection, sourceLanguage)
+                } else {
+                    val pcm = ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN).asShortBuffer()
+                    val samples = FloatArray(pcm.remaining()) { pcm.get() / 32768f }
+                    if (selection.engineId == QwenSpeechModel.ENGINE_ID) {
+                        val engine = checkNotNull(qwenEngine.get()) { "Qwen3-ASR is not open" }
+                        text = joinedBlocking({ engine.cancel() }) { owner.ensureActive(); engine.transcribe(samples) }
+                        language = QwenSpeechModel.detected(engine.language()) ?: language
+                    } else if (selection.engineId == "transcribepsy-local" || selection.engineId == "nemotron-asr-local" || selection.engineId == "moonshine-local" || selection.engineId == "omnilingual-local" || selection.engineId == "phonon-local" || selection.engineId == "vosk-local") {
+                        val engine = checkNotNull(backendEngine.get()) { "Speech backend is not open" }
+                        text = joinedBlocking({ engine.cancel() }) { owner.ensureActive(); engine.transcribe(samples) }
+                        language = engine.language().ifBlank { language }
+                    } else {
+                        text = joinedBlocking({ DesktopWhisperNative.cancel(handle.get()) }) {
+                            owner.ensureActive(); DesktopWhisperNative.transcribe(handle.get(), samples).toString(Charsets.UTF_8).trim()
+                        }
+                        language = DesktopWhisperNative.language(handle.get()).toString(Charsets.UTF_8).ifBlank { language }
+                    }
+                }
+                val end = offsetSamples + bytes.size / 2
+                if (text.isNotBlank()) {
+                    emit(SpeechSegment("speech-${sequence++}", text, true, offsetSamples / 16, end / 16, language))
+                    recognized = true
+                }
+                offsetSamples = end
+            }
+            // Utterance-windowed recognition, not a claim of token-by-token streaming.
+            frames.collect { frame ->
+                var cursor = 0
+                while (cursor < frame.bytes.size) {
+                    val count = minOf(frame.bytes.size - cursor, windowBytes - buffered.size())
+                    buffered.write(frame.bytes, cursor, count); cursor += count
+                    if (live) {
+                        var energy = 0.0
+                        val samples = ByteBuffer.wrap(frame.bytes, cursor - count, count).order(ByteOrder.LITTLE_ENDIAN).asShortBuffer()
+                        while (samples.hasRemaining()) { val value = samples.get() / 32768.0; energy += value * value }
+                        if (kotlin.math.sqrt(energy / (count / 2)) >= 0.008) { speechSamples += count / 2; silenceSamples = 0 }
+                        else silenceSamples += count / 2
+                    }
+                    if (buffered.size() == windowBytes || live && speechSamples >= 4000 && silenceSamples >= 9600) transcribe()
+                }
+            }
+            transcribe()
+            check(recognized) { "No speech was recognized in the supplied audio" }
+        } finally {
+            try {
+                withContext(NonCancellable + Dispatchers.IO) {
+                    try {
+                        qwenEngine.getAndSet(null)?.close()
+                        backendEngine.getAndSet(null)?.close()
+                    } finally {
+                        handle.getAndSet(0).takeIf { it != 0L }?.let(DesktopWhisperNative::destroy)
+                    }
+                }
+            } finally {
+                decoded?.let { Files.deleteIfExists(it) }
+            }
+        }
+    }
+
+    override suspend fun translate(text: String, selection: EngineSelection, sourceLanguage: String, targetLanguage: String): String {
+        check(!closed.get()) { "Desktop engines are closed" }
+        require(text.isNotBlank() && text.length <= TextChunks.MAX_TEXT_CHARACTERS) { "Translation accepts 1–32000 characters" }
+        if (selection.engineId == "openai-translation") return cloud.translate(text, selection, sourceLanguage, targetLanguage)
+        if (selection.engineId == "marian-local") { requireCpuAcceleration(selection); return translateCt2(text, selection, sourceLanguage, targetLanguage) }
+        require(selection.engineId == "llama-translation-local") { "Unknown translation engine: ${selection.engineId}" }
+        return translationGate.withLock {
+            val path = Path.of(selection.modelPath).toAbsolutePath().normalize()
+            val mode = when (selection.options["promptMode"] ?: "default") { "default" -> 0; "raw" -> 1; "euro" -> 2; "riva" -> 3; else -> error("Unknown local translation prompt mode") }
+            val hash = selection.options["sha256"].orEmpty()
+            val compute = desktopCompute(selection)
+            val threads = threads(selection)
+            val key = "$path|$hash|$mode|$compute|$threads|${Files.size(path)}|${Files.getLastModifiedTime(path)}"
+            try {
+                if (synchronized(lifecycle) { translationKey != key || translationHandle == 0L }) {
+                    verifiedModel(selection)
+                    withContext(Dispatchers.IO) {
+                        synchronized(lifecycle) {
+                            check(!closed.get()) { "Desktop engines are closed" }
+                            if (translationHandle != 0L) LocalTranslationNative.destroy(translationHandle)
+                            translationHandle = 0; translationKey = ""
+                        }
+                    }
+                    val owner = currentCoroutineContext()
+                    joinedBlocking({ synchronized(lifecycle) { translationHandle.takeIf { it != 0L }?.let(LocalTranslationNative::cancel) } }) {
+                        owner.ensureActive()
+                        check(LocalTranslationNative.promptProtocolVersion() == LocalTranslationNative.PROTOCOL_VERSION) { "Local translation native prompt protocol mismatch" }
+                        val created = LocalTranslationNative.createWithBackend(path.toString().toByteArray(), mode, threads, compute.backend, compute.gpuDevice)
+                        check(created != 0L) { "Translation returned an invalid model handle" }
+                        synchronized(lifecycle) {
+                            if (closed.get()) { LocalTranslationNative.destroy(created); error("Desktop engines are closed") }
+                            translationHandle = created; translationKey = key
+                        }
+                    }
+                }
+                val result = mutableListOf<String>()
+                for (part in TextChunks.split(text, 500)) {
+                    currentCoroutineContext().ensureActive()
+                    val instruction = DesktopTranslationPrompts.prompt(part, sourceLanguage, targetLanguage,
+                        selection.options["family"] ?: when (mode) { 1 -> "milmmt-46"; 2 -> "eurollm"; 3 -> "riva-translate"; else -> "hy-mt1.5" })
+                    val handle = synchronized(lifecycle) { translationHandle }
+                    val owner = currentCoroutineContext()
+                    val output = joinedBlocking({ LocalTranslationNative.cancel(handle) }) {
+                        owner.ensureActive(); LocalTranslationNative.translate(handle, instruction.toByteArray()).toString(Charsets.UTF_8).trim()
+                    }
+                    check(output.isNotBlank()) { "Translation model returned empty text" }
+                    result += output
+                }
+                result.joinToString("\n")
+            } catch (error: Throwable) {
+                withContext(NonCancellable + Dispatchers.IO) { clearTranslation() }
+                throw error
+            }
+        }
+    }
+
+    private suspend fun translateCt2(text: String, selection: EngineSelection, sourceLanguage: String, targetLanguage: String): String = ct2Gate.withLock {
+        val root = Path.of(selection.modelPath).toRealPath()
+        require(Files.isDirectory(root)) { "Select a complete CTranslate2 model directory" }
+        val mode = selection.options["profile"]?.toIntOrNull() ?: error("CTranslate2 tokenizer mode is required")
+        require(mode in 0..5) { "Unsupported CTranslate2 tokenizer mode" }
+        val sources = selection.options["sources"].orEmpty().split(',').filter { it.isNotBlank() }.toSet()
+        val targets = selection.options["targets"].orEmpty().split(',').filter { it.isNotBlank() }.toSet()
+        require(sources.isEmpty() || sourceLanguage in sources) { "This CTranslate2 model does not support $sourceLanguage → $targetLanguage" }
+        require(targets.isEmpty() || targetLanguage in targets) { "This CTranslate2 model does not support $sourceLanguage → $targetLanguage" }
+        val key = withContext(Dispatchers.IO) {
+            val context = currentCoroutineContext()
+            mode to Ct2ModelIntegrity.stamp(root, mode, selection) { context.ensureActive() }
+        }
+        if (synchronized(lifecycle) { ct2Key != key || ct2Engine == null }) {
+            withContext(Dispatchers.IO) {
+                val context = currentCoroutineContext()
+                check(Ct2ModelIntegrity.verify(root, mode, selection) { context.ensureActive() } == key.second) {
+                    "CTranslate2 components changed before model loading"
+                }
+            }
+            withContext(Dispatchers.IO) {
+                synchronized(lifecycle) {
+                    check(!closed.get()) { "Desktop engines are closed" }
+                    ct2Engine?.close()
+                    ct2Engine = DesktopCt2TranslationEngine.open(root, mode)
+                    ct2Key = key
+                }
+            }
+        }
+        val engine = synchronized(lifecycle) { ct2Engine } ?: error("CTranslate2 engine is not open")
+        try {
+            val result = mutableListOf<String>()
+            for (part in TextChunks.split(text, 500)) {
+                currentCoroutineContext().ensureActive()
+                val owner = currentCoroutineContext()
+                result += joinedBlocking({ engine.cancel() }) { owner.ensureActive(); engine.translate(part, targetLanguage) }
+            }
+            result.joinToString("\n")
+        } catch (error: Throwable) {
+            withContext(NonCancellable + Dispatchers.IO) { clearCt2() }
+            throw error
+        }
+    }
+
+    /** The selected catalog card chooses the variant; every component comes from its engine-owned pins. */
+    private suspend fun verifiedMoonshineModel(selection: EngineSelection): Path = withContext(Dispatchers.IO) {
+        val root = Path.of(selection.modelPath).toRealPath()
+        val context = currentCoroutineContext()
+        MoonshineSpeechModel.verify(root, selection.modelId) { context.ensureActive() }
+        root
+    }
+
+    /** Every sherpa family package is a directory whose components carry individual pins. */
+    private suspend fun verifiedSherpaPackage(selection: EngineSelection, pins: Map<String, String>, label: String): Path = withContext(Dispatchers.IO) {
+        val root = Path.of(selection.modelPath).toRealPath()
+        require(Files.isDirectory(root)) { "Select a complete $label model directory" }
+        for ((name, expected) in pins) {
+            val file = root.resolve(name).normalize()
+            require(file.startsWith(root)) { "$label component escapes its directory: $name" }
+            check(Files.isRegularFile(file)) { "Missing $label component: $name" }
+            currentCoroutineContext().ensureActive()
+            check(sha256(file) == expected) { "$label component checksum mismatch: $name" }
+        }
+        root
+    }
+
+    override suspend fun synthesize(text: String, selection: EngineSelection, language: String, voiceId: String): GeneratedAudio {
+        check(!closed.get()) { "Desktop engines are closed" }
+        require(text.isNotBlank()) { "Read aloud needs text" }
+        if (selection.engineId == "openai-tts") return cloud.synthesize(text, selection, voiceId)
+        if (selection.engineId == "ming-tts") return cloud.synthesizeMing(text, selection, language, voiceId)
+        if (selection.engineId == "system-tts") return DesktopSystemSpeech.synthesize(text, language, voiceId, appDataDirectory)
+        if (selection.engineId == "moss-tts-local") {
+            requireCpuAcceleration(selection)
+            return mossVoices.read(text, selection, language, voiceId)
+        }
+        if (selection.engineId == "omnivoice-tts-local") {
+            requireCpuAcceleration(selection)
+            return omnivoiceVoices.read(text, selection, language, voiceId)
+        }
+        if (selection.engineId == "magpie-tts-local") {
+            requireCpuAcceleration(selection)
+            return magpieVoices.read(text, selection, language, voiceId)
+        }
+        if (selection.engineId == "chatterbox-tts-local") {
+            requireCpuAcceleration(selection)
+            return chatterboxVoices.read(text, selection, language, voiceId)
+        }
+        if (selection.engineId == "ming-local") {
+            requireCpuAcceleration(selection)
+            withContext(Dispatchers.IO) {
+                val context = currentCoroutineContext()
+                synchronized(mingVerification) {
+                    val key = MingLocalModel.stamp(selection) { context.ensureActive() }
+                    if (mingVerified != key) {
+                        MingLocalModel.verify(selection) { context.ensureActive() }
+                        check(MingLocalModel.stamp(selection) { context.ensureActive() } == key) { "Ming components changed before model loading" }
+                        mingVerified = key
+                    }
+                }
+            }
+            return mingVoices.read(text, selection, language, voiceId)
+        }
+        require(selection.engineId == "supertonic-local") { "Unknown voice engine: ${selection.engineId}" }
+        requireCpuAcceleration(selection)
+        return voices.read(text, selection, language, voiceId)
+    }
+
+    private fun clearTranslation() = synchronized(lifecycle) {
+        val id = translationHandle; translationHandle = 0; translationKey = ""
+        if (id != 0L) LocalTranslationNative.destroy(id)
+    }
+    private fun clearCt2() = synchronized(lifecycle) {
+        val engine = ct2Engine; ct2Engine = null; ct2Key = null
+        engine?.close()
+    }
+    override fun close() {
+        if (closed.compareAndSet(false, true)) closeOwners(
+            { clearTranslation() }, { clearCt2() }, { synchronized(mingVerification) { mingVerified = null } },
+            { voices.close() }, { mossVoices.close() }, { omnivoiceVoices.close() },
+            { magpieVoices.close() }, { chatterboxVoices.close() }, { mingVoices.close() },
+        )
+    }
+/** Vosk models are extracted directories whose model-tree-sha256-v1 digest is the pin.
+ *  The desktop library verifies it on install/refresh and the adapter re-derives and
+ *  verifies the same digest immediately before loading the model. */
+private suspend fun verifiedVoskModel(selection: EngineSelection): Path = withContext(Dispatchers.IO) {
+    val context = currentCoroutineContext()
+    ModelTreeIntegrity.verify(Path.of(selection.modelPath), selection.options["treeSha256"].orEmpty()) { context.ensureActive() }
+}
+
+private suspend fun verifiedModel(selection: EngineSelection): Path = withContext(Dispatchers.IO) {
+        val path = Path.of(selection.modelPath).toRealPath()
+        require(Files.isRegularFile(path) && Files.size(path) > 0) { "Select a complete model file" }
+        val expected = selection.options["sha256"].orEmpty().lowercase()
+        require(expected.matches(Regex("[0-9a-f]{64}"))) { "A pinned SHA-256 is required for this local model" }
+        currentCoroutineContext().ensureActive()
+        check(sha256(path) == expected) { "Local model checksum mismatch: ${path.fileName}" }
+        currentCoroutineContext().ensureActive()
+        path
+    }
+
+    /** Qwen3-ASR ships as a directory; the engine owns the six reviewed file pins. */
+    private suspend fun verifiedQwenModel(selection: EngineSelection): Path = withContext(Dispatchers.IO) {
+        val root = Path.of(selection.modelPath).toRealPath()
+        val context = currentCoroutineContext()
+        QwenSpeechModel.verify(root) { context.ensureActive() }
+        root
+    }
+
+    private fun threads(selection: EngineSelection) = (selection.options["threads"]?.toIntOrNull() ?: minOf(4, Runtime.getRuntime().availableProcessors())).also { require(it in 1..32) { "Threads must be 1–32" } }
+    /** Call off the UI thread: CUDA inventory validates the installed driver and device contexts. */
+    fun gpuDevices(engineId: String, acceleration: String): List<DesktopGpuDevice> {
+        val compute = desktopCompute(EngineSelection(engineId, options = mapOf("acceleration" to acceleration)))
+        if (compute.backend == DesktopCompute.CPU) return emptyList()
+        val bytes = when (engineId) {
+            "whisper-local" -> {
+                check(DesktopWhisperNative.protocolVersion() == DesktopWhisperNative.PROTOCOL_VERSION) { "Desktop Whisper protocol mismatch" }
+                DesktopWhisperNative.gpuDevices(compute.backend)
+            }
+            "llama-translation-local" -> {
+                check(LocalTranslationNative.promptProtocolVersion() == LocalTranslationNative.PROTOCOL_VERSION) { "Desktop translation protocol mismatch" }
+                LocalTranslationNative.gpuDevices(compute.backend)
+            }
+            else -> error("$engineId currently supports CPU acceleration only")
+        }
+        return decodeGpuDevices(acceleration, bytes)
+    }
+}
+
+internal fun outputFile(directory: Path): Path = directory.resolve("generated-audio").also { Files.createDirectories(it) }.resolve("${UUID.randomUUID()}.wav")
+
+
+// Exactly the six models pinned in the Android catalog; Vosk has no code-switching or detection.
+private val TRANSCRIBEPSY_LANGUAGES = setOf("en", "nl", "fr", "de", "it", "pl", "pt", "es")
+private val VOSK_LANGUAGES = setOf("en", "de", "fr", "es", "ru", "zh")
+private val PHONON_LANGUAGES = setOf("en")
+// Mirrors Android SpeechProfile.OMNILINGUAL_CTC_300M_V2 capabilities; the checkpoint
+// covers more languages, but only this reviewed subset may be declared to the user.
+private val OMNILINGUAL_LANGUAGES = setOf("en", "ar", "ru", "zh")
+private val OMNILINGUAL_FILES = mapOf(
+    "model.int8.onnx" to "e3042b2f3b3ef0af2211bf99d2b4bf94a21f5ac0e9898827e7dd6d003a860e91",
+    "tokens.txt" to "7d99997ef207ff14c2cfe825f2aa037528ea250113cc3c6392bfe49326884ba6",
+)
+private val PHONON_FILES = mapOf(
+    "tokens.txt" to "d58544679ea4bc6ac563d1f545eb7d474bd6cfa467f0a6e2c1dc1c7d37e3c35d",
+    "encoder.int8.onnx" to "953ae3bd0b635e4d0929e53cdc1d4757629099b99dee9b88e0812cb6ee6f670a",
+    "decoder.int8.onnx" to "d92e2d8fc9c99ef9faf0a2cf1728af4ec08c0a83b99ece29a46037c4a5a757bf",
+    "joiner.int8.onnx" to "b848103db33b89be7167d218587ea59e772e40ba6ba1cd787230e7e754839633",
+)
+private val NEMOTRON_LANGUAGES = setOf(
+    "en", "es", "fr", "it", "pt", "nl", "de", "tr", "ru", "ar", "hi", "ja", "ko", "vi", "uk",
+    "pl", "sv", "cs", "nb", "da", "bg", "fi", "hr", "sk", "zh", "hu", "ro", "et",
+)

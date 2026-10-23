@@ -14,8 +14,8 @@
     <string name="label_homeservice_camera_title" formatted="false">"Camera &amp; photos"</string>
     <string name="label_homeservice_camera_description" formatted="false">"Point at a sign, a menu or a page. Or choose an image from your phone."</string>
     <string name="label_homeservice_camera_action" formatted="false">"Open camera"</string>
-    <string name="label_homeservice_screen_title" formatted="false">"Screen &amp; manga"</string>
-    <string name="label_homeservice_screen_description" formatted="false">"Read manga, books and other apps with translation over the page."</string>
+    <string name="label_homeservice_screen_title" formatted="false">"Screen translation"</string>
+    <string name="label_homeservice_screen_description" formatted="false">"Translate websites, other apps and Japanese manga over the screen. Keep scrolling through the translations."</string>
     <string name="label_homeservice_screen_action" formatted="false">"Open screen translator"</string>
     <string name="label_maintab_captions_label" formatted="false">"Captions"</string>
     <string name="label_maintab_captions_title" formatted="false">"Live captions"</string>

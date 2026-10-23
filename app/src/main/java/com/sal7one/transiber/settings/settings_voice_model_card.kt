@@ -20,7 +20,7 @@ internal fun VoiceModelCard(
     var expanded by rememberSaveable(title) { mutableStateOf(false) }
     ModelLibraryDisclosure(text(R.string.settings_flow_model_info), expanded, { expanded = !expanded }) {
     OutlinedCard(Modifier.fillMaxWidth(), colors = CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(Modifier.padding(SettingsLayout.cardPadding), verticalArrangement = Arrangement.spacedBy(SettingsLayout.contentGap)) {
             Text(title, style = MaterialTheme.typography.titleMedium)
             Text(runtime, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
             Text(coverage, style = MaterialTheme.typography.bodyMedium)

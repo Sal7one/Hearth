@@ -34,7 +34,9 @@ internal fun LocalSpeechSetup(
     val store = remember { LocalSpeechModels(File(context.filesDir, "speech-models")) }
     var models by remember { mutableStateOf<List<LocalSpeechModel>>(emptyList()) }
     var details by remember { mutableStateOf(false) }
-    var busy by remember { mutableStateOf(false) }
+    val importOwner = "speech-${config.effectiveEngine.name}"
+    val importBatches by com.sal7one.transiber.models.ModelImportQueue.state.collectAsState()
+    val busy = importBatches[importOwner]?.active == true
     var error by remember { mutableStateOf<String?>(null) }
     var runtimeAvailable by remember(config.effectiveEngine) { mutableStateOf(false) }
     var notice by remember { mutableStateOf<String?>(null) }
@@ -54,38 +56,26 @@ internal fun LocalSpeechSetup(
         } catch (e: CancellationException) { throw e }
         catch (e: Exception) { error = e.message ?: e.toString() }
     }
-    val importer = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        if (uri != null) scope.launch {
-            busy = true; error = null; notice = uiText(UiR.string.ui_copying_and_verifying_model_files_keep_this_screen_open_9b0f8)
-            try {
-                val imported = withContext(Dispatchers.IO) {
-                    val job = currentCoroutineContext()
-                    context.contentResolver.openInputStream(uri)?.use { input ->
-                        val name = context.contentResolver.query(uri, arrayOf(android.provider.OpenableColumns.DISPLAY_NAME), null, null, null)?.use { cursor ->
-                            if (cursor.moveToFirst()) cursor.getString(0) else ""
-                        }.orEmpty()
-                        val stream = java.io.BufferedInputStream(input)
-                        stream.mark(4)
-                        val magic = ByteArray(4); stream.read(magic); stream.reset()
-                        if (magic[0] == 'P'.code.toByte() && magic[1] == 'K'.code.toByte()) store.importZip(stream) { job.ensureActive() }
-                        else {
-                            val artifact = com.sal7one.transiber.models.SpeechDownloads.all.firstOrNull { it.fileName == name }
-                                ?: com.sal7one.transiber.models.SpeechDownloads.all.filter { it.profile.backend == backend }.singleOrNull()
-                                ?: error(uiText(UiR.string.ui_choose_the_original_downloaded_model_file_with_its_original_filen_c2fff))
-                            store.installPublisher(stream, artifact, -System.nanoTime()) { job.ensureActive() }
-                        }
-                    } ?: error(uiText(UiR.string.ui_cannot_open_selected_model_zip_ea4d3))
+    val importer = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
+        if (uris.isNotEmpty()) try {
+            val app = context.applicationContext
+            com.sal7one.transiber.models.ModelImportQueue.submit(app, importOwner, uris) { source ->
+                com.sal7one.transiber.runtime.LocalModelPolicy.requireAllowed(app, "speech model import")
+                val imported = source.open().buffered().use { stream ->
+                    stream.mark(4)
+                    val magic = ByteArray(4); stream.read(magic); stream.reset()
+                    if (magic[0] == 'P'.code.toByte() && magic[1] == 'K'.code.toByte()) store.importZip(stream, source::checkActive)
+                    else {
+                        val artifact = com.sal7one.transiber.models.SpeechDownloads.all.firstOrNull { it.fileName == source.displayName }
+                            ?: com.sal7one.transiber.models.SpeechDownloads.all.filter { it.profile.backend == backend }.singleOrNull()
+                            ?: error("Choose the original publisher archive or a Hearth speech ZIP with its manifest at the archive root.")
+                        store.installPublisher(stream, artifact, -System.nanoTime(), source::checkActive)
+                    }
                 }
-                com.sal7one.transiber.preferences.ModelSourceBindings.recordImported(context, imported.id, uri, listOf(imported.root))
-                models = withContext(Dispatchers.IO) { store.list() }
-                onModelsChanged(models)
-                notice = uiText(UiR.string.library_imported_choose_model, imported.profile.label)
-            } catch (e: CancellationException) { throw e }
-            catch (e: Exception) {
-                notice = null
-                error = generateSequence<Throwable>(e) { it.cause }.map { it.message ?: it.toString() }.joinToString("\n")
-            } finally { busy = false }
-        }
+                com.sal7one.transiber.preferences.ModelSourceBindings.recordImported(app, imported.id, source.uri, listOf(imported.root))
+                imported.profile.label
+            }
+        } catch (e: Exception) { error = e.message ?: e.toString() }
     }
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(uiText(UiR.string.ui_installed_models_c45cb), style = MaterialTheme.typography.titleSmall)
@@ -96,9 +86,9 @@ internal fun LocalSpeechSetup(
         Text(uiText(UiR.string.ui_downloads_install_automatically_keep_enough_free_space_for_both_t_5f4db), style = MaterialTheme.typography.bodySmall)
         }
         OutlinedButton(enabled = !busy, onClick = { importer.launch(arrayOf("*/*")) }) {
-            Text(if (busy) uiText(UiR.string.ui_importing_82059) else uiText(UiR.string.ui_import_existing_model_344f9))
+            Text(uiText(UiR.string.model_import_batch_pick))
         }
-        if (busy) LinearProgressIndicator(Modifier.fillMaxWidth())
+        com.sal7one.transiber.models.ModelImportStatus(importOwner)
         models.filter { it.profile.backend == backend }.forEach { model ->
             FilterChip(selected = config.modelId == model.id,
                 enabled = !busy,

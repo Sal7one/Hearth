@@ -1,0 +1,8 @@
+<resources>
+    <string name="setup_sources_components">%2$d 个组件中有 %1$d 个可用</string>
+    <string name="setup_sources_setup_incomplete">设置尚未完成。这些组件从未被记录为已安装，其他模型仍然可用。</string>
+    <string name="setup_sources_restore_downloads">从已保存的下载恢复</string>
+    <string name="setup_sources_restore_queued">已将 %1$d 个已保存的下载加入验证和恢复队列。</string>
+    <string name="setup_sources_component_details">组件和路径详情</string>
+    <string name="setup_sources_hide_details">隐藏详情</string>
+</resources>

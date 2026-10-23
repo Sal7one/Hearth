@@ -18,7 +18,7 @@ internal fun VoiceMenu(label: String, selected: String, values: List<Pair<String
     val uiText = rememberUiText()
     var expanded by remember { mutableStateOf(false) }
     var query by remember { mutableStateOf("") }
-    OutlinedButton(onClick = { query = ""; expanded = true }, enabled = values.isNotEmpty(), modifier = Modifier.fillMaxWidth()) {
+    OutlinedButton(onClick = { query = ""; expanded = true }, enabled = values.isNotEmpty(), modifier = Modifier.fillMaxWidth().heightIn(min = SettingsLayout.touchTarget)) {
         Text("$label: ${values.firstOrNull { it.first == selected }?.second ?: uiText(UiR.string.choose_value)}")
     }
     if (expanded) AlertDialog(onDismissRequest = { expanded = false }, title = { Text(label) },
@@ -33,7 +33,7 @@ internal fun VoiceMenu(label: String, selected: String, values: List<Pair<String
                 LazyColumn(Modifier.heightIn(max = 360.dp), state = scroll) {
                     items(matches.size, key = { matches[it].first }) { index ->
                         val (id, text) = matches[index]
-                        TextButton(onClick = { choose(id); expanded = false }, modifier = Modifier.fillMaxWidth().semantics { this.selected = id == selected }) {
+                        TextButton(onClick = { choose(id); expanded = false }, modifier = Modifier.fillMaxWidth().heightIn(min = SettingsLayout.touchTarget).semantics { this.selected = id == selected }) {
                             Text(if (id == selected) "✓ $text" else text)
                         }
                     }

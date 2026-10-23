@@ -1,0 +1,15 @@
+<resources>
+    <string name="ocr_cleaning_background">Cleaning text backgrounds — recognized text is ready</string>
+    <string name="ocr_reader_saved_for_both">Saved reader for Camera and Screen &amp; manga: %1$s</string>
+    <string name="ocr_manga_page_mode">Manga page reader</string>
+    <string name="ocr_manga_mode_fast">Compact</string>
+    <string name="ocr_manga_mode_koharu">Koharu</string>
+    <string name="ocr_manga_mode_cleanup">Koharu + cleanup</string>
+    <string name="ocr_manga_mode_explainer">Compact uses a small text detector. Koharu adds pixel masks and panel order; cleanup removes the original lettering. Each choice uses its own required model files.</string>
+    <string name="ocr_koharu_page">Japanese · Koharu manga page</string>
+    <string name="ocr_koharu_cleanup_page">Japanese · Koharu manga page + cleanup</string>
+    <string name="ocr_koharu_page_details">Koharu RF-DETR segmentation, panel and bubble grouping, and Manga OCR. Captured Japanese pages · CPU · Experimental · High runtime memory use. Detector weights have Manga109 academic-data terms; read the model card.</string>
+    <string name="ocr_koharu_cleanup_details">Koharu page segmentation and Manga OCR with LaMa cleanup of the original lettering. Captured Japanese pages · CPU · Experimental · Highest memory and processing cost. Detector weights have Manga109 academic-data terms.</string>
+    <string name="ocr_reader_needs_files">This reader needs model files. Open Reader to download or import them before starting.</string>
+    <string name="ocr_reader_capture_only">Manga readers work on a captured, settled page. Scrolling interrupts the current page; keep it still while reading and translating.</string>
+</resources>

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_directory_search">搜索设置</string>
+    <string name="settings_directory_search_hint">基准测试、模型、语音、外观…</string>
+    <string name="settings_directory_clear_search">清除设置搜索</string>
+    <string name="settings_directory_no_results">没有匹配的设置。请尝试模型、功能或任务名称。</string>
+    <string name="settings_directory_models">模型与测试</string>
+    <string name="settings_directory_models_detail">查找模型并比较其在此设备上的表现，再选择配置。</string>
+    <string name="settings_directory_benchmark">模型基准测试</string>
+    <string name="settings_directory_benchmark_detail">在结果表中比较语音识别、翻译和语音合成，包括可用的 CPU 和 GPU 路径。</string>
+    <string name="settings_directory_downloads_detail">浏览模型、管理下载并导入自己的文件。</string>
+    <string name="settings_directory_bundles_detail">使用推荐配置，或导入共享配置。</string>
+    <string name="settings_directory_speech_detail">选择语音识别引擎、语言和模型选项。</string>
+    <string name="settings_directory_translation_detail">选择翻译器、语言对和模型选项。</string>
+    <string name="settings_directory_voices_detail">选择系统声音、已下载的语音模型或语音服务。</string>
+    <string name="settings_directory_camera_detail">管理用于相机和屏幕文字的 OCR 模型。</string>
+    <string name="settings_directory_language">应用语言</string>
+    <string name="settings_directory_language_detail">更改 Hearth 菜单和设置使用的语言。</string>
+    <string name="settings_directory_all_settings">全部设置</string>
+</resources>

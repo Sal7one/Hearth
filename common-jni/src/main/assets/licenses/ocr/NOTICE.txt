@@ -12,6 +12,24 @@ Source: https://huggingface.co/kha-white/manga-ocr-base
 Exact revision and original/packaged hashes: assets/ocr/manga-provenance.json.
 Manga OCR ONNX exports: https://huggingface.co/onnx-community/manga-ocr-base-ONNX
 Model-card license: Apache-2.0; weights downloaded separately.
+Automatic manga pages add ogkalu/comic-text-and-bubble-detector, Apache-2.0.
+Source: https://huggingface.co/ogkalu/comic-text-and-bubble-detector
+Pinned revision: 16e8a622f91fabc6b5b65c96d32d1183f8843546
+Export: detector-v4-s_int8.onnx. Weights are a separate user download.
+Koharu scene/mask processing is adapted from koharu-rs/koharu under MIT,
+Copyright (c) 2025-2026 Mayo Takanashi and Koharu contributors,
+revision 73abcafab1507e1c228c36ed54ba84e5e1cd6ff8.
+The full MIT text is included in licenses/ocr/koharu-MIT.txt.
+The Rust/Torch frontend is not bundled. Hearth uses native ONNX adapters.
+Full segmentation model: ShiniShiho/koharu-layout-rfdetr-seg-2xl-1152-onnx,
+revision bfbbd4e5ab34a50459865074fa044da496cebb57, based on mayocream's
+aed55fdb8ca953c6bec33cf6ed6dd52a9b72bfa2 weights. The model is custom/other
+licensed and retains Manga109 academic-use data terms. Code MIT/Apache licenses
+do not replace those weight/data terms. See assets/ocr/koharu-provenance.json.
+LaMa manga ONNX: mayocream/lama-manga-onnx, Apache-2.0, revision
+b55497aadbfcb9740e1ed16f008268d71b4f3f79. Weights are separate user downloads.
+Original LaMa: https://github.com/advimman/lama (Apache-2.0).
+No GPL comic-text-detector postprocessing code is incorporated.
 Manga OCR acknowledges training data from Manga109-s (http://www.manga109.org).
 
 Meiki preprocessing and character suppression follow the published model contract

@@ -1,0 +1,7 @@
+<resources>
+    <string name="ocr_manga_page">日语 · 自动漫画页面</string>
+    <string name="ocr_manga_page_details">自动检测文字和对话气泡，再逐区域识别日语。在现有 Manga OCR 文件上增加 11.1 MB 检测器。CPU · 实验性 · Apache-2.0</string>
+    <string name="ocr_detecting_regions">正在检测文字和对话气泡…</string>
+    <string name="ocr_reading_regions">已识别 %1$d / %2$d 个文字区域…</string>
+    <string name="ocr_koharu_refining">初步轮廓已就绪。正在通过 Koharu 优化蒙版和分镜顺序… CPU 高质量处理可能需要一分钟。</string>
+</resources>

@@ -25,12 +25,13 @@
     "common-jni/src/main/cpp/translation/bpe-rust/src/lib.rs": "c8fab94b3851ce64c34dd90771299bb052a11debf0cfa6f4fbc9463e28e6724e",
     "common-jni/src/main/cpp/translation/ct2/bpe_smoke.cpp": "2496fcbaa51c9ea8e0a8b9f4fdb990053d93dafa4c2f021021255e8f37da2fc7",
     "common-jni/src/main/cpp/translation/ct2/byte_bpe.h": "69b4ab48e5d461731819c164bd5b077ba00c59990f6f7265aa3e919ca4b44d0f",
+    "common-jni/src/main/cpp/translation/ct2/ct2_desktop.exports": "38a1ab9d3d3e5fab3b0d4aa5776ef82a029f0c5e26a41877d0611714448042d9",
     "common-jni/src/main/cpp/translation/ct2/ct2_jni.cpp": "b8a325132ef18694925a3307d18c8440c69a7e89bfe5590c0f6d48d503103770",
     "common-jni/src/main/cpp/translation/ct2/ct2_model.h": "cae9551b85322c68b6c94ec47484244c3798337433f42babea91c0d82de1f83a",
     "common-jni/src/main/cpp/translation/ct2/ct2_smoke.cpp": "414c5beadaaafef895829347c95f17c123dc11fae511e072ddc28ad759cff4d8",
     "common-jni/src/main/cpp/translation/ct2/exports.map": "1efc7d364958477e71a6de5f8ffa014a2961f1799568157e6377b5d201a65ccf",
-    "scripts/translation/ct2/CMakeLists.txt": "5f0e35a48738dd10a701f92e45df0de407055f2678ce3eb9b55b2b0796cd40f9",
-    "scripts/translation/ct2/build-runtime.sh": "de8b7dce2bb94477586733394b68079b7753e8c9f4a6bd22f9fb53bf34f14e17",
+    "scripts/translation/ct2/CMakeLists.txt": "c06836ed05e82ca5055516e8333f34ac8623977a792b9064922c78258c9294dd",
+    "scripts/translation/ct2/build-runtime.sh": "55914d82bc3734b401a764a7ae681c3bede6397b89bc3cc6df65c42e5fed437e",
     "scripts/translation/ct2/package.py": "35758c064364a398c89a4f7b4f5cff3d63a04de8a2108f9b20b7b5f6df6fcce1",
     "scripts/translation/ct2/patch-thread-pool.py": "4cd3b5d2079fdb17fce3bee100d8bf7fa8190306fc52610318cf4dcb7ed6e7f6",
     "scripts/translation/ct2/runtime_sources.py": "f27f7f8a3d2d30fc116ce049eab8777709bae10927b63fe50f8e2db21a7b4d97",
@@ -42,7 +43,7 @@
       "name": "libtransiber_ct2.so",
       "bytes": 5301536,
       "sha256": "abcfa3ab4bec651a6938f0f3353767f2a6d36f88fdf87e91583b72237e109b8a",
-      "sourceSetSha256": "bcd46b5461e2e0c302e4b7c090437f77b2c40ef2e56dbb86154614ea8436e24e"
+      "sourceSetSha256": "f611dfa026bccada40ace9a8d226d2db02f424789ebd7e29727ab2dfe1fe5790"
     }
   }
 }

@@ -4,7 +4,7 @@ import com.sal7one.transiber.downloads.FileDownload
 import com.sal7one.transiber.translation.MarianCascade
 import com.sal7one.transiber.translation.MarianPackage
 
-/** Maps a preset to its real downloader records, including all files of a Marian route. */
+/** Maps any catalogue selection to its real downloader records, including shared route files. */
 internal data class BenchmarkDownloadProgress(
     val records: List<FileDownload>,
     val expectedFiles: Int,
@@ -33,6 +33,11 @@ internal data class BenchmarkDownloadProgress(
                 "cascade" -> MarianCascade.find(model.id)?.let { route ->
                     (route.first.parts + route.second.parts).map { it.id }
                 }
+                "ct2" -> com.sal7one.common_jni.translation.Ct2Catalog.find(model.id)?.let {
+                    com.sal7one.transiber.translation.Ct2Package.parts(it).map { part -> part.id }
+                }
+                "voice" -> com.sal7one.transiber.voice.VoiceCatalog.familyAssets(model.id).map { it.id } +
+                    if (model.id == "magpie") listOf(com.sal7one.transiber.downloads.DownloadAssets.MAGPIE_TOKENIZER) else emptyList()
                 "mlkit" -> emptyList()
                 else -> listOf(model.id)
             }.orEmpty().distinct()

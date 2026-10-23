@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="benchmark_score_all_languages">所有语言 · 最新输入</string>
+    <string name="benchmark_score_language">语言</string>
+    <string name="benchmark_score_heading">评分 / 100</string>
+    <string name="benchmark_score_sort">参考匹配评分</string>
+    <string name="benchmark_score_explanation">评分仅衡量参考文本匹配度：语音识别使用 100 × (1 − WER)，中文使用 CER，最低为 0。翻译使用 100 × chrF++。速度单独显示。缺少参考文本、失败、未完成及语音合成测试均不评分。每种语言使用各自的输入，跨语言评分不会产生共同优胜者。</string>
+</resources>

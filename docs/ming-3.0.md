@@ -111,6 +111,41 @@ voices → Self-hosted → Save & check voices** in Hearth. The existing capabil
 check supplies the model, languages and voice IDs. Requests remain bounded at
 300 characters and complete PCM16 WAV output; longer articles are split by the client.
 
+### Desktop app
+
+The desktop app exposes Ming TTS as the self-hosted **`ming-tts`** provider, not a
+local dylib. Set the full `/speech` endpoint (default
+`http://127.0.0.1:8787/speech`), the exact model id
+(`inclusionAI/Ming-3.0-tts-0.5B` or `inclusionAI/Ming-3.0-tts-tiny`) and the
+`HEARTH_VOICE_API_KEY` credential. Requests are capped at 300 characters; published
+languages are zh/en/de/es/fr/ko/ja (no Arabic) and the voice presets are US_Emma,
+US_James, US_Stella, UK_George and UK_Charlotte. `DesktopMingTtsTest` exercises the
+exact contract with a loopback mock; a real CUDA server is not run in CI.
+
+The upstream `fusor-rs/ming-wasm` project has a **desktop-only** native CLI for
+macOS arm64 (experimental v0.1, 850 MB bundle, ~2 GB memory, phones unmeasured).
+Android also has the same local runtime behind an off-by-default experimental flag
+(`:hearth-tts-ming`); it is a separate Android engine, so the hosted bridge above
+remains an independent fallback and is not used by the local path.
+
+### Desktop local engine (experimental)
+
+The desktop app also exposes **`ming-local`**, a local Ming-3.0-tts-0.5B engine built
+from the pinned `ming-ffi`/`ming-jni` Rust source over fusor-ai 0.1.2. It downloads the
+850 MB `fusorlabs/ming-3.0-tts-0.5b-web` bundle (17 pinned files), converts the flat
+catalog layout into the runtime's `parts/` layout, and writes 44.1 kHz mono WAV through
+JNI. It advertises **English and Chinese only**, because the shipped runtime hardcodes
+`language: None`; the other five published languages need a library-level wrapper.
+Peak RSS is ~1 GB and each one-shot call reloads the bundle (~0.9 s). Desktop allows
+1–8 worker threads (catalog default 6); Android caps at 4 and accepts locale tags
+(`en-US`, `zh-Hans`) after normalization. `DesktopMingLocalRealSmokeTest`
+is owner-opt-in. Android now has an in-app JNI proof on a Galaxy S20 FE (RTF ~2.1 with the `+dotprod`
+build and 4 threads, ~1.02 GB peak RSS); the engine is registered behind an
+off-by-default feature flag. The default scalar build measured RTF 34 on that phone
+and is only a fallback. The Android settings enable/select flow was exercised on a
+Galaxy S20 FE with four real AudioTrack syntheses, including Chinese; a FOSS-on-device
+run and human listening/quality remain unverified.
+
 ## ASR Tiny: direct connection
 
 Follow the pinned [official ASR setup](https://github.com/inclusionAI/Ming-3.0-asr)

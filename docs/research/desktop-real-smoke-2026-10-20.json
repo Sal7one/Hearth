@@ -1,0 +1,50 @@
+{
+    "schemaVersion": 1,
+    "asOf": "2026-10-20",
+    "platform": "macos-arm64",
+    "status": "COMPLETED",
+    "englishOnlyWhisperRejectsExplicitArabic": true,
+    "nativeSourceSetSha256": "92f7eae2a156fa254345de9e0f886729f737fa41dc35213a1d048fa48d8a003a",
+    "modelWeightsBundled": false,
+    "networkProvidersCalled": false,
+    "microphoneUsed": false,
+    "audioPlayed": false,
+    "models": {
+        "speech": {
+            "filename": "ggml-tiny.en-q5_1.bin",
+            "sha256": "c77c5766f1cef09b6b7d47f21b546cbddd4157886b3b5d6d4f709e91e66c7c2b",
+            "source": "https://huggingface.co/ggerganov/whisper.cpp"
+        },
+        "translation": {
+            "filename": "EuroLLM-1.7B-Instruct.Q4_K_M.gguf",
+            "sha256": "f22ab4b628f6e3cd12ec2e5aa6d1e460be2fa83f25cb6a8f5dd6d4d77b285b66",
+            "source": "https://huggingface.co/QuantFactory/EuroLLM-1.7B-Instruct-GGUF/resolve/4126f034ddfe7fd39ca3378ae58d3b1d74065315/EuroLLM-1.7B-Instruct.Q4_K_M.gguf"
+        }
+    },
+    "fixtureSha256": "6fab8e9717aa89980a908b58e12caed05490ee8e1bcf528d3ff7430d5952b666",
+    "translationExecutionInfo": "Metal GPU; load_tensors: offloaded 25/25 layers to GPU\nload_tensors:   CPU_Mapped model buffer size =   140.62 MiB\nload_tensors:  MTL0_Mapped model buffer size =   993.80 MiB\n; threads=2",
+    "transcript": "Do not send the payment today. The total is $42. Keep the door closed.",
+    "arabicTranslation": "لا ترسل الدفعة اليوم. يبلغ المجموع 42 دولارًا. حافظ على الباب مغلقًا.",
+    "arabicToEnglishCpu": "Do not send the payment today. The total is $42. Keep the door closed.",
+    "arabicToEnglishMetal": "Do not send the payment today. The total is $42. Keep the door closed.",
+    "tts": {
+        "provider": "installed system voice",
+        "voice": "Albert",
+        "language": "en-US",
+        "gender": "unknown",
+        "reads": "original English transcript",
+        "wavBytes": 388952
+    },
+    "timingsMs": {
+        "metalPlacementLoadMs": 128,
+        "speechTranslationVoicePipelineMs": 3998,
+        "arabicToEnglishCpuMs": 3778,
+        "arabicToEnglishMetalMs": 2989
+    },
+    "limits": [
+        "Single local fixture and host; timings include model load and kernel caching and are not a benchmark.",
+        "Translation meaning, Arabic pronunciation, and phone/Windows behavior require separate owner evaluation.",
+        "System TTS read the original English transcript; no installed Arabic voice was assumed.",
+        "No Supertonic model inference was performed by this test."
+    ]
+}

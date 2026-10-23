@@ -52,9 +52,9 @@
     <string name="ui_screen_sharing_was_cancelled_tap_start_reading_when_ready_b7b72" formatted="false">"已取消屏幕共享。准备好后点按开始阅读。"</string>
     <string name="ui_allow_hearth_to_display_over_other_apps_return_here_then_tap_star_1c196" formatted="false">"允许 Hearth 显示在其他应用上层，然后返回并点按开始阅读。"</string>
     <string name="ui_back_b52b3" formatted="false">"返回"</string>
-    <string name="ui_screen_manga_6c45b" formatted="false">"屏幕与漫画"</string>
+    <string name="ui_screen_manga_6c45b" formatted="false">"屏幕翻译"</string>
     <string name="ui_translate_as_you_read_7ee96" formatted="false">"边读边译"</string>
-    <string name="ui_open_your_reader_after_starting_translate_the_page_or_draw_around_c74fc" formatted="false">"启动后打开阅读应用。翻译整页，或圈选一个对话框。"</string>
+    <string name="ui_open_your_reader_after_starting_translate_the_page_or_draw_around_c74fc" formatted="false">"选择网站和应用或日语漫画，然后打开要阅读的应用。翻译屏幕或框选较小区域。"</string>
     <string name="ui_translate_when_b5cd2" formatted="false">"翻译时机"</string>
     <string name="ui_i_tap_96db1" formatted="false">"点按时"</string>
     <string name="ui_page_changes_25675" formatted="false">"页面变化时"</string>
@@ -64,7 +64,7 @@
     <string name="ui_starting_screen_translation_stops_live_audio_captions_17e29" formatted="false">"启动屏幕翻译会停止实时语音字幕。"</string>
     <string name="ui_install_1_s_to_read_this_language_70476">"安装 %1$s 以识别此语言。"</string>
     <string name="ui_choose_a_supported_translation_destination_or_translator_24a0b" formatted="false">"请选择支持的目标语言或翻译引擎。"</string>
-    <string name="ui_start_reading_overlay_c2be1" formatted="false">"启动阅读悬浮窗"</string>
+    <string name="ui_start_reading_overlay_c2be1" formatted="false">"开始屏幕翻译"</string>
     <string name="ui_ocr_reader_2de99" formatted="false">"文字识别引擎"</string>
     <string name="ui_wait_after_movement_1_s_ms_25f21">"移动后等待：%1$s 毫秒"</string>
     <string name="ui_wait_after_movement_milliseconds_ed502" formatted="false">"移动后等待时间，毫秒"</string>

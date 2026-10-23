@@ -29,9 +29,14 @@ internal fun VoiceSetup(onDownloads: () -> Unit, initialLocation: SettingsLocati
     val advanced = com.sal7one.transiber.preferences.rememberSetupMode() == com.sal7one.transiber.preferences.SetupMode.ADVANCED
     var playbackOptions by rememberSaveable { mutableStateOf(false) }
     var choice by remember {mutableStateOf(VoiceSettings.choice(context))}
-    var error by remember {mutableStateOf<String?>(null)};var busy by remember {mutableStateOf(false)}
+    var error by remember {mutableStateOf<String?>(null)}
+    val importBatches by com.sal7one.transiber.models.ModelImportQueue.state.collectAsState()
+    val importBatch = importBatches["voice"]
+    val busy = importBatch?.active == true
     var revision by remember {mutableIntStateOf(0)}
-    val models=remember {VoiceModels(File(context.filesDir,"voice-models"),permitFamily={LocalVoiceFamilies.requireAllowed(context,it,"speech model import")},permitOmniVoice={LocalVoiceFamilies.requireAllowed(context,"omnivoice","OmniVoice model import")}){MagpiePolicy.requireAllowed(context,"Magpie model import")}}
+    LaunchedEffect(importBatch?.revision) { revision++ }
+    val appContext = context.applicationContext
+    val models=remember {VoiceModels(File(appContext.filesDir,"voice-models"),permitFamily={LocalVoiceFamilies.requireAllowed(appContext,it,"speech model import")},permitOmniVoice={LocalVoiceFamilies.requireAllowed(appContext,"omnivoice","OmniVoice model import")}){MagpiePolicy.requireAllowed(appContext,"Magpie model import")}}
     var language by rememberSaveable {mutableStateOf("en")}
     var systemVoices by remember {mutableStateOf(emptyList<android.speech.tts.Voice>())}
     var speaking by remember {mutableStateOf(false)}
@@ -48,40 +53,33 @@ internal fun VoiceSetup(onDownloads: () -> Unit, initialLocation: SettingsLocati
         onDispose {tts?.shutdown();player.close()}
     }
     fun save(value: VoiceChoice){choice=value;VoiceSettings.save(context,value);player.stop();error=null}
-    val importer=rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()){uris ->if(uris.isNotEmpty())scope.launch {
-        busy=true;error=null
-        try {
-            withContext(Dispatchers.IO) {
-                com.sal7one.transiber.runtime.LocalModelPolicy.requireAllowed(context,"downloaded speech voice import")
-                LocalVoiceFamilies.requireAllowed(context,choice.family,"speech model import")
-                val job=currentCoroutineContext()
-                for(uri in uris) {
-                    val imported=mutableListOf<VoiceAsset>()
-                    var importFailure: Throwable?=null
-                    try {
-                        context.contentResolver.openInputStream(uri)?.buffered()?.use { input ->
-                            input.mark(4);val a=input.read();val b=input.read();input.reset()
-                            if(a==0x50&&b==0x4b)models.importZip(input,onImported={imported+=it}){job.ensureActive()}
-                            else imported+=models.import(input){job.ensureActive()}
-                        } ?: error(uiText(UiR.string.ui_cannot_open_voice_model_b4ec5))
-                    } catch(failure: Throwable) { importFailure=failure;throw failure } finally {
-                        // A later invalid ZIP member does not erase the provenance of earlier verified imports.
-                        withContext(NonCancellable) {
-                            try {
-                                for(asset in imported) for((id,file) in voiceImportSources(models,asset))
-                                    com.sal7one.transiber.preferences.ModelSourceBindings.recordImported(context,id,uri,listOf(file))
-                            }catch(sourceError: Exception) {
-                                val original=importFailure
-                                if(original!=null)original.addSuppressed(sourceError) else throw sourceError
-                            }
-                        }
+    val importer=rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
+        if (uris.isNotEmpty()) try {
+            val app = context.applicationContext
+            com.sal7one.transiber.models.ModelImportQueue.submit(app, "voice", uris) { source ->
+                com.sal7one.transiber.runtime.LocalModelPolicy.requireAllowed(app, "downloaded speech voice import")
+                val imported = mutableListOf<VoiceAsset>()
+                var failure: Throwable? = null
+                try {
+                    source.open().buffered().use { input ->
+                        input.mark(4); val a = input.read(); val b = input.read(); input.reset()
+                        if (a == 0x50 && b == 0x4b) models.importZip(input, onImported = { imported += it }, cancelled = source::checkActive)
+                        else imported += models.import(input, cancelled = source::checkActive)
+                    }
+                } catch (e: Throwable) { failure = e; throw e }
+                finally {
+                    // Preserve provenance for valid ZIP members even if a later member fails.
+                    withContext(NonCancellable) {
+                        try {
+                            for (asset in imported) for ((id, file) in voiceImportSources(models, asset))
+                                com.sal7one.transiber.preferences.ModelSourceBindings.recordImported(app, id, source.uri, listOf(file))
+                        } catch (sourceError: Exception) { failure?.addSuppressed(sourceError) ?: throw sourceError }
                     }
                 }
+                imported.joinToString { it.filename }
             }
-            revision++
-        }
-        catch(e: CancellationException){throw e}catch(e: Exception){error=e.message ?: e.toString()}finally{busy=false}
-    }}
+        } catch (e: Exception) { error = e.message ?: e.toString() }
+    }
     var selfHosted by rememberSaveable { mutableStateOf(false) }
     SettingsTabs(initialLocation, entryRevision) { location ->
         LaunchedEffect(location) { if (location == SettingsLocation.LOCAL) while (true) { delay(1500); revision++ } }
@@ -140,7 +138,7 @@ internal fun VoiceSetup(onDownloads: () -> Unit, initialLocation: SettingsLocati
         Slider(choice.rate,{save(choice.copy(rate=it))},valueRange=.5f..2f,modifier=Modifier.semantics {contentDescription=uiText(UiR.string.ui_speech_speed_3f322)})
         }
         }
-        if(busy)LinearProgressIndicator(Modifier.fillMaxWidth())
+        if (location == SettingsLocation.LOCAL) com.sal7one.transiber.models.ModelImportStatus("voice")
         error?.let {Text(it,color=MaterialTheme.colorScheme.error)}
     }
 }

@@ -4,6 +4,8 @@
  <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
  <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
  <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
+ <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+ <uses-permission android:name="android.permission.WAKE_LOCK" />
  <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
  <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
  <uses-feature android:name="android.hardware.microphone" android:required="false" />
@@ -35,6 +37,10 @@
   </activity>
   <activity android:name=".caption.CaptionStartActivity" android:exported="false" />
   <service android:name=".caption.CaptionCaptureService" android:exported="false" android:foregroundServiceType="mediaProjection|microphone" />
+  <service android:name=".benchmark.BenchmarkRunService" android:exported="false" android:foregroundServiceType="specialUse">
+   <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE" android:value="User-initiated, cancellable on-device speech, translation and voice model benchmarks; no recording or playback. Notification shows progress while sequential local CPU/GPU inference comparisons run." />
+  </service>
+  <service android:name=".benchmark.BenchmarkWorkerService" android:exported="false" android:process=":benchmark_worker" android:stopWithTask="false" />
   <activity android:name=".reading.ReadingStartActivity" android:exported="false" />
   <service android:name=".reading.ReadingOverlayService" android:exported="false" android:foregroundServiceType="mediaProjection" />
   <activity android:name=".shortcuts.OverlayLaunchActivity" android:exported="false" android:excludeFromRecents="true" android:launchMode="singleTop" android:taskAffinity="${applicationId}.quickstart" />

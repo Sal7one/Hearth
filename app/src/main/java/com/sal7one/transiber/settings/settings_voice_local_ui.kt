@@ -13,6 +13,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.sal7one.common_jni.language.LanguageCatalog
+import com.sal7one.hearth.tts.ming.MingCatalog
 import com.sal7one.transiber.byok.ByokPolicy
 import com.sal7one.transiber.downloads.*
 import com.sal7one.transiber.voice.*
@@ -44,20 +45,24 @@ internal fun SettingsVoiceLocalUi(
     val localModelsAllowed = com.sal7one.transiber.runtime.LocalModelPolicy.allowed(context)
     val advanced = rememberSetupMode() == SetupMode.ADVANCED
     var showMoreEngines by rememberSaveable { mutableStateOf(false) }
-    val visibleFamilies = LocalVoiceFamilies.ids.filter { advanced || showMoreEngines || it == choice.family || it in setOf("supertonic", "magpie") }
+    val visibleFamilies = LocalVoiceFamilies.ids.filter {
+        advanced || showMoreEngines || it == choice.family || it in setOf("supertonic", "magpie") ||
+            (it == MingCatalog.FAMILY && MingLocalFeature.enabled(context))
+    }
     val scope = rememberCoroutineScope()
     var queuing by remember { mutableStateOf(false) }
-    VoiceMenu(uiText(UiR.string.ui_speaker_engine_label_7f2c6),
-        if (localBackend == "system") "system" else choice.family,
-        listOf("system" to uiText(UiR.string.ui_android_voices_60cb9)) +
-            if (localModelsAllowed) visibleFamilies.map { it to LocalVoiceFamilies.label(it) } else emptyList()) { id ->
-        if (id == "system") save(choice.copy(backend = "system"))
-        else save(choice.copy(backend = "supertonic", family = id,
-            voice = if (choice.family == id) choice.voice else VoiceSettings.familyVoice(context, id)))
-    }
-    if (!advanced && localModelsAllowed) TextButton(onClick = { showMoreEngines = !showMoreEngines }) {
-        Text(uiText(if (showMoreEngines) UiR.string.voice_recommended_engines else UiR.string.voice_more_engines))
-    }
+    SettingsSection content@{
+        VoiceMenu(uiText(UiR.string.ui_speaker_engine_label_7f2c6),
+            if (localBackend == "system") "system" else choice.family,
+            listOf("system" to uiText(UiR.string.ui_android_voices_60cb9)) +
+                if (localModelsAllowed) visibleFamilies.map { it to LocalVoiceFamilies.label(it) } else emptyList()) { id ->
+            if (id == "system") save(choice.copy(backend = "system"))
+            else save(choice.copy(backend = "supertonic", family = id,
+                voice = if (choice.family == id) choice.voice else VoiceSettings.familyVoice(context, id)))
+        }
+        if (!advanced && localModelsAllowed) TextButton(onClick = { showMoreEngines = !showMoreEngines }) {
+            Text(uiText(if (showMoreEngines) UiR.string.voice_recommended_engines else UiR.string.voice_more_engines))
+        }
         when(localBackend) {
             "system" -> {
                 Text(uiText(UiR.string.ui_only_installed_offline_android_voices_are_offered_availability_co_8ecc2))
@@ -71,26 +76,30 @@ internal fun SettingsVoiceLocalUi(
                 OutlinedButton(onClick={try{context.startActivity(Intent("com.android.settings.TTS_SETTINGS"))}catch(e: Exception){onError(e.message)}}){Text(uiText(UiR.string.ui_install_or_manage_android_voices_0f03f))}
             }
             "supertonic" -> {
-                if (!localModelsAllowed) { LocalModelPolicyNotice(); return }
+                if (!localModelsAllowed) { LocalModelPolicyNotice(); return@content }
+                if(choice.family==MingCatalog.FAMILY) {
+                    SettingsVoiceMingUi(choice,save,language,onLanguage,onError,onImport,onDownloads,revision,onRevision)
+                    return@content
+                }
                 if(choice.family=="omnivoice") {
                     SettingsVoiceOmniVoiceUi(choice,save,language,onLanguage,onError,onImport,onDownloads,revision,onRevision)
-                    return
+                    return@content
                 }
                 if(choice.family=="chatterbox-v3") {
                     SettingsVoiceChatterboxUi(choice,save,language,onLanguage,onError,onImport,onDownloads,revision,onRevision)
-                    return
+                    return@content
                 }
                 if(choice.family=="oute") {
                     SettingsVoiceOuteUi(choice,save,language,onLanguage,onError,onImport,onDownloads,revision,onRevision)
-                    return
+                    return@content
                 }
                 if(choice.family=="moss-nano") {
                     SettingsVoiceMossUi(choice,save,language,onLanguage,onError,onImport,onDownloads,revision,onRevision)
-                    return
+                    return@content
                 }
                 if(choice.family=="magpie") {
                     SettingsVoiceMagpieUi(choice,save,language,onLanguage,onError,onImport,onDownloads,revision,onRevision)
-                    return
+                    return@content
                 }
                 var ready by remember { mutableStateOf(false) }
                 var records by remember { mutableStateOf<List<FileDownload>>(emptyList()) }
@@ -132,7 +141,7 @@ internal fun SettingsVoiceLocalUi(
                         uiText(UiR.string.ui_download_failed_reason_1_s_8bb99, it.reason)
                     }, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
                     if (active.isNotEmpty()) OutlinedButton(onClick = onDownloads) { Text(uiText(UiR.string.ui_download_progress_1_s_files_cdb9d, active.size)) }
-                    else if (!ready) Button(enabled = !busy && !queuing, onClick = {
+                    else if (!ready) Button(enabled = !queuing, onClick = {
                         scope.launch {
                             queuing = true; onError(null)
                             try {
@@ -151,4 +160,5 @@ internal fun SettingsVoiceLocalUi(
                 VoiceMenu(uiText(UiR.string.ui_preview_language_fe73d),language,VoiceCatalog.languages.sorted().map {it to LanguageCatalog.option(it).nativeName}){onLanguage(it)}
             }
         }
+    }
 }

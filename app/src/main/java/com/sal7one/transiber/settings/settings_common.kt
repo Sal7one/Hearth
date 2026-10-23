@@ -3,6 +3,7 @@ package com.sal7one.transiber.settings
 import com.sal7one.transiber.i18n.*
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
@@ -18,6 +19,58 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.sal7one.transiber.byok.ByokPolicy
+
+/** Shared rhythm for settings only; model content and action groups stay together. */
+internal object SettingsLayout {
+    val pageInsets = 20.dp
+    val sectionGap = 24.dp
+    val cardGap = 16.dp
+    val contentGap = 12.dp
+    val cardPadding = 20.dp
+    val maxContentWidth = 840.dp
+    val touchTarget = 48.dp
+}
+
+@Composable
+internal fun SettingsSection(
+    modifier: Modifier = Modifier,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(SettingsLayout.cardGap), content = content)
+}
+
+/** Paired selectors stack before their labels become narrow columns on phones. */
+@Composable
+internal fun SettingsFieldPair(
+    first: @Composable (Modifier) -> Unit,
+    second: @Composable (Modifier) -> Unit,
+) {
+    BoxWithConstraints(Modifier.fillMaxWidth()) {
+        if (maxWidth < 400.dp) {
+            Column(verticalArrangement = Arrangement.spacedBy(SettingsLayout.contentGap)) {
+                first(Modifier.fillMaxWidth())
+                second(Modifier.fillMaxWidth())
+            }
+        } else Row(horizontalArrangement = Arrangement.spacedBy(SettingsLayout.contentGap)) {
+            first(Modifier.weight(1f))
+            second(Modifier.weight(1f))
+        }
+    }
+}
+
+/** A readable column on tablets, with the same saved scroll contract on phones. */
+@Composable
+internal fun SettingsPageContent(
+    modifier: Modifier = Modifier,
+    scroll: ScrollState = rememberScrollState(),
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    Column(modifier.fillMaxSize().verticalScroll(scroll), horizontalAlignment = Alignment.CenterHorizontally) {
+        Column(Modifier.widthIn(max = SettingsLayout.maxContentWidth).fillMaxWidth()
+            .padding(horizontal = SettingsLayout.pageInsets, vertical = SettingsLayout.sectionGap),
+            verticalArrangement = Arrangement.spacedBy(SettingsLayout.sectionGap), content = content)
+    }
+}
 
 /** One scroll/state bucket per tab. No API keys are placed in saved state. */
 @Composable
@@ -48,23 +101,24 @@ internal fun SettingsTabs(
             }
         }
         pages.SaveableStateProvider(selected.name) {
-            Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(20.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)) { content(selected) }
+            SettingsPageContent(Modifier.weight(1f)) { content(selected) }
         }
     }
 }
 
 @Composable
 internal fun SettingsHeading(title: String, detail: String) {
-    Text(title, style = MaterialTheme.typography.titleLarge, modifier = Modifier.semantics { heading() })
-    Text(detail, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Text(title, style = MaterialTheme.typography.titleLarge, modifier = Modifier.semantics { heading() })
+        Text(detail, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
 }
 
 @Composable
 internal fun SettingsLink(title: String, subtitle: String, onClick: () -> Unit) {
     OutlinedCard(onClick = onClick, modifier = Modifier.fillMaxWidth().heightIn(min = 64.dp),
         colors = CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)) {
-        Row(Modifier.padding(horizontal = 16.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically,
+        Row(Modifier.fillMaxWidth().padding(SettingsLayout.cardPadding), verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(title, style = MaterialTheme.typography.titleSmall)

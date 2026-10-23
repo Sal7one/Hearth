@@ -32,7 +32,7 @@ internal data class TranslationBrowserItem(
         if (source != "any" && source == target) return false
         if (source != "any" && target != "any" && variants.isNotEmpty() && variants.none { it.supports(source, target) }) return false
         return if (variants.isNotEmpty()) variants.any { variantMatches(query, it) }
-        else ModelSearch.matches(query, title, id, "Marian OPUS-MT ONNX compact",
+        else ModelSearch.matches(query, title, id, "Marian OPUS-MT ONNX CPU compact",
             ModelSearch.languageTerms(sourceLanguages + targetLanguages),
             if (throughEnglish) "English pivot route two models" else "direct",
             pair?.license.orEmpty(), pair?.repository.orEmpty(),
@@ -44,7 +44,7 @@ internal data class TranslationBrowserItem(
 
     private fun variantMatches(query: String, variant: TranslationModelSpec): Boolean = ModelSearch.matches(
         query, title, id, variant.id, variant.family, variant.quantization, variant.license,
-        variant.repo, variant.fileName, "GGUF multilingual text", ModelSearch.languageTerms(sourceLanguages + targetLanguages),
+        variant.repo, variant.fileName, "GGUF multilingual text CPU GPU Vulkan OpenCL Adreno", ModelSearch.languageTerms(sourceLanguages + targetLanguages),
     )
 }
 

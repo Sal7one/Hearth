@@ -4,6 +4,11 @@ import android.content.Context
 import android.graphics.Bitmap
 import com.sal7one.common_jni.ocr.OcrLine
 import com.sal7one.common_jni.ocr.OcrEngine
+import com.sal7one.common_jni.ocr.toOcrLine
+import com.sal7one.hearth.core.vision.OcrRegion
+import com.sal7one.hearth.core.vision.PageOcrProgress
+import com.sal7one.hearth.core.vision.PageText
+import com.sal7one.hearth.core.vision.PageOcrStage
 import com.sal7one.common_jni.speech.TranslationDirection
 import com.sal7one.common_jni.translation.CancellableTextTranslator
 import com.sal7one.transiber.runtime.LocalWorkGate
@@ -19,6 +24,8 @@ internal data class CameraOcrState(
     val running: Boolean = false, val loading: Boolean = false, val live: Boolean = false,
     val processing: Boolean = false, val closing: Boolean = false, val text: String = "", val translation: String = "",
     val lines: List<OcrLine> = emptyList(), val width: Int = 1, val height: Int = 1,
+    val regions: List<OcrRegion> = emptyList(), val detecting: Boolean = false,
+    val stage: PageOcrStage? = null,
     val boxTranslations: List<TranslatedOcrBox> = emptyList(),
     val ocrMs: Long = 0, val translating: Boolean = false, val error: String? = null,
 )
@@ -29,12 +36,12 @@ internal class CameraOcrController(context: Context) : AutoCloseable {
     private val mutable = MutableStateFlow(CameraOcrState())
     val state = mutable.asStateFlow()
     private data class Frame(val bitmap: Bitmap, val captured: Boolean, val epoch: Long)
-    private data class TextRequest(val text: String, val revision: Long, val lines: List<OcrLine>)
+    private data class TextRequest(val text: String, val revision: Long, val lines: List<OcrLine>, val preservesRegions: Boolean = false)
     @Volatile private var frames: Channel<Frame>? = null
     @Volatile private var model: OcrEngine? = null
     @Volatile private var translator: CancellableTextTranslator? = null
     private var job: Job? = null
-    private var revision = 0L
+    @Volatile private var revision = 0L
     private val frameEpoch = java.util.concurrent.atomic.AtomicLong(0)
     fun error(error: Throwable) { mutable.update { it.copy(error = error.message ?: error.toString()) } }
     fun start(profile: OcrProfile, source: String, target: String, snapshot: ConversationTranslatorSnapshot?, live: Boolean, initial: Bitmap? = null, positioned: Boolean = false) {
@@ -64,7 +71,12 @@ internal class CameraOcrController(context: Context) : AutoCloseable {
                                 }.also { cache.put(text,it) }
                                 if(positioned) {
                                     OcrPageTranslation.run(request.lines, {request.revision == revision}, ::translate, { boxes ->
-                                        mutable.update { it.copy(boxTranslations=boxes,translation=boxes.joinToString("\n") {box->box.translation},error=null) }
+                                        mutable.update {
+                                            if(request.revision != revision) it else {
+                                                val refreshed=OcrPageTranslation.refreshGeometry(boxes,it.lines,request.preservesRegions)
+                                                it.copy(boxTranslations=refreshed,translation=refreshed.joinToString("\n") {box->box.translation},error=null)
+                                            }
+                                        }
                                     }, cached = { cache[it] })
                                 } else {
                                     val output=translate(request.text)
@@ -83,20 +95,47 @@ internal class CameraOcrController(context: Context) : AutoCloseable {
                         if(frame.epoch != frameEpoch.get()) continue
                         val bitmap=frame.bitmap
                         val begun=System.nanoTime()
+                        val engine=checkNotNull(model)
+                        val progressive=engine.preservesRegions
+                        val pageRevision=if(progressive) ++revision else revision
+                        if(progressive) mutable.update { it.copy(detecting=true,stage=null,regions=emptyList(),lines=emptyList(),text="",translation="",boxTranslations=emptyList()) }
+                        val work=currentCoroutineContext()
+                        val progress=object : PageOcrProgress {
+                            override fun isCurrent(): Boolean {
+                                work.ensureActive()
+                                return frame.epoch==frameEpoch.get() && (!progressive || pageRevision==revision)
+                            }
+                            override fun detected(regions: List<OcrRegion>) {
+                                if(!isCurrent())return
+                                mutable.update { if(frame.epoch!=frameEpoch.get())it else it.copy(regions=regions,detecting=false,width=bitmap.width,height=bitmap.height) }
+                            }
+                            override fun stage(stage: PageOcrStage) {
+                                if(isCurrent())mutable.update {it.copy(stage=stage)}
+                            }
+                            override fun recognized(text: List<PageText>) {
+                                if(!progressive || !isCurrent())return
+                                val recognized=text.map { it.toOcrLine() }
+                                val original=recognized.joinToString("\n") { it.text }
+                                mutable.update { if(frame.epoch!=frameEpoch.get())it else it.copy(lines=recognized,text=original,
+                                    boxTranslations=OcrPageTranslation.refreshGeometry(it.boxTranslations,recognized)) }
+                                if(positioned && original.isNotBlank() && snapshot!=null && source!=target && isCurrent())
+                                    textQueue.trySend(TextRequest(original,pageRevision,recognized,true))
+                            }
+                        }
                         val lines=withContext(Dispatchers.Default) {
                             val pixels=IntArray(bitmap.width*bitmap.height); bitmap.getPixels(pixels,0,bitmap.width,0,0,bitmap.width,bitmap.height)
-                            checkNotNull(model).recognize(pixels,bitmap.width,bitmap.height,if(frame.captured)960 else 640)
+                            engine.recognizePage(pixels,bitmap.width,bitmap.height,if(frame.captured)960 else 640,progress)
                                 .map { it.copy(text=OcrText.logical(it.text,profile.id == "arabic")) }
                         }
                         ensureActive()
                         if(frame.epoch != frameEpoch.get()) continue // A stale frame must not mark the newer request finished.
-                        val readingLines=if(positioned) OcrReadingGroups.group(lines) else lines
+                        val readingLines=if(positioned && !engine.preservesRegions) OcrReadingGroups.group(lines) else lines
                         val text=lines.joinToString("\n") { it.text }
                         val settled = stability.observe(text,frame.captured)
                         if(text.isBlank() && !frame.captured && !settled) continue
-                        if(positioned || text != mutable.value.text) { revision++;mutable.update { it.copy(text=text,translation="",boxTranslations=emptyList()) } }
-                        mutable.update { it.copy(processing=false,translating=settled && text.isNotBlank() && snapshot!=null && source!=target,lines=lines,width=bitmap.width,height=bitmap.height,ocrMs=(System.nanoTime()-begun)/1_000_000) }
-                        if(settled && text.isNotBlank() && snapshot != null && source != target) textQueue.trySend(TextRequest(text,revision,readingLines))
+                        if(!progressive && (positioned || text != mutable.value.text)) { revision++;mutable.update { it.copy(text=text,translation="",boxTranslations=emptyList()) } }
+                        mutable.update { it.copy(processing=false,detecting=false,translating=settled && text.isNotBlank() && snapshot!=null && source!=target,lines=lines,width=bitmap.width,height=bitmap.height,ocrMs=(System.nanoTime()-begun)/1_000_000) }
+                        if(settled && text.isNotBlank() && snapshot != null && source != target) textQueue.trySend(TextRequest(text,revision,readingLines,progressive))
                     } finally { frame.bitmap.recycle() }
                 }
             } catch(e: CancellationException) { throw e }
@@ -118,7 +157,7 @@ internal class CameraOcrController(context: Context) : AutoCloseable {
                         }
                     }
                 }
-                mutable.update { it.copy(running=false,loading=false,processing=false,closing=false,live=false,translating=false) }; job=null
+                mutable.update { it.copy(running=false,loading=false,processing=false,detecting=false,closing=false,live=false,translating=false) }; job=null
             }
         }
         initial?.let { input.trySend(Frame(it,true,frameEpoch.get())) }
@@ -130,14 +169,14 @@ internal class CameraOcrController(context: Context) : AutoCloseable {
         if(queue == null || (!captured && !mutable.value.live)) { bitmap.recycle();return }
         if(captured) {
             frameEpoch.incrementAndGet(); revision++
-            mutable.update { it.copy(live=false,processing=true,text="",translation="",boxTranslations=emptyList(),lines=emptyList(),error=null) }
+            mutable.update { it.copy(live=false,processing=true,detecting=false,text="",translation="",boxTranslations=emptyList(),lines=emptyList(),regions=emptyList(),error=null) }
         }
         if(!queue.trySend(Frame(bitmap,captured,frameEpoch.get())).isSuccess)bitmap.recycle()
     }
     /** Invalidate work immediately when the reader moves, without destroying the loaded model. */
     fun invalidate() {
         frameEpoch.incrementAndGet();revision++
-        mutable.update { it.copy(text="",translation="",boxTranslations=emptyList(),lines=emptyList(),error=null,translating=false) }
+        mutable.update { it.copy(text="",translation="",boxTranslations=emptyList(),lines=emptyList(),regions=emptyList(),detecting=false,error=null,translating=false) }
     }
     suspend fun awaitStopped() { job?.join() }
     fun freeze() { mutable.update { it.copy(live=false) } }

@@ -24,8 +24,9 @@ import com.sal7one.transiber.ui.components.ModelLibraryDisclosure
 import com.sal7one.transiber.translation.ConversationTranslationSettings
 import kotlinx.coroutines.*
 
-internal fun ct2BrowserMatches(spec: Ct2ModelSpec,query: String,source: String,target: String,kind: String): Boolean =
-    kind!="text" && (source=="any" || source in spec.sources) && (target=="any" || target in spec.targets) &&
+internal fun ct2BrowserMatches(spec: Ct2ModelSpec,query: String,source: String,target: String,kind: String,
+    hardware: com.sal7one.transiber.models.ModelHardwareFilter = com.sal7one.transiber.models.ModelHardwareFilter.ALL): Boolean =
+    hardware.matches(emptySet()) && kind!="text" && (source=="any" || source in spec.sources) && (target=="any" || target in spec.targets) &&
         (source=="any" || target=="any" || spec.supports(source,target)) &&
         ModelSearch.matches(query,spec.id,spec.label,spec.precisionLabel,"CTranslate2 CT2 CPU compact Arabic English",spec.license,
             if (spec.tokenizerMode>=2) "Jisr Saudi Egyptian Moroccan Algerian Tunisian Libyan Lebanese Syrian Palestinian Gulf Sudanese Yemeni Iraqi السعودية مصري دارجة شامي خليجي" else "",
@@ -41,23 +42,23 @@ internal fun Ct2ModelsUi(query: String,source: String,target: String,kind: Strin
     var busy by remember { mutableStateOf(false) }
     var records by remember { mutableStateOf(emptyList<com.sal7one.transiber.downloads.FileDownload>()) }
     var importedVariant by remember { mutableStateOf<Ct2ModelSpec?>(null) }
-    val importer=rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        if(uri!=null)scope.launch {
-            busy=true
-            try {
-                val result=withContext(Dispatchers.IO) {
-                    val job=currentCoroutineContext()
-                    val result=context.contentResolver.openInputStream(uri)?.use { Ct2Package.importZip(context,it) { job.ensureActive() } }
-                        ?: error("Cannot open CT2 translation package")
-                    com.sal7one.transiber.preferences.ModelSourceBindings.recordImported(context,result.first.id,uri,listOf(result.second))
-                    result
-                }
-                importedVariant=result.first
-                revision++ // Installation does not replace the active translation stage.
-            } catch(e: CancellationException) { throw e } catch(e: Exception) { onError(generateSequence<Throwable>(e) { it.cause }.joinToString("\n") { it.message ?: it.toString() }) }
-            finally { busy=false }
-        }
+    val importBatches by com.sal7one.transiber.models.ModelImportQueue.state.collectAsState()
+    val importBatch = importBatches["translation-ct2"]
+    val importer=rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
+        if (uris.isNotEmpty()) try {
+            val app = context.applicationContext
+            com.sal7one.transiber.models.ModelImportQueue.submit(app, "translation-ct2", uris) { source ->
+                val result = source.open().use { Ct2Package.importZip(app, it, source::checkActive) }
+                com.sal7one.transiber.preferences.ModelSourceBindings.recordImported(app, result.first.id, source.uri, listOf(result.second))
+                result.first.id
+            }
+        } catch (e: Exception) { onError(e.message ?: e.toString()) }
     }
+    LaunchedEffect(importBatch?.revision) {
+        importBatch?.outcomes?.lastOrNull { it.error.isBlank() }?.let { importedVariant = Ct2Catalog.find(it.result) }
+        revision++
+    }
+    com.sal7one.transiber.models.ModelImportStatus("translation-ct2")
     LaunchedEffect(Unit) {
         var lastError: String? = null
         while(isActive) {
@@ -90,7 +91,7 @@ internal fun Ct2ModelsUi(query: String,source: String,target: String,kind: Strin
             val parts=Ct2Package.parts(spec)
             val status=translationDownloadState(parts.map { it.id }.toSet(),records)
             OutlinedCard(Modifier.fillMaxWidth()) {
-                Column(Modifier.padding(14.dp),verticalArrangement=Arrangement.spacedBy(8.dp)) {
+                Column(Modifier.padding(SettingsLayout.cardPadding),verticalArrangement=Arrangement.spacedBy(SettingsLayout.contentGap)) {
                     Text(spec.label,style=MaterialTheme.typography.titleMedium)
                     Text(android.text.format.Formatter.formatShortFileSize(context,spec.bytes) + " · CPU" + spec.precisionLabel.takeIf { it.isNotBlank() }?.let { " · $it" }.orEmpty())
                     if(!Ct2Package.runtimeSupported()) Text(text(UiR.string.ct2_runtime_hint),style=MaterialTheme.typography.bodySmall)
@@ -100,7 +101,7 @@ internal fun Ct2ModelsUi(query: String,source: String,target: String,kind: Strin
                     else if(status.total>0 && status.completed>0) Text(text(UiR.string.model_files_downloaded,status.completed,status.total))
                     status.failure?.let { Text(it.error, color=MaterialTheme.colorScheme.error) }
                     if(status.active) LinearProgressIndicator(Modifier.fillMaxWidth())
-                    if (!ready || selectedId!=spec.id) Button(enabled=Ct2Package.runtimeSupported() && !busy && !status.active,onClick={
+                    if (!ready || selectedId!=spec.id) Button(modifier=Modifier.heightIn(min=SettingsLayout.touchTarget),enabled=Ct2Package.runtimeSupported() && !busy && !status.active && (ready || importBatch?.active != true),onClick={
                         if(!ready && (!ByokPolicy.FEATURE_BYOK || !spec.downloadEnabled)) importer.launch(arrayOf("application/zip","application/octet-stream"))
                         else scope.launch {
                             busy=true

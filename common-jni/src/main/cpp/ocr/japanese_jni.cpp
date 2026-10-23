@@ -1,10 +1,11 @@
 #include "japanese_ocr.h"
 #include "../common/lease_registry.h"
+#include "../jni/jni_helper.h"
 #include <jni.h>
 namespace {
 stt::concurrency::LeaseRegistry<hearth::ocr::JapaneseOcr> models;
 std::string path(JNIEnv* e,jbyteArray input){if(!input)throw std::invalid_argument("Missing OCR path");int n=e->GetArrayLength(input);if(n<1||n>4096)throw std::invalid_argument("Invalid OCR path");std::string s(n,'\0');e->GetByteArrayRegion(input,0,n,reinterpret_cast<jbyte*>(s.data()));if(s.find('\0')!=std::string::npos)throw std::invalid_argument("NUL in OCR path");return s;}
-void fail(JNIEnv* e,const char* message){if(!e->ExceptionCheck())e->ThrowNew(e->FindClass("java/lang/IllegalStateException"),message);}
+void fail(JNIEnv* e,const char* message){jni::throwIllegalStateException(e,message);}
 }
 extern "C" JNIEXPORT jlong JNICALL Java_com_sal7one_common_1jni_ocr_JapaneseNative_create(JNIEnv* e,jobject,jint kind,jbyteArray d,jbyteArray r,jbyteArray v){try{return models.insert(std::make_unique<hearth::ocr::JapaneseOcr>(kind,path(e,d),path(e,r),kind==2?path(e,v):std::string()));}catch(const std::exception& x){fail(e,x.what());return 0;}catch(...){fail(e,"OCR initialization failed");return 0;}}
 extern "C" JNIEXPORT jobjectArray JNICALL Java_com_sal7one_common_1jni_ocr_JapaneseNative_recognize(JNIEnv* e,jobject,jlong id,jintArray argb,jint w,jint h){

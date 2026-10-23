@@ -34,6 +34,7 @@ class SupertonicSpeechEngine(private val directory: File) : SpeechEngine {
         check(!closed) { "Supertonic voice engine is closed" }
         require(voice in voices && voice.supports(language)) { "Unsupported Supertonic voice or language" }
         cancellation.throwIfCancelled()
+        check(available()) { availabilityReason() }
         if (cancelled.getAndSet(false)) { native?.close(); native = null }
         val style = styles.getOrPut(voice.id) {
             verify(SupertonicCatalog.core + SupertonicCatalog.file("${voice.id}.json"))
@@ -85,4 +86,9 @@ class SupertonicSpeechEngine(private val directory: File) : SpeechEngine {
     private fun checkCancelled() { if (cancelled.get()) throw CancellationException("Supertonic speech stopped") }
     override fun cancel() { cancelled.set(true); native?.cancel() }
     @Synchronized override fun close() { if (!closed) { closed = true; native?.close(); native = null; styles.clear(); indexer = null } }
+
+    companion object {
+        fun available(): Boolean = SupertonicVoice.available()
+        fun availabilityReason(): String = SupertonicVoice.availabilityReason()
+    }
 }

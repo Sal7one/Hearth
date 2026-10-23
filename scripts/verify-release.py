@@ -4,6 +4,9 @@ from pathlib import Path
 import argparse, hashlib, json, os, re, subprocess, tempfile, zipfile
 from native_abis import ABIS, source_set_digest, verify_elf
 from apk_delivery import configured_identity, verify_delivery
+if not __debug__:
+    raise SystemExit("Verification requires Python assertions enabled; remove -O or PYTHONOPTIMIZE")
+
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument("--build-type", choices=["qa", "release"], default="qa")
 parser.add_argument("--allow-unsigned-for-signing", action="store_true",
@@ -117,7 +120,7 @@ assert ct2['sentencepieceRevision'] == '17d7580d6407802f85855d2cc9190634e2c95624
 assert set(ct2['binaries']) == {'arm64-v8a'}
 verify_optional_snapshot(dict(ct2, artifacts=[dict(item, abi=abi) for abi, item in ct2['binaries'].items()]),
                          'sources', {'libtransiber_ct2.so': False})
-# Independently packaged Magpie CPU provider; its JNI shim remains available on every app ABI.
+# Magpie CPU provider: both its runtime and JNI shim ship only on ARM64.
 magpie_root = root/'hearth-tts-magpie/src/main'
 magpie = json.loads((magpie_root/'assets/licenses/magpie/runtime-build.json').read_text())
 for path, digest in magpie['sources'].items():
@@ -133,6 +136,19 @@ assert hashlib.sha256((root/'scripts/voice/nemo-tts-inject.cmake').read_bytes())
 assert hashlib.sha256((root/'scripts/voice/magpie.map').read_bytes()).hexdigest() == magpie['build']['exportsSha256']
 vendor_hashes['lib/arm64-v8a/libhearth_magpie.so'] = magpie['runtime']['sha256']
 gpu_artifacts['libhearth_magpie.so'] = ('arm64-v8a', False)
+
+# Experimental Ming local TTS: two prebuilt ARM64 DSOs pinned in hearth-tts-ming.
+ming_root = root/'hearth-tts-ming/src/main/jniLibs/arm64-v8a'
+ming_libs = {
+    'libming_jni.so': '3c45361ee6e7d297a470b5b43ac34378407e45f8d4ce6d661cbf561cc52f0178',
+    'libming_jni_scalar.so': '2703bb050a7dc3e33162ac7aaadbbfc856dbe5dc0d44b2d0fbd3de7023380744',
+}
+for name, digest in ming_libs.items():
+    binary = ming_root/name
+    assert binary.is_file(), f'Missing pinned Ming JNI: {binary}'
+    assert hashlib.sha256(binary.read_bytes()).hexdigest() == digest, f'Pinned Ming JNI changed: {name}'
+    vendor_hashes[f'lib/arm64-v8a/{name}'] = digest
+    gpu_artifacts[name] = ('arm64-v8a', False)
 
 # Independently packaged OmniVoice CPU provider; trained language IDs and models are pinned.
 omnivoice_root = root/'hearth-tts-omnivoice/src/main'
@@ -223,7 +239,16 @@ manga = json.loads((ocr_assets/'manga-provenance.json').read_text())
 assert hashlib.sha256((ocr_assets/'manga.json').read_bytes()).hexdigest() == manga['dictionary_sha256']
 assert len(json.loads((ocr_assets/'manga.json').read_text())) == manga['classes'] == 6144
 
-expected_libs = {'libhearth_chatterbox_jni.so','libhearth_oute_jni.so','libhearth_moss_jni.so','libhearth_supertonic_jni.so','libhearth_omnivoice_jni.so','libhearth_magpie_jni.so','libtransiber_translation.so','libcommon_jni.so','libc++_shared.so','libvosk.so','libonnxruntime.so','libhearth_qwen.so','libhearth_nemotron.so','libhearth_transcribepsy.so','libandroidx.graphics.path.so','libdatastore_shared_counter.so','libimage_processing_util_jni.so'}
+expected_libs = {'libtransiber_translation.so','libcommon_jni.so','libc++_shared.so','libvosk.so','libonnxruntime.so','libhearth_qwen.so','libhearth_nemotron.so','libhearth_transcribepsy.so','libandroidx.graphics.path.so','libdatastore_shared_counter.so','libimage_processing_util_jni.so'}
+# Prebuilt TTS families are ARM64-only: their wrappers and runtime DSOs travel together.
+arm64_only_libs = {
+    'libhearth_chatterbox_jni.so', 'libhearth_chatterbox.so',
+    'libhearth_magpie_jni.so', 'libhearth_magpie.so',
+    'libhearth_moss_jni.so', 'libhearth_moss.so',
+    'libhearth_omnivoice_jni.so', 'libhearth_omnivoice.so',
+    'libhearth_oute_jni.so', 'libhearth_oute.so',
+    'libhearth_supertonic_jni.so',
+}
 platform = {'liblog.so','libandroid.so','libjnigraphics.so','libm.so','libdl.so','libc.so','libz.so'}
 delivery_signers = None
 unsigned_inputs = 0
@@ -246,10 +271,33 @@ for flavor, architecture in [(f, a) for f in ('play','foss') for a in (*ABIS, 'u
     with zipfile.ZipFile(apk) as archive, tempfile.TemporaryDirectory() as tmp:
         native = [n for n in archive.namelist() if n.startswith('lib/') and n.endswith('.so')]
         packaged_abis = set(ABIS) if architecture == 'universal' else {architecture}
-        all_expected = flavor_libs | {name for name, (abi, _) in gpu_artifacts.items() if abi in packaged_abis}
+        aria_abis = packaged_abis & {'arm64-v8a', 'x86_64'} if flavor == 'play' else set()
+        aria_name = 'libhearth_aria2c.so'
+        if flavor == 'play':
+            aria_manifest = json.loads(archive.read('assets/downloads/aria2-runtime.json'))
+            assert aria_manifest['httpOnly'] is True
+            assert aria_manifest['signature']['scriptSha256'] == hashlib.sha256((root/'scripts/downloads/build-aria2-android.py').read_bytes()).hexdigest(), 'aria2 builder differs from the packaged binary provenance'
+            assert aria_manifest['signature']['helperSha256'] == hashlib.sha256((root/'scripts/native_abis.py').read_bytes()).hexdigest(), 'aria2 native verification helper changed'
+            assert aria_manifest['correspondingSourceSha256'] == hashlib.sha256((root/'build/aria2-corresponding-source.tar.gz').read_bytes()).hexdigest(), 'aria2 corresponding sources differ from the runtime build'
+            for notice in ('aria2-COPYING.txt', 'GPL-3.0.txt', 'OpenSSL-LICENSE.txt', 'NDK-NOTICE.txt', 'NDK-TOOLCHAIN-NOTICE.txt', 'NOTICE.txt'):
+                assert len(archive.read('assets/downloads/' + notice)) > 100, notice
+            for abi in aria_abis:
+                binary = archive.read(f'lib/{abi}/{aria_name}')
+                pin = aria_manifest['binaries'][abi]
+                assert len(binary) == pin['bytes'] and hashlib.sha256(binary).hexdigest() == pin['sha256'], 'aria2 build pin changed'
+        else:
+            assert not any(name.startswith('assets/downloads/') for name in archive.namelist()), 'Offline APK contains downloader runtime assets'
+        all_expected = (flavor_libs
+                        | ({aria_name} if aria_abis else set())
+                        | {name for name, (abi, _) in gpu_artifacts.items() if abi in packaged_abis}
+                        | (arm64_only_libs if 'arm64-v8a' in packaged_abis else set()))
         assert {Path(n).name for n in native} == all_expected, native
         assert {n.split('/')[1] for n in native} == packaged_abis
-        assert all({Path(n).name for n in native if n.startswith('lib/' + abi + '/')} == flavor_libs | {name for name, (target_abi, _) in gpu_artifacts.items() if abi == target_abi} for abi in packaged_abis)
+        assert all({Path(n).name for n in native if n.startswith('lib/' + abi + '/')}
+                   == flavor_libs
+                   | {name for name, (target_abi, _) in gpu_artifacts.items() if abi == target_abi}
+                   | ({aria_name} if abi in aria_abis else set())
+                   | (arm64_only_libs if abi == 'arm64-v8a' else set()) for abi in packaged_abis)
         for name in native:
             abi = name.split('/')[1]
             file = Path(tmp)/abi/Path(name).name
@@ -317,6 +365,12 @@ for flavor, architecture in [(f, a) for f in ('play','foss') for a in (*ABIS, 'u
                     assert exports == {'hearth_moss_' + name for name in ('create','destroy','cancel','voice_count','voice_name','synthesize','last_error')}, exports
                     assert 'libonnxruntime.so' in needed, needed
                 assert not needed & {'libcommon_jni.so','libvulkan.so','libOpenCL.so'}, needed
+            if file.name in ming_libs:
+                symbols = subprocess.check_output([readelf, '--dyn-syms', '-W', file], text=True)
+                exports = {line.split()[-1] for line in symbols.splitlines() if re.search(r'\b(?:GLOBAL|WEAK)\s+DEFAULT\s+\d+\s+', line)}
+                required = {'Java_com_sal7one_common_1jni_MingNative_' + method for method in ('abiVersion', 'modelName', 'synthesizeWav')}
+                assert required <= exports, (file.name, sorted(required - exports))
+                assert not needed - platform, (file.name, needed)
             if file.name in {'libhearth_magpie.so', 'libhearth_magpie_jni.so'}:
                 symbols = subprocess.check_output([readelf, '--dyn-syms', '-W', file], text=True)
                 exports = {line.split()[-1] for line in symbols.splitlines() if re.search(r'\b(?:GLOBAL|WEAK)\s+DEFAULT\s+\d+\s+', line)}

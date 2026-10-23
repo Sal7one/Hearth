@@ -1,0 +1,8 @@
+<resources>
+    <string name="setup_sources_components">%1$d من %2$d مكونات متوفرة</string>
+    <string name="setup_sources_setup_incomplete">الإعداد غير مكتمل. لم تُسجّل هذه المكونات كمثبتة سابقًا، وتبقى النماذج الأخرى قابلة للاستخدام.</string>
+    <string name="setup_sources_restore_downloads">استعادة من التنزيلات المحفوظة</string>
+    <string name="setup_sources_restore_queued">أُضيف %1$d تنزيلات محفوظة للتحقق والاستعادة.</string>
+    <string name="setup_sources_component_details">تفاصيل المكونات والمسارات</string>
+    <string name="setup_sources_hide_details">إخفاء التفاصيل</string>
+</resources>

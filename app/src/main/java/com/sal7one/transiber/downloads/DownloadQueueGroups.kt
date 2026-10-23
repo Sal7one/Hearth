@@ -38,7 +38,8 @@ internal data class DownloadQueueGroup(val key: String, val modelId: String?, va
 }
 
 internal fun downloadQueueGroups(rows: List<FileDownload>): List<DownloadQueueGroup> = rows.groupBy { row ->
-    com.sal7one.transiber.voice.VoiceCatalog.find(row.modelId)?.let { "voice:${it.family}" }
+    (if (row.modelId == DownloadAssets.MAGPIE_TOKENIZER) "voice:magpie" else null)
+        ?: com.sal7one.transiber.voice.VoiceCatalog.find(row.modelId)?.let { "voice:${it.family}" }
         ?: com.sal7one.transiber.models.SpeechComponents.forPart(row.modelId)?.id ?: MarianPackage.part(row.modelId)?.pairId ?: Ct2Package.part(row.modelId)?.spec?.id ?: "file:${row.id}"
 }.map { (key, copies) ->
     val pair = MarianPackage.find(key)
@@ -46,7 +47,8 @@ internal fun downloadQueueGroups(rows: List<FileDownload>): List<DownloadQueueGr
     val voice = key.takeIf { it.startsWith("voice:") }?.removePrefix("voice:")
     val voiceParts = voice?.let { family -> com.sal7one.transiber.voice.VoiceCatalog.familyAssets(family).filter { asset ->
         family != "supertonic" || asset in com.sal7one.transiber.voice.VoiceCatalog.core || copies.any { it.modelId == asset.id }
-    }.associate { it.id to it.bytes } }
+    }.associate { it.id to it.bytes }.let { parts -> if (family == "magpie")
+        parts + (DownloadAssets.MAGPIE_TOKENIZER to com.sal7one.hearth.tts.magpie.MagpieCatalog.tokenizerSegmentsBytes) else parts } }
     val parts = voiceParts ?: com.sal7one.transiber.models.SpeechComponents.find(key)?.parts?.associate { it.id to it.bytes } ?: pair?.parts?.associate { it.id to it.bytes } ?: ct2?.let { Ct2Package.parts(it).associate { part -> part.id to part.file.bytes } }
     DownloadQueueGroup(key, key.takeIf { parts != null }, copies, parts ?: mapOf(copies.first().modelId to copies.first().total.coerceAtLeast(copies.first().bytes).coerceAtLeast(0)))
 }

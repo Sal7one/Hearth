@@ -1,0 +1,23 @@
+[package]
+name = "ming-jni"
+version = "0.1.0"
+edition = "2021"
+publish = false
+description = "Minimal JNI probe over the Ming C ABI (experimental)."
+license = "MIT"
+
+[lib]
+name = "ming_jni"
+crate-type = ["cdylib"]
+
+[dependencies]
+ming-ffi = { path = "../ffi" }
+jni = { version = "=0.21.1", default-features = false }
+
+[profile.release]
+opt-level = 3
+lto = "thin"
+codegen-units = 1
+panic = "abort"
+
+[workspace]

@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="download_queue_background">使用 Hearth 时，下载队列会继续运行</string>
+    <string name="download_queue_policy_summary">同时下载 %1$d 个文件 · 每个文件最多 %2$d 个连接</string>
+    <string name="download_queue_pause_all">全部暂停</string>
+    <string name="download_queue_resume_all">全部继续</string>
+    <string name="download_queue_retry_failed">重试失败项</string>
+    <string name="download_queue_settings">下载设置</string>
+    <string name="download_queue_results">传输结果</string>
+    <string name="download_queue_results_hint">按实际网络速度排序。每行显示最后一次成功传输，不含验证和安装时间。结果会受服务器和网络影响。</string>
+    <string name="download_queue_results_empty">完成下载后，可在此比较下载后端和连接设置。</string>
+    <string name="download_queue_copy_results">复制 CSV</string>
+    <string name="download_queue_done">完成</string>
+    <string name="download_queue_balanced">均衡</string>
+    <string name="download_queue_fast">快速</string>
+    <string name="download_queue_simultaneous">同时下载的文件数：%1$d</string>
+    <string name="download_queue_unmetered">仅使用不限流量的网络</string>
+    <string name="download_queue_advanced">高级选项</string>
+    <string name="download_queue_hide_advanced">隐藏高级选项</string>
+    <string name="download_queue_backend">下载后端</string>
+    <string name="download_queue_auto">自动</string>
+    <string name="download_queue_http">HTTP</string>
+    <string name="download_queue_aria">aria2</string>
+    <string name="download_queue_aria_available">aria2 可使用多个连接下载模型文件。验证后的文件将保存到所选文件夹。</string>
+    <string name="download_queue_aria_unavailable">此设备未包含 aria2。HTTP 支持断点续传模型下载。</string>
+    <string name="download_queue_connections">每个文件的连接数：%1$d</string>
+    <string name="download_queue_connection_hint">适用于 aria2。HTTP 每个文件使用一个连接。增加连接数不一定能提高所有服务器的速度。</string>
+    <string name="download_queue_bandwidth">每个文件的限速（KiB/s）</string>
+    <string name="download_queue_unlimited">0 表示不限速</string>
+    <string name="download_queue_retries">自动网络重试次数：%1$d</string>
+    <string name="download_queue_apply">应用设置</string>
+    <string name="download_queue_apply_hint">新传输将使用这些设置。更改并发数时，正在进行的传输会安全完成。</string>
+    <string name="download_queue_independent_lanes">下载与验证、安装分开运行。大型模型不会阻止其他操作，只有在您选择时才会启用已安装的模型。</string>
+    <string name="download_queue_waiting_network">等待不限流量的网络</string>
+    <string name="download_queue_queued_verification">等待验证</string>
+    <string name="download_queue_saving_verified">正在保存已验证的文件</string>
+</resources>

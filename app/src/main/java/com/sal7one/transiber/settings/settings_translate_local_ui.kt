@@ -19,6 +19,8 @@ import com.sal7one.transiber.preferences.*
 import com.sal7one.transiber.setup.*
 import com.sal7one.transiber.downloads.*
 import com.sal7one.transiber.i18n.rememberUiText
+import com.sal7one.transiber.models.ModelHardwareFilter
+import com.sal7one.transiber.models.translationGpuPaths
 import com.sal7one.transiber.models.LegacyModelSetup
 import com.sal7one.transiber.models.ModelEngineType
 import com.sal7one.transiber.models.ModelRegistry
@@ -42,10 +44,12 @@ internal fun SettingsTranslateLocalUi(
         return
     }
     if (!showFullLibrary && rememberSetupMode() == SetupMode.BASIC) {
-        Text(uiText(UiR.string.setup_basic_selected_translation, TranslationOptions.label(config.localTranslationModelId)),
-            style = MaterialTheme.typography.labelLarge)
-        LocalBundleUi(config, translationOnly = true)
-        AdvancedSetupLink()
+        SettingsSection {
+            Text(uiText(UiR.string.setup_basic_selected_translation, TranslationOptions.label(config.localTranslationModelId)),
+                style = MaterialTheme.typography.labelLarge)
+            LocalBundleUi(config, translationOnly = true)
+            AdvancedSetupLink()
+        }
         return
     }
     val context = LocalContext.current
@@ -62,13 +66,16 @@ internal fun SettingsTranslateLocalUi(
     var query by com.sal7one.transiber.models.rememberModelBrowseString("translation-query", "")
     var kind by com.sal7one.transiber.models.rememberModelBrowseString("translation-kind", "any")
     var installedOnly by com.sal7one.transiber.models.rememberModelBrowseBoolean("translation-installed")
+    var hardwareId by com.sal7one.transiber.models.rememberModelBrowseString("translation-hardware", "all")
+    val hardware = ModelHardwareFilter.fromKey(hardwareId)
     var showPivots by com.sal7one.transiber.models.rememberModelBrowseBoolean("translation-pivots", MarianCascade.find(config.localTranslationModelId) != null)
     var platformDetails by rememberSaveable { mutableStateOf(config.localTranslationModelId == TranslationOptions.ML_KIT) }
     var records by remember { mutableStateOf<List<FileDownload>>(emptyList()) }
     var installed by remember { mutableStateOf<Set<String>>(emptySet()) }
     var invalidInstalls by remember { mutableStateOf<Set<String>>(emptySet()) }
     var repairingInstalls by remember { mutableStateOf<Set<String>>(emptySet()) }
-    var importingId by rememberSaveable { mutableStateOf("") }
+    val importBatches by com.sal7one.transiber.models.ModelImportQueue.state.collectAsState()
+    val importBatch = importBatches["translation-gguf"]
     var busy by remember { mutableStateOf(false) }
     var message by remember { mutableStateOf<String?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
@@ -133,27 +140,23 @@ internal fun SettingsTranslateLocalUi(
             if (showCaptionControls) next.copy(localTranslationEnabled = true, mode = CaptionMode.TRANSLATE) else next
         }
     }
-    val importer = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        val spec = TranslationCatalog.models.firstOrNull { it.id == importingId }
-        importingId = ""
-        if (uri != null && spec != null) scope.launch {
-            busy = true; error = null
-            message = uiText(UiR.string.ui_copying_and_verifying_1_s_6575d, spec.label)
-            try {
-                withContext(Dispatchers.IO) {
-                    val job = currentCoroutineContext()
-                    context.contentResolver.openInputStream(uri)?.use { input ->
-                        val imported = store.import(input, spec) { job.ensureActive() }
-                        ModelSourceBindings.recordImported(context, spec.id, uri, listOf(imported))
-                    }
-                        ?: error(uiText(UiR.string.ui_cannot_open_selected_translation_gguf_cae88))
-                }
-                invalidInstalls = invalidInstalls - spec.id
-                refresh(); select(spec.id)
-                message = uiText(UiR.string.ui_1_s_imported_and_selected_as_the_local_model_849c7, spec.label)
-            } catch (e: CancellationException) { throw e }
-            catch (e: Exception) { error = generateSequence<Throwable>(e) { it.cause }.joinToString("\n") { it.message ?: it.toString() } }
-            finally { busy = false }
+    val importer = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
+        if (uris.isNotEmpty()) try {
+            val app = context.applicationContext
+            com.sal7one.transiber.models.ModelImportQueue.submit(app, "translation-gguf", uris) { source ->
+                com.sal7one.transiber.runtime.LocalModelPolicy.requireAllowed(app, "translation model import")
+                val (spec, imported) = source.open().use { store.importCatalog(it, checkActive = source::checkActive) }
+                ModelSourceBindings.recordImported(app, spec.id, source.uri, listOf(imported))
+                spec.label
+            }
+        } catch (e: Exception) { error = e.message ?: e.toString() }
+    }
+    LaunchedEffect(importBatch?.revision) {
+        if (importBatch?.outcomes?.any { it.error.isBlank() } == true) {
+            invalidInstalls = invalidInstalls - importBatch.outcomes.filter { it.error.isBlank() }.mapNotNull { outcome ->
+                TranslationCatalog.models.firstOrNull { it.label == outcome.result }?.id
+            }.toSet()
+            refresh()
         }
     }
     val languages = remember(catalog) { catalog.flatMap { it.sourceLanguages + it.targetLanguages }.distinct().sortedBy(TranslationLanguages::label) }
@@ -161,17 +164,22 @@ internal fun SettingsTranslateLocalUi(
     val shown = catalog.filter { item ->
         item.matches(query, source, target, kind) && (!installedOnly ||
             if (item.compact) item.installed(installed) else item.matchingVariants(query, installed).isNotEmpty()) &&
-            (!item.throughEnglish || showPivots)
+            (!item.throughEnglish || showPivots) && hardware.matches(translationGpuPaths(item.variants.isNotEmpty()))
     }
 
-    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        if (showCaptionControls) Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+    val shownCt2Count = com.sal7one.common_jni.translation.Ct2Catalog.models.filter {
+        ct2BrowserMatches(it, query, source, target, kind, hardware) && (!installedOnly || Ct2Package.installed(context, it))
+    }.map { it.groupId }.distinct().size
+
+    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(SettingsLayout.cardGap)) {
+        if (showCaptionControls) Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(SettingsLayout.contentGap),
+            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
             Switch(config.localTranslationEnabled, { enabled -> update { it.copy(localTranslationEnabled = enabled,
                 mode = if (enabled) CaptionMode.TRANSLATE else CaptionMode.CAPTIONS) } })
-            Text(uiText(if (config.localTranslationEnabled) UiR.string.ui_translation_enabled_8b961 else UiR.string.ui_disabled_cc_only_9fa78))
+            Text(uiText(if (config.localTranslationEnabled) UiR.string.ui_translation_enabled_8b961 else UiR.string.ui_disabled_cc_only_9fa78), Modifier.weight(1f))
         }
         Surface(color = MaterialTheme.colorScheme.secondaryContainer, shape = MaterialTheme.shapes.large) {
-            Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Column(Modifier.fillMaxWidth().padding(SettingsLayout.cardPadding), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(uiText(UiR.string.model_browser_selected), style = MaterialTheme.typography.labelMedium)
                 Text(TranslationOptions.label(config.localTranslationModelId), style = MaterialTheme.typography.titleSmall)
             }
@@ -185,32 +193,35 @@ internal fun SettingsTranslateLocalUi(
             Tab(installedOnly, onClick = { installedOnly = true }, text = { Text(uiText(UiR.string.model_browser_manage)) })
         }
         ModelSearchField(query, { query = it })
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            ModelFilterPicker(uiText(UiR.string.model_translation_source), source, options, { source = it }, Modifier.weight(1f))
-            ModelFilterPicker(uiText(UiR.string.translation_browser_target), target, options, { target = it }, Modifier.weight(1f))
-        }
+        SettingsFieldPair(
+            first = { ModelFilterPicker(uiText(UiR.string.model_translation_source), source, options, { source = it }, it) },
+            second = { ModelFilterPicker(uiText(UiR.string.translation_browser_target), target, options, { target = it }, it) },
+        )
         ModelFilterPicker(uiText(UiR.string.translation_browser_type), kind, listOf(
             "any" to uiText(UiR.string.translation_browser_type_all),
             "compact" to uiText(UiR.string.translation_browser_type_compact),
             "text" to uiText(UiR.string.translation_browser_type_text)), { kind = it })
-        if (kind != "text") Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        ModelHardwarePicker(hardware, { hardwareId = it })
+        if (kind != "text") Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
             Checkbox(showPivots, { showPivots = it })
             Text(uiText(UiR.string.translation_browser_pivots), style = MaterialTheme.typography.bodyMedium)
         }
+        OutlinedButton(enabled = importBatch?.active != true, onClick = { importer.launch(arrayOf("*/*")) }) { Text(uiText(UiR.string.model_import_batch_translation)) }
+        com.sal7one.transiber.models.ModelImportStatus("translation-gguf")
         if (busy) LinearProgressIndicator(Modifier.fillMaxWidth())
         message?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
         error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
-            Text(uiText(UiR.string.model_browser_results, shown.size + com.sal7one.common_jni.translation.Ct2Catalog.models.count { ct2BrowserMatches(it,query,source,target,kind) && (!installedOnly || Ct2Package.installed(context,it)) }), style = MaterialTheme.typography.labelMedium)
-            if (source != "any" || target != "any" || kind != "any" || showPivots) TextButton(onClick = {
-                source = "any"; target = "any"; kind = "any"; showPivots = false
+            Text(uiText(UiR.string.model_browser_results, shown.size + shownCt2Count), style = MaterialTheme.typography.labelMedium)
+            if (query.isNotBlank() || installedOnly || source != "any" || target != "any" || kind != "any" || showPivots || hardware != ModelHardwareFilter.ALL) TextButton(onClick = {
+                query = ""; installedOnly = false; source = "any"; target = "any"; kind = "any"; showPivots = false; hardwareId = "all"
             }) { Text(uiText(UiR.string.explorer_clear_filters)) }
         }
-        if (shown.isEmpty() && com.sal7one.common_jni.translation.Ct2Catalog.models.none { ct2BrowserMatches(it,query,source,target,kind) && (!installedOnly || Ct2Package.installed(context,it)) }) ModelBrowserEmptyState(onReset = {
-            query = ""; source = "any"; target = "any"; kind = "any"; installedOnly = false; showPivots = false
+        if (shown.isEmpty() && shownCt2Count == 0) ModelBrowserEmptyState(onReset = {
+            query = ""; source = "any"; target = "any"; kind = "any"; installedOnly = false; showPivots = false; hardwareId = "all"
         })
-        Ct2ModelsUi(query,source,target,kind,installedOnly,config.localTranslationModelId,{ select(it) },{ error=it })
+        if (hardware.matches(emptySet())) Ct2ModelsUi(query,source,target,kind,installedOnly,config.localTranslationModelId,{ select(it) },{ error=it })
         shown.forEach { item -> key(item.id) {
             var variantId by rememberSaveable { mutableStateOf("") }
             var details by rememberSaveable { mutableStateOf(false) }
@@ -236,8 +247,9 @@ internal fun SettingsTranslateLocalUi(
             OutlinedCard(Modifier.fillMaxWidth(), colors = CardDefaults.outlinedCardColors(
                 containerColor = if (selected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
                     else MaterialTheme.colorScheme.surfaceContainerLow)) {
-                Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(Modifier.padding(SettingsLayout.cardPadding), verticalArrangement = Arrangement.spacedBy(SettingsLayout.contentGap)) {
                     Text(item.title, style = MaterialTheme.typography.titleMedium)
+                    ModelGpuPaths(translationGpuPaths(item.variants.isNotEmpty()))
                     Text(uiText(if (item.compact) {
                         if (item.throughEnglish) UiR.string.explorer_translation_pivot else UiR.string.explorer_translation_direct
                     } else UiR.string.explorer_translation_multilingual), style = MaterialTheme.typography.labelMedium,
@@ -263,9 +275,9 @@ internal fun SettingsTranslateLocalUi(
                         if (stage in setOf(DownloadStage.VERIFYING, DownloadStage.INSTALLING)) Text(uiText(UiR.string.model_download_processing_hint), style = MaterialTheme.typography.bodySmall)
                     }
                     failed?.let { Text(it.error.ifBlank { uiText(UiR.string.ui_download_failed_reason_1_s_8bb99, it.reason) }, color = MaterialTheme.colorScheme.error) }
-                    if (!selected) Button(modifier = Modifier.fillMaxWidth(), enabled = !busy && !active, onClick = {
+                    if (!selected) Button(modifier = Modifier.fillMaxWidth().heightIn(min = SettingsLayout.touchTarget), enabled = !busy && !active, onClick = {
                         if (!ready && !ByokPolicy.FEATURE_BYOK) {
-                            if (spec != null) { importingId = spec.id; importer.launch(arrayOf("*/*")) }
+                            if (spec != null) { importer.launch(arrayOf("*/*")) }
                             else { installedOnly = true; message = uiText(UiR.string.translation_browser_import_pair_hint) }
                         } else if (ready) scope.launch {
                             busy = true; error = null
@@ -333,7 +345,7 @@ internal fun SettingsTranslateLocalUi(
                             Text(uiText(UiR.string.model_browser_revision, spec.revision), style = MaterialTheme.typography.bodySmall)
                             Text(uiText(UiR.string.model_browser_integrity, spec.sha256), style = MaterialTheme.typography.bodySmall)
                             Text(spec.sourceLanguages.sortedBy(TranslationLanguages::label).joinToString(", ") { TranslationLanguages.label(it) }, style = MaterialTheme.typography.bodySmall)
-                            OutlinedButton(enabled = !busy, onClick = { importingId = spec.id; importer.launch(arrayOf("*/*")) }) { Text(uiText(UiR.string.translation_browser_import)) }
+                            OutlinedButton(enabled = !busy, onClick = { importer.launch(arrayOf("*/*")) }) { Text(uiText(UiR.string.translation_browser_import)) }
                         } else {
                             Text(uiText(UiR.string.translation_browser_file_count, parts.size), style = MaterialTheme.typography.bodySmall)
                             if (!ready) {
@@ -350,15 +362,14 @@ internal fun SettingsTranslateLocalUi(
         } }
         if (installedOnly && includeLegacy) {
             HorizontalDivider()
-            Text(uiText(UiR.string.translation_browser_folder_import), style = MaterialTheme.typography.titleSmall)
-            Text(uiText(UiR.string.translation_browser_import_pair_hint), style = MaterialTheme.typography.bodySmall)
-            LegacyModelSetup(ModelEngineType.TRANSLATE, config, update, showDownloadSources = false)
-            ModelFilterPicker(uiText(UiR.string.translation_browser_gguf_import), importingId.ifBlank { "choose" },
-                listOf("choose" to uiText(UiR.string.translation_browser_choose_artifact)) + TranslationCatalog.models.map { it.id to it.label }, { id ->
-                    TranslationCatalog.models.firstOrNull { it.id == id }?.let { importingId = it.id; importer.launch(arrayOf("*/*")) }
-                })
+            if (hardware.matches(emptySet())) {
+                Text(uiText(UiR.string.translation_browser_folder_import), style = MaterialTheme.typography.titleSmall)
+                Text(uiText(UiR.string.translation_browser_import_pair_hint), style = MaterialTheme.typography.bodySmall)
+                LegacyModelSetup(ModelEngineType.TRANSLATE, config, update, showDownloadSources = false)
+            }
+
         }
-        if (PlatformTranslation.available) {
+        if (PlatformTranslation.available && hardware.matches(emptySet())) {
             HorizontalDivider()
             TextButton(onClick = { platformDetails = !platformDetails }) { Text(uiText(UiR.string.translation_browser_platform)) }
             if (platformDetails) MlKitSetup(config, update)

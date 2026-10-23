@@ -233,6 +233,7 @@ class MainActivity : AppCompatActivity() {
      }
     }
     var modelsSection by rememberSaveable { mutableStateOf("Speech") }
+    var reviewModelFiles by rememberSaveable { mutableStateOf(false) }
     fun localModels(section: String) { modelsSection = section; go(1) }
     fun speechSettings(location: SettingsLocation) { speechLocation = location; speechEntry++; go(4) }
     fun translationSettings(location: SettingsLocation) { translationLocation = location; translationEntry++; go(9) }
@@ -343,7 +344,7 @@ class MainActivity : AppCompatActivity() {
       nativeFailure?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(16.dp)) }
       preferencesFailure?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(16.dp)) }
       if (quickSettings && readySettings == null && settingsConfigError == null) LinearProgressIndicator(Modifier.fillMaxWidth())
-      ModelBindingRepairNotice(onRepair = { localModels("Speech") }, launchError = modelCheckError)
+      ModelBindingRepairNotice(onRepair = { reviewModelFiles = true; localModels("Speech") }, launchError = modelCheckError)
       Box(Modifier.weight(1f)) {
        screenState.SaveableStateProvider(com.sal7one.transiber.ui.navigationStateKey(tvUi, atHome, page)) {
        if (tvHome) com.sal7one.transiber.home.TvHomeScreen(
@@ -370,7 +371,8 @@ class MainActivity : AppCompatActivity() {
         onReading = { reading() },
        ) else when(page) {
         0 -> CaptionHome(onModels = { go(1) }, onCloud = { speechSettings(SettingsLocation.CLOUD) }, onHistory = { go(16) })
-        1 -> ModelsScreen(onDownloads = { go(2) }, onVoices = { voiceSettings(SettingsLocation.LOCAL) }, initialSection = modelsSection)
+        1 -> ModelsScreen(onDownloads = { go(2) }, onVoices = { voiceSettings(SettingsLocation.LOCAL) }, initialSection = modelsSection,
+            openIntegrity = reviewModelFiles, onIntegrityOpened = { reviewModelFiles = false })
         2 -> DownloadsScreen(onBrowseModels = { go(1) }, onVoices = { voiceSettings(SettingsLocation.LOCAL) })
         3 -> if (readySettings != null) SettingsScreen(
             initialConfig = readySettings,

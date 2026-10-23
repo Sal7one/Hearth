@@ -14,8 +14,8 @@
     <string name="label_homeservice_camera_title" formatted="false">"الكاميرا والصور"</string>
     <string name="label_homeservice_camera_description" formatted="false">"وجّه الكاميرا إلى لافتة أو قائمة أو صفحة، أو اختر صورة من هاتفك."</string>
     <string name="label_homeservice_camera_action" formatted="false">"فتح الكاميرا"</string>
-    <string name="label_homeservice_screen_title" formatted="false">"الشاشة والمانغا"</string>
-    <string name="label_homeservice_screen_description" formatted="false">"اقرأ المانغا والكتب والتطبيقات الأخرى بترجمة فوق الصفحة."</string>
+    <string name="label_homeservice_screen_title" formatted="false">"ترجمة الشاشة"</string>
+    <string name="label_homeservice_screen_description" formatted="false">"ترجم المواقع والتطبيقات والمانغا اليابانية فوق الشاشة مع متابعة التمرير عبر الترجمة."</string>
     <string name="label_homeservice_screen_action" formatted="false">"فتح مترجم الشاشة"</string>
     <string name="label_maintab_captions_label" formatted="false">"النص المباشر"</string>
     <string name="label_maintab_captions_title" formatted="false">"النص المباشر"</string>

@@ -1,6 +1,6 @@
 # Android CPU and TV support
 
-Hearth 0.23.9 (QA code 82) targets Android 9 / API 28 and later.
+Hearth 0.28.1 (QA code 95) targets Android 9 / API 28 and later.
 The universal APK is the easiest choice when a phone or TV's CPU is unknown.
 
 | APK suffix | Process | Typical device |
@@ -18,13 +18,15 @@ No model weights are embedded in these APKs.
 
 32-bit support does not expand the address space of a 32-bit process. Large
 models can still exceed available RAM/address space; start with smaller models
-and use the benchmark on the actual device. No model family is removed.
+and use the benchmark on the actual device. Local TTS and optional GPU plugins require ARM64; other architectures retain their supported CPU speech/translation paths.
 CPU compatibility does not promise equal inference speed on all devices.
 
 ## Native build and provenance
 
-All four architectures include the same common JNI features, Vosk, ONNX,
-private speech plugins and private llama translation runtime. Vosk/ORT are
+All four architectures include common JNI, Vosk, ONNX, baseline speech plugins
+and the private CPU llama translation runtime. Additional CPU families, GPU
+plugins, CT2 and all local TTS families are ARM64-only where their runtime
+inventory declares that limit. See [ABI/module selection](android-abis-and-modules.md). Vosk/ORT are
 extracted from the existing SHA-pinned AARs. Speech and translation are rebuilt
 from pinned sources with NDK 27.0.12077973.
 

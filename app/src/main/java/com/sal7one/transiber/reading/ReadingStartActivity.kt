@@ -32,6 +32,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.selected
 import com.sal7one.transiber.caption.CaptionCaptureService
 import com.sal7one.transiber.ocr.*
 import com.sal7one.transiber.settings.SettingsOcrLocalUi
@@ -40,6 +41,10 @@ import com.sal7one.transiber.ui.theme.FFmpegStudioTheme
 import com.sal7one.transiber.ui.theme.rememberThemeMode
 import java.io.File
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.withContext
 import com.sal7one.transiber.caption.*
 import com.sal7one.transiber.translation.*
 import com.sal7one.transiber.byok.ByokPolicy
@@ -48,6 +53,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.AutoStories
+import androidx.compose.material.icons.filled.Public
 import com.sal7one.transiber.ui.components.FeatureAction
 import com.sal7one.transiber.ui.components.FeatureOptionsSheet
 
@@ -76,6 +82,19 @@ class ReadingStartActivity : AppCompatActivity() {
         val targets=ocrTranslationTargets(selection,localModelId,cloud,ByokPolicy.FEATURE_BYOK)
         val translator=ConversationTranslationSettings.provider(provider)?.label ?: TranslationOptions.label(localModelId)
         val profile=selection.profile
+        val content=ReadingContent.selected(selection)
+        LaunchedEffect(profile.id,selection.source) {
+            prefs.edit().putString("${content.key}-profile",profile.id).putString("${content.key}-source",selection.source).apply()
+        }
+        var passThrough by rememberSaveable {mutableStateOf(prefs.getBoolean("pass-through",true))}
+        var readerReady by remember(profile.id) { mutableStateOf(false) }
+        LaunchedEffect(profile.id,currentSetup) {
+            val installed=OcrModels(File(filesDir,"ocr-models"))
+            while(isActive) {
+                readerReady=withContext(Dispatchers.IO) {installed.ready(profile)}
+                delay(1500)
+            }
+        }
         var models by rememberSaveable {mutableStateOf(false)}
         val modelsScroll=rememberScrollState()
         val savedMode=remember {prefs.getString("mode","page")}
@@ -91,6 +110,7 @@ class ReadingStartActivity : AppCompatActivity() {
                 scope.launch {
                     try {
                         CaptionCaptureService.stop(this@ReadingStartActivity)
+                        ReadingOverlayService.stopAndAwait(this@ReadingStartActivity)
                         // Stop unpublishes the overlay before its native model cleanup finishes.
                         com.sal7one.transiber.runtime.LocalWorkGate.awaitIdle()
                         androidx.core.content.ContextCompat.startForegroundService(this@ReadingStartActivity,
@@ -120,23 +140,57 @@ class ReadingStartActivity : AppCompatActivity() {
             Column(Modifier.fillMaxSize().systemBarsPadding()) {
                 Row(Modifier.fillMaxWidth().padding(horizontal=12.dp),verticalAlignment=androidx.compose.ui.Alignment.CenterVertically) {
                     TextButton(onClick={finish()}){Text(uiText(UiR.string.ui_back_b52b3))}
-                    Text(uiText(UiR.string.ui_screen_manga_6c45b),Modifier.weight(1f),style=MaterialTheme.typography.titleLarge)
+                    Text(uiText(UiR.string.tile_reading),Modifier.weight(1f),style=MaterialTheme.typography.titleLarge)
                 }
                 Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(20.dp),verticalArrangement=Arrangement.spacedBy(20.dp)) {
-                    Image(painterResource(R.drawable.home_screen),null,Modifier.fillMaxWidth().height(140.dp).clip(RoundedCornerShape(28.dp)),contentScale=ContentScale.Crop)
+                    Image(painterResource(R.drawable.screen_translation_hero),null,Modifier.fillMaxWidth().height(140.dp),contentScale=ContentScale.Fit)
                     Text(uiText(UiR.string.ui_translate_as_you_read_7ee96),style=MaterialTheme.typography.headlineMedium)
                     Text(uiText(UiR.string.ui_open_your_reader_after_starting_translate_the_page_or_draw_around_c74fc))
+                    Text(uiText(UiR.string.reading_content_kind),style=MaterialTheme.typography.titleSmall)
+                    Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(12.dp)) {
+                        ReadingContent.entries.forEach { next ->
+                            OutlinedCard(onClick={
+                                try {
+                                    prefs.edit().putString("${content.key}-profile",profile.id).putString("${content.key}-source",selection.source).apply()
+                                    selectionStore.update {it.forReadingContent(next,prefs.getString("${next.key}-profile",null),prefs.getString("${next.key}-source",null))}
+                                    error=null
+                                } catch(failure: Exception) { error=failure.message ?: failure.toString() }
+                            },modifier=Modifier.weight(1f).heightIn(min=96.dp).semantics {selected=content==next},
+                                colors=CardDefaults.outlinedCardColors(containerColor=if(content==next)MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surface),
+                                border=androidx.compose.foundation.BorderStroke(if(content==next)2.dp else 1.dp,if(content==next)MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant)) {
+                                Column(Modifier.padding(16.dp),verticalArrangement=Arrangement.spacedBy(8.dp)) {
+                                    Icon(if(next==ReadingContent.WEBSITES)Icons.Default.Public else Icons.Default.AutoStories,null)
+                                    Text(uiText(if(next==ReadingContent.WEBSITES)UiR.string.reading_content_websites else UiR.string.reading_content_manga),style=MaterialTheme.typography.titleSmall)
+                                }
+                            }
+                        }
+                    }
+                    Text(uiText(if(content==ReadingContent.WEBSITES)UiR.string.reading_websites_help else UiR.string.reading_manga_help),style=MaterialTheme.typography.bodySmall)
                     Text(uiText(UiR.string.ui_translate_when_b5cd2),style=MaterialTheme.typography.titleSmall)
                     FlowRow(horizontalArrangement=Arrangement.spacedBy(8.dp)) {
                         listOf("manual" to uiText(UiR.string.ui_i_tap_96db1), "page" to uiText(UiR.string.ui_page_changes_25675)).forEach {(id,label)->
                             FilterChip(selected=mode==id,onClick={mode=id},label={Text(label)})
                         }
                     }
-                    OcrLanguageControls(selection,targets,translator,{next->selectionStore.update {next};error=null},{models=true})
+                    OcrLanguageControls(selection,targets,translator,{next->selectionStore.update {next};error=null},{models=true},showMangaModes=content==ReadingContent.MANGA)
+                    Row(Modifier.fillMaxWidth(),verticalAlignment=androidx.compose.ui.Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f)) {
+                            Text(uiText(UiR.string.reading_passthrough),style=MaterialTheme.typography.bodyMedium)
+                            Text(uiText(UiR.string.reading_passthrough_help),style=MaterialTheme.typography.bodySmall)
+                        }
+                        Switch(passThrough,{passThrough=it;prefs.edit().putBoolean("pass-through",it).apply()},
+                            modifier=Modifier.semantics {contentDescription=uiText(UiR.string.reading_passthrough)})
+                    }
+                    if(!readerReady) {
+                        Text(uiText(UiR.string.ocr_reader_needs_files),style=MaterialTheme.typography.bodySmall)
+                        OutlinedButton(onClick={models=true}) {Text(uiText(UiR.string.ui_get_ocr_models_245d8))}
+                    }
+                    if(profile.family=="manga")Text(uiText(UiR.string.ocr_reader_capture_only),style=MaterialTheme.typography.bodySmall)
                     FeatureAction(uiText(UiR.string.ui_reading_settings_8195d), Icons.Default.Tune, {options=true},
                         detail=translator)
                     if(profile.engine=="manga")Text(uiText(UiR.string.ui_manga_ocr_needs_a_drawn_area_around_one_speech_bubble_214c9),style=MaterialTheme.typography.bodySmall)
                     Text(uiText(UiR.string.ui_images_stay_on_this_phone_cloud_translation_sends_recognized_text_1cbaa),style=MaterialTheme.typography.bodySmall)
+                    Text(uiText(UiR.string.reading_capture_limits),style=MaterialTheme.typography.bodySmall)
                     Text(uiText(UiR.string.ui_starting_screen_translation_stops_live_audio_captions_17e29),style=MaterialTheme.typography.bodySmall)
                     if(starting) {
                         LinearProgressIndicator(Modifier.fillMaxWidth())

@@ -57,4 +57,38 @@ class BenchmarkDownloadProgressTest {
             listOf(first, row(-2,group.parts.last().id,"Installed",100))))
         assertTrue(complete.complete)
     }
+    @Test fun ct2TracksEveryPinnedFileRatherThanReportingOneFileAsTheModel() {
+        val spec = requireNotNull(com.sal7one.common_jni.translation.Ct2Catalog.find("ct2-quickmt-en-ar"))
+        val parts = com.sal7one.transiber.translation.Ct2Package.parts(spec)
+        val model = SuggestedModel(spec.id, spec.label, spec.bytes, "ct2")
+        val partial = requireNotNull(BenchmarkDownloadProgress.forModel(model,
+            listOf(row(-1, parts.first().id, "Installed", parts.first().file.bytes))))
+        assertEquals(spec.files.size, partial.expectedFiles)
+        assertFalse(partial.complete)
+        val complete = requireNotNull(BenchmarkDownloadProgress.forModel(model,
+            parts.mapIndexed { index, part -> row(-index.toLong() - 1, part.id, "Installed", part.file.bytes) }))
+        assertTrue(complete.complete)
+        assertEquals(spec.bytes, complete.bytes)
+    }
+
+    @Test fun voiceBundleIncludesStylesAndRuntimeAssets() {
+        val assets = com.sal7one.transiber.voice.VoiceCatalog.familyAssets("supertonic")
+        val model = SuggestedModel("supertonic", "Supertonic 3", assets.sumOf { it.bytes }, "voice")
+        val all = assets.mapIndexed { index, asset -> row(-index.toLong() - 1, asset.id, "Installed", asset.bytes) }
+        val partial = requireNotNull(BenchmarkDownloadProgress.forModel(model, all.dropLast(1)))
+        assertEquals(assets.size, partial.expectedFiles)
+        assertFalse(partial.complete)
+        assertTrue(requireNotNull(BenchmarkDownloadProgress.forModel(model, all)).complete)
+    }
+
+    @Test fun magpieCannotReportCompleteWithOnlyItsTwoWeights() {
+        val assets = com.sal7one.transiber.voice.VoiceCatalog.familyAssets("magpie")
+        val model = SuggestedModel("magpie", "Magpie", com.sal7one.hearth.tts.magpie.MagpieCatalog.downloadBytes, "voice")
+        val weights = assets.mapIndexed { index, asset -> row(-index.toLong() - 1, asset.id, "Installed", asset.bytes) }
+        val partial = requireNotNull(BenchmarkDownloadProgress.forModel(model, weights))
+        assertEquals(3, partial.expectedFiles)
+        assertFalse(partial.complete)
+        val all = weights + row(-3, com.sal7one.transiber.downloads.DownloadAssets.MAGPIE_TOKENIZER, "Installed", com.sal7one.hearth.tts.magpie.MagpieCatalog.tokenizerSegmentsBytes)
+        assertTrue(requireNotNull(BenchmarkDownloadProgress.forModel(model, all)).complete)
+    }
 }

@@ -11,6 +11,7 @@ import android.service.quicksettings.Tile
 import android.service.quicksettings.TileService
 import com.sal7one.transiber.caption.CaptionCaptureService
 import com.sal7one.transiber.reading.ReadingOverlayService
+import com.sal7one.transiber.reading.ReadingStartActivity
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.StateFlow
 
@@ -52,9 +53,12 @@ abstract class OverlayTileService : TileService() {
             CaptionCaptureService.stop(this)
             return
         }
-        val intent = Intent(this, OverlayLaunchActivity::class.java)
-            .putExtra(OverlayLaunchActivity.EXTRA, shortcut.name)
-            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+        // Screen translation has two different reader families. A tile must open
+        // their chooser rather than immediately reusing a heavy manga model for a website.
+        val intent = if (shortcut == OverlayShortcut.READING && !ReadingOverlayService.running.value)
+            Intent(this, ReadingStartActivity::class.java)
+        else Intent(this, OverlayLaunchActivity::class.java).putExtra(OverlayLaunchActivity.EXTRA, shortcut.name)
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
         if (Build.VERSION.SDK_INT >= 34) {
             startActivityAndCollapse(PendingIntent.getActivity(this, shortcut.ordinal, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE))
         } else {

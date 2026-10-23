@@ -3,4 +3,17 @@
     <string name="ming_asr_hosted_detail">支持中文、英文、方言和上下文。连接自己的 SGLang-Omni /v1 服务器。按语句转写，不提供实时中间字幕或语音翻译接口。需要 CUDA 服务器。</string>
     <string name="ming_audio_hosted_detail">中文和英文音频模型。通过 Hearth Ming 转写桥连接自己的 SGLang 服务器。按语句转写，不提供实时中间字幕。需要 CUDA 服务器。</string>
     <string name="ming_official_model_card">官方模型卡</string>
+    <string name="ming_local_runtime">实验性设备端 Ming-3.0 语音运行时</string>
+    <string name="ming_local_coverage">仅英语和中文 · 约 850 MB 包 · CPU · 44.1 kHz · 300 字符</string>
+    <string name="ming_experimental_title">启用实验性 Ming 本地语音</string>
+    <string name="ming_experimental_detail">默认关闭。使用 arm64 CPU JNI，运行时约需 1 GB 内存。JNI 不提供流式输出或原生取消。应用内设备性能尚未验证。</string>
+    <string name="ming_enable_first">请先启用实验性引擎。除非在此启用，否则始终保持关闭。</string>
+    <string name="ming_no_runtime">Ming 本地运行时不可用：%1$s</string>
+    <string name="ming_select_voice">使用 Ming 语音</string>
+    <string name="ming_voice">Ming 语音</string>
+    <string name="ming_ready">完整的 Ming 包已安装，parts/ 布局会在首次合成时创建</string>
+    <string name="ming_install_note">请下载或导入约 850 MB 的包（缺少 %1$d/%2$d 个组件）。下载和安装期间请保留约 1.7 GB 可用空间。</string>
+    <string name="ming_limits">一次性生成：播放前先合成整段语音。每次请求最多 300 个字符，较长文本由阅读器拆分。仅英语和中文。无流式输出或原生取消。在一部 arm64 手机上，应用外 app_process 运行测得 RTF 约 2.1、峰值内存约 1.02 GB，随后应用内仪器测试已通过。</string>
+    <string name="ming_download">下载 Ming 包（850 MB）</string>
+    <string name="ming_import">导入 Ming 文件或 ZIP</string>
 </resources>

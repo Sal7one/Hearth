@@ -29,9 +29,11 @@ internal fun SettingsSpeechLocalUi(config: CaptionOverlayConfig,
         return
     }
     if (!showFullLibrary && rememberSetupMode() == SetupMode.BASIC) {
-        Text(uiText(UiR.string.setup_basic_selected_speech, uiText.label(config.engine)), style = MaterialTheme.typography.labelLarge)
-        LocalBundleUi(config)
-        AdvancedSetupLink()
+        SettingsSection {
+            Text(uiText(UiR.string.setup_basic_selected_speech, uiText.label(config.engine)), style = MaterialTheme.typography.labelLarge)
+            LocalBundleUi(config)
+            AdvancedSetupLink()
+        }
         return
     }
     var managing by rememberSaveable { mutableStateOf(false) }
@@ -45,10 +47,9 @@ internal fun SettingsSpeechLocalUi(config: CaptionOverlayConfig,
     })
     if (!managing) return
     ModalBottomSheet(onDismissRequest = { managing = false }) {
-    Column(Modifier.fillMaxWidth().heightIn(max = 680.dp).verticalScroll(rememberScrollState()).padding(18.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)) {
-    Text(uiText(UiR.string.library_model_options), style = MaterialTheme.typography.titleLarge)
-    Text(uiText(UiR.string.model_browser_manage_hint), style = MaterialTheme.typography.bodySmall)
+    Column(Modifier.fillMaxWidth().heightIn(max = 680.dp).verticalScroll(rememberScrollState()).padding(SettingsLayout.pageInsets),
+        verticalArrangement = Arrangement.spacedBy(SettingsLayout.cardGap)) {
+    SettingsHeading(uiText(UiR.string.library_model_options), uiText(UiR.string.model_browser_manage_hint))
     val engines = listOf(
         CaptionEngineChoice.AUDAR to "Audar Flash",
         CaptionEngineChoice.OWSM to "OWSM v4 Base",

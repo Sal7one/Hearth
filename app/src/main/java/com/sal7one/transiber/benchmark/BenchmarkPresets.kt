@@ -72,11 +72,11 @@ internal data class BenchmarkLeaders(
 
 /** Compare only the same phone, source/target and exact input hash. Failed/empty runs cannot win. */
 internal object BenchmarkComparison {
-    fun latest(results: List<BenchmarkResult>, source: String, target: String): BenchmarkLeaders? {
-        val matching = results.filter { it.source == source && it.target == target }
+    fun latest(results: List<BenchmarkResult>, source: String, target: String, task: String = if (target.isBlank()) "speech" else "translation"): BenchmarkLeaders? {
+        val matching = results.filter { it.source == source && it.target == target && it.task == task }
         val seed = matching.firstOrNull() ?: return null
         val comparable = matching.filter { it.inputHash == seed.inputHash && it.device == seed.device &&
-            it.protocolVersion == seed.protocolVersion }
+            it.protocolVersion == seed.protocolVersion && it.scoringNormalization == seed.scoringNormalization }
             .distinctBy { it.identity }.filter { result ->
                 result.error == null && result.computeMs.size >= 3 && result.computeMs.all { it.isFinite() && it >= 0 } &&
                     result.texts.lastOrNull()?.isNotBlank() == true &&
@@ -84,7 +84,8 @@ internal object BenchmarkComparison {
             }
         fun time(result: BenchmarkResult) = BenchmarkMetrics.median(result.computeMs.drop(1))
         fun quality(result: BenchmarkResult): Double? = BenchmarkTableModel.qualityScore(result)
-        val fastest = comparable.minByOrNull(::time)
+        val fastest = if (task == "voice") comparable.filter { BenchmarkTableModel.audioSpeed(it) != null }
+            .maxByOrNull { BenchmarkTableModel.audioSpeed(it)!! } else comparable.minByOrNull(::time)
         val scored = comparable.filter { quality(it)?.isFinite() == true }
         val accurate = scored.maxByOrNull { quality(it)!! }
         val balanced = if (scored.size < 3) null else {

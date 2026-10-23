@@ -10,7 +10,19 @@ APK assets under `licenses/`.
 | whisper.cpp + ggml | Vendored source subset of ggml-org/whisper.cpp, 19ceec8eac980403b714d603e5ca31653cd42a3f | MIT; upstream LICENSE, `licenses/whisper-LICENSE` and `licenses/ggml-cpu-NOTICES.txt` |
 | Vosk Android | Maven com.alphacephei:vosk-android:0.3.70, arm64 shared library | Apache-2.0; `licenses/vosk/`, Kaldi and OpenFst notices (OpenFst in `licenses/speech/openfst/`) |
 | ONNX Runtime | Maven com.microsoft.onnxruntime:onnxruntime-android:1.20.0 | MIT and upstream third-party notices in `licenses/onnxruntime-1.20.0/` |
-| Qwen / Moonshine speech adapter | sherpa-onnx 210f340bcfdfd5b9ad6b24245e77a934d6c28f1b; CPU ONNX Runtime 1.27.1 | Apache-2.0 and dependency notices in `licenses/speech/` |
+| Qwen / Moonshine speech adapter | sherpa-onnx 210f340bcfdfd5b9ad6b24245e77a934d6c28f1b; CPU ONNX Runtime 1.27.1 (Android) / 1.20.1 (desktop) | Apache-2.0 and dependency notices in `licenses/speech/` |
+| Qwen3-ASR desktop adapter | static sherpa-onnx 210f340bcfdfd5b9ad6b24245e77a934d6c28f1b linked with the shipped ONNX Runtime 1.20.1; Qwen3-ASR weights Apache-2.0 (separately downloaded, never committed) | `Sherpa-LICENSE.txt` and the aggregated `Sherpa-Dependencies-NOTICES.txt` are staged into the desktop native bundle and listed in its manifest |
+| TranscribePsy desktop backend | parakeet.cpp/qvac-transcribepsy 364ec36130dc87d2cd46e596598268a6e3313751, statically linked ggml; TranscribePsy 250M EU q8 weights Apache-2.0 (separately downloaded, never committed) | parakeet Apache-2.0 and ggml MIT notices are aggregated in `Speech-Backends-NOTICES.txt` in the desktop native bundle |
+| Nemotron 3.5 desktop backend | NeMo-Speech.cpp ffa38cb2408f1e832a36d46fef5e3e1e80d07e6c, SentencePiece 17d7580d6407802f85855d2cc9190634e2c95624, statically linked ggml; Nemotron 3.5 ASR q8 weights OpenMDW-1.1 (separately downloaded, never committed) | NeMo-Speech.cpp Apache-2.0, SentencePiece Apache-2.0 (with protobuf-lite BSD-3-Clause) and ggml MIT notices are aggregated in `Speech-Backends-NOTICES.txt` in the desktop native bundle |
+| Moonshine desktop speech | Moonshine tiny.en and the tiny/base Arabic, Spanish, Japanese, Korean, Ukrainian, Vietnamese and Chinese variants from the pinned sherpa-onnx model release; the English packages are MIT, the multilingual packages are Moonshine Community License; the runtime is the existing static sherpa-onnx/ONNX Runtime stack from the Qwen stage | Each package's `LICENSE` is verified inside its catalog archive; sherpa/ORT notices are already in `Sherpa-*` in the desktop bundle |
+| MOSS-TTS Nano desktop voice | MOSS-TTS Nano 100M ONNX weights Apache-2.0; runtime `hearth-tts-moss/src/main/cpp/moss.cpp` and static SentencePiece 0.2.0 (Apache-2.0); the shipped ONNX Runtime 1.20.1 is already covered above | `Moss-Dependencies-NOTICES.txt` in the desktop native bundle; the 14 model pins are in `MossCatalog.kt` |
+| OmniVoice desktop voice | omnivoice.cpp `1a468d8b9d65b3544ca1004d2d7c05dfc65d1f3e` (MIT) with static ggml `cc5df49a6b878db2b68b9a7b45976e279594627d` (MIT); Q8 generator `Serveurperso/OmniVoice-GGUF@017094167b5c9ed565a5076ac9b3b93c5ecf5c73` (656,395,008 B) is CC-BY-NC-4.0 and the audio codec GGUF (288,889,600 B) carries the Boson Higgs Audio 2 Community License with incorporated Meta Llama 3 terms; weights are separately downloaded and never committed | `OmniVoice-Dependencies-NOTICES.txt` is staged into the desktop native bundle and listed in its manifest; the two model pins are in `OmniVoiceCatalog.kt` |
+| MagpieTTS desktop voice | NeMo-Speech.cpp `caa3f47c7c75fa2e9e6340272ebad57c1647dd44` (Apache-2.0) with static llama.cpp/ggml `bd4f514db14d87fded667787a7a963bfbaa98e89` (MIT); MagpieTTS multilingual 357M v2607 F16 generator (568,663,392 B) and NanoCodec decoder (78,823,104 B) under the NVIDIA Open Model License and companion codec terms; tokenizer dictionaries come from two authenticated byte ranges (31,076,864 B) of the pinned 1,470,208,000 B `.nemo` archive and its embedded `model_weights.ckpt` is discarded; weights are separately downloaded and never committed | `Magpie-Dependencies-NOTICES.txt` is staged into the desktop native bundle and listed in its manifest; the model pins, range extents and 20,598,079 tokenizer bytes are in `hearth-tts-magpie/src/main/assets/magpie-sources.json` and the `magpie-tts` desktop catalog card |
+| Chatterbox Multilingual V3 desktop voice | Chatterbox Multilingual V3 ONNX stack `Masterx/chatterbox-multilingual-v3-ONNX@19b94afe41de738624b2f3afc75b4cd56221fbeb` (MIT, 1,556,285,252 B across 10 files) and the official Perth watermark checkpoint `resemble-ai/Perth@ff1c8ac55a976971245cdd53c18d6131ca00d993` (MIT, 37,429,684 B); runtime `birdup000/chatterboxcpp@1a9a4fc00a6caa8c8bb9bee533225f40661e4220` (MIT), nlohmann/json 3.11.2 (MIT), Hugging Face tokenizers 0.22.2 and its locked Rust dependencies; the shipped ONNX Runtime 1.20.1 is already covered above; weights are separately downloaded, never committed | `Chatterbox-Dependencies-NOTICES.txt` is staged into the desktop native bundle and listed in its manifest; the 11 model/watermark pins are in `ChatterboxCatalog.kt` and `docs/handoff/models/tts.json`; the Android module already carries the full tokenizer dependency license texts under `assets/licenses/chatterbox/` |
+| Omnilingual / Phonon desktop speech | Omnilingual CTC 300M weights (Apache-2.0) and Phonon 2 weights (CC-BY-4.0), both downloaded from their pinned sherpa-onnx archives; the runtime is the existing sherpa-onnx/ONNX Runtime stack | Model LICENSE/NOTICE files are verified inside each catalog archive; sherpa/ORT notices are already staged |
+| Ming-3.0 TTS local runtime | `ming-ffi`/`ming-jni` built from pinned ming-wasm / fusor-ai 0.1.2 (MIT); Ming-3.0-tts-0.5B weights and the 850 MB fusor-ai web bundle are MIT and downloaded separately, never committed | `Ming-NOTICES.txt` in the desktop bundle; synthetic speech must be labelled as synthetic |
+| Ming-3.0 TTS (self-hosted) | MIT model and server; not bundled or downloaded by Hearth, no native runtime | The user runs the official CUDA server; the desktop `ming-tts` provider only sends the documented `/speech` request |
+| CTranslate2 desktop translator | static CTranslate2 4.8.3 (MIT), SentencePiece 0.2.0 (Apache-2.0), Ruy (Apache-2.0), spdlog (MIT), cpu_features (Apache-2.0), Apache-2.0 Rust byte-BPE; QuickMT weights CC-BY-4.0 / SMaLL-100 MIT (separately downloaded, never committed) | `Ct2-Dependencies-NOTICES.txt` is staged into the desktop native bundle and listed in its manifest; model cards carry the weight licenses |
 | Nemotron speech adapter | nemo-speech ffa38cb2408f1e832a36d46fef5e3e1e80d07e6c | MIT; GGML, SentencePiece and other notices in `licenses/speech/` |
 | C++ shared runtime | Android NDK 27.0.12077973 | NDK NOTICE / NOTICE.toolchain in assets |
 | AndroidX / Compose / Material | Version catalog and app Gradle dependencies | Apache-2.0; `licenses/android/Apache-2.0.txt` |
@@ -19,6 +31,7 @@ APK assets under `licenses/`.
 | Kotlin / coroutines | Kotlin 2.2.0, coroutines 1.8.1 | Apache-2.0 |
 | Apache Commons Compress / IO / Lang / Codec | Compress 1.28.0; IO 2.20.0; Lang 3.18.0; Codec 1.19.0 | Apache-2.0; upstream license and notice files in `licenses/downloads/` |
 | OkHttp / Okio | OkHttp 4.12.0 and resolved Okio dependency | Apache-2.0; OkHttp notice in `licenses/android/` |
+| Android Play aria2 download executable | aria2 1.37.0 `02f2d0d8472b3c38c29b4dba8c75ebd5fdd2899a`, statically linked OpenSSL 3.5.9 `45e844fa2a14ec92d146bd8f5778ac130b6625fb`, NDK 27 | aria2 GPL-2.0-or-later, this build distributed under GPL-3.0-or-later; OpenSSL Apache-2.0. Executable, manifest and notices are Play-only. Complete corresponding sources accompany each release; see `licenses/aria2/README.md`. No Sealplus/ytdlp application code is bundled. |
 
 Exact prebuilt library hashes and original Maven artifact URLs are in
 `scripts/supply-chain-artifacts.tsv`, `common-jni/src/main/jniLibs/SHA256SUMS`, and `hearth-onnx-runtime/src/main/jniLibs/SHA256SUMS`.
@@ -94,7 +107,11 @@ and packaged in `assets/licenses/ocr/NOTICE.txt`.
   `caa3f47c7c75fa2e9e6340272ebad57c1647dd44`, supplies the optional Magpie CPU
   runtime under Apache-2.0, with GGML MIT and retained dependency notices in
   `assets/licenses/magpie/`. Magpie and codec model assets are separately acquired
-  under their published terms; the app links the NVIDIA Open Model License.
+  under their published terms; the app links the NVIDIA Open Model License. The
+  desktop `magpie` stage builds the same pinned runtime (its llama.cpp/ggml
+  submodule at `bd4f514db14d87fded667787a7a963bfbaa98e89`) into one self-contained
+  `libhearth_desktop_magpie.dylib`; `Magpie-Dependencies-NOTICES.txt` is staged in
+  the native bundle.
 - The [Ming-3.0](https://huggingface.co/collections/inclusionAI/ming-30) models and
   original upstream code declare MIT, with their own third-party notices. Hearth
   distributes first-party server adapters and pinned metadata; Ming model code,
@@ -130,3 +147,37 @@ Runtime licenses do not replace these model licenses. See
 ## Standalone MOSS Nano and Chatterbox V3 TTS providers
 
 `hearth-tts-moss` contains the Apache-2.0 MOSS orchestration and privately linked SentencePiece (including its original third-party notices), plus MIT JSON. Model/codec weights are separately downloaded under their exact pinned Apache-2.0 model terms. `hearth-tts-chatterbox` uses MIT chatterboxcpp audio/Perth code, real Hugging Face tokenizers0.22.2 with locked dependency notices, and MIT JSON. The native Perth converter operates only on the separately downloaded official MIT checkpoint; no pickle execution or checkpoint redistribution is included. Chatterbox V3 model/export is MIT, and the adapter always applies native Perth before publishing audio. Both optional providers share the single official ONNX Runtime AAR; neither links the broad STT/translation `common-jni` binary. Full source/binary provenance and dependency notices ship under each module's `assets/licenses/` folder.
+
+## Automatic manga page detection
+
+The separately downloaded [ogkalu comic text/bubble detector](https://huggingface.co/ogkalu/comic-text-and-bubble-detector)
+declares Apache-2.0. Hearth pins the INT8 RT-DETR-v2 export, revision
+`16e8a622f91fabc6b5b65c96d32d1183f8843546`; shared artifact identities are in
+`hearth-core/.../vision/MangaArtifacts.kt`. Android and desktop use the same
+geometry and owned-handle adapters. The optional full segmenter adapts RF-DETR
+preprocessing/mask projection and panel/bubble/text scene hierarchy from
+[Koharu](https://github.com/koharu-rs/koharu), MIT OR Apache-2.0, revision
+`73abcafab1507e1c228c36ed54ba84e5e1cd6ff8`, under its MIT option. Copyright
+(c) 2025-2026 Mayo Takanashi and Koharu contributors; the full MIT text ships as
+`licenses/ocr/koharu-MIT.txt`. The original Rust/Torch frontend and GPL-derived
+CTD postprocessing are not bundled.
+
+The separately downloaded [RF-DETR ONNX export](https://huggingface.co/ShiniShiho/koharu-layout-rfdetr-seg-2xl-1152-onnx)
+is pinned to `bfbbd4e5ab34a50459865074fa044da496cebb57`; its source weights are
+mayocream's `aed55fdb8ca953c6bec33cf6ed6dd52a9b72bfa2`. These weights declare a
+custom/other license with Manga109 academic-use data terms. The code's MIT or
+Apache license does not replace those terms. Optional [LaMa manga ONNX](https://huggingface.co/mayocream/lama-manga-onnx),
+revision `b55497aadbfcb9740e1ed16f008268d71b4f3f79`, declares Apache-2.0, following
+the [original LaMa](https://github.com/advimman/lama) implementation. Exact
+revisions, byte counts, hashes and tensor contracts ship in
+`ocr/koharu-provenance.json`. Model weights are not included in app packages.
+
+## Desktop window controls and keyboard shortcuts
+
+The desktop app includes Java Native Access (JNA and JNA Platform) 5.17.0,
+Copyright (c) 2007–2025 JNA contributors. Hearth uses JNA under its Apache
+License 2.0 option. The upstream dual-license notice ships in
+`desktopApp/src/desktopMain/resources/licenses/jna/LICENSE.txt`; source is at
+https://github.com/java-native-access/jna/tree/5.17.0. JNA calls the macOS and
+Windows window/hotkey APIs; it does not add a keyboard hook or inspect other
+applications.

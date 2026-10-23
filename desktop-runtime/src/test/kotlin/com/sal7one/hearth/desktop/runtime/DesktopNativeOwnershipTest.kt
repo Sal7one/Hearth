@@ -1,0 +1,212 @@
+package com.sal7one.hearth.desktop.runtime
+
+import com.sal7one.common_jni.desktop.DesktopBackendSpeechNative
+import com.sal7one.common_jni.desktop.DesktopQwenNative
+import com.sal7one.common_jni.desktop.DesktopWhisperNative
+import com.sal7one.common_jni.translation.Ct2Native
+import org.junit.Assume.assumeTrue
+import java.nio.file.Files
+import java.nio.file.Path
+import kotlin.test.Test
+import kotlin.test.assertContains
+import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertTrue
+import kotlin.test.fail
+
+private const val WHISPER_LIBRARY = "hearth_desktop_whisper"
+private const val CT2_LIBRARY = "hearth_desktop_ct2"
+private const val BACKEND_SPEECH_LIBRARY = "hearth_desktop_backend_speech"
+
+/**
+ * Handle-ownership guarantees for the desktop JNI layer, which the UI depends on
+ * when a session is cancelled, restarted or closed out of order.
+ *
+ * These run without a model file: rejecting a bad handle must never require one.
+ * They do need the host's native bundle, which is generated per platform; see
+ * [requireNativeBundle] for the skip/fail rule used by every test here.
+ */
+class DesktopNativeOwnershipTest {
+    @Test
+    fun operationsOnAnUnknownHandleFailClearly() {
+        requireNativeBundle(WHISPER_LIBRARY)
+        val text = assertFailsWith<IllegalStateException> {
+            DesktopWhisperNative.transcribe(0L, floatArrayOf())
+        }
+        assertContains(text.message.orEmpty(), "closed", ignoreCase = true)
+
+        val info = assertFailsWith<IllegalStateException> { DesktopWhisperNative.executionInfo(0L) }
+        assertContains(info.message.orEmpty(), "closed", ignoreCase = true)
+
+        val language = assertFailsWith<IllegalStateException> { DesktopWhisperNative.language(0L) }
+        assertContains(language.message.orEmpty(), "closed", ignoreCase = true)
+
+        // A handle that was never issued is rejected the same way as a retired one.
+        assertFailsWith<IllegalStateException> { DesktopWhisperNative.transcribe(9_999_999L, floatArrayOf()) }
+    }
+
+    @Test
+    fun retiringAnUnknownHandleIsANoOp() {
+        requireNativeBundle(WHISPER_LIBRARY)
+        // Cancelling and destroying must be idempotent: a UI teardown can race a close.
+        DesktopWhisperNative.cancel(0L)
+        DesktopWhisperNative.destroy(0L)
+        DesktopWhisperNative.cancel(9_999_999L)
+        DesktopWhisperNative.destroy(9_999_999L)
+        DesktopWhisperNative.destroy(9_999_999L)
+    }
+
+    @Test
+    fun creationSurfacesRealErrorsInsteadOfReturningAHandle() {
+        requireNativeBundle(WHISPER_LIBRARY)
+        val bogus = Path.of("/nonexistent/hearth-smoke/missing.bin")
+        val loadFailure = assertFailsWith<IllegalStateException> {
+            DesktopWhisperNative.create(bogus.toString().toByteArray(), "en".toByteArray(), 2, false)
+        }
+        assertTrue(loadFailure.message.orEmpty().isNotBlank(), "A failed load must carry a reason")
+
+        // Validation happens before the model is touched, so this cannot depend on the file.
+        val languageFailure = assertFailsWith<IllegalStateException> {
+            DesktopWhisperNative.create(bogus.toString().toByteArray(), "zz".toByteArray(), 2, false)
+        }
+        assertContains(languageFailure.message.orEmpty(), "language", ignoreCase = true)
+
+        val threadFailure = assertFailsWith<IllegalStateException> {
+            DesktopWhisperNative.create(bogus.toString().toByteArray(), "en".toByteArray(), 0, false)
+        }
+        assertContains(threadFailure.message.orEmpty(), "threads", ignoreCase = true)
+    }
+
+    @Test
+    fun destroyingAModelTwiceIsSafeAndUseAfterDestroyIsRejected() {
+        assumeTrue(
+            "Set HEARTH_WHISPER_SMOKE=1 and provide HEARTH_SMOKE_WHISPER",
+            System.getenv("HEARTH_WHISPER_SMOKE") == "1",
+        )
+        requireNativeBundle(WHISPER_LIBRARY)
+        val model = Path.of(requireNotNull(System.getenv("HEARTH_SMOKE_WHISPER"))).toRealPath()
+        val handle = DesktopWhisperNative.create(model.toString().toByteArray(), "en".toByteArray(), 2, false)
+        assertTrue(handle > 0, "A successful create must return a live handle")
+
+        DesktopWhisperNative.destroy(handle)
+        // Second destroy must not crash or free twice.
+        DesktopWhisperNative.destroy(handle)
+
+        val afterDestroy = assertFailsWith<IllegalStateException> {
+            DesktopWhisperNative.transcribe(handle, floatArrayOf(0f, 0f, 0f))
+        }
+        assertContains(afterDestroy.message.orEmpty(), "closed", ignoreCase = true)
+
+        // Handles are monotonic and never reused: a fresh model must not inherit the old one.
+        val next = DesktopWhisperNative.create(model.toString().toByteArray(), "en".toByteArray(), 2, false)
+        try {
+            assertTrue(next != handle, "Handle values must never be reused")
+        } finally {
+            DesktopWhisperNative.destroy(next)
+        }
+    }
+
+    @Test
+    fun qwenRejectsUnknownHandlesAndRetiresIdempotently() {
+        requireNativeBundle(QwenSpeechModel.LIBRARY)
+        assertEquals(QwenSpeechModel.PROTOCOL_VERSION, DesktopQwenNative.protocolVersion())
+        val text = assertFailsWith<IllegalStateException> { DesktopQwenNative.transcribe(0L, floatArrayOf()) }
+        assertContains(text.message.orEmpty(), "closed", ignoreCase = true)
+        assertFailsWith<IllegalStateException> { DesktopQwenNative.language(0L) }
+        assertFailsWith<IllegalStateException> { DesktopQwenNative.executionInfo(0L) }
+        DesktopQwenNative.cancel(0L)
+        DesktopQwenNative.destroy(0L)
+        DesktopQwenNative.cancel(9_999_999L)
+        DesktopQwenNative.destroy(9_999_999L)
+    }
+
+    @Test
+    fun qwenCreationSurfacesRealErrorsInsteadOfReturningAHandle() {
+        requireNativeBundle(QwenSpeechModel.LIBRARY)
+        assertEquals(QwenSpeechModel.PROTOCOL_VERSION, DesktopQwenNative.protocolVersion())
+        val bogus = Path.of("/nonexistent/hearth-qwen/missing")
+        val loadFailure = assertFailsWith<IllegalStateException> {
+            DesktopQwenNative.create(bogus.toString().toByteArray(), "en".toByteArray(), 2)
+        }
+        assertContains(loadFailure.message.orEmpty(), "Qwen3-ASR")
+        val languageFailure = assertFailsWith<IllegalStateException> {
+            DesktopQwenNative.create(bogus.toString().toByteArray(), "zz".toByteArray(), 2)
+        }
+        assertContains(languageFailure.message.orEmpty(), "language", ignoreCase = true)
+        val threadFailure = assertFailsWith<IllegalStateException> {
+            DesktopQwenNative.create(bogus.toString().toByteArray(), "en".toByteArray(), 0)
+        }
+        assertContains(threadFailure.message.orEmpty(), "threads", ignoreCase = true)
+    }
+
+    @Test
+    fun ct2RejectsUnknownHandlesAndCreationErrors() {
+        requireNativeBundle(CT2_LIBRARY)
+        assertEquals(DesktopCt2TranslationEngine.PROTOCOL_VERSION, Ct2Native.protocolVersion())
+        assertFailsWith<RuntimeException> { Ct2Native.translate(0L, "hello".toByteArray(), "ar".toByteArray()) }
+        val failure = assertFailsWith<RuntimeException> { Ct2Native.create(Path.of("/nonexistent/hearth-ct2").toString().toByteArray(), 0) }
+        assertTrue(failure.message.orEmpty().isNotBlank())
+        Ct2Native.cancel(0L)
+        Ct2Native.destroy(0L)
+    }
+
+    @Test
+    fun backendBridgeRejectsUnknownHandlesAndMissingLibraries() {
+        requireNativeBundle(BACKEND_SPEECH_LIBRARY)
+        assertEquals(DesktopBackendSpeechEngine.PROTOCOL_VERSION, DesktopBackendSpeechNative.protocolVersion())
+        assertFailsWith<IllegalStateException> { DesktopBackendSpeechNative.transcribe(0L, floatArrayOf()) }
+        assertFailsWith<IllegalStateException> { DesktopBackendSpeechNative.executionInfo(0L) }
+        val failure = assertFailsWith<IllegalStateException> {
+            DesktopBackendSpeechNative.create(
+                "/nonexistent/libhearth_transcribepsy.dylib".toByteArray(), "transcribepsy".toByteArray(),
+                "hearth_speech_backend_v1".toByteArray(), "/nonexistent/model.gguf".toByteArray(),
+                byteArrayOf(), byteArrayOf(), byteArrayOf(), byteArrayOf(), "en".toByteArray(), 2, 3, 15000, 600, -45f,
+            )
+        }
+        assertContains(failure.message.orEmpty(), "Could not load speech backend")
+        DesktopBackendSpeechNative.cancel(0L)
+        DesktopBackendSpeechNative.destroy(0L)
+    }
+}
+
+/**
+ * The JNI bridges load their host bundle from a static initializer, and `native-libs/<platform>`
+ * is generated per host by `scripts/desktop/build-native.py` instead of being committed. A host
+ * without a staged bundle (the Ubuntu Android CI runner) therefore has nothing to load: calling
+ * into a bridge fails with ExceptionInInitializerError/NoClassDefFoundError, which says nothing
+ * about handle ownership. Those hosts skip cleanly with readiness's diagnostic as the assumption
+ * reason.
+ *
+ * A bundle that *is* staged for this platform and still fails readiness is a real installation,
+ * checksum or architecture defect. That must fail the test rather than be hidden as a skip.
+ */
+private fun requireNativeBundle(library: String) {
+    val problem = DesktopNativeLibraries.readiness(library) ?: return
+    val platform = DesktopNativeLibraries.platform
+    // Some platform bundles are intentionally partial (Intel macOS omits Qwen3-ASR,
+    // CT2 and the backend bridge). A library absent from the manifest is optional;
+    // a staged library that fails checksum/load is a real defect.
+    val absentFromBundle = problem.contains("does not include", ignoreCase = true)
+    if (hostNativeBundleStaged(platform) && !absentFromBundle) {
+        fail("The $platform native bundle is staged, but $library failed to load: $problem")
+    }
+    assumeTrue(
+        "Skipping $library tests: no $platform native bundle is staged or this optional library " +
+            "is not part of it ($problem). Build it with scripts/desktop/build-native.py to run " +
+            "the native-handle coverage.",
+        false,
+    )
+}
+
+/** Mirrors the [DesktopNativeLibraries.load] bundle lookup without extracting or loading anything. */
+private fun hostNativeBundleStaged(platform: String): Boolean {
+    if (DesktopNativeOwnershipTest::class.java.getResource("/native/$platform/manifest.json") != null) return true
+    val configured = System.getProperty("hearth.native.dir")?.let(Path::of)
+    if (configured != null &&
+        (Files.isRegularFile(configured.resolve("manifest.json")) ||
+            Files.isRegularFile(configured.resolve(platform).resolve("manifest.json")))
+    ) {
+        return true
+    }
+    return Files.isRegularFile(defaultDataDirectory().resolve("native/$platform/manifest.json"))
+}

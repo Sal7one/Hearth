@@ -127,6 +127,7 @@ class ReadingOverlayService : Service() {
             display=projection!!.createVirtualDisplay("Hearth reading",reader!!.width,reader!!.height,resources.configuration.densityDpi,DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR,null,null,handler)
             val selection=OcrPreferences(this).read()
             profile=selection.profile;source=selection.source;target=selection.target
+            locked=prefs.getBoolean("pass-through",true)
             trigger.mode=ReadingTrigger.supportedMode(prefs.getString("mode","page"));trigger.settleMs=prefs.getLong("settle",500);scanMs=prefs.getLong("scan",250).coerceIn(200,1000);if(trigger.mode=="page")trigger.movement(now())
             createWindows()
             scope.launch {
@@ -141,13 +142,17 @@ class ReadingOverlayService : Service() {
                         snapshot=ConversationTranslationSettings.snapshot(this@ReadingOverlayService,selection.translationModel(config.localTranslationModelId),selection.providerId)
                     }
                     setupReady=true
+                    // Initial capture must wait for the actual saved translator snapshot.
+                    // Startup/disk delays can exceed the page-settle interval.
+                    if(trigger.mode=="page")trigger.movement(now())
                     controller.state.collect {value->
                         latest=value
                         if(!viewingBox && value.text.isNotBlank()) original?.text=value.text
+                        if(working && value.regions.isNotEmpty() && value.error==null)showRegions()
                         if(working && value.boxTranslations.isNotEmpty() && value.error==null)showTranslations(value.boxTranslations,automatic=true)
                         if(!viewingBox && value.translation.isNotBlank())translated?.text=value.translation
                         if(value.error!=null)showError(value.error)
-                        else status?.text=when {value.loading->uiText(UiR.string.service_loading_1_s_aba14, uiText.label(profile));value.processing->uiText(UiR.string.service_reading_text_b6863);value.translating->uiText(UiR.string.service_translating_ae47b);value.text.isNotBlank()->uiText(UiR.string.service_1_s_2_s_ms_ocr_87c9c, uiText.label(profile), value.ocrMs);else->uiText(UiR.string.service_open_a_reader_then_tap_translate_or_draw_area_a9c06)}
+                        else status?.text=when {value.loading->uiText(UiR.string.service_loading_1_s_aba14, uiText.label(profile));value.processing && value.stage==com.sal7one.hearth.core.vision.PageOcrStage.SEGMENTATION->uiText(UiR.string.ocr_koharu_refining);value.processing && value.stage==com.sal7one.hearth.core.vision.PageOcrStage.CLEANUP->uiText(UiR.string.ocr_cleaning_background);value.detecting->uiText(UiR.string.ocr_detecting_regions);value.processing && value.regions.isNotEmpty()->uiText(UiR.string.ocr_reading_regions,value.lines.size,value.regions.size);value.processing->uiText(UiR.string.service_reading_text_b6863);value.translating->uiText(UiR.string.service_translating_ae47b);value.text.isNotBlank()->uiText(UiR.string.service_1_s_2_s_ms_ocr_87c9c, uiText.label(profile), value.ocrMs);else->uiText(UiR.string.service_open_a_reader_then_tap_translate_or_draw_area_a9c06)}
                         if(working && !value.loading && !value.processing && !value.translating) {
                             working=false
                             handleLabel?.text=uiText(UiR.string.service_translate_2be17)
@@ -163,7 +168,7 @@ class ReadingOverlayService : Service() {
             scope.launch {
                 while(isActive) {
                     delay(scanMs)
-                    if(setupSuppressed || paused || selector!=null || panel?.visibility==View.VISIBLE || captureJob?.isActive==true)continue
+                    if(!setupReady || setupError!=null || setupSuppressed || paused || selector!=null || panel?.visibility==View.VISIBLE || captureJob?.isActive==true)continue
                     if(profile.engine=="manga" && region==null)continue
                     if(trigger.mode=="manual" && pageCrop==null && !working)continue
                     captureJob=scope.launch { samplePage() }
@@ -180,7 +185,8 @@ class ReadingOverlayService : Service() {
             .addAction(0,uiText(UiR.string.service_translate_2be17),action(41,"translate")).addAction(0,if(paused)uiText(UiR.string.service_resume_b3bd0) else uiText(UiR.string.service_pause_78196),action(42,"pause")).addAction(0,uiText(UiR.string.service_stop_9e253),action(43,"stop")).build()
     }
     private fun togglePause() {
-        paused=!paused;clearPage();trigger.reset();generation++;working=false;controller.invalidate();voice.stop()
+        paused=!paused;clearPage();trigger.reset();motion.reset();generation++;working=false;controller.invalidate();voice.stop()
+        if(!paused && trigger.mode=="page")trigger.movement(now())
         panel?.visibility=View.GONE;handle?.visibility=View.VISIBLE
         handleLabel?.text=if(paused)uiText(UiR.string.service_paused_read_989d4) else uiText(UiR.string.service_translate_2be17)
         pauseButton?.text=if(paused)uiText(UiR.string.service_resume_auto_f5626) else uiText(UiR.string.service_pause_auto_e2a61)
@@ -258,6 +264,9 @@ class ReadingOverlayService : Service() {
                     if(pageView?.visibility==View.VISIBLE)latest.boxTranslations.forEach {box->
                         OcrPageLayout.box(box.line,crop,pageWidth,pageHeight,frame.width,frame.height,coverEdges=true)?.let {masks+=it}
                     }
+                    if(pageView?.visibility==View.VISIBLE)latest.regions.forEach {region->
+                        OcrPageLayout.box(region,crop,pageWidth,pageHeight,frame.width,frame.height)?.let {masks+=it}
+                    }
                 }
                 if(motion.observe(frame.pixels,frame.width,frame.height,masks)) {
                     // observe() already advanced the baseline. Keeping it measures every
@@ -322,15 +331,16 @@ class ReadingOverlayService : Service() {
         } else if(!stopping) {
             if(selector!=null)selector?.visibility=View.VISIBLE else handle?.visibility=View.VISIBLE
             motion.reset();trigger.reset()
+            if(trigger.mode=="page")trigger.movement(now())
             if(recoverAfterSetup){recoverAfterSetup=false;showPanel()}
         }
     }
     private fun clearPage() {
-        pageView?.update(emptyList());pageView?.visibility=View.INVISIBLE;pageCrop=null
+        pageView?.update(emptyList());pageView?.updateRegions(emptyList());pageView?.visibility=View.INVISIBLE;pageCrop=null
     }
     private fun resumeReader() {
         panel?.visibility=View.GONE;handle?.visibility=View.VISIBLE
-        locked=true;applyLayerTouch()
+        applyLayerTouch()
         // The reader may have moved while controls were open: capture again instead of
         // restoring coordinates from history or a previously visible page.
         requestCapture(false)
@@ -360,6 +370,12 @@ class ReadingOverlayService : Service() {
         pageView?.visibility=if(automatic && panel?.visibility==View.VISIBLE)View.INVISIBLE else View.VISIBLE
         if(!automatic)panel?.visibility=View.GONE
         handle?.visibility=View.VISIBLE
+    }
+    private fun showRegions() {
+        if(setupSuppressed)return
+        val crop=pageCrop ?: return
+        pageView?.updateRegions(latest.regions,pageWidth,pageHeight,crop)
+        pageView?.visibility=if(panel?.visibility==View.VISIBLE)View.INVISIBLE else View.VISIBLE
     }
     private fun params(width: Int,height: Int)=WindowManager.LayoutParams(width,height,WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
         WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,PixelFormat.TRANSLUCENT).apply {gravity=Gravity.TOP or Gravity.LEFT}
@@ -397,7 +413,7 @@ class ReadingOverlayService : Service() {
             controls.addView(button("⋯"){showPanel()}.apply {contentDescription=uiText(UiR.string.service_reading_controls_83fa7)},LinearLayout.LayoutParams(0,-2,1f))
             handleControls=controls;root.addView(controls)
             lockButton=ImageButton(this).apply {
-                setOnClickListener {locked=!locked;applyLayerTouch()}
+                setOnClickListener {locked=!locked;prefs.edit().putBoolean("pass-through",locked).apply();applyLayerTouch()}
                 minimumWidth=0;minimumHeight=0
                 scaleType=ImageView.ScaleType.FIT_CENTER
                 background=android.graphics.drawable.InsetDrawable(android.graphics.drawable.GradientDrawable().apply {shape=android.graphics.drawable.GradientDrawable.OVAL;setColor(paper)},dp(8))
@@ -507,6 +523,12 @@ class ReadingOverlayService : Service() {
     companion object {
         private val runningState = kotlinx.coroutines.flow.MutableStateFlow(false)
         val running: kotlinx.coroutines.flow.StateFlow<Boolean> = runningState
+        /** A new projection must use the newly saved reader/translator selection.
+         * Wait for the old service to unpublish before awaiting its native lease. */
+        suspend fun stopAndAwait(context: android.content.Context) {
+            context.stopService(Intent(context, ReadingOverlayService::class.java))
+            withTimeout(30_000) { running.first { !it } }
+        }
         fun recover(context: android.content.Context) {
             context.startService(Intent(context, ReadingOverlayService::class.java).setAction("recover"))
         }

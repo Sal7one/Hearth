@@ -38,6 +38,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.*
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -45,6 +46,8 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.sal7one.transiber.byok.ByokPolicy
 import com.sal7one.transiber.caption.*
 import com.sal7one.transiber.translation.*
+import com.sal7one.transiber.reading.ReadingTranslationView
+import com.sal7one.hearth.core.vision.PageOcrStage
 import kotlinx.coroutines.*
 import java.io.File
 
@@ -79,6 +82,8 @@ internal fun CameraTranslateScreen(onModels: () -> Unit,onConnections: () -> Uni
     var capture by remember {mutableStateOf<(() -> Unit)?>(null)}
     var selectionImage by remember {mutableStateOf<Bitmap?>(null)}
     var frozen by remember {mutableStateOf<Bitmap?>(null)}
+    var showOriginalPage by remember(frozen) {mutableStateOf(false)}
+    var selectedBox by remember(frozen,profileId,target) {mutableStateOf<TranslatedOcrBox?>(null)}
     var importing by remember {mutableStateOf(false)}
     val provider=ConversationTranslationSettings.provider(providerId)
     val cloudLanguages=remember(provider,translationRevision) {provider?.let {ConversationTranslationSettings.capabilities(context,it)}}
@@ -106,7 +111,8 @@ internal fun CameraTranslateScreen(onModels: () -> Unit,onConnections: () -> Uni
         try {
             val selected=selectionStore.read()
             if(bitmap != null)frozen=bitmap
-            controller.start(selected.profile,selected.source,selected.target,snapshot(selected),live,bitmap?.copy(Bitmap.Config.ARGB_8888,false))
+            controller.start(selected.profile,selected.source,selected.target,snapshot(selected),live,bitmap?.copy(Bitmap.Config.ARGB_8888,false),
+                positioned=!live && selected.profile.engine=="manga-page")
         } catch(e: Exception){controller.error(e)}
     }
     fun recognizePhoto(bitmap: Bitmap) {
@@ -145,10 +151,23 @@ internal fun CameraTranslateScreen(onModels: () -> Unit,onConnections: () -> Uni
                 onFrame={controller.offer(it)},onCaptureReady={capture=it},onPhoto={photo(it)},onError=controller::error)
             else if(!permission && frozen==null)Button(onClick={permissionRequest.launch(Manifest.permission.CAMERA)}){Text(uiText(UiR.string.ui_open_camera_672b0))}
             frozen?.let {Image(it.asImageBitmap(),uiText(UiR.string.ui_captured_image_7fc88),Modifier.fillMaxSize().background(Color.Black),contentScale=ContentScale.Fit)}
-            if(state.lines.isNotEmpty() && (frozen!=null || state.live))Canvas(Modifier.fillMaxSize().clearAndSetSemantics {}) {
+            if(frozen!=null && profile.engine=="manga-page")AndroidView(
+                factory={ReadingTranslationView(it){box -> selectedBox=box}},modifier=Modifier.fillMaxSize(),
+                update={view ->
+                    val area=PixelCrop(0,0,state.width,state.height)
+                    view.showOriginal=showOriginalPage
+                    view.updateRegions(state.regions,state.width,state.height,area)
+                    view.update(state.boxTranslations,state.width,state.height,area)
+                })
+            else if((state.regions.isNotEmpty() || state.lines.isNotEmpty()) && (frozen!=null || state.live))Canvas(Modifier.fillMaxSize().clearAndSetSemantics {}) {
                 val scale=minOf(size.width/state.width,size.height/state.height)
                 val dx=(size.width-state.width*scale)/2;val dy=(size.height-state.height*scale)/2
-                state.lines.forEach {line -> drawRect(Color(0xFFFFD54F),Offset(dx+line.x*scale,dy+line.y*scale),Size(line.width*scale,line.height*scale),style=Stroke(2.dp.toPx()))}
+                val bounds=if(state.regions.isNotEmpty())state.regions.map {it.bounds} else state.lines.map {com.sal7one.hearth.core.vision.OcrRect(it.x,it.y,it.width,it.height)}
+                bounds.forEach {rect ->
+                    val origin=Offset(dx+rect.x*scale,dy+rect.y*scale);val area=Size(rect.width*scale,rect.height*scale)
+                    drawRect(Color(0x1A2DD4BF),origin,area)
+                    drawRect(Color(0xFF2DD4BF),origin,area,style=Stroke(2.dp.toPx()))
+                }
             }
         }
         if(!ready) {
@@ -156,6 +175,8 @@ internal fun CameraTranslateScreen(onModels: () -> Unit,onConnections: () -> Uni
             OutlinedButton(onClick={settings=true}){Text(uiText(UiR.string.ui_get_ocr_models_245d8))}
         }
         FlowRow(horizontalArrangement=Arrangement.spacedBy(8.dp),verticalArrangement=Arrangement.spacedBy(4.dp)) {
+            if(frozen!=null && profile.engine=="manga-page")FilterChip(selected=showOriginalPage,onClick={showOriginalPage=!showOriginalPage},
+                label={Text(uiText(UiR.string.ui_original_c0a80))})
             if(frozen==null)Button(onClick={capture?.invoke()},modifier=Modifier.heightIn(min=56.dp),enabled=ready&&permission&&capture!=null&&!state.loading&&!state.closing&&!importing){Text(if(translate) uiText(UiR.string.ui_capture_translate_a1034) else uiText(UiR.string.ui_capture_read_bc5ec))}
             if(frozen==null)OutlinedButton(onClick={imagePicker.launch(arrayOf("image/*"))},modifier=Modifier.heightIn(min=56.dp),enabled=ready&&!state.loading&&!state.closing&&!importing){Text(if(importing)uiText(UiR.string.ui_opening_b1b85) else uiText(UiR.string.ui_choose_photo_4a7ed))}
             if(frozen==null && profile.live)TextButton(onClick={begin(true)},enabled=ready&&permission&&!state.running&&!importing&&capture!=null){Text(uiText(UiR.string.ui_start_live_3d3ad))}
@@ -166,8 +187,8 @@ internal fun CameraTranslateScreen(onModels: () -> Unit,onConnections: () -> Uni
             if(frozen!=null)TextButton(onClick={controller.stop();frozen=null}){Text(uiText(UiR.string.ui_retake_16457))}
         }
         FeatureAction(uiText(UiR.string.ui_camera_settings_c1947), Icons.Default.Tune, {settings=true}, detail=if(translate)providerLabel else uiText(UiR.string.ui_original_text_only_7381b))
-        if(state.loading || state.translating || state.closing)LinearProgressIndicator(Modifier.fillMaxWidth())
-        Text(when{state.closing->uiText(UiR.string.ui_releasing_models_53a44);state.loading->uiText(UiR.string.ui_loading_1_s_aba14, uiText.label(profile));state.translating->uiText(UiR.string.ui_translating_settled_text_06e2b);state.live->uiText(UiR.string.ui_live_ocr_1_s_ms_hold_steady_c9ca4, state.ocrMs);state.running->uiText(UiR.string.ui_captured_ocr_1_s_ms_faf13, state.ocrMs);else->uiText(UiR.string.ui_ready_camera_opens_only_on_this_page_ae38b)},style=MaterialTheme.typography.bodySmall)
+        if(state.loading || state.processing || state.translating || state.closing)LinearProgressIndicator(Modifier.fillMaxWidth())
+        Text(when{state.closing->uiText(UiR.string.ui_releasing_models_53a44);state.loading->uiText(UiR.string.ui_loading_1_s_aba14, uiText.label(profile));state.processing && state.stage==PageOcrStage.SEGMENTATION->uiText(UiR.string.ocr_koharu_refining);state.processing && state.stage==PageOcrStage.CLEANUP->uiText(UiR.string.ocr_cleaning_background);state.detecting->uiText(UiR.string.ocr_detecting_regions);state.processing && state.regions.isNotEmpty()->uiText(UiR.string.ocr_reading_regions,state.lines.size,state.regions.size);state.translating->uiText(UiR.string.ui_translating_settled_text_06e2b);state.live->uiText(UiR.string.ui_live_ocr_1_s_ms_hold_steady_c9ca4, state.ocrMs);state.running->uiText(UiR.string.ui_captured_ocr_1_s_ms_faf13, state.ocrMs);else->uiText(UiR.string.ui_ready_camera_opens_only_on_this_page_ae38b)},style=MaterialTheme.typography.bodySmall)
         (voiceError ?: state.error)?.let {Text(it,color=MaterialTheme.colorScheme.error,modifier=Modifier.semantics {liveRegion=LiveRegionMode.Polite})}
         if(state.running && !state.loading && state.text.isBlank())Text(uiText(UiR.string.ui_no_readable_text_yet_hold_the_phone_level_move_closer_or_capture_8a5e9))
         if(speaking)OutlinedButton(onClick=voice::stop){Text(uiText(UiR.string.ui_stop_speech_3f0d2))}
@@ -191,6 +212,16 @@ internal fun CameraTranslateScreen(onModels: () -> Unit,onConnections: () -> Uni
                     }
 
         }, detail=uiText(UiR.string.ui_translate_in_another_app_9f00d))
+    }
+    selectedBox?.let {box -> AlertDialog(onDismissRequest={selectedBox=null},
+        title={Text(uiText(UiR.string.ui_translation_ac26a))},
+        text={Column(Modifier.heightIn(max=360.dp).verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(12.dp)) {
+            SelectionContainer {Text(box.line.text)}
+            SelectionContainer {Text(box.translation,style=MaterialTheme.typography.titleLarge)}
+            com.sal7one.transiber.voice.ReadAloudButtons(uiText(UiR.string.ui_translation_ac26a),
+                onPlay={system -> voiceError=null;voice.speak(box.translation,target,if(system)com.sal7one.transiber.voice.VoicePlaybackMode.SYSTEM else com.sal7one.transiber.voice.VoicePlaybackMode.CUSTOM)},onSetup=onVoices)
+        }},confirmButton={TextButton(onClick={selectedBox=null}){Text(uiText(UiR.string.ui_done_e9b45))}},
+        dismissButton={TextButton(onClick={context.getSystemService(ClipboardManager::class.java).setPrimaryClip(ClipData.newPlainText(uiText(UiR.string.ui_translation_ac26a),box.translation))}){Text(uiText(UiR.string.ui_copy_translation_ef0c0))}})
     }
     selectionImage?.let { image -> DrawOcrRegion(image,onDismiss={selectionImage=null},onConfirm={crop->
         selectionImage=null

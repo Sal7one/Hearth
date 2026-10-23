@@ -29,3 +29,13 @@ hearth-tts-chatterbox/src/main/assets/licenses/chatterbox/JSON-LICENSE whitespac
 hearth-tts-moss/src/main/assets/licenses/moss/JSON-LICENSE whitespace=-blank-at-eol,-blank-at-eof
 hearth-tts-moss/src/main/assets/licenses/moss/absl-LICENSE whitespace=-blank-at-eol,-blank-at-eof
 hearth-tts-moss/src/main/assets/licenses/moss/darts_clone-LICENSE whitespace=-blank-at-eol,-blank-at-eof
+
+# Desktop builds verify the vendored tree byte-for-byte on Windows as well as Unix.
+common-jni/src/main/cpp/whisper/upstream/** -text
+common-jni/src/main/cpp/translation/** -text
+hearth-tts-supertonic/src/main/cpp/** -text
+scripts/desktop/** text eol=lf
+desktop*/** text=auto eol=lf
+hearth-core/** text=auto eol=lf
+
+gradlew text eol=lf

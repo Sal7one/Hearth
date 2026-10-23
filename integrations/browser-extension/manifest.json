@@ -1,0 +1,25 @@
+{
+  "manifest_version": 3,
+  "name": "Hearth Website Translation",
+  "version": "0.1.0",
+  "description": "Translate visible website text through your explicitly paired local Hearth desktop app.",
+  "minimum_chrome_version": "121",
+  "permissions": ["activeTab", "scripting", "storage"],
+  "host_permissions": ["http://127.0.0.1/*"],
+  "background": {
+    "scripts": ["core.js", "background.js"],
+    "service_worker": "background.js"
+  },
+  "icons": {"128": "hearth.png"},
+  "action": {"default_title": "Hearth Website Translation", "default_popup": "popup.html", "default_icon": "hearth.png"},
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'none'; connect-src http://127.0.0.1:*"
+  },
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "website-translation@hearth.local",
+      "strict_min_version": "121.0",
+      "data_collection_permissions": {"required": ["websiteContent"]}
+    }
+  }
+}
