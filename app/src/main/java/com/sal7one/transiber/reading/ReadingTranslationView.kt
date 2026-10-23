@@ -20,6 +20,8 @@ import com.sal7one.hearth.core.vision.OcrRect
 import java.nio.ByteBuffer
 import java.util.Collections
 import java.util.IdentityHashMap
+import kotlin.math.ceil
+import kotlin.math.roundToInt
 
 /** Transparent live replacement layer. Window flags control touch pass-through; the handle is separate. */
 internal class ReadingTranslationView(
@@ -39,6 +41,14 @@ internal class ReadingTranslationView(
     private var imageWidth=1
     private var imageHeight=1
     private var crop=PixelCrop(0,0,1,1)
+    var textSizeSp=20f
+        set(value) {
+            val bounded=value.takeIf {it.isFinite()}?.coerceIn(14f,34f) ?: 20f
+            if(field==bounded)return
+            field=bounded
+            // Font controls do not rebuild cleanup bitmaps or replace text children.
+            labels.values.forEach {configureTypography(it,it.layoutParams.height)}
+        }
     var showOriginal=false
         set(value) { if(field!=value) { field=value; render(true) } }
     init { setBackgroundColor(Color.TRANSPARENT);setWillNotDraw(false) }
@@ -80,6 +90,40 @@ internal class ReadingTranslationView(
             boxes=value;imageWidth=width;imageHeight=height;crop=area;render(layoutChanged)
         }
     }
+    /**
+     * Source-image pixels changed by this layer, independent of its screen scale.
+     * A cleanup mask/patch can extend well beyond the OCR line or label. Excluding
+     * only text boxes makes our own cleanup look like another page scrolling.
+     * Visibility is controlled by the service, which also retains disappearance masks.
+     */
+    fun motionExclusions(): List<PixelCrop> {
+        if(showOriginal || imageWidth<=0 || imageHeight<=0)return emptyList()
+        val excluded=LinkedHashSet<PixelCrop>()
+        boxes.mapNotNullTo(excluded) {
+            OcrPageLayout.box(it.line,crop,imageWidth,imageHeight,imageWidth,imageHeight,coverEdges=true)
+        }
+        val scale=minOf(width.toFloat()/imageWidth,height.toFloat()/imageHeight)
+        val sourceScale=if(scale>0f)scale else 1f
+        val outlineMargin=ceil(resources.displayMetrics.density / sourceScale).toInt()
+        regions.forEach {region ->
+            if(region.bounds !in translatedBounds) {
+                OcrPageLayout.box(region,crop,imageWidth,imageHeight,imageWidth,imageHeight)?.let {bounds ->
+                    excluded+=PixelCrop((bounds.left-outlineMargin).coerceAtLeast(0),(bounds.top-outlineMargin).coerceAtLeast(0),
+                        (bounds.right+outlineMargin).coerceAtMost(imageWidth),(bounds.bottom+outlineMargin).coerceAtMost(imageHeight))
+                }
+            }
+        }
+        cleanupImages.values.forEach {prepared ->sourceBounds(prepared.bounds)?.let(excluded::add)}
+        return excluded.toList()
+    }
+    private fun sourceBounds(bounds: OcrRect): PixelCrop? {
+        if(imageWidth<=0 || imageHeight<=0)return null
+        val left=(bounds.x.toLong()+crop.left).coerceIn(0,imageWidth.toLong()).toInt()
+        val top=(bounds.y.toLong()+crop.top).coerceIn(0,imageHeight.toLong()).toInt()
+        val right=(bounds.right+crop.left).coerceIn(0,imageWidth.toLong()).toInt()
+        val bottom=(bounds.bottom+crop.top).coerceIn(0,imageHeight.toLong()).toInt()
+        return PixelCrop(left,top,right,bottom).takeIf {it.width>0 && it.height>0}
+    }
     override fun onSizeChanged(w: Int,h: Int,oldw: Int,oldh: Int) {
         // Cached translations can arrive before first layout. Adding children inside
         // onSizeChanged leaves them unmeasured until another UI event; defer a traversal.
@@ -119,9 +163,7 @@ internal class ReadingTranslationView(
                 setBackgroundColor(if(box.line.region?.paint!=null)Color.TRANSPARENT else Color.WHITE)
                 gravity=Gravity.CENTER; textDirection=View.TEXT_DIRECTION_FIRST_STRONG
                 includeFontPadding=false;ellipsize=TextUtils.TruncateAt.END
-                val minPx=TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP,10f,resources.displayMetrics)
-                maxLines=maxOf(1,(bounds.height/(minPx*1.25f)).toInt())
-                TextViewCompat.setAutoSizeTextTypeUniformWithConfiguration(this,10,24,1,TypedValue.COMPLEX_UNIT_SP)
+                configureTypography(this,bounds.height)
                 contentDescription="${box.line.text}. ${box.translation}. Open full text and read aloud"
                 isFocusable=true
                 setOnClickListener {onBox(box)}
@@ -129,6 +171,11 @@ internal class ReadingTranslationView(
             addView(label,LayoutParams(bounds.width,bounds.height).apply {leftMargin=bounds.left;topMargin=bounds.top})
             labels[box]=label
         }
+    }
+    private fun configureTypography(label: TextView,height: Int) {
+        val minPx=TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP,10f,resources.displayMetrics)
+        label.maxLines=maxOf(1,(height/(minPx*1.25f)).toInt())
+        TextViewCompat.setAutoSizeTextTypeUniformWithConfiguration(label,10,(24f*textSizeSp/20f).roundToInt(),1,TypedValue.COMPLEX_UNIT_SP)
     }
     private fun prepareCleanup(paint: MangaPaint): PreparedCleanup {
         paint.patch?.let {patch ->

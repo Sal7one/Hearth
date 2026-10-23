@@ -3,16 +3,20 @@ package com.sal7one.transiber.reading
 /** Clock supplied by the capture service: testable, bounded, no Android dependencies. */
 internal class ReadingTrigger {
     var mode = "manual"
-    var settleMs = 700L
-    var intervalMs = 2000L
-    private var changedAt = Long.MIN_VALUE
-    private var lastRequest = -100_000L
-    private var changed = false
-    fun movement(now: Long) { changed = true; changedAt = now }
-    fun ready(now: Long): Boolean = mode == "page" && changed &&
-        now-changedAt >= settleMs && now-lastRequest >= intervalMs
-    fun accepted(now: Long) { lastRequest=now; changed=false }
-    fun reset() { changed=false }
+    var settleMs = 900L
+    var intervalMs = 4000L
+    private var changedAt: Long? = null
+    private var lastRequest: Long? = null
+    fun movement(now: Long) { changedAt = now }
+    fun ready(now: Long): Boolean {
+        val movement=changedAt ?: return false
+        val last=lastRequest
+        return mode == "page" && now >= movement && now-movement >= settleMs.coerceAtLeast(0) &&
+            (last == null || (now >= last && now-last >= intervalMs.coerceAtLeast(0)))
+    }
+    fun accepted(now: Long) { lastRequest=now; changedAt=null }
+    /** Closing controls cancels pending UI motion without scheduling another page. */
+    fun reset() { changedAt=null }
 
     companion object {
         /** Migrate retired accessibility shortcuts; unknown values must not start capture automatically. */

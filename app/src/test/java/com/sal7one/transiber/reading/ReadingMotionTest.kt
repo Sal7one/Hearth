@@ -45,6 +45,35 @@ class ReadingMotionTest {
         val m=ReadingMotion();m.observe(page(240),64,128,emptyList())
         assertFalse(m.observe(page(235),64,128,emptyList()))
     }
+    @Test fun isolatedSpinnerCannotEraseAndTranslateThePageAgain() {
+        val m=ReadingMotion();m.observe(page(),64,128,emptyList())
+        val animated=page().apply {for(y in 24 until 32)for(x in 16 until 24)this[y*64+x]=grey(0)}
+        repeat(8) {
+            assertFalse(m.observe(if(it%2==0)animated else page(),64,128,emptyList()))
+        }
+    }
+    @Test fun sensitivityControlsSmallDistributedTextChangesWithoutCountingSinglePixelNoise() {
+        val smallChange=page().apply {
+            for(y in 40 until 43)for(x in 8 until 24)this[y*64+x]=grey(220)
+        }
+        val sensitive=ReadingMotion().apply {sensitivity="sensitive"}
+        sensitive.observe(page(),64,128,emptyList())
+        assertTrue(sensitive.observe(smallChange,64,128,emptyList()))
+        for(level in listOf("balanced","stable","unknown")) {
+            val m=ReadingMotion().apply {sensitivity=level}
+            m.observe(page(),64,128,emptyList())
+            assertFalse(m.observe(smallChange,64,128,emptyList()))
+        }
+        val m=ReadingMotion().apply {sensitivity="sensitive"}
+        m.observe(page(),64,128,emptyList())
+        assertFalse(m.observe(page().apply {this[2000]=grey(0)},64,128,emptyList()))
+    }
+    @Test fun stableModeStillDetectsARealPageScroll() {
+        val m=ReadingMotion().apply {sensitivity="stable"}
+        m.observe(page(),64,128,emptyList())
+        val moved=page().apply {for(y in 30..50)for(x in 10..50)this[y*64+x]=grey(235)}
+        assertTrue(m.observe(moved,64,128,emptyList()))
+    }
     @Test fun newTextCoversCannotTriggerTheirOwnRetranslationLoop() {
         val m=ReadingMotion()
         val original=page().apply {for(i in 64*40 until 64*50)this[i]=grey(0)}
