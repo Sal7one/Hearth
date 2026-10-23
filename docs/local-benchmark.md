@@ -23,17 +23,28 @@ selected when its installation is ready; it never starts inference automatically
 
 Default setup, per-stage model selections, language pair, input text, filters,
 sort, advanced choices and settings search persist through the existing
-DataStore-backed `UserPreferences`. Custom WAV audio is kept in memory for the
-active plan, not persisted as a general preference. The separate private Saudi
-recording pack can be saved deliberately.
+DataStore-backed `UserPreferences`. A selected custom WAV is copied into bounded,
+hash-checked private storage with its label, so leaving the screen or restarting
+the process does not discard the input. Saudi recording drafts use a separate
+private copy; their transcript/prompt state is independent of custom input text.
+The separate private Saudi recording pack can be saved deliberately.
+
+The Run/Stop footer stays visible while scrolling every tab. It states the input
+and explains a missing recording, unavailable sample language, model selection,
+input preparation or active engine owner. An empty Saudi pack offers both
+**Record / import** and an explicit **Use bundled Arabic** action. Refreshing
+catalogue labels does not lock already discovered models: installation mapping
+uses receipts and bounded metadata, while actual selected model weights are
+still verified before runtime initialization.
 
 The ready-to-run default is the bundled publisher reference set. For a Saudi
 speech comparison, select **Saudi speech**, record up to six private clips (or
 import PCM16 WAV files), correct each transcript, and save. References and
 SHA-256-checked audio remain in private storage until cleared. Suggested prompts
-are original examples and should match exactly what was spoken. The four-language
-sweep uses saved Saudi clips for Arabic and skips Arabic speech if none exist;
-it does not silently substitute Egyptian speech for a Saudi comparison.
+are original examples and should match exactly what was spoken. A personal Saudi
+comparison requires at least one saved recording; it never silently substitutes
+Egyptian speech. The separate bundled-language comparison and per-model sweep
+use the publisher corpus, including Egyptian Arabic when explicitly selected.
 
 The separate **Egyptian reference** choice remains available. Its built-in
 quick set contains six aligned, publisher-provided sentences for each
@@ -57,6 +68,28 @@ second publisher recording to the six short clips. This exposes longer
 utterance behavior without another download. The per-model four-language
 sweep uses the faster six-clip set; choose a single language and Long clip
 for a closer follow-up.
+
+**Bundled language comparison** offers English, Russian and Chinese together,
+with Arabic as an additional explicit choice. It applies the same corpus and
+references to each model advertising that language, grouping results by language
+and translation direction. Unknown model languages do not imply multilingual
+coverage, and unsupported combinations have skip reasons. For translation, the
+chosen destination must have published aligned references; no missing direction
+is filled with another model's output. **Preview audio, source text and
+references** shows exact cases and publisher attribution and plays verified WAV
+audio on request. Playback stops when the dialog or app leaves the foreground.
+
+The recording's known language is separate from decoder language control.
+Choose **Match sample language**, **Automatic**, or **Compare both**. Hint-capable
+multilingual models receive the explicit sample language in the matched run and
+`auto` in the automatic run. Fixed-language and automatic-only engines run once
+and are labelled accurately. A hint-only engine is explicitly omitted from an
+automatic-only experiment. No source language is silently changed to English.
+Result rows, details and exports record **Language hint / Automatic / Fixed**
+and the decoder code separately from the reference language. A hint is a decoder
+setting, not a guarantee about the recognized language. Historical results show
+Unrecorded where that evidence is absent. Experiment identities and resume hashes
+distinguish language controls as well as CPU/GPU placement.
 
 In Model Lab, choose Speech or Translation, select the source
 language and (for translation) destination, then select the built-in set. It is
@@ -139,6 +172,14 @@ public references, but never the custom audio bytes.
   **chrF++** is the mean sentence score over the six aligned samples. These are
   automatic text-similarity scores, not bilingual judgments of meaning,
   fluency, dialect, or safety.
+- **Reference score / 100** provides a readable per-language final score:
+  `100 × max(0, 1 − WER)` for speech, Chinese uses CER, and translation uses
+  `100 × chrF++`. The original error/similarity metrics remain visible and in
+  exports. No score is invented for failed/incomplete runs, absent references or
+  voice listening quality. Speed is measured separately and is not blended into
+  the reference score. The **All languages** table keeps the latest exact
+  input/device/protocol cohort per direction and makes no global winner across
+  unrelated languages or inputs.
 - Expand a result to inspect each sample, its publisher reference, model output,
   timing, exact model/runtime identity and device. A fast empty or wrong answer
   is not a quality win. Errors remain failed results; they do not become zero
@@ -183,7 +224,8 @@ lease. Android process termination can still interrupt a run; completed rows are
 already saved. There is no automatic boot/process-restart inference. Optional
 **Keep completed results** skips only successful, fully measured results matching
 the exact input, pinned artifact, device/app install, options, pass count and
-confirmed backend. Re-import an unsaved WAV to resume the same private input.
+confirmed backend. A saved custom WAV is restored to resume the same private
+input; process interruption never triggers inference automatically.
 
 Saved history uses one atomic record per result instead of rewriting the whole
 array after every model. It retains up to **10,000 records / 64 MiB**, pruning

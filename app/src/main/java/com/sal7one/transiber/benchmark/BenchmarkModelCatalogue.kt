@@ -115,6 +115,7 @@ internal fun BenchmarkCatalogueDialog(
     onDownloads: () -> Unit,
     onModels: () -> Unit,
     onDismiss: () -> Unit,
+    sourceLanguages: Set<String> = setOf(source),
 ) {
     val uiText = rememberUiText()
     fun size(bytes: Long?) = bytes?.let(::benchmarkBytes) ?: uiText(UiR.string.benchmark_lab_size_unknown)
@@ -138,9 +139,9 @@ internal fun BenchmarkCatalogueDialog(
     val hardware = ModelHardwareFilter.fromKey(hardwareKey)
     var confirmBatch by remember { mutableStateOf(false) }
     var showErrors by remember { mutableStateOf(false) }
-    val visible = remember(entries, source, target, query, compatibleOnly, family, sortBySize, hardware) {
+    val visible = remember(entries, sourceLanguages, target, query, compatibleOnly, family, sortBySize, hardware) {
         entries.filter { row ->
-            (!compatibleOnly || row.supports(source, target)) && (family.isBlank() || row.family == family) && hardware.matches(row.gpuPaths) &&
+            (!compatibleOnly || sourceLanguages.any { row.supports(it, target) }) && (family.isBlank() || row.family == family) && hardware.matches(row.gpuPaths) &&
                 (query.isBlank() || listOf(row.model.label, row.model.id, row.family).any { it.contains(query, true) })
         }.let { rows -> if (sortBySize) rows.sortedBy { it.model.bytes ?: Long.MAX_VALUE } else rows }
     }
@@ -161,7 +162,7 @@ internal fun BenchmarkCatalogueDialog(
                     OutlinedTextField(query, { query = it }, modifier = Modifier.fillMaxWidth(), singleLine = true,
                         label = { Text(uiText(UiR.string.benchmark_lab_search_catalogue)) })
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        FilterChip(compatibleOnly, { compatibleOnly = !compatibleOnly }, label = { Text(if (entries.any { it.targets.isNotEmpty() }) uiText(UiR.string.benchmark_lab_this_pair) else uiText(UiR.string.benchmark_lab_this_language)) })
+                        FilterChip(compatibleOnly, { compatibleOnly = !compatibleOnly }, label = { Text(if (sourceLanguages.size > 1) uiText.bench("Selected languages", "اللغات المختارة", "所选语言") else if (entries.any { it.targets.isNotEmpty() }) uiText(UiR.string.benchmark_lab_this_pair) else uiText(UiR.string.benchmark_lab_this_language)) })
                         FilterChip(sortBySize, { sortBySize = !sortBySize }, label = { Text(uiText(UiR.string.benchmark_lab_smallest)) })
                         var familyMenu by remember { mutableStateOf(false) }
                         Box {

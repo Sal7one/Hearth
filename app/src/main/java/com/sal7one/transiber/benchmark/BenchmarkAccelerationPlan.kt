@@ -18,5 +18,6 @@ internal object BenchmarkAccelerationPlan {
         }.distinctBy(::identity)
     }
 
-    fun identity(model: BenchmarkCandidate): String = model.id + (model.acceleration?.let { "@$it" } ?: "")
+    fun identity(model: BenchmarkCandidate): String = model.id + (model.acceleration?.let { "@$it" } ?: "") +
+        (model.recognitionLanguage?.let { "#language=$it" } ?: "")
 }

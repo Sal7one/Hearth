@@ -42,7 +42,9 @@ internal object BenchmarkExecutionMetadata {
         benchmarkHash(listOf("hearth-benchmark-v3", candidate.task.name, pin, candidate.acceleration.orEmpty(),
             candidate.voiceFamily.orEmpty(), candidate.voiceId.orEmpty(), "passes=$passes", settings, "voice-rate=1;voice-steps=5",
             "speech-threads=4;whisper-threads=8;vosk-threads=2;context=3;utterance-ms=4000",
-            BenchmarkAudio.NORMALIZATION).joinToString("\u0000").toByteArray())
+            BenchmarkAudio.NORMALIZATION).let { fields ->
+                if (candidate.recognitionLanguage == null) fields else fields + "recognition-language=${candidate.recognitionLanguage}"
+            }.joinToString("\u0000").toByteArray())
     }
 
     fun canResume(result: BenchmarkResult, candidate: BenchmarkCandidate, hash: String, configurationHash: String?,

@@ -76,6 +76,6 @@ class BenchmarkPresetsTest {
         runId = id, timestamp = timestamp, model = id, identity = id, route = "speech",
         inputHash = "same", source = "en", target = "", audioMs = 1000,
         loadMs = 1.0, computeMs = listOf(warm, warm, warm), texts = listOf("spoken"),
-        runtime = "test", firstTextMs = listOf(warm), device = "device", wordErrorRate = wer,
+        runtime = "test", firstTextMs = listOf(warm), device = "device", wordErrorRate = wer, referenceText = if (wer == null) null else "spoken",
     )
 }

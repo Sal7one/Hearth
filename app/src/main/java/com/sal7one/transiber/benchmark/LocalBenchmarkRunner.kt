@@ -48,6 +48,8 @@ internal data class BenchmarkCandidate(
     val acceleration: String? = null,
     val voiceFamily: String? = null, val voiceId: String? = null,
     val artifactFingerprint: String? = null, val artifactBytes: Long? = null,
+    /** Decoder selection; [sourceCodes] still describes the recording's supported languages. */
+    val recognitionLanguage: String? = null,
 ) {
     val task: BenchmarkTask get() = when {
         voiceFamily != null -> BenchmarkTask.VOICE
@@ -89,6 +91,8 @@ internal data class BenchmarkResult(
     val requestedAcceleration: String? = null, val actualAcceleration: String? = null,
     val modelBytes: Long? = null, val configurationHash: String? = null,
     val audioMsByPass: List<Long> = emptyList(), val environment: BenchmarkEnvironment? = null,
+    /** Recognizer control, independently of [source], which always identifies the sample. */
+    val languageControl: String? = null, val recognitionLanguage: String? = null,
 ) {
     fun json() = JSONObject().put("runId", runId).put("timestamp", timestamp).put("model", model)
         .put("identity", identity).put("route", route).put("inputHash", inputHash).put("source", source).put("target", target)
@@ -103,6 +107,8 @@ internal data class BenchmarkResult(
         .put("actualAcceleration", actualAcceleration ?: JSONObject.NULL)
         .put("modelBytes", modelBytes ?: JSONObject.NULL).put("configurationHash", configurationHash ?: JSONObject.NULL)
         .put("audioMsByPass", JSONArray(audioMsByPass)).put("environment", environment?.json() ?: JSONObject.NULL)
+        .put("languageControl", languageControl ?: JSONObject.NULL)
+        .put("recognitionLanguage", recognitionLanguage ?: JSONObject.NULL)
     companion object {
         fun from(j: JSONObject) = BenchmarkResult(
             j.getString("runId"), j.getLong("timestamp"), j.getString("model"), j.getString("identity"), j.getString("route"),
@@ -124,7 +130,9 @@ internal data class BenchmarkResult(
             if (j.has("modelBytes") && !j.isNull("modelBytes")) j.getLong("modelBytes") else null,
             if (j.has("configurationHash") && !j.isNull("configurationHash")) j.getString("configurationHash") else null,
             j.optJSONArray("audioMsByPass")?.let { a -> (0 until a.length()).map(a::getLong) }.orEmpty(),
-            j.optJSONObject("environment")?.let(BenchmarkEnvironment::from))
+            j.optJSONObject("environment")?.let(BenchmarkEnvironment::from),
+            if (j.has("languageControl") && !j.isNull("languageControl")) j.getString("languageControl") else null,
+            if (j.has("recognitionLanguage") && !j.isNull("recognitionLanguage")) j.getString("recognitionLanguage") else null)
     }
 }
 /** Sequential production runtimes. A fresh session is closed before the next model is loaded. */
@@ -141,7 +149,7 @@ internal class LocalBenchmarkRunner(private val context: Context) {
         packages.issues.forEach(discovery::report)
         val speech = packages.models.mapNotNull { model -> discovery.inspect(model.profile.label) {
             BenchmarkCandidate(model.id, model.profile.label + " · " + model.id.takeLast(6),
-                "Speech / ${model.profile.capabilities.streaming}", model.profile.capabilities.sourceLanguages + (if (model.profile.capabilities.sourceLanguages.size > 1) setOf("auto") else emptySet()),
+                "Speech / ${model.profile.capabilities.streaming}", model.profile.capabilities.sourceLanguages + (if (model.profile.capabilities.automaticSourceLanguage) setOf("auto") else emptySet()),
                 file = model.root, profile = model.profile,
                 artifactFingerprint = benchmarkHash(File(model.root, SpeechModelPackage.MANIFEST).readBytes()))
         } }
@@ -150,7 +158,7 @@ internal class LocalBenchmarkRunner(private val context: Context) {
         }.mapNotNull { model -> discovery.inspect(model.name) {
             val whisper = model.engineType == ModelEngineType.WHISPER
             val vocab = if (whisper) File(model.path).inputStream().use { com.sal7one.transiber.caption.whisperVocabulary(it) } else null
-            val codes = if (!whisper) setOf("model") else when (vocab) {
+            val codes = if (!whisper) BenchmarkLanguagePlan.voskLanguages(model.digest?.hex) else when (vocab) {
                 51864 -> setOf("en")
                 51865 -> (LanguageCatalog.whisperCodes - "yue") + "auto"
                 51866 -> LanguageCatalog.whisperCodes + "auto"
@@ -260,6 +268,7 @@ internal class LocalBenchmarkRunner(private val context: Context) {
                 var speech: SpeechSession? = null; var legacy: SttEngine? = null; var translator: CancellableTextTranslator? = null
                 var voiceReader: ArticleReader? = null
                 var actualAcceleration: String? = null
+                var recognition: BenchmarkRecognitionSetting? = null
                 var failure: String? = null
                 var executedAcceleration: String? = candidate.acceleration
                 val samples = mutableListOf<BenchmarkSampleResult>()
@@ -280,6 +289,8 @@ internal class LocalBenchmarkRunner(private val context: Context) {
                 val loading = System.nanoTime()
                 try {
                     require(source in candidate.sourceCodes || candidate.sourceCodes == setOf("model")) { "${candidate.label} cannot use spoken language $source" }
+                    recognition = BenchmarkLanguagePlan.recognition(candidate, source)
+                    val recognitionLanguage = candidate.recognitionLanguage ?: source
                     when {
                         synthesizing -> {
                             val family = checkNotNull(candidate.voiceFamily)
@@ -308,7 +319,7 @@ internal class LocalBenchmarkRunner(private val context: Context) {
                             val acceleration = candidate.acceleration ?: SpeechAccelerationStore.current(context, candidate.profile.captionEngine)
                             executedAcceleration = acceleration
                             runtime += "; requested $acceleration; initialization did not complete"
-                            speech = backend.open(checkNotNull(candidate.file), SpeechOptions(sourceLanguage = source,
+                            speech = backend.open(checkNotNull(candidate.file), SpeechOptions(sourceLanguage = recognitionLanguage,
                                 acceleration = SpeechAcceleration.entries.first { it.id == acceleration },
                                 gpuCacheDirectory = File(context.cacheDir, "speech-opencl")))
                             runtime = runtime.removeSuffix("; initialization did not complete") + "; ${speech?.executionInfo}"
@@ -369,7 +380,7 @@ internal class LocalBenchmarkRunner(private val context: Context) {
                                 val path = provider.getModelPath()
                                 engine.initialize(path, SttConfig.forBatch().copy(
                                     numThreads = if (engine is WhisperEngine) 8 else 2,
-                                    language = if (source in setOf("auto", "model")) LanguageConfig.Auto else LanguageConfig.Specific(source),
+                                    language = if (recognitionLanguage in setOf("auto", "model")) LanguageConfig.Auto else LanguageConfig.Specific(recognitionLanguage),
                                     modelSha256 = checkNotNull(provider.getModelDigest()).hex,
                                     whisperAcceleration = if (engine is WhisperEngine &&
                                         acceleration == "vulkan")
@@ -490,7 +501,8 @@ internal class LocalBenchmarkRunner(private val context: Context) {
                     modelBytes = candidate.artifactBytes ?: candidate.file?.takeIf(File::exists)?.let { file ->
                         if (file.isFile) file.length() else file.walkTopDown().filter(File::isFile).sumOf(File::length)
                     }, configurationHash = configurationHash, audioMsByPass = audioDurations,
-                    environment = BenchmarkEnvironment(environmentBefore, environmentAfter))
+                    environment = BenchmarkEnvironment(environmentBefore, environmentAfter),
+                    languageControl = recognition?.control, recognitionLanguage = recognition?.language)
                 withContext(Dispatchers.IO) { BenchmarkResults(context).append(result) }
                 withContext(Dispatchers.Main.immediate) { onResult(result) }
                 completed++

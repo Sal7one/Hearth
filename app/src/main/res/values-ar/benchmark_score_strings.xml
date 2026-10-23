@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="benchmark_score_all_languages">كل اللغات · أحدث المدخلات</string>
+    <string name="benchmark_score_language">اللغة</string>
+    <string name="benchmark_score_heading">النتيجة / 100</string>
+    <string name="benchmark_score_sort">درجة مطابقة المرجع</string>
+    <string name="benchmark_score_explanation">تقيس النتيجة مطابقة المرجع فقط: للتعرف على الكلام 100 × (1 − WER)، أو CER للصينية، بحد أدنى صفر. وللترجمة 100 × chrF++. تُعرض السرعة منفصلة. لا تُمنح درجة للاختبارات ذات المرجع المفقود أو الفاشلة أو غير المكتملة، ولا لاختبارات الأصوات. لكل لغة مدخلها الخاص، ولا تحدد الدرجات بين اللغات فائزًا مشتركًا.</string>
+</resources>

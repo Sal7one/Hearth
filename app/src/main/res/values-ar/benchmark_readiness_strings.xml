@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="benchmark_ready_input_summary">الإدخال: %1$s · تعديل</string>
+    <string name="benchmark_ready_initializing">جارٍ فحص النماذج المثبتة…</string>
+    <string name="benchmark_ready_preparing">جارٍ تجهيز الصوت…</string>
+    <string name="benchmark_ready_engine_in_use">تستخدم مهمة «%1$s» المحركات المحلية. أوقفها قبل بدء الاختبار.</string>
+    <string name="benchmark_ready_no_models">اختر نموذجًا واحدًا على الأقل يدعم هذه اللغات.</string>
+    <string name="benchmark_ready_empty_saudi">لا توجد تسجيلات سعودية محفوظة. سجّل عينة أو اختر المجموعة المرفقة.</string>
+    <string name="benchmark_ready_no_samples">لا توجد عينات مرفقة لهذه اللغات. اختر لغة أخرى أو أضف إدخالك الخاص.</string>
+    <string name="benchmark_ready_no_audio">اختر تسجيلًا بصيغة WAV من الإعداد.</string>
+    <string name="benchmark_ready_no_text">أدخل نصًا أو استخدم جملة تجريبية من الإعداد.</string>
+    <string name="benchmark_ready_same_pair">اختر لغتين مختلفتين للمصدر والترجمة.</string>
+    <string name="benchmark_ready_stop_activity">مراجعة الجلسة النشطة</string>
+    <string name="benchmark_ready_edit_input">إعداد الإدخال</string>
+    <string name="benchmark_ready_record_import">تسجيل / استيراد</string>
+    <string name="benchmark_ready_use_bundled_arabic">استخدام العينات العربية المرفقة</string>
+    <string name="benchmark_ready_unknown_sample_language">اختر اللغة المنطوقة في التسجيل. التعرف التلقائي إعداد منفصل.</string>
+</resources>

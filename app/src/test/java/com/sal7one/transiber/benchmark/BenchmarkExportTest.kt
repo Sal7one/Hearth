@@ -32,6 +32,22 @@ class BenchmarkExportTest {
         assertNull(BenchmarkTableModel.qualityValue(voice))
     }
 
+    @Test fun exportsScoreAndItsDefinitionWithoutReplacingTheRawReferenceMetric() {
+        val scored = result().copy(wordErrorRate = .25, referenceText = "spoken")
+        val exported = JSONObject(BenchmarkExport.render(listOf(scored), BenchmarkExportFormat.JSON))
+        val row = exported.getJSONArray("results").getJSONObject(0)
+        assertEquals(75.0, row.getDouble("referenceScore100"), .0)
+        assertEquals(.25, row.getDouble("wordErrorRate"), .0)
+        assertTrue(exported.getString("reference_score_notes").contains("speed is separate"))
+        assertEquals(scored, BenchmarkResult.from(row))
+        val failed = JSONObject(BenchmarkExport.render(listOf(scored.copy(error = "inference failed")), BenchmarkExportFormat.JSON))
+            .getJSONArray("results").getJSONObject(0)
+        assertTrue(failed.isNull("referenceScore100"))
+        val csv = BenchmarkExport.render(listOf(scored), BenchmarkExportFormat.CSV)
+        assertTrue(csv.contains("\"reference_score_0_to_100\""))
+        assertTrue(csv.contains("\"75.0\""))
+    }
+
     @Test fun exportsEnvironmentAsOptionalSamplesWithoutInventingPeakMemory() {
         val row = result().copy(environment = BenchmarkEnvironment(
             BenchmarkEnvironmentSnapshot(batteryPercent = 80, batteryCelsius = 30.5, processPssBytes = 1048576),
@@ -43,6 +59,24 @@ class BenchmarkExportTest {
         assertTrue(csv.contains("\"process_pss_bytes_before\""))
         assertTrue(csv.contains("\"1048576\""))
         assertFalse(csv.contains("peak_memory"))
+    }
+
+    @Test fun exportsDecoderLanguageSeparatelyAndLeavesHistoricalControlsUnrecorded() {
+        val recorded = result().copy(languageControl = "automatic", recognitionLanguage = "auto")
+        val json = JSONObject(BenchmarkExport.render(listOf(recorded, result()), BenchmarkExportFormat.JSON))
+        val row = json.getJSONArray("results").getJSONObject(0)
+        assertEquals("en", row.getString("source"))
+        assertEquals("automatic", row.getString("languageControl"))
+        assertEquals("auto", row.getString("recognitionLanguage"))
+        assertEquals(recorded, BenchmarkResult.from(row))
+        val historical = json.getJSONArray("results").getJSONObject(1)
+        assertTrue(historical.isNull("languageControl"))
+        assertTrue(historical.isNull("recognitionLanguage"))
+        assertTrue(json.getString("recognition_language_notes").contains("decoder language hint"))
+        val lines = BenchmarkExport.render(listOf(recorded, result()), BenchmarkExportFormat.CSV).lineSequence().toList()
+        assertTrue(lines[0].endsWith("\"language_control\",\"recognition_language\""))
+        assertTrue(lines[1].endsWith("\"automatic\",\"auto\""))
+        assertTrue(lines[2].endsWith("\"\",\"\""))
     }
 
     private fun result() = BenchmarkResult(

@@ -39,8 +39,25 @@ class BenchmarkTableModelTest {
         assertEquals(50.0, BenchmarkTableModel.firstTextMs(row)!!, 0.0)
         assertNull(BenchmarkTableModel.firstTextMs(row.copy(firstTextMs = emptyList())))
         assertEquals("vulkan", BenchmarkTableModel.requestedBackend(row.copy(identity = "one@vulkan")))
+        assertEquals("vulkan", BenchmarkTableModel.requestedBackend(row.copy(identity = "one@vulkan#language=auto")))
         assertNull(row.copy(identity = "one@vulkan").actualAcceleration)
         assertEquals("cpu", BenchmarkTableModel.requestedBackend(row.copy(identity = "one@vulkan", requestedAcceleration = "cpu")))
+    }
+
+    @Test fun recognitionControlIsRecordedMetadataAndCannotBeInferredFromSampleLanguage() {
+        val row = result("one", 100.0)
+        assertNull(BenchmarkTableModel.recognitionSetting(row))
+        assertNull(BenchmarkTableModel.recognitionSetting(row.copy(source = "ar")))
+        val hint = row.copy(languageControl = "forced", recognitionLanguage = "en")
+        assertEquals(BenchmarkRecognitionSetting("forced", "en"), BenchmarkTableModel.recognitionSetting(hint))
+        assertEquals(BenchmarkRecognitionSetting("automatic", "auto"),
+            BenchmarkTableModel.recognitionSetting(row.copy(languageControl = "automatic", recognitionLanguage = "auto")))
+        assertEquals(BenchmarkRecognitionSetting("fixed", "model"),
+            BenchmarkTableModel.recognitionSetting(row.copy(languageControl = "fixed", recognitionLanguage = "model")))
+        assertNull(BenchmarkTableModel.recognitionSetting(row.copy(languageControl = "forced", recognitionLanguage = "auto")))
+        assertNull(BenchmarkTableModel.recognitionSetting(row.copy(languageControl = "automatic", recognitionLanguage = "en")))
+        assertNull(BenchmarkTableModel.recognitionSetting(row.copy(languageControl = "guessed", recognitionLanguage = "en")))
+        assertEquals(listOf(hint), BenchmarkTableModel.filtered(listOf(row, hint), "language hint"))
     }
 
     @Test fun modelSizeAndFirstOutputSortMissingMeasurementsLast() {

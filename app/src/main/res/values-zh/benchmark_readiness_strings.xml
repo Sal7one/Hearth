@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="benchmark_ready_input_summary">输入：%1$s · 编辑</string>
+    <string name="benchmark_ready_initializing">正在检查已安装模型…</string>
+    <string name="benchmark_ready_preparing">正在准备音频…</string>
+    <string name="benchmark_ready_engine_in_use">%1$s 正在使用本地引擎。请先停止该任务，再开始基准测试。</string>
+    <string name="benchmark_ready_no_models">请至少选择一个支持这些语言的模型。</string>
+    <string name="benchmark_ready_empty_saudi">尚无已保存的沙特录音。请录制样本或选择内置样本集。</string>
+    <string name="benchmark_ready_no_samples">这些语言没有内置样本。请选择其他语言或提供自己的输入。</string>
+    <string name="benchmark_ready_no_audio">请在设置中选择 WAV 录音。</string>
+    <string name="benchmark_ready_no_text">请在设置中输入文本或使用示例句子。</string>
+    <string name="benchmark_ready_same_pair">请选择不同的源语言和翻译语言。</string>
+    <string name="benchmark_ready_stop_activity">处理当前会话</string>
+    <string name="benchmark_ready_edit_input">设置输入</string>
+    <string name="benchmark_ready_record_import">录制 / 导入</string>
+    <string name="benchmark_ready_use_bundled_arabic">使用内置阿拉伯语样本</string>
+    <string name="benchmark_ready_unknown_sample_language">请选择录音中使用的语言。自动识别是单独的设置。</string>
+</resources>

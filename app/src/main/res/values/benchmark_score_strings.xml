@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="benchmark_score_all_languages">All languages · latest inputs</string>
+    <string name="benchmark_score_language">Language</string>
+    <string name="benchmark_score_heading">Score / 100</string>
+    <string name="benchmark_score_sort">Reference score</string>
+    <string name="benchmark_score_explanation">Score measures reference agreement only: speech uses 100 × (1 − WER), or CER for Chinese, with a floor of 0. Translation uses 100 × chrF++. Speed is separate. Missing references, failed or incomplete runs, and voice tests have no score. Each language uses its own input; scores across languages do not declare a shared winner.</string>
+</resources>

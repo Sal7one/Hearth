@@ -55,11 +55,13 @@ internal fun BenchmarkResultsTable(
     results: List<BenchmarkResult> = leaders?.candidates.orEmpty(),
     onExport: ((List<BenchmarkResult>, BenchmarkExportFormat) -> Unit)? = null,
     task: String = if (target.isBlank()) "speech" else "translation",
+    showLanguages: Boolean = false,
 ) {
     val uiText = rememberUiText()
     var query by rememberBenchmarkString("results-query", "")
     var status by rememberBenchmarkEnum("results-status", BenchmarkResultStatus.ALL)
     var allInputs by rememberBenchmarkBoolean("results-all-inputs", false)
+    var allLanguages by rememberBenchmarkBoolean("results-all-languages", showLanguages)
     var actualGpuOnly by rememberBenchmarkBoolean("results-gpu-only", false)
     var page by rememberSaveable { mutableIntStateOf(0) }
     var detail by remember { mutableStateOf<BenchmarkResult?>(null) }
@@ -69,12 +71,13 @@ internal fun BenchmarkResultsTable(
     }
     val latest = remember(currentTaskRows) { currentTaskRows.maxByOrNull { it.timestamp }?.let(BenchmarkTableModel::cohort) }
     val activeCohort = chosenCohort?.takeIf { it.task == task && it.source == source && it.target == target } ?: latest
-    val rows = remember(results, currentTaskRows, query, status, allInputs, actualGpuOnly, activeCohort, sort) {
+    LaunchedEffect(showLanguages) { if (showLanguages) { allLanguages = true; allInputs = false } }
+    val rows = remember(results, task, source, target, query, status, allInputs, allLanguages, actualGpuOnly, activeCohort, sort) {
         BenchmarkTableModel.sorted(BenchmarkTableModel.filtered(
-            if (allInputs) results else currentTaskRows, query, status, if (allInputs) null else activeCohort,
+            BenchmarkTableModel.scopedRows(results, task, source, target, allInputs, allLanguages, activeCohort), query, status,
         ).filter { !actualGpuOnly || it.actualAcceleration?.lowercase(Locale.ROOT) in setOf("vulkan", "opencl", "metal", "cuda") }, sort)
     }
-    LaunchedEffect(query, status, allInputs, actualGpuOnly, activeCohort, sort) { page = 0 }
+    LaunchedEffect(query, status, allInputs, allLanguages, actualGpuOnly, activeCohort, sort) { page = 0 }
     val pageSize = 25
     val pages = ((rows.size + pageSize - 1) / pageSize).coerceAtLeast(1)
     val safePage = page.coerceIn(0, pages - 1)
@@ -96,13 +99,15 @@ internal fun BenchmarkResultsTable(
             OutlinedTextField(query, { query = it }, Modifier.fillMaxWidth(), singleLine = true,
                 label = { Text(uiText.bench("Search models, backends, phones or errors", "ابحث بالنموذج أو المسار أو الهاتف أو الخطأ", "搜索模型、后端、设备或错误")) })
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                FilterChip(!allInputs, { allInputs = false }, label = {
+                FilterChip(!allInputs && !allLanguages, { allInputs = false; allLanguages = false }, label = {
                     Text(uiText.bench("Same input · fair comparison", "نفس المدخلات · مقارنة عادلة", "相同输入 · 公平对比")) })
-                FilterChip(allInputs, { allInputs = true }, label = { Text(uiText.bench("All saved results", "كل النتائج المحفوظة", "所有已保存结果")) })
+                FilterChip(allLanguages && !allInputs, { allLanguages = true; allInputs = false },
+                    label = { Text(uiText(R.string.benchmark_score_all_languages)) })
+                FilterChip(allInputs, { allInputs = true; allLanguages = false }, label = { Text(uiText.bench("All saved results", "كل النتائج المحفوظة", "所有已保存结果")) })
                 FilterChip(actualGpuOnly, { actualGpuOnly = !actualGpuOnly }, label = {
                     Text(uiText.bench("Confirmed GPU only", "GPU مؤكد فقط", "仅已确认的 GPU")) })
             }
-            if (!allInputs && activeCohort != null) {
+            if (!allInputs && !allLanguages && activeCohort != null) {
                 Text("${activeCohort.device}\n${source.uppercase(Locale.ROOT)}${if (target.isNotBlank()) " → ${target.uppercase(Locale.ROOT)}" else ""} · ${uiText.bench("input", "المدخل", "输入")} ${activeCohort.inputHash.take(12)} · v${activeCohort.protocolVersion}",
                     style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 if (chosenCohort != null) TextButton({ chosenCohort = null }) {
@@ -130,7 +135,7 @@ internal fun BenchmarkResultsTable(
                         BenchmarkTableSort.WARM -> uiText(R.string.benchmark_table_sort_warm)
                         BenchmarkTableSort.AUDIO_SPEED -> uiText.bench("Audio throughput", "سرعة معالجة الصوت", "音频吞吐量")
                         BenchmarkTableSort.LOAD -> uiText(R.string.benchmark_table_sort_load)
-                        BenchmarkTableSort.QUALITY -> uiText(R.string.benchmark_table_sort_quality)
+                        BenchmarkTableSort.QUALITY -> uiText(R.string.benchmark_score_sort)
                         BenchmarkTableSort.FIRST_TEXT -> uiText.bench("First output", "أول مخرج", "首个输出")
                         BenchmarkTableSort.SIZE -> uiText.bench("Model size", "حجم النموذج", "模型大小")
                         BenchmarkTableSort.MODEL -> uiText.bench("Model name", "اسم النموذج", "模型名称")
@@ -156,6 +161,8 @@ internal fun BenchmarkResultsTable(
                 Column(Modifier.horizontalScroll(rememberScrollState())) {
                     Row(Modifier.padding(vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         TableCell(uiText(R.string.benchmark_table_model), 220.dp, true)
+                        TableCell(uiText(R.string.benchmark_score_language), 100.dp, true)
+                        TableCell(uiText(R.string.benchmark_score_heading), 100.dp, true)
                         TableCell(uiText.bench("Requested / actual", "المطلوب / الفعلي", "请求 / 实际"), 140.dp, true)
                         TableCell(uiText.bench("Warm total", "المجموع الدافئ", "预热后总耗时"), 100.dp, true)
                         TableCell(uiText.bench("Audio speed / each", "سرعة الصوت / للجملة", "音频速度 / 每句"), 120.dp, true)
@@ -178,6 +185,8 @@ internal fun BenchmarkResultsTable(
                                     maxLines = 2, overflow = TextOverflow.Ellipsis)
                                 Text("${result.task} · ${result.source}${if (result.target.isBlank()) "" else " → ${result.target}"}",
                                     style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text(recognitionLabel(result), style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 val awards = listOfNotNull(uiText(R.string.benchmark_table_fastest).takeIf { fastest },
                                     uiText(R.string.benchmark_table_best_reference).takeIf { accurate },
                                     uiText(R.string.benchmark_table_balanced).takeIf { balanced })
@@ -185,6 +194,10 @@ internal fun BenchmarkResultsTable(
                                     color = MaterialTheme.colorScheme.primary)
                                 TextButton({ detail = result }) { Text(uiText.bench("Details", "التفاصيل", "详情")) }
                             }
+                            TableCell("${result.source.uppercase(Locale.ROOT)}${if (result.target.isBlank()) "" else " → ${result.target.uppercase(Locale.ROOT)}"}", 100.dp)
+                            TableCell(BenchmarkTableModel.referenceScore100(result)?.let {
+                                String.format(Locale.getDefault(), "%.1f / 100", it)
+                            } ?: "—", 100.dp)
                             TableCell("${BenchmarkTableModel.requestedBackend(result)?.uppercase(Locale.ROOT) ?: "—"}\n/ ${result.actualAcceleration?.uppercase(Locale.ROOT) ?: uiText.bench("Unconfirmed", "غير مؤكد", "未确认")}", 140.dp)
                             TableCell(elapsed(BenchmarkTableModel.warmMs(result)), 100.dp)
                             TableCell(BenchmarkTableModel.audioSpeed(result)?.let { String.format(Locale.getDefault(), "%.2f×", it) }
@@ -219,11 +232,13 @@ internal fun BenchmarkResultsTable(
                 "الوقت وWER وCER الأقل أفضل. سرعة الصوت وchrF++ الأعلى أفضل. السرعة من إعادة تشغيل مسرعة، وقد يكون أول مخرج نهائيا فقط. حجم الملفات ليس RAM. القياسات الفارغة غير مقاسة. لا يُفترض تقييم بشري لجودة الصوت.",
                 "耗时、WER、CER 越低越好，音频速度和 chrF++ 越高越好。音频速度为加速回放，首个输出可能仅为最终结果。磁盘大小不等于内存；空白指标未测量，不推断人类听感评分。"),
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(uiText(R.string.benchmark_score_explanation), style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
     detail?.let { row ->
         BenchmarkResultDetails(row, onDismiss = { detail = null }, onCompare = {
-            chosenCohort = BenchmarkTableModel.cohort(row); allInputs = false; detail = null
+            chosenCohort = BenchmarkTableModel.cohort(row); allInputs = false; allLanguages = false; detail = null
         }, canCompare = row.task == task && row.source == source && row.target == target)
     }
 }
@@ -245,6 +260,7 @@ private fun BenchmarkResultDetails(result: BenchmarkResult, onDismiss: () -> Uni
                 Text(DateFormat.getDateTimeInstance().format(Date(result.timestamp)), style = MaterialTheme.typography.labelMedium)
                 result.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
                 Text("${result.task} · ${result.source}${if (result.target.isBlank()) "" else " → ${result.target}"}\n${result.device}")
+                Text("${uiText.bench("Recognition language", "لغة التعرف", "识别语言")}: ${recognitionLabel(result)}")
                 Text("${uiText.bench("Runtime evidence", "معلومات التنفيذ", "运行时证据")}:\n${result.runtime}")
                 Text("${uiText.bench("Requested backend", "مسار التنفيذ المطلوب", "请求后端")}: ${BenchmarkTableModel.requestedBackend(result) ?: "—"}\n" +
                     "${uiText.bench("Actual backend", "مسار التنفيذ الفعلي", "实际后端")}: ${result.actualAcceleration ?: uiText.bench("Not confirmed", "غير مؤكد", "未确认")}")
@@ -285,6 +301,20 @@ private fun BenchmarkResultDetails(result: BenchmarkResult, onDismiss: () -> Uni
     }, confirmButton = {
         if (canCompare) TextButton(onCompare) { Text(uiText.bench("Compare this input", "قارن هذا المدخل", "对比此输入")) }
     }, dismissButton = { TextButton(onDismiss) { Text(uiText.bench("Close", "إغلاق", "关闭")) } })
+}
+
+/** Uses only recorded decoder metadata; it never guesses from the benchmark's fixture language. */
+@Composable
+private fun recognitionLabel(result: BenchmarkResult): String {
+    val uiText = rememberUiText()
+    val setting = BenchmarkTableModel.recognitionSetting(result)
+        ?: return uiText.bench("Unrecorded", "غير مسجل", "未记录")
+    val control = when (setting.control) {
+        "forced" -> uiText.bench("Language hint", "تلميح اللغة", "语言提示")
+        "automatic" -> uiText.bench("Automatic", "تلقائي", "自动")
+        else -> uiText.bench("Fixed", "ثابت", "固定")
+    }
+    return "$control · ${setting.language.uppercase(Locale.ROOT)}"
 }
 
 private fun elapsed(ms: Double?): String = if (ms == null || !ms.isFinite() || ms < 0) "—"

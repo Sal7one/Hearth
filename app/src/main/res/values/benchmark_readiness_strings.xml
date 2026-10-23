@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="benchmark_ready_input_summary">Input: %1$s · Edit</string>
+    <string name="benchmark_ready_initializing">Checking installed models…</string>
+    <string name="benchmark_ready_preparing">Preparing your audio…</string>
+    <string name="benchmark_ready_engine_in_use">%1$s is using local engines. Stop it before benchmarking.</string>
+    <string name="benchmark_ready_no_models">Select at least one model compatible with these languages.</string>
+    <string name="benchmark_ready_empty_saudi">No Saudi recordings are saved. Record a sample or choose the bundled set.</string>
+    <string name="benchmark_ready_no_samples">No bundled samples for these languages. Choose another language or provide your own input.</string>
+    <string name="benchmark_ready_no_audio">Choose a WAV recording in Setup.</string>
+    <string name="benchmark_ready_no_text">Enter text or use a sample sentence in Setup.</string>
+    <string name="benchmark_ready_same_pair">Choose different source and translation languages.</string>
+    <string name="benchmark_ready_stop_activity">Resolve active session</string>
+    <string name="benchmark_ready_edit_input">Set up input</string>
+    <string name="benchmark_ready_record_import">Record / import</string>
+    <string name="benchmark_ready_use_bundled_arabic">Use bundled Arabic</string>
+    <string name="benchmark_ready_unknown_sample_language">Choose the language spoken in the recording. Automatic recognition is a separate setting.</string>
+</resources>
