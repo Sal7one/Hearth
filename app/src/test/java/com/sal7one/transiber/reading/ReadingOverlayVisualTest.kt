@@ -6,11 +6,15 @@ import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.Rect
 import android.os.LocaleList
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.ScrollView
+import androidx.core.graphics.Insets
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import com.sal7one.transiber.R
 import org.junit.Assert.*
 import org.junit.Test
@@ -73,6 +77,25 @@ class ReadingOverlayVisualTest {
         assertVisibleTargetsFit(view)
     }
 
+    @Test fun sessionStopAndErrorRetryAreVisibleWithNavigationInsets() = withActivity { activity ->
+        val context = localized(activity, "en", dark = true)
+        val view = ReadingOverlayControls(context, callbacks())
+        activity.setContentView(view)
+        ViewCompat.dispatchApplyWindowInsets(view, WindowInsetsCompat.Builder()
+            .setInsets(WindowInsetsCompat.Type.navigationBars(), Insets.of(0, 0, 0, (32 * context.resources.displayMetrics.density).toInt()))
+            .build())
+        view.render(ReadingOverlayUiState(error = "The translator stopped. Tap Translate now to retry.", languagePair = "English → Arabic"))
+        descendants(view).filterIsInstance<Button>().single { it.text == "Session and setup" }.performClick()
+        val stop = descendants(view).filterIsInstance<Button>().single { it.text == "Stop screen translation" }
+        render(view, "controls-session-stop-safe-insets", 360, 600, scrollTo = stop)
+        assertVisibleTargetsFit(view)
+        val handle = ReadingOverlayHandle(context, {}, {})
+        activity.setContentView(handle)
+        handle.render(ReadingOverlayUiState(error = "The translator stopped"))
+        render(handle, "handle-compact-retry", 144, 48)
+        assertVisibleTargetsFit(handle)
+    }
+
     private fun render(view: View, name: String, width: Int, height: Int, scrollTo: View? = null) {
         val density = view.resources.displayMetrics.density
         val pixelsWide = (width * density).toInt()
@@ -81,7 +104,10 @@ class ReadingOverlayVisualTest {
             View.MeasureSpec.makeMeasureSpec(pixelsHigh, View.MeasureSpec.EXACTLY))
         view.layout(0, 0, pixelsWide, pixelsHigh)
         if (scrollTo != null && view is ViewGroup) {
-            descendants(view).filterIsInstance<ScrollView>().single().scrollTo(0, scrollTo.top)
+            val scroll = descendants(view).filterIsInstance<ScrollView>().single()
+            val bounds = Rect(0, 0, scrollTo.width, scrollTo.height)
+            scroll.offsetDescendantRectToMyCoords(scrollTo, bounds)
+            scroll.scrollTo(0, bounds.top)
         }
         val bitmap = Bitmap.createBitmap(pixelsWide, pixelsHigh, Bitmap.Config.ARGB_8888)
         try {

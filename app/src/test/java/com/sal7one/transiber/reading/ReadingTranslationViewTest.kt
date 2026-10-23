@@ -5,8 +5,11 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
 import android.os.Looper
+import android.os.SystemClock
 import android.util.TypedValue
 import android.view.View
+import android.view.MotionEvent
+import android.view.ViewConfiguration
 import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.TextView
@@ -29,6 +32,42 @@ import org.robolectric.annotation.GraphicsMode
 @Config(sdk=[35])
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class ReadingTranslationViewTest {
+    @Test fun swipingWithinALargeTranslatedParagraphNeverOpensTheOptionsButTapAndAccessibilityStillWork() {
+        val activity=Robolectric.buildActivity(Activity::class.java).setup().visible()
+        var opened=0
+        val view=ReadingTranslationView(activity.get()){opened++}
+        activity.get().setContentView(view)
+        val box=TranslatedOcrBox(OcrLine(0,0,300,300,"A long coffee article",.9f),"مقال طويل عن القهوة")
+        try {
+            view.measure(View.MeasureSpec.makeMeasureSpec(300,View.MeasureSpec.EXACTLY),View.MeasureSpec.makeMeasureSpec(400,View.MeasureSpec.EXACTLY))
+            view.layout(0,0,300,400)
+            view.update(listOf(box),300,400,PixelCrop(0,0,300,400))
+            view.measure(View.MeasureSpec.makeMeasureSpec(300,View.MeasureSpec.EXACTLY),View.MeasureSpec.makeMeasureSpec(400,View.MeasureSpec.EXACTLY))
+            view.layout(0,0,300,400)
+            val label=view.getChildAt(0)
+            assertTrue(label.height>ViewConfiguration.get(activity.get()).scaledTouchSlop*4)
+            var time=SystemClock.uptimeMillis()
+            fun touch(action: Int,y: Float) {
+                val event=MotionEvent.obtain(time,time+10,action,100f,y,0)
+                try {view.dispatchTouchEvent(event)} finally {event.recycle()}
+                time+=20
+                shadowOf(Looper.getMainLooper()).idle()
+            }
+            touch(MotionEvent.ACTION_DOWN,40f);touch(MotionEvent.ACTION_UP,40f)
+            assertEquals(1,opened)
+            touch(MotionEvent.ACTION_DOWN,40f)
+            touch(MotionEvent.ACTION_MOVE,200f) // Deliberately remains within this same paragraph.
+            touch(MotionEvent.ACTION_UP,200f)
+            assertEquals("Scrolling within translated text must not become an options click",1,opened)
+            touch(MotionEvent.ACTION_DOWN,40f);touch(MotionEvent.ACTION_UP,40f)
+            assertEquals("A completed swipe must not poison the next deliberate tap",2,opened)
+            label.performClick()
+            assertEquals("Accessibility / keyboard clicks retain full-text access",3,opened)
+            touch(MotionEvent.ACTION_DOWN,40f);touch(MotionEvent.ACTION_CANCEL,40f);touch(MotionEvent.ACTION_UP,40f)
+            assertEquals(3,opened)
+        } finally {activity.pause().stop().destroy()}
+    }
+
     @Test fun cachedFlatMaskPreservesHolesAndUntranslatedBalloonsAcrossRedrawAndReattach() {
         val activity=Robolectric.buildActivity(Activity::class.java).setup().visible()
         val source=Bitmap.createBitmap(100,100,Bitmap.Config.ARGB_8888).apply {eraseColor(Color.BLACK)}

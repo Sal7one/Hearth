@@ -28,6 +28,8 @@ import com.sal7one.transiber.translation.*
 import com.sal7one.transiber.voice.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.math.abs
@@ -50,10 +52,17 @@ class ReadingOverlayService : Service() {
     private var snapshot: ConversationTranslatorSnapshot?=null
     private var setupReady=false
     private var setupError: String?=null
+    private var sessionError: String?=null
+    private var sessionSelection: OcrSelection?=null
+    private val setupMutex=Mutex()
+    private val captureMutex=Mutex()
     private var projection: MediaProjection?=null
     private var display: VirtualDisplay?=null
     private var reader: ImageReader?=null
     private var frameWaiter: CancellableContinuation<*>?=null
+    private var latestImage: Image?=null
+    private var imageGeneration=0L
+    private var frameConsumer: ((Image)->Unit)?=null
     private var handle: ReadingOverlayHandle?=null
     private var panel: ReadingOverlayControls?=null
     private var selector: LinearLayout?=null
@@ -63,6 +72,8 @@ class ReadingOverlayService : Service() {
     private var layerParams=WindowManager.LayoutParams()
     private var locked=true
     private val motion=ReadingMotion()
+    private var motionBaselineReady=false
+    private var verifyAfterSetup=false
     private var scanMs=500L
     private var pageCrop: PixelCrop?=null
     private var selectedBitmap: Bitmap?=null
@@ -74,6 +85,7 @@ class ReadingOverlayService : Service() {
     private var captureJob: Job?=null
     private var generation=0L
     private var working=false
+    private var frameSubmitted=false
     private var stopping=false
     private var setupSuppressed=false
     private var recoverAfterSetup=false
@@ -81,7 +93,6 @@ class ReadingOverlayService : Service() {
     private val trigger=ReadingTrigger()
     private val pageGuard=ReadingPageGuard()
     private var pageTicket: ReadingPageGuard.Ticket?=null
-    private var manualAttempt=false
     private data class CompletedPage(val state: CameraOcrState,val width: Int,val height: Int,val crop: PixelCrop)
     private var completedPage: CompletedPage?=null
     private var paintedMasks=emptyList<PixelCrop>()
@@ -127,64 +138,23 @@ class ReadingOverlayService : Service() {
                 override fun onCapturedContentResize(width: Int,height: Int){resize(width,height)}
             },handler)
             val size=screenSize();resize(size.first,size.second)
-            display=projection!!.createVirtualDisplay("Hearth reading",reader!!.width,reader!!.height,resources.configuration.densityDpi,DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR,null,null,handler)
+            display=projection!!.createVirtualDisplay("Hearth reading",reader!!.width,reader!!.height,resources.configuration.densityDpi,DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR,reader!!.surface,null,handler)
             val selection=OcrPreferences(this).read()
             profile=selection.profile;source=selection.source;target=selection.target
             options=overlayPreferences.read()
             configureOptions(options)
             createWindows()
             scope.launch {overlayPreferences.values().collect {applyOptions(it)}}
+            // Always observe the worker, including when initial configuration fails.
+            // A later explicit retry can repair/reload settings without restarting capture.
+            scope.launch {controller.state.collect(::onOcrState)}
             scope.launch {
                 try {
-                    val config=CaptionConfigStore.config(this@ReadingOverlayService).first()
-                    if(selection.translate) {
-                        val provider=ConversationTranslationSettings.provider(selection.providerId)
-                        val languages=provider?.let {ConversationTranslationSettings.capabilities(this@ReadingOverlayService,it)}
-                        uiText.ocrTranslationIssue(selection,selection.translationModel(config.localTranslationModelId),languages,ByokPolicy.FEATURE_BYOK)?.let {error(it)}
-                        snapshot=ConversationTranslationSettings.snapshot(this@ReadingOverlayService,selection.translationModel(config.localTranslationModelId),selection.providerId)
-                    }
-                    setupReady=true
-                    // Initial capture must wait for the actual saved translator snapshot.
-                    // Startup/disk delays can exceed the page-settle interval.
+                    prepareSession()
+                    // Initial capture waits for the saved translator snapshot.
                     if(trigger.mode=="page")trigger.movement(now())
-                    controller.state.collect {value->
-                        latest=value
-                        // Invalidated native work may still finish while paused, in
-                        // setup, or after a newer page. Only the admitted page owns UI.
-                        if(working && pageTicket!=null) {
-                            if(!viewingBox && value.text.isNotBlank())original?.text=value.text
-                            if(value.regions.isNotEmpty() && value.error==null)showRegions()
-                            if(value.boxTranslations.isNotEmpty() && value.error==null)showTranslations(value.boxTranslations)
-                            if(!viewingBox && value.translation.isNotBlank())translated?.text=value.translation
-                            if(value.error!=null) {
-                                finishAttempt(value)
-                                showError(value.error)
-                            } else {
-                                status?.text=when {
-                                    value.loading->uiText(UiR.string.service_loading_1_s_aba14,uiText.label(profile))
-                                    value.processing && value.stage==com.sal7one.hearth.core.vision.PageOcrStage.SEGMENTATION->uiText(UiR.string.ocr_koharu_refining)
-                                    value.processing && value.stage==com.sal7one.hearth.core.vision.PageOcrStage.CLEANUP->uiText(UiR.string.ocr_cleaning_background)
-                                    value.detecting->uiText(UiR.string.ocr_detecting_regions)
-                                    value.processing && value.regions.isNotEmpty()->uiText(UiR.string.ocr_reading_regions,value.lines.size,value.regions.size)
-                                    value.processing->uiText(UiR.string.service_reading_text_b6863)
-                                    value.translating->uiText(UiR.string.service_translating_ae47b)
-                                    value.text.isNotBlank()->uiText(UiR.string.service_1_s_2_s_ms_ocr_87c9c,uiText.label(profile),value.ocrMs)
-                                    else->uiText(UiR.string.service_open_a_reader_then_tap_translate_or_draw_area_a9c06)
-                                }
-                                if(!value.loading && !value.processing && !value.translating) {
-                                    finishAttempt(value)
-                                    if(value.text.isNotBlank()) {
-                                        val key=value.text+"\u0000"+value.translation
-                                        if(key!=lastHistory){historyIndex=-1;lastHistory=key;history.addFirst(value.text to value.translation);while(history.size>20)history.removeLast()}
-                                        if(value.boxTranslations.isNotEmpty())showTranslations(value.boxTranslations)
-                                        else if(manualAttempt){showPanel();panel?.showReadingText()}
-                                    } else status?.text=uiText(UiR.string.service_no_text_found_in_this_area_draw_a_smaller_region_o_0c8b8)
-                                }
-                            }
-                        }
-                        renderControls()
-                    }
-                }catch(e: CancellationException){throw e}catch(e: Exception){setupError=e.message ?: e.toString();showError(setupError!!)}
+                }catch(e: CancellationException){throw e}
+                catch(e: Exception){setupError=e.message ?: e.toString();showError(setupError!!)}
             }
             scope.launch {
                 while(isActive) {
@@ -198,6 +168,67 @@ class ReadingOverlayService : Service() {
         }catch(e: Exception) {Toast.makeText(this,e.message ?: e.toString(),Toast.LENGTH_LONG).show();stopSelf()}
         return START_NOT_STICKY
     }
+    /** One saved OCR/translator selection for each admitted page, never an in-flight reroute. */
+    private suspend fun prepareSession() = setupMutex.withLock {
+        val selection=OcrPreferences(this).read()
+        val config=CaptionConfigStore.config(this).first()
+        val nextSnapshot=if(selection.translate) {
+            val provider=ConversationTranslationSettings.provider(selection.providerId)
+            val languages=provider?.let {ConversationTranslationSettings.capabilities(this,it)}
+            uiText.ocrTranslationIssue(selection,selection.translationModel(config.localTranslationModelId),languages,ByokPolicy.FEATURE_BYOK)?.let {error(it)}
+            ConversationTranslationSettings.snapshot(this,selection.translationModel(config.localTranslationModelId),selection.providerId)
+        } else null
+        check(selection.source in selection.profile.languages) {
+            uiText(UiR.string.service_choose_a_text_language_supported_by_1_s_in_reading_83c65,uiText.label(selection.profile))
+        }
+        if(sessionSelection!=selection || snapshot!=nextSnapshot) {
+            // Reuse the loaded engine on an unchanged page. A changed language/model
+            // must retire its worker first; new pages never inherit an old translator.
+            if(controller.state.value.running || controller.state.value.closing) {
+                controller.stop()
+                try {withTimeout(30_000) {controller.awaitStopped()}}
+                catch(e: TimeoutCancellationException){throw IllegalStateException(uiText(UiR.string.pipeline_cleanup_timeout),e)}
+            }
+            pageGuard.reset();completedPage=null
+            profile=selection.profile;source=selection.source;target=selection.target
+            snapshot=nextSnapshot;sessionSelection=selection
+        }
+        setupReady=true;setupError=null
+    }
+    /** Progressive OCR and translation can overlap: only a fully idle page is terminal. */
+    private fun onOcrState(value: CameraOcrState) {
+        latest=value
+        if(!working || pageTicket==null || !frameSubmitted){renderControls();return}
+        if(!viewingBox && value.text.isNotBlank())original?.text=value.text
+        if(value.regions.isNotEmpty())showRegions()
+        if(value.boxTranslations.isNotEmpty())showTranslations(value.boxTranslations)
+        if(!viewingBox && value.translation.isNotBlank())translated?.text=value.translation
+        val terminal=!value.loading && !value.processing && !value.translating && !value.detecting && !value.closing
+        sessionError=value.error
+        status?.text=value.error ?: when {
+            value.loading->uiText(UiR.string.service_loading_1_s_aba14,uiText.label(profile))
+            value.processing && value.stage==com.sal7one.hearth.core.vision.PageOcrStage.SEGMENTATION->uiText(UiR.string.ocr_koharu_refining)
+            value.processing && value.stage==com.sal7one.hearth.core.vision.PageOcrStage.CLEANUP->uiText(UiR.string.ocr_cleaning_background)
+            value.detecting->uiText(UiR.string.ocr_detecting_regions)
+            value.processing && value.regions.isNotEmpty()->uiText(UiR.string.ocr_reading_regions,value.lines.size,value.regions.size)
+            value.processing->uiText(UiR.string.service_reading_text_b6863)
+            value.translating->uiText(UiR.string.service_translating_ae47b)
+            value.text.isNotBlank()->uiText(UiR.string.service_1_s_2_s_ms_ocr_87c9c,uiText.label(profile),value.ocrMs)
+            else->uiText(UiR.string.service_open_a_reader_then_tap_translate_or_draw_area_a9c06)
+        }
+        if(terminal) {
+            finishAttempt(value)
+            if(value.error!=null)showError(value.error)
+            else if(value.text.isNotBlank()) {
+                val key=value.text+"\u0000"+value.translation
+                if(key!=lastHistory){historyIndex=-1;lastHistory=key;history.addFirst(value.text to value.translation);while(history.size>20)history.removeLast()}
+                if(value.boxTranslations.isNotEmpty())showTranslations(value.boxTranslations)
+                // A successful refresh never steals focus by opening the controls.
+                // Original text and history remain available through the explicit menu.
+            } else status?.text=uiText(UiR.string.service_no_text_found_in_this_area_draw_a_smaller_region_o_0c8b8)
+        }
+        renderControls()
+    }
     private fun notification(): Notification {
         fun action(id: Int,name: String)=PendingIntent.getService(this,id,Intent(this,ReadingOverlayService::class.java).setAction(name),PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         return NotificationCompat.Builder(this,CHANNEL).setSmallIcon(android.R.drawable.ic_menu_view).setContentTitle(uiText(UiR.string.service_hearth_screen_reading_0905b))
@@ -206,14 +237,18 @@ class ReadingOverlayService : Service() {
             .addAction(0,uiText(UiR.string.service_translate_2be17),action(41,"translate")).addAction(0,if(paused)uiText(UiR.string.service_resume_b3bd0) else uiText(UiR.string.service_pause_78196),action(42,"pause")).addAction(0,uiText(UiR.string.service_stop_9e253),action(43,"stop")).build()
     }
     private fun togglePause() {
+        // A cancelled unfinished page is not a completed caption to keep on Resume.
+        // Clear only uncertain geometry; the last completed page/history remains cached.
+        if(!paused && working && frameSubmitted)clearPage()
         paused=!paused
         cancelAttempt();trigger.reset();voice.stop()
         // Pause retains the completed page. Resume observes real changes instead of
         // treating the button itself as a different page or throwing away its result.
-        if(!paused && completedPage==null && trigger.mode=="page")trigger.movement(now())
+        if(!paused && pageCrop==null && trigger.mode=="page")trigger.movement(now())
         renderControls();updateLayerVisibility()
         getSystemService(NotificationManager::class.java).notify(NOTIFICATION,notification())
     }
+    private fun resetMotion() {motion.reset();motionBaselineReady=false}
     private fun configureOptions(value: ReadingOverlaySettings) {
         options=value.bounded();locked=options.passThrough
         trigger.mode=options.mode;trigger.settleMs=options.settleMs;trigger.intervalMs=options.refreshCooldownMs
@@ -225,11 +260,12 @@ class ReadingOverlayService : Service() {
         pageView?.textSizeSp=options.textSizeSp
         updatePaintedMasks()
         if(old.mode!=options.mode) {
+            if(working && frameSubmitted)clearPage()
             cancelAttempt();trigger.reset()
-            if(options.mode=="page" && !paused && completedPage==null)trigger.movement(now())
+            if(options.mode=="page" && !paused && pageCrop==null)trigger.movement(now())
         }
         // Changes to our own drawing are not reader navigation.
-        if(old.showOriginal!=options.showOriginal || old.translationVisible!=options.translationVisible)motion.reset()
+        if(old.showOriginal!=options.showOriginal || old.translationVisible!=options.translationVisible || old.textSizeSp!=options.textSizeSp)resetMotion()
         applyLayerTouch();updateLayerVisibility();renderControls()
     }
     private fun renderControls() {
@@ -237,18 +273,18 @@ class ReadingOverlayService : Service() {
             translationsVisible=options.translationVisible,showOriginal=options.showOriginal,mode=options.mode,
             textSize=options.textSizeSp,settleMs=options.settleMs,scanMs=options.scanMs,
             refreshCooldownMs=options.refreshCooldownMs,changeSensitivity=options.changeSensitivity,
-            compactHandle=options.compactHandle,selectedArea=region!=null,languagePair="${uiText.languageName(source)} → ${uiText.languageName(target)}",historyCount=history.size)
+            compactHandle=options.compactHandle,selectedArea=region!=null,languagePair="${uiText.languageName(source)} → ${uiText.languageName(target)}",historyCount=history.size,error=sessionError)
         handle?.render(state);panel?.render(state)
     }
     private fun cancelAttempt() {
-        captureJob?.cancel();captureJob=null;generation++;working=false
+        captureJob?.cancel();captureJob=null;generation++;working=false;frameSubmitted=false
         pageGuard.cancel();pageTicket=null;controller.invalidate()
     }
     private fun finishAttempt(value: CameraOcrState) {
         val ticket=pageTicket ?: return
         if(!pageGuard.complete(ticket))return
-        pageTicket=null;working=false
-        completedPage=pageCrop?.takeIf {value.error==null}?.let {CompletedPage(value,pageWidth,pageHeight,it)}
+        pageTicket=null;working=false;frameSubmitted=false
+        completedPage=pageCrop?.takeIf {value.error==null || value.text.isNotBlank() || value.regions.isNotEmpty()}?.let {CompletedPage(value,pageWidth,pageHeight,it)}
     }
     private fun updateLayerVisibility() {
         pageView?.visibility=if(!setupSuppressed && selector==null && panel?.visibility!=View.VISIBLE &&
@@ -271,42 +307,95 @@ class ReadingOverlayService : Service() {
         val scale=minOf(1f,1600f/maxOf(width,height));val w=maxOf(1,(width*scale).toInt());val h=maxOf(1,(height*scale).toInt())
         if(reader?.width==w&&reader?.height==h)return
         frameWaiter?.let {if(it.isActive)it.resumeWithException(IllegalStateException(uiText(UiR.string.service_screen_size_changed_please_capture_the_page_again_38901)))};frameWaiter=null
-        display?.surface=null;reader?.close();reader=ImageReader.newInstance(w,h,PixelFormat.RGBA_8888,2)
+        display?.surface=null;reader?.setOnImageAvailableListener(null,null);latestImage?.close();latestImage=null;reader?.close()
+        reader=ImageReader.newInstance(w,h,PixelFormat.RGBA_8888,3).also {input->
+            // Keep one latest image, with two slots available for acquireLatestImage
+            // to discard older queued frames. Unused frames are never copied/OCRed.
+            input.setOnImageAvailableListener({images->
+                if(images!==reader || stopping)return@setOnImageAvailableListener
+                try {
+                    val next=images.acquireLatestImage() ?: return@setOnImageAvailableListener
+                    val previous=latestImage;latestImage=next;imageGeneration++
+                    previous?.close()
+                    frameConsumer?.invoke(next)
+                }catch(e: Exception){frameWaiter?.let {if(it.isActive)it.resumeWithException(e)}}
+            },handler)
+        }
         display?.resize(w,h,resources.configuration.densityDpi)
+        display?.surface=reader!!.surface
         if(::controller.isInitialized)cancelAttempt()
-        clearPage(forgetCompleted=true);region=null;motion.reset();trigger.reset()
+        clearPage(forgetCompleted=true);region=null;resetMotion();trigger.reset()
         if(setupReady && trigger.mode=="page" && !paused)trigger.movement(now())
     }
-    private suspend fun <T> capture(clean: Boolean, read: (Image)->T): T {
+    private fun captureCrop(width: Int,height: Int,useSelectedArea: Boolean=true): PixelCrop = region?.takeIf {useSelectedArea}?.let {r->
+        ReadingSelection.crop(width,height,width.toFloat(),height.toFloat(),r.left*width,r.top*height,r.right*width,r.bottom*height)
+            ?: error(uiText(UiR.string.service_selected_area_is_too_small_draw_it_again_79441))
+    } ?: run {
+        // Status/navigation glyphs must not make a protected black page look readable.
+        val screen=screenSize()
+        val insets=if(Build.VERSION.SDK_INT>=30)wm.maximumWindowMetrics.windowInsets.getInsetsIgnoringVisibility(WindowInsets.Type.systemBars()) else null
+        @Suppress("DEPRECATION") val top=insets?.top ?: handle?.rootWindowInsets?.stableInsetTop ?: 0
+        @Suppress("DEPRECATION") val bottom=insets?.bottom ?: handle?.rootWindowInsets?.stableInsetBottom ?: 0
+        PixelCrop(0,(top.toLong()*height/screen.second).toInt(),width,height-(bottom.toLong()*height/screen.second).toInt())
+    }
+    private suspend fun <T:Any> capture(clean: Boolean,useSelectedArea: Boolean=true,dispose: (T)->Unit={},read: (Image)->T): T = captureMutex.withLock {
+        val frames=ReadingCaptureFrames()
+        val began=now()
+        val needsFresh=clean && listOfNotNull(handle,panel,pageView).any {it.isShown}
+        val hiddenGeneration=imageGeneration
+        var blankCandidate: T?=null
         if(clean){handle?.visibility=View.INVISIBLE;panel?.visibility=View.GONE;pageView?.visibility=View.INVISIBLE}
         try {
-            if(clean)delay(100) // Only OCR needs a clean frame; motion sampling leaves translations visible.
-            val input=checkNotNull(reader){uiText(UiR.string.service_screen_capture_has_stopped_c682a)}
-            while(true){val old=input.acquireLatestImage() ?: break;old.close()}
-            return withTimeout(5000) {suspendCancellableCoroutine {continuation: CancellableContinuation<T>->
+            if(clean)delay(100) // Allow Android to compose the hidden overlay before inspecting the buffer.
+            checkNotNull(reader){uiText(UiR.string.service_screen_capture_has_stopped_c682a)}
+            checkNotNull(display){uiText(UiR.string.service_screen_capture_has_stopped_c682a)}
+            return@withLock withTimeout(5000) {suspendCancellableCoroutine {continuation: CancellableContinuation<T>->
                 frameWaiter=continuation
-                input.setOnImageAvailableListener({images->
-                    val image=images.acquireLatestImage() ?: return@setOnImageAvailableListener
+                fun inspect(image: Image) {
+                    if(!continuation.isActive || needsFresh && imageGeneration<=hiddenGeneration)return
                     try {
-                        if(!continuation.isActive)return@setOnImageAvailableListener
-                        continuation.resume(read(image))
-                    }catch(e: Exception){if(continuation.isActive)continuation.resumeWithException(e)}finally{image.close()}
-                },handler)
-                display?.surface=input.surface ?: error(uiText(UiR.string.service_screen_capture_has_stopped_c682a))
+                        val plane=image.planes[0]
+                        val decision=frames.observe(plane.buffer,image.width,image.height,plane.rowStride,plane.pixelStride,
+                            captureCrop(image.width,image.height,useSelectedArea),image.timestamp)
+                        when(decision) {
+                            ReadingCaptureFrames.Decision.STALE->Unit
+                            ReadingCaptureFrames.Decision.BLACK->{blankCandidate?.let(dispose);blankCandidate=null}
+                            ReadingCaptureFrames.Decision.BLANK->{
+                                val candidate=read(image)
+                                blankCandidate?.let(dispose);blankCandidate=candidate
+                            }
+                            ReadingCaptureFrames.Decision.READABLE->{
+                                val result=read(image)
+                                blankCandidate?.let(dispose);blankCandidate=null
+                                continuation.resume(result) {dispose(result)}
+                            }
+                        }
+                    }catch(e: Exception){if(continuation.isActive)continuation.resumeWithException(e)}
+                }
+                frameConsumer=::inspect
+                latestImage?.let(::inspect)
             }}
+        } catch(e: TimeoutCancellationException) {
+            currentCoroutineContext().ensureActive()
+            // A real static blank white page may produce only one frame. Preserve
+            // empty OCR semantics without accepting initial white before actual text.
+            blankCandidate?.let {blankCandidate=null;return@withLock it}
+            val message=if(frames.rejectedBlack>0)uiText(UiR.string.service_the_captured_area_is_black_check_that_the_reader_i_87046)
+                else uiText(UiR.string.reading_capture_timeout)
+            throw IllegalStateException(message,e)
         } finally {
-            frameWaiter=null;reader?.setOnImageAvailableListener(null,null);display?.surface=null
+            blankCandidate?.let(dispose)
+            frameConsumer=null;frameWaiter=null
+            android.util.Log.d("HearthReadingCapture","kind=${if(clean) "clean" else "motion"} hardware=${Build.HARDWARE} width=${reader?.width} height=${reader?.height} frames=${frames.frames} black=${frames.rejectedBlack} range=${frames.minimum}..${frames.maximum} elapsedMs=${now()-began}")
             if(clean && !stopping && !setupSuppressed && selector==null && panel?.visibility!=View.VISIBLE)handle?.visibility=View.VISIBLE
         }
     }
-    private suspend fun screenshot(clean: Boolean=true): Bitmap = capture(clean) { image ->
+    private suspend fun screenshot(clean: Boolean=true,useSelectedArea: Boolean=true): Bitmap = capture(clean,useSelectedArea=useSelectedArea,dispose={it.recycle()}) { image ->
         val plane=image.planes[0];check(plane.pixelStride==4){uiText(UiR.string.service_unsupported_screen_pixel_stride_1_s_69dba, plane.pixelStride)}
-        val paddedWidth=plane.rowStride/4
-        val padded=Bitmap.createBitmap(paddedWidth,image.height,Bitmap.Config.ARGB_8888)
-        padded.copyPixelsFromBuffer(plane.buffer)
-        val cropped=Bitmap.createBitmap(padded,0,0,image.width,image.height)
-        if(cropped!==padded)padded.recycle()
-        cropped
+        // Absolute RGBA reads preserve a retained Image's buffer position, honor
+        // row padding (including an unpadded last row), and make OCR pixels opaque.
+        Bitmap.createBitmap(ReadingCaptureFrames.copyOpaqueArgb(plane.buffer,image.width,image.height,plane.rowStride,plane.pixelStride),
+            image.width,image.height,Bitmap.Config.ARGB_8888)
     }
     private data class MotionFrame(val pixels: IntArray,val width: Int,val height: Int)
     private suspend fun motionFrame(): MotionFrame = capture(false) { image ->
@@ -337,9 +426,10 @@ class ReadingOverlayService : Service() {
                     mask.right*frame.width/pageWidth,mask.bottom*frame.height/pageHeight)
             }
             val moved=motion.observe(frame.pixels,frame.width,frame.height,masks)
+            motionBaselineReady=true
             previousPaintedMasks=visibleMasks
             if(moved) {
-                clearPage();trigger.movement(now());generation++;working=false
+                clearPage();trigger.movement(now());generation++;working=false;frameSubmitted=false
                 pageGuard.cancel();pageTicket=null;controller.invalidate()
                 original?.text="";translated?.text="";renderControls()
             }
@@ -352,12 +442,17 @@ class ReadingOverlayService : Service() {
         catch(e: Exception){paused=true;showError(e.message ?: e.toString());renderControls()}
     }
     fun requestCapture(draw: Boolean,wholePage: Boolean=false) {
-        if(setupSuppressed || stopping || projection==null || captureJob?.isActive==true || selector!=null)return
-        cancelAttempt();voice.stop();resumeReader()
+        if(setupSuppressed || stopping || projection==null || selector!=null)return
+        val previousCapture=captureJob
+        cancelAttempt();voice.stop();resumeReader();sessionError=null;working=true;renderControls()
         if(wholePage){region=null;pageGuard.reset();completedPage=null}
         captureJob=scope.launch {
             try {
-                val bitmap=screenshot();trigger.accepted(now())
+                // Manual taps have priority over passive motion sampling. Wait for
+                // its listener/surface cleanup before starting a replacement capture.
+                previousCapture?.join()
+                prepareSession()
+                val bitmap=screenshot(useSelectedArea=!draw);trigger.accepted(now())
                 if(draw || (profile.engine=="manga"&&region==null))selectRegion(bitmap) else submit(bitmap,manual=true)
             }catch(e: CancellationException){throw e}
             catch(e: Exception){showError(e.message ?: e.toString())}
@@ -366,19 +461,10 @@ class ReadingOverlayService : Service() {
     private suspend fun submit(bitmap: Bitmap, manual: Boolean=false) {
         var input: Bitmap?=null
         try {
+            prepareSession()
             check(setupReady){setupError ?: uiText(UiR.string.service_reading_settings_are_still_loading_tap_retry_in_a__cd6c6)}
             check(source in profile.languages){uiText(UiR.string.service_choose_a_text_language_supported_by_1_s_in_reading_83c65, uiText.label(profile))}
-            val crop=region?.let {r->
-                ReadingSelection.crop(bitmap.width,bitmap.height,bitmap.width.toFloat(),bitmap.height.toFloat(),r.left*bitmap.width,r.top*bitmap.height,r.right*bitmap.width,r.bottom*bitmap.height) ?: error(uiText(UiR.string.service_selected_area_is_too_small_draw_it_again_79441))
-            } ?: run {
-                // System status/navigation glyphs are not reader text.
-                val screen=screenSize()
-                val insets=if(Build.VERSION.SDK_INT>=30)wm.maximumWindowMetrics.windowInsets.getInsetsIgnoringVisibility(WindowInsets.Type.systemBars()) else null
-                @Suppress("DEPRECATION") val top=insets?.top ?: handle?.rootWindowInsets?.stableInsetTop ?: 0
-                @Suppress("DEPRECATION") val bottom=insets?.bottom ?: handle?.rootWindowInsets?.stableInsetBottom ?: 0
-                PixelCrop(0,(top.toLong()*bitmap.height/screen.second).toInt(),bitmap.width,
-                    bitmap.height-(bottom.toLong()*bitmap.height/screen.second).toInt())
-            }
+            val crop=captureCrop(bitmap.width,bitmap.height)
             val cropped=Bitmap.createBitmap(bitmap,crop.left,crop.top,crop.width,crop.height)
             input=if(cropped===bitmap)bitmap.copy(Bitmap.Config.ARGB_8888,false) else cropped
             val pixels=signature(input)
@@ -387,14 +473,14 @@ class ReadingOverlayService : Service() {
             if(ticket==null) {
                 input.recycle();bitmap.recycle();restoreCompletedPage();renderControls();return
             }
-            pageTicket=ticket;manualAttempt=manual
+            pageTicket=ticket;sessionError=null
             original?.text="";translated?.text="";status?.text=uiText(UiR.string.service_reading_1_s_30d82, uiText.label(profile))
             val epoch=generation
-            if(latest.closing)controller.awaitStopped()
+            if(controller.state.value.closing)controller.awaitStopped()
             if(epoch!=generation || !pageGuard.isCurrent(ticket)){input.recycle();bitmap.recycle();return}
             clearPage();pageWidth=bitmap.width;pageHeight=bitmap.height;pageCrop=crop;bitmap.recycle()
-            viewingBox=false;working=true;renderControls()
-            if(!latest.running)controller.start(profile,source,target,snapshot,false,input,positioned=true)
+            viewingBox=false;working=true;frameSubmitted=true;renderControls()
+            if(!controller.state.value.running)controller.start(profile,source,target,snapshot,false,input,positioned=true)
             else controller.offer(input,true)
         }catch(e: CancellationException){
             input?.takeUnless {it.isRecycled}?.recycle()
@@ -411,6 +497,7 @@ class ReadingOverlayService : Service() {
         if(setupSuppressed==suppressed)return
         setupSuppressed=suppressed
         if(suppressed) {
+            verifyAfterSetup=working
             cancelAttempt();voice.stop();trigger.reset()
             // Keep the last output and area while Hearth owns the foreground.
             // Returning from settings must not look like a fresh reader session.
@@ -419,10 +506,19 @@ class ReadingOverlayService : Service() {
             panel?.let {wm.updateViewLayout(it,panelParams)}
             handle?.visibility=View.GONE;pageView?.visibility=View.INVISIBLE;selector?.visibility=View.GONE
         } else if(!stopping) {
-            motion.reset()
+            // Preserve an observed reader baseline across Hearth navigation. Replacing
+            // it with the first returning frame would hide a page change underneath.
+            // If controls changed the baseline, or unfinished work was cancelled,
+            // remove uncertain geometry; automatic mode verifies via clean-page dedupe.
+            val uncertain=verifyAfterSetup || !motionBaselineReady
+            verifyAfterSetup=false
+            if(uncertain) {
+                clearPage()
+                if(sessionError==null)status?.text=uiText(UiR.string.service_open_a_reader_then_tap_translate_or_draw_area_a9c06)
+            }
             if(selector!=null)selector?.visibility=View.VISIBLE else handle?.visibility=View.VISIBLE
             updateLayerVisibility();renderControls()
-            if(setupReady && completedPage==null && trigger.mode=="page" && !paused)trigger.movement(now())
+            if(setupReady && pageCrop==null && trigger.mode=="page" && !paused)trigger.movement(now())
             if(recoverAfterSetup){recoverAfterSetup=false;showPanel()}
         }
     }
@@ -548,7 +644,7 @@ class ReadingOverlayService : Service() {
         showPanel()
     }
     private fun clear() {
-        cancelAttempt();viewingBox=false;clearPage(forgetCompleted=true);trigger.reset();voice.stop()
+        cancelAttempt();sessionError=null;viewingBox=false;clearPage(forgetCompleted=true);trigger.reset();voice.stop()
         history.clear();historyIndex=-1;lastHistory="";original?.text="";translated?.text=""
         status?.text=uiText(UiR.string.service_cleared_tap_translate_for_the_current_page_f78c6);renderControls()
     }
@@ -566,9 +662,13 @@ class ReadingOverlayService : Service() {
     }
     private fun showError(message: String) {
         pageTicket?.let {pageGuard.complete(it);completedPage=null};pageTicket=null
-        status?.text=message;working=false;renderControls();showPanel()
+        sessionError=message;status?.text=message;working=false;frameSubmitted=false;renderControls();updateLayerVisibility()
+        // Keep the current reader in front. The handle exposes Retry and the exact
+        // error is available in controls; failures must not open a focusable menu.
+        Toast.makeText(this,message,Toast.LENGTH_LONG).show()
     }
     private fun selectRegion(bitmap: Bitmap) {
+        working=false;frameSubmitted=false;renderControls()
         selectedBitmap=bitmap;handle?.visibility=View.GONE;panel?.visibility=View.GONE
         val root=ReadingBackAwareLayout(this){closeSelection()}.apply {
             orientation=LinearLayout.VERTICAL;setPadding(dp(16),dp(16),dp(16),dp(16))
@@ -585,7 +685,7 @@ class ReadingOverlayService : Service() {
             if(crop==null){Toast.makeText(this,uiText(UiR.string.service_draw_an_area_first_or_choose_center_5bc83),Toast.LENGTH_SHORT).show()}
             else {
                 region=RectF(crop.left.toFloat()/bitmap.width,crop.top.toFloat()/bitmap.height,crop.right.toFloat()/bitmap.width,crop.bottom.toFloat()/bitmap.height)
-                val owned=bitmap.copy(Bitmap.Config.ARGB_8888,false);closeSelection();pageGuard.reset();completedPage=null
+                val owned=bitmap.copy(Bitmap.Config.ARGB_8888,false);working=true;closeSelection();pageGuard.reset();completedPage=null
                 captureJob=scope.launch {try{submit(owned,manual=true)}catch(e: CancellationException){throw e}catch(e: Exception){showError(e.message ?: e.toString())}}
             }
         })
@@ -616,7 +716,7 @@ class ReadingOverlayService : Service() {
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
         com.sal7one.transiber.caption.CaptionConfigStore.onOrientationChanged(newConfig.orientation)
-        cancelAttempt();clearPage(forgetCompleted=true);val bounds=screenSize();region=null;motion.reset();trigger.reset()
+        cancelAttempt();clearPage(forgetCompleted=true);val bounds=screenSize();region=null;resetMotion();trigger.reset()
         layerParams.width=bounds.first;layerParams.height=bounds.second;pageView?.let {wm.updateViewLayout(it,layerParams)}
         if(Build.VERSION.SDK_INT<34)resize(bounds.first,bounds.second)
         closeSelection();handleParams.x=dp(8);handleParams.y=dp(70);handle?.let {wm.updateViewLayout(it,handleParams)}
@@ -628,7 +728,7 @@ class ReadingOverlayService : Service() {
         runningState.value=false
         stopping=true;clearPage()
         frameWaiter?.cancel();frameWaiter=null;scope.cancel();controller.close();voice.close()
-        display?.release();display=null;reader?.close();reader=null;projection?.stop();projection=null
+        display?.release();display=null;reader?.setOnImageAvailableListener(null,null);latestImage?.close();latestImage=null;reader?.close();reader=null;projection?.stop();projection=null
         listOfNotNull(selector,panel,handle,pageView).forEach {wm.removeView(it)};selectedBitmap?.recycle();selectedBitmap=null
         stopForeground(STOP_FOREGROUND_REMOVE);super.onDestroy()
     }

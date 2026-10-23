@@ -3,6 +3,8 @@ package com.sal7one.transiber.reading
 import android.app.Application
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.graphics.Bitmap
+import android.graphics.Color
 import android.graphics.RectF
 import android.media.projection.MediaProjection
 import android.view.KeyEvent
@@ -12,12 +14,23 @@ import android.view.WindowManager
 import android.widget.Button
 import android.widget.Switch
 import com.sal7one.transiber.R
+import com.sal7one.common_jni.ocr.OcrEngine
 import com.sal7one.common_jni.ocr.OcrLine
 import com.sal7one.transiber.ocr.TranslatedOcrBox
 import com.sal7one.transiber.ocr.PixelCrop
+import com.sal7one.transiber.ocr.CameraOcrController
 import com.sal7one.transiber.ocr.CameraOcrState
+import com.sal7one.transiber.ocr.OcrCatalog
+import com.sal7one.transiber.ocr.OcrPreferences
+import com.sal7one.transiber.ocr.OcrSelection
 import com.sal7one.transiber.preferences.UserPreferences
-import kotlinx.coroutines.Job
+import kotlinx.coroutines.*
+import kotlin.coroutines.Continuation
+import kotlin.coroutines.intrinsics.COROUTINE_SUSPENDED
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
+import kotlin.coroutines.suspendCoroutine
+import java.lang.reflect.InvocationTargetException
 import org.junit.Assert.*
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -187,6 +200,285 @@ class ReadingOverlayServiceTest {
         assertNull(field<Job?>(service, "captureJob"))
     }
 
+    @Test fun changingModesDuringTranslationClearsUnfinishedGeometryAndRearmsOnlyAutomaticMode() = withWindows { service ->
+        val saved = completePage(service)
+        for (mode in listOf("page", "manual")) {
+            admitPage(service)
+            call(service, "applyOptions", ClassParameter.from(ReadingOverlaySettings::class.java, ReadingOverlaySettings(mode = mode)))
+            assertFalse(field<Boolean>(service, "working"))
+            assertNull(field<ReadingPageGuard.Ticket?>(service, "pageTicket"))
+            assertNull(field<PixelCrop?>(service, "pageCrop"))
+            assertEquals(View.INVISIBLE, field<ReadingTranslationView>(service, "pageView").visibility)
+            assertSame(saved.completed, field<Any>(service, "completedPage"))
+            assertEquals(mode == "page", field<ReadingTrigger>(service, "trigger").ready(Long.MAX_VALUE))
+        }
+    }
+
+    @Test fun pausingUnfinishedAutomaticPageResumesWithCleanVerification() = withWindows { service ->
+        val saved = completePage(service)
+        call(service, "configureOptions", ClassParameter.from(ReadingOverlaySettings::class.java, ReadingOverlaySettings(mode = "page")))
+        admitPage(service)
+        call(service, "togglePause")
+        assertTrue(service.paused)
+        assertNull(field<PixelCrop?>(service, "pageCrop"))
+        assertSame(saved.completed, field<Any>(service, "completedPage"))
+        assertFalse(field<ReadingTrigger>(service, "trigger").ready(Long.MAX_VALUE))
+        call(service, "togglePause")
+        assertFalse(service.paused)
+        assertTrue(field<ReadingTrigger>(service, "trigger").ready(Long.MAX_VALUE))
+        assertEquals(View.INVISIBLE, field<ReadingTranslationView>(service, "pageView").visibility)
+    }
+
+    @Test fun setupReturnKeepsThePreviousMotionBaselineSoChangedPagesAreDetected() = withWindows { service ->
+        completePage(service)
+        call(service, "suppressForSetup", ClassParameter.from(Boolean::class.javaPrimitiveType!!, true))
+        call(service, "suppressForSetup", ClassParameter.from(Boolean::class.javaPrimitiveType!!, false))
+        assertTrue(field<ReadingMotion>(service, "motion").observe(
+            IntArray(ReadingMotion.WIDTH*ReadingMotion.HEIGHT) {Color.WHITE},100,100,emptyList()))
+        assertEquals(View.VISIBLE, field<ReadingTranslationView>(service, "pageView").visibility)
+    }
+
+    @Test fun uncertainManualSetupReturnRemovesOldGeometryUntilExplicitRefresh() = withWindows { service ->
+        val saved = completePage(service)
+        call(service, "suppressForSetup", ClassParameter.from(Boolean::class.javaPrimitiveType!!, true))
+        call(service, "applyOptions", ClassParameter.from(ReadingOverlaySettings::class.java, ReadingOverlaySettings(textSizeSp = 22f)))
+        call(service, "suppressForSetup", ClassParameter.from(Boolean::class.javaPrimitiveType!!, false))
+        assertEquals(View.INVISIBLE, field<ReadingTranslationView>(service, "pageView").visibility)
+        assertNull(field<PixelCrop?>(service, "pageCrop"))
+        assertSame("History remains available, but old geometry cannot cover a changed reader", saved.completed, field<Any>(service, "completedPage"))
+        assertFalse(field<ReadingTrigger>(service, "trigger").ready(Long.MAX_VALUE))
+        assertNull(field<Job?>(service, "captureJob"))
+    }
+
+    @Test fun uncertainAutomaticSetupReturnSchedulesCleanDedupeVerification() = withWindows { service ->
+        val saved = completePage(service)
+        call(service, "configureOptions", ClassParameter.from(ReadingOverlaySettings::class.java, ReadingOverlaySettings(mode = "page")))
+        call(service, "suppressForSetup", ClassParameter.from(Boolean::class.javaPrimitiveType!!, true))
+        call(service, "applyOptions", ClassParameter.from(ReadingOverlaySettings::class.java, ReadingOverlaySettings(mode = "page", showOriginal = true)))
+        call(service, "suppressForSetup", ClassParameter.from(Boolean::class.javaPrimitiveType!!, false))
+        assertNull(field<PixelCrop?>(service, "pageCrop"))
+        assertTrue(field<ReadingTrigger>(service, "trigger").ready(Long.MAX_VALUE))
+        assertNull("An unchanged clean page must still reuse its previous result", field<ReadingPageGuard>(service, "pageGuard").begin(saved.signature))
+        assertSame(saved.completed, field<Any>(service, "completedPage"))
+    }
+
+    @Test fun setupReturnDoesNotRestoreCancelledUnfinishedHighlights() = withWindows { service ->
+        completePage(service)
+        admitPage(service)
+        call(service, "suppressForSetup", ClassParameter.from(Boolean::class.javaPrimitiveType!!, true))
+        call(service, "suppressForSetup", ClassParameter.from(Boolean::class.javaPrimitiveType!!, false))
+        assertFalse(field<Boolean>(service, "working"))
+        assertNull(field<PixelCrop?>(service, "pageCrop"))
+        assertEquals(View.INVISIBLE, field<ReadingTranslationView>(service, "pageView").visibility)
+    }
+
+    @Test fun submissionUsesActualWorkerLifecycleWhenTheObservedStateIsBehind() = withWindows { service ->
+        val preferences = OcrPreferences(service)
+        val previous = preferences.read()
+        preferences.update { OcrSelection(translate = false) }
+        var reads = 0
+        val reader = object : OcrEngine {
+            override fun recognize(pixels: IntArray, width: Int, height: Int, maxSide: Int): List<OcrLine> {
+                reads++;return listOf(OcrLine(5,5,90,20,"A coffee article",1f))
+            }
+            override fun close() {}
+            override fun cancel() {}
+        }
+        val actual = CameraOcrController({reader},{error("Translation is disabled")},{AutoCloseable {}},
+            Dispatchers.Unconfined,Dispatchers.Unconfined,Dispatchers.Unconfined)
+        field<CameraOcrController>(service,"controller").close()
+        ReflectionHelpers.setField(service,"controller",actual)
+        ReflectionHelpers.setField(service,"latest",CameraOcrState(running=true,closing=true))
+        val bitmap=Bitmap.createBitmap(100,100,Bitmap.Config.ARGB_8888).apply {eraseColor(Color.WHITE)}
+        try {
+            runBlocking {
+                suspendCoroutine<Unit> {continuation ->
+                    try {
+                        val method=ReadingOverlayService::class.java.getDeclaredMethod("submit",Bitmap::class.java,
+                            Boolean::class.javaPrimitiveType!!,Continuation::class.java).apply {isAccessible=true}
+                        if(method.invoke(service,bitmap,true,continuation)!==COROUTINE_SUSPENDED)continuation.resume(Unit)
+                    }catch(failure:InvocationTargetException){continuation.resumeWithException(failure.targetException)}
+                }
+            }
+            assertEquals("A stale UI running flag must not send the frame to a closed queue",1,reads)
+            assertEquals("A coffee article",actual.state.value.text)
+            call(service,"onOcrState",ClassParameter.from(CameraOcrState::class.java,actual.state.value))
+            assertFalse(field<Boolean>(service,"working"))
+            assertNull(field<ReadingPageGuard.Ticket?>(service,"pageTicket"))
+        } finally {preferences.update {previous};actual.close();if(!bitmap.isRecycled)bitmap.recycle()}
+    }
+
+    @Test fun redrawingAnAreaAdmitsTheWholeImageInsteadOfThePreviousSelectedCrop() = withWindows { service ->
+        ReflectionHelpers.setField(service, "region", RectF(.2f, .3f, .7f, .8f))
+        fun crop(useSelectedArea: Boolean): PixelCrop = ReflectionHelpers.callInstanceMethod(service, "captureCrop",
+            ClassParameter.from(Int::class.javaPrimitiveType!!, 100),
+            ClassParameter.from(Int::class.javaPrimitiveType!!, 200),
+            ClassParameter.from(Boolean::class.javaPrimitiveType!!, useSelectedArea))
+        val selected = crop(true)
+        val redraw = crop(false)
+        assertNotEquals(selected, redraw)
+        ReflectionHelpers.setField(service, "region", null)
+        assertEquals("Selecting a replacement area must inspect the normal whole-page capture", crop(true), redraw)
+    }
+
+    @Test fun successfulManualOriginalOnlyResultNeverOpensTheOptions() = withWindows { service ->
+        val ticket = admitPage(service)
+        val value = CameraOcrState(running = true, text = "Coffee comes from roasted seeds")
+        call(service, "onOcrState", ClassParameter.from(CameraOcrState::class.java, value))
+        val panel = field<ReadingOverlayControls>(service, "panel")
+        assertEquals(View.GONE, panel.visibility)
+        assertEquals(View.VISIBLE, field<ReadingOverlayHandle>(service, "handle").visibility)
+        assertEquals(value.text, panel.originalText.text.toString())
+        assertFalse(field<Boolean>(service, "working"))
+        assertFalse(field<ReadingPageGuard>(service, "pageGuard").isCurrent(ticket))
+        assertNotNull(field<Any?>(service, "completedPage"))
+        assertNull(field<String?>(service, "sessionError"))
+    }
+
+    @Test fun intermediateTranslationErrorKeepsPageOwnershipUntilFinalSuccessfulTranslation() = withWindows { service ->
+        val ticket = admitPage(service)
+        val line = OcrLine(10, 10, 90, 30, "Fresh coffee", 1f)
+        val panel = field<ReadingOverlayControls>(service, "panel")
+        val partial = CameraOcrState(running = true, processing = true, text = line.text,
+            lines = listOf(line), error = "Intermediate translator request failed")
+        call(service, "onOcrState", ClassParameter.from(CameraOcrState::class.java, partial))
+        assertTrue(field<Boolean>(service, "working"))
+        assertSame(ticket, field<ReadingPageGuard.Ticket>(service, "pageTicket"))
+        assertTrue(field<ReadingPageGuard>(service, "pageGuard").isCurrent(ticket))
+        assertEquals(View.GONE, panel.visibility)
+        assertEquals(partial.error, field<String?>(service, "sessionError"))
+        val translating = partial.copy(processing = false, translating = true, error = null)
+        call(service, "onOcrState", ClassParameter.from(CameraOcrState::class.java, translating))
+        assertTrue(field<Boolean>(service, "working"))
+        assertNull(field<String?>(service, "sessionError"))
+        val completed = translating.copy(translating = false, translation = "قهوة طازجة",
+            boxTranslations = listOf(TranslatedOcrBox(line, "قهوة طازجة")))
+        call(service, "onOcrState", ClassParameter.from(CameraOcrState::class.java, completed))
+        assertFalse(field<Boolean>(service, "working"))
+        assertNull(field<ReadingPageGuard.Ticket?>(service, "pageTicket"))
+        assertEquals(completed.translation, panel.translatedText.text.toString())
+        assertEquals(View.VISIBLE, field<ReadingTranslationView>(service, "pageView").visibility)
+        assertEquals(View.GONE, panel.visibility)
+        assertNotNull(field<Any?>(service, "completedPage"))
+    }
+
+    @Test fun retiringWorkerCannotCompleteAPageThatIsStillWaitingToBeSubmitted() = withWindows { service ->
+        val ticket = admitPage(service)
+        ReflectionHelpers.setField(service, "frameSubmitted", false)
+        call(service, "onOcrState", ClassParameter.from(CameraOcrState::class.java,
+            CameraOcrState(text = "Old worker text", translation = "Old worker output")))
+        assertTrue(field<Boolean>(service, "working"))
+        assertSame(ticket, field<ReadingPageGuard.Ticket>(service, "pageTicket"))
+        assertEquals("", field<ReadingOverlayControls>(service, "panel").translatedText.text.toString())
+        assertNull(field<Any?>(service, "completedPage"))
+    }
+
+    @Test fun terminalTranslationErrorKeepsOriginalAndPartialOutputWithoutStealingFocus() = withWindows { service ->
+        admitPage(service)
+        val line = OcrLine(10, 10, 90, 30, "Coffee", 1f)
+        val failed = CameraOcrState(running = true, text = "Coffee\nRoasting", translation = "قهوة",
+            lines = listOf(line), boxTranslations = listOf(TranslatedOcrBox(line, "قهوة")),
+            error = "Actual provider error: unavailable model")
+        call(service, "onOcrState", ClassParameter.from(CameraOcrState::class.java, failed))
+        val panel = field<ReadingOverlayControls>(service, "panel")
+        assertEquals(View.GONE, panel.visibility)
+        assertFalse(field<Boolean>(service, "working"))
+        assertNotNull(field<Any?>(service, "completedPage"))
+        assertEquals(failed.text, panel.originalText.text.toString())
+        assertEquals(failed.translation, panel.translatedText.text.toString())
+        assertEquals(failed.error, field<String?>(service, "sessionError"))
+        val handle = field<ReadingOverlayHandle>(service, "handle")
+        assertTrue(descendants(handle).filterIsInstance<Button>().any {
+            it.isEnabled && it.contentDescription?.contains(failed.error!!) == true
+        })
+        call(service, "showPanel")
+        assertEquals(failed.error, panel.statusText.text.toString())
+    }
+
+    @Test fun translateTapPreemptsPassiveCaptureAndWaitsForItsCleanup() = withWindows { service ->
+        ReflectionHelpers.setField(service, "projection", ReflectionHelpers.newInstance(MediaProjection::class.java))
+        val cleanupStarted = CompletableDeferred<Unit>()
+        val releaseCleanup = CompletableDeferred<Unit>()
+        var cleaned = false
+        val previous = CoroutineScope(Dispatchers.Unconfined).launch {
+            try { awaitCancellation() }
+            finally { withContext(NonCancellable) { cleanupStarted.complete(Unit); releaseCleanup.await(); cleaned = true } }
+        }
+        ReflectionHelpers.setField(service, "captureJob", previous)
+        service.requestCapture(false)
+        val replacement = field<Job>(service, "captureJob")
+        assertNotSame("The explicit tap must replace the passive capture", previous, replacement)
+        assertTrue(previous.isCancelled)
+        assertTrue(cleanupStarted.isCompleted)
+        assertFalse(cleaned)
+        assertTrue("The replacement must wait while the previous frame listener releases", replacement.isActive)
+        assertTrue(field<Boolean>(service, "working"))
+        assertNull(field<String?>(service, "sessionError"))
+        // Cancel before any real capture/configuration is attempted by this host test.
+        call(service, "cancelAttempt")
+        releaseCleanup.complete(Unit)
+        assertTrue(cleaned)
+        assertTrue(previous.isCompleted)
+        assertTrue(replacement.isCancelled)
+        assertFalse(field<Boolean>(service, "working"))
+    }
+
+    @Test fun configurationErrorCanBeRepairedWithinTheSameService() = withWindows { service ->
+        val preferences = OcrPreferences(service)
+        val previous = preferences.read()
+        try {
+            preferences.update { OcrSelection(source = "not-a-language", translate = false) }
+            try {
+                prepareSession(service)
+                fail("Unsupported language must surface its error")
+            } catch (failure: IllegalStateException) {
+                call(service, "showError", ClassParameter.from(String::class.java, checkNotNull(failure.message)))
+            }
+            assertNotNull(field<String?>(service, "sessionError"))
+            assertFalse(field<Boolean>(service, "setupReady"))
+            preferences.update { OcrSelection(source = "en", target = "ar", translate = false) }
+            prepareSession(service)
+            assertTrue(field<Boolean>(service, "setupReady"))
+            assertNull(field<String?>(service, "setupError"))
+            assertEquals("en", field<String>(service, "source"))
+            assertEquals("ar", field<String>(service, "target"))
+            assertNull(field<Any?>(service, "snapshot"))
+        } finally { preferences.update { previous } }
+    }
+
+    @Test fun staleCompletionAfterPauseCannotOpenControlsOrReplaceSavedText() = withWindows { service ->
+        val saved = completePage(service)
+        admitPage(service)
+        call(service, "togglePause")
+        call(service, "onOcrState", ClassParameter.from(CameraOcrState::class.java,
+            CameraOcrState(text = "Late OCR", translation = "Late translation", error = "Late provider error")))
+        assertEquals(View.GONE, field<ReadingOverlayControls>(service, "panel").visibility)
+        assertSame(saved.completed, field<Any>(service, "completedPage"))
+        assertNull(field<String?>(service, "sessionError"))
+    }
+
+    private fun admitPage(service: ReadingOverlayService): ReadingPageGuard.Ticket {
+        ReflectionHelpers.setField(service, "profile", OcrCatalog.profile("latin"))
+        ReflectionHelpers.setField(service, "pageWidth", 100)
+        ReflectionHelpers.setField(service, "pageHeight", 100)
+        ReflectionHelpers.setField(service, "pageCrop", PixelCrop(0, 0, 100, 100))
+        val ticket = checkNotNull(field<ReadingPageGuard>(service, "pageGuard").begin(IntArray(64) { 140 }, manual = true))
+        ReflectionHelpers.setField(service, "pageTicket", ticket)
+        ReflectionHelpers.setField(service, "working", true)
+        ReflectionHelpers.setField(service, "frameSubmitted", true)
+        return ticket
+    }
+
+    private fun prepareSession(service: ReadingOverlayService) = runBlocking {
+        suspendCoroutine<Unit> { continuation ->
+            try {
+                val method = ReadingOverlayService::class.java.getDeclaredMethod("prepareSession", Continuation::class.java)
+                method.isAccessible = true
+                if (method.invoke(service, continuation) !== COROUTINE_SUSPENDED) continuation.resume(Unit)
+            } catch (failure: InvocationTargetException) { continuation.resumeWithException(failure.targetException) }
+        }
+    }
+
     private data class SavedPage(val completed: Any, val crop: PixelCrop, val signature: IntArray)
     private fun completePage(service: ReadingOverlayService): SavedPage {
         val crop = PixelCrop(0, 0, 100, 100)
@@ -194,6 +486,8 @@ class ReadingOverlayServiceTest {
         val value = CameraOcrState(text = "Saved original", translation = "ترجمة محفوظة",
             boxTranslations = listOf(TranslatedOcrBox(OcrLine(10, 10, 40, 20, "Saved original", 1f), "ترجمة محفوظة")))
         ReflectionHelpers.setField(service, "setupReady", true)
+        field<ReadingMotion>(service, "motion").observe(IntArray(ReadingMotion.WIDTH*ReadingMotion.HEIGHT) {Color.rgb(80,80,80)},100,100,emptyList())
+        ReflectionHelpers.setField(service, "motionBaselineReady", true)
         ReflectionHelpers.setField(service, "pageWidth", 100)
         ReflectionHelpers.setField(service, "pageHeight", 100)
         ReflectionHelpers.setField(service, "pageCrop", crop)

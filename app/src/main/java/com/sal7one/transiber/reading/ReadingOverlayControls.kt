@@ -26,6 +26,8 @@ import android.widget.Switch
 import android.widget.TextView
 import android.window.OnBackInvokedCallback
 import android.window.OnBackInvokedDispatcher
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import com.sal7one.transiber.R
 import com.sal7one.transiber.i18n.uiText
 import kotlin.math.roundToInt
@@ -47,6 +49,7 @@ internal data class ReadingOverlayUiState(
     val selectedArea: Boolean = false,
     val languagePair: String = "",
     val historyCount: Int = 0,
+    val error: String? = null,
 )
 
 internal data class ReadingOverlayCallbacks(
@@ -195,6 +198,7 @@ internal class ReadingOverlayHandle(
     }
 
     fun render(state: ReadingOverlayUiState) {
+        val error = state.error?.takeIf { it.isNotBlank() && !state.working }
         setPadding(if (state.compactHandle) 0 else palette.dp(6), if (state.compactHandle) 0 else palette.dp(4),
             if (state.compactHandle) 0 else palette.dp(6), if (state.compactHandle) 0 else palette.dp(4))
         dragIndicator.apply {
@@ -208,14 +212,22 @@ internal class ReadingOverlayHandle(
         statusText.visibility = if (state.compactHandle) GONE else VISIBLE
         compactTranslate.visibility = if (state.compactHandle) VISIBLE else GONE
         compactTranslate.text = if (state.working) "…" else "↻"
-        statusText.text = text(when {
+        if (error != null) compactTranslate.text = "!"
+        compactTranslate.background = palette.ripple(if (error == null) palette.accent else palette.dangerSurface, 14)
+        compactTranslate.setTextColor(if (error == null) palette.onAccent else palette.danger)
+        statusText.setTextColor(if (error == null) palette.muted else palette.danger)
+        statusText.text = error ?: text(when {
             state.working -> R.string.reading_overlay_reading
             state.paused -> R.string.reading_overlay_paused
             state.mode == "manual" -> R.string.reading_overlay_manual_status
             else -> R.string.reading_overlay_auto_status
         })
+        statusText.contentDescription = statusText.text
         dragTarget.contentDescription = text(R.string.reading_overlay_move_status, statusText.text)
-        compactTranslate.contentDescription = text(R.string.reading_overlay_translate_status, statusText.text)
+        val refreshDescription = if (error == null) text(R.string.reading_overlay_translate_status, statusText.text)
+            else text(R.string.reading_overlay_retry_error, error)
+        compactTranslate.contentDescription = refreshDescription
+        primaryButton.contentDescription = refreshDescription
     }
 }
 
@@ -267,6 +279,15 @@ internal class ReadingOverlayControls(
         clipToOutline = true
         elevation = palette.dp(16).toFloat()
         setPadding(palette.dp(16), palette.dp(12), palette.dp(16), palette.dp(12))
+        // WindowManager can draw this overlay behind a gesture/navigation bar. Keep the last
+        // destructive action above that area even when the sheet is scrolled to its end.
+        ViewCompat.setOnApplyWindowInsetsListener(this) { _, insets ->
+            val safe = insets.getInsets(WindowInsetsCompat.Type.systemBars() or
+                WindowInsetsCompat.Type.displayCutout() or WindowInsetsCompat.Type.mandatorySystemGestures())
+            setPadding(palette.dp(16) + safe.left, palette.dp(12),
+                palette.dp(16) + safe.right, palette.dp(12) + safe.bottom)
+            insets
+        }
         val heading = LinearLayout(context).apply { gravity = Gravity.CENTER_VERTICAL }
         heading.addView(ImageView(context).apply {
             setImageResource(R.drawable.ic_launcher)
@@ -295,7 +316,14 @@ internal class ReadingOverlayControls(
         tabs.addView(controlsTab, LayoutParams(0, palette.dp(48), 1f))
         tabs.addView(textTab, LayoutParams(0, palette.dp(48), 1f).apply { marginStart = palette.dp(8) })
         addView(tabs, LayoutParams(MATCH_PARENT, WRAP_CONTENT))
-        scroll = ScrollView(context).apply { isFillViewport = false; isVerticalScrollBarEnabled = true; clipToPadding = false }
+        scroll = ScrollView(context).apply {
+            isFillViewport = false
+            isVerticalScrollBarEnabled = true
+            clipToPadding = false
+            // Space after Stop screen translation is intentional, including on devices whose
+            // overlay insets are already fitted by WindowManager and therefore report zero.
+            setPadding(0, 0, 0, palette.dp(24))
+        }
         val content = vertical()
         scroll.addView(content, FrameLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT))
         addView(scroll, LayoutParams(MATCH_PARENT, 0, 1f).apply { topMargin = palette.dp(12) })
@@ -359,8 +387,10 @@ internal class ReadingOverlayControls(
         val more = disclosure(controlsPage, R.string.reading_overlay_more)
         more.addView(buttonRow(palette.button(text(R.string.reading_overlay_setup), callbacks.openSetup),
             palette.button(text(R.string.reading_overlay_open_hearth), callbacks.openHearth)), spaced(bottom = 8))
-        more.addView(buttonRow(palette.button(text(R.string.reading_overlay_clear), callbacks.clear),
-            palette.button(text(R.string.reading_overlay_stop), callbacks.stop).apply { setTextColor(palette.danger) }), spaced(bottom = 8))
+        more.addView(palette.button(text(R.string.reading_overlay_clear), callbacks.clear), spaced(bottom = 8))
+        more.addView(palette.button(text(R.string.reading_overlay_stop), callbacks.stop).apply {
+            setTextColor(palette.danger)
+        }, spaced(bottom = 12))
 
         textPage.addView(sectionLabel(R.string.reading_overlay_translation))
         translatedText = textBody()
@@ -383,11 +413,18 @@ internal class ReadingOverlayControls(
 
     /** Calling render never fires a callback, changes tabs, or resets scroll position. */
     fun render(value: ReadingOverlayUiState) {
+        val previousError = state.error
         state = value
         rendering = true
         try {
             languageText.text = value.languagePair
             languageText.visibility = if (value.languagePair.isBlank()) GONE else VISIBLE
+            val error = value.error?.takeIf { it.isNotBlank() && !value.working }
+            if (error != null) statusText.text = error
+            else if (previousError != null && statusText.text.toString() == previousError) {
+                statusText.text = text(if (value.working) R.string.reading_overlay_reading else R.string.reading_overlay_ready)
+            }
+            statusText.setTextColor(if (error == null) palette.muted else palette.danger)
             primaryButton.text = text(if (value.working) R.string.reading_overlay_reading else R.string.reading_overlay_translate)
             primaryButton.isEnabled = !value.working
             pauseButton.text = text(if (value.paused) R.string.reading_overlay_resume else R.string.reading_overlay_pause)
@@ -420,6 +457,12 @@ internal class ReadingOverlayControls(
     }
 
     fun showReadingText() = selectText(true)
+
+    override fun onAttachedToWindow() {
+        super.onAttachedToWindow()
+        ViewCompat.requestApplyInsets(this)
+    }
+
     fun resetToMain() {
         selectText(false)
         expandedSections.forEach { (button, section) -> section.visibility = GONE; updateDisclosure(button, false) }
@@ -427,7 +470,7 @@ internal class ReadingOverlayControls(
     }
 
     private fun selectText(value: Boolean) {
-                controlsPage.visibility = if (value) GONE else VISIBLE
+        controlsPage.visibility = if (value) GONE else VISIBLE
         textPage.visibility = if (value) VISIBLE else GONE
         styleSelected(controlsTab, !value)
         styleSelected(textTab, value)
@@ -531,6 +574,8 @@ private class ReadingOverlayPalette(private val context: Context) {
     val accent = if (dark) Color.rgb(98, 226, 207) else Color.rgb(0, 106, 97)
     val accentSurface = if (dark) Color.rgb(31, 73, 70) else Color.rgb(204, 244, 235)
     val danger = if (dark) Color.rgb(255, 172, 165) else Color.rgb(167, 35, 29)
+    val dangerSurface = if (dark) Color.rgb(76, 38, 39) else Color.rgb(255, 228, 224)
+    val onAccent = if (dark) Color.rgb(9, 45, 42) else Color.WHITE
     val paused = if (dark) Color.rgb(255, 206, 126) else Color.rgb(135, 82, 0)
     fun dp(value: Int) = (value * context.resources.displayMetrics.density).roundToInt()
     fun fill(color: Int, radius: Int) = GradientDrawable().apply { setColor(color); cornerRadius = dp(radius).toFloat() }
@@ -550,7 +595,7 @@ private class ReadingOverlayPalette(private val context: Context) {
         maxLines = 2; gravity = Gravity.CENTER
         setPadding(dp(10), dp(8), dp(10), dp(8))
         background = ripple(if (primary) accent else raised, 14)
-        setTextColor(if (primary) if (dark) Color.rgb(9, 45, 42) else Color.WHITE else ink)
+        setTextColor(if (primary) onAccent else ink)
         setOnClickListener { action() }
     }
 }

@@ -8,7 +8,7 @@
     <string name="reading_overlay_move">اسحب لتحريك أدوات ترجمة الشاشة</string>
     <string name="reading_overlay_move_status">%1$s. اسحب لتحريك الأدوات</string>
     <string name="reading_overlay_ready">جاهز للترجمة</string>
-    <string name="reading_overlay_manual_status">اضغط للترجمة</string>
+    <string name="reading_overlay_manual_status">اضغط ↻ للترجمة</string>
     <string name="reading_overlay_auto_status">يراقب تغيّر الصفحة</string>
     <string name="reading_overlay_paused">الترجمة التلقائية متوقفة مؤقتًا</string>
     <string name="reading_overlay_reading">جارٍ القراءة…</string>
@@ -27,9 +27,9 @@
     <string name="reading_overlay_select_area">تحديد منطقة</string>
     <string name="reading_overlay_whole_screen">الشاشة كاملة</string>
     <string name="reading_overlay_automation">الترجمة التلقائية</string>
-    <string name="reading_overlay_automation_detail">يمنحك وضع الضغط تحكمًا كاملًا. يقرأ وضع تغيّر الصفحة مجددًا بعد تحركها واستقرارها فقط.</string>
+    <string name="reading_overlay_automation_detail">يحتفظ الوضع اليدوي بالصفحة الحالية حتى تضغط ↻ أو «ترجم الآن». يقرأ وضع تغيّر الصفحة مجددًا بعد توقف التمرير.</string>
     <string name="reading_overlay_after_change">تغيّر الصفحة</string>
-    <string name="reading_overlay_on_tap">عند الضغط</string>
+    <string name="reading_overlay_on_tap">يدوي</string>
     <string name="reading_overlay_settle">انتظار استقرار الصفحة: %1$d مللي ثانية</string>
     <string name="reading_overlay_poll">فحص تغيّر الصفحة: %1$d مللي ثانية</string>
     <string name="reading_overlay_poll_detail">الفحص الأبطأ يستهلك بطارية أقل. لا يغيّر هذا سرعة النموذج.</string>
@@ -64,4 +64,5 @@
     <string name="reading_overlay_translate_status">ترجم الآن. %1$s</string>
     <string name="reading_overlay_expanded">موسّع</string>
     <string name="reading_overlay_collapsed">مطوي</string>
+    <string name="reading_overlay_retry_error">تعذرت الترجمة: %1$s. اضغط لإعادة المحاولة.</string>
 </resources>

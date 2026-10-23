@@ -30,9 +30,20 @@ internal data class CameraOcrState(
     val ocrMs: Long = 0, val translating: Boolean = false, val error: String? = null,
 )
 /** Bounded OCR + translation workers; stale translations cannot replace a newer camera view. */
-internal class CameraOcrController(context: Context) : AutoCloseable {
-    private val context = context.applicationContext
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+internal class CameraOcrController(
+    private val openModel: (OcrProfile) -> OcrEngine,
+    private val openTranslator: (ConversationTranslatorSnapshot) -> CancellableTextTranslator,
+    private val acquire: () -> AutoCloseable,
+    dispatcher: CoroutineDispatcher = Dispatchers.Main.immediate,
+    private val io: CoroutineDispatcher = Dispatchers.IO,
+    private val recognition: CoroutineDispatcher = Dispatchers.Default,
+) : AutoCloseable {
+    constructor(context: Context) : this(
+        { OcrModels(File(context.applicationContext.filesDir,"ocr-models")).open(context.applicationContext,it) },
+        { it.open(context.applicationContext) },
+        { LocalWorkGate.acquire("Camera OCR") },
+    )
+    private val scope = CoroutineScope(SupervisorJob() + dispatcher)
     private val mutable = MutableStateFlow(CameraOcrState())
     val state = mutable.asStateFlow()
     private data class Frame(val bitmap: Bitmap, val captured: Boolean, val epoch: Long)
@@ -51,7 +62,7 @@ internal class CameraOcrController(context: Context) : AutoCloseable {
         frameEpoch.incrementAndGet();revision++;translationWork.invalidate()
         frames = input; mutable.value = CameraOcrState(running=true,loading=true,processing=initial!=null,live=live)
         job = scope.launch(start = CoroutineStart.LAZY) {
-            var lease: LocalWorkGate.Lease? = null
+            var lease: AutoCloseable? = null
             val textQueue = Channel<TextRequest>(Channel.CONFLATED)
             fun current(request: TextRequest)=translationWork.isCurrent(request.ticket){revision}
             fun publish(request: TextRequest,change: (CameraOcrState)->CameraOcrState) {
@@ -62,7 +73,7 @@ internal class CameraOcrController(context: Context) : AutoCloseable {
             fun enqueue(request: TextRequest) {
                 // A late producer must not replace newer work in the conflated queue.
                 translationWork.publish(request.ticket,{revision}) {
-                    mutable.update {it.copy(translating=true)}
+                    mutable.update {it.copy(translating=true,error=null)}
                     if(!textQueue.trySend(request).isSuccess) {
                         translationWork.finish(request.ticket,{revision}) {
                             mutable.update {it.copy(translating=false,error="OCR translation worker stopped before accepting this page")}
@@ -71,8 +82,8 @@ internal class CameraOcrController(context: Context) : AutoCloseable {
                 }
             }
             try {
-                lease = LocalWorkGate.acquire("Camera OCR")
-                withContext(Dispatchers.IO + NonCancellable) { model = OcrModels(File(context.filesDir,"ocr-models")).open(context,profile) }
+                lease = acquire()
+                withContext(io + NonCancellable) { model = openModel(profile) }
                 ensureActive(); mutable.update { it.copy(loading=false) }
                 if(snapshot != null && source != target) launch {
                     val cache = OcrTranslationCache()
@@ -82,11 +93,13 @@ internal class CameraOcrController(context: Context) : AutoCloseable {
                             try {
                                 check(request.text.length <= 3000) { "Recognized text exceeds the 3,000-character translation limit. Capture a smaller area; original text is preserved." }
                                 publish(request) {it.copy(translating=true)}
-                                suspend fun translate(text: String): String = cache[text] ?: withContext(Dispatchers.IO) {
-                                    if(translator == null) withContext(NonCancellable) { translator = snapshot.open(context) }
+                                suspend fun translate(text: String): String = cache[text] ?: withContext(io) {
+                                    if(translator == null) withContext(NonCancellable) { translator = openTranslator(snapshot) }
                                     ensureActive(); val active = checkNotNull(translator); val direction=TranslationDirection(source,target)
                                     check(direction in active.directions) { "${snapshot.label} does not support $source → $target" }
-                                    active.translate(text,direction)
+                                    active.translate(text,direction).also {
+                                        check(it.isNotBlank()) { "Translation returned empty text" }
+                                    }
                                 }.also { cache.put(text,it) }
                                 if(positioned) {
                                     OcrPageTranslation.run(request.lines, {current(request)}, ::translate, { boxes ->
@@ -99,7 +112,13 @@ internal class CameraOcrController(context: Context) : AutoCloseable {
                                     val output=translate(request.text)
                                     publish(request) {it.copy(translation=output,error=null)}
                                 }
-                            } catch(e: CancellationException) { throw e }
+                            } catch(e: CancellationException) {
+                                // A provider may cancel just this call (for example its
+                                // own timeout). Only session cancellation retires the
+                                // worker; otherwise later Translate taps must still work.
+                                currentCoroutineContext().ensureActive()
+                                publish(request) {it.copy(error=e.message ?: "Translation was cancelled")}
+                            }
                             catch(e: Exception) {publish(request) {it.copy(error=e.message ?: e.toString())}}
                             catch(e: LinkageError) {publish(request) {it.copy(error=e.message ?: e.toString())}}
                             finally {
@@ -145,7 +164,7 @@ internal class CameraOcrController(context: Context) : AutoCloseable {
                             }
                         }
                         val lines=OcrFrameWork.run(frame.epoch,frameEpoch::get) {
-                            withContext(Dispatchers.Default) {
+                            withContext(recognition) {
                                 val pixels=IntArray(bitmap.width*bitmap.height); bitmap.getPixels(pixels,0,bitmap.width,0,0,bitmap.width,bitmap.height)
                                 engine.recognizePage(pixels,bitmap.width,bitmap.height,if(frame.captured)960 else 640,progress)
                                     .map { it.copy(text=OcrText.logical(it.text,profile.id == "arabic")) }
@@ -162,7 +181,11 @@ internal class CameraOcrController(context: Context) : AutoCloseable {
                         // progressive request's finally must not make this page terminal.
                         val finalRequest=if(settled && text.isNotBlank() && snapshot!=null && source!=target)
                             request(text,revision,readingLines,progressive) else null
-                        mutable.update {it.copy(processing=false,detecting=false,translating=finalRequest!=null,lines=lines,width=bitmap.width,height=bitmap.height,ocrMs=(System.nanoTime()-begun)/1_000_000)}
+                        mutable.update {it.copy(processing=false,detecting=false,
+                            // An unchanged live frame does not enqueue another request,
+                            // but the preceding frame's translator can still be busy.
+                            translating=finalRequest!=null || translationWork.hasCurrent {revision},
+                            lines=lines,width=bitmap.width,height=bitmap.height,ocrMs=(System.nanoTime()-begun)/1_000_000)}
                         finalRequest?.let(::enqueue)
                     } finally { frame.bitmap.recycle() }
                 }
@@ -177,7 +200,7 @@ internal class CameraOcrController(context: Context) : AutoCloseable {
                 children.forEach { it.cancel() }
                 withContext(NonCancellable) {
                     children.joinAll()
-                    withContext(Dispatchers.IO) {
+                    withContext(io) {
                         try { model?.close() }
                         finally {
                             model=null
@@ -206,7 +229,7 @@ internal class CameraOcrController(context: Context) : AutoCloseable {
     /** Invalidate work immediately when the reader moves, without destroying the loaded model. */
     fun invalidate() {
         frameEpoch.incrementAndGet();revision++;translationWork.invalidate()
-        mutable.update { it.copy(text="",translation="",boxTranslations=emptyList(),lines=emptyList(),regions=emptyList(),detecting=false,error=null,translating=false) }
+        mutable.update { it.copy(text="",translation="",boxTranslations=emptyList(),lines=emptyList(),regions=emptyList(),processing=false,detecting=false,error=null,translating=false) }
     }
     suspend fun awaitStopped() { job?.join() }
     fun freeze() { mutable.update { it.copy(live=false) } }

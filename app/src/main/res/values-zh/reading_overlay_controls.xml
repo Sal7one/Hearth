@@ -8,7 +8,7 @@
     <string name="reading_overlay_move">拖动以移动屏幕翻译控制</string>
     <string name="reading_overlay_move_status">%1$s。拖动以移动控制</string>
     <string name="reading_overlay_ready">可以开始翻译</string>
-    <string name="reading_overlay_manual_status">点击时翻译</string>
+    <string name="reading_overlay_manual_status">点击 ↻ 翻译</string>
     <string name="reading_overlay_auto_status">正在监测页面变化</string>
     <string name="reading_overlay_paused">自动翻译已暂停</string>
     <string name="reading_overlay_reading">正在识别…</string>
@@ -27,9 +27,9 @@
     <string name="reading_overlay_select_area">选择区域</string>
     <string name="reading_overlay_whole_screen">整个屏幕</string>
     <string name="reading_overlay_automation">自动翻译</string>
-    <string name="reading_overlay_automation_detail">点击模式由您控制。页面变化模式仅在页面移动并稳定后重新识别。</string>
+    <string name="reading_overlay_automation_detail">手动模式保留当前页面，直到点击 ↻ 或“立即翻译”。页面变化模式会在滚动停止后重新识别。</string>
     <string name="reading_overlay_after_change">页面变化时</string>
-    <string name="reading_overlay_on_tap">点击时</string>
+    <string name="reading_overlay_on_tap">手动</string>
     <string name="reading_overlay_settle">等待页面稳定：%1$d 毫秒</string>
     <string name="reading_overlay_poll">检查页面变化：%1$d 毫秒</string>
     <string name="reading_overlay_poll_detail">降低检查频率可节省电量，不会改变模型推理速度。</string>
@@ -64,4 +64,5 @@
     <string name="reading_overlay_translate_status">立即翻译。%1$s</string>
     <string name="reading_overlay_expanded">已展开</string>
     <string name="reading_overlay_collapsed">已折叠</string>
+    <string name="reading_overlay_retry_error">翻译失败：%1$s。点击重试。</string>
 </resources>

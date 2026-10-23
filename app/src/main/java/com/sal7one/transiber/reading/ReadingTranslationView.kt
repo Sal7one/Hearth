@@ -9,7 +9,9 @@ import android.graphics.RectF
 import android.text.TextUtils
 import android.util.TypedValue
 import android.view.Gravity
+import android.view.MotionEvent
 import android.view.View
+import android.view.ViewConfiguration
 import android.widget.FrameLayout
 import android.widget.TextView
 import androidx.core.widget.TextViewCompat
@@ -157,7 +159,7 @@ internal class ReadingTranslationView(
                 if(layoutChanged) existing.layoutParams=LayoutParams(bounds.width,bounds.height).apply {leftMargin=bounds.left;topMargin=bounds.top}
                 return@forEach
             }
-            val label=TextView(context).apply {
+            val label=ReadingTranslatedTextView(context).apply {
                 text=box.translation
                 setTextColor(box.line.region?.paint?.foreground ?: Color.BLACK)
                 setBackgroundColor(if(box.line.region?.paint!=null)Color.TRANSPARENT else Color.WHITE)
@@ -200,5 +202,31 @@ internal class ReadingTranslationView(
     override fun onDetachedFromWindow() {
         cleanupImages.values.forEach {it.image.recycle()};cleanupImages.clear()
         super.onDetachedFromWindow()
+    }
+}
+
+/** A swipe inside a large paragraph is not a request to open the full-text controls. */
+private class ReadingTranslatedTextView(context: Context) : TextView(context) {
+    private val touchSlop=ViewConfiguration.get(context).scaledTouchSlop.toFloat()
+    private var downX=0f
+    private var downY=0f
+    private var dragged=false
+
+    override fun onTouchEvent(event: MotionEvent): Boolean {
+        when(event.actionMasked) {
+            MotionEvent.ACTION_DOWN -> {downX=event.x;downY=event.y;dragged=false}
+            MotionEvent.ACTION_CANCEL -> {dragged=false;return super.onTouchEvent(event)}
+            MotionEvent.ACTION_MOVE,MotionEvent.ACTION_POINTER_DOWN -> {
+                val dx=event.x-downX;val dy=event.y-downY
+                if(!dragged && (event.actionMasked==MotionEvent.ACTION_POINTER_DOWN || dx*dx+dy*dy>touchSlop*touchSlop)) {
+                    dragged=true
+                    val cancel=MotionEvent.obtain(event).apply {action=MotionEvent.ACTION_CANCEL}
+                    try {super.onTouchEvent(cancel)} finally {cancel.recycle()}
+                }
+                if(dragged)return true
+            }
+            MotionEvent.ACTION_UP -> if(dragged) {dragged=false;return true}
+        }
+        return super.onTouchEvent(event)
     }
 }

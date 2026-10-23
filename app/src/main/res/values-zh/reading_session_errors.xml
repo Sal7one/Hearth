@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="reading_capture_timeout">屏幕没有提供新画面。请点按翻译重试，或停止并重新启动屏幕翻译，再次共享屏幕。</string>
+</resources>
