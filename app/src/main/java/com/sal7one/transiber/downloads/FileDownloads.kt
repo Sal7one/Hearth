@@ -516,9 +516,18 @@ class FileDownloads(private val context: Context) {
    return
   }
   require(item.installed && item.installedId.isNotBlank()) { "Model is not installed" }
-  CaptionConfigStore.update(context) {
-   if (speech != null) it.copy(engine = speech.profile.captionEngine, modelId = item.installedId, streamLanguage = if (speech.profile.capabilities.automaticSourceLanguage) "auto" else "ar")
-   else it.copy(localTranslationModelId = item.installedId)
+  if (speech != null) {
+   CaptionConfigStore.update(context) { it.copy(engine = speech.profile.captionEngine, modelId = item.installedId, streamLanguage = if (speech.profile.capabilities.automaticSourceLanguage) "auto" else "ar") }
+  } else {
+   val translator = TranslationCatalog.models.firstOrNull { it.id == item.installedId }
+    ?: error("Unknown installed translation model: ${item.installedId}")
+   require(modelId.isBlank() || modelId == translator.id) { "Installed translation model does not match this download" }
+   require(LocalTranslationModels(File(context.filesDir, "translation-models")).installed().any { it.id == translator.id }) {
+    "Download or import ${translator.label} in Models → Translation before selecting it."
+   }
+   // An explicit Use action selects the local stage, even after a cloud translator.
+   CaptionConfigStore.update(context) { it.copy(localTranslationModelId = translator.id,
+    textTranslationProviderId = "local", localTranslationEnabled = true, mode = CaptionMode.TRANSLATE) }
   }
  }
  fun translationModel(record: FileDownload): TranslationModelSpec? = TranslationCatalog.models.firstOrNull { if (record.modelId.isNotBlank()) it.id == record.modelId else it.fileName == record.title }

@@ -48,33 +48,24 @@ fun CaptionHome(
     val running by CaptionCaptureService.running.collectAsStateWithLifecycle()
     var config by remember { mutableStateOf<CaptionOverlayConfig?>(null) }
     var speech by remember { mutableStateOf<List<LocalSpeechModel>>(emptyList()) }
-    var translations by remember { mutableStateOf<Set<String>>(emptySet()) }
     var error by remember { mutableStateOf<String?>(null) }
     var saveFailed by remember { mutableStateOf(false) }
     var pendingWrite by remember { mutableStateOf<Job?>(null) }
     LaunchedEffect(Unit) {
         CaptionConfigStore.config(context).collect { config = it }
     }
-    LaunchedEffect(Unit) {
+    val bindings by ModelSourceBindings.checks.collectAsStateWithLifecycle()
+    val resumed = rememberCaptionSetupResumeRevision()
+    LaunchedEffect(registered, bindings, resumed) {
         try {
-            registry.refreshModels()
-            withContext(Dispatchers.IO) {
-                speech = LocalSpeechModels(File(context.filesDir, "speech-models")).list()
-                translations = com.sal7one.transiber.translation.LocalTranslationModels(File(context.filesDir, "translation-models"))
-                    .installed().map { it.id }.toSet() +
-                    com.sal7one.transiber.translation.MarianPackage.pairs.filter {
-                        com.sal7one.transiber.translation.MarianPackage.installed(context, it) != null
-                    }.map { it.id } +
-                    com.sal7one.transiber.translation.MarianCascade.routes.filter {
-                        com.sal7one.transiber.translation.MarianCascade.installed(context, it)
-                    }.map { it.id }
+            speech = withContext(Dispatchers.IO) {
+                LocalSpeechModels(File(context.filesDir, "speech-models")).list()
             }
         } catch (e: CancellationException) { throw e }
         catch (e: Exception) { error = e.message ?: e.toString() }
     }
     val cfg = config
     if (cfg == null) { LinearProgressIndicator(Modifier.fillMaxWidth()); return }
-    val languageModel = rememberCaptionLanguageModel(cfg)
     fun update(transform: (CaptionOverlayConfig) -> CaptionOverlayConfig) {
         config = transform(cfg)
         saveFailed = false
@@ -102,20 +93,9 @@ fun CaptionHome(
         else -> registered.any { it.isValid && (cfg.modelId.isBlank() || cfg.modelId == it.id) &&
             it.engineType == if (cfg.effectiveEngine == CaptionEngineChoice.VOSK) ModelEngineType.VOSK else ModelEngineType.WHISPER }
     }
-    val needsTranslator = when (captionTranslationRoute(cfg, CloudConfigStore.sttMode(context))) {
-        CaptionTranslationRoute.TEXT_TRANSLATOR -> if (cfg.textTranslationProviderId !in setOf("", "local")) !com.sal7one.transiber.translation.captionCloudTranslatorReady(cfg) else if (cfg.localTranslationModelId == com.sal7one.transiber.translation.TranslationOptions.ML_KIT)
-            !com.sal7one.transiber.translation.PlatformTranslation.available else {
-            val from = CaptionLanguages.effectiveSource(cfg, CloudConfigStore.sttMode(context), languageModel)
-            cfg.localTranslationModelId !in translations ||
-                cfg.target.languageTag !in com.sal7one.transiber.translation.TranslationOptions.targetLanguages(cfg.localTranslationModelId, from) ||
-                (from !in setOf("auto", "model", "und", "mul", "") &&
-                    !com.sal7one.transiber.translation.TranslationOptions.supports(cfg.localTranslationModelId, from, cfg.target.languageTag))
-        }
-        CaptionTranslationRoute.UNSUPPORTED -> true
-        CaptionTranslationRoute.ENGLISH_PIVOT, CaptionTranslationRoute.ENGLISH_TEXT ->
-            com.sal7one.transiber.translation.TranslationOptions.MARIAN_EN_AR !in translations
-        else -> false
-    }
+    val translationReadiness = rememberCaptionTranslationReadiness(cfg, CloudConfigStore.sttMode(context))
+    val needsTranslator = !translationReadiness.ready
+
     Column(Modifier.fillMaxSize()) {
         Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -141,14 +121,17 @@ fun CaptionHome(
             }
             FeatureAction(uiText(if (basic) UiR.string.setup_basic_manage else UiR.string.ui_speech_translation_8002b), Icons.Default.Tune, { if (basic) onModels() else options = true }, detail = if (isCloud) uiText(UiR.string.ui_1_s_audio_sent_to_your_provider_db1f9, uiText.label(cfg.effectiveEngine)) else uiText(UiR.string.ui_1_s_on_this_phone_0832f, uiText.label(cfg.effectiveEngine)))
             if (!engineReady) Text(if (isCloud) uiText(UiR.string.ui_connect_your_cloud_provider_to_start_14c5d) else uiText(UiR.string.ui_choose_a_speech_model_to_start_53e5a))
-            if (needsTranslator) TextButton(onClick = { if (basic) onModels() else options = true }) { Text(uiText(UiR.string.ui_set_up_translation_1d214)) }
+            if (needsTranslator) Text(translationReadiness.detail,
+                color = if (translationReadiness.checking) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.error,
+                modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite })
+            if (needsTranslator && !translationReadiness.checking) TextButton(onClick = { if (basic) onModels() else options = true }) { Text(uiText(UiR.string.ui_set_up_translation_1d214)) }
             error?.let { Text(it, color = MaterialTheme.colorScheme.error,
                 modifier = Modifier.semantics { liveRegion = LiveRegionMode.Assertive }) }
 
         }
         Surface(color=MaterialTheme.colorScheme.surface.copy(alpha=.65f),shadowElevation = 8.dp) {
             Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
-                Button(modifier = Modifier.weight(1f).heightIn(min = 52.dp), onClick = {
+                Button(modifier = Modifier.weight(1f).heightIn(min = 52.dp), enabled = running || !engineReady || !translationReadiness.checking, onClick = {
                     when {
                         running -> CaptionCaptureService.show(context)
                         !engineReady -> if (isCloud) onCloud() else onModels()
@@ -158,7 +141,7 @@ fun CaptionHome(
                             if (!saveFailed) CaptionStartActivity.start(context, config!!.source)
                         }
                     }
-                }) { Text(when { running -> uiText(UiR.string.ui_show_captions_78946); !engineReady && isCloud -> uiText(UiR.string.ui_connect_cloud_663c4); !engineReady -> uiText(UiR.string.ui_choose_a_model_fefb3); needsTranslator -> uiText(UiR.string.ui_set_up_translation_1d214); else -> uiText(UiR.string.ui_start_captions_68e1c) }) }
+                }) { Text(when { running -> uiText(UiR.string.ui_show_captions_78946); !engineReady && isCloud -> uiText(UiR.string.ui_connect_cloud_663c4); !engineReady -> uiText(UiR.string.ui_choose_a_model_fefb3); translationReadiness.checking -> translationReadiness.detail; needsTranslator -> uiText(UiR.string.ui_set_up_translation_1d214); else -> uiText(UiR.string.ui_start_captions_68e1c) }) }
                 if (running) IconButton(onClick = { CaptionCaptureService.stop(context) }, modifier = Modifier.size(52.dp)) {
                     Icon(Icons.Default.Stop, uiText(UiR.string.ui_stop_captions_58b64))
                 }

@@ -45,7 +45,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.sal7one.common_jni.marian.MarianTranslatorEngine
 import com.sal7one.transiber.byok.CloudConfigStore
 import com.sal7one.transiber.byok.ApiKeyStore
 import com.sal7one.transiber.settings.SettingsSpeechCloudUi
@@ -56,10 +55,9 @@ import com.sal7one.transiber.ui.components.CapabilityStatus
 import com.sal7one.transiber.ui.components.CapabilityTag
 import com.sal7one.transiber.ui.components.HearthCard
 import com.sal7one.transiber.ui.theme.AppDesign
-import androidx.compose.runtime.LaunchedEffect
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.CancellationException
 
 /**
  * Pre-flight page for the live caption overlay: configure the session, see
@@ -78,6 +76,10 @@ fun CaptionScreen(
     val registered by registry.registeredModels.collectAsStateWithLifecycle()
     var config by remember { mutableStateOf(CaptionOverlayConfig()) }
     var overlayAllowed by remember { mutableStateOf(Settings.canDrawOverlays(context)) }
+    var cloudMode by remember { mutableStateOf(CloudConfigStore.sttMode(context)) }
+    var cloudKeyStored by remember { mutableStateOf(captionCloudSpeechKeyStored(context, cloudMode)) }
+    var pendingWrite by remember { mutableStateOf<Job?>(null) }
+    var saveError by remember { mutableStateOf<String?>(null) }
 
     // Load the persisted configuration once, then keep local edits flowing
     // back to the store so the service starts with what is shown here.
@@ -89,6 +91,8 @@ fun CaptionScreen(
         val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
             if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
                 overlayAllowed = Settings.canDrawOverlays(context)
+                cloudMode = CloudConfigStore.sttMode(context)
+                cloudKeyStored = captionCloudSpeechKeyStored(context, cloudMode)
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -98,7 +102,16 @@ fun CaptionScreen(
     val update: ((CaptionOverlayConfig) -> CaptionOverlayConfig) -> Unit = { transform ->
         val next = transform(config).withUiClamp(TvControls.isTvDevice(context))
         config = next
-        scope.launch { CaptionConfigStore.update(context) { next } }
+        saveError = null
+        val previous = pendingWrite
+        pendingWrite = scope.launch {
+            previous?.join()
+            try {
+                CaptionConfigStore.update(context) { transform(it).withUiClamp(TvControls.isTvDevice(context)) }
+                saveError = null
+            } catch (error: CancellationException) { throw error }
+            catch (error: Exception) { saveError = error.message ?: error.toString() }
+        }
     }
 
     var localSpeechModels by remember { mutableStateOf<List<LocalSpeechModel>>(emptyList()) }
@@ -108,16 +121,9 @@ fun CaptionScreen(
     val voskModels = registered.count {
         it.engineType == ModelEngineType.VOSK && it.isValid
     }
-    // Key state lives here (not inside the section) so engine readiness
-    // never re-decrypts the key on recomposition — it refreshes only on
-    // save/remove. Play build only; FOSS has no key storage UI at all.
-    var cloudMode by remember { mutableStateOf(CloudConfigStore.sttMode(context)) }
-    var cloudKeyStored by remember {
-        mutableStateOf(ByokPolicy.cloudEngineAvailable() && ApiKeyStore.hasOpenAiKey(context))
-    }
     val chosenEngineReady = when (config.effectiveEngine) {
-        CaptionEngineChoice.WHISPER -> whisperModels > 0
-        CaptionEngineChoice.VOSK -> voskModels > 0
+        CaptionEngineChoice.WHISPER -> registered.any { it.engineType == ModelEngineType.WHISPER && it.isValid && (config.modelId.isBlank() || it.id == config.modelId) }
+        CaptionEngineChoice.VOSK -> registered.any { it.engineType == ModelEngineType.VOSK && it.isValid && (config.modelId.isBlank() || it.id == config.modelId) }
         CaptionEngineChoice.MOONSHINE, CaptionEngineChoice.QWEN, CaptionEngineChoice.OMNILINGUAL, CaptionEngineChoice.PHONON, CaptionEngineChoice.NEMOTRON, CaptionEngineChoice.TRANSCRIBEPSY, CaptionEngineChoice.COHERE, CaptionEngineChoice.FUNASR_MLT, CaptionEngineChoice.VOXTRAL, CaptionEngineChoice.AUDAR, CaptionEngineChoice.OWSM -> localSpeechModels.any {
             it.profile.backend == config.effectiveEngine.speechBackend && (config.modelId.isBlank() || it.id == config.modelId)
         }
@@ -126,29 +132,10 @@ fun CaptionScreen(
         CaptionEngineChoice.CLOUD ->
             ByokPolicy.cloudEngineAvailable() && (cloudKeyStored || !com.sal7one.transiber.byok.cloudSpeechKeyRequired(cloudMode,com.sal7one.transiber.byok.CloudConfigStore.provider(context)))
     }
-    // Cheap, honest pre-flight check: the translation runtime is compiled in
-    // AND a TRANSLATE model folder is registered. The authoritative check
-    // (native engine load) happens when the session starts; a load failure
-    // surfaces as an overlay notice from the caption controller.
-    val translationModelImported = registered.any {
-        it.engineType == ModelEngineType.TRANSLATE && it.isValid &&
-            it.digest?.hex == com.sal7one.transiber.translation.MarianPackage.find(
-                com.sal7one.transiber.translation.TranslationOptions.MARIAN_EN_AR)?.treeSha256
-    }
-    var localTranslationInstalled by remember { mutableStateOf(false) }
-    LaunchedEffect(config.localTranslationModelId) {
-        localTranslationInstalled = withContext(Dispatchers.IO) {
-            com.sal7one.transiber.translation.TranslationOptions.installed(context, config.localTranslationModelId)
-        }
-    }
     val route = captionTranslationRoute(config, cloudMode)
     val liveCloudTranslation = route == CaptionTranslationRoute.LIVE_TARGET
-    val translationReady = when (route) {
-        CaptionTranslationRoute.TEXT_TRANSLATOR -> if (config.textTranslationProviderId !in setOf("", "local")) com.sal7one.transiber.translation.captionCloudTranslatorReady(config) else localTranslationInstalled || (config.localTranslationModelId == com.sal7one.transiber.translation.TranslationOptions.ML_KIT && com.sal7one.transiber.translation.PlatformTranslation.available)
-        CaptionTranslationRoute.UNSUPPORTED -> false
-        CaptionTranslationRoute.ENGLISH_PIVOT, CaptionTranslationRoute.ENGLISH_TEXT -> translationModelImported && MarianTranslatorEngine.isRuntimeAvailable
-        else -> true
-    }
+    val translationReadiness = rememberCaptionTranslationReadiness(config, cloudMode)
+    val translationReady = translationReadiness.ready
 
     Column(
         modifier = Modifier
@@ -264,7 +251,7 @@ fun CaptionScreen(
                         } else if (translationReady) {
                             uiText(UiR.string.ui_translation_route_available_model_api_errors_will_appear_in_the_b_40687)
                         } else {
-                            uiText(UiR.string.ui_choose_a_translator_in_the_local_translation_section_below_origin_507ac)
+                            translationReadiness.detail
                         },
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -335,7 +322,10 @@ fun CaptionScreen(
                 // Settings can change it mid-session too.)
                 // NETWORK CODE — play distribution only.
                 Spacer(Modifier.height(AppDesign.Dimens.SpacingSm))
-                SettingsSpeechCloudUi(onStoredChange = { stored -> cloudKeyStored = stored }, onModeChange = { cloudMode = it })
+                SettingsSpeechCloudUi(onStoredChange = { stored -> cloudKeyStored = stored }, onModeChange = {
+                    cloudMode = it
+                    cloudKeyStored = captionCloudSpeechKeyStored(context, it)
+                })
             }
             if (engineModels.isNotEmpty()) {
                 Spacer(Modifier.height(AppDesign.Dimens.SpacingSm))
@@ -454,19 +444,24 @@ fun CaptionScreen(
         }
 
         // ------------------------------------------------------------- go
-        val ready = overlayAllowed && chosenEngineReady
+        val ready = overlayAllowed && chosenEngineReady && translationReady && saveError == null
         Button(
-            onClick = { CaptionStartActivity.start(context) },
+            onClick = { scope.launch {
+                pendingWrite?.join()
+                if (saveError == null) CaptionStartActivity.start(context)
+            } },
             enabled = ready,
             modifier = Modifier.fillMaxWidth(),
         ) {
             Icon(Icons.Default.VolumeUp, null)
             Text(uiText(UiR.string.ui_start_live_captions_ed786))
         }
+        saveError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
         if (!ready) {
             Text(
                 text = buildString {
                     if (!overlayAllowed) append(uiText(UiR.string.ui_grant_the_overlay_setting_7eef5))
+                    if (!translationReady) append(translationReadiness.detail + "\n")
                     if (!chosenEngineReady) {
                         if (config.effectiveEngine == CaptionEngineChoice.CLOUD) {
                             append(uiText(UiR.string.ui_paste_your_api_key_in_the_cloud_section_above_2d3b0))
@@ -577,5 +572,17 @@ private fun RequirementRow(
         if (actionLabel != null) {
             TextButton(onClick = onAction) { Text(actionLabel) }
         }
+    }
+}
+
+/** Match the actual selected cloud speech adapter; an OpenAI key does not configure Soniox/Scribe. */
+private fun captionCloudSpeechKeyStored(context: android.content.Context, mode: CloudConfigStore.SttMode): Boolean {
+    if (!ByokPolicy.cloudEngineAvailable()) return false
+    return when (mode) {
+        CloudConfigStore.SttMode.STREAMING_SONIOX -> ApiKeyStore.getSonioxKey(context).isNotBlank()
+        CloudConfigStore.SttMode.STREAMING_ELEVENLABS -> ApiKeyStore.getElevenLabsKey(context).isNotBlank()
+        CloudConfigStore.SttMode.STREAMING_DEEPGRAM -> ApiKeyStore.getDeepgramKey(context).isNotBlank()
+        CloudConfigStore.SttMode.STREAMING_ASSEMBLYAI -> ApiKeyStore.getAssemblyAiKey(context).isNotBlank()
+        else -> ApiKeyStore.hasOpenAiKey(context)
     }
 }

@@ -30,8 +30,9 @@ internal fun captionLanguageModel(context: Context, config: CaptionOverlayConfig
     }
     val type = if (config.engine == CaptionEngineChoice.VOSK) ModelEngineType.VOSK else ModelEngineType.WHISPER
     val candidates = ModelRegistry.getInstance(context).getModelsForEngine(type)
-    val model = candidates.firstOrNull { it.id == config.modelId } ?: candidates.firstOrNull()
-        ?: return CaptionLanguageModel("", "${config.engine.label} · no model selected")
+    val model = selectCaptionSpeechModel(candidates, config.modelId)
+        ?: return if (config.modelId.isBlank()) CaptionLanguageModel("", "${config.engine.label} · no model selected")
+        else CaptionLanguageModel(config.modelId, "${config.engine.label} · selected model unavailable")
     val vocab = if (type == ModelEngineType.WHISPER) runCatching {
         java.io.File(model.path).inputStream().use(::whisperVocabulary)
     }.getOrNull() else null

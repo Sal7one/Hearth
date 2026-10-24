@@ -4,7 +4,6 @@ import android.content.Context
 import android.provider.Settings
 import com.sal7one.common_jni.CommonJni
 import com.sal7one.common_jni.speech.SpeechRuntime
-import com.sal7one.common_jni.translation.TranslationCatalog
 import com.sal7one.transiber.byok.*
 import com.sal7one.transiber.caption.*
 import com.sal7one.transiber.models.*
@@ -79,7 +78,7 @@ internal suspend fun overlayPreflight(context: Context, shortcut: OverlayShortcu
                     val type = if (config.engine == CaptionEngineChoice.VOSK) ModelEngineType.VOSK else ModelEngineType.WHISPER
                     val registry = ModelRegistry.getInstance(context)
                     val candidates = registry.getModelsForEngine(type)
-                    val model = (if (config.modelId.isBlank()) candidates.firstOrNull() else candidates.firstOrNull { it.id == config.modelId })
+                    val model = selectCaptionSpeechModel(candidates, config.modelId)
                         ?: error("Selected ${type.displayName} model is missing. Import or select it in Models.")
                     check(model.isValid && File(model.path).exists()) { "Selected speech model is unavailable: ${model.name}" }
                     model.name
@@ -87,30 +86,7 @@ internal suspend fun overlayPreflight(context: Context, shortcut: OverlayShortcu
             }
         }
         probes += SetupProbe("Caption languages & translation", SetupFix.CAPTIONS) {
-            val spoken = CaptionLanguages.effectiveSource(config, cloudMode, captionLanguageModel(context, config))
-            when (captionTranslationRoute(config, cloudMode)) {
-                CaptionTranslationRoute.ORIGINAL -> "Original captions · ${config.source.label}"
-                CaptionTranslationRoute.UNSUPPORTED -> error("The selected speech path cannot translate with this setup. Choose a text translator or switch to original captions.")
-                CaptionTranslationRoute.TEXT_TRANSLATOR -> {
-                    if (spoken == "auto" && (config.engine in setOf(CaptionEngineChoice.WHISPER, CaptionEngineChoice.VOSK) ||
-                        config.engine == CaptionEngineChoice.CLOUD && cloudMode in setOf(CloudConfigStore.SttMode.BATCH, CloudConfigStore.SttMode.STREAMING_ELEVENLABS))) {
-                        error("This speech adapter needs a known spoken language for text translation. Set its supported spoken language or choose a speech engine that reports it.")
-                    }
-                    checkTranslator(context, config.localTranslationModelId, config.textTranslationProviderId.ifBlank { "local" }, spoken, config.target.languageTag)
-                }
-                CaptionTranslationRoute.ENGLISH_PIVOT, CaptionTranslationRoute.ENGLISH_TEXT -> {
-                    com.sal7one.transiber.runtime.LocalModelPolicy.requireAllowed(context, "translation")
-                    val pair = checkNotNull(MarianPackage.find(TranslationOptions.MARIAN_EN_AR))
-                    check(MarianPackage.installed(context, pair) != null) {
-                        "Download the verified English → Arabic translation model, or choose a different text translator."
-                    }
-                    "English → Arabic translation model registered"
-                }
-                else -> {
-                    check(config.target.languageTag in CaptionLanguages.target(config, cloudMode).codes) { "Unsupported translation target: ${config.target.languageTag}" }
-                    "Speech engine translation → ${config.target.label}"
-                }
-            }
+            checkCaptionTranslationSetup(context, config, cloudMode)
         }
     } else {
         probes += SetupProbe("OCR model & source language", SetupFix.CAMERA) {
@@ -122,61 +98,9 @@ internal suspend fun overlayPreflight(context: Context, shortcut: OverlayShortcu
             "${profile.label} · $source"
         }
         probes += SetupProbe("Text translation", SetupFix.TRANSLATION) {
-            checkTranslator(context, readingModel, provider, source, target)
+            checkTranslationSetup(context, readingModel, provider, source, target)
         }
     }
     val signature = listOf(config.toString(), cloudMode.name, profileId, source, target, provider, readingModel).joinToString("\n")
     OverlayPreflight(config, signature, checkOverlaySetup(probes))
-}
-
-private suspend fun checkTranslator(context: Context, localId: String, providerId: String, source: String, target: String): String {
-    val knownSource = source !in setOf("auto", "model", "und", "mul", "")
-    if (source == target) return "$source → $target · original text (same language)"
-    if (providerId != "local") {
-        check(ByokPolicy.FEATURE_BYOK) { "Cloud translation is unavailable in the offline build." }
-        val provider = ConversationTranslationSettings.provider(providerId) ?: error("Unknown translation provider: $providerId")
-        val connection = ConversationTranslationSettings.connection(context, provider)
-        val languages = ConversationTranslationSettings.capabilities(context, provider) ?: error("Check ${provider.label} languages in Translation settings first.")
-        check(target in languages.targetLanguages && (!knownSource || languages.supports(source, target))) { "${provider.label} does not support $source → $target." }
-        // Validate the real request contract without sending text or testing billing.
-        CloudTranslationProtocol.translateRequest(connection, "Setup check", if (knownSource) source else languages.sourceLanguages.first { languages.supports(it, target) }, target)
-        return "${provider.label} · saved connection and supported languages"
-    }
-    com.sal7one.transiber.runtime.LocalModelPolicy.requireAllowed(context, "translation")
-    if (localId == TranslationOptions.ML_KIT) {
-        check(PlatformTranslation.available) { "ML Kit is unavailable in this build. Select an imported local translator." }
-        check(target in TranslationOptions.mlKitCodes && (!knownSource || source in TranslationOptions.mlKitCodes)) { "ML Kit does not support $source → $target." }
-        val required = if (knownSource) setOf(source, target) else setOf(target)
-        val missing = required - PlatformTranslation.installed()
-        check(missing.isEmpty()) { "Download ML Kit language packs in Models: ${missing.joinToString()}" }
-        return "ML Kit packs installed${if (!knownSource) " · source pack must match detected speech" else ""}"
-    }
-    check(localId.isNotBlank()) { "Choose a local translator in Live captions → Speech & translation." }
-    MarianPackage.find(localId)?.let { pair ->
-        check(target == pair.target && (!knownSource || source == pair.source)) {
-            "Marian / OPUS-MT ${pair.source} → ${pair.target} does not support $source → $target."
-        }
-        check(MarianPackage.installed(context, pair) != null) {
-            "Download and install Marian ${pair.source} → ${pair.target} in Models → Translation."
-        }
-        return "Marian / OPUS-MT · $source → $target · four files verified"
-    }
-    com.sal7one.transiber.translation.MarianCascade.find(localId)?.let { route ->
-        check(target == route.target && (!knownSource || source == route.source)) {
-            "Marian via English ${route.source} → ${route.target} does not support $source → $target."
-        }
-        check(com.sal7one.transiber.translation.MarianCascade.installed(context, route)) {
-            "Install both Marian ${route.first.source} → English and English → ${route.target} in Models → Translation."
-        }
-        return "Marian / OPUS-MT · $source → English → $target · both models verified"
-    }
-    com.sal7one.common_jni.translation.Ct2Catalog.find(localId)?.let { spec ->
-        check(target in spec.targets && (!knownSource || spec.supports(source,target))) { "${spec.label} does not support $source → $target" }
-        check(com.sal7one.transiber.translation.Ct2Package.installed(context,spec)) { "Install ${spec.label} in Models → Translation" }
-        return "${spec.label} · CPU · pinned components present"
-    }
-    val model = TranslationCatalog.find(localId)
-    check(target in model.targetLanguages && (!knownSource || model.supports(source, target))) { "${model.label} does not support $source → $target." }
-    check(LocalTranslationModels(File(context.filesDir, "translation-models")).installed().any { it.id == localId }) { "Download or import ${model.label} in Models → Translation." }
-    return "${model.label} · $source → $target"
 }

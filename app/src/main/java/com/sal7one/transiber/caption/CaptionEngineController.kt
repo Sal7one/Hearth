@@ -708,9 +708,10 @@ class CaptionEngineController(
             else -> ModelEngineType.WHISPER
         }
         val candidates = registry.getModelsForEngine(engineType)
-        val model = candidates.firstOrNull { it.id == config.modelId } ?: candidates.firstOrNull()
+        val model = selectCaptionSpeechModel(candidates, config.modelId)
             ?: throw IllegalStateException(
-                "No ${engineType.displayName} model imported. Import one from the model catalogue first.",
+                if (config.modelId.isBlank()) "No ${engineType.displayName} model imported. Import one from the model catalogue first."
+                else "Selected ${engineType.displayName} model is missing: ${config.modelId}. Import or select it in Models.",
             )
 
         val provider = registry.getProvider(model.id)

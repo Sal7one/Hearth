@@ -4,6 +4,7 @@ import com.sal7one.transiber.R as UiR
 import com.sal7one.transiber.i18n.rememberUiText
 
 import com.sal7one.transiber.settings.SettingsTranslateCloudUi
+import android.content.Context
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
@@ -15,9 +16,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.sal7one.transiber.settings.SettingsLocation
 import com.sal7one.common_jni.translation.TranslationCatalog
 import com.sal7one.transiber.byok.ByokPolicy
+import com.sal7one.transiber.caption.rememberCaptionSetupResumeRevision
+import com.sal7one.transiber.preferences.ModelSourceBindings
 import com.sal7one.transiber.models.ModelRegistry
 import com.sal7one.transiber.models.ModelEngineType
 import com.sal7one.transiber.models.ModelSearch
@@ -55,8 +59,13 @@ internal fun TranslatorChooser(
     val showCloud = !localAllowed || (location?.let { it == SettingsLocation.CLOUD } ?: cloudTab)
     var editing by remember { mutableStateOf<TextTranslationProvider?>(null) }
     var mlKitSetup by rememberSaveable { mutableStateOf(localId == TranslationOptions.ML_KIT && providerId in setOf("", "local")) }
-    var installed by remember { mutableStateOf<Set<String>>(emptySet()) }
-    val registered by remember(context) { ModelRegistry.getInstance(context).registeredModels }.collectAsState()
+    val registered by remember(context) { ModelRegistry.getInstance(context).registeredModels }.collectAsStateWithLifecycle()
+    val bindings by ModelSourceBindings.checks.collectAsStateWithLifecycle()
+    val resumed = rememberCaptionSetupResumeRevision()
+    val inventoryRequest = listOf(context, localAllowed, expanded, localId, registered, bindings, resumed)
+    // Invalidate synchronously: a different selection or an in-place repair cannot borrow stale readiness.
+    var inventory by remember(inventoryRequest) { mutableStateOf(TranslatorChoiceInventory()) }
+    val installed = inventory.installed
     var applying by remember { mutableStateOf(false) }
     var applied by remember { mutableStateOf(false) }
     var failure by remember { mutableStateOf<String?>(null) }
@@ -65,10 +74,16 @@ internal fun TranslatorChooser(
     var scopeOptions by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(providerId,localId) { applied=false }
     LaunchedEffect(expanded) { if(expanded && location == null)cloudTab=providerId !in setOf("", "local") }
-    LaunchedEffect(expanded, localId) {
-        try { installed = withContext(Dispatchers.IO) { LocalTranslationModels(File(context.filesDir, "translation-models")).installed().map { it.id }.toSet() } }
-        catch (e: CancellationException) { throw e }
-        catch (e: Exception) { failure = e.message ?: e.toString() }
+    LaunchedEffect(inventoryRequest) {
+        try {
+            val ids = if (localAllowed) withContext(Dispatchers.IO) {
+                installedTranslatorChoices(context, registered)
+            } else emptySet()
+            inventory = TranslatorChoiceInventory(ids, checking = false)
+        } catch (e: CancellationException) { throw e }
+        catch (e: Exception) {
+            inventory = TranslatorChoiceInventory(checking = false, failure = e.message ?: e.toString())
+        }
     }
     val label = if (providerId.isBlank() && automaticLabel != null) automaticLabel
         else ConversationTranslationSettings.provider(providerId)?.label ?: TranslationOptions.label(localId)
@@ -102,8 +117,10 @@ internal fun TranslatorChooser(
                 Checkbox(showUnavailable, { showUnavailable = it }, enabled = enabled)
                 Text(uiText(UiR.string.settings_flow_show_unavailable), style = MaterialTheme.typography.bodySmall)
             }
-            if (!showUnavailable && installed.isEmpty() && registered.none { it.engineType == ModelEngineType.TRANSLATE && it.isValid })
+            if (inventory.checking) Text(uiText(UiR.string.ui_checking_820d6), style = MaterialTheme.typography.bodySmall)
+            if (!showUnavailable && !inventory.checking && inventory.failure == null && installed.isEmpty())
                 Text(uiText(UiR.string.settings_flow_no_installed), style = MaterialTheme.typography.bodySmall)
+            inventory.failure?.let { Text(it, color = MaterialTheme.colorScheme.error) }
             Column(Modifier.selectableGroup()) {
                 if (PlatformTranslation.available && ModelSearch.matches(query, TranslationOptions.label(TranslationOptions.ML_KIT), "Android language packs", ModelSearch.languageTerms(TranslationOptions.mlKitCodes))) TranslatorRow(TranslationOptions.label(TranslationOptions.ML_KIT),
                     uiText(UiR.string.mlkit_pair_choice) + pair { a,b -> a in TranslationOptions.mlKitCodes && b in TranslationOptions.mlKitCodes },
@@ -114,14 +131,13 @@ internal fun TranslatorChooser(
                     onSelect("local", TranslationOptions.ML_KIT); mlKitSetup = false; expanded = location != null
                 }
                 MarianPackage.pairs.forEach { marian ->
-                    val marianReady = registered.any { it.engineType == ModelEngineType.TRANSLATE &&
-                        it.isValid && it.isDirectory && it.digest?.hex == marian.treeSha256 }
+                    val marianReady = marian.id in installed
                     if (!localTranslatorVisible(marianReady, localId == marian.id, showUnavailable, query,
                         TranslationOptions.label(marian.id), "Marian OPUS", ModelSearch.languageTerms(setOf(marian.source, marian.target)))) return@forEach
                     TranslatorRow(TranslationOptions.label(marian.id),
                         (if (marianReady) uiText(UiR.string.model_installed_verified) else uiText(UiR.string.model_marian_setup)) +
                             pair { a,b -> TranslationOptions.supports(marian.id,a,b) },
-                        providerId == "local" && localId == marian.id, enabled,
+                        providerId == "local" && localId == marian.id, enabled && !inventory.checking && inventory.failure == null,
                         actionLabel = if (marianReady) null else uiText(UiR.string.ui_set_up_a5041)) {
                         if (marianReady) { onSelect("local", marian.id); expanded = location != null }
                         else {
@@ -132,13 +148,13 @@ internal fun TranslatorChooser(
                     }
                 }
                 MarianCascade.routes.forEach { route ->
-                    val ready = TranslationOptions.installed(context, route.id)
+                    val ready = route.id in installed
                     if (!localTranslatorVisible(ready, localId == route.id, showUnavailable, query,
                         TranslationOptions.label(route.id), "Marian English pivot", ModelSearch.languageTerms(setOf(route.source, route.target)))) return@forEach
                     TranslatorRow(TranslationOptions.label(route.id),
                         (if (ready) uiText(UiR.string.model_installed_verified) else uiText(UiR.string.model_marian_setup)) +
                             pair { a,b -> TranslationOptions.supports(route.id,a,b) },
-                        providerId == "local" && localId == route.id, enabled,
+                        providerId == "local" && localId == route.id, enabled && !inventory.checking && inventory.failure == null,
                         actionLabel = if (ready) null else uiText(UiR.string.ui_set_up_a5041)) {
                         if (ready) { onSelect("local", route.id); expanded = location != null }
                         else {
@@ -149,11 +165,11 @@ internal fun TranslatorChooser(
                     }
                 }
                 com.sal7one.common_jni.translation.Ct2Catalog.models.forEach { model ->
-                    val ready=com.sal7one.transiber.translation.Ct2Package.installed(context,model)
+                    val ready=model.id in installed
                     if (!localTranslatorVisible(ready, localId == model.id, showUnavailable, query,
                         model.label, model.id, ModelSearch.languageTerms(model.sources + model.targets))) return@forEach
                     TranslatorRow(model.label, "${model.bytes/1_048_576} MiB · CPU" + pair(model::supports),
-                        providerId=="local" && localId==model.id, enabled && com.sal7one.transiber.translation.Ct2Package.runtimeSupported(), actionLabel=if(ready)null else "Set up") {
+                        providerId=="local" && localId==model.id, enabled && !inventory.checking && inventory.failure == null && com.sal7one.transiber.translation.Ct2Package.runtimeSupported(), actionLabel=if(ready)null else "Set up") {
                         if(ready) { onSelect("local",model.id);expanded=location!=null } else onModels()
                     }
                 }
@@ -163,7 +179,7 @@ internal fun TranslatorChooser(
                         model.label, model.id, model.quantization, ModelSearch.languageTerms(model.sourceLanguages + model.targetLanguages))) return@forEach
                     TranslatorRow(model.label,
                         uiText(UiR.string.ui_1_s_2_s_mib_3_s_languages_01ef0, if (ready) uiText(UiR.string.model_installed) else uiText(UiR.string.model_download_import), model.bytes / 1_048_576, model.sourceLanguages.size) + pair(model::supports),
-                        providerId == "local" && localId == model.id, enabled,
+                        providerId == "local" && localId == model.id, enabled && !inventory.checking && inventory.failure == null,
                         actionLabel = if (ready) null else uiText(UiR.string.ui_set_up_a5041)) {
                         if (ready) { onSelect("local", model.id); expanded = location != null } else {
                             com.sal7one.transiber.preferences.UserPreferences.store(context, "translation-browser").edit().putString("model",model.id).putBoolean("open",true).apply(); onModels()
@@ -230,4 +246,25 @@ private fun TranslatorRow(title: String, detail: String, selected: Boolean, enab
         }
         actionLabel?.let { Text(it, style = MaterialTheme.typography.labelMedium) }
     }
+}
+
+private data class TranslatorChoiceInventory(
+    val installed: Set<String> = emptySet(),
+    val checking: Boolean = true,
+    val failure: String? = null,
+)
+
+/** Cheap private-file presence only. Publisher hashes are still verified when the selected engine opens. */
+internal fun installedTranslatorChoices(context: Context, registered: List<ModelRegistry.RegisteredModel>): Set<String> = buildSet {
+    addAll(LocalTranslationModels(File(context.filesDir, "translation-models")).installed().map { it.id })
+    MarianPackage.pairs.forEach { pair ->
+        if (registered.any { model ->
+                model.engineType == ModelEngineType.TRANSLATE && model.isValid && model.isDirectory &&
+                    model.digest?.hex == pair.treeSha256 && File(model.path).isDirectory && pair.parts.all { part ->
+                        File(model.path, part.fileName).let { it.isFile && it.length() == part.bytes }
+                    }
+            }) add(pair.id)
+    }
+    MarianCascade.routes.forEach { route -> if (route.first.id in this && route.second.id in this) add(route.id) }
+    com.sal7one.common_jni.translation.Ct2Catalog.models.forEach { spec -> if (Ct2Package.installed(context, spec)) add(spec.id) }
 }
