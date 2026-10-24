@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="reading_capture_timeout">لم تصل لقطة جديدة من الشاشة. اضغط ترجمة للمحاولة مجددًا، أو أوقف ترجمة الشاشة وابدأها لمشاركة الشاشة مرة أخرى.</string>
+</resources>

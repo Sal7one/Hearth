@@ -459,6 +459,12 @@ for flavor, architecture in [(f, a) for f in ('play','foss') for a in (*ABIS, 'u
     # binary manifest as well, including declarations contributed by dependencies.
     manifest = subprocess.check_output([aapt, 'dump', 'xmltree', apk, '--file', 'AndroidManifest.xml'], text=True)
     assert 'com.sal7one.transiber.HearthApplication' in manifest, 'Process-wide model audit application missing'
+    # Service-owned overlay windows use ApplicationInfo's policy, not the Activity
+    # underneath. Require the opt-in on the application itself in every delivered APK.
+    application_attributes = re.search(r'(?ms)^\s*E: application\b(.*?)(?=^\s*E:|\Z)', manifest)
+    assert application_attributes and re.search(
+        r'android:enableOnBackInvokedCallback\([^)]*\)=(?:true|\(type 0x12\)0xffffffff)(?:\s|$)',
+        application_attributes.group(1)), f'{flavor}: service overlay Back callbacks are disabled'
     optional_native = re.findall(r'(?ms)^\s*E: uses-native-library\b(.*?)(?=^\s*E:|\Z)', manifest)
     opencl_declarations = [block for block in optional_native if 'libOpenCL.so' in block]
     assert len(opencl_declarations) == 1 and re.search(r'android:required[^\n]*=(?:false|\(type 0x12\)0x0)(?:\s|$)', opencl_declarations[0]), 'OpenCL must remain an optional vendor library'

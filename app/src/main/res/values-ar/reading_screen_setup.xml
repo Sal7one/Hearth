@@ -11,7 +11,7 @@
     <string name="reading_setup_reader_ready">ملفات القارئ جاهزة على هذا الهاتف</string>
     <string name="reading_setup_refresh">متى تتحدّث ترجمة الصفحة؟</string>
     <string name="reading_setup_manual">عندما أضغط «ترجم» فقط</string>
-    <string name="reading_setup_manual_help">أبقِ الصفحة كما هي. أعد الترجمة وقتما تشاء، أو حدّد منطقة لقراءتها.</string>
+    <string name="reading_setup_manual_help">اضغط ↻ في مقبض Hearth العائم أو «ترجم الآن» في أدواته. لا يبدأ هذا الوضع الترجمة عند الضغط داخل التطبيق الآخر.</string>
     <string name="reading_setup_auto">بعد تغيّر الصفحة</string>
     <string name="reading_setup_auto_help">انتظر توقف التمرير ثم اقرأ الصفحة المتغيّرة. يمكنك إيقاف التحديث مؤقتًا من النافذة.</string>
     <string name="reading_setup_controls_hint">افتح أدوات التحكم من المقبض العائم. زر الرجوع يغلق الخيارات أولًا، والإيقاف المؤقت يحتفظ بالترجمة الحالية.</string>

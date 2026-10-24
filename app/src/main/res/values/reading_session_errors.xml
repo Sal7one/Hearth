@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="reading_capture_timeout">The screen did not provide a new frame. Tap Translate to retry, or stop and start screen translation to share the screen again.</string>
+</resources>

@@ -15,6 +15,9 @@ internal class OcrTranslationWork {
     fun isCurrent(ticket: Ticket,currentRevision: () -> Long): Boolean =
         latest===ticket && ticket.revision==currentRevision()
 
+    @Synchronized
+    fun hasCurrent(currentRevision: () -> Long): Boolean = latest?.revision==currentRevision()
+
     /** Publishing and invalidation share a lock, including the actual state update. */
     @Synchronized
     fun publish(ticket: Ticket,currentRevision: () -> Long,update: () -> Unit): Boolean {

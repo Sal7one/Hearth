@@ -11,7 +11,7 @@
     <string name="reading_setup_reader_ready">本机阅读器文件已就绪</string>
     <string name="reading_setup_refresh">何时更新页面翻译？</string>
     <string name="reading_setup_manual">仅在点击翻译时</string>
-    <string name="reading_setup_manual_help">保留当前结果。准备好后再翻译，或框选要阅读的区域。</string>
+    <string name="reading_setup_manual_help">点击 Hearth 浮动手柄上的 ↻，或控制面板中的“立即翻译”。点击其他应用中的内容不会开始翻译。</string>
     <string name="reading_setup_auto">页面变化后</string>
     <string name="reading_setup_auto_help">等滚动停止后再读取变化的页面。可随时在浮层中暂停。</string>
     <string name="reading_setup_controls_hint">浮动手柄可打开控制面板。返回键先关闭选项，暂停会保留当前翻译。</string>

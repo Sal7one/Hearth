@@ -8,7 +8,7 @@
     <string name="reading_overlay_move">Drag to move screen translation controls</string>
     <string name="reading_overlay_move_status">%1$s. Drag to move controls</string>
     <string name="reading_overlay_ready">Ready to translate</string>
-    <string name="reading_overlay_manual_status">Translate on tap</string>
+    <string name="reading_overlay_manual_status">Tap ↻ to translate</string>
     <string name="reading_overlay_auto_status">Watching page changes</string>
     <string name="reading_overlay_paused">Auto translation paused</string>
     <string name="reading_overlay_reading">Reading…</string>
@@ -27,9 +27,9 @@
     <string name="reading_overlay_select_area">Choose area</string>
     <string name="reading_overlay_whole_screen">Whole screen</string>
     <string name="reading_overlay_automation">Automatic translation</string>
-    <string name="reading_overlay_automation_detail">On tap gives you full control. Page changes reads again only after the page moves and settles.</string>
+    <string name="reading_overlay_automation_detail">Manual keeps the current page until you tap ↻ or Translate now. Page changes reads again after scrolling stops.</string>
     <string name="reading_overlay_after_change">Page changes</string>
-    <string name="reading_overlay_on_tap">On tap</string>
+    <string name="reading_overlay_on_tap">Manual</string>
     <string name="reading_overlay_settle">Wait for page to settle: %1$d ms</string>
     <string name="reading_overlay_poll">Check page changes: %1$d ms</string>
     <string name="reading_overlay_poll_detail">Slower checks use less battery. This does not change the model speed.</string>
@@ -64,4 +64,5 @@
     <string name="reading_overlay_translate_status">Translate now. %1$s</string>
     <string name="reading_overlay_expanded">Expanded</string>
     <string name="reading_overlay_collapsed">Collapsed</string>
+    <string name="reading_overlay_retry_error">Translation failed: %1$s. Tap to retry.</string>
 </resources>

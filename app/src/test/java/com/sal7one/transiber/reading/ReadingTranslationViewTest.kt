@@ -5,8 +5,11 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
 import android.os.Looper
+import android.os.SystemClock
 import android.util.TypedValue
 import android.view.View
+import android.view.MotionEvent
+import android.view.ViewConfiguration
 import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.TextView
@@ -15,6 +18,7 @@ import com.sal7one.common_jni.ocr.OcrLine
 import com.sal7one.hearth.core.vision.*
 import com.sal7one.transiber.ocr.PixelCrop
 import com.sal7one.transiber.ocr.TranslatedOcrBox
+import java.nio.ByteBuffer
 import org.junit.Assert.*
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -29,6 +33,120 @@ import org.robolectric.annotation.GraphicsMode
 @Config(sdk=[35])
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class ReadingTranslationViewTest {
+    @Test @Config(qualifiers="xxhdpi") fun sampledNativeHighlightPixelsStayInsideTheirMotionExclusionsAtPhoneScale() {
+        val activity=Robolectric.buildActivity(Activity::class.java).setup().visible()
+        val view=ReadingTranslationView(activity.get()){}
+        assertEquals(3f,view.resources.displayMetrics.density,.001f)
+        val crop=PixelCrop(0,59,720,1504)
+        // Odd source coordinates place stroke edges between physical/capture pixels.
+        // This reproduces the 29-region, 1080x2400 phone publication that looked like scrolling.
+        val regions=List(29) {index->
+            OcrRegion(OcrRect(23+index%3,12+index*50,670-index%5*7,23+index%3),.9f)
+        }
+        try {
+            layoutPhoneOverlay(view)
+            view.updateRegions(regions,720,1600,crop)
+            layoutPhoneOverlay(view)
+            val pixels=capturePhoneOverlay(view,Color.WHITE)
+            val exclusions=view.motionExclusions()
+            assertRenderedChangesExcluded(pixels,Color.WHITE,exclusions)
+            val samples=sampleCapture(pixels)
+            val motion=ReadingMotion()
+            assertFalse(motion.observe(IntArray(samples.size){Color.WHITE},720,1600,emptyList()))
+            assertFalse("Publishing the actual native teal outlines must not look like page movement",
+                motion.observe(samples,720,1600,emptyList(),painted=exclusions,paintStable=false))
+        } finally {activity.pause().stop().destroy()}
+    }
+
+    @Test @Config(qualifiers="xxhdpi") fun sampledNativeLabelBackgroundUsesTheSameRoundedBoundsAsTheActualView() {
+        val activity=Robolectric.buildActivity(Activity::class.java).setup().visible()
+        val view=ReadingTranslationView(activity.get()){}
+        val crop=PixelCrop(11,59,709,1504)
+        val boxes=List(12) {index->
+            TranslatedOcrBox(OcrLine(13+index%3,3+index*105,635-index%4*9,35+index%3,
+                "An article about coffee",.9f),"مقال عن القهوة وطرق تحضيرها")
+        }
+        try {
+            layoutPhoneOverlay(view)
+            view.update(boxes,720,1600,crop)
+            layoutPhoneOverlay(view)
+            val pixels=capturePhoneOverlay(view,Color.BLACK)
+            val exclusions=view.motionExclusions()
+            assertRenderedChangesExcluded(pixels,Color.BLACK,exclusions)
+            val samples=sampleCapture(pixels)
+            val motion=ReadingMotion()
+            assertFalse(motion.observe(IntArray(samples.size){Color.BLACK},720,1600,emptyList()))
+            assertFalse("Publishing native translated labels must not look like scrolling",
+                motion.observe(samples,720,1600,emptyList(),painted=exclusions,paintStable=false))
+        } finally {activity.pause().stop().destroy()}
+    }
+
+    @Test @Config(qualifiers="xxhdpi") fun fractionalCleanupProjectionKeepsPatchAndRleFringesExcludedWithoutPaintingTheirHoles() {
+        val activity=Robolectric.buildActivity(Activity::class.java).setup().visible()
+        val crop=PixelCrop(11,59,709,1504)
+        try {
+            for(patched in listOf(false,true)) {
+                val view=ReadingTranslationView(activity.get()){}
+                val runs=buildList {
+                    repeat(61) {row->addAll(listOf(50+row,50,34,50+row,117,34))}
+                }.toIntArray()
+                val bounds=OcrRect(50,50,101,61)
+                val paint=MangaPaint(ComicMask(runs,crop.width,crop.height),OcrRect(4,4,20,20),Color.WHITE,Color.BLACK,
+                    if(patched)MangaPatch(bounds,IntArray(bounds.width*bounds.height){Color.WHITE}) else null)
+                val region=OcrRegion(OcrRect(5,5,15,10),.9f,paint=paint)
+                val box=TranslatedOcrBox(OcrLine(5,5,15,10,"coffee",.9f,region),"")
+                try {
+                    layoutPhoneOverlay(view)
+                    view.update(listOf(box),720,1600,crop)
+                    layoutPhoneOverlay(view)
+                    val exclusions=view.motionExclusions()
+                    assertTrue("Keep the tight cleanup bounds as well as any demonstrated projection fringe",
+                        exclusions.contains(PixelCrop(61,109,162,170)))
+                    val pixels=capturePhoneOverlay(view,Color.BLACK)
+                    assertRenderedChangesExcluded(pixels,Color.BLACK,exclusions)
+                    if(!patched)assertEquals("A real hole between the two RLE spans must remain the original page",
+                        Color.BLACK,pixels[130*720+110])
+                } finally {view.update(emptyList())}
+            }
+        } finally {activity.pause().stop().destroy()}
+    }
+
+    @Test fun swipingWithinALargeTranslatedParagraphNeverOpensTheOptionsButTapAndAccessibilityStillWork() {
+        val activity=Robolectric.buildActivity(Activity::class.java).setup().visible()
+        var opened=0
+        val view=ReadingTranslationView(activity.get()){opened++}
+        activity.get().setContentView(view)
+        val box=TranslatedOcrBox(OcrLine(0,0,300,300,"A long coffee article",.9f),"مقال طويل عن القهوة")
+        try {
+            view.measure(View.MeasureSpec.makeMeasureSpec(300,View.MeasureSpec.EXACTLY),View.MeasureSpec.makeMeasureSpec(400,View.MeasureSpec.EXACTLY))
+            view.layout(0,0,300,400)
+            view.update(listOf(box),300,400,PixelCrop(0,0,300,400))
+            view.measure(View.MeasureSpec.makeMeasureSpec(300,View.MeasureSpec.EXACTLY),View.MeasureSpec.makeMeasureSpec(400,View.MeasureSpec.EXACTLY))
+            view.layout(0,0,300,400)
+            val label=view.getChildAt(0)
+            assertTrue(label.height>ViewConfiguration.get(activity.get()).scaledTouchSlop*4)
+            var time=SystemClock.uptimeMillis()
+            fun touch(action: Int,y: Float) {
+                val event=MotionEvent.obtain(time,time+10,action,100f,y,0)
+                try {view.dispatchTouchEvent(event)} finally {event.recycle()}
+                time+=20
+                shadowOf(Looper.getMainLooper()).idle()
+            }
+            touch(MotionEvent.ACTION_DOWN,40f);touch(MotionEvent.ACTION_UP,40f)
+            assertEquals(1,opened)
+            touch(MotionEvent.ACTION_DOWN,40f)
+            touch(MotionEvent.ACTION_MOVE,200f) // Deliberately remains within this same paragraph.
+            touch(MotionEvent.ACTION_UP,200f)
+            assertEquals("Scrolling within translated text must not become an options click",1,opened)
+            touch(MotionEvent.ACTION_DOWN,40f);touch(MotionEvent.ACTION_UP,40f)
+            assertEquals("A completed swipe must not poison the next deliberate tap",2,opened)
+            label.performClick()
+            assertEquals("Accessibility / keyboard clicks retain full-text access",3,opened)
+            touch(MotionEvent.ACTION_DOWN,40f);touch(MotionEvent.ACTION_CANCEL,40f);touch(MotionEvent.ACTION_UP,40f)
+            assertEquals(3,opened)
+        } finally {activity.pause().stop().destroy()}
+    }
+
     @Test fun cachedFlatMaskPreservesHolesAndUntranslatedBalloonsAcrossRedrawAndReattach() {
         val activity=Robolectric.buildActivity(Activity::class.java).setup().visible()
         val source=Bitmap.createBitmap(100,100,Bitmap.Config.ARGB_8888).apply {eraseColor(Color.BLACK)}
@@ -179,5 +297,67 @@ class ReadingTranslationViewTest {
             try {host.draw(Canvas(drawn));assertEquals(Color.WHITE,drawn.getPixel(95,95))}finally{drawn.recycle()}
             assertEquals(Color.BLACK,source.getPixel(95,95))
         } finally {activity.pause().stop().destroy();source.recycle()}
+    }
+
+    private fun layoutPhoneOverlay(view: ReadingTranslationView) {
+        view.measure(View.MeasureSpec.makeMeasureSpec(1080,View.MeasureSpec.EXACTLY),
+            View.MeasureSpec.makeMeasureSpec(2400,View.MeasureSpec.EXACTLY))
+        view.layout(0,0,1080,2400)
+    }
+
+    /** Real native Canvas publication, window alpha, then MediaProjection-sized resampling. */
+    private fun capturePhoneOverlay(view: ReadingTranslationView,background: Int): IntArray {
+        val screen=Bitmap.createBitmap(1080,2400,Bitmap.Config.ARGB_8888)
+        try {
+            screen.eraseColor(background)
+            val canvas=Canvas(screen)
+            val layer=canvas.saveLayerAlpha(null,204) // The real touch-through window opacity is .8.
+            view.draw(canvas)
+            canvas.restoreToCount(layer)
+            val capture=Bitmap.createScaledBitmap(screen,720,1600,true)
+            try {
+                return IntArray(720*1600).also {capture.getPixels(it,0,720,0,0,720,1600)}
+            } finally {capture.recycle()}
+        } finally {screen.recycle()}
+    }
+
+    private fun assertRenderedChangesExcluded(pixels: IntArray,background: Int,exclusions: List<PixelCrop>) {
+        val mask=BooleanArray(pixels.size)
+        exclusions.forEach {bounds->
+            for(y in bounds.top until bounds.bottom) {
+                mask.fill(true,y*720+bounds.left,y*720+bounds.right)
+            }
+        }
+        fun grey(color: Int)=(Color.red(color)*3+Color.green(color)*6+Color.blue(color))/10
+        val original=grey(background)
+        var changed=0
+        var escaped=0
+        var firstEscape=-1
+        pixels.forEachIndexed {index,color->
+            if(kotlin.math.abs(grey(color)-original)>=8) {
+                changed++
+                if(!mask[index]) {escaped++;if(firstEscape<0)firstEscape=index}
+            }
+        }
+        assertTrue("The native rendering fixture must publish substantial visible text/highlights",changed>1000)
+        assertEquals("$escaped native pixels escape exclusions; first source pixel " +
+            "(${firstEscape%720},${firstEscape/720})",0,escaped)
+    }
+
+    /** Exercise the same 64x128 padded RGBA sampler used by the live service. */
+    private fun sampleCapture(pixels: IntArray): IntArray {
+        val rowStride=720*4+16
+        val buffer=ByteBuffer.allocate(rowStride*1600)
+        repeat(ReadingMotion.WIDTH*ReadingMotion.HEIGHT) {index->
+            val x=((index%ReadingMotion.WIDTH+.5)*720/ReadingMotion.WIDTH).toInt()
+            val y=((index/ReadingMotion.WIDTH+.5)*1600/ReadingMotion.HEIGHT).toInt()
+            val color=pixels[y*720+x]
+            val offset=y*rowStride+x*4
+            buffer.put(offset,Color.red(color).toByte())
+            buffer.put(offset+1,Color.green(color).toByte())
+            buffer.put(offset+2,Color.blue(color).toByte())
+            buffer.put(offset+3,0xff.toByte())
+        }
+        return ReadingMotionSampler.sample(buffer,720,1600,rowStride,4)
     }
 }

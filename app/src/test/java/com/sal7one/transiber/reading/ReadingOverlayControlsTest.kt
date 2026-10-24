@@ -1,6 +1,9 @@
 package com.sal7one.transiber.reading
 
 import android.app.Activity
+import android.graphics.Rect
+import android.os.Looper
+import android.os.SystemClock
 import android.view.KeyEvent
 import android.view.MotionEvent
 import android.view.View
@@ -9,17 +12,133 @@ import android.view.WindowManager
 import android.widget.Button
 import android.widget.ScrollView
 import android.widget.Switch
+import androidx.core.graphics.Insets
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import com.sal7one.transiber.R
 import org.junit.Assert.*
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.RuntimeEnvironment
+import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
+import org.xmlpull.v1.XmlPullParser
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
 class ReadingOverlayControlsTest {
+    @Test @Config(sdk = [33]) fun serviceOwnedOverlayOptsIntoTheAndroidThirteenBackDispatcherAtApplicationLevel() {
+        // The platform checks ApplicationInfo for a Service's overlay window; opting in only
+        // on ReadingStartActivity leaves its real window callback silently unregistered.
+        val application = RuntimeEnvironment.getApplication()
+        // Read the compiled, merged manifest directly. Robolectric does not populate the
+        // platform's hidden ApplicationInfo.privateFlagsExt bit for this attribute.
+        val manifest = application.assets.openXmlResourceParser("AndroidManifest.xml")
+        try {
+            var applicationFound = false
+            while (manifest.eventType != XmlPullParser.END_DOCUMENT) {
+                if (manifest.eventType == XmlPullParser.START_TAG && manifest.name == "application") {
+                    applicationFound = true
+                    assertTrue("The merged manifest must enable Back callbacks for service-owned windows",
+                        manifest.getAttributeBooleanValue("http://schemas.android.com/apk/res/android",
+                            "enableOnBackInvokedCallback", false))
+                    break
+                }
+                manifest.next()
+            }
+            assertTrue("The test APK must contain its merged application manifest", applicationFound)
+        } finally { manifest.close() }
+    }
+
+    @Test fun manualModeSelectionDoesNotTranslateAndTheVisibleRefreshAcceptsTouch() {
+        val owner = Robolectric.buildActivity(Activity::class.java).setup().visible()
+        var translated = 0
+        val chosenModes = mutableListOf<String>()
+        val controls = ReadingOverlayControls(owner.get(), callbacks(translate = { translated++ }).copy(
+            mode = { chosenModes += it }))
+        owner.get().setContentView(controls)
+        button(controls, R.string.reading_overlay_automation).performClick()
+        button(controls, R.string.reading_overlay_on_tap).performClick()
+        assertEquals(listOf("manual"), chosenModes)
+        assertEquals("Choosing a refresh policy must not start a capture", 0, translated)
+        controls.render(ReadingOverlayUiState(mode = "manual"))
+        measure(controls, 360, 620)
+        tap(button(controls, R.string.reading_overlay_translate))
+        assertEquals(1, translated)
+        controls.render(ReadingOverlayUiState(working = true))
+        tap(button(controls, R.string.reading_overlay_reading))
+        assertEquals("Busy refresh must not enqueue a second capture", 1, translated)
+        controls.render(ReadingOverlayUiState(error = "Translator unavailable"))
+        assertEquals("Translator unavailable", controls.statusText.text.toString())
+        tap(button(controls, R.string.reading_overlay_translate))
+        assertEquals("A failed capture must leave manual retry enabled", 2, translated)
+        controls.render(ReadingOverlayUiState(working = true))
+        assertEquals(owner.get().getString(R.string.reading_overlay_reading), controls.statusText.text.toString())
+        controls.statusText.text = "Page translated"
+        controls.render(ReadingOverlayUiState())
+        assertEquals("Progress render must retain the service's completed-page status", "Page translated", controls.statusText.text.toString())
+        owner.pause().stop().destroy()
+    }
+
+    @Test fun compactRefreshRetriesAnErrorWithoutOpeningOptions() {
+        val owner = Robolectric.buildActivity(Activity::class.java).setup().visible()
+        var translated = 0
+        var opened = 0
+        val handle = ReadingOverlayHandle(owner.get(), { translated++ }, { opened++ })
+        owner.get().setContentView(handle)
+        handle.render(ReadingOverlayUiState(error = "Translation model is missing"))
+        measure(handle, 144, 48)
+        val retry = descendants(handle).filterIsInstance<Button>().single { it.isShown && it.text == "!" }
+        assertTrue(retry.contentDescription.contains("Translation model is missing"))
+        assertTrue(retry.contentDescription.contains("retry"))
+        tap(retry)
+        assertEquals(1, translated)
+        assertEquals(0, opened)
+        handle.render(ReadingOverlayUiState(working = true))
+        tap(retry)
+        assertEquals(1, translated)
+        handle.render(ReadingOverlayUiState())
+        assertEquals("↻", retry.text.toString())
+        assertFalse(retry.contentDescription.contains("missing"))
+        tap(retry)
+        assertEquals(2, translated)
+        assertEquals(0, opened)
+        owner.pause().stop().destroy()
+    }
+
+    @Test fun stopActionKeepsScrollClearanceAboveGestureAndNavigationInsets() {
+        val owner = Robolectric.buildActivity(Activity::class.java).setup().visible()
+        var stopped = 0
+        val controls = ReadingOverlayControls(owner.get(), callbacks().copy(stop = { stopped++ }))
+        owner.get().setContentView(controls)
+        val bars = WindowInsetsCompat.Builder()
+            .setInsets(WindowInsetsCompat.Type.navigationBars(), Insets.of(0, 0, 0, dp(controls, 48)))
+            .setInsets(WindowInsetsCompat.Type.mandatorySystemGestures(), Insets.of(0, 0, 0, dp(controls, 24)))
+            .build()
+        ViewCompat.dispatchApplyWindowInsets(controls, bars)
+        assertEquals(dp(controls, 60), controls.paddingBottom)
+        button(controls, R.string.reading_overlay_more).performClick()
+        measure(controls, 296, 440)
+        val scroll = descendants(controls).filterIsInstance<ScrollView>().single()
+        assertTrue(scroll.paddingBottom >= dp(controls, 24))
+        scroll.scrollTo(0, scroll.getChildAt(0).height)
+        val stop = button(controls, R.string.reading_overlay_stop)
+        val stopBounds = Rect()
+        val scrollBounds = Rect()
+        assertTrue(stop.getGlobalVisibleRect(stopBounds))
+        assertTrue(scroll.getGlobalVisibleRect(scrollBounds))
+        assertEquals("Stop must be a full-width action", (stop.parent as View).width, stop.width)
+        assertTrue("The final action needs breathing space before the sheet bottom",
+            scrollBounds.bottom - stopBounds.bottom >= dp(controls, 24))
+        tap(stop)
+        assertEquals(1, stopped)
+        ViewCompat.dispatchApplyWindowInsets(controls, WindowInsetsCompat.Builder().build())
+        assertEquals("Insets must not accumulate or survive hiding the navigation bar", dp(controls, 12), controls.paddingBottom)
+        owner.pause().stop().destroy()
+    }
+
     @Test fun backClosesTheControlWindowOnceWithoutTriggeringTranslation() {
         val owner = Robolectric.buildActivity(Activity::class.java).setup()
         var dismissed = 0
@@ -145,6 +264,25 @@ class ReadingOverlayControlsTest {
             add(view)
             if (view is ViewGroup) addAll(descendants(view))
         }
+    }
+    private fun button(root: ViewGroup, label: Int): Button = descendants(root).filterIsInstance<Button>()
+        .single { it.text == root.context.getString(label) }
+    private fun measure(view: View, width: Int, height: Int) {
+        view.measure(View.MeasureSpec.makeMeasureSpec(dp(view, width), View.MeasureSpec.EXACTLY),
+            View.MeasureSpec.makeMeasureSpec(dp(view, height), View.MeasureSpec.EXACTLY))
+        view.layout(0, 0, view.measuredWidth, view.measuredHeight)
+    }
+    private fun tap(view: View) {
+        val down = SystemClock.uptimeMillis()
+        val x = view.width / 2f
+        val y = view.height / 2f
+        val press = MotionEvent.obtain(down, down, MotionEvent.ACTION_DOWN, x, y, 0)
+        val release = MotionEvent.obtain(down, down + 30, MotionEvent.ACTION_UP, x, y, 0)
+        try {
+            view.dispatchTouchEvent(press)
+            view.dispatchTouchEvent(release)
+            shadowOf(Looper.getMainLooper()).idle()
+        } finally { press.recycle(); release.recycle() }
     }
     private fun dp(view: View, value: Int) = (value * view.resources.displayMetrics.density).toInt()
 }

@@ -11,7 +11,7 @@
     <string name="reading_setup_reader_ready">Reader files are ready on this phone</string>
     <string name="reading_setup_refresh">When should the page update?</string>
     <string name="reading_setup_manual">Only when I tap Translate</string>
-    <string name="reading_setup_manual_help">Keep the page still. Translate again when you are ready, or draw an area to read.</string>
+    <string name="reading_setup_manual_help">Tap ↻ on the floating Hearth handle or Translate now in its controls. This mode does not translate when you tap the other app.</string>
     <string name="reading_setup_auto">After the page changes</string>
     <string name="reading_setup_auto_help">Wait for scrolling to stop, then read a changed page. Pause from the overlay whenever you need.</string>
     <string name="reading_setup_controls_hint">The floating handle opens controls. Back closes options first; Pause keeps the current translation.</string>

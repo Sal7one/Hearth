@@ -9,7 +9,9 @@ import android.graphics.RectF
 import android.text.TextUtils
 import android.util.TypedValue
 import android.view.Gravity
+import android.view.MotionEvent
 import android.view.View
+import android.view.ViewConfiguration
 import android.widget.FrameLayout
 import android.widget.TextView
 import androidx.core.widget.TextViewCompat
@@ -21,6 +23,7 @@ import java.nio.ByteBuffer
 import java.util.Collections
 import java.util.IdentityHashMap
 import kotlin.math.ceil
+import kotlin.math.floor
 import kotlin.math.roundToInt
 
 /** Transparent live replacement layer. Window flags control touch pass-through; the handle is separate. */
@@ -100,21 +103,38 @@ internal class ReadingTranslationView(
         if(showOriginal || imageWidth<=0 || imageHeight<=0)return emptyList()
         val excluded=LinkedHashSet<PixelCrop>()
         boxes.mapNotNullTo(excluded) {
-            OcrPageLayout.box(it.line,crop,imageWidth,imageHeight,imageWidth,imageHeight,coverEdges=true)
+            // Typesetting uses a rounded View-space rectangle. Invert that exact
+            // rectangle rather than rounding independently in the source image.
+            OcrPageLayout.box(it.line,crop,imageWidth,imageHeight,width,height,coverEdges=true)
+                ?.let {bounds->viewBoundsToSource(bounds,1f)}
         }
-        val scale=minOf(width.toFloat()/imageWidth,height.toFloat()/imageHeight)
-        val sourceScale=if(scale>0f)scale else 1f
-        val outlineMargin=ceil(resources.displayMetrics.density / sourceScale).toInt()
         regions.forEach {region ->
             if(region.bounds !in translatedBounds) {
-                OcrPageLayout.box(region,crop,imageWidth,imageHeight,imageWidth,imageHeight)?.let {bounds ->
-                    excluded+=PixelCrop((bounds.left-outlineMargin).coerceAtLeast(0),(bounds.top-outlineMargin).coerceAtLeast(0),
-                        (bounds.right+outlineMargin).coerceAtMost(imageWidth),(bounds.bottom+outlineMargin).coerceAtMost(imageHeight))
-                }
+                OcrPageLayout.box(region,crop,imageWidth,imageHeight,width,height)
+                    ?.let {bounds->viewBoundsToSource(bounds,resources.displayMetrics.density+2f)}
+                    ?.let(excluded::add)
             }
         }
         cleanupImages.values.forEach {prepared ->sourceBounds(prepared.bounds)?.let(excluded::add)}
         return excluded.toList()
+    }
+    /**
+     * onDraw rounds the fitted region before stroking it. The stroke then extends
+     * half its width past that rounded edge, with an antialias fringe; capture can
+     * resample one more physical pixel. Exclude those actual View pixels before
+     * transforming back, including any letterbox offset, to avoid self-motion.
+     */
+    private fun viewBoundsToSource(bounds: PixelCrop,fringe: Float): PixelCrop? {
+        if(width<=0 || height<=0)return null
+        val scale=minOf(width.toDouble()/imageWidth,height.toDouble()/imageHeight)
+        val dx=(width-imageWidth*scale)/2
+        val dy=(height-imageHeight*scale)/2
+        return PixelCrop(
+            floor((bounds.left-fringe-dx)/scale).toInt().coerceIn(0,imageWidth),
+            floor((bounds.top-fringe-dy)/scale).toInt().coerceIn(0,imageHeight),
+            ceil((bounds.right+fringe-dx)/scale).toInt().coerceIn(0,imageWidth),
+            ceil((bounds.bottom+fringe-dy)/scale).toInt().coerceIn(0,imageHeight),
+        ).takeIf {it.width>0 && it.height>0}
     }
     private fun sourceBounds(bounds: OcrRect): PixelCrop? {
         if(imageWidth<=0 || imageHeight<=0)return null
@@ -157,7 +177,7 @@ internal class ReadingTranslationView(
                 if(layoutChanged) existing.layoutParams=LayoutParams(bounds.width,bounds.height).apply {leftMargin=bounds.left;topMargin=bounds.top}
                 return@forEach
             }
-            val label=TextView(context).apply {
+            val label=ReadingTranslatedTextView(context).apply {
                 text=box.translation
                 setTextColor(box.line.region?.paint?.foreground ?: Color.BLACK)
                 setBackgroundColor(if(box.line.region?.paint!=null)Color.TRANSPARENT else Color.WHITE)
@@ -200,5 +220,31 @@ internal class ReadingTranslationView(
     override fun onDetachedFromWindow() {
         cleanupImages.values.forEach {it.image.recycle()};cleanupImages.clear()
         super.onDetachedFromWindow()
+    }
+}
+
+/** A swipe inside a large paragraph is not a request to open the full-text controls. */
+private class ReadingTranslatedTextView(context: Context) : TextView(context) {
+    private val touchSlop=ViewConfiguration.get(context).scaledTouchSlop.toFloat()
+    private var downX=0f
+    private var downY=0f
+    private var dragged=false
+
+    override fun onTouchEvent(event: MotionEvent): Boolean {
+        when(event.actionMasked) {
+            MotionEvent.ACTION_DOWN -> {downX=event.x;downY=event.y;dragged=false}
+            MotionEvent.ACTION_CANCEL -> {dragged=false;return super.onTouchEvent(event)}
+            MotionEvent.ACTION_MOVE,MotionEvent.ACTION_POINTER_DOWN -> {
+                val dx=event.x-downX;val dy=event.y-downY
+                if(!dragged && (event.actionMasked==MotionEvent.ACTION_POINTER_DOWN || dx*dx+dy*dy>touchSlop*touchSlop)) {
+                    dragged=true
+                    val cancel=MotionEvent.obtain(event).apply {action=MotionEvent.ACTION_CANCEL}
+                    try {super.onTouchEvent(cancel)} finally {cancel.recycle()}
+                }
+                if(dragged)return true
+            }
+            MotionEvent.ACTION_UP -> if(dragged) {dragged=false;return true}
+        }
+        return super.onTouchEvent(event)
     }
 }
