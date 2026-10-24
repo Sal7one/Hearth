@@ -65,6 +65,8 @@ public:
 
     struct TranslateResult {
         bool ok = false;
+        // Content-specific no-output, never a timeout/provider/setup failure.
+        bool emptyOutput = false;
         std::string text;
         std::string error;
         int64_t latencyMs = 0;
@@ -117,7 +119,8 @@ private:
                     std::vector<float>& hidden, std::string* error);
     // Returns decoded ids (without </s>) via tokenizerDecoded on success.
     bool decodeLoop(const std::vector<float>& hidden, size_t encLen,
-                    std::vector<int64_t>& decodedIds, std::string* error);
+                    std::vector<int64_t>& decodedIds, std::string* error,
+                    bool* emptyOutput);
     bool setError(std::string* error, const std::string& message) const;
     bool interrupted(std::string* error) const;
     void terminateRun(bool timeout) noexcept;

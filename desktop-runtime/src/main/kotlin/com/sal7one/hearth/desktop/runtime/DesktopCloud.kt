@@ -102,7 +102,7 @@ internal class DesktopCloud(private val credentials: CredentialResolver, private
     }
 
     internal suspend fun request(selection: EngineSelection, defaultEndpoint: String, contentType: String, body: ByteArray, maximum: Int): ByteArray {
-        val endpoint = providerEndpoint(selection.endpoint.ifBlank { defaultEndpoint })
+        val endpoint = providerRequestEndpoint(selection.endpoint.ifBlank { defaultEndpoint }, selection.engineId)
         val key = if (selection.credentialId.isBlank()) null else credentials.resolve(selection.credentialId)
         require(key != null || endpoint.host in LOOPBACK) { "A provider credential is required" }
         require(key == null || key.isNotEmpty() && key.all { it in '\u0021'..'\u007e' }) { "Provider credential is missing or malformed" }
@@ -141,6 +141,23 @@ internal class DesktopCloud(private val credentials: CredentialResolver, private
     }
     companion object {
         private val LOOPBACK = setOf("localhost", "127.0.0.1", "[::1]", "::1")
+        /** Accept server roots and /v1 bases without changing saved, explicit API endpoints. */
+        internal fun providerRequestEndpoint(value: String, engineId: String): URI {
+            val endpoint = providerEndpoint(value)
+            val operation = when (engineId) {
+                "openai-translation" -> "chat/completions"
+                "openai-stt" -> "audio/transcriptions"
+                "openai-tts" -> "audio/speech"
+                else -> return endpoint
+            }
+            val path = endpoint.rawPath.orEmpty().trimEnd('/')
+            val apiBase = when {
+                path.isEmpty() -> "/v1"
+                path == "/v1" || path.endsWith("/v1") -> path
+                else -> return endpoint
+            }
+            return URI("${endpoint.scheme}://${endpoint.rawAuthority}$apiBase/$operation")
+        }
         internal fun providerEndpoint(value: String): URI {
             val uri = URI(value)
             require(uri.host != null && uri.userInfo == null && uri.fragment == null && uri.rawQuery == null &&

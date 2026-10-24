@@ -15,7 +15,7 @@ internal object ConnectionsCopy {
     const val NOT_IN_USE = "Not in use"
 
     const val ENDPOINT = "Endpoint"
-    const val ENDPOINT_HINT = "Base URL only. No query string, no credentials inside the URL."
+    const val ENDPOINT_HINT = "Server root, /v1 base URL, or full API endpoint. HTTPS is required except on this computer. No query string or credentials in the URL."
     const val MODEL = "Model"
     const val MODEL_HINT = "The model name the endpoint expects."
     const val CREDENTIAL = "Credential reference"

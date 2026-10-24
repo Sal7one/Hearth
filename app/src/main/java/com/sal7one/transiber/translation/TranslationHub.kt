@@ -21,6 +21,7 @@ internal fun TranslationHub(onModels: () -> Unit, initialLocation: SettingsLocat
     val revision by ConversationTranslationSettings.revision.collectAsState()
     val localModelId = remember(revision, config.localTranslationModelId) { ConversationTranslationSettings.localModel(context, config.localTranslationModelId) }
     val provider=remember(revision){ConversationTranslationSettings.selected(context)}
+    val typed = rememberTypedTranslationPreferences()
     var error by remember {mutableStateOf<String?>(null)}
     SettingsTabs(initialLocation, entryRevision,
         localAvailable = com.sal7one.transiber.runtime.LocalModelPolicy.allowed(context)) { location ->
@@ -28,6 +29,7 @@ internal fun TranslationHub(onModels: () -> Unit, initialLocation: SettingsLocat
             uiText(UiR.string.ui_choose_a_translator_here_browsing_tabs_does_not_change_the_active_3b0c1))
         Text(uiText(UiR.string.ui_active_1_s_830d0, ConversationTranslationSettings.label(context, localModelId)), style = MaterialTheme.typography.labelLarge)
         TranslatorChooser(provider,localModelId,uiText(UiR.string.ui_this_choice_is_shared_by_conversation_face_to_face_and_typed_text_f76d4),
+            source=typed.source,target=typed.target,
             onModels=onModels,location=location,onSelect={id,model->scope.launch {
                 try { ConversationTranslationSettings.select(context,id,model) }
                 catch(e: CancellationException){throw e}

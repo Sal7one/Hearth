@@ -1,0 +1,18 @@
+<resources>
+    <string name="mlkit_pair_title">ML Kit 语言包</string>
+    <string name="mlkit_pair_choice">在此检查或安装语言包。</string>
+    <string name="mlkit_pair_description">Google 设备端翻译需要为每种非英语语言安装语言包。英语已内置。这些语言包与下载的其他翻译模型相互独立。</string>
+    <string name="mlkit_pair_checking">正在检查已安装的语言包…</string>
+    <string name="mlkit_pair_choose_languages">请选择 ML Kit 支持的两种不同语言。</string>
+    <string name="mlkit_pair_missing">此次翻译需要：%1$s</string>
+    <string name="mlkit_pair_ready">所需语言包已安装。</string>
+    <string name="mlkit_pair_auto_ready">目标语言包已安装。检测到其他语音语言时，可能还需要安装相应语言包。</string>
+    <string name="mlkit_pair_auto_source">自动识别语音语言时，也请安装预计会听到的其他语言的语言包。</string>
+    <string name="mlkit_pair_download_button">下载%1$s</string>
+    <string name="mlkit_pair_downloading_wifi">正在下载%1$s…必要时等待 Wi-Fi。</string>
+    <string name="mlkit_pair_downloading">正在下载%1$s…</string>
+    <string name="mlkit_pair_downloaded">%1$s已安装并检查。</string>
+    <string name="mlkit_pair_refresh">重新检查语言包</string>
+    <string name="mlkit_pair_other_languages">管理其他语言</string>
+    <string name="mlkit_pair_wifi_only">仅通过 Wi-Fi 下载</string>
+</resources>

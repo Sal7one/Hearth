@@ -50,6 +50,8 @@ internal data class ReadingOverlayUiState(
     val languagePair: String = "",
     val historyCount: Int = 0,
     val error: String? = null,
+    val excludedAreas: Int = 0,
+    val inactiveExcludedAreas: Int = 0,
 )
 
 internal data class ReadingOverlayCallbacks(
@@ -76,6 +78,8 @@ internal data class ReadingOverlayCallbacks(
     val openHearth: () -> Unit,
     val stop: () -> Unit,
     val dismiss: () -> Unit,
+    val excludeArea: () -> Unit = {},
+    val clearExclusions: () -> Unit = {},
 )
 
 /**
@@ -248,6 +252,9 @@ internal class ReadingOverlayControls(
     private val primaryButton: Button
     private val pauseButton: Button
     private val selectedAreaText: TextView
+    private val excludedAreaText: TextView
+    private val excludeAreaButton: Button
+    private val clearExclusionsButton: Button
     private val passThrough: Switch
     private val visibilitySwitch: Switch
     private val originalSwitch: Switch
@@ -342,6 +349,14 @@ internal class ReadingOverlayControls(
         controlsPage.addView(selectedAreaText, spaced(bottom = 6))
         controlsPage.addView(buttonRow(palette.button(text(R.string.reading_overlay_select_area), callbacks.selectArea),
             palette.button(text(R.string.reading_overlay_whole_screen), callbacks.wholePage)), spaced(bottom = 12))
+        controlsPage.addView(sectionLabel(R.string.reading_exclusions_title))
+        excludedAreaText = palette.label("", 13f)
+        controlsPage.addView(excludedAreaText, spaced(bottom = 6))
+        controlsPage.addView(palette.label(text(R.string.reading_exclusions_detail), 12f), spaced(bottom = 8))
+        excludeAreaButton = palette.button(text(R.string.reading_exclusions_add), callbacks.excludeArea)
+        clearExclusionsButton = palette.button(text(R.string.reading_exclusions_clear), callbacks.clearExclusions)
+        controlsPage.addView(excludeAreaButton, spaced(bottom = 6))
+        controlsPage.addView(clearExclusionsButton, spaced(bottom = 12))
 
         automation = disclosure(controlsPage, R.string.reading_overlay_automation)
         automation.addView(palette.label(text(R.string.reading_overlay_automation_detail), 13f), spaced(bottom = 8))
@@ -434,6 +449,14 @@ internal class ReadingOverlayControls(
             visibilitySwitch.isChecked = value.translationsVisible
             originalSwitch.isChecked = value.showOriginal
             selectedAreaText.text = text(if (value.selectedArea) R.string.reading_overlay_selected_area else R.string.reading_overlay_full_screen)
+            excludedAreaText.text = when {
+                value.inactiveExcludedAreas > 0 -> text(R.string.reading_exclusions_inactive, value.excludedAreas, value.inactiveExcludedAreas)
+                value.excludedAreas > 0 -> text(R.string.reading_exclusions_count, value.excludedAreas, MAX_MOTION_EXCLUSIONS)
+                else -> text(R.string.reading_exclusions_none)
+            }
+            // Explicit selection can repair a live page whose moving area keeps invalidating work.
+            excludeAreaButton.isEnabled = value.excludedAreas < MAX_MOTION_EXCLUSIONS
+            clearExclusionsButton.isEnabled = value.excludedAreas > 0
             styleSelected(pageMode, value.mode == "page")
             styleSelected(manualMode, value.mode == "manual")
             settle.isEnabled = value.mode == "page"

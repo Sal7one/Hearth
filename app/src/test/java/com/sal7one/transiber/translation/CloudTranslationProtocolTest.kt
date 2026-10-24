@@ -53,23 +53,72 @@ class CloudTranslationProtocolTest {
         assertTrue(caps.supports("ar", "he"))
         assertFalse(caps.supports("ru", "he"))
     }
-    @Test fun deeplKeepsSourceAndTargetSeparateAndChoosesAmericanEnglishVariant() {
+    @Test fun deeplV3KeepsAdvertisedRolesAndWireCodesWhileTranslationStaysV2() {
         val caps = CloudTranslationProtocol.parseLanguages(TextTranslationProvider.DEEPL, listOf(
-            """[{"language":"EN"},{"language":"AR"},{"language":"NB"}]""",
-            """[{"language":"EN-GB"},{"language":"EN-US"},{"language":"DE"}]"""))
-        assertEquals(setOf("en", "ar", "nb"), caps.sourceLanguages)
-        assertEquals(setOf("en", "de"), caps.targetLanguages)
-        assertEquals("EN-US", caps.apiTarget("en"))
+            """[
+                {"lang":"en","usable_as_source":true,"usable_as_target":false,"status":"stable"},
+                {"lang":"ar","usable_as_source":true,"usable_as_target":false,"status":"stable"},
+                {"lang":"nb","usable_as_source":true,"usable_as_target":false,"status":"stable"},
+                {"lang":"ckb","usable_as_source":true,"usable_as_target":false,"status":"stable"},
+                {"lang":"en-GB","usable_as_source":false,"usable_as_target":true,"status":"stable"},
+                {"lang":"en-US","usable_as_source":false,"usable_as_target":true,"status":"stable"},
+                {"lang":"de","usable_as_source":false,"usable_as_target":true,"status":"stable"},
+                {"lang":"pt-BR","usable_as_source":false,"usable_as_target":true,"status":"stable"},
+                {"lang":"pt-PT","usable_as_source":false,"usable_as_target":true,"status":"stable"},
+                {"lang":"zh-Hant","usable_as_source":false,"usable_as_target":true,"status":"stable"},
+                {"lang":"zh-Hans","usable_as_source":false,"usable_as_target":true,"status":"stable"},
+                {"lang":"es","usable_as_source":true,"usable_as_target":true,"status":"beta"}
+            ]"""))
+        assertEquals(setOf("en", "ar", "nb", "ckb"), caps.sourceLanguages)
+        assertEquals(setOf("en", "de", "pt", "zh"), caps.targetLanguages)
+        assertEquals("en-US", caps.apiTarget("en"))
+        assertEquals("pt-PT", caps.apiTarget("pt"))
+        assertEquals("zh-Hans", caps.apiTarget("zh"))
         assertTrue(caps.supports("ar", "en"))
+        assertTrue(caps.supports("ckb", "de"))
         assertFalse(caps.supports("en", "ar"))
-        val requests = CloudTranslationProtocol.languageRequests(connection(TextTranslationProvider.DEEPL))
-        assertEquals(listOf("source", "target"), requests.map { it.url.queryParameter("type") })
-        assertTrue(requests.all { it.header("Authorization") == "DeepL-Auth-Key test-secret" })
+        assertFalse(caps.supports("es", "en"))
+        val discovery = CloudTranslationProtocol.languageRequests(connection(TextTranslationProvider.DEEPL)).single()
+        assertEquals("https://api-free.deepl.com/v3/languages?resource=translate_text", discovery.url.toString())
+        assertEquals("GET", discovery.method)
+        assertEquals("DeepL-Auth-Key test-secret", discovery.header("Authorization"))
         val request = CloudTranslationProtocol.translateRequest(connection(TextTranslationProvider.DEEPL, "https://api.deepl.com/v2"), "مرحبا", "ar", "en", caps)
         assertEquals("https://api.deepl.com/v2/translate", request.url.toString())
-        assertEquals("EN-US", JSONObject(body(request)).getString("target_lang"))
-        assertEquals("AR", JSONObject(body(request)).getString("source_lang"))
+        assertEquals("en-US", JSONObject(body(request)).getString("target_lang"))
+        assertEquals("ar", JSONObject(body(request)).getString("source_lang"))
         rejects { CloudTranslationProtocol.translateRequest(connection(TextTranslationProvider.DEEPL), "Hi", "en", "ar", caps) }
+    }
+    @Test fun deeplDiscoveryPreservesCustomProxyPrefixAndKeepsKeysOffTheUrl() {
+        val connection = connection(TextTranslationProvider.DEEPL, "https://proxy.example/api/deepl/v2/")
+        val discovery = CloudTranslationProtocol.languageRequests(connection).single()
+        assertEquals("https://proxy.example/api/deepl/v3/languages?resource=translate_text", discovery.url.toString())
+        assertEquals("DeepL-Auth-Key test-secret", discovery.header("Authorization"))
+        assertEquals("https://proxy.example/api/deepl/v2/translate",
+            CloudTranslationProtocol.translateRequest(connection, "Hi", "en", "ar").url.toString())
+        rejects { CloudTranslationProtocol.languageRequests(connection.copy(endpoint = "https://proxy.example/api/deepl")) }
+    }
+    @Test fun deeplRejectsLegacyMalformedUnadvertisedAndOversizedLanguageDiscovery() {
+        val valid = JSONObject().put("lang", "en").put("usable_as_source", true).put("usable_as_target", true).put("status", "stable")
+        val badBodies = listOf(
+            "[]",
+            """[{"language":"EN"}]""",
+            JSONArray().put(JSONObject(valid.toString()).put("usable_as_source", "true")).toString(),
+            JSONArray().put(JSONObject(valid.toString()).put("usable_as_target", 1)).toString(),
+            JSONArray().put(JSONObject(valid.toString()).apply { remove("usable_as_target") }).toString(),
+            JSONArray().put(JSONObject(valid.toString()).put("lang", "invalid language")).toString(),
+            JSONArray().put(JSONObject(valid.toString()).put("status", "beta")).toString(),
+            JSONArray().put(valid).put(JSONObject(valid.toString()).put("lang", "EN")).toString(),
+            JSONArray().apply { repeat(1001) { put(valid) } }.toString(),
+            """{"message":"Authentication failure"}""",
+        )
+        badBodies.forEach { raw ->
+            try { CloudTranslationProtocol.parseLanguages(TextTranslationProvider.DEEPL, listOf(raw)); fail("Expected discovery failure") }
+            catch (e: IllegalStateException) { assertTrue(e.message!!.contains(raw)) }
+        }
+        try {
+            CloudTranslationProtocol.parseLanguages(TextTranslationProvider.DEEPL, listOf(JSONArray().put(valid).toString(), JSONArray().put(valid).toString()))
+            fail("Expected one v3 discovery response")
+        } catch (e: IllegalStateException) { assertTrue(e.cause?.message.orEmpty().contains("Wrong number")) }
     }
     @Test fun librePreservesDirectedEdgesAndOptionalKeyWithoutCreatingAllPairs() {
         val caps = CloudTranslationProtocol.parseLanguages(TextTranslationProvider.LIBRETRANSLATE, listOf(

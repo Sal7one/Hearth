@@ -182,6 +182,44 @@ class DesktopRuntimeTest {
         assertEquals("localhost", DesktopCloud.providerEndpoint("http://localhost:9000/v1").host)
     }
 
+    @Test fun openAiBasesResolvePerStageAndExplicitEndpointsRemainUnchanged() {
+        val operations = mapOf("openai-translation" to "chat/completions", "openai-stt" to "audio/transcriptions", "openai-tts" to "audio/speech")
+        for ((engine, operation) in operations) {
+            for (base in listOf("https://example.test", "https://example.test/", "https://example.test/v1", "https://example.test/v1/")) {
+                assertEquals("https://example.test/v1/$operation", DesktopCloud.providerRequestEndpoint(base, engine).toString())
+            }
+            assertEquals("https://example.test/proxy/v1/$operation", DesktopCloud.providerRequestEndpoint("https://example.test/proxy/v1/", engine).toString())
+            for (explicit in listOf("https://example.test/translation", "https://example.test/v1/$operation", "https://example.test/custom%20path/translation/")) {
+                assertEquals(explicit, DesktopCloud.providerRequestEndpoint(explicit, engine).toString())
+            }
+        }
+        assertEquals("http://localhost:8787/speech", DesktopCloud.providerRequestEndpoint("http://localhost:8787/speech", "ming-tts").toString())
+        assertFailsWith<IllegalArgumentException> { DesktopCloud.providerRequestEndpoint("http://192.168.1.2:11434/v1", "openai-translation") }
+        assertFailsWith<IllegalArgumentException> { DesktopCloud.providerRequestEndpoint("https://example.test/v1?api_key=secret", "openai-translation") }
+    }
+
+    @Test fun cloudTranslationUsesOpenAiCompletionPathFromServerRootsAndVersionedBases() = runBlocking {
+        val server = HttpServer.create(InetSocketAddress("127.0.0.1", 0), 0)
+        val paths = mutableListOf<String>()
+        server.createContext("/") { exchange ->
+            synchronized(paths) { paths += exchange.requestURI.path }
+            exchange.requestBody.use { it.readBytes() }
+            val response = """{"choices":[{"finish_reason":"stop","message":{"content":"مرحبا"}}]}""".toByteArray()
+            exchange.sendResponseHeaders(200, response.size.toLong())
+            exchange.responseBody.use { it.write(response) }
+        }
+        server.start()
+        val folder = Files.createTempDirectory("hearth-openai-base-test")
+        try {
+            val cloud = DesktopCloud(CredentialResolver { null }, folder)
+            for (suffix in listOf("", "/v1", "/v1/")) {
+                val route = EngineSelection("openai-translation", "local-translator", endpoint = "http://127.0.0.1:${server.address.port}$suffix")
+                assertEquals("مرحبا", withTimeout(5000) { cloud.translate("Hello", route, "en", "ar") })
+            }
+            assertEquals(List(3) { "/v1/chat/completions" }, synchronized(paths) { paths.toList() })
+        } finally { server.stop(0); folder.toFile().deleteRecursively() }
+    }
+
     @Test fun cloudUsesOnlySelectedEndpointAndPreservesRedactedProviderErrors() = runBlocking {
         val server = HttpServer.create(InetSocketAddress("127.0.0.1", 0), 0)
         val destinationCalls = AtomicInteger()

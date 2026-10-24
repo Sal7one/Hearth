@@ -22,6 +22,7 @@ import com.sal7one.transiber.caption.CaptionConfigStore
 import com.sal7one.transiber.caption.CaptionOverlayConfig
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -43,7 +44,8 @@ internal fun SettingsTranslateCloudUi(initialProvider: String? = null, allowSele
     var status by remember { mutableStateOf<String?>(null) }
     var failure by remember { mutableStateOf(false) }
     var transport by remember { mutableStateOf<TranslationHttpTransport?>(null) }
-    DisposableEffect(Unit) { onDispose { transport?.close() } }
+    var checkJob by remember { mutableStateOf<Job?>(null) }
+    DisposableEffect(Unit) { onDispose { checkJob?.cancel(); transport?.close() } }
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(SettingsLayout.cardGap)) {
         SettingsHeading(uiText(UiR.string.ui_translation_connections_4a282),
             uiText(UiR.string.ui_one_connection_library_for_captions_typed_text_conversations_came_a2ee8))
@@ -78,27 +80,23 @@ internal fun SettingsTranslateCloudUi(initialProvider: String? = null, allowSele
                 Button(enabled = !working, onClick = {
                     working = true; status = null; failure = false
                     val nextEndpoint = endpoint.trim(); val nextRegion = region.trim(); val replacement = secret.takeIf { it.isNotBlank() } ?: if (sameEndpoint) null else ""
-                    scope.launch {
+                    checkJob = scope.launch {
                         try {
                             val found = withContext(Dispatchers.IO) {
-                                val saved = if (replacement == null) ConversationTranslationSettings.connection(context, provider).key else ""
-                                val next = CloudTranslationConnection(provider, nextEndpoint, replacement ?: saved, nextRegion)
-                                // Validate the credential/region syntax even for unauthenticated language discovery.
-                                CloudTranslationProtocol.translateRequest(next, "Connection setup", "en", "ar")
-                                val requests = CloudTranslationProtocol.languageRequests(next)
-                                val generation = ConversationTranslationSettings.save(context, provider, nextEndpoint, nextRegion, replacement)
-                                val active = TranslationHttpTransport(); transport = active
-                                try { generation to CloudTranslationProtocol.parseLanguages(provider, requests.map { active.execute(it, next.key) }) }
-                                finally { active.close(); transport = null }
+                                ConversationTranslationSettings.checkAndSave(context, provider, nextEndpoint, nextRegion, replacement) { next ->
+                                    val requests = CloudTranslationProtocol.languageRequests(next)
+                                    val active = TranslationHttpTransport(); transport = active
+                                    try { CloudTranslationProtocol.parseLanguages(provider, requests.map { active.execute(it, next.key) }) }
+                                    finally { active.close(); transport = null }
+                                }
                             }
-                            ConversationTranslationSettings.saveCapabilities(context, provider, found.second, found.first)
-                            secret = ""; status = uiText(UiR.string.ui_languages_loaded_1_s_source_languages_2_s_target_languages_5a0db, found.second.sourceLanguages.size, found.second.targetLanguages.size)
+                            secret = ""; status = uiText(UiR.string.ui_languages_loaded_1_s_source_languages_2_s_target_languages_5a0db, found.sourceLanguages.size, found.targetLanguages.size)
                         } catch (e: CancellationException) { throw e }
                         catch (e: Exception) { failure = true; status = e.message ?: e.toString() }
                         finally { working = false }
                     }
                 }) { Text(if (working) uiText(UiR.string.ui_checking_820d6) else uiText(UiR.string.ui_save_check_languages_7cd32)) }
-                if (working) TextButton(onClick = { transport?.close() }) { Text(uiText(UiR.string.ui_cancel_check_82097)) }
+                if (working) TextButton(onClick = { checkJob?.cancel(); transport?.close() }) { Text(uiText(UiR.string.ui_cancel_check_82097)) }
                 else TextButton(onClick = {
                     try { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(provider.sourceUrl))) }
                     catch (e: Exception) { failure = true; status = e.message ?: e.toString() }

@@ -3,6 +3,7 @@
 
 #include "../onnx/include/onnxruntime/onnxruntime_c_api.h"
 #include <array>
+#include <cmath>
 #include <cstdint>
 #include <limits>
 #include <string>
@@ -59,7 +60,8 @@ bool runGreedyDecoder(const OrtApi* api, OrtSession* session,
                       const int64_t* attention, size_t encLen, size_t vocabSize,
                       int64_t padId, int64_t eosId, int maxTokens,
                       std::vector<int64_t>& decodedIds, std::string* error,
-                      Interrupted interrupted) {
+                      Interrupted interrupted, bool* emptyOutput = nullptr) {
+    if (emptyOutput) *emptyOutput = false;
     auto fail = [error](const std::string& message) {
         if (error) *error = message;
         return false;
@@ -125,12 +127,26 @@ bool runGreedyDecoder(const OrtApi* api, OrtSession* session,
         float best = -std::numeric_limits<float>::infinity();
         token = eosId;
         for (size_t i = 0; i < vocabSize; ++i) {
-            if (i != static_cast<size_t>(padId) && logits[i] > best) {
+            if (i == static_cast<size_t>(padId)) continue;
+            if (std::isnan(logits[i]) || logits[i] == std::numeric_limits<float>::infinity()) {
+                return fail("Marian decoder returned invalid token scores");
+            }
+            if (logits[i] > best) {
                 best = logits[i];
                 token = static_cast<int64_t>(i);
             }
         }
-        if (token == eosId) return true;
+        if (!std::isfinite(best)) return fail("Marian decoder returned no usable token scores");
+        if (token == eosId) {
+            // The pinned model can genuinely prefer immediate EOS for short
+            // UI labels (for example English "Search"). Masking EOS invents
+            // unrelated text, so report that model limitation explicitly.
+            if (decodedIds.empty()) {
+                if (emptyOutput) *emptyOutput = true;
+                return fail("Marian produced no translation for this text. Try a longer phrase or another translator.");
+            }
+            return true;
+        }
         decodedIds.push_back(token);
         if (step + 1 == maxTokens) break;
         for (int layer = 0; layer < kDecoderLayers; ++layer) {

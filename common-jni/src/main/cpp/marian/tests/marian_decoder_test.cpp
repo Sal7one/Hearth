@@ -21,6 +21,7 @@ std::array<const OrtValue*, kDecoderPastCount> first{};
 int creates, views, allocations, reads, runs, releases, statusReleases;
 int failCreate, failRun, finishAfter;
 bool failRead, contractOkay;
+int invalidScores;
 OrtStatus injected;
 
 void require(bool condition, const char* label) {
@@ -88,6 +89,9 @@ OrtStatus* ORT_API_CALL run(OrtSession*, const OrtRunOptions*, const char* const
     std::fill(logits, logits + vocab, -10.0F);
     logits[4] = 100.0F; // pad must be masked without modifying the shared buffer.
     logits[runs + 1 == finishAfter ? 0 : 1] = 1.0F;
+    if (invalidScores == 1) logits[1] = std::numeric_limits<float>::quiet_NaN();
+    if (invalidScores == 2) logits[1] = std::numeric_limits<float>::infinity();
+    if (invalidScores == 3) std::fill(logits, logits + vocab, -std::numeric_limits<float>::infinity());
     const size_t outputsToCreate = runs == failRun ? 7 : kDecoderPastCount;
     for (size_t i = 0; i < outputsToCreate; ++i) {
         const bool encoder = i % 4 >= 2;
@@ -103,7 +107,7 @@ void reset() {
     require(live.empty(), "no retained values between captions");
     creates = views = allocations = reads = runs = releases = statusReleases = 0;
     failCreate = -1; failRun = -1; finishAfter = 4;
-    failRead = false; contractOkay = true;
+    failRead = false; contractOkay = true; invalidScores = 0;
 }
 OrtApi api() {
     OrtApi result{};
@@ -118,7 +122,8 @@ OrtApi api() {
 }
 
 bool translate(const OrtApi& ort, std::vector<int64_t>& ids, std::string& error,
-               int cap = 128, int stopCall = -1, int64_t pad = 4) {
+               int cap = 128, int stopCall = -1, int64_t pad = 4,
+               bool* emptyOutput = nullptr) {
     const float hidden[1024]{};
     const int64_t attention[2] = {1, 1};
     int calls = 0;
@@ -128,7 +133,7 @@ bool translate(const OrtApi& ort, std::vector<int64_t>& ids, std::string& error,
             if (calls++ != stopCall) return false;
             *cause = "cancelled";
             return true;
-        });
+        }, emptyOutput);
 }
 }
 
@@ -143,6 +148,19 @@ int main() {
     require(views == 5 && allocations == 1 && reads == 1 && runs == 4,
             "constant wrappers and logits allocation, no cache or logits readbacks");
     require(live.empty(), "success frees all caches and tensors");
+    reset(); finishAfter = 1;
+    bool emptyOutput = false;
+    require(!translate(ort, ids, error, 128, -1, 4, &emptyOutput) && emptyOutput && ids.empty() && runs == 1,
+            "immediate EOS is a model failure, not empty success or a forced invented token");
+    require(error.find("Try a longer phrase or another translator") != std::string::npos && live.empty(),
+            "immediate EOS is actionable and frees all returned tensors");
+    for (int invalid : {1, 2, 3}) {
+        reset(); invalidScores = invalid; emptyOutput = true;
+        require(!translate(ort, ids, error, 128, -1, 4, &emptyOutput) && !emptyOutput && runs == 1 && ids.empty(),
+                "NaN, positive infinity and all-masked logits fail before publishing text");
+        require(error.find("token scores") != std::string::npos && live.empty(),
+                "invalid scores retain their error and release all tensors");
+    }
     for (int failure = 1; failure <= 6; ++failure) {
         reset(); failCreate = failure;
         require(!translate(ort, ids, error), "tensor setup error surfaced");
@@ -153,15 +171,16 @@ int main() {
     reset(); failRead = true;
     require(!translate(ort, ids, error) && live.empty(), "logits setup failure cleaned");
     for (int failure : {0, 2}) {
-        reset(); failRun = failure;
-        require(!translate(ort, ids, error), "Run error surfaced");
+        reset(); failRun = failure; emptyOutput = true;
+        require(!translate(ort, ids, error, 128, -1, 4, &emptyOutput) && !emptyOutput,
+                "Run error surfaced without classifying it as empty output");
         require(error.find("injected provider failure") != std::string::npos,
                 "Run provider cause retained");
         require(contractOkay && live.empty(), "partial Run outputs and prior caches released");
     }
     for (int stop : {0, 1, 4, 5}) {
-        reset();
-        require(!translate(ort, ids, error, 128, stop) && error == "cancelled",
+        reset(); emptyOutput = true;
+        require(!translate(ort, ids, error, 128, stop, 4, &emptyOutput) && !emptyOutput && error == "cancelled",
                 "cancellation checked around every Run");
         require(live.empty(), "cancelled decoder freed");
     }

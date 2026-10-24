@@ -1,9 +1,14 @@
 package com.sal7one.transiber.ocr
 
 import com.sal7one.common_jni.ocr.OcrLine
+import com.sal7one.common_jni.translation.EmptyTranslationOutputException
 import com.sal7one.hearth.core.vision.OcrRegion
 
 internal data class TranslatedOcrBox(val line: OcrLine, val translation: String)
+
+internal class IncompleteOcrTranslationException(val failures: List<Pair<String, EmptyTranslationOutputException>>) :
+    IllegalStateException("${failures.size} text box(es) could not be translated; their original text is preserved. " +
+        "${failures.first().second.message} Text: ${failures.first().first.take(120)}", failures.first().second)
 
 /** Join adjacent lines from one reading block before invoking a text translator.
  * Keep distant balloons separate and retain their union geometry for the overlay.
@@ -91,16 +96,26 @@ internal object OcrPageTranslation {
         // Publish every known box before starting any slow new inference. Geometry is
         // always from this capture, even when its words came from an earlier page.
         val results = lines.map { line -> cached(line.text)?.takeIf { it.isNotBlank() }?.let { TranslatedOcrBox(line, it) } }.toMutableList()
+        val failures = mutableListOf<Pair<String, EmptyTranslationOutputException>>()
         if (results.any { it != null } && current()) publish(results.filterNotNull())
         for ((index, line) in lines.withIndex()) {
             if (!current()) return
             if (results[index] != null) continue
-            val translated = cached(line.text)?.takeIf { it.isNotBlank() } ?: translate(line.text)
+            val translated = try {
+                cached(line.text)?.takeIf { it.isNotBlank() } ?: translate(line.text)
+            } catch (error: EmptyTranslationOutputException) {
+                // A model can reject an isolated label while translating the article normally.
+                // Preserve that box and report partial failure after finishing the other boxes.
+                if (!current()) return
+                failures += line.text to error
+                continue
+            }
             if (!current()) return
             check(translated.isNotBlank()) { "Translation returned empty text for: ${line.text}" }
             results[index] = TranslatedOcrBox(line, translated)
             publish(results.filterNotNull())
         }
+        if (failures.isNotEmpty() && current()) throw IncompleteOcrTranslationException(failures.toList())
     }
 }
 

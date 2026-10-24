@@ -12,10 +12,15 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.WindowManager
 import android.widget.Button
+import android.widget.LinearLayout
 import android.widget.Switch
 import com.sal7one.transiber.R
 import com.sal7one.common_jni.ocr.OcrEngine
 import com.sal7one.common_jni.ocr.OcrLine
+import com.sal7one.hearth.core.vision.ComicMask
+import com.sal7one.hearth.core.vision.MangaPaint
+import com.sal7one.hearth.core.vision.OcrRect
+import com.sal7one.hearth.core.vision.OcrRegion
 import com.sal7one.transiber.ocr.TranslatedOcrBox
 import com.sal7one.transiber.ocr.PixelCrop
 import com.sal7one.transiber.ocr.CameraOcrController
@@ -41,6 +46,7 @@ import org.robolectric.shadows.ShadowSystemClock
 import java.time.Duration
 import org.robolectric.android.controller.ServiceController
 import org.robolectric.annotation.Config
+import org.robolectric.annotation.GraphicsMode
 import org.robolectric.util.ReflectionHelpers
 import org.robolectric.util.ReflectionHelpers.ClassParameter
 
@@ -430,6 +436,55 @@ class ReadingOverlayServiceTest {
         assertNotNull(field<Any?>(service, "completedPage"))
     }
 
+    @Test @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    fun progressiveOcrInvalidationRemovesStaleLabelsAndCleanupEvenIfReplacementFails() = withWindows { service ->
+        val ticket = admitPage(service)
+        val paint = MangaPaint(ComicMask(intArrayOf(10, 10, 20), 100, 100),
+            OcrRect(10, 10, 20, 1), Color.WHITE, Color.BLACK)
+        val region = OcrRegion(OcrRect(10, 10, 90, 30), 1f, paint = paint)
+        val original = OcrLine(10, 10, 90, 30, "Coffee", 1f, region)
+        val partial = CameraOcrState(running = true, processing = true, text = original.text,
+            translation = "قهوة", lines = listOf(original), regions = listOf(region),
+            boxTranslations = listOf(TranslatedOcrBox(original, "قهوة")))
+        val layer = field<ReadingTranslationView>(service, "pageView")
+        layer.layout(0, 0, 100, 100)
+        call(service, "onOcrState", ClassParameter.from(CameraOcrState::class.java, partial))
+        assertEquals(1, layer.childCount)
+        val cleanups = ReflectionHelpers.getField<Map<*, *>>(layer, "cleanupImages")
+        assertEquals(1, cleanups.size)
+        val cleanupImage = ReflectionHelpers.getField<Bitmap>(cleanups.values.single(), "image")
+        val panel = field<ReadingOverlayControls>(service, "panel")
+        assertEquals("قهوة", panel.translatedText.text.toString())
+
+        // The same admitted page now has corrected OCR text. Exact-box matching
+        // drops its previous translation before the replacement model call ends.
+        val corrected = original.copy(text = "Coffee roasting")
+        val pending = partial.copy(text = corrected.text, translation = "", lines = listOf(corrected),
+            boxTranslations = emptyList(), translating = true)
+        call(service, "onOcrState", ClassParameter.from(CameraOcrState::class.java, pending))
+        assertTrue(field<List<TranslatedOcrBox>>(service, "renderedBoxes").isEmpty())
+        assertEquals(0, layer.childCount)
+        assertTrue(cleanups.isEmpty())
+        assertTrue(cleanupImage.isRecycled)
+        assertEquals("", panel.translatedText.text.toString())
+        assertEquals(listOf(region), field<List<OcrRegion>>(service, "renderedRegions"))
+        assertTrue(field<Boolean>(service, "working"))
+        assertSame(ticket, field<ReadingPageGuard.Ticket>(service, "pageTicket"))
+        assertTrue(field<ReadingPageGuard>(service, "pageGuard").isCurrent(ticket))
+        assertEquals(View.GONE, field<ReadingOverlayControls>(service, "panel").visibility)
+
+        val failed = pending.copy(processing = false, translating = false,
+            error = "Actual Marian error: translation returned empty text")
+        call(service, "onOcrState", ClassParameter.from(CameraOcrState::class.java, failed))
+        assertEquals(0, layer.childCount)
+        assertTrue(field<List<TranslatedOcrBox>>(service, "renderedBoxes").isEmpty())
+        assertEquals(failed.error, field<String?>(service, "sessionError"))
+        assertEquals("", panel.translatedText.text.toString())
+        assertFalse(field<Boolean>(service, "working"))
+        assertNotNull(field<Any?>(service, "completedPage"))
+        assertEquals(View.GONE, field<ReadingOverlayControls>(service, "panel").visibility)
+    }
+
     @Test fun retiringWorkerCannotCompleteAPageThatIsStillWaitingToBeSubmitted() = withWindows { service ->
         val ticket = admitPage(service)
         ReflectionHelpers.setField(service, "frameSubmitted", false)
@@ -439,6 +494,58 @@ class ReadingOverlayServiceTest {
         assertSame(ticket, field<ReadingPageGuard.Ticket>(service, "pageTicket"))
         assertEquals("", field<ReadingOverlayControls>(service, "panel").translatedText.text.toString())
         assertNull(field<Any?>(service, "completedPage"))
+    }
+
+    @Test fun manualTranslationSurvivesLocalTickerButRealScrollInvalidatesItsTicket() = withWindows { service ->
+        val ticket = admitPage(service)
+        ReflectionHelpers.setField(service, "manualPage", true)
+        for (kind in listOf(ReadingMotion.ChangeKind.LOCALIZED, ReadingMotion.ChangeKind.ANIMATION)) {
+            call(service, "onPageMotion", ClassParameter.from(Boolean::class.javaPrimitiveType!!, true),
+                ClassParameter.from(ReadingMotion.ChangeKind::class.java, kind))
+            assertTrue(field<Boolean>(service, "working"))
+            assertSame(ticket, field<ReadingPageGuard.Ticket>(service, "pageTicket"))
+            assertTrue(field<ReadingPageGuard>(service, "pageGuard").isCurrent(ticket))
+        }
+        call(service, "onPageMotion", ClassParameter.from(Boolean::class.javaPrimitiveType!!, true),
+            ClassParameter.from(ReadingMotion.ChangeKind::class.java, ReadingMotion.ChangeKind.WIDESPREAD))
+        assertFalse(field<Boolean>(service, "working"))
+        assertNull(field<ReadingPageGuard.Ticket?>(service, "pageTicket"))
+        assertFalse(field<ReadingPageGuard>(service, "pageGuard").isCurrent(ticket))
+    }
+
+    @Test fun ignoredTickerDoesNotChangeCleanPageSignatureOrAlterCapturedPixels() = withWindows { service ->
+        val first = Bitmap.createBitmap(100, 100, Bitmap.Config.ARGB_8888).apply { eraseColor(Color.WHITE) }
+        val second = first.copy(Bitmap.Config.ARGB_8888, true)
+        for (y in 10 until 25) for (x in 0 until 100) second.setPixel(x,y,Color.BLACK)
+        val ignored = listOf(PixelCrop(0,10,100,25))
+        fun signature(image: Bitmap, areas: List<PixelCrop>) = ReflectionHelpers.callInstanceMethod<IntArray>(service, "signature",
+            ClassParameter.from(Bitmap::class.java, image), ClassParameter.from(List::class.java, areas))
+        try {
+            assertFalse(signature(first,emptyList()).contentEquals(signature(second,emptyList())))
+            assertArrayEquals(signature(first,ignored),signature(second,ignored))
+            assertEquals(Color.BLACK,second.getPixel(50,15))
+            assertEquals(Color.WHITE,first.getPixel(50,15))
+        } finally { first.recycle();second.recycle() }
+    }
+
+    @Test fun ignoredAreaSelectorPersistsItsCaptureGeometryAndLeavesSourcePixelsUntouched() = withWindows { service ->
+        val image = Bitmap.createBitmap(100, 100, Bitmap.Config.ARGB_8888).apply { eraseColor(Color.WHITE) }
+        call(service,"selectRegion",ClassParameter.from(Bitmap::class.java,image),
+            ClassParameter.from(Boolean::class.javaPrimitiveType!!,true))
+        val selector = field<LinearLayout>(service,"selector")
+        val area = selector.getChildAt(2)
+        area.layout(0,0,100,100)
+        ReflectionHelpers.callInstanceMethod<Unit>(area,"chooseCenter")
+        val saveText = service.getString(com.sal7one.transiber.R.string.reading_exclusions_save)
+        descendants(selector).filterIsInstance<Button>().single {it.text.toString()==saveText}.performClick()
+        assertNull(field<LinearLayout?>(service,"selector"))
+        assertTrue(image.isRecycled)
+        val saved = ReadingOverlayPreferences(service).read().motionExclusions.single()
+        assertEquals(PixelCrop(20,20,80,80),saved.cropFor(100,100))
+        assertNull(saved.cropFor(200,100))
+        val active = ReflectionHelpers.callInstanceMethod<List<PixelCrop>>(service,"ignoredAreas",
+            ClassParameter.from(Int::class.javaPrimitiveType!!,100),ClassParameter.from(Int::class.javaPrimitiveType!!,100))
+        assertEquals(listOf(PixelCrop(20,20,80,80)),active)
     }
 
     @Test fun terminalTranslationErrorKeepsOriginalAndPartialOutputWithoutStealingFocus() = withWindows { service ->

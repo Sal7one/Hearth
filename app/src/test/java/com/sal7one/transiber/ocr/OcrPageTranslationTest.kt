@@ -1,6 +1,7 @@
 package com.sal7one.transiber.ocr
 
 import com.sal7one.common_jni.ocr.OcrLine
+import com.sal7one.common_jni.translation.EmptyTranslationOutputException
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.*
 import org.junit.Test
@@ -71,6 +72,42 @@ class OcrPageTranslationTest {
         val source=line("original");var published=false
         val failure=runCatching {OcrPageTranslation.run(listOf(source),{true},{" "},{published=true})}.exceptionOrNull()
         assertTrue(failure is IllegalStateException);assertTrue(failure!!.message!!.contains("original"));assertFalse(published)
+    }
+    @Test fun modelEmptyOutputForLabelDoesNotPreventArticleTranslationAndRemainsAVisiblePartialFailure()=runBlocking {
+        val label=line("Search",10)
+        val article=line("Coffee is a popular drink.",200)
+        val cause=EmptyTranslationOutputException("Marian produced no translation for this text")
+        val calls=mutableListOf<String>()
+        var published=emptyList<TranslatedOcrBox>()
+        val failure=runCatching {
+            OcrPageTranslation.run(listOf(label,article),{true},{ text ->
+                calls+=text
+                if(text==label.text)throw cause
+                "القهوة مشروب شائع."
+            },{published=it})
+        }.exceptionOrNull()
+        assertEquals(listOf(label.text,article.text),calls)
+        assertEquals(listOf(TranslatedOcrBox(article,"القهوة مشروب شائع.")),published)
+        assertTrue(failure is IncompleteOcrTranslationException)
+        assertSame(cause,failure!!.cause)
+        assertTrue(failure.message!!.contains("Search"))
+        assertTrue(failure.message!!.contains("original text is preserved"))
+    }
+    @Test fun allContentFailuresRemainFailureWithoutPublishingFakeTranslations()=runBlocking {
+        var calls=0;var publications=0
+        val failure=runCatching {
+            OcrPageTranslation.run(listOf(line("Search"),line("Menu")),{true},{
+                calls++;throw EmptyTranslationOutputException("No visible model output")
+            },{publications++})
+        }.exceptionOrNull() as IncompleteOcrTranslationException
+        assertEquals(2,calls);assertEquals(2,failure.failures.size);assertEquals(0,publications)
+    }
+    @Test fun stalePageDoesNotPublishOrReportItsContentFailure()=runBlocking {
+        var current=true;var calls=0
+        OcrPageTranslation.run(listOf(line("Search"),line("article")),{current},{
+            calls++;current=false;throw EmptyTranslationOutputException("No visible model output")
+        },{fail("stale page must not publish")})
+        assertEquals(1,calls)
     }
     @Test fun oversizedPageDoesNotStartAnyTranslation()=runBlocking {
         for(lines in listOf(List(65){line("a")},listOf(line("a".repeat(3001))))) {

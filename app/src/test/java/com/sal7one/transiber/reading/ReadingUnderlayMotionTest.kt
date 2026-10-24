@@ -130,6 +130,36 @@ class ReadingUnderlayMotionTest {
         repeat(8) {assertFalse(m.observePainted(if(it%2==0)spinner else first))}
     }
 
+    @Test fun wideAnimatedTickerBehindStableCaptionsPreservesTheArticleButNotARealScroll() {
+        val m=ReadingMotion()
+        m.observePainted(composite(article()))
+        repeat(10) {step ->
+            val source=article().apply {for(y in 20 until 28)for(x in 0 until width)
+                this[y*width+x]=if((x+step)%8<4)0 else 255}
+            assertFalse("First and recurring localized frames must not erase translated body text",
+                m.observePainted(composite(source)))
+            assertEquals(if(step==0)ReadingMotion.ChangeKind.LOCALIZED else ReadingMotion.ChangeKind.ANIMATION,
+                m.lastDiagnostics.kind)
+            assertTrue(m.lastDiagnostics.coveredEligible)
+        }
+        assertTrue(m.observePainted(composite(article(7))))
+        assertEquals(ReadingMotion.ChangeKind.WIDESPREAD,m.lastDiagnostics.kind)
+    }
+
+    @Test fun aNewPaintRevisionCannotReleaseAnOldLocalizedCandidateAsPageMotion() {
+        val m=ReadingMotion()
+        val source=article()
+        m.observePainted(composite(source))
+        val changed=source.copyOf().apply {for(y in 40 until 45)for(x in 4 until 60)this[y*width+x]=0}
+        assertFalse(m.observePainted(composite(changed)))
+        assertEquals(ReadingMotion.ChangeKind.LOCALIZED,m.lastDiagnostics.kind)
+        val nextPaint=composite(changed,revision=1)
+        assertFalse(m.observePainted(nextPaint,revision=2,stable=false))
+        assertFalse(m.observePainted(nextPaint,revision=2))
+        assertFalse(m.observePainted(nextPaint,revision=2))
+        assertEquals(ReadingMotion.ChangeKind.STILL,m.lastDiagnostics.kind)
+    }
+
     @Test fun lowContrastOriginalTextIsStillVisibleAtTwentyPercentContribution() {
         val m = ReadingMotion()
         val first = IntArray(width*height) {grey(240)}

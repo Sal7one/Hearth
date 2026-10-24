@@ -32,9 +32,11 @@ static const char* TAG = "MarianJNI";
 namespace {
 
 stt::concurrency::LeaseRegistry<stt::marian::MarianEngine> g_engines;
+thread_local bool lastFailureWasEmptyOutput = false;
 
 void clearError() {
     stt::ThreadLocalError::get().clear();
+    lastFailureWasEmptyOutput = false;
 }
 
 void setError(stt::ErrorCode code, const std::string& message) {
@@ -118,6 +120,7 @@ Java_com_sal7one_common_1jni_marian_MarianNative_nativeTranslate(
         if (!result.ok) {
             setError(stt::ErrorCode::ENGINE_INFERENCE_FAILED,
                      result.error.empty() ? "Translation failed" : result.error);
+            lastFailureWasEmptyOutput = result.emptyOutput;
             return nullptr;
         }
 
@@ -196,6 +199,13 @@ Java_com_sal7one_common_1jni_marian_MarianNative_nativeGetLastError(
 ) {
     const std::string& message = stt::ThreadLocalError::get().message();
     return message.empty() ? nullptr : jni::utf8ToJString(env, message);
+}
+
+JNIEXPORT jboolean JNICALL
+Java_com_sal7one_common_1jni_marian_MarianNative_nativeLastFailureWasEmptyOutput(
+    JNIEnv*, jobject
+) {
+    return lastFailureWasEmptyOutput ? JNI_TRUE : JNI_FALSE;
 }
 
 }  // extern "C"

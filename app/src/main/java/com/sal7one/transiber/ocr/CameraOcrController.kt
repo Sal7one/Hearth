@@ -46,7 +46,7 @@ internal class CameraOcrController(
     private val scope = CoroutineScope(SupervisorJob() + dispatcher)
     private val mutable = MutableStateFlow(CameraOcrState())
     val state = mutable.asStateFlow()
-    private data class Frame(val bitmap: Bitmap, val captured: Boolean, val epoch: Long)
+    private data class Frame(val bitmap: Bitmap, val captured: Boolean, val epoch: Long, val excludedAreas: List<PixelCrop> = emptyList())
     private data class TextRequest(val text: String, val ticket: OcrTranslationWork.Ticket, val lines: List<OcrLine>, val preservesRegions: Boolean = false)
     @Volatile private var frames: Channel<Frame>? = null
     @Volatile private var model: OcrEngine? = null
@@ -56,7 +56,8 @@ internal class CameraOcrController(
     private val frameEpoch = java.util.concurrent.atomic.AtomicLong(0)
     private val translationWork=OcrTranslationWork()
     fun error(error: Throwable) { mutable.update { it.copy(error = error.message ?: error.toString()) } }
-    fun start(profile: OcrProfile, source: String, target: String, snapshot: ConversationTranslatorSnapshot?, live: Boolean, initial: Bitmap? = null, positioned: Boolean = false) {
+    fun start(profile: OcrProfile, source: String, target: String, snapshot: ConversationTranslatorSnapshot?, live: Boolean, initial: Bitmap? = null, positioned: Boolean = false,
+              excludedAreas: List<PixelCrop> = emptyList()) {
         if (job != null) { initial?.recycle(); error(IllegalStateException("Stop the current camera session before changing its models or settings")); return }
         val input = Channel<Frame>(1, onBufferOverflow = kotlinx.coroutines.channels.BufferOverflow.DROP_OLDEST, onUndeliveredElement = { it.bitmap.recycle() })
         frameEpoch.incrementAndGet();revision++;translationWork.invalidate()
@@ -134,6 +135,7 @@ internal class CameraOcrController(
                         val bitmap=frame.bitmap
                         val begun=System.nanoTime()
                         val engine=checkNotNull(model)
+                        fun included(line: OcrLine) = !OcrExcludedAreas.containsText(line.x,line.y,line.width,line.height,frame.excludedAreas)
                         val progressive=engine.preservesRegions
                         val pageRevision=if(progressive) ++revision else revision
                         if(progressive) {
@@ -148,17 +150,23 @@ internal class CameraOcrController(
                             }
                             override fun detected(regions: List<OcrRegion>) {
                                 if(!isCurrent())return
-                                mutable.update { if(frame.epoch!=frameEpoch.get())it else it.copy(regions=regions,detecting=false,width=bitmap.width,height=bitmap.height) }
+                                val includedRegions=regions.filterNot { region -> region.bounds.let { OcrExcludedAreas.containsText(it.x,it.y,it.width,it.height,frame.excludedAreas) } }
+                                mutable.update { if(frame.epoch!=frameEpoch.get())it else it.copy(regions=includedRegions,detecting=false,width=bitmap.width,height=bitmap.height) }
                             }
                             override fun stage(stage: PageOcrStage) {
                                 if(isCurrent())mutable.update {if(frame.epoch!=frameEpoch.get() || progressive && pageRevision!=revision)it else it.copy(stage=stage)}
                             }
                             override fun recognized(text: List<PageText>) {
                                 if(!progressive || !isCurrent())return
-                                val recognized=text.map { it.toOcrLine() }
+                                val recognized=text.map { it.toOcrLine() }.filter(::included)
                                 val original=recognized.joinToString("\n") { it.text }
-                                mutable.update { if(frame.epoch!=frameEpoch.get())it else it.copy(lines=recognized,text=original,
-                                    boxTranslations=OcrPageTranslation.refreshGeometry(it.boxTranslations,recognized)) }
+                                mutable.update {
+                                    if(frame.epoch!=frameEpoch.get())it else {
+                                        val refreshed=OcrPageTranslation.refreshGeometry(it.boxTranslations,recognized)
+                                        it.copy(lines=recognized,text=original,boxTranslations=refreshed,
+                                            translation=refreshed.joinToString("\n") {box->box.translation})
+                                    }
+                                }
                                 if(positioned && original.isNotBlank() && snapshot!=null && source!=target && isCurrent())
                                     request(original,pageRevision,recognized,true)?.let(::enqueue)
                             }
@@ -167,7 +175,7 @@ internal class CameraOcrController(
                             withContext(recognition) {
                                 val pixels=IntArray(bitmap.width*bitmap.height); bitmap.getPixels(pixels,0,bitmap.width,0,0,bitmap.width,bitmap.height)
                                 engine.recognizePage(pixels,bitmap.width,bitmap.height,if(frame.captured)960 else 640,progress)
-                                    .map { it.copy(text=OcrText.logical(it.text,profile.id == "arabic")) }
+                                    .filter(::included).map { it.copy(text=OcrText.logical(it.text,profile.id == "arabic")) }
                             }
                         } ?: continue // The old native call can finish or fail after the page has moved.
                         val readingLines=if(positioned && !engine.preservesRegions) OcrReadingGroups.group(lines) else lines
@@ -212,11 +220,11 @@ internal class CameraOcrController(
                 mutable.update { it.copy(running=false,loading=false,processing=false,detecting=false,closing=false,live=false,translating=false) }; job=null
             }
         }
-        initial?.let { input.trySend(Frame(it,true,frameEpoch.get())) }
+        initial?.let { input.trySend(Frame(it,true,frameEpoch.get(),excludedAreas.toList())) }
         job?.start()
     }
     /** Takes ownership only when a running worker can consume this frame. */
-    fun offer(bitmap: Bitmap, captured: Boolean = false) {
+    fun offer(bitmap: Bitmap, captured: Boolean = false, excludedAreas: List<PixelCrop> = emptyList()) {
         val queue=frames
         if(queue == null || (!captured && !mutable.value.live)) { bitmap.recycle();return }
         if(captured) {
@@ -224,7 +232,7 @@ internal class CameraOcrController(
             translationWork.invalidate()
             mutable.update { it.copy(live=false,processing=true,detecting=false,text="",translation="",boxTranslations=emptyList(),lines=emptyList(),regions=emptyList(),error=null) }
         }
-        if(!queue.trySend(Frame(bitmap,captured,frameEpoch.get())).isSuccess)bitmap.recycle()
+        if(!queue.trySend(Frame(bitmap,captured,frameEpoch.get(),excludedAreas.toList())).isSuccess)bitmap.recycle()
     }
     /** Invalidate work immediately when the reader moves, without destroying the loaded model. */
     fun invalidate() {

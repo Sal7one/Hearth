@@ -29,6 +29,32 @@ import org.xmlpull.v1.XmlPullParser
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
 class ReadingOverlayControlsTest {
+    @Test fun ignoredAreaControlsStayExplicitAndRenderDoesNotStartCapturesOrResetThePolicy() {
+        val owner = Robolectric.buildActivity(Activity::class.java).setup().visible()
+        var captured = 0; var excluded = 0; var cleared = 0
+        val controls = ReadingOverlayControls(owner.get(), callbacks(translate = { captured++ }).copy(
+            excludeArea = { excluded++ }, clearExclusions = { cleared++ }))
+        owner.get().setContentView(controls)
+        controls.render(ReadingOverlayUiState(mode = "manual", excludedAreas = 0))
+        val add = button(controls, R.string.reading_exclusions_add)
+        val clear = button(controls, R.string.reading_exclusions_clear)
+        assertTrue(add.isEnabled); assertFalse(clear.isEnabled)
+        add.performClick()
+        assertEquals(1, excluded); assertEquals(0, captured)
+        controls.render(ReadingOverlayUiState(working = true, excludedAreas = 1))
+        assertTrue("A busy moving page must still let its owner draw a repair exclusion", add.isEnabled)
+        controls.render(ReadingOverlayUiState(mode = "page", excludedAreas = 4, inactiveExcludedAreas = 1))
+        assertFalse(add.isEnabled); assertTrue(clear.isEnabled)
+        assertTrue(descendants(controls).filterIsInstance<android.widget.TextView>()
+            .any { it.text == owner.get().getString(R.string.reading_exclusions_inactive, 4, 1) })
+        assertEquals(1, excluded); assertEquals(0, cleared); assertEquals(0, captured)
+        clear.performClick()
+        assertEquals(1, cleared); assertEquals(0, captured)
+        controls.render(ReadingOverlayUiState(excludedAreas = 0))
+        assertTrue(add.isEnabled); assertFalse(clear.isEnabled)
+        owner.pause().stop().destroy()
+    }
+
     @Test @Config(sdk = [33]) fun serviceOwnedOverlayOptsIntoTheAndroidThirteenBackDispatcherAtApplicationLevel() {
         // The platform checks ApplicationInfo for a Service's overlay window; opting in only
         // on ReadingStartActivity leaves its real window callback silently unregistered.

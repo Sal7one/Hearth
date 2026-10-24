@@ -26,6 +26,8 @@ class ReadingMotionTest {
     @Test fun lowContrastPageMovementIsDetected() {
         val m=ReadingMotion();m.observe(page(),64,128,emptyList())
         val moved=page().apply {for(i in 4000..4100)this[i]=grey(205)}
+        assertFalse("A short changed band must settle before replacing the page",m.observe(moved,64,128,emptyList()))
+        assertEquals(ReadingMotion.ChangeKind.LOCALIZED,m.lastDiagnostics.kind)
         assertTrue(m.observe(moved,64,128,emptyList()))
     }
     @Test fun handleAndSystemChromeChangesAreExcluded() {
@@ -58,6 +60,7 @@ class ReadingMotionTest {
         }
         val sensitive=ReadingMotion().apply {sensitivity="sensitive"}
         sensitive.observe(page(),64,128,emptyList())
+        assertFalse(sensitive.observe(smallChange,64,128,emptyList()))
         assertTrue(sensitive.observe(smallChange,64,128,emptyList()))
         for(level in listOf("balanced","stable","unknown")) {
             val m=ReadingMotion().apply {sensitivity=level}
@@ -81,7 +84,72 @@ class ReadingMotionTest {
         val cover=listOf(PixelCrop(0,40,64,50))
         assertFalse(m.observe(page(),64,128,cover))
         assertFalse(m.observe(page(),64,128,cover))
-        assertTrue(m.observe(page().apply {for(i in 5000..5100)this[i]=grey(0)},64,128,cover))
+        val changed=page().apply {for(i in 5000..5100)this[i]=grey(0)}
+        assertFalse(m.observe(changed,64,128,cover))
+        assertTrue(m.observe(changed,64,128,cover))
+    }
+
+    @Test fun horizontalTickerCannotCancelTheFirstPageOrKeepRetranslatingIt() {
+        val motion=ReadingMotion()
+        val trigger=ReadingTrigger().apply {mode="page";settleMs=500}
+        motion.observe(page(),64,128,emptyList())
+        // Animation spans many tiles/pixels, but the article outside this band
+        // never changed. Its first observed frame must also preserve active work.
+        repeat(12) {step ->
+            val ticker=page().apply {for(y in 20 until 28)for(x in 0 until 64)
+                this[y*64+x]=grey(if((x+step)%8<4)0 else 255)}
+            val moved=motion.observe(ticker,64,128,emptyList())
+            if(moved)trigger.movement(step*500L)
+            assertFalse(moved)
+            assertEquals(if(step==0)ReadingMotion.ChangeKind.LOCALIZED else ReadingMotion.ChangeKind.ANIMATION,
+                motion.lastDiagnostics.kind)
+            assertFalse(trigger.ready(step*500L+500))
+        }
+    }
+
+    @Test fun oneOffLocalizedTextReplacementIsReportedOnceAfterItSettles() {
+        val motion=ReadingMotion();motion.observe(page(),64,128,emptyList())
+        val changed=page().apply {for(y in 40 until 45)for(x in 4 until 60)this[y*64+x]=grey(0)}
+        assertFalse(motion.observe(changed,64,128,emptyList()))
+        assertEquals(ReadingMotion.ChangeKind.LOCALIZED,motion.lastDiagnostics.kind)
+        assertTrue(motion.observe(changed,64,128,emptyList()))
+        assertEquals(ReadingMotion.ChangeKind.LOCALIZED,motion.lastDiagnostics.kind)
+        assertTrue(motion.lastDiagnostics.primary.settled)
+        assertFalse(motion.observe(changed,64,128,emptyList()))
+        assertEquals(ReadingMotion.ChangeKind.STILL,motion.lastDiagnostics.kind)
+    }
+
+    @Test fun realScrollAndBroadReplacementStillInterruptAKnownAnimatedBandImmediately() {
+        val motion=ReadingMotion();motion.observe(page(),64,128,emptyList())
+        val ticker=page().apply {for(y in 20 until 28)for(x in 0 until 64)this[y*64+x]=grey(0)}
+        assertFalse(motion.observe(ticker,64,128,emptyList()))
+        assertFalse(motion.observe(page(),64,128,emptyList()))
+        assertEquals(ReadingMotion.ChangeKind.ANIMATION,motion.lastDiagnostics.kind)
+        val articleMoved=page().apply {for(y in 35 until 110)for(x in 4 until 60)
+            if(y%6<3)this[y*64+x]=grey(0)}
+        assertTrue(motion.observe(articleMoved,64,128,emptyList()))
+        assertEquals(ReadingMotion.ChangeKind.WIDESPREAD,motion.lastDiagnostics.kind)
+        assertTrue(motion.observe(page(80),64,128,emptyList()))
+        assertEquals(ReadingMotion.ChangeKind.WIDESPREAD,motion.lastDiagnostics.kind)
+    }
+
+    @Test fun animationHistoryCannotWalkAcrossThePageOrSwallowASeparateChangedArea() {
+        val motion=ReadingMotion();motion.observe(page(),64,128,emptyList())
+        fun band(y: Int)=page().apply {for(row in y until y+4)for(x in 0 until 64)this[row*64+x]=grey(0)}
+        assertFalse(motion.observe(band(20),64,128,emptyList()))
+        assertFalse(motion.observe(band(23),64,128,emptyList()))
+        assertTrue("An ignored region stays anchored; it must not grow with moving content",
+            motion.observe(band(40),64,128,emptyList()))
+        assertEquals(ReadingMotion.ChangeKind.WIDESPREAD,motion.lastDiagnostics.kind)
+    }
+
+    @Test fun newOverlayMaskDropsPendingLocalizedMotionInsteadOfTriggeringItsOwnCapture() {
+        val motion=ReadingMotion();motion.observe(page(),64,128,emptyList())
+        val changed=page().apply {for(y in 40 until 45)for(x in 4 until 60)this[y*64+x]=grey(0)}
+        assertFalse(motion.observe(changed,64,128,emptyList()))
+        val paint=listOf(PixelCrop(0,35,64,50))
+        assertFalse(motion.observe(page(),64,128,paint))
+        assertFalse(motion.observe(page(),64,128,paint))
     }
 
     @Test fun successiveScrollFramesKeepPostponingRecognitionUntilMovementStops() {

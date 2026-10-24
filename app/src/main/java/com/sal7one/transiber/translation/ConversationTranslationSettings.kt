@@ -11,6 +11,8 @@ import com.sal7one.common_jni.translation.TranslationAcceleration
 import com.sal7one.common_jni.marian.MarianTranslationSession
 import com.sal7one.common_jni.speech.TranslationDirection
 import com.sal7one.transiber.byok.ByokPolicy
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import org.json.JSONArray
@@ -62,20 +64,40 @@ internal object ConversationTranslationSettings {
     fun endpoint(context: Context, provider: TextTranslationProvider): String = prefs(context).getString("${provider.id}.endpoint", provider.defaultEndpoint) ?: provider.defaultEndpoint
     fun region(context: Context, provider: TextTranslationProvider): String = prefs(context).getString("${provider.id}.region", "") ?: ""
     fun hasKey(context: Context, provider: TextTranslationProvider): Boolean = prefs(context).contains("${provider.id}.key")
+    @Synchronized
     fun connection(context: Context, provider: TextTranslationProvider): CloudTranslationConnection {
         check(ByokPolicy.FEATURE_BYOK) { "Cloud translation is unavailable in the offline build." }
         return CloudTranslationConnection(provider, endpoint(context, provider), readKey(context, provider), region(context, provider))
     }
+    private data class ConnectionDraft(val connection: CloudTranslationConnection, val generation: String?, val replacementKey: String?)
     @Synchronized
-    fun save(context: Context, provider: TextTranslationProvider, endpoint: String, region: String, replacementKey: String?): String {
+    private fun draft(context: Context, provider: TextTranslationProvider, endpoint: String, region: String, replacementKey: String?): ConnectionDraft {
         check(ByokPolicy.FEATURE_BYOK) { "Cloud translation is unavailable in the offline build." }
-        val generation = java.util.UUID.randomUUID().toString()
-        val edit = prefs(context).edit().putString("${provider.id}.generation", generation)
-        // A new server/key can expose different languages. Only a successful fresh check restores them.
-        edit.remove("${provider.id}.languages").putString("${provider.id}.endpoint", endpoint.trim())
-            .putString("${provider.id}.region", region.trim())
         val scopedKey = replacementKey ?: if (CloudTranslationProtocol.sameEndpoint(provider, endpoint, endpoint(context, provider))) null else ""
-        scopedKey?.let { key ->
+        return ConnectionDraft(CloudTranslationConnection(provider, endpoint.trim(), scopedKey ?: readKey(context, provider), region.trim()),
+            prefs(context).getString("${provider.id}.generation", null), scopedKey)
+    }
+    /** Failed/cancelled checks leave the last working connection intact, including its capabilities. */
+    suspend fun checkAndSave(context: Context, provider: TextTranslationProvider, endpoint: String, region: String,
+                             replacementKey: String?, discover: suspend (CloudTranslationConnection) -> CloudTranslationLanguages): CloudTranslationLanguages {
+        val draft = draft(context, provider, endpoint, region, replacementKey)
+        // Discovery may be public (Azure); still reject malformed credentials before sending anything.
+        CloudTranslationProtocol.translateRequest(draft.connection, "Connection setup", "en", "ar")
+        val languages = discover(draft.connection)
+        currentCoroutineContext().ensureActive()
+        saveChecked(context, draft, languages)
+        return languages
+    }
+    @Synchronized
+    private fun saveChecked(context: Context, draft: ConnectionDraft, languages: CloudTranslationLanguages) {
+        val provider = draft.connection.provider
+        check(prefs(context).getString("${provider.id}.generation", null) == draft.generation) {
+            "This translation connection changed during language discovery. Check its languages again."
+        }
+        val edit = prefs(context).edit().putString("${provider.id}.generation", java.util.UUID.randomUUID().toString())
+            .putString("${provider.id}.endpoint", draft.connection.endpoint).putString("${provider.id}.region", draft.connection.region)
+            .putString("${provider.id}.languages", serialize(languages))
+        draft.replacementKey?.let { key ->
             if (key.isBlank()) edit.remove("${provider.id}.key")
             else {
                 val cipher = Cipher.getInstance("AES/GCM/NoPadding")
@@ -84,11 +106,12 @@ internal object ConversationTranslationSettings {
                 edit.putString("${provider.id}.key", Base64.encodeToString(cipher.iv, Base64.NO_WRAP) + ":" + Base64.encodeToString(encrypted, Base64.NO_WRAP))
             }
         }
-        check(edit.commit()) { "Could not save translation connection" }; changed(); return generation
+        check(edit.commit()) { "Could not save translation connection" }; changed()
     }
     @Synchronized
     fun forget(context: Context, provider: TextTranslationProvider) {
-        val edit = prefs(context).edit().remove("${provider.id}.key").remove("${provider.id}.languages").remove("${provider.id}.generation")
+        val edit = prefs(context).edit().remove("${provider.id}.key").remove("${provider.id}.languages")
+            .putString("${provider.id}.generation", java.util.UUID.randomUUID().toString())
         if (selected(context) == provider.id) edit.putString("selected", LOCAL)
         check(edit.commit()) { "Could not remove translation key" }; changed()
     }
@@ -102,15 +125,10 @@ internal object ConversationTranslationSettings {
             })
         } catch (_: Exception) { null } // Corrupt cache requires explicit refresh; never invent capabilities.
     }
-    @Synchronized
-    fun saveCapabilities(context: Context, provider: TextTranslationProvider, languages: CloudTranslationLanguages, generation: String) {
-        check(prefs(context).getString("${provider.id}.generation", null) == generation) {
-            "This translation connection changed during language discovery. Check its languages again."
-        }
+    private fun serialize(languages: CloudTranslationLanguages): String {
         val pairs = JSONObject(); languages.targetsBySource.forEach { (from, to) -> pairs.put(from, JSONArray(to.toList())) }
         val json = JSONObject().put("sources", JSONObject(languages.sourceCodes)).put("targets", JSONObject(languages.targetCodes)).put("pairs", pairs)
-        check(prefs(context).edit().putString("${provider.id}.languages", json.toString()).commit()) { "Could not save supported translation languages" }
-        changed()
+        return json.toString()
     }
     fun label(context: Context, localId: String): String = provider(selected(context))?.label ?: TranslationOptions.label(localId)
     fun languages(context: Context, localId: String): Set<String> = provider(selected(context))?.let { p ->
@@ -123,6 +141,7 @@ internal object ConversationTranslationSettings {
             else TranslationOptions.supports(localId, source, target)
     }
     /** Snapshot credentials/capabilities once, before a turn. Later settings cannot reroute in-flight text. */
+    @Synchronized
     fun snapshot(context: Context, localId: String, providerId: String = selected(context)): ConversationTranslatorSnapshot {
         check(ByokPolicy.FEATURE_BYOK || providerId == LOCAL || providerId.isBlank()) { "Cloud translation is unavailable in the offline build." }
         check(providerId == LOCAL || providerId.isBlank() || provider(providerId) != null) { "Unknown translation provider: $providerId" }

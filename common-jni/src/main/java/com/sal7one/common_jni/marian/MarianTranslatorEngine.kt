@@ -21,7 +21,7 @@ class MarianTranslatorEngine private constructor(
         data class Translated(val text: String, val latencyMs: Long, val stages: StageStats?) : Outcome
 
         /** [reason] is human-readable and safe to show in the overlay. */
-        data class Failure(val reason: String) : Outcome
+        data class Failure(val reason: String, val emptyOutput: Boolean = false) : Outcome
     }
 
     data class StageStats(val tokenizeMs: Long, val encoderMs: Long, val decoderMs: Long,
@@ -44,6 +44,7 @@ class MarianTranslatorEngine private constructor(
                 Outcome.Failure(
                     MarianNative.nativeGetLastError()
                         ?: "Translation failed for an unknown reason.",
+                    emptyOutput = MarianNative.nativeLastFailureWasEmptyOutput(),
                 )
             } else {
                 val nativeStats = MarianNative.nativeLastStats(current)

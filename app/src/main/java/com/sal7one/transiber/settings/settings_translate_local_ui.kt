@@ -387,7 +387,9 @@ internal fun SettingsTranslateLocalUi(
         if (PlatformTranslation.available && hardware.matches(emptySet())) {
             HorizontalDivider()
             TextButton(onClick = { platformDetails = !platformDetails }) { Text(uiText(UiR.string.translation_browser_platform)) }
-            if (platformDetails) MlKitSetup(config, update)
+            if (platformDetails) MlKitSetup(config, update,
+                sourceLanguage = selectionSource ?: spoken, targetLanguage = selectionTarget ?: config.target.languageTag,
+                onUse = if (onLocalModelSelected != null) ({ select(TranslationOptions.ML_KIT) }) else null)
         }
         if (showCaptionControls) {
             HorizontalDivider()

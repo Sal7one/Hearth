@@ -89,6 +89,7 @@ class ReadingOverlayService : Service() {
     private var generation=0L
     private var working=false
     private var frameSubmitted=false
+    private var manualPage=false
     private var stopping=false
     private var setupSuppressed=false
     private var recoverAfterSetup=false
@@ -219,8 +220,10 @@ class ReadingOverlayService : Service() {
         if(!working || pageTicket==null || !frameSubmitted){renderControls();return}
         if(!viewingBox && value.text.isNotBlank())original?.text=value.text
         if(value.regions.isNotEmpty())showRegions()
-        if(value.boxTranslations.isNotEmpty())showTranslations(value.boxTranslations)
-        if(!viewingBox && value.translation.isNotBlank())translated?.text=value.translation
+        // Progressive OCR can invalidate every translated box while retaining the
+        // page. An empty authoritative list must also remove stale labels/cleanup.
+        showTranslations(value.boxTranslations)
+        if(!viewingBox)translated?.text=value.translation
         val terminal=!value.loading && !value.processing && !value.translating && !value.detecting && !value.closing
         sessionError=value.error
         status?.text=value.error ?: when {
@@ -282,6 +285,9 @@ class ReadingOverlayService : Service() {
             cancelAttempt();trigger.reset()
             if(options.mode=="page" && !paused && pageCrop==null)trigger.movement(now())
         }
+        if(old.motionExclusions!=options.motionExclusions) {
+            cancelAttempt();clearPage(forgetCompleted=true);resetMotion();trigger.reset()
+        }
         // Changes to our own drawing are not reader navigation.
         if(old.showOriginal!=options.showOriginal || old.translationVisible!=options.translationVisible || old.textSizeSp!=options.textSizeSp)resetMotion()
         applyLayerTouch();updateLayerVisibility();renderControls()
@@ -291,11 +297,13 @@ class ReadingOverlayService : Service() {
             translationsVisible=options.translationVisible,showOriginal=options.showOriginal,mode=options.mode,
             textSize=options.textSizeSp,settleMs=options.settleMs,scanMs=options.scanMs,
             refreshCooldownMs=options.refreshCooldownMs,changeSensitivity=options.changeSensitivity,
-            compactHandle=options.compactHandle,selectedArea=region!=null,languagePair="${uiText.languageName(source)} → ${uiText.languageName(target)}",historyCount=history.size,error=sessionError)
+            compactHandle=options.compactHandle,selectedArea=region!=null,languagePair="${uiText.languageName(source)} → ${uiText.languageName(target)}",historyCount=history.size,error=sessionError,
+            excludedAreas=options.motionExclusions.size,
+            inactiveExcludedAreas=options.motionExclusions.count {it.cropFor(pageWidth,pageHeight)==null})
         handle?.render(state);panel?.render(state)
     }
     private fun cancelAttempt() {
-        captureJob?.cancel();captureJob=null;generation++;working=false;frameSubmitted=false
+        captureJob?.cancel();captureJob=null;generation++;working=false;frameSubmitted=false;manualPage=false
         pageGuard.cancel();pageTicket=null;controller.invalidate()
     }
     private fun finishAttempt(value: CameraOcrState) {
@@ -444,10 +452,15 @@ class ReadingOverlayService : Service() {
         check(plane.pixelStride==4){uiText(UiR.string.service_unsupported_screen_pixel_stride_1_s_69dba, plane.pixelStride)}
         MotionFrame(ReadingMotionSampler.sample(plane.buffer,image.width,image.height,plane.rowStride,plane.pixelStride),image.width,image.height,imageGeneration)
     }
-    private fun signature(bitmap: Bitmap): IntArray {
+    private fun signature(bitmap: Bitmap, excludedAreas: List<PixelCrop> = emptyList()): IntArray {
         val tiny=Bitmap.createScaledBitmap(bitmap,32,48,false)
-        return IntArray(32*48).also {pixels->tiny.getPixels(pixels,0,32,0,0,32,48);pixels.indices.forEach {i->val p=pixels[i];pixels[i]=(Color.red(p)*3+Color.green(p)*6+Color.blue(p))/10};if(tiny!==bitmap)tiny.recycle()}
+        return IntArray(32*48).also {pixels->tiny.getPixels(pixels,0,32,0,0,32,48);pixels.indices.forEach {i->
+            val x=(i%32+.5)*bitmap.width/32;val y=(i/32+.5)*bitmap.height/48
+            val ignored=excludedAreas.any {x>=it.left && x<it.right && y>=it.top && y<it.bottom}
+            val p=pixels[i];pixels[i]=if(ignored)127 else (Color.red(p)*3+Color.green(p)*6+Color.blue(p))/10
+        };if(tiny!==bitmap)tiny.recycle()}
     }
+    private fun ignoredAreas(width: Int,height: Int)=options.motionExclusions.mapNotNull {it.cropFor(width,height)}
     /** Window elevation is drawn outside View bounds (Samsung adds 2*elevation outsets). */
     private fun controlMotionCrop(view: View,frameWidth: Int,frameHeight: Int): PixelCrop {
         val position=IntArray(2);view.getLocationOnScreen(position)
@@ -465,6 +478,7 @@ class ReadingOverlayService : Service() {
             val masks=mutableListOf(PixelCrop(0,0,frame.width,(frame.height*.055f).toInt()),
                 PixelCrop(0,(frame.height*.94f).toInt(),frame.width,frame.height))
             handle?.let {masks+=controlMotionCrop(it,frame.width,frame.height)}
+            masks+=ignoredAreas(frame.width,frame.height)
             val visibleMasks=if(pageView?.visibility==View.VISIBLE && !options.showOriginal)paintedMasks else emptyList()
             // Hard masks are controls/system chrome. Covered source text remains
             // observable through the layer's <=.8 alpha once our own painting settles.
@@ -481,9 +495,7 @@ class ReadingOverlayService : Service() {
                 if(com.sal7one.transiber.BuildConfig.DEBUG || com.sal7one.transiber.BuildConfig.BUILD_TYPE=="qa") {
                     android.util.Log.d("HearthReadingMotion","${motion.lastDiagnostics} paintRevision=$paintRevision stable=$paintStable pendingDraw=$pendingPaintDraw paintAgeMs=${now()-paintChangedAt} frameGeneration=${frame.generation} paintGeneration=$paintChangedGeneration alpha=${layerParams.alpha} regions=${renderedRegions.size} boxes=${renderedBoxes.size} hardMasks=${masks.size} coveredMasks=${covered.size} working=$working")
                 }
-                clearPage();trigger.movement(now());generation++;working=false;frameSubmitted=false
-                pageGuard.cancel();pageTicket=null;controller.invalidate()
-                original?.text="";translated?.text="";renderControls()
+                onPageMotion(moved,motion.lastDiagnostics.kind)
             }
             if(trigger.ready(now()) && !working) {
                 val clean=screenshot()
@@ -493,10 +505,17 @@ class ReadingOverlayService : Service() {
         }catch(e: CancellationException){throw e}
         catch(e: Exception){paused=true;showError(e.message ?: e.toString());renderControls()}
     }
+    /** A manual request owns its captured page through localized animations and late DOM updates. */
+    private fun onPageMotion(moved: Boolean, kind: ReadingMotion.ChangeKind) {
+        if(!moved || working && manualPage && kind!=ReadingMotion.ChangeKind.WIDESPREAD)return
+        clearPage();trigger.movement(now());generation++;working=false;frameSubmitted=false;manualPage=false
+        pageGuard.cancel();pageTicket=null;controller.invalidate()
+        original?.text="";translated?.text="";renderControls()
+    }
     fun requestCapture(draw: Boolean,wholePage: Boolean=false) {
         if(setupSuppressed || stopping || projection==null || selector!=null)return
         val previousCapture=captureJob
-        cancelAttempt();voice.stop();resumeReader();sessionError=null;working=true;renderControls()
+        cancelAttempt();manualPage=true;voice.stop();resumeReader();sessionError=null;working=true;renderControls()
         if(wholePage){region=null;pageGuard.reset();completedPage=null}
         captureJob=scope.launch {
             try {
@@ -519,21 +538,23 @@ class ReadingOverlayService : Service() {
             val crop=captureCrop(bitmap.width,bitmap.height)
             val cropped=Bitmap.createBitmap(bitmap,crop.left,crop.top,crop.width,crop.height)
             input=if(cropped===bitmap)bitmap.copy(Bitmap.Config.ARGB_8888,false) else cropped
-            val pixels=signature(input)
-            check(pixels.any {it>8}){uiText(UiR.string.service_the_captured_area_is_black_check_that_the_reader_i_87046)}
+            val excluded=OcrExcludedAreas.localize(ignoredAreas(bitmap.width,bitmap.height),crop)
+            // Check the actual capture before normalizing excluded signature pixels.
+            check(signature(input).any {it>8}){uiText(UiR.string.service_the_captured_area_is_black_check_that_the_reader_i_87046)}
+            val pixels=signature(input,excluded)
             val ticket=pageGuard.begin(pixels,manual)
             if(ticket==null) {
                 input.recycle();bitmap.recycle();restoreCompletedPage();renderControls();return
             }
-            pageTicket=ticket;sessionError=null
+            pageTicket=ticket;manualPage=manual;sessionError=null
             original?.text="";translated?.text="";status?.text=uiText(UiR.string.service_reading_1_s_30d82, uiText.label(profile))
             val epoch=generation
             if(controller.state.value.closing)controller.awaitStopped()
             if(epoch!=generation || !pageGuard.isCurrent(ticket)){input.recycle();bitmap.recycle();return}
             clearPage();pageWidth=bitmap.width;pageHeight=bitmap.height;pageCrop=crop;bitmap.recycle()
             viewingBox=false;working=true;frameSubmitted=true;renderControls()
-            if(!controller.state.value.running)controller.start(profile,source,target,snapshot,false,input,positioned=true)
-            else controller.offer(input,true)
+            if(!controller.state.value.running)controller.start(profile,source,target,snapshot,false,input,positioned=true,excludedAreas=excluded)
+            else controller.offer(input,true,excludedAreas=excluded)
         }catch(e: CancellationException){
             input?.takeUnless {it.isRecycled}?.recycle()
             if(!bitmap.isRecycled)bitmap.recycle()
@@ -610,7 +631,6 @@ class ReadingOverlayService : Service() {
     private fun showTranslations(boxes: List<TranslatedOcrBox> = latest.boxTranslations) {
         if(setupSuppressed)return
         val crop=pageCrop ?: return
-        if(boxes.isEmpty())return
         renderedBoxes=boxes
         pageView?.update(boxes,pageWidth,pageHeight,crop)
         updatePaintedMasks();updateLayerVisibility()
@@ -674,6 +694,7 @@ class ReadingOverlayService : Service() {
             visibility={value->overlayPreferences.update {it.copy(translationVisible=value)}},
             showOriginal={value->overlayPreferences.update {it.copy(showOriginal=value)}},
             selectArea={requestCapture(true)},wholePage={requestCapture(false,wholePage=true)},
+            excludeArea={requestExclusion()},clearExclusions={overlayPreferences.update {it.copy(motionExclusions=emptyList())}},
             clear={clear()},mode={value->overlayPreferences.update {it.copy(mode=value)}},
             textSize={value->overlayPreferences.update {it.copy(textSizeSp=value)}},
             settleMs={value->overlayPreferences.update {it.copy(settleMs=value)}},
@@ -734,7 +755,19 @@ class ReadingOverlayService : Service() {
         // error is available in controls; failures must not open a focusable menu.
         Toast.makeText(this,message,Toast.LENGTH_LONG).show()
     }
-    private fun selectRegion(bitmap: Bitmap) {
+    private fun requestExclusion() {
+        if(setupSuppressed || stopping || projection==null || selector!=null || options.motionExclusions.size>=MAX_MOTION_EXCLUSIONS)return
+        val previousCapture=captureJob
+        cancelAttempt();manualPage=true;voice.stop();resumeReader();sessionError=null;working=true;renderControls()
+        captureJob=scope.launch {
+            try {
+                previousCapture?.join()
+                selectRegion(screenshot(useSelectedArea=false),ignoreMotion=true)
+            }catch(e: CancellationException){throw e}
+            catch(e: Exception){showError(e.message ?: e.toString())}
+        }
+    }
+    private fun selectRegion(bitmap: Bitmap, ignoreMotion: Boolean=false) {
         working=false;frameSubmitted=false;renderControls()
         selectedBitmap=bitmap;handle?.visibility=View.GONE;panel?.visibility=View.GONE
         val root=ReadingBackAwareLayout(this){closeSelection()}.apply {
@@ -743,14 +776,20 @@ class ReadingOverlayService : Service() {
             layoutDirection=if(uiText.locale.language=="ar")View.LAYOUT_DIRECTION_RTL else View.LAYOUT_DIRECTION_LTR
         };selector=root
         val area=SelectionView(bitmap)
-        root.addView(text(uiText(UiR.string.service_draw_around_a_bubble_or_paragraph_0f329),20f))
-        root.addView(text(uiText(UiR.string.service_drag_or_circle_the_text_center_and_whole_image_als_b1a82),13f))
+        root.addView(text(uiText(if(ignoreMotion)UiR.string.reading_exclusions_draw_title else UiR.string.service_draw_around_a_bubble_or_paragraph_0f329),20f))
+        root.addView(text(uiText(if(ignoreMotion)UiR.string.reading_exclusions_draw_detail else UiR.string.service_drag_or_circle_the_text_center_and_whole_image_als_b1a82),13f))
         root.addView(area,LinearLayout.LayoutParams(-1,0,1f))
         row(root,uiText(UiR.string.service_center_a2391) to {area.chooseCenter()},uiText(UiR.string.service_whole_image_6bd00) to {area.whole()})
-        row(root,uiText(UiR.string.service_cancel_77dfd) to {closeSelection()},uiText(UiR.string.service_read_area_9c448) to {
+        row(root,uiText(UiR.string.service_cancel_77dfd) to {closeSelection()},uiText(if(ignoreMotion)UiR.string.reading_exclusions_save else UiR.string.service_read_area_9c448) to {
             val crop=area.crop()
             if(crop==null){Toast.makeText(this,uiText(UiR.string.service_draw_an_area_first_or_choose_center_5bc83),Toast.LENGTH_SHORT).show()}
-            else {
+            else if(ignoreMotion) {
+                val exclusion=ReadingMotionExclusion.fromCrop(crop,bitmap.width,bitmap.height)
+                if(exclusion!=null) {
+                    overlayPreferences.update {it.copy(motionExclusions=it.motionExclusions+exclusion)}
+                    closeSelection();applyOptions(overlayPreferences.read());requestCapture(false)
+                }
+            } else {
                 region=RectF(crop.left.toFloat()/bitmap.width,crop.top.toFloat()/bitmap.height,crop.right.toFloat()/bitmap.width,crop.bottom.toFloat()/bitmap.height)
                 val owned=bitmap.copy(Bitmap.Config.ARGB_8888,false);working=true;closeSelection();pageGuard.reset();completedPage=null
                 captureJob=scope.launch {try{submit(owned,manual=true)}catch(e: CancellationException){throw e}catch(e: Exception){showError(e.message ?: e.toString())}}

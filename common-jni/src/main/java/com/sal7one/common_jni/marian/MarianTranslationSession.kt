@@ -2,6 +2,7 @@ package com.sal7one.common_jni.marian
 
 import com.sal7one.common_jni.speech.TranslationDirection
 import com.sal7one.common_jni.translation.CancellableTextTranslator
+import com.sal7one.common_jni.translation.EmptyTranslationOutputException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -18,7 +19,10 @@ class MarianTranslationSession private constructor(
         require(direction in directions) { "$id does not support ${direction.source} → ${direction.target}" }
         when (val output = engine.translate(text)) {
             is MarianTranslatorEngine.Outcome.Translated -> output.text
-            is MarianTranslatorEngine.Outcome.Failure -> error(output.reason)
+            is MarianTranslatorEngine.Outcome.Failure -> {
+                if (output.emptyOutput) throw EmptyTranslationOutputException(output.reason)
+                error(output.reason)
+            }
         }
     }
 

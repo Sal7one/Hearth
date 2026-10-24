@@ -13,6 +13,7 @@ internal data class ReadingOverlaySettings(
     val translationVisible: Boolean = true,
     val textSizeSp: Float = 20f,
     val compactHandle: Boolean = true,
+    val motionExclusions: List<ReadingMotionExclusion> = emptyList(),
 ) {
     fun bounded() = copy(
         mode = ReadingTrigger.supportedMode(mode),
@@ -21,6 +22,7 @@ internal data class ReadingOverlaySettings(
         refreshCooldownMs = refreshCooldownMs.coerceIn(2_000, 15_000),
         changeSensitivity = changeSensitivity.takeIf { it in setOf("stable", "balanced", "sensitive") } ?: "balanced",
         textSizeSp = textSizeSp.takeIf { it.isFinite() }?.coerceIn(14f, 34f) ?: 20f,
+        motionExclusions = ReadingMotionExclusions.bounded(motionExclusions),
     )
 
     companion object {
@@ -36,6 +38,7 @@ internal data class ReadingOverlaySettings(
             translationVisible = values["translation-visible"] as? Boolean ?: true,
             textSizeSp = (values["textSize"] as? Number)?.toFloat() ?: 20f,
             compactHandle = values["compact-handle"] as? Boolean ?: true,
+            motionExclusions = ReadingMotionExclusions.decode(values["motion-exclusions"] as? String),
         ).bounded()
     }
 }

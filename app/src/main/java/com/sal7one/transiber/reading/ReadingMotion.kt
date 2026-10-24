@@ -7,18 +7,30 @@ import kotlin.math.ceil
 
 /** Samples both uncovered content and the reader signal visible through a stable translucent caption. */
 internal class ReadingMotion {
+    internal enum class ChangeKind { STILL, LOCALIZED, ANIMATION, WIDESPREAD }
     internal data class SignalDiagnostics(val visible: Int=0,val changed: Int=0,val occupiedTiles: Int=0,
         val minimumVisible: Int=0,val minimumChanged: Int=0,val minimumTiles: Int=0,val pixelDifference: Int=0,
-        val moved: Boolean=false,val changedBounds: PixelCrop?=null)
+        val moved: Boolean=false,val changedBounds: PixelCrop?=null,val kind: ChangeKind=ChangeKind.STILL,
+        val settled: Boolean=false)
     internal data class Diagnostics(val primary: SignalDiagnostics=SignalDiagnostics(),
         val covered: SignalDiagnostics=SignalDiagnostics(),val coveredEligible: Boolean=false,
-        val paintRevision: Long=0,val baselineRevision: Long?=null,val paintStable: Boolean=false)
+        val paintRevision: Long=0,val baselineRevision: Long?=null,val paintStable: Boolean=false) {
+        val kind: ChangeKind get() = when {
+            primary.kind==ChangeKind.WIDESPREAD || covered.kind==ChangeKind.WIDESPREAD -> ChangeKind.WIDESPREAD
+            primary.moved && primary.kind==ChangeKind.LOCALIZED || covered.moved && covered.kind==ChangeKind.LOCALIZED -> ChangeKind.LOCALIZED
+            primary.kind==ChangeKind.ANIMATION || covered.kind==ChangeKind.ANIMATION -> ChangeKind.ANIMATION
+            primary.kind==ChangeKind.LOCALIZED || covered.kind==ChangeKind.LOCALIZED -> ChangeKind.LOCALIZED
+            else -> ChangeKind.STILL
+        }
+    }
     /** Counts/geometry only: device diagnostics never include captured pixels or article text. */
     var lastDiagnostics=Diagnostics();private set
     /** Unknown saved values use the safe balanced behavior. */
     var sensitivity: String = "balanced"
     private var previous: IntArray? = null
     private var previousMask = BooleanArray(WIDTH * HEIGHT)
+    private val primaryChanges=LocalizedChanges()
+    private val coveredChanges=LocalizedChanges()
     private data class StablePaint(val grey: IntArray,val visible: BooleanArray,val revision: Long,
                                    val alpha: Float,val width: Int,val height: Int)
     private var stablePaint: StablePaint? = null
@@ -26,6 +38,7 @@ internal class ReadingMotion {
         previous = null
         previousMask = BooleanArray(WIDTH * HEIGHT)
         stablePaint = null
+        primaryChanges.reset();coveredChanges.reset()
         lastDiagnostics=Diagnostics()
     }
     /**
@@ -55,8 +68,9 @@ internal class ReadingMotion {
             "stable" -> Sensitivity(12,48,50,4)
             else -> Sensitivity(8,24,100,3)
         }
-        val primary=if(old!=null)detectsMovement(grey,old,settings,argb.size/8) {i->!mask[i]&&!previousMask[i]}
-            else SignalDiagnostics(minimumVisible=argb.size/8,pixelDifference=settings.pixelDifference)
+        if(!mask.contentEquals(previousMask))primaryChanges.reset()
+        val primary=if(old!=null)primaryChanges.filter(detectsMovement(grey,old,settings,argb.size/8) {i->!mask[i]&&!previousMask[i]})
+            else {primaryChanges.reset();SignalDiagnostics(minimumVisible=argb.size/8,pixelDifference=settings.pixelDifference)}
         // At alpha .8 an unchanged translated glyph is constant, while scrolling
         // original text still changes the captured pixel by up to 51 grey levels.
         // Keep a rounding/noise margin: balanced becomes 3, sensitive 2, stable 4.
@@ -64,14 +78,14 @@ internal class ReadingMotion {
         var baseline=stablePaint
         if(baseline!=null && (baseline.revision!=paintRevision || abs(baseline.alpha-overlayAlpha)>=.0001f ||
                     baseline.width!=imageWidth || baseline.height!=imageHeight)) {
-            stablePaint=null;baseline=null
+            stablePaint=null;baseline=null;coveredChanges.reset()
         }
         val eligible=paintStable && remaining>=.02f && paintedVisible.any {it}
         val stableBaseline=baseline
         val coveredSettings=settings.copy(pixelDifference=maxOf(2,ceil(settings.pixelDifference*remaining*1.5f).toInt()))
         val coveredSignal=if(eligible && stableBaseline!=null)
-            detectsMovement(grey,stableBaseline.grey,coveredSettings,argb.size/16) {i->paintedVisible[i]&&stableBaseline.visible[i]}
-            else SignalDiagnostics(minimumVisible=argb.size/16,pixelDifference=coveredSettings.pixelDifference)
+            coveredChanges.filter(detectsMovement(grey,stableBaseline.grey,coveredSettings,argb.size/16) {i->paintedVisible[i]&&stableBaseline.visible[i]})
+            else {coveredChanges.reset();SignalDiagnostics(minimumVisible=argb.size/16,pixelDifference=coveredSettings.pixelDifference)}
         lastDiagnostics=Diagnostics(primary,coveredSignal,eligible&&stableBaseline!=null,paintRevision,stableBaseline?.revision,paintStable)
         // Options and clean captures temporarily hide identical paint. Preserve its
         // last stable baseline so a completed scroll during that interval is still
@@ -104,6 +118,57 @@ internal class ReadingMotion {
             if(changed>0)PixelCrop(left,top,right,bottom) else null)
     }
     private data class Sensitivity(val pixelDifference: Int,val minimumPixels: Int,val fractionDivisor: Int,val minimumTiles: Int)
+    /** A ticker changes many pixels/tiles, but stays confined to the same short band.
+     * Hold its first change so it cannot cancel an admitted page. One-off localized
+     * text changes are reported once they settle; recurring animation is ignored.
+     * This stores only bounded sample geometry, never grows an exclusion mask. */
+    private class LocalizedChanges {
+        private var pending: SignalDiagnostics?=null
+        private var animated=false
+        fun reset() {pending=null;animated=false}
+        fun filter(signal: SignalDiagnostics): SignalDiagnostics {
+            val before=pending
+            val bounds=signal.changedBounds
+            if(!signal.moved) {
+                if(before==null)return signal
+                // A ticker can momentarily change fewer pixels than the admission
+                // threshold. That is activity, not a settled replacement heading.
+                if(signal.changed>=3 && bounds!=null && sameArea(checkNotNull(before.changedBounds),bounds)) {
+                    animated=true
+                    return signal.copy(kind=ChangeKind.ANIMATION)
+                }
+                if(animated)return signal.copy(kind=ChangeKind.ANIMATION)
+                reset()
+                return before.copy(moved=true,kind=ChangeKind.LOCALIZED,settled=true)
+            }
+            if(bounds==null || !localized(bounds)) {
+                reset();return signal.copy(kind=ChangeKind.WIDESPREAD)
+            }
+            if(before!=null) {
+                val previous=checkNotNull(before.changedBounds)
+                if(!sameArea(previous,bounds)) {
+                    // Separate changed areas are evidence of navigation/content
+                    // replacement, not permission to learn a larger ignored region.
+                    reset();return signal.copy(kind=ChangeKind.WIDESPREAD)
+                }
+                animated=true
+            }
+            if(before==null)pending=signal
+            return signal.copy(moved=false,kind=if(animated)ChangeKind.ANIMATION else ChangeKind.LOCALIZED)
+        }
+        private fun sameArea(first: PixelCrop,second: PixelCrop): Boolean {
+            val horizontalOverlap=first.left<second.right && second.left<first.right
+            val verticalOverlap=first.top<second.bottom && second.top<first.bottom
+            val union=PixelCrop(minOf(first.left,second.left),minOf(first.top,second.top),
+                maxOf(first.right,second.right),maxOf(first.bottom,second.bottom))
+            return localized(union) && (horizontalOverlap && verticalOverlap ||
+                union.height<=HEIGHT/8 && verticalOverlap || union.width<=WIDTH/8 && horizontalOverlap)
+        }
+        private fun localized(bounds: PixelCrop): Boolean =
+            bounds.height<=HEIGHT/8 ||
+                bounds.width<=WIDTH/8 && bounds.height<=HEIGHT/2 ||
+                bounds.width<=WIDTH/2 && bounds.height<=HEIGHT/4 && bounds.width*bounds.height<=WIDTH*HEIGHT/16
+    }
     companion object { const val WIDTH=64;const val HEIGHT=128;private const val TILE=8 }
 }
 

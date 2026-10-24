@@ -54,6 +54,7 @@ internal fun TranslatorChooser(
     var cloudTab by rememberSaveable { mutableStateOf(providerId !in setOf("", "local")) }
     val showCloud = !localAllowed || (location?.let { it == SettingsLocation.CLOUD } ?: cloudTab)
     var editing by remember { mutableStateOf<TextTranslationProvider?>(null) }
+    var mlKitSetup by rememberSaveable { mutableStateOf(localId == TranslationOptions.ML_KIT && providerId in setOf("", "local")) }
     var installed by remember { mutableStateOf<Set<String>>(emptySet()) }
     val registered by remember(context) { ModelRegistry.getInstance(context).registeredModels }.collectAsState()
     var applying by remember { mutableStateOf(false) }
@@ -105,9 +106,12 @@ internal fun TranslatorChooser(
                 Text(uiText(UiR.string.settings_flow_no_installed), style = MaterialTheme.typography.bodySmall)
             Column(Modifier.selectableGroup()) {
                 if (PlatformTranslation.available && ModelSearch.matches(query, TranslationOptions.label(TranslationOptions.ML_KIT), "Android language packs", ModelSearch.languageTerms(TranslationOptions.mlKitCodes))) TranslatorRow(TranslationOptions.label(TranslationOptions.ML_KIT),
-                    uiText(UiR.string.ui_language_packs_required_manage_download_in_models_de735) + pair { a,b -> a in TranslationOptions.mlKitCodes && b in TranslationOptions.mlKitCodes },
+                    uiText(UiR.string.mlkit_pair_choice) + pair { a,b -> a in TranslationOptions.mlKitCodes && b in TranslationOptions.mlKitCodes },
                     providerId == "local" && localId == TranslationOptions.ML_KIT, enabled) {
-                    onSelect("local", TranslationOptions.ML_KIT); expanded = location != null
+                    mlKitSetup = !mlKitSetup
+                }
+                if (mlKitSetup && PlatformTranslation.available) MlKitPackSetup(source, target) {
+                    onSelect("local", TranslationOptions.ML_KIT); mlKitSetup = false; expanded = location != null
                 }
                 MarianPackage.pairs.forEach { marian ->
                     val marianReady = registered.any { it.engineType == ModelEngineType.TRANSLATE &&

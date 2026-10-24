@@ -51,6 +51,9 @@ int main() {
     const auto encoded = tokenizer.encode("a");
     CHECK(encoded.ok);
     CHECK(encoded.ids == std::vector<int64_t>({3, 1}));
+    CHECK(!tokenizer.encode("").ok);
+    CHECK(!tokenizer.encode("   ").ok);
+    CHECK(tokenizer.encode("   ").error == "Marian input contains no translatable text");
 
     // Marian maps SentencePiece's surface strings through the joint vocab:
     // an unknown source-SPM character is not automatically a joint-vocab unk.

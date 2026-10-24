@@ -1,0 +1,12 @@
+<resources>
+    <string name="reading_exclusions_title">مناطق متحركة يتم تجاهلها</string>
+    <string name="reading_exclusions_add">تجاهل منطقة متحركة</string>
+    <string name="reading_exclusions_clear">مسح المناطق المتجاهلة</string>
+    <string name="reading_exclusions_detail">حدّد شريط أخبار أو فيديو أو حركة. يبقى محتوى المنطقة الأصلي، ولا تؤدي حركتها إلى إعادة الترجمة. تُطبّق المناطق المحفوظة فقط بحجم الشاشة الذي حدّدتها فيه.</string>
+    <string name="reading_exclusions_none">لا توجد مناطق متجاهلة. يمكنك إضافة 4 مناطق كحد أقصى.</string>
+    <string name="reading_exclusions_count">يتم تجاهل %1$d من أصل %2$d مناطق.</string>
+    <string name="reading_exclusions_inactive">تم حفظ %1$d مناطق؛ %2$d منها غير نشطة لتغيّر حجم الشاشة. امسحها وحدّدها مجددًا لهذه الشاشة.</string>
+    <string name="reading_exclusions_draw_title">حدّد المنطقة المتحركة التي تريد تجاهلها</string>
+    <string name="reading_exclusions_draw_detail">يبقى النص الأصلي. لن تبدأ الحركة داخل المنطقة الترجمة أو تقاطعها.</string>
+    <string name="reading_exclusions_save">تجاهل هذه المنطقة</string>
+</resources>

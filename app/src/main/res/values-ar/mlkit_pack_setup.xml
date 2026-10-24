@@ -1,0 +1,18 @@
+<resources>
+    <string name="mlkit_pair_title">حزم لغات ML Kit</string>
+    <string name="mlkit_pair_choice">افحص حزم اللغات أو ثبّتها هنا. </string>
+    <string name="mlkit_pair_description">يحتاج مترجم Google على الجهاز إلى حزمة لكل لغة غير الإنجليزية. الإنجليزية مضمّنة. هذه الحزم مستقلة عن نماذج الترجمة الأخرى التي نزّلتها.</string>
+    <string name="mlkit_pair_checking">جارٍ فحص حزم اللغات المثبّتة…</string>
+    <string name="mlkit_pair_choose_languages">اختر لغتين مختلفتين يدعمهما ML Kit.</string>
+    <string name="mlkit_pair_missing">الحزم المطلوبة لهذه الترجمة: %1$s</string>
+    <string name="mlkit_pair_ready">حزم اللغات المطلوبة مثبّتة.</string>
+    <string name="mlkit_pair_auto_ready">حزمة لغة الترجمة مثبّتة. قد تحتاج لغات الكلام الأخرى التي يتم اكتشافها إلى حزمة إضافية.</string>
+    <string name="mlkit_pair_auto_source">عند اكتشاف لغة الكلام تلقائيًا، ثبّت أيضًا حزم اللغات الأخرى التي تتوقع سماعها.</string>
+    <string name="mlkit_pair_download_button">تنزيل %1$s</string>
+    <string name="mlkit_pair_downloading_wifi">جارٍ تنزيل %1$s… سيتم انتظار Wi-Fi عند الحاجة.</string>
+    <string name="mlkit_pair_downloading">جارٍ تنزيل %1$s…</string>
+    <string name="mlkit_pair_downloaded">تم تثبيت %1$s والتحقّق منها.</string>
+    <string name="mlkit_pair_refresh">فحص الحزم مجددًا</string>
+    <string name="mlkit_pair_other_languages">إدارة اللغات الأخرى</string>
+    <string name="mlkit_pair_wifi_only">التنزيل عبر Wi-Fi فقط</string>
+</resources>

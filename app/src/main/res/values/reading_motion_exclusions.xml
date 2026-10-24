@@ -1,0 +1,12 @@
+<resources>
+    <string name="reading_exclusions_title">Ignored moving areas</string>
+    <string name="reading_exclusions_add">Ignore moving area</string>
+    <string name="reading_exclusions_clear">Clear ignored areas</string>
+    <string name="reading_exclusions_detail">Draw around a ticker, video or animation. Ignored areas stay original and do not restart translation. Saved areas apply only at the screen size where you drew them.</string>
+    <string name="reading_exclusions_none">No ignored areas. You can add up to 4.</string>
+    <string name="reading_exclusions_count">%1$d of %2$d areas ignored.</string>
+    <string name="reading_exclusions_inactive">%1$d areas saved; %2$d inactive because the screen size changed. Clear and draw them again for this screen.</string>
+    <string name="reading_exclusions_draw_title">Draw around the moving area to ignore</string>
+    <string name="reading_exclusions_draw_detail">Its text stays original. Movement inside this area will not trigger or interrupt translation.</string>
+    <string name="reading_exclusions_save">Ignore this area</string>
+</resources>

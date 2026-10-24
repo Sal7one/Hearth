@@ -6,6 +6,7 @@ import com.google.mlkit.common.model.RemoteModelManager
 import com.google.mlkit.nl.translate.*
 import com.sal7one.common_jni.speech.TranslationDirection
 import com.sal7one.common_jni.translation.CancellableTextTranslator
+import com.sal7one.transiber.byok.ByokPolicy
 import kotlinx.coroutines.suspendCancellableCoroutine
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.coroutines.resume
@@ -20,15 +21,21 @@ object PlatformTranslation {
     private val manager get() = RemoteModelManager.getInstance()
     private fun sdk(code: String) = if (code == "fil") "tl" else code
     private fun model(code: String) = TranslateRemoteModel.Builder(sdk(code)).build()
-    suspend fun installed(): Set<String> = manager.getDownloadedModels(TranslateRemoteModel::class.java).waitFor().map { if (it.language == "tl") "fil" else it.language }.toSet() + "en"
-    suspend fun download(code: String) {
-        require(code in TranslationOptions.mlKitCodes)
-        if (code != "en") manager.download(model(code), DownloadConditions.Builder().requireWifi().build()).waitFor()
-    }
-    suspend fun remove(code: String) {
-        require(code in TranslationOptions.mlKitCodes)
-        if (code != "en") manager.deleteDownloadedModel(model(code)).waitFor()
-    }
+    private val packs = MlKitLanguagePacks(
+        supported = { languages },
+        readInstalled = { manager.getDownloadedModels(TranslateRemoteModel::class.java).waitFor().map { it.language }.toSet() },
+        downloadPack = { code, wifiOnly ->
+            check(ByokPolicy.FEATURE_BYOK) { "ML Kit packs require the network-enabled app" }
+            val conditions = DownloadConditions.Builder().apply { if (wifiOnly) requireWifi() }.build()
+            manager.download(model(code), conditions).waitFor()
+        },
+        removePack = { code -> manager.deleteDownloadedModel(model(code)).waitFor() },
+    )
+    val revision get() = packs.revision
+    suspend fun installed(): Set<String> = packs.installed()
+    suspend fun download(code: String, wifiOnly: Boolean = true) = packs.download(code, wifiOnly)
+    suspend fun downloadPair(source: String, target: String, wifiOnly: Boolean = true) = packs.downloadPair(source, target, wifiOnly)
+    suspend fun remove(code: String) = packs.remove(code)
     fun open(): CancellableTextTranslator = Session()
     private class Session : CancellableTextTranslator {
         override val id = TranslationOptions.ML_KIT

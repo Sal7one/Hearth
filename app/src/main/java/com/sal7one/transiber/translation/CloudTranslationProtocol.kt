@@ -56,8 +56,8 @@ data class CloudTranslationLanguages(
  * Google authentication header is documented with this exact v2 translate URL:
  * https://docs.cloud.google.com/docs/authentication/api-keys-use
  * Azure languages: https://learn.microsoft.com/en-us/rest/api/translator/translator/languages?view=rest-translator-v3.0
- * DeepL v2 discovery remains documented but deprecated; response order here is source, then target:
- * https://developers.deepl.com/api-reference/languages/retrieve-supported-languages
+ * DeepL text translation stays on v2; language discovery uses the sibling v3 resource endpoint:
+ * https://developers.deepl.com/docs/languages/migrating-from-v2-languages
  * Libre directed targets: https://docs.libretranslate.com/api/operations/languages/
  */
 object CloudTranslationProtocol {
@@ -114,9 +114,9 @@ object CloudTranslationProtocol {
             TextTranslationProvider.GOOGLE -> listOf(authorized(connection, true).url(url).get().build())
             TextTranslationProvider.AZURE -> listOf(Request.Builder().url(url.newBuilder().addQueryParameter("api-version", "3.0")
                 .addQueryParameter("scope", "translation").build()).get().build()) // Discovery requires no auth.
-            TextTranslationProvider.DEEPL -> listOf("source", "target").map { type ->
-                authorized(connection, true).url(url.newBuilder().addQueryParameter("type", type).build()).get().build()
-            }
+            TextTranslationProvider.DEEPL -> listOf(authorized(connection, true).url(
+                deepLLanguagesUrl(connection).newBuilder().addQueryParameter("resource", "translate_text").build()
+            ).get().build())
             TextTranslationProvider.LIBRETRANSLATE -> listOf(Request.Builder().url(url).get().build())
         }
     }
@@ -134,7 +134,7 @@ object CloudTranslationProtocol {
     }
 
     fun parseLanguages(provider: TextTranslationProvider, bodies: List<String>): CloudTranslationLanguages = parse(provider, bodies) {
-        require(bodies.size == if (provider == TextTranslationProvider.DEEPL) 2 else 1) { "Wrong number of language responses" }
+        require(bodies.size == 1) { "Wrong number of language responses" }
         fun list(array: JSONArray, key: String): List<String> {
             require(array.length() in 1..1000) { "Empty or oversized language list" }
             return (0 until array.length()).map { array.getJSONObject(it).strictString(key) }
@@ -153,10 +153,28 @@ object CloudTranslationProtocol {
                 raw.forEach { languages.getJSONObject(it) }
                 CloudTranslationLanguages(codes(provider, raw, false), codes(provider, raw, true))
             }
-            TextTranslationProvider.DEEPL -> CloudTranslationLanguages(
-                codes(provider, list(JSONArray(bodies[0]), "language"), false),
-                codes(provider, list(JSONArray(bodies[1]), "language"), true),
-            )
+            TextTranslationProvider.DEEPL -> {
+                val array = JSONArray(bodies.single())
+                require(array.length() in 1..1000) { "Empty or oversized language list" }
+                val sources = mutableListOf<String>()
+                val targets = mutableListOf<String>()
+                val seen = mutableSetOf<String>()
+                for (index in 0 until array.length()) {
+                    val language = array.getJSONObject(index)
+                    val code = language.strictString("lang").also { normalize(it) }
+                    require(seen.add(code.lowercase(Locale.ROOT))) { "Duplicate DeepL language" }
+                    val source = language.strictBoolean("usable_as_source")
+                    val target = language.strictBoolean("usable_as_target")
+                    // No beta/external opt-in is requested. Do not expose unavailable variants
+                    // if a proxy returns more than the stable resource's advertised languages.
+                    if (language.strictString("status") == "stable") {
+                        if (source) sources += code
+                        if (target) targets += code
+                    }
+                }
+                require(sources.isNotEmpty() && targets.isNotEmpty()) { "No stable DeepL translation languages" }
+                CloudTranslationLanguages(codes(provider, sources, false), codes(provider, targets, true))
+            }
             TextTranslationProvider.LIBRETRANSLATE -> {
                 val array = JSONArray(bodies.single())
                 val rawSources = list(array, "code")
@@ -221,6 +239,11 @@ object CloudTranslationProtocol {
         return url.newBuilder().encodedPath(url.encodedPath.trimEnd('/').ifBlank { "/" }).build()
     }
     private fun child(root: HttpUrl, path: String) = root.newBuilder().addPathSegment(path).build()
+    private fun deepLLanguagesUrl(connection: CloudTranslationConnection): HttpUrl {
+        val root = endpoint(connection)
+        require(root.pathSegments.last() == "v2") { "DeepL API root must end in /v2; language discovery uses its sibling /v3 endpoint" }
+        return child(root.newBuilder().setPathSegment(root.pathSegments.lastIndex, "v3").build(), "languages")
+    }
     private fun authorized(connection: CloudTranslationConnection, needsKey: Boolean): Request.Builder {
         val key = connection.key.trim()
         require(key.none { it.code < 32 || it.code == 127 }) { "API key contains a control character" }
@@ -245,6 +268,7 @@ object CloudTranslationProtocol {
         return array.getJSONObject(0)
     }
     private fun JSONObject.strictString(key: String): String = get(key) as? String ?: error("Invalid $key")
+    private fun JSONObject.strictBoolean(key: String): Boolean = get(key) as? Boolean ?: error("Invalid $key")
     private inline fun <T> parse(provider: TextTranslationProvider, bodies: List<String>, action: () -> T): T {
         try {
             require(bodies.isNotEmpty() && bodies.all { it.isNotBlank() && it.length <= 1024 * 1024 }) { "Empty or oversized response" }

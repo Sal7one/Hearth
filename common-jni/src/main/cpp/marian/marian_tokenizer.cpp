@@ -716,6 +716,10 @@ MarianTokenizer::EncodeResult MarianTokenizer::encode(
         result.error = "text contains malformed UTF-8";
         return result;
     }
+    if (normalized.empty()) {
+        result.error = "Marian input contains no translatable text";
+        return result;
+    }
 
     std::vector<Segment> segments;
     if (!segment(normalized, segments)) {

@@ -1,0 +1,18 @@
+<resources>
+    <string name="mlkit_pair_title">ML Kit language packs</string>
+    <string name="mlkit_pair_choice">Check or install language packs here. </string>
+    <string name="mlkit_pair_description">Google’s on-device translator needs a pack for each non-English language. English is included. These packs are separate from other downloaded translation models.</string>
+    <string name="mlkit_pair_checking">Checking installed language packs…</string>
+    <string name="mlkit_pair_choose_languages">Choose different languages supported by ML Kit.</string>
+    <string name="mlkit_pair_missing">Needed for this translation: %1$s</string>
+    <string name="mlkit_pair_ready">Required language packs are installed.</string>
+    <string name="mlkit_pair_auto_ready">The target language pack is installed. Other detected speech languages may need another pack.</string>
+    <string name="mlkit_pair_auto_source">With automatic speech detection, also install packs for any other languages you expect to hear.</string>
+    <string name="mlkit_pair_download_button">Download %1$s</string>
+    <string name="mlkit_pair_downloading_wifi">Downloading %1$s… waiting for Wi-Fi if needed.</string>
+    <string name="mlkit_pair_downloading">Downloading %1$s…</string>
+    <string name="mlkit_pair_downloaded">%1$s installed and checked.</string>
+    <string name="mlkit_pair_refresh">Check packs again</string>
+    <string name="mlkit_pair_other_languages">Manage other languages</string>
+    <string name="mlkit_pair_wifi_only">Download over Wi-Fi only</string>
+</resources>

@@ -392,7 +392,7 @@ bool MarianEngine::runEncoder(const std::vector<int64_t>& ids,
 
 bool MarianEngine::decodeLoop(const std::vector<float>& hidden, size_t encLen,
                               std::vector<int64_t>& decodedIds,
-                              std::string* error) {
+                              std::string* error, bool* emptyOutput) {
     static_assert(kLayers == detail::kDecoderLayers && kHeads == detail::kDecoderHeads &&
                   kHeadDim == detail::kDecoderHeadDim && kHiddenDim == detail::kDecoderHiddenDim,
                   "Marian graph dimensions must agree with the decoder");
@@ -400,7 +400,7 @@ bool MarianEngine::decodeLoop(const std::vector<float>& hidden, size_t encLen,
         allocator_, inputNames_.data(), outputNames_.data(), hidden.data(),
         attention_.data(), encLen, tokenizer_.vocabSize(), padId_, eosId_,
         maxNewTokens_, decodedIds, error,
-        [this](std::string* cause) { return interrupted(cause); });
+        [this](std::string* cause) { return interrupted(cause); }, emptyOutput);
 }
 
 void MarianEngine::terminateRun(bool timeout) noexcept {
@@ -472,9 +472,9 @@ MarianEngine::TranslateResult MarianEngine::translate(const std::string& text) {
 
     std::vector<int64_t> decodedIds;
     const auto decoderStart = std::chrono::steady_clock::now();
-    if (!decodeLoop(hidden_, encLen, decodedIds, &error)) {
+    if (!decodeLoop(hidden_, encLen, decodedIds, &error, &result.emptyOutput)) {
         result.error = error;
-        interrupted(&result.error);
+        if (interrupted(&result.error)) result.emptyOutput = false;
         return result;
     }
     result.stages.decoderMs = std::chrono::duration_cast<std::chrono::milliseconds>(
@@ -483,7 +483,11 @@ MarianEngine::TranslateResult MarianEngine::translate(const std::string& text) {
 
     if (interrupted(&result.error)) return result;
     result.text = tokenizer_.decode(decodedIds);
-    if (result.text.empty()) { result.error = "Marian translation returned empty text"; return result; }
+    if (result.text.empty()) {
+        result.emptyOutput = true;
+        result.error = "Marian produced no readable translation for this text. Try a longer phrase or another translator.";
+        return result;
+    }
     const auto end = std::chrono::steady_clock::now();
     result.latencyMs = std::chrono::duration_cast<std::chrono::milliseconds>(
                            end - start)

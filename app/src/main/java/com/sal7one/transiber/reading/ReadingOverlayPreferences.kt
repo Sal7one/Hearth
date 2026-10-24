@@ -25,7 +25,8 @@ internal class ReadingOverlayPreferences(context: Context) {
             .putLong("refresh-cooldown", next.refreshCooldownMs).putString("change-sensitivity", next.changeSensitivity)
             .putBoolean("pass-through", next.passThrough).putBoolean("show-original", next.showOriginal)
             .putBoolean("translation-visible", next.translationVisible).putFloat("textSize", next.textSizeSp)
-            .putBoolean("compact-handle", next.compactHandle).apply()
+            .putBoolean("compact-handle", next.compactHandle)
+            .putString("motion-exclusions", ReadingMotionExclusions.encode(next.motionExclusions)).apply()
     }
 }
 

@@ -49,4 +49,20 @@ class ReadingOverlayPreferencesTest {
         assertEquals(30f, store.read().textSizeSp)
         assertEquals("page", store.read().mode)
     }
+
+    @Test fun ignoredAreasPersistAcrossReaderRecreationAndOrdinaryOptionUpdatesAndCanBeCleared() = runBlocking {
+        val store = ReadingOverlayPreferences(context)
+        val area = checkNotNull(ReadingMotionExclusion.fromCrop(com.sal7one.transiber.ocr.PixelCrop(10, 800, 1050, 960), 1080, 2400))
+        store.update { it.copy(mode = "page", motionExclusions = listOf(area)) }
+        store.update { it.copy(textSizeSp = 25f, passThrough = false) }
+        val restored = ReadingOverlayPreferences(context).read()
+        assertEquals(listOf(area), restored.motionExclusions)
+        assertEquals("page", restored.mode)
+        assertEquals(25f, restored.textSizeSp)
+        assertFalse(restored.passThrough)
+        assertEquals(listOf(area), ReadingMotionExclusions.decode(raw.getString("motion-exclusions", null)))
+        store.update { it.copy(motionExclusions = emptyList()) }
+        assertTrue(ReadingOverlayPreferences(context).read().motionExclusions.isEmpty())
+        assertEquals(25f, store.read().textSizeSp)
+    }
 }

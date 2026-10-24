@@ -27,6 +27,7 @@ internal object MarianNative {
     external fun nativeRelease(handle: Long)
 
     external fun nativeGetLastError(): String?
+    external fun nativeLastFailureWasEmptyOutput(): Boolean
 
     init {
         System.loadLibrary("common_jni")

@@ -1,0 +1,12 @@
+<resources>
+    <string name="reading_exclusions_title">忽略的动态区域</string>
+    <string name="reading_exclusions_add">忽略动态区域</string>
+    <string name="reading_exclusions_clear">清除忽略区域</string>
+    <string name="reading_exclusions_detail">框选滚动字幕、视频或动画。忽略区域保留原文，其变化不会重新启动翻译。已保存区域仅适用于绘制时的屏幕尺寸。</string>
+    <string name="reading_exclusions_none">尚无忽略区域，最多可添加 4 个。</string>
+    <string name="reading_exclusions_count">已忽略 %1$d 个区域，上限为 %2$d 个。</string>
+    <string name="reading_exclusions_inactive">已保存 %1$d 个区域，其中 %2$d 个因屏幕尺寸变化而未启用。请清除并在此屏幕上重新绘制。</string>
+    <string name="reading_exclusions_draw_title">框选要忽略的动态区域</string>
+    <string name="reading_exclusions_draw_detail">区域内保留原文，其中的变化不会启动或中断翻译。</string>
+    <string name="reading_exclusions_save">忽略此区域</string>
+</resources>
