@@ -65,4 +65,31 @@ class ReadingOverlayPreferencesTest {
         assertTrue(ReadingOverlayPreferences(context).read().motionExclusions.isEmpty())
         assertEquals(25f, store.read().textSizeSp)
     }
+
+    @Test fun customPaletteAndGeometrySurviveStoreRecreationAndOrdinaryDisplayEdits() = runBlocking {
+        val store = ReadingOverlayPreferences(context)
+        store.update { it.copy(replaceText = true, boxWidthPercent = 80, boxHeightPercent = 175,
+            boxBackgroundArgb = 0xff123456.toInt(), boxTextArgb = 0xffe3d2c1.toInt(), boxOpacity = 65) }
+        store.update { it.copy(mode = "page", textSizeSp = 23f) }
+        val restored = ReadingOverlayPreferences(context).read()
+        assertTrue(restored.replaceText)
+        assertEquals(80, restored.boxWidthPercent); assertEquals(175, restored.boxHeightPercent)
+        assertEquals(0xff123456.toInt(), restored.boxBackgroundArgb)
+        assertEquals(0xffe3d2c1.toInt(), restored.boxTextArgb); assertEquals(65, restored.boxOpacity)
+        assertEquals("page", restored.mode); assertEquals(23f, restored.textSizeSp)
+        store.update { it.copy(replaceText = false) }
+        assertEquals(restored.copy(replaceText = false), ReadingOverlayPreferences(context).read())
+    }
+
+    @Test fun styleUpdatesDoNotReplacePositionBookmarksOrNewerMotionSettings() = runBlocking {
+        val store = ReadingOverlayPreferences(context)
+        assertTrue(raw.edit().putInt("x", 225).putString("websites-profile", "ocr-reader").commit())
+        store.update { it.copy(mode = "page", settleMs = 1400, passThrough = false) }
+        val style = ReadingBoxPreset.DARK.applyTo(ReadingOverlaySettings()).copy(boxWidthPercent = 125)
+        store.update { it.withReadingAppearance(style) }
+        assertEquals("page", store.read().mode); assertEquals(1400, store.read().settleMs)
+        assertFalse(store.read().passThrough); assertTrue(ReadingBoxPreset.DARK.matches(store.read()))
+        assertEquals(125, store.read().boxWidthPercent)
+        assertEquals(225, raw.getInt("x", 0)); assertEquals("ocr-reader", raw.getString("websites-profile", null))
+    }
 }

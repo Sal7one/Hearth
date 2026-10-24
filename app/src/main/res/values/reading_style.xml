@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="reading_style_replace">Match page colours (replace text)</string>
+    <string name="reading_style_replace_help">Sample colours around each source region and cover the original text. Best on plain backgrounds; photos may show a patch.</string>
+    <string name="reading_style_saved_palette">Box colours stay saved while page matching is on. Turn it off to use your chosen palette.</string>
+    <string name="reading_style_light">Light</string>
+    <string name="reading_style_dark">Dark</string>
+    <string name="reading_style_warm">Warm</string>
+    <string name="reading_style_contrast">High contrast</string>
+    <string name="reading_style_width" formatted="false">Box width (%)</string>
+    <string name="reading_style_height" formatted="false">Box height (%)</string>
+    <string name="reading_style_opacity" formatted="false">Box background opacity (%)</string>
+    <string name="reading_style_geometry_help">Resize each box around the source text. Translations wrap and expand to stay complete; turn off pass-through to scroll inside long boxes.</string>
+    <string name="reading_style_background">Box background</string>
+    <string name="reading_style_foreground">Translation text</string>
+    <string name="reading_style_colour_choice">%1$s: %2$s</string>
+    <string name="reading_style_rgb">Custom RGB colours</string>
+    <string name="reading_style_red">Red</string>
+    <string name="reading_style_green">Green</string>
+    <string name="reading_style_blue">Blue</string>
+    <string name="reading_style_value">%1$s · %2$d</string>
+</resources>

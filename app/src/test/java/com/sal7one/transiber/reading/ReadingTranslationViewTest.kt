@@ -13,7 +13,6 @@ import android.view.ViewConfiguration
 import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.TextView
-import androidx.core.widget.TextViewCompat
 import com.sal7one.common_jni.ocr.OcrLine
 import com.sal7one.hearth.core.vision.*
 import com.sal7one.transiber.ocr.PixelCrop
@@ -87,6 +86,7 @@ class ReadingTranslationViewTest {
         try {
             for(patched in listOf(false,true)) {
                 val view=ReadingTranslationView(activity.get()){}
+                view.applyAppearance(ReadingOverlaySettings(replaceText=true))
                 val runs=buildList {
                     repeat(61) {row->addAll(listOf(50+row,50,34,50+row,117,34))}
                 }.toIntArray()
@@ -151,6 +151,7 @@ class ReadingTranslationViewTest {
         val activity=Robolectric.buildActivity(Activity::class.java).setup().visible()
         val source=Bitmap.createBitmap(100,100,Bitmap.Config.ARGB_8888).apply {eraseColor(Color.BLACK)}
         val view=ReadingTranslationView(activity.get()){}
+        view.applyAppearance(ReadingOverlaySettings(replaceText=true))
         val host=FrameLayout(activity.get()).apply {
             addView(ImageView(context).apply {setImageBitmap(source)},FrameLayout.LayoutParams(100,100))
             addView(view,FrameLayout.LayoutParams(100,100))
@@ -192,6 +193,7 @@ class ReadingTranslationViewTest {
         val source=Bitmap.createBitmap(100,100,Bitmap.Config.ARGB_8888).apply {eraseColor(Color.BLACK)}
         var opened: TranslatedOcrBox?=null
         val view=ReadingTranslationView(activity.get()){opened=it}
+        view.applyAppearance(ReadingOverlaySettings(replaceText=true))
         val host=FrameLayout(activity.get()).apply {
             addView(ImageView(context).apply {setImageBitmap(source)},FrameLayout.LayoutParams(100,100))
             addView(view,FrameLayout.LayoutParams(100,100))
@@ -225,6 +227,7 @@ class ReadingTranslationViewTest {
         val activity=Robolectric.buildActivity(Activity::class.java).setup().visible()
         val source=Bitmap.createBitmap(200,200,Bitmap.Config.ARGB_8888).apply {eraseColor(Color.BLACK)}
         val view=ReadingTranslationView(activity.get()){}
+        view.applyAppearance(ReadingOverlaySettings(replaceText=true))
         val host=FrameLayout(activity.get()).apply {
             addView(ImageView(context).apply {setImageBitmap(source)},FrameLayout.LayoutParams(200,200))
             addView(view,FrameLayout.LayoutParams(200,200))
@@ -260,6 +263,7 @@ class ReadingTranslationViewTest {
         val activity=Robolectric.buildActivity(Activity::class.java).setup().visible()
         val source=Bitmap.createBitmap(100,100,Bitmap.Config.ARGB_8888).apply {eraseColor(Color.BLACK)}
         val view=ReadingTranslationView(activity.get()){}
+        view.applyAppearance(ReadingOverlaySettings(replaceText=true))
         val host=FrameLayout(activity.get()).apply {
             addView(ImageView(context).apply {setImageBitmap(source)},FrameLayout.LayoutParams(100,100))
             addView(view,FrameLayout.LayoutParams(100,100))
@@ -278,18 +282,20 @@ class ReadingTranslationViewTest {
         try {
             layout();view.update(listOf(box),100,100,PixelCrop(0,0,100,100));layout()
             val label=view.getChildAt(0) as TextView
-            assertEquals(sp(10f),TextViewCompat.getAutoSizeMinTextSize(label))
-            assertEquals(sp(24f),TextViewCompat.getAutoSizeMaxTextSize(label))
+            assertNull(label.ellipsize)
+            assertEquals(Int.MAX_VALUE,label.maxLines)
+            assertTrue(label.textSize>=sp(14f))
             val exclusions=view.motionExclusions()
             view.textSizeSp=28f;layout()
             assertSame(label,view.getChildAt(0))
-            assertEquals(sp(34f),TextViewCompat.getAutoSizeMaxTextSize(label))
+            assertTrue(label.textSize>=sp(14f))
+            assertTrue(label.textSize<=sp(34f)+1)
             assertFalse(label.isLayoutRequested)
             view.textSizeSp=28f
             assertFalse(label.isLayoutRequested) // Re-emitting the same preference does no UI work.
-            assertEquals(exclusions,view.motionExclusions())
+            assertEquals("Short text keeps the same source geometry while its preferred font changes",exclusions,view.motionExclusions())
             view.textSizeSp=0f;assertEquals(14f,view.textSizeSp)
-            assertEquals(sp(17f),TextViewCompat.getAutoSizeMaxTextSize(label))
+            assertTrue(label.textSize<=sp(17f)+1)
             view.textSizeSp=Float.NaN;assertEquals(20f,view.textSizeSp)
             view.textSizeSp=100f;assertEquals(34f,view.textSizeSp)
             layout()
@@ -297,6 +303,258 @@ class ReadingTranslationViewTest {
             try {host.draw(Canvas(drawn));assertEquals(Color.WHITE,drawn.getPixel(95,95))}finally{drawn.recycle()}
             assertEquals(Color.BLACK,source.getPixel(95,95))
         } finally {activity.pause().stop().destroy();source.recycle()}
+    }
+
+    @Test fun sourceReplacementIsOffUntilExplicitlyEnabledAndCanBeDisabledWithoutAnotherTranslation() {
+        val activity=Robolectric.buildActivity(Activity::class.java).setup().visible()
+        val view=ReadingTranslationView(activity.get()){}
+        val paint=MangaPaint(ComicMask(intArrayOf(90,90,5),100,100),OcrRect(5,5,25,15),Color.WHITE,Color.BLACK,
+            MangaPatch(OcrRect(90,90,5,5),IntArray(25){Color.WHITE}))
+        val region=OcrRegion(OcrRect(5,5,25,15),1f,paint=paint)
+        val box=TranslatedOcrBox(OcrLine(5,5,25,15,"Coffee",1f,region),"قهوة")
+        try {
+            activity.get().setContentView(view);layoutOverlay(view,100,100)
+            view.update(listOf(box),100,100,PixelCrop(0,0,100,100));layoutOverlay(view,100,100)
+            fun pixel(): Int {
+                val bitmap=Bitmap.createBitmap(100,100,Bitmap.Config.ARGB_8888).apply {eraseColor(Color.BLACK)}
+                return try {view.draw(Canvas(bitmap));bitmap.getPixel(92,92)} finally {bitmap.recycle()}
+            }
+            assertEquals(Color.BLACK,pixel())
+            assertFalse(view.motionExclusions().any {it.left<=90 && it.top<=90 && it.right>=95 && it.bottom>=95})
+            view.applyAppearance(ReadingOverlaySettings(replaceText=true));layoutOverlay(view,100,100)
+            assertEquals(Color.WHITE,pixel())
+            assertTrue(view.motionExclusions().contains(PixelCrop(90,90,95,95)))
+            val label=view.getChildAt(0)
+            view.applyAppearance(ReadingOverlaySettings());layoutOverlay(view,100,100)
+            assertEquals(Color.BLACK,pixel());assertSame(label,view.getChildAt(0))
+        } finally {activity.pause().stop().destroy()}
+    }
+
+    @Test fun tinyEdgeBoxKeepsEveryArabicCharacterAndScrollsWithoutOpeningOptions() {
+        val activity=Robolectric.buildActivity(Activity::class.java).setup().visible()
+        var opened=0
+        val view=ReadingTranslationView(activity.get()){opened++}
+        val translated=List(100){"القهوة العربية تحتاج إلى ماء ساخن وطحن مناسب."}.joinToString(" ")
+        val box=TranslatedOcrBox(OcrLine(270,290,10,10,"Coffee article",1f),translated)
+        try {
+            activity.get().setContentView(view);layoutOverlay(view,280,300)
+            view.applyAppearance(ReadingOverlaySettings(boxWidthPercent=50,boxHeightPercent=50))
+            view.update(listOf(box),280,300,PixelCrop(0,0,280,300));layoutOverlay(view,280,300)
+            val label=view.getChildAt(0) as TextView
+            assertEquals(translated,label.text.toString());assertNull(label.ellipsize);assertEquals(Int.MAX_VALUE,label.maxLines)
+            assertTrue(label.left>=0 && label.top>=0 && label.right<=280 && label.bottom<=300)
+            assertTrue("A narrow paragraph must not automatically occupy the whole viewport",label.height<150)
+            assertEquals(translated.length,label.layout.getLineEnd(label.layout.lineCount-1))
+            assertTrue(label.layout.lineCount>2)
+            assertTrue(label.layout.height>label.height)
+            for(i in 0 until label.layout.lineCount)assertEquals(0,label.layout.getEllipsisCount(i))
+            assertEquals(-1,label.layout.getParagraphDirection(0))
+            val start=SystemClock.uptimeMillis()
+            fun touch(action: Int,y: Float) {
+                val event=MotionEvent.obtain(start,start+20,action,label.width/2f,y,0)
+                try {label.dispatchTouchEvent(event)} finally {event.recycle()}
+            }
+            touch(MotionEvent.ACTION_DOWN,label.height-2f);touch(MotionEvent.ACTION_MOVE,2f);touch(MotionEvent.ACTION_UP,2f)
+            assertTrue("The complete paragraph remains readable by vertical scrolling",label.scrollY>0)
+            assertEquals(0,opened)
+            label.performClick();assertEquals(1,opened)
+        } finally {activity.pause().stop().destroy()}
+    }
+
+    @Test fun styleChangesReuseTheTranslationAndLabelsWhileWidthHeightAndColoursUpdate() {
+        val activity=Robolectric.buildActivity(Activity::class.java).setup().visible()
+        val view=ReadingTranslationView(activity.get()){}
+        val box=TranslatedOcrBox(OcrLine(80,50,100,50,"Coffee",1f),"ترجمة القهوة")
+        try {
+            activity.get().setContentView(view);layoutOverlay(view,400,300)
+            view.update(listOf(box),400,300,PixelCrop(0,0,400,300));layoutOverlay(view,400,300)
+            val label=view.getChildAt(0) as TextView
+            val originalBounds=view.renderedLabels().single().bounds
+            val settings=ReadingOverlaySettings(boxWidthPercent=200,boxHeightPercent=200,
+                boxBackgroundArgb=Color.rgb(20,40,60),boxTextArgb=Color.rgb(240,210,120),boxOpacity=60)
+            view.applyAppearance(settings);layoutOverlay(view,400,300)
+            assertSame(label,view.getChildAt(0));assertEquals(box.translation,label.text.toString())
+            val drawn=view.renderedLabels().single()
+            assertTrue(drawn.bounds.width>originalBounds.width);assertTrue(drawn.bounds.height>originalBounds.height)
+            assertEquals(settings.boxTextArgb,drawn.foreground)
+            assertEquals(Color.argb(153,20,40,60),drawn.background)
+            assertEquals(box.line,OcrLine(80,50,100,50,"Coffee",1f))
+            view.applyAppearance(settings)
+            assertFalse("Repeated preference snapshots do not request another traversal",label.isLayoutRequested)
+        } finally {activity.pause().stop().destroy()}
+    }
+
+    @Test fun expandedNeighbouringBoxesAvoidEachOtherAndExposeTheirActualMotionBounds() {
+        val activity=Robolectric.buildActivity(Activity::class.java).setup().visible()
+        val view=ReadingTranslationView(activity.get()){}
+        val boxes=listOf(10,22,34).map {y->TranslatedOcrBox(OcrLine(30,y,100,8,"Line $y",1f),"Translated line $y")}
+        try {
+            activity.get().setContentView(view);layoutOverlay(view,320,300)
+            view.applyAppearance(ReadingOverlaySettings(boxWidthPercent=150,boxHeightPercent=200))
+            view.update(boxes,320,300,PixelCrop(0,0,320,300));layoutOverlay(view,320,300)
+            val bounds=view.renderedLabels().map {it.bounds}
+            assertEquals(3,bounds.size)
+            bounds.forEachIndexed {index,box ->
+                assertTrue(box.left>=0 && box.top>=0 && box.right<=320 && box.bottom<=300)
+                bounds.drop(index+1).forEach {other ->
+                    assertTrue(box.right<=other.left || other.right<=box.left || box.bottom<=other.top || other.bottom<=box.top)
+                }
+                assertTrue(view.motionExclusions().any {it.left<=box.left && it.top<=box.top && it.right>=box.right && it.bottom>=box.bottom})
+            }
+        } finally {activity.pause().stop().destroy()}
+    }
+
+    @Test fun narrowLongParagraphStaysCompactAndHeightSliderIncreasesTheVisibleText() {
+        val activity=Robolectric.buildActivity(Activity::class.java).setup().visible()
+        val view=ReadingTranslationView(activity.get()){}
+        val text=List(40){"A paragraph about coffee brewing and water temperature."}.joinToString(" ")
+        val boxes=listOf(TranslatedOcrBox(OcrLine(20,20,100,12,"Coffee article",1f),text),
+            TranslatedOcrBox(OcrLine(20,100,100,12,"Search",1f),"بحث"))
+        try {
+            activity.get().setContentView(view);layoutOverlay(view,320,500)
+            view.update(boxes,320,500,PixelCrop(0,0,320,500));layoutOverlay(view,320,500)
+            val label=view.getChildAt(0) as TextView
+            val compactHeight=label.height
+            assertTrue(compactHeight<125);assertTrue(label.layout.height>label.height)
+            assertTrue(view.renderedLabels().let {it[0].bounds.bottom<=it[1].bounds.top || it[1].bounds.bottom<=it[0].bounds.top})
+            view.applyAppearance(ReadingOverlaySettings(boxHeightPercent=300));layoutOverlay(view,320,500)
+            assertSame(label,view.getChildAt(0));assertTrue(label.height>compactHeight)
+            assertTrue(label.height<250);assertEquals(text,label.text.toString())
+            assertEquals(text.length,label.layout.getLineEnd(label.layout.lineCount-1))
+        } finally {activity.pause().stop().destroy()}
+    }
+
+    @Test fun laterProgressiveBoxDoesNotRelayoutOrResetTheParagraphBeingRead() {
+        val activity=Robolectric.buildActivity(Activity::class.java).setup().visible()
+        var opened=0
+        val view=ReadingTranslationView(activity.get()){opened++}
+        val first=TranslatedOcrBox(OcrLine(10,10,160,20,"Coffee article",1f),
+            List(40){"Coffee brewing needs a suitable grind size and hot water."}.joinToString(" "))
+        val next=TranslatedOcrBox(OcrLine(10,200,160,20,"Another paragraph",1f),"A later translated paragraph")
+        try {
+            activity.get().setContentView(view);layoutOverlay(view,300,500)
+            view.update(listOf(first),300,500,PixelCrop(0,0,300,500));layoutOverlay(view,300,500)
+            val label=view.getChildAt(0) as TextView
+            scrollParagraph(label)
+            val held=label.scrollY
+            assertTrue(held>0)
+            val geometry=label.layoutParams
+            view.update(listOf(first,next))
+            assertSame("An unchanged paragraph keeps its existing geometry object",geometry,label.layoutParams)
+            layoutOverlay(view,300,500)
+            repeat(3){label.onPreDraw()} // TextView may bring content into view on multiple frames.
+            assertSame(label,view.getChildAt(0));assertEquals(held,label.scrollY)
+            assertEquals(first.translation.length,label.layout.getLineEnd(label.layout.lineCount-1))
+            assertEquals(0,opened)
+        } finally {activity.pause().stop().destroy()}
+    }
+
+    @Test fun scrollingParagraphHonoursTextSizeChangesInsteadOfAlwaysUsingTheMinimumFont() {
+        val activity=Robolectric.buildActivity(Activity::class.java).setup().visible()
+        val view=ReadingTranslationView(activity.get()){}
+        val text=List(60){"القهوة العربية تحتاج إلى درجة طحن مناسبة وماء ساخن."}.joinToString(" ")
+        val box=TranslatedOcrBox(OcrLine(20,20,160,20,"Coffee article",1f),text)
+        try {
+            activity.get().setContentView(view);layoutOverlay(view,320,500)
+            view.applyAppearance(ReadingOverlaySettings(textSizeSp=14f))
+            view.update(listOf(box),320,500,PixelCrop(0,0,320,500));layoutOverlay(view,320,500)
+            val label=view.getChildAt(0) as TextView
+            val small=label.textSize
+            assertTrue(label.layout.height>label.height)
+            scrollParagraph(label);val held=label.scrollY;assertTrue(held>0)
+            view.applyAppearance(ReadingOverlaySettings(textSizeSp=34f));layoutOverlay(view,320,500)
+            repeat(3){label.onPreDraw()}
+            assertSame(label,view.getChildAt(0));assertTrue(label.textSize>small*2)
+            assertTrue(label.layout.height>label.height);assertEquals(held,label.scrollY)
+            assertEquals(text,label.text.toString());assertEquals(text.length,label.layout.getLineEnd(label.layout.lineCount-1))
+            val beforeScroll=label.scrollY;scrollParagraph(label);assertTrue(label.scrollY>beforeScroll)
+            assertNull(label.ellipsize)
+        } finally {activity.pause().stop().destroy()}
+    }
+
+    @Test fun matchedMangaLabelKeepsCleanupPatchAndBubbleArtworkVisible() {
+        val activity=Robolectric.buildActivity(Activity::class.java).setup().visible()
+        val view=ReadingTranslationView(activity.get()){}
+        val paint=MangaPaint(ComicMask(intArrayOf(10,10,10),100,100),OcrRect(30,30,40,40),Color.WHITE,Color.BLACK,
+            MangaPatch(OcrRect(10,10,10,10),IntArray(100){Color.WHITE}))
+        val box=TranslatedOcrBox(OcrLine(10,10,10,10,"Coffee",1f,OcrRegion(OcrRect(10,10,10,10),1f,paint=paint)),"A")
+        try {
+            activity.get().setContentView(view);layoutOverlay(view,100,100)
+            view.applyAppearance(ReadingOverlaySettings(replaceText=true))
+            view.update(listOf(box),100,100,PixelCrop(0,0,100,100));layoutOverlay(view,100,100)
+            assertEquals(Color.TRANSPARENT,view.renderedLabels().single().background)
+            val image=Bitmap.createBitmap(100,100,Bitmap.Config.ARGB_8888).apply {eraseColor(Color.MAGENTA)}
+            try {
+                view.draw(Canvas(image))
+                assertEquals("Mask cleanup is still applied",Color.WHITE,image.getPixel(15,15))
+                assertEquals("The label's padding must not cover artwork with sampled white",Color.MAGENTA,image.getPixel(32,32))
+            } finally {image.recycle()}
+        } finally {activity.pause().stop().destroy()}
+    }
+
+    @Test fun cleanupRefinementKeepsTheHeldLabelButClickUsesTheNewestRegion() {
+        val activity=Robolectric.buildActivity(Activity::class.java).setup().visible()
+        var opened: TranslatedOcrBox?=null
+        val view=ReadingTranslationView(activity.get()){opened=it}
+        val paint=MangaPaint(ComicMask(intArrayOf(20,20,40),300,500),OcrRect(10,10,160,20),Color.WHITE,Color.BLACK)
+        val region=OcrRegion(OcrRect(10,10,160,20),.8f,paint=paint)
+        val first=TranslatedOcrBox(OcrLine(10,10,160,20,"Coffee article",.8f,region),
+            List(40){"The source bubble is translated while cleanup finishes."}.joinToString(" "))
+        try {
+            activity.get().setContentView(view);layoutOverlay(view,300,500)
+            view.applyAppearance(ReadingOverlaySettings(replaceText=true))
+            view.update(listOf(first),300,500,PixelCrop(0,0,300,500));layoutOverlay(view,300,500)
+            val label=view.getChildAt(0) as TextView
+            scrollParagraph(label);val held=label.scrollY;assertTrue(held>0)
+            val refinedRegion=region.copy(confidence=.95f,paint=paint.copy(background=Color.BLACK,foreground=Color.WHITE))
+            val refined=first.copy(line=first.line.copy(confidence=.95f,region=refinedRegion))
+            view.update(listOf(refined));layoutOverlay(view,300,500)
+            repeat(3){label.onPreDraw()}
+            assertEquals(1,view.childCount);assertSame(label,view.getChildAt(0));assertEquals(held,label.scrollY)
+            assertEquals(Color.WHITE,label.currentTextColor)
+            assertEquals(first.translation,label.text.toString())
+            assertEquals(Color.TRANSPARENT,view.renderedLabels().single().background)
+            label.performClick();assertSame(refined,opened)
+        } finally {activity.pause().stop().destroy()}
+    }
+
+    @Test @Config(qualifiers="xxhdpi") fun sampledGenericReplacementAndExpandedLabelsExcludeEveryPaintedPixel() {
+        val activity=Robolectric.buildActivity(Activity::class.java).setup().visible()
+        val source=Bitmap.createBitmap(720,1445,Bitmap.Config.ARGB_8888).apply {eraseColor(Color.rgb(230,220,200))}
+        val view=ReadingTranslationView(activity.get()){}
+        try {
+            layoutPhoneOverlay(view)
+            view.setSourceImage(source)
+            view.applyAppearance(ReadingOverlaySettings(replaceText=true,boxWidthPercent=180,boxHeightPercent=170))
+            val boxes=listOf(TranslatedOcrBox(OcrLine(400,1200,100,25,"Coffee article",1f),"مقالة عن القهوة وطرق تحضيرها"))
+            view.update(boxes,720,1600,PixelCrop(0,59,720,1504));layoutPhoneOverlay(view)
+            assertEquals(Color.rgb(230,220,200),Color.rgb(Color.red(view.renderedLabels().single().background),
+                Color.green(view.renderedLabels().single().background),Color.blue(view.renderedLabels().single().background)))
+            val pixels=capturePhoneOverlay(view,Color.BLACK)
+            assertRenderedChangesExcluded(pixels,Color.BLACK,view.motionExclusions())
+            assertEquals(Color.rgb(230,220,200),source.getPixel(0,0))
+        } finally {activity.pause().stop().destroy();source.recycle()}
+    }
+
+    private fun layoutOverlay(view: ReadingTranslationView,width: Int,height: Int) {
+        // An attached MATCH_PARENT content view is otherwise resized by the Activity's
+        // pending decor traversal after the manual layout, invalidating this viewport.
+        val params=view.layoutParams ?: FrameLayout.LayoutParams(width,height)
+        if(params.width!=width || params.height!=height) {
+            params.width=width;params.height=height;view.layoutParams=params
+        }
+        view.measure(View.MeasureSpec.makeMeasureSpec(width,View.MeasureSpec.EXACTLY),
+            View.MeasureSpec.makeMeasureSpec(height,View.MeasureSpec.EXACTLY))
+        view.layout(0,0,width,height);shadowOf(Looper.getMainLooper()).idle()
+    }
+
+    private fun scrollParagraph(label: TextView) {
+        val start=SystemClock.uptimeMillis()
+        fun touch(action: Int,y: Float) {
+            val event=MotionEvent.obtain(start,start+20,action,label.width/2f,y,0)
+            try {label.dispatchTouchEvent(event)} finally {event.recycle()}
+        }
+        touch(MotionEvent.ACTION_DOWN,label.height-2f);touch(MotionEvent.ACTION_MOVE,2f);touch(MotionEvent.ACTION_UP,2f)
     }
 
     private fun layoutPhoneOverlay(view: ReadingTranslationView) {

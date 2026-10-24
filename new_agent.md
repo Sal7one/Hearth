@@ -16,7 +16,9 @@ handover, not to claim a finished glasses integration.
 - `main` includes the Android updates and this handover. The original handover branch
   started from RC11; use the updated remote branch, not an old local checkout.
 - RC15 / code 111 is public, with flowing captions and exact model selection.
-  RC16 / code 112 adds saved text colour/opacity controls and a shorter README.
+  RC16 / code 112 adds saved speech caption colours and a shorter README (draft).
+  RC17 / code 113 adds bounded QuickMT article translation and screen box styles;
+  see `docs/handoff/screen-translation-quickmt-style-2026-10-24.md`.
   See `docs/handoff/overlay-caption-flow-2026-10-24.md` for the caption flow contract.
 - No Meta SDK, glasses app, remote caption transport or new Windows runtime has
   been implemented. The glasses work remains a planning handover.
@@ -398,8 +400,10 @@ Do not invent a latency achievement or claim recognition of who is speaking.
 
 ## 9. Recent release state and documentation drift
 
-- Current Android candidate source is `0.30.0`, version code **112** (RC16):
-  saved caption colours and independent text opacity, including minimal mode.
+- Current Android candidate source is `0.30.0`, version code **113** (RC17):
+  bounded QuickMT translation, opt-in sampled page colours, saved box palettes
+  and width/height controls with full wrapped/scrollable text. RC16/code112
+  remains a draft with speech caption colour/opacity controls.
   The public [RC15](https://github.com/Sal7one/Hearth/releases/tag/v0.30.0-rc.15)
   APKs are code **111**, bound to `cfb3d3c218b13a11fd3166c3c80efce2a180cd5d`,
   with the existing QA signer. README now keeps brief guides and Android/desktop/TV galleries.

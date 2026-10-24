@@ -1,7 +1,9 @@
 package com.sal7one.hearth.desktop.runtime
 
 import com.sal7one.common_jni.translation.Ct2Native
+import com.sal7one.hearth.core.Ct2TextTranslation
 import java.nio.file.Path
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * Desktop CTranslate2 (Marian/OPUS/QuickMT) translator.
@@ -14,25 +16,30 @@ internal class DesktopCt2TranslationEngine private constructor(
     private var handle: Long,
     val mode: Int,
 ) : AutoCloseable {
+    private val cancelled = AtomicBoolean(false)
     val executionInfo: String =
         "CPU · CTranslate2 4.8.3 · Ruy · ${if (mode in 1..3) "INT8_FLOAT32" else "FLOAT32"} · 2 threads · greedy"
 
     fun translate(text: String, targetLanguage: String): String {
-        require(text.isNotBlank() && text.length <= 2000) { "CTranslate2 accepts 1–2000 caption characters" }
         val active = synchronized(this) { handle }
         check(active != 0L) { "CTranslate2 session is closed" }
-        val output = Ct2Native.translate(active, text.toByteArray(Charsets.UTF_8), targetLanguage.toByteArray(Charsets.UTF_8))
-            .toString(Charsets.UTF_8).trim()
-        check(output.isNotBlank()) { "CTranslate2 returned empty text" }
-        return output
+        fun checkActive() {
+            check(!cancelled.get() && synchronized(this) { handle == active }) { "CT2 translation cancelled or closed" }
+        }
+        val target = targetLanguage.toByteArray(Charsets.UTF_8)
+        return Ct2TextTranslation.translate(text, ::checkActive) { part ->
+            Ct2Native.translate(active, part.toByteArray(Charsets.UTF_8), target).toString(Charsets.UTF_8)
+        }
     }
 
     fun cancel() {
+        cancelled.set(true)
         val active = synchronized(this) { handle }
         if (active != 0L) Ct2Native.cancel(active)
     }
 
     override fun close() {
+        cancelled.set(true)
         val retired = synchronized(this) { val value = handle; handle = 0; value }
         if (retired != 0L) Ct2Native.destroy(retired)
     }

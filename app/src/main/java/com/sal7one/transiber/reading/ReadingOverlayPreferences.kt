@@ -26,6 +26,10 @@ internal class ReadingOverlayPreferences(context: Context) {
             .putBoolean("pass-through", next.passThrough).putBoolean("show-original", next.showOriginal)
             .putBoolean("translation-visible", next.translationVisible).putFloat("textSize", next.textSizeSp)
             .putBoolean("compact-handle", next.compactHandle)
+            .putBoolean("replace-text", next.replaceText)
+            .putInt("box-width-percent", next.boxWidthPercent).putInt("box-height-percent", next.boxHeightPercent)
+            .putInt("box-background-argb", next.boxBackgroundArgb).putInt("box-text-argb", next.boxTextArgb)
+            .putInt("box-opacity", next.boxOpacity)
             .putString("motion-exclusions", ReadingMotionExclusions.encode(next.motionExclusions)).apply()
     }
 }

@@ -2,11 +2,12 @@ package com.sal7one.transiber.ocr
 
 import com.sal7one.common_jni.ocr.OcrLine
 import com.sal7one.common_jni.translation.EmptyTranslationOutputException
+import com.sal7one.hearth.core.TranslationContentLimitException
 import com.sal7one.hearth.core.vision.OcrRegion
 
 internal data class TranslatedOcrBox(val line: OcrLine, val translation: String)
 
-internal class IncompleteOcrTranslationException(val failures: List<Pair<String, EmptyTranslationOutputException>>) :
+internal class IncompleteOcrTranslationException(val failures: List<Pair<String, Exception>>) :
     IllegalStateException("${failures.size} text box(es) could not be translated; their original text is preserved. " +
         "${failures.first().second.message} Text: ${failures.first().first.take(120)}", failures.first().second)
 
@@ -96,7 +97,7 @@ internal object OcrPageTranslation {
         // Publish every known box before starting any slow new inference. Geometry is
         // always from this capture, even when its words came from an earlier page.
         val results = lines.map { line -> cached(line.text)?.takeIf { it.isNotBlank() }?.let { TranslatedOcrBox(line, it) } }.toMutableList()
-        val failures = mutableListOf<Pair<String, EmptyTranslationOutputException>>()
+        val failures = mutableListOf<Pair<String, Exception>>()
         if (results.any { it != null } && current()) publish(results.filterNotNull())
         for ((index, line) in lines.withIndex()) {
             if (!current()) return
@@ -106,6 +107,12 @@ internal object OcrPageTranslation {
             } catch (error: EmptyTranslationOutputException) {
                 // A model can reject an isolated label while translating the article normally.
                 // Preserve that box and report partial failure after finishing the other boxes.
+                if (!current()) return
+                failures += line.text to error
+                continue
+            } catch (error: TranslationContentLimitException) {
+                // A bounded translator has already exhausted its safe splitting/retry policy.
+                // This box keeps its original; unrelated article blocks can still complete.
                 if (!current()) return
                 failures += line.text to error
                 continue

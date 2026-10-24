@@ -11,6 +11,7 @@ import android.view.ViewGroup
 import android.view.WindowManager
 import android.widget.Button
 import android.widget.ScrollView
+import android.widget.SeekBar
 import android.widget.Switch
 import androidx.core.graphics.Insets
 import androidx.core.view.ViewCompat
@@ -29,6 +30,83 @@ import org.xmlpull.v1.XmlPullParser
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
 class ReadingOverlayControlsTest {
+    @Test fun appearanceControlsAreLiveOptInAndPresetsKeepTheSavedGeometry() {
+        val owner = Robolectric.buildActivity(Activity::class.java).setup().visible()
+        val writes = mutableListOf<ReadingOverlaySettings>()
+        var captures = 0
+        val controls = ReadingOverlayControls(owner.get(), callbacks(translate = { captures++ }).copy(appearance = { writes += it }))
+        owner.get().setContentView(controls)
+        controls.render(ReadingOverlayUiState(replaceText = false, boxWidthPercent = 85, boxHeightPercent = 145))
+        assertTrue(writes.isEmpty())
+        button(controls, R.string.reading_overlay_appearance).performClick()
+        val replacement = descendants(controls).filterIsInstance<Switch>()
+            .single { it.text == owner.get().getString(R.string.reading_style_replace) }
+        assertFalse(replacement.isChecked)
+        replacement.performClick()
+        assertEquals(1, writes.size); assertTrue(writes.last().replaceText)
+        button(controls, R.string.reading_style_dark).performClick()
+        assertEquals(2, writes.size)
+        assertTrue(ReadingBoxPreset.DARK.matches(writes.last()))
+        assertTrue(writes.last().replaceText)
+        assertEquals(85, writes.last().boxWidthPercent); assertEquals(145, writes.last().boxHeightPercent)
+        assertEquals(0, captures)
+        owner.pause().stop().destroy()
+    }
+
+    @Test fun customColoursCanChangeDuringReplacementAndRenderDoesNotWriteOrCloseRgb() {
+        val owner = Robolectric.buildActivity(Activity::class.java).setup().visible()
+        val writes = mutableListOf<ReadingOverlaySettings>()
+        val appearance = ReadingAppearanceControls(owner.get()) { writes += it }
+        owner.get().setContentView(appearance)
+        appearance.render(ReadingOverlaySettings(replaceText = true))
+        val backgroundChoice = descendants(appearance).filterIsInstance<Button>().single {
+            it.contentDescription == owner.get().getString(R.string.reading_style_colour_choice,
+                owner.get().getString(R.string.reading_style_background), "#17212B") }
+        backgroundChoice.performClick()
+        assertEquals(1, writes.size)
+        assertTrue(writes.last().replaceText); assertEquals(0xff17212b.toInt(), writes.last().boxBackgroundArgb)
+        val rgb = button(appearance, R.string.reading_style_rgb)
+        assertFalse(rgb.isSelected)
+        rgb.performClick()
+        assertTrue(rgb.isSelected)
+        appearance.render(writes.last().copy(boxWidthPercent = 150))
+        assertEquals(1, writes.size); assertTrue(rgb.isSelected)
+        val width = descendants(appearance).filterIsInstance<SeekBar>().single {
+            it.contentDescription == owner.get().getString(R.string.reading_style_width) }
+        assertEquals(20, width.progress)
+        width.keyProgressIncrement = 1
+        width.onKeyDown(KeyEvent.KEYCODE_DPAD_RIGHT, KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DPAD_RIGHT))
+        assertEquals(2, writes.size); assertEquals(155, writes.last().boxWidthPercent)
+        assertTrue(writes.last().replaceText)
+        val red = descendants(appearance).filterIsInstance<SeekBar>().first {
+            it.contentDescription == owner.get().getString(R.string.reading_style_red) }
+        red.keyProgressIncrement = 1
+        red.onKeyDown(KeyEvent.KEYCODE_DPAD_RIGHT, KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DPAD_RIGHT))
+        assertEquals(3, writes.size)
+        assertEquals(0xff18212b.toInt(), writes.last().boxBackgroundArgb)
+        assertEquals(155, writes.last().boxWidthPercent); assertTrue(writes.last().replaceText)
+        owner.pause().stop().destroy()
+    }
+
+    @Test fun appearanceRgbDisclosureKeepsAllNativeControlsWithinANarrowSheet() {
+        val owner = Robolectric.buildActivity(Activity::class.java).setup().visible()
+        val controls = ReadingOverlayControls(owner.get(), callbacks())
+        owner.get().setContentView(controls)
+        button(controls, R.string.reading_overlay_appearance).performClick()
+        button(controls, R.string.reading_style_rgb).performClick()
+        measure(controls, 296, 440)
+        val scroll = descendants(controls).filterIsInstance<ScrollView>().single()
+        assertTrue(scroll.getChildAt(0).height > scroll.height)
+        val appearance = descendants(controls).filterIsInstance<ReadingAppearanceControls>().single()
+        descendants(appearance).filterIsInstance<Button>().forEach { button ->
+            assertTrue(button.measuredHeight >= dp(controls, 48))
+            assertTrue(button.width > 0)
+            assertTrue(button.right <= (button.parent as View).width)
+        }
+        assertEquals(9, descendants(appearance).filterIsInstance<SeekBar>().size)
+        owner.pause().stop().destroy()
+    }
+
     @Test fun ignoredAreaControlsStayExplicitAndRenderDoesNotStartCapturesOrResetThePolicy() {
         val owner = Robolectric.buildActivity(Activity::class.java).setup().visible()
         var captured = 0; var excluded = 0; var cleared = 0

@@ -112,6 +112,52 @@ class ReadingOverlayServiceTest {
         assertEquals(preferences.read(), ReadingOverlayPreferences(service).read())
     }
 
+    @Test @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    fun appearanceCallbackPersistsAndRepaintsTheSamePageWithoutReroutingOrRecapturing() = withWindows { service ->
+        val preferences=ReadingOverlayPreferences(service)
+        val initial=ReadingOverlaySettings(mode="page",passThrough=false,settleMs=1500,scanMs=1000)
+        preferences.write(initial)
+        call(service,"applyOptions",ClassParameter.from(ReadingOverlaySettings::class.java,initial))
+        completePage(service)
+        val layer=field<ReadingTranslationView>(service,"pageView")
+        layer.measure(View.MeasureSpec.makeMeasureSpec(400,View.MeasureSpec.EXACTLY),View.MeasureSpec.makeMeasureSpec(400,View.MeasureSpec.EXACTLY))
+        layer.layout(0,0,400,400)
+        call(service,"showTranslations",ClassParameter.from(List::class.java,field<List<TranslatedOcrBox>>(service,"renderedBoxes")))
+        val generation=field<Long>(service,"generation")
+        val revision=field<Long>(service,"paintRevision")
+        val panel=field<ReadingOverlayControls>(service,"panel")
+        val callback=ReflectionHelpers.getField<ReadingOverlayCallbacks>(panel,"callbacks")
+        callback.appearance(ReadingOverlaySettings(boxWidthPercent=170,boxHeightPercent=180,
+            boxBackgroundArgb=Color.rgb(15,30,45),boxTextArgb=Color.YELLOW,boxOpacity=65))
+        val saved=preferences.read()
+        assertEquals(initial.mode,saved.mode);assertEquals(initial.settleMs,saved.settleMs)
+        assertEquals(initial.scanMs,saved.scanMs);assertFalse(saved.passThrough)
+        call(service,"applyOptions",ClassParameter.from(ReadingOverlaySettings::class.java,saved))
+        assertEquals(Color.YELLOW,layer.renderedLabels().single().foreground)
+        assertEquals(Color.argb(165,15,30,45),layer.renderedLabels().single().background)
+        assertEquals(field<List<PixelCrop>>(service,"paintedMasks"),layer.motionExclusions())
+        assertTrue(field<Long>(service,"paintRevision")>revision)
+        val repainted=field<Long>(service,"paintRevision")
+        call(service,"applyOptions",ClassParameter.from(ReadingOverlaySettings::class.java,saved))
+        assertEquals("The same saved style must not look like the reader moved",repainted,field<Long>(service,"paintRevision"))
+        assertEquals(generation,field<Long>(service,"generation"));assertNull(field<Job?>(service,"captureJob"))
+        assertEquals("ترجمة محفوظة",layer.renderedLabels().single().text)
+    }
+
+    @Test fun completedPageKeepsOnlyItsBoundedColourGridAndForgetDropsIt() = withWindows { service ->
+        val layer=field<ReadingTranslationView>(service,"pageView")
+        val bitmap=Bitmap.createBitmap(200,100,Bitmap.Config.ARGB_8888).apply {eraseColor(Color.CYAN)}
+        val samples=try {ReadingColourSamples.from(bitmap)} finally {bitmap.recycle()}
+        layer.sourceColours=samples
+        completePage(service)
+        layer.sourceColours=null
+        call(service,"restoreCompletedPage")
+        assertSame(samples,layer.sourceColours)
+        assertEquals(Color.CYAN,layer.sourceColours!!.sample(PixelCrop(0,0,100,100))!!.background)
+        call(service,"clearPage",ClassParameter.from(Boolean::class.javaPrimitiveType!!,true))
+        assertNull(layer.sourceColours);assertNull(field<Any?>(service,"completedPage"))
+    }
+
     @Test fun setupSuppressionAndRepeatedOptionsNavigationKeepTheCompletedPage() = withWindows { service ->
         call(service, "configureOptions", ClassParameter.from(ReadingOverlaySettings::class.java, ReadingOverlaySettings(mode = "page")))
         val saved = completePage(service)
@@ -234,7 +280,11 @@ class ReadingOverlayServiceTest {
         }
     }
 
-    @Test fun repeatedProgressDoesNotResetTheActualPaintRevision() = withWindows { service ->
+    @Test @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    fun repeatedProgressDoesNotResetTheActualPaintRevision() = withWindows { service ->
+        val layer=field<ReadingTranslationView>(service,"pageView")
+        layer.measure(View.MeasureSpec.makeMeasureSpec(100,View.MeasureSpec.EXACTLY),View.MeasureSpec.makeMeasureSpec(100,View.MeasureSpec.EXACTLY))
+        layer.layout(0,0,100,100)
         completePage(service)
         val original=field<CameraOcrState>(service,"latest")
         val revision=field<Long>(service,"paintRevision")
@@ -438,6 +488,7 @@ class ReadingOverlayServiceTest {
 
     @Test @GraphicsMode(GraphicsMode.Mode.NATIVE)
     fun progressiveOcrInvalidationRemovesStaleLabelsAndCleanupEvenIfReplacementFails() = withWindows { service ->
+        call(service,"applyOptions",ClassParameter.from(ReadingOverlaySettings::class.java,ReadingOverlaySettings(replaceText=true)))
         val ticket = admitPage(service)
         val paint = MangaPaint(ComicMask(intArrayOf(10, 10, 20), 100, 100),
             OcrRect(10, 10, 20, 1), Color.WHITE, Color.BLACK)

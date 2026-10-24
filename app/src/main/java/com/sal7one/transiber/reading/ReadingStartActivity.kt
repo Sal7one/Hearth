@@ -323,6 +323,7 @@ class ReadingStartActivity : AppCompatActivity() {
                         valueRange = 14f..34f, steps = 9,
                         modifier = Modifier.semantics { contentDescription = text(R.string.reading_setup_text_size_label) })
                 }
+                ReadingStyleOptions(settings) { change -> settingsStore.update(change) }
                 TextButton(onClick = { advanced = !advanced }) { Text(text(if (advanced) R.string.reading_setup_hide_advanced else R.string.reading_setup_advanced)) }
                 if (advanced) ReadingSetupSection(text(R.string.reading_setup_auto_tuning)) {
                     Text(text(R.string.reading_setup_auto_tuning_help), style = MaterialTheme.typography.bodySmall)

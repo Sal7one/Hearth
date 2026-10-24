@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="reading_style_replace">مطابقة ألوان الصفحة (استبدال النص)</string>
+    <string name="reading_style_replace_help">تؤخذ الألوان حول كل منطقة لتغطية النص الأصلي. أنسب للخلفيات البسيطة؛ قد تظهر رقعة فوق الصور.</string>
+    <string name="reading_style_saved_palette">تبقى ألوان المربعات محفوظة أثناء مطابقة الصفحة. أوقفها لاستخدام الألوان التي اخترتها.</string>
+    <string name="reading_style_light">فاتح</string>
+    <string name="reading_style_dark">داكن</string>
+    <string name="reading_style_warm">دافئ</string>
+    <string name="reading_style_contrast">تباين عالٍ</string>
+    <string name="reading_style_width">عرض المربع (٪)</string>
+    <string name="reading_style_height">ارتفاع المربع (٪)</string>
+    <string name="reading_style_opacity">عتامة خلفية المربع (٪)</string>
+    <string name="reading_style_geometry_help">غيّر عرض وارتفاع كل مربع حول النص الأصلي. تلتف الترجمة وتتمدد لتبقى كاملة؛ أوقف تمرير اللمس للتطبيق للتمرير داخل المربعات الطويلة.</string>
+    <string name="reading_style_background">خلفية المربع</string>
+    <string name="reading_style_foreground">نص الترجمة</string>
+    <string name="reading_style_colour_choice">%1$s: %2$s</string>
+    <string name="reading_style_rgb">ألوان RGB مخصصة</string>
+    <string name="reading_style_red">الأحمر</string>
+    <string name="reading_style_green">الأخضر</string>
+    <string name="reading_style_blue">الأزرق</string>
+    <string name="reading_style_value">%1$s · %2$d</string>
+</resources>

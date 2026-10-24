@@ -2,10 +2,13 @@ package com.sal7one.transiber.reading
 
 import android.app.Application
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.junit4.AndroidComposeTestRule
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import com.sal7one.transiber.R
 import com.sal7one.transiber.preferences.UserPreferences
 import com.sal7one.transiber.shortcuts.OverlaySetupVisibility
@@ -65,6 +68,43 @@ class ReadingSetupNavigationTest {
         compose.runOnIdle { activity.onBackPressedDispatcher.onBackPressed() }
         compose.onNodeWithText(activity.getString(R.string.reading_setup_display)).assertDoesNotExist()
         compose.runOnIdle { assertEquals("page", preferences.read().mode) }
+    }
+
+    @Test fun setupAppearanceUsesTheSameSavedPaletteAsTheLiveOverlayAndKeepsOtherChoices() {
+        val activity = compose.activity
+        val preferences = ReadingOverlayPreferences(activity)
+        compose.runOnIdle { preferences.update { it.copy(mode = "page", passThrough = false,
+            boxWidthPercent = 85, boxHeightPercent = 165, textSizeSp = 27f) } }
+        compose.onNodeWithContentDescription(activity.getString(R.string.reading_setup_options)).performClick()
+        compose.onNodeWithContentDescription(activity.getString(R.string.reading_style_replace)).performScrollTo().performClick()
+        compose.onNodeWithText(activity.getString(R.string.reading_style_warm)).performScrollTo().performClick()
+        compose.runOnIdle {
+            val restored = ReadingOverlayPreferences(activity).read()
+            assertTrue(restored.replaceText); assertTrue(ReadingBoxPreset.WARM.matches(restored))
+            assertEquals(85, restored.boxWidthPercent); assertEquals(165, restored.boxHeightPercent)
+            assertEquals("page", restored.mode); assertFalse(restored.passThrough); assertEquals(27f, restored.textSizeSp)
+        }
+        compose.runOnIdle { activity.onBackPressedDispatcher.onBackPressed() }
+        compose.onNodeWithContentDescription(activity.getString(R.string.reading_setup_options)).performClick()
+        compose.onNodeWithText(activity.getString(R.string.reading_style_warm)).assertExists()
+    }
+
+    @Test fun setupRgbIsCollapsedAndAColourChoiceKeepsPageMatchingEnabled() {
+        val activity = compose.activity
+        val preferences = ReadingOverlayPreferences(activity)
+        compose.runOnIdle { preferences.update { it.copy(replaceText = true, mode = "page") } }
+        compose.onNodeWithContentDescription(activity.getString(R.string.reading_setup_options)).performClick()
+        compose.onNodeWithContentDescription(activity.getString(R.string.reading_style_red)).assertDoesNotExist()
+        val swatch = activity.getString(R.string.reading_style_colour_choice,
+            activity.getString(R.string.reading_style_foreground), "#55E0CB")
+        compose.onNodeWithContentDescription(swatch).performScrollTo().performClick()
+        compose.runOnIdle {
+            assertTrue(preferences.read().replaceText)
+            assertEquals(0xff55e0cb.toInt(), preferences.read().boxTextArgb)
+            assertEquals("page", preferences.read().mode)
+        }
+        compose.onNodeWithText(activity.getString(R.string.reading_style_rgb)).performScrollTo().performClick()
+        compose.onAllNodesWithContentDescription(activity.getString(R.string.reading_style_blue)).assertCountEquals(2)
     }
 
     class ReadingActivityRule : TestRule {

@@ -6,7 +6,10 @@ import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.Bitmap
 import android.graphics.RectF
-import android.text.TextUtils
+import android.text.Layout
+import android.text.StaticLayout
+import android.text.TextDirectionHeuristics
+import android.text.TextPaint
 import android.util.TypedValue
 import android.view.Gravity
 import android.view.MotionEvent
@@ -14,7 +17,6 @@ import android.view.View
 import android.view.ViewConfiguration
 import android.widget.FrameLayout
 import android.widget.TextView
-import androidx.core.widget.TextViewCompat
 import com.sal7one.transiber.ocr.*
 import com.sal7one.hearth.core.vision.OcrRegion
 import com.sal7one.hearth.core.vision.MangaPaint
@@ -26,6 +28,9 @@ import kotlin.math.ceil
 import kotlin.math.floor
 import kotlin.math.roundToInt
 
+internal data class ReadingRenderedLabel(val bounds: PixelCrop,val text: String,val foreground: Int,
+    val background: Int,val scrollY: Int)
+
 /** Transparent live replacement layer. Window flags control touch pass-through; the handle is separate. */
 internal class ReadingTranslationView(
     context: Context,
@@ -34,7 +39,9 @@ internal class ReadingTranslationView(
     private var boxes=emptyList<TranslatedOcrBox>()
     private var regions=emptyList<OcrRegion>()
     private val outline=Paint(Paint.ANTI_ALIAS_FLAG)
-    private val labels=LinkedHashMap<TranslatedOcrBox, TextView>()
+    private data class LabelKey(val x: Int,val y: Int,val width: Int,val height: Int,val source: String,val translation: String)
+    private fun TranslatedOcrBox.labelKey()=LabelKey(line.x,line.y,line.width,line.height,line.text,translation)
+    private val labels=LinkedHashMap<LabelKey, TextView>()
     private data class PreparedCleanup(val bounds: OcrRect,val image: Bitmap,val background: Int?)
     // Identity keys avoid repeatedly hashing a large immutable RLE mask. The same
     // paint instance is shared by progressive OCR/translation snapshots.
@@ -44,21 +51,34 @@ internal class ReadingTranslationView(
     private var imageWidth=1
     private var imageHeight=1
     private var crop=PixelCrop(0,0,1,1)
+    private var style=ReadingBoxStyle.from(ReadingOverlaySettings())
+    private val labelBackgrounds=LinkedHashMap<LabelKey,Int>()
+    private val genericCleanup=LinkedHashMap<TranslatedOcrBox,Pair<PixelCrop,Int>>()
+    var sourceColours: ReadingColourSamples?=null
+        set(value) {if(field!==value){field=value;render()}}
+    fun setSourceImage(bitmap: Bitmap) {sourceColours=ReadingColourSamples.from(bitmap)}
+    fun applyAppearance(settings: ReadingOverlaySettings) {
+        val next=ReadingBoxStyle.from(settings)
+        if(style==next)return
+        style=next
+        textSizeSp=next.textSizeSp
+        render()
+    }
     var textSizeSp=20f
         set(value) {
             val bounded=value.takeIf {it.isFinite()}?.coerceIn(14f,34f) ?: 20f
             if(field==bounded)return
             field=bounded
-            // Font controls do not rebuild cleanup bitmaps or replace text children.
-            labels.values.forEach {configureTypography(it,it.layoutParams.height)}
+            style=style.copy(textSizeSp=bounded)
+            render()
         }
     var showOriginal=false
-        set(value) { if(field!=value) { field=value; render(true) } }
+        set(value) { if(field!=value) { field=value; render() } }
     init { setBackgroundColor(Color.TRANSPARENT);setWillNotDraw(false) }
     fun updateRegions(value: List<OcrRegion>, width: Int=imageWidth, height: Int=imageHeight, area: PixelCrop=crop) {
         val changed=imageWidth!=width || imageHeight!=height || crop!=area
         regions=value;imageWidth=width;imageHeight=height;crop=area
-        if(changed)render(true)
+        if(changed)render()
         invalidate()
     }
     override fun onDraw(canvas: Canvas) {
@@ -70,7 +90,11 @@ internal class ReadingTranslationView(
         // Every mask/patch is prepared once when its immutable paint arrives.
         // Redraws issue one bitmap operation per translated bubble, rather than
         // thousands of Kotlin-to-Canvas calls or allocating pixels inside onDraw.
-        boxes.forEach { box -> box.line.region?.paint?.let { paint ->
+        genericCleanup.values.forEach {(bounds,colour) ->
+            cleanupPaint.color=colour
+            canvas.drawRect(bounds.left.toFloat(),bounds.top.toFloat(),bounds.right.toFloat(),bounds.bottom.toFloat(),cleanupPaint)
+        }
+        boxes.forEach { box -> box.line.region?.paint?.takeIf {style.replaceText}?.let { paint ->
             val prepared=cleanupImages[paint] ?: return@let
             val r=prepared.bounds
             prepared.background?.let {cleanupPaint.color=it}
@@ -89,8 +113,7 @@ internal class ReadingTranslationView(
     }
     fun update(value: List<TranslatedOcrBox>, width: Int=imageWidth, height: Int=imageHeight, area: PixelCrop=crop) {
         if(boxes!=value || imageWidth!=width || imageHeight!=height || crop!=area) {
-            val layoutChanged=imageWidth!=width || imageHeight!=height || crop!=area
-            boxes=value;imageWidth=width;imageHeight=height;crop=area;render(layoutChanged)
+            boxes=value;imageWidth=width;imageHeight=height;crop=area;render()
         }
     }
     /**
@@ -102,12 +125,12 @@ internal class ReadingTranslationView(
     fun motionExclusions(): List<PixelCrop> {
         if(showOriginal || imageWidth<=0 || imageHeight<=0)return emptyList()
         val excluded=LinkedHashSet<PixelCrop>()
-        boxes.mapNotNullTo(excluded) {
-            // Typesetting uses a rounded View-space rectangle. Invert that exact
-            // rectangle rather than rounding independently in the source image.
-            OcrPageLayout.box(it.line,crop,imageWidth,imageHeight,width,height,coverEdges=true)
-                ?.let {bounds->viewBoundsToSource(bounds,1f)}
+        labels.values.mapNotNullTo(excluded) {label ->
+            val bounds=label.layoutParams as LayoutParams
+            viewBoundsToSource(PixelCrop(bounds.leftMargin,bounds.topMargin,
+                bounds.leftMargin+bounds.width,bounds.topMargin+bounds.height),1f)
         }
+        genericCleanup.values.forEach {(bounds,_) ->viewBoundsToSource(bounds,1f)?.let(excluded::add)}
         regions.forEach {region ->
             if(region.bounds !in translatedBounds) {
                 OcrPageLayout.box(region,crop,imageWidth,imageHeight,width,height)
@@ -147,55 +170,109 @@ internal class ReadingTranslationView(
     override fun onSizeChanged(w: Int,h: Int,oldw: Int,oldh: Int) {
         // Cached translations can arrive before first layout. Adding children inside
         // onSizeChanged leaves them unmeasured until another UI event; defer a traversal.
-        post { if(isAttachedToWindow)render(true) }
+        post { if(isAttachedToWindow)render() }
     }
-    private fun render(layoutChanged: Boolean) {
+    private fun render() {
         val paints=Collections.newSetFromMap(IdentityHashMap<MangaPaint,Boolean>())
-        boxes.mapNotNullTo(paints) {it.line.region?.paint}
+        if(style.replaceText)boxes.mapNotNullTo(paints) {it.line.region?.paint}
         cleanupImages.entries.removeAll { (paint,prepared) -> if(paint !in paints){prepared.image.recycle();true}else false }
         paints.forEach { paint -> if(!cleanupImages.containsKey(paint))cleanupImages[paint]=prepareCleanup(paint) }
         translatedBounds=boxes.map {OcrRect(it.line.x,it.line.y,it.line.width,it.line.height)}.toSet()
         invalidate()
+        genericCleanup.clear()
         if(showOriginal) {
-            if(labels.isNotEmpty()) { removeAllViews();labels.clear() }
+            if(labels.isNotEmpty()) { removeAllViews();labels.clear();labelBackgrounds.clear() }
             return
         }
-        val wanted=boxes.toSet()
+        // Paint/cleanup and confidence can refine independently of translated text.
+        // Keep the reader's existing view while updating those drawing details.
+        val wanted=boxes.map {it.labelKey()}.toSet()
         val old=labels.entries.iterator()
         while(old.hasNext()) {
             val entry=old.next()
-            if(entry.key !in wanted) { removeView(entry.value);old.remove() }
+            if(entry.key !in wanted) { removeView(entry.value);labelBackgrounds.remove(entry.key);old.remove() }
         }
+        val occupied=mutableListOf<PixelCrop>()
         boxes.forEach { box ->
-            val bounds=OcrPageLayout.box(box.line,crop,imageWidth,imageHeight,width,height,coverEdges=true)
-            if(bounds==null) {
-                labels.remove(box)?.let(::removeView)
+            val key=box.labelKey()
+            val line=if(style.replaceText)box.line else box.line.copy(region=null)
+            val sourceBounds=OcrPageLayout.box(line,crop,imageWidth,imageHeight,width,height,coverEdges=true)
+            if(sourceBounds==null) {
+                labels.remove(key)?.let(::removeView)
+                labelBackgrounds.remove(key)
                 return@forEach
             }
-            val existing=labels[box]
-            if(existing!=null) {
-                if(layoutChanged) existing.layoutParams=LayoutParams(bounds.width,bounds.height).apply {leftMargin=bounds.left;topMargin=bounds.top}
-                return@forEach
-            }
-            val label=ReadingTranslatedTextView(context).apply {
+            val existing=labels[key]
+            val label=existing ?: ReadingTranslatedTextView(context).apply {
                 text=box.translation
-                setTextColor(box.line.region?.paint?.foreground ?: Color.BLACK)
-                setBackgroundColor(if(box.line.region?.paint!=null)Color.TRANSPARENT else Color.WHITE)
-                gravity=Gravity.CENTER; textDirection=View.TEXT_DIRECTION_FIRST_STRONG
-                includeFontPadding=false;ellipsize=TextUtils.TruncateAt.END
-                configureTypography(this,bounds.height)
-                contentDescription="${box.line.text}. ${box.translation}. Open full text and read aloud"
+                gravity=Gravity.TOP or Gravity.CENTER_HORIZONTAL;textDirection=View.TEXT_DIRECTION_FIRST_STRONG
+                includeFontPadding=false;ellipsize=null;maxLines=Int.MAX_VALUE
+                setHorizontallyScrolling(false)
+                val padding=(3*resources.displayMetrics.density).roundToInt()
+                setPadding(padding,padding,padding,padding)
+                isVerticalScrollBarEnabled=true;overScrollMode=View.OVER_SCROLL_NEVER
                 isFocusable=true
-                setOnClickListener {onBox(box)}
             }
-            addView(label,LayoutParams(bounds.width,bounds.height).apply {leftMargin=bounds.left;topMargin=bounds.top})
-            labels[box]=label
+            label.contentDescription="${box.line.text}. ${box.translation}. Open full text and read aloud"
+            label.setOnClickListener {onBox(box)}
+            val sampled=if(style.replaceText)box.line.region?.paint?.let {
+                ReadingSampledColours(it.background,it.foreground)
+            } ?: sourceColours?.sample(PixelCrop(box.line.x,box.line.y,box.line.x+box.line.width,box.line.y+box.line.height)) else null
+            val foreground=sampled?.foreground ?: style.foreground
+            val rawBackground=sampled?.background ?: style.background
+            // Manga cleanup already reconstructs only the glyph mask/patch. A solid
+            // label would hide that reconstruction and paint across the bubble's art.
+            val background=if(style.replaceText && box.line.region?.paint!=null)Color.TRANSPARENT else
+                Color.argb(if(rawBackground ushr 24==0)0 else (255*style.opacity/100),
+                    Color.red(rawBackground),Color.green(rawBackground),Color.blue(rawBackground))
+            label.setTextColor(foreground);label.setBackgroundColor(background);labelBackgrounds[key]=background
+            if(style.replaceText && box.line.region?.paint==null && sampled!=null)genericCleanup[box]=sourceBounds to background
+            val minPx=TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP,14f,resources.displayMetrics)
+            val maxPx=TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP,(24f*textSizeSp/20f).coerceAtLeast(14f),resources.displayMetrics)
+            // A tiny icon/label needs one readable glyph, not a wide article panel.
+            val minimumWidth=ceil(maxPx).toInt()+label.paddingLeft+label.paddingRight
+            val requestedWidth=ReadingBoxLayout.scaled(maxOf(sourceBounds.width,minimumWidth),style.widthPercent)
+                .coerceIn(maxOf(1,minOf(width,minimumWidth)),maxOf(1,width))
+            val availableWidth=maxOf(1,requestedWidth-label.paddingLeft-label.paddingRight)
+            fun textHeight(size: Float): Int {
+                val paint=TextPaint(label.paint).apply {textSize=size}
+                return StaticLayout.Builder.obtain(label.text,0,label.text.length,paint,availableWidth)
+                    .setIncludePad(false).setTextDirection(TextDirectionHeuristics.FIRSTSTRONG_LTR)
+                    .setBreakStrategy(Layout.BREAK_STRATEGY_HIGH_QUALITY).build().height+label.paddingTop+label.paddingBottom
+            }
+            val minimumHeight=ceil(minPx*1.3f).toInt()+label.paddingTop+label.paddingBottom
+            val scaledHeight=ReadingBoxLayout.scaled(maxOf(sourceBounds.height,minimumHeight),style.heightPercent)
+                .coerceIn(maxOf(1,minOf(height,minimumHeight)),maxOf(1,height))
+            // Modest automatic growth helps short translations. Long paragraphs stay
+            // compact and scroll; the user's height slider controls how much is visible.
+            val allowance=minOf(maxOf(minimumHeight,scaledHeight/2),maxOf(minimumHeight,height/5))
+            val requestedHeight=maxOf(scaledHeight,minOf(textHeight(minPx),scaledHeight+allowance))
+                .coerceAtMost(maxOf(1,height))
+            val bounds=ReadingBoxLayout.place(sourceBounds,requestedWidth,requestedHeight,width,height,occupied)
+                ?: return@forEach
+            occupied+=bounds
+            var size=maxPx
+            // Once scrolling is necessary, the chosen font remains meaningful.
+            // Only a short label which can fit at a readable size is fitted down.
+            if(textHeight(minPx)<=bounds.height)
+                while(size>minPx && textHeight(size)>bounds.height)size=maxOf(minPx,size-resources.displayMetrics.scaledDensity)
+            if(existing!=null)(label as ReadingTranslatedTextView).preserveScrollForLayout()
+            label.setTextSize(TypedValue.COMPLEX_UNIT_PX,size)
+            label.breakStrategy=Layout.BREAK_STRATEGY_HIGH_QUALITY
+            val params=LayoutParams(bounds.width,bounds.height).apply {leftMargin=bounds.left;topMargin=bounds.top}
+            if(existing==null)addView(label,params) else {
+                val previous=label.layoutParams as LayoutParams
+                if(previous.width!=params.width || previous.height!=params.height ||
+                    previous.leftMargin!=params.leftMargin || previous.topMargin!=params.topMargin)
+                    label.layoutParams=params
+            }
+            labels[key]=label
         }
     }
-    private fun configureTypography(label: TextView,height: Int) {
-        val minPx=TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP,10f,resources.displayMetrics)
-        label.maxLines=maxOf(1,(height/(minPx*1.25f)).toInt())
-        TextViewCompat.setAutoSizeTextTypeUniformWithConfiguration(label,10,(24f*textSizeSp/20f).roundToInt(),1,TypedValue.COMPLEX_UNIT_SP)
+    fun renderedLabels(): List<ReadingRenderedLabel> = labels.map {(box,label) ->
+        val bounds=label.layoutParams as LayoutParams
+        ReadingRenderedLabel(PixelCrop(bounds.leftMargin,bounds.topMargin,bounds.leftMargin+bounds.width,bounds.topMargin+bounds.height),
+            label.text.toString(),label.currentTextColor,labelBackgrounds[box] ?: Color.TRANSPARENT,label.scrollY)
     }
     private fun prepareCleanup(paint: MangaPaint): PreparedCleanup {
         paint.patch?.let {patch ->
@@ -215,7 +292,7 @@ internal class ReadingTranslationView(
     }
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
-        render(true)
+        render()
     }
     override fun onDetachedFromWindow() {
         cleanupImages.values.forEach {it.image.recycle()};cleanupImages.clear()
@@ -228,11 +305,34 @@ private class ReadingTranslatedTextView(context: Context) : TextView(context) {
     private val touchSlop=ViewConfiguration.get(context).scaledTouchSlop.toFloat()
     private var downX=0f
     private var downY=0f
+    private var lastY=0f
     private var dragged=false
+    private var readerScrollY: Int?=null
+
+    fun preserveScrollForLayout() {if(readerScrollY==null)readerScrollY=scrollY}
+    private fun restoreScroll() {
+        if(layout==null || height<=0)return
+        readerScrollY?.let {
+            val clamped=it.coerceIn(0,maximumScroll())
+            scrollTo(0,clamped);readerScrollY=clamped
+        }
+    }
+    private fun maximumScroll()=maxOf(0,(layout?.height ?: 0)+paddingTop+paddingBottom-height)
+    override fun onLayout(changed: Boolean,left: Int,top: Int,right: Int,bottom: Int) {
+        super.onLayout(changed,left,top,right,bottom)
+        restoreScroll()
+    }
+    override fun onPreDraw(): Boolean {
+        val ready=super.onPreDraw()
+        // TextView can bring the first line into view on more than one pre-draw.
+        // The last deliberate reader position remains authoritative across frames.
+        restoreScroll()
+        return ready
+    }
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
         when(event.actionMasked) {
-            MotionEvent.ACTION_DOWN -> {downX=event.x;downY=event.y;dragged=false}
+            MotionEvent.ACTION_DOWN -> {readerScrollY=scrollY;downX=event.x;downY=event.y;lastY=event.y;dragged=false}
             MotionEvent.ACTION_CANCEL -> {dragged=false;return super.onTouchEvent(event)}
             MotionEvent.ACTION_MOVE,MotionEvent.ACTION_POINTER_DOWN -> {
                 val dx=event.x-downX;val dy=event.y-downY
@@ -241,7 +341,13 @@ private class ReadingTranslatedTextView(context: Context) : TextView(context) {
                     val cancel=MotionEvent.obtain(event).apply {action=MotionEvent.ACTION_CANCEL}
                     try {super.onTouchEvent(cancel)} finally {cancel.recycle()}
                 }
-                if(dragged)return true
+                if(dragged) {
+                    val next=((readerScrollY ?: scrollY)+lastY-event.y).roundToInt().coerceIn(0,maximumScroll())
+                    scrollTo(0,next);readerScrollY=next
+                    lastY=event.y
+                    parent?.requestDisallowInterceptTouchEvent(true)
+                    return true
+                }
             }
             MotionEvent.ACTION_UP -> if(dragged) {dragged=false;return true}
         }

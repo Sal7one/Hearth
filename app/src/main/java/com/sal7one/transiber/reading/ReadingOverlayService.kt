@@ -97,7 +97,8 @@ class ReadingOverlayService : Service() {
     private val trigger=ReadingTrigger()
     private val pageGuard=ReadingPageGuard()
     private var pageTicket: ReadingPageGuard.Ticket?=null
-    private data class CompletedPage(val state: CameraOcrState,val width: Int,val height: Int,val crop: PixelCrop)
+    private data class CompletedPage(val state: CameraOcrState,val width: Int,val height: Int,val crop: PixelCrop,
+        val colours: ReadingColourSamples?)
     private var completedPage: CompletedPage?=null
     private var paintedMasks=emptyList<PixelCrop>()
     private var previousPaintedMasks=emptyList<PixelCrop>()
@@ -107,9 +108,10 @@ class ReadingOverlayService : Service() {
         override fun equals(other: Any?)=other is PaintIdentity && value===other.value
         override fun hashCode()=System.identityHashCode(value)
     }
-    private data class LabelPixels(val bounds: OcrRect,val text: String,val paint: PaintIdentity?)
-    private data class LayerPixels(val labels: List<LabelPixels>,val outlines: List<OcrRect>,val crop: PixelCrop,
-        val sourceWidth: Int,val sourceHeight: Int,val viewWidth: Int,val viewHeight: Int,val font: Float,val alpha: Float)
+    private data class LayerPixels(val labels: List<ReadingRenderedLabel>,val cleanup: List<PaintIdentity>,
+        val outlines: List<OcrRect>,val crop: PixelCrop,val masks: List<PixelCrop>,
+        val sourceWidth: Int,val sourceHeight: Int,val viewWidth: Int,val viewHeight: Int,
+        val appearance: ReadingBoxStyle,val alpha: Float)
     private var layerPixels: LayerPixels?=null
     private var lastPaintPixels: LayerPixels?=null
     private var paintRevision=0L
@@ -278,7 +280,7 @@ class ReadingOverlayService : Service() {
     private fun applyOptions(value: ReadingOverlaySettings) {
         val old=options;configureOptions(value)
         pageView?.showOriginal=options.showOriginal
-        pageView?.textSizeSp=options.textSizeSp
+        pageView?.applyAppearance(options)
         updatePaintedMasks()
         if(old.mode!=options.mode) {
             if(working && frameSubmitted)clearPage()
@@ -289,7 +291,8 @@ class ReadingOverlayService : Service() {
             cancelAttempt();clearPage(forgetCompleted=true);resetMotion();trigger.reset()
         }
         // Changes to our own drawing are not reader navigation.
-        if(old.showOriginal!=options.showOriginal || old.translationVisible!=options.translationVisible || old.textSizeSp!=options.textSizeSp)resetMotion()
+        if(old.showOriginal!=options.showOriginal || old.translationVisible!=options.translationVisible ||
+            ReadingBoxStyle.from(old)!=ReadingBoxStyle.from(options))resetMotion()
         applyLayerTouch();updateLayerVisibility();renderControls()
     }
     private fun renderControls() {
@@ -298,6 +301,8 @@ class ReadingOverlayService : Service() {
             textSize=options.textSizeSp,settleMs=options.settleMs,scanMs=options.scanMs,
             refreshCooldownMs=options.refreshCooldownMs,changeSensitivity=options.changeSensitivity,
             compactHandle=options.compactHandle,selectedArea=region!=null,languagePair="${uiText.languageName(source)} → ${uiText.languageName(target)}",historyCount=history.size,error=sessionError,
+            replaceText=options.replaceText,boxWidthPercent=options.boxWidthPercent,boxHeightPercent=options.boxHeightPercent,
+            boxBackgroundArgb=options.boxBackgroundArgb,boxTextArgb=options.boxTextArgb,boxOpacity=options.boxOpacity,
             excludedAreas=options.motionExclusions.size,
             inactiveExcludedAreas=options.motionExclusions.count {it.cropFor(pageWidth,pageHeight)==null})
         handle?.render(state);panel?.render(state)
@@ -310,7 +315,9 @@ class ReadingOverlayService : Service() {
         val ticket=pageTicket ?: return
         if(!pageGuard.complete(ticket))return
         pageTicket=null;working=false;frameSubmitted=false
-        completedPage=pageCrop?.takeIf {value.error==null || value.text.isNotBlank() || value.regions.isNotEmpty()}?.let {CompletedPage(value,pageWidth,pageHeight,it)}
+        completedPage=pageCrop?.takeIf {value.error==null || value.text.isNotBlank() || value.regions.isNotEmpty()}?.let {
+            CompletedPage(value,pageWidth,pageHeight,it,pageView?.sourceColours)
+        }
     }
     /** Track actual pixels, not repeated OCR progress/confidence/source-text emissions. */
     private fun updatePaintRevision() {
@@ -318,11 +325,11 @@ class ReadingOverlayService : Service() {
         val crop=pageCrop
         val next=if(view?.visibility==View.VISIBLE && !options.showOriginal && crop!=null &&
             (renderedBoxes.isNotEmpty() || renderedRegions.isNotEmpty())) {
-            val labels=renderedBoxes.map {box->LabelPixels(OcrRect(box.line.x,box.line.y,box.line.width,box.line.height),
-                box.translation,box.line.region?.paint?.let(::PaintIdentity))}
-            val translatedBounds=labels.map {it.bounds}.toSet()
-            LayerPixels(labels,renderedRegions.map {it.bounds}.filter {it !in translatedBounds},crop,pageWidth,pageHeight,
-                view.width,view.height,options.textSizeSp,layerParams.alpha)
+            val labels=view.renderedLabels()
+            val translatedBounds=renderedBoxes.map {OcrRect(it.line.x,it.line.y,it.line.width,it.line.height)}.toSet()
+            val cleanup=if(options.replaceText)renderedBoxes.mapNotNull {it.line.region?.paint?.let(::PaintIdentity)} else emptyList()
+            LayerPixels(labels,cleanup,renderedRegions.map {it.bounds}.filter {it !in translatedBounds},crop,
+                view.motionExclusions(),pageWidth,pageHeight,view.width,view.height,ReadingBoxStyle.from(options),layerParams.alpha)
         } else null
         if(next==layerPixels)return
         // Hiding/restoring the exact same layer changes composition, not its
@@ -341,6 +348,7 @@ class ReadingOverlayService : Service() {
     private fun restoreCompletedPage() {
         val page=completedPage ?: return
         pageWidth=page.width;pageHeight=page.height;pageCrop=page.crop
+        pageView?.sourceColours=page.colours
         renderedRegions=page.state.regions;renderedBoxes=page.state.boxTranslations
         pageView?.updateRegions(page.state.regions,pageWidth,pageHeight,page.crop)
         pageView?.update(page.state.boxTranslations,pageWidth,pageHeight,page.crop)
@@ -551,7 +559,10 @@ class ReadingOverlayService : Service() {
             val epoch=generation
             if(controller.state.value.closing)controller.awaitStopped()
             if(epoch!=generation || !pageGuard.isCurrent(ticket)){input.recycle();bitmap.recycle();return}
-            clearPage();pageWidth=bitmap.width;pageHeight=bitmap.height;pageCrop=crop;bitmap.recycle()
+            clearPage();pageWidth=bitmap.width;pageHeight=bitmap.height;pageCrop=crop
+            // Capture() hid every Hearth window before these pixels were admitted.
+            // Retain only a bounded colour grid; the OCR worker still owns/recycles input.
+            pageView?.setSourceImage(checkNotNull(input));bitmap.recycle()
             viewingBox=false;working=true;frameSubmitted=true;renderControls()
             if(!controller.state.value.running)controller.start(profile,source,target,snapshot,false,input,positioned=true,excludedAreas=excluded)
             else controller.offer(input,true,excludedAreas=excluded)
@@ -600,7 +611,7 @@ class ReadingOverlayService : Service() {
         paintedMasks=emptyList();renderedRegions=emptyList();renderedBoxes=emptyList()
         if(lastPaintPixels!=null){lastPaintPixels=null;paintRevision++}
         pageView?.update(emptyList());pageView?.updateRegions(emptyList());pageView?.visibility=View.INVISIBLE;pageCrop=null;updatePaintRevision()
-        if(forgetCompleted){completedPage=null;pageGuard.reset();pageTicket=null}
+        if(forgetCompleted){completedPage=null;pageView?.sourceColours=null;pageGuard.reset();pageTicket=null}
     }
     private fun resumeReader() {
         panel?.visibility=View.GONE
@@ -659,8 +670,9 @@ class ReadingOverlayService : Service() {
             viewingBox=true;original?.text=box.line.text;translated?.text=box.translation
             status?.text=uiText(UiR.string.service_selected_text_box_3e276);showPanel();panel?.showReadingText()
         }.also {view->
-            view.showOriginal=options.showOriginal;view.textSizeSp=options.textSizeSp
+            view.showOriginal=options.showOriginal;view.applyAppearance(options)
             view.viewTreeObserver.addOnDrawListener {
+                updatePaintedMasks()
                 updatePaintRevision()
                 if(pendingPaintDraw) {
                     // The next composed capture must postdate this actual traversal,
@@ -702,6 +714,7 @@ class ReadingOverlayService : Service() {
             refreshCooldownMs={value->overlayPreferences.update {it.copy(refreshCooldownMs=value)}},
             changeSensitivity={value->overlayPreferences.update {it.copy(changeSensitivity=value)}},
             compactHandle={value->overlayPreferences.update {it.copy(compactHandle=value)}},
+            appearance={value->overlayPreferences.update {it.withReadingAppearance(value)}},
             copy={getSystemService(ClipboardManager::class.java).setPrimaryClip(ClipData.newPlainText("Hearth reading",translated?.text?.takeIf {it.isNotBlank()} ?: original?.text))},
             speak={sourceText,system->speak(sourceText,if(system)VoicePlaybackMode.SYSTEM else VoicePlaybackMode.DEFAULT)},
             stopVoice={voice.stop()},history={showHistory()},

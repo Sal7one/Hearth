@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="reading_style_replace">匹配页面颜色（替换文字）</string>
+    <string name="reading_style_replace_help">采样每个原文区域周围的颜色以覆盖原文。适合纯色背景；照片上可能出现色块。</string>
+    <string name="reading_style_saved_palette">匹配页面时仍会保存文字框颜色。关闭后即可使用所选配色。</string>
+    <string name="reading_style_light">浅色</string>
+    <string name="reading_style_dark">深色</string>
+    <string name="reading_style_warm">暖色</string>
+    <string name="reading_style_contrast">高对比度</string>
+    <string name="reading_style_width" formatted="false">文字框宽度（%）</string>
+    <string name="reading_style_height" formatted="false">文字框高度（%）</string>
+    <string name="reading_style_opacity" formatted="false">文字框背景不透明度（%）</string>
+    <string name="reading_style_geometry_help">按原文区域调整每个文本框的宽高。译文会换行并适当扩展；关闭触摸穿透后可在长文本框内滚动。</string>
+    <string name="reading_style_background">文字框背景</string>
+    <string name="reading_style_foreground">译文颜色</string>
+    <string name="reading_style_colour_choice">%1$s：%2$s</string>
+    <string name="reading_style_rgb">自定义 RGB 颜色</string>
+    <string name="reading_style_red">红色</string>
+    <string name="reading_style_green">绿色</string>
+    <string name="reading_style_blue">蓝色</string>
+    <string name="reading_style_value">%1$s · %2$d</string>
+</resources>

@@ -1,10 +1,13 @@
 package com.sal7one.common_jni.translation
 
 import com.sal7one.common_jni.speech.TranslationDirection
+import com.sal7one.hearth.core.Ct2TextTranslation
 import java.io.File
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 
 internal object Ct2Native {
@@ -36,14 +39,19 @@ class Ct2TranslationSession private constructor(private val spec: Ct2ModelSpec, 
     override val directions get() = spec.directions
     override val executionInfo get() = "CPU · CTranslate2 4.8.3 · Ruy · ${if(spec.tokenizerMode in 1..3) "INT8_FLOAT32" else "FLOAT32"} · 2 threads · greedy" + if (spec.tokenizerMode==2 || spec.tokenizerMode==4) " · $arabicDialect" else ""
     override suspend fun translate(text: String, direction: TranslationDirection): String = withContext(Dispatchers.IO) {
-        require(text.isNotBlank() && text.length <= 2000) { "CT2 translation accepts 1–2000 caption characters" }
         require(spec.supports(direction.source,direction.target)) { "${spec.label} does not support ${direction.source} → ${direction.target}" }
-        check(!cancelled.get()) { "CT2 translation cancelled" }
         val current=handle.get();check(current!=0L) { "CT2 session is closed" }
+        val context=currentCoroutineContext()
+        fun ensureRunning() {
+            context.ensureActive()
+            check(!cancelled.get() && handle.get()==current) { "CT2 translation cancelled or closed" }
+        }
         val normalized=TranslationLanguages.normalize(direction.target)
         val target=when { spec.tokenizerMode==2 || spec.tokenizerMode==4 -> arabicDialect; spec.tokenizerMode==1 && normalized=="fil" -> "tl"; else -> normalized }
-        runtime.translate(current,text.toByteArray(Charsets.UTF_8),target.toByteArray(Charsets.UTF_8)).toString(Charsets.UTF_8).trim()
-            .also { check(!cancelled.get() && handle.get()==current) { "CT2 translation cancelled or closed" };check(it.isNotBlank()) { "CT2 returned empty text" } }
+        val targetBytes=target.toByteArray(Charsets.UTF_8)
+        Ct2TextTranslation.translate(text,::ensureRunning) { part ->
+            runtime.translate(current,part.toByteArray(Charsets.UTF_8),targetBytes).toString(Charsets.UTF_8)
+        }
     }
     override fun cancel() { cancelled.set(true);handle.get().takeIf { it!=0L }?.let(runtime::cancel) }
     override fun close() { cancelled.set(true);handle.getAndSet(0).takeIf { it!=0L }?.let(runtime::destroy) }

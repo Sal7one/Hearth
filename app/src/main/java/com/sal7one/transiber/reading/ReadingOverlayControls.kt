@@ -52,6 +52,12 @@ internal data class ReadingOverlayUiState(
     val error: String? = null,
     val excludedAreas: Int = 0,
     val inactiveExcludedAreas: Int = 0,
+    val replaceText: Boolean = false,
+    val boxWidthPercent: Int = 100,
+    val boxHeightPercent: Int = 100,
+    val boxBackgroundArgb: Int = 0xfff8fafc.toInt(),
+    val boxTextArgb: Int = 0xff1f2937.toInt(),
+    val boxOpacity: Int = 95,
 )
 
 internal data class ReadingOverlayCallbacks(
@@ -80,6 +86,7 @@ internal data class ReadingOverlayCallbacks(
     val dismiss: () -> Unit,
     val excludeArea: () -> Unit = {},
     val clearExclusions: () -> Unit = {},
+    val appearance: (ReadingOverlaySettings) -> Unit = {},
 )
 
 /**
@@ -271,6 +278,7 @@ internal class ReadingOverlayControls(
     private val cooldownLabel: TextView
     private val sensitivityButtons: List<Pair<String, Button>>
     private val compactSwitch: Switch
+    private val boxAppearance: ReadingAppearanceControls
     private val controlsPage: LinearLayout
     private val textPage: LinearLayout
     private val controlsTab: Button
@@ -398,6 +406,8 @@ internal class ReadingOverlayControls(
         appearance.addView(textSize, LayoutParams(MATCH_PARENT, palette.dp(48)))
         textSize.id = View.generateViewId(); textSizeLabel.labelFor = textSize.id
         appearance.addView(palette.label(text(R.string.reading_overlay_appearance_detail), 12f), spaced(bottom = 8))
+        boxAppearance = ReadingAppearanceControls(context, callbacks.appearance)
+        appearance.addView(boxAppearance, spaced(bottom = 12))
         compactSwitch = toggle(R.string.reading_overlay_compact, R.string.reading_overlay_compact_detail, callbacks.compactHandle, appearance)
         val more = disclosure(controlsPage, R.string.reading_overlay_more)
         more.addView(buttonRow(palette.button(text(R.string.reading_overlay_setup), callbacks.openSetup),
@@ -464,6 +474,7 @@ internal class ReadingOverlayControls(
             cooldown.isEnabled = value.mode == "page"
             sensitivityButtons.forEach { (key, button) -> styleSelected(button, key == value.changeSensitivity); button.isEnabled = value.mode == "page" }
             compactSwitch.isChecked = value.compactHandle
+            boxAppearance.render(value.appearanceSettings())
             cooldown.progress = ((value.refreshCooldownMs.coerceIn(2000, 15000) - 2000) / 500).toInt()
             settle.progress = ((value.settleMs.coerceIn(500, 2500) - 500) / 100).toInt()
             scan.progress = ((value.scanMs.coerceIn(250, 1500) - 250) / 50).toInt()
@@ -588,7 +599,7 @@ internal class ReadingOverlayControls(
     }
 }
 
-private class ReadingOverlayPalette(private val context: Context) {
+internal class ReadingOverlayPalette(private val context: Context) {
     private val dark = context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
     val ink = if (dark) Color.rgb(238, 243, 246) else Color.rgb(24, 34, 40)
     val muted = if (dark) Color.rgb(169, 184, 193) else Color.rgb(83, 101, 110)

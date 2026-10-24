@@ -10,6 +10,7 @@ import java.nio.file.Path
 import kotlin.test.Test
 import kotlin.test.assertContains
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 
 /**
@@ -31,6 +32,28 @@ class DesktopCt2RealSmokeTest {
         "sha256.tgt.spm.model" to "c7b8bf117088a901628696f60ddd15e047057ccbdcf9b0996ca19e2779a234c7",
     )
     private val sentence = "The museum opens at nine in the morning."
+
+    @Test
+    fun articleThatExhaustsNativeOutputCompletesThroughBoundedSession() {
+        val model = fixture()
+        val article = checkNotNull(javaClass.getResource("/translation/quickmt-coffee-article.txt")).readText()
+        assertEquals(1912, article.length)
+        val raw = Ct2Native.create(model.toString().toByteArray(), 0)
+        try {
+            val failure = assertFailsWith<RuntimeException> {
+                Ct2Native.translate(raw, article.toByteArray(), "ar".toByteArray())
+            }
+            assertContains(failure.message.orEmpty(), "output token limit")
+        } finally { Ct2Native.destroy(raw) }
+        val started = System.nanoTime()
+        DesktopCt2TranslationEngine.open(model, 0).use { engine ->
+            val translated = engine.translate(article, "ar")
+            println("CT2_ARTICLE_SMOKE chars=${article.length} outputChars=${translated.length} ms=${(System.nanoTime()-started)/1_000_000} text=$translated")
+            assertTrue(translated.length > 1000, "Every sentence group must contribute a complete translation")
+            assertContains(translated, "القهوة")
+            assertContains(translated, "المطبخ")
+        }
+    }
 
     @Test
     fun realCt2TranslatesEnglishToArabic() {

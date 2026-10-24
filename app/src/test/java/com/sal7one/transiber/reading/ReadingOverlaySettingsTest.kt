@@ -12,6 +12,52 @@ class ReadingOverlaySettingsTest {
         assertEquals(4_000, settings.refreshCooldownMs)
         assertTrue(settings.passThrough)
         assertTrue(settings.translationVisible)
+        assertFalse(settings.replaceText)
+        assertEquals(100, settings.boxWidthPercent); assertEquals(100, settings.boxHeightPercent)
+        assertEquals(95, settings.boxOpacity)
+    }
+
+    @Test fun savedBoxGeometryIsBoundedAndColoursKeepTheirOwnOpaqueRgb() {
+        val settings = ReadingOverlaySettings.from(mapOf("replace-text" to true, "box-width-percent" to -30,
+            "box-height-percent" to 600, "box-opacity" to 0,
+            "box-background-argb" to 0x123456, "box-text-argb" to 0x00112233))
+        assertTrue(settings.replaceText)
+        assertEquals(50, settings.boxWidthPercent); assertEquals(300, settings.boxHeightPercent)
+        assertEquals(10, settings.boxOpacity)
+        assertEquals(0xff123456.toInt(), settings.boxBackgroundArgb)
+        assertEquals(0xff112233.toInt(), settings.boxTextArgb)
+        val opposite = settings.copy(boxWidthPercent = 900, boxHeightPercent = -1, boxOpacity = 200).bounded()
+        assertEquals(200, opposite.boxWidthPercent); assertEquals(50, opposite.boxHeightPercent); assertEquals(100, opposite.boxOpacity)
+    }
+
+    @Test fun presetsKeepReplacementGeometryAndCapturePreferences() {
+        val original = ReadingOverlaySettings(mode = "page", replaceText = true, boxWidthPercent = 85,
+            boxHeightPercent = 165, textSizeSp = 29f, passThrough = false, compactHandle = false,
+            refreshCooldownMs = 9000, showOriginal = true)
+        ReadingBoxPreset.entries.forEach { preset ->
+            val changed = preset.applyTo(original)
+            assertTrue(preset.matches(changed))
+            assertEquals(original.copy(boxBackgroundArgb = preset.background, boxTextArgb = preset.foreground,
+                boxOpacity = preset.opacity), changed)
+        }
+    }
+
+    @Test fun anAppearanceSnapshotCannotRevertNewerCaptureAndTextSettings() {
+        val current = ReadingOverlaySettings(mode = "page", passThrough = false, showOriginal = true,
+            textSizeSp = 31f, settleMs = 1200, compactHandle = false)
+        val oldSnapshot = ReadingBoxPreset.WARM.applyTo(ReadingOverlaySettings()).copy(replaceText = true,
+            boxWidthPercent = 125, boxHeightPercent = 150)
+        val result = current.withReadingAppearance(oldSnapshot)
+        assertEquals(current.copy(replaceText = true, boxWidthPercent = 125, boxHeightPercent = 150,
+            boxBackgroundArgb = oldSnapshot.boxBackgroundArgb, boxTextArgb = oldSnapshot.boxTextArgb,
+            boxOpacity = oldSnapshot.boxOpacity), result)
+    }
+
+    @Test fun rgbEditingChangesOnlyOneChannelAndNormalizesBounds() {
+        assertEquals(0xff12ff56.toInt(), readingWithRgbChannel(0x00123456, 8, 300))
+        assertEquals(0xff003456.toInt(), readingWithRgbChannel(0x00123456, 16, -2))
+        assertEquals(0x34, readingRgbChannel(0xff123456.toInt(), 8))
+        assertEquals(0xff1234ab.toInt(), readingWithRgbChannel(0xff123456.toInt(), 0, 0xab))
     }
 
     @Test fun legacyChoicesMigrateWithoutResettingManualOrPageMode() {
