@@ -165,13 +165,20 @@ int main() {
     unsupportedMoonshineLanguage.replace(unsupportedMoonshineLanguage.find("\"auto\""), 6, "\"de\"");
     fails([&] { SpeechConfig c(unsupportedMoonshineLanguage); }, "Unsupported Moonshine source declaration");
     const std::string phonon = R"({"backend":"phonon","model":"tokens.txt","frontend":"joiner.int8.onnx","encoder":"encoder.int8.onnx","decoder":"decoder.int8.onnx","tokenizer":"","language":"auto","numThreads":4,"rightContext":3,"maxUtteranceMs":4000,"silenceMs":600,"silenceThresholdDb":-45})";
-    check(SpeechConfig(phonon).backend == "phonon");
+    for (const char* language : {"auto", "en", "es", "fr", "de", "it", "pt", "nl", "pl", "ru", "uk", "ro", "cs", "sk", "bg", "hr", "sv", "da", "fi", "et", "lv", "lt", "hu", "sl", "mt", "el"}) {
+        auto localized = phonon;
+        localized.replace(localized.find("\"auto\""), 6, std::string("\"") + language + "\"");
+        SpeechConfig c(localized);
+        check(c.backend == "phonon" && std::string(c.value.language) == language);
+    }
     auto missingJoiner = phonon;
     missingJoiner.replace(missingJoiner.find("joiner.int8.onnx"), std::strlen("joiner.int8.onnx"), "");
     fails([&] { SpeechConfig c(missingJoiner); }, "Phonon requires tokens, joiner, encoder and decoder");
-    auto nonEnglish = phonon;
-    nonEnglish.replace(nonEnglish.find("\"auto\""), 6, "\"ar\"");
-    fails([&] { SpeechConfig c(nonEnglish); }, "Phonon is English-only");
+    for (const char* language : {"ar", "zh", "ja", "no", "en-US", "", "e", "en fr", "en es", "auto en", "mt el", " en", "en "}) {
+        auto unsupported = phonon;
+        unsupported.replace(unsupported.find("\"auto\""), 6, std::string("\"") + language + "\"");
+        fails([&] { SpeechConfig c(unsupported); }, "Unsupported Phonon source declaration");
+    }
     const std::string psy = R"({"backend":"transcribepsy","model":"model.gguf","frontend":"","encoder":"","decoder":"","tokenizer":"","language":"auto","numThreads":2,"rightContext":3,"maxUtteranceMs":4000,"silenceMs":600,"silenceThresholdDb":-45})";
     for (const char* language : {"auto", "en", "nl", "fr", "de", "it", "pl", "pt", "es"}) {
         auto localized = psy;

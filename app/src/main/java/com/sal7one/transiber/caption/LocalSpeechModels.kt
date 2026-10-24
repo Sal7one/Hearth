@@ -57,6 +57,7 @@ internal val SpeechProfile.label: String get() = when (this) {
     SpeechProfile.QWEN3_ASR_1_7B -> "Qwen3-ASR 1.7B (larger; phone performance unverified)"
     SpeechProfile.OMNILINGUAL_CTC_300M_V2 -> "Omnilingual CTC 300M v2 · experimental"
     SpeechProfile.PHONON_2 -> "Phonon 2 · English"
+    SpeechProfile.PHONON_2_5 -> "Phonon 2.5 · 25 European languages"
     SpeechProfile.NEMOTRON_3_5_ASR_0_6B -> "Nemotron 3.5 ASR 0.6B"
     SpeechProfile.TRANSCRIBEPSY_250M_EU_SUB -> "TranscribePsy 250M · European languages"
 }

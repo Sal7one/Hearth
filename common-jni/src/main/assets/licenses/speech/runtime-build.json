@@ -17,8 +17,8 @@
     {
       "abi": "arm64-v8a",
       "file": "libhearth_qwen.so",
-      "bytes": 20562272,
-      "sha256": "4ec81b6da87a30069facb376e61815c3874ee1af03ac0c2dd638b18909aab9ef",
+      "bytes": 20562304,
+      "sha256": "138351b92aa46549424ccf1d3a500f8f1763ba053db4ac4d94d161c7a4d5f532",
       "minPageAlignment": 16384,
       "dependencies": [
         "liblog.so",
@@ -28,7 +28,7 @@
         "libc++_shared.so",
         "libc.so"
       ],
-      "sourceSetSha256": "0d9e815d3b2ebb2d71bfb165597912db8fe45e472c4ffd0d1161cb4ef70c2655"
+      "sourceSetSha256": "6e3f13febf242686dde6ac1bcc2056e67967def5f246c136774ef1a0711e55f5"
     },
     {
       "abi": "arm64-v8a",
@@ -43,7 +43,7 @@
         "libc++_shared.so",
         "libc.so"
       ],
-      "sourceSetSha256": "0d9e815d3b2ebb2d71bfb165597912db8fe45e472c4ffd0d1161cb4ef70c2655"
+      "sourceSetSha256": "6e3f13febf242686dde6ac1bcc2056e67967def5f246c136774ef1a0711e55f5"
     },
     {
       "abi": "arm64-v8a",
@@ -59,13 +59,13 @@
         "libc++_shared.so",
         "libc.so"
       ],
-      "sourceSetSha256": "0d9e815d3b2ebb2d71bfb165597912db8fe45e472c4ffd0d1161cb4ef70c2655"
+      "sourceSetSha256": "6e3f13febf242686dde6ac1bcc2056e67967def5f246c136774ef1a0711e55f5"
     },
     {
       "abi": "armeabi-v7a",
       "file": "libhearth_qwen.so",
-      "bytes": 13927556,
-      "sha256": "b02478a2d85d155e0cff6fcc6be54dcdbf1ce87bb7383f2cf4a58c0aa347079f",
+      "bytes": 13927492,
+      "sha256": "a4ad8fc1cd6ff68c42331d34b94d6af0fad8841446ad1554a5a9e93d4d140e44",
       "minPageAlignment": 16384,
       "dependencies": [
         "liblog.so",
@@ -75,7 +75,7 @@
         "libc++_shared.so",
         "libc.so"
       ],
-      "sourceSetSha256": "0d9e815d3b2ebb2d71bfb165597912db8fe45e472c4ffd0d1161cb4ef70c2655"
+      "sourceSetSha256": "6e3f13febf242686dde6ac1bcc2056e67967def5f246c136774ef1a0711e55f5"
     },
     {
       "abi": "armeabi-v7a",
@@ -90,7 +90,7 @@
         "libc++_shared.so",
         "libc.so"
       ],
-      "sourceSetSha256": "0d9e815d3b2ebb2d71bfb165597912db8fe45e472c4ffd0d1161cb4ef70c2655"
+      "sourceSetSha256": "6e3f13febf242686dde6ac1bcc2056e67967def5f246c136774ef1a0711e55f5"
     },
     {
       "abi": "armeabi-v7a",
@@ -106,13 +106,13 @@
         "libc++_shared.so",
         "libc.so"
       ],
-      "sourceSetSha256": "0d9e815d3b2ebb2d71bfb165597912db8fe45e472c4ffd0d1161cb4ef70c2655"
+      "sourceSetSha256": "6e3f13febf242686dde6ac1bcc2056e67967def5f246c136774ef1a0711e55f5"
     },
     {
       "abi": "x86",
       "file": "libhearth_qwen.so",
-      "bytes": 24238536,
-      "sha256": "82e3367935b07d43177c3bfb1862a6b6a99d603a1628de329f27fb2dc674f4f8",
+      "bytes": 24238472,
+      "sha256": "7778fe1a5b7a23be7f271b2d9434c031975779740d4438bf21ce05a9fb6a56bb",
       "minPageAlignment": 16384,
       "dependencies": [
         "liblog.so",
@@ -122,7 +122,7 @@
         "libc++_shared.so",
         "libc.so"
       ],
-      "sourceSetSha256": "0d9e815d3b2ebb2d71bfb165597912db8fe45e472c4ffd0d1161cb4ef70c2655"
+      "sourceSetSha256": "6e3f13febf242686dde6ac1bcc2056e67967def5f246c136774ef1a0711e55f5"
     },
     {
       "abi": "x86",
@@ -137,7 +137,7 @@
         "libc++_shared.so",
         "libc.so"
       ],
-      "sourceSetSha256": "0d9e815d3b2ebb2d71bfb165597912db8fe45e472c4ffd0d1161cb4ef70c2655"
+      "sourceSetSha256": "6e3f13febf242686dde6ac1bcc2056e67967def5f246c136774ef1a0711e55f5"
     },
     {
       "abi": "x86",
@@ -153,13 +153,13 @@
         "libc++_shared.so",
         "libc.so"
       ],
-      "sourceSetSha256": "0d9e815d3b2ebb2d71bfb165597912db8fe45e472c4ffd0d1161cb4ef70c2655"
+      "sourceSetSha256": "6e3f13febf242686dde6ac1bcc2056e67967def5f246c136774ef1a0711e55f5"
     },
     {
       "abi": "x86_64",
       "file": "libhearth_qwen.so",
-      "bytes": 23580464,
-      "sha256": "3a0184f252d96d42f01e8a5c8205187cb5ccdc7bf37570dd6bf6e7f9114e3629",
+      "bytes": 23580432,
+      "sha256": "13f8edcb3c86b5641fac0595d9cbeb7dae9e5fd3c823523857f476473b6ea76f",
       "minPageAlignment": 16384,
       "dependencies": [
         "liblog.so",
@@ -169,7 +169,7 @@
         "libc++_shared.so",
         "libc.so"
       ],
-      "sourceSetSha256": "0d9e815d3b2ebb2d71bfb165597912db8fe45e472c4ffd0d1161cb4ef70c2655"
+      "sourceSetSha256": "6e3f13febf242686dde6ac1bcc2056e67967def5f246c136774ef1a0711e55f5"
     },
     {
       "abi": "x86_64",
@@ -184,7 +184,7 @@
         "libc++_shared.so",
         "libc.so"
       ],
-      "sourceSetSha256": "0d9e815d3b2ebb2d71bfb165597912db8fe45e472c4ffd0d1161cb4ef70c2655"
+      "sourceSetSha256": "6e3f13febf242686dde6ac1bcc2056e67967def5f246c136774ef1a0711e55f5"
     },
     {
       "abi": "x86_64",
@@ -200,7 +200,7 @@
         "libc++_shared.so",
         "libc.so"
       ],
-      "sourceSetSha256": "0d9e815d3b2ebb2d71bfb165597912db8fe45e472c4ffd0d1161cb4ef70c2655"
+      "sourceSetSha256": "6e3f13febf242686dde6ac1bcc2056e67967def5f246c136774ef1a0711e55f5"
     }
   ],
   "adapterSources": {
@@ -210,7 +210,7 @@
     "common-jni/src/main/cpp/speech/backends/backend_guard.h": "271f1d9d135b73835664614a67b3e0c676aa7aec992311986cb173a266172cbe",
     "common-jni/src/main/cpp/speech/backends/exports.map": "546cdb327cca1d7b93e99fbb82304445637236c2a70ccf1e714b5e094289c4b5",
     "common-jni/src/main/cpp/speech/backends/nemotron_backend.cpp": "072fbd0d138f387ee90a39c36949a0124f99a5b8e22898ecb13a7ce00cff8636",
-    "common-jni/src/main/cpp/speech/backends/qwen_backend.cpp": "f641da08c89f447a6d68e6943229b62a7b9dbcae51f3cb0f4db22b635ab8a601",
+    "common-jni/src/main/cpp/speech/backends/qwen_backend.cpp": "ec6318c49aee5eb17736aff4ba55614b8ac466404aadde8117fe3ab15155e058",
     "common-jni/src/main/cpp/speech/backends/qwen_exports.map": "08631a07b5281380aae15cdd5ccec2c24e67e2bed745c0aa11dcb1487733b370",
     "common-jni/src/main/cpp/speech/backends/transcribepsy_backend.cpp": "836c534e3bc33c30429bdeef9e81fc52b5d73dd84b8e7bed3c02823b7861293c",
     "common-jni/src/main/cpp/speech/backends/vosk_backend.cpp": "1160120138f3625e3f44e5ef003658b7536f4aa43552d6c0ff73af25e0c44ff0",

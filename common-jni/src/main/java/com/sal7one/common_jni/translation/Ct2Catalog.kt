@@ -5,12 +5,16 @@ import com.sal7one.common_jni.speech.TranslationDirection
 import java.io.File
 
 /** Exact required files; each directional package is installed atomically. */
-data class Ct2File(val name: String, val bytes: Long, val sha256: String, val repo: String, val revision: String) {
-    val url get() = "https://huggingface.co/$repo/resolve/$revision/$name"
+data class Ct2File(val name: String, val bytes: Long, val sha256: String, val repo: String, val revision: String,
+    val downloadUrl: String? = null) {
+    val url get() = downloadUrl ?: "https://huggingface.co/$repo/resolve/$revision/$name"
 }
+/** A reviewed runtime conversion can be distributed as one pinned archive independently of upstream sources. */
+data class Ct2DownloadArchive(val url: String, val bytes: Long, val sha256: String)
 data class Ct2ModelSpec(val id: String, val label: String, val tokenizerMode: Int,
     val sources: Set<String>, val targets: Set<String>, val files: List<Ct2File>, val license: String, val modelCard: String,
-    val downloadEnabled: Boolean = true, val groupId: String = id, val precisionLabel: String = "") {
+    val downloadEnabled: Boolean = true, val groupId: String = id, val precisionLabel: String = "",
+    val archive: Ct2DownloadArchive? = null) {
     val bytes get() = files.sumOf { it.bytes }
     val selectionLabel get() = label + precisionLabel.takeIf { it.isNotBlank() }?.let { " · $it" }.orEmpty()
     fun supports(source: String, target: String): Boolean {
@@ -57,7 +61,9 @@ object Ct2Catalog {
             Ct2File("tokenizer.json", 2670172L, "6f45717637add9564d0bd905209208d1aafa55a2e4ec3b8a817309e0384cb307", "oddadmix/Jisr-MT-50M-AllDialects", "8803d9d4e3b53e96783968237aa32425eb83922e"),
             Ct2File("LICENSE", 11358L, "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30", "oddadmix/Jisr-MT-50M-AllDialects", "8803d9d4e3b53e96783968237aa32425eb83922e"),
             Ct2File("NOTICE", 562L, "bce7092fadb678426aaba270129f02b3a3633df9962ee3f438c781e6eccf6372", "oddadmix/Jisr-MT-50M-AllDialects", "8803d9d4e3b53e96783968237aa32425eb83922e"),
-        ), "Apache-2.0", "https://huggingface.co/oddadmix/Jisr-MT-50M-AllDialects", downloadEnabled = false, groupId = "ct2-jisr-50m-en-ar", precisionLabel = "FP32"),
+        ), "Apache-2.0", "https://huggingface.co/oddadmix/Jisr-MT-50M-AllDialects", groupId = "ct2-jisr-50m-en-ar", precisionLabel = "FP32",
+            archive = Ct2DownloadArchive("https://github.com/Sal7one/Hearth/releases/download/v0.27.3/ct2-jisr-50m-en-ar-0.27.3.zip",
+                198432430L, "bd0c43727015ec0183becede9ef83ff86a7c54648e04e23aafb9b02630ac0bb5")),
         Ct2ModelSpec("ct2-jisr-50m-en-ar-int8", "Jisr 50M · English → Arabic dialects", 2, setOf("en"), setOf("ar"), listOf(
             Ct2File("config.json", 226L, "99fa08f9ae4fe585ace28258a3420d4d19d59e2b99d3e8dd2bc7dff70aa408cf", "oddadmix/Jisr-MT-50M-AllDialects", "8803d9d4e3b53e96783968237aa32425eb83922e"),
             Ct2File("model.bin", 50619043L, "6b8b5286c7edc7eb711a17c0b9c644314e41740d1e4e7d93f799980771791375", "oddadmix/Jisr-MT-50M-AllDialects", "8803d9d4e3b53e96783968237aa32425eb83922e"),
@@ -65,7 +71,9 @@ object Ct2Catalog {
             Ct2File("tokenizer.json", 2670172L, "6f45717637add9564d0bd905209208d1aafa55a2e4ec3b8a817309e0384cb307", "oddadmix/Jisr-MT-50M-AllDialects", "8803d9d4e3b53e96783968237aa32425eb83922e"),
             Ct2File("LICENSE", 11358L, "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30", "oddadmix/Jisr-MT-50M-AllDialects", "8803d9d4e3b53e96783968237aa32425eb83922e"),
             Ct2File("NOTICE", 559L, "d83d54c3ffa0eba669e616af1a0ab8fa775059a6d916206b51b00b7372f88d38", "oddadmix/Jisr-MT-50M-AllDialects", "8803d9d4e3b53e96783968237aa32425eb83922e"),
-        ), "Apache-2.0", "https://huggingface.co/oddadmix/Jisr-MT-50M-AllDialects", downloadEnabled = false, groupId = "ct2-jisr-50m-en-ar", precisionLabel = "INT8"),
+        ), "Apache-2.0", "https://huggingface.co/oddadmix/Jisr-MT-50M-AllDialects", groupId = "ct2-jisr-50m-en-ar", precisionLabel = "INT8",
+            archive = Ct2DownloadArchive("https://github.com/Sal7one/Hearth/releases/download/v0.27.3/ct2-jisr-50m-en-ar-int8-0.27.3.zip",
+                54620720L, "54f9ea30f5b08fed33b09b8a6c2985133b2d03d0ae1b51a4b008c7ecd7b22556")),
         Ct2ModelSpec("ct2-jisr-50m-ar-en", "Jisr 50M · Arabic dialects → English", 5, setOf("ar"), setOf("en"), listOf(
             Ct2File("config.json", 226L, "99fa08f9ae4fe585ace28258a3420d4d19d59e2b99d3e8dd2bc7dff70aa408cf", "oddadmix/Jisr-MT-50M-Dialects2En", "2cfe89dcfaba280c81bc0b9da34e9dc096795405"),
             Ct2File("model.bin", 194407459L, "ca3cb2edaff87fddf715db8fcdea9258b47a926624f662aab01e31decd753805", "oddadmix/Jisr-MT-50M-Dialects2En", "2cfe89dcfaba280c81bc0b9da34e9dc096795405"),
@@ -73,7 +81,9 @@ object Ct2Catalog {
             Ct2File("tokenizer.json", 2667790L, "7ab7a5ec74e7c2a1671c051fe91aaa3d92e3657a75f6867cd584d3b4307dcc9b", "oddadmix/Jisr-MT-50M-Dialects2En", "2cfe89dcfaba280c81bc0b9da34e9dc096795405"),
             Ct2File("LICENSE", 11358L, "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30", "oddadmix/Jisr-MT-50M-Dialects2En", "2cfe89dcfaba280c81bc0b9da34e9dc096795405"),
             Ct2File("NOTICE", 562L, "42b536894f16165d948f83792e502e14ff01aa59a237544b912b16b678ffb282", "oddadmix/Jisr-MT-50M-Dialects2En", "2cfe89dcfaba280c81bc0b9da34e9dc096795405"),
-        ), "Apache-2.0", "https://huggingface.co/oddadmix/Jisr-MT-50M-Dialects2En", downloadEnabled = false, groupId = "ct2-jisr-50m-ar-en", precisionLabel = "FP32"),
+        ), "Apache-2.0", "https://huggingface.co/oddadmix/Jisr-MT-50M-Dialects2En", groupId = "ct2-jisr-50m-ar-en", precisionLabel = "FP32",
+            archive = Ct2DownloadArchive("https://github.com/Sal7one/Hearth/releases/download/v0.27.3/ct2-jisr-50m-ar-en-0.27.3.zip",
+                198406580L, "b596911767ded267aa476f9da440671d68f98f0ee5191efc13fc1ab4ed867dee")),
         Ct2ModelSpec("ct2-jisr-50m-ar-en-int8", "Jisr 50M · Arabic dialects → English", 3, setOf("ar"), setOf("en"), listOf(
             Ct2File("config.json", 226L, "99fa08f9ae4fe585ace28258a3420d4d19d59e2b99d3e8dd2bc7dff70aa408cf", "oddadmix/Jisr-MT-50M-Dialects2En", "2cfe89dcfaba280c81bc0b9da34e9dc096795405"),
             Ct2File("model.bin", 50613167L, "fe73eb55916e327c47b9d346f6b2d1f734d3d34533e3a97c55dd74ba4b0e1b19", "oddadmix/Jisr-MT-50M-Dialects2En", "2cfe89dcfaba280c81bc0b9da34e9dc096795405"),
@@ -81,7 +91,9 @@ object Ct2Catalog {
             Ct2File("tokenizer.json", 2667790L, "7ab7a5ec74e7c2a1671c051fe91aaa3d92e3657a75f6867cd584d3b4307dcc9b", "oddadmix/Jisr-MT-50M-Dialects2En", "2cfe89dcfaba280c81bc0b9da34e9dc096795405"),
             Ct2File("LICENSE", 11358L, "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30", "oddadmix/Jisr-MT-50M-Dialects2En", "2cfe89dcfaba280c81bc0b9da34e9dc096795405"),
             Ct2File("NOTICE", 559L, "02665d596142b410fc5f4a2b239ab453619125286e18784fbd7ec630ae94db52", "oddadmix/Jisr-MT-50M-Dialects2En", "2cfe89dcfaba280c81bc0b9da34e9dc096795405"),
-        ), "Apache-2.0", "https://huggingface.co/oddadmix/Jisr-MT-50M-Dialects2En", downloadEnabled = false, groupId = "ct2-jisr-50m-ar-en", precisionLabel = "INT8"),
+        ), "Apache-2.0", "https://huggingface.co/oddadmix/Jisr-MT-50M-Dialects2En", groupId = "ct2-jisr-50m-ar-en", precisionLabel = "INT8",
+            archive = Ct2DownloadArchive("https://github.com/Sal7one/Hearth/releases/download/v0.27.3/ct2-jisr-50m-ar-en-int8-0.27.3.zip",
+                54612290L, "1574ea2162b8c3ad105114f68c239a1d7ff7443da8e0cd7f85fc50da75438e0f")),
     )
     fun find(id: String): Ct2ModelSpec? = models.firstOrNull { it.id == id }
 }

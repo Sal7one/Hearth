@@ -26,11 +26,21 @@ internal object Ct2Package {
         check(runtimeSupported()) { "CT2 translation requires the ARM64 runtime and a 64-bit ARM app process. Select an available translator on this device." }
     }
     data class Part(val spec: Ct2ModelSpec, val file: Ct2File, val index: Int) {
-        val id get() = "${spec.id}-file-$index"
+        val id get() = if (spec.archive != null) "${spec.id}-archive" else "${spec.id}-file-$index"
         val downloadName get() = "${spec.id}-${file.name}"
-        fun asset() = DownloadAsset(id,file.url,file.bytes,file.sha256,spec.bytes)
+        // Archives are pinned in private staging before extraction, so both copies coexist temporarily.
+        fun asset() = DownloadAsset(id,file.url,file.bytes,file.sha256,
+            spec.archive?.let { Math.addExact(spec.bytes,it.bytes) } ?: spec.bytes)
     }
-    fun parts(spec: Ct2ModelSpec) = if (!spec.downloadEnabled) emptyList() else spec.files.mapIndexed { index,file -> Part(spec,file,index) }
+    fun parts(spec: Ct2ModelSpec): List<Part> {
+        val archive = spec.archive
+        return when {
+        !spec.downloadEnabled -> emptyList()
+        archive != null -> listOf(Part(spec, Ct2File("runtime.zip",archive.bytes,archive.sha256,
+            repo="",revision="",downloadUrl=archive.url),0))
+        else -> spec.files.mapIndexed { index,file -> Part(spec,file,index) }
+        }
+    }
     fun part(id: String) = Ct2Catalog.models.asSequence().flatMap { parts(it).asSequence() }.firstOrNull { it.id==id }
     fun directory(context: Context,spec: Ct2ModelSpec) = File(context.filesDir,"ct2-models/${spec.id}")
     fun installed(context: Context,spec: Ct2ModelSpec): Boolean = directory(context,spec).let { root ->
@@ -59,6 +69,13 @@ internal object Ct2Package {
         val parent=File(context.filesDir,"ct2-models").apply { check(isDirectory || mkdirs()) }
         val stage=File(parent,".install-${UUID.randomUUID()}").apply { check(mkdir()) }
         try {
+            if (spec.archive != null) {
+                context.contentResolver.openInputStream(downloads.uri(rows.single().id))?.use { input ->
+                    installArchive(context,spec,stage,input) { job.ensureActive() }
+                } ?: error("Cannot open downloaded CT2 runtime archive")
+                com.sal7one.transiber.preferences.ModelSourceBindings.recheck(context)
+                return spec.id
+            }
             spec.files.zip(rows).forEach { (part,row) ->
                 job.ensureActive()
                 context.contentResolver.openInputStream(downloads.uri(row.id))?.use { input ->
@@ -69,7 +86,25 @@ internal object Ct2Package {
             publish(context,spec,stage)
             com.sal7one.transiber.preferences.ModelSourceBindings.recheck(context)
             return spec.id
+        } catch(error: Exception) {
+            // File staging wraps read failures; preserve cancellation for the durable queue worker.
+            generateSequence<Throwable>(error) { it.cause }.filterIsInstance<java.util.concurrent.CancellationException>()
+                .firstOrNull()?.let { throw it }
+            throw error
         } finally { stage.deleteRecursively() }
+    }
+    /** Both the transport ZIP and its flat runtime package must match the selected catalog identity. */
+    private fun installArchive(context: Context,spec: Ct2ModelSpec,work: File,input: InputStream,
+        checkActive: () -> Unit): File {
+        val archive=checkNotNull(spec.archive)
+        val pinned=ModelIntegrity.stageFile(input,work,"runtime.zip",archive.sha256,archive.bytes) { checkActive() }
+        require(pinned.sizeBytes==archive.bytes) { "Downloaded CT2 runtime archive size differs from its catalog pin" }
+        checkActive()
+        val (identity,staged)=pinned.file.inputStream().use { verified ->
+            com.sal7one.common_jni.translation.Ct2Archive.stage(work,verified,models=listOf(spec),checkActive=checkActive)
+        }
+        require(identity.id==spec.id) { "Downloaded CT2 runtime archive belongs to a different model" }
+        checkActive();return publish(context,spec,staged)
     }
     fun importZip(context: Context,input: InputStream,checkActive: () -> Unit = {}): Pair<Ct2ModelSpec,File> {
         requireRuntime(context)

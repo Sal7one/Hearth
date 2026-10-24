@@ -23,7 +23,7 @@ class BenchmarkLanguagePlanTest {
 
     @Test fun enginesWithoutLanguageHintsAreNeverLabelledAsForcedOrDuplicated() {
         listOf(SpeechProfile.OMNILINGUAL_CTC_300M_V2, SpeechProfile.TRANSCRIBEPSY_250M_EU_SUB,
-            SpeechProfile.VOXTRAL_MINI_REALTIME_2602).forEach { speechProfile ->
+            SpeechProfile.VOXTRAL_MINI_REALTIME_2602, SpeechProfile.PHONON_2_5).forEach { speechProfile ->
             BenchmarkLanguageMode.entries.forEach { mode ->
                 val expanded = BenchmarkLanguagePlan.expand(listOf(profile(speechProfile)), "en", mode)
                 assertEquals(listOf("auto"), expanded.models.map { it.recognitionLanguage })
@@ -33,6 +33,18 @@ class BenchmarkLanguagePlanTest {
         val autoOnly = profile(SpeechProfile.OMNILINGUAL_CTC_300M_V2)
         assertEquals(BenchmarkRecognitionSetting("automatic", "auto"), BenchmarkLanguagePlan.recognition(autoOnly, "ar"))
         assertTrue(runCatching { BenchmarkLanguagePlan.recognition(autoOnly.copy(recognitionLanguage = "ar"), "ar") }.isFailure)
+    }
+
+    @Test fun multilingualPhononRunsRussianOnceWithoutInventedLanguageForcingAndRejectsArabicAudio() {
+        val modern = profile(SpeechProfile.PHONON_2_5)
+        BenchmarkLanguageMode.entries.forEach { mode ->
+            val russian = BenchmarkLanguagePlan.expand(listOf(modern), "ru", mode)
+            assertEquals(1, russian.models.size)
+            assertEquals(BenchmarkRecognitionSetting("automatic", "auto"), BenchmarkLanguagePlan.recognition(russian.models.single(), "ru"))
+            val arabic = BenchmarkLanguagePlan.expand(listOf(modern), "ar", mode)
+            assertTrue(arabic.models.isEmpty())
+            assertTrue(arabic.omitted.single().contains("does not support recordings in ar"))
+        }
     }
 
     @Test fun hintOnlyModelsAreExplicitlyOmittedFromAutomaticRatherThanGivenInventedDetection() {

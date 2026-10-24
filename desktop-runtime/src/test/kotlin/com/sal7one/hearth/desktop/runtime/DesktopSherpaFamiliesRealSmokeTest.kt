@@ -96,7 +96,7 @@ class DesktopSherpaFamiliesRealSmokeTest {
                 assertTrue(capabilities.getValue("omnilingual-local").available)
                 assertTrue(capabilities.getValue("phonon-local").available)
                 assertEquals(setOf("en", "ar", "ru", "zh"), capabilities.getValue("omnilingual-local").languages)
-                assertEquals(setOf("en"), capabilities.getValue("phonon-local").languages)
+                assertEquals(PHONON_25_LANGUAGES, capabilities.getValue("phonon-local").languages)
                 for ((id, profile, root) in listOf(
                     Triple("omnilingual-local", "omnilingual-ctc-300m-v2-int8", fixture.omnilingual),
                     Triple("phonon-local", "phonon-2", fixture.phonon),

@@ -27,7 +27,7 @@ internal data class CaptionTranslationReadiness(
 /** These callbacks do not supply a reliable detected source. A verified fixed model still counts as known. */
 internal fun captionRequiresKnownTranslationSource(engine: CaptionEngineChoice, cloudMode: CloudConfigStore.SttMode): Boolean =
     engine in setOf(CaptionEngineChoice.WHISPER, CaptionEngineChoice.VOSK, CaptionEngineChoice.TRANSCRIBEPSY,
-        CaptionEngineChoice.OMNILINGUAL, CaptionEngineChoice.VOXTRAL) ||
+        CaptionEngineChoice.OMNILINGUAL, CaptionEngineChoice.VOXTRAL, CaptionEngineChoice.PHONON) ||
         engine == CaptionEngineChoice.CLOUD && cloudMode != CloudConfigStore.SttMode.STREAMING_SONIOX
 
 /** Exactly the check used by shortcut/start preflight. No network, model inference or weight hashing. */

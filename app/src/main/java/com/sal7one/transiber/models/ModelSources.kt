@@ -24,6 +24,11 @@ internal object ModelSources {
             ModelSource("qwen3-asr-1.7b", "Qwen3-ASR · 1.7B · custom package",
                 "https://huggingface.co/Qwen/Qwen3-ASR-1.7B", "https://huggingface.co/Qwen/Qwen3-ASR-1.7B/tree/main",
                 "Compatible prepared packages are accepted, but this app has no verified ready-made 1.7B download. Raw checkpoints cannot be imported. Use the 0.6B package unless you are preparing a compatible sherpa export.")
+        CaptionEngineChoice.PHONON -> SpeechArtifactCatalog.forEngine(engine).map(::artifactSource) +
+            if (SpeechArtifactCatalog.find("phonon-2.5") == null) listOf(ModelSource("phonon-2.5", "Phonon 2.5 · 25 European languages · prepared package",
+                "https://huggingface.co/FermionResearch/Phonon-2.5",
+                "https://huggingface.co/FermionResearch/Phonon-2.5/tree/96dad4f3b5b784b1aa595213ea7481bf8a7addcd",
+                "Import a prepared Hearth transducer package for 25 European languages, including English and Russian. Raw .bps model weights are not this adapter’s input. Auto provides original captions without a source-language identity; choose a known source for translation. Arabic and Chinese speech are not supported. CC-BY-4.0.")) else emptyList()
         else -> SpeechArtifactCatalog.forEngine(engine).map(::artifactSource)
     }
 
@@ -38,7 +43,9 @@ internal object ModelSources {
             CaptionEngineChoice.NEMOTRON -> " Multilingual streaming captions; translation uses a separate model."
             CaptionEngineChoice.QWEN -> " Multilingual captions in short audio segments. Runtime package: March 2026."
             CaptionEngineChoice.OMNILINGUAL -> " Experimental, short utterance windows. Recognition has no language-forcing input; the source selection labels its output for translation."
-            CaptionEngineChoice.PHONON -> " Fermion's five-value weights converted to sherpa transducer ONNX (INT8); English utterance windows. The raw .bps archive is not importable."
+            CaptionEngineChoice.PHONON -> if (artifact.profile == com.sal7one.common_jni.speech.SpeechProfile.PHONON_2_5)
+                " Phonon 2.5 transducer ONNX (INT8); 25 European languages, including English and Russian. Auto captions have no reported source language; choose a known source for translation. Arabic and Chinese speech are not supported. The raw .bps archive is not importable."
+                else " Fermion's five-value weights converted to sherpa transducer ONNX (INT8); English utterance windows. The raw .bps archive is not importable."
             CaptionEngineChoice.MOONSHINE -> " Language-specific captions in short audio segments. This adapter does not provide Moonshine streaming decoding."
             CaptionEngineChoice.VOSK -> " Streaming recognition in the model's fixed language."
             else -> error("Unsupported automatic speech source: ${artifact.id}")

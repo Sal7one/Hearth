@@ -10,11 +10,24 @@ class BenchmarkPresetsTest {
         assertEquals("marian-en-ar", englishArabic[0].translation?.id)
         assertEquals("hy-mt2-q4", englishArabic[2].translation?.id)
         val russianArabic = BenchmarkPresets.forPair("ru", "ar")
-        assertEquals("omnilingual-ctc-300m-v2-int8", russianArabic[0].speech?.id)
+        assertEquals(if (com.sal7one.transiber.models.SpeechArtifactCatalog.find("phonon-2.5") != null)
+            "phonon-2.5" else "omnilingual-ctc-300m-v2-int8", russianArabic[0].speech?.id)
         assertEquals("marian-ru-ar-via-en", russianArabic[0].translation?.id)
         assertEquals("qwen3-asr-0.6b", russianArabic[1].speech?.id)
         assertEquals("nemotron-3.5-asr-0.6b", russianArabic[2].speech?.id)
         assertTrue(BenchmarkPresets.forPair("en", "en").all { it.translation == null })
+    }
+
+    @Test fun multilingualPhononSuggestionsNeverAdvertiseArabicOrChineseRecognition() {
+        listOf("ar", "zh").forEach { source ->
+            assertTrue(BenchmarkPresets.forPair(source, "en").none { it.speech?.id == "phonon-2.5" })
+        }
+        com.sal7one.transiber.models.SpeechArtifactCatalog.find("phonon-2.5")?.let { artifact ->
+            assertEquals(25, artifact.languages.size)
+            listOf("ru", "el", "mt", "sl").forEach { source ->
+                assertEquals(artifact.id, BenchmarkPresets.forPair(source, "ar").first().speech?.id)
+            }
+        }
     }
 
     @Test fun comparisonsIgnoreDifferentInputDeviceErrorsAndEmptyOutput() {

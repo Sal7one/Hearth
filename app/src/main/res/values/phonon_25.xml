@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="model_phonon_25_language_note">Phonon 2.5 supports 25 European languages. Choose the known spoken language for translation; this labels the recognized text and does not force the decoder. Auto provides original captions with an unknown source. Arabic and Chinese speech are not supported.</string>
+</resources>

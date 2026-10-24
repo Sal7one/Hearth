@@ -697,6 +697,7 @@ private fun SettingsPanel(
         ) { checked -> onConfigChange { it.copy(tapThrough = checked) } }
 
         } else {
+            CaptionSpeechTimingControls(cfg, onConfigChange)
             com.sal7one.transiber.caption.history.CaptionHistoryOptions(cfg, onConfigChange, { openSetup(16) })
             androidx.compose.material3.HorizontalDivider()
         SettingsLabel(uiText(UiR.string.ui_mode_a7b93), palette)

@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""Convert Fermion's pinned Phonon-2 artifact into a Hearth phonon-2 speech package.
+"""Convert pinned Phonon-2 / multilingual Phonon-2.5 weights into a Hearth ONNX package.
 
-Fermion publishes English-only parakeet-tdt-0.6b-v3 weights in their own
-five-value container. Hearth's phone runtime does not (and must not) learn
+Fermion publishes Parakeet-TDT weights in its own five-value container.
+The default phonon-2 profile is English-only; phonon-2.5 supports its 25 published
+European languages. The packed 156 MB download is not the Android ONNX size. Hearth's phone runtime does not (and must not) learn
 that container: this host-only script expands it once into dense fp32 tensors
 and re-exports the three ONNX graphs sherpa's nemo_transducer adapter already
 runs, following k2-fsa's scripts/nemo/parakeet-tdt-0.6b-v3 recipe.
@@ -19,8 +20,9 @@ Stages (each verifies its input before running):
      the IO contract sherpa expects, quantize to int8 and embed the required
      metadata (vocab_size, subsampling_factor, pred_rnn_layers, pred_hidden,
      feat_dim, url containing "tdt");
-  5. optional --verify: greedy TDT decode a WAV through the exported graphs and
-     require an exact transcript match against the dense reference model.
+  5. optional --verify: diagnostic greedy TDT decode of a WAV through the exported
+     graphs. This is not a native-runtime test or an assertion of reference parity;
+     validate packaged graphs separately through Hearth's production speech backend.
 
 Output directory then packages with:
   make-package.py OUT_DIR --profile phonon-2 \
@@ -28,7 +30,8 @@ Output directory then packages with:
     --role encoder=encoder.int8.onnx --role decoder=decoder.int8.onnx
 
 Requires (host only; nothing here ships to phones):
-  pip install torch "transformers>=4.57" onnx onnxruntime numpy zstandard soundfile librosa
+  pip install -r scripts/speech/requirements-phonon-export.txt
+  (Parakeet TDT needs Transformers 5.12.1 here; earlier CTC-only releases do not suffice.)
 """
 from __future__ import annotations
 
@@ -44,7 +47,12 @@ from pathlib import Path
 import numpy as np
 
 PINNED = {
-    "archive_url": "https://huggingface.co/FermionResearch/Phonon-2/resolve/main/phonon-2.bps.tar.zst",
+    "profile": "phonon-2",
+    "repository": "FermionResearch/Phonon-2",
+    "revision": "3e6ab3a81d73b4d424ff34cc72535deb606378ef",
+    "archive_name": "phonon-2.bps.tar.zst",
+    "archive_url": "https://huggingface.co/FermionResearch/Phonon-2/resolve/3e6ab3a81d73b4d424ff34cc72535deb606378ef/phonon-2.bps.tar.zst",
+    "languages": ["en"],
     "archive_bytes": 163515201,
     "archive_sha256": "98125795b6dda72f5c6eee9ba33d19815df65dcb18b50a357bf9f73c9935309e",
     "container": "model.fermion",
@@ -53,6 +61,34 @@ PINNED = {
     "base_repo": "nvidia/parakeet-tdt-0.6b-v3",
     "format": "fermion-five-value-parakeet-v1",
     "license": "CC-BY-4.0 (weights, per FermionResearch/Phonon-2 and the NVIDIA base model)",
+}
+PHONON_25 = {
+    **PINNED,
+    "profile": "phonon-2.5",
+    "repository": "FermionResearch/Phonon-2.5",
+    "revision": "96dad4f3b5b784b1aa595213ea7481bf8a7addcd",
+    "archive_name": "phonon-2.5.bps.tar.zst",
+    "archive_url": "https://huggingface.co/FermionResearch/Phonon-2.5/resolve/96dad4f3b5b784b1aa595213ea7481bf8a7addcd/phonon-2.5.bps.tar.zst",
+    "archive_bytes": 162587031,
+    "archive_sha256": "1faa04053a472cabab3bc31d07f30c23f22906f71044ca10eb1f0de36d1f19a9",
+    "container_bytes": 177593644,
+    "container_sha256": "17cb62d08e751a41819eb779db089aa7ac4eb2bab433ba5c2991d8cbd3cfefb9",
+    "unpack_dir": "model_phonon25_f25x1_48k_int6",
+    "languages": "en es fr de it pt nl pl ru uk ro cs sk bg hr sv da fi et lv lt hu sl mt el".split(),
+    "source_files": {
+        "NOTICE": (2664, "dd4993badd45eb336280a0ab5b4ecb3ed06260d189a30fcae8b9e89a587c4de8"),
+        "LICENSE-WEIGHTS-CC-BY-4.0.txt": (18657, "9ba9550ad48438d0836ddab3da480b3b69ffa0aac7b7878b5a0039e7ab429411"),
+    },
+    "license": "CC-BY-4.0 (weights, per FermionResearch/Phonon-2.5 and the NVIDIA base model)",
+}
+PROFILES = {"phonon-2": PINNED, "phonon-2.5": PHONON_25}
+BASE_REVISION = "541d1f99c6b0c3cd0b11a95167540bb8edefd82b"
+BASE_FILES = {
+    "config.json": (1153, "e747b85e1bdfd300c8b8ac63bac8dd5221f8fe9bc275b48d06c735fcd6971b6e"),
+    "generation_config.json": (289, "b141de6ec6d7f982ece13f98f604e3fe1807ea9c0e839185d0ab7064604209d0"),
+    "processor_config.json": (392, "8346a93a3b987fa1dec57a78f045cd0817d21786589a5a096b41a57a446fd1d7"),
+    "tokenizer.json": (1159960, "bd321b096832a3f270bd3b2a88823957920f1a5c5ada71114a26ea729d0cbe91"),
+    "tokenizer_config.json": (290, "0b2fe0037599ee335f0b972fa682bf0ece74e4ccfec755cb7daa3405d3d3e874"),
 }
 BLOCK = 1 << 20
 
@@ -118,11 +154,11 @@ def _intn(blob: bytes, shape, bits: int) -> np.ndarray:
     return w.reshape(shape)
 
 
-def read_container(path: Path) -> dict[str, np.ndarray]:
+def read_container(path: Path, pins=PINNED) -> dict[str, np.ndarray]:
     with path.open("rb") as fh:
         n = int.from_bytes(fh.read(8), "little")
         header = json.loads(fh.read(n))
-        assert header["format"] == PINNED["format"], header["format"]
+        assert header["format"] == pins["format"], header["format"]
         out: dict[str, np.ndarray] = {}
         for e in header["index"]:
             blob = fh.read(e["b"])
@@ -143,59 +179,86 @@ def read_container(path: Path) -> dict[str, np.ndarray]:
 # ---------------------------------------------------------------------------
 # Stage 1-2: pinned artifact handling
 # ---------------------------------------------------------------------------
-def obtain_container(archive: Path | None, workdir: Path) -> Path:
+def verified_download(url: str, destination: Path, size: int, sha256: str) -> Path:
+    """No model-repository code is imported; only exact pinned bytes become reusable input."""
+    if destination.is_file():
+        if destination.stat().st_size != size or sha256_file(destination) != sha256:
+            raise RuntimeError(f"pinned file hash/size mismatch: {destination}")
+        return destination
+    import urllib.request
+
+    temporary = destination.with_name(destination.name + ".partial")
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        urllib.request.urlretrieve(url, temporary)
+        if temporary.stat().st_size != size or sha256_file(temporary) != sha256:
+            raise RuntimeError(f"download hash/size mismatch: {url}")
+        temporary.replace(destination)
+    finally:
+        temporary.unlink(missing_ok=True)
+    return destination
+
+
+def obtain_base(workdir: Path, pins=PINNED) -> Path:
+    """A local, hash-verified config/tokenizer snapshot; Transformers never resolves mutable main."""
+    root = workdir / ("base-" + BASE_REVISION)
+    for filename, (size, digest) in BASE_FILES.items():
+        verified_download(f"https://huggingface.co/{pins['base_repo']}/resolve/{BASE_REVISION}/{filename}",
+                          root / filename, size, digest)
+    return root
+
+
+def obtain_container(archive: Path | None, workdir: Path, pins=PINNED) -> Path:
     target = workdir / "model.fermion"
-    if target.is_file() and sha256_file(target) == PINNED["container_sha256"]:
-        print(f"[1] container already verified at {target}")
+    if target.is_file() and target.stat().st_size == pins["container_bytes"] and sha256_file(target) == pins["container_sha256"]:
+        print(f"[1] container already verified at {target}", flush=True)
         return target
     import zstandard
 
     if archive is None:
-        archive = workdir / "phonon-2.bps.tar.zst"
-        if not archive.is_file():
-            import urllib.request
+        archive = verified_download(pins["archive_url"], workdir / pins["archive_name"],
+                                    pins["archive_bytes"], pins["archive_sha256"])
+    if archive.stat().st_size != pins["archive_bytes"] or sha256_file(archive) != pins["archive_sha256"]:
+        raise RuntimeError(f"archive hash/size mismatch: {archive}")
+    print(f"[1] archive verified against {pins['repository']} at {pins['revision']}", flush=True)
 
-            print(f"[1] downloading pinned archive ({PINNED['archive_bytes']} bytes)")
-            urllib.request.urlretrieve(PINNED["archive_url"], archive)
-    if archive.stat().st_size != PINNED["archive_bytes"]:
-        raise RuntimeError(f"archive size mismatch: {archive}")
-    digest = sha256_file(archive)
-    if digest != PINNED["archive_sha256"]:
-        raise RuntimeError(f"archive SHA-256 mismatch: {digest}")
-    print("[1] archive verified against FermionResearch/Phonon-2 pin")
-
+    accepted = {pins["container"]}
+    if pins.get("unpack_dir"):
+        accepted.add(pins["unpack_dir"] + "/" + pins["container"])
+    temporary = target.with_name(target.name + ".partial")
     dctx = zstandard.ZstdDecompressor()
-    with archive.open("rb") as compressed, dctx.stream_reader(compressed) as reader:
-        with tarfile.open(fileobj=io.BufferedReader(reader), mode="r|") as tar:
-            for member in tar:
-                if member.name != PINNED["container"]:
-                    continue
-                extracted = tar.extractfile(member)
-                assert extracted is not None
-                target.parent.mkdir(parents=True, exist_ok=True)
-                h = hashlib.sha256()
-                with target.open("wb") as out:
-                    while True:
-                        chunk = extracted.read(BLOCK)
-                        if not chunk:
-                            break
-                        h.update(chunk)
-                        out.write(chunk)
-                if h.hexdigest() != PINNED["container_sha256"] or target.stat().st_size != PINNED["container_bytes"]:
-                    target.unlink(missing_ok=True)
-                    raise RuntimeError("container hash/size mismatch after extraction")
-                print(f"[2] container extracted and verified ({target.stat().st_size} bytes)")
-                return target
-    raise RuntimeError(f"member {PINNED['container']} not found in archive")
+    try:
+        with archive.open("rb") as compressed, dctx.stream_reader(compressed) as reader:
+            with tarfile.open(fileobj=io.BufferedReader(reader), mode="r|") as tar:
+                for member in tar:
+                    if member.name not in accepted:
+                        continue
+                    if not member.isfile() or member.size != pins["container_bytes"]:
+                        raise RuntimeError("container must be a regular archive member with its pinned size")
+                    extracted = tar.extractfile(member)
+                    if extracted is None:
+                        raise RuntimeError("container cannot be read")
+                    target.parent.mkdir(parents=True, exist_ok=True)
+                    with temporary.open("wb") as out:
+                        while chunk := extracted.read(BLOCK):
+                            out.write(chunk)
+                    if temporary.stat().st_size != pins["container_bytes"] or sha256_file(temporary) != pins["container_sha256"]:
+                        raise RuntimeError("container hash/size mismatch after extraction")
+                    temporary.replace(target)
+                    print(f"[2] container extracted and verified ({target.stat().st_size} bytes)", flush=True)
+                    return target
+    finally:
+        temporary.unlink(missing_ok=True)
+    raise RuntimeError(f"member {pins['container']} not found in archive")
 
 
 # ---------------------------------------------------------------------------
 # Stage 3: dense HF state dict
 # ---------------------------------------------------------------------------
-def dense_state_dict(container: Path):
+def dense_state_dict(container: Path, pins=PINNED):
     import torch
 
-    tensors = read_container(container)
+    tensors = read_container(container, pins)
     sd = {}
     for k, v in tensors.items():
         if k.endswith("num_batches_tracked"):
@@ -213,13 +276,13 @@ def dense_state_dict(container: Path):
 # ---------------------------------------------------------------------------
 # Stage 4: export sherpa-layout ONNX from the dense transformers model
 # ---------------------------------------------------------------------------
-def load_reference_model(container: Path):
+def load_reference_model(container: Path, base: Path, pins=PINNED):
     import torch
     from transformers import ParakeetForTDT, ParakeetTDTConfig
 
-    cfg = ParakeetTDTConfig.from_pretrained(PINNED["base_repo"])
+    cfg = ParakeetTDTConfig.from_pretrained(base, local_files_only=True)
     model = ParakeetForTDT(cfg)
-    sd = dense_state_dict(container)
+    sd = dense_state_dict(container, pins)
     missing, unexpected = model.load_state_dict(sd, strict=False)
     if missing or unexpected:
         raise RuntimeError(f"state dict mismatch: missing {missing[:5]} unexpected {unexpected[:5]}")
@@ -227,12 +290,12 @@ def load_reference_model(container: Path):
     return model, cfg
 
 
-def vocabulary_of(model) -> list[str]:
+def vocabulary_of(model, base: Path) -> list[str]:
     """Tokenizer symbols indexed by id; the final id is the blank (config.blank_token_id)."""
     from transformers import AutoTokenizer
 
     blank = model.config.blank_token_id
-    tok = AutoTokenizer.from_pretrained(PINNED["base_repo"])
+    tok = AutoTokenizer.from_pretrained(base, local_files_only=True)
     vocab = tok.get_vocab()
     ids = sorted(vocab.values())
     if ids != list(range(len(ids))) or ids[-1] != blank:
@@ -313,7 +376,7 @@ class JoinerExportModule:
         self.module = Module()
 
 
-def export_onnx(model, outdir: Path):
+def export_onnx(model, outdir: Path, base: Path, pins=PINNED):
     import torch
     from onnxruntime.quantization import QuantType, quantize_dynamic
     import onnx
@@ -323,7 +386,7 @@ def export_onnx(model, outdir: Path):
     for p in model.parameters():
         p.requires_grad_(False)
 
-    symbols = vocabulary_of(model)
+    symbols = vocabulary_of(model, base)
     blank = model.config.blank_token_id
     durations = list(getattr(model.config, "durations", None) or [])
     if not durations:
@@ -355,8 +418,11 @@ def export_onnx(model, outdir: Path):
         "model_type": "EncDecRNNTBPEModel",
         "version": "2",
         "model_author": "FermionResearch",
-        "url": "https://huggingface.co/FermionResearch/Phonon-2 (parakeet-tdt)",
-        "comment": "Phonon-2 five-value weights expanded to dense fp32 and re-exported for sherpa nemo_transducer",
+        "url": f"https://huggingface.co/{pins['repository']} (parakeet-tdt)",
+        "comment": f"{pins['profile']} five-value weights expanded to dense fp32 and re-exported for sherpa nemo_transducer",
+        "hearth_profile": pins["profile"],
+        "hearth_source_revision": pins["revision"],
+        "hearth_source_languages": ",".join(pins["languages"]),
         "feat_dim": 128,
     }
 
@@ -420,7 +486,7 @@ def verify(outdir: Path, wav: Path):
     from phonon_fbank import compute_fbank  # noqa: F401  (shared with the smoke harness)
 
     audio, rate = sf.read(wav, dtype="float32", always_2d=True)
-    if rate != 16000:
+    if rate != 16000 or audio.shape[1] != 1:
         raise RuntimeError("verification WAV must already be 16 kHz mono")
     features = compute_fbank(audio[:, 0])
 
@@ -476,27 +542,49 @@ def verify(outdir: Path, wav: Path):
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("outdir", type=Path)
-    ap.add_argument("--archive", type=Path, default=None, help="local phonon-2.bps.tar.zst (still hash-verified)")
+    ap.add_argument("--profile", choices=sorted(PROFILES), default="phonon-2", help="explicit pinned source; defaults to original English-only Phonon-2")
+    ap.add_argument("--archive", type=Path, default=None, help="local archive for the chosen profile (still hash-verified)")
     ap.add_argument("--verify", type=Path, default=None, help="16 kHz mono WAV decoded through the exported graphs")
     args = ap.parse_args()
 
+    pins = PROFILES[args.profile]
     args.outdir.mkdir(parents=True, exist_ok=True)
     # Cache (pinned archive + container) stays outside the package directory:
     # make-package hashes every file under the directory it is given.
     package = args.outdir / "package"
     package.mkdir(exist_ok=True)
-    container = obtain_container(args.archive, args.outdir)
-    model, _cfg = load_reference_model(container)
-    export_onnx(model, package)
+    container = obtain_container(args.archive, args.outdir, pins)
+    base = obtain_base(args.outdir, pins)
+    model, _cfg = load_reference_model(container, base, pins)
+    export_onnx(model, package, base, pins)
     if args.verify:
         verify(package, args.verify)
+    for name, (size, digest) in pins.get("source_files", {}).items():
+        verified_download(f"https://huggingface.co/{pins['repository']}/resolve/{pins['revision']}/{name}",
+                          package / name, size, digest)
+    import importlib.metadata
+    provenance = {
+        "profile": args.profile, "repository": pins["repository"], "revision": pins["revision"],
+        "archiveBytes": pins["archive_bytes"], "archiveSha256": pins["archive_sha256"],
+        "containerBytes": pins["container_bytes"], "containerSha256": pins["container_sha256"],
+        "baseRepository": pins["base_repo"], "baseRevision": BASE_REVISION,
+        "languages": pins["languages"], "license": pins["license"],
+        "exporterSha256": sha256_file(Path(__file__)),
+        "versions": {name: importlib.metadata.version(name) for name in ("torch", "transformers", "onnx", "onnxruntime", "numpy")},
+        "files": [{"path": file.name, "bytes": file.stat().st_size, "sha256": sha256_file(file)}
+                  for file in sorted(package.iterdir()) if file.is_file()],
+        "limitations": ["Host ONNX export; phone speed and multilingual accuracy are unmeasured.",
+                        "Converted INT8 package size differs from the publisher's packed FSQ download.",
+                        "Language selection is a source declaration, not forced decoding or reliable auto-language metadata."],
+    }
+    (args.outdir / "conversion-provenance.json").write_text(json.dumps(provenance, indent=2) + "\n")
     print(f"""
 Next: package the export for Hearth import
-  python3 scripts/speech/make-package.py {package} --profile phonon-2 \\
+  python3 scripts/speech/make-package.py {package} --profile {args.profile} \\
     --role model=tokens.txt --role frontend=joiner.int8.onnx \\
     --role encoder=encoder.int8.onnx --role decoder=decoder.int8.onnx
 Then Import speech ZIP (or publish the directory pinned and add it to SpeechDownloads).
-Weights: {PINNED['license']}.""")
+Weights: {pins['license']}.""")
 
 
 if __name__ == "__main__":

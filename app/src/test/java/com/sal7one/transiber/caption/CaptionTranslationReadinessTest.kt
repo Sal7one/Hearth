@@ -142,6 +142,19 @@ class CaptionTranslationReadinessTest {
         assertFalse(captionRequiresKnownTranslationSource(CaptionEngineChoice.NEMOTRON, SttMode.BATCH))
     }
 
+    @Test fun phonon25AutoDoesNotClaimKnownTranslationSourceButOldEnglishCheckpointStillDoes() = runBlocking {
+        arm64()
+        val config = local("ct2-quickmt-en-ar").copy(engine = CaptionEngineChoice.PHONON, streamLanguage = "auto")
+        val modern = readiness(config, model = CaptionLanguageModel(com.sal7one.common_jni.speech.SpeechProfile.PHONON_2_5.id))
+        assertFalse(modern.ready)
+        assertTrue(modern.detail, modern.detail.contains("known spoken language"))
+        val old = readiness(config, model = CaptionLanguageModel(com.sal7one.common_jni.speech.SpeechProfile.PHONON_2.id))
+        assertFalse(old.ready)
+        assertTrue("Old fixed-English Phonon must reach the actual package check: ${old.detail}", old.detail.contains("Install"))
+        val declared = readiness(config.copy(streamLanguage = "en"), model = CaptionLanguageModel(com.sal7one.common_jni.speech.SpeechProfile.PHONON_2_5.id))
+        assertTrue(declared.detail, declared.detail.contains("Install"))
+    }
+
     @Test fun originalAndIntegratedCaptionsNeverRequireRememberedLocalWeights() = runBlocking {
         val selected = local("missing-model")
         assertTrue(readiness(selected.copy(mode = CaptionMode.CAPTIONS)).ready)

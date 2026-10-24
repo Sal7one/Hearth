@@ -76,6 +76,18 @@ class PackageTest(unittest.TestCase):
             (root / "encoder.int8.onnx").unlink()
             with self.assertRaisesRegex(ValueError, "Missing assets"):
                 packager.create_manifest(root, "phonon-2", roles)
+    def test_phonon25_keeps_distinct_profile_and_hashes_license_assets(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            roles = {"model": "tokens.txt", "frontend": "joiner.int8.onnx", "encoder": "encoder.int8.onnx", "decoder": "decoder.int8.onnx"}
+            for name in [*roles.values(), "NOTICE", "LICENSE-WEIGHTS-CC-BY-4.0.txt"]:
+                (root / name).write_bytes(b"fixture")
+            result = packager.create_manifest(root, "phonon-2.5", roles)
+            self.assertEqual(result["profile"], "phonon-2.5")
+            self.assertEqual({entry["path"] for entry in result["files"]}, set(roles.values()) | {"NOTICE", "LICENSE-WEIGHTS-CC-BY-4.0.txt"})
+            with self.assertRaisesRegex(ValueError, "Required roles"):
+                packager.create_manifest(root, "phonon-2.5", {"model": "tokens.txt", "encoder": "encoder.int8.onnx", "decoder": "decoder.int8.onnx"})
+
     def test_transcribepsy_uses_one_gguf_role(self):
         with tempfile.TemporaryDirectory() as d:
             root = Path(d)

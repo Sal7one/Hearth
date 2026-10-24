@@ -10,7 +10,7 @@ import json
 import os
 from pathlib import Path
 
-PROFILES = {"audar-asr-v1-flash", "owsm-v4-base-102m", "cohere-transcribe-arabic-07-2026", "fun-asr-mlt-nano-2512", "voxtral-mini-4b-realtime-2602", "moonshine-tiny-en-v2", "moonshine-base-en-v2", "moonshine-base-ar-v2", "moonshine-base-es-v2", "moonshine-tiny-ja-v2", "moonshine-tiny-ko-v2", "moonshine-base-ja-v2", "moonshine-base-uk-v2", "moonshine-base-vi-v2", "moonshine-base-zh-v2", "qwen3-asr-0.6b", "qwen3-asr-1.7b", "omnilingual-ctc-300m-v2-int8", "phonon-2", "nemotron-3.5-asr-0.6b", "transcribepsy-250m-eu-sub-q8"}
+PROFILES = {"audar-asr-v1-flash", "owsm-v4-base-102m", "cohere-transcribe-arabic-07-2026", "fun-asr-mlt-nano-2512", "voxtral-mini-4b-realtime-2602", "moonshine-tiny-en-v2", "moonshine-base-en-v2", "moonshine-base-ar-v2", "moonshine-base-es-v2", "moonshine-tiny-ja-v2", "moonshine-tiny-ko-v2", "moonshine-base-ja-v2", "moonshine-base-uk-v2", "moonshine-base-vi-v2", "moonshine-base-zh-v2", "qwen3-asr-0.6b", "qwen3-asr-1.7b", "omnilingual-ctc-300m-v2-int8", "phonon-2", "phonon-2.5", "nemotron-3.5-asr-0.6b", "transcribepsy-250m-eu-sub-q8"}
 MANIFEST = "hearth-speech.json"
 
 def create_manifest(root, profile, roles):

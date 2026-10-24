@@ -47,6 +47,19 @@ class Ct2ModelIntegrityTest {
         }
     }
 
+    @Test fun jisrArchiveSelectionPinsItsIdentityAndNoticesWithoutWeakeningNativeInputPins() {
+        val names = setOf("model.bin", "config.json", "shared_vocabulary.json", "tokenizer.json", "LICENSE", "NOTICE", "hearth-translation.json")
+        fixture(names) { root, selection ->
+            val verified = Ct2ModelIntegrity.verify(root, 2, selection)
+            assertEquals(names, verified.files.map { it.name }.toSet())
+            assertFailsWith<IllegalArgumentException> {
+                Ct2ModelIntegrity.verify(root, 2, selection.copy(options = selection.options - "sha256.model.bin"))
+            }
+            Files.writeString(root.resolve("hearth-translation.json"), "changed identity")
+            assertFailsWith<IllegalStateException> { Ct2ModelIntegrity.verify(root, 2, selection) }
+        }
+    }
+
     private fun fixture(names: Set<String>, run: (Path, EngineSelection) -> Unit) {
         val root = Files.createTempDirectory("hearth-ct2-integrity-")
         try {

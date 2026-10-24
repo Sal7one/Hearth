@@ -947,7 +947,7 @@
     <string name="benchmark_quick_set">Quick · 6 clips</string>
     <string name="benchmark_long_clip_set">Long clip · 7 clips</string>
     <string name="ui_caption_delivery_for_1_s_47c31">Caption delivery · %1$s</string>
-    <string name="ui_caption_delivery_note_5a1e0">Smaller windows show captions sooner, in smaller pieces. Saved for this model; the recognizer restarts to apply it. Not used by streaming engines.</string>
+    <string name="ui_caption_delivery_note_5a1e0">Smaller windows show captions sooner, in shorter pieces; very short windows may lose context. Saved for this model. Applying restarts recognition and clears current overlay text.</string>
     <string name="ui_tuning_preset_label_6d94e">Responsiveness</string>
     <string name="ui_tuning_standard_2c94d">Standard · 4 s windows</string>
     <string name="ui_tuning_responsive_7b36e">Responsive · 2 s</string>

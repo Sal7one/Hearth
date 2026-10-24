@@ -14,6 +14,15 @@ trap 'rm -rf "$BUILD"' EXIT
   "$SPEECH/tests/audar_protocol_test.cpp" -o "$BUILD/audar_protocol_test"
 "$BUILD/audar_protocol_test"
 
+# Phonon 2/2.5 share a transducer adapter. Exercise real adapter language
+# provenance, exact-once finals and ownership with only the external C API faked.
+"${CXX:-c++}" -std=c++17 -O1 -g -Wall -Wextra -fsanitize=address,undefined \
+  -I"$SPEECH/tests/fixtures/sherpa" \
+  "$SPEECH/tests/phonon_backend_test.cpp" "$SPEECH/speech_session.cpp" \
+  "$SPEECH/../common/json_utils.cpp" "$SPEECH/../common/engine_interface.cpp" \
+  -pthread -ldl -o "$BUILD/phonon_backend_test"
+"$BUILD/phonon_backend_test"
+
 # The legacy Whisper adapter also serves live captions. Stub only its pinned C
 # API so decoder failures exercise production worker/finalize/batch behavior.
 CPP="$(dirname "$SPEECH")"

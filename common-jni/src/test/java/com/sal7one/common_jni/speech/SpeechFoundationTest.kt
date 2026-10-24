@@ -254,7 +254,9 @@ class SpeechFoundationTest {
         assertEquals(SpeechProfile.PHONON_2, SpeechModelPackage.verify(root).profile)
         val capabilities = SpeechProfile.PHONON_2.capabilities
         assertEquals(setOf("en"), capabilities.sourceLanguages)
-        assertTrue(capabilities.languages.all { it.canForce })
+        assertTrue(capabilities.languages.none { it.canForce })
+        assertEquals("en", SpeechProfile.PHONON_2.fixedSourceLanguage)
+        assertEquals("en", SpeechProfile.PHONON_2.runtimeSourceLanguage("auto"))
         assertTrue(capabilities.configurableThreads)
         assertFalse(capabilities.partialResults)
         SpeechOptions(sourceLanguage = "en").validate(SpeechProfile.PHONON_2)
@@ -263,6 +265,39 @@ class SpeechFoundationTest {
         val missingDecoder = JSONObject(manifest.toString()).put("roles", JSONObject().put("model", "tokens.txt").put("frontend", "joiner.int8.onnx").put("encoder", "encoder.int8.onnx"))
         File(root, SpeechModelPackage.MANIFEST).writeText(missingDecoder.toString())
         rejects("roles") { SpeechModelPackage.verify(root) }
+    }
+
+    @Test fun phonon25PackageUsesTheSameTransducerContractWithTwentyFiveDeclaredSources() = withPackage { root ->
+        val names = listOf("tokens.txt", "encoder.int8.onnx", "decoder.int8.onnx", "joiner.int8.onnx")
+        val entries = JSONArray()
+        names.forEach { name ->
+            val file = File(root, name).apply { writeText("verified-$name-fixture") }
+            val sha = MessageDigest.getInstance("SHA-256").digest(file.readBytes()).joinToString("") { "%02x".format(it) }
+            entries.put(JSONObject().put("path", name).put("bytes", file.length()).put("sha256", sha))
+        }
+        File(root, "model.gguf").delete()
+        val manifest = JSONObject().put("schemaVersion", 1).put("profile", "phonon-2.5")
+            .put("roles", JSONObject().put("model", "tokens.txt").put("frontend", "joiner.int8.onnx")
+                .put("encoder", "encoder.int8.onnx").put("decoder", "decoder.int8.onnx"))
+            .put("files", entries)
+        File(root, SpeechModelPackage.MANIFEST).writeText(manifest.toString())
+        val parsed = SpeechModelPackage.verify(root)
+        assertEquals(SpeechProfile.PHONON_2_5, parsed.profile)
+        assertEquals(SpeechBackend.PHONON, parsed.profile.backend)
+        val codes = "en es fr de it pt nl pl ru uk ro cs sk bg hr sv da fi et lv lt hu sl mt el".split(' ').toSet()
+        assertEquals(25, codes.size)
+        assertEquals(codes, parsed.profile.capabilities.sourceLanguages)
+        assertTrue(parsed.profile.capabilities.sourceLanguageHints.isEmpty())
+        assertTrue(parsed.profile.capabilities.languages.none { it.canForce })
+        assertNull(parsed.profile.fixedSourceLanguage)
+        assertEquals("auto", parsed.profile.runtimeSourceLanguage("auto"))
+        assertEquals("ru", parsed.profile.runtimeSourceLanguage("ru-RU"))
+        SpeechOptions().validate(parsed.profile)
+        codes.forEach { SpeechOptions(sourceLanguage = it).validate(parsed.profile) }
+        rejects("source-language") { SpeechOptions(sourceLanguage = "ar").validate(parsed.profile) }
+        rejects("source-language") { SpeechOptions(sourceLanguage = "zh").validate(parsed.profile) }
+        File(root, "joiner.int8.onnx").appendText("changed")
+        rejects("missing") { SpeechModelPackage.verify(root) }
     }
     @Test fun rejectsFractionalSchemaAndAssetSizes() = withPackage { root ->
         val j = manifest(root).put("schemaVersion", 1.5)

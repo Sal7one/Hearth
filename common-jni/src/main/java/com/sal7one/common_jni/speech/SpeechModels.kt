@@ -22,6 +22,7 @@ enum class SpeechProfile(val id: String, val backend: SpeechBackend) {
     QWEN3_ASR_1_7B("qwen3-asr-1.7b", SpeechBackend.QWEN3_ASR),
     OMNILINGUAL_CTC_300M_V2("omnilingual-ctc-300m-v2-int8", SpeechBackend.OMNILINGUAL_CTC),
     PHONON_2("phonon-2", SpeechBackend.PHONON),
+    PHONON_2_5("phonon-2.5", SpeechBackend.PHONON),
     TRANSCRIBEPSY_250M_EU_SUB("transcribepsy-250m-eu-sub-q8", SpeechBackend.TRANSCRIBEPSY),
     NEMOTRON_3_5_ASR_0_6B("nemotron-3.5-asr-0.6b", SpeechBackend.NEMOTRON_3_5),
     COHERE_ARABIC_07_2026("cohere-transcribe-arabic-07-2026", SpeechBackend.COHERE),
@@ -32,7 +33,7 @@ enum class SpeechProfile(val id: String, val backend: SpeechBackend) {
 
     /** Monolingual checkpoints carry their source identity even when the caller chooses Auto. */
     val fixedSourceLanguage: String? get() = when (this) {
-        MOONSHINE_TINY_EN, MOONSHINE_BASE_EN -> "en"
+        MOONSHINE_TINY_EN, MOONSHINE_BASE_EN, PHONON_2 -> "en"
         MOONSHINE_BASE_AR -> "ar"
         MOONSHINE_BASE_ES -> "es"
         MOONSHINE_TINY_JA, MOONSHINE_BASE_JA -> "ja"
@@ -70,7 +71,10 @@ enum class SpeechProfile(val id: String, val backend: SpeechBackend) {
         )
         SpeechBackend.PHONON -> SpeechCapabilities(
             streaming = SpeechStreamingKind.UTTERANCE_WINDOWED,
-            partialResults = false, sourceLanguages = setOf("en"), sourceLanguageHints = setOf("en"),
+            partialResults = false,
+            sourceLanguages = if (this == PHONON_2_5) PHONON_25_LANGUAGES else setOf("en"),
+            // The transducer has no decoder language hint or language-identification output.
+            sourceLanguageHints = emptySet(),
             configurableThreads = true,
         )
         SpeechBackend.TRANSCRIBEPSY -> SpeechCapabilities(
@@ -97,6 +101,7 @@ enum class SpeechProfile(val id: String, val backend: SpeechBackend) {
         fun fromId(id: String): SpeechProfile = entries.firstOrNull { it.id == id }
             ?: throw IllegalArgumentException("Unsupported speech model profile: $id")
         private val FUN_LANGUAGES = "ar en zh yue ja ko vi id th ms fil hi bg hr cs da nl et fi el hu ga lv lt mt pl pt ro sk sl sv".split(' ').toSet()
+        private val PHONON_25_LANGUAGES = "en es fr de it pt nl pl ru uk ro cs sk bg hr sv da fi et lv lt hu sl mt el".split(' ').toSet()
         private val QWEN_LANGUAGES = "zh en yue ar de fr es pt id it ko ru th vi ja tr hi ms nl sv da fi pl cs fil fa el hu mk ro".split(' ').toSet()
         // Excludes NVIDIA's adaptation-only languages, which need fine-tuning.
         private val NEMO_LANGUAGES = "en es fr it pt nl de tr ru ar hi ja ko vi uk pl sv cs nb da bg fi hr sk zh hu ro et".split(' ').toSet()

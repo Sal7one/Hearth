@@ -63,9 +63,9 @@ class DesktopSettingsTest {
             val nemotron = if (macosArm) 1 else 0
             val moonshine = if (macosArm) 10 else 0
             val omnilingual = if (macosArm) 1 else 0
-            val phonon = if (macosArm) 1 else 0
+            val phonon = if (macosArm) 2 else 0
             val vosk = if (macosArm) 6 else 0
-            val ct2 = if (macosArm) 3 else 0
+            val ct2 = if (macosArm) 7 else 0
             val moss = if (macosArm) 1 else 0
             val omnivoice = if (macosArm) 1 else 0
             val magpie = if (macosArm) 1 else 0
@@ -137,11 +137,22 @@ class DesktopSettingsTest {
                 assertEquals(2, card.archive?.files?.size)
                 assertEquals(292_313_120L, card.bytes)
             }
-            if (phonon == 1) {
+            if (phonon > 0) {
                 val card = library.catalog.single { it.id == "phonon-2" }
                 assertEquals("phonon-local", card.engineId)
                 assertEquals(4, card.archive?.files?.size)
                 assertEquals(339_918_748L, card.bytes)
+                val multilingual = library.catalog.single { it.id == "phonon-2.5" }
+                assertEquals("phonon-local", multilingual.engineId)
+                assertEquals("phonon-2.5", multilingual.options["profile"])
+                assertEquals("Phonon", multilingual.family)
+                assertEquals(25, multilingual.languages.size)
+                assertTrue("ru" in multilingual.languages && "ar" !in multilingual.languages && "zh" !in multilingual.languages)
+                assertEquals(339_205_640L, multilingual.bytes)
+                assertEquals(629_548_381L, multilingual.installedBytes)
+                assertEquals(6, multilingual.archive?.files?.size)
+                assertEquals("d869c32887cb9eaa1c034216797f25a215344aaea0b3e1ef82fe8d3f086d737c", multilingual.artifacts.single().sha256)
+                assertTrue(multilingual.archive!!.files.any { it.path == "NOTICE" })
             }
             if (ming == 1) {
                 val card = library.catalog.single { it.id == "ming-3.0-tts-0.5b-web" }
@@ -207,8 +218,8 @@ class DesktopSettingsTest {
             assertTrue(translators.all { it.artifacts.size == 1 && it.artifacts.single().filename.endsWith(".gguf") })
             if (ct2 > 0) {
                 val marian = library.catalog.filter { it.engineId == "marian-local" }
-                assertEquals(3, marian.size, marian.map { it.id }.toString())
-                assertTrue(marian.all { it.artifacts.size > 1 }, marian.map { it.id to it.artifacts.size }.toString())
+                assertEquals(7, marian.size, marian.map { it.id }.toString())
+                assertTrue(marian.all { it.artifacts.size > 1 || it.archive?.files?.size == 7 }, marian.map { it.id to it.artifacts.size }.toString())
                 val quickmt = marian.single { it.id == "ct2-quickmt-en-ar" }
                 assertEquals("0", quickmt.options["profile"])
                 assertEquals("en", quickmt.options["sources"])

@@ -1383,6 +1383,302 @@
       ]
     },
     {
+      "id": "ct2-jisr-50m-en-ar",
+      "name": "Jisr 50M · English → Arabic dialects · FP32",
+      "family": "ct2",
+      "stage": "TRANSLATION",
+      "engineId": "marian-local",
+      "languages": [
+        "ar",
+        "en"
+      ],
+      "source": "https://huggingface.co/oddadmix/Jisr-MT-50M-AllDialects",
+      "license": "Apache-2.0",
+      "note": "Pinned Jisr CTranslate2 runtime ZIP, including its identity manifest, LICENSE and NOTICE; CPU-only, macOS Apple silicon. Archive and every expanded file are verified. INT8 and FP32 are precision variants of the same trained directional model; device speed and quality are not inferred from publisher scores.",
+      "options": {
+        "profile": "4",
+        "backend": "ct2",
+        "family": "ct2",
+        "sources": "en",
+        "targets": "ar"
+      },
+      "artifacts": [
+        {
+          "filename": "ct2-jisr-50m-en-ar-0.27.3.zip",
+          "bytes": 198432430,
+          "sha256": "bd0c43727015ec0183becede9ef83ff86a7c54648e04e23aafb9b02630ac0bb5",
+          "url": "https://github.com/Sal7one/Hearth/releases/download/v0.27.3/ct2-jisr-50m-en-ar-0.27.3.zip"
+        }
+      ],
+      "platforms": [
+        "macos-arm64"
+      ],
+      "archive": {
+        "format": "zip",
+        "root": "",
+        "expandedBytes": 198431692,
+        "files": [
+          {
+            "path": "config.json",
+            "bytes": 226,
+            "sha256": "99fa08f9ae4fe585ace28258a3420d4d19d59e2b99d3e8dd2bc7dff70aa408cf"
+          },
+          {
+            "path": "model.bin",
+            "bytes": 194430755,
+            "sha256": "5b0124527a4a9763d819d8087c08ed289df0ce02d926737313aac5492056353c"
+          },
+          {
+            "path": "shared_vocabulary.json",
+            "bytes": 1318566,
+            "sha256": "12b45628eae6d2949aa85e430d6a2c7f033400f894f9ec2e521466aa82006e5a"
+          },
+          {
+            "path": "tokenizer.json",
+            "bytes": 2670172,
+            "sha256": "6f45717637add9564d0bd905209208d1aafa55a2e4ec3b8a817309e0384cb307"
+          },
+          {
+            "path": "LICENSE",
+            "bytes": 11358,
+            "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+          },
+          {
+            "path": "NOTICE",
+            "bytes": 562,
+            "sha256": "bce7092fadb678426aaba270129f02b3a3633df9962ee3f438c781e6eccf6372"
+          },
+          {
+            "path": "hearth-translation.json",
+            "bytes": 53,
+            "sha256": "830d9c1e3b3a81135ad595a839a86875a7ff4cce0c73410e268d3f0debf5657c"
+          }
+        ]
+      }
+    },
+    {
+      "id": "ct2-jisr-50m-en-ar-int8",
+      "name": "Jisr 50M · English → Arabic dialects · INT8",
+      "family": "ct2",
+      "stage": "TRANSLATION",
+      "engineId": "marian-local",
+      "languages": [
+        "ar",
+        "en"
+      ],
+      "source": "https://huggingface.co/oddadmix/Jisr-MT-50M-AllDialects",
+      "license": "Apache-2.0",
+      "note": "Pinned Jisr CTranslate2 runtime ZIP, including its identity manifest, LICENSE and NOTICE; CPU-only, macOS Apple silicon. Archive and every expanded file are verified. INT8 and FP32 are precision variants of the same trained directional model; device speed and quality are not inferred from publisher scores.",
+      "options": {
+        "profile": "2",
+        "backend": "ct2",
+        "family": "ct2",
+        "sources": "en",
+        "targets": "ar"
+      },
+      "artifacts": [
+        {
+          "filename": "ct2-jisr-50m-en-ar-int8-0.27.3.zip",
+          "bytes": 54620720,
+          "sha256": "54f9ea30f5b08fed33b09b8a6c2985133b2d03d0ae1b51a4b008c7ecd7b22556",
+          "url": "https://github.com/Sal7one/Hearth/releases/download/v0.27.3/ct2-jisr-50m-en-ar-int8-0.27.3.zip"
+        }
+      ],
+      "platforms": [
+        "macos-arm64"
+      ],
+      "archive": {
+        "format": "zip",
+        "root": "",
+        "expandedBytes": 54619982,
+        "files": [
+          {
+            "path": "config.json",
+            "bytes": 226,
+            "sha256": "99fa08f9ae4fe585ace28258a3420d4d19d59e2b99d3e8dd2bc7dff70aa408cf"
+          },
+          {
+            "path": "model.bin",
+            "bytes": 50619043,
+            "sha256": "6b8b5286c7edc7eb711a17c0b9c644314e41740d1e4e7d93f799980771791375"
+          },
+          {
+            "path": "shared_vocabulary.json",
+            "bytes": 1318566,
+            "sha256": "12b45628eae6d2949aa85e430d6a2c7f033400f894f9ec2e521466aa82006e5a"
+          },
+          {
+            "path": "tokenizer.json",
+            "bytes": 2670172,
+            "sha256": "6f45717637add9564d0bd905209208d1aafa55a2e4ec3b8a817309e0384cb307"
+          },
+          {
+            "path": "LICENSE",
+            "bytes": 11358,
+            "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+          },
+          {
+            "path": "NOTICE",
+            "bytes": 559,
+            "sha256": "d83d54c3ffa0eba669e616af1a0ab8fa775059a6d916206b51b00b7372f88d38"
+          },
+          {
+            "path": "hearth-translation.json",
+            "bytes": 58,
+            "sha256": "33493426a8e5be0586f8ce8158fd35ff69661755d012920a149d988ae7b617df"
+          }
+        ]
+      }
+    },
+    {
+      "id": "ct2-jisr-50m-ar-en",
+      "name": "Jisr 50M · Arabic dialects → English · FP32",
+      "family": "ct2",
+      "stage": "TRANSLATION",
+      "engineId": "marian-local",
+      "languages": [
+        "ar",
+        "en"
+      ],
+      "source": "https://huggingface.co/oddadmix/Jisr-MT-50M-Dialects2En",
+      "license": "Apache-2.0",
+      "note": "Pinned Jisr CTranslate2 runtime ZIP, including its identity manifest, LICENSE and NOTICE; CPU-only, macOS Apple silicon. Archive and every expanded file are verified. INT8 and FP32 are precision variants of the same trained directional model; device speed and quality are not inferred from publisher scores.",
+      "options": {
+        "profile": "5",
+        "backend": "ct2",
+        "family": "ct2",
+        "sources": "ar",
+        "targets": "en"
+      },
+      "artifacts": [
+        {
+          "filename": "ct2-jisr-50m-ar-en-0.27.3.zip",
+          "bytes": 198406580,
+          "sha256": "b596911767ded267aa476f9da440671d68f98f0ee5191efc13fc1ab4ed867dee",
+          "url": "https://github.com/Sal7one/Hearth/releases/download/v0.27.3/ct2-jisr-50m-ar-en-0.27.3.zip"
+        }
+      ],
+      "platforms": [
+        "macos-arm64"
+      ],
+      "archive": {
+        "format": "zip",
+        "root": "",
+        "expandedBytes": 198405842,
+        "files": [
+          {
+            "path": "config.json",
+            "bytes": 226,
+            "sha256": "99fa08f9ae4fe585ace28258a3420d4d19d59e2b99d3e8dd2bc7dff70aa408cf"
+          },
+          {
+            "path": "model.bin",
+            "bytes": 194407459,
+            "sha256": "ca3cb2edaff87fddf715db8fcdea9258b47a926624f662aab01e31decd753805"
+          },
+          {
+            "path": "shared_vocabulary.json",
+            "bytes": 1318394,
+            "sha256": "38b7aaf9fd81d8e6b2cae4603966e768813377b628ba86ae9b1dab28c3929e53"
+          },
+          {
+            "path": "tokenizer.json",
+            "bytes": 2667790,
+            "sha256": "7ab7a5ec74e7c2a1671c051fe91aaa3d92e3657a75f6867cd584d3b4307dcc9b"
+          },
+          {
+            "path": "LICENSE",
+            "bytes": 11358,
+            "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+          },
+          {
+            "path": "NOTICE",
+            "bytes": 562,
+            "sha256": "42b536894f16165d948f83792e502e14ff01aa59a237544b912b16b678ffb282"
+          },
+          {
+            "path": "hearth-translation.json",
+            "bytes": 53,
+            "sha256": "207c7f9d04cc255afd813ee20643138d809881a07ee403691e473d64391c96e8"
+          }
+        ]
+      }
+    },
+    {
+      "id": "ct2-jisr-50m-ar-en-int8",
+      "name": "Jisr 50M · Arabic dialects → English · INT8",
+      "family": "ct2",
+      "stage": "TRANSLATION",
+      "engineId": "marian-local",
+      "languages": [
+        "ar",
+        "en"
+      ],
+      "source": "https://huggingface.co/oddadmix/Jisr-MT-50M-Dialects2En",
+      "license": "Apache-2.0",
+      "note": "Pinned Jisr CTranslate2 runtime ZIP, including its identity manifest, LICENSE and NOTICE; CPU-only, macOS Apple silicon. Archive and every expanded file are verified. INT8 and FP32 are precision variants of the same trained directional model; device speed and quality are not inferred from publisher scores.",
+      "options": {
+        "profile": "3",
+        "backend": "ct2",
+        "family": "ct2",
+        "sources": "ar",
+        "targets": "en"
+      },
+      "artifacts": [
+        {
+          "filename": "ct2-jisr-50m-ar-en-int8-0.27.3.zip",
+          "bytes": 54612290,
+          "sha256": "1574ea2162b8c3ad105114f68c239a1d7ff7443da8e0cd7f85fc50da75438e0f",
+          "url": "https://github.com/Sal7one/Hearth/releases/download/v0.27.3/ct2-jisr-50m-ar-en-int8-0.27.3.zip"
+        }
+      ],
+      "platforms": [
+        "macos-arm64"
+      ],
+      "archive": {
+        "format": "zip",
+        "root": "",
+        "expandedBytes": 54611552,
+        "files": [
+          {
+            "path": "config.json",
+            "bytes": 226,
+            "sha256": "99fa08f9ae4fe585ace28258a3420d4d19d59e2b99d3e8dd2bc7dff70aa408cf"
+          },
+          {
+            "path": "model.bin",
+            "bytes": 50613167,
+            "sha256": "fe73eb55916e327c47b9d346f6b2d1f734d3d34533e3a97c55dd74ba4b0e1b19"
+          },
+          {
+            "path": "shared_vocabulary.json",
+            "bytes": 1318394,
+            "sha256": "38b7aaf9fd81d8e6b2cae4603966e768813377b628ba86ae9b1dab28c3929e53"
+          },
+          {
+            "path": "tokenizer.json",
+            "bytes": 2667790,
+            "sha256": "7ab7a5ec74e7c2a1671c051fe91aaa3d92e3657a75f6867cd584d3b4307dcc9b"
+          },
+          {
+            "path": "LICENSE",
+            "bytes": 11358,
+            "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+          },
+          {
+            "path": "NOTICE",
+            "bytes": 559,
+            "sha256": "02665d596142b410fc5f4a2b239ab453619125286e18784fbd7ec630ae94db52"
+          },
+          {
+            "path": "hearth-translation.json",
+            "bytes": 58,
+            "sha256": "380d7bb2f72360f127188d8193a64d0a5ad9d46553e5730392c586756b642f45"
+          }
+        ]
+      }
+    },
+    {
       "id": "supertonic-3",
       "name": "Supertonic 3 · ten voices",
       "family": "Supertonic",
@@ -2498,7 +2794,7 @@
     {
       "id": "phonon-2",
       "name": "Phonon 2 · int8",
-      "family": "Phonon 2",
+      "family": "Phonon",
       "stage": "STT",
       "engineId": "phonon-local",
       "languages": [
@@ -2543,6 +2839,94 @@
             "path": "joiner.int8.onnx",
             "bytes": 5281492,
             "sha256": "b848103db33b89be7167d218587ea59e772e40ba6ba1cd787230e7e754839633"
+          }
+        ]
+      }
+    },
+    {
+      "id": "phonon-2.5",
+      "name": "Phonon 2.5 · 25 European languages · INT8",
+      "family": "Phonon",
+      "stage": "STT",
+      "engineId": "phonon-local",
+      "languages": [
+        "en",
+        "es",
+        "fr",
+        "de",
+        "it",
+        "pt",
+        "nl",
+        "pl",
+        "ru",
+        "uk",
+        "ro",
+        "cs",
+        "sk",
+        "bg",
+        "hr",
+        "sv",
+        "da",
+        "fi",
+        "et",
+        "lv",
+        "lt",
+        "hu",
+        "sl",
+        "mt",
+        "el"
+      ],
+      "source": "https://huggingface.co/FermionResearch/Phonon-2.5",
+      "license": "CC-BY-4.0",
+      "note": "Multilingual Phonon 2.5 TDT, re-exported to ONNX INT8; CPU-only, utterance-windowed, macOS Apple silicon. 25 European languages including Russian; no Arabic or Chinese speech. Choose the known spoken language for translation: this labels the output, not a decoder hint. Auto leaves the source unknown. The Hearth ONNX download is 339 MB, larger than the publisher packed format.",
+      "options": {
+        "profile": "phonon-2.5"
+      },
+      "platforms": [
+        "macos-arm64"
+      ],
+      "artifacts": [
+        {
+          "filename": "phonon-2.5-hearth-int8.tar.bz2",
+          "url": "https://github.com/Sal7one/Hearth/releases/download/v0.30.0-models.1/phonon-2.5-hearth-int8.tar.bz2",
+          "bytes": 339205640,
+          "sha256": "d869c32887cb9eaa1c034216797f25a215344aaea0b3e1ef82fe8d3f086d737c"
+        }
+      ],
+      "archive": {
+        "format": "tar.bz2",
+        "root": "phonon-2.5-hearth-int8",
+        "expandedBytes": 629548381,
+        "files": [
+          {
+            "path": "LICENSE-WEIGHTS-CC-BY-4.0.txt",
+            "bytes": 18657,
+            "sha256": "9ba9550ad48438d0836ddab3da480b3b69ffa0aac7b7878b5a0039e7ab429411"
+          },
+          {
+            "path": "NOTICE",
+            "bytes": 2664,
+            "sha256": "dd4993badd45eb336280a0ab5b4ecb3ed06260d189a30fcae8b9e89a587c4de8"
+          },
+          {
+            "path": "decoder.int8.onnx",
+            "bytes": 12257658,
+            "sha256": "9759e3eff1ccb5b79c694f218377a780a327ffc693a0fb21db812bd2754ceaac"
+          },
+          {
+            "path": "encoder.int8.onnx",
+            "bytes": 611893971,
+            "sha256": "2e644946846e0027c1c8973ab88675643e17720ac6fdb15320365e040519d63a"
+          },
+          {
+            "path": "joiner.int8.onnx",
+            "bytes": 5281492,
+            "sha256": "b848103db33b89be7167d218587ea59e772e40ba6ba1cd787230e7e754839633"
+          },
+          {
+            "path": "tokens.txt",
+            "bytes": 93939,
+            "sha256": "d58544679ea4bc6ac563d1f545eb7d474bd6cfa467f0a6e2c1dc1c7d37e3c35d"
           }
         ]
       }

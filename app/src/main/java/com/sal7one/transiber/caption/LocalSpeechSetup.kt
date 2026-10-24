@@ -121,7 +121,9 @@ internal fun LocalSpeechSetup(
             Text(if (backend == com.sal7one.common_jni.speech.SpeechBackend.MOONSHINE) uiText(UiR.string.model_moonshine_utterance_note) else if (backend == com.sal7one.common_jni.speech.SpeechBackend.QWEN3_ASR)
                 uiText(UiR.string.ui_publisher_coverage_30_languages_plus_chinese_dialects_auto_or_an_529f3)
             else if (backend == com.sal7one.common_jni.speech.SpeechBackend.OMNILINGUAL_CTC) uiText(UiR.string.model_omnilingual_language_note)
-            else if (backend == com.sal7one.common_jni.speech.SpeechBackend.PHONON) uiText(UiR.string.model_phonon_language_note)
+            else if (backend == com.sal7one.common_jni.speech.SpeechBackend.PHONON) uiText(
+                if (profile == com.sal7one.common_jni.speech.SpeechProfile.PHONON_2_5) UiR.string.model_phonon_25_language_note
+                else UiR.string.model_phonon_language_note)
             else if (backend == com.sal7one.common_jni.speech.SpeechBackend.TRANSCRIBEPSY) uiText(UiR.string.model_transcribepsy_language_note)
             else if (backend == com.sal7one.common_jni.speech.SpeechBackend.AUDAR) uiText(UiR.string.speech_audar_note)
             else if (backend == com.sal7one.common_jni.speech.SpeechBackend.OWSM) uiText(UiR.string.speech_owsm_note)

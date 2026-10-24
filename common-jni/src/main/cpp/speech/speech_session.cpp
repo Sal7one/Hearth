@@ -61,8 +61,10 @@ SpeechConfig::SpeechConfig(const std::string& json) {
     } else if (backend == "phonon") {
         for (int i = 0; i <= 3; ++i) if (paths[i].empty())
             throw std::invalid_argument("Phonon requires tokens, joiner, encoder and decoder paths");
-        if (paths[5] != "auto" && paths[5] != "en")
-            throw std::invalid_argument("Phonon is English-only and cannot declare source: " + paths[5]);
+        const std::string supported = " auto en es fr de it pt nl pl ru uk ro cs sk bg hr sv da fi et lv lt hu sl mt el ";
+        if (paths[5].find_first_of(" \t\r\n") != std::string::npos ||
+            supported.find(" " + paths[5] + " ") == std::string::npos)
+            throw std::invalid_argument("Unsupported Phonon source declaration: " + paths[5]);
     } else if (backend == "transcribepsy") {
         if (paths[0].empty()) throw std::invalid_argument("TranscribePsy requires a GGUF model path");
         if (paths[5] != "auto" && paths[5] != "en" && paths[5] != "nl" && paths[5] != "fr" &&

@@ -67,22 +67,27 @@ internal fun pipelineLanguages(
     val family = translationCard?.options?.get("family") ?: translation?.options?.get("family")
     if (family == "riva-translate" && config.sourceLanguage != "en") targetCodes = targetCodes intersect setOf("en")
     if (family == "riva-translate" && config.targetLanguage != "en") sourceCodes = sourceCodes intersect setOf("en")
-    val allowsAuto = !typedText && config.speech?.engineId in detectingSpeechEngines &&
+    val multilingualPhonon = config.speech?.engineId == "phonon-local" &&
+        (speechCard?.id == "phonon-2.5" || config.speech?.options?.get("profile") == "phonon-2.5")
+    val phononOriginalAuto = !typedText && multilingualPhonon && translation == null
+    val allowsAuto = phononOriginalAuto || (!typedText && config.speech?.engineId in detectingSpeechEngines &&
         explicitSources.isEmpty() && (family != "riva-translate" || config.targetLanguage == "en") &&
         (translation == null || translator?.kind == EngineKind.CLOUD || config.speech?.engineId == "whisper-local") &&
-        !(config.speech?.engineId == "whisper-local" && speechLanguages?.size == 1)
+        !(config.speech?.engineId == "whisper-local" && speechLanguages?.size == 1))
     if (allowsAuto) sourceCodes = sourceCodes + "auto"
     val issue = when {
         config.targetLanguage == "auto" -> "Choose an output language; detection is only available for speech input."
         config.sourceLanguage !in sourceCodes -> when {
             config.sourceLanguage == "auto" && typedText -> "Choose the language of your text before translating."
+            config.sourceLanguage == "auto" && multilingualPhonon -> "Choose the spoken language for translation; Phonon 2.5 does not report its detected language."
             explicitSources.size == 1 -> "This translation model needs ${languageLabel(explicitSources.single())} as its source language."
             else -> "Choose a source language supported by the selected speech and translation models."
         }
         config.targetLanguage !in targetCodes -> "Choose an output language supported by the selected translation model."
         else -> null
     }
-    fun options(codes: Set<String>) = codes.map { LanguageOption(it, languageLabel(it)) }
+    fun options(codes: Set<String>) = codes.map { LanguageOption(it,
+        if (it == "auto" && phononOriginalAuto) "Auto · original captions" else languageLabel(it)) }
         .sortedWith(compareBy<LanguageOption> { it.code != "auto" }.thenBy { it.label })
     val reverseRiva = family != "riva-translate" || config.sourceLanguage == "en" || config.targetLanguage == "en"
     return PipelineLanguageState(config.sourceLanguage, config.targetLanguage, options(sourceCodes), options(targetCodes),

@@ -45,6 +45,26 @@ class ModelSourcesTest {
         assertTrue(ModelSources.marian.installation.contains("English → Arabic"))
     }
 
+    @Test fun phonon25HasItsOwnActualCoverageAndPinnedSourceWithoutReplacingEnglishPhonon2() {
+        val sources = ModelSources.speech(CaptionEngineChoice.PHONON)
+        val old = sources.single { it.id == SpeechProfile.PHONON_2.id }
+        val modern = sources.single { it.id == SpeechProfile.PHONON_2_5.id }
+        assertTrue(old.installation.contains("English utterance windows"))
+        assertTrue(modern.installation.contains("25 European languages"))
+        assertTrue(modern.installation.contains("Arabic and Chinese speech are not supported"))
+        assertEquals("https://huggingface.co/FermionResearch/Phonon-2.5", modern.publisher)
+        if (SpeechArtifactCatalog.find(modern.id) == null) {
+            assertNull("Until a runtime export is pinned, the source card must remain import-only", modern.download)
+            assertNull(modern.downloadBytes)
+            assertTrue(modern.files.endsWith("96dad4f3b5b784b1aa595213ea7481bf8a7addcd"))
+        } else {
+            val artifact = checkNotNull(SpeechArtifactCatalog.find(modern.id))
+            assertEquals(SpeechProfile.PHONON_2_5.capabilities.sourceLanguages, artifact.languages)
+            assertEquals("96dad4f3b5b784b1aa595213ea7481bf8a7addcd", artifact.sourceRevision)
+            assertEquals("CC-BY-4.0", artifact.license)
+        }
+    }
+
     @Test fun voskSourcesSeparatePinnedAutomaticInstallsFromCustomFolderImports() {
         val sources = ModelSources.speech(CaptionEngineChoice.VOSK)
         val downloadable = sources.filter { it.download != null }

@@ -1,0 +1,11 @@
+# Host only. The source models are decoded without importing repository code.
+# This exact Torch wheel is also mirrored by official download.pytorch.org (same SHA256).
+torch==2.12.0
+transformers==5.12.1
+onnx==1.17.0
+onnxruntime==1.20.1
+numpy==2.5.4
+zstandard==0.25.0
+soundfile==0.13.1
+# Optional diagnostic --verify additionally needs a compatible kaldi-native-fbank.
+# Production validation uses Hearth's native adapter instead.

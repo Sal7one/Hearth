@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="model_phonon_25_language_note">Phonon 2.5 支持 25 种欧洲语言。翻译时请选择已知的口语语言；此选择仅标注识别文本的语言，不会强制解码语言。自动模式仅显示原文字幕，来源语言未知。不支持阿拉伯语或中文语音识别。</string>
+</resources>

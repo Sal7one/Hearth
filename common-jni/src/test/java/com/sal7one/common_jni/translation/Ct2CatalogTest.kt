@@ -11,8 +11,12 @@ class Ct2CatalogTest {
         assertEquals(4,jisr.size)
         assertEquals(2,jisr.map { it.groupId }.distinct().size)
         assertEquals(setOf(2,3,4,5),jisr.map { it.tokenizerMode }.toSet())
-        assertTrue(jisr.all { !it.downloadEnabled }) // Converted packages are supplied in the draft, not invented HF URLs.
+        assertTrue(jisr.all { it.downloadEnabled && it.archive != null })
         jisr.forEach { spec ->
+            val archive = requireNotNull(spec.archive)
+            assertEquals("https://github.com/Sal7one/Hearth/releases/download/v0.27.3/${spec.id}-0.27.3.zip", archive.url)
+            assertTrue(archive.bytes > spec.bytes && archive.bytes < 200_000_000L)
+            assertTrue(archive.sha256.matches(Regex("[0-9a-f]{64}")))
             assertTrue(spec.files.map { it.name }.containsAll(listOf("model.bin","config.json","shared_vocabulary.json","tokenizer.json","LICENSE","NOTICE")))
             assertEquals(6,spec.files.size)
             assertTrue(spec.bytes < if(spec.precisionLabel=="INT8")60_000_000L else 200_000_000L)

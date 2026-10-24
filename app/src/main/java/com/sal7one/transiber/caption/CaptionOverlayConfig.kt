@@ -63,9 +63,9 @@ enum class CaptionEngineChoice(val label: String, val explanation: String) {
         "Compact multilingual captions in short utterance windows. No language-forcing input; selecting a spoken language declares it for downstream translation.",
     ),
     PHONON(
-        "Phonon 2 (local)",
-        "English-only parakeet-tdt transducer captions in utterance windows, from a converted Phonon 2 ONNX package. " +
-            "Original-language CC; optional local translation bridge.",
+        "Phonon (local)",
+        "Transducer captions in short utterance windows. Phonon 2 recognizes English; Phonon 2.5 supports 25 European languages. " +
+            "Choose a known source for Phonon 2.5 translation; automatic recognition does not report its language.",
     ),
     NEMOTRON(
         "Nemotron 3.5 (local)",

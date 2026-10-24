@@ -63,7 +63,7 @@ def kotlin_set(arg):
 
 def kotlin_ct2_models():
     """Read the reviewed CT2 pins from the Android catalog; multi-component cards."""
-    import re
+    import re, hashlib
     text = (ROOT / 'common-jni/src/main/java/com/sal7one/common_jni/translation/Ct2Catalog.kt').read_text(encoding='utf-8')
     models = []
     for call in kotlin_calls(text, 'Ct2ModelSpec'):
@@ -88,13 +88,30 @@ def kotlin_ct2_models():
             continue
         if not files or len(files) < 2:
             continue
-        models.append(dict(id=model_id, name=label, family='ct2', stage='TRANSLATION', engineId='marian-local',
+        precision = kotlin_string(named.get('precisionLabel', '""'))
+        model = dict(id=model_id, name=label + (f' · {precision}' if precision else ''), family='ct2', stage='TRANSLATION', engineId='marian-local',
             languages=sorted(sources | targets), source=card, license=license_name,
             note=f'Pinned CTranslate2 package ({len(files)} components); CPU-only, macOS Apple silicon. Component hashes are verified at install and before translation.',
             options={'profile': str(mode), 'backend': 'ct2', 'family': 'ct2',
                      'sources': ','.join(sorted(sources)), 'targets': ','.join(sorted(targets))},
-            artifacts=files, platforms=['macos-arm64']))
-    assert len(models) == 3, [m['id'] for m in models]
+            artifacts=files, platforms=['macos-arm64'])
+        if 'archive' in named:
+            archive_call = list(kotlin_calls(named['archive'], 'Ct2DownloadArchive'))
+            assert len(archive_call) == 1, model_id
+            parts = split_kotlin_args(archive_call[0])
+            assert len(parts) == 3, model_id
+            url = kotlin_string(parts[0]); size = int(parts[1].removesuffix('L')); sha = kotlin_string(parts[2])
+            # These exact bytes are pinned in the public v0.27.3 import ZIPs; no newline.
+            manifest = json.dumps({'schemaVersion': 1, 'modelId': model_id}).encode('utf-8')
+            components = [dict(path=part['filename'], bytes=part['bytes'], sha256=part['sha256']) for part in files]
+            components.append(dict(path='hearth-translation.json', bytes=len(manifest), sha256=hashlib.sha256(manifest).hexdigest()))
+            model['artifacts'] = [dict(filename=url.rsplit('/', 1)[-1], bytes=size, sha256=sha, url=url)]
+            model['archive'] = dict(format='zip', root='', expandedBytes=sum(part['bytes'] for part in components), files=components)
+            model['note'] = ('Pinned Jisr CTranslate2 runtime ZIP, including its identity manifest, LICENSE and NOTICE; '
+                'CPU-only, macOS Apple silicon. Archive and every expanded file are verified. '
+                'INT8 and FP32 are precision variants of the same trained directional model; device speed and quality are not inferred from publisher scores.')
+        models.append(model)
+    assert len(models) == 7, [m['id'] for m in models]
     return models
 
 
@@ -244,8 +261,9 @@ def generate():
     for path, size, digest in re.findall(r'PinnedFile\("([^"]+)",\s*([0-9_]+)L,\s*"([a-f0-9]{64})"\)', qwen_source):
         qwen_files.append((path, int(size.replace('_', '')), digest))
     assert len(qwen_files) == 6, qwen_files
-    language_block = re.search(r'val languages: Set<String> = setOf\((.*?)\)', qwen_source, re.S).group(1)
-    qwen_languages = re.findall(r'"([a-z]+)"', language_block)
+    # Qwen exposes the reviewed prompt/output name map, with languages = languageNames.keys.
+    language_block = re.search(r'val languageNames: Map<String, String> = mapOf\((.*?)\)', qwen_source, re.S).group(1)
+    qwen_languages = re.findall(r'"([a-z]+)"\s+to\s+"[^"]+"', language_block)
     assert len(qwen_languages) == 30, qwen_languages
     audit = json.loads((ROOT / 'docs/model-catalog-audit-2026-10-19.json').read_text(encoding='utf-8'))
     archive = next(a for a in audit['artifacts'] if a['id'] == 'qwen3-asr-0.6b')
@@ -342,7 +360,7 @@ def generate():
         ('decoder.int8.onnx', 12257659, 'd92e2d8fc9c99ef9faf0a2cf1728af4ec08c0a83b99ece29a46037c4a5a757bf'),
         ('joiner.int8.onnx', 5281492, 'b848103db33b89be7167d218587ea59e772e40ba6ba1cd787230e7e754839633'),
     ]
-    models.append(dict(id='phonon-2', name='Phonon 2 · int8', family='Phonon 2',
+    models.append(dict(id='phonon-2', name='Phonon 2 · int8', family='Phonon',
         stage='STT', engineId='phonon-local', languages=['en'],
         source='https://huggingface.co/FermionResearch/Phonon-2', license=phonon['license'],
         note='Pinned Phonon 2 (NeMo TDT transducer) int8 package; CPU-only, utterance-windowed, macOS Apple silicon. '
@@ -353,6 +371,21 @@ def generate():
         archive=dict(format='tar.bz2', root='phonon-2-hearth-int8',
             expandedBytes=sum(size for _, size, _ in phonon_files),
             files=[dict(path=path, bytes=size, sha256=digest) for path, size, digest in phonon_files])))
+    phonon25 = json.loads((ROOT / 'docs/models/phonon-2.5.json').read_text())
+    assert phonon25['profile'] == 'phonon-2.5' and len(phonon25['languages']) == 25
+    assert not phonon25['archive']['manifestIncluded']
+    assert phonon25['installedBytes'] == sum(file['bytes'] for file in phonon25['files'])
+    models.append(dict(id='phonon-2.5', name=phonon25['label'], family='Phonon',
+        stage='STT', engineId='phonon-local', languages=phonon25['languages'],
+        source=phonon25['source']['modelCard'], license=phonon25['license'],
+        note='Multilingual Phonon 2.5 TDT, re-exported to ONNX INT8; CPU-only, utterance-windowed, macOS Apple silicon. '
+             '25 European languages including Russian; no Arabic or Chinese speech. '
+             'Choose the known spoken language for translation: this labels the output, not a decoder hint. '
+             'Auto leaves the source unknown. The Hearth ONNX download is 339 MB, larger than the publisher packed format.',
+        options={'profile': 'phonon-2.5'}, platforms=['macos-arm64'],
+        artifacts=[{key: phonon25['archive'][key] for key in ('filename', 'url', 'bytes', 'sha256')}],
+        archive=dict(format='tar.bz2', root=phonon25['archive']['root'],
+            expandedBytes=phonon25['installedBytes'], files=phonon25['files'])))
     transcribepsy = next(a for a in audit['artifacts'] if a['id'] == 'transcribepsy-250m-eu-sub-q8')
     models.append(dict(id='transcribepsy-250m-eu-sub-q8', name='TranscribePsy 250M · EU (q8)', family='TranscribePsy',
         stage='STT', engineId='transcribepsy-local',
@@ -372,7 +405,7 @@ def generate():
         artifacts=[dict(filename=nemotron['url'].rsplit('/', 1)[-1], bytes=nemotron['bytes'], sha256=nemotron['sha256'], url=nemotron['url'])]))
     vosk_models(models)
     ming_models(models)
-    assert len(models) == 71, len(models)
+    assert len(models) == 76, len(models)
     return json.dumps({'schemaVersion':1,'provenance':'Generated from existing Android pins, the audited Qwen3-ASR release archive, reviewed CT2 catalog pins and reviewed desktop engine pins; run scripts/desktop/generate-catalog.py --check','models':models},ensure_ascii=False,indent=2)+'\n'
 
 

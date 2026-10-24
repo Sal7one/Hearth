@@ -67,7 +67,7 @@ fun CaptionHome(
     val cfg = config
     if (cfg == null) { LinearProgressIndicator(Modifier.fillMaxWidth()); return }
     fun update(transform: (CaptionOverlayConfig) -> CaptionOverlayConfig) {
-        config = transform(cfg)
+        config = transform(config ?: cfg)
         saveFailed = false
         val previous = pendingWrite
         pendingWrite = scope.launch {
@@ -116,8 +116,9 @@ fun CaptionHome(
                 update { it.withCaptionMode(mode) }
             }
             }
-            Column(Modifier.fillMaxWidth().glassPanel().padding(20.dp)) {
+            Column(Modifier.fillMaxWidth().glassPanel().padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 CaptionLanguageFields(cfg, ::update, enabled = !running, compact = true)
+                if (engineReady && cfg.effectiveEngine.speechBackend != null) CaptionSpeechTimingControls(cfg, ::update)
             }
             FeatureAction(uiText(if (basic) UiR.string.setup_basic_manage else UiR.string.ui_speech_translation_8002b), Icons.Default.Tune, { if (basic) onModels() else options = true }, detail = if (isCloud) uiText(UiR.string.ui_1_s_audio_sent_to_your_provider_db1f9, uiText.label(cfg.effectiveEngine)) else uiText(UiR.string.ui_1_s_on_this_phone_0832f, uiText.label(cfg.effectiveEngine)))
             if (!engineReady) Text(if (isCloud) uiText(UiR.string.ui_connect_your_cloud_provider_to_start_14c5d) else uiText(UiR.string.ui_choose_a_speech_model_to_start_53e5a))

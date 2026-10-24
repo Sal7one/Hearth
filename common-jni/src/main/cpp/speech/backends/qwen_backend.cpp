@@ -19,7 +19,10 @@ struct Qwen {
         : segmenter(c.max_utterance_ms, c.silence_ms, c.silence_threshold_db),
           // The verified Moonshine profile resolves Auto to its sole language in
           // Kotlin. Keep English for legacy native callers that still pass Auto.
-          sourceCode(phonon || (moonshine && std::string(c.language) == "auto") ? "en" : c.language),
+          // Phonon 2.5 uses the same transducer path as English-only Phonon 2.
+          // Fixed-language profiles resolve Auto before entering native code;
+          // multilingual Auto must never be labelled English by default.
+          sourceCode(moonshine && std::string(c.language) == "auto" ? "en" : c.language),
           languageName(moonshine || omnilingual || phonon ? "" : qwenLanguageName(sourceCode)) {
         SherpaOnnxOfflineRecognizerConfig cfg{};
         cfg.feat_config.sample_rate = 16000;

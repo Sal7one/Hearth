@@ -10,6 +10,25 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class CaptionLanguagesTest {
+    @Test fun phononLanguageChoicesFollowTheActualCheckpointAndNeverPretendToForceTheDecoder() {
+        val config = CaptionOverlayConfig(engine = CaptionEngineChoice.PHONON, streamLanguage = "auto")
+        val old = CaptionLanguageModel(SpeechProfile.PHONON_2.id)
+        assertEquals(setOf("en"), CaptionLanguages.source(config, SttMode.BATCH, old).codes)
+        assertEquals("en", CaptionLanguages.effectiveSource(config, SttMode.BATCH, old))
+        assertEquals("en", CaptionLanguages.effectiveSource(config.copy(streamLanguage = "ru"), SttMode.BATCH, old))
+        val modern = CaptionLanguageModel(SpeechProfile.PHONON_2_5.id)
+        val choices = CaptionLanguages.source(config, SttMode.BATCH, modern)
+        assertEquals(SpeechProfile.PHONON_2_5.capabilities.sourceLanguages + "auto", choices.codes)
+        assertEquals(26, choices.codes.size)
+        assertTrue(choices.languages.none { it.canForce })
+        assertFalse("ar" in choices.codes)
+        assertFalse("zh" in choices.codes)
+        assertEquals("auto", CaptionLanguages.effectiveSource(config, SttMode.BATCH, modern))
+        assertEquals("ru", CaptionLanguages.effectiveSource(config.copy(streamLanguage = "ru-RU"), SttMode.BATCH, modern))
+        assertEquals("auto", CaptionLanguages.effectiveSource(config.copy(streamLanguage = "ar"), SttMode.BATCH, modern))
+        assertEquals(setOf("auto"), CaptionLanguages.source(config, SttMode.BATCH, CaptionLanguageModel("missing-selected-install")).codes)
+    }
+
     @Test fun newNativeSpeechLanguageChoicesPreserveForcedVersusDeclaredSources() {
         val cohere = CaptionOverlayConfig(engine = CaptionEngineChoice.COHERE, streamLanguage = "ar")
         assertEquals(setOf("ar", "en"), CaptionLanguages.source(cohere, SttMode.BATCH).codes)

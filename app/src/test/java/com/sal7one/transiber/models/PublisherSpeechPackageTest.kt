@@ -140,17 +140,19 @@ class PublisherSpeechPackageTest {
             "fixture/decoder.int8.onnx" to "onnx-decoder-fixture".toByteArray(),
             "fixture/joiner.int8.onnx" to "onnx-joiner-fixture".toByteArray())
         val bytes = archive(entries)
-        val source = spec(bytes).copy(profile = SpeechProfile.PHONON_2,
-            roles = mapOf("model" to "tokens.txt", "frontend" to "joiner.int8.onnx", "encoder" to "encoder.int8.onnx", "decoder" to "decoder.int8.onnx"))
-        val root = Files.createTempDirectory("publisher-phonon").toFile()
-        try {
-            val installed = PublisherSpeechPackage.stage(bytes.inputStream(), source, root)
-            val verified = SpeechModelPackage.verify(installed)
-            assertEquals(SpeechProfile.PHONON_2, verified.profile)
-            assertEquals("a 1\n", installed.resolve("tokens.txt").readText())
-        } finally { root.deleteRecursively() }
-        rejected(archive(entries.dropLast(1)), source.copy(bytes = archive(entries.dropLast(1)).size.toLong(),
-            sha256 = MessageDigest.getInstance("SHA-256").digest(archive(entries.dropLast(1))).joinToString("") { "%02x".format(it) }))
+        listOf(SpeechProfile.PHONON_2, SpeechProfile.PHONON_2_5).forEach { profile ->
+            val source = spec(bytes).copy(profile = profile,
+                roles = mapOf("model" to "tokens.txt", "frontend" to "joiner.int8.onnx", "encoder" to "encoder.int8.onnx", "decoder" to "decoder.int8.onnx"))
+            val root = Files.createTempDirectory("publisher-phonon").toFile()
+            try {
+                val installed = PublisherSpeechPackage.stage(bytes.inputStream(), source, root)
+                val verified = SpeechModelPackage.verify(installed)
+                assertEquals(profile, verified.profile)
+                assertEquals("a 1\n", installed.resolve("tokens.txt").readText())
+            } finally { root.deleteRecursively() }
+            rejected(archive(entries.dropLast(1)), source.copy(bytes = archive(entries.dropLast(1)).size.toLong(),
+                sha256 = MessageDigest.getInstance("SHA-256").digest(archive(entries.dropLast(1))).joinToString("") { "%02x".format(it) }))
+        }
     }
     @Test fun rejectsOversizedRawArtifact() {
         val bytes = "GGUFtest".toByteArray()

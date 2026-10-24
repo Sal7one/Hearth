@@ -220,12 +220,17 @@ class DesktopModelLibrary internal constructor(val directory: Path, val catalog:
     private fun selection(card: DesktopModelCard, path: Path): EngineSelection {
         val single = if (card.artifacts.size == 1 && card.archive == null && card.rangePackage == null) mapOf("sha256" to card.artifacts.single().sha256) else emptyMap()
         // Multi-component engines verify each file; single-file engines keep the one sha256 pin.
-        val components = if (card.artifacts.size > 1) card.artifacts.associate { "sha256.${it.filename}" to it.sha256 } else emptyMap()
+        val components = if (card.family == "ct2" && card.archive?.hasComponentPins == true)
+            card.archive.files.associate { "sha256.${it.path}" to it.sha256 }
+        else if (card.artifacts.size > 1) card.artifacts.associate { "sha256.${it.filename}" to it.sha256 } else emptyMap()
         return EngineSelection(card.engineId, card.id, path.toString(), options = card.options + single + components)
     }
     private fun hasRuntimeInventory(card: DesktopModelCard, root: Path): Boolean {
         val archive = card.archive
         if (archive != null) {
+            if (archive.format == "zip" && archive.root.isEmpty()) {
+                verifyFlatInventory(card, root)
+            }
             if (archive.hasComponentPins) return archive.files.all { Files.isRegularFile(root.resolve(it.path)) && Files.size(root.resolve(it.path)) == it.bytes }
             return Files.list(root).use { files -> files.anyMatch { !it.fileName.toString().startsWith(".") &&
                 it.fileName.toString() !in card.artifacts.map { artifact -> artifact.filename } } }
@@ -240,6 +245,7 @@ class DesktopModelLibrary internal constructor(val directory: Path, val catalog:
         phase: ModelInstallPhase = ModelInstallPhase.VERIFYING) {
         val archive = card.archive
         if (archive != null) {
+            if (archive.format == "zip" && archive.root.isEmpty()) verifyFlatInventory(card, root)
             if (!archive.hasComponentPins) {
                 requireNotNull(archive.treeSha256) { "Model archive has no tree pin" }
                 val context = currentCoroutineContext()
@@ -251,13 +257,14 @@ class DesktopModelLibrary internal constructor(val directory: Path, val catalog:
             for (file in archive.files) {
                 val target = root.resolve(file.path).normalize()
                 check(target.startsWith(root.normalize())) { "Model component escapes its directory: ${file.path}" }
-                check(Files.isRegularFile(target) && Files.size(target) == file.bytes && digest(target) { done, _ ->
+                check(!Files.isSymbolicLink(target) && Files.isRegularFile(target) && Files.size(target) == file.bytes && digest(target) { done, _ ->
                     activity(ModelInstallProgress(phase, completed + done, archive.expandedBytes, file.path))
                 } == file.sha256) {
                     "Missing or modified model component: ${file.path}"
                 }
                 completed += file.bytes
             }
+            if (archive.format == "zip" && archive.root.isEmpty()) verifyFlatManifest(card, root)
             return
         }
         var completed = 0L
@@ -482,6 +489,10 @@ class DesktopModelLibrary internal constructor(val directory: Path, val catalog:
      */
     internal fun installZip(card: DesktopModelCard, root: Path, activity: (ModelInstallProgress) -> Unit = {}, checkActive: () -> Unit = {}) {
         val archive = card.archive ?: return
+        if (archive.hasComponentPins) {
+            installFlatZip(card, root, activity, checkActive)
+            return
+        }
         val expectedTree = requireNotNull(archive.treeSha256) { "A ZIP model archive requires a tree digest pin" }
         val zip = root.resolve(card.artifacts.single().filename)
         check(Files.isRegularFile(zip)) { "Model archive is missing: ${zip.fileName}" }
@@ -539,6 +550,82 @@ class DesktopModelLibrary internal constructor(val directory: Path, val catalog:
         }
         staging.toFile().deleteRecursively()
     }
+
+    /** Flat CT2 packages have a complete component inventory, including their non-executable identity manifest. */
+    private fun installFlatZip(card: DesktopModelCard, root: Path, activity: (ModelInstallProgress) -> Unit, checkActive: () -> Unit) {
+        val archive = requireNotNull(card.archive)
+        requireFlatZip(archive)
+        require(card.family == "ct2") { "Flat ZIP packages require a CT2 model identity" }
+        require(!Files.isSymbolicLink(root)) { "Model directory must not be a symbolic link" }
+        val zip = root.resolve(card.artifacts.single().filename)
+        require(!Files.isSymbolicLink(zip) && Files.isRegularFile(zip)) { "Model archive is missing: ${zip.fileName}" }
+        val staging = Files.createTempDirectory(root, ".extract-")
+        val seen = mutableSetOf<String>()
+        var expanded = 0L
+        activity(ModelInstallProgress(ModelInstallPhase.EXTRACTING, 0, archive.expandedBytes))
+        try {
+            ZipInputStream(BufferedInputStream(Files.newInputStream(zip), 1 shl 16)).use { input ->
+                var entries = 0
+                while (true) {
+                    checkActive()
+                    val entry = input.nextEntry ?: break
+                    require(++entries <= 16) { "CT2 ZIP archive exceeds 16 entries" }
+                    val relative = entry.name
+                    require(!entry.isDirectory && safeArchivePath(relative) && '/' !in relative) { "CT2 ZIP components and manifest must be flat files at the archive root" }
+                    val pin = archive.byPath[relative] ?: error("Unexpected CT2 ZIP component: $relative")
+                    require(seen.add(relative)) { "Duplicate CT2 ZIP component: $relative" }
+                    require(entry.size < 0 || entry.size == pin.bytes) { "CT2 ZIP component has the wrong declared size: $relative" }
+                    val target = staging.resolve(relative)
+                    val hash = MessageDigest.getInstance("SHA-256")
+                    var count = 0L
+                    Files.newOutputStream(target).use { output ->
+                        val buffer = ByteArray(1 shl 16)
+                        while (true) {
+                            checkActive()
+                            val read = input.read(buffer)
+                            if (read < 0) break
+                            count = Math.addExact(count, read.toLong())
+                            expanded = Math.addExact(expanded, read.toLong())
+                            require(count <= pin.bytes && expanded <= archive.expandedBytes) { "CT2 ZIP component exceeds its pinned size: $relative" }
+                            hash.update(buffer, 0, read)
+                            output.write(buffer, 0, read)
+                            activity(ModelInstallProgress(ModelInstallPhase.EXTRACTING, expanded, archive.expandedBytes, relative))
+                        }
+                    }
+                    require(count == pin.bytes && hash.digest().hex() == pin.sha256) { "CT2 ZIP component failed verification: $relative" }
+                }
+            }
+            require(seen == archive.byPath.keys) { "CT2 ZIP archive is missing components: ${archive.byPath.keys - seen}" }
+            require(expanded == archive.expandedBytes) { "CT2 ZIP expanded size differs from its pin" }
+            verifyFlatManifest(card, staging)
+            // Nothing is published before every byte and the model identity has passed verification.
+            for (relative in archive.byPath.keys) {
+                checkActive()
+                Files.move(staging.resolve(relative), root.resolve(relative), StandardCopyOption.REPLACE_EXISTING)
+            }
+            Files.deleteIfExists(zip)
+        } finally { staging.toFile().deleteRecursively() }
+    }
+
+    private fun verifyFlatManifest(card: DesktopModelCard, root: Path) {
+        val manifest = root.resolve("hearth-translation.json")
+        require(Files.size(manifest) in 1..16384) { "Missing or oversized CT2 identity manifest" }
+        val identity = Json.parseToJsonElement(Files.readString(manifest)).jsonObject
+        require(identity.keys == setOf("schemaVersion", "modelId") &&
+            identity.getValue("schemaVersion").jsonPrimitive.let { !it.isString && it.content == "1" } &&
+            identity.getValue("modelId").jsonPrimitive.content == card.id) { "CT2 archive identity does not match ${card.id}" }
+    }
+
+    private fun verifyFlatInventory(card: DesktopModelCard, root: Path) {
+        val archive = requireNotNull(card.archive)
+        requireFlatZip(archive)
+        require(!Files.isSymbolicLink(root)) { "Model directory must not be a symbolic link" }
+        val transport = card.artifacts.single()
+        val partial = ".${transport.filename}.${transport.sha256.take(16)}.part"
+        val allowed = archive.byPath.keys + setOf(transport.filename, partial, "$partial.resume.json", "$partial.aria2")
+        val extra = Files.list(root).use { stream -> stream.map { it.fileName.toString() }.toList().toSet() - allowed }
+        require(extra.isEmpty()) { "Unexpected flat model components: ${extra.sorted().joinToString()}" }
+    }
     /** A single pinned byte range; the model host must answer 206 with the exact extent. */
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     private suspend fun openRange(initial: URI, start: Long, end: Long, sourceBytes: Long): HttpResponse<java.io.InputStream> {
@@ -590,7 +677,7 @@ class DesktopModelLibrary internal constructor(val directory: Path, val catalog:
                     val format = a.getValue("format").jsonPrimitive.content
                     require(format == "tar.bz2" || format == "zip") { "Unsupported desktop model archive format: $format" }
                     val root = a.getValue("root").jsonPrimitive.content
-                    require(safeArchivePath(root) && '/' !in root) { "Invalid desktop model archive root: $root" }
+                    require(root.isEmpty() && format == "zip" || safeArchivePath(root) && '/' !in root) { "Invalid desktop model archive root: $root" }
                     val expanded = a.getValue("expandedBytes").jsonPrimitive.long
                     require(expanded > 0) { "Desktop model archive must declare its expanded size" }
                     val tree = a["treeSha256"]?.jsonPrimitive?.content
@@ -604,8 +691,11 @@ class DesktopModelLibrary internal constructor(val directory: Path, val catalog:
                         DesktopModelArchiveFile(path, bytes, sha)
                     } ?: emptyList()
                     if (format == "zip") {
-                        require(tree != null && files.isEmpty()) {
-                            "A ZIP model archive pins the expanded model-tree SHA-256 and no component list"
+                        if (root.isEmpty()) {
+                            require(text("family") == "ct2") { "Flat ZIP packages require a CT2 model identity" }
+                            requireFlatZip(DesktopModelArchive(format, root, expanded, files, tree))
+                        } else require(tree != null && files.isEmpty()) {
+                            "A named-root ZIP model archive pins the expanded model-tree SHA-256 and no component list"
                         }
                     } else {
                         require(files.size in 1..1000 && files.map { it.path }.toSet().size == files.size) { "Desktop model archive components are missing or duplicated" }
@@ -739,6 +829,15 @@ private fun safeArchivePath(path: String): Boolean =
     path.isNotEmpty() && path.length <= 1024 &&
         path.split('/').all { it.isNotEmpty() && it != "." && it != ".." } &&
         '\\' !in path && ':' !in path && path.none { it.isISOControl() }
+
+private fun requireFlatZip(archive: DesktopModelArchive) {
+    require(archive.format == "zip" && archive.root.isEmpty() && archive.treeSha256 == null) { "Pinned CT2 ZIP packages must have a flat root and component pins" }
+    require(archive.files.size in 2..16 && archive.byPath.size == archive.files.size && archive.byPath == archive.files.associateBy { it.path } &&
+        archive.files.all { safeArchivePath(it.path) && '/' !in it.path && it.bytes in 1..500_000_000L && it.sha256.matches(Regex("[a-f0-9]{64}")) }) { "Missing, duplicated or invalid CT2 ZIP component pins" }
+    require(archive.expandedBytes in 1..500_000_000L && archive.files.sumOf { it.bytes } == archive.expandedBytes) { "CT2 ZIP expanded size differs from its bounded component inventory" }
+    val manifest = archive.byPath["hearth-translation.json"]
+    require(manifest != null && manifest.bytes in 1..16384) { "CT2 ZIP packages must pin their root identity manifest" }
+}
 
 /** Must match the native bundle target platform names (native/macos-arm64/...). */
 internal fun desktopPlatform(): String {

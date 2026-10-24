@@ -1,0 +1,438 @@
+{
+  "schemaVersion": 1,
+  "asOf": "2026-10-24",
+  "profile": "phonon-2.5",
+  "modelFamily": "Phonon",
+  "label": "Phonon 2.5 · 25 European languages · INT8",
+  "source": {
+    "repository": "FermionResearch/Phonon-2.5",
+    "revision": "96dad4f3b5b784b1aa595213ea7481bf8a7addcd",
+    "modelCard": "https://huggingface.co/FermionResearch/Phonon-2.5",
+    "archiveUrl": "https://huggingface.co/FermionResearch/Phonon-2.5/resolve/96dad4f3b5b784b1aa595213ea7481bf8a7addcd/phonon-2.5.bps.tar.zst",
+    "archiveBytes": 162587031,
+    "archiveSha256": "1faa04053a472cabab3bc31d07f30c23f22906f71044ca10eb1f0de36d1f19a9",
+    "containerFormat": "fermion-five-value-parakeet-v1",
+    "containerBytes": 177593644,
+    "containerSha256": "17cb62d08e751a41819eb779db089aa7ac4eb2bab433ba5c2991d8cbd3cfefb9",
+    "packedFsq": {
+      "filename": "phonon-2.5.fsq",
+      "bytes": 156181652,
+      "sha256": "49da2dbe8301433caf7486368afa98c8d1a0e0477fbbc465895713ff6b510a66",
+      "runtimeSupported": false
+    },
+    "baseRepository": "nvidia/parakeet-tdt-0.6b-v3",
+    "baseRevision": "541d1f99c6b0c3cd0b11a95167540bb8edefd82b",
+    "baseFiles": [
+      {
+        "path": "config.json",
+        "bytes": 1153,
+        "sha256": "e747b85e1bdfd300c8b8ac63bac8dd5221f8fe9bc275b48d06c735fcd6971b6e"
+      },
+      {
+        "path": "generation_config.json",
+        "bytes": 289,
+        "sha256": "b141de6ec6d7f982ece13f98f604e3fe1807ea9c0e839185d0ab7064604209d0"
+      },
+      {
+        "path": "processor_config.json",
+        "bytes": 392,
+        "sha256": "8346a93a3b987fa1dec57a78f045cd0817d21786589a5a096b41a57a446fd1d7"
+      },
+      {
+        "path": "tokenizer.json",
+        "bytes": 1159960,
+        "sha256": "bd321b096832a3f270bd3b2a88823957920f1a5c5ada71114a26ea729d0cbe91"
+      },
+      {
+        "path": "tokenizer_config.json",
+        "bytes": 290,
+        "sha256": "0b2fe0037599ee335f0b972fa682bf0ece74e4ccfec755cb7daa3405d3d3e874"
+      }
+    ]
+  },
+  "languages": [
+    "en",
+    "es",
+    "fr",
+    "de",
+    "it",
+    "pt",
+    "nl",
+    "pl",
+    "ru",
+    "uk",
+    "ro",
+    "cs",
+    "sk",
+    "bg",
+    "hr",
+    "sv",
+    "da",
+    "fi",
+    "et",
+    "lv",
+    "lt",
+    "hu",
+    "sl",
+    "mt",
+    "el"
+  ],
+  "languageSelection": "Known source declaration only; it does not force the multilingual decoder. Auto produces unknown source metadata.",
+  "license": "CC-BY-4.0",
+  "codeLicense": "Apache-2.0",
+  "archive": {
+    "filename": "phonon-2.5-hearth-int8.tar.bz2",
+    "url": "https://github.com/Sal7one/Hearth/releases/download/v0.30.0-models.1/phonon-2.5-hearth-int8.tar.bz2",
+    "bytes": 339205640,
+    "sha256": "d869c32887cb9eaa1c034216797f25a215344aaea0b3e1ef82fe8d3f086d737c",
+    "manifestIncluded": false,
+    "root": "phonon-2.5-hearth-int8"
+  },
+  "offlineZip": {
+    "filename": "phonon-2.5-hearth-int8.zip",
+    "url": "https://github.com/Sal7one/Hearth/releases/download/v0.30.0-models.1/phonon-2.5-hearth-int8.zip",
+    "bytes": 363898653,
+    "sha256": "077dc80159561954617bb714912cfe7b71f8572258e250ab74bbdfb777566553",
+    "manifestIncluded": true
+  },
+  "installedBytes": 629548381,
+  "roles": {
+    "model": "tokens.txt",
+    "frontend": "joiner.int8.onnx",
+    "encoder": "encoder.int8.onnx",
+    "decoder": "decoder.int8.onnx"
+  },
+  "files": [
+    {
+      "path": "LICENSE-WEIGHTS-CC-BY-4.0.txt",
+      "bytes": 18657,
+      "sha256": "9ba9550ad48438d0836ddab3da480b3b69ffa0aac7b7878b5a0039e7ab429411"
+    },
+    {
+      "path": "NOTICE",
+      "bytes": 2664,
+      "sha256": "dd4993badd45eb336280a0ab5b4ecb3ed06260d189a30fcae8b9e89a587c4de8"
+    },
+    {
+      "path": "decoder.int8.onnx",
+      "bytes": 12257658,
+      "sha256": "9759e3eff1ccb5b79c694f218377a780a327ffc693a0fb21db812bd2754ceaac"
+    },
+    {
+      "path": "encoder.int8.onnx",
+      "bytes": 611893971,
+      "sha256": "2e644946846e0027c1c8973ab88675643e17720ac6fdb15320365e040519d63a"
+    },
+    {
+      "path": "joiner.int8.onnx",
+      "bytes": 5281492,
+      "sha256": "b848103db33b89be7167d218587ea59e772e40ba6ba1cd787230e7e754839633"
+    },
+    {
+      "path": "tokens.txt",
+      "bytes": 93939,
+      "sha256": "d58544679ea4bc6ac563d1f545eb7d474bd6cfa467f0a6e2c1dc1c7d37e3c35d"
+    }
+  ],
+  "dependencies": {
+    "torch": "2.12.0",
+    "transformers": "5.12.1",
+    "onnx": "1.17.0",
+    "onnxruntime": "1.20.1",
+    "numpy": "2.5.4",
+    "python": "3.12.15",
+    "tokenizers": "0.22.2"
+  },
+  "conversion": {
+    "script": "scripts/speech/phonon-2-export.py",
+    "requirements": "scripts/speech/requirements-phonon-export.txt",
+    "sourceSha256": "7ab9e053aab3eb5da55b10046885f4986516e51e49c6b5d58c2d27042e5fd2da",
+    "publishedSourceSha256": "c9971dbc8cd77f93f3cd360d38335583b4f01c82d4dad9062797727e9bf5f7b8",
+    "sourceNote": "After conversion, only the exporter module docstring was corrected to require the tested pinned dependencies. Executable AST is identical to the source used for conversion.",
+    "containerRecords": 723,
+    "strictTensorKeyLoad": true,
+    "quantization": {
+      "encoder": "dynamic QUInt8",
+      "decoder": "dynamic QInt8",
+      "joiner": "dynamic QInt8"
+    },
+    "featureBins": 128,
+    "sampleRate": 16000,
+    "subsamplingFactor": 8,
+    "symbolsIncludingBlank": 8193,
+    "tdtDurations": [
+      0,
+      1,
+      2,
+      3,
+      4
+    ]
+  },
+  "nativeValidation": {
+    "scope": "Real weights, production native C ABI, CPU, macOS ARM64. Decode compute only, excluding capture/endpoint wait and model preparation.",
+    "runtimes": [
+      {
+        "name": "host",
+        "onnxRuntime": "1.28.1",
+        "library": "build/speech-runtimes/host/lib/libhearth_qwen.dylib",
+        "sha256": "813e7c0aa7cca271cb1a9360c82f946cc19ff78051557d3ca549d452a471522d"
+      },
+      {
+        "name": "desktop",
+        "onnxRuntime": "1.20.1",
+        "library": "desktop-runtime/native-libs/macos-arm64/libhearth_desktop_qwen3_asr.dylib",
+        "sha256": "09879803153c714bf4389d584cfa81be10dbcd317ebc95ac742fbb3c3cbf0526"
+      }
+    ],
+    "runs": [
+      {
+        "runtime": "host",
+        "clip": "en",
+        "source": "en",
+        "returnCode": 0,
+        "seconds": 1.856,
+        "transcript": "",
+        "languages": [],
+        "reference": "in the north the region is bounded by the sahel and in the south and west by the atlantic ocean",
+        "command": [
+          "build/speech-runtimes/host/speech_smoke",
+          "build/phonon-2.5/package",
+          "build/phonon-2.5/native-validation/en-1897.pcm",
+          "en"
+        ],
+        "timing": [
+          "load_seconds=1.44058 inference_seconds=0.00192462 audio_seconds=7.14"
+        ],
+        "runtimeLibrary": "/Users/salehalanazi/AndroidStudioProjects/Hearth/build/speech-runtimes/host/lib/libhearth_qwen.dylib",
+        "runtimeLibrarySha256": "813e7c0aa7cca271cb1a9360c82f946cc19ff78051557d3ca549d452a471522d",
+        "onnxRuntimeVersion": "1.28.1",
+        "modelManifestSha256": "995689b158f9c37505597048b15d08f1dab10835855cdb7745bdfc483f4c5bca",
+        "validationBoundary": "Production exported Phonon C ABI + native session; not Android device or desktop JNI",
+        "classification": "Input filtered by production -45 dBFS energy gate; decoder not called",
+        "inputRmsDbfs": -58.42313384037144,
+        "inputPeak": 0.009185791015625,
+        "inputGain": 1,
+        "normalizationReceipt": "/Users/salehalanazi/AndroidStudioProjects/Hearth/build/phonon-2.5/native-validation/normalized-fixtures/normalization-receipt.json",
+        "inferenceObserved": false
+      },
+      {
+        "runtime": "host",
+        "clip": "ru",
+        "source": "ru",
+        "inputGain": 1,
+        "inputSha256": "9033a0c5bb22467a9456a71efb9a62387a932cf04b762c2742f6615059bc0435",
+        "returnCode": 0,
+        "seconds": 1.076,
+        "transcript": "На севере регион ограничен Сахелем на юге и западе Атлантическим океаном.",
+        "languages": [
+          "ru",
+          "ru"
+        ],
+        "reference": "на севере регион ограничен сахелем а на юге и западе атлантическим океаном",
+        "command": [
+          "build/speech-runtimes/host/speech_smoke",
+          "build/phonon-2.5/package",
+          "build/phonon-2.5/native-validation/ru-1897.pcm",
+          "ru"
+        ],
+        "timing": [
+          "load_seconds=0.856905 inference_seconds=0.178119 audio_seconds=7.62"
+        ],
+        "runtimeLibrary": "/Users/salehalanazi/AndroidStudioProjects/Hearth/build/speech-runtimes/host/lib/libhearth_qwen.dylib",
+        "runtimeLibrarySha256": "813e7c0aa7cca271cb1a9360c82f946cc19ff78051557d3ca549d452a471522d",
+        "onnxRuntimeVersion": "1.28.1",
+        "modelManifestSha256": "995689b158f9c37505597048b15d08f1dab10835855cdb7745bdfc483f4c5bca",
+        "validationBoundary": "Production exported Phonon C ABI + native session; not Android device or desktop JNI",
+        "classification": "Actual neural model inference produced visible final text",
+        "normalizationReceipt": "/Users/salehalanazi/AndroidStudioProjects/Hearth/build/phonon-2.5/native-validation/normalized-fixtures/normalization-receipt.json",
+        "inferenceObserved": true
+      },
+      {
+        "runtime": "host",
+        "clip": "en",
+        "source": "en",
+        "inputGain": 87.08837209302327,
+        "inputSha256": "86e33497ebef611d502c1fac9af4c0f52a418ab89cf47c5f864dbd25ca25ecb0",
+        "returnCode": 0,
+        "seconds": 0.849,
+        "transcript": "In the north the region is bounded by the Sahil and in the south and west by the Atlantic Ocean.",
+        "languages": [
+          "en",
+          "en"
+        ],
+        "reference": "in the north the region is bounded by the sahel and in the south and west by the atlantic ocean",
+        "command": [
+          "build/speech-runtimes/host/speech_smoke",
+          "build/phonon-2.5/package",
+          "build/phonon-2.5/native-validation/en-1897-normalized.pcm",
+          "en"
+        ],
+        "timing": [
+          "load_seconds=0.622509 inference_seconds=0.194264 audio_seconds=7.14"
+        ],
+        "runtimeLibrary": "/Users/salehalanazi/AndroidStudioProjects/Hearth/build/speech-runtimes/host/lib/libhearth_qwen.dylib",
+        "runtimeLibrarySha256": "813e7c0aa7cca271cb1a9360c82f946cc19ff78051557d3ca549d452a471522d",
+        "onnxRuntimeVersion": "1.28.1",
+        "modelManifestSha256": "995689b158f9c37505597048b15d08f1dab10835855cdb7745bdfc483f4c5bca",
+        "validationBoundary": "Production exported Phonon C ABI + native session; not Android device or desktop JNI",
+        "classification": "Actual neural model inference produced visible final text",
+        "normalizationReceipt": "/Users/salehalanazi/AndroidStudioProjects/Hearth/build/phonon-2.5/native-validation/normalized-fixtures/normalization-receipt.json",
+        "inferenceObserved": true
+      },
+      {
+        "runtime": "host",
+        "clip": "en",
+        "source": "auto",
+        "inputGain": 87.08837209302327,
+        "inputSha256": "86e33497ebef611d502c1fac9af4c0f52a418ab89cf47c5f864dbd25ca25ecb0",
+        "returnCode": 0,
+        "seconds": 0.866,
+        "transcript": "In the north the region is bounded by the Sahil and in the south and west by the Atlantic Ocean.",
+        "languages": [
+          "",
+          ""
+        ],
+        "reference": "in the north the region is bounded by the sahel and in the south and west by the atlantic ocean",
+        "command": [
+          "build/speech-runtimes/host/speech_smoke",
+          "build/phonon-2.5/package",
+          "build/phonon-2.5/native-validation/en-1897-normalized.pcm",
+          "auto"
+        ],
+        "timing": [
+          "load_seconds=0.632176 inference_seconds=0.204467 audio_seconds=7.14"
+        ],
+        "runtimeLibrary": "/Users/salehalanazi/AndroidStudioProjects/Hearth/build/speech-runtimes/host/lib/libhearth_qwen.dylib",
+        "runtimeLibrarySha256": "813e7c0aa7cca271cb1a9360c82f946cc19ff78051557d3ca549d452a471522d",
+        "onnxRuntimeVersion": "1.28.1",
+        "modelManifestSha256": "995689b158f9c37505597048b15d08f1dab10835855cdb7745bdfc483f4c5bca",
+        "validationBoundary": "Production exported Phonon C ABI + native session; not Android device or desktop JNI",
+        "classification": "Actual neural model inference produced visible final text",
+        "normalizationReceipt": "/Users/salehalanazi/AndroidStudioProjects/Hearth/build/phonon-2.5/native-validation/normalized-fixtures/normalization-receipt.json",
+        "inferenceObserved": true
+      },
+      {
+        "runtime": "desktop",
+        "clip": "ru",
+        "source": "ru",
+        "inputGain": 1,
+        "inputSha256": "9033a0c5bb22467a9456a71efb9a62387a932cf04b762c2742f6615059bc0435",
+        "returnCode": 0,
+        "seconds": 1.302,
+        "transcript": "На севере регион ограничен Сахелем на юге и западе Атлантическим океаном.",
+        "languages": [
+          "ru",
+          "ru"
+        ],
+        "reference": "на севере регион ограничен сахелем а на юге и западе атлантическим океаном",
+        "command": [
+          "build/speech-runtimes/host/speech_smoke",
+          "build/phonon-2.5/package",
+          "build/phonon-2.5/native-validation/ru-1897.pcm",
+          "ru"
+        ],
+        "timing": [
+          "load_seconds=1.09421 inference_seconds=0.163408 audio_seconds=7.62"
+        ],
+        "runtimeLibrary": "/Users/salehalanazi/AndroidStudioProjects/Hearth/desktop-runtime/native-libs/macos-arm64/libhearth_desktop_qwen3_asr.dylib",
+        "runtimeLibrarySha256": "09879803153c714bf4389d584cfa81be10dbcd317ebc95ac742fbb3c3cbf0526",
+        "onnxRuntimeVersion": "1.20.1",
+        "modelManifestSha256": "995689b158f9c37505597048b15d08f1dab10835855cdb7745bdfc483f4c5bca",
+        "validationBoundary": "Production exported Phonon C ABI + native session; not Android device or desktop JNI",
+        "classification": "Actual neural model inference produced visible final text",
+        "normalizationReceipt": "/Users/salehalanazi/AndroidStudioProjects/Hearth/build/phonon-2.5/native-validation/normalized-fixtures/normalization-receipt.json",
+        "inferenceObserved": true
+      },
+      {
+        "runtime": "desktop",
+        "clip": "en",
+        "source": "en",
+        "inputGain": 87.08837209302327,
+        "inputSha256": "86e33497ebef611d502c1fac9af4c0f52a418ab89cf47c5f864dbd25ca25ecb0",
+        "returnCode": 0,
+        "seconds": 0.851,
+        "transcript": "In the north the region is bounded by the Sahil and in the south and west by the Atlantic Ocean.",
+        "languages": [
+          "en",
+          "en"
+        ],
+        "reference": "in the north the region is bounded by the sahel and in the south and west by the atlantic ocean",
+        "command": [
+          "build/speech-runtimes/host/speech_smoke",
+          "build/phonon-2.5/package",
+          "build/phonon-2.5/native-validation/en-1897-normalized.pcm",
+          "en"
+        ],
+        "timing": [
+          "load_seconds=0.58644 inference_seconds=0.216512 audio_seconds=7.14"
+        ],
+        "runtimeLibrary": "/Users/salehalanazi/AndroidStudioProjects/Hearth/desktop-runtime/native-libs/macos-arm64/libhearth_desktop_qwen3_asr.dylib",
+        "runtimeLibrarySha256": "09879803153c714bf4389d584cfa81be10dbcd317ebc95ac742fbb3c3cbf0526",
+        "onnxRuntimeVersion": "1.20.1",
+        "modelManifestSha256": "995689b158f9c37505597048b15d08f1dab10835855cdb7745bdfc483f4c5bca",
+        "validationBoundary": "Production exported Phonon C ABI + native session; not Android device or desktop JNI",
+        "classification": "Actual neural model inference produced visible final text",
+        "normalizationReceipt": "/Users/salehalanazi/AndroidStudioProjects/Hearth/build/phonon-2.5/native-validation/normalized-fixtures/normalization-receipt.json",
+        "inferenceObserved": true
+      },
+      {
+        "runtime": "desktop",
+        "clip": "en",
+        "source": "auto",
+        "inputGain": 87.08837209302327,
+        "inputSha256": "86e33497ebef611d502c1fac9af4c0f52a418ab89cf47c5f864dbd25ca25ecb0",
+        "returnCode": 0,
+        "seconds": 0.833,
+        "transcript": "In the north the region is bounded by the Sahil and in the south and west by the Atlantic Ocean.",
+        "languages": [
+          "",
+          ""
+        ],
+        "reference": "in the north the region is bounded by the sahel and in the south and west by the atlantic ocean",
+        "command": [
+          "build/speech-runtimes/host/speech_smoke",
+          "build/phonon-2.5/package",
+          "build/phonon-2.5/native-validation/en-1897-normalized.pcm",
+          "auto"
+        ],
+        "timing": [
+          "load_seconds=0.605406 inference_seconds=0.179983 audio_seconds=7.14"
+        ],
+        "runtimeLibrary": "/Users/salehalanazi/AndroidStudioProjects/Hearth/desktop-runtime/native-libs/macos-arm64/libhearth_desktop_qwen3_asr.dylib",
+        "runtimeLibrarySha256": "09879803153c714bf4389d584cfa81be10dbcd317ebc95ac742fbb3c3cbf0526",
+        "onnxRuntimeVersion": "1.20.1",
+        "modelManifestSha256": "995689b158f9c37505597048b15d08f1dab10835855cdb7745bdfc483f4c5bca",
+        "validationBoundary": "Production exported Phonon C ABI + native session; not Android device or desktop JNI",
+        "classification": "Actual neural model inference produced visible final text",
+        "normalizationReceipt": "/Users/salehalanazi/AndroidStudioProjects/Hearth/build/phonon-2.5/native-validation/normalized-fixtures/normalization-receipt.json",
+        "inferenceObserved": true
+      }
+    ]
+  },
+  "hostTests": {
+    "exporter": {
+      "passed": 5,
+      "command": "build/marian-runtime-fix/venv/bin/python scripts/speech/test_phonon_export.py"
+    },
+    "package": {
+      "passed": 11,
+      "command": "python3 scripts/speech/test_package.py"
+    }
+  },
+  "archivePolicy": "Publisher TAR excludes hearth-speech.json because installation generates it after pinned archive verification. Offline import ZIP includes hearth-speech.json at archive root. Both retain all6pinned runtime/license assets.",
+  "limitations": [
+    "No Android phone or GPU inference, sustained thermals, memory/battery measurement, or full25-language quality benchmark.",
+    "Only English and Russian production inference were checked; this validates integration, not the publisher's multilingual WER claims.",
+    "The raw English FLEURS fixture is below the production energy gate. Its no-inference run remains recorded; meaningful English inference used a separately recorded gain-normalized copy.",
+    "Observed transcripts include Sahil vs reference Sahel and a missing Russian conjunction; output is not claimed exact or superior.",
+    "Publisher156.2MB FSQ is not a supported Android runtime package; Hearth download/installed sizes are the independently pinned339.2MB/629.5MB converted artifacts.",
+    "Arabic and Chinese speech are unsupported. Arabic translation requires an independent English/Russian-to-Arabic text translator."
+  ],
+  "archiveValidation": {
+    "passed": true,
+    "checks": [
+      "TAR: exact6files, allsizes/hashespassed, manifestexcluded",
+      "ZIP: rootmanifest+exact6files, allsizes/hashespassed"
+    ]
+  }
+}

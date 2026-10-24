@@ -56,8 +56,17 @@ object CaptionLanguages {
                 listOf(model.label, com.sal7one.common_jni.translation.TranslationLanguages.label(language))),
                 listOf(com.sal7one.common_jni.speech.SpeechSourceLanguage(language, false)))
         }
-        CaptionEngineChoice.PHONON -> CaptionLanguageChoices(setOf("en"), UiMessage(UiR.string.model_phonon_language_note,
-            "Phonon 2 · This model recognizes English only. No automatic language detection or override is needed."))
+        CaptionEngineChoice.PHONON -> when (model.id) {
+            SpeechProfile.PHONON_2.id -> CaptionLanguageChoices(setOf("en"), UiMessage(UiR.string.model_phonon_language_note,
+                "Phonon 2 · This model recognizes English only. No automatic language detection or override is needed."),
+                SpeechProfile.PHONON_2.capabilities.languages)
+            SpeechProfile.PHONON_2_5.id -> CaptionLanguageChoices(SpeechProfile.PHONON_2_5.capabilities.sourceLanguages + "auto",
+                UiMessage(UiR.string.model_phonon_25_language_note,
+                    "Phonon 2.5 · 25 European languages. Choose a known spoken language for translation; this labels the recognized text and does not force the decoder. Auto provides original captions with an unknown source. Arabic and Chinese speech are not supported."),
+                SpeechProfile.PHONON_2_5.capabilities.languages)
+            else -> automatic(model.label, UiMessage(UiR.string.model_fixed_language_unknown,
+                "Import or select a verified model to see its spoken language."))
+        }
         CaptionEngineChoice.OMNILINGUAL -> {
             val capabilities = SpeechProfile.OMNILINGUAL_CTC_300M_V2.capabilities
             CaptionLanguageChoices(capabilities.sourceLanguages + "auto",

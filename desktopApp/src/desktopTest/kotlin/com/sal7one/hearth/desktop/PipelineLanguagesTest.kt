@@ -59,6 +59,29 @@ class PipelineLanguagesTest {
         assertFalse(pipelineLanguages(config.copy(speech = EngineSelection("qwen3-asr-local")), engines, catalog).sources.any { it.code == "auto" })
     }
 
+    @Test fun multilingualPhononOffersAutoOnlyForOriginalCaptionsAndKeepsCheckpointCoverage() {
+        val phonon = EngineDescriptor("phonon-local", "Phonon", PipelineStage.STT, EngineKind.LOCAL,
+            setOf("en", "ru", "fr"), requiresModel = true)
+        val multilingual = card("phonon-2.5", "phonon-local", PipelineStage.STT, setOf("en", "ru", "fr"))
+        val english = multilingual.copy(id = "phonon-2", languages = setOf("en"))
+        val models = catalog + multilingual + english
+        val allEngines = engines + phonon
+        val cc = PipelineConfig(speech = EngineSelection("phonon-local", "phonon-2.5"), sourceLanguage = "auto", targetLanguage = "ar")
+        val automatic = pipelineLanguages(cc, allEngines, models)
+        assertNull(automatic.issue)
+        assertEquals("Auto · original captions", automatic.sources.single { it.code == "auto" }.label)
+        assertEquals(setOf("auto", "en", "ru", "fr"), automatic.sources.map { it.code }.toSet())
+        assertFalse(automatic.canSwap)
+        val translated = cc.copy(translation = EngineSelection("openai-translation"))
+        val unknownSource = pipelineLanguages(translated, allEngines, models)
+        assertTrue(unknownSource.issue!!.contains("does not report"))
+        assertFalse(unknownSource.sources.any { it.code == "auto" })
+        assertNull(pipelineLanguages(translated.copy(sourceLanguage = "ru"), allEngines, models).issue)
+        val old = cc.copy(speech = EngineSelection("phonon-local", "phonon-2"), sourceLanguage = "ru")
+        assertEquals(setOf("en"), pipelineLanguages(old, allEngines, models).sources.map { it.code }.toSet())
+        assertNotNull(pipelineLanguages(old, allEngines, models).issue)
+    }
+
     @Test fun checkpointLanguageAndRivaEnglishPairConstraintsAreAppliedToSwapping() {
         val english = whisper.copy(id = "whisper-en", languages = setOf("en"))
         val restricted = pipelineLanguages(PipelineConfig(speech = EngineSelection("whisper-local", english.id)), engines, catalog + english)

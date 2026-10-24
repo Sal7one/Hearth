@@ -52,6 +52,23 @@ class DownloadQueueGroupsTest {
         assertEquals(2, groups.size)
         assertTrue(groups.all { !it.multipart && it.modelId == null })
     }
+    @Test fun aJisrRuntimeArchiveIsOneModelCardWithZipTransferBytesAndAnIndependentUseAction() {
+        val spec=checkNotNull(com.sal7one.common_jni.translation.Ct2Catalog.find("ct2-jisr-50m-en-ar-int8"))
+        val part=com.sal7one.transiber.translation.Ct2Package.parts(spec).single()
+        val complete=FileDownload(-700,part.downloadName,DownloadManager.STATUS_SUCCESSFUL,0,
+            part.file.bytes,part.file.bytes,"Complete",modelId=part.id)
+        val group=downloadQueueGroups(listOf(complete)).single()
+        assertEquals(spec.id,group.modelId)
+        assertFalse(group.multipart)
+        assertEquals(mapOf(part.id to spec.archive!!.bytes),group.required)
+        assertEquals(spec.archive!!.bytes,group.total)
+        assertEquals(group.total,group.transferred)
+        assertEquals(DownloadStage.READY,group.stage)
+        assertNull(group.installedRecord)
+        val installed=downloadQueueGroups(listOf(complete.copy(phase="Installed",installedId=spec.id))).single()
+        assertEquals(DownloadStage.INSTALLED,installed.stage)
+        assertEquals(spec.id,installed.installedRecord?.installedId)
+    }
     @Test fun speechDecoderAndEncoderShareOneCardAndBothAreRequired() {
         val source = com.sal7one.transiber.models.SpeechComponents.groups.single()
         val rows = source.parts.mapIndexed { index, part -> FileDownload(-100L-index, part.fileName,

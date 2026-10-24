@@ -151,7 +151,7 @@ class DesktopEngines(
             local(MoonshineSpeechModel.ENGINE_ID, "Moonshine", PipelineStage.STT, "hearth_desktop_backend_speech", MoonshineSpeechModel.languages),
             local("vosk-local", "Vosk (Kaldi)", PipelineStage.STT, "hearth_vosk", VOSK_LANGUAGES),
             local("omnilingual-local", "Omnilingual CTC 300M", PipelineStage.STT, "hearth_desktop_backend_speech", OMNILINGUAL_LANGUAGES),
-            local("phonon-local", "Phonon 2", PipelineStage.STT, "hearth_desktop_backend_speech", PHONON_LANGUAGES),
+            local("phonon-local", "Phonon", PipelineStage.STT, "hearth_desktop_backend_speech", PHONON_25_LANGUAGES),
             local("moss-tts-local", "MOSS-TTS Nano 100M", PipelineStage.TTS, "hearth_desktop_moss", setOf("ar", "en")),
             local("omnivoice-tts-local", "OmniVoice (voice design)", PipelineStage.TTS, "hearth_desktop_omnivoice", setOf("ar", "en")),
             local("magpie-tts-local", "MagpieTTS Multilingual 357M", PipelineStage.TTS, "hearth_desktop_magpie", MagpieCatalog.languages),
@@ -257,11 +257,15 @@ class DesktopEngines(
                     }
                 }
             } else if (selection.engineId == "phonon-local") {
-                val root = verifiedSherpaPackage(selection, PHONON_FILES, "Phonon 2")
+                val multilingual = phononMultilingual(selection)
+                val root = verifiedSherpaPackage(selection,
+                    if (multilingual) PHONON_25_FILES else PHONON_FILES,
+                    if (multilingual) "Phonon 2.5" else "Phonon 2")
+                val language = phononSource(selection, sourceLanguage)
                 val owner = currentCoroutineContext()
                 joinedBlocking({ backendEngine.get()?.cancel() }) {
                     owner.ensureActive()
-                    val opened = withSupportedSpeechLanguage(sourceLanguage, PHONON_LANGUAGES, "Phonon 2") { language -> DesktopBackendSpeechEngine.open(
+                    val opened = DesktopBackendSpeechEngine.open(
                         "hearth_desktop_qwen3_asr", "phonon", root.resolve("tokens.txt"),
                         language, threads(selection),
                         entrySymbol = "hearth_phonon_backend_v1",
@@ -269,7 +273,7 @@ class DesktopEngines(
                         decoder = root.resolve("decoder.int8.onnx"),
                         convFrontend = root.resolve("joiner.int8.onnx"),
                         maximumMs = 15000,
-                    ) }
+                    )
                     if (!backendEngine.compareAndSet(null, opened)) {
                         opened.close()
                         error("Speech backend engine was already published")
@@ -600,7 +604,6 @@ internal fun outputFile(directory: Path): Path = directory.resolve("generated-au
 // Exactly the six models pinned in the Android catalog; Vosk has no code-switching or detection.
 private val TRANSCRIBEPSY_LANGUAGES = setOf("en", "nl", "fr", "de", "it", "pl", "pt", "es")
 private val VOSK_LANGUAGES = setOf("en", "de", "fr", "es", "ru", "zh")
-private val PHONON_LANGUAGES = setOf("en")
 // Mirrors Android SpeechProfile.OMNILINGUAL_CTC_300M_V2 capabilities; the checkpoint
 // covers more languages, but only this reviewed subset may be declared to the user.
 private val OMNILINGUAL_LANGUAGES = setOf("en", "ar", "ru", "zh")
@@ -612,6 +615,12 @@ private val PHONON_FILES = mapOf(
     "tokens.txt" to "d58544679ea4bc6ac563d1f545eb7d474bd6cfa467f0a6e2c1dc1c7d37e3c35d",
     "encoder.int8.onnx" to "953ae3bd0b635e4d0929e53cdc1d4757629099b99dee9b88e0812cb6ee6f670a",
     "decoder.int8.onnx" to "d92e2d8fc9c99ef9faf0a2cf1728af4ec08c0a83b99ece29a46037c4a5a757bf",
+    "joiner.int8.onnx" to "b848103db33b89be7167d218587ea59e772e40ba6ba1cd787230e7e754839633",
+)
+private val PHONON_25_FILES = mapOf(
+    "tokens.txt" to "d58544679ea4bc6ac563d1f545eb7d474bd6cfa467f0a6e2c1dc1c7d37e3c35d",
+    "encoder.int8.onnx" to "2e644946846e0027c1c8973ab88675643e17720ac6fdb15320365e040519d63a",
+    "decoder.int8.onnx" to "9759e3eff1ccb5b79c694f218377a780a327ffc693a0fb21db812bd2754ceaac",
     "joiner.int8.onnx" to "b848103db33b89be7167d218587ea59e772e40ba6ba1cd787230e7e754839633",
 )
 private val NEMOTRON_LANGUAGES = setOf(

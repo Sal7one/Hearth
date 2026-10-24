@@ -60,7 +60,15 @@ python3 scripts/translation/ct2/package.py ct2-jisr-50m-en-ar-int8 \
   /path/to/converted/files /path/to/new-package.zip
 ```
 
-The app currently offers **Import**, rather than inventing publisher URLs for
-Hearth's converted files. Importing checks the manifest, exact file inventory,
-SHA-256, archive bounds and atomic replacement. Runtime models and original
-weights are excluded from Git and the SDK. License: Apache-2.0.
+All four converted packages now support **Download** on Android ARM64 and macOS
+Apple silicon, using the original public [v0.27.3 model assets](https://github.com/Sal7one/Hearth/releases/tag/v0.27.3).
+No upstream training URL is substituted for a converted runtime file. Each transfer
+checks the pinned ZIP size and SHA-256, then its root manifest and all six runtime
+components before atomic installation. Desktop selection retains every component
+pin for verification at inference time. The queue reserves space for both the ZIP
+and expanded runtime during installation.
+
+**Import** remains available on both platforms, including Android FOSS. The ZIPs
+contain a flat root manifest; import checks the exact file inventory, SHA-256,
+archive bounds and atomic replacement. Runtime models and original weights are
+excluded from Git and the SDK. License: Apache-2.0.

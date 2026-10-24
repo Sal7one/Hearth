@@ -9,7 +9,7 @@ import java.nio.file.Path
 internal object Ct2ModelIntegrity {
     private val vocabularies = setOf("shared_vocabulary.json", "shared_vocabulary.txt", "source_vocabulary.json",
         "source_vocabulary.txt", "target_vocabulary.json", "target_vocabulary.txt")
-    private val metadata = setOf("LICENSE", "LICENSE.txt", "NOTICE", "README.md", "tokenizer_config.json", "special_tokens_map.json")
+    private val metadata = setOf("LICENSE", "LICENSE.txt", "NOTICE", "README.md", "tokenizer_config.json", "special_tokens_map.json", "hearth-translation.json")
 
     private fun inventory(root: Path, mode: Int): ComponentModelIntegrity {
         require(mode in 0..5) { "Unsupported CTranslate2 tokenizer mode" }
