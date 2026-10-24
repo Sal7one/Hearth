@@ -146,8 +146,8 @@ enum class CaptionFontScale(val label: String, val multiplier: Float) {
  * Everything the overlay and capture pipeline can be tuned with. Persisted in
  * DataStore so a session resumes exactly as the user left it.
  *
- * [theme] is the user's own style choice and is the one field caption presets
- * must leave alone; they restyle the bubble through [withShape] instead.
+ * [theme], [textColorArgb] and [textOpacity] are the user's own style choices;
+ * caption presets restyle the bubble through [withShape] without changing them.
  */
 data class CaptionOverlayConfig(
     val mode: CaptionMode = CaptionMode.CAPTIONS,
@@ -192,6 +192,10 @@ data class CaptionOverlayConfig(
      */
     val theme: CaptionTheme = CaptionTheme.DARK,
     val backgroundOpacity: Int = 70,     // 0..100
+    /** Null follows the selected theme; custom colours are stored with opaque alpha. */
+    val textColorArgb: Int? = null,
+    /** Caption text opacity, independently adjustable from the bubble background. */
+    val textOpacity: Int = 100,          // 10..100
     // Behaviour
     val tapThrough: Boolean = false,     // overlay ignores all touches
     val paused: Boolean = false,         // discard captured audio; suspend speech processing
@@ -247,14 +251,17 @@ data class CaptionOverlayConfig(
         minimalHeightDp = minimalHeightDp.coerceIn(MINIMAL_OVERLAY_MIN_HEIGHT_DP, 600),
         historyLines = historyLines.coerceIn(0, 8),
         backgroundOpacity = backgroundOpacity.coerceIn(0, 100),
+        textColorArgb = textColorArgb?.or(0xff000000.toInt()),
+        textOpacity = textOpacity.coerceIn(10, 100),
     )
 
     /**
      * Copies only the bubble's visual shape onto [this]: layout, text sizing
      * and background. Capture/translation semantics (mode, source, engine,
-     * target, display) and the user-owned [theme] are deliberately absent, so
-     * caption presets can restyle the bubble without overriding the user's
-     * theme. Defaults keep the current value, matching [copy] semantics for
+     * target, display) and the user-owned [theme], [textColorArgb] and
+     * [textOpacity] are deliberately absent, so
+     * caption presets can restyle the bubble without overriding its theme or
+     * custom text appearance. Defaults keep the current value, matching [copy] semantics for
      * the included fields.
      */
     fun withShape(
@@ -362,6 +369,8 @@ object CaptionConfigStore {
             showPartial = prefs[ShowPartial] ?: true,
             theme = prefs[Theme]?.let { enumOrDefault(it, CaptionTheme.DARK) } ?: CaptionTheme.DARK,
             backgroundOpacity = prefs[BackgroundOpacity] ?: 70,
+            textColorArgb = prefs[TextColorArgb],
+            textOpacity = prefs[TextOpacity] ?: 100,
             tapThrough = false, // Session-only opt-in, including upgrades with a saved true value.
             saveCaptionHistory = prefs[SaveCaptionHistory] ?: false,
             speakCaptions = prefs[SpeakCaptions] ?: false,
@@ -409,6 +418,9 @@ object CaptionConfigStore {
         prefs[ShowPartial] = config.showPartial
         prefs[Theme] = config.theme.name
         prefs[BackgroundOpacity] = config.backgroundOpacity
+        config.textColorArgb?.let { prefs[TextColorArgb] = it or 0xff000000.toInt() }
+            ?: prefs.remove(TextColorArgb)
+        prefs[TextOpacity] = config.textOpacity.coerceIn(10, 100)
         prefs.remove(TapThrough)
         prefs[SaveCaptionHistory] = config.saveCaptionHistory
         prefs[SpeakCaptions] = config.speakCaptions
@@ -465,6 +477,8 @@ object CaptionConfigStore {
     private val ShowPartial = booleanPreferencesKey("show_partial")
     private val Theme = stringPreferencesKey("theme")
     private val BackgroundOpacity = intPreferencesKey("background_opacity")
+    private val TextColorArgb = intPreferencesKey("text_color_argb_v1")
+    private val TextOpacity = intPreferencesKey("text_opacity_v1")
     private val TapThrough = booleanPreferencesKey("tap_through")
     private val SaveCaptionHistory = booleanPreferencesKey("save_caption_history_v1")
     private val SpeakCaptions = booleanPreferencesKey("speak_captions")

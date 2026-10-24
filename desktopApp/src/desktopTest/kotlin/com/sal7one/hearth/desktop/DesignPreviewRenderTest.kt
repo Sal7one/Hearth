@@ -651,7 +651,7 @@ class DesignPreviewRenderTest {
             )
         },
         case(DesktopScreen.TRANSLATE, status = "EuroLLM ready", height = 900) {
-            TranslateScreen(state = translateFixture, actions = TranslateActions())
+            TranslateScreen(state = translateFixture, draft = translateFixture.original, actions = TranslateActions())
         },
         case(DesktopScreen.OVERLAY, status = "Overlay on", height = 1000, statusLive = true) {
             OverlayScreen(state = previewOverlay, actions = OverlayActions())

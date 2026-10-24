@@ -2,8 +2,9 @@
 
 Prepared 24 October 2026. Android candidate `v0.30.0-rc.15`, version
 `0.30.0` / code **111**, preserves the existing QA package and signing identity.
-The latest public application release remains RC14 until the owner publishes this
-candidate. Model packages, native runtimes and desktop source are unchanged.
+The owner has published RC15; its APKs are bound to
+`cfb3d3c218b13a11fd3166c3c80efce2a180cd5d`. Model packages, native runtimes
+and desktop production source were unchanged by this candidate.
 
 ## What changed
 

@@ -519,8 +519,8 @@ private fun CaptionBody(
                 val text = buildAnnotatedString {
                     paragraph.chunks.forEachIndexed { index, chunk ->
                         if (index != 0) append(" ")
-                        withStyle(SpanStyle(color = if (chunk.faded) palette.onSurfaceFaded
-                            else if (paragraph.translated) palette.accent else palette.onSurface)) {
+                        val color = captionTextColor(cfg, palette, paragraph.translated, chunk.faded)
+                        withStyle(SpanStyle(color = color, shadow = captionTextShadow(color, cfg))) {
                             append(chunk.text)
                         }
                     }
@@ -566,25 +566,27 @@ private fun LinePair(
         Text(
             text = original,
             modifier = Modifier.fillMaxWidth(),
-            color = if (faded) palette.onSurfaceFaded else palette.onSurface,
+            color = captionTextColor(cfg, palette, faded = faded),
             fontSize = (14.sp * cfg.fontScale.multiplier),
             lineHeight = (20.sp * cfg.fontScale.multiplier),
             textAlign = TextAlign.Start,
-            style = LocalTextStyle.current.copy(textDirection = TextDirection.Content),
+            style = LocalTextStyle.current.copy(textDirection = TextDirection.Content,
+                shadow = captionTextShadow(captionTextColor(cfg, palette, faded = faded), cfg)),
         )
     }
     pair.translation?.let { translation ->
         Text(
             text = translation,
             modifier = Modifier.fillMaxWidth(),
-            color = if (faded) palette.onSurfaceFaded else palette.accent,
+            color = captionTextColor(cfg, palette, translated = true, faded = faded),
             fontSize = (15.sp * cfg.fontScale.multiplier),
             lineHeight = (21.sp * cfg.fontScale.multiplier),
             // RTL targets render right-aligned; Compose handles bidi runs in
             // mixed-script lines automatically.
             textAlign = if (cfg.translationRtl) TextAlign.Right else TextAlign.Start,
             style = LocalTextStyle.current.copy(textDirection =
-                if (cfg.translationRtl) TextDirection.ContentOrRtl else TextDirection.Content),
+                if (cfg.translationRtl) TextDirection.ContentOrRtl else TextDirection.Content,
+                shadow = captionTextShadow(captionTextColor(cfg, palette, translated = true, faded = faded), cfg)),
         )
     }
 }
@@ -662,6 +664,8 @@ private fun SettingsPanel(
                 )
             }
         }
+
+        CaptionTextAppearanceControls(cfg, onConfigChange, onConfigPreview)
 
         SettingsLabel(uiText(UiR.string.ui_theme_a797e), palette)
         ChipRow {

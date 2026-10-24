@@ -1,0 +1,19 @@
+<resources>
+    <string name="caption_text_colour">لون النص</string>
+    <string name="caption_text_colour_help">يُطبّق على النص الأصلي والترجمة. شفافية الخلفية مستقلة.</string>
+    <string name="caption_text_opacity">عتامة النص · %1$d%%</string>
+    <string name="caption_ink_theme">لون السمة</string>
+    <string name="caption_ink_custom">لون مخصص · %1$s</string>
+    <string name="caption_ink_soft_white">أبيض هادئ</string>
+    <string name="caption_ink_warm">كريمي دافئ</string>
+    <string name="caption_ink_yellow">أصفر</string>
+    <string name="caption_ink_mint">نعناعي</string>
+    <string name="caption_ink_sky">أزرق سماوي</string>
+    <string name="caption_ink_lavender">بنفسجي فاتح</string>
+    <string name="caption_ink_rose">وردي</string>
+    <string name="caption_ink_dark">رمادي فحمي</string>
+    <string name="caption_ink_red">أحمر</string>
+    <string name="caption_ink_green">أخضر</string>
+    <string name="caption_ink_blue">أزرق</string>
+    <string name="caption_ink_preview">Your captions\nترجمتك هنا</string>
+</resources>

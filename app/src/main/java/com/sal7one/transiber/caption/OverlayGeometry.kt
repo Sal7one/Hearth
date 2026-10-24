@@ -25,10 +25,11 @@ internal fun CaptionOverlayConfig.resetOverlayPresentation(orientation: OverlayO
         minimalHeader = false, minimalHeightDp = MINIMAL_OVERLAY_DEFAULT_HEIGHT_DP, minimalHeaderExpanded = false,
         fontScale = CaptionFontScale.NORMAL, historyLines = CaptionReading.DEFAULT_PREVIOUS_LINES,
         showPartial = true, theme = CaptionTheme.DARK, backgroundOpacity = 70,
+        textColorArgb = null, textOpacity = 100,
         tapThrough = false, languagePicker = null)
 }
 
-/** Main-thread resize drafts protect live size from older DataStore emissions.
+/** Main-thread appearance drafts protect live size and text from older DataStore emissions.
  *  Only a completed gesture writes settings; a late commit cannot clear a newer draft. */
 internal class OverlaySizePreview {
     private var draft: CaptionOverlayConfig? = null
@@ -36,7 +37,7 @@ internal class OverlaySizePreview {
     fun preview(config: CaptionOverlayConfig) { draft = config; revision++ }
     fun applyTo(stored: CaptionOverlayConfig): CaptionOverlayConfig = draft?.let {
         stored.copy(widthPercent = it.widthPercent, bubbleHeightDp = it.bubbleHeightDp,
-            minimalHeightDp = it.minimalHeightDp)
+            minimalHeightDp = it.minimalHeightDp, textColorArgb = it.textColorArgb, textOpacity = it.textOpacity)
     } ?: stored
     fun beginCommit(config: CaptionOverlayConfig): Long {
         if (draft != null) draft = config

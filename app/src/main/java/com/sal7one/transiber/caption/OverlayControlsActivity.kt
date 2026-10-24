@@ -206,6 +206,7 @@ private fun OverlayControls(onReturn: () -> Unit, onStart: () -> Unit, onSpeechS
                                 { adjustHeight(-1) }, { adjustHeight(1) })
                         }
                         OverlayEditorCategory.TEXT -> {
+                            CaptionTextAppearanceControls(cfg, ::update)
                             if (cfg.mode == CaptionMode.TRANSLATE) {
                                 Text(text(R.string.ui_show_d97d1), style = MaterialTheme.typography.titleMedium)
                                 CaptionDisplay.entries.forEach { display ->
@@ -428,11 +429,13 @@ private fun OverlayPositionPreview(config: CaptionOverlayConfig, viewport: Overl
                 if (!config.minimalHeader || config.minimalHeaderExpanded)
                     Box(Modifier.width((28 * textScale).dp).height(2.dp).background(palette.onSurfaceMuted))
                 if (config.historyLines > 0) Text(text(R.string.overlay_preview_previous),
-                    color = palette.onSurfaceFaded, fontSize = (14 * config.fontScale.multiplier * textScale).sp,
-                    lineHeight = (20 * config.fontScale.multiplier * textScale).sp)
-                Text(text(R.string.overlay_preview_sample), color = palette.onSurface,
+                    color = captionTextColor(config, palette, faded = true), fontSize = (14 * config.fontScale.multiplier * textScale).sp,
+                    lineHeight = (20 * config.fontScale.multiplier * textScale).sp,
+                    style = androidx.compose.ui.text.TextStyle(shadow = captionTextShadow(captionTextColor(config, palette, faded = true), config, textScale)))
+                Text(text(R.string.overlay_preview_sample), color = captionTextColor(config, palette),
                     fontSize = (14 * config.fontScale.multiplier * textScale).sp,
-                    lineHeight = (20 * config.fontScale.multiplier * textScale).sp)
+                    lineHeight = (20 * config.fontScale.multiplier * textScale).sp,
+                    style = androidx.compose.ui.text.TextStyle(shadow = captionTextShadow(captionTextColor(config, palette), config, textScale)))
             }
         }
     }

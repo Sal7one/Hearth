@@ -1,0 +1,82 @@
+{
+  "generated_at_utc": "2026-10-24T06:06:04Z",
+  "host": "macOS arm64",
+  "source_base_commit": "cfb3d3c218b13a11fd3166c3c80efce2a180cd5d",
+  "rendering": "Production Compose UI, offscreen ImageComposeScene, fixed demonstration state",
+  "not_live_capture": true,
+  "fixture_source": "desktopApp/src/desktopTest/kotlin/com/sal7one/hearth/desktop/DesignPreviewRenderTest.kt",
+  "fixture_source_sha256": "4223b8a53a2ee617ca77d9c731b1ea096812bd14ba8710c8d6c000cede1b5bf1",
+  "fixture_change": "Typed translation preview passes its synthetic source text as the independent draft argument.",
+  "state_note": "Example model selections, readiness, statuses and translation results are synthetic fixture values; no inference or GPU performance is represented.",
+  "image_changes": "None; PNG renderer output copied byte-for-byte.",
+  "command": "HEARTH_PREVIEW_DIR=\"$PWD/build/readme-desktop-previews\" ./gradlew -PhearthDesktopOnly=true :hearth-core:desktopTest :desktop-runtime:test :desktop-data:test :desktop-media:test :desktop-integration:test :desktopApp:desktopTest",
+  "validation": {
+    "result": "PASS",
+    "task_totals": [
+      {
+        "module": "hearth-core",
+        "task": "desktopTest",
+        "tests": 47,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "module": "desktop-runtime",
+        "task": "test",
+        "tests": 113,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 36
+      },
+      {
+        "module": "desktop-data",
+        "task": "test",
+        "tests": 38,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 1
+      },
+      {
+        "module": "desktop-media",
+        "task": "test",
+        "tests": 9,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "module": "desktop-integration",
+        "task": "test",
+        "tests": 27,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "module": "desktopApp",
+        "task": "desktopTest",
+        "tests": 120,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 3
+      }
+    ]
+  },
+  "images": [
+    {
+      "file": "home.png",
+      "width": 1440,
+      "height": 1500,
+      "bytes": 627086,
+      "sha256": "7ef1984d27896af62122d0981f4c450da6f7366719faefdfc96426c0432cb6f9"
+    },
+    {
+      "file": "translate.png",
+      "width": 1440,
+      "height": 900,
+      "bytes": 79721,
+      "sha256": "8a790a455c7113e608dbfd8982859525e46f1c509819dd5146fedb50145e2fc1"
+    }
+  ]
+}

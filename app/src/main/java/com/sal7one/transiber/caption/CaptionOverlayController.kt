@@ -142,7 +142,7 @@ class CaptionOverlayController(
         applyWindowChanges()
     }
 
-    /** Size-only UI updates: no disk writes or recognizer work for slider ticks. */
+    /** Appearance previews: no disk writes or recognizer work for slider ticks. */
     private fun previewConfig(transform: (CaptionOverlayConfig) -> CaptionOverlayConfig) {
         val next = transform(_config.value).withUiClamp(television)
         sizePreview.preview(next)

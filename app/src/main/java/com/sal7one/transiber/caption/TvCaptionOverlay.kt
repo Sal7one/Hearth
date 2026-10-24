@@ -10,9 +10,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.text.style.TextAlign
@@ -39,14 +37,17 @@ internal fun TvOverlayText(text: String, config: CaptionOverlayConfig, modifier:
     val scroll = rememberScrollState()
     LaunchedEffect(text, scroll.maxValue) { scroll.scrollTo(scroll.maxValue) }
     val subtitles = config.tvSubtitleMode
+    val ink = if (subtitles && config.textColorArgb == null) Color.White.copy(alpha = config.textOpacity.coerceIn(10, 100) / 100f)
+        else captionTextColor(config, palette)
     Box(modifier.fillMaxSize().clipToBounds().then(if (subtitles) Modifier else Modifier.background(
         palette.surface.copy(alpha = effectiveSurfaceAlpha(palette.surface.alpha, config.backgroundOpacity))))) {
         Text(text, modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().verticalScroll(scroll)
             .padding(horizontal = (6 * scale).dp, vertical = (2 * scale).dp),
-            color = if (subtitles) Color.White else palette.onSurface,
+            color = ink,
             fontSize = ((if (subtitles) 22 else 18) * config.fontScale.multiplier * scale).sp,
             lineHeight = ((if (subtitles) 28 else 24) * config.fontScale.multiplier * scale).sp,
             textAlign = if (subtitles) TextAlign.Center else TextAlign.Start,
-            style = TextStyle(textDirection = TextDirection.Content, shadow = if (subtitles) Shadow(Color.Black, Offset(scale, scale), 4f * scale) else null))
+            style = TextStyle(textDirection = TextDirection.Content,
+                shadow = captionTextShadow(ink, config, scale, force = subtitles)))
     }
 }

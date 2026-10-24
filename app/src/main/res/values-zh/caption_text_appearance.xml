@@ -1,0 +1,19 @@
+<resources>
+    <string name="caption_text_colour">字幕颜色</string>
+    <string name="caption_text_colour_help">同时用于原文和译文。背景透明度单独设置。</string>
+    <string name="caption_text_opacity">文字不透明度 · %1$d%%</string>
+    <string name="caption_ink_theme">跟随主题</string>
+    <string name="caption_ink_custom">自定义颜色 · %1$s</string>
+    <string name="caption_ink_soft_white">柔白色</string>
+    <string name="caption_ink_warm">暖米色</string>
+    <string name="caption_ink_yellow">黄色</string>
+    <string name="caption_ink_mint">薄荷绿</string>
+    <string name="caption_ink_sky">天蓝色</string>
+    <string name="caption_ink_lavender">淡紫色</string>
+    <string name="caption_ink_rose">玫瑰色</string>
+    <string name="caption_ink_dark">炭灰色</string>
+    <string name="caption_ink_red">红色</string>
+    <string name="caption_ink_green">绿色</string>
+    <string name="caption_ink_blue">蓝色</string>
+    <string name="caption_ink_preview">Your captions\nترجمتك هنا</string>
+</resources>

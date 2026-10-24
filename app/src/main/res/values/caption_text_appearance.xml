@@ -1,0 +1,19 @@
+<resources>
+    <string name="caption_text_colour">Text colour</string>
+    <string name="caption_text_colour_help">Applies to captions and translations. Background transparency stays separate.</string>
+    <string name="caption_text_opacity">Text opacity · %1$d%%</string>
+    <string name="caption_ink_theme">Theme default</string>
+    <string name="caption_ink_custom">Custom colour · %1$s</string>
+    <string name="caption_ink_soft_white">Soft white</string>
+    <string name="caption_ink_warm">Warm cream</string>
+    <string name="caption_ink_yellow">Yellow</string>
+    <string name="caption_ink_mint">Mint</string>
+    <string name="caption_ink_sky">Sky blue</string>
+    <string name="caption_ink_lavender">Lavender</string>
+    <string name="caption_ink_rose">Rose</string>
+    <string name="caption_ink_dark">Charcoal</string>
+    <string name="caption_ink_red">Red</string>
+    <string name="caption_ink_green">Green</string>
+    <string name="caption_ink_blue">Blue</string>
+    <string name="caption_ink_preview">Your captions\nترجمتك هنا</string>
+</resources>
