@@ -16,15 +16,15 @@ models with your own cloud or self-hosted connections; configure each stage inde
 | **Android · most phones** | **[Play ARM64 · 0.30.0](https://github.com/Sal7one/Hearth/releases/download/v0.30.0/hearth-0.30.0-play-arm64-v8a-qa.apk)** |
 | Android · offline | [FOSS ARM64 QA · no network permission](https://github.com/Sal7one/Hearth/releases/download/v0.30.0/hearth-0.30.0-foss-arm64-v8a-qa.apk) |
 | Android · other CPUs / TV | [All individual APKs and checksums](https://github.com/Sal7one/Hearth/releases/tag/v0.30.0) |
-| **Mac · Apple silicon** | **[Desktop 1.0.4 DMG](https://github.com/Sal7one/Hearth/releases/download/desktop-v1.0.4/hearth-1.0.4-macos-arm64.dmg)** |
+| **Mac · Apple silicon** | **[Desktop 1.0.4 DMG](https://github.com/Sal7one/Hearth/releases/download/v0.30.0/hearth-1.0.4-macos-arm64.dmg)** |
 | Browser companion | [Website text extension](https://github.com/Sal7one/Hearth/releases/download/v0.30.0-rc.8/hearth-browser-extension-0.1.0.zip) · [setup](integrations/browser-extension/README.md) |
 
 Android 9+; device audio requires Android 10+. QA builds share the test identity
 `com.sal7one.transiber.qa`; Play and FOSS replace each other. **Update without
 uninstalling** to retain your models and preferences. Model weights download separately.
 
-Mac installers are ad hoc signed and not notarized. The installer predates the
-latest source changes. Windows builds and NVIDIA execution still need hardware
+The Mac installer supports Apple silicon on macOS 13.3+ and is ad hoc signed,
+not notarized. Windows builds and NVIDIA execution still need hardware
 validation; see the [desktop guide](docs/desktop.md). **TVs use cloud speech and
 translation, with installed system voices; local models are blocked.** FOSS stays offline on TVs.
 
