@@ -20,7 +20,8 @@ handover, not to claim a finished glasses integration.
   RC16 / code 112 adds saved speech caption colours and a shorter README (draft).
   RC17 / code 113 adds bounded QuickMT article translation and screen box styles;
   see `docs/handoff/screen-translation-quickmt-style-2026-10-24.md`.
-  RC18 / code 114 replaces RGB sliders with visual pickers and fixes manual video
+  Final Android 0.30.0 / code 115 and desktop 1.0.4 include the recent fixes.
+  RC18 / code 114 replaced RGB sliders with visual pickers and fixed manual video
   snapshots; see `docs/handoff/visual-picker-manual-snapshot-2026-10-24.md`.
   See `docs/handoff/overlay-caption-flow-2026-10-24.md` for the caption flow contract.
 - No Meta SDK, glasses app, remote caption transport or new Windows runtime has
@@ -403,7 +404,7 @@ Do not invent a latency achievement or claim recognition of who is speaking.
 
 ## 9. Recent release state and documentation drift
 
-- Current Android candidate source is `0.30.0`, version code **114** (RC18):
+- Final Android release source is `0.30.0`, version code **115**; desktop is **1.0.4**:
   visual colour pickers, manual video snapshots and opaque replacement with a
   one-tap eye control. RC17/code113 includes
   bounded QuickMT translation, opt-in sampled page colours, saved box palettes

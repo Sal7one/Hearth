@@ -94,8 +94,8 @@ def main():
     parser.add_argument("--evidence-dir", type=Path, required=True)
     args = parser.parse_args()
     identity = configured_identity((ROOT / "app/build.gradle.kts").read_text(), "qa")
-    if not re.fullmatch(r"v" + re.escape(identity.version_name) + r"-rc\.[1-9]\d*", args.tag):
-        parser.error("Tag must match the configured Android version and an RC number")
+    if not re.fullmatch(r"v" + re.escape(identity.version_name) + r"(?:-rc\.[1-9]\d*)?", args.tag):
+        parser.error("Tag must match the configured Android version, optionally followed by an RC number")
     # Keep candidate downloads distinguishable on a phone even when Android's
     # versionName remains stable across QA builds. The install identity is unchanged.
     asset_version = args.tag.removeprefix("v")

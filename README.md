@@ -13,10 +13,10 @@ models with your own cloud or self-hosted connections; configure each stage inde
 
 | Edition | Download |
 | --- | --- |
-| **Android · most phones** | **[Play ARM64 QA · 0.30.0 RC15](https://github.com/Sal7one/Hearth/releases/download/v0.30.0-rc.15/hearth-0.30.0-rc.15-play-arm64-v8a-qa.apk)** |
-| Android · offline | [FOSS ARM64 QA · no network permission](https://github.com/Sal7one/Hearth/releases/download/v0.30.0-rc.15/hearth-0.30.0-rc.15-foss-arm64-v8a-qa.apk) |
-| Android · other CPUs / TV | [All individual APKs and checksums](https://github.com/Sal7one/Hearth/releases/tag/v0.30.0-rc.15) |
-| **Mac · Apple silicon** | **[Desktop 1.0.4 DMG](https://github.com/Sal7one/Hearth/releases/download/desktop-v1.0.4-rc.1/hearth-1.0.4-macos-arm64.dmg)** |
+| **Android · most phones** | **[Play ARM64 · 0.30.0](https://github.com/Sal7one/Hearth/releases/download/v0.30.0/hearth-0.30.0-play-arm64-v8a-qa.apk)** |
+| Android · offline | [FOSS ARM64 QA · no network permission](https://github.com/Sal7one/Hearth/releases/download/v0.30.0/hearth-0.30.0-foss-arm64-v8a-qa.apk) |
+| Android · other CPUs / TV | [All individual APKs and checksums](https://github.com/Sal7one/Hearth/releases/tag/v0.30.0) |
+| **Mac · Apple silicon** | **[Desktop 1.0.4 DMG](https://github.com/Sal7one/Hearth/releases/download/desktop-v1.0.4/hearth-1.0.4-macos-arm64.dmg)** |
 | Browser companion | [Website text extension](https://github.com/Sal7one/Hearth/releases/download/v0.30.0-rc.8/hearth-browser-extension-0.1.0.zip) · [setup](integrations/browser-extension/README.md) |
 
 Android 9+; device audio requires Android 10+. QA builds share the test identity
