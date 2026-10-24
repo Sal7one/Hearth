@@ -4,4 +4,9 @@
     <string name="caption_original_unavailable">This translation route does not provide original captions.</string>
     <string name="caption_show_original_while_translating">Show original while translating</string>
     <string name="caption_show_original_while_translating_help">Show original captions until a translation is available.</string>
+    <string name="caption_minimal_header">Minimal header</string>
+    <string name="caption_minimal_header_help">Hide controls while watching. Tap the captions to show them briefly.</string>
+    <string name="caption_minimal_header_lock_help">With tap-through on, tap the lock handle to restore controls.</string>
+    <string name="caption_show_controls">Show controls</string>
+    <string name="caption_hide_controls">Hide controls</string>
 </resources>

@@ -174,6 +174,9 @@ data class CaptionOverlayConfig(
     val anchor: CaptionAnchor = CaptionAnchor.BOTTOM,
     val widthPercent: Int = OverlayGeometryDefaults.PORTRAIT.widthPercent,   // 40..100 of screen width
     val bubbleHeightDp: Int? = null,     // null preserves the pre-upgrade reading height
+    /** Compact phone presentation; the normal bubble retains its own reading height. */
+    val minimalHeader: Boolean = false,
+    val minimalHeightDp: Int = MINIMAL_OVERLAY_DEFAULT_HEIGHT_DP,
     val maxHeightPercent: Int = OverlayGeometryDefaults.PORTRAIT.maxHeightPercent,  // 20..60 of screen height; scroll beyond
     val xOffsetPx: Int = 0,              // manual drag offset from anchor
     val yOffsetPx: Int = 0,
@@ -205,6 +208,7 @@ data class CaptionOverlayConfig(
     // Transient UI state (never persisted; survives via the in-memory flow)
     val showSettings: Boolean = false,
     val languagePicker: CaptionLanguagePicker? = null,
+    val minimalHeaderExpanded: Boolean = false,
 ) {
     val effectiveEngine: CaptionEngineChoice
         get() = engine
@@ -240,6 +244,7 @@ data class CaptionOverlayConfig(
         speakerVolume = speakerVolume.coerceIn(0, 100),
         maxHeightPercent = maxHeightPercent.coerceIn(20, 60),
         bubbleHeightDp = bubbleHeightDp?.coerceIn(minimumOverlayHeightDp(television), 600),
+        minimalHeightDp = minimalHeightDp.coerceIn(MINIMAL_OVERLAY_MIN_HEIGHT_DP, 600),
         historyLines = historyLines.coerceIn(0, 8),
         backgroundOpacity = backgroundOpacity.coerceIn(0, 100),
     )
@@ -347,6 +352,8 @@ object CaptionConfigStore {
             widthPercent = geometry(if (portrait) WidthPortrait else WidthLandscape, if (portrait) WidthPercent else null, defaults.widthPercent),
             maxHeightPercent = geometry(if (portrait) HeightPortrait else HeightLandscape, if (portrait) MaxHeightPercent else null, defaults.maxHeightPercent),
             bubbleHeightDp = (prefs[if (portrait) BubbleHeightPortrait else BubbleHeightLandscape] ?: (if (portrait) prefs[BubbleHeightDp] else null)),
+            minimalHeader = prefs[MinimalHeader] ?: false,
+            minimalHeightDp = prefs[if (portrait) MinimalHeightPortrait else MinimalHeightLandscape] ?: MINIMAL_OVERLAY_DEFAULT_HEIGHT_DP,
             xOffsetPx = geometry(if (portrait) XOffsetPortrait else XOffsetLandscape, if (portrait) XOffset else null, 0),
             yOffsetPx = geometry(if (portrait) YOffsetPortrait else YOffsetLandscape, if (portrait) YOffset else null, 0),
             fontScale = prefs[FontScale]?.let { enumOrDefault(it, CaptionFontScale.NORMAL) }
@@ -390,6 +397,8 @@ object CaptionConfigStore {
         prefs[if (portrait) HeightPortrait else HeightLandscape] = config.maxHeightPercent
         val bubbleKey = if (portrait) BubbleHeightPortrait else BubbleHeightLandscape
         config.bubbleHeightDp?.let { prefs[bubbleKey] = it } ?: prefs.remove(bubbleKey)
+        prefs[MinimalHeader] = config.minimalHeader
+        prefs[if (portrait) MinimalHeightPortrait else MinimalHeightLandscape] = config.minimalHeightDp.coerceIn(MINIMAL_OVERLAY_MIN_HEIGHT_DP, 600)
         // Once portrait is explicitly saved, the legacy value must not resurrect
         // an old height when Reset removes the orientation-specific override.
         if (portrait) prefs.remove(BubbleHeightDp)
@@ -432,6 +441,9 @@ object CaptionConfigStore {
     private val HeightLandscape = intPreferencesKey("max_height_percent_landscape_v1")
     private val BubbleHeightPortrait = intPreferencesKey("bubble_height_portrait_v1")
     private val BubbleHeightLandscape = intPreferencesKey("bubble_height_landscape_v1")
+    private val MinimalHeader = booleanPreferencesKey("minimal_header_v1")
+    private val MinimalHeightPortrait = intPreferencesKey("minimal_height_portrait_v1")
+    private val MinimalHeightLandscape = intPreferencesKey("minimal_height_landscape_v1")
     private val AnchorPortrait = stringPreferencesKey("anchor_portrait_v1")
     private val AnchorLandscape = stringPreferencesKey("anchor_landscape_v1")
     private val XOffsetPortrait = intPreferencesKey("x_offset_portrait_v1")

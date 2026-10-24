@@ -189,9 +189,21 @@ private fun OverlayControls(onReturn: () -> Unit, onStart: () -> Unit, onSpeechS
                             RemoteAdjustment(text(R.string.overlay_width, cfg.widthPercent), cfg.widthPercent > 40, cfg.widthPercent < 100,
                                 { update { it.copy(widthPercent = it.widthPercent - 5) } }, { update { it.copy(widthPercent = it.widthPercent + 5) } })
                             val height = (overlayHeightPx(viewport.height, density, cfg, television) / density).toInt()
-                            RemoteAdjustment(if (television) text(R.string.tv_overlay_height, height) else text(R.string.overlay_height, height * 100 / (viewport.height / density).toInt().coerceAtLeast(1)),
-                                height > minimumOverlayHeightDp(television), height < minOf(600, (viewport.height / density).toInt()),
-                                { update { it.copy(bubbleHeightDp = height - if (television) 8 else 24) } }, { update { it.copy(bubbleHeightDp = height + if (television) 8 else 24) } })
+                            val minimal = !television && cfg.minimalHeader
+                            val minimumHeight = if (minimal) 48 else minimumOverlayHeightDp(television)
+                            val maximumHeight = minOf(600, (viewport.height / density).toInt()).coerceAtLeast(minimumHeight)
+                            fun adjustHeight(direction: Int) = update { current ->
+                                val currentMinimal = !television && current.minimalHeader
+                                val currentHeight = (overlayHeightPx(viewport.height, density, current, television) / density).toInt()
+                                val minimum = if (currentMinimal) 48 else minimumOverlayHeightDp(television)
+                                val change = direction * if (television || currentMinimal) 8 else 24
+                                val nextHeight = (currentHeight + change).coerceIn(minimum, maximumHeight.coerceAtLeast(minimum))
+                                if (currentMinimal) current.copy(minimalHeightDp = nextHeight)
+                                else current.copy(bubbleHeightDp = nextHeight)
+                            }
+                            RemoteAdjustment(if (television || minimal) text(R.string.tv_overlay_height, height) else text(R.string.overlay_height, height * 100 / (viewport.height / density).toInt().coerceAtLeast(1)),
+                                height > minimumHeight, height < maximumHeight,
+                                { adjustHeight(-1) }, { adjustHeight(1) })
                         }
                         OverlayEditorCategory.TEXT -> {
                             if (cfg.mode == CaptionMode.TRANSLATE) {
@@ -222,6 +234,14 @@ private fun OverlayControls(onReturn: () -> Unit, onStart: () -> Unit, onSpeechS
                                 RemoteButton(text(R.string.tv_overlay_panel), modifier = Modifier.fillMaxWidth(), selected = !cfg.tvSubtitleMode,
                                     onClick = { update { it.copy(tvSubtitleMode = false) } })
                                 Text(text(R.string.tv_overlay_subtitles_help), style = MaterialTheme.typography.bodySmall)
+                            } else {
+                                RemoteToggle(text(R.string.caption_minimal_header), cfg.minimalHeader) { checked ->
+                                    update { it.copy(minimalHeader = checked, minimalHeaderExpanded = false) }
+                                }
+                                Text(text(R.string.caption_minimal_header_help), style = MaterialTheme.typography.bodySmall)
+                                if (cfg.minimalHeader) Text(text(R.string.caption_minimal_header_lock_help),
+                                    style = MaterialTheme.typography.bodySmall)
+                                HorizontalDivider()
                             }
                             CaptionTheme.entries.forEach { theme ->
                                 RemoteButton(text.label(theme), modifier = Modifier.fillMaxWidth(), selected = cfg.theme == theme,
@@ -405,7 +425,8 @@ private fun OverlayPositionPreview(config: CaptionOverlayConfig, viewport: Overl
             .background(palette.surface.copy(alpha = effectiveSurfaceAlpha(palette.surface.alpha, config.backgroundOpacity)), RoundedCornerShape(4.dp))
             .border(1.dp, palette.accent.copy(alpha = .6f), RoundedCornerShape(4.dp))) {
             Column(Modifier.padding((8 * textScale).dp), verticalArrangement = Arrangement.spacedBy((4 * textScale).dp)) {
-                Box(Modifier.width((28 * textScale).dp).height(2.dp).background(palette.onSurfaceMuted))
+                if (!config.minimalHeader || config.minimalHeaderExpanded)
+                    Box(Modifier.width((28 * textScale).dp).height(2.dp).background(palette.onSurfaceMuted))
                 if (config.historyLines > 0) Text(text(R.string.overlay_preview_previous),
                     color = palette.onSurfaceFaded, fontSize = (14 * config.fontScale.multiplier * textScale).sp,
                     lineHeight = (20 * config.fontScale.multiplier * textScale).sp)

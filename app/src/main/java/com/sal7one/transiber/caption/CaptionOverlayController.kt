@@ -66,6 +66,7 @@ class CaptionOverlayController(
                         onClose = ::stopSession, onClear = engineController::clearTranscript,
                         availableHeightDp = maxHeight,
                         onConfigPreview = ::previewConfig,
+                        onHeaderVisibilityChange = ::setMinimalHeaderExpanded,
                     )
                                     }
 }
@@ -117,7 +118,11 @@ class CaptionOverlayController(
     fun updateConfig(transform: (CaptionOverlayConfig) -> CaptionOverlayConfig) {
         scope.launch {
             val next = transform(_config.value).withUiClamp(television)
-            _config.value = if (next.tapThrough) next.copy(showSettings = false, languagePicker = null) else next
+            _config.value = next.copy(
+                showSettings = next.showSettings && !next.tapThrough,
+                languagePicker = next.languagePicker.takeUnless { next.tapThrough },
+                minimalHeaderExpanded = next.minimalHeaderExpanded && next.minimalHeader && !next.tapThrough,
+            )
             val committed = _config.value
             val revision = sizePreview.beginCommit(committed)
             applyWindowChanges()
@@ -125,6 +130,16 @@ class CaptionOverlayController(
             try { CaptionConfigStore.update(context) { committed } }
             finally { sizePreview.finishCommit(revision) }
         }
+    }
+
+    /** Revealing controls is session UI, not a preference write or engine update. */
+    internal fun setMinimalHeaderExpanded(expanded: Boolean) {
+        if (destroyed || television) return
+        val current = _config.value
+        val next = current.copy(minimalHeaderExpanded = expanded && current.minimalHeader && !current.tapThrough)
+        if (next == current) return
+        _config.value = next
+        applyWindowChanges()
     }
 
     /** Size-only UI updates: no disk writes or recognizer work for slider ticks. */
@@ -149,20 +164,21 @@ class CaptionOverlayController(
     fun suppressForSetup(suppressed: Boolean) {
         setupSuppressed = suppressed
         // Returning from normal controls must hand keys back to the video app.
-        if (suppressed) _config.value = _config.value.copy(showSettings = false, languagePicker = null)
+        if (suppressed) _config.value = _config.value.copy(showSettings = false, languagePicker = null, minimalHeaderExpanded = false)
         applyWindowChanges()
     }
 
     fun centerOverlay(showSettings: Boolean = false) {
         hidden = false
         view?.visibility = if (setupSuppressed) android.view.View.INVISIBLE else android.view.View.VISIBLE
-        updateConfig { it.copy(anchor = CaptionAnchor.CENTER, xOffsetPx = 0, yOffsetPx = 0, tapThrough = false, showSettings = showSettings, languagePicker = null) }
+        updateConfig { it.copy(anchor = CaptionAnchor.CENTER, xOffsetPx = 0, yOffsetPx = 0, tapThrough = false,
+            showSettings = showSettings, languagePicker = null, minimalHeaderExpanded = it.minimalHeader) }
     }
 
     /** Showing captions must preserve the position and size chosen with a remote. */
     fun setVisible(visible: Boolean) {
         hidden = !visible
-        if (!visible) updateConfig { it.copy(showSettings = false, languagePicker = null) }
+        if (!visible) updateConfig { it.copy(showSettings = false, languagePicker = null, minimalHeaderExpanded = false) }
         applyWindowChanges()
     }
 
@@ -277,7 +293,7 @@ class CaptionOverlayController(
             setContent {
                     com.sal7one.transiber.i18n.UiLocaleProvider {
                 TapThroughRecoveryHandle(
-                    onRestore = { updateConfig { it.copy(tapThrough = false) } },
+                    onRestore = { updateConfig { it.copy(tapThrough = false, minimalHeaderExpanded = it.minimalHeader) } },
                     onDrag = ::move, onDragFinished = ::persistCurrent,
                 )
                                 }

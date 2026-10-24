@@ -6,12 +6,14 @@ import android.content.res.Configuration
 internal fun CaptionOverlayConfig.withLiveOverlayState(live: CaptionOverlayConfig, source: CaptionSource?) = copy(
     source = source ?: live.source, paused = live.paused, tapThrough = live.tapThrough,
     showSettings = live.showSettings, languagePicker = live.languagePicker,
+    minimalHeaderExpanded = minimalHeader && live.minimalHeader && live.minimalHeaderExpanded,
 )
 
 /** Rotation replaces persisted geometry without resetting the live session or controls. */
 internal fun CaptionOverlayConfig.withStoredGeometry(stored: CaptionOverlayConfig) = copy(
     widthPercent = stored.widthPercent, maxHeightPercent = stored.maxHeightPercent,
     bubbleHeightDp = stored.bubbleHeightDp, anchor = stored.anchor,
+    minimalHeightDp = stored.minimalHeightDp,
     xOffsetPx = stored.xOffsetPx, yOffsetPx = stored.yOffsetPx,
 )
 
@@ -20,6 +22,7 @@ internal fun CaptionOverlayConfig.resetOverlayPresentation(orientation: OverlayO
     val defaults = OverlayGeometryDefaults.defaultsFor(orientation)
     return copy(tvSubtitleMode = if (television) true else tvSubtitleMode, widthPercent = defaults.widthPercent, maxHeightPercent = defaults.maxHeightPercent,
         bubbleHeightDp = null, anchor = CaptionAnchor.BOTTOM, xOffsetPx = 0, yOffsetPx = 0,
+        minimalHeader = false, minimalHeightDp = MINIMAL_OVERLAY_DEFAULT_HEIGHT_DP, minimalHeaderExpanded = false,
         fontScale = CaptionFontScale.NORMAL, historyLines = CaptionReading.DEFAULT_PREVIOUS_LINES,
         showPartial = true, theme = CaptionTheme.DARK, backgroundOpacity = 70,
         tapThrough = false, languagePicker = null)
@@ -32,7 +35,8 @@ internal class OverlaySizePreview {
     private var revision = 0L
     fun preview(config: CaptionOverlayConfig) { draft = config; revision++ }
     fun applyTo(stored: CaptionOverlayConfig): CaptionOverlayConfig = draft?.let {
-        stored.copy(widthPercent = it.widthPercent, bubbleHeightDp = it.bubbleHeightDp)
+        stored.copy(widthPercent = it.widthPercent, bubbleHeightDp = it.bubbleHeightDp,
+            minimalHeightDp = it.minimalHeightDp)
     } ?: stored
     fun beginCommit(config: CaptionOverlayConfig): Long {
         if (draft != null) draft = config
@@ -97,12 +101,30 @@ internal fun placeOverlay(
 /** TV has no inline controls, so one caption line can use a much smaller viewport. */
 internal fun minimumOverlayHeightDp(television: Boolean) = if (television) 32 else 144
 internal const val TV_OVERLAY_DEFAULT_HEIGHT_DP = 64
+internal const val MINIMAL_OVERLAY_DEFAULT_HEIGHT_DP = 64
+internal const val MINIMAL_OVERLAY_MIN_HEIGHT_DP = 48
+internal const val MINIMAL_OVERLAY_CHROME_HEIGHT_DP = 96
+
+/** Sliders/buttons edit the saved reading area, never temporary controls/settings chrome. */
+internal fun CaptionOverlayConfig.withActiveOverlayHeightDp(height: Int, television: Boolean = false): CaptionOverlayConfig =
+    if (minimalHeader && !television) copy(minimalHeightDp = height.coerceIn(MINIMAL_OVERLAY_MIN_HEIGHT_DP, 600))
+    else copy(bubbleHeightDp = height.coerceIn(minimumOverlayHeightDp(television), 600))
 
 /** A fixed user-selected viewport: long text scrolls inside it, never grows the window. */
 internal fun overlayHeightPx(viewportHeight: Int, density: Float, config: CaptionOverlayConfig, television: Boolean = false): Int {
     val legacy = if (television) TV_OVERLAY_DEFAULT_HEIGHT_DP * density
         else minOf(viewportHeight * config.maxHeightPercent / 100f, 320f * density)
     val reading = config.bubbleHeightDp?.times(density) ?: legacy
+    if (config.minimalHeader && !television) {
+        val compact = config.minimalHeightDp.coerceIn(MINIMAL_OVERLAY_MIN_HEIGHT_DP, 600) * density
+        val height = when {
+            config.showSettings -> reading.coerceAtLeast(240 * density)
+            config.minimalHeaderExpanded && !config.tapThrough ->
+                (compact + MINIMAL_OVERLAY_CHROME_HEIGHT_DP * density).coerceAtLeast(144 * density)
+            else -> compact
+        }
+        return height.toInt().coerceIn(1, viewportHeight.coerceAtLeast(1))
+    }
     return reading.coerceAtLeast(minimumOverlayHeightDp(television) * density).toInt().coerceIn(1, viewportHeight.coerceAtLeast(1))
 }
 

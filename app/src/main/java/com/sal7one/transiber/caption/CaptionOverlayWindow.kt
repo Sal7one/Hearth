@@ -15,7 +15,10 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.ui.semantics.*
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.layout.Arrangement
@@ -40,6 +43,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DragIndicator
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Settings
@@ -64,6 +68,7 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -73,6 +78,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -88,6 +94,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.sal7one.transiber.caption.CaptionEngineController.State
 import com.sal7one.transiber.caption.CaptionEngineController.Status
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 private enum class CaptionSettingsPage { APPEARANCE, CAPTIONS, AUDIO }
@@ -158,6 +165,9 @@ fun CaptionOverlayWindow(
     onClear: () -> Unit,
     availableHeightDp: Float = 240f,
     onConfigPreview: ((CaptionOverlayConfig) -> CaptionOverlayConfig) -> Unit = onConfigChange,
+    onHeaderVisibilityChange: (Boolean) -> Unit = { expanded ->
+        onConfigChange { it.copy(minimalHeaderExpanded = expanded) }
+    },
 ) {
     val uiText = rememberUiText()
 
@@ -185,19 +195,55 @@ fun CaptionOverlayWindow(
     val clipboard = LocalClipboardManager.current
     val content = held ?: CaptionReading.snapshot(state, cfg.showPartial)
     val bodyScroll = if (held == null) scrollState else rememberScrollState(initial = Int.MAX_VALUE)
+    val controlsVisible = !cfg.tapThrough && (!cfg.minimalHeader || cfg.minimalHeaderExpanded || cfg.showSettings)
+    val minimalReading = cfg.minimalHeader && !controlsVisible
+    var interacting by remember { mutableStateOf(false) }
+    var interactionRevision by remember { mutableIntStateOf(0) }
+    val accessibility = remember(context) {
+        context.getSystemService(Context.ACCESSIBILITY_SERVICE) as android.view.accessibility.AccessibilityManager
+    }
 
-    LaunchedEffect(cfg.tapThrough) { if (cfg.tapThrough) held = null }
+    LaunchedEffect(cfg.tapThrough, cfg.minimalHeader, cfg.minimalHeaderExpanded, cfg.showSettings) {
+        if (cfg.tapThrough || (cfg.minimalHeader && !cfg.minimalHeaderExpanded && !cfg.showSettings)) held = null
+    }
+    // Live transcript updates must not keep controls open. Only user interaction
+    // resets the timer; settings, history and an in-progress drag keep it suspended.
+    LaunchedEffect(cfg.minimalHeader, cfg.minimalHeaderExpanded, cfg.showSettings,
+        cfg.tapThrough, held != null, interacting, interactionRevision) {
+        if (cfg.minimalHeader && cfg.minimalHeaderExpanded && !cfg.showSettings &&
+            !cfg.tapThrough && held == null && !interacting && !accessibility.isTouchExplorationEnabled) {
+            val timeout = if (Build.VERSION.SDK_INT >= 29) accessibility.getRecommendedTimeoutMillis(
+                5_000, android.view.accessibility.AccessibilityManager.FLAG_CONTENT_CONTROLS,
+            ).toLong() else 5_000L
+            delay(timeout)
+            if (!accessibility.isTouchExplorationEnabled) onHeaderVisibilityChange(false)
+        }
+    }
     val height = availableHeightDp.coerceAtLeast(1f)
     Column(
         modifier = Modifier.fillMaxWidth().height(height.dp)
+            .pointerInput(Unit) {
+                awaitEachGesture {
+                    awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
+                    interacting = true
+                    try {
+                        do { val event = awaitPointerEvent(PointerEventPass.Initial) }
+                        while (event.changes.any { it.pressed })
+                    } finally {
+                        interacting = false
+                        interactionRevision++
+                    }
+                }
+            }
             .clip(RoundedCornerShape(16.dp))
             .background(palette.surface.copy(alpha = if (cfg.showSettings) 0.97f else effectiveSurfaceAlpha(palette.surface.alpha, cfg.backgroundOpacity)))
             .border(0.5.dp, palette.onSurfaceFaded, RoundedCornerShape(16.dp)),
     ) {
-        if (cfg.tapThrough) Text(uiText(UiR.string.ui_tap_lock_to_restore_controls_drag_lock_to_move_20d73),
+        if (cfg.tapThrough && !cfg.minimalHeader) Text(uiText(UiR.string.ui_tap_lock_to_restore_controls_drag_lock_to_move_20d73),
             Modifier.padding(horizontal = 12.dp, vertical = 8.dp), color = palette.onSurface, fontSize = 12.sp)
-        else ControlStrip(cfg, state, palette, true, onDrag, onDragFinished, onClose, { held = null; onClear() }, onConfigChange,
-            heightDp = height)
+        else if (controlsVisible) ControlStrip(cfg, state, palette, true, onDrag, onDragFinished, onClose,
+            { held = null; onClear() }, onConfigChange, heightDp = height,
+            onHideHeader = { held = null; onHeaderVisibilityChange(false) })
         Box(Modifier.weight(1f).fillMaxWidth()) {
             if (cfg.showSettings && cfg.languagePicker != null) {
                 val which = cfg.languagePicker
@@ -238,7 +284,7 @@ fun CaptionOverlayWindow(
                 )
             } else {
                 Column {
-                    if (!cfg.tapThrough) Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    if (controlsVisible) Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), verticalAlignment = Alignment.CenterVertically) {
                         TextButton(onClick = {
                             held = if (held == null) CaptionReading.snapshot(state, cfg.showPartial) else null
                         }) {
@@ -251,12 +297,12 @@ fun CaptionOverlayWindow(
                             }) { Text(uiText(UiR.string.ui_copy_text_06a76), color = palette.accent) }
                         }
                     }
-                    if (held != null) Text(
-                        uiText(UiR.string.ui_text_held_capture_continues_latest_120_segments_retained_ff712),
-                        modifier = Modifier.padding(horizontal = 12.dp), color = palette.onSurfaceMuted, fontSize = 11.sp,
-                    )
-                    Box(Modifier.weight(1f)) {
-                        SelectionContainer { CaptionBody(cfg, state, content, held != null, palette, bodyScroll) }
+                    val reveal = if (cfg.minimalHeader && !controlsVisible && !cfg.tapThrough) Modifier.clickable(
+                        onClickLabel = uiText(UiR.string.caption_show_controls),
+                    ) { onHeaderVisibilityChange(true) } else Modifier
+                    Box(Modifier.weight(1f).fillMaxWidth().then(reveal)) {
+                        if (minimalReading) CaptionBody(cfg, state, content, false, palette, bodyScroll, minimal = true)
+                        else SelectionContainer { CaptionBody(cfg, state, content, held != null, palette, bodyScroll) }
                     }
                 }
             }
@@ -276,6 +322,7 @@ private fun ControlStrip(
     onClear: () -> Unit,
     onConfigChange: ((CaptionOverlayConfig) -> CaptionOverlayConfig) -> Unit,
     heightDp: Float,
+    onHideHeader: () -> Unit,
 ) {
     val uiText = rememberUiText()
 
@@ -299,6 +346,34 @@ private fun ControlStrip(
         }
     } else {
         Modifier
+    }
+    if (cfg.minimalHeader) {
+        // A single scrolling toolbar keeps every action reachable on narrow phones
+        // without wrapping into the caption's separately saved reading height.
+        Row(Modifier.fillMaxWidth().height(48.dp).horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+            Icon(Icons.Default.DragIndicator, uiText(UiR.string.ui_drag_to_move_captions_51a37),
+                tint = palette.onSurfaceFaded,
+                modifier = Modifier.size(48.dp).then(stripDrag).semantics { customActions = moveActions })
+            IconButton(onClick = { onConfigChange { it.copy(paused = !it.paused) } },
+                enabled = state.status != Status.ERROR, modifier = Modifier.size(48.dp)) {
+                Icon(if (cfg.paused) Icons.Default.PlayArrow else Icons.Default.Pause,
+                    uiText(if (cfg.paused) UiR.string.ui_resume_captions_b31f8 else UiR.string.ui_pause_captions_dc66c), tint = palette.onSurfaceFaded)
+            }
+            if (!cfg.showSettings) IconButton(onClick = onClear, modifier = Modifier.size(48.dp)) {
+                Icon(Icons.Default.Delete, uiText(UiR.string.ui_clear_previous_text_and_pending_translations_4cbd5), tint = palette.onSurfaceFaded)
+            }
+            IconButton(onClick = { onConfigChange { it.copy(showSettings = !it.showSettings, languagePicker = null) } }, modifier = Modifier.size(48.dp)) {
+                Icon(Icons.Default.Settings, uiText(UiR.string.ui_caption_settings_da0c8), tint = palette.onSurfaceFaded)
+            }
+            if (!cfg.showSettings) IconButton(onClick = onHideHeader, modifier = Modifier.size(48.dp)) {
+                Icon(Icons.Default.KeyboardArrowDown, uiText(UiR.string.caption_hide_controls), tint = palette.onSurfaceFaded)
+            }
+            IconButton(onClick = onClose, modifier = Modifier.size(48.dp)) {
+                Icon(Icons.Default.Close, uiText(UiR.string.ui_stop_captions_58b64), tint = palette.onSurfaceFaded)
+            }
+        }
+        return
     }
     BoxWithConstraints(Modifier.fillMaxWidth()) {
     val controlSize = 48.dp
@@ -385,6 +460,7 @@ private fun CaptionBody(
     reading: Boolean,
     palette: OverlayPalette,
     scrollState: ScrollState,
+    minimal: Boolean = false,
 ) {
     val uiText = rememberUiText()
 
@@ -397,9 +473,13 @@ private fun CaptionBody(
         if (!reading && !scrollState.isScrollInProgress) scrollState.scrollTo(scrollState.maxValue)
     }
     Column(
-        Modifier.fillMaxWidth().verticalScroll(scrollState).padding(12.dp),
+        Modifier.fillMaxWidth().verticalScroll(scrollState).padding(horizontal = 12.dp, vertical = if (minimal) 6.dp else 12.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
+        if (reading) Text(
+            uiText(UiR.string.ui_text_held_capture_continues_latest_120_segments_retained_ff712),
+            color = palette.onSurfaceMuted, fontSize = 11.sp,
+        )
         if (cfg.paused) {
             Text(uiText(UiR.string.ui_paused_resume_from_the_bubble_or_notification_58a85), color = palette.accent, fontSize = 13.sp)
         }
@@ -416,10 +496,10 @@ private fun CaptionBody(
             }, color = palette.onSurface, fontSize = 14.sp)
         }
         // Keep diagnostic counters above the text: live scrolling must land on captions.
-        state.localTranslationMetrics?.let {
+        state.localTranslationMetrics?.takeUnless { minimal }?.let {
             Text(it, color = palette.onSurfaceMuted, fontSize = 11.sp)
         }
-        state.localSpeechMetrics?.let {
+        state.localSpeechMetrics?.takeUnless { minimal }?.let {
             Text(it, color = palette.onSurfaceMuted, fontSize = 11.sp)
         }
         lines.forEachIndexed { index, line ->
@@ -518,14 +598,24 @@ private fun SettingsPanel(
                 cfg, onConfigChange, showDeviceMediaVolume = true, onOpenVoices = { openSetup(12) },
             )
         } else if (page == CaptionSettingsPage.APPEARANCE) {
-            SliderRow(uiText(UiR.string.ui_height_dp, cfg.bubbleHeightDp ?: currentHeightDp.toInt()), (cfg.bubbleHeightDp?.toFloat() ?: currentHeightDp).coerceIn(144f, 600f),
-                144f..600f, palette,
-                onPreview = { value -> onConfigPreview { it.copy(bubbleHeightDp = value.toInt()) } },
-            ) { value -> onConfigChange { it.copy(bubbleHeightDp = value.toInt()) } }
+            ToggleRow(uiText(UiR.string.caption_minimal_header), cfg.minimalHeader, palette) { checked ->
+                onConfigChange { it.copy(minimalHeader = checked, minimalHeaderExpanded = false) }
+            }
+            SettingsCaption(uiText(UiR.string.caption_minimal_header_help), palette)
+            if (cfg.minimalHeader && cfg.tapThrough) SettingsCaption(uiText(UiR.string.caption_minimal_header_lock_help), palette)
+            val selectedHeight = if (cfg.minimalHeader) cfg.minimalHeightDp.toFloat()
+                else cfg.bubbleHeightDp?.toFloat() ?: currentHeightDp
+            val minimumHeight = if (cfg.minimalHeader) 48f else 144f
+            SliderRow(uiText(UiR.string.ui_height_dp, selectedHeight.toInt()), selectedHeight.coerceIn(minimumHeight, 600f),
+                minimumHeight..600f, palette,
+                onPreview = { value -> onConfigPreview { it.withActiveOverlayHeightDp(value.toInt()) } },
+            ) { value -> onConfigChange { it.withActiveOverlayHeightDp(value.toInt()) } }
             ChipRow {
-                listOf(uiText(UiR.string.ui_compact_1df39) to 160, uiText(UiR.string.ui_comfortable_23137) to 240, uiText(UiR.string.ui_large_738fd) to 320).forEach { (label, size) ->
-                    FilterChip(selected = cfg.bubbleHeightDp == size,
-                        onClick = { onConfigChange { it.copy(bubbleHeightDp = size) } }, label = { Text(label) })
+                listOf(uiText(UiR.string.ui_compact_1df39) to if (cfg.minimalHeader) 64 else 160,
+                    uiText(UiR.string.ui_comfortable_23137) to if (cfg.minimalHeader) 96 else 240,
+                    uiText(UiR.string.ui_large_738fd) to if (cfg.minimalHeader) 144 else 320).forEach { (label, size) ->
+                    FilterChip(selected = selectedHeight.toInt() == size,
+                        onClick = { onConfigChange { it.withActiveOverlayHeightDp(size) } }, label = { Text(label) })
                 }
             }
         SettingsLabel(uiText(UiR.string.ui_text_size_3cc6e), palette)

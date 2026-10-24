@@ -4,6 +4,38 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class OverlaySizePreviewTest {
+    @Test fun staleEmissionsCannotUndoMinimalHeightOrBringBackAHiddenHeader() {
+        val preview = OverlaySizePreview()
+        val dragged = CaptionOverlayConfig(minimalHeader = true, minimalHeightDp = 96, bubbleHeightDp = 260, widthPercent = 90)
+        preview.preview(dragged)
+        val stored = dragged.copy(minimalHeader = false, minimalHeightDp = 64, widthPercent = 60, theme = CaptionTheme.LIGHT)
+        val current = preview.applyTo(stored)
+        assertEquals(96, current.minimalHeightDp); assertEquals(260, current.bubbleHeightDp)
+        assertEquals(90, current.widthPercent); assertFalse(current.minimalHeader)
+        assertEquals(CaptionTheme.LIGHT, current.theme)
+        val first = preview.beginCommit(dragged)
+        val newer = dragged.copy(minimalHeightDp = 120)
+        preview.preview(newer); preview.finishCommit(first)
+        assertEquals(120, preview.applyTo(stored).minimalHeightDp)
+        val latest = preview.beginCommit(newer); preview.finishCommit(latest)
+        assertEquals(64, preview.applyTo(stored).minimalHeightDp)
+    }
+
+    @Test fun resetDuringMinimalResizeResetsBothSizesAndRotationInvalidatesTheOldDraft() {
+        val preview = OverlaySizePreview()
+        val dragged = CaptionOverlayConfig(minimalHeader = true, minimalHeightDp = 200, bubbleHeightDp = 260)
+        preview.preview(dragged)
+        val reset = dragged.resetOverlayPresentation(OverlayOrientation.PORTRAIT)
+        val resetCommit = preview.beginCommit(reset)
+        assertEquals(64, preview.applyTo(dragged).minimalHeightDp)
+        assertNull(preview.applyTo(dragged).bubbleHeightDp)
+        preview.cancel()
+        val landscape = dragged.copy(minimalHeightDp = 88, bubbleHeightDp = 180)
+        preview.preview(landscape)
+        preview.finishCommit(resetCommit)
+        assertEquals(88, preview.applyTo(reset).minimalHeightDp)
+    }
+
     @Test fun staleStorageCannotUndoAResizeButOtherSettingsStillApply() {
         val preview = OverlaySizePreview()
         preview.preview(CaptionOverlayConfig(widthPercent = 80, bubbleHeightDp = 240))

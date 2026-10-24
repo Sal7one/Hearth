@@ -4,4 +4,9 @@
     <string name="caption_original_unavailable">此翻译路径不提供原文字幕。</string>
     <string name="caption_show_original_while_translating">翻译时显示原文</string>
     <string name="caption_show_original_while_translating_help">在译文可用之前显示原文字幕。</string>
+    <string name="caption_minimal_header">精简控制栏</string>
+    <string name="caption_minimal_header_help">观看时隐藏控件。轻点字幕可暂时显示控件。</string>
+    <string name="caption_minimal_header_lock_help">启用触摸穿透后，轻点锁定按钮可恢复控件。</string>
+    <string name="caption_show_controls">显示控件</string>
+    <string name="caption_hide_controls">隐藏控件</string>
 </resources>

@@ -4,4 +4,9 @@
     <string name="caption_original_unavailable">مسار الترجمة هذا لا يوفر النص الأصلي للكلام.</string>
     <string name="caption_show_original_while_translating">إظهار النص الأصلي أثناء الترجمة</string>
     <string name="caption_show_original_while_translating_help">إظهار النص الأصلي للكلام حتى تتوفر الترجمة.</string>
+    <string name="caption_minimal_header">شريط أدوات مختصر</string>
+    <string name="caption_minimal_header_help">إخفاء أدوات التحكم أثناء المشاهدة. اضغط على الترجمة لإظهارها مؤقتًا.</string>
+    <string name="caption_minimal_header_lock_help">عند تفعيل تمرير اللمس، اضغط على مقبض القفل لاستعادة أدوات التحكم.</string>
+    <string name="caption_show_controls">إظهار أدوات التحكم</string>
+    <string name="caption_hide_controls">إخفاء أدوات التحكم</string>
 </resources>
