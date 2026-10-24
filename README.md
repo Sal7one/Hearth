@@ -25,32 +25,37 @@ provides a private caption link, a browser preview and separate controls for ext
 
 ## Download
 
-**[Hearth 0.30.0 RC8 — Android and Mac test release](https://github.com/Sal7one/Hearth/releases/tag/v0.30.0-rc.8)**
+**[Hearth 0.30.0 RC14 — Android release](https://github.com/Sal7one/Hearth/releases/tag/v0.30.0-rc.14)**
 
-Includes the modern benchmark lab, model downloads/imports, separate website/manga
-screen translation, and the KMP desktop app with illustrated OBS setup. RC8 repairs
-the screen translator chooser and aria2 HTTPS detection/download fallback. No model
-weights are bundled.
+Includes compact/minimal speech overlays, accessible caption timing presets,
+Phonon 2.5 multilingual recognition, working Jisr downloads, translator readiness
+fixes and the earlier screen translation/benchmark improvements. No model weights
+are bundled. [Phonon 2.5 model files](https://github.com/Sal7one/Hearth/releases/tag/v0.30.0-models.1)
+are a separate download; Hearth's CPU ONNX conversion is 339 MB and recognizes
+25 European languages, including Russian. Arabic and Chinese speech are excluded.
 
 | Download | Choose this for |
 | --- | --- |
-| **[Android Play ARM64 QA](https://github.com/Sal7one/Hearth/releases/download/v0.30.0-rc.8/hearth-0.30.0-rc.8-play-arm64-v8a-qa.apk)** | Galaxy S25 Ultra, S22 Ultra and most modern phones; cloud connections and local models |
-| [Android FOSS ARM64 QA](https://github.com/Sal7one/Hearth/releases/download/v0.30.0-rc.8/hearth-0.30.0-rc.8-foss-arm64-v8a-qa.apk) | Network-free edition; import models from files |
-| [Other Android APKs · individual downloads](https://github.com/Sal7one/Hearth/releases/tag/v0.30.0-rc.8) | Separate Play/FOSS APKs for ARMv7, x86, x86-64 and Universal; TVs use cloud connections |
-| [Mac Apple Silicon DMG](https://github.com/Sal7one/Hearth/releases/download/v0.30.0-rc.8/hearth-1.0.3-macos-arm64.dmg) | Desktop 1.0.3; ad hoc signed, not notarized |
+| **[Android Play ARM64 QA](https://github.com/Sal7one/Hearth/releases/download/v0.30.0-rc.14/hearth-0.30.0-rc.14-play-arm64-v8a-qa.apk)** | Galaxy S25 Ultra, S22 Ultra and most modern phones; cloud connections and local models |
+| [Android FOSS ARM64 QA](https://github.com/Sal7one/Hearth/releases/download/v0.30.0-rc.14/hearth-0.30.0-rc.14-foss-arm64-v8a-qa.apk) | Network-free edition; import models from files |
+| [Other Android APKs · individual downloads](https://github.com/Sal7one/Hearth/releases/tag/v0.30.0-rc.14) | Separate Play/FOSS APKs for ARMv7, x86, x86-64 and Universal; TVs use cloud connections |
+| [Mac Apple Silicon DMG](https://github.com/Sal7one/Hearth/releases/download/desktop-v1.0.4-rc.1/hearth-1.0.4-macos-arm64.dmg) | Desktop 1.0.4; ad hoc signed, not notarized |
 | [Website text extension](https://github.com/Sal7one/Hearth/releases/download/v0.30.0-rc.8/hearth-browser-extension-0.1.0.zip) | Chrome/Edge/Firefox; extract and load unpacked, then pair with Hearth |
 
-The [release page](https://github.com/Sal7one/Hearth/releases/tag/v0.30.0-rc.8)
-lists all ten Android APKs, the Mac installer, validation JSON/logs and checksums
-as individual downloads. The browser extension ZIP is its installable format;
-the downloader source archive is provided separately for license compliance. Windows
-builds and NVIDIA execution still require matching-hardware validation; no Windows
-installer is presented as verified here. [Previous releases](https://github.com/Sal7one/Hearth/releases).
+The [Android release page](https://github.com/Sal7one/Hearth/releases/tag/v0.30.0-rc.14)
+lists all ten APKs, validation records and checksums as individual downloads.
+The downloader source archive is provided separately for license compliance.
+The [desktop installer release](https://github.com/Sal7one/Hearth/releases/tag/desktop-v1.0.4-rc.1)
+has its own validation evidence; the newer Phonon 2.5/Jisr desktop code in `main`
+requires a source build and is not included in that 1.0.4 installer. The browser
+extension ZIP is its installable format. Windows builds and NVIDIA execution
+still require matching-hardware validation; no Windows installer is presented as
+verified here. [Previous releases](https://github.com/Sal7one/Hearth/releases).
 
 Android 9+; device-audio capture requires Android 10+. The FOSS edition has **no
 network permission**. These are test-signed QA builds; Play and FOSS replace each
 other. **Update without uninstalling** to retain models, keys, settings and history.
-Version code 104 preserves the prior QA identity/signing. Android device acceptance
+Version code 110 preserves the prior QA identity/signing. Android device acceptance
 belongs to the owner. [CPU and TV support](docs/android-abi-support.md).
 
 ## Screenshots

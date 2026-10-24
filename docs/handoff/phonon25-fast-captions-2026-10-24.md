@@ -3,7 +3,10 @@
 Branch: `codex/phonon25-fast-captions`, based on RC13 (`3292024`). Android
 candidate: `v0.30.0-rc.14`, version 0.30.0 / code 110, existing QA app identity
 and test certificate. Model artifacts have their own public prerelease tag,
-`v0.30.0-models.1`; the Android application release remains a draft. Application
+`v0.30.0-models.1`. The owner published the [RC14 application release](https://github.com/Sal7one/Hearth/releases/tag/v0.30.0-rc.14)
+on 24 October 2026; its source remains `2100e766cb603930b6b35a6c8a7b3f4e36ebe5cd`.
+RC12, RC13, RC14 and the Meta glasses handover are integrated into `main`.
+Application
 assets are separate APKs, never a combined release ZIP. The model import ZIP is
 a single model package.
 
