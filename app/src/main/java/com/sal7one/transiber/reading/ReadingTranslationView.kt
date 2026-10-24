@@ -223,10 +223,12 @@ internal class ReadingTranslationView(
             // Manga cleanup already reconstructs only the glyph mask/patch. A solid
             // label would hide that reconstruction and paint across the bubble's art.
             val background=if(style.replaceText && box.line.region?.paint!=null)Color.TRANSPARENT else
-                Color.argb(if(rawBackground ushr 24==0)0 else (255*style.opacity/100),
+                Color.argb(if(style.replaceText)255 else if(rawBackground ushr 24==0)0 else (255*style.opacity/100),
                     Color.red(rawBackground),Color.green(rawBackground),Color.blue(rawBackground))
             label.setTextColor(foreground);label.setBackgroundColor(background);labelBackgrounds[key]=background
-            if(style.replaceText && box.line.region?.paint==null && sampled!=null)genericCleanup[box]=sourceBounds to background
+            // Erase the original location independently of a label's size or
+            // overlap-avoiding placement. Missing sampling uses the saved palette.
+            if(style.replaceText && box.line.region?.paint==null)genericCleanup[box]=sourceBounds to background
             val minPx=TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP,14f,resources.displayMetrics)
             val maxPx=TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP,(24f*textSizeSp/20f).coerceAtLeast(14f),resources.displayMetrics)
             // A tiny icon/label needs one readable glyph, not a wide article panel.
@@ -288,7 +290,7 @@ internal class ReadingTranslationView(
             pixels.fill(0xff.toByte(),offset,offset+length)
         }
         bitmap.copyPixelsFromBuffer(ByteBuffer.wrap(pixels))
-        return PreparedCleanup(bounds,bitmap,paint.background)
+        return PreparedCleanup(bounds,bitmap,paint.background or Color.BLACK)
     }
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()

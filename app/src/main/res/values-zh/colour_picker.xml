@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="colour_picker_hex">十六进制颜色（可选）</string>
+    <string name="colour_picker_apply">应用</string>
+    <string name="colour_picker_invalid_hex">请输入六位十六进制数字，例如 #20B2AA</string>
+    <string name="colour_picker_selected">已选颜色：%1$s</string>
+    <string name="colour_picker_saturation_brightness">饱和度和亮度。按方向键调整；按确认或回车键前往下一个控件。</string>
+    <string name="colour_picker_sv_value">饱和度百分之 %1$d，亮度百分之 %2$d。滑动可调整颜色。按方向键调整；按确认或回车键前往下一个控件。</string>
+    <string name="colour_picker_hue">色相。按方向键调整；按确认或回车键前往下一个控件。</string>
+    <string name="colour_picker_hue_value">色相 %1$d 度。按方向键调整；按确认或回车键前往下一个控件。</string>
+    <string name="colour_picker_more_saturation">提高饱和度</string>
+    <string name="colour_picker_less_saturation">降低饱和度</string>
+    <string name="colour_picker_more_brightness">提高亮度</string>
+    <string name="colour_picker_less_brightness">降低亮度</string>
+</resources>

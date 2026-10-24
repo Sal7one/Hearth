@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="colour_picker_hex">رمز اللون الست عشري (اختياري)</string>
+    <string name="colour_picker_apply">تطبيق</string>
+    <string name="colour_picker_invalid_hex">أدخل ست خانات ست عشرية، مثل #20B2AA</string>
+    <string name="colour_picker_selected">اللون المحدد: %1$s</string>
+    <string name="colour_picker_saturation_brightness">التشبع والسطوع. استخدم الأسهم للتعديل. اضغط موافق أو إدخال للانتقال إلى العنصر التالي.</string>
+    <string name="colour_picker_sv_value">التشبع %1$d بالمئة، والسطوع %2$d بالمئة. اسحب للوصول إلى إجراءات تعديل اللون. استخدم الأسهم للتعديل. اضغط موافق أو إدخال للانتقال إلى العنصر التالي.</string>
+    <string name="colour_picker_hue">درجة اللون. استخدم الأسهم للتعديل. اضغط موافق أو إدخال للانتقال إلى العنصر التالي.</string>
+    <string name="colour_picker_hue_value">درجة اللون %1$d. استخدم الأسهم للتعديل. اضغط موافق أو إدخال للانتقال إلى العنصر التالي.</string>
+    <string name="colour_picker_more_saturation">زيادة التشبع</string>
+    <string name="colour_picker_less_saturation">تقليل التشبع</string>
+    <string name="colour_picker_more_brightness">زيادة السطوع</string>
+    <string name="colour_picker_less_brightness">تقليل السطوع</string>
+</resources>

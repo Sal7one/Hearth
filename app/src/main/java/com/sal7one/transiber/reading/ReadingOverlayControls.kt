@@ -19,6 +19,7 @@ import android.view.WindowManager
 import android.widget.Button
 import android.widget.FrameLayout
 import android.widget.ImageView
+import android.widget.ImageButton
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.SeekBar
@@ -152,6 +153,7 @@ internal class ReadingOverlayHandle(
     context: Context,
     onTranslate: () -> Unit,
     onOpenControls: () -> Unit,
+    onToggleTranslations: () -> Unit = {},
 ) : LinearLayout(context) {
     private val palette = ReadingOverlayPalette(context)
     private val text = context.uiText()
@@ -159,6 +161,7 @@ internal class ReadingOverlayHandle(
     val statusText: TextView
     val dragTarget: View
     private val compactTranslate: Button
+    private val visibilityButton: ImageButton
     private val dragIndicator: TextView
 
     init {
@@ -199,6 +202,16 @@ internal class ReadingOverlayHandle(
             visibility = GONE
         }
         top.addView(compactTranslate, LayoutParams(palette.dp(48), palette.dp(48)))
+        visibilityButton = ImageButton(context).apply {
+            tag = "reading-layer-visibility"
+            setImageResource(android.R.drawable.ic_menu_view)
+            imageTintList = ColorStateList.valueOf(palette.accent)
+            background = palette.ripple(palette.raised, 14)
+            setPadding(palette.dp(12), palette.dp(12), palette.dp(12), palette.dp(12))
+            setOnClickListener { onToggleTranslations() }
+            visibility = GONE
+        }
+        top.addView(visibilityButton, LayoutParams(palette.dp(48), palette.dp(48)))
         top.addView(palette.button("⋯", onOpenControls).apply {
             textSize = 24f
             contentDescription = this@ReadingOverlayHandle.text(R.string.reading_overlay_open_controls)
@@ -222,6 +235,10 @@ internal class ReadingOverlayHandle(
         primaryButton.visibility = if (state.compactHandle) GONE else VISIBLE
         statusText.visibility = if (state.compactHandle) GONE else VISIBLE
         compactTranslate.visibility = if (state.compactHandle) VISIBLE else GONE
+        visibilityButton.visibility = if (state.replaceText) VISIBLE else GONE
+        visibilityButton.isSelected = state.translationsVisible
+        visibilityButton.contentDescription = text(if (state.translationsVisible)
+            R.string.reading_style_hide_translation else R.string.reading_style_show_translation)
         compactTranslate.text = if (state.working) "…" else "↻"
         if (error != null) compactTranslate.text = "!"
         compactTranslate.background = palette.ripple(if (error == null) palette.accent else palette.dangerSurface, 14)
@@ -263,6 +280,7 @@ internal class ReadingOverlayControls(
     private val excludeAreaButton: Button
     private val clearExclusionsButton: Button
     private val passThrough: Switch
+    private val replacementTouchNote: TextView
     private val visibilitySwitch: Switch
     private val originalSwitch: Switch
     private val pageMode: Button
@@ -351,6 +369,8 @@ internal class ReadingOverlayControls(
         pauseButton = palette.button(text(R.string.reading_overlay_pause), callbacks.pause)
         controlsPage.addView(buttonRow(primaryButton, pauseButton), spaced(bottom = 12))
         passThrough = toggle(R.string.reading_overlay_passthrough, R.string.reading_overlay_passthrough_detail, callbacks.passThrough)
+        replacementTouchNote = palette.label(text(R.string.reading_style_opaque_help), 12f).apply { visibility = GONE }
+        controlsPage.addView(replacementTouchNote, spaced(bottom = 12))
         originalSwitch = toggle(R.string.reading_overlay_original, R.string.reading_overlay_original_detail, callbacks.showOriginal)
         controlsPage.addView(sectionLabel(R.string.reading_overlay_area))
         selectedAreaText = palette.label("", 13f)
@@ -455,7 +475,10 @@ internal class ReadingOverlayControls(
             pauseButton.text = text(if (value.paused) R.string.reading_overlay_resume else R.string.reading_overlay_pause)
             pauseButton.isSelected = value.paused
             pauseButton.visibility = if (value.mode == "page") VISIBLE else GONE
-            passThrough.isChecked = value.passThrough
+            val opaqueReplacement = value.appearanceSettings().opaqueReplacementActive
+            passThrough.isChecked = !opaqueReplacement && value.passThrough
+            passThrough.isEnabled = !opaqueReplacement
+            replacementTouchNote.visibility = if (opaqueReplacement) VISIBLE else GONE
             visibilitySwitch.isChecked = value.translationsVisible
             originalSwitch.isChecked = value.showOriginal
             selectedAreaText.text = text(if (value.selectedArea) R.string.reading_overlay_selected_area else R.string.reading_overlay_full_screen)
@@ -593,8 +616,9 @@ internal class ReadingOverlayControls(
 
     companion object {
         /** Focus only the options window. The compact handle must leave the foreground app in control. */
-        fun focusableFlags(base: Int): Int = (base and WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE.inv()) or
-            WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM or
+        fun focusableFlags(base: Int): Int = (base and WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE.inv() and
+            WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM.inv()) or
+            WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
             WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH
     }
 }

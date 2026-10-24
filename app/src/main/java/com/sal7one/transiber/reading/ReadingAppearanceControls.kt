@@ -13,14 +13,16 @@ import android.widget.Switch
 import android.widget.TextView
 import com.sal7one.transiber.R
 import com.sal7one.transiber.i18n.uiText
+import com.sal7one.transiber.ui.components.HearthColourPickerView
 import java.util.Locale
 
 internal fun ReadingOverlayUiState.appearanceSettings() = ReadingOverlaySettings(
+    showOriginal = showOriginal, translationVisible = translationsVisible, passThrough = passThrough,
     replaceText = replaceText, boxWidthPercent = boxWidthPercent, boxHeightPercent = boxHeightPercent,
     boxBackgroundArgb = boxBackgroundArgb, boxTextArgb = boxTextArgb, boxOpacity = boxOpacity,
 ).bounded()
 
-/** Shares saved values with setup; render never emits writes or resets the colour disclosure. */
+/** Shares saved values with setup; render never emits writes or resets the open picker. */
 internal class ReadingAppearanceControls(context: Context, private val changed: (ReadingOverlaySettings) -> Unit) : LinearLayout(context) {
     private val palette = ReadingOverlayPalette(context)
     private val text = context.uiText()
@@ -30,9 +32,12 @@ internal class ReadingAppearanceControls(context: Context, private val changed: 
     private val widthScale: StyleSlider
     private val heightScale: StyleSlider
     private val opacity: StyleSlider
+    private val opaqueHelp: TextView
     private val presetButtons: List<Pair<ReadingBoxPreset, Button>>
     private val swatches = mutableListOf<Triple<Boolean, Int, Button>>()
-    private val rgb = mutableListOf<Triple<Boolean, Int, StyleSlider>>()
+    private val colourPickers = mutableListOf<Pair<Boolean, HearthColourPickerView>>()
+    private val colourButtons = mutableListOf<Pair<Boolean, Button>>()
+    private var activeColour: Boolean? = null
 
     init {
         orientation = VERTICAL
@@ -60,27 +65,11 @@ internal class ReadingAppearanceControls(context: Context, private val changed: 
         widthScale = styleSlider(R.string.reading_style_width, 50, 200, 5) { value -> update { it.copy(boxWidthPercent = value) } }
         heightScale = styleSlider(R.string.reading_style_height, 50, 300, 5) { value -> update { it.copy(boxHeightPercent = value) } }
         opacity = styleSlider(R.string.reading_style_opacity, 10, 100, 5) { value -> update { it.copy(boxOpacity = value) } }
+        opaqueHelp = palette.label(text(R.string.reading_style_opaque_help), 12f)
+        addView(opaqueHelp, spaced())
         addView(palette.label(text(R.string.reading_style_geometry_help), 12f), spaced())
-        colourSwatches(false, R.string.reading_style_background)
-        colourSwatches(true, R.string.reading_style_foreground)
-        val advanced = LinearLayout(context).apply { orientation = VERTICAL; visibility = GONE }
-        val advancedButton = palette.button(text(R.string.reading_style_rgb), {})
-        advancedButton.setOnClickListener {
-            advanced.visibility = if (advanced.visibility == VISIBLE) GONE else VISIBLE
-            advancedButton.isSelected = advanced.visibility == VISIBLE
-        }
-        addView(advancedButton, spaced())
-        listOf(false to R.string.reading_style_background, true to R.string.reading_style_foreground).forEach { (foreground, label) ->
-            advanced.addView(palette.label(text(label), 14f, strong = true), spaced())
-            listOf(16 to R.string.reading_style_red, 8 to R.string.reading_style_green, 0 to R.string.reading_style_blue).forEach { (shift, channel) ->
-                val control = styleSlider(channel, 0, 255, 1, advanced) { value -> update {
-                    if (foreground) it.copy(boxTextArgb = readingWithRgbChannel(it.boxTextArgb, shift, value))
-                    else it.copy(boxBackgroundArgb = readingWithRgbChannel(it.boxBackgroundArgb, shift, value))
-                } }
-                rgb += Triple(foreground, shift, control)
-            }
-        }
-        addView(advanced, full())
+        colourControls(false, R.string.reading_style_background)
+        colourControls(true, R.string.reading_style_foreground)
         render(state)
     }
 
@@ -88,7 +77,10 @@ internal class ReadingAppearanceControls(context: Context, private val changed: 
         state = settings.bounded(); rendering = true
         try {
             replacement.isChecked = state.replaceText
-            widthScale.render(state.boxWidthPercent); heightScale.render(state.boxHeightPercent); opacity.render(state.boxOpacity)
+            widthScale.render(state.boxWidthPercent); heightScale.render(state.boxHeightPercent)
+            opacity.render(if (state.replaceText) 100 else state.boxOpacity)
+            opacity.slider.isEnabled = !state.replaceText
+            opaqueHelp.visibility = if (state.replaceText) VISIBLE else GONE
             presetButtons.forEach { (preset, button) ->
                 button.isSelected = preset.matches(state)
                 button.background = palette.ripple(if (button.isSelected) palette.accentSurface else palette.raised, 12)
@@ -98,7 +90,16 @@ internal class ReadingAppearanceControls(context: Context, private val changed: 
                 button.isSelected = colour == if (foreground) state.boxTextArgb else state.boxBackgroundArgb
                 button.text = if (button.isSelected) "✓" else ""
             }
-            rgb.forEach { (foreground, shift, control) -> control.render(readingRgbChannel(if (foreground) state.boxTextArgb else state.boxBackgroundArgb, shift)) }
+            colourButtons.forEach { (foreground, button) ->
+                val label = text(if (foreground) R.string.reading_style_foreground else R.string.reading_style_background)
+                val colour = if (foreground) state.boxTextArgb else state.boxBackgroundArgb
+                button.text = text(R.string.reading_style_choose_colour, label, String.format(Locale.ROOT, "#%06X", colour and 0xffffff))
+                button.isSelected = activeColour == foreground
+            }
+            colourPickers.forEach { (foreground, picker) ->
+                picker.setColour(if (foreground) state.boxTextArgb else state.boxBackgroundArgb)
+                picker.visibility = if (activeColour == foreground) VISIBLE else GONE
+            }
         } finally { rendering = false }
     }
 
@@ -108,6 +109,29 @@ internal class ReadingAppearanceControls(context: Context, private val changed: 
             render(next)
             changed(next)
         }
+    }
+
+    private fun colourControls(foreground: Boolean, label: Int) {
+        colourSwatches(foreground, label)
+        val button = palette.button("", {
+            activeColour = if (activeColour == foreground) null else foreground
+            render(state)
+        }).apply {
+            tag = if (foreground) "reading-text-colour-picker" else "reading-background-colour-picker"
+        }
+        colourButtons += foreground to button
+        addView(button, spaced())
+        val picker = HearthColourPickerView(context,
+            if (foreground) state.boxTextArgb else state.boxBackgroundArgb,
+            onCommit = { colour -> update {
+                if (foreground) it.copy(boxTextArgb = colour) else it.copy(boxBackgroundArgb = colour)
+            } },
+        ).apply {
+            visibility = GONE
+            setPalette(palette.ink, palette.raised, palette.accent)
+        }
+        colourPickers += foreground to picker
+        addView(picker, spaced())
     }
 
     private fun colourSwatches(foreground: Boolean, label: Int) {

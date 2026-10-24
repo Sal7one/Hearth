@@ -1,6 +1,10 @@
 package com.sal7one.transiber.caption
 
 import android.app.Application
+import android.view.MotionEvent
+import android.view.View
+import android.view.WindowManager
+import android.widget.EditText
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
@@ -170,7 +174,7 @@ class CaptionTextAppearanceUiTest {
         assertEquals(0, current.value.backgroundOpacity)
     }
 
-    @Test fun customRgbAndOpacityAccessibilityActionsCommitTheSelectedValues() {
+    @Test fun visualColourGesturesAndHexCommitPersistWithoutOverwritingNewerOptions() {
         val prefs = mutablePreferencesOf()
         val current = mutableStateOf(config.value)
         var commits = 0
@@ -186,22 +190,80 @@ class CaptionTextAppearanceUiTest {
                 }
             } }
         }
+        compose.onNodeWithTag("caption-ink-picker").assertDoesNotExist()
         compose.onNodeWithTag("caption-ink-custom").performClick()
-        listOf("caption-ink-channel-16" to 80f, "caption-ink-channel-8" to 120f,
-            "caption-ink-channel-0" to 200f, "caption-ink-opacity" to 55f).forEach { (tag, value) ->
-            compose.onNodeWithTag(tag).performSemanticsAction(SemanticsActions.SetProgress) { action ->
-                assertTrue("The slider must accept accessibility progress changes", action(value))
-            }
+        compose.onNodeWithTag("caption-ink-picker").performScrollTo().assertExists()
+        lateinit var square: View
+        compose.runOnIdle {
+            square = nativeView("hearth_colour_sv")
+            assertTrue("The visual saturation/brightness area must be measured", square.width > 0 && square.height > 0)
+            touch(square, MotionEvent.ACTION_DOWN, .8f, .2f)
+            touch(square, MotionEvent.ACTION_MOVE, .25f, .65f)
+            assertEquals("Dragging previews without persisting every pixel", 0, commits)
+            assertTrue("The caption preview changes while selecting a colour", previews > 0)
+            current.value = current.value.copy(backgroundOpacity = 23)
         }
         compose.runOnIdle {
-            assertEquals("Every completed accessibility adjustment must save once", 4, commits)
-            assertEquals(4, previews)
+            touch(square, MotionEvent.ACTION_UP, .25f, .65f)
+            assertEquals("One completed selection commits once", 1, commits)
+            assertNotEquals(amber, CaptionConfigStore.readFrom(prefs).textColorArgb)
+            assertEquals("A completed drag must retain a more recent panel edit", 23, current.value.backgroundOpacity)
+        }
+        compose.runOnIdle {
+            val hex = nativeView<EditText>("hearth_colour_hex")
+            assertEquals(View.VISIBLE, hex.visibility)
+            hex.setText("#5078C8")
+            nativeView<View>("hearth_colour_apply").performClick()
+        }
+        compose.onNodeWithTag("caption-ink-opacity").performSemanticsAction(SemanticsActions.SetProgress) { action ->
+            assertTrue("Opacity still accepts accessibility progress changes", action(55f))
+        }
+        compose.runOnIdle {
+            assertEquals("Visual drag, hex Apply and opacity each save once", 3, commits)
             val saved = CaptionConfigStore.readFrom(prefs)
             assertEquals(0xff5078c8.toInt(), saved.textColorArgb)
             assertEquals(55, saved.textOpacity)
-            assertEquals(0, saved.backgroundOpacity)
+            assertEquals(23, saved.backgroundOpacity)
             assertEquals(CaptionMode.TRANSLATE, saved.mode)
             assertEquals(TranslationTarget.ARABIC, saved.target)
+        }
+    }
+
+    @Test fun floatingPickerKeepsVisualControlsWithoutAnUnavailableKeyboardField() {
+        val current = mutableStateOf(config.value)
+        var commits = 0
+        compose.activity.window.addFlags(WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE)
+        compose.setContent {
+            MaterialTheme { UiLocaleProvider {
+                Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+                    CaptionTextAppearanceControls(current.value, { transform ->
+                        current.value = transform(current.value)
+                        commits++
+                    })
+                }
+            } }
+        }
+        compose.onNodeWithTag("caption-ink-custom").performClick()
+        compose.onNodeWithTag("caption-ink-picker").performScrollTo()
+        compose.runOnIdle {
+            assertFalse("A nonfocusable floating window must not offer a dead keyboard field",
+                nativeView<View>("hearth_colour_hex").isShown)
+            val square = nativeView<View>("hearth_colour_sv")
+            touch(square, MotionEvent.ACTION_DOWN, .7f, .4f)
+            touch(square, MotionEvent.ACTION_UP, .7f, .4f)
+            assertEquals(1, commits)
+            assertNotEquals(amber, current.value.textColorArgb)
+            assertTrue(compose.activity.window.attributes.flags and WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE != 0)
+        }
+    }
+
+    private fun <T : View> nativeView(tag: String): T = checkNotNull(compose.activity.window.decorView.findViewWithTag(tag)) {
+        "The real Android colour picker must expose $tag"
+    }
+
+    private fun touch(view: View, action: Int, x: Float, y: Float) {
+        MotionEvent.obtain(0L, 0L, action, view.width * x, view.height * y, 0).let { event ->
+            try { assertTrue(view.dispatchTouchEvent(event)) } finally { event.recycle() }
         }
     }
 

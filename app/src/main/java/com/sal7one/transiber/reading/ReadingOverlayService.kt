@@ -17,6 +17,7 @@ import android.media.projection.MediaProjection
 import android.media.projection.MediaProjectionManager
 import android.os.*
 import android.view.*
+import android.view.inputmethod.InputMethodManager
 import android.widget.*
 import androidx.core.app.NotificationCompat
 import com.sal7one.transiber.R
@@ -219,7 +220,8 @@ class ReadingOverlayService : Service() {
     /** Progressive OCR and translation can overlap: only a fully idle page is terminal. */
     private fun onOcrState(value: CameraOcrState) {
         latest=value
-        if(!working || pageTicket==null || !frameSubmitted){renderControls();return}
+        val ticket=pageTicket
+        if(stopping || setupSuppressed || !working || ticket==null || !pageGuard.isCurrent(ticket) || !frameSubmitted){renderControls();return}
         if(!viewingBox && value.text.isNotBlank())original?.text=value.text
         if(value.regions.isNotEmpty())showRegions()
         // Progressive OCR can invalidate every translated box while retaining the
@@ -342,7 +344,7 @@ class ReadingOverlayService : Service() {
         now()-paintChangedAt>=150 && frameGeneration>paintChangedGeneration
     private fun updateLayerVisibility() {
         pageView?.visibility=if(!setupSuppressed && selector==null && panel?.visibility!=View.VISIBLE &&
-            options.translationVisible && pageCrop!=null)View.VISIBLE else View.INVISIBLE
+            options.translationVisible && !options.showOriginal && pageCrop!=null)View.VISIBLE else View.INVISIBLE
         updatePaintRevision()
     }
     private fun restoreCompletedPage() {
@@ -513,9 +515,14 @@ class ReadingOverlayService : Service() {
         }catch(e: CancellationException){throw e}
         catch(e: Exception){paused=true;showError(e.message ?: e.toString());renderControls()}
     }
-    /** A manual request owns its captured page through localized animations and late DOM updates. */
+    /** Explicit Translate reads one snapshot, even if a video keeps changing behind it. */
     private fun onPageMotion(moved: Boolean, kind: ReadingMotion.ChangeKind) {
-        if(!moved || working && manualPage && kind!=ReadingMotion.ChangeKind.WIDESPREAD)return
+        if(!moved || stopping || setupSuppressed)return
+        // Motion cannot distinguish scrolling from video playback. The explicit
+        // capture keeps its ticket through every class of movement; lifecycle,
+        // configuration changes and a newer tap still cancel it normally.
+        // In manual mode keep the finished snapshot readable until the next tap.
+        if(manualPage && (working || trigger.mode=="manual"))return
         clearPage();trigger.movement(now());generation++;working=false;frameSubmitted=false;manualPage=false
         pageGuard.cancel();pageTicket=null;controller.invalidate()
         original?.text="";translated?.text="";renderControls()
@@ -585,6 +592,7 @@ class ReadingOverlayService : Service() {
             cancelAttempt();voice.stop();trigger.reset()
             // Keep the last output and area while Hearth owns the foreground.
             // Returning from settings must not look like a fresh reader session.
+            hidePanelInput()
             panel?.visibility=View.GONE
             panelParams.flags=panelParams.flags or WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
             panel?.let {wm.updateViewLayout(it,panelParams)}
@@ -613,7 +621,14 @@ class ReadingOverlayService : Service() {
         pageView?.update(emptyList());pageView?.updateRegions(emptyList());pageView?.visibility=View.INVISIBLE;pageCrop=null;updatePaintRevision()
         if(forgetCompleted){completedPage=null;pageView?.sourceColours=null;pageGuard.reset();pageTicket=null}
     }
+    private fun hidePanelInput() {
+        panel?.let { root ->
+            getSystemService(InputMethodManager::class.java)?.hideSoftInputFromWindow(root.windowToken,0)
+            root.findFocus()?.clearFocus()
+        }
+    }
     private fun resumeReader() {
+        hidePanelInput()
         panel?.visibility=View.GONE
         panelParams.flags=panelParams.flags or WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
         panel?.let {wm.updateViewLayout(it,panelParams)}
@@ -623,12 +638,19 @@ class ReadingOverlayService : Service() {
         // motion sample can still detect a real page change made while options were open.
     }
     private fun applyLayerTouch() {
-        layerParams.flags=layerParams.flags.let {if(locked)it or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE else it and WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE.inv()}
-        layerParams.alpha=if(locked && Build.VERSION.SDK_INT>=31)minOf(.8f,getSystemService(android.hardware.input.InputManager::class.java).maximumObscuringOpacityForTouch) else .8f
+        // Android 12+ rejects touches through an opaque untrusted full-screen
+        // overlay. Replacement therefore becomes an interactive reading layer;
+        // retain the saved pass-through choice for ordinary boxes and Original.
+        val passThrough=locked && !options.opaqueReplacementActive
+        layerParams.flags=layerParams.flags.let {if(passThrough)it or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE else it and WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE.inv()}
+        layerParams.alpha=if(passThrough) {
+            if(Build.VERSION.SDK_INT>=31)minOf(.8f,getSystemService(android.hardware.input.InputManager::class.java).maximumObscuringOpacityForTouch) else .8f
+        } else 1f
         pageView?.let {wm.updateViewLayout(it,layerParams)}
         updatePaintRevision()
         handle?.let {root->
-            handleParams.width=dp(if(options.compactHandle)156 else 240);handleParams.height=WindowManager.LayoutParams.WRAP_CONTENT
+            handleParams.width=dp(if(options.compactHandle) {if(options.replaceText)204 else 156} else {if(options.replaceText)288 else 240})
+            handleParams.height=WindowManager.LayoutParams.WRAP_CONTENT
             val bounds=screenSize()
             handleParams.x=handleParams.x.coerceIn(0,maxOf(0,bounds.first-handleParams.width))
             handleParams.y=handleParams.y.coerceIn(dp(24),maxOf(dp(24),bounds.second-dp(if(options.compactHandle)80 else 144)))
@@ -682,11 +704,12 @@ class ReadingOverlayService : Service() {
             }
             wm.addView(view,layerParams);view.visibility=View.INVISIBLE
         }
-        handleParams=params(dp(if(options.compactHandle)156 else 240),-2).apply {
+        handleParams=params(dp(if(options.compactHandle) {if(options.replaceText)204 else 156} else {if(options.replaceText)288 else 240}),-2).apply {
             x=prefs.getInt("x",dp(8)).coerceIn(0,maxOf(0,size.first-width))
             y=prefs.getInt("y",dp(100)).coerceIn(dp(24),maxOf(dp(24),size.second-dp(160)))
         }
-        handle=ReadingOverlayHandle(this,{requestCapture(false)},{showPanel()}).also {root->
+        handle=ReadingOverlayHandle(this,{requestCapture(false)},{showPanel()},
+            onToggleTranslations={overlayPreferences.update {it.copy(translationVisible=!it.translationVisible)}}).also {root->
             var sx=0f;var sy=0f;var x=0;var y=0
             root.dragTarget.setOnClickListener {showPanel()}
             root.dragTarget.setOnTouchListener {view,event->when(event.actionMasked) {
@@ -753,6 +776,7 @@ class ReadingOverlayService : Service() {
         if(setupSuppressed || selector!=null)return
         pageView?.visibility=View.INVISIBLE;handle?.visibility=View.GONE;updatePaintRevision()
         panelParams.flags=ReadingOverlayControls.focusableFlags(panelParams.flags)
+        panelParams.softInputMode=WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE
         panel?.let {it.visibility=View.VISIBLE;wm.updateViewLayout(it,panelParams);it.requestFocus()}
         renderControls()
     }
@@ -844,8 +868,9 @@ class ReadingOverlayService : Service() {
         if(setupReady && trigger.mode=="page" && !paused)trigger.movement(now())
     }
     override fun onDestroy() {
+        hidePanelInput()
         runningState.value=false
-        stopping=true;clearPage()
+        stopping=true;cancelAttempt();clearPage()
         frameWaiter?.cancel();frameWaiter=null;scope.cancel();controller.close();voice.close()
         display?.release();display=null;reader?.setOnImageAvailableListener(null,null);latestImage?.close();latestImage=null;reader?.close();reader=null;projection?.stop();projection=null
         listOfNotNull(selector,panel,handle,pageView).forEach {wm.removeView(it)};selectedBitmap?.recycle();selectedBitmap=null

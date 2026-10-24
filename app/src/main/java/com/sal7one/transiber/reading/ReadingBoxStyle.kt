@@ -29,7 +29,3 @@ internal val readingBoxColourChoices = listOf(
     0xff000000.toInt(), 0xffffffff.toInt(), 0xff17212b.toInt(),
     0xfffff1cf.toInt(), 0xff55e0cb.toInt(), 0xfff9bf60.toInt(),
 )
-
-internal fun readingRgbChannel(colour: Int, shift: Int): Int = (colour ushr shift) and 255
-internal fun readingWithRgbChannel(colour: Int, shift: Int, value: Int): Int =
-    ((colour and (255 shl shift).inv()) or (value.coerceIn(0, 255) shl shift)) or 0xff000000.toInt()

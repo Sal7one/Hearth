@@ -53,13 +53,6 @@ class ReadingOverlaySettingsTest {
             boxOpacity = oldSnapshot.boxOpacity), result)
     }
 
-    @Test fun rgbEditingChangesOnlyOneChannelAndNormalizesBounds() {
-        assertEquals(0xff12ff56.toInt(), readingWithRgbChannel(0x00123456, 8, 300))
-        assertEquals(0xff003456.toInt(), readingWithRgbChannel(0x00123456, 16, -2))
-        assertEquals(0x34, readingRgbChannel(0xff123456.toInt(), 8))
-        assertEquals(0xff1234ab.toInt(), readingWithRgbChannel(0xff123456.toInt(), 0, 0xab))
-    }
-
     @Test fun legacyChoicesMigrateWithoutResettingManualOrPageMode() {
         for (mode in listOf("manual", "page", "distance", "scrolls")) {
             val settings = ReadingOverlaySettings.from(mapOf("mode" to mode, "settle" to 700L,

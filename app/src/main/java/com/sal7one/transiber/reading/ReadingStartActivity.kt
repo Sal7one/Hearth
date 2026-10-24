@@ -306,7 +306,9 @@ class ReadingStartActivity : AppCompatActivity() {
             }
             "options" -> FeatureOptionsSheet(text(R.string.reading_setup_options), { sheet = null }, optionsScroll) {
                 ReadingSetupSection(text(R.string.reading_setup_display)) {
-                    ReadingOptionSwitch(text(R.string.reading_passthrough), text(R.string.reading_setup_passthrough_help), settings.passThrough) { value ->
+                    ReadingOptionSwitch(text(R.string.reading_passthrough),
+                        text(if (settings.opaqueReplacementActive) R.string.reading_style_opaque_help else R.string.reading_setup_passthrough_help),
+                        settings.passThrough && !settings.opaqueReplacementActive, enabled = !settings.opaqueReplacementActive) { value ->
                         settingsStore.update { it.copy(passThrough = value) }
                     }
                     ReadingOptionSwitch(text(R.string.reading_setup_compact), text(R.string.reading_setup_compact_help), settings.compactHandle) { value ->
@@ -355,13 +357,13 @@ class ReadingStartActivity : AppCompatActivity() {
     }
 }
 
-@Composable private fun ReadingOptionSwitch(title: String, detail: String, checked: Boolean, onChange: (Boolean) -> Unit) {
+@Composable private fun ReadingOptionSwitch(title: String, detail: String, checked: Boolean, enabled: Boolean = true, onChange: (Boolean) -> Unit) {
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(title, style = MaterialTheme.typography.bodyLarge)
             Text(detail, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
-        Switch(checked, onChange, modifier = Modifier.semantics { contentDescription = title })
+        Switch(checked, onChange, enabled = enabled, modifier = Modifier.semantics { contentDescription = title })
     }
 }
 

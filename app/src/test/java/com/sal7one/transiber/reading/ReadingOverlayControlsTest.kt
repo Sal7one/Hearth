@@ -10,6 +10,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.WindowManager
 import android.widget.Button
+import android.widget.EditText
 import android.widget.ScrollView
 import android.widget.SeekBar
 import android.widget.Switch
@@ -17,6 +18,7 @@ import androidx.core.graphics.Insets
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import com.sal7one.transiber.R
+import com.sal7one.transiber.ui.components.HearthColourPickerView
 import org.junit.Assert.*
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -30,6 +32,51 @@ import org.xmlpull.v1.XmlPullParser
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
 class ReadingOverlayControlsTest {
+    @Test fun replacementShowsSolidOpacityAndSuspendsTouchThroughWithoutSavingEitherControl() {
+        val owner = Robolectric.buildActivity(Activity::class.java).setup().visible()
+        var writes = 0
+        val controls = ReadingOverlayControls(owner.get(), callbacks(changed = { writes++ }).copy(appearance = { writes++ }))
+        owner.get().setContentView(controls)
+        val saved = ReadingOverlayUiState(replaceText = true, passThrough = true, boxOpacity = 25)
+        controls.render(saved)
+        val pass = descendants(controls).filterIsInstance<Switch>().single {
+            it.text == owner.get().getString(R.string.reading_overlay_passthrough)
+        }
+        val opacity = descendants(controls).filterIsInstance<SeekBar>().single {
+            it.contentDescription == owner.get().getString(R.string.reading_style_opacity)
+        }
+        assertFalse(pass.isEnabled); assertFalse(pass.isChecked)
+        assertFalse(opacity.isEnabled); assertEquals(opacity.max, opacity.progress)
+        controls.render(saved.copy(translationsVisible = false))
+        assertTrue(pass.isEnabled); assertTrue(pass.isChecked)
+        controls.render(saved.copy(replaceText = false))
+        assertTrue(pass.isEnabled); assertTrue(pass.isChecked)
+        assertTrue(opacity.isEnabled); assertEquals(3, opacity.progress)
+        assertEquals("Rendering effective opacity must not overwrite saved preferences", 0, writes)
+        owner.pause().stop().destroy()
+    }
+
+    @Test fun opaqueReplacementAddsAnAccessibleEyeWithinTheCompactHandle() {
+        val owner = Robolectric.buildActivity(Activity::class.java).setup().visible()
+        var toggles = 0
+        val handle = ReadingOverlayHandle(owner.get(), {}, {}, onToggleTranslations = { toggles++ })
+        owner.get().setContentView(handle)
+        handle.render(ReadingOverlayUiState(replaceText = true, compactHandle = true))
+        measure(handle, 204, 56)
+        val eye = handle.findViewWithTag<View>("reading-layer-visibility")
+        assertTrue(eye.isShown)
+        assertTrue(eye.measuredWidth >= dp(handle, 48)); assertTrue(eye.measuredHeight >= dp(handle, 48))
+        assertTrue(eye.right <= (eye.parent as View).width)
+        assertEquals(owner.get().getString(R.string.reading_style_hide_translation), eye.contentDescription)
+        eye.performClick(); assertEquals(1, toggles)
+        handle.render(ReadingOverlayUiState(replaceText = true, translationsVisible = false))
+        assertEquals(owner.get().getString(R.string.reading_style_show_translation), eye.contentDescription)
+        eye.performClick(); assertEquals(2, toggles)
+        handle.render(ReadingOverlayUiState(replaceText = false))
+        assertEquals(View.GONE, eye.visibility)
+        owner.pause().stop().destroy()
+    }
+
     @Test fun appearanceControlsAreLiveOptInAndPresetsKeepTheSavedGeometry() {
         val owner = Robolectric.buildActivity(Activity::class.java).setup().visible()
         val writes = mutableListOf<ReadingOverlaySettings>()
@@ -53,57 +100,119 @@ class ReadingOverlayControlsTest {
         owner.pause().stop().destroy()
     }
 
-    @Test fun customColoursCanChangeDuringReplacementAndRenderDoesNotWriteOrCloseRgb() {
+    @Test fun colourPickerKeepsUnappliedHexAndCommitsOnlyItsColourAgainstLatestSettings() {
         val owner = Robolectric.buildActivity(Activity::class.java).setup().visible()
         val writes = mutableListOf<ReadingOverlaySettings>()
         val appearance = ReadingAppearanceControls(owner.get()) { writes += it }
         owner.get().setContentView(appearance)
-        appearance.render(ReadingOverlaySettings(replaceText = true))
-        val backgroundChoice = descendants(appearance).filterIsInstance<Button>().single {
-            it.contentDescription == owner.get().getString(R.string.reading_style_colour_choice,
-                owner.get().getString(R.string.reading_style_background), "#17212B") }
-        backgroundChoice.performClick()
-        assertEquals(1, writes.size)
-        assertTrue(writes.last().replaceText); assertEquals(0xff17212b.toInt(), writes.last().boxBackgroundArgb)
-        val rgb = button(appearance, R.string.reading_style_rgb)
-        assertFalse(rgb.isSelected)
-        rgb.performClick()
-        assertTrue(rgb.isSelected)
-        appearance.render(writes.last().copy(boxWidthPercent = 150))
-        assertEquals(1, writes.size); assertTrue(rgb.isSelected)
-        val width = descendants(appearance).filterIsInstance<SeekBar>().single {
-            it.contentDescription == owner.get().getString(R.string.reading_style_width) }
-        assertEquals(20, width.progress)
-        width.keyProgressIncrement = 1
-        width.onKeyDown(KeyEvent.KEYCODE_DPAD_RIGHT, KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DPAD_RIGHT))
-        assertEquals(2, writes.size); assertEquals(155, writes.last().boxWidthPercent)
-        assertTrue(writes.last().replaceText)
-        val red = descendants(appearance).filterIsInstance<SeekBar>().first {
-            it.contentDescription == owner.get().getString(R.string.reading_style_red) }
-        red.keyProgressIncrement = 1
-        red.onKeyDown(KeyEvent.KEYCODE_DPAD_RIGHT, KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DPAD_RIGHT))
-        assertEquals(3, writes.size)
-        assertEquals(0xff18212b.toInt(), writes.last().boxBackgroundArgb)
-        assertEquals(155, writes.last().boxWidthPercent); assertTrue(writes.last().replaceText)
+        val original = ReadingOverlaySettings(replaceText = true, boxWidthPercent = 85,
+            boxHeightPercent = 145, boxOpacity = 70, mode = "page", passThrough = false)
+        appearance.render(original)
+        val background = tagged<Button>(appearance, "reading-background-colour-picker")
+        background.performClick()
+        val backgroundPicker = shownPicker(appearance)
+        assertTrue(background.isSelected)
+        val hex = tagged<EditText>(backgroundPicker, "hearth_colour_hex")
+        hex.setText("2471A3")
+        assertTrue("Typing an optional hex value must not save before Apply", writes.isEmpty())
+
+        val newer = original.copy(boxWidthPercent = 150, boxTextArgb = 0xfffedcba.toInt())
+        appearance.render(newer)
+        assertTrue("A progress render must keep the colour picker open", backgroundPicker.isShown)
+        assertEquals("A service echo must not overwrite uncommitted input", "2471A3", hex.text.toString())
+        assertTrue(writes.isEmpty())
+        tagged<Button>(backgroundPicker, "hearth_colour_apply").performClick()
+        assertEquals(listOf(newer.copy(boxBackgroundArgb = 0xff2471a3.toInt())), writes)
+
+        tagged<Button>(appearance, "reading-text-colour-picker").performClick()
+        val textPicker = shownPicker(appearance)
+        assertFalse("Opening text colour must close the background picker", backgroundPicker.isShown)
+        tagged<EditText>(textPicker, "hearth_colour_hex").setText("102030")
+        tagged<Button>(textPicker, "hearth_colour_apply").performClick()
+        assertEquals(2, writes.size)
+        assertEquals(newer.copy(boxBackgroundArgb = 0xff2471a3.toInt(), boxTextArgb = 0xff102030.toInt()), writes.last())
         owner.pause().stop().destroy()
     }
 
-    @Test fun appearanceRgbDisclosureKeepsAllNativeControlsWithinANarrowSheet() {
+    @Test fun colourPickerCanCloseOrSwitchWithoutApplyingUncommittedHex() {
+        val owner = Robolectric.buildActivity(Activity::class.java).setup().visible()
+        val writes = mutableListOf<ReadingOverlaySettings>()
+        val appearance = ReadingAppearanceControls(owner.get()) { writes += it }
+        owner.get().setContentView(appearance)
+        val saved = ReadingOverlaySettings(boxBackgroundArgb = 0xff0a0b0c.toInt(),
+            boxTextArgb = 0xfff0f1f2.toInt(), boxOpacity = 55)
+        appearance.render(saved)
+        val background = tagged<Button>(appearance, "reading-background-colour-picker")
+        background.performClick()
+        tagged<EditText>(shownPicker(appearance), "hearth_colour_hex").setText("FF00FF")
+        background.performClick()
+        assertFalse(background.isSelected)
+        assertTrue(descendants(appearance).filterIsInstance<HearthColourPickerView>().none { it.isShown })
+        assertTrue(writes.isEmpty())
+
+        tagged<Button>(appearance, "reading-text-colour-picker").performClick()
+        val picker = shownPicker(appearance)
+        tagged<EditText>(picker, "hearth_colour_hex").setText("765432")
+        tagged<Button>(picker, "hearth_colour_apply").performClick()
+        assertEquals(listOf(saved.copy(boxTextArgb = 0xff765432.toInt())), writes)
+        owner.pause().stop().destroy()
+    }
+
+    @Test fun colourDragSurvivesAProgressRenderAndCommitsAgainstTheLatestGeometry() {
+        val owner = Robolectric.buildActivity(Activity::class.java).setup().visible()
+        val writes = mutableListOf<ReadingOverlaySettings>()
+        val appearance = ReadingAppearanceControls(owner.get()) { writes += it }
+        owner.get().setContentView(appearance)
+        val saved = ReadingOverlaySettings(boxBackgroundArgb = 0xff00aabb.toInt(),
+            boxTextArgb = 0xffeeddcc.toInt(), replaceText = true, boxOpacity = 60)
+        appearance.render(saved)
+        tagged<Button>(appearance, "reading-background-colour-picker").performClick()
+        measure(appearance, 296, 2_000)
+        val picker = shownPicker(appearance)
+        val field = tagged<View>(picker, "hearth_colour_sv")
+        val downAt = SystemClock.uptimeMillis()
+        val press = MotionEvent.obtain(downAt, downAt, MotionEvent.ACTION_DOWN,
+            field.width * .4f, field.height * .3f, 0)
+        val release = MotionEvent.obtain(downAt, downAt + 40, MotionEvent.ACTION_UP,
+            field.width * .6f, field.height * .7f, 0)
+        try {
+            assertTrue(field.dispatchTouchEvent(press))
+            assertTrue("A colour preview must not persist every pointer movement", writes.isEmpty())
+            appearance.render(saved.copy(boxWidthPercent = 180, boxHeightPercent = 190))
+            assertTrue(picker.isShown)
+            assertTrue("A service render must not cancel the active colour drag", field.dispatchTouchEvent(release))
+        } finally { press.recycle(); release.recycle() }
+        assertEquals(1, writes.size)
+        val committed = writes.single()
+        assertNotEquals(saved.boxBackgroundArgb, committed.boxBackgroundArgb)
+        assertEquals(saved.copy(boxWidthPercent = 180, boxHeightPercent = 190,
+            boxBackgroundArgb = committed.boxBackgroundArgb), committed)
+        owner.pause().stop().destroy()
+    }
+
+    @Test fun appearanceColourPickerKeepsAllNativeControlsWithinANarrowSheet() {
         val owner = Robolectric.buildActivity(Activity::class.java).setup().visible()
         val controls = ReadingOverlayControls(owner.get(), callbacks())
         owner.get().setContentView(controls)
         button(controls, R.string.reading_overlay_appearance).performClick()
-        button(controls, R.string.reading_style_rgb).performClick()
+        tagged<Button>(controls, "reading-background-colour-picker").performClick()
         measure(controls, 296, 440)
         val scroll = descendants(controls).filterIsInstance<ScrollView>().single()
         assertTrue(scroll.getChildAt(0).height > scroll.height)
         val appearance = descendants(controls).filterIsInstance<ReadingAppearanceControls>().single()
-        descendants(appearance).filterIsInstance<Button>().forEach { button ->
+        descendants(appearance).filterIsInstance<Button>().filter { it.isShown }.forEach { button ->
             assertTrue(button.measuredHeight >= dp(controls, 48))
             assertTrue(button.width > 0)
             assertTrue(button.right <= (button.parent as View).width)
         }
-        assertEquals(9, descendants(appearance).filterIsInstance<SeekBar>().size)
+        val picker = shownPicker(appearance)
+        val saturation = tagged<View>(picker, "hearth_colour_sv")
+        val hue = tagged<View>(picker, "hearth_colour_hue")
+        assertTrue("The visual colour field must be usable on a narrow sheet", saturation.width >= dp(controls, 120))
+        assertTrue(saturation.height >= dp(controls, 96))
+        assertTrue(hue.width > 0)
+        assertTrue(hue.height >= dp(controls, 48))
+        assertTrue(tagged<EditText>(picker, "hearth_colour_hex").width > 0)
         owner.pause().stop().destroy()
     }
 
@@ -350,7 +459,8 @@ class ReadingOverlayControlsTest {
         val panel = ReadingOverlayControls.focusableFlags(base)
         assertEquals(0, panel and WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE)
         assertNotEquals(0, panel and WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL)
-        assertNotEquals(0, panel and WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM)
+        assertEquals("The options picker must be able to open the optional hex keyboard", 0,
+            panel and WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM)
         assertNotEquals(0, panel and WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH)
         assertNotEquals(0, panel and WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN)
     }
@@ -371,6 +481,10 @@ class ReadingOverlayControlsTest {
     }
     private fun button(root: ViewGroup, label: Int): Button = descendants(root).filterIsInstance<Button>()
         .single { it.text == root.context.getString(label) }
+    private inline fun <reified T : View> tagged(root: ViewGroup, tag: String): T =
+        descendants(root).filterIsInstance<T>().single { it.tag == tag }
+    private fun shownPicker(root: ViewGroup): HearthColourPickerView =
+        descendants(root).filterIsInstance<HearthColourPickerView>().single { it.isShown }
     private fun measure(view: View, width: Int, height: Int) {
         view.measure(View.MeasureSpec.makeMeasureSpec(dp(view, width), View.MeasureSpec.EXACTLY),
             View.MeasureSpec.makeMeasureSpec(dp(view, height), View.MeasureSpec.EXACTLY))

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="colour_picker_hex">Hex colour (optional)</string>
+    <string name="colour_picker_apply">Apply</string>
+    <string name="colour_picker_invalid_hex">Enter six hexadecimal digits, for example #20B2AA</string>
+    <string name="colour_picker_selected">Selected colour: %1$s</string>
+    <string name="colour_picker_saturation_brightness">Saturation and brightness. Use arrow keys to adjust. Press OK or Enter for the next control.</string>
+    <string name="colour_picker_sv_value">Saturation %1$d percent, brightness %2$d percent. Swipe for colour adjustment actions. Use arrow keys to adjust. Press OK or Enter for the next control.</string>
+    <string name="colour_picker_hue">Hue. Use arrow keys to adjust. Press OK or Enter for the next control.</string>
+    <string name="colour_picker_hue_value">Hue %1$d degrees. Use arrow keys to adjust. Press OK or Enter for the next control.</string>
+    <string name="colour_picker_more_saturation">Increase saturation</string>
+    <string name="colour_picker_less_saturation">Decrease saturation</string>
+    <string name="colour_picker_more_brightness">Increase brightness</string>
+    <string name="colour_picker_less_brightness">Decrease brightness</string>
+</resources>

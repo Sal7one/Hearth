@@ -45,6 +45,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import com.sal7one.transiber.i18n.rememberUiText
+import com.sal7one.transiber.ui.components.HearthColourPicker
 import java.util.Locale
 import kotlin.math.roundToInt
 import com.sal7one.transiber.R as UiR
@@ -68,7 +69,7 @@ internal fun captionTextShadow(color: Color, config: CaptionOverlayConfig, scale
     return Shadow(contrast.copy(alpha = color.alpha * .9f), Offset(0f, scale), 3f * scale)
 }
 
-/** Same inline picker in floating options and the full overlay editor; no extra overlay window or keyboard. */
+/** Same inline visual picker in floating options and the full editor, without another overlay window. */
 @Composable
 internal fun CaptionTextAppearanceControls(
     config: CaptionOverlayConfig,
@@ -112,20 +113,15 @@ internal fun CaptionTextAppearanceControls(
             }
         }
         TextButton(onClick = { custom = !custom }, modifier = Modifier.testTag("caption-ink-custom").captionFocusRing()) {
+            Box(Modifier.size(24.dp).background(Color(current), CircleShape)
+                .border(1.dp, MaterialTheme.colorScheme.outline, CircleShape))
+            androidx.compose.foundation.layout.Spacer(Modifier.size(8.dp))
             Text(text(UiR.string.caption_ink_custom, String.format(Locale.ROOT, "#%06X", current and 0xffffff)))
         }
         if (custom) {
-            listOf(UiR.string.caption_ink_red to 16, UiR.string.caption_ink_green to 8, UiR.string.caption_ink_blue to 0).forEach { (label, shift) ->
-                val value = (current ushr shift) and 255
-                fun changed(value: Float, old: CaptionOverlayConfig): CaptionOverlayConfig {
-                    val base = (old.textColorArgb ?: current) or 0xff000000.toInt()
-                    val argb = (base and (255 shl shift).inv()) or (value.roundToInt().coerceIn(0, 255) shl shift)
-                    return old.copy(textColorArgb = argb)
-                }
-                CaptionInkSlider(text(label), value.toFloat(), 0f..255f, "caption-ink-channel-$shift",
-                    onPreview = onPreview?.let { preview -> { v -> preview { changed(v, it) } } },
-                    onChange = { v -> onChange { changed(v, it) } })
-            }
+            HearthColourPicker(current, Modifier.fillMaxWidth().testTag("caption-ink-picker"),
+                onPreview = { colour -> onPreview?.invoke { it.copy(textColorArgb = colour) } },
+                onCommit = { colour -> onChange { it.copy(textColorArgb = colour) } })
         }
         CaptionInkSlider(text(UiR.string.caption_text_opacity, config.textOpacity), config.textOpacity.toFloat(), 10f..100f,
             "caption-ink-opacity", onPreview = onPreview?.let { preview -> { value -> preview { it.copy(textOpacity = value.roundToInt()) } } },

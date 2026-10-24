@@ -384,6 +384,40 @@ class ReadingTranslationViewTest {
         } finally {activity.pause().stop().destroy()}
     }
 
+    @Test fun replacementErasesOriginalInkOutsideAShrunkenLabelAtFullOpacityWithSampledAndFallbackColours() {
+        val activity=Robolectric.buildActivity(Activity::class.java).setup().visible()
+        val sampledColour=Color.rgb(230,220,200)
+        val fallbackColour=Color.rgb(255,170,85)
+        val source=Bitmap.createBitmap(400,300,Bitmap.Config.ARGB_8888).apply {
+            eraseColor(sampledColour)
+            for(y in 78 until 150)for(x in 88 until 95)setPixel(x,y,Color.BLACK)
+        }
+        val box=TranslatedOcrBox(OcrLine(80,70,240,90,"Original coffee article",1f),"Translated")
+        try {
+            for(sampled in listOf(false,true)) {
+                val view=ReadingTranslationView(activity.get()){}
+                activity.get().setContentView(view);layoutOverlay(view,400,300)
+                if(sampled)view.setSourceImage(source)
+                view.applyAppearance(ReadingOverlaySettings(replaceText=true,boxWidthPercent=50,
+                    boxHeightPercent=50,boxOpacity=10,boxBackgroundArgb=fallbackColour))
+                view.update(listOf(box),400,300,PixelCrop(0,0,400,300));layoutOverlay(view,400,300)
+                val label=view.renderedLabels().single()
+                assertEquals(255,Color.alpha(label.background))
+                assertTrue("The original ink fixture must lie outside the resized translation label",
+                    90<label.bounds.left || 90>=label.bounds.right || 100<label.bounds.top || 100>=label.bounds.bottom)
+                val image=source.copy(Bitmap.Config.ARGB_8888,true)
+                try {
+                    view.draw(Canvas(image))
+                    val expected=if(sampled)sampledColour else fallbackColour
+                    assertEquals("Cleanup must cover original ink, even at saved 10% box opacity",expected,image.getPixel(90,100))
+                    assertEquals("Uncovered artwork remains the source image",sampledColour,image.getPixel(20,20))
+                    assertTrue(view.motionExclusions().any {it.left<=90 && it.right>90 && it.top<=100 && it.bottom>100})
+                } finally {image.recycle()}
+                assertEquals("Replacement never mutates the captured source",Color.BLACK,source.getPixel(90,100))
+            }
+        } finally {activity.pause().stop().destroy();source.recycle()}
+    }
+
     @Test fun expandedNeighbouringBoxesAvoidEachOtherAndExposeTheirActualMotionBounds() {
         val activity=Robolectric.buildActivity(Activity::class.java).setup().visible()
         val view=ReadingTranslationView(activity.get()){}

@@ -17,6 +17,8 @@ import android.widget.Switch
 import com.sal7one.transiber.R
 import com.sal7one.common_jni.ocr.OcrEngine
 import com.sal7one.common_jni.ocr.OcrLine
+import com.sal7one.common_jni.speech.TranslationDirection
+import com.sal7one.common_jni.translation.CancellableTextTranslator
 import com.sal7one.hearth.core.vision.ComicMask
 import com.sal7one.hearth.core.vision.MangaPaint
 import com.sal7one.hearth.core.vision.OcrRect
@@ -29,7 +31,9 @@ import com.sal7one.transiber.ocr.OcrCatalog
 import com.sal7one.transiber.ocr.OcrPreferences
 import com.sal7one.transiber.ocr.OcrSelection
 import com.sal7one.transiber.preferences.UserPreferences
+import com.sal7one.transiber.translation.ConversationTranslatorSnapshot
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.collect
 import kotlin.coroutines.Continuation
 import kotlin.coroutines.intrinsics.COROUTINE_SUSPENDED
 import kotlin.coroutines.resume
@@ -106,10 +110,132 @@ class ReadingOverlayServiceTest {
         call(service, "resumeReader")
         assertEquals(View.INVISIBLE, layer.visibility)
         change(R.string.reading_overlay_show_translation, true)
+        assertEquals("Original mode must not leave an invisible full-screen touch target", View.INVISIBLE, layer.visibility)
+        change(R.string.reading_overlay_original, false)
         assertEquals(View.VISIBLE, layer.visibility)
         assertEquals(generation, field<Long>(service, "generation"))
         assertNull(field<Job?>(service, "captureJob"))
         assertEquals(preferences.read(), ReadingOverlayPreferences(service).read())
+    }
+
+    @Test @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    fun replacementIsOpaqueAndInteractiveWhileRegularTouchAndOpacityChoicesStaySaved() = withWindows { service ->
+        val preferences = ReadingOverlayPreferences(service)
+        val saved = ReadingOverlaySettings(passThrough = true, boxOpacity = 25,
+            boxBackgroundArgb = Color.rgb(30, 60, 90))
+        preferences.write(saved)
+        call(service, "applyOptions", ClassParameter.from(ReadingOverlaySettings::class.java, saved))
+        val layer = field<ReadingTranslationView>(service, "pageView")
+        layer.measure(View.MeasureSpec.makeMeasureSpec(400, View.MeasureSpec.EXACTLY),
+            View.MeasureSpec.makeMeasureSpec(400, View.MeasureSpec.EXACTLY))
+        layer.layout(0, 0, 400, 400)
+        // Admission normally follows an attached, measured window. Publishing the
+        // fixture before its first layout postpones render() to a later traversal.
+        completePage(service)
+        call(service, "showTranslations", ClassParameter.from(List::class.java,
+            field<List<TranslatedOcrBox>>(service, "renderedBoxes")))
+        assertEquals(1, layer.childCount)
+        val params = field<WindowManager.LayoutParams>(service, "layerParams")
+        val passThroughAlpha = params.alpha
+        assertTrue(passThroughAlpha <= .8f)
+        assertNotEquals(0, params.flags and WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE)
+        assertEquals(63, Color.alpha(layer.renderedLabels().single().background))
+        val generation = field<Long>(service, "generation")
+
+        val matching = saved.copy(replaceText = true)
+        preferences.write(matching)
+        call(service, "applyOptions", ClassParameter.from(ReadingOverlaySettings::class.java, matching))
+        assertEquals(1f, params.alpha, 0f)
+        assertEquals("An opaque untrusted overlay must receive touches instead of asking Android to drop them", 0,
+            params.flags and WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE)
+        assertEquals(255, Color.alpha(layer.renderedLabels().single().background))
+        assertTrue("The owner's touch-through choice remains saved", preferences.read().passThrough)
+        assertEquals(25, preferences.read().boxOpacity)
+        val revision = field<Long>(service, "paintRevision")
+        call(service, "applyOptions", ClassParameter.from(ReadingOverlaySettings::class.java, matching))
+        assertEquals("Reapplying the same opaque style must not trigger self-motion", revision, field<Long>(service, "paintRevision"))
+
+        preferences.write(saved)
+        call(service, "applyOptions", ClassParameter.from(ReadingOverlaySettings::class.java, saved))
+        assertEquals(passThroughAlpha, params.alpha, 0f)
+        assertNotEquals(0, params.flags and WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE)
+        assertEquals(63, Color.alpha(layer.renderedLabels().single().background))
+        assertEquals(saved, preferences.read())
+        assertEquals(generation, field<Long>(service, "generation"))
+        assertNull(field<Job?>(service, "captureJob"))
+    }
+
+    @Test fun originalAndHiddenTranslationReleaseTheOpaqueLayerWithoutDiscardingTheCompletedPage() = withWindows { service ->
+        val preferences = ReadingOverlayPreferences(service)
+        val saved = ReadingOverlaySettings(replaceText = true, passThrough = true, boxOpacity = 35)
+        preferences.write(saved)
+        call(service, "applyOptions", ClassParameter.from(ReadingOverlaySettings::class.java, saved))
+        val page = completePage(service)
+        val layer = field<ReadingTranslationView>(service, "pageView")
+        val params = field<WindowManager.LayoutParams>(service, "layerParams")
+        val generation = field<Long>(service, "generation")
+        for (hidden in listOf(saved.copy(showOriginal = true), saved.copy(translationVisible = false))) {
+            preferences.write(hidden)
+            call(service, "applyOptions", ClassParameter.from(ReadingOverlaySettings::class.java, hidden))
+            assertEquals(View.INVISIBLE, layer.visibility)
+            assertNotEquals(0, params.flags and WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE)
+            assertTrue(params.alpha <= .8f)
+            assertSame(page.completed, field<Any>(service, "completedPage"))
+            assertEquals(generation, field<Long>(service, "generation"))
+            assertNull(field<Job?>(service, "captureJob"))
+            preferences.write(saved)
+            call(service, "applyOptions", ClassParameter.from(ReadingOverlaySettings::class.java, saved))
+            assertEquals(View.VISIBLE, layer.visibility)
+            assertEquals(1f, params.alpha, 0f)
+            assertEquals(0, params.flags and WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE)
+            assertSame(page.completed, field<Any>(service, "completedPage"))
+        }
+        assertEquals(saved, preferences.read())
+    }
+
+    @Test fun interactiveRegularBoxesUseTheirOwnOpacityWithoutAnAdditionalWindowFade() = withWindows { service ->
+        val saved = ReadingOverlaySettings(passThrough = false, boxOpacity = 45)
+        ReadingOverlayPreferences(service).write(saved)
+        call(service, "applyOptions", ClassParameter.from(ReadingOverlaySettings::class.java, saved))
+        val params = field<WindowManager.LayoutParams>(service, "layerParams")
+        assertEquals(1f, params.alpha, 0f)
+        assertEquals(0, params.flags and WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE)
+        assertEquals(saved, ReadingOverlayPreferences(service).read())
+    }
+
+    @Test fun replacementHandleEyeRestoresUnderlyingTouchesAndTheSameSnapshotWithoutRecapturing() = withWindows { service ->
+        val preferences = ReadingOverlayPreferences(service)
+        val saved = ReadingOverlaySettings(replaceText = true, passThrough = true)
+        preferences.write(saved)
+        call(service, "applyOptions", ClassParameter.from(ReadingOverlaySettings::class.java, saved))
+        val page = completePage(service)
+        val generation = field<Long>(service, "generation")
+        val handle = field<ReadingOverlayHandle>(service, "handle")
+        val eye = descendants(handle).single { it.tag == "reading-layer-visibility" }
+        val layer = field<ReadingTranslationView>(service, "pageView")
+        val params = field<WindowManager.LayoutParams>(service, "layerParams")
+        assertEquals(View.VISIBLE, eye.visibility)
+        assertEquals((204 * service.resources.displayMetrics.density).toInt(),
+            field<WindowManager.LayoutParams>(service, "handleParams").width)
+
+        eye.performClick()
+        val hidden = preferences.read()
+        assertFalse(hidden.translationVisible)
+        assertTrue(hidden.passThrough)
+        call(service, "applyOptions", ClassParameter.from(ReadingOverlaySettings::class.java, hidden))
+        assertEquals(View.INVISIBLE, layer.visibility)
+        assertNotEquals(0, params.flags and WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE)
+        assertSame(page.completed, field<Any>(service, "completedPage"))
+
+        eye.performClick()
+        assertEquals(saved, preferences.read())
+        call(service, "applyOptions", ClassParameter.from(ReadingOverlaySettings::class.java, preferences.read()))
+        assertEquals(View.VISIBLE, layer.visibility)
+        assertEquals(1f, params.alpha, 0f)
+        assertEquals(0, params.flags and WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE)
+        assertSame(page.completed, field<Any>(service, "completedPage"))
+        assertEquals(generation, field<Long>(service, "generation"))
+        assertNull(field<Job?>(service, "captureJob"))
     }
 
     @Test @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -270,13 +396,25 @@ class ReadingOverlayServiceTest {
         assertTrue(crop.bottom>position[1]+handle.height)
     }
 
-    @Test fun interactiveAndPassthroughLayersBothLeaveAnObservableUnderlaySignal() = withWindows { service ->
+    @Test fun passthroughRetainsItsUnderlaySignalWhileInteractiveRenderingIsUnfaded() = withWindows { service ->
         completePage(service)
         for (passThrough in listOf(false,true)) {
             call(service, "applyOptions", ClassParameter.from(ReadingOverlaySettings::class.java, ReadingOverlaySettings(passThrough=passThrough)))
             val params=field<WindowManager.LayoutParams>(service,"layerParams")
-            assertTrue(params.alpha>0f && params.alpha<=.8f)
+            if(passThrough)assertTrue(params.alpha>0f && params.alpha<=.8f)
+            else assertEquals("Interactive windows must not fade already styled text and cleanup",1f,params.alpha,0f)
             assertEquals(passThrough,params.flags and WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE!=0)
+            val motion=ReadingMotion()
+            val white=IntArray(ReadingMotion.WIDTH*ReadingMotion.HEIGHT) {Color.WHITE}
+            val covered=listOf(PixelCrop(0,0,100,100))
+            assertFalse(motion.observe(white,100,100,emptyList(),covered,paintRevision=1,overlayAlpha=params.alpha))
+            // White overlay on a page turning from white to black. At full
+            // opacity no underlay signal exists, so covered motion stays disabled.
+            val grey=(255*params.alpha).toInt()
+            val changed=IntArray(white.size) {Color.rgb(grey,grey,grey)}
+            assertEquals(passThrough,motion.observe(changed,100,100,emptyList(),covered,
+                paintRevision=1,overlayAlpha=params.alpha))
+            assertEquals(passThrough,motion.lastDiagnostics.coveredEligible)
         }
     }
 
@@ -547,22 +685,123 @@ class ReadingOverlayServiceTest {
         assertNull(field<Any?>(service, "completedPage"))
     }
 
-    @Test fun manualTranslationSurvivesLocalTickerButRealScrollInvalidatesItsTicket() = withWindows { service ->
+    @Test fun manualSnapshotFinishesThroughAVideoAndRemainsReadableUntilTheNextTap() = withWindows { service ->
         val ticket = admitPage(service)
         ReflectionHelpers.setField(service, "manualPage", true)
-        for (kind in listOf(ReadingMotion.ChangeKind.LOCALIZED, ReadingMotion.ChangeKind.ANIMATION)) {
+        for (kind in ReadingMotion.ChangeKind.entries) {
             call(service, "onPageMotion", ClassParameter.from(Boolean::class.javaPrimitiveType!!, true),
                 ClassParameter.from(ReadingMotion.ChangeKind::class.java, kind))
             assertTrue(field<Boolean>(service, "working"))
             assertSame(ticket, field<ReadingPageGuard.Ticket>(service, "pageTicket"))
             assertTrue(field<ReadingPageGuard>(service, "pageGuard").isCurrent(ticket))
         }
-        call(service, "onPageMotion", ClassParameter.from(Boolean::class.javaPrimitiveType!!, true),
-            ClassParameter.from(ReadingMotion.ChangeKind::class.java, ReadingMotion.ChangeKind.WIDESPREAD))
+        val line = OcrLine(5, 5, 80, 20, "Coffee in the video", 1f)
+        val result = CameraOcrState(text = line.text, translation = "القهوة في الفيديو",
+            boxTranslations = listOf(TranslatedOcrBox(line, "القهوة في الفيديو")))
+        call(service, "onOcrState", ClassParameter.from(CameraOcrState::class.java, result))
         assertFalse(field<Boolean>(service, "working"))
         assertNull(field<ReadingPageGuard.Ticket?>(service, "pageTicket"))
         assertFalse(field<ReadingPageGuard>(service, "pageGuard").isCurrent(ticket))
+        val completed = field<Any>(service, "completedPage")
+        repeat(3) { widespreadMotion(service) }
+        assertSame(completed, field<Any>(service, "completedPage"))
+        assertEquals(result.translation, field<ReadingOverlayControls>(service, "panel").translatedText.text.toString())
+        assertEquals(View.VISIBLE, field<ReadingTranslationView>(service, "pageView").visibility)
     }
+
+    @Test fun videoMovementStillInvalidatesAnAutomaticTicketAndItsLateResult() = withWindows { service ->
+        val ticket = admitPage(service)
+        ReflectionHelpers.setField(service, "manualPage", false)
+        widespreadMotion(service)
+        assertFalse(field<Boolean>(service, "working"))
+        assertNull(field<ReadingPageGuard.Ticket?>(service, "pageTicket"))
+        assertFalse(field<ReadingPageGuard>(service, "pageGuard").isCurrent(ticket))
+        call(service, "onOcrState", ClassParameter.from(CameraOcrState::class.java,
+            CameraOcrState(text = "Obsolete video frame", translation = "Obsolete translation")))
+        assertNull(field<Any?>(service, "completedPage"))
+        assertEquals("", field<ReadingOverlayControls>(service, "panel").translatedText.text.toString())
+    }
+
+    @Test fun pageModeResumesMotionFollowingAfterAnExplicitSnapshotFinishes() = withWindows { service ->
+        call(service, "configureOptions", ClassParameter.from(ReadingOverlaySettings::class.java,
+            ReadingOverlaySettings(mode = "page")))
+        val ticket = admitPage(service)
+        ReflectionHelpers.setField(service, "manualPage", true)
+        widespreadMotion(service)
+        assertTrue(field<ReadingPageGuard>(service, "pageGuard").isCurrent(ticket))
+        call(service, "onOcrState", ClassParameter.from(CameraOcrState::class.java,
+            CameraOcrState(text = "A captured frame", translation = "لقطة")))
+        assertNotNull(field<PixelCrop?>(service, "pageCrop"))
+        widespreadMotion(service)
+        assertNull(field<PixelCrop?>(service, "pageCrop"))
+        assertEquals("", field<ReadingOverlayControls>(service, "panel").translatedText.text.toString())
+    }
+
+    @Test fun manualSnapshotAllowsTheRealTranslationWorkerToPublishWhileVideoMoves() = withWindows { service ->
+        val pending = CompletableDeferred<String>()
+        var translations = 0
+        val translator = object : CancellableTextTranslator {
+            override val id = "snapshot-test"
+            override val directions = setOf(TranslationDirection("en", "ar"))
+            override suspend fun translate(text: String, direction: TranslationDirection): String {
+                translations++;return pending.await()
+            }
+            override fun close() = Unit
+            override fun cancel() = Unit
+        }
+        val reader = object : OcrEngine {
+            override fun recognize(pixels: IntArray, width: Int, height: Int, maxSide: Int) =
+                listOf(OcrLine(5, 5, 80, 20, "Coffee on a moving video", 1f))
+            override fun close() = Unit
+            override fun cancel() = Unit
+        }
+        val actual = CameraOcrController({ reader }, { translator }, { AutoCloseable {} },
+            Dispatchers.Unconfined, Dispatchers.Unconfined, Dispatchers.Unconfined)
+        field<CameraOcrController>(service, "controller").close()
+        ReflectionHelpers.setField(service, "controller", actual)
+        val ticket = admitPage(service)
+        ReflectionHelpers.setField(service, "manualPage", true)
+        val bitmap = Bitmap.createBitmap(100, 100, Bitmap.Config.ARGB_8888)
+        actual.start(OcrCatalog.profile("latin"), "en", "ar", ConversationTranslatorSnapshot("test"),
+            live = false, initial = bitmap, positioned = true)
+        val observer = CoroutineScope(Dispatchers.Unconfined).launch {
+            actual.state.collect { call(service, "onOcrState", ClassParameter.from(CameraOcrState::class.java, it)) }
+        }
+        try {
+            assertEquals(1, translations)
+            assertTrue(actual.state.value.translating)
+            repeat(4) { widespreadMotion(service) }
+            assertTrue(field<ReadingPageGuard>(service, "pageGuard").isCurrent(ticket))
+            pending.complete("القهوة في فيديو متحرك")
+            assertFalse(field<Boolean>(service, "working"))
+            assertEquals("القهوة في فيديو متحرك", field<ReadingOverlayControls>(service, "panel").translatedText.text.toString())
+            assertNotNull(field<Any?>(service, "completedPage"))
+            widespreadMotion(service)
+            assertEquals(View.VISIBLE, field<ReadingTranslationView>(service, "pageView").visibility)
+        } finally { observer.cancel();actual.close();if(!bitmap.isRecycled)bitmap.recycle() }
+    }
+
+    @Test fun setupAndNewerManualTicketsStillRetireTheOldSnapshot() = withWindows { service ->
+        val first = admitPage(service)
+        ReflectionHelpers.setField(service, "manualPage", true)
+        call(service, "cancelAttempt")
+        val second = admitPage(service)
+        ReflectionHelpers.setField(service, "manualPage", true)
+        assertFalse(field<ReadingPageGuard>(service, "pageGuard").isCurrent(first))
+        assertTrue(field<ReadingPageGuard>(service, "pageGuard").isCurrent(second))
+        call(service, "suppressForSetup", ClassParameter.from(Boolean::class.javaPrimitiveType!!, true))
+        assertFalse(field<ReadingPageGuard>(service, "pageGuard").isCurrent(second))
+        call(service, "onOcrState", ClassParameter.from(CameraOcrState::class.java,
+            CameraOcrState(text = "Hidden page", translation = "Late hidden output")))
+        call(service, "suppressForSetup", ClassParameter.from(Boolean::class.javaPrimitiveType!!, false))
+        assertEquals("", field<ReadingOverlayControls>(service, "panel").translatedText.text.toString())
+        assertNull(field<Any?>(service, "completedPage"))
+        assertFalse(field<Boolean>(service, "manualPage"))
+    }
+
+    private fun widespreadMotion(service: ReadingOverlayService) = call(service, "onPageMotion",
+        ClassParameter.from(Boolean::class.javaPrimitiveType!!, true),
+        ClassParameter.from(ReadingMotion.ChangeKind::class.java, ReadingMotion.ChangeKind.WIDESPREAD))
 
     @Test fun ignoredTickerDoesNotChangeCleanPageSignatureOrAlterCapturedPixels() = withWindows { service ->
         val first = Bitmap.createBitmap(100, 100, Bitmap.Config.ARGB_8888).apply { eraseColor(Color.WHITE) }
