@@ -1,12 +1,19 @@
 # Android Screen translation device recovery — 2026-10-24
 
-This follows the [RC9 handover](android-screen-reader-controls-2026-10-24.md).
-Baseline: `main` at `ca8e291`, Android 0.30.0 / code 105. Recovery branch:
-`codex/android-screen-reader-recovery`, Android **0.30.0 / code 106**, preserving
-the QA app ID and test signer. Commits `d6dff81` and `042798d` are **unreleased
-test candidates with subsequently discovered bugs**. The projection-fringe fix
-is still uncommitted at this checkpoint. Final artifact identity and exact-APK
-reinstall/retest remain pending; successful prototype tests are not final-APK proof.
+Published QA prerelease: [`v0.30.0-rc.10`](https://github.com/Sal7one/Hearth/releases/tag/v0.30.0-rc.10), Android **0.30.0 / code 106**.
+Code/tag subject: `c3c961987524f8e5e9f3f601edbd5ec8050be854`.
+[PR #8](https://github.com/Sal7one/Hearth/pull/8) merged into `main` at
+`bc57bd722f60aab2b17a4716d6f40aaac6eb5460`; its feature branch was removed.
+All 13 individual assets have matching GitHub SHA-256 digests and sizes.
+The ten APKs carry the exact code/tag revision. The existing QA app ID and signer
+are preserved; the final Play ARM64 APK is installed on the authorized phone.
+No GitHub Actions or `gh run` commands were used.
+
+This follows the [RC9 handover](android-screen-reader-controls-2026-10-24.md),
+starting from `ca8e291` / code 105. Intermediate commits `d6dff81` and `042798d`
+were unreleased test candidates with subsequently discovered bugs; they are not
+qualified release artifacts. The final fringe correction and delivery proof below
+supersede those checkpoints.
 
 ## Actual phone evidence
 
@@ -50,7 +57,8 @@ area selection excluded Hearth's own handle/labels, Center → Read translated i
 crop, and Back cancelled selection. The full-width red Stop had about **56
 physical pixels** of bottom clearance; tapping it left no active MediaProjection.
 Saved language/model selections survived an in-place QA update. Those checks
-describe their tested prototypes and still need confirmation on the final APK.
+describe their tested prototypes; current host regressions cover those flows.
+The final committed APK was reinstalled and independently checked as recorded below.
 
 The actual UI downloaded approximately **12.3 MiB** of Latin OCR models via the
 standard HTTPS fallback after aria2's OpenSSL legacy-provider failure. An existing
@@ -118,12 +126,45 @@ area, Back and Stop screenshots/logs and `host-ui/` renders remain in that folde
 The actual tested phone base APK is saved as `phone-validated-source.apk` there:
 SHA-256 `e9c8e77532bed095485274170a269d63a652025f7dbb9c11adc8ad5e71977f79`.
 
-## Final delivery record — pending
+## Final delivery record
 
-Commit the tested fringe correction, repack the exact final
-source into both QA flavors, and run `python3 scripts/verify-release.py`. Reinstall
-that exact Play ARM64 APK in place and recheck static-page stability, dense Back →
-scroll, fresh Arabic, interactive gestures, setup/pause/mode recovery and Stop.
-Compare the final packaged payload with the saved phone-tested APK before delivery.
-Then record final commit/tag, APK hash, verifier receipt, phone result and release
-URL here. Publish each APK/asset individually; no combined release ZIP.
+The committed Play ARM64 APK was installed **in place**, preserving the saved Latin
+reader, English → Arabic pair, QuickMT model and other preferences. Its installed
+base-APK SHA-256 exactly matches the delivered file:
+
+`fdfec4ea410480aa6ee545199af15710ff351d052ca69767d62eee483f79f993`.
+
+It cold-started on the public coffee-preparation article with **one clean capture,
+zero false motion events and actual Arabic output** (1,292 output characters in
+the UI proof). Its displayed **2,896 ms** measures OCR only. Stop was fully visible
+above the navigation bar and ended MediaProjection. Final device state: capture
+stopped, touch-through enabled, Manual refresh selected, models/settings retained.
+
+The final APK and the saved phone-tested prototype have **1,191 identical runtime
+ZIP entries**, including DEX, native libraries, Android manifest, resources and
+assets. Only VCS metadata and JAR signature/manifest records were excluded from
+comparison. Their common payload digest is
+`203632d14749267d7a12a76c5e9105a93393682364f95201ca3bfa0832f9cb53`.
+This links the detailed manual/dense-scroll/91-second/gesture matrix to the
+delivered runtime without confusing the prototype APK hash with the final hash.
+
+Both QA flavors were repackaged after committing. `python3 scripts/verify-release.py`
+passed all ten APKs: signer, current package/code, native ABI inventory, ELF/page
+alignment, application-level Back opt-in and FOSS permission checks.
+Post-commit build log: `/tmp/hearth-reading-device-commit-package.log`; verifier:
+`/tmp/hearth-reading-device-verification.log`.
+
+Release folder: `build/releases/v0.30.0-rc.10/`. Its individual files are ten QA APKs,
+aria2 corresponding source, `SHA256SUMS` and `VALIDATION-RECEIPT.json`. The receipt
+records exact source, test suites, APK hashes, actual-device matrix and payload
+proof. Local supporting records are `final-device-result.json`,
+`runtime-payload-proof.json`, `release-exact-log.txt`,
+`release-exact-arabic-proof.xml`, `release-exact-stop-padding.png`, and
+`github-assets-verified.json` under `build/reading-phone-qa/`. No combined APK ZIP.
+
+These checks validate the stated CPU reader configuration and controls. They do
+not establish other model/language quality, GPU throughput or predictive Back
+gestures. QuickMT can repeat long passages, and the translucent layer can show
+source-text ghosting; those quality/readability limits remain separate. Secure
+screens retain Android's capture restrictions. Desktop/native sources and TTS
+module boundaries are unchanged by this release.
