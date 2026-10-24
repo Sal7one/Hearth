@@ -1,6 +1,7 @@
 package com.sal7one.transiber.caption
 
 import android.content.Context
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.sal7one.transiber.byok.CloudConfigStore
 import com.sal7one.transiber.models.ModelEngineType
 import com.sal7one.transiber.models.ModelRegistry
@@ -45,19 +46,16 @@ internal fun captionLanguageModel(context: Context, config: CaptionOverlayConfig
 @androidx.compose.runtime.Composable
 internal fun rememberCaptionLanguageModel(config: CaptionOverlayConfig): CaptionLanguageModel {
     val context = androidx.compose.ui.platform.LocalContext.current
-    val owner = androidx.lifecycle.compose.LocalLifecycleOwner.current
-    val revision = androidx.compose.runtime.remember { androidx.compose.runtime.mutableIntStateOf(0) }
-    androidx.compose.runtime.DisposableEffect(owner) {
-        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
-            if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) revision.intValue++
-        }
-        owner.lifecycle.addObserver(observer)
-        onDispose { owner.lifecycle.removeObserver(observer) }
+    val resumed = rememberCaptionSetupResumeRevision()
+    val bindings = com.sal7one.transiber.preferences.ModelSourceBindings.checks.collectAsStateWithLifecycle().value
+    val registered = ModelRegistry.getInstance(context).registeredModels.collectAsStateWithLifecycle().value
+    val request = listOf(config.engine, config.modelId, config.speechSelectionRevision, resumed,
+        bindings, registered, CloudConfigStore.sttModel(context))
+    val state = androidx.compose.runtime.remember(request) {
+        androidx.compose.runtime.mutableStateOf(CaptionLanguageModel(config.modelId))
     }
-    return androidx.compose.runtime.produceState(
-        initialValue = CaptionLanguageModel(config.modelId),
-        config.engine, config.modelId, revision.intValue, CloudConfigStore.sttModel(context),
-    ) {
-        value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { captionLanguageModel(context, config) }
-    }.value
+    androidx.compose.runtime.LaunchedEffect(request) {
+        state.value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { captionLanguageModel(context, config) }
+    }
+    return state.value
 }

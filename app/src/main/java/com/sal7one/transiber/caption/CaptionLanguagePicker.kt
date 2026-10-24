@@ -51,7 +51,9 @@ fun CaptionLanguageFields(
         if (showSource) {
             val sourceCode = if (source.codes == setOf("model")) "model" else CaptionLanguages.effectiveSource(config, cloudMode, model)
             LanguageField(uiText(UiR.string.ui_spoken_language_cc_c652a), sourceCode, enabled && source.allowsSelection) { open(CaptionLanguagePicker.SOURCE) }
-            Text(if (compact && config.engine == CaptionEngineChoice.CLOUD && cloudMode != CloudConfigStore.SttMode.BATCH) uiText.label(cloudMode) else if (compact) model.label else uiText.note(source), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(if (compact && model.id == com.sal7one.common_jni.speech.SpeechProfile.PHONON_2_5.id && sourceCode == "auto")
+                uiText(UiR.string.phonon_25_auto_source_note)
+            else if (compact && config.engine == CaptionEngineChoice.CLOUD && cloudMode != CloudConfigStore.SttMode.BATCH) uiText.label(cloudMode) else if (compact) model.label else uiText.note(source), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             if (config.streamLanguage != sourceCode && config.streamLanguage != "auto") Text(
                 uiText(UiR.string.ui_saved_hint_1_s_is_not_used_by_this_mode_09131, uiText.languageName(config.streamLanguage)),
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)

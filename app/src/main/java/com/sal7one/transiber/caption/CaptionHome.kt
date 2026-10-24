@@ -166,8 +166,12 @@ fun CaptionHome(
             }
         }
         Text(if (isCloud) uiText(UiR.string.ui_audio_goes_to_your_configured_cloud_provider_77561) else uiText(UiR.string.ui_speech_stays_on_this_phone_c93d7), style = MaterialTheme.typography.bodySmall)
-        OutlinedButton(onClick = { if (isCloud) onCloud() else onModels() }, modifier = Modifier.fillMaxWidth()) {
-            Text(if (isCloud) uiText(UiR.string.ui_manage_speech_connection_1959e) else uiText(UiR.string.ui_choose_or_download_speech_models_34085))
+        if (cfg.effectiveEngine.speechBackend != null) {
+            CaptionSpeechModelPicker(cfg, ::update, onModels, enabled = !running)
+        } else {
+            OutlinedButton(onClick = { if (isCloud) onCloud() else onModels() }, modifier = Modifier.fillMaxWidth()) {
+                Text(if (isCloud) uiText(UiR.string.ui_manage_speech_connection_1959e) else uiText(UiR.string.ui_choose_or_download_speech_models_34085))
+            }
         }
         if (cfg.mode == CaptionMode.TRANSLATE) {
             HorizontalDivider()

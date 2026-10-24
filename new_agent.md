@@ -15,6 +15,9 @@ handover, not to claim a finished glasses integration.
 - Released Android source: `2100e766cb603930b6b35a6c8a7b3f4e36ebe5cd`, tag `v0.30.0-rc.14`.
 - `main` includes RC12/RC13/RC14 and this handover. The original handover branch
   started from RC11; use the updated remote branch, not an old local checkout.
+- The follow-up Android candidate is RC15 / code 111: flowing live captions,
+  Arabic alignment and exact local speech model choices. See
+  `docs/handoff/overlay-caption-flow-2026-10-24.md`; RC14 remains the public build.
 - No Meta SDK, glasses app, remote caption transport or new Windows runtime has
   been implemented. The glasses work remains a planning handover.
 - The exact Meta frames, firmware, phone pairing, Windows GPU and driver are
@@ -395,9 +398,12 @@ Do not invent a latency achievement or claim recognition of who is speaking.
 
 ## 9. Recent release state and documentation drift
 
-- Current Android source is `0.30.0`, version code **110**. The owner published
+- Current Android candidate source is `0.30.0`, version code **111** (RC15).
+  It fixes live caption flow and exact model selection; its draft validation
+  receipts belong to the candidate release. The owner published
   [RC14](https://github.com/Sal7one/Hearth/releases/tag/v0.30.0-rc.14); its APKs
-  are bound to `2100e766cb603930b6b35a6c8a7b3f4e36ebe5cd`, with the existing QA signer.
+  remain code **110**, bound to `2100e766cb603930b6b35a6c8a7b3f4e36ebe5cd`, with
+  the existing QA signer.
 - RC12 adds the Android minimal overlay header; RC13 fixes translator readiness
   and selection; RC14 adds accessible timing controls, verified Jisr downloads
   and Phonon 2.5's 25 European languages. Phonon 2.5 does not recognize Arabic

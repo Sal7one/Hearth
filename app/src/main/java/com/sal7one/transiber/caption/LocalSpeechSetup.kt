@@ -99,19 +99,8 @@ internal fun LocalSpeechSetup(
         var expandedLanguages by remember { mutableStateOf(false) }
         val profile = models.firstOrNull { it.id == config.modelId && it.profile.backend == backend }?.profile
             ?: models.firstOrNull { config.modelId.isBlank() && it.profile.backend == backend }?.profile
-            ?: when (backend) {
-            com.sal7one.common_jni.speech.SpeechBackend.MOONSHINE -> com.sal7one.common_jni.speech.SpeechProfile.MOONSHINE_TINY_EN
-            com.sal7one.common_jni.speech.SpeechBackend.QWEN3_ASR -> com.sal7one.common_jni.speech.SpeechProfile.QWEN3_ASR_0_6B
-            com.sal7one.common_jni.speech.SpeechBackend.OMNILINGUAL_CTC -> com.sal7one.common_jni.speech.SpeechProfile.OMNILINGUAL_CTC_300M_V2
-            com.sal7one.common_jni.speech.SpeechBackend.PHONON -> com.sal7one.common_jni.speech.SpeechProfile.PHONON_2
-            com.sal7one.common_jni.speech.SpeechBackend.NEMOTRON_3_5 -> com.sal7one.common_jni.speech.SpeechProfile.NEMOTRON_3_5_ASR_0_6B
-            com.sal7one.common_jni.speech.SpeechBackend.AUDAR -> com.sal7one.common_jni.speech.SpeechProfile.AUDAR_ASR_V1_FLASH
-            com.sal7one.common_jni.speech.SpeechBackend.OWSM -> com.sal7one.common_jni.speech.SpeechProfile.OWSM_V4_BASE_102M
-            com.sal7one.common_jni.speech.SpeechBackend.COHERE -> com.sal7one.common_jni.speech.SpeechProfile.COHERE_ARABIC_07_2026
-            com.sal7one.common_jni.speech.SpeechBackend.FUNASR_MLT -> com.sal7one.common_jni.speech.SpeechProfile.FUNASR_MLT_NANO_2512
-            com.sal7one.common_jni.speech.SpeechBackend.VOXTRAL_REALTIME -> com.sal7one.common_jni.speech.SpeechProfile.VOXTRAL_MINI_REALTIME_2602
-            com.sal7one.common_jni.speech.SpeechBackend.TRANSCRIBEPSY -> com.sal7one.common_jni.speech.SpeechProfile.TRANSCRIBEPSY_250M_EU_SUB
-        }
+        // Coverage and tuning must describe the selected install, never a made-up default checkpoint.
+        if (profile != null) {
         val ccLanguages = profile.capabilities.sourceLanguages
         TextButton(onClick = { expandedLanguages = !expandedLanguages }) { Text(uiText(UiR.string.ui_cc_language_support_1_s_languages_26530, ccLanguages.size)) }
         if (expandedLanguages) {
@@ -135,6 +124,7 @@ internal fun LocalSpeechSetup(
         if (profile.capabilities.streaming == com.sal7one.common_jni.speech.SpeechStreamingKind.UTTERANCE_WINDOWED) {
             val tuningProfile = models.firstOrNull { it.id == config.modelId && it.profile.backend == backend }?.profile ?: profile
             SpeechWindowTuningSection(tuningProfile, onTuningApplied)
+        }
         }
         if (details) {
         CaptionLanguageFields(config, update, enabled = !busy, showTarget = false)

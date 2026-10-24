@@ -62,6 +62,11 @@ import androidx.compose.material3.TextButton
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.text.style.TextDirection
+import androidx.compose.ui.platform.testTag
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -502,12 +507,36 @@ private fun CaptionBody(
         state.localSpeechMetrics?.takeUnless { minimal }?.let {
             Text(it, color = palette.onSurfaceMuted, fontSize = 11.sp)
         }
-        lines.forEachIndexed { index, line ->
-            LinePair(CaptionPresentation.line(line, cfg), cfg, palette,
-                faded = !partial.empty || index < lines.lastIndex)
-        }
-        if (!partial.empty) {
-            LinePair(partial, cfg, palette, false)
+        if (reading) {
+            // Held history keeps its original segment boundaries for reading/copying.
+            lines.forEachIndexed { index, line ->
+                LinePair(CaptionPresentation.line(line, cfg), cfg, palette,
+                    faded = !partial.empty || index < lines.lastIndex)
+            }
+            if (!partial.empty) LinePair(partial, cfg, palette, false)
+        } else {
+            CaptionLiveText.paragraphs(content, cfg).forEach { paragraph ->
+                val text = buildAnnotatedString {
+                    paragraph.chunks.forEachIndexed { index, chunk ->
+                        if (index != 0) append(" ")
+                        withStyle(SpanStyle(color = if (chunk.faded) palette.onSurfaceFaded
+                            else if (paragraph.translated) palette.accent else palette.onSurface)) {
+                            append(chunk.text)
+                        }
+                    }
+                }
+                val rtlTarget = paragraph.translated && cfg.translationRtl
+                Text(
+                    text = text,
+                    modifier = Modifier.fillMaxWidth().testTag(
+                        if (paragraph.translated) "caption-live-translation" else "caption-live-original"),
+                    fontSize = (if (paragraph.translated) 15.sp else 14.sp) * cfg.fontScale.multiplier,
+                    lineHeight = (if (paragraph.translated) 21.sp else 20.sp) * cfg.fontScale.multiplier,
+                    textAlign = if (rtlTarget) TextAlign.Right else TextAlign.Start,
+                    style = LocalTextStyle.current.copy(textDirection =
+                        if (rtlTarget) TextDirection.ContentOrRtl else TextDirection.Content),
+                )
+            }
         }
         state.error?.takeIf { hasVisibleCaptions }?.let {
             Text(it, color = palette.accent, fontSize = 12.sp)
@@ -536,21 +565,26 @@ private fun LinePair(
     pair.original?.let { original ->
         Text(
             text = original,
+            modifier = Modifier.fillMaxWidth(),
             color = if (faded) palette.onSurfaceFaded else palette.onSurface,
             fontSize = (14.sp * cfg.fontScale.multiplier),
             lineHeight = (20.sp * cfg.fontScale.multiplier),
-            textAlign = if (cfg.translationRtl) TextAlign.Start else null,
+            textAlign = TextAlign.Start,
+            style = LocalTextStyle.current.copy(textDirection = TextDirection.Content),
         )
     }
     pair.translation?.let { translation ->
         Text(
             text = translation,
+            modifier = Modifier.fillMaxWidth(),
             color = if (faded) palette.onSurfaceFaded else palette.accent,
             fontSize = (15.sp * cfg.fontScale.multiplier),
             lineHeight = (21.sp * cfg.fontScale.multiplier),
             // RTL targets render right-aligned; Compose handles bidi runs in
             // mixed-script lines automatically.
             textAlign = if (cfg.translationRtl) TextAlign.Right else TextAlign.Start,
+            style = LocalTextStyle.current.copy(textDirection =
+                if (cfg.translationRtl) TextDirection.ContentOrRtl else TextDirection.Content),
         )
     }
 }
@@ -697,6 +731,7 @@ private fun SettingsPanel(
         ) { checked -> onConfigChange { it.copy(tapThrough = checked) } }
 
         } else {
+            CaptionSpeechModelPicker(cfg, onConfigChange, { openSetup(1) })
             CaptionSpeechTimingControls(cfg, onConfigChange)
             com.sal7one.transiber.caption.history.CaptionHistoryOptions(cfg, onConfigChange, { openSetup(16) })
             androidx.compose.material3.HorizontalDivider()
@@ -743,9 +778,11 @@ private fun SettingsPanel(
             }
         }
 
-            SettingsLabel(uiText(UiR.string.ui_current_speech_model_29c90), palette)
-            Text(uiText.label(cfg.effectiveEngine), color = palette.onSurface)
-            TextButton(onClick = { openSetup(1) }) { Text(uiText(UiR.string.ui_choose_or_download_models_a1983)) }
+            if (cfg.effectiveEngine.speechBackend == null) {
+                SettingsLabel(uiText(UiR.string.ui_current_speech_model_29c90), palette)
+                Text(uiText.label(cfg.effectiveEngine), color = palette.onSurface)
+                TextButton(onClick = { openSetup(1) }) { Text(uiText(UiR.string.ui_choose_or_download_models_a1983)) }
+            }
             TextButton(onClick = { openSetup(3) }) { Text(uiText(UiR.string.ui_full_setup_cloud_settings_ac020)) }
             TextButton(onClick = onClear) { Text(uiText(UiR.string.ui_clear_transcript_05690)) }
         }
