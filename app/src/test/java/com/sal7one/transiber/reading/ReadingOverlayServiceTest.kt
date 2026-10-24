@@ -37,6 +37,8 @@ import org.junit.runner.RunWith
 import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows
+import org.robolectric.shadows.ShadowSystemClock
+import java.time.Duration
 import org.robolectric.android.controller.ServiceController
 import org.robolectric.annotation.Config
 import org.robolectric.util.ReflectionHelpers
@@ -198,6 +200,56 @@ class ReadingOverlayServiceTest {
         assertSame(saved.completed, field<Any>(service, "completedPage"))
         assertEquals(saved.crop, field<PixelCrop>(service, "pageCrop"))
         assertNull(field<Job?>(service, "captureJob"))
+    }
+
+    @Test fun interactiveAndPassthroughLayersBothLeaveAnObservableUnderlaySignal() = withWindows { service ->
+        completePage(service)
+        for (passThrough in listOf(false,true)) {
+            call(service, "applyOptions", ClassParameter.from(ReadingOverlaySettings::class.java, ReadingOverlaySettings(passThrough=passThrough)))
+            val params=field<WindowManager.LayoutParams>(service,"layerParams")
+            assertTrue(params.alpha>0f && params.alpha<=.8f)
+            assertEquals(passThrough,params.flags and WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE!=0)
+        }
+    }
+
+    @Test fun repeatedProgressDoesNotResetTheActualPaintRevision() = withWindows { service ->
+        completePage(service)
+        val original=field<CameraOcrState>(service,"latest")
+        val revision=field<Long>(service,"paintRevision")
+        repeat(3) {
+            call(service,"showRegions")
+            call(service,"showTranslations",ClassParameter.from(List::class.java,original.boxTranslations))
+        }
+        assertEquals(revision,field<Long>(service,"paintRevision"))
+        val box=original.boxTranslations.single()
+        call(service,"showTranslations",ClassParameter.from(List::class.java,
+            listOf(box.copy(line=box.line.copy(text="Different source metadata",confidence=.1f)))))
+        assertEquals("Source text/confidence is not part of the displayed Arabic pixels",revision,field<Long>(service,"paintRevision"))
+        call(service,"showTranslations",ClassParameter.from(List::class.java,listOf(box.copy(translation="قهوة جديدة"))))
+        assertTrue(field<Long>(service,"paintRevision")>revision)
+    }
+
+    @Test fun hidingAndRestoringTheSamePaintKeepsItsReferenceButRequiresFreshComposition() = withWindows { service ->
+        completePage(service)
+        val view=field<ReadingTranslationView>(service,"pageView")
+        val revision=field<Long>(service,"paintRevision")
+        fun stable(generation: Long):Boolean=ReflectionHelpers.callInstanceMethod(service,"paintIsStable",
+            ClassParameter.from(Long::class.javaPrimitiveType!!,generation))
+        assertFalse(stable(1))
+        view.viewTreeObserver.dispatchOnDraw()
+        assertFalse("The compositor grace interval is part of admission",stable(1))
+        ShadowSystemClock.advanceBy(Duration.ofMillis(151))
+        assertFalse("A cached frame predating the draw cannot be a painted baseline",stable(0))
+        assertTrue(stable(1))
+        call(service,"showPanel")
+        assertEquals(revision,field<Long>(service,"paintRevision"))
+        assertFalse(stable(1))
+        call(service,"resumeReader")
+        assertEquals("Back restores the same pixels, preserving the last stable underlay reference",revision,field<Long>(service,"paintRevision"))
+        assertFalse(stable(1))
+        view.viewTreeObserver.dispatchOnDraw()
+        ShadowSystemClock.advanceBy(Duration.ofMillis(151))
+        assertTrue(stable(1))
     }
 
     @Test fun changingModesDuringTranslationClearsUnfinishedGeometryAndRearmsOnlyAutomaticMode() = withWindows { service ->

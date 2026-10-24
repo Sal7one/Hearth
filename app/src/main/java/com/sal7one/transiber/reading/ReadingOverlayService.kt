@@ -24,6 +24,9 @@ import com.sal7one.transiber.MainActivity
 import com.sal7one.transiber.byok.ByokPolicy
 import com.sal7one.transiber.caption.CaptionConfigStore
 import com.sal7one.transiber.ocr.*
+import com.sal7one.hearth.core.vision.OcrRect
+import com.sal7one.hearth.core.vision.OcrRegion
+import com.sal7one.hearth.core.vision.MangaPaint
 import com.sal7one.transiber.translation.*
 import com.sal7one.transiber.voice.*
 import kotlinx.coroutines.*
@@ -97,6 +100,21 @@ class ReadingOverlayService : Service() {
     private var completedPage: CompletedPage?=null
     private var paintedMasks=emptyList<PixelCrop>()
     private var previousPaintedMasks=emptyList<PixelCrop>()
+    private var renderedRegions=emptyList<OcrRegion>()
+    private var renderedBoxes=emptyList<TranslatedOcrBox>()
+    private class PaintIdentity(val value: MangaPaint) {
+        override fun equals(other: Any?)=other is PaintIdentity && value===other.value
+        override fun hashCode()=System.identityHashCode(value)
+    }
+    private data class LabelPixels(val bounds: OcrRect,val text: String,val paint: PaintIdentity?)
+    private data class LayerPixels(val labels: List<LabelPixels>,val outlines: List<OcrRect>,val crop: PixelCrop,
+        val sourceWidth: Int,val sourceHeight: Int,val viewWidth: Int,val viewHeight: Int,val font: Float,val alpha: Float)
+    private var layerPixels: LayerPixels?=null
+    private var lastPaintPixels: LayerPixels?=null
+    private var paintRevision=0L
+    private var paintChangedAt=0L
+    private var paintChangedGeneration=0L
+    private var pendingPaintDraw=false
     private val history=ArrayDeque<Pair<String,String>>()
     private var latest=CameraOcrState()
     private var lastHistory=""
@@ -286,13 +304,36 @@ class ReadingOverlayService : Service() {
         pageTicket=null;working=false;frameSubmitted=false
         completedPage=pageCrop?.takeIf {value.error==null || value.text.isNotBlank() || value.regions.isNotEmpty()}?.let {CompletedPage(value,pageWidth,pageHeight,it)}
     }
+    /** Track actual pixels, not repeated OCR progress/confidence/source-text emissions. */
+    private fun updatePaintRevision() {
+        val view=pageView
+        val crop=pageCrop
+        val next=if(view?.visibility==View.VISIBLE && !options.showOriginal && crop!=null &&
+            (renderedBoxes.isNotEmpty() || renderedRegions.isNotEmpty())) {
+            val labels=renderedBoxes.map {box->LabelPixels(OcrRect(box.line.x,box.line.y,box.line.width,box.line.height),
+                box.translation,box.line.region?.paint?.let(::PaintIdentity))}
+            val translatedBounds=labels.map {it.bounds}.toSet()
+            LayerPixels(labels,renderedRegions.map {it.bounds}.filter {it !in translatedBounds},crop,pageWidth,pageHeight,
+                view.width,view.height,options.textSizeSp,layerParams.alpha)
+        } else null
+        if(next==layerPixels)return
+        // Hiding/restoring the exact same layer changes composition, not its
+        // content. Preserve the stable covered-pixel reference across controls.
+        if(next!=null && next!=lastPaintPixels) {paintRevision++;lastPaintPixels=next}
+        layerPixels=next;paintChangedAt=now();paintChangedGeneration=imageGeneration
+        pendingPaintDraw=next!=null
+    }
+    private fun paintIsStable(frameGeneration: Long)=layerPixels!=null && !pendingPaintDraw &&
+        now()-paintChangedAt>=150 && frameGeneration>paintChangedGeneration
     private fun updateLayerVisibility() {
         pageView?.visibility=if(!setupSuppressed && selector==null && panel?.visibility!=View.VISIBLE &&
             options.translationVisible && pageCrop!=null)View.VISIBLE else View.INVISIBLE
+        updatePaintRevision()
     }
     private fun restoreCompletedPage() {
         val page=completedPage ?: return
         pageWidth=page.width;pageHeight=page.height;pageCrop=page.crop
+        renderedRegions=page.state.regions;renderedBoxes=page.state.boxTranslations
         pageView?.updateRegions(page.state.regions,pageWidth,pageHeight,page.crop)
         pageView?.update(page.state.boxTranslations,pageWidth,pageHeight,page.crop)
         updatePaintedMasks();updateLayerVisibility()
@@ -344,7 +385,7 @@ class ReadingOverlayService : Service() {
         val needsFresh=clean && listOfNotNull(handle,panel,pageView).any {it.isShown}
         val hiddenGeneration=imageGeneration
         var blankCandidate: T?=null
-        if(clean){handle?.visibility=View.INVISIBLE;panel?.visibility=View.GONE;pageView?.visibility=View.INVISIBLE}
+        if(clean){handle?.visibility=View.INVISIBLE;panel?.visibility=View.GONE;pageView?.visibility=View.INVISIBLE;updatePaintRevision()}
         try {
             if(clean)delay(100) // Allow Android to compose the hidden overlay before inspecting the buffer.
             checkNotNull(reader){uiText(UiR.string.service_screen_capture_has_stopped_c682a)}
@@ -397,11 +438,11 @@ class ReadingOverlayService : Service() {
         Bitmap.createBitmap(ReadingCaptureFrames.copyOpaqueArgb(plane.buffer,image.width,image.height,plane.rowStride,plane.pixelStride),
             image.width,image.height,Bitmap.Config.ARGB_8888)
     }
-    private data class MotionFrame(val pixels: IntArray,val width: Int,val height: Int)
+    private data class MotionFrame(val pixels: IntArray,val width: Int,val height: Int,val generation: Long)
     private suspend fun motionFrame(): MotionFrame = capture(false) { image ->
         val plane=image.planes[0]
         check(plane.pixelStride==4){uiText(UiR.string.service_unsupported_screen_pixel_stride_1_s_69dba, plane.pixelStride)}
-        MotionFrame(ReadingMotionSampler.sample(plane.buffer,image.width,image.height,plane.rowStride,plane.pixelStride),image.width,image.height)
+        MotionFrame(ReadingMotionSampler.sample(plane.buffer,image.width,image.height,plane.rowStride,plane.pixelStride),image.width,image.height,imageGeneration)
     }
     private fun signature(bitmap: Bitmap): IntArray {
         val tiny=Bitmap.createScaledBitmap(bitmap,32,48,false)
@@ -419,13 +460,15 @@ class ReadingOverlayService : Service() {
                     (position[0]+view.width)*frame.width/screen.first,(position[1]+view.height)*frame.height/screen.second)
             }
             val visibleMasks=if(pageView?.visibility==View.VISIBLE && !options.showOriginal)paintedMasks else emptyList()
-            // Keep the previous drawing excluded for its disappearance frame too.
-            // Geometry is independent of controller.invalidate(), which clears its arrays.
+            // Hard masks are controls/system chrome. Covered source text remains
+            // observable through the layer's <=.8 alpha once our own painting settles.
+            val covered=mutableListOf<PixelCrop>()
             for(mask in visibleMasks+previousPaintedMasks)if(pageWidth>0 && pageHeight>0) {
-                masks+=PixelCrop(mask.left*frame.width/pageWidth,mask.top*frame.height/pageHeight,
+                covered+=PixelCrop(mask.left*frame.width/pageWidth,mask.top*frame.height/pageHeight,
                     mask.right*frame.width/pageWidth,mask.bottom*frame.height/pageHeight)
             }
-            val moved=motion.observe(frame.pixels,frame.width,frame.height,masks)
+            val paintStable=paintIsStable(frame.generation)
+            val moved=motion.observe(frame.pixels,frame.width,frame.height,masks,covered,paintRevision,paintStable,layerParams.alpha)
             motionBaselineReady=true
             previousPaintedMasks=visibleMasks
             if(moved) {
@@ -504,7 +547,7 @@ class ReadingOverlayService : Service() {
             panel?.visibility=View.GONE
             panelParams.flags=panelParams.flags or WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
             panel?.let {wm.updateViewLayout(it,panelParams)}
-            handle?.visibility=View.GONE;pageView?.visibility=View.INVISIBLE;selector?.visibility=View.GONE
+            handle?.visibility=View.GONE;pageView?.visibility=View.INVISIBLE;selector?.visibility=View.GONE;updatePaintRevision()
         } else if(!stopping) {
             // Preserve an observed reader baseline across Hearth navigation. Replacing
             // it with the first returning frame would hide a page change underneath.
@@ -524,8 +567,9 @@ class ReadingOverlayService : Service() {
     }
     private fun clearPage(forgetCompleted: Boolean=false) {
         if(paintedMasks.isNotEmpty())previousPaintedMasks=paintedMasks
-        paintedMasks=emptyList()
-        pageView?.update(emptyList());pageView?.updateRegions(emptyList());pageView?.visibility=View.INVISIBLE;pageCrop=null
+        paintedMasks=emptyList();renderedRegions=emptyList();renderedBoxes=emptyList()
+        if(lastPaintPixels!=null){lastPaintPixels=null;paintRevision++}
+        pageView?.update(emptyList());pageView?.updateRegions(emptyList());pageView?.visibility=View.INVISIBLE;pageCrop=null;updatePaintRevision()
         if(forgetCompleted){completedPage=null;pageGuard.reset();pageTicket=null}
     }
     private fun resumeReader() {
@@ -539,8 +583,9 @@ class ReadingOverlayService : Service() {
     }
     private fun applyLayerTouch() {
         layerParams.flags=layerParams.flags.let {if(locked)it or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE else it and WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE.inv()}
-        layerParams.alpha=if(locked && Build.VERSION.SDK_INT>=31)minOf(.8f,getSystemService(android.hardware.input.InputManager::class.java).maximumObscuringOpacityForTouch) else if(locked).8f else 1f
+        layerParams.alpha=if(locked && Build.VERSION.SDK_INT>=31)minOf(.8f,getSystemService(android.hardware.input.InputManager::class.java).maximumObscuringOpacityForTouch) else .8f
         pageView?.let {wm.updateViewLayout(it,layerParams)}
+        updatePaintRevision()
         handle?.let {root->
             handleParams.width=dp(if(options.compactHandle)156 else 240);handleParams.height=WindowManager.LayoutParams.WRAP_CONTENT
             val bounds=screenSize()
@@ -557,12 +602,14 @@ class ReadingOverlayService : Service() {
         if(setupSuppressed)return
         val crop=pageCrop ?: return
         if(boxes.isEmpty())return
+        renderedBoxes=boxes
         pageView?.update(boxes,pageWidth,pageHeight,crop)
         updatePaintedMasks();updateLayerVisibility()
     }
     private fun showRegions() {
         if(setupSuppressed)return
         val crop=pageCrop ?: return
+        renderedRegions=latest.regions
         pageView?.updateRegions(latest.regions,pageWidth,pageHeight,crop)
         updatePaintedMasks();updateLayerVisibility()
     }
@@ -582,7 +629,18 @@ class ReadingOverlayService : Service() {
         pageView=ReadingTranslationView(this) {box->
             viewingBox=true;original?.text=box.line.text;translated?.text=box.translation
             status?.text=uiText(UiR.string.service_selected_text_box_3e276);showPanel();panel?.showReadingText()
-        }.also {it.showOriginal=options.showOriginal;it.textSizeSp=options.textSizeSp;wm.addView(it,layerParams);it.visibility=View.INVISIBLE}
+        }.also {view->
+            view.showOriginal=options.showOriginal;view.textSizeSp=options.textSizeSp
+            view.viewTreeObserver.addOnDrawListener {
+                updatePaintRevision()
+                if(pendingPaintDraw) {
+                    // The next composed capture must postdate this actual traversal,
+                    // not just the setter that scheduled it.
+                    paintChangedAt=now();paintChangedGeneration=imageGeneration;pendingPaintDraw=false
+                }
+            }
+            wm.addView(view,layerParams);view.visibility=View.INVISIBLE
+        }
         handleParams=params(dp(if(options.compactHandle)156 else 240),-2).apply {
             x=prefs.getInt("x",dp(8)).coerceIn(0,maxOf(0,size.first-width))
             y=prefs.getInt("y",dp(100)).coerceIn(dp(24),maxOf(dp(24),size.second-dp(160)))
@@ -650,7 +708,7 @@ class ReadingOverlayService : Service() {
     }
     private fun showPanel() {
         if(setupSuppressed || selector!=null)return
-        pageView?.visibility=View.INVISIBLE;handle?.visibility=View.GONE
+        pageView?.visibility=View.INVISIBLE;handle?.visibility=View.GONE;updatePaintRevision()
         panelParams.flags=ReadingOverlayControls.focusableFlags(panelParams.flags)
         panel?.let {it.visibility=View.VISIBLE;wm.updateViewLayout(it,panelParams);it.requestFocus()}
         renderControls()
