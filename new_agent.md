@@ -11,10 +11,11 @@ with a stronger NVIDIA GPU. The immediate request was to prepare this branch and
 handover, not to claim a finished glasses integration.
 
 - Repository: <https://github.com/Sal7one/Hearth>
-- Working branch: `codex/meta-glasses-handoff`, synchronized with the integrated `main`.
+- Working branch: `main`. Finished remote feature and handover branches were deleted
+  after confirming that every commit was merged into `main`.
 - Released Android source: `cfb3d3c218b13a11fd3166c3c80efce2a180cd5d`, tag `v0.30.0-rc.15`.
 - `main` includes the Android updates and this handover. The original handover branch
-  started from RC11; use the updated remote branch, not an old local checkout.
+  started from RC11; continue on `main`, not an old local handover checkout.
 - RC15 / code 111 is public, with flowing captions and exact model selection.
   RC16 / code 112 adds saved speech caption colours and a shorter README (draft).
   RC17 / code 113 adds bounded QuickMT article translation and screen box styles;
@@ -32,18 +33,18 @@ For an existing Windows clone, preserve any local changes before switching:
 
 ```powershell
 git fetch origin
-git switch --track origin/codex/meta-glasses-handoff
+git switch main
 git pull --ff-only
 git status --short --branch
 ```
 
-If the local branch already exists, use `git switch codex/meta-glasses-handoff`
-and then `git pull --ff-only`. Preserve local work if Git reports divergence;
-do not reset or force-push it.
+If the clone has no local `main` branch, use `git switch --track origin/main`
+before `git pull --ff-only`. Preserve local work if Git reports divergence;
+do not reset or force-push it. Keep local feature branches with unfinished work.
 For a fresh checkout:
 
 ```powershell
-git clone --branch codex/meta-glasses-handoff https://github.com/Sal7one/Hearth.git
+git clone --branch main https://github.com/Sal7one/Hearth.git
 cd Hearth
 ```
 
