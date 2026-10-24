@@ -448,17 +448,23 @@ class ReadingOverlayService : Service() {
         val tiny=Bitmap.createScaledBitmap(bitmap,32,48,false)
         return IntArray(32*48).also {pixels->tiny.getPixels(pixels,0,32,0,0,32,48);pixels.indices.forEach {i->val p=pixels[i];pixels[i]=(Color.red(p)*3+Color.green(p)*6+Color.blue(p))/10};if(tiny!==bitmap)tiny.recycle()}
     }
+    /** Window elevation is drawn outside View bounds (Samsung adds 2*elevation outsets). */
+    private fun controlMotionCrop(view: View,frameWidth: Int,frameHeight: Int): PixelCrop {
+        val position=IntArray(2);view.getLocationOnScreen(position)
+        val screen=screenSize()
+        val shadow=maxOf(dp(16),kotlin.math.ceil(view.elevation*2).toInt()+dp(4))
+        return PixelCrop(((position[0]-shadow).coerceAtLeast(0).toLong()*frameWidth/screen.first).toInt(),
+            ((position[1]-shadow).coerceAtLeast(0).toLong()*frameHeight/screen.second).toInt(),
+            ((position[0]+view.width+shadow).coerceAtMost(screen.first).toLong()*frameWidth/screen.first).toInt(),
+            ((position[1]+view.height+shadow).coerceAtMost(screen.second).toLong()*frameHeight/screen.second).toInt())
+    }
     private suspend fun samplePage() {
         try {
             val frame=motionFrame()
             if(paused || setupSuppressed || selector!=null || panel?.visibility==View.VISIBLE)return
             val masks=mutableListOf(PixelCrop(0,0,frame.width,(frame.height*.055f).toInt()),
                 PixelCrop(0,(frame.height*.94f).toInt(),frame.width,frame.height))
-            handle?.let { view ->
-                val position=IntArray(2);view.getLocationOnScreen(position);val screen=screenSize()
-                masks+=PixelCrop(position[0]*frame.width/screen.first,position[1]*frame.height/screen.second,
-                    (position[0]+view.width)*frame.width/screen.first,(position[1]+view.height)*frame.height/screen.second)
-            }
+            handle?.let {masks+=controlMotionCrop(it,frame.width,frame.height)}
             val visibleMasks=if(pageView?.visibility==View.VISIBLE && !options.showOriginal)paintedMasks else emptyList()
             // Hard masks are controls/system chrome. Covered source text remains
             // observable through the layer's <=.8 alpha once our own painting settles.
@@ -472,6 +478,9 @@ class ReadingOverlayService : Service() {
             motionBaselineReady=true
             previousPaintedMasks=visibleMasks
             if(moved) {
+                if(com.sal7one.transiber.BuildConfig.DEBUG || com.sal7one.transiber.BuildConfig.BUILD_TYPE=="qa") {
+                    android.util.Log.d("HearthReadingMotion","${motion.lastDiagnostics} paintRevision=$paintRevision stable=$paintStable pendingDraw=$pendingPaintDraw paintAgeMs=${now()-paintChangedAt} frameGeneration=${frame.generation} paintGeneration=$paintChangedGeneration alpha=${layerParams.alpha} regions=${renderedRegions.size} boxes=${renderedBoxes.size} hardMasks=${masks.size} coveredMasks=${covered.size} working=$working")
+                }
                 clearPage();trigger.movement(now());generation++;working=false;frameSubmitted=false
                 pageGuard.cancel();pageTicket=null;controller.invalidate()
                 original?.text="";translated?.text="";renderControls()

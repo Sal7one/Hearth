@@ -34,6 +34,12 @@ class ReadingUnderlayMotionTest {
         assertFalse(m.observePainted(first))
         assertTrue("The ordinary path has zero uncovered pixels; underlay motion must still clear stale captions",
             m.observePainted(composite(article(offset = 7))))
+        assertEquals(0,m.lastDiagnostics.primary.visible)
+        assertFalse(m.lastDiagnostics.primary.moved)
+        assertTrue(m.lastDiagnostics.coveredEligible)
+        assertTrue(m.lastDiagnostics.covered.moved)
+        assertEquals(3,m.lastDiagnostics.covered.pixelDifference)
+        assertNotNull(m.lastDiagnostics.covered.changedBounds)
         assertFalse(m.observePainted(composite(article(offset = 7))))
     }
 

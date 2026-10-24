@@ -7,6 +7,14 @@ import kotlin.math.ceil
 
 /** Samples both uncovered content and the reader signal visible through a stable translucent caption. */
 internal class ReadingMotion {
+    internal data class SignalDiagnostics(val visible: Int=0,val changed: Int=0,val occupiedTiles: Int=0,
+        val minimumVisible: Int=0,val minimumChanged: Int=0,val minimumTiles: Int=0,val pixelDifference: Int=0,
+        val moved: Boolean=false,val changedBounds: PixelCrop?=null)
+    internal data class Diagnostics(val primary: SignalDiagnostics=SignalDiagnostics(),
+        val covered: SignalDiagnostics=SignalDiagnostics(),val coveredEligible: Boolean=false,
+        val paintRevision: Long=0,val baselineRevision: Long?=null,val paintStable: Boolean=false)
+    /** Counts/geometry only: device diagnostics never include captured pixels or article text. */
+    var lastDiagnostics=Diagnostics();private set
     /** Unknown saved values use the safe balanced behavior. */
     var sensitivity: String = "balanced"
     private var previous: IntArray? = null
@@ -18,6 +26,7 @@ internal class ReadingMotion {
         previous = null
         previousMask = BooleanArray(WIDTH * HEIGHT)
         stablePaint = null
+        lastDiagnostics=Diagnostics()
     }
     /**
      * [excluded] contains hard exclusions such as system bars and the movable handle.
@@ -46,7 +55,8 @@ internal class ReadingMotion {
             "stable" -> Sensitivity(12,48,50,4)
             else -> Sensitivity(8,24,100,3)
         }
-        val uncoveredMoved=old!=null && detectsMovement(grey,old,settings,argb.size/8) {i->!mask[i]&&!previousMask[i]}
+        val primary=if(old!=null)detectsMovement(grey,old,settings,argb.size/8) {i->!mask[i]&&!previousMask[i]}
+            else SignalDiagnostics(minimumVisible=argb.size/8,pixelDifference=settings.pixelDifference)
         // At alpha .8 an unchanged translated glyph is constant, while scrolling
         // original text still changes the captured pixel by up to 51 grey levels.
         // Keep a rounding/noise margin: balanced becomes 3, sensitive 2, stable 4.
@@ -58,19 +68,22 @@ internal class ReadingMotion {
         }
         val eligible=paintStable && remaining>=.02f && paintedVisible.any {it}
         val stableBaseline=baseline
-        val coveredMoved=eligible && stableBaseline!=null &&
-            detectsMovement(grey,stableBaseline.grey,settings.copy(pixelDifference=maxOf(2,ceil(settings.pixelDifference*remaining*1.5f).toInt())),
-                argb.size/16) {i->paintedVisible[i]&&stableBaseline.visible[i]}
+        val coveredSettings=settings.copy(pixelDifference=maxOf(2,ceil(settings.pixelDifference*remaining*1.5f).toInt()))
+        val coveredSignal=if(eligible && stableBaseline!=null)
+            detectsMovement(grey,stableBaseline.grey,coveredSettings,argb.size/16) {i->paintedVisible[i]&&stableBaseline.visible[i]}
+            else SignalDiagnostics(minimumVisible=argb.size/16,pixelDifference=coveredSettings.pixelDifference)
+        lastDiagnostics=Diagnostics(primary,coveredSignal,eligible&&stableBaseline!=null,paintRevision,stableBaseline?.revision,paintStable)
         // Options and clean captures temporarily hide identical paint. Preserve its
         // last stable baseline so a completed scroll during that interval is still
         // detected immediately on return, rather than becoming the new baseline.
         if(eligible)stablePaint=StablePaint(grey,paintedVisible,paintRevision,overlayAlpha,imageWidth,imageHeight)
         previous=grey;previousMask=mask
-        return uncoveredMoved || coveredMoved
+        return primary.moved || coveredSignal.moved
     }
     private inline fun detectsMovement(grey: IntArray,old: IntArray,settings: Sensitivity,minimumVisible: Int,
-                                       visibleAt: (Int)->Boolean): Boolean {
+                                       visibleAt: (Int)->Boolean): SignalDiagnostics {
         var changed=0;var visible=0
+        var left=WIDTH;var top=HEIGHT;var right=0;var bottom=0
         // A blinking cursor, spinner or a single animated badge is not a new page.
         // Real scrolling/text replacement normally changes several parts of the
         // sampled page. Count spatial coverage as well as individual pixels.
@@ -79,12 +92,16 @@ internal class ReadingMotion {
             visible++
             if(abs(grey[i]-old[i])>=settings.pixelDifference) {
                 changed++
+                val x=i%WIDTH;val y=i/WIDTH
+                left=minOf(left,x);right=maxOf(right,x+1);top=minOf(top,y);bottom=maxOf(bottom,y+1)
                 changedTiles[(i / WIDTH / TILE) * (WIDTH / TILE) + (i % WIDTH / TILE)]++
             }
         }
         val occupied=changedTiles.count {it>=3}
-        return visible>=minimumVisible && changed>=maxOf(settings.minimumPixels,visible/settings.fractionDivisor) &&
-            occupied>=settings.minimumTiles
+        val minimumChanged=maxOf(settings.minimumPixels,visible/settings.fractionDivisor)
+        return SignalDiagnostics(visible,changed,occupied,minimumVisible,minimumChanged,settings.minimumTiles,settings.pixelDifference,
+            visible>=minimumVisible && changed>=minimumChanged && occupied>=settings.minimumTiles,
+            if(changed>0)PixelCrop(left,top,right,bottom) else null)
     }
     private data class Sensitivity(val pixelDifference: Int,val minimumPixels: Int,val fractionDivisor: Int,val minimumTiles: Int)
     companion object { const val WIDTH=64;const val HEIGHT=128;private const val TILE=8 }

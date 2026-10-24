@@ -202,6 +202,22 @@ class ReadingOverlayServiceTest {
         assertNull(field<Job?>(service, "captureJob"))
     }
 
+    @Test fun motionMaskIncludesTheHandlesElevatedWindowShadowOutsideItsTouchBounds() = withWindows { service ->
+        val handle=field<ReadingOverlayHandle>(service,"handle")
+        handle.layout(0,0,48,48)
+        handle.elevation=24f
+        val size=ReflectionHelpers.callInstanceMethod<Pair<Int,Int>>(service,"screenSize")
+        val crop=ReflectionHelpers.callInstanceMethod<PixelCrop>(service,"controlMotionCrop",
+            ClassParameter.from(View::class.java,handle),
+            ClassParameter.from(Int::class.javaPrimitiveType!!,size.first),
+            ClassParameter.from(Int::class.javaPrimitiveType!!,size.second))
+        val position=IntArray(2);handle.getLocationOnScreen(position)
+        assertTrue(crop.left<=position[0])
+        assertTrue(crop.top<=position[1])
+        assertTrue("The sampled mask must include the renderer shadow beyond the layout width",crop.right>position[0]+handle.width)
+        assertTrue(crop.bottom>position[1]+handle.height)
+    }
+
     @Test fun interactiveAndPassthroughLayersBothLeaveAnObservableUnderlaySignal() = withWindows { service ->
         completePage(service)
         for (passThrough in listOf(false,true)) {
