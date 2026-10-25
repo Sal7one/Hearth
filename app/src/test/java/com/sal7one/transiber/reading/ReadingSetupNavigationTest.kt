@@ -152,7 +152,7 @@ class ReadingSetupNavigationTest {
         }
     }
 
-    @Test fun solidReplacementShowsEffectiveTouchThroughAndRestoresSavedOpacityAndTouchChoices() {
+    @Test fun replacementKeepsTouchThroughEditableAndPersistsItAcrossDisplayChanges() {
         val activity = compose.activity
         val preferences = ReadingOverlayPreferences(activity)
         compose.runOnIdle { preferences.update { it.copy(passThrough = true, boxOpacity = 35,
@@ -170,22 +170,34 @@ class ReadingSetupNavigationTest {
         passThrough.assertIsOn().assertIsEnabled()
         opacity.assertIsEnabled(); assertOpacity(35f)
         replace.performScrollTo().performClick()
-        passThrough.assertIsOff().assertIsNotEnabled()
+        passThrough.assertIsOn().assertIsEnabled()
         opacity.assertIsNotEnabled(); assertOpacity(100f)
+        passThrough.performScrollTo().performClick()
+        passThrough.assertIsOff().assertIsEnabled()
         compose.runOnIdle {
             val saved = preferences.read()
-            assertTrue("Opaque replacement changes effective touch behavior, not the saved preference", saved.passThrough)
+            assertFalse("Touch-through stays editable while replacement is visible", saved.passThrough)
             assertEquals("Regular-box opacity must remain available after replacement is turned off", 35, saved.boxOpacity)
             assertEquals(82, saved.boxWidthPercent); assertEquals(165, saved.boxHeightPercent)
         }
         original.performScrollTo().performClick()
-        passThrough.assertIsOn().assertIsEnabled()
+        passThrough.assertIsOff().assertIsEnabled()
         original.performClick()
-        passThrough.assertIsOff().assertIsNotEnabled()
+        passThrough.assertIsOff().assertIsEnabled()
         translations.performScrollTo().performClick()
-        passThrough.assertIsOn().assertIsEnabled()
+        passThrough.assertIsOff().assertIsEnabled()
         translations.performClick()
-        passThrough.assertIsOff().assertIsNotEnabled()
+        passThrough.assertIsOff().assertIsEnabled()
+        passThrough.performScrollTo().performClick()
+        passThrough.assertIsOn().assertIsEnabled()
+        compose.runOnIdle {
+            assertTrue(preferences.read().replaceText)
+            assertTrue(preferences.read().passThrough)
+            activity.onBackPressedDispatcher.onBackPressed()
+        }
+        compose.onNodeWithContentDescription(activity.getString(R.string.reading_setup_options)).performClick()
+        passThrough.assertIsOn().assertIsEnabled()
+        replace.assertIsOn()
         replace.performScrollTo().performClick()
         passThrough.assertIsOn().assertIsEnabled()
         opacity.assertIsEnabled(); assertOpacity(35f)

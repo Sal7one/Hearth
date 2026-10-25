@@ -308,7 +308,7 @@ class ReadingStartActivity : AppCompatActivity() {
                 ReadingSetupSection(text(R.string.reading_setup_display)) {
                     ReadingOptionSwitch(text(R.string.reading_passthrough),
                         text(if (settings.opaqueReplacementActive) R.string.reading_style_opaque_help else R.string.reading_setup_passthrough_help),
-                        settings.passThrough && !settings.opaqueReplacementActive, enabled = !settings.opaqueReplacementActive) { value ->
+                        settings.passThrough) { value ->
                         settingsStore.update { it.copy(passThrough = value) }
                     }
                     ReadingOptionSwitch(text(R.string.reading_setup_compact), text(R.string.reading_setup_compact_help), settings.compactHandle) { value ->

@@ -476,8 +476,8 @@ internal class ReadingOverlayControls(
             pauseButton.isSelected = value.paused
             pauseButton.visibility = if (value.mode == "page") VISIBLE else GONE
             val opaqueReplacement = value.appearanceSettings().opaqueReplacementActive
-            passThrough.isChecked = !opaqueReplacement && value.passThrough
-            passThrough.isEnabled = !opaqueReplacement
+            passThrough.isChecked = value.passThrough
+            passThrough.isEnabled = true
             replacementTouchNote.visibility = if (opaqueReplacement) VISIBLE else GONE
             visibilitySwitch.isChecked = value.translationsVisible
             originalSwitch.isChecked = value.showOriginal

@@ -638,10 +638,10 @@ class ReadingOverlayService : Service() {
         // motion sample can still detect a real page change made while options were open.
     }
     private fun applyLayerTouch() {
-        // Android 12+ rejects touches through an opaque untrusted full-screen
-        // overlay. Replacement therefore becomes an interactive reading layer;
-        // retain the saved pass-through choice for ordinary boxes and Original.
-        val passThrough=locked && !options.opaqueReplacementActive
+        // Replacement changes the rendered pixels, not the owner's input choice.
+        // Android 12+ checks WINDOW alpha for cross-app touches, so keep the same
+        // system-safe cap for labels, cleanup patches and replacement images.
+        val passThrough=locked
         layerParams.flags=layerParams.flags.let {if(passThrough)it or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE else it and WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE.inv()}
         layerParams.alpha=if(passThrough) {
             if(Build.VERSION.SDK_INT>=31)minOf(.8f,getSystemService(android.hardware.input.InputManager::class.java).maximumObscuringOpacityForTouch) else .8f

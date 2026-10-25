@@ -32,10 +32,12 @@ import org.xmlpull.v1.XmlPullParser
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
 class ReadingOverlayControlsTest {
-    @Test fun replacementShowsSolidOpacityAndSuspendsTouchThroughWithoutSavingEitherControl() {
+    @Test fun replacementKeepsTouchThroughEditableWithoutOverwritingSavedOpacity() {
         val owner = Robolectric.buildActivity(Activity::class.java).setup().visible()
         var writes = 0
-        val controls = ReadingOverlayControls(owner.get(), callbacks(changed = { writes++ }).copy(appearance = { writes++ }))
+        val touchChoices = mutableListOf<Boolean>()
+        val controls = ReadingOverlayControls(owner.get(), callbacks(changed = { writes++ }).copy(
+            appearance = { writes++ }, passThrough = { touchChoices += it }))
         owner.get().setContentView(controls)
         val saved = ReadingOverlayUiState(replaceText = true, passThrough = true, boxOpacity = 25)
         controls.render(saved)
@@ -45,8 +47,17 @@ class ReadingOverlayControlsTest {
         val opacity = descendants(controls).filterIsInstance<SeekBar>().single {
             it.contentDescription == owner.get().getString(R.string.reading_style_opacity)
         }
-        assertFalse(pass.isEnabled); assertFalse(pass.isChecked)
+        assertTrue(pass.isEnabled); assertTrue(pass.isChecked)
         assertFalse(opacity.isEnabled); assertEquals(opacity.max, opacity.progress)
+        pass.performClick()
+        assertEquals(listOf(false), touchChoices)
+        controls.render(saved.copy(passThrough = false))
+        assertTrue(pass.isEnabled); assertFalse(pass.isChecked)
+        assertFalse(opacity.isEnabled); assertEquals(opacity.max, opacity.progress)
+        pass.performClick()
+        assertEquals(listOf(false, true), touchChoices)
+        controls.render(saved.copy(showOriginal = true))
+        assertTrue(pass.isEnabled); assertTrue(pass.isChecked)
         controls.render(saved.copy(translationsVisible = false))
         assertTrue(pass.isEnabled); assertTrue(pass.isChecked)
         controls.render(saved.copy(replaceText = false))

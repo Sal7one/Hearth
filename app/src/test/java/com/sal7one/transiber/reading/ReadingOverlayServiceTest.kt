@@ -119,7 +119,7 @@ class ReadingOverlayServiceTest {
     }
 
     @Test @GraphicsMode(GraphicsMode.Mode.NATIVE)
-    fun replacementIsOpaqueAndInteractiveWhileRegularTouchAndOpacityChoicesStaySaved() = withWindows { service ->
+    fun replacementHonoursTouchThroughWhileCleanupAndSavedBoxChoicesStayOpaque() = withWindows { service ->
         val preferences = ReadingOverlayPreferences(service)
         val saved = ReadingOverlaySettings(passThrough = true, boxOpacity = 25,
             boxBackgroundArgb = Color.rgb(30, 60, 90))
@@ -145,15 +145,33 @@ class ReadingOverlayServiceTest {
         val matching = saved.copy(replaceText = true)
         preferences.write(matching)
         call(service, "applyOptions", ClassParameter.from(ReadingOverlaySettings::class.java, matching))
-        assertEquals(1f, params.alpha, 0f)
-        assertEquals("An opaque untrusted overlay must receive touches instead of asking Android to drop them", 0,
+        assertEquals(passThroughAlpha, params.alpha, 0f)
+        assertNotEquals("Replacement must leave scrolling and taps to the underlying app", 0,
             params.flags and WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE)
         assertEquals(255, Color.alpha(layer.renderedLabels().single().background))
         assertTrue("The owner's touch-through choice remains saved", preferences.read().passThrough)
         assertEquals(25, preferences.read().boxOpacity)
         val revision = field<Long>(service, "paintRevision")
         call(service, "applyOptions", ClassParameter.from(ReadingOverlaySettings::class.java, matching))
-        assertEquals("Reapplying the same opaque style must not trigger self-motion", revision, field<Long>(service, "paintRevision"))
+        assertEquals("Reapplying the same replacement must not trigger self-motion", revision, field<Long>(service, "paintRevision"))
+
+        // The real controls callback can still select interactive, unfaded text
+        // without removing the replacement or recapturing the completed page.
+        val toggle = descendants(field<ReadingOverlayControls>(service, "panel"))
+            .filterIsInstance<Switch>().single { it.text == service.getString(R.string.reading_overlay_passthrough) }
+        assertTrue(toggle.isEnabled)
+        toggle.isChecked = false
+        call(service, "applyOptions", ClassParameter.from(ReadingOverlaySettings::class.java, preferences.read()))
+        assertFalse(preferences.read().passThrough)
+        assertTrue(preferences.read().replaceText)
+        assertEquals(1f, params.alpha, 0f)
+        assertEquals(0, params.flags and WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE)
+        assertEquals(255, Color.alpha(layer.renderedLabels().single().background))
+        toggle.isChecked = true
+        call(service, "applyOptions", ClassParameter.from(ReadingOverlaySettings::class.java, preferences.read()))
+        assertEquals(matching, preferences.read())
+        assertEquals(passThroughAlpha, params.alpha, 0f)
+        assertNotEquals(0, params.flags and WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE)
 
         preferences.write(saved)
         call(service, "applyOptions", ClassParameter.from(ReadingOverlaySettings::class.java, saved))
@@ -165,7 +183,7 @@ class ReadingOverlayServiceTest {
         assertNull(field<Job?>(service, "captureJob"))
     }
 
-    @Test fun originalAndHiddenTranslationReleaseTheOpaqueLayerWithoutDiscardingTheCompletedPage() = withWindows { service ->
+    @Test fun replacementRemainsTouchThroughAfterOriginalAndVisibilityChangesWithoutDiscardingThePage() = withWindows { service ->
         val preferences = ReadingOverlayPreferences(service)
         val saved = ReadingOverlaySettings(replaceText = true, passThrough = true, boxOpacity = 35)
         preferences.write(saved)
@@ -186,8 +204,8 @@ class ReadingOverlayServiceTest {
             preferences.write(saved)
             call(service, "applyOptions", ClassParameter.from(ReadingOverlaySettings::class.java, saved))
             assertEquals(View.VISIBLE, layer.visibility)
-            assertEquals(1f, params.alpha, 0f)
-            assertEquals(0, params.flags and WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE)
+            assertTrue(params.alpha > 0f && params.alpha <= .8f)
+            assertNotEquals(0, params.flags and WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE)
             assertSame(page.completed, field<Any>(service, "completedPage"))
         }
         assertEquals(saved, preferences.read())
@@ -203,7 +221,7 @@ class ReadingOverlayServiceTest {
         assertEquals(saved, ReadingOverlayPreferences(service).read())
     }
 
-    @Test fun replacementHandleEyeRestoresUnderlyingTouchesAndTheSameSnapshotWithoutRecapturing() = withWindows { service ->
+    @Test fun replacementHandleEyeKeepsUnderlyingTouchesAndTheSameSnapshotWithoutRecapturing() = withWindows { service ->
         val preferences = ReadingOverlayPreferences(service)
         val saved = ReadingOverlaySettings(replaceText = true, passThrough = true)
         preferences.write(saved)
@@ -231,8 +249,8 @@ class ReadingOverlayServiceTest {
         assertEquals(saved, preferences.read())
         call(service, "applyOptions", ClassParameter.from(ReadingOverlaySettings::class.java, preferences.read()))
         assertEquals(View.VISIBLE, layer.visibility)
-        assertEquals(1f, params.alpha, 0f)
-        assertEquals(0, params.flags and WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE)
+        assertTrue(params.alpha > 0f && params.alpha <= .8f)
+        assertNotEquals(0, params.flags and WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE)
         assertSame(page.completed, field<Any>(service, "completedPage"))
         assertEquals(generation, field<Long>(service, "generation"))
         assertNull(field<Job?>(service, "captureJob"))
@@ -396,13 +414,17 @@ class ReadingOverlayServiceTest {
         assertTrue(crop.bottom>position[1]+handle.height)
     }
 
-    @Test fun passthroughRetainsItsUnderlaySignalWhileInteractiveRenderingIsUnfaded() = withWindows { service ->
+    @Test @Config(sdk = [29, 31, 35])
+    fun passthroughRetainsItsUnderlaySignalForBoxesAndReplacementWhileInteractiveRenderingIsUnfaded() = withWindows { service ->
         completePage(service)
-        for (passThrough in listOf(false,true)) {
-            call(service, "applyOptions", ClassParameter.from(ReadingOverlaySettings::class.java, ReadingOverlaySettings(passThrough=passThrough)))
+        for (replacement in listOf(false,true)) for (passThrough in listOf(false,true)) {
+            call(service, "applyOptions", ClassParameter.from(ReadingOverlaySettings::class.java,
+                ReadingOverlaySettings(passThrough=passThrough,replaceText=replacement)))
             val params=field<WindowManager.LayoutParams>(service,"layerParams")
             if(passThrough)assertTrue(params.alpha>0f && params.alpha<=.8f)
             else assertEquals("Interactive windows must not fade already styled text and cleanup",1f,params.alpha,0f)
+            if(passThrough && android.os.Build.VERSION.SDK_INT>=31)assertTrue(params.alpha<=
+                service.getSystemService(android.hardware.input.InputManager::class.java).maximumObscuringOpacityForTouch)
             assertEquals(passThrough,params.flags and WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE!=0)
             val motion=ReadingMotion()
             val white=IntArray(ReadingMotion.WIDTH*ReadingMotion.HEIGHT) {Color.WHITE}

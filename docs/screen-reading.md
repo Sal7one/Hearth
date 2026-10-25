@@ -27,7 +27,9 @@ feature stops the other; Android's projection session is never reused after stop
    alternatives to drawing. The area is reused for this session; rotation clears it.
 4. Translations appear **over detected text in the actual reader**, with a transparent
    background outside the text boxes. The reader remains live; no screenshot viewer
-   replaces it. With **🔒 Scroll through** enabled, touches pass through the text layer.
+   replaces it. With **🔒 Scroll through** enabled, taps and scrolling pass through the text layer,
+   including **Match page colours (replace text)** and Koharu image cleanup. This choice remains
+   editable while replacement is visible; the eye button is optional.
    The separate movable lock stays touchable: 20 dp glyph, 32 dp visible circle,
    48 dp touch target. Tapping it reveals the expanded controls. Open the lock to tap a box for its
    full text/read-aloud controls; close it again to scroll. The pass-through choice is saved and is also
@@ -79,9 +81,10 @@ releases capture resources. A session cannot restart without fresh consent.
 
 - Generic OCR uses text covers over line boxes. Koharu with cleanup supplies
   clipped background patches using the shared manga pipeline; its quality pass
-  and model memory cost are higher. Android limits pass-through overlay opacity
-  (normally 80%); the app
-  respects the device's maximum, so some original text can remain faintly visible.
+  and model memory cost are higher. Replacement paints solid cleanup patches. With
+  touch-through enabled, [Android 12+ limits the whole overlay opacity](https://developer.android.com/reference/android/view/WindowManager.LayoutParams#FLAG_NOT_TOUCHABLE)
+  (normally 80%), so some source text can remain faintly visible. Turn touch-through
+  off for fully opaque replacement and direct interaction with the translated boxes.
 - Meiki/Paddle return line boxes; Manga uses the drawn bubble. Nearby consecutive
   lines in a single horizontal or vertical reading block are grouped before
   translation. Dense-page panel order remains future work. A small clipped cover

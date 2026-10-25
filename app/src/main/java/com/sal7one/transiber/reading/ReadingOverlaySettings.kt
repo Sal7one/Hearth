@@ -22,7 +22,7 @@ internal data class ReadingOverlaySettings(
     val boxTextArgb: Int = 0xff1f2937.toInt(),
     val boxOpacity: Int = 95,
 ) {
-    /** Replacement must erase source ink; regular opacity and pass-through stay saved separately. */
+    /** Replacement paints solid cleanup; window touch-through opacity is applied separately. */
     val opaqueReplacementActive get() = replaceText && translationVisible && !showOriginal
 
     fun bounded() = copy(

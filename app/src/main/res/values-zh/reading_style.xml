@@ -20,7 +20,7 @@
     <string name="reading_style_blue">蓝色</string>
     <string name="reading_style_value">%1$s · %2$d</string>
     <string name="reading_style_choose_colour">选择%1$s · %2$s</string>
-    <string name="reading_style_opaque_help">替换完全不透明。点按眼睛按钮可隐藏译文并操作下方应用。隐藏译文或关闭替换后，将恢复您保存的触摸穿透设置。</string>
+    <string name="reading_style_opaque_help">替换会覆盖原文。开启触摸穿透时，Android 12 及以上版本会限制悬浮层的不透明度，让您可以滚动和点击下方应用。关闭触摸穿透可使用完全不透明的替换。</string>
     <string name="reading_style_hide_translation">隐藏译文并操作下方应用</string>
     <string name="reading_style_show_translation">显示译文</string>
 </resources>
