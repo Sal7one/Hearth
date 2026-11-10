@@ -14,6 +14,56 @@ import kotlin.test.*
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class DesktopModelControllerTest {
+    @Test fun startupRestoresRecordedReaderWithOnePinnedVerification() = runTest {
+        val directory = Files.createTempDirectory("hearth-desktop-reading-startup")
+        try {
+            val library = DesktopModelLibrary(directory)
+            val reader = library.find(selectedReadingModel(emptyMap()))
+            val path = directory.resolve("external-reader")
+            val route = EngineSelection(reader.engineId, reader.id, path.toString())
+            library.downloads.imported(reader.id, path)
+            val verified = mutableListOf<String>()
+            val errors = mutableListOf<String>()
+            val controller = DesktopModelController(library, backgroundScope, errors::add) { id, checked ->
+                assertEquals(path, checked)
+                verified.add(id)
+                route
+            }
+            val savedReader = controller.restoreReadingSelection(reader.id, path.toString())
+            assertEquals(reader.id, savedReader)
+            assertTrue(controller.state.value.transfers[reader.id]?.importing == true)
+            controller.refresh(PipelineConfig(), startupReaderId = savedReader)
+            controller.state.first { !it.refreshing && it.transfers.isEmpty() }
+            assertEquals(listOf(reader.id), verified)
+            assertEquals(route, controller.verifiedSelection(reader.id))
+            assertTrue(errors.isEmpty())
+            controller.close()
+        } finally {
+            withContext(Dispatchers.IO) { directory.toFile().deleteRecursively() }
+        }
+    }
+
+    @Test fun startupShowsManagedReaderCheckWithoutAnImportTransfer() = runTest {
+        val directory = Files.createTempDirectory("hearth-desktop-managed-reader-startup")
+        try {
+            val library = DesktopModelLibrary(directory)
+            val reader = library.find(selectedReadingModel(emptyMap()))
+            val path = directory.resolve("models").resolve(reader.id).toString()
+            val controller = DesktopModelController(library, backgroundScope, { error(it) }) { _, _ ->
+                error("A managed reader must not run an independent import")
+            }
+            val savedReader = controller.restoreReadingSelection(reader.id, path)
+            controller.refresh(PipelineConfig(), startupReaderId = savedReader)
+            assertEquals(path, controller.state.value.verifyingSelections[reader.id])
+            assertTrue(controller.state.value.transfers.isEmpty())
+            controller.state.first { !it.refreshing }
+            assertFalse(reader.id in controller.state.value.verifyingSelections)
+            controller.close()
+        } finally {
+            withContext(Dispatchers.IO) { directory.toFile().deleteRecursively() }
+        }
+    }
+
     @Test fun damagedSpeechImportDoesNotHideAnIndependentlyHealthyTranslator() = runTest {
         val directory = Files.createTempDirectory("hearth-desktop-model-ui")
         try {

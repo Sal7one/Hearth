@@ -1,0 +1,18 @@
+<resources>
+    <string name="model_speed_title">السرعة المقاسة</string>
+    <string name="model_speed_measured_only">له قياس مرجعي</string>
+    <string name="model_speed_explanation">قارن النتائج ضمن مجموعة اختبار واحدة. لا يشمل القياس التقاط المحتوى أو عرضه مباشرةً.</string>
+    <string name="model_speed_reference">الاختبارات المرجعية</string>
+    <string name="model_speed_this_device">هذا الجهاز</string>
+    <string name="model_speed_reference_value">%1$s · %2$s</string>
+    <string name="model_speed_no_reference">لا توجد قياسات لهذه الفئة هنا حتى الآن.</string>
+    <string name="model_speed_no_local">لا توجد اختبارات مكتملة لهذه الفئة حتى الآن.</string>
+    <string name="model_speed_latest_cohort">أحدث مجموعة اختبارات مكتملة · %1$s · %2$s</string>
+    <string name="model_speed_input_audio">%1$s ثانية من الصوت المدخل</string>
+    <string name="model_speed_input_samples">عدد العينات: %1$d</string>
+    <string name="model_speed_unknown_backend">محرك التنفيذ غير معروف</string>
+    <string name="model_speed_local_value">%1$s · %2$d مللي ثانية بعد التهيئة · %3$s</string>
+    <string name="model_speed_more">%1$d نتائج إضافية في مختبر الأداء</string>
+    <string name="model_speed_source">عرض الاختبار والمصدر</string>
+    <string name="model_speed_open_benchmark">فتح مختبر الأداء</string>
+</resources>

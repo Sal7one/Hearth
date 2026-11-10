@@ -128,11 +128,11 @@ private fun launchDesktop() = application {
                 DesktopServices(store, credentials, runtime, modelController, controller, reading, readingService)
                     .also { candidate = it }
             }
-            services = loaded
-            loaded.models.refresh(loaded.settings.config.value)
-            loaded.settings.ui.value["reading-model-path"]?.takeIf(String::isNotBlank)?.let {
-                loaded.models.verify(selectedReadingModel(loaded.settings.ui.value), Path.of(it))
+            val savedReader = loaded.settings.ui.value["reading-model-path"]?.takeIf(String::isNotBlank)?.let {
+                loaded.models.restoreReadingSelection(selectedReadingModel(loaded.settings.ui.value), it)
             }
+            loaded.models.refresh(loaded.settings.config.value, startupReaderId = savedReader)
+            services = loaded
         } catch(e: Exception) {
             withContext(NonCancellable) {
                 try {

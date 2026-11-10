@@ -4,6 +4,8 @@ import com.sal7one.hearth.core.PipelineConfig
 import com.sal7one.hearth.core.EngineDescriptor
 import com.sal7one.hearth.core.EngineSelection
 import com.sal7one.hearth.core.PipelineStage
+import com.sal7one.hearth.core.models.ModelPerformanceCatalog
+import com.sal7one.hearth.core.models.PerformancePlatform
 import com.sal7one.hearth.desktop.ModelTransfer
 import com.sal7one.hearth.desktop.data.DesktopModelCard
 import com.sal7one.hearth.desktop.data.DesktopModelStatus
@@ -45,16 +47,22 @@ internal fun modelsState(
             card.languages.any { it.contains(filter.query, ignoreCase = true) }
         val matchesStage = if(filter.readingOnly) card.stage==null else filter.stage == null || card.stage == filter.stage
         val matchesInstalled = !filter.onlyInstalled || row.status != ModelStatus.AVAILABLE
-        matchesQuery && matchesStage && matchesInstalled &&
+        val matchesMeasurement = !filter.measuredOnly || row.measurements.isNotEmpty()
+        matchesQuery && matchesStage && matchesInstalled && matchesMeasurement &&
             filter.hardware.matches(desktopModelGpuPaths(card), availableModelGpuPaths(card, engines))
     }
 
     val groups = listOf(PipelineStage.STT, PipelineStage.TRANSLATION, PipelineStage.TTS,null).map { stage ->
+        val stageRows = filtered.filter { it.stage == stage }
         ModelGroup(
             stage = stage,
             title = ModelsCopy.groupTitle(stage),
             detail = ModelsCopy.groupDetail(stage),
-            rows = filtered.filter { it.stage == stage },
+            rows = if (filter.measuredOnly) {
+                stageRows.groupBy { it.measurements.first().cohort }.values.flatMap { cohort ->
+                    cohort.sortedBy { it.measurements.first().elapsedMs }
+                }
+            } else stageRows,
         )
     }
 
@@ -108,6 +116,8 @@ private fun modelRow(card: DesktopModelCard, status: DesktopModelStatus?, config
         status = modelStatus,
         inUse = inUse,
         issue = status?.issue,
+        downloadSizeLabel = card.bytes.takeIf { it != card.installedBytes }?.let(::formatBytes),
+        measurements = ModelPerformanceCatalog.forModel(card.id, PerformancePlatform.MACOS),
     )
 }
 

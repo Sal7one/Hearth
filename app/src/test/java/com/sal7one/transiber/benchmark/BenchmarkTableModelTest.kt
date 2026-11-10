@@ -4,6 +4,20 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class BenchmarkTableModelTest {
+    @Test fun modelLibrarySpeedUsesOnlyLatestSuccessfulRunAndMatchingWorkload() {
+        val latest = result("cpu", 100.0).copy(runId = "current", timestamp = 8, actualAcceleration = "cpu")
+        val fast = latest.copy(identity = "vulkan", computeMs = listOf(900.0, 40.0, 60.0), actualAcceleration = "vulkan")
+        val rows = listOf(latest, fast, latest.copy(identity = "old-run", runId = "old", timestamp = 2),
+            latest.copy(identity = "different-input", inputHash = "different", timestamp = 7),
+            latest.copy(timestamp = 3, computeMs = listOf(0.0, 2.0, 2.0)),
+            latest.copy(identity = "failed", runId = "newer", timestamp = 9, error = "stopped"),
+            latest.copy(identity = "timeout", timestamp = 10, terminationReason = "deadline"))
+        val snapshot = latestBenchmarkSpeed(rows, "speech")
+        assertEquals(listOf("vulkan", "cpu"), snapshot.map { it.result.identity })
+        assertEquals(50.0, snapshot.first().warmMs, 0.0)
+        assertTrue(latestBenchmarkSpeed(rows, "translation").isEmpty())
+    }
+
     @Test fun hundredsOfRowsRemainSearchableAcrossModelRuntimeAndErrors() {
         val rows = (0 until 1200).map { result("model-$it", it.toDouble() + 1) }
         assertEquals(1200, BenchmarkTableModel.filtered(rows).size)

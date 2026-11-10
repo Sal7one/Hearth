@@ -69,7 +69,7 @@ internal class DesktopModelController(
         }
     }
 
-    fun refresh(config: PipelineConfig): Unit = synchronized(lock) {
+    fun refresh(config: PipelineConfig, startupReaderId: String? = null): Unit = synchronized(lock) {
         if (closed) return@synchronized
         fun routes(value: PipelineConfig)=PipelineStage.entries.mapNotNull(value::selection).filter { route ->
             route.modelPath.isNotBlank() && library.catalog.any {it.id==route.modelId && it.engineId==route.engineId}
@@ -89,7 +89,12 @@ internal class DesktopModelController(
         completedAuditCopies=emptySet()
         val expectedGenerations = generations.toMap()
         val expectedCopies=copyGenerations.toMap()
-        mutableState.update { it.copy(refreshing = true, verifyingSelections = configured.mapValues {it.value.modelPath}) }
+        val managedReader = startupReaderId?.takeUnless { it in operations }?.let { id ->
+            mapOf(id to managedPath(library.find(id)).toString())
+        }.orEmpty()
+        mutableState.update {
+            it.copy(refreshing = true, verifyingSelections = configured.mapValues { it.value.modelPath } + managedReader)
+        }
         refreshJob = scope.launch {
             suspend fun checkRoute(route: EngineSelection) {
                 try {
@@ -131,10 +136,13 @@ internal class DesktopModelController(
                 }}
             }
             try {
-                library.refresh(configured.keys) { id -> configured[id]?.let {checkRoute(it)} }
+                library.refresh(configured.keys + listOfNotNull(startupReaderId)) { id ->
+                    configured[id]?.let { checkRoute(it) }
+                    if (id in managedReader) mutableState.update { it.copy(verifyingSelections = it.verifyingSelections - id) }
+                }
                 // Unselected imports are still restored, but never delay the saved
-                // live-caption setup behind an unrelated model's hash.
-                journal.state.value.imports.filterKeys {it !in configured}.forEach { (id,path) ->
+                // live-caption setup or duplicate the saved reader check.
+                journal.state.value.imports.filterKeys { it !in configured && it != startupReaderId }.forEach { (id,path) ->
                     library.catalog.firstOrNull {it.id==id}?.let {checkRoute(EngineSelection(it.engineId,id,path))}
                 }
             } catch(e: CancellationException) { throw e }
@@ -212,6 +220,21 @@ internal class DesktopModelController(
         journal.remove(id)
         val key=modelCopyKey(id,path.toString())
         mutableState.update { it.copy(verifiedImports = it.verifiedImports + (id to verified),verifiedCopies=boundedProofs(it,key,verified),copyIssues=it.copyIssues-key) }
+    }
+
+    fun restoreReadingSelection(id: String, savedPath: String): String? {
+        val card = library.find(id)
+        val path = try {
+            Path.of(savedPath)
+        } catch (invalid: java.nio.file.InvalidPathException) {
+            error("Saved reader path is invalid: ${invalid.reason}")
+            return null
+        }
+        val key = modelCopyKey(id, savedPath)
+        // Managed copies use the priority audit. External copies verify on the
+        // import lane while unrelated installed models are still being checked.
+        if (key != modelCopyKey(id, managedPath(card).toString())) verify(id, path)
+        return id
     }
 
     /** Verification and activation remain separate; imports take precedence after an explicit pick. */
@@ -303,6 +326,12 @@ internal class DesktopModelController(
         mutableState.update { it.copy(transfers = emptyMap()) }
     }
 
+    private fun managedPath(card: DesktopModelCard): Path {
+        val root = library.directory.resolve("models").resolve(card.id)
+        return if (card.artifacts.size == 1 && card.archive == null && card.rangePackage == null)
+            root.resolve(card.artifacts.single().filename) else root
+    }
+
     private fun launch(id: String, importing: Boolean, selectedPath:Path?=null, block: suspend () -> Unit) = synchronized(lock) {
         if (closed) return@synchronized
         val name = library.find(id).name
@@ -311,9 +340,7 @@ internal class DesktopModelController(
             return@synchronized
         }
         generations[id] = (generations[id] ?: 0L) + 1
-        val card=library.find(id)
-        val managedRoot=library.directory.resolve("models").resolve(id)
-        val path=selectedPath ?: if(card.artifacts.size==1 && card.archive==null && card.rangePackage==null)managedRoot.resolve(card.artifacts.single().filename) else managedRoot
+        val path = selectedPath ?: managedPath(library.find(id))
         val copyKey=modelCopyKey(id,path.toString())
         copyGenerations[copyKey]=(copyGenerations[copyKey] ?: 0L)+1
         val previous = state.value.transfers[id]

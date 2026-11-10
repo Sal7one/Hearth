@@ -68,6 +68,7 @@ import com.sal7one.hearth.desktop.ui.screens.translate.translateState
 import com.sal7one.hearth.desktop.ui.screens.presets.BuiltInPresets
 import com.sal7one.hearth.desktop.ui.screens.presets.PresetsActions
 import com.sal7one.hearth.desktop.ui.screens.presets.PresetsScreen
+import com.sal7one.hearth.desktop.ui.screens.presets.applyDesktopPreset
 import com.sal7one.hearth.desktop.ui.screens.presets.presetsState
 import com.sal7one.hearth.desktop.ui.screens.downloads.DownloadsActions
 import com.sal7one.hearth.desktop.ui.screens.downloads.DownloadsScreen
@@ -149,6 +150,7 @@ internal fun HearthDesktopRoot(
                 onlyInstalled = initialUi["model-installed"] == "true",
                 hardware = ModelHardwareFilter.fromKey(initialUi["model-hardware"]),
                 readingOnly = initialUi["model-stage"] == "OCR",
+                measuredOnly = initialUi["model-measured"] == "true",
             ),
         )
     }
@@ -158,8 +160,12 @@ internal fun HearthDesktopRoot(
     val workspace by controller.state.collectAsState()
     LaunchedEffect(config.speech,config.translation,config.voice) {
         val selected=listOfNotNull(config.speech,config.translation,config.voice)
-        if(selected.any {route ->route.modelPath.isNotBlank() && models.library.catalog.any {it.id==route.modelId && it.engineId==route.engineId} &&
-                models.verifiedSelection(route.modelId)?.modelPath!=route.modelPath}) models.refresh(config)
+        if (selected.any { route ->
+                route.modelPath.isNotBlank() &&
+                    models.library.catalog.any { it.id == route.modelId && it.engineId == route.engineId } &&
+                    models.selectedStatus(route.modelId, route.modelPath) == null &&
+                    models.verifiedSelection(route.modelId)?.modelPath != route.modelPath
+            }) models.refresh(config)
     }
     val activeConfig = if (workspace.active) workspace.sessionConfig ?: config else config
     val library by models.state.collectAsState()
@@ -276,13 +282,17 @@ internal fun HearthDesktopRoot(
             modelFilter = modelFilter.copy(onlyInstalled = !modelFilter.onlyInstalled)
             saveUi(mapOf("model-installed" to modelFilter.onlyInstalled.toString()))
         },
+        onToggleMeasuredOnly = {
+            modelFilter = modelFilter.copy(measuredOnly = !modelFilter.measuredOnly)
+            saveUi(mapOf("model-measured" to modelFilter.measuredOnly.toString()))
+        },
         onFilterHardware = { hardware ->
             modelFilter = modelFilter.copy(hardware = hardware)
             saveUi(mapOf("model-hardware" to hardware.key))
         },
         onResetFilters = {
             modelFilter = ModelsFilter()
-            saveUi(mapOf("model-hardware" to "all", "model-stage" to "", "model-installed" to "false"))
+            saveUi(mapOf("model-hardware" to "all", "model-stage" to "", "model-installed" to "false", "model-measured" to "false"))
         },
         onAction = { id ->
             val card = models.library.find(id)
@@ -540,30 +550,28 @@ internal fun HearthDesktopRoot(
         catalog = models.library.catalog,
         installations = installations,
         config = config,
+        engines = controller.capabilities,
+        transfers = library.transfers,
+        verifying = library.verifyingSelections.keys,
+        verifiedPath = { models.verifiedSelection(it)?.modelPath },
     )
 
     val presetsActions = PresetsActions(
         onApply = { id ->
             val definition = BuiltInPresets.all.first { it.id == id }
-            val speech = definition.speechId?.let(models::verifiedSelection)
-            val translation = definition.translationId?.let(models::verifiedSelection)
-            val voice = definition.voiceId?.let(models::verifiedSelection)
-            val missing = buildList {
-                if (definition.speechId != null && speech == null) add(definition.speechId)
-                if (definition.translationId != null && translation == null) add(definition.translationId)
-                if (definition.voiceId != null && voice == null) add(definition.voiceId)
+            controller.updateConfig { current ->
+                applyDesktopPreset(current, definition, controller.capabilities, models.library.catalog, models::verifiedSelection)
             }
-            if (missing.isEmpty()) {
-                controller.updateConfig {
-                    it.copy(
-                        speech = speech,
-                        translation = translation,
-                        voice = voice,
-                        voiceId = if (voice != null) definition.voiceStyle else "",
-                    )
-                }
-            } else {
-                navigate(DesktopScreen.DOWNLOADS)
+        },
+        onDownload = { id ->
+            val candidate = presets.presets.first { it.id == id }
+            if (candidate.unavailableReason == null) {
+                val pending = models.state.value
+                models.downloadAll(candidate.downloadIds.filter { modelId ->
+                    models.verifiedSelection(modelId) == null &&
+                        modelId !in pending.verifyingSelections &&
+                        pending.transfers[modelId]?.let { it.paused && !it.cancelling } != false
+                })
             }
         },
         onNavigate = ::navigate,
@@ -771,13 +779,16 @@ internal fun HearthDesktopRoot(
                     onSwapLanguages = ::swapLanguages,
                     onSourceLanguage = ::sourceLanguage,
                     onTargetLanguage = ::targetLanguage,
-                    onOpenSetup = { navigate(when (home.setupStage) {
-                        PipelineStage.TRANSLATION -> DesktopScreen.TRANSLATION_SETTINGS
-                        PipelineStage.TTS -> DesktopScreen.VOICES
+                    onOpenSetup = { navigate(when {
+                        !home.hasSavedSpeech && presets.starter != null -> DesktopScreen.PRESETS
+                        home.setupStage == PipelineStage.TRANSLATION -> DesktopScreen.TRANSLATION_SETTINGS
+                        home.setupStage == PipelineStage.TTS -> DesktopScreen.VOICES
                         else -> DesktopScreen.SPEECH
                     }) },
                     onOpen = ::navigate,
                     onOpenWorkspace = { navigate(DesktopScreen.CAPTIONS) },
+                    starter = presets.starter,
+                    presetActions = presetsActions,
                 )
                 DesktopScreen.CONVERSATION -> ConversationScreen()
                 DesktopScreen.CAMERA -> CameraScreen()
@@ -798,7 +809,8 @@ internal fun HearthDesktopRoot(
                             readingModelId=id
                             saveUi(readingModelSettings(id, models.verifiedSelection(id)?.modelPath.orEmpty()))
                         },
-                        modelActivity = library.transfers[readingModelId]?.label,
+                        modelActivity = library.transfers[readingModelId]?.label
+                            ?: "Checking saved reader files".takeIf { readingModelId in library.verifyingSelections },
                         source = readingSource, sources = readingSources,
                         onSource = { source ->
                             if (source in readingSources && source != readingSource) {

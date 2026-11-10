@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.30.4 draft — 2026-11-10
+
+- Open Android presets directly from Home and Captions. Choose a task and languages, see exact models and missing download size, then apply the verified setup.
+- Show a checking state while Android loads saved speech models. Initialize the native runtime and preferences concurrently off the UI thread.
+- Add measured model speed to Android and desktop. Keep reference tests separate from on-device results and compare matching workloads. Prioritize saved reader files during desktop startup.
+
 ## 0.30.3 draft — 2026-11-10
 
 - Add the PP-OCRv6 Manga reader for Android and desktop. Fast lines reads horizontal and vertical Japanese and Chinese from a 23.23 MB model pack. It publishes outlines first, then recognizes crops in parallel with one model session. The bubble, Koharu and neural cleanup readers remain available.

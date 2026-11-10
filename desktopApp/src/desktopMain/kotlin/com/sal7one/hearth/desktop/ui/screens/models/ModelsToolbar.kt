@@ -50,6 +50,7 @@ internal fun ModelsToolbar(
     onReset: () -> Unit,
     modifier: Modifier = Modifier,
     onReading: () -> Unit = {},
+    onToggleMeasured: () -> Unit = {},
 ) {
     val colors = HearthTheme.colors
     Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -67,6 +68,7 @@ internal fun ModelsToolbar(
             FilterPill("Voice", filter.stage == PipelineStage.TTS) { onStage(PipelineStage.TTS) }
             FilterPill("Reading", filter.readingOnly) { onReading() }
             FilterPill("Installed", filter.onlyInstalled) { onToggleInstalled() }
+            FilterPill("Measured on Mac", filter.measuredOnly) { onToggleMeasured() }
             SettingsSelect(
                 value = filter.hardware.key,
                 options = ModelHardwareFilter.entries.map { SelectOption(it.key, it.label) },
@@ -76,7 +78,13 @@ internal fun ModelsToolbar(
             if (filter != ModelsFilter()) HearthButton("Reset filters", onReset,
                 tone = ButtonTone.Ghost, size = ButtonSize.Small)
         }
-        Text(filter.hardware.detail, style = HearthType.small, color = colors.muted)
+        if (filter.hardware != ModelHardwareFilter.ALL) {
+            Text(filter.hardware.detail, style = HearthType.small, color = colors.muted)
+        }
+        if (filter.measuredOnly) {
+            Text("Models from the same test appear in time order. Each result includes its device and workload.",
+                style = HearthType.small, color = colors.muted)
+        }
     }
 }
 
@@ -128,12 +136,17 @@ internal fun ModelRowView(
                 }
                 Spacer(Modifier.height(3.dp))
                 Text(
-                    "${row.sizeLabel} · ${row.metaLabel}",
+                    (row.downloadSizeLabel?.let { "$it download · ${row.sizeLabel} installed" } ?: row.sizeLabel) +
+                        " · ${row.metaLabel}",
                     style = HearthType.rowSub,
                     color = colors.muted,
-                    maxLines = 1,
+                    maxLines = 2,
                 )
                 row.gpuLabel?.let { Text(it, style = HearthType.rowSub, color = colors.accent, maxLines = 2) }
+                if (row.measurements.isNotEmpty()) {
+                    Spacer(Modifier.height(4.dp))
+                    ModelMeasurements(row.measurements, showModel = row.stage == PipelineStage.TTS)
+                }
                 row.issue?.let {
                     Text(it, style = HearthType.rowSub, color = colors.err, maxLines = 2)
                 }

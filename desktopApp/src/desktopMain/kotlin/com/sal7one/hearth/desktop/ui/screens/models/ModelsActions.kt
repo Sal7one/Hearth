@@ -12,6 +12,7 @@ internal class ModelsActions(
     val onFilterStage: (PipelineStage?) -> Unit = {},
     val onFilterReading: () -> Unit = {},
     val onToggleInstalledOnly: () -> Unit = {},
+    val onToggleMeasuredOnly: () -> Unit = {},
     val onFilterHardware: (ModelHardwareFilter) -> Unit = {},
     val onResetFilters: () -> Unit = {},
     val onAction: (String) -> Unit = {},

@@ -218,6 +218,14 @@ class DesignPreviewRenderTest {
         card("riva-translate-4b-v2-q4", "Riva-Translate 4B Instruct v2", PipelineStage.TRANSLATION, 2.76, setOf("en", "ar")),
         card("supertonic-3", "Supertonic 3 · ten voices", PipelineStage.TTS, 0.412, setOf("ar", "en")),
     )
+    private val presetCatalog = previewCatalog + listOf(
+        card("moonshine-tiny-en-v2", "Moonshine Tiny English", PipelineStage.STT, 0.03, setOf("en"))
+            .copy(engineId = "moonshine-local"),
+        card("phonon-2.5", "Phonon 2.5", PipelineStage.STT, 0.339, setOf("en", "ru"))
+            .copy(engineId = "phonon-local"),
+        card("ct2-quickmt-en-ar", "QuickMT · English → Arabic", PipelineStage.TRANSLATION, 0.363, setOf("en", "ar"))
+            .copy(engineId = "marian-local"),
+    )
 
     private val previewInstallations = mapOf(
         "whisper-large-v3-turbo-q5_0" to DesktopModelStatus(true, Path.of("/preview/models/whisper-large-v3-turbo-q5_0")),
@@ -391,7 +399,7 @@ class DesignPreviewRenderTest {
 
     private val presetsFixture = presetsState(
         definitions = BuiltInPresets.all,
-        catalog = previewCatalog,
+        catalog = presetCatalog,
         installations = previewInstallations,
         config = PipelineConfig(),
     )
@@ -711,6 +719,7 @@ class DesignPreviewRenderTest {
                 onSwapLanguages = {},
                 onOpen = {},
                 onOpenWorkspace = {},
+                starter = presetsFixture.starter,
             )
         },
         case(DesktopScreen.CAPTIONS, name = "captions-empty", status = "Not configured", height = 900) {

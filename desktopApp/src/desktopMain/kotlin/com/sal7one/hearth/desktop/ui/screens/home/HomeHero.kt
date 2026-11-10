@@ -41,6 +41,7 @@ import com.sal7one.hearth.desktop.ui.icons.HearthIcons
 import com.sal7one.hearth.desktop.ui.theme.HearthTheme
 import com.sal7one.hearth.desktop.ui.theme.HearthType
 import com.sal7one.hearth.desktop.ui.language.LanguagePairPicker
+import com.sal7one.hearth.desktop.ui.language.LanguagePicker
 
 /**
  * Home's single hero: the captions artwork, the product's one sentence, the
@@ -101,7 +102,11 @@ internal fun HomeHero(
                 .widthIn(max = 620.dp),
             verticalArrangement = Arrangement.Center,
         ) {
-            Eyebrow(when {state.setupVerifying -> "Live captions · checking saved setup";state.recognitionReady -> HomeCopy.EYEBROW;else -> "Live captions · setup needed"})
+            Eyebrow(when {
+                state.setupVerifying -> "Live captions · checking saved setup"
+                state.statusLive || state.recognitionReady && state.setupIssue == null && state.languages.issue == null -> HomeCopy.EYEBROW
+                else -> "Live captions · setup needed"
+            })
             Spacer(Modifier.height(14.dp))
             Text(
                 text = HomeCopy.HEADLINE_LINE_ONE + "\n" + HomeCopy.HEADLINE_LINE_TWO,
@@ -123,9 +128,23 @@ internal fun HomeHero(
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                LanguagePairPicker(state.languages, onSourceLanguage, onTargetLanguage, onSwapLanguages, enabled = !state.statusLive)
+                if (state.hasSavedSpeech) {
+                    if (state.translationEngine != null) {
+                        LanguagePairPicker(state.languages, onSourceLanguage, onTargetLanguage, onSwapLanguages,
+                            enabled = !state.statusLive)
+                    } else {
+                        LanguagePicker("Spoken", state.languages.source, state.languages.sources, onSourceLanguage,
+                            enabled = !state.statusLive)
+                    }
+                }
                 HearthButton(
-                    text = if (state.statusLive) "Open live captions" else if(state.setupVerifying) "Checking saved models…" else if (state.setupIssue != null) "Finish setup" else "Start live captions",
+                    text = when {
+                        state.statusLive -> "Open live captions"
+                        state.setupVerifying -> "Checking saved models…"
+                        !state.hasSavedSpeech -> "Set up live captions"
+                        state.setupIssue != null -> "Finish setup"
+                        else -> "Start live captions"
+                    },
                     onClick = if (state.setupIssue != null && !state.statusLive) onOpenSetup else onStart,
                     tone = ButtonTone.Primary,
                     size = ButtonSize.Large,

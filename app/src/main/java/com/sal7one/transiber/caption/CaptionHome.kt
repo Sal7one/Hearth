@@ -35,6 +35,7 @@ fun CaptionHome(
     onModels: () -> Unit,
     onCloud: () -> Unit,
     onHistory: () -> Unit,
+    onPresets: () -> Unit = onModels,
 ) {
     val uiText = rememberUiText()
 
@@ -47,7 +48,8 @@ fun CaptionHome(
     val registered by registry.registeredModels.collectAsStateWithLifecycle()
     val running by CaptionCaptureService.running.collectAsStateWithLifecycle()
     var config by remember { mutableStateOf<CaptionOverlayConfig?>(null) }
-    var speech by remember { mutableStateOf<List<LocalSpeechModel>>(emptyList()) }
+    var speech by remember { mutableStateOf<List<LocalSpeechModel>?>(null) }
+    var speechLoadError by remember { mutableStateOf<String?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
     var saveFailed by remember { mutableStateOf(false) }
     var pendingWrite by remember { mutableStateOf<Job?>(null) }
@@ -56,16 +58,19 @@ fun CaptionHome(
     }
     val bindings by ModelSourceBindings.checks.collectAsStateWithLifecycle()
     val resumed = rememberCaptionSetupResumeRevision()
-    LaunchedEffect(registered, bindings, resumed) {
+    val cfg = config
+    if (cfg == null) { LinearProgressIndicator(Modifier.fillMaxWidth()); return }
+    val usesSpeechPackage = cfg.effectiveEngine.speechBackend != null
+    if (usesSpeechPackage) LaunchedEffect(registered, bindings, resumed) {
         try {
             speech = withContext(Dispatchers.IO) {
                 LocalSpeechModels(File(context.filesDir, "speech-models")).list()
             }
+            speechLoadError = null
         } catch (e: CancellationException) { throw e }
-        catch (e: Exception) { error = e.message ?: e.toString() }
+        catch (e: Exception) { speechLoadError = e.message ?: e.toString() }
     }
-    val cfg = config
-    if (cfg == null) { LinearProgressIndicator(Modifier.fillMaxWidth()); return }
+    val engineChecking = usesSpeechPackage && speech == null && speechLoadError == null
     fun update(transform: (CaptionOverlayConfig) -> CaptionOverlayConfig) {
         config = transform(config ?: cfg)
         saveFailed = false
@@ -87,7 +92,7 @@ fun CaptionHome(
     }
     val engineReady = when {
         isCloud -> keyReady
-        cfg.effectiveEngine.speechBackend != null -> speech.any {
+        usesSpeechPackage -> speech.orEmpty().any {
             it.profile.backend == cfg.effectiveEngine.speechBackend && (cfg.modelId.isBlank() || cfg.modelId == it.id)
         }
         else -> registered.any { it.isValid && (cfg.modelId.isBlank() || cfg.modelId == it.id) &&
@@ -120,29 +125,30 @@ fun CaptionHome(
                 CaptionLanguageFields(cfg, ::update, enabled = !running, compact = true)
                 if (engineReady && cfg.effectiveEngine.speechBackend != null) CaptionSpeechTimingControls(cfg, ::update)
             }
-            FeatureAction(uiText(if (basic) UiR.string.setup_basic_manage else UiR.string.ui_speech_translation_8002b), Icons.Default.Tune, { if (basic) onModels() else options = true }, detail = if (isCloud) uiText(UiR.string.ui_1_s_audio_sent_to_your_provider_db1f9, uiText.label(cfg.effectiveEngine)) else uiText(UiR.string.ui_1_s_on_this_phone_0832f, uiText.label(cfg.effectiveEngine)))
-            if (!engineReady) Text(if (isCloud) uiText(UiR.string.ui_connect_your_cloud_provider_to_start_14c5d) else uiText(UiR.string.ui_choose_a_speech_model_to_start_53e5a))
-            if (needsTranslator) Text(translationReadiness.detail,
+            FeatureAction(uiText(if (basic) UiR.string.setup_basic_manage else UiR.string.ui_speech_translation_8002b), Icons.Default.Tune, { if (basic) onPresets() else options = true }, detail = if (isCloud) uiText(UiR.string.ui_1_s_audio_sent_to_your_provider_db1f9, uiText.label(cfg.effectiveEngine)) else uiText(UiR.string.ui_1_s_on_this_phone_0832f, uiText.label(cfg.effectiveEngine)))
+            if (engineChecking) Text(uiText(UiR.string.setup_bundle_preparing), color = MaterialTheme.colorScheme.onSurfaceVariant)
+            else if (!engineReady && speechLoadError == null) Text(if (isCloud) uiText(UiR.string.ui_connect_your_cloud_provider_to_start_14c5d) else uiText(UiR.string.ui_choose_a_speech_model_to_start_53e5a))
+            if (!engineChecking && needsTranslator) Text(translationReadiness.detail,
                 color = if (translationReadiness.checking) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.error,
                 modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite })
-            if (needsTranslator && !translationReadiness.checking) TextButton(onClick = { if (basic) onModels() else options = true }) { Text(uiText(UiR.string.ui_set_up_translation_1d214)) }
-            error?.let { Text(it, color = MaterialTheme.colorScheme.error,
+            if (!engineChecking && needsTranslator && !translationReadiness.checking) TextButton(onClick = { if (basic) onPresets() else options = true }) { Text(uiText(UiR.string.ui_set_up_translation_1d214)) }
+            (error ?: speechLoadError.takeIf { usesSpeechPackage })?.let { Text(it, color = MaterialTheme.colorScheme.error,
                 modifier = Modifier.semantics { liveRegion = LiveRegionMode.Assertive }) }
 
         }
         Surface(color=MaterialTheme.colorScheme.surface.copy(alpha=.65f),shadowElevation = 8.dp) {
             Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
-                Button(modifier = Modifier.weight(1f).heightIn(min = 52.dp), enabled = running || !engineReady || !translationReadiness.checking, onClick = {
+                Button(modifier = Modifier.weight(1f).heightIn(min = 52.dp), enabled = running || (!engineChecking && (!engineReady || !translationReadiness.checking)), onClick = {
                     when {
                         running -> CaptionCaptureService.show(context)
-                        !engineReady -> if (isCloud) onCloud() else onModels()
-                        needsTranslator -> if (basic) onModels() else options = true
+                        !engineReady -> if (isCloud) onCloud() else if (basic) onPresets() else onModels()
+                        needsTranslator -> if (basic) onPresets() else options = true
                         else -> scope.launch {
                             pendingWrite?.join()
                             if (!saveFailed) CaptionStartActivity.start(context, config!!.source)
                         }
                     }
-                }) { Text(when { running -> uiText(UiR.string.ui_show_captions_78946); !engineReady && isCloud -> uiText(UiR.string.ui_connect_cloud_663c4); !engineReady -> uiText(UiR.string.ui_choose_a_model_fefb3); translationReadiness.checking -> translationReadiness.detail; needsTranslator -> uiText(UiR.string.ui_set_up_translation_1d214); else -> uiText(UiR.string.ui_start_captions_68e1c) }) }
+                }) { Text(when { running -> uiText(UiR.string.ui_show_captions_78946); engineChecking -> uiText(UiR.string.setup_bundle_preparing); !engineReady && isCloud -> uiText(UiR.string.ui_connect_cloud_663c4); !engineReady -> uiText(if (basic) UiR.string.setup_presets_title else UiR.string.ui_choose_a_model_fefb3); translationReadiness.checking -> translationReadiness.detail; needsTranslator -> uiText(UiR.string.ui_set_up_translation_1d214); else -> uiText(UiR.string.ui_start_captions_68e1c) }) }
                 if (running) IconButton(onClick = { CaptionCaptureService.stop(context) }, modifier = Modifier.size(52.dp)) {
                     Icon(Icons.Default.Stop, uiText(UiR.string.ui_stop_captions_58b64))
                 }
@@ -153,8 +159,8 @@ fun CaptionHome(
         com.sal7one.transiber.caption.history.CaptionHistoryOptions(cfg, ::update, onHistory)
         HorizontalDivider()
         if (basic) {
-            OutlinedButton(onClick = onModels, modifier = Modifier.fillMaxWidth()) {
-                Text(uiText(UiR.string.setup_basic_manage))
+            OutlinedButton(onClick = onPresets, modifier = Modifier.fillMaxWidth()) {
+                Text(uiText(UiR.string.setup_presets_title))
             }
             AdvancedSetupLink()
             return@FeatureOptionsSheet

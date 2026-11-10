@@ -1,44 +1,70 @@
 package com.sal7one.hearth.desktop.ui.screens.presets
 
-/**
- * The presets Hearth ships with. They reference real catalog ids; if a catalog id
- * disappears the preset reports it as missing rather than silently picking
- * something else.
- */
 internal object BuiltInPresets {
     val all: List<PresetDefinition> = listOf(
         PresetDefinition(
-            id = "live-captions",
-            title = "Live captions",
-            description = "Subtitle anything without translating it. The lightest way to run Hearth for an hour.",
-            speechId = "whisper-large-v3-turbo-q5_0",
+            id = "english-captions",
+            title = "English captions",
+            description = "A small download for English videos, calls and podcasts.",
+            speechId = "moonshine-tiny-en-v2",
+            sourceLanguage = "en",
             featured = true,
         ),
         PresetDefinition(
-            id = "arabic-meetings",
-            title = "Arabic meetings",
-            description = "Speak Arabic, keep English notes — or the other way round. The voice reads the translation back.",
-            speechId = "whisper-large-v3-turbo-q5_0",
-            translationId = "eurollm-17b-q4",
-            voiceId = "supertonic-3",
-            voiceStyle = "F2",
+            id = "phonon-captions",
+            title = "25-language captions",
+            description = "Original captions in supported European languages, including English and Russian.",
+            speechId = "phonon-2.5",
+            sourceLanguage = "auto",
             featured = true,
         ),
         PresetDefinition(
-            id = "long-session",
-            title = "Long session",
-            description = "Smaller speech model, lighter on battery. Good for lectures and calls over an hour.",
-            speechId = "whisper-small-q5_1",
-            translationId = "eurollm-17b-q4",
+            id = "english-to-arabic",
+            title = "English → Arabic captions",
+            description = "Translate English speech with Moonshine and QuickMT.",
+            speechId = "moonshine-tiny-en-v2",
+            translationId = "ct2-quickmt-en-ar",
+            sourceLanguage = "en",
+            targetLanguage = "ar",
         ),
         PresetDefinition(
-            id = "interviews",
-            title = "Interviews",
-            description = "The strongest translation model, with a voice for playback. Heavy, but the most careful.",
-            speechId = "whisper-medium-q5_0",
-            translationId = "riva-translate-4b-v2-q4",
+            id = "arabic-to-english",
+            title = "Arabic → English captions",
+            description = "Translate Arabic speech with Moonshine and QuickMT.",
+            speechId = "moonshine-base-ar-v2",
+            translationId = "ct2-quickmt-ar-en",
+            sourceLanguage = "ar",
+            targetLanguage = "en",
+        ),
+        PresetDefinition(
+            id = "arabic-readback",
+            title = "English → Arabic with voice",
+            description = "Translate English speech and read the Arabic captions aloud.",
+            speechId = "moonshine-tiny-en-v2",
+            translationId = "ct2-quickmt-en-ar",
             voiceId = "supertonic-3",
-            voiceStyle = "M1",
+            voiceStyle = "F1",
+            sourceLanguage = "en",
+            targetLanguage = "ar",
+        ),
+        PresetDefinition(
+            id = "portable-captions",
+            title = "Multilingual captions",
+            description = "Original captions with a compact Whisper model for supported desktop builds.",
+            speechId = "whisper-base-q5_1",
+            sourceLanguage = "auto",
+            featured = true,
+            fallback = true,
+        ),
+        PresetDefinition(
+            id = "portable-arabic",
+            title = "Arabic → English captions",
+            description = "Local Arabic speech and English captions using Whisper and EuroLLM.",
+            speechId = "whisper-base-q5_1",
+            translationId = "eurollm-17b-q4",
+            sourceLanguage = "ar",
+            targetLanguage = "en",
+            fallback = true,
         ),
     )
 }

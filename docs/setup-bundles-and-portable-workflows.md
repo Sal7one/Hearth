@@ -8,21 +8,29 @@ applies to the main app and its setup screens, including the full TV interface.
 
 ## Basic setup
 
-Open Models and choose spoken/source and target languages. The available bundles
-are Compact captions (Whisper Tiny), Compact translation (Whisper Base plus a direct
-Marian pair), and Broad translation (Nemotron plus Index). Language constraints
-can make a bundle unavailable. Cards show total artifact download size rather
-than implying every model is suitable for a small TV. These are choices, not
-device performance claims. Translation-only setup omits speech, its download and
-its saved configuration entirely.
+Open **Presets** from Home and choose captions or translation, then set the
+spoken or source language. Hearth shows the exact checkpoints for that choice.
+Captions include language-specific Moonshine, multilingual Phonon and streaming
+Nemotron where supported. Translation offers a direct Marian or QuickMT model
+for supported pairs and a broader route for more languages. Translation-only
+setup leaves speech alone. Local presets are unavailable on Android TV.
 
 The preview resolves actual installed models and verifies their identity. It
 shows missing assets before downloading or applying anything. Play downloads
 reuse the pinned catalog and existing queue; FOSS provides document/folder import
-without network or system-download delegation. The Basic **Download and set up** action authorizes that selected recipe to
-apply after installation and verification; Finish later cancels activation while
-downloads continue. Portable JSON imports require an explicit Apply after their
-preview is ready. Active speech/reading/benchmark work must stop first.
+without network or system-download delegation. Downloads continue if you leave
+the preview. Select **Apply** when all required models are ready. Portable JSON
+imports also require an explicit Apply. Active speech/reading/benchmark work
+must stop first.
+
+**Measured speed** in Models separates reference tests from Benchmark lab
+results saved on the phone. The reference filter respects the current language
+and exact checkpoint. Phone results compare completed runs on the same input
+and timing protocol in the latest eligible batch. The Mac library and starters
+show CPU timings with the test workload, including the
+[same-clip Moonshine and Phonon replay](benchmarks/2026-11-10-m4-pro-speech-replay.json).
+Native replay measures compute after the audio is available. Capture, caption
+windowing and display add separate delays.
 
 Advanced retains model family/checkpoint/quant choices, custom imports, GPU
 backend controls and utterance-window tuning. Typed text keeps language, input,

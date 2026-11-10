@@ -68,6 +68,7 @@ internal fun homeState(
         setupVerifying = verifying,
         verificationMessage = pending?.value?.message,
         onDevice = listOfNotNull(speech, translation, voice).none { it.kind == EngineKind.CLOUD },
+        hasSavedSpeech = config.speech != null,
     )
 }
 

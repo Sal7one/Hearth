@@ -27,13 +27,18 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.first
 import java.io.File
 
-@Composable internal fun EasySetupLocalUi(onDone: () -> Unit, onDownloads: () -> Unit) {
+@Composable internal fun EasySetupLocalUi(
+    onDone: () -> Unit,
+    onDownloads: () -> Unit,
+    presets: Boolean = false,
+    onBrowseModels: ((Boolean) -> Unit)? = null,
+) {
     val uiText = rememberUiText()
     if (!com.sal7one.transiber.runtime.LocalModelPolicy.allowed(LocalContext.current)) {
         com.sal7one.transiber.ui.components.LocalModelPolicyNotice()
         return
     }
-    if (com.sal7one.transiber.preferences.rememberSetupMode() == com.sal7one.transiber.preferences.SetupMode.BASIC) {
+    if (presets || com.sal7one.transiber.preferences.rememberSetupMode() == com.sal7one.transiber.preferences.SetupMode.BASIC) {
         val context = LocalContext.current
         var current by remember { mutableStateOf<CaptionOverlayConfig?>(null) }
         var loadingError by remember { mutableStateOf<String?>(null) }
@@ -42,9 +47,9 @@ import java.io.File
             catch (e: CancellationException) { throw e }
             catch (e: Exception) { loadingError = e.message ?: e.toString() }
         }
-        current?.let { LocalBundleUi(it, onDone, onDownloads) }
+        current?.let { LocalBundleUi(it, onDone, onDownloads, onBrowseModels = onBrowseModels) }
             ?: if (loadingError == null) LinearProgressIndicator(Modifier.fillMaxWidth()) else Text(loadingError.orEmpty(), color = MaterialTheme.colorScheme.error)
-        AdvancedSetupLink()
+        if (!presets) AdvancedSetupLink()
         return
     }
 

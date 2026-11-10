@@ -26,7 +26,8 @@ import kotlinx.coroutines.*
 fun ModelsScreen(onDownloads: () -> Unit = {}, onVoices: () -> Unit = {}, initialSection: String = "Speech",
     openIntegrity: Boolean = false, onIntegrityOpened: () -> Unit = {},
     scopedTranslationModelId: String? = null, onTranslationSelected: ((String)->Unit)? = null,
-    scopedTranslationSource:String? = null,scopedTranslationTarget:String? = null) {
+    scopedTranslationSource:String? = null,scopedTranslationTarget:String? = null,
+    onBenchmark: (() -> Unit)? = null) {
     val text = rememberUiText()
     val context = LocalContext.current
     if (!com.sal7one.transiber.runtime.LocalModelPolicy.allowed(context)) {
@@ -94,9 +95,12 @@ fun ModelsScreen(onDownloads: () -> Unit = {}, onVoices: () -> Unit = {}, initia
                 error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
                 if (!loaded) { if (error == null) LinearProgressIndicator(Modifier.fillMaxWidth()); return@Column }
                 val simpleTask = (section == "Speech" || section == "Translation") && onTranslationSelected == null
-                if (setupMode == SetupMode.BASIC && simpleTask) Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    FilterChip(!browseAll, onClick = { browseAll = false }, label = { Text(text(UiR.string.library_recommended)) })
-                    FilterChip(browseAll, onClick = { browseAll = true }, label = { Text(text(UiR.string.library_all_models)) })
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), itemVerticalAlignment = Alignment.CenterVertically) {
+                    if (setupMode == SetupMode.BASIC && simpleTask) {
+                        FilterChip(!browseAll, onClick = { browseAll = false }, label = { Text(text(UiR.string.library_recommended)) })
+                        FilterChip(browseAll, onClick = { browseAll = true }, label = { Text(text(UiR.string.library_all_models)) })
+                    }
+                    TextButton(onClick = { sheet = "speed" }) { Text(text(UiR.string.model_speed_title)) }
                 }
                 if (setupMode == SetupMode.BASIC && simpleTask && !browseAll) {
                     LocalBundleUi(config, onDownloads = onDownloads, translationOnly = section == "Translation", showHeading = false)
@@ -115,6 +119,7 @@ fun ModelsScreen(onDownloads: () -> Unit = {}, onVoices: () -> Unit = {}, initia
         Column(Modifier.fillMaxWidth().heightIn(max = 680.dp).verticalScroll(rememberScrollState()).padding(18.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)) {
             when (sheet) {
+                "speed" -> ModelSpeedPanel(section, onBenchmark?.let { open -> { sheet = ""; open() } })
                 "bundles" -> if (onTranslationSelected == null) LocalBundleUi(config, onDownloads = onDownloads, translationOnly = section == "Translation")
                 "portable" -> PortableSetupUi(
                     onSpeechModels = { browseAll = true; section = "Speech"; sheet = "" },

@@ -132,7 +132,7 @@ internal fun ReadingScreen(
         Spacer(Modifier.height(22.dp))
         if(!modelReady) {
             Banner(modelActivity ?: "Get the selected ${modelBytes/1048576} MiB bundle. Downloads and imported folders are verified before use.",
-                action = { HearthButton(if(modelActivity == null) "Get models" else "Downloading…", onDownload,
+                action = { HearthButton(if(modelActivity == null) "Get models" else "Preparing…", onDownload,
                     tone = ButtonTone.Secondary, size = ButtonSize.Small, enabled = modelActivity == null) })
             Spacer(Modifier.height(18.dp))
         }

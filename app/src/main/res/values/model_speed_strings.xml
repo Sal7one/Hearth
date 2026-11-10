@@ -1,0 +1,18 @@
+<resources>
+    <string name="model_speed_title">Measured speed</string>
+    <string name="model_speed_measured_only">Has reference timing</string>
+    <string name="model_speed_explanation">Compare within a test group. Model timing excludes live capture and display.</string>
+    <string name="model_speed_reference">Reference tests</string>
+    <string name="model_speed_this_device">This device</string>
+    <string name="model_speed_reference_value">%1$s · %2$s</string>
+    <string name="model_speed_no_reference">No timing for this category here yet.</string>
+    <string name="model_speed_no_local">No completed tests for this category yet.</string>
+    <string name="model_speed_latest_cohort">Latest completed test group · %1$s · %2$s</string>
+    <string name="model_speed_input_audio">%1$s s of input audio</string>
+    <string name="model_speed_input_samples">Sample count: %1$d</string>
+    <string name="model_speed_unknown_backend">Backend unreported</string>
+    <string name="model_speed_local_value">%1$s · %2$d ms warm · %3$s</string>
+    <string name="model_speed_more">%1$d more in Benchmark lab</string>
+    <string name="model_speed_source">See test and source</string>
+    <string name="model_speed_open_benchmark">Open Benchmark lab</string>
+</resources>
