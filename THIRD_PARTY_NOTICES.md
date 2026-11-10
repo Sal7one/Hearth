@@ -71,7 +71,7 @@ blank/space entries for CTC decoding. Exact origins, revisions and hashes are in
 verified downloads, not APK assets. See [OCR sources](docs/camera-ocr.md).
 
 Supertonic 3 inference/text preparation adapts the MIT implementation from
-[Supertone](https://github.com/supertone-inc/supertonic), revision
+[Supertone's source archive](https://github.com/supertone-oss-archive/supertonic), revision
 1e9799e964ea4c0dad7cde993b65c3c813a7b373. Its copyright/license and provenance are in
 `assets/licenses/voice/`. Downloaded Supertonic 3 weights use OpenRAIL-M terms, also
 included there, and are not bundled in the APK. The first-party server bridge calls

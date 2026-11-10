@@ -355,7 +355,7 @@
     <string name="ui_select_all_onnx_files_for_the_selected_engine_together_file_names_c1ec6" formatted="false">"请一起选择该引擎的所有 ONNX 文件。文件名不限，Hearth 按文件内容精确验证模型，配套字典已内置。Manga 和 Meiki 目前处理拍摄或导入的页面；Paddle 可用于实时模式。"</string>
     <string name="ui_downloads_folder_settings_668bd" formatted="false">"下载与文件夹设置"</string>
     <string name="ui_cloud_provider_connection_49770" formatted="false">"云端服务商与连接"</string>
-    <string name="ui_soniox_stt_rt_v5_streaming_cc_and_optional_integrated_translation_7d848" formatted="false">"Soniox stt-rt-v5：流式字幕与可选内置翻译。原文和译文分别保留。"</string>
+    <string name="ui_soniox_stt_rt_v5_streaming_cc_and_optional_integrated_translation_7d848" formatted="false">"Soniox stt-rt-v6：流式字幕与可选内置翻译。原文和译文分别保留。"</string>
     <string name="ui_elevenlabs_scribe_v2_realtime_streaming_cc_with_optional_spoken_l_07f57" formatted="false">"ElevenLabs Scribe v2 Realtime：流式字幕，可指定语言提示。翻译需启用本地引擎；此适配器的自动源语言暂不能用于本地翻译。"</string>
     <string name="ui_batch_uploads_chunks_of_audio_and_returns_one_result_per_2ca0a" formatted="false">"批处理上传音频片段，每次请求返回一个结果。"</string>
     <string name="ui_round_trip_slowest_but_works_with_any_openai_compatible_76f1d" formatted="false">"速度最慢，但兼容任何 OpenAI 格式的接口"</string>
@@ -657,7 +657,7 @@
     <string name="ui_browse_publisher_files_e0abe" formatted="false">"浏览发布方文件"</string>
     <string name="ui_offline_build_obtain_files_on_another_device_then_import_locally_cd62f">"离线版：在其他设备获取文件，再本地导入。来源：%1$s"</string>
     <string name="ui_openai_live_speech_translation_d7b5e" formatted="false">"OpenAI · 实时语音与翻译"</string>
-    <string name="ui_soniox_v5_speech_translation_6a8ec" formatted="false">"Soniox v5 · 语音与翻译"</string>
+    <string name="ui_soniox_v5_speech_translation_6a8ec" formatted="false">"Soniox v6 · 语音与翻译"</string>
     <string name="ui_scribe_v2_speech_recognition_5c97a" formatted="false">"Scribe v2 · 语音识别"</string>
     <string name="ui_deepgram_speech_recognition_3a549" formatted="false">"Deepgram · 语音识别"</string>
     <string name="ui_assemblyai_speech_recognition_4e78b" formatted="false">"AssemblyAI · 语音识别"</string>

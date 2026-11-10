@@ -1,9 +1,10 @@
 # Sources and installation by model group
 
-Updated 2026-09-23. These are supported adapters, not a claim that every
-artifact/language pair was tested on a phone. Models → Speech / Translation / Cloud
-contains the same source links and installation distinctions. App downloads are
-available only in Play. FOSS remains offline; custom files can still be imported.
+Updated 2026-11-10. This page lists selected model sources and installation
+paths. The in-app Models catalog lists the complete selection for your device.
+On Android, Play supports model downloads and FOSS supports offline imports.
+Local models are unavailable on Android TV. For macOS and Windows support by
+engine, see [desktop setup](../desktopApp/README.md).
 
 ## Speech on this phone
 
@@ -14,26 +15,28 @@ available only in Play. FOSS remains offline; custom files can still be imported
 | Omnilingual CTC 300M v2 INT8, experimental | [Meta model](https://huggingface.co/facebook/omniASR-CTC-300M), [sherpa archive](https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-v2-int8-2026-02-05.tar.bz2) | 278.8 MiB verified archive; shared C++ speech ABI and on-phone installer. Uses utterance windows; the picker exposes English, Arabic, Russian and Chinese as declared source languages. This CTC export has no force-language control. [Native validation](native-speech-omnilingual-2026-09-23.md). |
 | Qwen3-ASR 1.7B | [Qwen card/files](https://huggingface.co/Qwen/Qwen3-ASR-1.7B) | Compatible custom package only; no verified ready-made download in this app. |
 | Phonon 2 (English, parakeet-tdt) | [Fermion weights](https://huggingface.co/FermionResearch/Phonon-2), [converted INT8 archive](https://github.com/Sal7one/Hearth/releases/download/v0.23.0/phonon-2-hearth-int8.tar.bz2) | Download & install automatically: 324.0 MiB verified archive converted from Fermion's pinned five-value artifact by `scripts/speech/phonon-2-export.py`. English utterance windows; CC-BY-4.0 weights. [Native validation](native-speech-phonon-2026-09-30.md). |
+| Phonon 2.5 (25 European languages) | [Fermion model card](https://huggingface.co/FermionResearch/Phonon-2.5), [Hearth download and offline import](https://github.com/Sal7one/Hearth/releases/tag/v0.30.0-models.1) | The converted INT8 package runs on Android and Apple silicon. For translation, choose the spoken language so Hearth can pass it to the translator. See [language coverage and setup](models/phonon-2.5.md). |
 | Moonshine Tiny English | [Moonshine](https://github.com/moonshine-ai/moonshine), [sherpa Tiny files](https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-moonshine-tiny-en-quantized-2026-02-27.tar.bz2) | 28.5 MiB publisher archive; automatic on-phone installation. |
 | Moonshine Base English | [sherpa Base files](https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-moonshine-base-en-quantized-2026-02-27.tar.bz2) | 106.1 MiB publisher archive; automatic on-phone installation; inference not phone-tested here. |
 | Whisper | [pinned whisper.cpp artifacts](https://huggingface.co/ggerganov/whisper.cpp/tree/5359861c739e955e79d9a303bcbc70fb988958b1) | The app now offers 27 verified `.bin` downloads: tiny, base, small, medium and large-v3-turbo; English-only variants where published; Q5, Q8 and F16 choices where available. Select family → checkpoint → quant in Models → Speech. |
-| Vosk | [publisher language catalog](https://alphacephei.com/vosk/models) | Import an extracted, compatible model folder. Hearth does not offer an unverified Vosk download button. |
+| Vosk | [publisher language catalog](https://alphacephei.com/vosk/models) | Play offers seven pinned packages for automatic installation, including Arabic. You can also import an extracted compatible model folder. |
 
 Catalogued downloads install automatically, including tar.bz2 extraction, raw
 Nemotron GGUF packaging and Whisper GGML `.bin` files. Existing prepared ZIPs
-remain importable. Downloads are saved under the device's `Downloads/Hearth`
-folder; installed models are copied into app-managed model storage and remain
-ready without an export/re-import step. Large downloads support pause/resume
-when the selected storage provider supports seeking and the server validates the
-saved range. The app checks required transfer/install space first. Developer
-packaging instructions are in [model setup](models.md), for custom packages only.
-Archive sizes are download sizes, not peak RAM or installed-model sizes.
+remain importable. `Downloads/Hearth` is the default download location on Android
+10 and later. Choose a writable folder on Android 9. Verified models install into
+app-managed storage. Large downloads support pause and resume when the storage
+provider supports seeking and the server validates the saved range. The app checks
+transfer and install space first. See [model setup](models.md) for custom packages.
+Archive size measures the download. Installed files and peak memory can be larger.
 
 ## Translation on this phone
 
 | Choice | Source | Installation |
 | --- | --- | --- |
 | ML Kit | [Google translation guide](https://developers.google.com/ml-kit/language/translation/android), [terms/privacy](https://developers.google.com/ml-kit/terms) | Explicit Wi-Fi language-pack download inside Models; SDK-managed storage. Play only. |
+| QuickMT English ↔ Arabic | [English → Arabic](https://huggingface.co/quickmt/quickmt-en-ar), [Arabic → English](https://huggingface.co/quickmt/quickmt-ar-en) | Choose the directional CTranslate2 package in Models → Translation. |
+| Jisr 50M English ↔ Arabic dialects | [English → Arabic dialects](https://huggingface.co/oddadmix/Jisr-MT-50M-AllDialects), [Arabic dialects → English](https://huggingface.co/oddadmix/Jisr-MT-50M-Dialects2En), [Hearth packages](https://github.com/Sal7one/Hearth/releases/tag/v0.27.3) | Choose the direction and INT8 or FP32 package. Both are pinned CTranslate2 imports and Play downloads. |
 | HY-MT1.5 Q4/Q6/Q8 | [Tencent GGUF files/card](https://huggingface.co/tencent/HY-MT1.5-1.8B-GGUF) | Choose size/quant, download and install, or import exact pinned GGUF. |
 | Hy-MT2 Q2/Q3/Q4/Q6/Q8 | [Tencent GGUF files/card](https://huggingface.co/tencent/Hy-MT2-1.8B-GGUF), [pinned community Q2/Q3 conversions](https://huggingface.co/mradermacher/Hy-MT2-1.8B-GGUF/tree/d760e9708bbded7cee9aa135b4f1dedb42ed2fc4) | Five verified quant choices appear together by file size. Q2 is about 777 MB and Q3 about 951 MB; they reduce download/storage cost, but have not been proven more accurate or faster on every phone. |
 | TranslateGemma 4B Q4 | [Google original](https://huggingface.co/google/translategemma-4b-it), [supported conversion](https://huggingface.co/mradermacher/translategemma-4b-it-GGUF) | Download/install the catalog’s pinned 2.49 GB conversion. |
@@ -60,7 +63,7 @@ backend/device labels.
 
 Cloud models need a provider account/key, not a local weight download.
 
-- [Soniox v5](https://soniox.com/docs/api-reference/stt/websocket-api): original captions and integrated translation.
+- [Soniox v6](https://docs.soniox.com/api-reference/stt/websocket-api): original captions and integrated translation.
 - [ElevenLabs Scribe v2](https://elevenlabs.io/docs/api-reference/speech-to-text/v-1-speech-to-text-realtime): speech recognition; optional local translation bridge.
 - [OpenAI realtime](https://platform.openai.com/docs/guides/realtime): existing live speech/translation routes.
 - [Deepgram](https://developers.deepgram.com/docs/models-languages-overview): existing streaming recognition.
@@ -103,6 +106,6 @@ and extension contracts](camera-ocr.md). Speech packages do not change.
 
 ## Read aloud
 
-Models → Voices or Setup → Voices & read aloud provides Android's installed voice
-inventory, native Supertonic 3 downloads/import and self-hosted model source links.
-See [all voice artifacts, languages, licenses and server setup](voices.md).
+Models → Voices or Setup → Voices & read aloud shows Android system voices,
+compatible local voice packages and self-hosted model sources. See [voice setup](voices.md)
+and the [TTS SDK engine table](tts-sdk.md) for runtime and language coverage.

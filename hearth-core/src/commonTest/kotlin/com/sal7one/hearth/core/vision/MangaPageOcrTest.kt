@@ -40,6 +40,21 @@ class MangaPageOcrTest {
         override fun cancel() {}
         override fun close() {}
     }
+    @Test fun compactRegionsAreReadWhenSegmentationFindsNoText() {
+        val compact = Detector(listOf(hit(5, 5, 20, 30)))
+        val reader = object : MangaRegionReader {
+            override fun read(pixels: IntArray, width: Int, height: Int) = "日本語"
+            override fun cancel() {}
+            override fun close() {}
+        }
+        val outlines = mutableListOf<List<OcrRegion>>()
+        val page = MangaPageOcr(Detector(listOf(hit(1, 1, 50, 50, label = 0))), reader, compact)
+        val result = page.recognize(IntArray(10000), 100, 100, object : PageOcrProgress {
+            override fun detected(regions: List<OcrRegion>) { outlines += regions }
+        })
+        assertEquals("日本語", result.single().text)
+        assertEquals(result.single().region, outlines.single().single())
+    }
     @Test fun regionsArriveBeforeRecognitionAndPublishedSnapshotsDoNotGrow() {
         val events=mutableListOf<String>();val snapshots=mutableListOf<List<PageText>>()
         val reader=object : MangaRegionReader {

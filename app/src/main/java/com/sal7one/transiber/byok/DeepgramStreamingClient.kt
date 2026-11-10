@@ -15,16 +15,15 @@ import java.util.concurrent.TimeUnit
  * Deepgram STREAMING speech-to-text client (WebSocket, interim results).
  * NETWORK CODE — play distribution only; see [ByokPolicy].
  *
- * Verified against Deepgram's docs plus a live auth handshake 2026-08-23:
+ * https://developers.deepgram.com/reference/speech-to-text/listen-streaming
  *  - wss://api.deepgram.com/v1/listen with model=nova-3, language=multi
- *    (the multilingual model auto-detects across 10 languages), encoding=
+ *    (the multilingual model auto-detects across 55 languages), encoding=
  *    linear16, sample_rate=16000, channels=1, interim_results=true,
  *    smart_format=true, no_delay=true, utterance_end_ms=1000
  *  - Authorization: Token <secret key>, enforced before the WS upgrade
  *  - client frames: raw binary PCM16 LE audio; KeepAlive/CloseStream text
- *  - server "Results" transcripts are CUMULATIVE for the current
- *    utterance — replace the live line on every event, never append;
- *    speech_final marks the settled utterance (commit it)
+ *  - Results cover a segment. Preserve each is_final segment, and use
+ *    speech_final to publish the utterance.
  *  - NET-0001 drops the socket when no frame arrives within 10 s of open
  *    and NET-0002 on prolonged silence — an idle timer streams 100 ms
  *    silence frames whenever capture is quiet (playback capture before
@@ -42,7 +41,7 @@ class DeepgramStreamingClient(
     override var onConnected: (() -> Unit)? = null
 
     private var socket: WebSocket? = null
-    private var closing = false
+    @Volatile private var closing = false
 
     @Volatile private var lastAudioAtMs = 0L
     private var keepalive: ScheduledExecutorService? = null
@@ -68,6 +67,8 @@ class DeepgramStreamingClient(
             .addHeader("Authorization", "Token $apiKey")
             .build()
         socket = client.newWebSocket(request, object : WebSocketListener() {
+            private val transcript = DeepgramTranscript()
+
             override fun onOpen(webSocket: WebSocket, response: Response) {
                 // First-frame rule: an audio frame must land within 10 s of
                 // open or the server drops the socket (NET-0001).
@@ -80,19 +81,11 @@ class DeepgramStreamingClient(
                 val json = runCatching { JSONObject(text) }.getOrNull() ?: return
                 when (json.optString("type")) {
                     "Results" -> {
-                        val transcript = json.optJSONObject("channel")
-                            ?.optJSONArray("alternatives")
-                            ?.optJSONObject(0)
-                            ?.optString("transcript")
-                            ?.takeIf { it.isNotBlank() } ?: return
-                        if (json.optBoolean("speech_final")) {
-                            onFinal?.invoke(transcript)
-                        } else {
-                            // Interim AND non-speech finals carry the whole
-                            // utterance so far — replace, don't append.
-                            onInterim?.invoke(transcript)
-                        }
+                        val update = transcript.accept(json)
+                        update.final?.let { onFinal?.invoke(it) }
+                        onInterim?.invoke(update.interim)
                     }
+                    "Metadata" -> if (closing) transcript.finish()?.let { onFinal?.invoke(it) }
                     "Error" -> onError?.invoke(
                         json.optString("description").ifBlank {
                             json.optString("message").ifBlank { "unknown Deepgram error" }
@@ -123,16 +116,17 @@ class DeepgramStreamingClient(
     }
 
     override fun close() {
+        val sendEnd = !closing
         closing = true
         stopKeepalive()
-        runCatching { socket?.send("""{"type":"CloseStream"}""") }
+        if (sendEnd) runCatching { socket?.send("""{"type":"CloseStream"}""") }
         socket?.close(1000, "client close")
         socket = null
     }
 
     override fun onCaptureEnded() {
         // CloseStream makes the server FINISH processing the buffered audio,
-        // emit the remaining Results (speech_final included) and Metadata,
+        // emit the remaining Results and Metadata,
         // then close the connection itself — a graceful end-of-source drain.
         closing = true
         stopKeepalive()

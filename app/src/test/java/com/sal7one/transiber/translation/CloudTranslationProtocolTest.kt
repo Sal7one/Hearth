@@ -134,6 +134,14 @@ class CloudTranslationProtocolTest {
         assertEquals("test-secret", JSONObject(body(keyed)).getString("api_key"))
         assertEquals("https://libretranslate.com/languages", CloudTranslationProtocol.languageRequests(connection(TextTranslationProvider.LIBRETRANSLATE)).single().url.toString())
     }
+    @Test fun libreHostedRequiresAKeyBeforeSavingAConnection() {
+        val hosted = connection(TextTranslationProvider.LIBRETRANSLATE, key = " ")
+        val error = assertThrows(IllegalArgumentException::class.java) {
+            CloudTranslationProtocol.translateRequest(hosted, "Hi", "en", "ar")
+        }
+        assertEquals("Enter the LibreTranslate API key", error.message)
+        assertEquals("GET", CloudTranslationProtocol.languageRequests(hosted).single().method)
+    }
     @Test fun libreVariantNormalizationDoesNotInventAnUnadvertisedWirePair() {
         val caps = CloudTranslationProtocol.parseLanguages(TextTranslationProvider.LIBRETRANSLATE, listOf(
             """[{"code":"ar","targets":["en-US"]},{"code":"es","targets":["en-GB"]}]"""))

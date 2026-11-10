@@ -12,13 +12,13 @@
     <string name="capability_note_8975a9a157" formatted="false">"Automatic source language only in this connection. There is no manual language control."</string>
     <string name="capability_note_1ffb589569" formatted="false">"Detects the spoken language automatically. This translation connection does not accept a source-language override."</string>
     <string name="capability_note_e752f4c2db" formatted="false">"The audio-translation endpoint detects the source automatically; it accepts no language override."</string>
-    <string name="capability_note_51deda856c" formatted="false">"Select the spoken language for dedicated recognition. Auto uses multilingual mode (10 languages)."</string>
+    <string name="capability_note_51deda856c" formatted="false">"Select the spoken language for dedicated recognition. Auto uses multilingual mode (55 languages)."</string>
     <string name="capability_note_5715f3cacd" formatted="false">"Select the spoken language to send an explicit recognition hint, or choose Auto."</string>
     <string name="capability_note_be018a0a4e" formatted="false">"Manual spoken-language selection is not available for this model in this app. Recognition uses its default language behavior."</string>
     <string name="capability_note_de49da057d">"%1$s · text translation after speech recognition."</string>
     <string name="capability_note_444ec285c4" formatted="false">"Set up this translation connection and check its languages first."</string>
     <string name="capability_note_017b414f07" formatted="false">"Cloud text translation · supported targets from the chosen spoken language."</string>
-    <string name="capability_note_0f1a227949" formatted="false">"Soniox v5 integrated translation; original and translated text are retained separately."</string>
+    <string name="capability_note_0f1a227949" formatted="false">"Soniox v6 integrated translation; original and translated text are retained separately."</string>
     <string name="capability_note_b410e7fbf2" formatted="false">"ML Kit · download spoken and target language packs in Models. Non-English pairs translate through English."</string>
     <string name="capability_note_0434e0f540" formatted="false">"Choose a known local translation model in Setup to load its languages."</string>
     <string name="capability_note_38000e13f0">"%1$s: %2$s output languages. The spoken language must also be supported by this translation model."</string>

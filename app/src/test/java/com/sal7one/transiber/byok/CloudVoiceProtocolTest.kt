@@ -25,14 +25,26 @@ class CloudVoiceProtocolTest {
         assertEquals("Puck", g.copy(maleVoice="Puck").selectedVoice(VoiceGender.MALE))
         assertEquals("echo", CloudVoiceConfig().selectedVoice(VoiceGender.MALE))
     }
-    @Test fun openRouterRawAudioAndUnsupportedOptions() {
+    @Test fun openRouterGeminiRequestsPcmAndWrapsItForPlayback() {
         val c = CloudVoiceConfig(CloudVoiceProvider.OPENROUTER)
         val request = CloudVoiceProtocol.speech(c.copy(speed=1.5f,instructions="not supported"), "مرحبا")
         assertEquals("https://openrouter.ai/api/v1/audio/speech", request.url)
         val body=JSONObject(request.body!!)
-        assertEquals("mp3", body.getString("response_format")); assertEquals("Kore", body.getString("voice"))
+        assertEquals("pcm", body.getString("response_format")); assertEquals("Kore", body.getString("voice"))
         assertFalse(body.has("speed")); assertFalse(body.has("instructions"))
-        assertArrayEquals(byteArrayOf(1,2,3), CloudVoiceProtocol.audio(c, byteArrayOf(1,2,3), "audio/mpeg").bytes)
+        // A valid PCM sample can start with '{'. The response type takes precedence over JSON sniffing.
+        val pcm = byteArrayOf(0x7b, 0, 1, 0)
+        val audio = CloudVoiceProtocol.audio(c, pcm, "audio/pcm; rate=16000; channels=1")
+        assertEquals("wav", audio.extension)
+        assertArrayEquals(WavEncoder.encodePcm16(shortArrayOf(0x7b, 1), 16000), audio.bytes)
+        assertArrayEquals(WavEncoder.encodePcm16(shortArrayOf(0x7b, 1), 24000),
+            CloudVoiceProtocol.audio(c, pcm, "audio/pcm").bytes)
+        assertThrows(IllegalStateException::class.java) { CloudVoiceProtocol.audio(c, pcm, "audio/pcm; channels=2") }
+        assertThrows(IllegalArgumentException::class.java) { CloudVoiceProtocol.audio(c, byteArrayOf(1), "audio/pcm") }
+
+        val other = c.copy(model = "fish-audio/s2.1-pro")
+        assertEquals("mp3", JSONObject(CloudVoiceProtocol.speech(other, "Hi").body!!).getString("response_format"))
+        assertArrayEquals(byteArrayOf(1,2,3), CloudVoiceProtocol.audio(other, byteArrayOf(1,2,3), "audio/mpeg").bytes)
     }
     @Test fun providerDefaultIsExplicitAndNeverInventsVoiceIds() {
         val c = CloudVoiceConfig(CloudVoiceProvider.OPENROUTER, model="fish-audio/s2.1-pro", voice="", providerDefaultVoice=true)

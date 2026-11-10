@@ -21,7 +21,7 @@ object CloudConfigStore {
      * Custom batch provider instead. */
     enum class SttMode(val label: String) {
         BATCH("Batch"),
-        STREAMING_SONIOX("Streaming · Soniox v5"),
+        STREAMING_SONIOX("Streaming · Soniox v6"),
         STREAMING_ELEVENLABS("Streaming · Scribe v2"),
         STREAMING_DEEPGRAM("Streaming · Deepgram"),
         STREAMING_OPENAI("Streaming · OpenAI"),
@@ -37,7 +37,7 @@ object CloudConfigStore {
     }
 
     enum class Provider(val label: String, val baseUrl: String, val sttModel: String, val ttsModel: String, val ttsVoice: String) {
-        OPENAI("OpenAI", "https://api.openai.com/v1", "whisper-1", "tts-1", "alloy"),
+        OPENAI("OpenAI", "https://api.openai.com/v1", OpenAiAudioClient.DEFAULT_TRANSCRIPTION_MODEL, "tts-1", "alloy"),
         OPENROUTER(
             "OpenRouter",
             "https://openrouter.ai/api/v1",

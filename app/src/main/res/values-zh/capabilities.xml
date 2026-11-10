@@ -12,13 +12,13 @@
     <string name="capability_note_8975a9a157" formatted="false">"此连接仅自动检测源语言，无法手动指定。"</string>
     <string name="capability_note_1ffb589569" formatted="false">"自动检测口语语言。此翻译连接不接受源语言覆盖。"</string>
     <string name="capability_note_e752f4c2db" formatted="false">"音频翻译接口自动检测源语言，不接受语言覆盖。"</string>
-    <string name="capability_note_51deda856c" formatted="false">"指定口语语言进行专用识别。自动模式使用多语言识别（10 种语言）。"</string>
+    <string name="capability_note_51deda856c" formatted="false">"指定口语语言进行专用识别。自动模式使用多语言识别（55 种语言）。"</string>
     <string name="capability_note_5715f3cacd" formatted="false">"指定口语语言以发送明确识别提示，或选择自动。"</string>
     <string name="capability_note_be018a0a4e" formatted="false">"此模型在本应用中不支持手动选择口语语言，将使用默认语言行为。"</string>
     <string name="capability_note_de49da057d">"%1$s · 语音识别后翻译文本。"</string>
     <string name="capability_note_444ec285c4" formatted="false">"请先配置此翻译连接并检查语言。"</string>
     <string name="capability_note_017b414f07" formatted="false">"云端文本翻译 · 从所选口语语言支持的目标语言。"</string>
-    <string name="capability_note_0f1a227949" formatted="false">"Soniox v5 内置翻译，分别保留原文和译文。"</string>
+    <string name="capability_note_0f1a227949" formatted="false">"Soniox v6 内置翻译，分别保留原文和译文。"</string>
     <string name="capability_note_b410e7fbf2" formatted="false">"ML Kit · 请在模型页下载源语言和目标语言包。非英语语言对通过英语中转。"</string>
     <string name="capability_note_0434e0f540" formatted="false">"请在设置中选择已知本地翻译模型以加载其语言。"</string>
     <string name="capability_note_38000e13f0">"%1$s：%2$s 种输出语言。翻译模型也必须支持口语语言。"</string>

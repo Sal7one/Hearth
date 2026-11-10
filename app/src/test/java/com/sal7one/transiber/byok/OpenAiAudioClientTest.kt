@@ -7,6 +7,22 @@ import org.junit.Test
 import java.util.concurrent.TimeUnit
 
 class OpenAiAudioClientTest {
+    @Test fun currentModelUsesArrayLanguageHintAndLegacyGatewayKeepsSingularHint() {
+        if (!ByokPolicy.FEATURE_BYOK) return
+        MockWebServer().use { server ->
+            for ((model, field) in listOf("gpt-transcribe" to "languages[]", "whisper-1" to "language")) {
+                server.enqueue(MockResponse().setBody("""{"text":"مرحبا","languages":[{"code":"ar"}]}"""))
+                val client = OpenAiAudioClient("", server.url("/v1/audio/transcriptions").toString(), model)
+                assertEquals("مرحبا", client.transcribe(byteArrayOf(1), "ar"))
+                val request = checkNotNull(server.takeRequest(1, TimeUnit.SECONDS))
+                assertEquals("/v1/audio/transcriptions", request.path)
+                val body = request.body.readUtf8()
+                assertTrue(body.contains("name=\"$field\"\r\n\r\nar\r\n"))
+                assertFalse(body.contains("name=\"${if (field == "language") "languages[]" else "language"}\""))
+            }
+        }
+    }
+
     @Test fun providerFailuresCannotBecomeEmptyTranscriptsAndContextPreservesArabic() {
         if (!ByokPolicy.FEATURE_BYOK) return
         MockWebServer().use { server ->

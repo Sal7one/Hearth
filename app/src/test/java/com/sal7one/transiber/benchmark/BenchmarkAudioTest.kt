@@ -35,6 +35,13 @@ class BenchmarkAudioTest {
         assertTrue(decoded.samples.all { it == 1234.toShort() })
         assertEquals(BenchmarkAudio.decode(wav()).sha256, decoded.sha256)
     }
+    @Test fun highFrequencyNoiseDoesNotAliasIntoBenchmarkSpeech() {
+        val decoded = BenchmarkAudio.decode(wav(rate = 48000) { frame, _ ->
+            (16000 * kotlin.math.sin(2 * kotlin.math.PI * 10000 * frame / 48000)).toInt().toShort()
+        })
+        assertEquals(16000, decoded.samples.size)
+        assertTrue((100 until 15900).all { kotlin.math.abs(decoded.samples[it].toInt()) <= 3 })
+    }
     @Test fun comparisonGainMatchesHostPolicyAndPreservesSilenceAndNormalLevelAudio() {
         val quiet = shortArrayOf(1, -2, 100, -311)
         val boosted = BenchmarkAudio.normalizeForComparison(quiet)

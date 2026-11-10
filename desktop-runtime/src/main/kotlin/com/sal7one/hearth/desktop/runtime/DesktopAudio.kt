@@ -1,6 +1,7 @@
 package com.sal7one.hearth.desktop.runtime
 
 import com.sal7one.hearth.core.PcmFrame
+import com.sal7one.hearth.core.SpeechDownsampler
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
@@ -11,6 +12,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.buffer
+import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.withContext
 import java.io.Closeable
 import java.io.RandomAccessFile
@@ -22,6 +24,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 import javax.sound.sampled.AudioFileFormat
 import javax.sound.sampled.AudioFormat
+import javax.sound.sampled.AudioInputStream
 import javax.sound.sampled.AudioSystem
 import javax.sound.sampled.DataLine
 import javax.sound.sampled.SourceDataLine
@@ -127,7 +130,7 @@ object DesktopAudioFiles {
                 AudioSystem.isConversionSupported(AudioFormat(16000f, 16, 1, true, false), source)
         } catch (_: javax.sound.sampled.UnsupportedAudioFileException) { false }
     }
-    /** PCM16 mono/stereo RIFF WAV only. JavaSound performs the explicit 16 kHz mono conversion. */
+    /** PCM16 mono/stereo RIFF WAV only, converted to 16 kHz mono. */
     fun frames(path: String): Flow<PcmFrame> = flow {
         val file = Path.of(path).toFile()
         require(file.isFile) { "Audio file does not exist: $path" }
@@ -144,6 +147,12 @@ object DesktopAudioFiles {
             }
             val target = AudioFormat(16000f, 16, 1, true, false)
             require(AudioSystem.isConversionSupported(target, source)) { "JavaSound cannot convert this WAV to 16 kHz mono" }
+            val filter = SpeechDownsampler.forRate(source.sampleRate.toInt())
+            if (filter != null) {
+                val mono = AudioFormat(source.sampleRate, 16, 1, true, false)
+                AudioSystem.getAudioInputStream(mono, original).use { emitAll(filteredFrames(it, filter)) }
+                return@use
+            }
             AudioSystem.getAudioInputStream(target, original).use { input ->
                 var total = 0L
                 while (true) {
@@ -161,6 +170,37 @@ object DesktopAudioFiles {
             }
         }
     }.flowOn(Dispatchers.IO)
+
+    private fun filteredFrames(input: AudioInputStream, filter: SpeechDownsampler): Flow<PcmFrame> = flow {
+        val readBuffer = ByteArray(8192)
+        val pcm = ByteBuffer.wrap(readBuffer).order(ByteOrder.LITTLE_ENDIAN).asShortBuffer()
+        val samples = ShortArray(pcm.capacity())
+        var frame = ByteBuffer.allocate(3200).order(ByteOrder.LITTLE_ENDIAN)
+        var total = 0L
+        suspend fun append(values: ShortArray) {
+            total += values.size * 2L
+            require(total <= 230_400_000L) { "WAV exceeds the two-hour import limit" }
+            for (sample in values) {
+                frame.putShort(sample)
+                if (!frame.hasRemaining()) {
+                    emit(PcmFrame(frame.array()))
+                    frame = ByteBuffer.allocate(3200).order(ByteOrder.LITTLE_ENDIAN)
+                }
+            }
+        }
+        while (true) {
+            currentCoroutineContext().ensureActive()
+            val count = input.read(readBuffer)
+            if (count < 0) break
+            require(count % 2 == 0) { "WAV contains a truncated PCM16 sample" }
+            pcm.position(0)
+            pcm.get(samples, 0, count / 2)
+            append(filter.push(samples, count / 2))
+        }
+        append(filter.finish())
+        require(total > 0) { "WAV has no audio frames" }
+        if (frame.position() > 0) emit(PcmFrame(frame.array().copyOf(frame.position())))
+    }
 }
 
 /** Explicit playback; synthesis itself never claims to have played its output. */

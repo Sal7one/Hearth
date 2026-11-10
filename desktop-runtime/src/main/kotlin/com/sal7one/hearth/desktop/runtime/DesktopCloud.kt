@@ -30,8 +30,12 @@ internal class DesktopCloud(private val credentials: CredentialResolver, private
             require(!value.contains('\r') && !value.contains('\n')) { "Invalid transcription field" }
             output.write("--$boundary\r\nContent-Disposition: form-data; name=\"$name\"\r\n\r\n$value\r\n".toByteArray())
         }
-        field("model", selection.modelId.ifBlank { "gpt-4o-mini-transcribe" }); field("response_format", "json")
-        if (language != "auto") field("language", language)
+        val model = selection.modelId.ifBlank { DEFAULT_TRANSCRIPTION_MODEL }
+        field("model", model)
+        field("response_format", "json")
+        if (language.isNotBlank() && language != "auto") {
+            field(if (model == DEFAULT_TRANSCRIPTION_MODEL) "languages[]" else "language", language)
+        }
         output.write("--$boundary\r\nContent-Disposition: form-data; name=\"file\"; filename=\"speech.wav\"\r\nContent-Type: audio/wav\r\n\r\n".toByteArray())
         val header = ByteBuffer.allocate(44).order(ByteOrder.LITTLE_ENDIAN)
         header.put("RIFF".toByteArray()).putInt(pcm.size + 36).put("WAVEfmt ".toByteArray()).putInt(16)
@@ -39,7 +43,8 @@ internal class DesktopCloud(private val credentials: CredentialResolver, private
         output.write(header.array()); output.write(pcm); output.write("\r\n--$boundary--\r\n".toByteArray())
         val response = request(selection, "https://api.openai.com/v1/audio/transcriptions", "multipart/form-data; boundary=$boundary", output.toByteArray(), 2_000_000)
         val json = Json.parseToJsonElement(response.toString(Charsets.UTF_8)).jsonObject
-        return json["text"]?.jsonPrimitive?.content ?: error("Transcription response is missing text")
+        return (json["text"] as? JsonPrimitive)?.takeIf { it.isString }?.content
+            ?: error("Transcription response is missing a text string")
     }
     suspend fun translate(text: String, selection: EngineSelection, source: String, target: String): String {
         val results = mutableListOf<String>()
@@ -140,6 +145,7 @@ internal class DesktopCloud(private val credentials: CredentialResolver, private
         }
     }
     companion object {
+        const val DEFAULT_TRANSCRIPTION_MODEL = "gpt-transcribe"
         private val LOOPBACK = setOf("localhost", "127.0.0.1", "[::1]", "::1")
         /** Accept server roots and /v1 bases without changing saved, explicit API endpoints. */
         internal fun providerRequestEndpoint(value: String, engineId: String): URI {

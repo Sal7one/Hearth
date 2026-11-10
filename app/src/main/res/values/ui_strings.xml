@@ -355,7 +355,7 @@
     <string name="ui_select_all_onnx_files_for_the_selected_engine_together_file_names_c1ec6" formatted="false">"Select all ONNX files for the selected engine together. File names do not matter: Hearth identifies and verifies the exact model bytes. Matching dictionaries are included. Manga and Meiki currently use captured/imported pages; live mode remains available with Paddle."</string>
     <string name="ui_downloads_folder_settings_668bd" formatted="false">"Downloads &amp; folder settings"</string>
     <string name="ui_cloud_provider_connection_49770" formatted="false">"Cloud provider / connection"</string>
-    <string name="ui_soniox_stt_rt_v5_streaming_cc_and_optional_integrated_translation_7d848" formatted="false">"Soniox stt-rt-v5: streaming CC and optional integrated translation. Source and translated text are retained separately."</string>
+    <string name="ui_soniox_stt_rt_v5_streaming_cc_and_optional_integrated_translation_7d848" formatted="false">"Soniox stt-rt-v6: streaming CC and optional integrated translation. Source and translated text are retained separately."</string>
     <string name="ui_elevenlabs_scribe_v2_realtime_streaming_cc_with_optional_spoken_l_07f57" formatted="false">"ElevenLabs Scribe v2 Realtime: streaming CC with optional spoken-language hint. Enable a local translator for translation. Auto source cannot yet route local translation on this adapter."</string>
     <string name="ui_batch_uploads_chunks_of_audio_and_returns_one_result_per_2ca0a" formatted="false">"Batch uploads chunks of audio and returns one result per "</string>
     <string name="ui_round_trip_slowest_but_works_with_any_openai_compatible_76f1d" formatted="false">"round-trip — slowest, but works with any OpenAI-compatible "</string>
@@ -657,7 +657,7 @@
     <string name="ui_browse_publisher_files_e0abe" formatted="false">"Browse publisher files"</string>
     <string name="ui_offline_build_obtain_files_on_another_device_then_import_locally_cd62f">"Offline build: obtain files on another device, then import locally. Source: %1$s"</string>
     <string name="ui_openai_live_speech_translation_d7b5e" formatted="false">"OpenAI · live speech / translation"</string>
-    <string name="ui_soniox_v5_speech_translation_6a8ec" formatted="false">"Soniox v5 · speech + translation"</string>
+    <string name="ui_soniox_v5_speech_translation_6a8ec" formatted="false">"Soniox v6 · speech + translation"</string>
     <string name="ui_scribe_v2_speech_recognition_5c97a" formatted="false">"Scribe v2 · speech recognition"</string>
     <string name="ui_deepgram_speech_recognition_3a549" formatted="false">"Deepgram · speech recognition"</string>
     <string name="ui_assemblyai_speech_recognition_4e78b" formatted="false">"AssemblyAI · speech recognition"</string>

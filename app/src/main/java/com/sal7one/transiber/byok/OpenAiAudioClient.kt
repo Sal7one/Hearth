@@ -16,7 +16,7 @@ import java.net.URL
 class OpenAiAudioClient(
     private val apiKey: String,
     private val baseUrl: String = "https://api.openai.com/v1",
-    private val model: String = "whisper-1",
+    private val model: String = DEFAULT_TRANSCRIPTION_MODEL,
     private val connectTimeoutMs: Int = 15_000,
     private val readTimeoutMs: Int = 15_000,
 ) {
@@ -31,6 +31,12 @@ class OpenAiAudioClient(
     /** /audio/translations: any language → English (NOT offered by all providers). */
     fun translateToEnglish(wav: ByteArray): String = call("/audio/translations", wav, null, null)
 
+    internal fun modelFor(translateToEnglish: Boolean): String =
+        if (translateToEnglish && model == DEFAULT_TRANSCRIPTION_MODEL && isOfficialOpenAi(URL(baseUrl.trim()))) {
+            // The legacy OpenAI English audio-translation route still requires Whisper.
+            "whisper-1"
+        } else model
+
     /**
      * Builds the absolute endpoint from a user-configurable base URL.
      * Accepts: a bare host, a host with /api/v1, or the FULL endpoint —
@@ -44,15 +50,17 @@ class OpenAiAudioClient(
                     "in the cloud provider settings."
             )
         }
-        if (trimmed.endsWith(path)) return trimmed
-        return trimmed + path
+        val base = trimmed.removeSuffix("/audio/transcriptions").removeSuffix("/audio/translations")
+        val url = URL(base)
+        return base + (if (url.path.isEmpty() && isOfficialOpenAi(url)) "/v1" else "") + path
     }
 
     private fun call(path: String, wav: ByteArray, language: String?, prompt: String? = null): String {
         check(ByokPolicy.FEATURE_BYOK) { "Cloud services are unavailable in the offline build" }
         val boundary = "sal7one-byok-" + System.nanoTime()
-        val body = buildMultipart(boundary, wav, language, prompt)
         val endpoint = endpointFor(path)
+        val requestModel = modelFor(path == "/audio/translations")
+        val body = buildMultipart(boundary, wav, language, prompt, requestModel)
 
         val connection = (URL(endpoint).openConnection() as HttpURLConnection).apply {
             instanceFollowRedirects = false
@@ -95,7 +103,9 @@ class OpenAiAudioClient(
         }
     }
 
-    private fun buildMultipart(boundary: String, wav: ByteArray, language: String?, prompt: String? = null): ByteArray {
+    private fun buildMultipart(
+        boundary: String, wav: ByteArray, language: String?, prompt: String?, requestModel: String,
+    ): ByteArray {
         val out = ByteArrayOutputStream(wav.size + 1024)
         fun part(name: String, value: String) {
             out.writeAscii("--$boundary\r\n")
@@ -110,8 +120,10 @@ class OpenAiAudioClient(
         )
         out.write(wav)
         out.writeAscii("\r\n")
-        part("model", model)
-        language?.takeIf { it.isNotBlank() }?.let { part("language", it) }
+        part("model", requestModel)
+        language?.takeIf { it.isNotBlank() && it != "auto" }?.let {
+            part(if (requestModel == DEFAULT_TRANSCRIPTION_MODEL) "languages[]" else "language", it)
+        }
         prompt?.takeIf { it.isNotBlank() }?.let { part("prompt", it) }
         part("response_format", "json")
         out.writeAscii("--$boundary--\r\n")
@@ -123,6 +135,13 @@ class OpenAiAudioClient(
     }
 
     private fun redact(text: String): String = if (apiKey.isBlank()) text else text.replace(apiKey, "<redacted>")
+
+    companion object {
+        internal const val DEFAULT_TRANSCRIPTION_MODEL = "gpt-transcribe"
+
+        private fun isOfficialOpenAi(url: URL): Boolean = url.protocol == "https" &&
+            url.host.equals("api.openai.com", ignoreCase = true) && url.port in setOf(-1, 443)
+    }
 }
 
 class ByokHttpException(message: String) : Exception(message)

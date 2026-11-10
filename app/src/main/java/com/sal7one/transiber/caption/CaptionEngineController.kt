@@ -695,8 +695,8 @@ class CaptionEngineController(
                 ),
             ).getOrThrow()
             _state.value = _state.value.copy(
-                modelName = "cloud:" + cloudStore.sttModel(context),
-                engineLabel = "Cloud Whisper",
+                modelName = "cloud:" + remote.activeModelId,
+                engineLabel = "Cloud speech · batch",
                 availableModels = emptyList(),
             )
             return@withContext LoadedCaptionEngine(legacy = remote)
@@ -1413,15 +1413,18 @@ class CaptionEngineController(
             audioJob?.join()
             if (gen != sessionGeneration) return@launch
             localSpeech?.finish()
-            (engineAtStop as? com.sal7one.transiber.byok.StreamingCloudEngine)?.onCaptureEnded()
+            val cloudAtStop = engineAtStop as? com.sal7one.transiber.byok.StreamingCloudEngine
+            cloudAtStop?.onCaptureEnded()
             val started = System.currentTimeMillis()
             while (CaptionDrainPolicy.shouldWait(System.currentTimeMillis(), started, lastActivityMs,
-                localSpeech?.state?.value == com.sal7one.common_jni.speech.SpeechProcessorState.Running,
+                localSpeech?.state?.value == com.sal7one.common_jni.speech.SpeechProcessorState.Running ||
+                    cloudAtStop?.awaitingEndOfAudio == true,
                 localTranslationBridge?.hasPendingWork == true, DRAIN_QUIET_MS, DRAIN_MAX_MS)
             ) {
                 delay(400)
             }
             if (gen != sessionGeneration) return@launch  // a new session took over
+            if (cloudAtStop?.awaitingEndOfAudio == true) reportError("Cloud speech timed out while finishing the last caption")
             stopInternal(promotePending = true)
             _state.update { if (it.status == Status.ERROR) it else it.copy(status = Status.STOPPED) }
             onDrained?.invoke()

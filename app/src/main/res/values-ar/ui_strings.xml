@@ -355,7 +355,7 @@
     <string name="ui_select_all_onnx_files_for_the_selected_engine_together_file_names_c1ec6" formatted="false">"اختر كل ملفات ONNX للمحرك معًا. لا تهم أسماؤها؛ يتحقق Hearth من محتوى النموذج نفسه. القواميس المطابقة مضمّنة. يعمل Manga وMeiki حاليًا على الصور الملتقطة أو المستوردة؛ ويدعم Paddle الوضع المباشر."</string>
     <string name="ui_downloads_folder_settings_668bd" formatted="false">"التنزيلات وإعدادات المجلد"</string>
     <string name="ui_cloud_provider_connection_49770" formatted="false">"مزوّد السحابة والاتصال"</string>
-    <string name="ui_soniox_stt_rt_v5_streaming_cc_and_optional_integrated_translation_7d848" formatted="false">"Soniox stt-rt-v5: نص مباشر وترجمة مدمجة اختيارية. يُحتفظ بالنص الأصلي والمترجم منفصلين."</string>
+    <string name="ui_soniox_stt_rt_v5_streaming_cc_and_optional_integrated_translation_7d848" formatted="false">"Soniox stt-rt-v6: نص مباشر وترجمة مدمجة اختيارية. يُحتفظ بالنص الأصلي والمترجم منفصلين."</string>
     <string name="ui_elevenlabs_scribe_v2_realtime_streaming_cc_with_optional_spoken_l_07f57" formatted="false">"ElevenLabs Scribe v2 Realtime: نص مباشر مع تلميح اختياري للغة. فعّل مترجمًا محليًا للترجمة. لا يدعم هذا المحوّل بعد توجيه الترجمة المحلية مع لغة تلقائية."</string>
     <string name="ui_batch_uploads_chunks_of_audio_and_returns_one_result_per_2ca0a" formatted="false">"يرفع الوضع المجمّع مقاطع الصوت ويعيد نتيجة لكل "</string>
     <string name="ui_round_trip_slowest_but_works_with_any_openai_compatible_76f1d" formatted="false">"طلب؛ وهو الأبطأ، لكنه يعمل مع أي واجهة متوافقة مع OpenAI "</string>
@@ -657,7 +657,7 @@
     <string name="ui_browse_publisher_files_e0abe" formatted="false">"تصفح ملفات الناشر"</string>
     <string name="ui_offline_build_obtain_files_on_another_device_then_import_locally_cd62f">"إصدار دون اتصال: احصل على الملفات بجهاز آخر ثم استوردها محليًا. المصدر: %1$s"</string>
     <string name="ui_openai_live_speech_translation_d7b5e" formatted="false">"OpenAI · كلام وترجمة مباشرة"</string>
-    <string name="ui_soniox_v5_speech_translation_6a8ec" formatted="false">"Soniox v5 · كلام وترجمة"</string>
+    <string name="ui_soniox_v5_speech_translation_6a8ec" formatted="false">"Soniox v6 · كلام وترجمة"</string>
     <string name="ui_scribe_v2_speech_recognition_5c97a" formatted="false">"Scribe v2 · التعرف على الكلام"</string>
     <string name="ui_deepgram_speech_recognition_3a549" formatted="false">"Deepgram · التعرف على الكلام"</string>
     <string name="ui_assemblyai_speech_recognition_4e78b" formatted="false">"AssemblyAI · التعرف على الكلام"</string>

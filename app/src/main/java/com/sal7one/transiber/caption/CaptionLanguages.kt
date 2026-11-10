@@ -7,6 +7,7 @@ import com.sal7one.common_jni.speech.SpeechProfile
 import com.sal7one.common_jni.translation.TranslationCatalog
 import com.sal7one.transiber.byok.CloudSpeechLanguages
 import com.sal7one.transiber.byok.CloudConfigStore.SttMode
+import com.sal7one.transiber.byok.OpenAiAudioClient
 
 /** Picker options come from recognition + adapter capabilities, never the display-name catalog. */
 data class CaptionLanguageChoices(
@@ -115,16 +116,17 @@ object CaptionLanguages {
             else -> automatic(model.label.ifBlank { "Whisper" }, UiMessage(UiR.string.capability_note_825ace0f79, "Language capabilities are unavailable until a supported model is imported. No language override will be sent."))
         }
         CaptionEngineChoice.CLOUD -> when {
-            cloudMode == SttMode.STREAMING_SONIOX -> hinted("Soniox v5", CloudSpeechLanguages.sonioxCodes, UiMessage(UiR.string.capability_note_f03453f699, "Select a language hint, or Auto. A hint guides recognition; it does not prohibit other languages."))
+            cloudMode == SttMode.STREAMING_SONIOX -> hinted("Soniox v6", CloudSpeechLanguages.sonioxCodes, UiMessage(UiR.string.capability_note_f03453f699, "Select a language hint, or Auto. A hint guides recognition; it does not prohibit other languages."))
             cloudMode == SttMode.STREAMING_ELEVENLABS -> hinted("Scribe v2 Realtime", CloudSpeechLanguages.scribeCodes, UiMessage(UiR.string.capability_note_a9bb5b597d, "Select a spoken-language hint, or Auto. Select a source explicitly when using the local translation bridge."))
             cloudMode == SttMode.STREAMING_ASSEMBLYAI -> automatic("AssemblyAI streaming", UiMessage(UiR.string.capability_note_8975a9a157, "Automatic source language only in this connection. There is no manual language control."))
             cloudMode == SttMode.STREAMING_OPENAI && captionTranslationRoute(config,cloudMode) == CaptionTranslationRoute.LIVE_TARGET -> automatic("OpenAI live translation", UiMessage(UiR.string.capability_note_1ffb589569, "Detects the spoken language automatically. This translation connection does not accept a source-language override."))
             cloudMode == SttMode.BATCH && captionTranslationRoute(config,cloudMode).sttToEnglish -> automatic(model.label.ifBlank { "Cloud audio translation" }, UiMessage(UiR.string.capability_note_e752f4c2db, "The audio-translation endpoint detects the source automatically; it accepts no language override."))
             cloudMode == SttMode.STREAMING_DEEPGRAM -> hinted("Deepgram Nova-3", CloudSpeechLanguages.deepgramCodes,
-                UiMessage(UiR.string.capability_note_51deda856c, "Select the spoken language for dedicated recognition. Auto uses multilingual mode (10 languages)."))
+                UiMessage(UiR.string.capability_note_51deda856c, "Select the spoken language for dedicated recognition. Auto uses multilingual mode (55 languages)."))
             cloudMode == SttMode.STREAMING_OPENAI -> hinted("OpenAI gpt-live-transcribe", CloudSpeechLanguages.cloudTranscriptionCodes,
                 UiMessage(UiR.string.capability_note_5715f3cacd, "Select the spoken language to send an explicit recognition hint, or choose Auto."))
-            model.id.substringAfterLast('/') == "whisper-1" || model.id.substringAfterLast('/').startsWith("whisper-large-v3") ||
+            model.id == OpenAiAudioClient.DEFAULT_TRANSCRIPTION_MODEL || model.id.substringAfterLast('/') == "whisper-1" ||
+                model.id.substringAfterLast('/').startsWith("whisper-large-v3") ||
                 Regex("gpt-4o-(mini-)?transcribe(-[0-9]{4}-[0-9]{2}-[0-9]{2})?").matches(model.id.substringAfterLast('/')) -> hinted(model.label, CloudSpeechLanguages.cloudTranscriptionCodes,
                     UiMessage(UiR.string.capability_note_5715f3cacd, "Select the spoken language to send an explicit recognition hint, or choose Auto."))
             else -> automatic(model.label.ifBlank { "Custom cloud model" }, UiMessage(UiR.string.capability_note_be018a0a4e, "Manual spoken-language selection is not available for this model in this app. Recognition uses its default language behavior."))
@@ -153,7 +155,7 @@ object CaptionLanguages {
                 if (textLanguages == null) UiMessage(UiR.string.capability_note_444ec285c4, "Set up this translation connection and check its languages first.") else UiMessage(UiR.string.capability_note_017b414f07, "Cloud text translation · supported targets from the chosen spoken language."))
         }
         config.engine == CaptionEngineChoice.CLOUD && cloudMode == SttMode.STREAMING_SONIOX ->
-            CaptionLanguageChoices(CloudSpeechLanguages.sonioxCodes, UiMessage(UiR.string.capability_note_0f1a227949, "Soniox v5 integrated translation; original and translated text are retained separately."))
+            CaptionLanguageChoices(CloudSpeechLanguages.sonioxCodes, UiMessage(UiR.string.capability_note_0f1a227949, "Soniox v6 integrated translation; original and translated text are retained separately."))
         config.engine == CaptionEngineChoice.CLOUD && cloudMode == SttMode.STREAMING_OPENAI ->
             openAiTranslation
         captionTranslationRoute(config.copy(mode = CaptionMode.TRANSLATE), cloudMode) == CaptionTranslationRoute.TEXT_TRANSLATOR && config.localTranslationModelId == com.sal7one.transiber.translation.TranslationOptions.ML_KIT ->

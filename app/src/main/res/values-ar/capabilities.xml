@@ -12,13 +12,13 @@
     <string name="capability_note_8975a9a157" formatted="false">"هذا الاتصال يدعم لغة مصدر تلقائية فقط، دون تحكم يدوي."</string>
     <string name="capability_note_1ffb589569" formatted="false">"يكتشف لغة الكلام تلقائيًا. لا يقبل هذا الاتصال فرض لغة المصدر."</string>
     <string name="capability_note_e752f4c2db" formatted="false">"تكتشف واجهة ترجمة الصوت المصدر تلقائيًا ولا تقبل فرض لغة."</string>
-    <string name="capability_note_51deda856c" formatted="false">"حدد لغة الكلام للتعرف المخصص. يستخدم تلقائي وضعًا متعدد اللغات (10 لغات)."</string>
+    <string name="capability_note_51deda856c" formatted="false">"حدد لغة الكلام للتعرف المخصص. يستخدم تلقائي وضعًا متعدد اللغات (55 لغة)."</string>
     <string name="capability_note_5715f3cacd" formatted="false">"حدد لغة الكلام لإرسال تلميح صريح، أو اختر تلقائي."</string>
     <string name="capability_note_be018a0a4e" formatted="false">"لا يتيح التطبيق اختيار لغة الكلام يدويًا لهذا النموذج. يستخدم التعرف سلوك اللغة الافتراضي."</string>
     <string name="capability_note_de49da057d">"%1$s · ترجمة النص بعد التعرف على الكلام."</string>
     <string name="capability_note_444ec285c4" formatted="false">"أعدّ اتصال الترجمة وافحص لغاته أولًا."</string>
     <string name="capability_note_017b414f07" formatted="false">"ترجمة نص سحابية · وجهات مدعومة من لغة الكلام المختارة."</string>
-    <string name="capability_note_0f1a227949" formatted="false">"ترجمة Soniox v5 المدمجة؛ يُحتفظ بالأصل والترجمة منفصلين."</string>
+    <string name="capability_note_0f1a227949" formatted="false">"ترجمة Soniox v6 المدمجة؛ يُحتفظ بالأصل والترجمة منفصلين."</string>
     <string name="capability_note_b410e7fbf2" formatted="false">"ML Kit · نزّل حزمتي الكلام والترجمة من النماذج. تمر اللغات غير الإنجليزية عبر الإنجليزية."</string>
     <string name="capability_note_0434e0f540" formatted="false">"اختر نموذج ترجمة محليًا معروفًا في الإعداد لتحميل لغاته."</string>
     <string name="capability_note_38000e13f0">"%1$s: يدعم %2$s لغة إخراج. يجب أن يدعم نموذج الترجمة لغة الكلام أيضًا."</string>

@@ -14,7 +14,12 @@ class ElevenLabsStreamingClient(private val apiKey: String, private val language
     override var onFinal: ((String) -> Unit)? = null
     override var onError: ((String) -> Unit)? = null
     override var onConnected: (() -> Unit)? = null
-    private val http = OkHttpClient.Builder().connectTimeout(15, TimeUnit.SECONDS).pingInterval(10, TimeUnit.SECONDS).build()
+    private val http = OkHttpClient.Builder()
+        .followRedirects(false)
+        .followSslRedirects(false)
+        .connectTimeout(15, TimeUnit.SECONDS)
+        .pingInterval(10, TimeUnit.SECONDS)
+        .build()
     @Volatile private var socket: WebSocket? = null
     @Volatile private var closed = false
     @Volatile private var ending = false

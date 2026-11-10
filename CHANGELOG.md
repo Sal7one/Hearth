@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.30.2 draft — 2026-11-10
+
+- Keep compact manga results when the detailed detector finds no readable regions. Reduce native Manga OCR input preparation while preserving the model input and recognized tokens.
+- Use a preallocated macOS system-audio queue. Filter 44.1 and 48 kHz WAV input before downsampling in desktop imports and the Android benchmark. Optimize the shared Common JNI NV21 converter without changing RGB results for valid packed inputs.
+- Update cloud speech request formats, provider links and model sources. Include the [compact OCR](docs/research/compact-ocr-manga.md) and [translation](docs/research/compact-translation.md) evaluations.
+
+## 0.30.1 — 2026-10-25 · Screen translation touch-through
+
+- Allow scrolling and tapping the underlying app when screen translation uses Match page colours and image cleanup. The floating controls remain interactive.
+- Publish Android 0.30.1 (build 116) and Desktop 1.0.4 together with individual installers and checksums. [Release](https://github.com/Sal7one/Hearth/releases/tag/v0.30.1).
+
+## 0.30.0 · Screen translation and desktop 1.0.4
+
+- Add visual colour pickers and solid screen replacement with an eye control. Manual screen translation can finish while video or other content is moving.
+- Publish the Apple silicon installer and Android 0.30.0 (build 115) in one release. The macOS build was verified with real Metal speech and English-to-Arabic translation. [Release](https://github.com/Sal7one/Hearth/releases/tag/v0.30.0).
+
 ## 0.27.3 — 2026-10-20 · Setup, model families and settings navigation
 
 - Keep settings sheet presentation, scroll position and expanded options when returning from a child page; avoid replaying its opening animation. Preserve nested model/download navigation and explicit Home behavior.

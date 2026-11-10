@@ -106,8 +106,9 @@ def status_name(code: int) -> str:
 
 def probe(url: str) -> dict:
     status, headers, _ = request(url, method="HEAD")
-    if status in (400, 403, 405, 501):
-        # HEAD can be unsupported while downloads work. Never consume a weight:
+    if status in (400, 403, 404, 405, 501):
+        # ModelScope's file-list API answers HEAD with 404 and GET with 200.
+        # Other servers can reject HEAD as well. Never consume a weight:
         # a Range response is probed separately with a one-byte bounded read.
         try:
             req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT, "Range": "bytes=0-0"})

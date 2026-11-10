@@ -69,7 +69,7 @@ until all required engine files and the selected voice are present.
 - [Publisher and weights](https://huggingface.co/Supertone/supertonic-3)
 - [Pinned ONNX files](https://huggingface.co/Supertone/supertonic-3/tree/3cadd1ee6394adea1bd021217a0e650ede09a323/onnx)
 - [Pinned voice styles](https://huggingface.co/Supertone/supertonic-3/tree/3cadd1ee6394adea1bd021217a0e650ede09a323/voice_styles)
-- [Official implementations](https://github.com/supertone-inc/supertonic)
+- [Publisher's archived implementations](https://github.com/supertone-oss-archive/supertonic)
 
 All files together are about 383 MiB. Runtime memory is higher and is not inferred
 from download size. Code is MIT; model weights are **OpenRAIL-M**, with use

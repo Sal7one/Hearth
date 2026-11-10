@@ -152,17 +152,32 @@ class DesktopRuntimeTest {
         try {
             val path = folder.resolve("article.wav")
             WaveWriter(path, 44100).use { writer ->
-                writer.append(FloatArray(44100) { if (it % 2 == 0) .1f else -.1f }); writer.publish()
+                writer.append(FloatArray(44100) { .5f * kotlin.math.sin(2 * kotlin.math.PI * 10_000 * it / 44_100).toFloat() })
+                writer.publish()
             }
             val frames = DesktopAudioFiles.frames(path.toString()).toList()
             assertTrue(DesktopAudioFiles.supports(path))
             assertTrue(frames.all { it.bytes.size <= 3200 && it.bytes.size % 2 == 0 })
-            assertTrue(frames.sumOf { it.bytes.size } in 31900..32100)
+            assertEquals(32_000, frames.sumOf { it.bytes.size })
+            assertTrue(frames.drop(1).dropLast(1).all { frame ->
+                val samples = java.nio.ByteBuffer.wrap(frame.bytes).order(java.nio.ByteOrder.LITTLE_ENDIAN).asShortBuffer()
+                (0 until samples.limit()).all { kotlin.math.abs(samples.get(it).toInt()) <= 3 }
+            })
             val unsupported = folder.resolve("clip.mp4"); Files.write(unsupported, "not a WAV".toByteArray())
             assertFalse(DesktopAudioFiles.supports(unsupported))
             val mislabeled = folder.resolve("pcm.mp4"); Files.copy(path, mislabeled)
             assertTrue(DesktopAudioFiles.supports(mislabeled))
             assertFailsWith<IllegalArgumentException> { DesktopAudioFiles.frames(unsupported.toString()).toList() }
+
+            val stereo = folder.resolve("stereo.wav")
+            val bytes = java.nio.ByteBuffer.allocate(44 + 4800 * 4).order(java.nio.ByteOrder.LITTLE_ENDIAN)
+            bytes.put("RIFF".toByteArray()).putInt(bytes.capacity() - 8).put("WAVEfmt ".toByteArray())
+                .putInt(16).putShort(1).putShort(2).putInt(48000).putInt(48000 * 4).putShort(4).putShort(16)
+                .put("data".toByteArray()).putInt(4800 * 4)
+            repeat(4800) { bytes.putShort(2000).putShort(-2000) }
+            Files.write(stereo, bytes.array())
+            assertTrue(DesktopAudioFiles.supports(stereo))
+            assertTrue(DesktopAudioFiles.frames(stereo.toString()).toList().single().bytes.contentEquals(ByteArray(3200)))
         } finally { folder.toFile().deleteRecursively() }
     }
 
@@ -217,6 +232,36 @@ class DesktopRuntimeTest {
                 assertEquals("مرحبا", withTimeout(5000) { cloud.translate("Hello", route, "en", "ar") })
             }
             assertEquals(List(3) { "/v1/chat/completions" }, synchronized(paths) { paths.toList() })
+        } finally { server.stop(0); folder.toFile().deleteRecursively() }
+    }
+
+    @Test fun cloudTranscriptionSendsModelSpecificLanguageHints() = runBlocking {
+        val server = HttpServer.create(InetSocketAddress("127.0.0.1", 0), 0)
+        val requests = mutableListOf<String>()
+        server.createContext("/v1/audio/transcriptions") { exchange ->
+            val body = exchange.requestBody.use { it.readBytes().toString(Charsets.UTF_8) }
+            val requestNumber = synchronized(requests) { requests.add(body); requests.size }
+            val response = if (requestNumber <= 2) """{"text":"مرحبا"}""" else """{"text":null}"""
+            val bytes = response.toByteArray()
+            exchange.sendResponseHeaders(200, bytes.size.toLong())
+            exchange.responseBody.use { it.write(bytes) }
+        }
+        server.start()
+        val folder = Files.createTempDirectory("hearth-openai-stt-test")
+        try {
+            val cloud = DesktopCloud(CredentialResolver { null }, folder)
+            val endpoint = "http://127.0.0.1:${server.address.port}/v1"
+            val selection = EngineSelection("openai-stt", "", endpoint = endpoint)
+            assertEquals("مرحبا", withTimeout(5000) { cloud.recognize(ByteArray(2), selection, "ar") })
+            assertEquals("مرحبا", withTimeout(5000) { cloud.recognize(ByteArray(2), selection.copy(modelId = "whisper-1"), "ar") })
+            assertFailsWith<IllegalStateException> {
+                withTimeout(5000) { cloud.recognize(ByteArray(2), selection, "auto") }
+            }
+            val (current, legacy, auto) = synchronized(requests) { requests.toList() }
+            assertTrue(current.contains("name=\"model\"\r\n\r\ngpt-transcribe\r\n"))
+            assertTrue(current.contains("name=\"languages[]\"\r\n\r\nar\r\n"))
+            assertTrue(legacy.contains("name=\"language\"\r\n\r\nar\r\n"))
+            assertFalse(auto.contains("name=\"languages[]\""))
         } finally { server.stop(0); folder.toFile().deleteRecursively() }
     }
 

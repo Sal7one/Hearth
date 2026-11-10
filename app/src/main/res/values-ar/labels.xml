@@ -102,7 +102,7 @@
     <string name="label_captiondisplay_translated_label" formatted="false">"الترجمة فقط"</string>
     <string name="label_captiondisplay_both_label" formatted="false">"الأصل والترجمة"</string>
     <string name="label_sttmode_batch_label" formatted="false">"مقاطع"</string>
-    <string name="label_sttmode_streaming_soniox_label" formatted="false">"بث مباشر · Soniox v5"</string>
+    <string name="label_sttmode_streaming_soniox_label" formatted="false">"بث مباشر · Soniox v6"</string>
     <string name="label_sttmode_streaming_elevenlabs_label" formatted="false">"بث مباشر · Scribe v2"</string>
     <string name="label_sttmode_streaming_deepgram_label" formatted="false">"بث مباشر · Deepgram"</string>
     <string name="label_sttmode_streaming_openai_label" formatted="false">"بث مباشر · OpenAI"</string>

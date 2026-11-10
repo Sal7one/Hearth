@@ -72,24 +72,27 @@ class MangaPageOcr(private val detector: ComicRegionDetector, private val reader
             progress.stage(value)
             return progress.isCurrent().also {if(it)checkBudget()}
         }
-        if(preview!=null) {
+        val preliminary = if(preview!=null) {
             if(!stage(PageOcrStage.PREVIEW))return emptyList()
-            val preliminary=MangaPageLayout.regions(preview.detect(pixels,width,height),width,height)
+            val outlines=MangaPageLayout.regions(preview.detect(pixels,width,height),width,height)
             if(!progress.isCurrent())return emptyList()
-            progress.detected(preliminary)
-        }
+            progress.detected(outlines)
+            outlines
+        } else emptyList()
         if(!stage(PageOcrStage.SEGMENTATION))return emptyList()
         val detections=detector.detect(pixels,width,height)
         if (!progress.isCurrent()) return emptyList()
         checkBudget()
-        val candidates=MangaPageLayout.regions(detections,width,height)
+        val refined=MangaPageLayout.regions(detections,width,height)
+        // A successful mask pass can still miss text found by the compact detector.
+        val candidates=refined.ifEmpty { preliminary }
         check(candidates.size <= 64) { "Page exceeds 64 text regions. Draw a smaller area." }
         val regions=candidates.map {
             if(!progress.isCurrent())return emptyList()
             KoharuPageScene.preparePaint(it,pixels,width,height)
         }
         if (!progress.isCurrent()) return emptyList()
-        progress.detected(regions) // Highlight all geometry before the first slow OCR/translation call.
+        if (preview == null || refined.isNotEmpty()) progress.detected(regions)
         if(!stage(PageOcrStage.RECOGNITION))return emptyList()
         val results = ArrayList<PageText>(regions.size)
         for (region in regions) {

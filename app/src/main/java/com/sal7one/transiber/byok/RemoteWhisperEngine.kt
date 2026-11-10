@@ -59,6 +59,7 @@ class RemoteWhisperEngine(
     override val engineType: SttEngineType = SttEngineType.WHISPER
     override val isInitialized: Boolean get() = initialized
     override val currentModel: ModelInfo? = null
+    internal val activeModelId: String get() = client.modelFor(config?.translateToEnglish == true)
 
     override suspend fun initialize(modelPath: String, config: SttConfig): Result<Unit> {
         // The cloud engine needs no local model file; modelPath is ignored.
@@ -194,7 +195,7 @@ class RemoteWhisperEngine(
 
     companion object {
         const val DEFAULT_BASE_URL = "https://api.openai.com/v1"
-        const val DEFAULT_MODEL = "whisper-1"
+        const val DEFAULT_MODEL = OpenAiAudioClient.DEFAULT_TRANSCRIPTION_MODEL
         const val NETWORK_DISABLED_MESSAGE =
             "Cloud engines need the play (BYOK) distribution; the FOSS build has no network"
         private const val TARGET_SAMPLE_RATE = 16_000

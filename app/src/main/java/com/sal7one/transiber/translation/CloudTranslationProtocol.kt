@@ -83,7 +83,10 @@ object CloudTranslationProtocol {
         val from = languages?.apiSource(source) ?: defaultCode(connection.provider, source, false)
         val to = languages?.apiTarget(target) ?: defaultCode(connection.provider, target, true)
         val url = endpoint(connection)
-        val request = authorized(connection, needsKey = true)
+        // The public LibreTranslate instance requires a key even though its language catalog is public.
+        // A self-hosted instance can choose to allow keyless translation.
+        val request = authorized(connection, needsKey = connection.provider != TextTranslationProvider.LIBRETRANSLATE ||
+            url.host == "libretranslate.com")
         val body: String
         when (connection.provider) {
             TextTranslationProvider.GOOGLE -> {
@@ -247,7 +250,7 @@ object CloudTranslationProtocol {
     private fun authorized(connection: CloudTranslationConnection, needsKey: Boolean): Request.Builder {
         val key = connection.key.trim()
         require(key.none { it.code < 32 || it.code == 127 }) { "API key contains a control character" }
-        if (needsKey && connection.provider != TextTranslationProvider.LIBRETRANSLATE) require(key.isNotBlank()) { "Enter the ${connection.provider.label} API key" }
+        if (needsKey) require(key.isNotBlank()) { "Enter the ${connection.provider.label} API key" }
         val request = Request.Builder().header("Accept", "application/json")
         when (connection.provider) {
             TextTranslationProvider.GOOGLE -> request.header("X-goog-api-key", key)

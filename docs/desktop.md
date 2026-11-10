@@ -101,10 +101,10 @@ complete pinned Supertonic directory when running `:desktop-runtime:test`;
 `HEARTH_SUPERTONIC_SMOKE_RECEIPT` optionally saves a fresh receipt. The test never
 downloads models or calls a provider.
 
-When combining cloud recognition with local EuroLLM/Riva translation, choose an
-explicit source language. The generic cloud recognition route does not currently
-propagate detected language; local Whisper does, and Qwen3-ASR does when an explicit
-source language is selected (its Auto mode leaves the detected label unknown).
+When combining generic OpenAI-compatible recognition with local EuroLLM/Riva
+translation, choose an explicit source language. The generic cloud route does
+not propagate detected language. Local Whisper and Qwen3-ASR forward recognized
+language labels when available.
 
 Native video/audio decoding uses AVFoundation on macOS and Media Foundation on
 Windows. It reads the first audio track and produces bounded PCM for the speech
@@ -215,6 +215,8 @@ the app-local DLLs serve the official ONNX Runtime dependency on clean Windows
 ```
 
 Validate the actual packaged launcher with `python3 scripts/desktop/check-packaged.py`.
+If Gradle selects Android Studio's bundled runtime and reports that `jpackage`
+is missing, pass `-PhearthDesktopJavaHome=/path/to/full/jdk-21` to the packaging task.
 The `--self-check <report-file>` entry opens no window/microphone/model; it checks
 packaged native adapters, audio/crypto services and authenticated loopback HTTP.
 

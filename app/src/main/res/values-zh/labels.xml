@@ -102,7 +102,7 @@
     <string name="label_captiondisplay_translated_label" formatted="false">"仅译文"</string>
     <string name="label_captiondisplay_both_label" formatted="false">"原文与译文"</string>
     <string name="label_sttmode_batch_label" formatted="false">"批处理"</string>
-    <string name="label_sttmode_streaming_soniox_label" formatted="false">"流式 · Soniox v5"</string>
+    <string name="label_sttmode_streaming_soniox_label" formatted="false">"流式 · Soniox v6"</string>
     <string name="label_sttmode_streaming_elevenlabs_label" formatted="false">"流式 · Scribe v2"</string>
     <string name="label_sttmode_streaming_deepgram_label" formatted="false">"流式 · Deepgram"</string>
     <string name="label_sttmode_streaming_openai_label" formatted="false">"流式 · OpenAI"</string>

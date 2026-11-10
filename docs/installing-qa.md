@@ -1,36 +1,36 @@
-# Installing Hearth 0.25.4
+# Installing Hearth on Android
 
-Download a signed **`qa`** APK from the 0.25.4 GitHub draft. It contains the
-optional original captions while translating and uses the existing QA signing identity.
+Download an APK from the [latest Hearth release](https://github.com/Sal7one/Hearth/releases/latest).
+Choose **Play ARM64 APK** for most recent phones, including the Galaxy S25 Ultra and
+S22 Ultra. Choose the Play universal APK from **Assets** for a supported TV or if
+you are unsure which CPU your device uses. For a fully offline phone installation,
+choose the corresponding **FOSS** APK and import models from local files.
 
-- **Galaxy S25 Ultra / S22 Ultra:** `hearth-0.25.4-play-qa-arm64-v8a.apk`.
-- **TV or unknown architecture:** `hearth-0.25.4-play-qa-universal.apk`.
-- **Offline build:** choose the corresponding `foss-qa` APK. Play and FOSS replace
-  one another within the QA package; they do not install side by side.
+Play enables model downloads and cloud or self-hosted providers. FOSS has no
+network permissions. TVs use cloud speech and translation with installed system
+voices, so FOSS cannot provide cloud speech or translation on a TV.
 
-Keep your existing app installed. These APKs use package
-`com.sal7one.transiber.qa`, version 0.25.4/code 88, and the same certificate as
-the published 0.23.10 QA APK (code 83), corrected 0.25.1 QA draft (code 85),
-and 0.25.3 QA draft (code 87).
-Android can update those installations
-without deleting app-private settings, history or models. An installation from
-a different signing key or package is a different case; do not uninstall to
-work around a conflict before preserving its data.
+These are release-optimized QA builds for sideloading, signed with Hearth's
+existing QA debug certificate. They require Android 9 or later. Device audio
+capture requires Android 10 or later.
 
-These are release-optimized, non-debuggable **QA test artifacts signed with the
-existing debug certificate**, not production-signed APKs. Android 9 or newer is
-required. The universal build includes ARM64, ARMv7, x86 and x86_64. OpenCL is
-optional.
+## Update an existing installation
 
-Verified signing certificate SHA-256:
+Open the downloaded APK and follow Android's installation prompt. If prompted,
+allow the browser or file manager you are using to install unknown apps.
 
-`7a9256582e2627e5b715ef2648373e52d62c512127f40b2aff3ccbcc787d5792`
+Keep the existing app installed and install the new APK over it. The GitHub QA
+builds share package `com.sal7one.transiber.qa`; Play and FOSS replace each other.
+A compatible update preserves app-private history, settings and model files. An
+APK from a different signing key cannot update the QA build. Check the signer
+and package before uninstalling, since that removes app-private data.
 
-SHA256SUMS verifies the exact downloadable files. The source archive matches the
-0.25.4 tag. This draft offers no unsigned APKs; those were the cause of the
-initial 0.25.1 installation failure and have been removed from that draft.
+## Verify the download
 
-In overlay settings, choose **CC/translation → Translation only**, then enable
-**Show original while translating** if desired. The switch is off by default
-and saved across launches. Original text is replaced when its translation arrives.
-On TV, open overlay controls → **Text → Translation only** for the same switch.
+Download `SHA256SUMS` from the same release. Compare the hash of the downloaded
+APK against the row for its exact filename using `sha256sum <file.apk>` on Linux,
+`shasum -a 256 <file.apk>` on macOS or `Get-FileHash <file.apk> -Algorithm SHA256`
+in PowerShell.
+
+The published QA signing certificate SHA-256 is
+`7a9256582e2627e5b715ef2648373e52d62c512127f40b2aff3ccbcc787d5792`.
