@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.30.3 draft — 2026-11-10
+
+- Add the PP-OCRv6 Manga reader for Android and desktop. Fast lines reads horizontal and vertical Japanese and Chinese from a 23.23 MB model pack. It publishes outlines first, then recognizes crops in parallel with one model session. The bubble, Koharu and neural cleanup readers remain available.
+- Add the pinned QuickMT v2 Japanese→English translator to the Android and Apple silicon model libraries. Desktop Reading shows the OCR time and supports choosing Japanese or Chinese when the new reader is selected.
+
 ## 0.30.2 draft — 2026-11-10
 
 - Keep compact manga results when the detailed detector finds no readable regions. Reduce native Manga OCR input preparation while preserving the model input and recognized tokens.

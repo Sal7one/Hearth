@@ -351,8 +351,8 @@
     <string name="ui_copy_exact_file_link_9e1fe" formatted="false">"复制准确文件链接"</string>
     <string name="ui_source_license_1_s_98997">"来源与许可 · %1$s"</string>
     <string name="ui_verifying_model_fa771" formatted="false">"正在校验模型…"</string>
-    <string name="ui_import_downloaded_onnx_files_1f3bd" formatted="false">"导入已下载的 ONNX 文件"</string>
-    <string name="ui_select_all_onnx_files_for_the_selected_engine_together_file_names_c1ec6" formatted="false">"请一起选择该引擎的所有 ONNX 文件。文件名不限，Hearth 按文件内容精确验证模型，配套字典已内置。Manga 和 Meiki 目前处理拍摄或导入的页面；Paddle 可用于实时模式。"</string>
+    <string name="ui_import_downloaded_onnx_files_1f3bd" formatted="false">"导入 OCR 文件"</string>
+    <string name="ui_select_all_onnx_files_for_the_selected_engine_together_file_names_c1ec6" formatted="false">"请选择识别器卡片所列的 ONNX 文件和字典。Hearth 按文件内容识别和验证文件。Manga 和 Meiki 处理拍摄或导入的页面。Paddle 支持实时 OCR。"</string>
     <string name="ui_downloads_folder_settings_668bd" formatted="false">"下载与文件夹设置"</string>
     <string name="ui_cloud_provider_connection_49770" formatted="false">"云端服务商与连接"</string>
     <string name="ui_soniox_stt_rt_v5_streaming_cc_and_optional_integrated_translation_7d848" formatted="false">"Soniox stt-rt-v6：流式字幕与可选内置翻译。原文和译文分别保留。"</string>

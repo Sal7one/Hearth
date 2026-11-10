@@ -39,9 +39,9 @@ class CameraOcrControllerTest {
         override fun close() { closed++ }
         override fun cancel() { cancelled++ }
     }
-    private class Translator : CancellableTextTranslator {
+    private class Translator(direction: TranslationDirection = TranslationDirection("en", "ar")) : CancellableTextTranslator {
         override val id = "test"
-        override val directions = setOf(TranslationDirection("en", "ar"))
+        override val directions = setOf(direction)
         val calls = mutableListOf<String>()
         val pending = mutableListOf<CompletableDeferred<String>>()
         var closed = 0
@@ -356,6 +356,51 @@ class CameraOcrControllerTest {
                     assertEquals("تبدأ القهوة هنا", result.boxTranslations.single().translation)
                 } finally {
                     releaseNative.countDown()
+                    withContext(ui) { controller.stop() }
+                    withTimeout(10_000) { controller.awaitStopped() }
+                    controller.close()
+                }
+            }
+        }
+    }
+
+    @Test fun fastMangaPublishesSourceAndQueuesOnlyTheCompletedTranslation() = runBlocking {
+        newSingleThreadContext("fast-manga-controller-test").use { ui ->
+            newSingleThreadContext("fast-manga-native-test").use { native ->
+                val allowReturn = CountDownLatch(1)
+                val translator = Translator(TranslationDirection("ja", "ar"))
+                val line = line("おはよう")
+                val region = OcrRegion(OcrRect(line.x, line.y, line.width, line.height), line.confidence)
+                val reader = object : OcrEngine {
+                    override val preservesRegions = true
+                    override fun recognize(pixels: IntArray, width: Int, height: Int, maxSide: Int) = error("Page path required")
+                    override fun recognizePage(pixels: IntArray, width: Int, height: Int, maxSide: Int, progress: PageOcrProgress): List<OcrLine> {
+                        check(maxSide == 960)
+                        progress.detected(listOf(region))
+                        progress.recognized(listOf(PageText(region, line.text)))
+                        check(allowReturn.await(10, TimeUnit.SECONDS))
+                        return listOf(line)
+                    }
+                    override fun cancel() { allowReturn.countDown() }
+                    override fun close() {}
+                }
+                val controller = CameraOcrController({ reader }, { translator }, { AutoCloseable {} }, ui, ui, native)
+                try {
+                    withContext(ui) { controller.start(OcrCatalog.lineProfile, "ja", "ar", route, false, image(), positioned = true) }
+                    val source = withTimeout(10_000) { controller.state.first { it.text == line.text } }
+                    assertEquals(listOf(region), source.regions)
+                    assertTrue(source.processing)
+                    assertFalse(source.translating)
+                    allowReturn.countDown()
+                    withTimeout(10_000) { controller.state.first { !it.processing && it.translating } }
+                    withContext(ui) {
+                        assertEquals(listOf(line.text), translator.calls)
+                        translator.pending.single().complete("صباح الخير")
+                    }
+                    val finished = withTimeout(10_000) { controller.state.first { !it.translating && it.translation.isNotBlank() } }
+                    assertEquals("صباح الخير", finished.boxTranslations.single().translation)
+                } finally {
+                    allowReturn.countDown()
                     withContext(ui) { controller.stop() }
                     withTimeout(10_000) { controller.awaitStopped() }
                     controller.close()

@@ -58,10 +58,15 @@ internal fun CameraTranslateScreen(onModels: () -> Unit,onConnections: () -> Uni
 
     val context=LocalContext.current;val scope=rememberCoroutineScope();val lifecycle=LocalLifecycleOwner.current
     val (selection,selectionStore)=rememberOcrPreferences()
-    val profileId=selection.profileId;val source=selection.source;val target=selection.target
+    val source=selection.source;val target=selection.target
     val providerId=selection.providerId;val translate=selection.translate
     val translationRevision by ConversationTranslationSettings.revision.collectAsState()
-    val profile=selection.profile
+    val models=remember {OcrModels(File(context.filesDir,"ocr-models"))}
+    var reader by remember(selection.profileId,selection.legacyMangaPinned) {
+        mutableStateOf(models.effectiveProfile(selection).let {it to models.ready(it)})
+    }
+    val (profile,ready)=reader
+    val profileId=profile.id
     val config by remember { CaptionConfigStore.config(context) }.collectAsState(initial=CaptionOverlayConfig())
     val currentConfig by rememberUpdatedState(config)
     val localModelId = selection.translationModel(config.localTranslationModelId)
@@ -74,8 +79,6 @@ internal fun CameraTranslateScreen(onModels: () -> Unit,onConnections: () -> Uni
         val next=selection to localModelId
         if(next!=previousSettings) {controller.stop();controller.invalidate();voice.stop();previousSettings=next}
     }
-    val models=remember {OcrModels(File(context.filesDir,"ocr-models"))}
-    var ready by remember {mutableStateOf(models.ready(profile))}
     var permission by remember {mutableStateOf(ContextCompat.checkSelfPermission(context,Manifest.permission.CAMERA)==PackageManager.PERMISSION_GRANTED)}
     val settingsScroll=rememberScrollState()
     var settings by rememberSaveable {mutableStateOf(false)}
@@ -109,9 +112,11 @@ internal fun CameraTranslateScreen(onModels: () -> Unit,onConnections: () -> Uni
     fun begin(live: Boolean, bitmap: Bitmap?=null) {
         try {
             val selected=selectionStore.read()
+            val activeProfile=models.effectiveProfile(selected)
+            reader=activeProfile to models.ready(activeProfile)
             if(bitmap != null)frozen=bitmap
-            controller.start(selected.profile,selected.source,selected.target,snapshot(selected),live,bitmap?.copy(Bitmap.Config.ARGB_8888,false),
-                positioned=!live && selected.profile.engine=="manga-page")
+            controller.start(activeProfile,selected.source,selected.target,snapshot(selected),live,bitmap?.copy(Bitmap.Config.ARGB_8888,false),
+                positioned=!live && activeProfile.pageReader)
         } catch(e: Exception){controller.error(e)}
     }
     fun recognizePhoto(bitmap: Bitmap) {
@@ -135,7 +140,12 @@ internal fun CameraTranslateScreen(onModels: () -> Unit,onConnections: () -> Uni
     }}
     val imagePicker=rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()){uri -> if(uri!=null)importPhoto(uri)}
     LaunchedEffect(sharedImage) {sharedImage?.let {importPhoto(it);onShareConsumed()}}
-    LaunchedEffect(profileId) {while(true){ready=models.ready(profile);delay(1200)}}
+    LaunchedEffect(selection.profileId,selection.legacyMangaPinned,state.running,state.closing) {
+        while(isActive && !state.running && !state.closing) {
+            reader=withContext(Dispatchers.IO) {models.effectiveProfile(selection).let {it to models.ready(it)}}
+            delay(1200)
+        }
+    }
     DisposableEffect(lifecycle) {
         val observer=LifecycleEventObserver {_,event -> if(event==Lifecycle.Event.ON_STOP){controller.stop();voice.stop()}}
         lifecycle.lifecycle.addObserver(observer)
@@ -143,7 +153,7 @@ internal fun CameraTranslateScreen(onModels: () -> Unit,onConnections: () -> Uni
     }
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
         OcrLanguageControls(selection,targetCodes,providerLabel,::changeSelection,{editingTranslator=false;settings=true},enabled=!state.closing,
-            onTranslator={editingTranslator=true;settings=true},translationIssue=uiText.ocrTranslationIssue(selection,localModelId,cloudLanguages,ByokPolicy.FEATURE_BYOK))
+            onTranslator={editingTranslator=true;settings=true},translationIssue=uiText.ocrTranslationIssue(selection,localModelId,cloudLanguages,ByokPolicy.FEATURE_BYOK),reader=profile)
         if(frozen!=null && !state.running && state.text.isBlank())Text(uiText(UiR.string.ui_settings_changed_tap_translate_again_to_update_this_photo_f837e),style=MaterialTheme.typography.bodySmall)
         if(translate && provider != null)Text(uiText(UiR.string.ui_only_recognized_text_is_sent_to_1_s_camera_images_stay_on_your_ph_0beab, provider.label),style=MaterialTheme.typography.bodySmall)
         Box(Modifier.fillMaxWidth().height(280.dp).background(Color.Black),contentAlignment=Alignment.Center) {
@@ -151,7 +161,7 @@ internal fun CameraTranslateScreen(onModels: () -> Unit,onConnections: () -> Uni
                 onFrame={controller.offer(it)},onCaptureReady={capture=it},onPhoto={photo(it)},onError=controller::error)
             else if(!permission && frozen==null)Button(onClick={permissionRequest.launch(Manifest.permission.CAMERA)}){Text(uiText(UiR.string.ui_open_camera_672b0))}
             frozen?.let {Image(it.asImageBitmap(),uiText(UiR.string.ui_captured_image_7fc88),Modifier.fillMaxSize().background(Color.Black),contentScale=ContentScale.Fit)}
-            if(frozen!=null && profile.engine=="manga-page")AndroidView(
+            if(frozen!=null && profile.pageReader)AndroidView(
                 factory={ReadingTranslationView(it){box -> selectedBox=box}},modifier=Modifier.fillMaxSize(),
                 update={view ->
                     val area=PixelCrop(0,0,state.width,state.height)
@@ -175,7 +185,7 @@ internal fun CameraTranslateScreen(onModels: () -> Unit,onConnections: () -> Uni
             OutlinedButton(onClick={settings=true}){Text(uiText(UiR.string.ui_get_ocr_models_245d8))}
         }
         FlowRow(horizontalArrangement=Arrangement.spacedBy(8.dp),verticalArrangement=Arrangement.spacedBy(4.dp)) {
-            if(frozen!=null && profile.engine=="manga-page")FilterChip(selected=showOriginalPage,onClick={showOriginalPage=!showOriginalPage},
+            if(frozen!=null && profile.pageReader)FilterChip(selected=showOriginalPage,onClick={showOriginalPage=!showOriginalPage},
                 label={Text(uiText(UiR.string.ui_original_c0a80))})
             if(frozen==null)Button(onClick={capture?.invoke()},modifier=Modifier.heightIn(min=56.dp),enabled=ready&&permission&&capture!=null&&!state.loading&&!state.closing&&!importing){Text(if(translate) uiText(UiR.string.ui_capture_translate_a1034) else uiText(UiR.string.ui_capture_read_bc5ec))}
             if(frozen==null)OutlinedButton(onClick={imagePicker.launch(arrayOf("image/*"))},modifier=Modifier.heightIn(min=56.dp),enabled=ready&&!state.loading&&!state.closing&&!importing){Text(if(importing)uiText(UiR.string.ui_opening_b1b85) else uiText(UiR.string.ui_choose_photo_4a7ed))}

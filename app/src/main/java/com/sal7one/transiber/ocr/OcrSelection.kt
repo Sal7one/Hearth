@@ -8,20 +8,23 @@ internal data class OcrSelection(
     val profileId: String = "latin", val source: String = "en", val target: String = "ar",
     val providerId: String = "local", val translate: Boolean = true,
     val localModelId: String? = null,
+    val legacyMangaPinned: Boolean = false,
 ) {
     fun translationModel(fallback: String): String = localModelId?.trim()?.takeIf {it.isNotEmpty()} ?: fallback.trim()
     /** Explicit translator choice is independent of OCR script, direction and speech settings. */
     fun withTranslator(provider:String, model:String):OcrSelection = copy(providerId=provider,
         localModelId=model.trim().takeIf {it.isNotEmpty()})
     val profile get() = OcrCatalog.profile(profileId)
+    val canUseFasterMangaReader get() = profileId == MangaPageMode.COMPACT.profileId && !legacyMangaPinned
     fun withProfile(id: String): OcrSelection {
         val next = OcrCatalog.profile(id)
-        return copy(profileId=id, source=source.takeIf { it in next.languages } ?: next.languages.first())
+        return copy(profileId=id, source=source.takeIf { it in next.languages } ?: next.languages.first(),
+            legacyMangaPinned=id == MangaPageMode.COMPACT.profileId)
     }
     fun withSource(code: String): OcrSelection {
         val next = if(code in profile.languages) profile else
             OcrCatalog.profiles.firstOrNull { code in it.languages } ?: error("No OCR model supports $code")
-        return copy(profileId=next.id, source=code)
+        return copy(profileId=next.id, source=code, legacyMangaPinned=legacyMangaPinned && next.id == profileId)
     }
     companion object {
         val sourceLanguages get() = OcrCatalog.profiles.flatMap { it.languages }.toSet()

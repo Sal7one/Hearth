@@ -65,14 +65,14 @@ class DesktopSettingsTest {
             val omnilingual = if (macosArm) 1 else 0
             val phonon = if (macosArm) 2 else 0
             val vosk = if (macosArm) 6 else 0
-            val ct2 = if (macosArm) 7 else 0
+            val ct2 = if (macosArm) 8 else 0
             val moss = if (macosArm) 1 else 0
             val omnivoice = if (macosArm) 1 else 0
             val magpie = if (macosArm) 1 else 0
             val ming = if (macosArm) 1 else 0
             val chatterbox = if (macosArm) 1 else 0
             val byStage = library.catalog.groupingBy { it.stage?.name ?: "OCR" }.eachCount()
-            assertEquals(mapOf("STT" to 27 + qwen + transcribepsy + nemotron + moonshine + omnilingual + phonon + vosk, "TRANSLATION" to 14 + ct2, "TTS" to 1 + moss + omnivoice + magpie + ming + chatterbox, "OCR" to 3), byStage)
+            assertEquals(mapOf("STT" to 27 + qwen + transcribepsy + nemotron + moonshine + omnilingual + phonon + vosk, "TRANSLATION" to 14 + ct2, "TTS" to 1 + moss + omnivoice + magpie + ming + chatterbox, "OCR" to 4), byStage)
             assertEquals(if (qwen + transcribepsy + nemotron + moonshine + omnilingual + phonon + vosk > 0) 8 else 1, library.catalog.filter { it.stage == com.sal7one.hearth.core.PipelineStage.STT }.map { it.family }.distinct().size)
             if (qwen == 1) {
                 val card = library.catalog.single { it.id == "qwen3-asr-0.6b" }
@@ -218,13 +218,17 @@ class DesktopSettingsTest {
             assertTrue(translators.all { it.artifacts.size == 1 && it.artifacts.single().filename.endsWith(".gguf") })
             if (ct2 > 0) {
                 val marian = library.catalog.filter { it.engineId == "marian-local" }
-                assertEquals(7, marian.size, marian.map { it.id }.toString())
+                assertEquals(ct2, marian.size, marian.map { it.id }.toString())
                 assertTrue(marian.all { it.artifacts.size > 1 || it.archive?.files?.size == 7 }, marian.map { it.id to it.artifacts.size }.toString())
                 val quickmt = marian.single { it.id == "ct2-quickmt-en-ar" }
                 assertEquals("0", quickmt.options["profile"])
                 assertEquals("en", quickmt.options["sources"])
                 assertEquals("ar", quickmt.options["targets"])
                 assertEquals(6, quickmt.artifacts.size)
+                val japaneseQuickMt = marian.single { it.id == "ct2-quickmt-ja-en-v2" }
+                assertEquals(mapOf("profile" to "0", "backend" to "ct2", "family" to "ct2", "sources" to "ja", "targets" to "en"), japaneseQuickMt.options)
+                assertEquals(211_304_082L, japaneseQuickMt.bytes)
+                assertEquals(quickmt.artifacts.map { it.filename }, japaneseQuickMt.artifacts.map { it.filename })
             }
             assertTrue(library.catalog.flatMap { it.artifacts }.all { it.url.startsWith("https://") && it.sha256.length == 64 && it.bytes > 0 })
             val fake = directory.resolve("ggml-tiny-q5_1.bin"); Files.write(fake, byteArrayOf(1, 2, 3))

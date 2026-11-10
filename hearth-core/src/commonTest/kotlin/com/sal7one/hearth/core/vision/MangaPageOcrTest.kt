@@ -29,6 +29,15 @@ class MangaPageOcrTest {
         assertEquals(listOf(96,6,6),regions.map {it.bounds.x})
         assertTrue(regions[2].bounds.y>regions[1].bounds.bottom)
     }
+    @Test fun textLineOrderKeepsHorizontalRowsAndVerticalColumnsDistinct() {
+        val left = OcrRegion(OcrRect(10, 10, 48, 14), .9f)
+        val right = OcrRegion(OcrRect(92, 10, 45, 14), .9f)
+        val lower = OcrRegion(OcrRect(10, 45, 72, 14), .9f)
+        assertEquals(listOf(left, right, lower), MangaPageLayout.orderLines(listOf(right, lower, left)))
+        val leftColumn = left.copy(bounds = OcrRect(10, 10, 14, 70))
+        val rightColumn = right.copy(bounds = OcrRect(92, 10, 14, 70))
+        assertEquals(listOf(rightColumn, leftColumn), MangaPageLayout.orderLines(listOf(leftColumn, rightColumn)))
+    }
     @Test fun coordinatesAreClippedWithoutIntegerOverflowAndInvalidScoresFail() {
         val regions=MangaPageLayout.regions(listOf(hit(-5,-5,30,30,2),hit(Int.MAX_VALUE,10,100,100,2)),100,100)
         assertEquals(1,regions.size);assertEquals(0,regions.single().bounds.x)

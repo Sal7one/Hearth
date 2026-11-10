@@ -3,6 +3,7 @@ package com.sal7one.transiber.ocr
 import org.junit.Assert.*
 import org.junit.Test
 import java.io.ByteArrayInputStream
+import java.io.RandomAccessFile
 import java.nio.file.Files
 
 class OcrPolicyTest {
@@ -59,6 +60,36 @@ class OcrPolicyTest {
             assertTrue(profile.description.contains("Manga109"));assertTrue(profile.description.contains("CPU"))
             assertTrue(profile.assets.contains(OcrCatalog.comicDetector)) // fast outlines remain part of the complete bundle.
         }
+    }
+    @Test fun automaticMangaUsesFastLinesOnlyWhenTheEntirePinnedPackIsPresent() {
+        val root=Files.createTempDirectory("ocr-fast-manga-test").toFile()
+        try {
+            val models=OcrModels(root)
+            val fast=OcrCatalog.lineProfile
+            val vocabulary=OcrCatalog.mangaLineVocabulary
+            val saved=OcrSelection("manga-page", "ja", "ar")
+            val explicit=saved.withProfile("manga-page")
+            val koharu=saved.withProfile("manga-koharu-page")
+            assertEquals(setOf("ja", "zh"), fast.languages)
+            assertEquals("manga", fast.family)
+            assertFalse(fast.live)
+            assertEquals(23_227_987L, fast.assets.sumOf { it.bytes })
+            assertEquals("txt", models.file(vocabulary).extension)
+            assertEquals(saved.profile, models.effectiveProfile(saved))
+            for (asset in fast.assets.filterNot { it == vocabulary }) {
+                RandomAccessFile(models.file(asset), "rw").use { it.setLength(asset.bytes) }
+            }
+            assertEquals(listOf(vocabulary), models.missing(fast))
+            assertEquals(saved.profile, models.effectiveProfile(saved))
+            assertThrows(IllegalStateException::class.java) {
+                models.import(ByteArrayInputStream(ByteArray(vocabulary.bytes.toInt())), vocabulary)
+            }
+            assertFalse(models.file(vocabulary).exists())
+            RandomAccessFile(models.file(vocabulary), "rw").use { it.setLength(vocabulary.bytes) }
+            assertEquals(fast, models.effectiveProfile(saved))
+            assertEquals(explicit.profile, models.effectiveProfile(explicit))
+            assertEquals(koharu.profile, models.effectiveProfile(koharu))
+        } finally { root.deleteRecursively() }
     }
     @Test fun invalidImportCannotPublishOrOverwriteExistingModel() {
         val root=Files.createTempDirectory("ocr-import-test").toFile()

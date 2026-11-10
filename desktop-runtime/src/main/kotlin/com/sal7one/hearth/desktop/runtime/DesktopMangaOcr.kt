@@ -13,20 +13,24 @@ import java.util.concurrent.atomic.AtomicLong
 /** Real CPU ORT adapters using the same model pins, geometry and page processing as Android. */
 class DesktopMangaOcr(directory: Path,profileId: String?=null) : AutoCloseable, PageOcrReader {
     private val closed=AtomicBoolean(false)
-    private val page: MangaPageOcr
-    init {
+    private val page: PageOcrReader = if (profileId == MangaArtifacts.lineProfileId) {
+        verifyArtifacts(directory, MangaArtifacts.lineFiles, VisionArtifact::filename)
+        DesktopNativeLibraries.load("hearth_desktop_ocr")
+        MangaLinePageReader(directory.resolve(MangaArtifacts.lineDetector.filename),
+            directory.resolve(MangaArtifacts.lineRecognizer.filename), directory.resolve(MangaArtifacts.lineVocabulary.filename),
+            Runtime.getRuntime().availableProcessors().coerceIn(1, 6))
+    } else openBubbleReader(directory, profileId)
+
+    private fun openBubbleReader(directory: Path, profileId: String?): MangaPageOcr {
         require(profileId==null || profileId in setOf("manga-page","manga-koharu-page","manga-koharu-clean-page")) {"Unknown manga pipeline profile: $profileId"}
         val koharu=if(profileId==null)Files.exists(directory.resolve("${MangaArtifacts.koharuDetector.id}.onnx")) else profileId!="manga-page"
         val cleanup=if(profileId==null)koharu && Files.exists(directory.resolve("${MangaArtifacts.inpainter.id}.onnx")) else profileId=="manga-koharu-clean-page"
         val artifacts=if(cleanup)MangaArtifacts.filesForKoharuCleanup else if(koharu)MangaArtifacts.filesForKoharu else MangaArtifacts.files
-        for (asset in artifacts) {
-            val file=directory.resolve("${asset.id}.onnx")
-            check(Files.isRegularFile(file) && Files.size(file)==asset.bytes && sha(file)==asset.sha256) { "Manga model checksum/size failed: ${asset.id}. Repair or import the pinned bundle." }
-        }
+        verifyArtifacts(directory, artifacts, VisionArtifact::installedFilename)
         val detector=DesktopComicRegionDetector(directory.resolve("${if(koharu)MangaArtifacts.koharuDetector.id else MangaArtifacts.detector.id}.onnx"),koharu)
         var preview: DesktopComicRegionDetector?=null
         var inpainter: DesktopMangaInpainter?=null
-        page=try {
+        return try {
             if(koharu)preview=DesktopComicRegionDetector(directory.resolve("${MangaArtifacts.detector.id}.onnx"),false)
             if(cleanup)inpainter=DesktopMangaInpainter(directory.resolve("${MangaArtifacts.inpainter.id}.onnx"))
             MangaPageOcr(detector,DesktopMangaRegionReader(directory),preview,if(koharu)180_000 else 45_000,inpainter)
@@ -51,6 +55,15 @@ class DesktopMangaOcr(directory: Path,profileId: String?=null) : AutoCloseable, 
             rejectsRetiredHandle { ComicNative.detect(0,intArrayOf(0),1,1) }
             rejectsRetiredHandle { ComicNative.inpaint(0,intArrayOf(0),1,1,intArrayOf(0,0,1)) }
             rejectsRetiredHandle { JapaneseNative.recognize(0,intArrayOf(0),1,1) }
+            MangaLinePageReader.verifyNativeContract()
+        }
+        private fun verifyArtifacts(directory: Path, artifacts: List<VisionArtifact>, relativePath: (VisionArtifact) -> String) {
+            for (asset in artifacts) {
+                val file = directory.resolve(relativePath(asset))
+                check(Files.isRegularFile(file) && Files.size(file) == asset.bytes && sha(file) == asset.sha256) {
+                    "Manga model checksum/size failed: ${asset.id}. Repair or import the pinned bundle."
+                }
+            }
         }
         private fun sha(path: Path): String {
             val digest=MessageDigest.getInstance("SHA-256")

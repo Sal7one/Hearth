@@ -34,6 +34,7 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import java.io.File
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.math.abs
@@ -124,6 +125,7 @@ class ReadingOverlayService : Service() {
     private var lastHistory=""
     private var historyIndex=-1
     private var viewingBox=false
+    private val ocrModels by lazy { OcrModels(File(filesDir, "ocr-models")) }
     var paused=false; private set
     private val dark get()=resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
     private val ink get()=if(dark)Color.WHITE else Color.rgb(25,30,35)
@@ -148,6 +150,7 @@ class ReadingOverlayService : Service() {
         }
         if(projection!=null)return START_NOT_STICKY
         try {
+            com.sal7one.transiber.runtime.LocalModelPolicy.requireAllowed(this, "OCR")
             val manager=getSystemService(NotificationManager::class.java)
             manager.createNotificationChannel(NotificationChannel(CHANNEL,uiText(UiR.string.service_screen_reading_153b9),NotificationManager.IMPORTANCE_LOW))
             if(Build.VERSION.SDK_INT>=29)startForeground(NOTIFICATION,notification(),ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION)
@@ -162,7 +165,7 @@ class ReadingOverlayService : Service() {
             val size=screenSize();resize(size.first,size.second)
             display=projection!!.createVirtualDisplay("Hearth reading",reader!!.width,reader!!.height,resources.configuration.densityDpi,DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR,reader!!.surface,null,handler)
             val selection=OcrPreferences(this).read()
-            profile=selection.profile;source=selection.source;target=selection.target
+            profile=ocrModels.effectiveProfile(selection);source=selection.source;target=selection.target
             options=overlayPreferences.read()
             configureOptions(options)
             createWindows()
@@ -193,6 +196,7 @@ class ReadingOverlayService : Service() {
     /** One saved OCR/translator selection for each admitted page, never an in-flight reroute. */
     private suspend fun prepareSession() = setupMutex.withLock {
         val selection=OcrPreferences(this).read()
+        val nextProfile=withContext(Dispatchers.IO) { ocrModels.effectiveProfile(selection) }
         val config=CaptionConfigStore.config(this).first()
         val nextSnapshot=if(selection.translate) {
             val provider=ConversationTranslationSettings.provider(selection.providerId)
@@ -200,10 +204,10 @@ class ReadingOverlayService : Service() {
             uiText.ocrTranslationIssue(selection,selection.translationModel(config.localTranslationModelId),languages,ByokPolicy.FEATURE_BYOK)?.let {error(it)}
             ConversationTranslationSettings.snapshot(this,selection.translationModel(config.localTranslationModelId),selection.providerId)
         } else null
-        check(selection.source in selection.profile.languages) {
-            uiText(UiR.string.service_choose_a_text_language_supported_by_1_s_in_reading_83c65,uiText.label(selection.profile))
+        check(selection.source in nextProfile.languages) {
+            uiText(UiR.string.service_choose_a_text_language_supported_by_1_s_in_reading_83c65,uiText.label(nextProfile))
         }
-        if(sessionSelection!=selection || snapshot!=nextSnapshot) {
+        if(sessionSelection!=selection || profile.id!=nextProfile.id || snapshot!=nextSnapshot) {
             // Reuse the loaded engine on an unchanged page. A changed language/model
             // must retire its worker first; new pages never inherit an old translator.
             if(controller.state.value.running || controller.state.value.closing) {
@@ -212,7 +216,7 @@ class ReadingOverlayService : Service() {
                 catch(e: TimeoutCancellationException){throw IllegalStateException(uiText(UiR.string.pipeline_cleanup_timeout),e)}
             }
             pageGuard.reset();completedPage=null
-            profile=selection.profile;source=selection.source;target=selection.target
+            profile=nextProfile;source=selection.source;target=selection.target
             snapshot=nextSnapshot;sessionSelection=selection
         }
         setupReady=true;setupError=null

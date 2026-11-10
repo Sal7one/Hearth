@@ -1235,6 +1235,68 @@
       ]
     },
     {
+      "id": "ct2-quickmt-ja-en-v2",
+      "name": "QuickMT v2 · Japanese → English",
+      "family": "ct2",
+      "stage": "TRANSLATION",
+      "engineId": "marian-local",
+      "languages": [
+        "en",
+        "ja"
+      ],
+      "source": "https://huggingface.co/Yokii2/quickmt-ja-en-v2",
+      "license": "CC-BY-4.0",
+      "note": "Pinned CTranslate2 package (6 components); CPU-only, macOS Apple silicon. Component hashes are verified at install and before translation.",
+      "options": {
+        "profile": "0",
+        "backend": "ct2",
+        "family": "ct2",
+        "sources": "ja",
+        "targets": "en"
+      },
+      "artifacts": [
+        {
+          "filename": "model.bin",
+          "bytes": 208401549,
+          "sha256": "c62cf3751ff5e6e91fcb8da0d6f0c434e3ef86963dab340eb1df9a9092310696",
+          "url": "https://huggingface.co/Yokii2/quickmt-ja-en-v2/resolve/3eeaf22dcd0a0ee7331aa4fa824d0cf33e6ea088/model.bin"
+        },
+        {
+          "filename": "config.json",
+          "bytes": 223,
+          "sha256": "66edc5d58ceb812a41b4b784497001f815c35400884f40984b19de29e1bc3d69",
+          "url": "https://huggingface.co/Yokii2/quickmt-ja-en-v2/resolve/3eeaf22dcd0a0ee7331aa4fa824d0cf33e6ea088/config.json"
+        },
+        {
+          "filename": "source_vocabulary.json",
+          "bytes": 749282,
+          "sha256": "991033d8ce6387bea59e2eb5baa1619a0fd7f0fdba00829d6b36de41664cfecd",
+          "url": "https://huggingface.co/Yokii2/quickmt-ja-en-v2/resolve/3eeaf22dcd0a0ee7331aa4fa824d0cf33e6ea088/source_vocabulary.json"
+        },
+        {
+          "filename": "target_vocabulary.json",
+          "bytes": 538306,
+          "sha256": "ddf086241bf6d962dabbc1eb8cfb07dfdacc4dfb68864ff82d6ebe842959abf8",
+          "url": "https://huggingface.co/Yokii2/quickmt-ja-en-v2/resolve/3eeaf22dcd0a0ee7331aa4fa824d0cf33e6ea088/target_vocabulary.json"
+        },
+        {
+          "filename": "src.spm.model",
+          "bytes": 816774,
+          "sha256": "438e5f7fd498d76b057ca8b6759470b82eb3855b81a67718face917407b31ff5",
+          "url": "https://huggingface.co/Yokii2/quickmt-ja-en-v2/resolve/3eeaf22dcd0a0ee7331aa4fa824d0cf33e6ea088/src.spm.model"
+        },
+        {
+          "filename": "tgt.spm.model",
+          "bytes": 797948,
+          "sha256": "d2e58f48c0d030d6b4e6b183ebca7068704ef9cce640f090abfea4ac9ea11da0",
+          "url": "https://huggingface.co/Yokii2/quickmt-ja-en-v2/resolve/3eeaf22dcd0a0ee7331aa4fa824d0cf33e6ea088/tgt.spm.model"
+        }
+      ],
+      "platforms": [
+        "macos-arm64"
+      ]
+    },
+    {
       "id": "ct2-small100-int8",
       "name": "SMaLL-100 · INT8",
       "family": "ct2",

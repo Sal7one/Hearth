@@ -87,6 +87,10 @@ class ReadingStartActivity : AppCompatActivity() {
 
     @OptIn(ExperimentalLayoutApi::class)
     @Composable private fun Screen() {
+        if (!com.sal7one.transiber.runtime.LocalModelPolicy.allowed(this)) {
+            com.sal7one.transiber.ui.components.LocalModelPolicyNotice()
+            return
+        }
         val text = rememberUiText()
         val scope = rememberCoroutineScope()
         val currentSetup = setupRevision
@@ -105,9 +109,10 @@ class ReadingStartActivity : AppCompatActivity() {
         val targets = ocrTranslationTargets(selection, localModelId, cloud, ByokPolicy.FEATURE_BYOK)
         val translator = ConversationTranslationSettings.provider(selection.providerId)?.label ?: TranslationOptions.label(localModelId)
         val translationIssue = text.ocrTranslationIssue(selection, localModelId, cloud, ByokPolicy.FEATURE_BYOK)
-        val profile = selection.profile
+        val models = remember { OcrModels(File(filesDir, "ocr-models")) }
+        var reader by remember(selection.profileId, selection.legacyMangaPinned) { mutableStateOf(selection.profile to false) }
+        val (profile, readerReady) = reader
         val content = ReadingContent.selected(selection)
-        var readerReady by remember(profile.id) { mutableStateOf(false) }
         var error by rememberSaveable { mutableStateOf<String?>(null) }
         var starting by remember { mutableStateOf(false) }
         var sheet by rememberSaveable { mutableStateOf<String?>(null) }
@@ -117,14 +122,15 @@ class ReadingStartActivity : AppCompatActivity() {
         val modelsScroll = rememberScrollState()
         val translatorScroll = rememberScrollState()
 
-        LaunchedEffect(profile.id, selection.source) {
-            bookmarks.edit().putString("${content.key}-profile", profile.id)
-                .putString("${content.key}-source", selection.source).apply()
+        fun bookmarkCurrent() {
+            bookmarks.edit().putString("${content.key}-profile", selection.profileId)
+                .putString("${content.key}-source", selection.source)
+                .putBoolean("${content.key}-legacy-bubbles", selection.legacyMangaPinned).apply()
         }
-        LaunchedEffect(profile.id, currentSetup) {
-            val installed = OcrModels(File(filesDir, "ocr-models"))
+        LaunchedEffect(content, selection.profileId, selection.source, selection.legacyMangaPinned) { bookmarkCurrent() }
+        LaunchedEffect(selection.profileId, selection.legacyMangaPinned, currentSetup) {
             while (isActive) {
-                readerReady = withContext(Dispatchers.IO) { installed.ready(profile) }
+                reader = withContext(Dispatchers.IO) { models.effectiveProfile(selection).let { it to models.ready(it) } }
                 delay(1_500)
             }
         }
@@ -168,8 +174,9 @@ class ReadingStartActivity : AppCompatActivity() {
         fun startReading() {
             error = null
             if (running) { recover(); return }
-            if (!OcrModels(File(filesDir, "ocr-models")).ready(profile)) {
-                error = text(R.string.ui_install_1_s_to_read_this_language_70476, text.label(profile)); sheet = "models"
+            val startProfile = models.effectiveProfile(selectionStore.read())
+            if (!models.ready(startProfile)) {
+                error = text(R.string.ui_install_1_s_to_read_this_language_70476, text.label(startProfile)); sheet = "models"
             } else if (translationIssue != null) { error = translationIssue; sheet = "translator" }
             else if (Build.VERSION.SDK_INT >= 33 && checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED)
                 notifications.launch(android.Manifest.permission.POST_NOTIFICATIONS)
@@ -210,10 +217,10 @@ class ReadingStartActivity : AppCompatActivity() {
                                     val chosen = content == next
                                     OutlinedCard(onClick = {
                                         try {
-                                            bookmarks.edit().putString("${content.key}-profile", profile.id)
-                                                .putString("${content.key}-source", selection.source).apply()
+                                            bookmarkCurrent()
                                             selectionStore.update { it.forReadingContent(next,
-                                                bookmarks.getString("${next.key}-profile", null), bookmarks.getString("${next.key}-source", null)) }
+                                                bookmarks.getString("${next.key}-profile", null), bookmarks.getString("${next.key}-source", null),
+                                                bookmarks.getBoolean("${next.key}-legacy-bubbles", false)) }
                                             error = null
                                         } catch (failure: Exception) { error = failure.message ?: failure.toString() }
                                     }, modifier = Modifier.weight(1f).heightIn(min = 104.dp).semantics { selected = chosen },
@@ -233,7 +240,7 @@ class ReadingStartActivity : AppCompatActivity() {
                             OcrLanguageControls(selection, targets, translator,
                                 { next -> selectionStore.update { next }; error = null }, { sheet = "models" },
                                 showMangaModes = content == ReadingContent.MANGA,
-                                onTranslator = { sheet = "translator" }, translationIssue = translationIssue)
+                                onTranslator = { sheet = "translator" }, translationIssue = translationIssue, reader = profile)
                             if (profile.engine == "manga") Text(text(R.string.ui_manga_ocr_needs_a_drawn_area_around_one_speech_bubble_214c9),
                                 style = MaterialTheme.typography.bodySmall)
                             if (!readerReady) {
@@ -287,7 +294,7 @@ class ReadingStartActivity : AppCompatActivity() {
 
         when (sheet) {
             "models" -> FeatureOptionsSheet(text(R.string.ui_ocr_reader_2de99), { sheet = null }, modelsScroll) {
-                SettingsOcrLocalUi(selected = selection.profileId,
+                SettingsOcrLocalUi(selected = profile.id,
                     onSelect = { id -> selectionStore.update { it.withProfile(id) }; error = null; sheet = null },
                     onDownloads = { startActivity(Intent(this@ReadingStartActivity, com.sal7one.transiber.MainActivity::class.java)
                         .putExtra("page", 2).putExtra("returnToReading", true)) })

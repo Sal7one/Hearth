@@ -167,7 +167,9 @@ internal class CameraOcrController(
                                             translation=refreshed.joinToString("\n") {box->box.translation})
                                     }
                                 }
-                                if(positioned && original.isNotBlank() && snapshot!=null && source!=target && isCurrent())
+                                // The fast line reader has one complete callback immediately before return.
+                                // The final request below owns its translation, while originals publish here.
+                                if(profile.mangaPageMode != MangaPageMode.FAST && positioned && original.isNotBlank() && snapshot!=null && source!=target && isCurrent())
                                     request(original,pageRevision,recognized,true)?.let(::enqueue)
                             }
                         }

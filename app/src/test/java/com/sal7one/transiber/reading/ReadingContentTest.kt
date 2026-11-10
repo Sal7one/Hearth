@@ -1,6 +1,7 @@
 package com.sal7one.transiber.reading
 
 import com.sal7one.transiber.ocr.OcrSelection
+import com.sal7one.transiber.ocr.MangaPageMode
 import org.junit.Assert.*
 import org.junit.Test
 
@@ -27,7 +28,7 @@ class ReadingContentTest {
 
     @Test fun returningToMangaRestoresTheExplicitPreviousReaderAndSourceOnly() {
         val website = OcrSelection("arabic", "ar", "en", "local", false, "custom-translator")
-        for (reader in listOf("manga", "manga-page", "manga-koharu-page", "manga-koharu-clean-page", "meiki")) {
+        for (reader in listOf("manga", "manga-page", "manga-koharu-page", "manga-koharu-clean-page", "meiki", MangaPageMode.FAST.profileId)) {
             val manga = website.forReadingContent(ReadingContent.MANGA, reader, "ja")
             assertEquals(reader, manga.profileId); assertEquals("ja", manga.source)
             assertEquals("en", manga.target); assertFalse(manga.translate); assertEquals("custom-translator", manga.localModelId)
@@ -50,6 +51,19 @@ class ReadingContentTest {
             assertEquals("cjk", web.profileId); assertEquals("ja", web.source); assertEquals("ar", web.target)
         }
         val firstManga = OcrSelection().forReadingContent(ReadingContent.MANGA, "latin", "en")
-        assertEquals("manga-page", firstManga.profileId); assertEquals("ja", firstManga.source); assertEquals("ar", firstManga.target)
+        assertEquals(MangaPageMode.FAST.profileId, firstManga.profileId)
+        assertEquals("ja", firstManga.source); assertEquals("ar", firstManga.target)
+        val chineseManga = OcrSelection("cjk", "zh", "ar").forReadingContent(ReadingContent.MANGA, null, null)
+        assertEquals(MangaPageMode.FAST.profileId, chineseManga.profileId)
+        assertEquals("zh", chineseManga.source)
+    }
+
+    @Test fun returningFromWebsitesKeepsAnExplicitBubbleReaderChoice() {
+        val website = OcrSelection("latin", "en", "ar")
+        val automatic = website.forReadingContent(ReadingContent.MANGA, "manga-page", "ja")
+        val explicit = website.forReadingContent(ReadingContent.MANGA, "manga-page", "ja", savedLegacyMangaPinned = true)
+        assertTrue(automatic.canUseFasterMangaReader)
+        assertFalse(explicit.canUseFasterMangaReader)
+        assertEquals(automatic.copy(legacyMangaPinned = true), explicit)
     }
 }

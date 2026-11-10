@@ -1,5 +1,17 @@
 # Koharu source notes and Hearth's 200 ms manga OCR target
 
+## Production reader
+
+Hearth 0.30.3 adds the **Fast lines** reader. The three files from the pinned FP32 release total 23,227,987 bytes. Android and desktop use the same C++ model path, crop orientation, contour geometry and Kotlin reading order. Desktop uses up to six crop workers and Android starts with up to four. Both keep a single resident recognizer. The app publishes geometry before recognition and restores reading order before publishing text.
+
+On the quiet M4 Pro, the real desktop page controller published all 33 lines in 159 ms p95 for OCR and 165 ms p95 from the controller's Read request to completion, over 20 warm runs. The native JNI output matched all 33 reference transcripts. One of nine synthetic lines lost a full stop because the portable detector resize moved a crop edge by one pixel. After the same runtime startup checks the desktop app runs, the first cold OCR request took 721 ms. The OCR-only timing excludes screen capture and translation. The first full 33-line QuickMT Japanese→English pass took 2.62 s, including translator loading. An unchanged page reused translations and took 165 ms. Android device latency remains unmeasured.
+
+In a separate M4 Pro native test on those 33 lines, one stock FP32 CTranslate2 batch matched all 33 sequential translations and reduced median translation time from 1,706 ms to 453 ms. INT8 took 276 ms and changed one translation. The current app uses its existing sequential translation path.
+
+For a real host test, point `HEARTH_MANGA_LINE_MODELS` at the pinned model tree and `HEARTH_MANGA_LINE_PAGE` at a local image. Set `HEARTH_MANGA_QUICKMT_MODELS` to the verified QuickMT directory to also time the translation pipeline. Run `./gradlew -PhearthDesktopOnly=true :desktopApp:desktopTest --tests '*DesktopMangaLineRealTest' --info` after staging the desktop native OCR library. The test prints timing and line counts.
+
+## Source checkout
+
 The upstream source is checked out clean and detached in `build/research/koharu-8047c8b/` at `8047c8b37a28f112fbf09dcf19436350b40a93ad` (November 9, 2026 UTC). Hearth ignores `build/`. The older checkout in `build/research/koharu/` has a local commit and was preserved. This checkout contains source only. [Pinned Koharu source](https://github.com/koharu-rs/koharu/tree/8047c8b37a28f112fbf09dcf19436350b40a93ad)
 
 ```sh

@@ -111,7 +111,7 @@ def kotlin_ct2_models():
                 'CPU-only, macOS Apple silicon. Archive and every expanded file are verified. '
                 'INT8 and FP32 are precision variants of the same trained directional model; device speed and quality are not inferred from publisher scores.')
         models.append(model)
-    assert len(models) == 7, [m['id'] for m in models]
+    assert len(models) == 8, [m['id'] for m in models]
     return models
 
 
@@ -405,7 +405,7 @@ def generate():
         artifacts=[dict(filename=nemotron['url'].rsplit('/', 1)[-1], bytes=nemotron['bytes'], sha256=nemotron['sha256'], url=nemotron['url'])]))
     vosk_models(models)
     ming_models(models)
-    assert len(models) == 76, len(models)
+    assert len(models) == 77, len(models)
     return json.dumps({'schemaVersion':1,'provenance':'Generated from existing Android pins, the audited Qwen3-ASR release archive, reviewed CT2 catalog pins and reviewed desktop engine pins; run scripts/desktop/generate-catalog.py --check','models':models},ensure_ascii=False,indent=2)+'\n'
 
 

@@ -241,6 +241,7 @@ internal fun UiText.label(profile: com.sal7one.transiber.ocr.OcrProfile): String
     "arabic" -> this(R.string.ocr_arabic)
     "cyrillic" -> this(R.string.ocr_cyrillic)
     "manga" -> this(R.string.ocr_manga)
+    com.sal7one.hearth.core.vision.MangaArtifacts.lineProfileId -> this(R.string.ocr_manga_line_page)
     "manga-page" -> this(R.string.ocr_manga_page)
     "manga-koharu-page" -> this(R.string.ocr_koharu_page)
     "manga-koharu-clean-page" -> this(R.string.ocr_koharu_cleanup_page)
@@ -249,6 +250,7 @@ internal fun UiText.label(profile: com.sal7one.transiber.ocr.OcrProfile): String
 }
 internal fun UiText.description(profile: com.sal7one.transiber.ocr.OcrProfile): String = when(profile.id) {
     "manga" -> this(R.string.ocr_manga_details)
+    com.sal7one.hearth.core.vision.MangaArtifacts.lineProfileId -> this(R.string.ocr_manga_line_page_details)
     "manga-page" -> this(R.string.ocr_manga_page_details)
     "manga-koharu-page" -> this(R.string.ocr_koharu_page_details)
     "manga-koharu-clean-page" -> this(R.string.ocr_koharu_cleanup_details)

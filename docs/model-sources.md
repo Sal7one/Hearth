@@ -36,6 +36,7 @@ Archive size measures the download. Installed files and peak memory can be large
 | --- | --- | --- |
 | ML Kit | [Google translation guide](https://developers.google.com/ml-kit/language/translation/android), [terms/privacy](https://developers.google.com/ml-kit/terms) | Explicit Wi-Fi language-pack download inside Models; SDK-managed storage. Play only. |
 | QuickMT English ↔ Arabic | [English → Arabic](https://huggingface.co/quickmt/quickmt-en-ar), [Arabic → English](https://huggingface.co/quickmt/quickmt-ar-en) | Choose the directional CTranslate2 package in Models → Translation. |
+| QuickMT v2 Japanese → English | [Yokii2 model card](https://huggingface.co/Yokii2/quickmt-ja-en-v2), [pinned files](https://huggingface.co/Yokii2/quickmt-ja-en-v2/tree/3eeaf22dcd0a0ee7331aa4fa824d0cf33e6ea088) | 211.30 MB across six pinned runtime files, CC BY 4.0. Choose the local translator in Models → Translation on Android ARM64 or Apple silicon macOS. |
 | Jisr 50M English ↔ Arabic dialects | [English → Arabic dialects](https://huggingface.co/oddadmix/Jisr-MT-50M-AllDialects), [Arabic dialects → English](https://huggingface.co/oddadmix/Jisr-MT-50M-Dialects2En), [Hearth packages](https://github.com/Sal7one/Hearth/releases/tag/v0.27.3) | Choose the direction and INT8 or FP32 package. Both are pinned CTranslate2 imports and Play downloads. |
 | HY-MT1.5 Q4/Q6/Q8 | [Tencent GGUF files/card](https://huggingface.co/tencent/HY-MT1.5-1.8B-GGUF) | Choose size/quant, download and install, or import exact pinned GGUF. |
 | Hy-MT2 Q2/Q3/Q4/Q6/Q8 | [Tencent GGUF files/card](https://huggingface.co/tencent/Hy-MT2-1.8B-GGUF), [pinned community Q2/Q3 conversions](https://huggingface.co/mradermacher/Hy-MT2-1.8B-GGUF/tree/d760e9708bbded7cee9aa135b4f1dedb42ed2fc4) | Five verified quant choices appear together by file size. Q2 is about 777 MB and Q3 about 951 MB; they reduce download/storage cost, but have not been proven more accurate or faster on every phone. |
@@ -58,6 +59,13 @@ presented as installable choices. Phone speed/quality evidence is in the
 the [Mac host smoke report](benchmark-host-smoke-2026-09-23.md) records newer
 Q2/Q4 and Whisper comparisons. Mac and phone results must keep their
 backend/device labels.
+
+For a QuickMT v2 offline Android import, put `model.bin`, `config.json`,
+`source_vocabulary.json`, `target_vocabulary.json`, `src.spm.model`, and
+`tgt.spm.model` at the ZIP root alongside `hearth-translation.json` containing
+`{"schemaVersion":1,"modelId":"ct2-quickmt-ja-en-v2"}`. On macOS, import the
+folder containing those six files directly. Hearth verifies each component
+against the publisher revision before using it.
 
 ## Cloud providers
 

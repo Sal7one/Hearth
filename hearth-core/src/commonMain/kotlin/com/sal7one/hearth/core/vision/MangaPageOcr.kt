@@ -221,7 +221,10 @@ object MangaPageLayout {
         val left = min(a.x, b.x); val top = min(a.y, b.y)
         return OcrRect(left, top, (max(a.right, b.right)-left).toInt(), (max(a.bottom,b.bottom)-top).toInt())
     }
-    private fun readingOrder(regions: List<OcrRegion>): List<OcrRegion> {
+    internal fun orderLines(regions: List<OcrRegion>): List<OcrRegion> =
+        readingOrder(regions, rightToLeft = regions.count { it.bounds.height > it.bounds.width } * 2 > regions.size)
+
+    private fun readingOrder(regions: List<OcrRegion>, rightToLeft: Boolean = true): List<OcrRegion> {
         if (regions.size < 2) return regions
         // Whitespace cuts approximate row/panel order, then Japanese right-to-left columns.
         // This detector has no panel class; this is explicitly spatial rather than semantic order.
@@ -237,10 +240,10 @@ object MangaPageLayout {
             }
             if (best < 8 || at < 1) return null
             val first = sorted.take(at); val second = sorted.drop(at)
-            return if (vertical) second to first else first to second
+            return if (vertical && rightToLeft) second to first else first to second
         }
         val cut = split(false) ?: split(true)
-        return if (cut != null) readingOrder(cut.first) + readingOrder(cut.second)
-            else regions.sortedWith(compareBy<OcrRegion> { it.bounds.y }.thenByDescending { it.bounds.x })
+        return if (cut != null) readingOrder(cut.first, rightToLeft) + readingOrder(cut.second, rightToLeft)
+            else regions.sortedWith(compareBy<OcrRegion> { it.bounds.y }.thenBy { if (rightToLeft) -it.bounds.x else it.bounds.x })
     }
 }

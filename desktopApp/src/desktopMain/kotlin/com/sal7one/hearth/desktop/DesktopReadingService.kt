@@ -2,6 +2,7 @@ package com.sal7one.hearth.desktop
 
 import com.sal7one.hearth.core.PipelineConfig
 import com.sal7one.hearth.core.PipelineService
+import com.sal7one.hearth.core.vision.MangaArtifacts
 import com.sal7one.hearth.desktop.runtime.DesktopMangaOcr
 import com.sal7one.hearth.integration.*
 import kotlinx.coroutines.*
@@ -26,18 +27,16 @@ internal class DesktopReadingService(
     private val requests = Mutex()
 
     override fun capabilities(): IntegrationReadingCapabilities {
-        val problem = when {
-            !owner.isActive -> "Image reading service is closed"
-            selection() == null -> "Install or verify a Japanese reading model in Reading first"
-            else -> runtimeIssue()
-        }
-        return IntegrationReadingCapabilities(problem == null, setOf("ja"), problem)
+        if (!owner.isActive) return IntegrationReadingCapabilities(false, setOf("ja"), "Image reading service is closed")
+        val selected = selection()
+        val problem = if (selected == null) "Install or verify a reading model in Reading first" else runtimeIssue()
+        return IntegrationReadingCapabilities(problem == null, readingModelLanguages(selected?.second ?: MangaArtifacts.lineProfileId), problem)
     }
 
     override fun start(request: IntegrationReadingRequest): IntegrationReadingSession {
         check(owner.isActive) { "Image reading service is closed" }
-        require(request.config.sourceLanguage == "ja") { "Image reading currently supports Japanese source text" }
-        val selected = selection() ?: error("Install or verify a Japanese reading model in Reading first")
+        val selected = selection() ?: error("Install or verify a reading model in Reading first")
+        require(request.config.sourceLanguage in readingModelLanguages(selected.second)) { "The selected image reader does not support this source language" }
         runtimeIssue()?.let { error(it) }
         val id = UUID.randomUUID().toString()
         val state = MutableStateFlow(IntegrationReadingSnapshot(id, IntegrationReadingStatus.RUNNING,
@@ -50,7 +49,7 @@ internal class DesktopReadingService(
                     var operation: Job? = null
                     var observation: Job? = null
                     try {
-                        operation = reader.readFrame(request.image, selected.first, request.translate, selected.second)
+                        operation = reader.readFrame(request.image, selected.first, request.translate, selected.second, request.config.sourceLanguage)
                             ?: error("The reading controller is closed")
                         observation = launch {
                             reader.state.collect { current ->

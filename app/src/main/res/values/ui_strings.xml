@@ -351,8 +351,8 @@
     <string name="ui_copy_exact_file_link_9e1fe" formatted="false">"Copy exact file link"</string>
     <string name="ui_source_license_1_s_98997">"Source &amp; license · %1$s"</string>
     <string name="ui_verifying_model_fa771" formatted="false">"Verifying model…"</string>
-    <string name="ui_import_downloaded_onnx_files_1f3bd" formatted="false">"Import downloaded ONNX files"</string>
-    <string name="ui_select_all_onnx_files_for_the_selected_engine_together_file_names_c1ec6" formatted="false">"Select all ONNX files for the selected engine together. File names do not matter: Hearth identifies and verifies the exact model bytes. Matching dictionaries are included. Manga and Meiki currently use captured/imported pages; live mode remains available with Paddle."</string>
+    <string name="ui_import_downloaded_onnx_files_1f3bd" formatted="false">"Import OCR files"</string>
+    <string name="ui_select_all_onnx_files_for_the_selected_engine_together_file_names_c1ec6" formatted="false">"Select the ONNX files and any dictionary listed on the reader card. Hearth identifies files by their contents. Manga and Meiki read captured or imported pages. Paddle supports live OCR."</string>
     <string name="ui_downloads_folder_settings_668bd" formatted="false">"Downloads &amp; folder settings"</string>
     <string name="ui_cloud_provider_connection_49770" formatted="false">"Cloud provider / connection"</string>
     <string name="ui_soniox_stt_rt_v5_streaming_cc_and_optional_integrated_translation_7d848" formatted="false">"Soniox stt-rt-v6: streaming CC and optional integrated translation. Source and translated text are retained separately."</string>

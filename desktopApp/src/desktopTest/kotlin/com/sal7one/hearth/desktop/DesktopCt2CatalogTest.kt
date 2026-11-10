@@ -15,7 +15,7 @@ class DesktopCt2CatalogTest {
             val ct2 = catalog.filter { it.engineId == "marian-local" }
             // The desktop CT2 cards are macOS-arm64 only; other hosts correctly filter them out.
             if (ct2.isEmpty()) return
-            assertEquals(7, ct2.size, ct2.map { it.id }.toString())
+            assertEquals(8, ct2.size, ct2.map { it.id }.toString())
             assertTrue(ct2.all { it.artifacts.size > 1 || it.archive?.files?.size == 7 }, ct2.map { it.id to it.artifacts.size }.toString())
             assertTrue(ct2.all { card -> card.artifacts.all { it.url.startsWith("https://") && it.sha256.length == 64 && it.bytes > 0 } })
             val quickmt = ct2.single { it.id == "ct2-quickmt-en-ar" }

@@ -21,6 +21,8 @@ class OcrBrowserPresentationTest {
         assertEquals(listOf("manga-page", "manga-koharu-page", "manga-koharu-clean-page"), OcrCatalog.profiles.filter { it.matchesBrowser("detector-v4-s", "manga") }.map { it.id })
         assertEquals(listOf("manga-koharu-clean-page"), OcrCatalog.profiles.filter {it.matchesBrowser("LaMa", "manga")}.map {it.id})
         assertEquals(listOf("manga-koharu-page", "manga-koharu-clean-page"), OcrCatalog.profiles.filter {it.matchesBrowser("academic", "manga")}.map {it.id})
+        assertTrue(OcrCatalog.lineProfile.matchesBrowser("Chinese ppocrv6_dict", "manga"))
+        assertFalse(OcrCatalog.lineProfile.matchesBrowser("Chinese", "paddle"))
         assertTrue(OcrCatalog.profiles.none { it.matchesBrowser("does-not-exist", "any") })
     }
 
@@ -37,6 +39,7 @@ class OcrBrowserPresentationTest {
             assertEquals(id, recommendedOcrReader("ja", id)?.id)
         }
         assertEquals("cjk", recommendedOcrReader("ja", "latin")?.id)
+        for (code in listOf("ja", "zh")) assertEquals(OcrCatalog.lineProfile.id, recommendedOcrReader(code, OcrCatalog.lineProfile.id)?.id)
         for (code in com.sal7one.transiber.ocr.OcrSelection.sourceLanguages) {
             val reader = checkNotNull(recommendedOcrReader(code, "latin"))
             assertTrue(code in reader.languages)

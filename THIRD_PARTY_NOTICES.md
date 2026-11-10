@@ -150,6 +150,8 @@ Runtime licenses do not replace these model licenses. See
 
 ## Automatic manga page detection
 
+Fast lines uses the separately downloaded [PP-OCRv6 Manga v0.3 detector, recognizer and dictionary](https://huggingface.co/Kellenok/PP-OCRv6_manga), which declare Apache-2.0. Hearth pins revision `d65838996a00ef6b1c73ca3a700d7a8c5fbbef8a` and the exact three files in `MangaArtifacts.kt`. The model card credits Manga109-s as training data. Neither source pages nor model weights ship in Hearth.
+
 The separately downloaded [ogkalu comic text/bubble detector](https://huggingface.co/ogkalu/comic-text-and-bubble-detector)
 declares Apache-2.0. Hearth pins the INT8 RT-DETR-v2 export, revision
 `16e8a622f91fabc6b5b65c96d32d1183f8843546`; shared artifact identities are in

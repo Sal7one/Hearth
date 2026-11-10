@@ -13,7 +13,7 @@ internal fun OcrProfile.matchesBrowser(query: String, family: String): Boolean =
 /** OCR follows the text being read, never the translator's output language. */
 internal fun recommendedOcrReader(source: String, selected: String?, profiles: List<OcrProfile> = com.sal7one.transiber.ocr.OcrCatalog.profiles): OcrProfile? {
     val current = profiles.firstOrNull { it.id == selected }
-    if (current != null && source == "ja" && current.family in setOf("manga", "meiki") && source in current.languages) return current
+    if (current != null && current.family in setOf("manga", "meiki") && source in current.languages) return current
     return profiles.firstOrNull { it.engine == "paddle" && source in it.languages }
 }
 

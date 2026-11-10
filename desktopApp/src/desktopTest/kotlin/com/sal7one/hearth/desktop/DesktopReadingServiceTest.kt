@@ -12,6 +12,22 @@ import java.util.concurrent.TimeUnit
 import kotlin.test.*
 
 class DesktopReadingServiceTest {
+    @Test fun fastReaderPublishesChineseSourceCapability() = runBlocking<Unit> {
+        val pipeline = noPipeline()
+        val service = DesktopReadingService(pipeline, this, { Path.of("models") to MangaArtifacts.lineProfileId }, { null },
+            readerFactory = { config, scope -> DesktopReadingController(pipeline, config, scope) { FakeReader() } })
+        try {
+            assertEquals(setOf("ja", "zh"), service.capabilities().sourceLanguages)
+            val session = service.start(IntegrationReadingRequest(image(), PipelineConfig(sourceLanguage = "zh"), false))
+            val result = withTimeout(5000) { session.state.first { it.terminal } }
+            assertEquals(IntegrationReadingStatus.COMPLETED, result.status)
+            assertEquals(1, result.regions.size)
+            assertFailsWith<IllegalArgumentException> {
+                service.start(IntegrationReadingRequest(image(), PipelineConfig(sourceLanguage = "en"), false))
+            }
+        } finally { service.close() }
+    }
+
     @Test fun serviceUsesConfiguredTranslatorAndPublishesMappedRegions() = runBlocking {
         val requests = mutableListOf<PipelineRequest>()
         val pipeline = object : PipelineService {

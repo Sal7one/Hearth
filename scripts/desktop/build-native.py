@@ -866,6 +866,7 @@ def main():
             installed_ocr = output / "libhearth_desktop_ocr.dylib"
             require_exports(installed_ocr, "_Java_com_sal7one_common_1jni_ocr_ComicNative_", 7)
             require_exports(installed_ocr, "_Java_com_sal7one_common_1jni_ocr_JapaneseNative_", 4)
+            require_exports(installed_ocr, "_Java_com_sal7one_common_1jni_ocr_MangaLineNative_", 5)
         if stage == "backend":
             installed_backend = output / "libhearth_desktop_backend_speech.dylib"
             if not installed_backend.is_file():

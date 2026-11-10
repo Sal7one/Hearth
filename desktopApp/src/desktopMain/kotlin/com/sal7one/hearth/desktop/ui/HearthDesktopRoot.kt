@@ -15,6 +15,8 @@ import com.sal7one.hearth.desktop.DesktopScreenReadingController
 import com.sal7one.hearth.desktop.platform.DesktopScreenCapture
 import com.sal7one.hearth.desktop.ui.screens.reading.ScreenReadingWindow
 import com.sal7one.hearth.desktop.selectedReadingModel
+import com.sal7one.hearth.desktop.readingModelLanguages
+import com.sal7one.hearth.desktop.readingModelSettings
 import com.sal7one.hearth.desktop.DesktopWorkspaceController
 import com.sal7one.hearth.desktop.data.DesktopModelStatus
 import com.sal7one.hearth.desktop.WorkspaceInput
@@ -131,6 +133,9 @@ internal fun HearthDesktopRoot(
     var readingTranslate by remember { mutableStateOf(initialUi["reading-translate"] != "false") }
     var readingOriginal by remember { mutableStateOf(initialUi["reading-original"] == "true") }
     var readingModelId by remember { mutableStateOf(selectedReadingModel(initialUi)) }
+    var savedReadingSource by remember { mutableStateOf(initialUi["reading-source"] ?: "ja") }
+    val readingSources = readingModelLanguages(readingModelId)
+    val readingSource = savedReadingSource.takeIf { it in readingSources } ?: "ja"
     var readingPollMs by remember { mutableStateOf(initialUi["reading-screen-poll-ms"]?.toLongOrNull()?.takeIf {it in setOf(1000L,2000L,5000L)} ?: 2000L) }
     val screenReading=remember(reading,readingPollMs) {DesktopScreenReadingController(reading,scope,DesktopScreenCapture::capture,readingPollMs)}
     val screenReadingState by screenReading.state.collectAsState()
@@ -170,7 +175,7 @@ internal fun HearthDesktopRoot(
 
     val installed = remember(installations) { installations.values.count { it.ready } }
     val screenSetup=listOf(readingModelId,models.verifiedSelection(readingModelId)?.modelPath,
-        readingTranslate,config.translation,config.targetLanguage)
+        readingTranslate,readingSource,config.translation,config.targetLanguage)
     var watchedSetup by remember {mutableStateOf<List<Any?>?>(null)}
     LaunchedEffect(screenSetup,screenReadingState.active) {
         if(screenReadingState.active && watchedSetup!=null && watchedSetup!=screenSetup) {
@@ -287,7 +292,7 @@ internal fun HearthDesktopRoot(
                 if(stage==null) {
                     reading.resetResults()
                     readingModelId=id
-                    saveUi(mapOf("reading-model-id" to id,"reading-model-path" to installed.modelPath))
+                    saveUi(readingModelSettings(id, installed.modelPath))
                     navigate(DesktopScreen.READING)
                 }
                 else controller.updateConfig { normalize(it.useVerifiedModel(stage, installed)) }
@@ -777,7 +782,7 @@ internal fun HearthDesktopRoot(
                 DesktopScreen.CONVERSATION -> ConversationScreen()
                 DesktopScreen.CAMERA -> CameraScreen()
                 DesktopScreen.READING -> {
-                    val readingConfig = config.copy(sourceLanguage = "ja", speech = null, voice = null)
+                    val readingConfig = config.copy(sourceLanguage = readingSource, speech = null, voice = null)
                     val languages = com.sal7one.hearth.desktop.ui.language.pipelineLanguages(readingConfig,
                         controller.capabilities, models.library.catalog, typedText = true)
                     val issue = if (workspace.active) "Finish the active caption or file session before translating a page. OCR-only reading is available."
@@ -791,17 +796,26 @@ internal fun HearthDesktopRoot(
                             screenReading.stop()
                             reading.resetResults()
                             readingModelId=id
-                            saveUi(mapOf("reading-model-id" to id,"reading-model-path" to models.verifiedSelection(id)?.modelPath.orEmpty()))
+                            saveUi(readingModelSettings(id, models.verifiedSelection(id)?.modelPath.orEmpty()))
                         },
                         modelActivity = library.transfers[readingModelId]?.label,
+                        source = readingSource, sources = readingSources,
+                        onSource = { source ->
+                            if (source in readingSources && source != readingSource) {
+                                screenReading.stop()
+                                reading.resetResults()
+                                savedReadingSource = source
+                                saveUi(mapOf("reading-source" to source))
+                            }
+                        },
                         target = config.targetLanguage, targets = languages.targets,
                         translate = readingTranslate, showOriginal = readingOriginal, translationIssue = issue,
                         onOpen = { screenReading.stop(); runCatching {
                             chooseFile(null, "Open manga image", listOf("png", "jpg", "jpeg"))?.let(reading::openImage)
                         }.onFailure { failure(it.message ?: it.toString()) } },
                         onRead = { model?.modelPath?.let {
-                            saveUi(mapOf("reading-model-path" to it))
-                            reading.read(java.nio.file.Path.of(it), readingTranslate, readingModelId)
+                            saveUi(readingModelSettings(readingModelId, it))
+                            reading.read(java.nio.file.Path.of(it), readingTranslate, readingModelId, readingSource)
                         } },
                         onCancel = reading::cancel, onCrop = reading::selectArea,
                         screenState = screenReadingState, screenAvailable = DesktopScreenCapture.available,
@@ -819,16 +833,16 @@ internal fun HearthDesktopRoot(
                                     val region=DesktopScreenCapture.selectRegion()
                                     if(region==null)onShowWindow()
                                     else {
-                                        saveUi(mapOf("reading-model-path" to path))
+                                        saveUi(readingModelSettings(readingModelId, path))
                                         watchedSetup=screenSetup
-                                        screenReading.start(region,java.nio.file.Path.of(path),readingTranslate,readingModelId)
+                                        screenReading.start(region,java.nio.file.Path.of(path),readingTranslate,readingModelId,readingSource)
                                     }
                                 } catch(cancelled: kotlinx.coroutines.CancellationException) {throw cancelled}
                                 catch(error: Exception) {onShowWindow();failure(error.message ?: error.toString())}
                                 finally {choosingScreen=false}
                             }
                         } },
-                        onDownload = { saveUi(mapOf("reading-model-path" to "")); models.download(readingModelId) },
+                        onDownload = { saveUi(readingModelSettings(readingModelId, "")); models.download(readingModelId) },
                         onSetup = { navigate(DesktopScreen.TRANSLATION_SETTINGS) }, onTarget = ::targetLanguage,
                         onTranslate = { readingTranslate = it; saveUi(mapOf("reading-translate" to it.toString())) },
                         onOriginal = { readingOriginal = it; saveUi(mapOf("reading-original" to it.toString())) },

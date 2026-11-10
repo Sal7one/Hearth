@@ -351,8 +351,8 @@
     <string name="ui_copy_exact_file_link_9e1fe" formatted="false">"نسخ رابط الملف المباشر"</string>
     <string name="ui_source_license_1_s_98997">"المصدر والرخصة · %1$s"</string>
     <string name="ui_verifying_model_fa771" formatted="false">"جارٍ التحقق من النموذج…"</string>
-    <string name="ui_import_downloaded_onnx_files_1f3bd" formatted="false">"استيراد ملفات ONNX المنزّلة"</string>
-    <string name="ui_select_all_onnx_files_for_the_selected_engine_together_file_names_c1ec6" formatted="false">"اختر كل ملفات ONNX للمحرك معًا. لا تهم أسماؤها؛ يتحقق Hearth من محتوى النموذج نفسه. القواميس المطابقة مضمّنة. يعمل Manga وMeiki حاليًا على الصور الملتقطة أو المستوردة؛ ويدعم Paddle الوضع المباشر."</string>
+    <string name="ui_import_downloaded_onnx_files_1f3bd" formatted="false">"استيراد ملفات التعرّف على النص"</string>
+    <string name="ui_select_all_onnx_files_for_the_selected_engine_together_file_names_c1ec6" formatted="false">"اختر ملفات ONNX وأي قاموس مدرج في بطاقة القارئ. يتعرّف Hearth على الملفات من محتواها. يقرأ Manga وMeiki الصور الملتقطة أو المستوردة. يدعم Paddle التعرّف المباشر على النص."</string>
     <string name="ui_downloads_folder_settings_668bd" formatted="false">"التنزيلات وإعدادات المجلد"</string>
     <string name="ui_cloud_provider_connection_49770" formatted="false">"مزوّد السحابة والاتصال"</string>
     <string name="ui_soniox_stt_rt_v5_streaming_cc_and_optional_integrated_translation_7d848" formatted="false">"Soniox stt-rt-v6: نص مباشر وترجمة مدمجة اختيارية. يُحتفظ بالنص الأصلي والمترجم منفصلين."</string>

@@ -20,6 +20,7 @@ internal data class DesktopReadingState(
     val busy: Boolean=false,val phase: String="Open a manga page to begin",
     val regions: List<OcrRegion> = emptyList(),val text: List<PageText> = emptyList(),
     val translations: Map<OcrRect,String> = emptyMap(),val error: String?=null,
+    val ocrElapsedMs: Long? = null,
 )
 
 /** Shared by UI and loopback image sessions: cancellation joins native work before admission passes. */
@@ -54,22 +55,24 @@ internal class DesktopReadingController(
         if(state.value.busy)return
         val image=state.value.image ?: return
         require(area==null || area.x>=0 && area.y>=0 && area.width>=8 && area.height>=8 && area.right<=image.width && area.bottom<=image.height)
-        mutable.update {it.copy(crop=area,regions=emptyList(),text=emptyList(),translations=emptyMap(),error=null)}
+        mutable.update {it.copy(crop=area,regions=emptyList(),text=emptyList(),translations=emptyMap(),error=null,ocrElapsedMs=null)}
     }
-    fun read(directory: Path, translate: Boolean,profileId: String?=null): Job? {
+    fun read(directory: Path, translate: Boolean,profileId: String?=null,sourceLanguage: String="ja"): Job? {
         val image=state.value.image ?: return null
-        return readImage(image, state.value.crop ?: OcrRect(0,0,image.width,image.height), directory, translate, profileId)
+        return readImage(image, state.value.crop ?: OcrRect(0,0,image.width,image.height), directory, translate, profileId, sourceLanguage)
     }
     /** Screen frames use the same resident reader and translator as imported pages. No frame queue is retained. */
-    fun readFrame(image: BufferedImage, directory: Path, translate: Boolean, profileId: String?=null): Job? {
+    fun readFrame(image: BufferedImage, directory: Path, translate: Boolean, profileId: String?=null, sourceLanguage: String="ja"): Job? {
         require(image.width in 1..2048 && image.height in 1..2048) { "Screen frame exceeds the 2048-pixel OCR bound" }
-        return readImage(image, OcrRect(0,0,image.width,image.height), directory, translate, profileId, "Selected screen region")
+        return readImage(image, OcrRect(0,0,image.width,image.height), directory, translate, profileId, sourceLanguage, "Selected screen region")
     }
-    private fun readImage(image: BufferedImage, area: OcrRect, directory: Path, translate: Boolean, profileId: String?, name: String?=null): Job? {
-        val settings=config.value.copy(sourceLanguage="ja",speech=null,voice=null)
+    private fun readImage(image: BufferedImage, area: OcrRect, directory: Path, translate: Boolean, profileId: String?,
+        sourceLanguage: String, name: String?=null): Job? {
+        require(sourceLanguage in readingModelLanguages(profileId)) { "The selected reader does not support $sourceLanguage" }
+        val settings=config.value.copy(sourceLanguage=sourceLanguage,speech=null,voice=null)
         return replace { token ->
             if(name != null) mutable.value=DesktopReadingState(image=image,name=name,busy=true)
-            mutable.update {it.copy(busy=true,phase="Loading manga models…",regions=emptyList(),text=emptyList(),translations=emptyMap(),error=null)}
+            mutable.update {it.copy(busy=true,phase="Loading manga models…",regions=emptyList(),text=emptyList(),translations=emptyMap(),error=null,ocrElapsedMs=null)}
             if(readerPath!=directory || readerProfile!=profileId || reader==null) {
                 releaseReader()
                 withContext(Dispatchers.IO+NonCancellable) {
@@ -80,7 +83,7 @@ internal class DesktopReadingController(
             currentCoroutineContext().ensureActive()
             val active=checkNotNull(reader)
             val pixels=withContext(Dispatchers.Default) {image.getRGB(area.x,area.y,area.width,area.height,null,0,area.width)}
-            mutable.update {it.copy(phase="Finding text and speech bubbles…")}
+            mutable.update {it.copy(phase=if (profileId == MangaArtifacts.lineProfileId) "Finding text lines…" else "Finding text and speech bubbles…")}
             coroutineScope {
                 val pending=Channel<PageText>(64)
                 val queued=HashSet<Pair<OcrRect,String>>()
@@ -108,6 +111,7 @@ internal class DesktopReadingController(
                 }
                 try {
                     withContext(Dispatchers.Default) {
+                        val ocrStarted = System.nanoTime()
                         active.recognize(pixels,area.width,area.height,object:PageOcrProgress {
                             override fun isCurrent():Boolean {work.ensureActive();return epoch.get()==token}
                             private fun OcrRegion.page()=translated(area.x,area.y,image.width,image.height)
@@ -115,7 +119,7 @@ internal class DesktopReadingController(
                                 if(isCurrent())mutable.update {it.copy(phase=when(stage){
                                     PageOcrStage.PREVIEW->"Finding a quick outline…"
                                     PageOcrStage.SEGMENTATION->"Refining outlines with Koharu masks and panel layout… This CPU quality pass can take a minute."
-                                    PageOcrStage.RECOGNITION->"Reading Japanese text inside each region…"
+                                    PageOcrStage.RECOGNITION->"Recognizing text…"
                                     PageOcrStage.CLEANUP->"Removing source text while preserving the page…"
                                 })}
                             }
@@ -135,6 +139,10 @@ internal class DesktopReadingController(
                                 }
                             }
                         })
+                        if (epoch.get() == token) {
+                            val elapsed = (System.nanoTime() - ocrStarted) / 1_000_000
+                            mutable.update { it.copy(ocrElapsedMs = elapsed) }
+                        }
                     }
                     pending.close()
                     if(translate)mutable.update {it.copy(phase="Finishing translations…")}
@@ -153,7 +161,7 @@ internal class DesktopReadingController(
     }
     fun resetResults() {
         cancel()
-        mutable.update {it.copy(regions=emptyList(),text=emptyList(),translations=emptyMap(),error=null,phase="Ready · choose Read page to use the selected pipeline")}
+        mutable.update {it.copy(regions=emptyList(),text=emptyList(),translations=emptyMap(),error=null,ocrElapsedMs=null,phase="Ready · choose Read page to use the selected pipeline")}
     }
     @OptIn(ExperimentalCoroutinesApi::class)
     private fun replace(block: suspend (Long)->Unit): Job? {
