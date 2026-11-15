@@ -10,8 +10,8 @@ conditions through the Android application.
 
 | Area | Desktop implementation |
 | --- | --- |
-| Inputs | Mac system audio through ScreenCaptureKit, typed text, a chosen microphone/virtual audio device, PCM WAV and native-system-supported audio/video files. |
-| Local recognition | Pinned whisper.cpp with CPU/Metal and an opt-in Windows CUDA build; Qwen3-ASR, Moonshine/Omnilingual/Phonon (sherpa-onnx), Vosk (Kaldi), TranscribePsy (parakeet/ggml) and Nemotron 3.5 (NeMo ggml) use CPU on macOS arm64. Live recognition uses utterance windows; it is not a token-streaming decoder. |
+| Inputs | Mac system audio through ScreenCaptureKit, Windows PC audio through WASAPI loopback, typed text, a chosen microphone/virtual audio device, PCM WAV and native-system-supported audio/video files. |
+| Local recognition | Pinned whisper.cpp with CPU/Metal and an opt-in Windows CUDA build; Qwen3-ASR, Moonshine/Omnilingual/Phonon (sherpa-onnx), Vosk (Kaldi), TranscribePsy (parakeet/ggml) and Nemotron 3.5 (NeMo ggml) use CPU on macOS arm64 and Windows x64. Live recognition uses utterance windows; it is not a token-streaming decoder. |
 | Local translation | Hearth's existing llama.cpp translation model/prompt protocol plus pinned CTranslate2 QuickMT/SMaLL-100 packages, with pinned EuroLLM/Riva catalog entries and explicit verified custom model paths. |
 | Local voice | Supertonic 3 (F1–F5/M1–M5), MOSS-TTS Nano, Ming-3.0 local (experimental, English/Chinese), OmniVoice (24 kHz), Magpie (22.05 kHz) and Chatterbox V3 (24 kHz, experimental). |
 | Cloud stages | Independently configured OpenAI-compatible STT, chat translation and WAV TTS endpoints; local compatible servers may omit credentials. Provider keys never enter the model downloader. |
@@ -35,6 +35,12 @@ live capture and protected-content behavior; the noncapturing probe proves only
 helper/framework packaging. An OBS native plugin remains separate; the Browser
 Source and external-app PCM API work without one.
 
+On Windows 10/11, choose **PC audio** in Captions. The helper uses WASAPI loopback, needs
+no permission prompt and opens no microphone. Where Windows provides process loopback
+(documented from build 20348) Hearth's own process tree is excluded, so spoken
+translations are not captured again; older releases capture the default playback
+device's whole mix. Quiet gaps are filled from the clock so a pause can end an utterance.
+
 The floating toolbar uses the Hearth icon; click it to bring the main window back
 to Overlay settings. Diagnostic `--overlay-preview` windows are explicitly marked
 as sample captions and use focused-window shortcuts only, so they cannot take
@@ -46,7 +52,7 @@ Mac builds now compile Metal by default for Whisper and GGUF translation;
 only when supported by their actual native adapter and device. Fresh routes and
 older/imported setups without a compute choice prefer an available GPU; explicit
 saved CPU/GPU choices remain intact. The resolved choice is saved before a session starts. Qwen3-ASR,
-CTranslate2 and local TTS adapters currently use CPU. Qwen3-ASR is macOS arm64 only.
+CTranslate2 and local TTS adapters currently use CPU. Qwen3-ASR is built for macOS arm64 and Windows x64.
 
 Live speech uses the displayed four-second Standard window for every engine,
 or the explicitly selected window. A 600 ms trailing pause can finish a shorter
@@ -169,9 +175,25 @@ The OS bridge registers these specific chords; it installs no keyboard hook.
 ## Build and run
 
 Use JDK 17 for compilation and JDK 21 for installer packaging, Python 3,
-CMake 3.22 or newer, and Rust 1.99 (Ming). `hearthDesktopOnly=true`
+CMake 3.22 or newer, and Rust 1.99 (Ming; on Windows also the CTranslate2 tokenizer library). `hearthDesktopOnly=true`
 avoids requiring an Android SDK for a desktop build. Without that property, the
 ordinary Android project and all its checks remain enabled.
+
+Start with the check. It reads tool versions, the installed JDKs, Visual Studio or
+Xcode, Rust, the NVIDIA driver and any CUDA Toolkit, names each missing piece with
+the command that installs it, and lists the build steps still to do. It downloads,
+installs and changes nothing.
+
+```sh
+python3 scripts/desktop/doctor.py          # what is here, what is missing, what is left to build
+python3 scripts/desktop/doctor.py --run    # then run the steps still to do, in order
+```
+
+`--run` stops at the first step that fails and leaves that step's own output as the
+reason; `--run --all` rebuilds every step. A step counts as done when its result is in
+the tree, not when it matches your latest changes. `--json` prints the same facts for
+scripts. It ends by packaging the app and running the packaged check. To build and run
+from source by hand instead:
 
 ```sh
 python3 scripts/desktop/prepare-dependencies.py
@@ -180,7 +202,14 @@ bash scripts/desktop/build-media.sh
 ./gradlew -PhearthDesktopOnly=true :desktopApp:run
 ```
 
-`--stage all` now provisions NeMo/llama.cpp and builds Magpie on macOS arm64.
+An NVIDIA GPU and CUDA are never required: every engine runs on the CPU. The check
+reports a CUDA Toolkit only when it is one the [CUDA build](desktop-cuda.md) accepts,
+an installed official toolkit with its compiler. CUDA runtime files that came with
+another program are listed as such; Hearth cannot compile with them and never bundles
+them.
+
+`--stage all` now provisions NeMo/llama.cpp and builds Magpie on macOS arm64. On Windows x64
+it builds every stage except Chatterbox, which `--stage chatterbox` builds on request.
 Chatterbox and Magpie are experimental, not live-readers. The final acceptance
 matrix is in [the final handoff](handoff/desktop-final-2026-10-22.md).
 
@@ -209,7 +238,7 @@ the app-local DLLs serve the official ONNX Runtime dependency on clean Windows
 ```sh
 ./gradlew -PhearthDesktopOnly=true :hearth-core:desktopTest \
   :desktop-runtime:test :desktop-data:test :desktop-media:test \
-  :desktop-integration:test :desktopApp:desktopTest
+  :desktop-integration:test :desktop-service:test :desktopApp:desktopTest
 ./gradlew -PhearthDesktopOnly=true :desktopApp:packageDmg        # macOS host
 ./gradlew -PhearthDesktopOnly=true :desktopApp:packageMsi :desktopApp:packageExe  # Windows host
 ```
@@ -222,7 +251,7 @@ The current desktop installer version is `1.0.4`, independent of Android's versi
 macOS installer versions require a nonzero major. Use
 `-PhearthDesktopVersion=MAJOR.MINOR.PATCH` to change it. Builds target Windows x64,
 macOS Apple Silicon and macOS Intel, but this branch's native artifacts and real
-proofs are **macOS arm64 only**; Intel/Windows are build-wired, not staged/proven.
+proofs cover **macOS arm64 and Windows x64** ([what was run](desktop-native-verification.md)); Intel Macs are build-wired, not staged/proven.
 macOS minimum deployment is 13.3 (the pinned ONNX Runtime requirement). Signing and
 notarization identities are not checked into the repository; local/CI installers
 are development builds; the verified Apple Silicon app is ad hoc signed and not
@@ -270,6 +299,7 @@ becomes completed transcription.
 | `desktop-media` | Platform-native media decoder and macOS Security.framework helper; no Android dependency. Secrets pass only through pipes, never command-line arguments. |
 | `desktop-data` | DataStore, credential references/OS storage, portable setup validation, derived model catalog and isolated pinned downloader. |
 | `desktop-integration` | Optional loopback HTTP/SSE/PCM/OBS interface over the same pipeline; owns only sessions it creates. |
+| `desktop-service` | Headless `Hearth --serve` for other local programs: caller-keyed jobs over loopback HTTP, with engines in a worker process the host can end. See [the service API](service-api.md). |
 | `desktopApp` | Desktop workspace, model/provider setup, exports, floating overlay and host installers. |
 
 A runtime adapter must release or cache its own handles deliberately. Cached
