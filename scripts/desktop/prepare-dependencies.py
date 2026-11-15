@@ -91,6 +91,7 @@ def main():
     if not (llama/'.git').is_dir():
         if llama.exists(): raise RuntimeError('Refusing to overwrite a non-checkout dependency directory')
         subprocess.run(['git','init',str(llama)],check=True)
+        subprocess.run(['git','-C',str(llama),'config','core.autocrlf','false'],check=True)
         subprocess.run(['git','-C',str(llama),'remote','add','origin','https://github.com/ggml-org/llama.cpp.git'],check=True)
     status=subprocess.check_output(['git','-C',str(llama),'status','--porcelain'],text=True)
     if status.strip(): raise RuntimeError('Dependency checkout has local changes; not resetting it')
@@ -101,6 +102,7 @@ def main():
     if not (sherpa/'.git').is_dir():
         if sherpa.exists(): raise RuntimeError('Refusing to overwrite a non-checkout sherpa-onnx directory')
         subprocess.run(['git','init',str(sherpa)],check=True)
+        subprocess.run(['git','-C',str(sherpa),'config','core.autocrlf','false'],check=True)
         subprocess.run(['git','-C',str(sherpa),'remote','add','origin','https://github.com/k2-fsa/sherpa-onnx.git'],check=True)
     status=subprocess.check_output(['git','-C',str(sherpa),'status','--porcelain'],text=True)
     if status.strip(): raise RuntimeError('sherpa-onnx checkout has local changes; not resetting it')
@@ -108,11 +110,13 @@ def main():
     if not exists: subprocess.run(['git','-C',str(sherpa),'fetch','--depth','1','https://github.com/k2-fsa/sherpa-onnx.git',SHERPA_PIN],check=True)
     subprocess.run(['git','-C',str(sherpa),'checkout','--detach',SHERPA_PIN],check=True)
     omnivoice=None
-    if key=='macos-arm64':
+    voices=key in ('macos-arm64','windows-x64')
+    if voices:
         omnivoice=work/'omnivoice.cpp'
         if not (omnivoice/'.git').is_dir():
             if omnivoice.exists(): raise RuntimeError('Refusing to overwrite a non-checkout omnivoice.cpp directory')
             subprocess.run(['git','init',str(omnivoice)],check=True)
+            subprocess.run(['git','-C',str(omnivoice),'config','core.autocrlf','false'],check=True)
             subprocess.run(['git','-C',str(omnivoice),'remote','add','origin','https://github.com/ServeurpersoCom/omnivoice.cpp.git'],check=True)
         status=subprocess.check_output(['git','-C',str(omnivoice),'status','--porcelain'],text=True)
         if status.strip(): raise RuntimeError('omnivoice.cpp checkout has local changes; not resetting it')
@@ -120,7 +124,7 @@ def main():
         if not exists: subprocess.run(['git','-C',str(omnivoice),'fetch','--depth','1','https://github.com/ServeurpersoCom/omnivoice.cpp.git',OMNIVOICE_PIN],check=True)
         subprocess.run(['git','-C',str(omnivoice),'checkout','--detach',OMNIVOICE_PIN],check=True)
         # The ggml runtime is a git submodule; check it out at its own pin and verify it.
-        subprocess.run(['git','-C',str(omnivoice),'submodule','update','--init','--recursive'],check=True)
+        subprocess.run(['git','-c','core.autocrlf=false','-C',str(omnivoice),'submodule','update','--init','--recursive'],check=True)
         ggml=(omnivoice/'ggml')
         ggml_pin=subprocess.check_output(['git','-C',str(ggml),'rev-parse','HEAD'],text=True).strip()
         if ggml_pin!=OMNIVOICE_GGML_PIN: raise RuntimeError(f'omnivoice.cpp/ggml must be {OMNIVOICE_GGML_PIN}, found {ggml_pin}')
@@ -130,6 +134,7 @@ def main():
         if not (chatterbox/'.git').is_dir():
             if chatterbox.exists(): raise RuntimeError('Refusing to overwrite a non-checkout chatterboxcpp directory')
             subprocess.run(['git','init',str(chatterbox)],check=True)
+            subprocess.run(['git','-C',str(chatterbox),'config','core.autocrlf','false'],check=True)
             subprocess.run(['git','-C',str(chatterbox),'remote','add','origin','https://github.com/birdup000/chatterboxcpp.git'],check=True)
         status=subprocess.check_output(['git','-C',str(chatterbox),'status','--porcelain'],text=True)
         if status.strip(): raise RuntimeError('chatterboxcpp checkout has local changes; not resetting it')
@@ -140,13 +145,14 @@ def main():
         if not (nemo/'.git').is_dir():
             if nemo.exists(): raise RuntimeError('Refusing to overwrite a non-checkout NeMo-Speech.cpp directory')
             subprocess.run(['git','init',str(nemo)],check=True)
+            subprocess.run(['git','-C',str(nemo),'config','core.autocrlf','false'],check=True)
             subprocess.run(['git','-C',str(nemo),'remote','add','origin','https://github.com/NVIDIA/NeMo-Speech.cpp.git'],check=True)
         status=subprocess.check_output(['git','-C',str(nemo),'status','--porcelain'],text=True)
         if status.strip(): raise RuntimeError('NeMo-Speech.cpp checkout has local changes; not resetting it')
         exists=subprocess.run(['git','-C',str(nemo),'cat-file','-e',f'{MAGPIE_NEMO_PIN}^{{commit}}'],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL).returncode==0
         if not exists: subprocess.run(['git','-C',str(nemo),'fetch','--depth','1','https://github.com/NVIDIA/NeMo-Speech.cpp.git',MAGPIE_NEMO_PIN],check=True)
         subprocess.run(['git','-C',str(nemo),'checkout','--detach',MAGPIE_NEMO_PIN],check=True)
-        subprocess.run(['git','-C',str(nemo),'submodule','update','--init','--recursive'],check=True)
+        subprocess.run(['git','-c','core.autocrlf=false','-C',str(nemo),'submodule','update','--init','--recursive'],check=True)
         ggml=nemo/'llama.cpp'
         ggml_pin=subprocess.check_output(['git','-C',str(ggml),'rev-parse','HEAD'],text=True).strip()
         if ggml_pin!=MAGPIE_NEMO_GGML_PIN: raise RuntimeError(f'NeMo-Speech.cpp/llama.cpp must be {MAGPIE_NEMO_GGML_PIN}, found {ggml_pin}')
@@ -181,7 +187,7 @@ def main():
     if (ort/'VERSION_NUMBER').read_text().strip()!='1.20.1': raise ValueError('Unexpected ONNX Runtime version')
     paths={'HEARTH_LLAMA_ROOT':str(llama),'HEARTH_SHERPA_ROOT':str(sherpa),'HEARTH_ORT_ROOT':str(ort)}
     if omnivoice is not None: paths['HEARTH_OMNIVOICE_ROOT']=str(omnivoice)
-    if key=='macos-arm64':
+    if voices:
         paths['HEARTH_CHATTERBOX_ROOT']=str(work/'chatterboxcpp')
         paths['HEARTH_NEMO_ROOT']=str(work/'NeMo-Speech.cpp')
     if args.github_env:

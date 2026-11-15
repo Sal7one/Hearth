@@ -57,27 +57,29 @@ class DesktopSettingsTest {
         val directory = Files.createTempDirectory("hearth-model-test-")
         try {
             val library = DesktopModelLibrary(directory)
-            val macosArm = desktopPlatform() == "macos-arm64"
-            val qwen = if (macosArm) 1 else 0
-            val transcribepsy = if (macosArm) 1 else 0
-            val nemotron = if (macosArm) 1 else 0
-            val moonshine = if (macosArm) 10 else 0
-            val omnilingual = if (macosArm) 1 else 0
-            val phonon = if (macosArm) 2 else 0
-            val vosk = if (macosArm) 6 else 0
-            val ct2 = if (macosArm) 7 else 0
-            val moss = if (macosArm) 1 else 0
-            val omnivoice = if (macosArm) 1 else 0
-            val magpie = if (macosArm) 1 else 0
-            val ming = if (macosArm) 1 else 0
-            val chatterbox = if (macosArm) 1 else 0
+            // Hosts whose native bundle carries every engine family; other hosts list the common three only.
+            val ported = desktopPlatform() in setOf("macos-arm64", "windows-x64")
+            val qwen = if (ported) 1 else 0
+            val transcribepsy = if (ported) 1 else 0
+            val nemotron = if (ported) 1 else 0
+            val moonshine = if (ported) 10 else 0
+            val omnilingual = if (ported) 1 else 0
+            val phonon = if (ported) 2 else 0
+            val vosk = if (ported) 6 else 0
+            val ct2 = if (ported) 7 else 0
+            val moss = if (ported) 1 else 0
+            val omnivoice = if (ported) 1 else 0
+            val magpie = if (ported) 1 else 0
+            val ming = if (ported) 1 else 0
+            // Chatterbox stays macOS-only until its English generation is correct on Windows x64.
+            val chatterbox = if (desktopPlatform() == "macos-arm64") 1 else 0
             val byStage = library.catalog.groupingBy { it.stage?.name ?: "OCR" }.eachCount()
             assertEquals(mapOf("STT" to 27 + qwen + transcribepsy + nemotron + moonshine + omnilingual + phonon + vosk, "TRANSLATION" to 14 + ct2, "TTS" to 1 + moss + omnivoice + magpie + ming + chatterbox, "OCR" to 3), byStage)
             assertEquals(if (qwen + transcribepsy + nemotron + moonshine + omnilingual + phonon + vosk > 0) 8 else 1, library.catalog.filter { it.stage == com.sal7one.hearth.core.PipelineStage.STT }.map { it.family }.distinct().size)
             if (qwen == 1) {
                 val card = library.catalog.single { it.id == "qwen3-asr-0.6b" }
                 assertEquals("qwen3-asr-local", card.engineId)
-                assertEquals(setOf("macos-arm64"), card.platforms)
+                assertEquals(setOf("macos-arm64", "windows-x64"), card.platforms)
                 assertEquals(878_702_423L, card.bytes)
                 assertEquals(987_015_347L, card.installedBytes)
                 assertEquals(6, card.archive?.files?.size)
@@ -104,7 +106,7 @@ class DesktopSettingsTest {
                 assertEquals(10, cards.size, cards.map { it.id }.toString())
                 assertEquals(setOf("en", "ar", "es", "ja", "ko", "uk", "vi", "zh"), cards.flatMap { it.languages }.toSet())
                 for (card in cards) {
-                    assertEquals(setOf("macos-arm64"), card.platforms)
+                    assertEquals(setOf("macos-arm64", "windows-x64"), card.platforms)
                     val archive = requireNotNull(card.archive) { card.id }
                     assertEquals("tar.bz2", archive.format)
                     assertEquals(archive.root, card.artifacts.single().filename.removeSuffix(".tar.bz2"))
@@ -171,7 +173,7 @@ class DesktopSettingsTest {
             if (omnivoice == 1) {
                 val card = library.catalog.single { it.id == "omnivoice-tts" }
                 assertEquals("omnivoice-tts-local", card.engineId)
-                assertEquals(setOf("macos-arm64"), card.platforms)
+                assertEquals(setOf("macos-arm64", "windows-x64"), card.platforms)
                 assertEquals(2, card.artifacts.size)
                 assertEquals(945_284_608L, card.bytes)
                 assertEquals("design-female", card.options["voice"])
@@ -183,7 +185,7 @@ class DesktopSettingsTest {
             if (magpie == 1) {
                 val card = library.catalog.single { it.id == "magpie-tts" }
                 assertEquals("magpie-tts-local", card.engineId)
-                assertEquals(setOf("macos-arm64"), card.platforms)
+                assertEquals(setOf("macos-arm64", "windows-x64"), card.platforms)
                 assertEquals(2, card.artifacts.size)
                 assertEquals(678_563_360L, card.bytes)
                 assertEquals(668_084_575L, card.installedBytes)

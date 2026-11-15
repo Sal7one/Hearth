@@ -100,8 +100,8 @@ elseif(HEARTH_STAGE STREQUAL "supertonic" OR HEARTH_STAGE STREQUAL "ocr")
  target_link_libraries(${OUTPUT_TARGET} PRIVATE onnx_host)
  set_target_properties(${OUTPUT_TARGET} PROPERTIES BUILD_RPATH "${HEARTH_ORT_ROOT}/lib" INSTALL_RPATH "@loader_path")
 elseif(HEARTH_STAGE STREQUAL "onnx")
- if(NOT APPLE OR NOT CMAKE_SYSTEM_PROCESSOR STREQUAL "arm64")
-  message(FATAL_ERROR "The Qwen3-ASR desktop runtime is built only for macOS arm64")
+ if(NOT WIN32 AND (NOT APPLE OR NOT CMAKE_SYSTEM_PROCESSOR STREQUAL "arm64"))
+  message(FATAL_ERROR "The Qwen3-ASR desktop runtime is built only for macOS arm64 and Windows x64")
  endif()
  if(NOT EXISTS "${HEARTH_ORT_ROOT}/VERSION_NUMBER")
   message(FATAL_ERROR "Set HEARTH_ORT_ROOT to the extracted official ONNX Runtime 1.20.1 host SDK")
@@ -111,9 +111,22 @@ elseif(HEARTH_STAGE STREQUAL "onnx")
  if(NOT ORT_VERSION STREQUAL "1.20.1")
   message(FATAL_ERROR "The desktop bundle ships ONNX Runtime 1.20.1")
  endif()
- if(NOT EXISTS "${HEARTH_SHERPA_ROOT}/include/sherpa-onnx/c-api/c-api.h" OR
-    NOT EXISTS "${HEARTH_SHERPA_ROOT}/lib/libsherpa-onnx.a")
+ if(WIN32)
+  # MSVC has no combined archive step; the installed static libraries are linked by name.
+  set(HEARTH_SHERPA_LIBRARIES)
+  foreach(name sherpa-onnx-c-api sherpa-onnx-core kaldi-native-fbank-core kissfft-float sherpa-onnx-fstfar
+          sherpa-onnx-fst sherpa-onnx-kaldifst-core kaldi-decoder-core ssentencepiece_core)
+   list(APPEND HEARTH_SHERPA_LIBRARIES "${HEARTH_SHERPA_ROOT}/lib/${name}.lib")
+  endforeach()
+ else()
+  set(HEARTH_SHERPA_LIBRARIES "${HEARTH_SHERPA_ROOT}/lib/libsherpa-onnx.a" "-framework Foundation")
+ endif()
+ list(GET HEARTH_SHERPA_LIBRARIES 0 HEARTH_SHERPA_FIRST)
+ if(NOT EXISTS "${HEARTH_SHERPA_ROOT}/include/sherpa-onnx/c-api/c-api.h" OR NOT EXISTS "${HEARTH_SHERPA_FIRST}")
   message(FATAL_ERROR "Set HEARTH_SHERPA_ROOT to the pinned static sherpa-onnx install tree")
+ endif()
+ if(NOT DEFINED HEARTH_ONNX_ENGINE_SOURCE)
+  set(HEARTH_ONNX_ENGINE_SOURCE "${CPP}/onnx/onnx_engine.cpp")
  endif()
  add_library(onnx_host SHARED IMPORTED)
  if(WIN32)
@@ -128,7 +141,7 @@ elseif(HEARTH_STAGE STREQUAL "onnx")
  add_library(hearth_desktop_qwen3_asr SHARED
    "${DESKTOP_CPP}/qwen_jni.cpp"
    "${CPP}/speech/backends/qwen_backend.cpp"
-   "${CPP}/onnx/onnx_engine.cpp"
+   "${HEARTH_ONNX_ENGINE_SOURCE}"
    "${CPP}/common/logging.cpp"
    "${CPP}/common/json_utils.cpp"
    "${CPP}/common/engine_interface.cpp"
@@ -139,12 +152,18 @@ elseif(HEARTH_STAGE STREQUAL "onnx")
    ${JNI_INCLUDE_DIRS} "${DESKTOP_CPP}" "${CPP}/common" "${CPP}/speech" "${CPP}/speech/backends"
    "${CPP}/onnx" "${CPP}/onnx/include" "${CPP}/onnx/include/onnxruntime"
    "${HEARTH_SHERPA_ROOT}/include")
- target_link_libraries(hearth_desktop_qwen3_asr PRIVATE onnx_host "${HEARTH_SHERPA_ROOT}/lib/libsherpa-onnx.a" "-framework Foundation")
+ target_link_libraries(hearth_desktop_qwen3_asr PRIVATE onnx_host ${HEARTH_SHERPA_LIBRARIES})
+ if(WIN32)
+  # The shared Android sources mark their entry points with GCC visibility; name them for the MSVC linker.
+  target_compile_options(hearth_desktop_qwen3_asr PRIVATE "/FI${HEARTH_WINDOWS_COMPAT}/hearth_windows_compat.h")
+  target_link_options(hearth_desktop_qwen3_asr PRIVATE /EXPORT:hearth_speech_backend_v1 /EXPORT:hearth_moonshine_backend_v1
+    /EXPORT:hearth_omnilingual_backend_v1 /EXPORT:hearth_phonon_backend_v1)
+ endif()
  set_target_properties(hearth_desktop_qwen3_asr PROPERTIES BUILD_RPATH "${HEARTH_ORT_ROOT}/lib" INSTALL_RPATH "@loader_path")
  set(OUTPUT_TARGET hearth_desktop_qwen3_asr)
 elseif(HEARTH_STAGE STREQUAL "moss")
- if(NOT APPLE OR NOT CMAKE_SYSTEM_PROCESSOR STREQUAL "arm64")
-  message(FATAL_ERROR "The MOSS desktop voice runtime is built only for macOS arm64")
+ if(NOT WIN32 AND (NOT APPLE OR NOT CMAKE_SYSTEM_PROCESSOR STREQUAL "arm64"))
+  message(FATAL_ERROR "The MOSS desktop voice runtime is built only for macOS arm64 and Windows x64")
  endif()
  if(NOT EXISTS "${HEARTH_ORT_ROOT}/VERSION_NUMBER")
   message(FATAL_ERROR "Set HEARTH_ORT_ROOT to the extracted official ONNX Runtime 1.20.1 host SDK")
@@ -161,21 +180,28 @@ elseif(HEARTH_STAGE STREQUAL "moss")
   message(FATAL_ERROR "Set HEARTH_SENTENCEPIECE_SOURCE to the pinned SentencePiece 0.2.0 source")
  endif()
  add_library(onnx_host SHARED IMPORTED)
- set_target_properties(onnx_host PROPERTIES IMPORTED_LOCATION "${HEARTH_ORT_ROOT}/lib/libonnxruntime.1.20.1.dylib")
+ if(WIN32)
+  set_target_properties(onnx_host PROPERTIES IMPORTED_LOCATION "${HEARTH_ORT_ROOT}/lib/onnxruntime.dll" IMPORTED_IMPLIB "${HEARTH_ORT_ROOT}/lib/onnxruntime.lib")
+ else()
+  set_target_properties(onnx_host PROPERTIES IMPORTED_LOCATION "${HEARTH_ORT_ROOT}/lib/libonnxruntime.1.20.1.dylib")
+ endif()
+ if(NOT DEFINED HEARTH_MOSS_SOURCE)
+  set(HEARTH_MOSS_SOURCE "${HEARTH_MOSS_CPP}/moss.cpp")
+ endif()
  set(CMAKE_POLICY_VERSION_MINIMUM 3.5 CACHE STRING "" FORCE)
  set(SPM_ENABLE_SHARED OFF CACHE BOOL "" FORCE)
  set(SPM_ENABLE_TCMALLOC OFF CACHE BOOL "" FORCE)
  set(SPM_BUILD_TEST OFF CACHE BOOL "" FORCE)
  set(SPM_ENABLE_NFKC_COMPILE OFF CACHE BOOL "" FORCE)
  add_subdirectory("${HEARTH_SENTENCEPIECE_SOURCE}" spm EXCLUDE_FROM_ALL)
- add_library(hearth_desktop_moss SHARED "${DESKTOP_CPP}/moss_jni.cpp" "${HEARTH_MOSS_CPP}/moss.cpp")
+ add_library(hearth_desktop_moss SHARED "${DESKTOP_CPP}/moss_jni.cpp" "${HEARTH_MOSS_SOURCE}")
  target_include_directories(hearth_desktop_moss PRIVATE ${JNI_INCLUDE_DIRS} "${HEARTH_MOSS_CPP}" "${HEARTH_MOSS_CPP}/vendor" "${HEARTH_SENTENCEPIECE_SOURCE}/src" "${CPP}/common" "${CPP}/onnx/include")
  target_link_libraries(hearth_desktop_moss PRIVATE sentencepiece-static onnx_host)
  set_target_properties(hearth_desktop_moss PROPERTIES BUILD_RPATH "${HEARTH_ORT_ROOT}/lib" INSTALL_RPATH "@loader_path")
  set(OUTPUT_TARGET hearth_desktop_moss)
 elseif(HEARTH_STAGE STREQUAL "omnivoice")
- if(NOT APPLE OR NOT CMAKE_SYSTEM_PROCESSOR STREQUAL "arm64")
-  message(FATAL_ERROR "The OmniVoice desktop voice runtime is built only for macOS arm64")
+ if(NOT WIN32 AND (NOT APPLE OR NOT CMAKE_SYSTEM_PROCESSOR STREQUAL "arm64"))
+  message(FATAL_ERROR "The OmniVoice desktop voice runtime is built only for macOS arm64 and Windows x64")
  endif()
  if(NOT DEFINED HEARTH_OMNIVOICE_SOURCE OR NOT EXISTS "${HEARTH_OMNIVOICE_SOURCE}/src/omnivoice.cpp" OR
     NOT EXISTS "${HEARTH_OMNIVOICE_SOURCE}/ggml/CMakeLists.txt")
@@ -194,9 +220,11 @@ elseif(HEARTH_STAGE STREQUAL "omnivoice")
  add_compile_definitions(GGML_MAX_NAME=128)
  # Pin the embedded source identity for the runtime and its static ggml so two clean
  # checkouts at the same revisions produce the same dylib, independent of checkout path.
- add_compile_options(
-   "-ffile-prefix-map=${HEARTH_OMNIVOICE_SOURCE}=omnivoice"
-   "-fdebug-prefix-map=${HEARTH_OMNIVOICE_SOURCE}=omnivoice")
+ if(NOT MSVC)
+  add_compile_options(
+    "-ffile-prefix-map=${HEARTH_OMNIVOICE_SOURCE}=omnivoice"
+    "-fdebug-prefix-map=${HEARTH_OMNIVOICE_SOURCE}=omnivoice")
+ endif()
  add_subdirectory("${HEARTH_OMNIVOICE_SOURCE}/ggml" ggml-omnivoice)
  find_package(Threads REQUIRED)
  execute_process(COMMAND "${CMAKE_COMMAND}" "-DSRC_DIR=${HEARTH_OMNIVOICE_SOURCE}" "-DOUTPUT=${CMAKE_BINARY_DIR}/version.h" -P "${HEARTH_OMNIVOICE_SOURCE}/tools/version.cmake" COMMAND_ERROR_IS_FATAL ANY)
@@ -214,8 +242,8 @@ elseif(HEARTH_STAGE STREQUAL "omnivoice")
  target_link_libraries(hearth_desktop_omnivoice PRIVATE ggml Threads::Threads)
  set(OUTPUT_TARGET hearth_desktop_omnivoice)
 elseif(HEARTH_STAGE STREQUAL "chatterbox")
- if(NOT APPLE OR NOT CMAKE_SYSTEM_PROCESSOR STREQUAL "arm64")
-  message(FATAL_ERROR "The Chatterbox desktop voice runtime is built only for macOS arm64")
+ if(NOT WIN32 AND (NOT APPLE OR NOT CMAKE_SYSTEM_PROCESSOR STREQUAL "arm64"))
+  message(FATAL_ERROR "The Chatterbox desktop voice runtime is built only for macOS arm64 and Windows x64")
  endif()
  if(NOT EXISTS "${HEARTH_ORT_ROOT}/VERSION_NUMBER")
   message(FATAL_ERROR "Set HEARTH_ORT_ROOT to the extracted official ONNX Runtime 1.20.1 host SDK")
@@ -239,13 +267,20 @@ elseif(HEARTH_STAGE STREQUAL "chatterbox")
   set(HEARTH_CHATTERBOX_CPP "${HEARTH_ROOT}/hearth-tts-chatterbox/src/main/cpp")
  endif()
  add_library(onnx_host SHARED IMPORTED)
- set_target_properties(onnx_host PROPERTIES IMPORTED_LOCATION "${HEARTH_ORT_ROOT}/lib/libonnxruntime.1.20.1.dylib")
+ if(WIN32)
+  set_target_properties(onnx_host PROPERTIES IMPORTED_LOCATION "${HEARTH_ORT_ROOT}/lib/onnxruntime.dll" IMPORTED_IMPLIB "${HEARTH_ORT_ROOT}/lib/onnxruntime.lib")
+ else()
+  set_target_properties(onnx_host PROPERTIES IMPORTED_LOCATION "${HEARTH_ORT_ROOT}/lib/libonnxruntime.1.20.1.dylib")
+ endif()
+ if(NOT DEFINED HEARTH_CHATTERBOX_RUNTIME_SOURCE)
+  set(HEARTH_CHATTERBOX_RUNTIME_SOURCE "${HEARTH_CHATTERBOX_CPP}/chatterbox.cpp")
+ endif()
  add_library(hearth_bpe STATIC IMPORTED)
  set_target_properties(hearth_bpe PROPERTIES IMPORTED_LOCATION "${HEARTH_BPE_LIBRARY}")
  # The runtime statically owns its Rust byte-BPE and links only the shared ORT dylib.
  add_library(hearth_desktop_chatterbox SHARED
    "${DESKTOP_CPP}/chatterbox_jni.cpp"
-   "${HEARTH_CHATTERBOX_CPP}/chatterbox.cpp"
+   "${HEARTH_CHATTERBOX_RUNTIME_SOURCE}"
    "${HEARTH_CHATTERBOX_SOURCE}/src/audio.cpp"
    "${HEARTH_CHATTERBOX_WATERMARK}"
  )
@@ -254,11 +289,16 @@ elseif(HEARTH_STAGE STREQUAL "chatterbox")
    ${JNI_INCLUDE_DIRS} "${HEARTH_CHATTERBOX_CPP}" "${HEARTH_CHATTERBOX_CPP}/vendor"
    "${HEARTH_CHATTERBOX_SOURCE}/include" "${CPP}/common" "${CPP}/onnx/include")
  target_link_libraries(hearth_desktop_chatterbox PRIVATE onnx_host hearth_bpe)
+ if(WIN32)
+  # Windows components named by the static Rust byte-BPE library; GCC attributes in shared headers become no-ops.
+  target_link_libraries(hearth_desktop_chatterbox PRIVATE kernel32 ntdll userenv ws2_32 dbghelp synchronization bcrypt advapi32)
+  target_compile_options(hearth_desktop_chatterbox PRIVATE "/FI${HEARTH_WINDOWS_COMPAT}/hearth_windows_compat.h")
+ endif()
  set_target_properties(hearth_desktop_chatterbox PROPERTIES BUILD_RPATH "${HEARTH_ORT_ROOT}/lib" INSTALL_RPATH "@loader_path")
  set(OUTPUT_TARGET hearth_desktop_chatterbox)
 elseif(HEARTH_STAGE STREQUAL "backend")
- if(NOT APPLE OR NOT CMAKE_SYSTEM_PROCESSOR STREQUAL "arm64")
-  message(FATAL_ERROR "The desktop speech backend bridge is built only for macOS arm64")
+ if(NOT WIN32 AND (NOT APPLE OR NOT CMAKE_SYSTEM_PROCESSOR STREQUAL "arm64"))
+  message(FATAL_ERROR "The desktop speech backend bridge is built only for macOS arm64 and Windows x64")
  endif()
  # The bridge dlopens a pinned backend dylib by absolute path; no SDK is linked here.
  add_library(hearth_desktop_backend_speech SHARED "${DESKTOP_CPP}/backend_speech_jni.cpp")
@@ -266,14 +306,17 @@ elseif(HEARTH_STAGE STREQUAL "backend")
  target_link_libraries(hearth_desktop_backend_speech PRIVATE ${CMAKE_DL_LIBS})
  set(OUTPUT_TARGET hearth_desktop_backend_speech)
 elseif(HEARTH_STAGE STREQUAL "vosk")
- if(NOT APPLE OR NOT CMAKE_SYSTEM_PROCESSOR STREQUAL "arm64")
-  message(FATAL_ERROR "The Vosk desktop backend is built only for macOS arm64")
+ if(NOT WIN32 AND (NOT APPLE OR NOT CMAKE_SYSTEM_PROCESSOR STREQUAL "arm64"))
+  message(FATAL_ERROR "The Vosk desktop backend is built only for macOS arm64 and Windows x64")
+ endif()
+ if(NOT DEFINED HEARTH_VOSK_BACKEND_SOURCE)
+  set(HEARTH_VOSK_BACKEND_SOURCE "${CPP}/speech/backends/vosk_backend.cpp")
  endif()
  # The pinned official libvosk.dylib is never linked here: this adapter dlopen()s
  # its sibling by absolute path at create() so the runtime stays a verified bundle
  # file and the adapter carries no Vosk load command.
  add_library(hearth_vosk SHARED
-   "${CPP}/speech/backends/vosk_backend.cpp"
+   "${HEARTH_VOSK_BACKEND_SOURCE}"
    "${CPP}/vosk/vosk_engine.cpp"
    "${CPP}/common/logging.cpp"
    "${CPP}/common/json_utils.cpp"
@@ -281,6 +324,12 @@ elseif(HEARTH_STAGE STREQUAL "vosk")
    "${CPP}/common/audio_utils.cpp"
  )
  target_compile_definitions(hearth_vosk PRIVATE VOSK_AVAILABLE=1)
+ if(WIN32)
+  # Searched first: the Windows <dlfcn.h> and common/model_integrity.h twins of the POSIX originals.
+  target_include_directories(hearth_vosk BEFORE PRIVATE "${HEARTH_WINDOWS_COMPAT}")
+  target_compile_options(hearth_vosk PRIVATE "/FI${HEARTH_WINDOWS_COMPAT}/hearth_windows_compat.h")
+  target_link_options(hearth_vosk PRIVATE /EXPORT:hearth_speech_backend_v1)
+ endif()
  target_include_directories(hearth_vosk PRIVATE
    "${CPP}" "${CPP}/common" "${CPP}/speech" "${CPP}/speech/backends" "${CPP}/vosk")
  target_link_libraries(hearth_vosk PRIVATE ${CMAKE_DL_LIBS})

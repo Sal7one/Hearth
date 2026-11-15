@@ -59,7 +59,12 @@ class DesktopRuntimeTest {
         assertEquals(listOf("libvosk.dylib"), nativeDependencyOrder("hearth_vosk", "macos-arm64", setOf("libvosk.dylib")))
         assertFailsWith<IllegalStateException> { nativeDependencyOrder("hearth_vosk", "macos-arm64", setOf("libhearth_vosk.dylib")) }
         assertFailsWith<IllegalStateException> { nativeDependencyOrder("hearth_vosk", "windows-x64", setOf("libvosk.dylib")) }
-        assertEquals(emptyList(), nativeDependencyOrder("hearth_desktop_qwen3_asr", "windows-x64", emptySet()))
+        assertFailsWith<IllegalStateException> { nativeDependencyOrder("hearth_desktop_qwen3_asr", "windows-x64", emptySet()) }
+        assertEquals(nativeDependencyOrder("hearth_supertonic_jni", "windows-x64", files), nativeDependencyOrder("hearth_desktop_qwen3_asr", "windows-x64", files))
+        // The official Windows Vosk release is a MinGW build; its runtime libraries load before it.
+        val voskWindows = listOf("libwinpthread-1.dll", "libgcc_s_seh-1.dll", "libstdc++-6.dll", "libvosk.dll")
+        assertEquals(voskWindows, nativeDependencyOrder("hearth_vosk", "windows-x64", voskWindows.toSet()))
+        assertFailsWith<IllegalStateException> { nativeDependencyOrder("hearth_vosk", "windows-x64", voskWindows.toSet() - "libstdc++-6.dll") }
     }
     @Test fun malformedPastedCredentialsNeverReachHttpHeadersOrErrors() = runBlocking<Unit> {
         val folder = Files.createTempDirectory("hearth-secret-header-test")

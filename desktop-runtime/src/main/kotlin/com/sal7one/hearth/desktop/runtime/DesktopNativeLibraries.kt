@@ -135,13 +135,16 @@ internal fun nativeDependencyOrder(library: String, platform: String, files: Set
     // runtime first so the path the adapter resolves is the file this manifest approved,
     // never a post-extraction swap or a DYLD fallback.
     if (library == "hearth_vosk") {
-        check(platform.startsWith("macos-")) { "The Vosk desktop backend is staged for macOS only" }
-        check("libvosk.dylib" in files) { "hearth_vosk bundle is missing its pinned Vosk runtime: libvosk.dylib" }
-        return listOf("libvosk.dylib")
+        // The official Windows release is a MinGW build: its three runtime libraries load first, in dependency order.
+        val runtime = when {
+            platform.startsWith("macos-") -> listOf("libvosk.dylib")
+            platform.startsWith("windows-") -> listOf("libwinpthread-1.dll", "libgcc_s_seh-1.dll", "libstdc++-6.dll", "libvosk.dll")
+            else -> error("The Vosk desktop backend is staged for macOS and Windows only")
+        }
+        for (filename in runtime) check(filename in files) { "hearth_vosk bundle is missing its pinned Vosk runtime: $filename" }
+        return runtime
     }
     if (library !in setOf("hearth_supertonic_jni", "hearth_desktop_qwen3_asr", "hearth_desktop_moss", "hearth_desktop_chatterbox", "hearth_desktop_ocr")) return emptyList()
-    // The Qwen3-ASR stage is staged for macOS arm64 only; do not preload a Windows ORT for a dylib that is not part of that bundle.
-    if (library == "hearth_desktop_qwen3_asr" && !platform.startsWith("macos-")) return emptyList()
     if (platform.startsWith("windows-")) {
         val microsoft = listOf("vcruntime140.dll", "vcruntime140_1.dll", "msvcp140.dll", "msvcp140_1.dll")
         for (filename in microsoft) check(filename in files) {
@@ -226,7 +229,8 @@ internal fun readPackagedNative(platform: String, filename: String, expectedSha2
 }
 
 internal fun nativeBundleFiles(manifest: JsonObject): Map<String, String> = manifest.getValue("files").jsonObject.map { (filename, value) ->
-    require(filename.matches(Regex("[A-Za-z0-9_.-]{1,180}")) && filename != "." && filename != "..") { "Invalid native bundle filename" }
+    // '+' admits the MinGW runtime name libstdc++-6.dll that the official Windows Vosk library imports; separators stay excluded.
+    require(filename.matches(Regex("[A-Za-z0-9_.+-]{1,180}")) && filename != "." && filename != "..") { "Invalid native bundle filename" }
     val hash = value.jsonPrimitive.content
     require(hash.matches(Regex("[0-9a-f]{64}"))) { "Invalid native bundle SHA-256: $filename" }
     filename to hash

@@ -297,29 +297,92 @@ Expected: `QWEN_SMOKE language=en text=The museum opens at nine in the morning. 
 and a `QWEN_ENGINE_SMOKE ... segments=1` line. The test verifies all six model-file pins,
 loads the packaged dylib, and never downloads or plays audio.
 
-## Windows: parked (not verified)
+## Windows x64: built, packaged and proven with real models (2026-11-15)
 
-Windows is deliberately parked by the owner for this merge. Nothing below is a
-claim that Windows runs; a macOS merge must not depend on the Windows job.
+Run on Windows 11 x64 (Ryzen 7 7800X3D, RTX 5070) with Visual Studio Build Tools 2022
+17.14 (MSVC 14.44, Windows SDK 10.0.26100), CMake 4.3.3, Python 3.14, Corretto JDK
+17 + 21 and rustup (stable plus the pinned 1.99.0). No CUDA Toolkit was installed, so
+every result below is CPU. Compose fetched WiX 3 itself.
 
-What exists and was checked:
+| Check | Command | Result |
+| --- | --- | --- |
+| Script gates | `python scripts/desktop/generate-catalog.py --check`, `python -m unittest discover -s scripts/desktop -p 'test_*.py'` | catalog matches Android pins; 23 tests OK, 1 skipped |
+| Native bundle | `python scripts/desktop/build-native.py --llama-root ... --ort-root ... --jobs 12` | 12 Hearth libraries: Whisper, GGUF translation, Supertonic, OCR, the sherpa library (Qwen/Moonshine/Omnilingual/Phonon), the speech bridge with TranscribePsy and Nemotron, CTranslate2, MOSS, OmniVoice, Magpie, Vosk and Ming |
+| App-local Microsoft runtime | `python scripts/desktop/stage-windows-crt.py` | four VC143 14.44.35211 DLLs staged with signature and import-closure receipts |
+| Media helpers | `scripts/desktop/build-media.ps1` | `hearth-media-decode.exe`, `hearth-system-audio.exe`; three native tests pass |
+| Desktop suites | the six Gradle test tasks from `docs/desktop.md` with `-PhearthRequireMedia=true` | 367 tests, 0 failures, 43 skipped (opt-in model smokes; two symlink tests need Developer Mode or elevation) |
+| Packaged self-check | `python scripts/desktop/check-packaged.py` | PASS: 15 local engines available, manga OCR adapters, native media decode, PC audio helper probe |
+| Installers | `./gradlew -PhearthDesktopOnly=true :desktopApp:packageMsi :desktopApp:packageExe` | `Hearth-1.0.4.msi`, `Hearth-1.0.4.exe` (about 104 MB each); neither was installed |
+| Launch | packaged `Hearth.exe` with an isolated `HEARTH_DATA_DIRECTORY` | main window within 2 s, responsive for 40 s, clean exit on window close |
 
-- `scripts/desktop/build-native.py` (MSVC), `build-media.ps1`, `stage-windows-crt.py`,
-  `prepare-dependencies.py` all byte-compile.
-- `python -m unittest discover -s scripts/desktop -p 'test_*.py'` — 7 tests OK,
-  including signed x64 CRT selection and signature-host isolation.
-- `.github/workflows/desktop.yml` has a `windows-latest` job that builds the native
-  runtimes, stages the app-local Microsoft runtime, packages installers and runs
-  `scripts/desktop/check-packaged.py`.
+### Real models on Windows
 
-Known risk from the previous handover: the Windows job failed at
-`Stage verified app-local Microsoft runtime`. Its unit tests pass here, so the
-failure is runner-specific — most likely what the GitHub image ships rather than
-the logic. It cannot be reproduced from macOS.
+Every model came from the catalog pins (size and SHA-256 checked). The speech input is
+`The museum opens at nine in the morning. Please bring your ticket to the east entrance.`
+spoken by a Windows system voice and captured through the new PC audio helper, so each
+speech row also covers that capture path.
 
-**To settle Windows:** push the branch and let `desktop.yml` run, or run the same
-commands on a Windows machine. Until then, treat Windows as build-wired and
-unit-tested, not working.
+| Engine | Smoke | Result |
+| --- | --- | --- |
+| Whisper tiny Q5_1 | `DesktopWhisperRealSmokeTest` | exact transcript |
+| Qwen3-ASR 0.6B | `DesktopQwenRealSmokeTest` | exact transcript, Auto detects `en`, 873 ms for 10.0 s of audio |
+| Moonshine tiny.en | `DesktopMoonshineRealSmokeTest` | exact transcript, 55 ms decode |
+| Omnilingual CTC 300M | `DesktopSherpaFamiliesRealSmokeTest` | exact lower-case transcript, 331 ms |
+| Phonon 2 | same test | exact transcript, 197 ms |
+| TranscribePsy 250M EU | `DesktopTranscribePsyRealSmokeTest` | exact transcript, 225 ms |
+| Nemotron 3.5 ASR | `DesktopNemotronRealSmokeTest` | exact lower-case transcript, 1,955 ms |
+| Vosk English | `DesktopVoskRealSmokeTest` | exact lower-case transcript, tree-verified, 792 ms |
+| CTranslate2 QuickMT EN→AR | `DesktopCt2RealSmokeTest` | `يفتح المتحف في الساعة التاسعة صباحًا.` (190 ms native) |
+| Supertonic 3 | `DesktopSupertonicRealSmokeTest` | passed |
+| MOSS-TTS Nano | `DesktopMossRealSmokeTest` | 48 kHz, peak 0.516, RMS 0.0996, the macOS values |
+| OmniVoice | `DesktopOmniVoiceRealSmokeTest` | EN 1.84 s and AR 1.97 s non-silent, RTF about 5 |
+| MagpieTTS | `DesktopMagpieCatalogInstallTest` | pinned install, then 1.21 s non-silent at 22.05 kHz |
+| Ming-3.0 local | `DesktopMingLocalRealSmokeTest` | 61,740 frames, 87% non-zero, 18.9 s |
+| Chatterbox V3 | `DesktopChatterboxRealSmokeTest` | **fails; not offered on Windows** (below) |
+
+Chatterbox builds on Windows with `--stage chatterbox` and reproduces the recorded macOS
+tokens for the Arabic reference sentence exactly (41 tokens, 38,400 samples). Its
+greedy 4-bit English generation does not: for `Hello from Hearth.` it emits 29 different
+tokens, four recognizers hear "They pie", and the trailing silence tokens leave 74% of
+samples non-zero against the smoke's 80% bound. `docs/research/chatterbox-native-smoke-2026-10-20.json`
+already records that English tokens change between ONNX Runtime versions. Its card stays
+macOS-only and the default Windows bundle omits its library.
+
+### PC audio capture
+
+`hearth-system-audio.exe` uses WASAPI process loopback with Hearth's process tree excluded
+and speaks the macOS helper's `HSA1` pipe protocol. Measured here: 4.01 s of 16 kHz mono
+audio in 4.05 s of wall time while the PC was silent, a clean `STOP` drain, the spoken
+sentence captured at peak 31,150, the same sentence played from inside the excluded tree
+captured at peak 1, and a normal end when the owning process exits. Windows releases
+without process loopback fall back to the default playback device's whole mix, which
+includes Hearth's own voice output.
+
+### What changed to get here
+
+- The CI failure at `Stage verified app-local Microsoft runtime` was not runner-specific.
+  The script required the signer name `Microsoft Corporation`, but the VC 14.4x CRT is
+  signed by `Microsoft Windows Software Compatibility Publisher`, and Windows reports its
+  catalog signer `Microsoft Windows` when it ships the same bytes. The check now allows
+  those three signers and requires `O=Microsoft Corporation`.
+- Sources hashed into the Android runtime receipts are untouched. Windows builds them
+  through `scripts/desktop/windows_stages.py`, CMake projects under
+  `scripts/desktop/native/windows/` and compatibility headers under
+  `desktop-runtime/src/main/cpp/windows/` (GCC attributes, `dlfcn.h`, and a Windows twin
+  of the model-tree integrity walk). Wide-path adaptations are made on build-tree copies.
+- The native bundle filename check admits `+` for `libstdc++-6.dll`, which the official
+  MinGW-built Vosk library imports.
+
+### Not verified, and limits
+
+- Not exercised on Windows: live captions through the app window (microphone or PC
+  audio), the overlay and hotkeys, DPAPI secrets, system voices, installing either
+  installer, and any GPU path. `--cuda` needs an installed NVIDIA CUDA Toolkit.
+- Model folders with non-ASCII characters in their path were not tested. Whisper, GGUF
+  translation, Supertonic, MOSS and ONNX sessions take UTF-8 paths; Vosk/Kaldi,
+  CTranslate2 and some sherpa-onnx text files open narrow paths in the ANSI code page.
+- The Vosk runtime is the official MinGW build, so three GCC runtime DLLs ship beside it
+  (about 47 MB uncompressed).
 
 ## Platform differences that are intentional
 
@@ -337,8 +400,7 @@ unit-tested, not working.
 - Model weights are never committed; `build/smoke/` is local scratch.
 - The opt-in smoke tests skip themselves unless their environment variable is set,
   so CI and the normal gates stay fast.
-- Qwen3-ASR is built and verified for macOS arm64 only; the Windows bundle omits the
-  `onnx` stage and its catalog card is filtered out there. Auto language recognition
+- Qwen3-ASR is built and verified for macOS arm64 and Windows x64. Auto language recognition
   returns no language label on desktop (the Android build applies a sherpa patch that
   the pinned desktop build does not); explicit source languages are reliable.
 - The desktop window has been launched (process alive, no exception, data directory

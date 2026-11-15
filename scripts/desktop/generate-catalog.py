@@ -6,6 +6,8 @@ from pathlib import Path
 import re
 
 ROOT = Path(__file__).resolve().parents[2]
+# Hosts whose native bundle includes the engine families beyond Whisper, GGUF translation and Supertonic.
+PORTED_PLATFORMS = ['macos-arm64', 'windows-x64']
 OUTPUT = ROOT / 'desktop-data/src/main/resources/desktop-models.json'
 
 
@@ -91,10 +93,10 @@ def kotlin_ct2_models():
         precision = kotlin_string(named.get('precisionLabel', '""'))
         model = dict(id=model_id, name=label + (f' · {precision}' if precision else ''), family='ct2', stage='TRANSLATION', engineId='marian-local',
             languages=sorted(sources | targets), source=card, license=license_name,
-            note=f'Pinned CTranslate2 package ({len(files)} components); CPU-only, macOS Apple silicon. Component hashes are verified at install and before translation.',
+            note=f'Pinned CTranslate2 package ({len(files)} components); CPU-only, macOS Apple silicon and Windows x64. Component hashes are verified at install and before translation.',
             options={'profile': str(mode), 'backend': 'ct2', 'family': 'ct2',
                      'sources': ','.join(sorted(sources)), 'targets': ','.join(sorted(targets))},
-            artifacts=files, platforms=['macos-arm64'])
+            artifacts=files, platforms=PORTED_PLATFORMS)
         if 'archive' in named:
             archive_call = list(kotlin_calls(named['archive'], 'Ct2DownloadArchive'))
             assert len(archive_call) == 1, model_id
@@ -108,7 +110,7 @@ def kotlin_ct2_models():
             model['artifacts'] = [dict(filename=url.rsplit('/', 1)[-1], bytes=size, sha256=sha, url=url)]
             model['archive'] = dict(format='zip', root='', expandedBytes=sum(part['bytes'] for part in components), files=components)
             model['note'] = ('Pinned Jisr CTranslate2 runtime ZIP, including its identity manifest, LICENSE and NOTICE; '
-                'CPU-only, macOS Apple silicon. Archive and every expanded file are verified. '
+                'CPU-only, macOS Apple silicon and Windows x64. Archive and every expanded file are verified. '
                 'INT8 and FP32 are precision variants of the same trained directional model; device speed and quality are not inferred from publisher scores.')
         models.append(model)
     assert len(models) == 7, [m['id'] for m in models]
@@ -142,7 +144,7 @@ def vosk_models(models):
             engineId='vosk-local', languages=[pin['language']],
             source='https://alphacephei.com/vosk/models', license='Apache-2.0',
             note='Pinned Vosk Kaldi model; the ZIP is hash-verified before extraction and the expanded model-tree SHA-256 is verified before loading. One desktop engine id (vosk-local) serves all six models.',
-            options={'treeSha256': pin['tree_sha256']}, platforms=['macos-arm64'],
+            options={'treeSha256': pin['tree_sha256']}, platforms=PORTED_PLATFORMS,
             artifacts=[dict(filename=f"{pin['checkpoint']}.zip", bytes=pin['zip_bytes'], sha256=pin['zip_sha256'],
                 url=f"https://alphacephei.com/vosk/models/{pin['checkpoint']}.zip")],
             archive=dict(format='zip', root=pin['checkpoint'], expandedBytes=pin['expanded_bytes'], treeSha256=pin['tree_sha256'])))
@@ -181,9 +183,9 @@ def moonshine_models(models, audit):
         models.append(dict(id=variant['id'], name=variant['label'], family='Moonshine',
             stage='STT', engineId='moonshine-local', languages=[variant['language']],
             source='https://github.com/k2-fsa/sherpa-onnx/releases/tag/asr-models', license=variant['license'],
-            note='Pinned sherpa-onnx Moonshine package; CPU-only, macOS Apple silicon. '
+            note='Pinned sherpa-onnx Moonshine package; CPU-only, macOS Apple silicon and Windows x64. '
                  'The archive, all four pinned files and the model LICENSE are verified before loading.',
-            options={}, platforms=['macos-arm64'],
+            options={}, platforms=PORTED_PLATFORMS,
             artifacts=[dict(filename=filename, bytes=pin['bytes'], sha256=pin['sha256'], url=pin['url'])],
             archive=dict(format='tar.bz2', root=variant['root'],
                 expandedBytes=sum(file['bytes'] for file in variant['files']),
@@ -214,7 +216,7 @@ def ming_models(models):
         stage='TTS', engineId='ming-local', languages=['en', 'zh'],
         source='https://huggingface.co/fusorlabs/ming-3.0-tts-0.5b-web', license='MIT',
         note='Experimental local Ming runtime; 850 MB fusor-ai bundle, CPU, 44.1 kHz, English/Chinese built-in voices. The flat files are verified and linked into the parts/ layout the runtime expects. Synthetic speech must be labelled.',
-        options={'voice': 'US_Emma', 'threads': '6'}, platforms=['macos-arm64'],
+        options={'voice': 'US_Emma', 'threads': '6'}, platforms=PORTED_PLATFORMS,
         artifacts=[dict(filename=name, bytes=size, sha256=digest, url=url) for name, size, digest, url in MING_ARTIFACTS]))
 
 def generate():
@@ -270,8 +272,8 @@ def generate():
     assert archive['bytes'] > 0 and re.fullmatch(r'[a-f0-9]{64}', archive['sha256']), 'Qwen3-ASR archive pin is missing'
     models.append(dict(id='qwen3-asr-0.6b', name='Qwen3-ASR 0.6B · int8', family='Qwen3-ASR', stage='STT', engineId='qwen3-asr-local',
         languages=qwen_languages, source='https://github.com/k2-fsa/sherpa-onnx/releases/tag/asr-models', license='Apache-2.0',
-        note='Pinned sherpa-onnx Qwen3-ASR package; CPU-only, utterance-windowed, macOS Apple silicon. Six model files are verified individually before loading; the archive hash is the audited release pin.',
-        options={}, platforms=['macos-arm64'],
+        note='Pinned sherpa-onnx Qwen3-ASR package; CPU-only, utterance-windowed, macOS Apple silicon and Windows x64. Six model files are verified individually before loading; the archive hash is the audited release pin.',
+        options={}, platforms=PORTED_PLATFORMS,
         artifacts=[dict(filename='sherpa-onnx-qwen3-asr-0.6B-int8-2026-03-25.tar.bz2', bytes=archive['bytes'], sha256=archive['sha256'], url=archive['url'])],
         archive=dict(format='tar.bz2', root='sherpa-onnx-qwen3-asr-0.6B-int8-2026-03-25',
             expandedBytes=sum(size for _, size, _ in qwen_files),
@@ -281,8 +283,8 @@ def generate():
     assert len(moss_assets) == 14, len(moss_assets)
     models.append(dict(id='moss-tts-nano', name='MOSS-TTS Nano 100M', family='MOSS', stage='TTS', engineId='moss-tts-local',
         languages=['ar', 'en'], source='https://huggingface.co/OpenMOSS-Team/MOSS-TTS-Nano-100M-ONNX', license='Apache-2.0',
-        note='Pinned MOSS-TTS Nano 100M ONNX package; CPU-only, 48 kHz mono, macOS Apple silicon. Every component is verified before loading; the default voice is Ava.',
-        options={'voice': 'Ava', 'threads': '2'}, platforms=['macos-arm64'],
+        note='Pinned MOSS-TTS Nano 100M ONNX package; CPU-only, 48 kHz mono, macOS Apple silicon and Windows x64. Every component is verified before loading; the default voice is Ava.',
+        options={'voice': 'Ava', 'threads': '2'}, platforms=PORTED_PLATFORMS,
         artifacts=[dict(filename=name, bytes=int(size), sha256=digest, url=url) for name, size, digest, url in moss_assets]))
     omnivoice_source = (ROOT / 'hearth-tts-omnivoice/src/main/java/com/sal7one/hearth/tts/omnivoice/OmniVoiceCatalog.kt').read_text(encoding='utf-8')
     omnivoice_revision = re.search(r'const val revision = "([a-f0-9]{40})"', omnivoice_source).group(1)
@@ -292,9 +294,9 @@ def generate():
     models.append(dict(id='omnivoice-tts', name='OmniVoice · voice design', family='OmniVoice', stage='TTS', engineId='omnivoice-tts-local',
         languages=['ar', 'en'], source=omnivoice_repo,
         license='CC-BY-NC-4.0 (pretrained generator); MIT (runtime); Boson Higgs Audio 2 Community License with incorporated Meta Llama 3 terms (codec)',
-        note='Pinned OmniVoice Q8 GGUF generator and audio codec; CPU-only, 24 kHz mono, macOS Apple silicon. Both files are verified before loading. '
+        note='Pinned OmniVoice Q8 GGUF generator and audio codec; CPU-only, 24 kHz mono, macOS Apple silicon and Windows x64. Both files are verified before loading. '
              'Voice designs are requested attributes, not fixed speaker identities.',
-        options={'voice': 'design-female', 'threads': '2'}, platforms=['macos-arm64'],
+        options={'voice': 'design-female', 'threads': '2'}, platforms=PORTED_PLATFORMS,
         artifacts=[dict(filename=name, bytes=int(size), sha256=digest,
             url=f'{omnivoice_repo}/resolve/{omnivoice_revision}/{name}') for name, size, digest in omnivoice_assets]))
     magpie_index = json.loads((ROOT / 'hearth-tts-magpie/src/main/assets/magpie-sources.json').read_text(encoding='utf-8'))
@@ -307,11 +309,11 @@ def generate():
     models.append(dict(id='magpie-tts', name='MagpieTTS Multilingual 357M', family='MagpieTTS', stage='TTS', engineId='magpie-tts-local',
         languages=magpie_languages, source='https://huggingface.co/nvidia/magpie_tts_multilingual_357m',
         license=magpie_handoff['license']['name'],
-        note='Pinned MagpieTTS v2607 F16 generator and NanoCodec plus the authenticated tokenizer package; CPU-only, 22.05 kHz mono, macOS Apple silicon. '
+        note='Pinned MagpieTTS v2607 F16 generator and NanoCodec plus the authenticated tokenizer package; CPU-only, 22.05 kHz mono, macOS Apple silicon and Windows x64. '
              'Two GGUF files are downloaded directly and the tokenizer dictionaries are extracted from pinned append-only byte ranges of the .nemo archive; '
              'model_weights.ckpt is discarded. Every weight and tokenizer member is verified before loading. Languages are the runtime set supported by this build '
              '(Chinese and Japanese frontends are excluded).',
-        options={'voice': 'Aria', 'threads': '2'}, platforms=['macos-arm64'],
+        options={'voice': 'Aria', 'threads': '2'}, platforms=PORTED_PLATFORMS,
         artifacts=[dict(filename=c['filename'], bytes=c['bytes'], sha256=c['sha256'], url=c['url']) for c in magpie_weights],
         rangePackage=dict(
             sourceUrl=f"https://huggingface.co/{magpie_index['repo']}/resolve/{magpie_index['revision']}/{magpie_tokenizer['filename']}",
@@ -345,10 +347,10 @@ def generate():
     models.append(dict(id='omnilingual-ctc-300m-v2-int8', name='Omnilingual CTC 300M · int8', family='Omnilingual CTC',
         stage='STT', engineId='omnilingual-local', languages=['en', 'ar', 'ru', 'zh'],
         source='https://huggingface.co/facebook/omniASR-CTC-300M', license=omnilingual['license'],
-        note='Pinned sherpa-onnx Omnilingual CTC 300M package; CPU-only, utterance-windowed, macOS Apple silicon. '
+        note='Pinned sherpa-onnx Omnilingual CTC 300M package; CPU-only, utterance-windowed, macOS Apple silicon and Windows x64. '
              'The archive and both model files are verified before loading. CTC recognition; the source language '
              'labels captions for translation and is never a decoder hint.',
-        options={}, platforms=['macos-arm64'],
+        options={}, platforms=PORTED_PLATFORMS,
         artifacts=[dict(filename=omnilingual['url'].rsplit('/', 1)[-1], bytes=omnilingual['bytes'], sha256=omnilingual['sha256'], url=omnilingual['url'])],
         archive=dict(format='tar.bz2', root='sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-v2-int8-2026-02-05',
             expandedBytes=sum(size for _, size, _ in omnilingual_files),
@@ -363,26 +365,26 @@ def generate():
     models.append(dict(id='phonon-2', name='Phonon 2 · int8', family='Phonon',
         stage='STT', engineId='phonon-local', languages=['en'],
         source='https://huggingface.co/FermionResearch/Phonon-2', license=phonon['license'],
-        note='Pinned Phonon 2 (NeMo TDT transducer) int8 package; CPU-only, utterance-windowed, macOS Apple silicon. '
+        note='Pinned Phonon 2 (NeMo TDT transducer) int8 package; CPU-only, utterance-windowed, macOS Apple silicon and Windows x64. '
              'The archive and all four files are verified before loading. English only; the joiner is passed to the '
              'backend conv_frontend slot.',
-        options={}, platforms=['macos-arm64'],
+        options={}, platforms=PORTED_PLATFORMS,
         artifacts=[dict(filename=phonon['url'].rsplit('/', 1)[-1], bytes=phonon['bytes'], sha256=phonon['sha256'], url=phonon['url'])],
         archive=dict(format='tar.bz2', root='phonon-2-hearth-int8',
             expandedBytes=sum(size for _, size, _ in phonon_files),
             files=[dict(path=path, bytes=size, sha256=digest) for path, size, digest in phonon_files])))
-    phonon25 = json.loads((ROOT / 'docs/models/phonon-2.5.json').read_text())
+    phonon25 = json.loads((ROOT / 'docs/models/phonon-2.5.json').read_text(encoding='utf-8'))
     assert phonon25['profile'] == 'phonon-2.5' and len(phonon25['languages']) == 25
     assert not phonon25['archive']['manifestIncluded']
     assert phonon25['installedBytes'] == sum(file['bytes'] for file in phonon25['files'])
     models.append(dict(id='phonon-2.5', name=phonon25['label'], family='Phonon',
         stage='STT', engineId='phonon-local', languages=phonon25['languages'],
         source=phonon25['source']['modelCard'], license=phonon25['license'],
-        note='Multilingual Phonon 2.5 TDT, re-exported to ONNX INT8; CPU-only, utterance-windowed, macOS Apple silicon. '
+        note='Multilingual Phonon 2.5 TDT, re-exported to ONNX INT8; CPU-only, utterance-windowed, macOS Apple silicon and Windows x64. '
              '25 European languages including Russian; no Arabic or Chinese speech. '
              'Choose the known spoken language for translation: this labels the output, not a decoder hint. '
              'Auto leaves the source unknown. The Hearth ONNX download is 339 MB, larger than the publisher packed format.',
-        options={'profile': 'phonon-2.5'}, platforms=['macos-arm64'],
+        options={'profile': 'phonon-2.5'}, platforms=PORTED_PLATFORMS,
         artifacts=[{key: phonon25['archive'][key] for key in ('filename', 'url', 'bytes', 'sha256')}],
         archive=dict(format='tar.bz2', root=phonon25['archive']['root'],
             expandedBytes=phonon25['installedBytes'], files=phonon25['files'])))
@@ -391,8 +393,8 @@ def generate():
         stage='STT', engineId='transcribepsy-local',
         languages=['en', 'nl', 'fr', 'de', 'it', 'pl', 'pt', 'es'],
         source='https://huggingface.co/qvac/TranscribePsy-250M-EU-sub-gguf', license='Apache-2.0',
-        note='Pinned TranscribePsy 250M EU q8 GGUF; CPU-only, macOS Apple silicon. The single GGUF hash is verified before loading.',
-        options={}, platforms=['macos-arm64'],
+        note='Pinned TranscribePsy 250M EU q8 GGUF; CPU-only, macOS Apple silicon and Windows x64. The single GGUF hash is verified before loading.',
+        options={}, platforms=PORTED_PLATFORMS,
         artifacts=[dict(filename=transcribepsy['url'].rsplit('/', 1)[-1], bytes=transcribepsy['bytes'], sha256=transcribepsy['sha256'], url=transcribepsy['url'])]))
     nemotron = next(a for a in audit['artifacts'] if a['id'] == 'nemotron-3.5-asr-0.6b')
     models.append(dict(id='nemotron-3.5-asr-0.6b', name='Nemotron 3.5 ASR · 0.6B (q8)', family='Nemotron 3.5',
@@ -400,8 +402,8 @@ def generate():
         languages=['en', 'es', 'fr', 'it', 'pt', 'nl', 'de', 'tr', 'ru', 'ar', 'hi', 'ja', 'ko', 'vi', 'uk',
                    'pl', 'sv', 'cs', 'nb', 'da', 'bg', 'fi', 'hr', 'sk', 'zh', 'hu', 'ro', 'et'],
         source='https://huggingface.co/nvidia/nemotron-3.5-asr-streaming-0.6b', license=nemotron['license'],
-        note='Pinned Nemotron 3.5 ASR streaming q8 GGUF; CPU-only, macOS Apple silicon. The single GGUF hash is verified before loading.',
-        options={}, platforms=['macos-arm64'],
+        note='Pinned Nemotron 3.5 ASR streaming q8 GGUF; CPU-only, macOS Apple silicon and Windows x64. The single GGUF hash is verified before loading.',
+        options={}, platforms=PORTED_PLATFORMS,
         artifacts=[dict(filename=nemotron['url'].rsplit('/', 1)[-1], bytes=nemotron['bytes'], sha256=nemotron['sha256'], url=nemotron['url'])]))
     vosk_models(models)
     ming_models(models)

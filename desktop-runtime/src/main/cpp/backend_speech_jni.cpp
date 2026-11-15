@@ -7,13 +7,42 @@
 #include <cmath>
 #include <cstdint>
 #include <cstring>
-#include <dlfcn.h>
 #include <mutex>
 #include <stdexcept>
 #include <string>
 #include <vector>
+#ifdef _WIN32
+#define NOMINMAX
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#else
+#include <dlfcn.h>
+#endif
 
 namespace {
+#ifdef _WIN32
+// The verified absolute UTF-8 path is loaded as given; its dependencies resolve beside it.
+void* openLibrary(const std::string& path, std::string& error) {
+    const int size = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, path.data(), static_cast<int>(path.size()), nullptr, 0);
+    if (size <= 0) { error = "the path is not valid UTF-8"; return nullptr; }
+    std::wstring wide(static_cast<size_t>(size), L'\0');
+    MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, path.data(), static_cast<int>(path.size()), wide.data(), size);
+    const HMODULE module = LoadLibraryExW(wide.c_str(), nullptr, LOAD_WITH_ALTERED_SEARCH_PATH);
+    if (!module) error = "Windows error " + std::to_string(GetLastError());
+    return module;
+}
+void* findSymbol(void* library, const char* name) { return reinterpret_cast<void*>(GetProcAddress(static_cast<HMODULE>(library), name)); }
+void closeLibrary(void* library) { FreeLibrary(static_cast<HMODULE>(library)); }
+#else
+void* openLibrary(const std::string& path, std::string& error) {
+    void* library = dlopen(path.c_str(), RTLD_NOW | RTLD_LOCAL);
+    if (!library) { const char* reason = dlerror(); error = reason ? reason : "unknown dlopen error"; }
+    return library;
+}
+void* findSymbol(void* library, const char* name) { return dlsym(library, name); }
+void closeLibrary(void* library) { dlclose(library); }
+#endif
+
 using HearthEntry = const HearthSpeechBackend* (*)();
 
 constexpr size_t kSliceSamples = 16000;
@@ -35,12 +64,10 @@ struct Backend {
         if (threads < 1 || threads > 32) throw std::invalid_argument("Speech threads must be 1–32");
         if (language.size() > 32) throw std::invalid_argument("Speech language is too long");
         if (entrySymbol.empty() || entrySymbol.size() > 128) throw std::invalid_argument("Speech backend entry symbol is invalid");
-        library = dlopen(libraryPath.c_str(), RTLD_NOW | RTLD_LOCAL);
-        if (!library) {
-            const char* error = dlerror();
-            throw std::runtime_error("Could not load speech backend " + libraryPath + ": " + (error ? error : "unknown dlopen error"));
-        }
-        const auto entry = reinterpret_cast<HearthEntry>(dlsym(library, entrySymbol.c_str()));
+        std::string loadError;
+        library = openLibrary(libraryPath, loadError);
+        if (!library) throw std::runtime_error("Could not load speech backend " + libraryPath + ": " + loadError);
+        const auto entry = reinterpret_cast<HearthEntry>(findSymbol(library, entrySymbol.c_str()));
         if (!entry) throw std::runtime_error("Speech backend does not export " + entrySymbol + ": " + libraryPath);
         api = entry();
         if (!api || api->abi_version != HEARTH_SPEECH_ABI_VERSION || api->size != sizeof(HearthSpeechBackend)) {
@@ -76,14 +103,14 @@ struct Backend {
         } catch (...) {
             // A throwing constructor does not run ~Backend(); release dlopen/create here.
             if (api && session) { api->destroy(session); session = nullptr; }
-            if (library) { dlclose(library); library = nullptr; }
+            if (library) { closeLibrary(library); library = nullptr; }
             throw;
         }
     }
 
     ~Backend() {
         if (api && session) api->destroy(session);
-        if (library) dlclose(library);
+        if (library) closeLibrary(library);
     }
 
     std::string transcribe(const std::vector<float>& samples) {

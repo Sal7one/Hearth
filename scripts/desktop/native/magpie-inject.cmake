@@ -26,6 +26,10 @@ function(hearth_finalize_magpie)
         ${HEARTH_MAGPIE_JNI_INCLUDE_DIRS}
         "${HEARTH_MAGPIE_COMMON_CPP}"
         "${HEARTH_MAGPIE_ROOT}/hearth-tts-magpie/src/main/cpp")
+    if(WIN32)
+        # Upstream exports every C++ symbol for its own tools; this DLL exposes the C ABI and JNI entries only.
+        set_target_properties(nemo_speech_tts PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS OFF)
+    endif()
     if(APPLE)
         get_target_property(options nemo_speech_tts LINK_OPTIONS)
         if(NOT options)

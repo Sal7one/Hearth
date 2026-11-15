@@ -19,6 +19,15 @@ import subprocess
 import sys
 
 ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import windows_stages  # noqa: E402  (Windows x64 twins of the macOS shell recipes)
+
+# Engine stages beyond the four common adapters, in dependency order (MOSS reuses the CT2 SentencePiece checkout).
+EXTENDED_STAGES = ["onnx", "ct2", "backend", "moss", "omnivoice", "chatterbox", "magpie", "vosk", "ming"]
+WINDOWS_EXTENDED_STAGES = ["onnx", "ct2", "backend", "moss", "omnivoice", "magpie", "vosk", "ming"]
+# Builds and matches the macOS Arabic reference tokens, but its 4-bit English generation says the
+# wrong words under ONNX Runtime 1.20.1 on x64. Built only when named; not bundled or offered by default.
+WINDOWS_ON_REQUEST_STAGES = ["chatterbox"]
 LLAMA_PIN = "64e9bceb2c3a856efed96feda784a50947049feb"
 WHISPER_PIN = "5f3464bc06c04426d66eae69e5e510d32fb76621b524c42ab25b4294f035a920"
 SHERPA_PIN = "210f340bcfdfd5b9ad6b24245e77a934d6c28f1b"
@@ -175,7 +184,7 @@ def require_exports(dylib, prefix, expected):
 
 
 def snapshot():
-    paths = [ROOT / "scripts/desktop/build-native.py"]
+    paths = [ROOT / "scripts/desktop/build-native.py", ROOT / "scripts/desktop/windows_stages.py"]
     cuda_stager = ROOT / "scripts/desktop/stage-cuda-runtime.py"
     if cuda_stager.is_file(): paths.append(cuda_stager)
     for folder in ["scripts/desktop/native", "desktop-runtime/src/main/cpp", "common-jni/src/main/cpp/ocr"]:
@@ -520,23 +529,26 @@ def vosk_install(cache, output):
             "voskHeaderSha256": VOSK_HEADER_SHA256}
 
 
-def ming_install(output):
+def ming_install(output, windows=False):
     """Build the experimental Ming JNI runtime from the pinned Rust source."""
-    script = ROOT / "scripts/desktop/build-ming-runtime.sh"
-    environment = os.environ.copy()
-    environment["HEARTH_MING_OUTPUT"] = str(output)
-    subprocess.run(["bash", str(script)], check=True, env=environment)
-    dylib = output / "libming_jni.dylib"
-    if not dylib.is_file():
-        raise RuntimeError("The Ming runtime build did not produce libming_jni.dylib")
-    require_exports(dylib, "_Java_com_sal7one_common_1jni_MingNative_", 3)
-    linked = subprocess.check_output(["otool", "-L", str(dylib)], text=True).splitlines()[1:]
-    for line in linked:
-        entry = line.strip().split(" ")[0] if line.strip() else ""
-        if entry in (str(dylib), "@rpath/libming_jni.dylib"):
-            continue
-        if entry.startswith("/") and not (entry.startswith("/usr/lib/") or entry.startswith("/System/Library/")):
-            raise RuntimeError(f"libming_jni.dylib has a non-system dependency: {entry}")
+    if windows:
+        dylib = windows_stages.ming(output)
+    else:
+        script = ROOT / "scripts/desktop/build-ming-runtime.sh"
+        environment = os.environ.copy()
+        environment["HEARTH_MING_OUTPUT"] = str(output)
+        subprocess.run(["bash", str(script)], check=True, env=environment)
+        dylib = output / "libming_jni.dylib"
+        if not dylib.is_file():
+            raise RuntimeError("The Ming runtime build did not produce libming_jni.dylib")
+        require_exports(dylib, "_Java_com_sal7one_common_1jni_MingNative_", 3)
+        linked = subprocess.check_output(["otool", "-L", str(dylib)], text=True).splitlines()[1:]
+        for line in linked:
+            entry = line.strip().split(" ")[0] if line.strip() else ""
+            if entry in (str(dylib), "@rpath/libming_jni.dylib"):
+                continue
+            if entry.startswith("/") and not (entry.startswith("/usr/lib/") or entry.startswith("/System/Library/")):
+                raise RuntimeError(f"libming_jni.dylib has a non-system dependency: {entry}")
     notice = """===== ming-wasm / fusor-ai (MIT) =====
 ming-wasm 7252aa537ab2ef4c4c2c58088116ecb754f654d6 (MIT, (c) 2026 Fusor)
 fusor-ai 7dda3bfb4015d76bed053456ad371f1e4f487ad9, crates fusor-ai-* 0.1.2 (MIT)
@@ -553,7 +565,7 @@ Synthetic speech must be labelled as synthetic. Model weights are downloaded sep
             "mingJniSha256": sha(dylib)}
 
 
-def magpie_install(output, nemo_root, build_dir, jobs):
+def magpie_install(output, nemo_root, build_dir, jobs, windows=False):
     """Build the pinned NeMo MagpieTTS C ABI plus Hearth's desktop JNI into one dylib.
 
     The upstream project is configured standalone (its CMake relies on CMAKE_SOURCE_DIR),
@@ -573,61 +585,64 @@ def magpie_install(output, nemo_root, build_dir, jobs):
         changes = subprocess.check_output(["git", "-C", str(folder), "status", "--porcelain"], text=True)
         if changes.strip():
             raise RuntimeError(f"{label} source checkout has local changes")
-    java_home = os.environ.get("JAVA_HOME")
-    if not java_home:
-        try:
-            java_home = subprocess.check_output(["/usr/libexec/java_home", "-v", "17"], text=True).strip()
-        except (OSError, subprocess.CalledProcessError):
-            raise RuntimeError("Set JAVA_HOME to a JDK 17 installation for the Magpie JNI adapter")
-    jni_include = f"{java_home}/include;{java_home}/include/darwin"
-    cache = build_dir.resolve() / "magpie-nemo"
-    command = [
-        "cmake", "-S", str(root), "-B", str(cache), "-G", "Ninja",
-        "-DCMAKE_BUILD_TYPE=Release", "-DCMAKE_OSX_DEPLOYMENT_TARGET=13.0",
-        "-DCMAKE_POSITION_INDEPENDENT_CODE=ON", "-DBUILD_SHARED_LIBS=OFF",
-        "-DGGML_NATIVE=OFF", "-DGGML_OPENMP=OFF", "-DGGML_METAL=OFF", "-DGGML_VULKAN=OFF",
-        "-DGGML_CUDA=OFF", "-DGGML_BLAS=OFF", "-DGGML_BACKEND_DL=OFF",
-        "-DNEMO_SPEECH_GGML_PATCHED=OFF", "-DNEMO_SPEECH_BUILD_ASR=OFF",
-        "-DNEMO_SPEECH_BUILD_DIAR=OFF", "-DNEMO_SPEECH_BUILD_TTS=ON",
-        "-DNEMO_SPEECH_BUILD_NMT=OFF", "-DNEMO_SPEECH_BUILD_CLI=OFF",
-        "-DNEMO_SPEECH_BUILD_MIC_CAPTURE=OFF", "-DNEMO_SPEECH_BUILD_HTTP=OFF",
-        "-DNEMO_SPEECH_BUILD_GRPC=OFF", "-DNEMO_SPEECH_BUILD_TESTS=OFF", "-DBUILD_TESTING=OFF",
-        "-DNEMO_SPEECH_TTS_WITH_JA=OFF", "-DNEMO_SPEECH_TTS_WITH_ZH=OFF", "-DNEMO_SPEECH_WITH_NORM=OFF",
-        f"-DCMAKE_PROJECT_TOP_LEVEL_INCLUDES={ROOT / 'scripts/desktop/native/magpie-inject.cmake'}",
-        f"-DHEARTH_MAGPIE_ROOT={ROOT}",
-        f"-DHEARTH_MAGPIE_JNI_SOURCE={ROOT / 'desktop-runtime/src/main/cpp/magpie_jni.cpp'}",
-        f"-DHEARTH_MAGPIE_JNI_INCLUDE_DIRS={jni_include}",
-        f"-DHEARTH_MAGPIE_COMMON_CPP={ROOT / 'common-jni/src/main/cpp/common'}",
-        f"-DHEARTH_MAGPIE_EXPORTS={ROOT / 'scripts/desktop/native/magpie.exports'}",
-        f"-DCMAKE_C_FLAGS=-ffile-prefix-map={root}=nemo-speech",
-        f"-DCMAKE_CXX_FLAGS=-ffile-prefix-map={root}=nemo-speech -fdebug-prefix-map={root}=nemo-speech",
-    ]
-    environment = dict(os.environ)
-    # ggml embeds `git rev-parse --short HEAD`; fix the abbreviation so the same pin
-    # produces the same embedded revision in a full and a shallow checkout.
-    environment.update({"GIT_CONFIG_COUNT": "1", "GIT_CONFIG_KEY_0": "core.abbrev", "GIT_CONFIG_VALUE_0": "7"})
-    subprocess.run(command, check=True, env=environment)
-    subprocess.run(["cmake", "--build", str(cache), "--target", "nemo_speech_tts",
-                    "--parallel", str(jobs)], check=True, env=environment)
-    built = [path for path in (cache / "bin").glob("libhearth_desktop_magpie*.dylib") if not path.is_symlink()]
-    if len(built) != 1:
-        raise RuntimeError(f"The Magpie runtime build produced {len(built)} candidate dylibs; expected one")
-    staged = output / "libhearth_desktop_magpie.dylib"
-    shutil.copyfile(built[0], staged)
-    subprocess.run(["install_name_tool", "-id", "@rpath/libhearth_desktop_magpie.dylib", str(staged)], check=True)
-    require_exports(staged, "_Java_com_sal7one_common_1jni_voice_MagpieNative_", 6)
-    symbols = subprocess.check_output(["nm", "-gU", str(staged)], text=True).split()
-    for symbol in ("_nemo_speech_tts_create", "_nemo_speech_tts_synthesize_text", "_nemo_speech_tts_speaker_count"):
-        if symbol not in symbols:
-            raise RuntimeError(f"The Magpie dylib does not export its C ABI symbol {symbol}")
-    linked = subprocess.check_output(["otool", "-L", str(staged)], text=True).splitlines()[1:]
-    for line in linked:
-        entry = line.strip().split(" ")[0] if line.strip() else ""
-        if not entry:
-            continue
-        if entry.startswith(("/usr/lib/", "/System/Library/Frameworks/", "@rpath/libhearth_desktop_magpie.dylib")):
-            continue
-        raise RuntimeError(f"The Magpie dylib has a non-system dependency: {entry}")
+    if windows:
+        staged = windows_stages.magpie(root, output, build_dir, jobs)
+    else:
+        java_home = os.environ.get("JAVA_HOME")
+        if not java_home:
+            try:
+                java_home = subprocess.check_output(["/usr/libexec/java_home", "-v", "17"], text=True).strip()
+            except (OSError, subprocess.CalledProcessError):
+                raise RuntimeError("Set JAVA_HOME to a JDK 17 installation for the Magpie JNI adapter")
+        jni_include = f"{java_home}/include;{java_home}/include/darwin"
+        cache = build_dir.resolve() / "magpie-nemo"
+        command = [
+            "cmake", "-S", str(root), "-B", str(cache), "-G", "Ninja",
+            "-DCMAKE_BUILD_TYPE=Release", "-DCMAKE_OSX_DEPLOYMENT_TARGET=13.0",
+            "-DCMAKE_POSITION_INDEPENDENT_CODE=ON", "-DBUILD_SHARED_LIBS=OFF",
+            "-DGGML_NATIVE=OFF", "-DGGML_OPENMP=OFF", "-DGGML_METAL=OFF", "-DGGML_VULKAN=OFF",
+            "-DGGML_CUDA=OFF", "-DGGML_BLAS=OFF", "-DGGML_BACKEND_DL=OFF",
+            "-DNEMO_SPEECH_GGML_PATCHED=OFF", "-DNEMO_SPEECH_BUILD_ASR=OFF",
+            "-DNEMO_SPEECH_BUILD_DIAR=OFF", "-DNEMO_SPEECH_BUILD_TTS=ON",
+            "-DNEMO_SPEECH_BUILD_NMT=OFF", "-DNEMO_SPEECH_BUILD_CLI=OFF",
+            "-DNEMO_SPEECH_BUILD_MIC_CAPTURE=OFF", "-DNEMO_SPEECH_BUILD_HTTP=OFF",
+            "-DNEMO_SPEECH_BUILD_GRPC=OFF", "-DNEMO_SPEECH_BUILD_TESTS=OFF", "-DBUILD_TESTING=OFF",
+            "-DNEMO_SPEECH_TTS_WITH_JA=OFF", "-DNEMO_SPEECH_TTS_WITH_ZH=OFF", "-DNEMO_SPEECH_WITH_NORM=OFF",
+            f"-DCMAKE_PROJECT_TOP_LEVEL_INCLUDES={ROOT / 'scripts/desktop/native/magpie-inject.cmake'}",
+            f"-DHEARTH_MAGPIE_ROOT={ROOT}",
+            f"-DHEARTH_MAGPIE_JNI_SOURCE={ROOT / 'desktop-runtime/src/main/cpp/magpie_jni.cpp'}",
+            f"-DHEARTH_MAGPIE_JNI_INCLUDE_DIRS={jni_include}",
+            f"-DHEARTH_MAGPIE_COMMON_CPP={ROOT / 'common-jni/src/main/cpp/common'}",
+            f"-DHEARTH_MAGPIE_EXPORTS={ROOT / 'scripts/desktop/native/magpie.exports'}",
+            f"-DCMAKE_C_FLAGS=-ffile-prefix-map={root}=nemo-speech",
+            f"-DCMAKE_CXX_FLAGS=-ffile-prefix-map={root}=nemo-speech -fdebug-prefix-map={root}=nemo-speech",
+        ]
+        environment = dict(os.environ)
+        # ggml embeds `git rev-parse --short HEAD`; fix the abbreviation so the same pin
+        # produces the same embedded revision in a full and a shallow checkout.
+        environment.update({"GIT_CONFIG_COUNT": "1", "GIT_CONFIG_KEY_0": "core.abbrev", "GIT_CONFIG_VALUE_0": "7"})
+        subprocess.run(command, check=True, env=environment)
+        subprocess.run(["cmake", "--build", str(cache), "--target", "nemo_speech_tts",
+                        "--parallel", str(jobs)], check=True, env=environment)
+        built = [path for path in (cache / "bin").glob("libhearth_desktop_magpie*.dylib") if not path.is_symlink()]
+        if len(built) != 1:
+            raise RuntimeError(f"The Magpie runtime build produced {len(built)} candidate dylibs; expected one")
+        staged = output / "libhearth_desktop_magpie.dylib"
+        shutil.copyfile(built[0], staged)
+        subprocess.run(["install_name_tool", "-id", "@rpath/libhearth_desktop_magpie.dylib", str(staged)], check=True)
+        require_exports(staged, "_Java_com_sal7one_common_1jni_voice_MagpieNative_", 6)
+        symbols = subprocess.check_output(["nm", "-gU", str(staged)], text=True).split()
+        for symbol in ("_nemo_speech_tts_create", "_nemo_speech_tts_synthesize_text", "_nemo_speech_tts_speaker_count"):
+            if symbol not in symbols:
+                raise RuntimeError(f"The Magpie dylib does not export its C ABI symbol {symbol}")
+        linked = subprocess.check_output(["otool", "-L", str(staged)], text=True).splitlines()[1:]
+        for line in linked:
+            entry = line.strip().split(" ")[0] if line.strip() else ""
+            if not entry:
+                continue
+            if entry.startswith(("/usr/lib/", "/System/Library/Frameworks/", "@rpath/libhearth_desktop_magpie.dylib")):
+                continue
+            raise RuntimeError(f"The Magpie dylib has a non-system dependency: {entry}")
     notices = ["===== NeMo-Speech.cpp TTS runtime (Apache-2.0) =====\n"
                f"Source: https://github.com/NVIDIA/NeMo-Speech.cpp revision {MAGPIE_NEMO_PIN}\n"
                f"ggml: llama.cpp/ggml revision {MAGPIE_NEMO_GGML_PIN} (MIT), built statically into this dylib.\n"
@@ -692,31 +707,16 @@ def main():
     previous_manifest = json.loads((output / "manifest.json").read_text()) if (output / "manifest.json").is_file() else {}
     args.build_dir.mkdir(parents=True, exist_ok=True)
     stages = ["whisper", "translation", "supertonic", "ocr"] if args.stage == "all" else [args.stage]
+    windows = target == "windows-x64"
+    supported = EXTENDED_STAGES if target == "macos-arm64" else WINDOWS_EXTENDED_STAGES if windows else []
     if args.stage == "all":
-        if (system, arch) == ("macos", "arm64"):
-            stages.extend(["onnx", "ct2", "backend", "moss", "omnivoice", "chatterbox", "magpie", "vosk", "ming"])
-        else:
-            print(f"Skipping Qwen3-ASR (onnx), CTranslate2 (ct2), speech backends (backend), MOSS TTS (moss), OmniVoice TTS (omnivoice), Chatterbox TTS (chatterbox) and Magpie TTS (magpie): built only for macos-arm64; host is {target}", file=sys.stderr)
-    if "onnx" in stages and system != "macos":
-        parser.error("The Qwen3-ASR (sherpa-onnx) stage is built for macOS arm64 only")
-    if "onnx" in stages and arch != "arm64":
-        parser.error("The Qwen3-ASR (sherpa-onnx) stage is built for macOS arm64 only")
-    if "ct2" in stages and (system, arch) != ("macos", "arm64"):
-        parser.error("The CTranslate2 (ct2) stage is built for macOS arm64 only")
-    if "backend" in stages and (system, arch) != ("macos", "arm64"):
-        parser.error("The desktop speech backend stage is built for macOS arm64 only")
-    if "moss" in stages and (system, arch) != ("macos", "arm64"):
-        parser.error("The MOSS TTS stage is built for macOS arm64 only")
-    if "omnivoice" in stages and (system, arch) != ("macos", "arm64"):
-        parser.error("The OmniVoice TTS stage is built for macOS arm64 only")
-    if "magpie" in stages and (system, arch) != ("macos", "arm64"):
-        parser.error("The Magpie TTS stage is built for macOS arm64 only")
-    if "chatterbox" in stages and (system, arch) != ("macos", "arm64"):
-        parser.error("The Chatterbox TTS stage is built for macOS arm64 only")
-    if "ming" in stages and (system, arch) != ("macos", "arm64"):
-        parser.error("The Ming TTS runtime is built for macOS arm64 in this stage")
-    if "vosk" in stages and (system, arch) != ("macos", "arm64"):
-        parser.error("The Vosk speech backend stage is built for macOS arm64 only")
+        stages.extend(supported)
+        skipped = [name for name in EXTENDED_STAGES if name not in supported]
+        if skipped:
+            print(f"Skipping stages not built for {target}: {', '.join(skipped)}", file=sys.stderr)
+    for name in stages:
+        if name in EXTENDED_STAGES and name not in supported and not (windows and name in WINDOWS_ON_REQUEST_STAGES):
+            parser.error(f"The {name} stage is built for macOS arm64{' and Windows x64' if name in WINDOWS_EXTENDED_STAGES + WINDOWS_ON_REQUEST_STAGES else ''} only; host is {target}")
     speech_backends = [value.strip() for value in args.speech_backends.split(",") if value.strip()]
     if any(value not in ("transcribepsy", "nemotron") for value in speech_backends):
         parser.error("--speech-backends accepts transcribepsy and/or nemotron")
@@ -765,9 +765,9 @@ def main():
         changes = subprocess.check_output(["git", "-C", str(root), "status", "--porcelain"], text=True)
         if changes.strip(): raise RuntimeError("chatterboxcpp source checkout has local changes")
         chatterbox_tree = source_tree_sha_files(root)
-        if not shutil.which("cargo") or not shutil.which("rustc"):
+        if not windows and (not shutil.which("cargo") or not shutil.which("rustc")):
             raise RuntimeError("The Chatterbox stage requires cargo and rustc")
-        rust_target = subprocess.check_output(["rustc", "-vV"], text=True)
+        rust_target = "host: x86_64-pc-windows-msvc" if windows else subprocess.check_output(["rustc", "-vV"], text=True)
         rust_host = next((line.split()[1] for line in rust_target.splitlines() if line.startswith("host:")), None)
         if rust_host is None: raise RuntimeError("Could not determine the Rust host target")
         bpe_environment = os.environ.copy()
@@ -776,14 +776,17 @@ def main():
         # pins resolution, but fetch missing crates on demand: --offline turned the cold
         # cache into a misleading "no matching package" error. This matches the CT2 stage,
         # which builds the same manifest through scripts/translation/ct2/build-runtime.sh.
-        subprocess.run(["cargo", "build", "--manifest-path", str(ROOT / "common-jni/src/main/cpp/translation/bpe-rust/Cargo.toml"),
-                        "--locked", "--release", "--target", rust_host, "--target-dir", str(ROOT / "build/ct2-runtime/rust")],
-                       check=True, env=bpe_environment)
-        chatterbox_bpe = ROOT / "build/ct2-runtime/rust" / rust_host / "release/libhearth_byte_bpe.a"
+        if windows:
+            chatterbox_bpe = windows_stages.byte_bpe()
+        else:
+            subprocess.run(["cargo", "build", "--manifest-path", str(ROOT / "common-jni/src/main/cpp/translation/bpe-rust/Cargo.toml"),
+                            "--locked", "--release", "--target", rust_host, "--target-dir", str(ROOT / "build/ct2-runtime/rust")],
+                           check=True, env=bpe_environment)
+            chatterbox_bpe = ROOT / "build/ct2-runtime/rust" / rust_host / "release/libhearth_byte_bpe.a"
         if not chatterbox_bpe.is_file(): raise RuntimeError("The Chatterbox stage did not build the pinned Rust byte-BPE library")
         chatterbox_watermark = args.build_dir.resolve() / "chatterbox" / "watermark.cpp"
         chatterbox_watermark.parent.mkdir(parents=True, exist_ok=True)
-        subprocess.run([sys.executable, str(ROOT / "scripts/voice/chatterbox/prepare-watermark.py"),
+        subprocess.run([sys.executable, "-X", "utf8", str(ROOT / "scripts/voice/chatterbox/prepare-watermark.py"),
                         str(root / "src/watermark.cpp"), str(chatterbox_watermark)], check=True)
     if ("supertonic" in stages or "ocr" in stages or "onnx" in stages or "chatterbox" in stages) and (not args.ort_root or not args.ort_root.is_dir()):
         parser.error("--ort-root/HEARTH_ORT_ROOT must name the official extracted ONNX Runtime 1.20.1 host SDK")
@@ -792,23 +795,30 @@ def main():
     sherpa_tree = None
     sherpa_source_tree = None
     if "onnx" in stages:
-        sherpa, sherpa_version = sherpa_install(args.sherpa_root.resolve(), args.ort_root.resolve(),
-                                                args.build_dir.resolve() / target / "onnx", args.jobs)
+        if windows:
+            sherpa, sherpa_version = windows_stages.sherpa(args.sherpa_root.resolve(), args.ort_root.resolve(),
+                args.build_dir.resolve() / target / "onnx", args.jobs, SHERPA_PIN, prepare_sherpa_qwen_language)
+        else:
+            sherpa, sherpa_version = sherpa_install(args.sherpa_root.resolve(), args.ort_root.resolve(),
+                                                    args.build_dir.resolve() / target / "onnx", args.jobs)
         sherpa_tree = subprocess.check_output(["git", "-C", str(args.sherpa_root), "rev-parse", "HEAD^{tree}"], text=True).strip()
         sherpa_source_tree = source_tree_sha(args.sherpa_root.resolve())
     ct2_sources = None
     if "ct2" in stages:
-        ct2_sources = ct2_install(args.build_dir.resolve() / target / "ct2", output, args.jobs)
+        ct2_sources = (windows_stages.ct2(output, args.jobs, {"ct2": CT2_PIN, "sentencepiece": SENTENCEPIECE_PIN}) if windows
+                       else ct2_install(args.build_dir.resolve() / target / "ct2", output, args.jobs))
     backend_revisions = None
     vosk_upstreams = None
     if "backend" in stages:
-        backend_revisions = speech_backend_install(speech_backends, output, args.jobs)
+        backend_revisions = (windows_stages.speech_backends(speech_backends, output, args.jobs,
+                                 {"transcribepsy": TRANSCRIBEPSY_PIN, "nemotron": NEMO_PIN, "sentencepiece": SENTENCEPIECE_PIN})
+                             if windows else speech_backend_install(speech_backends, output, args.jobs))
     ming_revisions = None
     if "ming" in stages:
-        ming_revisions = ming_install(output)
+        ming_revisions = ming_install(output, windows)
     magpie_pins = None
     if "magpie" in stages:
-        magpie_pins = magpie_install(output, args.nemo_root, args.build_dir, args.jobs)
+        magpie_pins = magpie_install(output, args.nemo_root, args.build_dir, args.jobs, windows)
     source = ROOT / "hearth-tts-supertonic/src/main/cpp/voice/supertonic.cpp"
     original = source.read_text(encoding="utf-8")
     old = 'for(int i=0;i<4;++i)checked(api()->CreateSession(env,(dir+"/"+names[i]).c_str(),options,&sessions[i]));'
@@ -841,18 +851,24 @@ def main():
             if args.cuda_architectures: command.append(f"-DCMAKE_CUDA_ARCHITECTURES={args.cuda_architectures}")
         if args.ort_root: command.append(f"-DHEARTH_ORT_ROOT={args.ort_root.resolve()}")
         if stage == "onnx": command.append(f"-DHEARTH_SHERPA_ROOT={sherpa}")
+        if windows:
+            command.append(f"-DHEARTH_WINDOWS_COMPAT={windows_stages.COMPAT}")
+            if stage == "onnx": command.append(f"-DHEARTH_ONNX_ENGINE_SOURCE={windows_stages.prepare_onnx_engine(args.build_dir.resolve())}")
+            if stage == "vosk": command.append(f"-DHEARTH_VOSK_BACKEND_SOURCE={windows_stages.prepare_vosk(args.build_dir.resolve())}")
         if stage == "omnivoice":
             command.append(f"-DHEARTH_OMNIVOICE_SOURCE={args.omnivoice_root.resolve()}")
         if stage == "chatterbox":
             command.append(f"-DHEARTH_CHATTERBOX_SOURCE={args.chatterbox_root.resolve()}")
             command.append(f"-DHEARTH_CHATTERBOX_WATERMARK={chatterbox_watermark}")
             command.append(f"-DHEARTH_BPE_LIBRARY={chatterbox_bpe}")
+            if windows: command.append(f"-DHEARTH_CHATTERBOX_RUNTIME_SOURCE={windows_stages.prepare_chatterbox(args.build_dir.resolve())}")
         if stage == "moss":
             sentencepiece = ROOT / "build/ct2-runtime/src/sentencepiece"
             if not (sentencepiece / "src/sentencepiece_processor.h").is_file():
                 raise RuntimeError("The MOSS stage needs the pinned SentencePiece source from the CT2 build; run --stage ct2 first")
             command.append(f"-DHEARTH_MOSS_CPP={ROOT / 'hearth-tts-moss/src/main/cpp'}")
             command.append(f"-DHEARTH_SENTENCEPIECE_SOURCE={sentencepiece}")
+            if windows: command.append(f"-DHEARTH_MOSS_SOURCE={windows_stages.prepare_moss(args.build_dir.resolve())}")
         if system == "macos": command.append(f"-DCMAKE_OSX_DEPLOYMENT_TARGET={'13.3' if stage in ('onnx', 'ocr') else '13.0'}")
         stage_env = dict(os.environ)
         if stage == "omnivoice":
@@ -866,12 +882,24 @@ def main():
             installed_ocr = output / "libhearth_desktop_ocr.dylib"
             require_exports(installed_ocr, "_Java_com_sal7one_common_1jni_ocr_ComicNative_", 7)
             require_exports(installed_ocr, "_Java_com_sal7one_common_1jni_ocr_JapaneseNative_", 4)
-        if stage == "backend":
+        if stage == "backend" and windows:
+            installed_backend = output / "hearth_desktop_backend_speech.dll"
+            if not installed_backend.is_file():
+                raise RuntimeError("The desktop speech backend bridge was not staged")
+            windows_stages.require_exports(installed_backend, "Java_com_sal7one_common_1jni_desktop_DesktopBackendSpeechNative_", 7)
+            windows_stages.require_system_imports(installed_backend)
+        elif stage == "backend":
             installed_backend = output / "libhearth_desktop_backend_speech.dylib"
             if not installed_backend.is_file():
                 raise RuntimeError("The desktop speech backend bridge was not staged")
             require_exports(installed_backend, "_Java_com_sal7one_common_1jni_desktop_DesktopBackendSpeechNative_", 7)
-        if stage == "vosk":
+        if stage == "vosk" and windows:
+            installed_vosk = output / "hearth_vosk.dll"
+            if not installed_vosk.is_file():
+                raise RuntimeError("The Vosk speech backend DLL was not staged")
+            windows_stages.check_vosk(installed_vosk)
+            vosk_upstreams = windows_stages.vosk_runtime(args.build_dir.resolve() / target / "vosk", output)
+        elif stage == "vosk":
             installed_vosk = output / "libhearth_vosk.dylib"
             if not installed_vosk.is_file():
                 raise RuntimeError("The Vosk speech backend dylib was not staged")
@@ -883,24 +911,31 @@ def main():
                     raise RuntimeError("libhearth_vosk.dylib must dlopen libvosk.dylib, not link it")
             vosk_upstreams = vosk_install(args.build_dir.resolve() / target / "vosk", output)
         if stage == "moss":
-            installed_moss = output / "libhearth_desktop_moss.dylib"
+            installed_moss = output / ("hearth_desktop_moss.dll" if windows else "libhearth_desktop_moss.dylib")
             if not installed_moss.is_file():
-                raise RuntimeError("The MOSS desktop voice dylib was not staged")
-            require_exports(installed_moss, "_Java_com_sal7one_common_1jni_voice_MossNative_", 6)
-            linked = subprocess.check_output(["otool", "-L", str(installed_moss)], text=True)
-            if "@rpath/libonnxruntime.1.20.1.dylib" not in linked:
-                raise RuntimeError("The MOSS dylib does not link the staged ONNX Runtime 1.20.1")
+                raise RuntimeError("The MOSS desktop voice library was not staged")
+            if windows:
+                windows_stages.check_voice(installed_moss, "MossNative", 6, ort=True)
+            else:
+                require_exports(installed_moss, "_Java_com_sal7one_common_1jni_voice_MossNative_", 6)
+                linked = subprocess.check_output(["otool", "-L", str(installed_moss)], text=True)
+                if "@rpath/libonnxruntime.1.20.1.dylib" not in linked:
+                    raise RuntimeError("The MOSS dylib does not link the staged ONNX Runtime 1.20.1")
             notices = []
             for path in sorted((ROOT / "hearth-tts-moss/src/main/assets/licenses/moss").glob("*")):
                 if path.is_file():
                     notices.append(f"===== MOSS asset {path.name} =====\n{path.read_text(encoding='utf-8', errors='replace').rstrip()}\n")
             (output / "Moss-Dependencies-NOTICES.txt").write_text("\n".join(notices), encoding="utf-8", newline="\n")
         if stage == "omnivoice":
-            installed_omnivoice = output / "libhearth_desktop_omnivoice.dylib"
+            installed_omnivoice = output / ("hearth_desktop_omnivoice.dll" if windows else "libhearth_desktop_omnivoice.dylib")
             if not installed_omnivoice.is_file():
-                raise RuntimeError("The OmniVoice desktop voice dylib was not staged")
-            require_exports(installed_omnivoice, "_Java_com_sal7one_common_1jni_voice_OmniVoiceNative_", 6)
-            linked = subprocess.check_output(["otool", "-L", str(installed_omnivoice)], text=True).splitlines()[1:]
+                raise RuntimeError("The OmniVoice desktop voice library was not staged")
+            if windows:
+                windows_stages.check_voice(installed_omnivoice, "OmniVoiceNative", 6)
+                linked = []
+            else:
+                require_exports(installed_omnivoice, "_Java_com_sal7one_common_1jni_voice_OmniVoiceNative_", 6)
+                linked = subprocess.check_output(["otool", "-L", str(installed_omnivoice)], text=True).splitlines()[1:]
             for line in linked:
                 entry = line.strip().split(" ")[0] if line.strip() else ""
                 if not entry: continue
@@ -917,12 +952,17 @@ def main():
                 notices.append(f"===== {label} ({name}) =====\n{path.read_text(encoding='utf-8').rstrip()}\n")
             (output / "OmniVoice-Dependencies-NOTICES.txt").write_text("\n".join(notices), encoding="utf-8", newline="\n")
         if stage == "chatterbox":
-            installed_chatterbox = output / "libhearth_desktop_chatterbox.dylib"
+            installed_chatterbox = output / ("hearth_desktop_chatterbox.dll" if windows else "libhearth_desktop_chatterbox.dylib")
             if not installed_chatterbox.is_file():
-                raise RuntimeError("The Chatterbox desktop voice dylib was not staged")
-            require_exports(installed_chatterbox, "_Java_com_sal7one_common_1jni_voice_ChatterboxNative_", 6)
-            require_exports(installed_chatterbox, "_hearth_chatterbox_", 7)
-            linked = subprocess.check_output(["otool", "-L", str(installed_chatterbox)], text=True).splitlines()[1:]
+                raise RuntimeError("The Chatterbox desktop voice library was not staged")
+            if windows:
+                # The JNI adapter links the runtime directly; only an ONNX Runtime import may leave the DLL.
+                windows_stages.check_voice(installed_chatterbox, "ChatterboxNative", 6, ort=True)
+                linked = ["@rpath/libonnxruntime.1.20.1.dylib"]
+            else:
+                require_exports(installed_chatterbox, "_Java_com_sal7one_common_1jni_voice_ChatterboxNative_", 6)
+                require_exports(installed_chatterbox, "_hearth_chatterbox_", 7)
+                linked = subprocess.check_output(["otool", "-L", str(installed_chatterbox)], text=True).splitlines()[1:]
             for line in linked:
                 entry = line.strip().split(" ")[0] if line.strip() else ""
                 if not entry: continue
@@ -949,7 +989,12 @@ def main():
             notices.append("===== Hugging Face tokenizers dependency inventory (full texts under assets/licenses/chatterbox/HuggingFaceTokenizers) =====")
             notices.append(dependency_inventory.read_text(encoding='utf-8').rstrip())
             (output / "Chatterbox-Dependencies-NOTICES.txt").write_text("\n".join(notices) + "\n", encoding="utf-8", newline="\n")
-        if stage == "onnx":
+        if stage == "onnx" and windows:
+            installed = output / "hearth_desktop_qwen3_asr.dll"
+            if not installed.is_file():
+                raise RuntimeError("The Qwen3-ASR DLL was not staged into the bundle")
+            windows_stages.check_qwen(installed)
+        elif stage == "onnx":
             installed = output / "libhearth_desktop_qwen3_asr.dylib"
             if not installed.is_file():
                 raise RuntimeError("The Qwen3-ASR dylib was not staged into the bundle")
@@ -1048,7 +1093,7 @@ def main():
             "omnivoiceGgmlRevision": OMNIVOICE_GGML_PIN,
             "omnivoiceSourceTreeSha256": omnivoice_tree,
             "omnivoiceGgmlTreeSha256": omnivoice_ggml_tree,
-            "omnivoiceJniSha256": sha(output / "libhearth_desktop_omnivoice.dylib"),
+            "omnivoiceJniSha256": sha(output / ("hearth_desktop_omnivoice.dll" if windows else "libhearth_desktop_omnivoice.dylib")),
         })
     source_digest = hashlib.sha256(json.dumps(before, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
     manifest = {"schemaVersion": 1, "platform": target, "files": files, "sources": before,

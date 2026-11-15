@@ -1122,7 +1122,7 @@
       ],
       "source": "https://huggingface.co/quickmt/quickmt-en-ar",
       "license": "CC-BY-4.0",
-      "note": "Pinned CTranslate2 package (6 components); CPU-only, macOS Apple silicon. Component hashes are verified at install and before translation.",
+      "note": "Pinned CTranslate2 package (6 components); CPU-only, macOS Apple silicon and Windows x64. Component hashes are verified at install and before translation.",
       "options": {
         "profile": "0",
         "backend": "ct2",
@@ -1169,7 +1169,8 @@
         }
       ],
       "platforms": [
-        "macos-arm64"
+        "macos-arm64",
+        "windows-x64"
       ]
     },
     {
@@ -1184,7 +1185,7 @@
       ],
       "source": "https://huggingface.co/quickmt/quickmt-ar-en",
       "license": "CC-BY-4.0",
-      "note": "Pinned CTranslate2 package (6 components); CPU-only, macOS Apple silicon. Component hashes are verified at install and before translation.",
+      "note": "Pinned CTranslate2 package (6 components); CPU-only, macOS Apple silicon and Windows x64. Component hashes are verified at install and before translation.",
       "options": {
         "profile": "0",
         "backend": "ct2",
@@ -1231,7 +1232,8 @@
         }
       ],
       "platforms": [
-        "macos-arm64"
+        "macos-arm64",
+        "windows-x64"
       ]
     },
     {
@@ -1344,7 +1346,7 @@
       ],
       "source": "https://huggingface.co/alirezamsh/small100",
       "license": "MIT",
-      "note": "Pinned CTranslate2 package (4 components); CPU-only, macOS Apple silicon. Component hashes are verified at install and before translation.",
+      "note": "Pinned CTranslate2 package (4 components); CPU-only, macOS Apple silicon and Windows x64. Component hashes are verified at install and before translation.",
       "options": {
         "profile": "1",
         "backend": "ct2",
@@ -1379,7 +1381,8 @@
         }
       ],
       "platforms": [
-        "macos-arm64"
+        "macos-arm64",
+        "windows-x64"
       ]
     },
     {
@@ -1394,7 +1397,7 @@
       ],
       "source": "https://huggingface.co/oddadmix/Jisr-MT-50M-AllDialects",
       "license": "Apache-2.0",
-      "note": "Pinned Jisr CTranslate2 runtime ZIP, including its identity manifest, LICENSE and NOTICE; CPU-only, macOS Apple silicon. Archive and every expanded file are verified. INT8 and FP32 are precision variants of the same trained directional model; device speed and quality are not inferred from publisher scores.",
+      "note": "Pinned Jisr CTranslate2 runtime ZIP, including its identity manifest, LICENSE and NOTICE; CPU-only, macOS Apple silicon and Windows x64. Archive and every expanded file are verified. INT8 and FP32 are precision variants of the same trained directional model; device speed and quality are not inferred from publisher scores.",
       "options": {
         "profile": "4",
         "backend": "ct2",
@@ -1411,7 +1414,8 @@
         }
       ],
       "platforms": [
-        "macos-arm64"
+        "macos-arm64",
+        "windows-x64"
       ],
       "archive": {
         "format": "zip",
@@ -1468,7 +1472,7 @@
       ],
       "source": "https://huggingface.co/oddadmix/Jisr-MT-50M-AllDialects",
       "license": "Apache-2.0",
-      "note": "Pinned Jisr CTranslate2 runtime ZIP, including its identity manifest, LICENSE and NOTICE; CPU-only, macOS Apple silicon. Archive and every expanded file are verified. INT8 and FP32 are precision variants of the same trained directional model; device speed and quality are not inferred from publisher scores.",
+      "note": "Pinned Jisr CTranslate2 runtime ZIP, including its identity manifest, LICENSE and NOTICE; CPU-only, macOS Apple silicon and Windows x64. Archive and every expanded file are verified. INT8 and FP32 are precision variants of the same trained directional model; device speed and quality are not inferred from publisher scores.",
       "options": {
         "profile": "2",
         "backend": "ct2",
@@ -1485,7 +1489,8 @@
         }
       ],
       "platforms": [
-        "macos-arm64"
+        "macos-arm64",
+        "windows-x64"
       ],
       "archive": {
         "format": "zip",
@@ -1542,7 +1547,7 @@
       ],
       "source": "https://huggingface.co/oddadmix/Jisr-MT-50M-Dialects2En",
       "license": "Apache-2.0",
-      "note": "Pinned Jisr CTranslate2 runtime ZIP, including its identity manifest, LICENSE and NOTICE; CPU-only, macOS Apple silicon. Archive and every expanded file are verified. INT8 and FP32 are precision variants of the same trained directional model; device speed and quality are not inferred from publisher scores.",
+      "note": "Pinned Jisr CTranslate2 runtime ZIP, including its identity manifest, LICENSE and NOTICE; CPU-only, macOS Apple silicon and Windows x64. Archive and every expanded file are verified. INT8 and FP32 are precision variants of the same trained directional model; device speed and quality are not inferred from publisher scores.",
       "options": {
         "profile": "5",
         "backend": "ct2",
@@ -1559,7 +1564,8 @@
         }
       ],
       "platforms": [
-        "macos-arm64"
+        "macos-arm64",
+        "windows-x64"
       ],
       "archive": {
         "format": "zip",
@@ -1616,7 +1622,7 @@
       ],
       "source": "https://huggingface.co/oddadmix/Jisr-MT-50M-Dialects2En",
       "license": "Apache-2.0",
-      "note": "Pinned Jisr CTranslate2 runtime ZIP, including its identity manifest, LICENSE and NOTICE; CPU-only, macOS Apple silicon. Archive and every expanded file are verified. INT8 and FP32 are precision variants of the same trained directional model; device speed and quality are not inferred from publisher scores.",
+      "note": "Pinned Jisr CTranslate2 runtime ZIP, including its identity manifest, LICENSE and NOTICE; CPU-only, macOS Apple silicon and Windows x64. Archive and every expanded file are verified. INT8 and FP32 are precision variants of the same trained directional model; device speed and quality are not inferred from publisher scores.",
       "options": {
         "profile": "3",
         "backend": "ct2",
@@ -1633,7 +1639,8 @@
         }
       ],
       "platforms": [
-        "macos-arm64"
+        "macos-arm64",
+        "windows-x64"
       ],
       "archive": {
         "format": "zip",
@@ -1832,10 +1839,11 @@
       ],
       "source": "https://github.com/k2-fsa/sherpa-onnx/releases/tag/asr-models",
       "license": "Apache-2.0",
-      "note": "Pinned sherpa-onnx Qwen3-ASR package; CPU-only, utterance-windowed, macOS Apple silicon. Six model files are verified individually before loading; the archive hash is the audited release pin.",
+      "note": "Pinned sherpa-onnx Qwen3-ASR package; CPU-only, utterance-windowed, macOS Apple silicon and Windows x64. Six model files are verified individually before loading; the archive hash is the audited release pin.",
       "options": {},
       "platforms": [
-        "macos-arm64"
+        "macos-arm64",
+        "windows-x64"
       ],
       "artifacts": [
         {
@@ -1895,13 +1903,14 @@
       ],
       "source": "https://huggingface.co/OpenMOSS-Team/MOSS-TTS-Nano-100M-ONNX",
       "license": "Apache-2.0",
-      "note": "Pinned MOSS-TTS Nano 100M ONNX package; CPU-only, 48 kHz mono, macOS Apple silicon. Every component is verified before loading; the default voice is Ava.",
+      "note": "Pinned MOSS-TTS Nano 100M ONNX package; CPU-only, 48 kHz mono, macOS Apple silicon and Windows x64. Every component is verified before loading; the default voice is Ava.",
       "options": {
         "voice": "Ava",
         "threads": "2"
       },
       "platforms": [
-        "macos-arm64"
+        "macos-arm64",
+        "windows-x64"
       ],
       "artifacts": [
         {
@@ -2002,13 +2011,14 @@
       ],
       "source": "https://huggingface.co/Serveurperso/OmniVoice-GGUF",
       "license": "CC-BY-NC-4.0 (pretrained generator); MIT (runtime); Boson Higgs Audio 2 Community License with incorporated Meta Llama 3 terms (codec)",
-      "note": "Pinned OmniVoice Q8 GGUF generator and audio codec; CPU-only, 24 kHz mono, macOS Apple silicon. Both files are verified before loading. Voice designs are requested attributes, not fixed speaker identities.",
+      "note": "Pinned OmniVoice Q8 GGUF generator and audio codec; CPU-only, 24 kHz mono, macOS Apple silicon and Windows x64. Both files are verified before loading. Voice designs are requested attributes, not fixed speaker identities.",
       "options": {
         "voice": "design-female",
         "threads": "2"
       },
       "platforms": [
-        "macos-arm64"
+        "macos-arm64",
+        "windows-x64"
       ],
       "artifacts": [
         {
@@ -2045,13 +2055,14 @@
       ],
       "source": "https://huggingface.co/nvidia/magpie_tts_multilingual_357m",
       "license": "NVIDIA Open Model License; runtime Apache-2.0; companion codec license must accompany distribution",
-      "note": "Pinned MagpieTTS v2607 F16 generator and NanoCodec plus the authenticated tokenizer package; CPU-only, 22.05 kHz mono, macOS Apple silicon. Two GGUF files are downloaded directly and the tokenizer dictionaries are extracted from pinned append-only byte ranges of the .nemo archive; model_weights.ckpt is discarded. Every weight and tokenizer member is verified before loading. Languages are the runtime set supported by this build (Chinese and Japanese frontends are excluded).",
+      "note": "Pinned MagpieTTS v2607 F16 generator and NanoCodec plus the authenticated tokenizer package; CPU-only, 22.05 kHz mono, macOS Apple silicon and Windows x64. Two GGUF files are downloaded directly and the tokenizer dictionaries are extracted from pinned append-only byte ranges of the .nemo archive; model_weights.ckpt is discarded. Every weight and tokenizer member is verified before loading. Languages are the runtime set supported by this build (Chinese and Japanese frontends are excluded).",
       "options": {
         "voice": "Aria",
         "threads": "2"
       },
       "platforms": [
-        "macos-arm64"
+        "macos-arm64",
+        "windows-x64"
       ],
       "artifacts": [
         {
@@ -2237,10 +2248,11 @@
       ],
       "source": "https://github.com/k2-fsa/sherpa-onnx/releases/tag/asr-models",
       "license": "MIT",
-      "note": "Pinned sherpa-onnx Moonshine package; CPU-only, macOS Apple silicon. The archive, all four pinned files and the model LICENSE are verified before loading.",
+      "note": "Pinned sherpa-onnx Moonshine package; CPU-only, macOS Apple silicon and Windows x64. The archive, all four pinned files and the model LICENSE are verified before loading.",
       "options": {},
       "platforms": [
-        "macos-arm64"
+        "macos-arm64",
+        "windows-x64"
       ],
       "artifacts": [
         {
@@ -2289,10 +2301,11 @@
       ],
       "source": "https://github.com/k2-fsa/sherpa-onnx/releases/tag/asr-models",
       "license": "MIT",
-      "note": "Pinned sherpa-onnx Moonshine package; CPU-only, macOS Apple silicon. The archive, all four pinned files and the model LICENSE are verified before loading.",
+      "note": "Pinned sherpa-onnx Moonshine package; CPU-only, macOS Apple silicon and Windows x64. The archive, all four pinned files and the model LICENSE are verified before loading.",
       "options": {},
       "platforms": [
-        "macos-arm64"
+        "macos-arm64",
+        "windows-x64"
       ],
       "artifacts": [
         {
@@ -2341,10 +2354,11 @@
       ],
       "source": "https://github.com/k2-fsa/sherpa-onnx/releases/tag/asr-models",
       "license": "Moonshine Community License",
-      "note": "Pinned sherpa-onnx Moonshine package; CPU-only, macOS Apple silicon. The archive, all four pinned files and the model LICENSE are verified before loading.",
+      "note": "Pinned sherpa-onnx Moonshine package; CPU-only, macOS Apple silicon and Windows x64. The archive, all four pinned files and the model LICENSE are verified before loading.",
       "options": {},
       "platforms": [
-        "macos-arm64"
+        "macos-arm64",
+        "windows-x64"
       ],
       "artifacts": [
         {
@@ -2393,10 +2407,11 @@
       ],
       "source": "https://github.com/k2-fsa/sherpa-onnx/releases/tag/asr-models",
       "license": "Moonshine Community License",
-      "note": "Pinned sherpa-onnx Moonshine package; CPU-only, macOS Apple silicon. The archive, all four pinned files and the model LICENSE are verified before loading.",
+      "note": "Pinned sherpa-onnx Moonshine package; CPU-only, macOS Apple silicon and Windows x64. The archive, all four pinned files and the model LICENSE are verified before loading.",
       "options": {},
       "platforms": [
-        "macos-arm64"
+        "macos-arm64",
+        "windows-x64"
       ],
       "artifacts": [
         {
@@ -2445,10 +2460,11 @@
       ],
       "source": "https://github.com/k2-fsa/sherpa-onnx/releases/tag/asr-models",
       "license": "Moonshine Community License",
-      "note": "Pinned sherpa-onnx Moonshine package; CPU-only, macOS Apple silicon. The archive, all four pinned files and the model LICENSE are verified before loading.",
+      "note": "Pinned sherpa-onnx Moonshine package; CPU-only, macOS Apple silicon and Windows x64. The archive, all four pinned files and the model LICENSE are verified before loading.",
       "options": {},
       "platforms": [
-        "macos-arm64"
+        "macos-arm64",
+        "windows-x64"
       ],
       "artifacts": [
         {
@@ -2497,10 +2513,11 @@
       ],
       "source": "https://github.com/k2-fsa/sherpa-onnx/releases/tag/asr-models",
       "license": "Moonshine Community License",
-      "note": "Pinned sherpa-onnx Moonshine package; CPU-only, macOS Apple silicon. The archive, all four pinned files and the model LICENSE are verified before loading.",
+      "note": "Pinned sherpa-onnx Moonshine package; CPU-only, macOS Apple silicon and Windows x64. The archive, all four pinned files and the model LICENSE are verified before loading.",
       "options": {},
       "platforms": [
-        "macos-arm64"
+        "macos-arm64",
+        "windows-x64"
       ],
       "artifacts": [
         {
@@ -2549,10 +2566,11 @@
       ],
       "source": "https://github.com/k2-fsa/sherpa-onnx/releases/tag/asr-models",
       "license": "Moonshine Community License",
-      "note": "Pinned sherpa-onnx Moonshine package; CPU-only, macOS Apple silicon. The archive, all four pinned files and the model LICENSE are verified before loading.",
+      "note": "Pinned sherpa-onnx Moonshine package; CPU-only, macOS Apple silicon and Windows x64. The archive, all four pinned files and the model LICENSE are verified before loading.",
       "options": {},
       "platforms": [
-        "macos-arm64"
+        "macos-arm64",
+        "windows-x64"
       ],
       "artifacts": [
         {
@@ -2601,10 +2619,11 @@
       ],
       "source": "https://github.com/k2-fsa/sherpa-onnx/releases/tag/asr-models",
       "license": "Moonshine Community License",
-      "note": "Pinned sherpa-onnx Moonshine package; CPU-only, macOS Apple silicon. The archive, all four pinned files and the model LICENSE are verified before loading.",
+      "note": "Pinned sherpa-onnx Moonshine package; CPU-only, macOS Apple silicon and Windows x64. The archive, all four pinned files and the model LICENSE are verified before loading.",
       "options": {},
       "platforms": [
-        "macos-arm64"
+        "macos-arm64",
+        "windows-x64"
       ],
       "artifacts": [
         {
@@ -2653,10 +2672,11 @@
       ],
       "source": "https://github.com/k2-fsa/sherpa-onnx/releases/tag/asr-models",
       "license": "Moonshine Community License",
-      "note": "Pinned sherpa-onnx Moonshine package; CPU-only, macOS Apple silicon. The archive, all four pinned files and the model LICENSE are verified before loading.",
+      "note": "Pinned sherpa-onnx Moonshine package; CPU-only, macOS Apple silicon and Windows x64. The archive, all four pinned files and the model LICENSE are verified before loading.",
       "options": {},
       "platforms": [
-        "macos-arm64"
+        "macos-arm64",
+        "windows-x64"
       ],
       "artifacts": [
         {
@@ -2705,10 +2725,11 @@
       ],
       "source": "https://github.com/k2-fsa/sherpa-onnx/releases/tag/asr-models",
       "license": "Moonshine Community License",
-      "note": "Pinned sherpa-onnx Moonshine package; CPU-only, macOS Apple silicon. The archive, all four pinned files and the model LICENSE are verified before loading.",
+      "note": "Pinned sherpa-onnx Moonshine package; CPU-only, macOS Apple silicon and Windows x64. The archive, all four pinned files and the model LICENSE are verified before loading.",
       "options": {},
       "platforms": [
-        "macos-arm64"
+        "macos-arm64",
+        "windows-x64"
       ],
       "artifacts": [
         {
@@ -2760,10 +2781,11 @@
       ],
       "source": "https://huggingface.co/facebook/omniASR-CTC-300M",
       "license": "Apache-2.0",
-      "note": "Pinned sherpa-onnx Omnilingual CTC 300M package; CPU-only, utterance-windowed, macOS Apple silicon. The archive and both model files are verified before loading. CTC recognition; the source language labels captions for translation and is never a decoder hint.",
+      "note": "Pinned sherpa-onnx Omnilingual CTC 300M package; CPU-only, utterance-windowed, macOS Apple silicon and Windows x64. The archive and both model files are verified before loading. CTC recognition; the source language labels captions for translation and is never a decoder hint.",
       "options": {},
       "platforms": [
-        "macos-arm64"
+        "macos-arm64",
+        "windows-x64"
       ],
       "artifacts": [
         {
@@ -2802,10 +2824,11 @@
       ],
       "source": "https://huggingface.co/FermionResearch/Phonon-2",
       "license": "CC-BY-4.0",
-      "note": "Pinned Phonon 2 (NeMo TDT transducer) int8 package; CPU-only, utterance-windowed, macOS Apple silicon. The archive and all four files are verified before loading. English only; the joiner is passed to the backend conv_frontend slot.",
+      "note": "Pinned Phonon 2 (NeMo TDT transducer) int8 package; CPU-only, utterance-windowed, macOS Apple silicon and Windows x64. The archive and all four files are verified before loading. English only; the joiner is passed to the backend conv_frontend slot.",
       "options": {},
       "platforms": [
-        "macos-arm64"
+        "macos-arm64",
+        "windows-x64"
       ],
       "artifacts": [
         {
@@ -2878,12 +2901,13 @@
       ],
       "source": "https://huggingface.co/FermionResearch/Phonon-2.5",
       "license": "CC-BY-4.0",
-      "note": "Multilingual Phonon 2.5 TDT, re-exported to ONNX INT8; CPU-only, utterance-windowed, macOS Apple silicon. 25 European languages including Russian; no Arabic or Chinese speech. Choose the known spoken language for translation: this labels the output, not a decoder hint. Auto leaves the source unknown. The Hearth ONNX download is 339 MB, larger than the publisher packed format.",
+      "note": "Multilingual Phonon 2.5 TDT, re-exported to ONNX INT8; CPU-only, utterance-windowed, macOS Apple silicon and Windows x64. 25 European languages including Russian; no Arabic or Chinese speech. Choose the known spoken language for translation: this labels the output, not a decoder hint. Auto leaves the source unknown. The Hearth ONNX download is 339 MB, larger than the publisher packed format.",
       "options": {
         "profile": "phonon-2.5"
       },
       "platforms": [
-        "macos-arm64"
+        "macos-arm64",
+        "windows-x64"
       ],
       "artifacts": [
         {
@@ -2949,10 +2973,11 @@
       ],
       "source": "https://huggingface.co/qvac/TranscribePsy-250M-EU-sub-gguf",
       "license": "Apache-2.0",
-      "note": "Pinned TranscribePsy 250M EU q8 GGUF; CPU-only, macOS Apple silicon. The single GGUF hash is verified before loading.",
+      "note": "Pinned TranscribePsy 250M EU q8 GGUF; CPU-only, macOS Apple silicon and Windows x64. The single GGUF hash is verified before loading.",
       "options": {},
       "platforms": [
-        "macos-arm64"
+        "macos-arm64",
+        "windows-x64"
       ],
       "artifacts": [
         {
@@ -3001,10 +3026,11 @@
       ],
       "source": "https://huggingface.co/nvidia/nemotron-3.5-asr-streaming-0.6b",
       "license": "OpenMDW-1.1",
-      "note": "Pinned Nemotron 3.5 ASR streaming q8 GGUF; CPU-only, macOS Apple silicon. The single GGUF hash is verified before loading.",
+      "note": "Pinned Nemotron 3.5 ASR streaming q8 GGUF; CPU-only, macOS Apple silicon and Windows x64. The single GGUF hash is verified before loading.",
       "options": {},
       "platforms": [
-        "macos-arm64"
+        "macos-arm64",
+        "windows-x64"
       ],
       "artifacts": [
         {
@@ -3031,7 +3057,8 @@
         "treeSha256": "1855931c4d84fa0f731a5a7906c1356837335d49ee7f2ca6a6a32389bac7f8e8"
       },
       "platforms": [
-        "macos-arm64"
+        "macos-arm64",
+        "windows-x64"
       ],
       "artifacts": [
         {
@@ -3064,7 +3091,8 @@
         "treeSha256": "b8a470cd032c88ea1bad4b173071a30c014ffa345f45a41499747fdac69a8743"
       },
       "platforms": [
-        "macos-arm64"
+        "macos-arm64",
+        "windows-x64"
       ],
       "artifacts": [
         {
@@ -3097,7 +3125,8 @@
         "treeSha256": "42427727ea015131d1f3f54c21bfeb772945b8682a87b6165dc61d9aa3d4d3c4"
       },
       "platforms": [
-        "macos-arm64"
+        "macos-arm64",
+        "windows-x64"
       ],
       "artifacts": [
         {
@@ -3130,7 +3159,8 @@
         "treeSha256": "aaf9b97e2b0efadfdbaabb97900e620884908a554fd1f5072339d3f1458ad129"
       },
       "platforms": [
-        "macos-arm64"
+        "macos-arm64",
+        "windows-x64"
       ],
       "artifacts": [
         {
@@ -3163,7 +3193,8 @@
         "treeSha256": "4f1bd9e45f0a1c1fd669b6cb75ae1bcded09ed9e22de60247bb57a40814f0f07"
       },
       "platforms": [
-        "macos-arm64"
+        "macos-arm64",
+        "windows-x64"
       ],
       "artifacts": [
         {
@@ -3196,7 +3227,8 @@
         "treeSha256": "ebbc20212be98c8cf0c5076915ebf2854106a7bf5ca376b11110f28b042e4555"
       },
       "platforms": [
-        "macos-arm64"
+        "macos-arm64",
+        "windows-x64"
       ],
       "artifacts": [
         {
@@ -3231,7 +3263,8 @@
         "threads": "6"
       },
       "platforms": [
-        "macos-arm64"
+        "macos-arm64",
+        "windows-x64"
       ],
       "artifacts": [
         {
