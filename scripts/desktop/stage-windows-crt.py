@@ -147,15 +147,26 @@ $ErrorActionPreference = 'Stop'
 [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
 Import-Module Microsoft.PowerShell.Security -ErrorAction Stop
 $paths = [Console]::In.ReadToEnd() | ConvertFrom-Json
+# VC 14.4x signs the redistributable CRT with the Software Compatibility Publisher
+# certificate, and Windows reports its own catalog signer when it ships the same bytes.
+# Each is a Microsoft Corporation certificate; any other signer or organization fails.
+$publishers = @('Microsoft Corporation', 'Microsoft Windows', 'Microsoft Windows Software Compatibility Publisher')
 $results = @(foreach ($path in $paths) {
   $signature = Get-AuthenticodeSignature -LiteralPath $path
   $certificate = $signature.SignerCertificate
+  $signer = ''
+  $organization = @()
+  if ($null -ne $certificate) {
+    $signer = $certificate.GetNameInfo([System.Security.Cryptography.X509Certificates.X509NameType]::SimpleName, $false)
+    $organization = @($certificate.SubjectName.Format($true) -split "`r?`n" | Where-Object { $_ -ceq 'O=Microsoft Corporation' })
+  }
   if ($signature.Status -ne 'Valid' -or $null -eq $certificate -or
-      $certificate.GetNameInfo([System.Security.Cryptography.X509Certificates.X509NameType]::SimpleName, $false) -ne 'Microsoft Corporation') {
-    throw "Expected valid Microsoft Authenticode signature: $path ($($signature.Status))"
+      $publishers -cnotcontains $signer -or $organization.Count -ne 1) {
+    throw "Expected valid Microsoft Authenticode signature: $path ($($signature.Status); signer '$signer')"
   }
   [pscustomobject]@{name=[IO.Path]::GetFileName($path).ToLowerInvariant();
     publisher=$certificate.Subject; thumbprint=$certificate.Thumbprint;
+    signatureType=[string]$signature.SignatureType;
     version=(Get-Item -LiteralPath $path).VersionInfo.FileVersion; status='Valid'}
 })
 ConvertTo-Json -InputObject $results -Depth 4 -Compress

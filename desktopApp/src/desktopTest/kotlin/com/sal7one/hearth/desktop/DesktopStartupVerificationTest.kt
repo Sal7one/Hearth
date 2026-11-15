@@ -14,7 +14,7 @@ class DesktopStartupVerificationTest {
     @Test fun savedQwenRouteSurvivesRestartAndWaitsForAuditWithoutAskingToConfigureAgain() = runTest {
         val directory=Files.createTempDirectory("hearth-startup-setup-")
         val library=DesktopModelLibrary(directory)
-        val card=library.catalog.first {it.engineId=="qwen3-asr-local"}
+        val card=auditCard(library)
         val route=EngineSelection(card.engineId,card.id,directory.resolve("picked-qwen").toString(),options=mapOf("threads" to "6","acceleration" to "cpu"))
         val selected=PipelineConfig(speech=route,sourceLanguage="ru",targetLanguage="en")
         val first=DesktopSettingsStore(directory)
@@ -44,7 +44,7 @@ class DesktopStartupVerificationTest {
     @Test fun failedAuditShowsActualMissingFilesAndDoesNotStayPendingOrSilentlyResetTheSelection() = runTest {
         val directory=Files.createTempDirectory("hearth-startup-missing-")
         val library=DesktopModelLibrary(directory)
-        val card=library.catalog.first {it.engineId=="qwen3-asr-local"}
+        val card=auditCard(library)
         val route=EngineSelection(card.engineId,card.id,directory.resolve("missing-qwen").toString())
         val selected=PipelineConfig(speech=route,sourceLanguage="en")
         val errors=mutableListOf<String>()
@@ -65,7 +65,7 @@ class DesktopStartupVerificationTest {
         val directory=Files.createTempDirectory("hearth-startup-other-path-")
         try {
             val library=DesktopModelLibrary(directory)
-            val card=library.catalog.first {it.engineId=="qwen3-asr-local"}
+            val card=auditCard(library)
             val route=EngineSelection(card.engineId,card.id,directory.resolve("old").toString())
             val descriptor=EngineDescriptor(card.engineId,"Qwen3-ASR",PipelineStage.STT,EngineKind.LOCAL,requiresModel=true)
             val home=homeState(PipelineConfig(speech=route,sourceLanguage="en"),listOf(descriptor),1,1,"Ready",false,
@@ -78,7 +78,7 @@ class DesktopStartupVerificationTest {
         val directory=Files.createTempDirectory("hearth-refresh-old-proof-")
         try {
             val library=DesktopModelLibrary(directory)
-            val card=library.catalog.first {it.engineId=="qwen3-asr-local"}
+            val card=auditCard(library)
             val path=directory.resolve("qwen")
             val config=PipelineConfig(speech=EngineSelection(card.engineId,card.id,path.toString()),sourceLanguage="en")
             val state=homeState(config,listOf(EngineDescriptor(card.engineId,"Qwen",PipelineStage.STT,EngineKind.LOCAL,requiresModel=true)),1,1,"Ready",false,
@@ -90,7 +90,7 @@ class DesktopStartupVerificationTest {
     @Test fun changedSavedPathDuringAuditIsQueuedAndOldFailureCannotEraseItsPendingState() = runTest {
         val directory=Files.createTempDirectory("hearth-refresh-new-path-")
         val library=DesktopModelLibrary(directory)
-        val card=library.catalog.first {it.engineId=="qwen3-asr-local"}
+        val card=auditCard(library)
         val old=EngineSelection(card.engineId,card.id,directory.resolve("old").toString())
         val fresh=old.copy(modelPath=directory.resolve("new").toString())
         val entered=CompletableDeferred<Unit>();val release=CompletableDeferred<Unit>()
@@ -115,7 +115,7 @@ class DesktopStartupVerificationTest {
     @Test fun pausedDownloadForTheSameIdDoesNotPreventAuditingAHealthyExternalSelection() = runTest {
         val directory=Files.createTempDirectory("hearth-refresh-paused-same-id-")
         val initial=DesktopModelLibrary(directory)
-        val card=initial.catalog.first {it.engineId=="qwen3-asr-local"}
+        val card=auditCard(initial)
         initial.downloads.queue(DesktopQueueEntry(card.id,DesktopQueuePhase.PAUSED,10,100))
         val route=EngineSelection(card.engineId,card.id,directory.resolve("healthy-external").toString())
         val checked=mutableListOf<Path>()
@@ -132,7 +132,7 @@ class DesktopStartupVerificationTest {
     @Test fun importingAnotherCopyDuringStartupCannotEraseTheSavedCopyProofOrActivateTheImport() = runTest {
         val directory=Files.createTempDirectory("hearth-refresh-copy-proof-")
         val library=DesktopModelLibrary(directory)
-        val card=library.catalog.first {it.engineId=="qwen3-asr-local"}
+        val card=auditCard(library)
         val saved=EngineSelection(card.engineId,card.id,directory.resolve("saved-A").toString())
         val imported=saved.copy(modelPath=directory.resolve("imported-B").toString())
         val config=PipelineConfig(speech=saved,sourceLanguage="en")
@@ -156,7 +156,7 @@ class DesktopStartupVerificationTest {
     @Test fun failedReverificationInvalidatesOnlyThatExactCopyAndSurfacesItsRealError() = runTest {
         val directory=Files.createTempDirectory("hearth-refresh-bad-copy-")
         val library=DesktopModelLibrary(directory)
-        val card=library.catalog.first {it.engineId=="qwen3-asr-local"}
+        val card=auditCard(library)
         val saved=EngineSelection(card.engineId,card.id,directory.resolve("saved-A").toString())
         val other=saved.copy(modelPath=directory.resolve("bad-B").toString())
         val config=PipelineConfig(speech=saved,sourceLanguage="en")
@@ -179,6 +179,11 @@ class DesktopStartupVerificationTest {
             assertTrue(failed.setupIssue.orEmpty().contains("checksum changed"))
         } finally {controller.close();directory.toFile().deleteRecursively()}
     }
+
+    // Qwen3-ASR is offered on macOS arm64 only. Other hosts drive the same audit state machine
+    // with a speech card their catalog does offer, instead of failing to find the fixture.
+    private fun auditCard(library:DesktopModelLibrary)=library.catalog.firstOrNull {it.engineId=="qwen3-asr-local"}
+        ?: library.catalog.first {it.stage==PipelineStage.STT}
 
     private fun home(config:PipelineConfig,controller:DesktopModelController,card:DesktopModelCard)=homeState(
         config,listOf(EngineDescriptor(card.engineId,"Qwen3-ASR",PipelineStage.STT,EngineKind.LOCAL,requiresModel=true)),

@@ -48,6 +48,11 @@ class WindowsCrtStageTests(unittest.TestCase):
         self.assertEqual(system_root, "C:/Windows")
         self.assertIn("Import-Module Microsoft.PowerShell.Security -ErrorAction Stop", args[0][-1])
         self.assertIn("$signature.Status -ne 'Valid'", args[0][-1])
+        # Real VC143 14.4x CRT DLLs carry the Software Compatibility Publisher certificate
+        # (or Windows' catalog signer), never a signer outside Microsoft Corporation.
+        self.assertIn("'Microsoft Windows Software Compatibility Publisher'", args[0][-1])
+        self.assertIn("$publishers -cnotcontains $signer", args[0][-1])
+        self.assertIn("$_ -ceq 'O=Microsoft Corporation'", args[0][-1])
 
     def test_only_release_x64_visual_studio_redist_candidates_are_considered(self):
         with tempfile.TemporaryDirectory() as temporary:

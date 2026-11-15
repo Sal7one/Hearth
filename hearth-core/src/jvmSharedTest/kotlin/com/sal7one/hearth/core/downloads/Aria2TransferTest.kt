@@ -68,7 +68,9 @@ class Aria2TransferTest {
         } finally { root.deleteRecursively() }
     }
     @Test fun argumentsSeparateFileAndConnectionConcurrencyAndDisableAmbientConfiguration() {
-        val request = Aria2Request(File("/opt/aria2c"),File("/tmp/models/a model.part"),"https://example.org/model?revision=pinned",12,connections=8)
+        // Host-absolute fixtures: "/opt/aria2c" is drive-relative, not absolute, on Windows.
+        val root = File(System.getProperty("java.io.tmpdir")).absoluteFile
+        val request = Aria2Request(File(root,"aria2c"),File(File(root,"models"),"a model.part"),"https://example.org/model?revision=pinned",12,connections=8)
         val args = Aria2Transfer.arguments(request)
         assertTrue("--max-concurrent-downloads=1" in args)
         assertTrue("--split=8" in args && "--max-connection-per-server=8" in args)

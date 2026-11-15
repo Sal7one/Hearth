@@ -46,7 +46,7 @@ class MingLocalModelTest {
         val root = bundle()
         try {
             Files.createDirectories(root.resolve("parts"))
-            Files.createSymbolicLink(root.resolve("parts/000.bin"), Path.of("part-000.bin"))
+            createSymbolicLinkOrSkip(root.resolve("parts/000.bin"), Path.of("part-000.bin"))
             MingLocalModel.prepare(root)
             assertTrue(Files.isRegularFile(root.resolve("parts/000.bin")))
             assertEquals("old", Files.readString(root.resolve("parts/000.bin")))

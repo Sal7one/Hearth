@@ -67,12 +67,12 @@ class NativeBundleMetadataTests(unittest.TestCase):
             self.assertEqual(result['libraries']['transiber_translation.dll']['compiledBackends'], ['cpu', 'cuda'])
 
     def test_translation_preparation_keeps_android_source_untouched_and_binds_device(self):
-        header = (module.ROOT / 'common-jni/src/main/cpp/translation/text_model.h').read_text()
+        header = (module.ROOT / 'common-jni/src/main/cpp/translation/text_model.h').read_text(encoding='utf-8')
         prepared = module.prepare_translation_header(header)
         self.assertIn('mp.devices = devices;', prepared)
         self.assertIn('mp.split_mode = LLAMA_SPLIT_MODE_NONE;', prepared)
         self.assertNotIn('mp.devices = devices;', header)
-        jni = module.prepare_translation((module.ROOT / 'common-jni/src/main/cpp/translation/translation_jni.cpp').read_text())
+        jni = module.prepare_translation((module.ROOT / 'common-jni/src/main/cpp/translation/translation_jni.cpp').read_text(encoding='utf-8'))
         self.assertIn('createWithBackend', jni)
         self.assertIn('return 5;', jni)
         self.assertIn('hearth_desktop_compiled_backends', jni)

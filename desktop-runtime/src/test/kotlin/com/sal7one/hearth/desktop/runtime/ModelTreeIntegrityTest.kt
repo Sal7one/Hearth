@@ -20,7 +20,7 @@ class ModelTreeIntegrityTest {
     }
     @Test fun rejectsSymlinksAndMalformedPins() = fixture { root ->
         assertFailsWith<IllegalArgumentException> { ModelTreeIntegrity.verify(root, "") }
-        Files.createSymbolicLink(root.resolve("alias"), root.resolve("z.bin"))
+        createSymbolicLinkOrSkip(root.resolve("alias"), root.resolve("z.bin"))
         assertFailsWith<IllegalArgumentException> { ModelTreeIntegrity.digest(root) }
     }
     @Test fun hashingIsCancellableAndCannotPublishChangedTree() = fixture { root ->

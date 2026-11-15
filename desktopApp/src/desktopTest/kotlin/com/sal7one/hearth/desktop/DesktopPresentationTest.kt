@@ -5,6 +5,7 @@ import com.sal7one.hearth.core.PipelineSnapshot
 import com.sal7one.hearth.core.PipelineConfig
 import com.sal7one.hearth.core.PipelineStage
 import com.sal7one.hearth.core.EngineSelection
+import java.nio.file.Path
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -40,9 +41,10 @@ class DesktopPresentationTest {
     }
 
     @Test fun desktopDataUsesThePlatformDirectoryAndExplicitOverride() {
-        assertEquals("/user/Library/Application Support/Hearth", desktopDataDirectory("Mac OS X", "/user", emptyMap()).toString())
-        assertEquals("/data/hearth", desktopDataDirectory("Linux", "/user", mapOf("XDG_DATA_HOME" to "/data")).toString())
-        assertEquals("/chosen", desktopDataDirectory("Mac OS X", "/user", mapOf("HEARTH_DATA_DIRECTORY" to "/chosen")).toString())
+        assertEquals(Path.of("/user/Library/Application Support/Hearth"), desktopDataDirectory("Mac OS X", "/user", emptyMap()))
+        assertEquals(Path.of("/data/hearth"), desktopDataDirectory("Linux", "/user", mapOf("XDG_DATA_HOME" to "/data")))
+        // An explicit override is made absolute on the host: POSIX keeps /chosen, Windows adds the current drive.
+        assertEquals(Path.of("/chosen").toAbsolutePath().normalize(), desktopDataDirectory("Mac OS X", "/user", mapOf("HEARTH_DATA_DIRECTORY" to "/chosen")))
     }
 
     @Test fun arabicFilterRetainsMultilingualWhisperAndExcludesEnglishOnlyVariants() {
