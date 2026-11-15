@@ -57,7 +57,7 @@ fun main(arguments: Array<String>) {
                             }
                             val summary = buildJsonObject {
                                 when (job.operation) {
-                                    ServiceOperation.TRANSLATE -> { write("translation.txt", "text/plain; charset=utf-8", job.text!!.reversed().toByteArray()); put("characters", job.text!!.length) }
+                                    ServiceOperation.TRANSLATE -> { write("translation.txt", "text/plain",job.text!!.reversed().toByteArray()); put("characters", job.text!!.length) }
                                     ServiceOperation.SPEAK -> { write("speech.wav", "audio/wav", ByteArray(44 + 32_000) { held[it] }); put("audioSeconds", 1.0); put("sampleRate", 16_000) }
                                     else -> {
                                         write("transcript.json", "application/json", """{"segments":[{"id":"1","startMs":0,"endMs":900,"text":"fake"}]}""".toByteArray())

@@ -113,6 +113,9 @@ class DesktopServiceHostTest {
         assertEquals("translation.txt", output.getValue("name").jsonPrimitive.content)
         val whole = call("GET", "/v1/jobs/${key(1)}/outputs/translation.txt")
         assertEquals("muesum olleH", whole.body().toString(Charsets.UTF_8))
+        // The record names the bare type; the download says how the text is encoded.
+        assertEquals("text/plain", output.getValue("mime").jsonPrimitive.content)
+        assertEquals("text/plain; charset=utf-8", whole.headers().firstValue("Content-Type").get())
         assertEquals(sha256Hex(whole.body()), output.getValue("sha256").jsonPrimitive.content)
         val part = call("GET", "/v1/jobs/${key(1)}/outputs/translation.txt", headers = mapOf("Range" to "bytes=2-5"))
         assertEquals(206, part.statusCode()); assertEquals("esum", part.body().toString(Charsets.UTF_8))

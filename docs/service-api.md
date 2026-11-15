@@ -115,7 +115,7 @@ nothing, and was measured at 54 ms at worst. Each route carries:
 | `sourceLanguages`, `targetLanguages`, `voices` | What a request may ask for. |
 | `limits.maxAudioSeconds`, `limits.maxTextCharacters` | Hard bounds for one job. |
 | `speed.secondsPerAudioSecond` | Measured on this computer during the route's last completed job; `null` until measured. For `speak` it is seconds per second of generated audio. |
-| `memory.ramBytes`, `memory.vramBytes` | The worker's memory after the route's last completed job; `null` until measured. `vramBytes` is 0 for a CPU route and `null` for a GPU route, because Hearth does not measure video memory yet. |
+| `memory.ramBytes`, `memory.vramBytes` | The worker's memory after the route's last completed job; `null` until measured. It is the whole worker's memory, so it includes any other route loaded at that moment: treat it as an upper bound for this route, not a sum to add across routes. `vramBytes` is 0 for a CPU route and `null` for a GPU route, because Hearth does not measure video memory yet. |
 | `resident` | Whether every model of the route is loaded in the worker right now. |
 
 A route that stopped being ready fails job creation with `route_not_ready` and the
@@ -212,6 +212,10 @@ job record.
   ]
 }
 ```
+
+`mime` is the bare media type: `application/json`, `text/vtt`, `text/plain` or
+`audio/wav`. Every text output is UTF-8, and its download carries
+`Content-Type: <mime>; charset=utf-8`.
 
 States are `awaiting_input`, `queued`, `running`, `completed`, `failed` and
 `cancelled`. A failed or cancelled job has `"error": {"code": "...", "message": "..."}`.

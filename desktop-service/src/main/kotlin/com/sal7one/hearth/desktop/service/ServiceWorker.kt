@@ -154,7 +154,7 @@ internal object ServiceOutputs {
         if (job.operation == ServiceOperation.TRANSLATE) {
             val translated = snapshot.translatedText
             if (translated.isBlank()) return WorkerOutcome.Failed(ServiceErrorCode.ENGINE_FAILED, "The translation engine returned no text")
-            outputs += file(directory, "translation.txt", "text/plain; charset=utf-8", translated.toByteArray(Charsets.UTF_8))
+            outputs += file(directory, "translation.txt", "text/plain",translated.toByteArray(Charsets.UTF_8))
         }
         if (job.config.voice != null) {
             if (snapshot.audio.isEmpty()) {

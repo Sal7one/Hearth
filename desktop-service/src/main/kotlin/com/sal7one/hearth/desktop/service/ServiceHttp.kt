@@ -143,7 +143,9 @@ internal class ServiceHttp(
             val range = exchange.requestHeaders.getFirst("Range")?.let { parseRange(it, size) ?: throw HttpRefusal(416, "invalid_range", "The requested range is not available") }
             val start = range?.first ?: 0
             val length = range?.let { it.last - it.first + 1 } ?: size
-            exchange.responseHeaders.set("Content-Type", output.mime)
+            // The record names the bare media type; every text output is UTF-8, and the header says so.
+            val textual = output.mime.startsWith("text/") || output.mime == "application/json"
+            exchange.responseHeaders.set("Content-Type", if (textual) "${output.mime}; charset=utf-8" else output.mime)
             exchange.responseHeaders.set("Accept-Ranges", "bytes")
             exchange.responseHeaders.set("Cache-Control", "no-store")
             if (range != null) exchange.responseHeaders.set("Content-Range", "bytes ${range.first}-${range.last}/$size")

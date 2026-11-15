@@ -21,7 +21,7 @@ Do not reintroduce the media editor, FFmpeg, sign recognition, books or yt-dlp.
   Before APK delivery build both QA variants and run `python3 scripts/verify-release.py`.
 - For desktop changes also run `./gradlew -PhearthDesktopOnly=true :hearth-core:desktopTest
   :desktop-runtime:test :desktop-data:test :desktop-media:test :desktop-integration:test
-  :desktopApp:desktopTest`. Build native helpers first for full host coverage. Validate
+  :desktop-service:test :desktopApp:desktopTest`. Build native helpers first for full host coverage. Validate
   installers with `python3 scripts/desktop/check-packaged.py` on each matching OS.
 - The owner device-tests. Do not use adb or drive their device unless explicitly asked.
 - Never commit keys, signing stores, local.properties, model weights, generated builds
