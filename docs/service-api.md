@@ -135,7 +135,7 @@ nothing, and was measured at 54 ms at worst. Each route carries:
 | `id`, `operation` | The route and `transcribe`, `translate`, `speak` or `pipeline`. |
 | `setup` | The name of the saved setup the route comes from, or `null` for the setup the app is showing. |
 | `stages` | For each stage: `stage`, `engine`, `model` and `acceleration` (`cpu`, `cuda` or `metal`). Informational. |
-| `sourceLanguages`, `targetLanguages`, `voices` | What a request may ask for. |
+| `sourceLanguages`, `targetLanguages`, `voices` | What a request may ask for. For `speak`, `sourceLanguages` is the language the voice speaks, the language of the text sent, and `targetLanguages` is empty; two setups that share a voice are told apart by it. |
 | `limits.maxAudioSeconds`, `limits.maxTextCharacters` | Hard bounds for one job. |
 | `speed.secondsPerAudioSecond` | Measured on this computer during the route's last completed job; `null` until measured. For `speak` it is seconds per second of generated audio. |
 | `memory.ramBytes`, `memory.vramBytes` | The worker's memory after the route's last completed job; `null` until measured. It is the whole worker's memory, so it includes any other route loaded at that moment: treat it as an upper bound for this route, not a sum to add across routes. `vramBytes` is 0 for a CPU route and `null` for a GPU route, because Hearth does not measure video memory yet. |
