@@ -43,7 +43,7 @@ internal object CaptionsCopy {
     const val FINISH = "Finish recording"
     const val DEVICE = "Input"
     const val MICROPHONE = "Microphone"
-    const val SYSTEM_AUDIO = "Mac audio"
+    val SYSTEM_AUDIO = com.sal7one.hearth.desktop.systemAudioTitle
     const val AUDIO_FILE = "Audio or video file…"
     const val TEXT_INPUT = "Typed text"
 }

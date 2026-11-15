@@ -10,3 +10,4 @@ if ($LASTEXITCODE -ne 0) { throw 'Media host tests failed' }
 $stage = Join-Path $repo 'desktop-media/native-libs/windows-x64'
 New-Item -ItemType Directory -Force $stage | Out-Null
 Copy-Item "$build/Release/hearth-media-decode.exe" $stage -Force
+Copy-Item "$build/Release/hearth-system-audio.exe" $stage -Force

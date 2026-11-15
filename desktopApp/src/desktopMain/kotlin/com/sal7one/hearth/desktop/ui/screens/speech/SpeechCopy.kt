@@ -18,9 +18,9 @@ internal object SpeechCopy {
     const val LANGUAGE = "Language"
     const val LANGUAGE_HINT = "Explicit is more accurate; auto costs a moment."
     const val INPUT = "Microphone device"
-    const val INPUT_HINT = "For microphone input. Choose Mac audio in Captions to capture streams and videos."
+    val INPUT_HINT = "For microphone input. Choose ${com.sal7one.hearth.desktop.systemAudioTitle} in Captions to capture streams and videos."
     const val REFRESH = "Refresh"
-    const val INPUT_NOTE = "Mac audio uses the system output instead of this microphone device."
+    val INPUT_NOTE = "${com.sal7one.hearth.desktop.systemAudioTitle} uses the system output instead of this microphone device."
     const val RESPONSIVENESS = "Responsiveness"
     const val RESPONSIVENESS_HINT = "How long Hearth waits before committing a line."
 

@@ -119,7 +119,7 @@ internal fun HearthDesktopRoot(
     var showPendingOriginal by remember { mutableStateOf(initialUi["overlay-pending"] != "false") }
     var overlaySettings by remember { mutableStateOf(overlaySettingsFrom(initialUi)) }
     var reduceMotion by remember { mutableStateOf(initialUi["reduce-motion"] == "true") }
-    val systemAudioLabel=remember {if(System.getProperty("os.name").startsWith("Windows",true))"PC audio" else "Mac audio"}
+    val systemAudioLabel=com.sal7one.hearth.desktop.systemAudioTitle
     val systemAudioAvailable = remember { com.sal7one.hearth.desktop.runtime.DesktopSystemAudioCapture.available }
     val systemAudioReason = remember { com.sal7one.hearth.desktop.runtime.DesktopSystemAudioCapture.availabilityReason }
     var captureSource by remember { mutableStateOf(

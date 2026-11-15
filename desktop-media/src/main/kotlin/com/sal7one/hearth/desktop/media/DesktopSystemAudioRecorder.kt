@@ -23,13 +23,14 @@ import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 
 /**
- * ScreenCaptureKit system audio only. A single collector owns the helper process and joins it on
- * cancellation. Native buffering is sixteen 100 ms frames; the JVM boundary is a rendezvous,
- * plus one in-flight frame and the operating system's bounded pipe. No microphone is opened.
+ * System output only: ScreenCaptureKit on macOS, WASAPI loopback on Windows. A single collector
+ * owns the helper process and joins it on cancellation. Native buffering is sixteen 100 ms frames;
+ * the JVM boundary is a rendezvous, plus one in-flight frame and the operating system's bounded
+ * pipe. No microphone is opened, and Hearth's own audio output is excluded where the OS allows.
  */
 class DesktopSystemAudioRecorder private constructor(private val launch: () -> Process) : Closeable {
     constructor(dataDirectory: Path) : this({
-        check(available) { availabilityReason ?: "Native macOS system audio capture is unavailable" }
+        check(available) { availabilityReason ?: "Native system audio capture is unavailable" }
         ProcessBuilder(SystemAudioHelper.executable(dataDirectory).toString(), "capture", ProcessHandle.current().pid().toString()).start()
     })
     internal constructor(launch: () -> Process, @Suppress("UNUSED_PARAMETER") test: Unit) : this(launch)
@@ -192,13 +193,20 @@ internal fun readSystemAudioFrame(input: InputStream): ByteArray? {
 }
 
 private object SystemAudioHelper {
-    private const val filename = "hearth-system-audio"
+    private val windows = System.getProperty("os.name").startsWith("Windows", ignoreCase = true)
+    private val platform = if (windows) "windows" else "macos"
+    private val filename = "hearth-system-audio" + if (windows) ".exe" else ""
     private val arch = when (System.getProperty("os.arch").lowercase()) { "arm64", "aarch64" -> "arm64"; "x86_64", "amd64" -> "x64"; else -> "unsupported" }
-    private val resource = "/media/macos-$arch/$filename"
+    private val resource = "/media/$platform-$arch/$filename"
     private fun external() = (System.getProperty("hearth.native.dir") ?: System.getenv("HEARTH_DESKTOP_NATIVE_DIR"))
         ?.let { Path.of(it).resolve(filename) }?.takeIf { Files.isRegularFile(it) }
     val availabilityReason: String? get() {
-        if (!System.getProperty("os.name").startsWith("Mac", ignoreCase = true)) return "Native system audio capture currently requires macOS 13.3 or newer"
+        if (windows) {
+            // WASAPI loopback needs no permission; the helper is built for x64 only.
+            if (arch != "x64") return "This Windows architecture does not support Hearth PC audio capture"
+            return if (external() == null && SystemAudioHelper::class.java.getResource(resource) == null) "The native Windows PC audio helper is not packaged; build the desktop media helpers" else null
+        }
+        if (!System.getProperty("os.name").startsWith("Mac", ignoreCase = true)) return "Native system audio capture requires macOS 13.3 or newer, or Windows 10 or newer"
         val version = System.getProperty("os.version").split('.').map { it.toIntOrNull() ?: 0 }
         if (version.firstOrNull() == null || version[0] < 13 || version[0] == 13 && version.getOrElse(1) { 0 } < 3) return "Native system audio capture requires macOS 13.3 or newer"
         if (arch == "unsupported") return "This Mac architecture does not support Hearth system audio capture"
@@ -207,16 +215,18 @@ private object SystemAudioHelper {
     @Synchronized fun executable(directory: Path): Path {
         external()?.let { return it.toAbsolutePath() }
         val bytes = SystemAudioHelper::class.java.getResourceAsStream(resource)?.use { it.readNBytes(16 * 1024 * 1024 + 1) }
-            ?: error("The native macOS system audio helper is not packaged")
+            ?: error("The native system audio helper is not packaged")
         check(bytes.size in 1..(16 * 1024 * 1024)) { "Invalid packaged system audio helper" }
         val hash = MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it) }
-        val parent = directory.resolve("helpers/macos-$arch/$hash")
-        Files.createDirectories(parent); Files.setPosixFilePermissions(parent, PosixFilePermissions.fromString("rwx------"))
+        val parent = directory.resolve("helpers/$platform-$arch/$hash")
+        Files.createDirectories(parent)
+        if (!windows) Files.setPosixFilePermissions(parent, PosixFilePermissions.fromString("rwx------"))
         val file = parent.resolve(filename)
         if (!Files.isRegularFile(file) || Files.size(file) != bytes.size.toLong() || !MessageDigest.isEqual(Files.readAllBytes(file), bytes)) {
             val temporary = Files.createTempFile(parent, ".system-audio-", ".tmp")
             try {
-                Files.write(temporary, bytes); Files.setPosixFilePermissions(temporary, PosixFilePermissions.fromString("rwx------"))
+                Files.write(temporary, bytes)
+                if (!windows) Files.setPosixFilePermissions(temporary, PosixFilePermissions.fromString("rwx------"))
                 Files.move(temporary, file, StandardCopyOption.REPLACE_EXISTING)
             } finally { Files.deleteIfExists(temporary) }
         }

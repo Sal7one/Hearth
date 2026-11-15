@@ -93,7 +93,8 @@ class DesktopSystemAudioRecorderTest {
     }
 
     @Test fun stagedProbeLoadsHelperWithoutRequestingPermissionOrCapturingAudio() = runBlocking<Unit> {
-        if (!System.getProperty("os.name").startsWith("Mac", true)) return@runBlocking
+        val os = System.getProperty("os.name")
+        if (!os.startsWith("Mac", true) && !os.startsWith("Windows", true)) return@runBlocking
         if (System.getProperty("hearth.media.required") == "true") assertTrue(DesktopSystemAudioRecorder.available, DesktopSystemAudioRecorder.availabilityReason)
         assumeTrue(DesktopSystemAudioRecorder.available)
         val directory = Files.createTempDirectory("hearth-system-audio-probe-")

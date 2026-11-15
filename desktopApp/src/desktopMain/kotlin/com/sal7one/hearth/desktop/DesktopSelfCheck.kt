@@ -31,8 +31,8 @@ internal object DesktopSelfCheck {
             check(KeyPairGenerator.getInstance("EC").provider != null) { "Packaged runtime lacks EC cryptography for HTTPS" }
             check(AudioSystem.getAudioFileTypes().isNotEmpty()) { "Packaged runtime lacks sampled audio services" }
             check(DesktopMediaDecoder.available) { "Native media adapter is missing from the packaged runtime" }
-            if (System.getProperty("os.name").startsWith("Mac", true)) {
-                check(DesktopSystemAudioCapture.available) { DesktopSystemAudioCapture.availabilityReason ?: "Native Mac system audio helper is missing" }
+            if (System.getProperty("os.name").let { it.startsWith("Mac", true) || it.startsWith("Windows", true) }) {
+                check(DesktopSystemAudioCapture.available) { DesktopSystemAudioCapture.availabilityReason ?: "Native system audio helper is missing" }
                 DesktopSystemAudioCapture.probe(profile)
                 report.setProperty("system-audio", "helper protocol1 passed; permission not requested; live capture not tested")
             }

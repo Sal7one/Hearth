@@ -14,7 +14,7 @@ interface DesktopPcmCapture : Closeable {
     override fun close() = cancel()
 }
 
-/** Native Mac system mixer input, independent of microphone capture and provider/model choices. */
+/** Native Mac or Windows system output, independent of microphone capture and provider/model choices. */
 class DesktopSystemAudioCapture(dataDirectory: Path) : DesktopPcmCapture {
     private val recorder = DesktopSystemAudioRecorder(dataDirectory)
     override fun start(): Flow<PcmFrame> = recorder.start().map { PcmFrame(it) }

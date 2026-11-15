@@ -8,7 +8,9 @@ import com.sal7one.hearth.core.PipelineConfig
 import java.nio.file.Path
 import java.util.Locale
 
-internal enum class WorkspaceInput(val title: String) { MICROPHONE("Microphone"), SYSTEM_AUDIO("Mac audio"), AUDIO_FILE("Audio file"), TEXT("Text") }
+/** One name for the system-output input on each host; menus, hints and state comparisons share it. */
+internal val systemAudioTitle: String = if (System.getProperty("os.name").startsWith("Windows", ignoreCase = true)) "PC audio" else "Mac audio"
+internal enum class WorkspaceInput(val title: String) { MICROPHONE("Microphone"), SYSTEM_AUDIO(systemAudioTitle), AUDIO_FILE("Audio file"), TEXT("Text") }
 internal enum class DesktopPage(val title: String) { WORKSPACE("Workspace"), MODELS("Models & providers"), INTEGRATION("Integration") }
 internal data class WorkspaceDraft(val text: String = "", val audioPath: String = "", val deviceId: String? = null)
 internal data class ModelFilters(val query: String = "", val stage: PipelineStage? = null,
