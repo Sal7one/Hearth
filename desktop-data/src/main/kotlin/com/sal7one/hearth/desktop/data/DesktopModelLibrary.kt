@@ -71,7 +71,7 @@ data class ModelInstallProgress(val phase: ModelInstallPhase, val completed: Lon
 
 /** Downloads only pinned catalog artifacts. Requests contain no provider headers or credentials. */
 class DesktopModelLibrary internal constructor(val directory: Path, val catalog: List<DesktopModelCard>, private val transferEngine: DesktopArtifactTransfer = DesktopArtifactTransfer()) {
-    constructor(directory: Path) : this(directory, (readCatalog()+mangaPageCard()+koharuMangaPageCard()+koharuCleanupMangaPageCard()).filter { it.platforms == null || desktopPlatform() in it.platforms })
+    constructor(directory: Path) : this(directory, (readCatalog()+mangaLinePageCard()+mangaPageCard()+koharuMangaPageCard()+koharuCleanupMangaPageCard()).filter { it.platforms == null || desktopPlatform() in it.platforms })
     private val mutableInstallations = MutableStateFlow<Map<String, DesktopModelStatus>>(emptyMap())
     val installations = mutableInstallations.asStateFlow()
     val downloads = DesktopDownloadStore(directory)

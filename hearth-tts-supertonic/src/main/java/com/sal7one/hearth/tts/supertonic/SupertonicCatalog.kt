@@ -7,7 +7,7 @@ data class SupertonicAsset(val id: String, val filename: String, val path: Strin
 }
 object SupertonicCatalog {
     const val modelCard = "https://huggingface.co/Supertone/supertonic-3"
-    const val projectUrl = "https://github.com/supertone-inc/supertonic"
+    const val projectUrl = "https://github.com/supertone-oss-archive/supertonic"
     const val license = "OpenRAIL-M (model weights); MIT (runtime code)"
     val filesUrl get() = "$modelCard/tree/$revision"
     val licenseUrl get() = "$modelCard/blob/$revision/LICENSE"

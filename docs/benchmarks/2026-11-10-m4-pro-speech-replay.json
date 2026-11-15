@@ -1,0 +1,215 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-11-10",
+  "sourceCommit": "0aad5e401d47779562c11a9d12afe2f41291011a",
+  "platform": {
+    "hardware": "Apple M4 Pro",
+    "os": "macOS 26.5",
+    "architecture": "arm64"
+  },
+  "backend": {
+    "abiVersion": 2,
+    "adapter": "libhearth_desktop_qwen3_asr.dylib",
+    "adapterSha256": "09879803153c714bf4389d584cfa81be10dbcd317ebc95ac742fbb3c3cbf0526",
+    "onnxRuntime": "1.20.1",
+    "onnxRuntimeSha256": "530cdb5a0de774677d369a83ec8912b0242e9769acd12d34b61412ee6ae368ae",
+    "placement": "CPU",
+    "threads": 4
+  },
+  "fixture": {
+    "id": "fleurs-en-1897",
+    "source": "https://huggingface.co/datasets/google/fleurs",
+    "revision": "70bb2e84b976b7e960aa89f1c648e09c59f894dd",
+    "license": "CC-BY-4.0",
+    "wavSha256": "a6f80b9e411481883bb0dd3bc11e24aef8e53befb636d99967ea4eee595265c4",
+    "normalizedPcmSha256": "86e33497ebef611d502c1fac9af4c0f52a418ab89cf47c5f864dbd25ca25ecb0",
+    "gain": 87.08837209302327,
+    "normalization": "Multiply int16 samples by 87.08837209302327, round to nearest int, clamp to signed int16. Same for all three models.",
+    "audioSeconds": 7.14,
+    "reference": "in the north the region is bounded by the sahel and in the south and west by the atlantic ocean",
+    "attribution": "FLEURS: Few-shot Learning Evaluation of Universal Representations of Speech, Conneau et al. (2022). Google."
+  },
+  "method": {
+    "sourceLanguage": "en",
+    "sampleRateHz": 16000,
+    "frameSamples": 800,
+    "maxUtteranceMs": 4000,
+    "endingSilenceMs": 600,
+    "energyGateDbfs": -45,
+    "rightContext": 3,
+    "warmupsPerModel": 4,
+    "measuredRunsPerModel": 30,
+    "order": "One model at a time per round, shuffled with Python Random(2957); all three sessions remain resident.",
+    "boundary": "Monotonic wall time from first PCM push through finish and drain of all native final results; reset, model preparation, package hashing and PCM normalization are outside the timer.",
+    "p95": "Nearest rank ceil(0.95 * n).",
+    "hostLoadAverageBefore": "1.68 1.67 1.74",
+    "hostLoadAverageAfter": "2.33 1.81 1.79",
+    "entryPoints": [
+      "hearth_moonshine_backend_v1",
+      "hearth_phonon_backend_v1"
+    ],
+    "positionFinals": "Two ordered final results per model and replay, with identical text and source sample endpoints on all timed and untimed passes of each model."
+  },
+  "models": [
+    {
+      "modelId": "moonshine-tiny-en-v2",
+      "archive": {
+        "filename": "sherpa-onnx-moonshine-tiny-en-quantized-2026-02-27.tar.bz2",
+        "bytes": 29858559,
+        "sha256": "9ec31b342d8fa3240c3b81b8f82e1cf7e3ac467c93ca5a999b741d5887164f8d",
+        "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-moonshine-tiny-en-quantized-2026-02-27.tar.bz2"
+      },
+      "verifiedFiles": [
+        {
+          "path": "tokens.txt",
+          "bytes": 549350,
+          "sha256": "2870d843e14c1e187bf1913a521562a63b53933814bd7f2145120468f494a049"
+        },
+        {
+          "path": "encoder_model.ort",
+          "bytes": 13281600,
+          "sha256": "94e90a4654fc45cdfedb77c4c08e1739f48862998e58fada384b25118134f221"
+        },
+        {
+          "path": "decoder_model_merged.ort",
+          "bytes": 30412256,
+          "sha256": "cf524c4862d36e9e5ab032eddc73637efd822d70e868ac575cf1a46e1e4708a0"
+        },
+        {
+          "path": "LICENSE",
+          "bytes": 13344,
+          "sha256": "6148d7574a6554b7379b633cfd4c4fe5840c3f548d13bc83e00b52dc6fa00abd"
+        }
+      ],
+      "warmReplayMs": [34.804, 35.724, 35.552, 35.646, 34.054, 35.736, 34.444, 34.956, 32.951, 35.766, 35.044, 36.906, 36.357, 35.738, 35.665, 35.722, 35.885, 35.91, 33.969, 36.246, 35.04, 34.91, 35.106, 34.78, 34.943, 36.002, 35.858, 35.973, 35.777, 35.146],
+      "positionFinals": [
+        {
+          "endSample": 64000,
+          "text": "In the north the region is bounded by the Sahil, and in the south"
+        },
+        {
+          "endSample": 114240,
+          "text": "And west by the Atlantic Ocean."
+        }
+      ],
+      "runtimeRevision": "210f340bcfdfd5b9ad6b24245e77a934d6c28f1b",
+      "execution": "CPU · ONNX Runtime",
+      "initialSessionMs": 120.325,
+      "warmP50Ms": 35.656,
+      "warmP95Ms": 36.357,
+      "warmMaxMs": 36.906
+    },
+    {
+      "modelId": "phonon-2",
+      "archive": {
+        "filename": "phonon-2-hearth-int8.tar.bz2",
+        "bytes": 339918748,
+        "sha256": "6b6cd464a3271f25f0bcbde0c12839516cd1e9b49f8292368da6a1931a2fa805",
+        "url": "https://github.com/Sal7one/Hearth/releases/download/v0.23.0/phonon-2-hearth-int8.tar.bz2"
+      },
+      "verifiedFiles": [
+        {
+          "path": "tokens.txt",
+          "bytes": 93939,
+          "sha256": "d58544679ea4bc6ac563d1f545eb7d474bd6cfa467f0a6e2c1dc1c7d37e3c35d"
+        },
+        {
+          "path": "encoder.int8.onnx",
+          "bytes": 611893758,
+          "sha256": "953ae3bd0b635e4d0929e53cdc1d4757629099b99dee9b88e0812cb6ee6f670a"
+        },
+        {
+          "path": "decoder.int8.onnx",
+          "bytes": 12257659,
+          "sha256": "d92e2d8fc9c99ef9faf0a2cf1728af4ec08c0a83b99ece29a46037c4a5a757bf"
+        },
+        {
+          "path": "joiner.int8.onnx",
+          "bytes": 5281492,
+          "sha256": "b848103db33b89be7167d218587ea59e772e40ba6ba1cd787230e7e754839633"
+        }
+      ],
+      "warmReplayMs": [166.309, 166.147, 163.277, 163.525, 164.185, 167.248, 164.759, 164.091, 164.794, 164.522, 164.349, 162.37, 163.557, 164.848, 164.588, 163.206, 167.764, 166.832, 165.032, 163.639, 163.095, 164.937, 164.198, 165.037, 167.449, 167.536, 164.665, 164.323, 164.201, 163.55],
+      "positionFinals": [
+        {
+          "endSample": 64000,
+          "text": "In the north the region is bounded by the Sahil and in the south"
+        },
+        {
+          "endSample": 114240,
+          "text": "and west by the Atlantic Ocean."
+        }
+      ],
+      "runtimeRevision": "210f340bcfdfd5b9ad6b24245e77a934d6c28f1b",
+      "execution": "CPU · ONNX Runtime",
+      "initialSessionMs": 507.696,
+      "warmP50Ms": 164.555,
+      "warmP95Ms": 167.536,
+      "warmMaxMs": 167.764
+    },
+    {
+      "modelId": "phonon-2.5",
+      "archive": {
+        "filename": "phonon-2.5-hearth-int8.tar.bz2",
+        "url": "https://github.com/Sal7one/Hearth/releases/download/v0.30.0-models.1/phonon-2.5-hearth-int8.tar.bz2",
+        "bytes": 339205640,
+        "sha256": "d869c32887cb9eaa1c034216797f25a215344aaea0b3e1ef82fe8d3f086d737c"
+      },
+      "verifiedFiles": [
+        {
+          "path": "LICENSE-WEIGHTS-CC-BY-4.0.txt",
+          "bytes": 18657,
+          "sha256": "9ba9550ad48438d0836ddab3da480b3b69ffa0aac7b7878b5a0039e7ab429411"
+        },
+        {
+          "path": "NOTICE",
+          "bytes": 2664,
+          "sha256": "dd4993badd45eb336280a0ab5b4ecb3ed06260d189a30fcae8b9e89a587c4de8"
+        },
+        {
+          "path": "decoder.int8.onnx",
+          "bytes": 12257658,
+          "sha256": "9759e3eff1ccb5b79c694f218377a780a327ffc693a0fb21db812bd2754ceaac"
+        },
+        {
+          "path": "encoder.int8.onnx",
+          "bytes": 611893971,
+          "sha256": "2e644946846e0027c1c8973ab88675643e17720ac6fdb15320365e040519d63a"
+        },
+        {
+          "path": "joiner.int8.onnx",
+          "bytes": 5281492,
+          "sha256": "b848103db33b89be7167d218587ea59e772e40ba6ba1cd787230e7e754839633"
+        },
+        {
+          "path": "tokens.txt",
+          "bytes": 93939,
+          "sha256": "d58544679ea4bc6ac563d1f545eb7d474bd6cfa467f0a6e2c1dc1c7d37e3c35d"
+        }
+      ],
+      "warmReplayMs": [166.148, 162.913, 163.938, 165.804, 166.689, 168.516, 166.353, 165.924, 165.016, 163.716, 163.778, 164.296, 163.737, 164.299, 164.492, 164.002, 163.387, 166.504, 165.207, 165.86, 164.716, 165.53, 163.405, 165.095, 166.276, 165.543, 162.029, 164.575, 163.831, 165.235],
+      "positionFinals": [
+        {
+          "endSample": 64000,
+          "text": "In the north the region is bounded by the Sahil and in the south"
+        },
+        {
+          "endSample": 114240,
+          "text": "and west by the Atlantic Ocean."
+        }
+      ],
+      "runtimeRevision": "210f340bcfdfd5b9ad6b24245e77a934d6c28f1b",
+      "execution": "CPU · ONNX Runtime",
+      "initialSessionMs": 517.603,
+      "warmP50Ms": 164.866,
+      "warmP95Ms": 166.689,
+      "warmMaxMs": 168.516
+    }
+  ],
+  "limits": [
+    "Single public English clip, no corpus accuracy claim.",
+    "Replayed at compute speed. Capture, real-time audio arrival, caption publication, and translation are outside the measurement.",
+    "Desktop host result. Android, Windows and other hardware were not measured.",
+    "Initial session time is a single observation and excludes package verification."
+  ]
+}

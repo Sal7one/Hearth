@@ -65,6 +65,7 @@ internal fun ModelsScreen(
                     onStage = actions.onFilterStage,
                     onReading = actions.onFilterReading,
                     onToggleInstalled = actions.onToggleInstalledOnly,
+                    onToggleMeasured = actions.onToggleMeasuredOnly,
                     onHardware = actions.onFilterHardware,
                     onReset = actions.onResetFilters,
                 )

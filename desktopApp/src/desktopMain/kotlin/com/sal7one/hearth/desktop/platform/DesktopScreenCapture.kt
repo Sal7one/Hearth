@@ -98,7 +98,7 @@ internal object DesktopScreenCapture {
                             }
                             g.color=Color(12,18,26,235);g.fillRoundRect(24,24,440,60,18,18)
                             g.color=Color.WHITE;g.font=Font(Font.SANS_SERIF,Font.BOLD,16)
-                            g.drawString("Drag around Japanese text · Escape to cancel",40,60)
+                            g.drawString("Drag around the text · Escape to cancel",40,60)
                         } finally {g.dispose()}
                     }
                 }

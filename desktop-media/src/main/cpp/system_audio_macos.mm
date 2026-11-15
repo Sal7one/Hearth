@@ -54,7 +54,7 @@ static bool writeSize(size_t count, const std::shared_ptr<hearth::SystemAudioQue
 - (instancetype)initWithQueue:(std::shared_ptr<hearth::SystemAudioQueue>)value {
     if ((self=[super init])) {
         queue=value; finished=false; stopping=false; started=false; startPending=false;
-        pcm=std::make_unique<hearth::SystemAudioPcm>([value](std::vector<uint8_t> frame) { return value->push(std::move(frame)); });
+        pcm=std::make_unique<hearth::SystemAudioPcm>([value](const uint8_t* bytes, size_t size) { return value->push(bytes, size); });
         audioQueue=dispatch_queue_create("com.sal7one.hearth.system-audio",DISPATCH_QUEUE_SERIAL);
     }
     return self;
@@ -166,8 +166,11 @@ int main(int argc,char** argv) {
                 if (!queue->waitReady()) return;
                 const uint8_t magic[]{'H','S','A','1'};
                 if (!writeBytes(magic,sizeof(magic),queue)) return;
-                std::vector<uint8_t> frame;
-                while (queue->pop(frame)) if (!writeSize(frame.size(),queue) || !writeBytes(frame.data(),frame.size(),queue)) return;
+                while (true) {
+                    const auto frame = queue->pop();
+                    if (!frame.size) break;
+                    if (!writeSize(frame.size, queue) || !writeBytes(frame.bytes, frame.size, queue)) return;
+                }
                 if (queue->error().empty()) (void)writeSize(0,queue);
             });
             [capture begin:static_cast<pid_t>(parent)];

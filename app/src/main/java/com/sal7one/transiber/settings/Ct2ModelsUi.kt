@@ -35,7 +35,7 @@ internal fun ct2BrowserMatches(spec: Ct2ModelSpec,query: String,source: String,t
 /** Compact packages use one card per directional model, independent of GGUF backend settings. */
 @Composable
 internal fun Ct2ModelsUi(query: String,source: String,target: String,kind: String,installedOnly: Boolean,
-    selectedId: String,onSelect: (String) -> Unit,onError: (String) -> Unit) {
+    selectedId: String,onSelect: (String) -> Unit,onError: (String) -> Unit, measuredOnly: Boolean = false) {
     val context=LocalContext.current;val scope=rememberCoroutineScope();val text=rememberUiText()
     val downloads=remember { FileDownloads(context) }
     var revision by remember { mutableIntStateOf(0) }
@@ -74,7 +74,8 @@ internal fun Ct2ModelsUi(query: String,source: String,target: String,kind: Strin
             revision++;delay(1500)
         }
     }
-    Ct2Catalog.models.filter { ct2BrowserMatches(it,query,source,target,kind) }
+    Ct2Catalog.models.filter { ct2BrowserMatches(it,query,source,target,kind) &&
+        (!measuredOnly || com.sal7one.transiber.models.modelSpeedReferences(it.id, source, target).isNotEmpty()) }
         .groupBy { it.groupId }.forEach { (groupId, allVariants) ->
         val variants=remember(revision,allVariants,installedOnly) { allVariants.filter { !installedOnly || Ct2Package.installed(context,it) } }
         if(variants.isEmpty()) return@forEach
@@ -93,6 +94,7 @@ internal fun Ct2ModelsUi(query: String,source: String,target: String,kind: Strin
             OutlinedCard(Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(SettingsLayout.cardPadding),verticalArrangement=Arrangement.spacedBy(SettingsLayout.contentGap)) {
                     Text(spec.label,style=MaterialTheme.typography.titleMedium)
+                    com.sal7one.transiber.models.ModelSpeedLine(spec.id, source, target)
                     Text(android.text.format.Formatter.formatShortFileSize(context,spec.bytes) + " · CPU" + spec.precisionLabel.takeIf { it.isNotBlank() }?.let { " · $it" }.orEmpty())
                     if(!Ct2Package.runtimeSupported()) Text(text(UiR.string.ct2_runtime_hint),style=MaterialTheme.typography.bodySmall)
                     Text(text(UiR.string.ct2_experimental),style=MaterialTheme.typography.bodySmall)

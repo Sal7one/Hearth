@@ -1,5 +1,6 @@
 package com.sal7one.transiber.byok
 
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import org.json.JSONArray
 import org.json.JSONObject
 import java.net.URLEncoder
@@ -42,7 +43,8 @@ internal object CloudVoiceProtocol {
                 "xi-api-key", JSONObject().put("text", text).put("model_id", c.model)
                     .put("voice_settings", JSONObject().put("speed", c.speed.toString().toDouble())).toString())
             else -> {
-                val body = JSONObject().put("model", c.model).put("input", text).put("response_format", "mp3")
+                val format = if (usesOpenRouterGeminiPcm(c)) "pcm" else "mp3"
+                val body = JSONObject().put("model", c.model).put("input", text).put("response_format", format)
                 if (c.voice.isNotBlank()) body.put("voice", c.voice)
                 if (c.supportsSpeed()) body.put("speed", c.speed.toString().toDouble())
                 if (c.supportsInstructions() && c.instructions.isNotBlank()) body.put("instructions", c.instructions)
@@ -53,9 +55,22 @@ internal object CloudVoiceProtocol {
 
     fun audio(config: CloudVoiceConfig, raw: ByteArray, contentType: String?): Audio {
         check(raw.isNotEmpty()) { "TTS provider returned empty audio" }
+        val expectPcm = usesOpenRouterGeminiPcm(config)
+        val mediaType = contentType?.toMediaTypeOrNull()
+        if (expectPcm && mediaType?.type == "audio" && mediaType.subtype == "pcm") {
+            check(raw.size <= AUDIO_LIMIT) { "TTS audio exceeds size limit" }
+            val channels = mediaType.parameter("channels") ?: "1"
+            check(channels.toIntOrNull() == 1) {
+                "Expected mono OpenRouter PCM audio"
+            }
+            // Gemini PCM defaults to signed, little-endian, mono 24 kHz. OpenRouter may provide the rate.
+            val rate = mediaType.parameter("rate")?.let { it.toIntOrNull() ?: error("Invalid OpenRouter PCM sample rate") } ?: 24000
+            return Audio(WavEncoder.wrapPcm16(raw, rate), "wav")
+        }
         val json = contentType.orEmpty().contains("json", true) || raw.firstOrNull { !it.toInt().toChar().isWhitespace() } == '{'.code.toByte()
         if (!json) {
             check(config.provider != CloudVoiceProvider.GEMINI) { "Google returned a non-JSON response" }
+            check(!expectPcm) { "OpenRouter returned ${contentType.orEmpty()} instead of PCM audio" }
             check(raw.size <= AUDIO_LIMIT) { "TTS audio exceeds size limit" }
             check(contentType == null || contentType.startsWith("audio/", true) || contentType.startsWith("application/octet-stream", true)) {
                 "TTS provider returned ${contentType.orEmpty()} instead of audio"
@@ -144,4 +159,8 @@ internal object CloudVoiceProtocol {
         return VoicePage(voices, next)
     }
     private fun encode(value: String) = URLEncoder.encode(value, "UTF-8").replace("+", "%20")
+
+    // https://openrouter.ai/docs/guides/overview/multimodal/tts
+    private fun usesOpenRouterGeminiPcm(config: CloudVoiceConfig): Boolean =
+        config.provider == CloudVoiceProvider.OPENROUTER && config.model.startsWith("google/gemini-")
 }

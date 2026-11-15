@@ -3,7 +3,7 @@
 import importlib.util
 import unittest
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 spec = importlib.util.spec_from_file_location("catalog_audit", Path(__file__).with_name("audit-model-catalog.py"))
 audit = importlib.util.module_from_spec(spec)
@@ -45,6 +45,15 @@ class CatalogAuditTest(unittest.TestCase):
         for code in (429, 500, 502, 503):
             self.assertEqual("retry_needed", self.check(status=code)["status"])
         self.assertEqual("access_blocked", self.check(status=401)["status"])
+
+    def test_head_404_falls_back_to_a_bounded_get(self):
+        response = MagicMock(status=200, headers={})
+        with patch.object(audit, "request", return_value=(404, {}, b"")), \
+             patch.object(audit.PUBLIC_OPENER, "open") as opened:
+            opened.return_value.__enter__.return_value = response
+            self.assertEqual("reachable", audit.probe("https://modelscope.cn/api/example")["status"])
+            self.assertEqual("bytes=0-0", opened.call_args.args[0].get_header("Range"))
+            response.read.assert_called_once_with(1)
 
     def test_release_without_digest_is_explicitly_only_size_checked(self):
         self.artifact["url"] = "https://github.com/owner/repo/releases/download/v1/model.tar.bz2"

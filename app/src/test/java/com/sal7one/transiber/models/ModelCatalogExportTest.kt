@@ -29,7 +29,15 @@ class ModelCatalogExportTest {
                 .put("bytes", bytes).put("sha256", sha256).put("license", license)
         }
         SpeechArtifactCatalog.all.forEach {
-            artifact(it.id, "speech", it.url, it.bytes, it.sha256, it.license)
+            val components = it.components
+            if (components == null) {
+                artifact(it.id, "speech", it.url, it.bytes, it.sha256, it.license)
+            } else {
+                // A multi-file package uses its publisher page as the card URL. Audit its actual downloads.
+                components.parts.forEach { part ->
+                    artifact(part.id, "speech", part.url, part.bytes, part.sha256, it.license)
+                }
+            }
             source(it.publisherUrl, it.filesUrl, it.licenseUrl)
         }
         CaptionEngineChoice.entries.flatMap(ModelSources::speech).forEach { source(it.publisher, it.files) }

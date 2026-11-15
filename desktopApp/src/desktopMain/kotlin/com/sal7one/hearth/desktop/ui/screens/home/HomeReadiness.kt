@@ -43,7 +43,7 @@ internal fun HomeReadiness(state: HomeState, modifier: Modifier = Modifier) {
             .border(1.dp, colors.border, shapes.card),
     ) {
         ReadinessCell(
-            eyebrow = "On this Mac",
+            eyebrow = "On this computer",
             value = "${state.installedModels} model" + if (state.installedModels == 1) "" else "s",
             chip = if (state.verifiedModels > 0) "Verified" to ChipTone.Ok else null,
             detail = if (state.installedModels == 0) {

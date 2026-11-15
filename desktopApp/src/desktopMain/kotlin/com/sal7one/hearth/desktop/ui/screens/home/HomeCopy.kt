@@ -13,8 +13,7 @@ internal object HomeCopy {
     const val HEADLINE_LINE_ONE = "Hear the room."
     const val HEADLINE_LINE_TWO = "Read it in your language."
     const val LEDE =
-        "Speech, translation and voice are separate stages. Turn on the ones you need — on this Mac, " +
-            "or through a provider you already use."
+        "Use your saved speech, translation and voice setup to caption your microphone or computer audio."
     const val START = "Start listening"
     const val MAP_EYEBROW = "Workspace"
     const val MAP_TITLE = "Use your saved setup"

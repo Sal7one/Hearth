@@ -28,6 +28,9 @@ interface StreamingSttClient {
      */
     fun onCaptureEnded() {}
 
+    /** True while a provider with an explicit end acknowledgement still has output to flush. */
+    val awaitingEndOfAudio: Boolean get() = false
+
     var onInterim: ((String) -> Unit)?
     var onFinal: ((String) -> Unit)?
     var onError: ((String) -> Unit)?

@@ -129,6 +129,7 @@ class CaptionLanguagesTest {
         assertEquals(setOf("auto"), CaptionLanguages.source(cloud, SttMode.BATCH, CaptionLanguageModel("my-custom-stt")).codes)
         assertEquals("auto", CaptionLanguages.effectiveSource(cloud, SttMode.BATCH, CaptionLanguageModel("my-custom-stt")))
         assertEquals("ru", CaptionLanguages.effectiveSource(cloud, SttMode.BATCH, CaptionLanguageModel("gpt-4o-mini-transcribe")))
+        assertEquals("ru", CaptionLanguages.effectiveSource(cloud, SttMode.BATCH, CaptionLanguageModel("gpt-transcribe")))
         assertFalse(CaptionLanguages.source(cloud.copy(mode = CaptionMode.TRANSLATE), SttMode.STREAMING_OPENAI).allowsSelection)
     }
     @Test fun headerCoverageDoesNotGuessFromFilenameOrTruncatedData() {

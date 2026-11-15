@@ -71,7 +71,7 @@ blank/space entries for CTC decoding. Exact origins, revisions and hashes are in
 verified downloads, not APK assets. See [OCR sources](docs/camera-ocr.md).
 
 Supertonic 3 inference/text preparation adapts the MIT implementation from
-[Supertone](https://github.com/supertone-inc/supertonic), revision
+[Supertone's source archive](https://github.com/supertone-oss-archive/supertonic), revision
 1e9799e964ea4c0dad7cde993b65c3c813a7b373. Its copyright/license and provenance are in
 `assets/licenses/voice/`. Downloaded Supertonic 3 weights use OpenRAIL-M terms, also
 included there, and are not bundled in the APK. The first-party server bridge calls
@@ -149,6 +149,8 @@ Runtime licenses do not replace these model licenses. See
 `hearth-tts-moss` contains the Apache-2.0 MOSS orchestration and privately linked SentencePiece (including its original third-party notices), plus MIT JSON. Model/codec weights are separately downloaded under their exact pinned Apache-2.0 model terms. `hearth-tts-chatterbox` uses MIT chatterboxcpp audio/Perth code, real Hugging Face tokenizers0.22.2 with locked dependency notices, and MIT JSON. The native Perth converter operates only on the separately downloaded official MIT checkpoint; no pickle execution or checkpoint redistribution is included. Chatterbox V3 model/export is MIT, and the adapter always applies native Perth before publishing audio. Both optional providers share the single official ONNX Runtime AAR; neither links the broad STT/translation `common-jni` binary. Full source/binary provenance and dependency notices ship under each module's `assets/licenses/` folder.
 
 ## Automatic manga page detection
+
+Fast lines uses the separately downloaded [PP-OCRv6 Manga v0.3 detector, recognizer and dictionary](https://huggingface.co/Kellenok/PP-OCRv6_manga), which declare Apache-2.0. Hearth pins revision `d65838996a00ef6b1c73ca3a700d7a8c5fbbef8a` and the exact three files in `MangaArtifacts.kt`. The model card credits Manga109-s as training data. Neither source pages nor model weights ship in Hearth.
 
 The separately downloaded [ogkalu comic text/bubble detector](https://huggingface.co/ogkalu/comic-text-and-bubble-detector)
 declares Apache-2.0. Hearth pins the INT8 RT-DETR-v2 export, revision

@@ -1,6 +1,7 @@
 package com.sal7one.hearth.desktop.ui.screens.models
 
 import com.sal7one.hearth.core.PipelineStage
+import com.sal7one.hearth.core.models.ModelMeasurement
 
 /** What a catalog entry currently is to the operator. */
 internal enum class ModelStatus { INSTALLED, AVAILABLE, BROKEN }
@@ -16,6 +17,8 @@ internal data class ModelRow(
     val issue: String? = null,
     val activity: String? = null,
     val gpuLabel: String? = null,
+    val downloadSizeLabel: String? = null,
+    val measurements: List<ModelMeasurement> = emptyList(),
 ) {
     val actionLabel: String
         get() = when {
@@ -44,6 +47,7 @@ internal data class ModelsFilter(
     val onlyInstalled: Boolean = false,
     val hardware: ModelHardwareFilter = ModelHardwareFilter.ALL,
     val readingOnly: Boolean = false,
+    val measuredOnly: Boolean = false,
 )
 
 /** A real transfer, already resolved to display strings by the mapper. */
@@ -72,5 +76,5 @@ internal data class ModelsState(
     val issues: List<String> = emptyList(),
 ) {
     val isEmpty: Boolean get() = groups.all { it.rows.isEmpty() }
-    val isEmptyBecauseOfFilter: Boolean get() = isEmpty && (filter.query.isNotBlank() || filter.onlyInstalled || filter.stage != null || filter.readingOnly || filter.hardware != ModelHardwareFilter.ALL)
+    val isEmptyBecauseOfFilter: Boolean get() = isEmpty && filter != ModelsFilter()
 }

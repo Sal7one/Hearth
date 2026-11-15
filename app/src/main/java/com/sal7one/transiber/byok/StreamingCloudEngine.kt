@@ -157,6 +157,9 @@ class StreamingCloudEngine(
     /** Non-sticky error for UI surfacing (same pattern as RemoteWhisperEngine). */
     fun takeLastErrorForUi(): String? = lastError?.also { lastError = null }
 
+    val awaitingEndOfAudio: Boolean
+        get() = initialized && !released && client.awaitingEndOfAudio
+
     override suspend fun finalize(): Result<TranscriptResult> {
         onCaptureEnded()
         retire()

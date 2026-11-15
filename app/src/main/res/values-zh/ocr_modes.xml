@@ -2,10 +2,13 @@
     <string name="ocr_cleaning_background">正在清理文字背景 — 已识别文本就绪</string>
     <string name="ocr_reader_saved_for_both">相机与屏幕漫画共用的已保存识别器：%1$s</string>
     <string name="ocr_manga_page_mode">漫画页面识别器</string>
-    <string name="ocr_manga_mode_fast">精简版</string>
+    <string name="ocr_manga_mode_lines">快速文本行</string>
+    <string name="ocr_manga_mode_fast">对白气泡</string>
     <string name="ocr_manga_mode_koharu">Koharu</string>
     <string name="ocr_manga_mode_cleanup">Koharu + 清理</string>
-    <string name="ocr_manga_mode_explainer">精简版使用小型文字检测器。Koharu 增加像素蒙版和分镜排序；清理模式会移除原文。每种模式都有各自必需的模型文件。</string>
+    <string name="ocr_manga_mode_explainer">快速文本行识别整页日文和中文。对白气泡识别日文对白。Koharu 增加像素蒙版和分镜排序。清理功能会移除原文。</string>
+    <string name="ocr_manga_line_page">日文和中文 · 漫画快速文本行</string>
+    <string name="ocr_manga_line_page_details">PP-OCRv6 Manga 可识别截取页面中的竖排和横排文本。23.2 MB 的模型包包含两个 ONNX 文件和一个字典。CPU · Apache-2.0</string>
     <string name="ocr_koharu_page">日语 · Koharu 漫画页面</string>
     <string name="ocr_koharu_cleanup_page">日语 · Koharu 漫画页面 + 清理</string>
     <string name="ocr_koharu_page_details">Koharu RF-DETR 分割、分镜与气泡分组，以及 Manga OCR。用于截取的日语页面 · CPU · 实验性 · 运行内存需求较高。检测器权重受 Manga109 学术数据条款约束，请阅读模型卡。</string>

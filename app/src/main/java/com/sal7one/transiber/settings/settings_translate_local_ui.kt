@@ -24,6 +24,8 @@ import com.sal7one.transiber.models.translationGpuPaths
 import com.sal7one.transiber.models.LegacyModelSetup
 import com.sal7one.transiber.models.ModelEngineType
 import com.sal7one.transiber.models.ModelRegistry
+import com.sal7one.transiber.models.ModelSpeedLine
+import com.sal7one.transiber.models.modelSpeedReferences
 import com.sal7one.transiber.translation.*
 import com.sal7one.transiber.ui.components.*
 import kotlinx.coroutines.*
@@ -72,6 +74,7 @@ internal fun SettingsTranslateLocalUi(
     var query by com.sal7one.transiber.models.rememberModelBrowseString("translation-query", "")
     var kind by com.sal7one.transiber.models.rememberModelBrowseString("translation-kind", "any")
     var installedOnly by com.sal7one.transiber.models.rememberModelBrowseBoolean("translation-installed")
+    var measuredOnly by rememberSaveable { mutableStateOf(false) }
     var hardwareId by com.sal7one.transiber.models.rememberModelBrowseString("translation-hardware", "all")
     val hardware = ModelHardwareFilter.fromKey(hardwareId)
     var showPivots by com.sal7one.transiber.models.rememberModelBrowseBoolean("translation-pivots", MarianCascade.find(config.localTranslationModelId) != null)
@@ -174,15 +177,18 @@ internal fun SettingsTranslateLocalUi(
     }
     val languages = remember(catalog) { catalog.flatMap { it.sourceLanguages + it.targetLanguages }.distinct().sortedBy(TranslationLanguages::label) }
     val options = listOf("any" to uiText(UiR.string.model_browser_all_languages)) + languages.map { it to TranslationLanguages.label(it) }
+    fun measured(id: String) = !measuredOnly || modelSpeedReferences(id, source, target).isNotEmpty()
+    fun visibleVariants(item: TranslationBrowserItem) = item.matchingVariants(query, installed.takeIf { installedOnly })
+        .filter { measured(it.id) }
     val shown = catalog.filter { item ->
-        item.matches(query, source, target, kind) && (!installedOnly ||
-            if (item.compact) item.installed(installed) else item.matchingVariants(query, installed).isNotEmpty()) &&
+        item.matches(query, source, target, kind) &&
+            (if (item.compact) measured(item.id) && (!installedOnly || item.installed(installed)) else visibleVariants(item).isNotEmpty()) &&
             (!item.throughEnglish || showPivots) && hardware.matches(translationGpuPaths(item.variants.isNotEmpty()))
     }
-
-    val shownCt2Count = com.sal7one.common_jni.translation.Ct2Catalog.models.filter {
-        ct2BrowserMatches(it, query, source, target, kind, hardware) && (!installedOnly || Ct2Package.installed(context, it))
+    val shownCt2Count = Ct2Catalog.models.filter {
+        ct2BrowserMatches(it, query, source, target, kind, hardware) && measured(it.id) && (!installedOnly || Ct2Package.installed(context, it))
     }.map { it.groupId }.distinct().size
+    val showPlatform = PlatformTranslation.available && hardware.matches(emptySet()) && measured(TranslationOptions.ML_KIT)
 
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(SettingsLayout.cardGap)) {
         if (showCaptionControls) Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(SettingsLayout.contentGap),
@@ -206,6 +212,7 @@ internal fun SettingsTranslateLocalUi(
             Tab(installedOnly, onClick = { installedOnly = true }, text = { Text(uiText(UiR.string.model_browser_manage)) })
         }
         ModelSearchField(query, { query = it })
+        FilterChip(measuredOnly, onClick = { measuredOnly = !measuredOnly }, label = { Text(uiText(UiR.string.model_speed_measured_only)) })
         SettingsFieldPair(
             first = { ModelFilterPicker(uiText(UiR.string.model_translation_source), source, options, { source = it }, it) },
             second = { ModelFilterPicker(uiText(UiR.string.translation_browser_target), target, options, { target = it }, it) },
@@ -229,18 +236,20 @@ internal fun SettingsTranslateLocalUi(
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
             Text(uiText(UiR.string.model_browser_results, shown.size + shownCt2Count), style = MaterialTheme.typography.labelMedium)
-            if (query.isNotBlank() || installedOnly || source != "any" || target != "any" || kind != "any" || showPivots || hardware != ModelHardwareFilter.ALL) TextButton(onClick = {
-                query = ""; installedOnly = false; source = "any"; target = "any"; kind = "any"; showPivots = false; hardwareId = "all"
+            if (query.isNotBlank() || installedOnly || measuredOnly || source != "any" || target != "any" || kind != "any" || showPivots || hardware != ModelHardwareFilter.ALL) TextButton(onClick = {
+                query = ""; installedOnly = false; measuredOnly = false; source = "any"; target = "any"; kind = "any"; showPivots = false; hardwareId = "all"
             }) { Text(uiText(UiR.string.explorer_clear_filters)) }
         }
-        if (shown.isEmpty() && shownCt2Count == 0) ModelBrowserEmptyState(onReset = {
-            query = ""; source = "any"; target = "any"; kind = "any"; installedOnly = false; showPivots = false; hardwareId = "all"
+        if (shown.isEmpty() && shownCt2Count == 0 && (!measuredOnly || !showPlatform)) ModelBrowserEmptyState(onReset = {
+            query = ""; source = "any"; target = "any"; kind = "any"; installedOnly = false; measuredOnly = false; showPivots = false; hardwareId = "all"
         })
-        if (hardware.matches(emptySet())) Ct2ModelsUi(query,source,target,kind,installedOnly,config.localTranslationModelId,{ select(it) },{ error=it })
+        if (hardware.matches(emptySet()) && (!measuredOnly || shownCt2Count > 0)) {
+            Ct2ModelsUi(query,source,target,kind,installedOnly,config.localTranslationModelId,{ select(it) },{ error=it }, measuredOnly)
+        }
         shown.forEach { item -> key(item.id) {
             var variantId by rememberSaveable { mutableStateOf("") }
             var details by rememberSaveable { mutableStateOf(false) }
-            val variants = item.matchingVariants(query, installed.takeIf { installedOnly })
+            val variants = visibleVariants(item)
             val spec = variants.firstOrNull { it.id == variantId } ?: variants.takeIf { it.isNotEmpty() }
                 ?.let { preferredTranslationVariant(it, installed, config.localTranslationModelId) }
             val id = spec?.id ?: item.id
@@ -264,6 +273,7 @@ internal fun SettingsTranslateLocalUi(
                     else MaterialTheme.colorScheme.surfaceContainerLow)) {
                 Column(Modifier.padding(SettingsLayout.cardPadding), verticalArrangement = Arrangement.spacedBy(SettingsLayout.contentGap)) {
                     Text(item.title, style = MaterialTheme.typography.titleMedium)
+                    ModelSpeedLine(id, source, target)
                     ModelGpuPaths(translationGpuPaths(item.variants.isNotEmpty()))
                     Text(uiText(if (item.compact) {
                         if (item.throughEnglish) UiR.string.explorer_translation_pivot else UiR.string.explorer_translation_direct
@@ -384,9 +394,10 @@ internal fun SettingsTranslateLocalUi(
             }
 
         }
-        if (PlatformTranslation.available && hardware.matches(emptySet())) {
+        if (showPlatform) {
             HorizontalDivider()
             TextButton(onClick = { platformDetails = !platformDetails }) { Text(uiText(UiR.string.translation_browser_platform)) }
+            ModelSpeedLine(TranslationOptions.ML_KIT, source, target)
             if (platformDetails) MlKitSetup(config, update,
                 sourceLanguage = selectionSource ?: spoken, targetLanguage = selectionTarget ?: config.target.languageTag,
                 onUse = if (onLocalModelSelected != null) ({ select(TranslationOptions.ML_KIT) }) else null)

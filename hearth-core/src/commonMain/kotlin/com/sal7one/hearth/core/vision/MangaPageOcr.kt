@@ -72,24 +72,27 @@ class MangaPageOcr(private val detector: ComicRegionDetector, private val reader
             progress.stage(value)
             return progress.isCurrent().also {if(it)checkBudget()}
         }
-        if(preview!=null) {
+        val preliminary = if(preview!=null) {
             if(!stage(PageOcrStage.PREVIEW))return emptyList()
-            val preliminary=MangaPageLayout.regions(preview.detect(pixels,width,height),width,height)
+            val outlines=MangaPageLayout.regions(preview.detect(pixels,width,height),width,height)
             if(!progress.isCurrent())return emptyList()
-            progress.detected(preliminary)
-        }
+            progress.detected(outlines)
+            outlines
+        } else emptyList()
         if(!stage(PageOcrStage.SEGMENTATION))return emptyList()
         val detections=detector.detect(pixels,width,height)
         if (!progress.isCurrent()) return emptyList()
         checkBudget()
-        val candidates=MangaPageLayout.regions(detections,width,height)
+        val refined=MangaPageLayout.regions(detections,width,height)
+        // A successful mask pass can still miss text found by the compact detector.
+        val candidates=refined.ifEmpty { preliminary }
         check(candidates.size <= 64) { "Page exceeds 64 text regions. Draw a smaller area." }
         val regions=candidates.map {
             if(!progress.isCurrent())return emptyList()
             KoharuPageScene.preparePaint(it,pixels,width,height)
         }
         if (!progress.isCurrent()) return emptyList()
-        progress.detected(regions) // Highlight all geometry before the first slow OCR/translation call.
+        if (preview == null || refined.isNotEmpty()) progress.detected(regions)
         if(!stage(PageOcrStage.RECOGNITION))return emptyList()
         val results = ArrayList<PageText>(regions.size)
         for (region in regions) {
@@ -218,7 +221,10 @@ object MangaPageLayout {
         val left = min(a.x, b.x); val top = min(a.y, b.y)
         return OcrRect(left, top, (max(a.right, b.right)-left).toInt(), (max(a.bottom,b.bottom)-top).toInt())
     }
-    private fun readingOrder(regions: List<OcrRegion>): List<OcrRegion> {
+    internal fun orderLines(regions: List<OcrRegion>): List<OcrRegion> =
+        readingOrder(regions, rightToLeft = regions.count { it.bounds.height > it.bounds.width } * 2 > regions.size)
+
+    private fun readingOrder(regions: List<OcrRegion>, rightToLeft: Boolean = true): List<OcrRegion> {
         if (regions.size < 2) return regions
         // Whitespace cuts approximate row/panel order, then Japanese right-to-left columns.
         // This detector has no panel class; this is explicitly spatial rather than semantic order.
@@ -234,10 +240,10 @@ object MangaPageLayout {
             }
             if (best < 8 || at < 1) return null
             val first = sorted.take(at); val second = sorted.drop(at)
-            return if (vertical) second to first else first to second
+            return if (vertical && rightToLeft) second to first else first to second
         }
         val cut = split(false) ?: split(true)
-        return if (cut != null) readingOrder(cut.first) + readingOrder(cut.second)
-            else regions.sortedWith(compareBy<OcrRegion> { it.bounds.y }.thenByDescending { it.bounds.x })
+        return if (cut != null) readingOrder(cut.first, rightToLeft) + readingOrder(cut.second, rightToLeft)
+            else regions.sortedWith(compareBy<OcrRegion> { it.bounds.y }.thenBy { if (rightToLeft) -it.bounds.x else it.bounds.x })
     }
 }

@@ -106,12 +106,16 @@ internal object Ct2Package {
         require(identity.id==spec.id) { "Downloaded CT2 runtime archive belongs to a different model" }
         checkActive();return publish(context,spec,staged)
     }
-    fun importZip(context: Context,input: InputStream,checkActive: () -> Unit = {}): Pair<Ct2ModelSpec,File> {
+    fun importZip(context: Context,input: InputStream,checkActive: () -> Unit = {}): Pair<Ct2ModelSpec,File> =
+        importZip(context, input, Ct2Catalog.models, checkActive)
+
+    fun importZip(context: Context, input: InputStream, models: List<Ct2ModelSpec>,
+        checkActive: () -> Unit): Pair<Ct2ModelSpec,File> {
         requireRuntime(context)
         val parent=File(context.filesDir,"ct2-models").apply { check(isDirectory || mkdirs()) }
         val work=File(parent,".import-${UUID.randomUUID()}").apply { check(mkdir()) }
         try {
-            val (spec,staged)=com.sal7one.common_jni.translation.Ct2Archive.stage(work,input,checkActive=checkActive)
+            val (spec,staged)=com.sal7one.common_jni.translation.Ct2Archive.stage(work,input,models=models,checkActive=checkActive)
             checkActive();return spec to publish(context,spec,staged)
         } finally { work.deleteRecursively() }
     }

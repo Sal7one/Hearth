@@ -5,6 +5,8 @@
 #include "logging.h"
 #include <cstring>
 #include <algorithm>
+#include <limits>
+#include <utility>
 
 #if defined(__ARM_NEON) || defined(__ARM_NEON__)
 #include <arm_neon.h>
@@ -24,42 +26,40 @@ class ImageUtils {
 public:
     /**
      * Convert NV21 (Android camera) to RGB888.
-     * NV21: Y plane followed by interleaved VU plane.
+     * NV21: packed, even-sized Y and interleaved VU planes. As before, callers
+     * can supply the packed VU plane separately via planeV.
      */
     static bool nv21ToRgb(const ImageView& src, ImageFrame& dst) {
-        if (src.format != PixelFormat::NV21 || !src.isValid()) {
+        if (src.format != PixelFormat::NV21 || !src.isValid() ||
+            src.width % 2 != 0 || src.height % 2 != 0 ||
+            src.width > (std::numeric_limits<int>::max() - 15) / 3) {
             return false;
         }
-        
-        dst = ImageFrame(src.width, src.height, PixelFormat::RGB888);
-        
+        const size_t width = static_cast<size_t>(src.width);
+        const size_t height = static_cast<size_t>(src.height);
+        const size_t rgbStride = (width * 3 + 15) & ~size_t(15);
+        if (height > std::numeric_limits<size_t>::max() / rgbStride) return false;
+
+        ImageFrame converted(src.width, src.height, PixelFormat::RGB888);
         const uint8_t* yPlane = src.data;
-        const uint8_t* vuPlane = src.planeV ? src.planeV : (src.data + src.width * src.height);
-        
-        uint8_t* rgb = dst.data();
-        int dstStride = dst.stride();
-        
-        for (int y = 0; y < src.height; y++) {
-            const uint8_t* yRow = yPlane + y * src.width;
-            const uint8_t* vuRow = vuPlane + (y / 2) * src.width;
-            uint8_t* rgbRow = rgb + y * dstStride;
-            
-            for (int x = 0; x < src.width; x++) {
-                int Y = yRow[x];
-                int V = vuRow[(x / 2) * 2] - 128;
-                int U = vuRow[(x / 2) * 2 + 1] - 128;
-                
-                // YUV to RGB conversion
-                int R = Y + (1.370705f * V);
-                int G = Y - (0.337633f * U) - (0.698001f * V);
-                int B = Y + (1.732446f * U);
-                
-                rgbRow[x * 3 + 0] = static_cast<uint8_t>(std::clamp(R, 0, 255));
-                rgbRow[x * 3 + 1] = static_cast<uint8_t>(std::clamp(G, 0, 255));
-                rgbRow[x * 3 + 2] = static_cast<uint8_t>(std::clamp(B, 0, 255));
+        const uint8_t* vuPlane = src.planeV ? src.planeV : yPlane + width * height;
+
+        for (size_t y = 0; y < height; y += 2) {
+            const auto* yTop = yPlane + y * width;
+            const auto* yBottom = yTop + width;
+            const auto* vu = vuPlane + (y / 2) * width;
+            auto* rgbTop = converted.data() + y * rgbStride;
+            auto* rgbBottom = rgbTop + rgbStride;
+            for (size_t x = 0; x < width; x += 2) {
+                const int v = vu[x] - 128;
+                const int u = vu[x + 1] - 128;
+                writeNv21Pixel(rgbTop + 3 * x, yTop[x], u, v);
+                writeNv21Pixel(rgbTop + 3 * x + 3, yTop[x + 1], u, v);
+                writeNv21Pixel(rgbBottom + 3 * x, yBottom[x], u, v);
+                writeNv21Pixel(rgbBottom + 3 * x + 3, yBottom[x + 1], u, v);
             }
         }
-        
+        dst = std::move(converted);
         return true;
     }
     
@@ -373,6 +373,15 @@ public:
         }
         
         return true;
+    }
+private:
+    static void writeNv21Pixel(uint8_t* rgb, int y, int u, int v) {
+        const int r = y + 1.370705f * v;
+        const int g = y - 0.337633f * u - 0.698001f * v;
+        const int b = y + 1.732446f * u;
+        rgb[0] = static_cast<uint8_t>(std::clamp(r, 0, 255));
+        rgb[1] = static_cast<uint8_t>(std::clamp(g, 0, 255));
+        rgb[2] = static_cast<uint8_t>(std::clamp(b, 0, 255));
     }
 };
 

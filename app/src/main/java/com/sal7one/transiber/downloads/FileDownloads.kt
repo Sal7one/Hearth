@@ -468,17 +468,16 @@ class FileDownloads(private val context: Context) {
   OcrCatalog.find(modelId)?.let { asset ->
    require(item.installed) { "OCR model is not installed" }
    if(asset.id == OcrCatalog.detector.id)return
-   val selected=com.sal7one.transiber.ocr.OcrPreferences(context).read().profileId
+   val settings=com.sal7one.transiber.ocr.OcrPreferences(context)
+   val selected=settings.read().profileId
    val candidates=OcrCatalog.profiles.filter { profile -> profile.assets.any { it.id == asset.id } }
    val ocrModels=OcrModels(File(context.filesDir,"ocr-models"))
    // Shared Manga reader files serve both automatic pages and manual bubbles.
    // Respect the selected profile; a component's Use button must not force its new sibling.
    (candidates.firstOrNull {it.id==selected} ?: candidates.firstOrNull(ocrModels::ready)
       ?: candidates.minByOrNull {it.assets.size})?.let { profile ->
-    require(OcrModels(File(context.filesDir, "ocr-models")).ready(profile)) { "Finish installing all files for ${profile.label} first" }
-    val settings = com.sal7one.transiber.preferences.UserPreferences.store(context, "camera-translate")
-    val source = settings.getString("source", "en")
-    settings.edit().putString("profile", profile.id).putString("source", source?.takeIf { it in profile.languages } ?: profile.languages.first()).apply()
+    require(ocrModels.ready(profile)) { "Finish installing all files for ${profile.label} first" }
+    settings.update { it.withProfile(profile.id) }
    }
    return
   }

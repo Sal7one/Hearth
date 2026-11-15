@@ -1,6 +1,7 @@
 // Model contracts: docs/manga-ocr-adapters.md. No Python runtime is required.
 #include "japanese_ocr.h"
 #include "japanese_geometry.h"
+#include "manga_ocr_input.h"
 #include "model_path.h"
 #include "../onnx/include/onnxruntime/onnxruntime_c_api.h"
 #include <atomic>
@@ -28,8 +29,8 @@ struct Value {
     template<class T> T* data() const {void* ptr=nullptr;check(api()->GetTensorMutableData(p,&ptr));return static_cast<T*>(ptr);}
 };
 
-// Bilinear upright ARGB -> CHW. Meiki uses BGR [0,1]; Manga uses grayscale [-1,1].
-std::vector<float> image(const uint32_t* pixels,int width,int height,Box crop,int tw,int th,int cw,int ch,bool manga) {
+// Bilinear upright ARGB -> CHW. Meiki uses BGR [0,1].
+std::vector<float> meikiImage(const uint32_t* pixels,int width,int height,Box crop,int tw,int th,int cw,int ch) {
     if(cw<1||ch<1||cw>tw||ch>th||crop.width<1||crop.height<1)throw std::runtime_error("Invalid OCR resize");
     std::vector<float> out(size_t(3)*tw*th,0.f);
     for(int y=0;y<ch;++y)for(int x=0;x<cw;++x){
@@ -37,9 +38,9 @@ std::vector<float> image(const uint32_t* pixels,int width,int height,Box crop,in
         float fy=std::clamp(crop.y+(y+.5f)*crop.height/ch-.5f,0.f,float(height-1));
         int x0=int(fx),y0=int(fy),x1=std::min(x0+1,width-1),y1=std::min(y0+1,height-1);float dx=fx-x0,dy=fy-y0;
         for(int c=0;c<3;++c){
-            auto sample=[&](int a,int b){auto p=pixels[b*width+a];return manga ? std::round(.299f*((p>>16)&255)+.587f*((p>>8)&255)+.114f*(p&255))/255.f : float((p>>(c*8))&255)/255.f;};
+            auto sample=[&](int a,int b){return float((pixels[b*width+a]>>(c*8))&255)/255.f;};
             float v=(sample(x0,y0)*(1-dx)+sample(x1,y0)*dx)*(1-dy)+(sample(x0,y1)*(1-dx)+sample(x1,y1)*dx)*dy;
-            out[(size_t(c)*th+y)*tw+x]=manga ? (v-.5f)*2 : v;
+            out[(size_t(c)*th+y)*tw+x]=v;
         }
     }
     return out;
@@ -73,8 +74,8 @@ struct JapaneseOcr::Impl {
         for(size_t i=0;i<raw.size();++i)result[i].p=raw[i];check(status);active();return result;
     }
     std::vector<Line> manga(const uint32_t* pixels,int w,int h){
-        auto data=image(pixels,w,h,{0,0,w,h,1},224,224,224,224,true);
-        auto input=tensor(data,{1,3,224,224},ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT);
+        auto data=mangaOcrInput(pixels,w,h);
+        auto input=tensor(data,{1,3,kMangaImageSide,kMangaImageSide},ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT);
         auto encoded=infer(first,{"pixel_values"},{input.p},{"last_hidden_state"});
         if(encoded[0].shape(ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT)!=std::vector<int64_t>{1,197,768})throw std::runtime_error("Unexpected Manga encoder shape");
         std::vector<int64_t> ids{2};Decoded decoded;
@@ -104,7 +105,7 @@ struct JapaneseOcr::Impl {
     }
     std::vector<Line> meiki(const uint32_t* pixels,int w,int h){
         float scale=std::min(960.f/w,544.f/h);int cw=std::max(1,int(w*scale)),ch=std::max(1,int(h*scale));
-        auto data=image(pixels,w,h,{0,0,w,h,1},960,544,cw,ch,false);
+        auto data=meikiImage(pixels,w,h,{0,0,w,h,1},960,544,cw,ch);
         auto detected=meikiRun(first,data,960,544,int(960/scale),int(544/scale),true);
         auto n=detected[2].shape(ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT)[1];auto boxes=detected[1].data<float>();auto scores=detected[2].data<float>();
         std::vector<Line> lines;
@@ -123,7 +124,7 @@ struct JapaneseOcr::Impl {
                 Box crop=box;if(vertical){crop.y+=offset;crop.height=std::min(segment,box.height-offset);}
                 float f=std::min(float(tw)/crop.width,float(th)/crop.height);
                 int ew=std::max(1,int(std::round(crop.width*f))),eh=std::max(1,int(std::round(crop.height*f)));
-                auto content=image(pixels,w,h,crop,tw,th,std::min(tw,ew),std::min(th,eh),false);
+                auto content=meikiImage(pixels,w,h,crop,tw,th,std::min(tw,ew),std::min(th,eh));
                 auto recognized=meikiRun(vertical?third:second,content,tw,th,tw,th,false);
                 auto count=recognized[2].shape(ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT)[1];auto chars=recognized[0].data<int32_t>();auto b=recognized[1].data<float>();auto s=recognized[2].data<float>();
                 for(int j=0;j<count;++j){

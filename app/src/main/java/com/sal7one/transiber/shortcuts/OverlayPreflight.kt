@@ -21,12 +21,13 @@ internal data class OverlayPreflight(val config: CaptionOverlayConfig, val signa
 /** No downloads, remote requests or recognizer allocation. Runtime still verifies weights when opening. */
 internal suspend fun overlayPreflight(context: Context, shortcut: OverlayShortcut): OverlayPreflight = withContext(Dispatchers.IO) {
     val config = CaptionConfigStore.config(context).first()
-    val camera = com.sal7one.transiber.preferences.UserPreferences.store(context, "camera-translate")
-    val readingModel = OcrPreferences(context).read().translationModel(config.localTranslationModelId)
-    val profileId = camera.getString("profile", "latin")!!
-    val source = camera.getString("source", "en")!!
-    val target = camera.getString("target", "ar")!!
-    val provider = if (ByokPolicy.FEATURE_BYOK) camera.getString("provider", "local")!! else "local"
+    val reading = OcrPreferences(context).read()
+    val readingModel = reading.translationModel(config.localTranslationModelId)
+    val ocrModels = OcrModels(File(context.filesDir, "ocr-models"))
+    val profile by lazy { ocrModels.effectiveProfile(reading) }
+    val source = reading.source
+    val target = reading.target
+    val provider = reading.providerId
     val cloudMode = CloudConfigStore.sttMode(context)
     val probes = mutableListOf(
         SetupProbe("Display over other apps", SetupFix.OVERLAY_PERMISSION) {
@@ -91,9 +92,8 @@ internal suspend fun overlayPreflight(context: Context, shortcut: OverlayShortcu
     } else {
         probes += SetupProbe("OCR model & source language", SetupFix.CAMERA) {
             com.sal7one.transiber.runtime.LocalModelPolicy.requireAllowed(context, "OCR")
-            val profile = OcrCatalog.profile(profileId)
             check(source in profile.languages) { "${profile.label} does not support source language $source." }
-            val missing = OcrModels(File(context.filesDir, "ocr-models")).missing(profile)
+            val missing = ocrModels.missing(profile)
             check(missing.isEmpty()) { "Download or import ${profile.label}: ${missing.joinToString { it.filename }}" }
             "${profile.label} · $source"
         }
@@ -101,6 +101,7 @@ internal suspend fun overlayPreflight(context: Context, shortcut: OverlayShortcu
             checkTranslationSetup(context, readingModel, provider, source, target)
         }
     }
-    val signature = listOf(config.toString(), cloudMode.name, profileId, source, target, provider, readingModel).joinToString("\n")
+    val readerId = if (shortcut == OverlayShortcut.CAPTIONS) reading.profileId else runCatching { profile.id }.getOrDefault(reading.profileId)
+    val signature = listOf(config.toString(), cloudMode.name, readerId, source, target, provider, readingModel).joinToString("\n")
     OverlayPreflight(config, signature, checkOverlaySetup(probes))
 }

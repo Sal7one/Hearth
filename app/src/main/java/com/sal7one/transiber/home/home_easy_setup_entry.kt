@@ -41,7 +41,7 @@ internal fun HomeEasySetupEntry(onSetup: () -> Unit) {
                 modifier = Modifier.weight(1f).padding(start = 8.dp, end = 24.dp).heightIn(min = 48.dp)) {
                 Icon(Icons.Default.AutoAwesome, null, Modifier.size(18.dp))
                 Spacer(Modifier.width(8.dp))
-                Text(uiText(UiR.string.ui_easy_setup_35fb5))
+                Text(uiText(UiR.string.setup_presets_title))
             }
         }
     }

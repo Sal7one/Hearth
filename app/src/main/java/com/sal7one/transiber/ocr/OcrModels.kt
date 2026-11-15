@@ -4,6 +4,7 @@ import android.content.Context
 import com.sal7one.common_jni.ocr.PaddleOcr
 import com.sal7one.common_jni.ocr.OcrEngine
 import com.sal7one.common_jni.ocr.JapaneseOcr
+import com.sal7one.common_jni.ocr.MangaLineOcr
 import com.sal7one.common_jni.ocr.MangaPageEngine
 import com.sal7one.hearth.core.vision.MangaArtifacts
 import com.sal7one.hearth.core.vision.VisionArtifact
@@ -14,9 +15,10 @@ import java.nio.file.Files
 import java.nio.file.StandardCopyOption
 import java.security.MessageDigest
 
-internal data class OcrAsset(val id: String, val repository: String, val revision: String, val bytes: Long, val sha256: String, val owner: String = "PaddlePaddle", val remoteFile: String = "inference.onnx") {
+internal data class OcrAsset(val id: String, val repository: String, val revision: String, val bytes: Long, val sha256: String,
+    val owner: String = "PaddlePaddle", val remoteFile: String = "inference.onnx", val installedFilename: String = "$id.onnx") {
     val url get() = "https://huggingface.co/$owner/$repository/resolve/$revision/$remoteFile"
-    val filename get() = if(owner == "PaddlePaddle") "$repository.onnx" else "$id.onnx"
+    val filename get() = if(owner == "PaddlePaddle") "$repository.onnx" else installedFilename
     val modelCard get() = "https://huggingface.co/$owner/$repository"
     val filesUrl get() = "$modelCard/tree/$revision"
     val license get() = when(owner) { "rtr46" -> "LGPL-3.0"; "ShiniShiho" -> "Other · Manga109 academic-data terms"; else -> "Apache-2.0" }
@@ -30,14 +32,21 @@ internal data class OcrAsset(val id: String, val repository: String, val revisio
 internal data class OcrProfile(val id: String, val label: String, val languages: Set<String>, val asset: OcrAsset, val engine: String = "paddle", val extraAssets: List<OcrAsset> = emptyList(), val description: String = "Horizontal printed text · Apache-2.0") {
     val assets get() = if(engine == "paddle") listOf(OcrCatalog.detector,asset) else listOf(asset)+extraAssets
     val live get() = engine == "paddle"
-    val family get() = if (engine == "manga-page") "manga" else engine
+    val pageReader get() = engine == "manga-page" || id == MangaArtifacts.lineProfileId
+    val family get() = if (pageReader) "manga" else engine
 }
 internal object OcrCatalog {
-    private fun VisionArtifact.asset() = OcrAsset(id,repository,revision,bytes,sha256,owner,filename)
+    private fun VisionArtifact.asset() = OcrAsset(id,repository,revision,bytes,sha256,owner,filename,installedFilename)
     val detector = OcrAsset("ocr-detector", "PP-OCRv5_mobile_det_onnx", "e6f4fa85f00e168c862bc462aebca69eef9b3d3d",4826518,"a431985659dc921974177a95adcfbb90fd9e51989a5e04d70d0b75f597b6e61d")
     val comicDetector = MangaArtifacts.detector.asset()
     val koharuDetector = MangaArtifacts.koharuDetector.asset()
     val mangaInpainter = MangaArtifacts.inpainter.asset()
+    val mangaLineDetector = MangaArtifacts.lineDetector.asset()
+    val mangaLineRecognizer = MangaArtifacts.lineRecognizer.asset()
+    val mangaLineVocabulary = MangaArtifacts.lineVocabulary.asset()
+    val lineProfile = OcrProfile(MangaArtifacts.lineProfileId, "Japanese & Chinese · Fast manga lines", setOf("ja", "zh"),
+        mangaLineDetector, "manga-lines", listOf(mangaLineRecognizer, mangaLineVocabulary),
+        "PP-OCRv6 Manga detects and reads vertical and horizontal text lines in one page scan. CPU · Apache-2.0")
     // Publisher language table, checked 2026-09-20; tied to each pinned recognition artifact.
     // https://www.paddleocr.ai/latest/en/version3.x/algorithm/PP-OCRv5/PP-OCRv5_multi_languages.html
     // Latin profile's Serbian/Kurdish are Latin-script; choose the Arabic reader for Arabic-script Kurdish.
@@ -59,7 +68,8 @@ internal object OcrCatalog {
     val koharuCleanupProfile get() = OcrProfile("manga-koharu-clean-page","Japanese · Koharu manga + cleanup",setOf("ja"),manualManga.asset,
         "manga-page",koharuProfile.extraAssets+mangaInpainter,"Koharu pixel segmentation, Manga OCR and LaMa neural text cleanup. Japanese · CPU · Experimental · High memory use · Detector weights have Manga109 academic-data terms.")
     val profiles get() = readerProfiles.toMutableList().apply {
-        val index = indexOfFirst { it.id == "manga" }; add(index,pageProfile); add(index+1,koharuProfile); add(index+2,koharuCleanupProfile)
+        val index = indexOfFirst { it.id == "manga" }
+        addAll(index, listOf(lineProfile, pageProfile, koharuProfile, koharuCleanupProfile))
     }.toList()
     val assets get() = profiles.flatMap { it.assets }.distinctBy { it.id }
     fun find(id: String) = assets.firstOrNull { it.id == id }
@@ -67,10 +77,12 @@ internal object OcrCatalog {
 }
 /** Shared download/import sink: content identity, bounded staging, atomic publication. */
 internal class OcrModels(private val root: File) {
-    fun file(asset: OcrAsset) = File(root, "${asset.id}.onnx")
+    fun file(asset: OcrAsset) = File(root, asset.installedFilename)
     fun installed(asset: OcrAsset) = file(asset).let { it.isFile && it.length() == asset.bytes }
     fun ready(profile: OcrProfile) = profile.assets.all(::installed)
     fun missing(profile: OcrProfile) = profile.assets.filterNot(::installed)
+    fun effectiveProfile(selection: OcrSelection): OcrProfile =
+        if (selection.canUseFasterMangaReader && ready(OcrCatalog.lineProfile)) OcrCatalog.lineProfile else selection.profile
     fun import(input: InputStream, expected: OcrAsset? = null, cancelled: () -> Unit = {}): OcrAsset {
         root.mkdirs(); val temp = File.createTempFile("ocr-import-", ".part", root)
         try {
@@ -83,7 +95,7 @@ internal class OcrModels(private val root: File) {
                 }
             }
             val sha = digest.digest().joinToString("") { "%02x".format(it) }
-            val asset = OcrCatalog.assets.firstOrNull { it.bytes == total && it.sha256 == sha } ?: error("OCR model checksum is not in the supported OCR catalog. Download the linked ONNX export.")
+            val asset = OcrCatalog.assets.firstOrNull { it.bytes == total && it.sha256 == sha } ?: error("OCR file checksum is not in the supported catalog. Use the exact files linked in Models.")
             require(expected == null || expected.id == asset.id) { "Downloaded OCR model does not match the selected model" }
             cancelled(); Files.move(temp.toPath(),file(asset).toPath(),StandardCopyOption.ATOMIC_MOVE,StandardCopyOption.REPLACE_EXISTING)
             return asset
@@ -96,6 +108,9 @@ internal class OcrModels(private val root: File) {
             val hash = path.inputStream().use { input -> val digest=MessageDigest.getInstance("SHA-256");val b=ByteArray(65536);while(true){val n=input.read(b);if(n<0)break;digest.update(b,0,n)};digest.digest().joinToString(""){"%02x".format(it)} }
             check(hash == asset.sha256) { "Installed OCR model checksum failed: ${asset.id}" }
         }
+        if (profile.id == MangaArtifacts.lineProfileId) return MangaLineOcr(
+            file(OcrCatalog.mangaLineDetector), file(OcrCatalog.mangaLineRecognizer), file(OcrCatalog.mangaLineVocabulary),
+        )
         if(profile.engine == "meiki")return JapaneseOcr(2,file(profile.asset),file(profile.extraAssets[0]),file(profile.extraAssets[1]))
         val vocabularyId=if(profile.engine=="manga-page") "manga" else profile.id
         val array=JSONArray(context.assets.open("ocr/$vocabularyId.json").bufferedReader().use { it.readText() })

@@ -1,6 +1,7 @@
 package com.sal7one.transiber.benchmark
 
 import com.sal7one.common_jni.audio.Pcm16Resampler
+import com.sal7one.hearth.core.SpeechDownsampler
 import java.io.InputStream
 import java.security.MessageDigest
 
@@ -33,7 +34,8 @@ internal object BenchmarkAudio {
         val audio=com.sal7one.common_jni.audio.PcmWave.decode(bytes,MAX_BYTES,MAX_SECONDS)
         val mono=audio.samples;val rate=audio.sampleRate
         require(mono.size>=rate/2) { "Choose audio between 0.5 and 30 seconds" }
-        val samples = Pcm16Resampler.frame(mono, rate, 16000)
+        val filter = SpeechDownsampler.forRate(rate)
+        val samples = if (filter != null) filter.push(mono) + filter.finish() else Pcm16Resampler.frame(mono, rate, 16000)
         return fromPcm16(samples)
     }
 

@@ -34,7 +34,6 @@ internal fun SettingsOcrLocalUi(onDownloads: () -> Unit = {}, selected: String? 
     // The library is also a model chooser. The same persisted reader is consumed
     // by Camera and by the screen-reading service when its session starts.
     val (savedSelection, selectionStore) = rememberOcrPreferences()
-    val selectedProfile = selected ?: savedSelection.profileId
     val selectProfile: (String) -> Unit = onSelect ?: { id -> selectionStore.update { it.withProfile(id) } }
     val models = remember { OcrModels(File(context.filesDir, "ocr-models")) }
     val downloads = remember { FileDownloads(context.applicationContext) }
@@ -47,6 +46,8 @@ internal fun SettingsOcrLocalUi(onDownloads: () -> Unit = {}, selected: String? 
     var installedOnly by com.sal7one.transiber.models.rememberModelBrowseBoolean("ocr-installed")
     var installed by remember { mutableStateOf<Set<String>>(emptySet()) }
     var records by remember { mutableStateOf<List<FileDownload>>(emptyList()) }
+    val selectedProfile = selected ?: if (savedSelection.canUseFasterMangaReader && OcrCatalog.lineProfile.id in installed)
+        OcrCatalog.lineProfile.id else savedSelection.profileId
     val importer = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
         if (uris.isNotEmpty()) scope.launch {
             importing = true; error = null

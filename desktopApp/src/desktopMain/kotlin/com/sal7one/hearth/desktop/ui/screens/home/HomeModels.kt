@@ -43,6 +43,7 @@ internal data class HomeState(
     val verificationMessage: String? = null,
     val onDevice: Boolean = true,
     val inputLabel: String = "Microphone",
+    val hasSavedSpeech: Boolean = speechEngine != null,
 ) {
     val subtitleChips: List<String>
         get() = buildList {

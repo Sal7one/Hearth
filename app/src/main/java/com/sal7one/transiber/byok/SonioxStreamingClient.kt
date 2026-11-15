@@ -17,22 +17,21 @@ class SonioxStreamingClient(private val apiKey: String, private val language: St
     override var onCaption: ((CloudCaptionUpdate) -> Unit)? = null
     override var onTranslatedInterim: ((String) -> Unit)? = null
     private val transcript = SonioxTranscript()
-    private val http = OkHttpClient.Builder().connectTimeout(15, TimeUnit.SECONDS).pingInterval(10, TimeUnit.SECONDS).build()
+    private val http = OkHttpClient.Builder()
+        .followRedirects(false)
+        .followSslRedirects(false)
+        .connectTimeout(15, TimeUnit.SECONDS)
+        .pingInterval(10, TimeUnit.SECONDS)
+        .build()
     @Volatile private var socket: WebSocket? = null
     @Volatile private var closed = false
     @Volatile private var ending = false
     override fun connect() {
         check(ByokPolicy.FEATURE_BYOK) { "Network disabled in offline app" }
-        socket = http.newWebSocket(Request.Builder().url("wss://stt-rt.soniox.com/transcribe-websocket").build(), object : WebSocketListener() {
+        socket = http.newWebSocket(upgradeRequest(apiKey), object : WebSocketListener() {
             override fun onOpen(ws: WebSocket, response: Response) {
                 if (closed) { ws.close(1000, null); return }
-                val config = JSONObject().put("api_key", apiKey).put("model", "stt-rt-v5")
-                    .put("audio_format", "pcm_s16le").put("sample_rate", 16000).put("num_channels", 1)
-                    .put("enable_language_identification", true).put("enable_endpoint_detection", true)
-                    .put("max_endpoint_delay_ms", 1000)
-                if (language != "auto") config.put("language_hints", JSONArray().put(language))
-                if (target != null) config.put("translation", JSONObject().put("type", "one_way").put("target_language", target))
-                if (!ws.send(config.toString())) { onError?.invoke("Soniox configuration send failed"); return }
+                if (!ws.send(startMessage(language, target).toString())) { onError?.invoke("Soniox configuration send failed"); return }
                 onConnected?.invoke()
             }
             override fun onMessage(ws: WebSocket, value: String) {
@@ -64,4 +63,21 @@ class SonioxStreamingClient(private val apiKey: String, private val language: St
     }
     override fun onCaptureEnded() { ending = true; if (socket?.send("") != true) onError?.invoke("Soniox end-of-audio send failed") }
     override fun close() { closed = true; socket?.close(1000, null); socket = null; http.dispatcher.executorService.shutdown() }
+
+    companion object {
+        internal fun upgradeRequest(apiKey: String): Request = Request.Builder()
+            .url("wss://stt-rt.soniox.com/transcribe-websocket")
+            .header("Authorization", "Bearer $apiKey")
+            .build()
+
+        internal fun startMessage(language: String, target: String?): JSONObject {
+            val config = JSONObject().put("model", "stt-rt-v6")
+                .put("audio_format", "pcm_s16le").put("sample_rate", 16000).put("num_channels", 1)
+                .put("enable_language_identification", true).put("enable_endpoint_detection", true)
+                .put("max_endpoint_delay_ms", 1000)
+            if (language != "auto") config.put("language_hints", JSONArray().put(language))
+            if (target != null) config.put("translation", JSONObject().put("type", "one_way").put("target_language", target))
+            return config
+        }
+    }
 }

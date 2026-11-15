@@ -882,6 +882,11 @@ def main():
             installed_ocr = output / "libhearth_desktop_ocr.dylib"
             require_exports(installed_ocr, "_Java_com_sal7one_common_1jni_ocr_ComicNative_", 7)
             require_exports(installed_ocr, "_Java_com_sal7one_common_1jni_ocr_JapaneseNative_", 4)
+            require_exports(installed_ocr, "_Java_com_sal7one_common_1jni_ocr_MangaLineNative_", 5)
+        if stage == "ocr" and windows:
+            installed_ocr = output / "hearth_desktop_ocr.dll"
+            for family, count in (("ComicNative", 7), ("JapaneseNative", 4), ("MangaLineNative", 5)):
+                windows_stages.require_exports(installed_ocr, f"Java_com_sal7one_common_1jni_ocr_{family}_", count)
         if stage == "backend" and windows:
             installed_backend = output / "hearth_desktop_backend_speech.dll"
             if not installed_backend.is_file():

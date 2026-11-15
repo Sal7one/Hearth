@@ -19,7 +19,7 @@ internal data class DesktopScreenReadingState(
     val region: DesktopScreenRegion? = null,
     val overlayReady: Boolean = false,
     val completedFrames: Int = 0,
-    val phase: String = "Choose a screen area to read Japanese pages in another app",
+    val phase: String = "Choose a screen area to read pages in another app",
     val error: String? = null,
 )
 
@@ -41,7 +41,7 @@ internal class DesktopScreenReadingController(
     init {require(pollMs>=10 && settleMs>=0)}
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    fun start(region: DesktopScreenRegion, directory: Path, translate: Boolean, profileId: String): Job {
+    fun start(region: DesktopScreenRegion, directory: Path, translate: Boolean, profileId: String, sourceLanguage: String = "ja"): Job {
         val token=generation.incrementAndGet()
         val previous=work
         previous?.cancel()
@@ -67,7 +67,7 @@ internal class DesktopScreenReadingController(
                         val stableSignature=readingFrameSignature(stable)
                         if(readingFrameChanged(signature,stableSignature)) {delay(pollMs);continue}
                         mutable.update {it.copy(phase="Reading the selected screen area…")}
-                        reading.readFrame(stable,directory,translate,profileId)?.join()
+                        reading.readFrame(stable,directory,translate,profileId,sourceLanguage)?.join()
                         ensureActive()
                         reading.state.value.error?.let {error(it)}
                         val current=readingFrameSignature(capture(region))

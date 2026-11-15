@@ -1,7 +1,10 @@
 package com.sal7one.transiber
 
 import com.sal7one.transiber.i18n.*
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.launch
 import androidx.lifecycle.lifecycleScope
 import android.os.Bundle
@@ -118,26 +121,40 @@ class MainActivity : AppCompatActivity() {
  override fun onCreate(savedInstanceState: Bundle?) {
   super.onCreate(savedInstanceState)
   if(savedInstanceState==null)receiveShare(intent)
-  val nativeFailure = try { com.sal7one.common_jni.CommonJni.init(applicationContext); null }
-   catch(e: Exception) { e.message ?: e.toString() }
   enableEdgeToEdge()
   setContent {
+   var nativeFailure by remember { mutableStateOf<String?>(null) }
+   var nativeChecked by remember { mutableStateOf(com.sal7one.common_jni.CommonJni.isInitialized()) }
+   LaunchedEffect(Unit) {
+    if (!nativeChecked) {
+     try { withContext(Dispatchers.IO) { com.sal7one.common_jni.CommonJni.init(applicationContext) } }
+     catch (e: CancellationException) { throw e }
+     catch (e: Exception) { nativeFailure = e.message ?: e.toString() }
+     nativeChecked = true
+    }
+   }
    var preferencesReady by remember { mutableStateOf(false) }
    var preferencesError by remember { mutableStateOf<String?>(null) }
    var initializationAttempt by remember { mutableIntStateOf(0) }
    LaunchedEffect(initializationAttempt) {
     preferencesError = null
     try {
-     kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { UserPreferences.initialize(applicationContext) }
+     UserPreferences.initialize(applicationContext)
      preferencesReady = true
     } catch (e: kotlinx.coroutines.CancellationException) { throw e }
     catch (e: Exception) { preferencesError = e.message ?: e.toString() }
    }
-   if (!preferencesReady) {
+   // Native loading and DataStore initialization can run in parallel. Wait
+   // before composing a direct feature entry that may probe native capabilities.
+   if (!preferencesReady || !nativeChecked) {
     MaterialTheme {
      Surface(Modifier.fillMaxSize()) {
       Column(Modifier.fillMaxSize().padding(24.dp), verticalArrangement = Arrangement.Center) {
-       Text(getString(if (preferencesError == null) R.string.setup_preferences_loading else R.string.setup_preferences_failed))
+       Text(getString(when {
+        preferencesError != null -> R.string.setup_preferences_failed
+        !preferencesReady -> R.string.setup_preferences_loading
+        else -> R.string.setup_runtime_loading
+       }))
        preferencesError?.let { failure ->
         Text(failure, color = MaterialTheme.colorScheme.error)
         Button(onClick = { initializationAttempt++ }) { Text(getString(R.string.setup_preferences_retry)) }
@@ -201,16 +218,14 @@ class MainActivity : AppCompatActivity() {
     val focus = LocalFocusManager.current
     val screenState = androidx.compose.runtime.saveable.rememberSaveableStateHolder()
     var tvSetupFeature by rememberSaveable { mutableStateOf<com.sal7one.transiber.setup.TvSetupFeature?>(null) }
-    var setupStep by rememberSaveable { mutableStateOf(EasySetupStep.CHOICE) }
+    val setupEntry = if (television) EasySetupStep.CHOICE else EasySetupStep.PRESETS
+    var setupStep by rememberSaveable { mutableStateOf(setupEntry) }
     var translationForOcr by rememberSaveable {mutableStateOf(intent.getBooleanExtra("ocrTranslationSelection",false))}
     val (ocrTranslationSelection,ocrTranslationStore)=com.sal7one.transiber.ocr.rememberOcrPreferences()
     fun go(next: Int) {
      if(next!=1 && next!=2)translationForOcr=false
      focus.clearFocus()
-     if (next == 15) {
-      setupStep = EasySetupStep.CHOICE
-      if (atHome || page != 15) screenState.removeState(com.sal7one.transiber.ui.navigationStateKey(tvUi, false, 15))
-     }
+     if (next == 15) setupStep = setupEntry
      if (atHome) {
       route = AppNavigation.initial(next)
       homeDestination = next
@@ -227,7 +242,7 @@ class MainActivity : AppCompatActivity() {
     LaunchedEffect(Unit) { if (intent.getIntExtra("page", 0) == 12) { voiceLocation = captionVoiceLocation(); voiceEntry++ } }
     val requestedPage by navigation.collectAsState()
     LaunchedEffect(requestedPage) {
-     requestedPage?.let { translationForOcr = false; if (it == 15) setupStep = EasySetupStep.CHOICE; if (it == 4) { speechLocation = SettingsLocation.CLOUD; speechEntry++ }; if (it == 12) { voiceLocation = captionVoiceLocation(); voiceEntry++ }; focus.clearFocus(); quickSettings = false; settingsReturns = emptyList(); route = AppNavigation.initial(it); homeDestination = null; showHome = false; navigation.value = null }
+     requestedPage?.let { translationForOcr = false; if (it == 15) setupStep = setupEntry; if (it == 4) { speechLocation = SettingsLocation.CLOUD; speechEntry++ }; if (it == 12) { voiceLocation = captionVoiceLocation(); voiceEntry++ }; focus.clearFocus(); quickSettings = false; settingsReturns = emptyList(); route = AppNavigation.initial(it); homeDestination = null; showHome = false; navigation.value = null }
     }
     var faceLayout by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(page, atHome, faceLayout) {
@@ -247,8 +262,8 @@ class MainActivity : AppCompatActivity() {
     fun home() { translationForOcr = false; focus.clearFocus(); quickSettings = false; settingsReturns = emptyList(); homeDestination = null; showHome = true }
     fun back() {
      focus.clearFocus()
-     if (page == 15 && !tvUi && setupStep.back() != null) {
-      setupStep = requireNotNull(setupStep.back())
+     if (page == 15 && !tvUi) setupStep.back(setupEntry)?.let {
+      setupStep = it
       return
      }
      settingsReturns.lastOrNull()?.takeIf { !tvUi && it.reachedFrom(route) }?.let { origin ->
@@ -320,7 +335,7 @@ class MainActivity : AppCompatActivity() {
       4 -> uiText(R.string.nav_speech_settings); 5 -> uiText(R.string.nav_advanced_captions)
       7 -> if (faceLayout) uiText(R.string.label_homeservice_face_title) else uiText(R.string.label_homeservice_conversation_title)
       8 -> uiText(R.string.ui_local_benchmark_3acfe); 9 -> uiText(R.string.label_settingsfeature_translation_label); 10 -> uiText(R.string.label_maintab_camera_title)
-      11 -> uiText(R.string.label_maintab_translate_title); 12 -> uiText(R.string.label_settingsfeature_voices_label); 13 -> uiText(R.string.ui_appearance_navigation_433af); 14 -> uiText(R.string.overlay_shortcuts_title); 15 -> uiText(R.string.ui_easy_setup_35fb5); 16 -> uiText(R.string.caption_history_title); else -> uiText(R.string.nav_help)
+      11 -> uiText(R.string.label_maintab_translate_title); 12 -> uiText(R.string.label_settingsfeature_voices_label); 13 -> uiText(R.string.ui_appearance_navigation_433af); 14 -> uiText(R.string.overlay_shortcuts_title); 15 -> uiText(R.string.setup_presets_title); 16 -> uiText(R.string.caption_history_title); else -> uiText(R.string.nav_help)
      }, style = MaterialTheme.typography.titleMedium) },
       navigationIcon = { if (!atHome && !tvHome && (simple || !route.isRoot || settingsReturns.isNotEmpty())) IconButton(modifier = Modifier.testTag("app-back"), onClick = { if (page == 16) onBackPressedDispatcher.onBackPressed() else back() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, uiText(R.string.ui_back_b52b3)) } },
       actions = {
@@ -378,13 +393,14 @@ class MainActivity : AppCompatActivity() {
         onCamera = { go(10) },
         onReading = { reading() },
        ) else when(page) {
-        0 -> CaptionHome(onModels = { go(1) }, onCloud = { speechSettings(SettingsLocation.CLOUD) }, onHistory = { go(16) })
+        0 -> CaptionHome(onModels = { go(1) }, onPresets = { go(15) }, onCloud = { speechSettings(SettingsLocation.CLOUD) }, onHistory = { go(16) })
         1 -> ModelsScreen(onDownloads = { go(2) }, onVoices = { voiceSettings(SettingsLocation.LOCAL) }, initialSection = modelsSection,
             openIntegrity = reviewModelFiles, onIntegrityOpened = { reviewModelFiles = false },
             scopedTranslationModelId=if(translationForOcr)ocrTranslationSelection.localModelId else null,
             onTranslationSelected=if(translationForOcr)({id ->ocrTranslationStore.update {it.withTranslator("local",id)}}) else null,
             scopedTranslationSource=if(translationForOcr)ocrTranslationSelection.source else null,
-            scopedTranslationTarget=if(translationForOcr)ocrTranslationSelection.target else null)
+            scopedTranslationTarget=if(translationForOcr)ocrTranslationSelection.target else null,
+            onBenchmark = { go(8) })
         2 -> DownloadsScreen(onBrowseModels = { go(1) }, onVoices = { voiceSettings(SettingsLocation.LOCAL) })
         3 -> if (readySettings != null) SettingsScreen(
             initialConfig = readySettings,
@@ -399,7 +415,7 @@ class MainActivity : AppCompatActivity() {
                 TextButton(onClick = { retrySettingsConfig() }) { Text(uiText(R.string.setup_preferences_retry)) }
             } ?: LinearProgressIndicator(Modifier.fillMaxWidth())
         }
-        15 -> com.sal7one.transiber.setup.EasySetupScreen(step=setupStep,onStep={setupStep=it},onCaptions={go(0)},onHome={home()},onSettings={go(3)},onDownloads={go(2)})
+        15 -> com.sal7one.transiber.setup.EasySetupScreen(step=setupStep,entry=setupEntry,onStep={setupStep=it},onCaptions={go(0)},onHome={home()},onSettings={go(3)},onDownloads={go(2)},onModels={translate -> localModels(if (translate) "Translation" else "Speech")})
         13 -> Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) { AppearanceSettings() }
         14 -> Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp)) { SettingsShortcutsUi() }
         4 -> SettingsSpeechScreen(speechLocation, speechEntry, onHistory = { go(16) })

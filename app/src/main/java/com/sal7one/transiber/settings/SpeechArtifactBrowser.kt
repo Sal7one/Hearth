@@ -44,6 +44,7 @@ internal fun SpeechArtifactBrowser(config: CaptionOverlayConfig, onManage: (Capt
     var language by rememberModelBrowseString("speech-language", "")
     var query by rememberModelBrowseString("speech-query", "")
     var installedOnly by rememberModelBrowseBoolean("speech-installed")
+    var measuredOnly by rememberSaveable { mutableStateOf(false) }
     var hardwareId by rememberModelBrowseString("speech-hardware", "all")
     val hardware = ModelHardwareFilter.fromKey(hardwareId)
     val catalog = SpeechArtifactCatalog.all
@@ -68,7 +69,10 @@ internal fun SpeechArtifactBrowser(config: CaptionOverlayConfig, onManage: (Capt
     val installedIds = installations.installedIds
     val currentArtifact = catalog.firstOrNull { item -> item.engine == config.engine &&
         (registryMatches[item.id]?.id == config.modelId || localMatches[item.id]?.id == config.modelId) }
-    val groups = speechCheckpointGroups(catalog, family, language, query, installedOnly, installedIds, hardware)
+    val visibleCatalog = if (measuredOnly) catalog.filter {
+        modelSpeedReferences(it.id, language).isNotEmpty()
+    } else catalog
+    val groups = speechCheckpointGroups(visibleCatalog, family, language, query, installedOnly, installedIds, hardware)
     val families = listOf("" to uiText(UiR.string.model_browser_all_engines)) + catalog.map { it.family }.distinct()
         .map { it to speechFamilyTitle(it) }.sortedBy { it.second }
     val languages = listOf("" to uiText(UiR.string.model_browser_all_languages)) + catalog.flatMap { it.languages }.distinct()
@@ -82,17 +86,18 @@ internal fun SpeechArtifactBrowser(config: CaptionOverlayConfig, onManage: (Capt
             second = { ModelFilterPicker(uiText(UiR.string.model_browser_engine), family, families, { family = it }, it) },
         )
         ModelHardwarePicker(hardware, { hardwareId = it })
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             FilterChip(selected = !installedOnly, onClick = { installedOnly = false }, label = { Text(uiText(UiR.string.model_browser_all)) })
             FilterChip(selected = installedOnly, onClick = { installedOnly = true }, label = { Text(uiText(UiR.string.model_browser_installed)) })
+            FilterChip(measuredOnly, onClick = { measuredOnly = !measuredOnly }, label = { Text(uiText(UiR.string.model_speed_measured_only)) })
         }
         FlowRow(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp), itemVerticalAlignment = Alignment.CenterVertically) {
             Text(uiText(UiR.string.model_browser_results, groups.size), style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
             TextButton(onClick = { onManage(config.engine) }) { Text(uiText(UiR.string.library_import)) }
-            if (query.isNotBlank() || family.isNotBlank() || language.isNotBlank() || installedOnly || hardware != ModelHardwareFilter.ALL) {
-                TextButton(onClick = { query = ""; family = ""; language = ""; installedOnly = false; hardwareId = "all" }) {
+            if (query.isNotBlank() || family.isNotBlank() || language.isNotBlank() || installedOnly || measuredOnly || hardware != ModelHardwareFilter.ALL) {
+                TextButton(onClick = { query = ""; family = ""; language = ""; installedOnly = false; measuredOnly = false; hardwareId = "all" }) {
                     Text(uiText(UiR.string.model_explorer_reset_filters))
                 }
             }
@@ -112,7 +117,7 @@ internal fun SpeechArtifactBrowser(config: CaptionOverlayConfig, onManage: (Capt
                 }
             }
         }
-        if (groups.isEmpty()) ModelBrowserEmptyState(onReset = { query = ""; family = ""; language = ""; installedOnly = false; hardwareId = "all" })
+        if (groups.isEmpty()) ModelBrowserEmptyState(onReset = { query = ""; family = ""; language = ""; installedOnly = false; measuredOnly = false; hardwareId = "all" })
         groups.forEach { variants -> key(variants.first().family, variants.first().checkpoint) {
             var selectedVariant by rememberSaveable { mutableStateOf("") }
             var details by rememberSaveable { mutableStateOf(false) }
@@ -145,6 +150,7 @@ internal fun SpeechArtifactBrowser(config: CaptionOverlayConfig, onManage: (Capt
                     val languageLabel = if (item.languages.size == 1) uiText.languageName(item.languages.single()) else uiText(UiR.string.model_browser_language_count, item.languages.size)
                     Text("$languageLabel · ${item.bytes.toMiBString(uiText.locale)} MiB · ${item.quant}", style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    ModelSpeedLine(item.id, language)
                     Text(uiText(when (speechDecodeMode(item)) {
                         SpeechDecodeMode.STREAMING_PARTIALS -> UiR.string.model_speech_streaming_partials
                         SpeechDecodeMode.WINDOWED_PARTIALS -> UiR.string.model_speech_windowed_partials

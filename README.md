@@ -19,9 +19,10 @@ models with your own cloud or self-hosted connections; configure each stage inde
 | **Mac · Apple silicon** | **[Desktop 1.0.4 DMG](https://github.com/Sal7one/Hearth/releases/download/v0.30.1/hearth-1.0.4-macos-arm64.dmg)** |
 | Browser companion | [Website text extension](https://github.com/Sal7one/Hearth/releases/download/v0.30.0-rc.8/hearth-browser-extension-0.1.0.zip) · [setup](integrations/browser-extension/README.md) |
 
-Android 9+; device audio requires Android 10+. QA builds share the test identity
-`com.sal7one.transiber.qa`; Play and FOSS replace each other. **Update without
-uninstalling** to retain your models and preferences. Model weights download separately.
+Android 9+; device audio requires Android 10+. These APKs are QA builds for
+sideloading. Play and FOSS share `com.sal7one.transiber.qa` and replace each other.
+**Update without uninstalling** to retain your models and preferences. Model weights are separate.
+[APK selection, installation and checksum guide](docs/installing-qa.md).
 
 The Mac installer supports Apple silicon on macOS 13.3+ and is ad hoc signed,
 not notarized. Windows builds and NVIDIA execution still need hardware

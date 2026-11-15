@@ -2,10 +2,13 @@
     <string name="ocr_cleaning_background">جارٍ تنظيف خلفيات النص — النص المتعرّف عليه جاهز</string>
     <string name="ocr_reader_saved_for_both">القارئ المحفوظ للكاميرا وشاشة المانغا: %1$s</string>
     <string name="ocr_manga_page_mode">قارئ صفحة المانغا</string>
-    <string name="ocr_manga_mode_fast">مدمج</string>
+    <string name="ocr_manga_mode_lines">سطور سريعة</string>
+    <string name="ocr_manga_mode_fast">قارئ الفقاعات</string>
     <string name="ocr_manga_mode_koharu">Koharu</string>
     <string name="ocr_manga_mode_cleanup">Koharu مع تنظيف</string>
-    <string name="ocr_manga_mode_explainer">يستخدم القارئ المدمج كاشف نص صغيرًا. يضيف Koharu أقنعة بكسل وترتيب اللوحات، ويزيل التنظيف الكتابة الأصلية. لكل اختيار ملفات نماذج مطلوبة.</string>
+    <string name="ocr_manga_mode_explainer">تقرأ السطور السريعة النص الياباني والصيني في الصفحة. يقرأ قارئ الفقاعات فقاعات الحوار الياباني. يضيف Koharu أقنعة البكسل وترتيب اللوحات. يزيل التنظيف الكتابة الأصلية.</string>
+    <string name="ocr_manga_line_page">اليابانية والصينية · سطور مانغا سريعة</string>
+    <string name="ocr_manga_line_page_details">يقرأ PP-OCRv6 Manga السطور العمودية والأفقية في الصفحة الملتقطة. تتضمن الحزمة بحجم 23.2 ميغابايت ملفي ONNX وقاموسًا. المعالج المركزي · Apache-2.0</string>
     <string name="ocr_koharu_page">اليابانية · صفحة مانغا Koharu</string>
     <string name="ocr_koharu_cleanup_page">اليابانية · صفحة مانغا Koharu مع تنظيف</string>
     <string name="ocr_koharu_page_details">تقسيم Koharu RF-DETR وتجميع اللوحات والفقاعات وقراءة Manga OCR. صفحات يابانية ملتقطة · معالج مركزي · تجريبي · استهلاك مرتفع للذاكرة أثناء التشغيل. تخضع أوزان الكاشف لشروط بيانات Manga109 الأكاديمية؛ اقرأ بطاقة النموذج.</string>

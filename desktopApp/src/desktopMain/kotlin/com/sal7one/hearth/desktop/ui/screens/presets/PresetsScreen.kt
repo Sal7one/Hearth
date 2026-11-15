@@ -21,10 +21,6 @@ import com.sal7one.hearth.desktop.ui.icons.HearthIcons
 import com.sal7one.hearth.desktop.ui.screens.models.ModelsSubnav
 import com.sal7one.hearth.desktop.ui.shell.PageScaffold
 
-/**
- * Presets: four bundles over catalog models, each stating readiness and cost
- * before it can be applied. Applying is all-or-nothing by design.
- */
 @Composable
 internal fun PresetsScreen(
     state: PresetsState,
@@ -51,6 +47,10 @@ internal fun PresetsScreen(
 
         ModelsSubnav(current = current, onNavigate = actions.onNavigate)
 
+        if (state.presets.isEmpty()) {
+            Banner("This build has no compatible starter presets. Choose an engine in Settings or open the model library.",
+                tone = BannerTone.Neutral)
+        }
         state.presets.chunked(2).forEachIndexed { index, row ->
             if (index > 0) Spacer(Modifier.height(16.dp))
             Row(
@@ -60,17 +60,13 @@ internal fun PresetsScreen(
                 row.forEach { preset ->
                     PresetCard(
                         preset = preset,
-                        onApply = { actions.onApply(preset.id) },
-                        onSetUp = { actions.onOpenDownloads() },
+                        actions = actions,
                         modifier = Modifier.weight(1f).fillMaxHeight(),
                     )
                 }
                 if (row.size == 1) Spacer(Modifier.weight(1f))
             }
         }
-
-        Spacer(Modifier.height(16.dp))
-        BuildPresetCard(onOpenLibrary = { actions.onNavigate(DesktopScreen.MODELS) })
 
         Spacer(Modifier.height(16.dp))
         Banner(text = PresetsCopy.FOOTNOTE, tone = BannerTone.Neutral)

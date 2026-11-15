@@ -1,0 +1,18 @@
+<resources>
+    <string name="model_speed_title">实测速度</string>
+    <string name="model_speed_measured_only">有参考测速</string>
+    <string name="model_speed_explanation">请在同一组测试内比较。模型耗时不包含实时采集和显示。</string>
+    <string name="model_speed_reference">参考测试</string>
+    <string name="model_speed_this_device">本机</string>
+    <string name="model_speed_reference_value">%1$s · %2$s</string>
+    <string name="model_speed_no_reference">此类别暂无测速结果。</string>
+    <string name="model_speed_no_local">本机尚未完成此类别的测试。</string>
+    <string name="model_speed_latest_cohort">最近完成的测试组 · %1$s · %2$s</string>
+    <string name="model_speed_input_audio">%1$s 秒输入音频</string>
+    <string name="model_speed_input_samples">样本数：%1$d</string>
+    <string name="model_speed_unknown_backend">后端未报告</string>
+    <string name="model_speed_local_value">%1$s · 预热后 %2$d 毫秒 · %3$s</string>
+    <string name="model_speed_more">基准测试中还有 %1$d 项结果</string>
+    <string name="model_speed_source">查看测试及来源</string>
+    <string name="model_speed_open_benchmark">打开基准测试</string>
+</resources>

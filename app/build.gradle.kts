@@ -22,8 +22,8 @@ android {
   applicationId = "com.sal7one.transiber"
   minSdk = 28
   targetSdk = 36
-  versionCode = 116
-  versionName = "0.30.1"
+  versionCode = 119
+  versionName = "0.30.4"
   testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   ndk { abiFilters += activeHearthAbis }
  }

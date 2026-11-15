@@ -4,8 +4,21 @@ package com.sal7one.hearth.core.vision
 data class VisionArtifact(val id: String, val owner: String, val repository: String, val revision: String,
                           val filename: String, val bytes: Long, val sha256: String) {
     val url get() = "https://huggingface.co/$owner/$repository/resolve/$revision/$filename"
+    val installedFilename get() = "$id.${filename.substringAfterLast('.')}"
 }
 object MangaArtifacts {
+    const val lineProfileId = "manga-line-page"
+    const val lineModelCard = "https://huggingface.co/Kellenok/PP-OCRv6_manga"
+    private const val lineRevision = "d65838996a00ef6b1c73ca3a700d7a8c5fbbef8a"
+    val lineDetector = VisionArtifact("ocr-manga-v6-detector", "Kellenok", "PP-OCRv6_manga", lineRevision,
+        "det/manga_det.onnx", 1816958, "97c434ae8deaad83513fb132b605d5085a3af8ffac2cb15e2aa096815c206172")
+    val lineRecognizer = VisionArtifact("ocr-manga-v6-recognizer", "Kellenok", "PP-OCRv6_manga", lineRevision,
+        "rec/manga_rec.onnx", 21334702, "5288bd221a9a047c6b7d1ff56bb98de8c875fb613df98ebe8754946448bda540")
+    val lineVocabulary = VisionArtifact("ocr-manga-v6-vocabulary", "Kellenok", "PP-OCRv6_manga", lineRevision,
+        "ppocrv6_dict.txt", 76327, "4f0f8971ecb95e3a4d278985d6eaac154413e81fda0b4c941db17389580e9e9b")
+    val lineFiles = listOf(lineDetector, lineRecognizer, lineVocabulary)
+    val lineLanguages = setOf("ja", "zh")
+
     /** Koharu's default full instance segmenter, exported without changing its source weights.
      * Custom/other weight license; Manga109 academic-use data terms apply. */
     val koharuDetector = VisionArtifact("ocr-koharu-rfdetr","ShiniShiho","koharu-layout-rfdetr-seg-2xl-1152-onnx",

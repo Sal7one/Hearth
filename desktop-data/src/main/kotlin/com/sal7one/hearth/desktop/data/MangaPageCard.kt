@@ -10,3 +10,11 @@ internal fun mangaPageCard() = DesktopModelCard(
     options=mapOf("purpose" to "ocr","sourceLanguage" to "ja"),
     artifacts=MangaArtifacts.files.map { DesktopModelArtifact("${it.id}.onnx",it.url,it.bytes,it.sha256) },
 )
+
+internal fun mangaLinePageCard() = DesktopModelCard(
+    id = MangaArtifacts.lineProfileId, name = "Fast manga text lines", family = "PP-OCRv6 Manga", stage = null,
+    engineId = "manga-page", languages = MangaArtifacts.lineLanguages, source = MangaArtifacts.lineModelCard,
+    license = "Apache-2.0", note = "Read horizontal and vertical Japanese and Chinese text lines with a small CPU model. Uses spatial reading order and Hearth’s selected translator.",
+    options = mapOf("purpose" to "ocr", "sourceLanguage" to "ja"),
+    artifacts = MangaArtifacts.lineFiles.map { DesktopModelArtifact(it.filename, it.url, it.bytes, it.sha256) },
+)

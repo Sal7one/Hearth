@@ -18,6 +18,7 @@
 #include <memory>
 #include <sstream>
 #include <thread>
+#include <vector>
 #include "system_audio_pcm.h"
 #include "system_audio_resample.h"
 
@@ -177,7 +178,7 @@ void capture(DWORD parent, const std::shared_ptr<Control>& control) {
     const std::unique_ptr<void, void(*)(void*)> ownedOwner(owner, [](void* handle) { CloseHandle(handle); });
 
     hearth::SystemAudioResampler resampler(format.rate);
-    hearth::SystemAudioPcm pcm([queue = control->queue](std::vector<uint8_t> frame) { return queue->push(std::move(frame)); });
+    hearth::SystemAudioPcm pcm([queue = control->queue](const uint8_t* bytes, size_t size) { return queue->push(bytes, size); });
     std::vector<float> mono, resampled;
     const auto deliver = [&] {
         resampled.clear(); resampler.push(mono.data(), mono.size(), resampled);
@@ -239,8 +240,13 @@ int main(int argc, char** argv) {
         const HANDLE output = GetStdHandle(STD_OUTPUT_HANDLE);
         if (queue->waitReady()) {
             const uint8_t magic[]{'H', 'S', 'A', '1'};
-            std::vector<uint8_t> frame; bool open = writeBytes(output, magic, sizeof(magic), queue);
-            while (open && queue->pop(frame)) open = writeSize(output, frame.size(), queue) && writeBytes(output, frame.data(), frame.size(), queue);
+            bool open = writeBytes(output, magic, sizeof(magic), queue);
+            while (open) {
+                // The queue lends the frame until the next pop; it is written before that.
+                const auto frame = queue->pop();
+                if (!frame.size) break;
+                open = writeSize(output, frame.size, queue) && writeBytes(output, frame.bytes, frame.size, queue);
+            }
             if (open && queue->error().empty()) (void)writeSize(output, 0, queue);
         }
         written = true;

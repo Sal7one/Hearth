@@ -102,7 +102,7 @@
     <string name="label_captiondisplay_translated_label" formatted="false">"Translation only"</string>
     <string name="label_captiondisplay_both_label" formatted="false">"Original + translation"</string>
     <string name="label_sttmode_batch_label" formatted="false">"Batch"</string>
-    <string name="label_sttmode_streaming_soniox_label" formatted="false">"Streaming · Soniox v5"</string>
+    <string name="label_sttmode_streaming_soniox_label" formatted="false">"Streaming · Soniox v6"</string>
     <string name="label_sttmode_streaming_elevenlabs_label" formatted="false">"Streaming · Scribe v2"</string>
     <string name="label_sttmode_streaming_deepgram_label" formatted="false">"Streaming · Deepgram"</string>
     <string name="label_sttmode_streaming_openai_label" formatted="false">"Streaming · OpenAI"</string>

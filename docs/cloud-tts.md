@@ -1,8 +1,14 @@
-# Cloud read-aloud — 0.23.5
+# Cloud read-aloud
 
-Checked against primary provider documentation on 2026-10-02. These are protocol
-integrations, not measured voice-quality or latency rankings. No paid synthesis
-request was made for this release.
+The provider table describes Hearth's supported protocols. Voice quality and
+latency depend on the model, language, and connection.
+
+OpenAI will retire `gpt-4o-mini-tts`, `tts-1`, and `tts-1-hd` on **January 6,
+2027**. Hearth's direct OpenAI voice connection currently uses these Speech API
+models. Its successor, `gpt-realtime-2.1-mini`, requires a Realtime client and
+cannot be used as a model ID on the current endpoint. The other cloud and local
+voice options have separate configurations.
+[OpenAI deprecation schedule](https://developers.openai.com/api/docs/deprecations#2026-10-01-text-to-speech-models)
 
 ## Setup
 
@@ -24,7 +30,7 @@ the caption overlay.
 | Provider | Selection and controls | Protocol / important limits |
 | --- | --- | --- |
 | [OpenAI](https://developers.openai.com/api/docs/guides/text-to-speech) | `gpt-4o-mini-tts`, `tts-1`, `tts-1-hd`; model-specific voice list, speed; style instructions for mini TTS | Bearer key; `/v1/audio/speech`; MP3. Legacy models expose six voices. Provider voices are optimized for English; Arabic quality needs listening tests. |
-| [OpenRouter](https://openrouter.ai/docs/guides/overview/multimodal/tts) | Load live models whose output modality is `speech`; known Google/OpenAI voice lists, editable other voice IDs and model-page links | Bearer key; `/api/v1/audio/speech`; raw MP3, not JSON. Send speed only for OpenAI models. Explicit provider-default option omits voice; unsupported defaults produce the provider error. |
+| [OpenRouter](https://openrouter.ai/docs/guides/overview/multimodal/tts) | Load live models whose output modality is `speech`; known Google/OpenAI voice lists, editable other voice IDs and model-page links | Bearer key and `/api/v1/audio/speech`. Gemini returns PCM, which Hearth wraps as WAV for playback. Other models use MP3 where supported. Speed is sent only for OpenAI models. The explicit provider-default option omits the voice field. |
 | [Google Gemini](https://ai.google.dev/gemini-api/docs/speech-generation) | 3.8 Flash-Lite / Flash TTS, 3.1 Flash preview, 2.5 Pro preview; 30 prebuilt voices, manual voice IDs; 3.8 style metadata | `x-goog-api-key`; 3.8 Interactions API, inline WAV in `steps[].content[]`. Legacy `generateContent` returns PCM24k/mono/16-bit, wrapped once as WAV. Language is inferred from text; Saudi-accent quality is unverified. |
 | [ElevenLabs](https://elevenlabs.io/docs/api-reference/text-to-speech/convert) | Load [TTS-capable models](https://elevenlabs.io/docs/api-reference/models/list) and paginated [account voices](https://elevenlabs.io/docs/api-reference/voices/search); advertised gender labels and explicit overlay gender IDs | `xi-api-key`; `/v1/text-to-speech/{voice_id}`; MP3. [Speed is 0.7–1.2](https://elevenlabs.io/docs/overview/capabilities/text-to-speech/best-practices). No retired sample voice ID is assumed. |
 | OpenAI-compatible | HTTPS endpoint, model and voice IDs, speed | Compatibility requires the speech API, not just a chat-completions endpoint. Uses a separately scoped key. HTTP is allowed only for loopback tests. |

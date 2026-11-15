@@ -4,6 +4,13 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class EasySetupStepTest {
+    @Test fun directPresetEntryReturnsToItsCallerAndCloudBackReturnsToPresets() {
+        val entry = EasySetupStep.PRESETS
+        assertNull(entry.back(entry))
+        assertEquals(entry, EasySetupStep.CLOUD.back(entry))
+        assertEquals(entry, entry.complete().back(entry))
+    }
+
     @Test fun localBackRetracesEveryStep() {
         val done = EasySetupStep.LOCAL.complete()
         assertTrue(done.finished)
