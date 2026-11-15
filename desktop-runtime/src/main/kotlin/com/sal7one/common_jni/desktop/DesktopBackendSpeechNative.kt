@@ -16,6 +16,14 @@ internal object DesktopBackendSpeechNative {
         encoder: ByteArray, decoder: ByteArray, tokenizer: ByteArray, convFrontend: ByteArray, language: ByteArray,
         threads: Int, rightContext: Int, maximumMs: Int, silenceMs: Int, thresholdDb: Float,
     ): Long
+    /** The same session on a named device, "cuda" or "cuda:N". Only a bundle that carries a GPU backend library has this entry. */
+    external fun createAccelerated(
+        library: ByteArray, backendId: ByteArray, entrySymbol: ByteArray, model: ByteArray,
+        encoder: ByteArray, decoder: ByteArray, tokenizer: ByteArray, convFrontend: ByteArray, language: ByteArray,
+        threads: Int, rightContext: Int, maximumMs: Int, silenceMs: Int, thresholdDb: Float, acceleration: ByteArray,
+    ): Long
+    /** The GPUs a backend library can run on, as the JSON array `decodeGpuDevices` reads. Loads no model. */
+    external fun gpuDevices(library: ByteArray): ByteArray
     external fun transcribe(handle: Long, pcm: FloatArray): ByteArray
     external fun language(handle: Long): ByteArray
     external fun executionInfo(handle: Long): ByteArray

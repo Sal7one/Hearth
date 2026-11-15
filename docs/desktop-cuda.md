@@ -3,7 +3,8 @@
 This is an opt-in build path for the pinned Whisper and GGUF translation
 backends. It does not enable GPU execution for every local engine. Android's
 backends and the macOS Metal build are separate. **No NVIDIA Windows host has
-validated this path yet.** Packaging fixtures are not evidence of GPU execution,
+validated this path yet.** Nemotron has a separate CUDA backend that has been
+run on NVIDIA hardware; see [Nemotron on NVIDIA GPUs](#nemotron-on-nvidia-gpus). Packaging fixtures are not evidence of GPU execution,
 driver compatibility, performance or an installable Windows release.
 
 ## Build contract
@@ -185,3 +186,124 @@ native/model/WAV hashes, model allocations, outputs and separate load/inference
 timings. A flag, an empty output, a CPU fallback or an unavailable GPU cannot pass.
 Send back `build/nvidia-inference.json` and the build logs. Single-fixture timings
 are observations, not a throughput benchmark or a translation-quality evaluation.
+
+## Nemotron on NVIDIA GPUs
+
+Nemotron 3.5 ASR has its own CUDA backend on Windows x64. It is separate from the Whisper
+and GGUF translation path above and follows a different rule, because it ships nothing
+made by NVIDIA. It was built and run on an RTX 5070 on 15 November 2026.
+
+| | Whisper and GGUF translation (above) | Nemotron |
+| --- | --- | --- |
+| NVIDIA libraries in the installer | cuBLAS and cuBLASLt, about 500 MB, under the CUDA EULA | none |
+| What the user needs | an NVIDIA driver | an NVIDIA driver and an RTX 30-series or newer GPU |
+| What the build needs | an installed official CUDA Toolkit | the pinned build tools `fetch-cuda-toolkit.py` fetches; no administrator rights |
+| Run on NVIDIA hardware | not yet | yes, results below |
+
+### What is built
+
+- `hearth_nemotron_cuda.dll` (37 MB) is a second backend library beside the CPU
+  `hearth_nemotron.dll`. It contains ggml's CUDA backend and NVIDIA's CUDA runtime, linked
+  statically. It imports the NVIDIA driver (`nvcuda.dll`), so it cannot load on a computer
+  without one; the CPU library is unchanged and remains the default.
+- `hearth_nemotron_cublas.dll` (3.4 MB) holds NeMo-Speech.cpp's own matrix kernels
+  (Apache-2.0), which stand in for cuBLAS and cuBLASLt. Upstream gives this file NVIDIA's
+  library name so that it replaces the real one at run time. Hearth links it directly under
+  its own name instead: nothing in the bundle is named like an NVIDIA library, a real cuBLAS
+  loaded by another engine cannot be mistaken for it, and a call it does not implement
+  fails the link rather than a user's session.
+- The kernels are compiled as portable code for CUDA compute capability 8.0 and newer,
+  which covers the RTX 30, 40 and 50 series. An older GPU is not listed, and asking for
+  one fails with that reason.
+- Portable code is compiled by the NVIDIA driver the first time it runs on a computer,
+  and the driver keeps the result. On the RTX 5070 that first transcription took 22 s;
+  every later start took about half a second. `--nemotron-cuda-native 86-real;89-real;120a-real`
+  adds ready-made code for the RTX 30, 40 and 50 series, which removes that first wait for
+  those cards and adds about 19 MB to the library for each. ggml's own default would also
+  build for GPUs this backend cannot run on and comes to 169 MB.
+- `Nemotron-CUDA-NOTICES.txt` carries the licence of the statically linked runtime.
+- Together they add 27 MB to the Windows installer (131 MB against 104 MB).
+- The shared adapter `nemotron_backend.cpp` is part of the Android runtime receipt and is
+  not edited. The build compiles a copy with three counted replacements that ask
+  `desktop-runtime/src/main/cpp/windows/nemotron_cuda.cpp` which device to use; if the
+  adapter changes, the build stops and says which replacement no longer applies.
+
+### Build tools
+
+```powershell
+python scripts/desktop/fetch-cuda-toolkit.py --accept-nvidia-eula
+python scripts/desktop/build-native.py --stage backend --llama-root build/desktop-dependencies/llama.cpp `
+  --ort-root build/desktop-dependencies/onnxruntime-win-x64-1.20.1 --jobs 12
+```
+
+The first command downloads four of NVIDIA's CUDA 12.9.1 redistributable archives
+(684 MB) from `developer.download.nvidia.com`, each pinned by SHA-256, into
+`build/desktop-dependencies/cuda-toolkit`. It keeps the compiler, the headers and the
+import libraries, extracts none of NVIDIA's runtime DLLs, and checks the assembled tree
+against a pinned digest. The archives are NVIDIA software under the CUDA EULA, which is
+why the flag is required; each component's licence is kept beside the tools.
+
+`build-native.py` verifies that tree again before it compiles. When the tools are present
+it builds the GPU backend with the other speech backends; when they are not, it says so
+and builds the CPU backends only, which is what CI does today. The GPU build uses Ninja
+from Visual Studio's CMake tools and takes about three minutes on twelve jobs.
+`python scripts/desktop/doctor.py` reports whether the tools are fetched.
+
+### What the app does with it
+
+- The native manifest gains a `nemotronCuda` receipt naming the two libraries and the
+  notices with their SHA-256, the toolkit version, the minimum compute capability, and
+  that no NVIDIA library is bundled and the driver comes from Windows. The loader refuses
+  a receipt that says otherwise, a file whose hash differs, and an app-local `nvcuda.dll`,
+  before it loads anything.
+- Nemotron's engine offers **NVIDIA CUDA** only when that library loads and lists a
+  usable device. The CPU engine stays available whatever happens to the GPU library.
+- A session that asks for CUDA runs on exactly the device it named, or fails with the
+  reason. The GPU library has no CPU path to fall back to.
+
+### Run on an RTX 5070 (driver 621.14)
+
+`HEARTH_NEMOTRON_SMOKE=1 HEARTH_NEMOTRON_CUDA_SMOKE=1` with the pinned model and a 10 s
+recording, through `DesktopNemotronRealSmokeTest`:
+
+| Measure | Result |
+| --- | --- |
+| Transcript | identical to the CPU transcript, and identical on a second pass |
+| 10 s of audio, model already loaded | 172 ms on the GPU; 2,018 ms on the CPU with four threads |
+| First transcription ever on this computer (the driver compiles the portable code) | 22 s, once |
+| First transcription of a later session, including moving the model to the GPU | 0.5 s |
+| Video memory while the model is loaded | 986 MB, returned when the session closes |
+| The same choice through the app's engine path, from nothing loaded | 775 ms |
+| Device 7 requested; CPU requested of the GPU library | both refused with the reason |
+
+The test cannot pass on a flag: the device must report less free memory while the model
+is loaded, and the session must name the device it runs on.
+
+### Not verified
+
+- Any other GPU, an older driver, and a second GPU (device index above 0).
+- A computer with no NVIDIA driver. By design the GPU library fails to load there and
+  only the CPU engine is offered; the loader policy is unit-tested, the computer is not.
+- The installed app on a clean PC, and the service host's video-memory figure, which is
+  still `null` for a GPU route.
+- CI does not fetch the build tools, so released installers do not contain this backend
+  until the release build does.
+
+### Qwen3-ASR on the GPU
+
+Not built, on evidence. Qwen3-ASR runs through ONNX Runtime, where the GPU route on
+Windows that needs no vendor libraries is DirectML. The pinned model's three graphs were
+timed on this PC's RTX 5070 with synthetic inputs (ONNX Runtime 1.24.4 with DirectML
+against four CPU threads; these are timings, not transcripts):
+
+| Graph | CPU | DirectML |
+| --- | --- | --- |
+| Convolution front end, ten seconds of features | 87 ms | 4 ms |
+| Encoder (int8) | 49 ms | 22 ms |
+| Decoder (int8), one step | 46 ms | 48 ms |
+
+The decoder runs once for every output token and is where the time goes, and it is no
+faster on the GPU. For a sentence of twenty tokens that arithmetic gives about 6% overall.
+A GPU path for Qwen3-ASR therefore needs a decoder exported for GPUs (fp16 or fp32), which
+is not in the pinned catalogue, as well as a DirectML build of ONNX Runtime and
+sherpa-onnx. Until then Nemotron is the recognizer to choose for the GPU.

@@ -37,6 +37,14 @@ internal class DesktopBackendSpeechEngine private constructor(
 
     companion object {
         const val PROTOCOL_VERSION = 1
+        private val ACCELERATION = Regex("cpu|cuda(?::[0-9]{1,3})?")
+
+        /** The GPUs a verified backend library can run on. It loads no model, and fails with the driver's own reason. */
+        fun gpuDevices(backendLibrary: String, backend: String): List<DesktopGpuDevice> {
+            check(DesktopBackendSpeechNative.protocolVersion() == PROTOCOL_VERSION) { "Desktop speech backend protocol mismatch; rebuild the native bundle" }
+            val library = DesktopNativeLibraries.libraryPath(backendLibrary)
+            return decodeGpuDevices(backend, DesktopBackendSpeechNative.gpuDevices(library.toString().toByteArray()))
+        }
 
         fun open(
             backendLibrary: String,
@@ -53,16 +61,25 @@ internal class DesktopBackendSpeechEngine private constructor(
             maximumMs: Int = 15000,
             silenceMs: Int = 600,
             thresholdDb: Float = -45f,
+            acceleration: String = "cpu",
         ): DesktopBackendSpeechEngine {
             require(threads in 1..32) { "Speech threads must be 1–32" }
+            require(acceleration.matches(ACCELERATION)) { "Speech acceleration must be cpu, cuda or cuda:<device>" }
             check(DesktopBackendSpeechNative.protocolVersion() == PROTOCOL_VERSION) { "Desktop speech backend protocol mismatch; rebuild the native bundle" }
-            val library = DesktopNativeLibraries.libraryPath(backendLibrary)
-            val handle = DesktopBackendSpeechNative.create(
-                library.toString().toByteArray(), backendId.toByteArray(), entrySymbol.toByteArray(), model.toString().toByteArray(),
-                encoder?.toString().orEmpty().toByteArray(), decoder?.toString().orEmpty().toByteArray(),
-                tokenizer?.toString().orEmpty().toByteArray(), convFrontend?.toString().orEmpty().toByteArray(),
-                language.toByteArray(),
+            val library = DesktopNativeLibraries.libraryPath(backendLibrary).toString().toByteArray()
+            val encoderPath = encoder?.toString().orEmpty().toByteArray()
+            val decoderPath = decoder?.toString().orEmpty().toByteArray()
+            val tokenizerPath = tokenizer?.toString().orEmpty().toByteArray()
+            val frontendPath = convFrontend?.toString().orEmpty().toByteArray()
+            // CPU sessions keep the original entry, which every bundle has; a device is named only to a library built for it.
+            val handle = if (acceleration == "cpu") DesktopBackendSpeechNative.create(
+                library, backendId.toByteArray(), entrySymbol.toByteArray(), model.toString().toByteArray(),
+                encoderPath, decoderPath, tokenizerPath, frontendPath, language.toByteArray(),
                 threads, rightContext, maximumMs, silenceMs, thresholdDb,
+            ) else DesktopBackendSpeechNative.createAccelerated(
+                library, backendId.toByteArray(), entrySymbol.toByteArray(), model.toString().toByteArray(),
+                encoderPath, decoderPath, tokenizerPath, frontendPath, language.toByteArray(),
+                threads, rightContext, maximumMs, silenceMs, thresholdDb, acceleration.toByteArray(),
             )
             check(handle != 0L) { "Speech backend returned an invalid handle" }
             val execution = try {

@@ -181,6 +181,14 @@ class Host:
         except (ValueError, OSError) as error:
             return None, None, str(error)
 
+    def cuda_build_tools(self):
+        """(version, root, None) for the pinned compiler and headers fetched for the Nemotron GPU backend, else (None, None, reason)."""
+        fetched = sibling("fetch-cuda-toolkit.py")
+        try:
+            return fetched.verify(), str(fetched.default_root()), None
+        except fetched.ToolkitError as reason:
+            return None, None, str(reason)
+
     def cuda_runtime_folders(self):
         """Folders on PATH or in CUDA_PATH that hold CUDA runtime DLLs but no compiler: another program's copies."""
         names = [value for key, value in self.environment.items() if key.upper().startswith("CUDA_PATH")]
@@ -252,12 +260,18 @@ def gpu(host):
     cards = host.nvidia_gpus()
     findings.append(Finding(GPU, "NVIDIA GPU and driver", OK if cards else ABSENT,
                             "; ".join(cards) if cards else "no NVIDIA driver found; CUDA builds would not run here"))
+    fetched, location, reason = host.cuda_build_tools()
+    if fetched:
+        findings.append(Finding(GPU, "CUDA build tools for Nemotron", OK, f"{fetched} at {location}; build-native.py builds the Nemotron GPU backend with them"))
+    else:
+        findings.append(Finding(GPU, "CUDA build tools for Nemotron", ABSENT, reason,
+                                "python scripts/desktop/fetch-cuda-toolkit.py --accept-nvidia-eula (684 MB from NVIDIA, no administrator rights)"))
     root, toolkit, reason = host.cuda_toolkit()
     if root:
-        findings.append(Finding(GPU, "NVIDIA CUDA Toolkit", OK, f"{toolkit} at {root}; add --cuda to build-native.py to use it (docs/desktop-cuda.md)"))
+        findings.append(Finding(GPU, "NVIDIA CUDA Toolkit", OK, f"{toolkit} at {root}; add --cuda to build-native.py for Whisper and GGUF translation (docs/desktop-cuda.md)"))
     else:
         findings.append(Finding(GPU, "NVIDIA CUDA Toolkit", ABSENT, f"none the build accepts ({reason})",
-                                "winget install Nvidia.CUDA (asks for administrator approval; needed only to compile a CUDA build)"))
+                                "winget install Nvidia.CUDA (asks for administrator approval; needed only for Whisper and GGUF translation on CUDA)"))
     for folder in host.cuda_runtime_folders():
         findings.append(Finding(GPU, "CUDA runtime copy", ABSENT,
                                 f"{folder} holds another program's CUDA runtime files without the compiler; Hearth cannot build with it and never bundles it"))

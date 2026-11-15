@@ -16,6 +16,7 @@ import struct
 import subprocess
 import sys
 
+Q = chr(34)
 ROOT = Path(__file__).resolve().parents[2]
 CPP = ROOT / "common-jni/src/main/cpp"
 COMPAT = ROOT / "desktop-runtime/src/main/cpp/windows"
@@ -30,6 +31,9 @@ MSVC_FLAGS = ["-A", "x64", "-DCMAKE_BUILD_TYPE=Release", "-DCMAKE_POLICY_DEFAULT
               "-DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded", "-DCMAKE_POLICY_VERSION_MINIMUM=3.10",
               "-DBUILD_SHARED_LIBS=OFF"]
 
+_cuda = importlib.util.spec_from_file_location("fetch_cuda_toolkit", Path(__file__).with_name("fetch-cuda-toolkit.py"))
+cuda_tools = importlib.util.module_from_spec(_cuda)
+_cuda.loader.exec_module(cuda_tools)
 _crt = importlib.util.spec_from_file_location("stage_windows_crt", Path(__file__).with_name("stage-windows-crt.py"))
 _crt_module = importlib.util.module_from_spec(_crt)
 _crt.loader.exec_module(_crt_module)
@@ -124,18 +128,19 @@ def require_symbols(dll, symbols):
         raise RuntimeError(f"{Path(dll).name} does not export: {', '.join(missing)}")
 
 
-def require_system_imports(dll, bundled=()):
-    """Every import is a Windows component or an explicitly named, separately verified bundle file."""
-    allowed = {name.lower() for name in bundled}
+def require_system_imports(dll, bundled=(), driver=()):
+    """Every import is a Windows component, a named and separately verified bundle file, or a named system driver."""
+    allowed = {name.lower() for name in (*bundled, *driver)}
     foreign = [name for name in pe_imports(Path(dll).read_bytes())
                if name not in SYSTEM_DLLS and name not in allowed and not name.startswith(("api-ms-win-", "ext-ms-win-"))]
     if foreign:
         raise RuntimeError(f"{Path(dll).name} has a non-system dependency: {', '.join(foreign)}")
 
 
-def built(directory, name):
-    """One Release artifact below a Visual Studio build tree."""
-    matches = [path for path in Path(directory).rglob(name) if "Release" in path.parts or path.parent == Path(directory)]
+def built(directory, name, single_configuration=False):
+    """One Release artifact below a Visual Studio build tree, or the one artifact of a single-configuration (Ninja) tree."""
+    matches = [path for path in Path(directory).rglob(name)
+               if single_configuration or "Release" in path.parts or path.parent == Path(directory)]
     if len(matches) != 1:
         raise RuntimeError(f"Expected one built {name} below {directory}, found {len(matches)}")
     return matches[0]
@@ -147,7 +152,7 @@ def notices(output, name, candidates):
     (output / name).write_text("\n".join(aggregate), encoding="utf-8", newline="\n")
 
 
-def speech_backends(names, output, jobs, pins):
+def speech_backends(names, output, jobs, pins, cuda_native=None):
     """TranscribePsy and Nemotron backends as self-contained DLLs behind the shared bridge."""
     work = ROOT / "build/speech-runtimes"
     source_root = work / "src"
@@ -162,7 +167,8 @@ def speech_backends(names, output, jobs, pins):
         run(["cmake", "--build", build, "--config", "Release", "--target", "hearth_transcribepsy", "--parallel", jobs], env=env)
         stage_backend(built(build, "hearth_transcribepsy.dll"), output)
         revisions["transcribepsyRevision"] = pins["transcribepsy"]
-    if "nemotron" in names:
+    cuda = None
+    if "nemotron" in names or "nemotron-cuda" in names:
         nemo = checkout("https://github.com/NVIDIA/NeMo-Speech.cpp.git", source_root / "nemo", pins["nemotron"], submodules=["ggml"])
         sentencepiece = checkout("https://github.com/google/sentencepiece.git", source_root / "sentencepiece", pins["sentencepiece"])
         spm_build = work / "windows-x64/sentencepiece"
@@ -177,23 +183,27 @@ def speech_backends(names, output, jobs, pins):
         if text.count(shared) != 1:
             raise RuntimeError("Pinned NeMo-Speech.cpp ASR target changed; review the static embedding")
         asr.write_text(text.replace(shared, "add_library(nemo_speech_asr STATIC ${ASR_SOURCES})"), encoding="utf-8", newline=chr(10))
-        build = work / "windows-x64/nemo"
-        run(["cmake", "-S", nemo, "-B", build, *MSVC_FLAGS,
-             f"-DCMAKE_PROJECT_nemo_speech_INCLUDE={(PROJECTS / 'nemotron-inject.cmake').as_posix()}",
-             f"-DHEARTH_CPP={CPP.as_posix()}", f"-DHEARTH_WINDOWS_COMPAT={COMPAT.as_posix()}",
-             "-DGGML_NATIVE=OFF", "-DGGML_OPENMP=OFF", "-DGGML_CPU_KLEIDIAI=OFF", "-DGGML_METAL=OFF", "-DGGML_CUDA=OFF",
-             "-DNEMO_SPEECH_GGML_PATCHED=OFF", "-DNEMO_SPEECH_BUILD_ASR=ON", "-DNEMO_SPEECH_BUILD_DIAR=OFF",
-             "-DNEMO_SPEECH_BUILD_TTS=OFF", "-DNEMO_SPEECH_BUILD_NMT=OFF", "-DNEMO_SPEECH_BUILD_CLI=OFF",
-             "-DNEMO_SPEECH_BUILD_MIC_CAPTURE=OFF", "-DNEMO_SPEECH_BUILD_HTTP=OFF", "-DNEMO_SPEECH_BUILD_GRPC=OFF",
-             "-DNEMO_SPEECH_BUILD_TESTS=OFF", "-DNEMO_SPEECH_BUILD_EXAMPLES=OFF", "-DNEMO_SPEECH_BUILD_TOOLS=OFF",
-             f"-DSENTENCEPIECE_LIB={built(spm_build, 'sentencepiece.lib').as_posix()}",
-             f"-DSENTENCEPIECE_INCLUDE_DIR={(sentencepiece / 'src').as_posix()}"], env=env)
-        run(["cmake", "--build", build, "--config", "Release", "--target", "nemo_speech_asr_c", "--parallel", jobs], env=env)
-        stage_backend(built(build, "hearth_nemotron.dll"), output)
+        # What the CPU and the CUDA build share: the parts of NeMo compiled out, and the pinned SentencePiece.
+        common = [f"-DHEARTH_CPP={CPP.as_posix()}", f"-DHEARTH_WINDOWS_COMPAT={COMPAT.as_posix()}",
+                  "-DGGML_NATIVE=OFF", "-DGGML_OPENMP=OFF", "-DGGML_CPU_KLEIDIAI=OFF", "-DGGML_METAL=OFF",
+                  "-DNEMO_SPEECH_GGML_PATCHED=OFF", "-DNEMO_SPEECH_BUILD_ASR=ON", "-DNEMO_SPEECH_BUILD_DIAR=OFF",
+                  "-DNEMO_SPEECH_BUILD_TTS=OFF", "-DNEMO_SPEECH_BUILD_NMT=OFF", "-DNEMO_SPEECH_BUILD_CLI=OFF",
+                  "-DNEMO_SPEECH_BUILD_MIC_CAPTURE=OFF", "-DNEMO_SPEECH_BUILD_HTTP=OFF", "-DNEMO_SPEECH_BUILD_GRPC=OFF",
+                  "-DNEMO_SPEECH_BUILD_TESTS=OFF", "-DNEMO_SPEECH_BUILD_EXAMPLES=OFF", "-DNEMO_SPEECH_BUILD_TOOLS=OFF",
+                  f"-DSENTENCEPIECE_LIB={built(spm_build, 'sentencepiece.lib').as_posix()}",
+                  f"-DSENTENCEPIECE_INCLUDE_DIR={(sentencepiece / 'src').as_posix()}"]
+        if "nemotron" in names:
+            build = work / "windows-x64/nemo"
+            run(["cmake", "-S", nemo, "-B", build, *MSVC_FLAGS, "-DGGML_CUDA=OFF",
+                 f"-DCMAKE_PROJECT_nemo_speech_INCLUDE={(PROJECTS / 'nemotron-inject.cmake').as_posix()}", *common], env=env)
+            run(["cmake", "--build", build, "--config", "Release", "--target", "nemo_speech_asr_c", "--parallel", jobs], env=env)
+            stage_backend(built(build, "hearth_nemotron.dll"), output)
+        if "nemotron-cuda" in names:
+            cuda = nemotron_cuda(nemo, common, work, output, jobs, cuda_native)
         revisions["nemoRevision"] = pins["nemotron"]
         revisions["sentencepieceRevision"] = pins["sentencepiece"]
     candidates = []
-    if "nemotron" in names:
+    if "nemotron" in names or "nemotron-cuda" in names:
         candidates += [(source_root / "nemo/LICENSE", "NeMo-Speech.cpp LICENSE (Apache-2.0)"),
                        (source_root / "nemo/NOTICE", "NeMo-Speech.cpp NOTICE"),
                        (source_root / "nemo/THIRD_PARTY_NOTICES.md", "NeMo-Speech.cpp third-party notices"),
@@ -204,7 +214,100 @@ def speech_backends(names, output, jobs, pins):
                        (source_root / "transcribepsy/NOTICE", "TranscribePsy NOTICE"),
                        (source_root / "transcribepsy/ggml/LICENSE", "TranscribePsy ggml LICENSE (MIT)")]
     notices(output, "Speech-Backends-NOTICES.txt", candidates)
-    return revisions
+    return revisions, cuda
+
+
+def msvc_environment(installation):
+    """The x64 Visual Studio command-line environment, for a Ninja build that must find cl and link itself."""
+    script = Path(installation) / "VC/Auxiliary/Build/vcvars64.bat"
+    if not script.is_file():
+        raise RuntimeError("Visual Studio's vcvars64.bat is missing; the Nemotron CUDA backend needs the x64 C++ tools")
+    # cmd /u writes the environment as UTF-16, so a non-ASCII user folder survives.
+    output = subprocess.check_output(f'cmd /u /d /c "{Q}{script}{Q} >nul && set"').decode("utf-16-le", errors="replace")
+    values = dict(line.split("=", 1) for line in output.splitlines() if "=" in line and not line.startswith("="))
+    if not any(key.upper() == "VCINSTALLDIR" for key in values):
+        raise RuntimeError("vcvars64.bat did not set up the Visual Studio C++ environment")
+    return values
+
+
+def ninja_program(installation):
+    """Ninja from Visual Studio's CMake tools, or the one on PATH."""
+    bundled = Path(installation) / "Common7/IDE/CommonExtensions/Microsoft/CMake/Ninja/ninja.exe"
+    found = bundled if bundled.is_file() else shutil.which("ninja")
+    if not found:
+        raise RuntimeError("The Nemotron CUDA backend builds with Ninja; add \"C++ CMake tools for Windows\" in the Visual Studio Installer")
+    return Path(found)
+
+
+NEMOTRON_CUDA = {"backend": "hearth_nemotron_cuda.dll", "blas": "hearth_nemotron_cublas.dll", "notices": "Nemotron-CUDA-NOTICES.txt"}
+NVIDIA_DRIVER = "nvcuda.dll"
+# Portable code for compute capability 8.0 and newer: the driver compiles it once for the GPU that is
+# present (22 s on an RTX 5070) and caches the result. Native code for a generation saves its owners
+# that first run and adds about 19 MB each: 86 is the RTX 30 series, 89 the 40 series, 120a and 121a the 50 series.
+NEMOTRON_CUDA_PORTABLE = "80-virtual"
+NEMOTRON_CUDA_NATIVE = re.compile(r"(?:8[0-9]|9[0-9]|1[0-9]{2})[af]?-real")
+
+
+def nemotron_cuda_architectures(native=None):
+    """The CMake architecture list: the portable code always, then any native code asked for."""
+    extra = [value.strip() for value in (native or "").replace(",", ";").split(";") if value.strip()]
+    if len(set(extra)) != len(extra) or any(not NEMOTRON_CUDA_NATIVE.fullmatch(value) for value in extra):
+        raise ValueError("Native GPU code is named like 86-real;89-real;120a-real, for compute capability 8.0 and newer")
+    return ";".join([NEMOTRON_CUDA_PORTABLE, *extra])
+
+
+def nemotron_cuda(nemo, common, work, output, jobs, native=None):
+    """The Nemotron backend for NVIDIA GPUs: ggml's CUDA backend, NVIDIA's static runtime and NeMo's own matrix kernels.
+
+    It is a second DLL beside the CPU backend, because it imports the NVIDIA driver and so cannot load
+    on a computer without one. No NVIDIA library is staged with it; the receipt returned for the manifest says so.
+    """
+    architectures = nemotron_cuda_architectures(native)
+    tools = cuda_tools.default_root()
+    version = cuda_tools.verify(tools)
+    installation = _crt_module.discover()[0]
+    env = msvc_environment(installation)
+    # The shared adapter is CPU-only and pinned for Android; this copy asks nemotron_cuda.cpp for its device.
+    source = prepared_copy(CPP / "speech/backends/nemotron_backend.cpp", work / "windows-x64/nemo-cuda-source/nemotron_backend.cpp", [
+        ("backend.gpu = -1;", "backend.gpu = hearth::nemotron::selectDevice(c, execution);"),
+        ("    std::string language;" + chr(10), "    std::string language;" + chr(10) + "    std::string execution;" + chr(10)),
+        ('[](void*) { return "CPU \u00b7 NeMo GGML"; }', "[](void* p) { return static_cast<Nemo*>(p)->execution.c_str(); }"),
+    ], prefix='#include "nemotron_cuda.h"')
+    build = work / "windows-x64/nemo-cuda"
+    run(["cmake", "-S", nemo, "-B", build, "-G", "Ninja", f"-DCMAKE_MAKE_PROGRAM={ninja_program(installation).as_posix()}",
+         "-DCMAKE_BUILD_TYPE=Release", "-DCMAKE_C_COMPILER=cl", "-DCMAKE_CXX_COMPILER=cl",
+         "-DCMAKE_POLICY_DEFAULT_CMP0091=NEW", "-DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded",
+         "-DCMAKE_POLICY_VERSION_MINIMUM=3.10", "-DBUILD_SHARED_LIBS=OFF",
+         f"-DCUDAToolkit_ROOT={tools.as_posix()}", f"-DCMAKE_CUDA_COMPILER={(tools / 'bin/nvcc.exe').as_posix()}",
+         f"-DCMAKE_PROJECT_nemo_speech_INCLUDE={(PROJECTS / 'nemotron-cuda-inject.cmake').as_posix()}",
+         f"-DHEARTH_NEMOTRON_SOURCE={source.as_posix()}",
+         # ggml's own default also builds for GPUs older than the matrix kernels can run on, and native code
+         # for several generations: five times the size. See NEMOTRON_CUDA_PORTABLE.
+         f"-DCMAKE_CUDA_ARCHITECTURES={architectures}",
+         "-DGGML_CUDA=ON", "-DGGML_STATIC=ON", "-DNEMO_SPEECH_CUBLAS_SHIM=ON", *common], env=env)
+    run(["cmake", "--build", build, "--target", "nemo_speech_asr_c", "--parallel", jobs], env=env)
+    backend = built(build, NEMOTRON_CUDA["backend"], single_configuration=True)
+    blas = built(build, NEMOTRON_CUDA["blas"], single_configuration=True)
+    require_symbols(backend, ["hearth_speech_backend_v1", "hearth_speech_gpu_devices_v1"])
+    # Neither library may import NVIDIA's cuBLAS or runtime DLLs: only Windows, the driver, and for the backend its own kernels.
+    require_system_imports(backend, bundled=(NEMOTRON_CUDA["blas"],), driver=(NVIDIA_DRIVER,))
+    require_system_imports(blas, driver=(NVIDIA_DRIVER,))
+    for library in (backend, blas):
+        shutil.copyfile(library, output / library.name)
+    licence = (tools / "licenses/cuda_cudart-LICENSE.txt").read_text(encoding="utf-8", errors="replace")
+    component = cuda_tools.COMPONENTS["cuda_cudart"]["version"]
+    (output / NEMOTRON_CUDA["notices"]).write_text(
+        f"NVIDIA CUDA runtime in {NEMOTRON_CUDA['backend']} and {NEMOTRON_CUDA['blas']}" + chr(10) + chr(10) +
+        "These two libraries are built by Hearth. They contain NVIDIA's CUDA runtime, statically linked from" + chr(10) +
+        f"CUDA Toolkit {version} (cuda_cudart {component}). That runtime remains NVIDIA software under the NVIDIA" + chr(10) +
+        "CUDA EULA reproduced below and is not relicensed under Hearth's licence. No other NVIDIA library, developer" + chr(10) +
+        "tool or driver is included: the matrix kernels are NeMo-Speech.cpp's own (Apache-2.0, see" + chr(10) +
+        "Speech-Backends-NOTICES.txt). A compatible installed NVIDIA display driver is required." + chr(10) +
+        cuda_tools.EULA + chr(10) + chr(10) + "===== cuda_cudart LICENSE =====" + chr(10) + licence.rstrip() + chr(10),
+        encoding="utf-8", newline=chr(10))
+    return {"schemaVersion": 1, **NEMOTRON_CUDA, "toolkitVersion": version, "toolkitTreeSha256": cuda_tools.TREE_SHA256,
+            "minimumComputeCapability": "8.0", "architectures": architectures.split(";"), "driver": NVIDIA_DRIVER, "requiresSystemDriver": True,
+            "nvidiaLibrariesBundled": False}
 
 
 def stage_backend(dll, output):

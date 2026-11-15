@@ -679,7 +679,8 @@ def magpie_install(output, nemo_root, build_dir, jobs, windows=False):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--stage", choices=["all", "whisper", "translation", "supertonic", "ocr", "onnx", "ct2", "moss", "omnivoice", "magpie", "chatterbox", "backend", "vosk", "ming"], default="all")
-    parser.add_argument("--speech-backends", default="transcribepsy,nemotron", help="Comma-separated speech backends to stage (transcribepsy, nemotron)")
+    parser.add_argument("--speech-backends", help="Comma-separated speech backends to stage: transcribepsy, nemotron and, on Windows x64, nemotron-cuda. "
+                        "Default: every backend this host can build; nemotron-cuda only when fetch-cuda-toolkit.py has fetched its build tools")
     parser.add_argument("--llama-root", type=Path, default=ROOT / "build/translation-runtime/llama.cpp")
     parser.add_argument("--sherpa-root", type=Path, default=ROOT / "build/desktop-dependencies/sherpa-onnx")
     parser.add_argument("--omnivoice-root", type=Path, default=Path(os.environ.get("HEARTH_OMNIVOICE_ROOT", str(ROOT / "build/desktop-dependencies/omnivoice.cpp"))))
@@ -696,6 +697,8 @@ def main():
     parser.add_argument("--cuda", action="store_true", help="Build NVIDIA CUDA for Whisper/GGUF translation (Windows x64)")
     parser.add_argument("--cuda-toolkit", type=Path, help="Installed official NVIDIA CUDA Toolkit root")
     parser.add_argument("--cuda-architectures", help="Optional CMake CUDA architecture list; upstream portable defaults otherwise")
+    parser.add_argument("--nemotron-cuda-native", help="Native GPU code to add to the Nemotron CUDA backend's portable code, for example "
+                        "86-real;89-real;120a-real (RTX 30, 40 and 50 series): no first-run compile for those GPUs, about 19 MB each")
     args = parser.parse_args()
     system = {"Darwin": "macos", "Windows": "windows", "Linux": "linux"}.get(platform.system())
     arch = {"arm64": "arm64", "aarch64": "arm64", "x86_64": "x64", "amd64": "x64"}.get(platform.machine().lower())
@@ -717,9 +720,24 @@ def main():
     for name in stages:
         if name in EXTENDED_STAGES and name not in supported and not (windows and name in WINDOWS_ON_REQUEST_STAGES):
             parser.error(f"The {name} stage is built for macOS arm64{' and Windows x64' if name in WINDOWS_EXTENDED_STAGES + WINDOWS_ON_REQUEST_STAGES else ''} only; host is {target}")
-    speech_backends = [value.strip() for value in args.speech_backends.split(",") if value.strip()]
-    if any(value not in ("transcribepsy", "nemotron") for value in speech_backends):
-        parser.error("--speech-backends accepts transcribepsy and/or nemotron")
+    if args.speech_backends is None:
+        speech_backends = ["transcribepsy", "nemotron"]
+        if windows and "backend" in stages:
+            # The GPU backend needs the pinned CUDA build tools; without them the CPU backends are the whole build.
+            try:
+                windows_stages.cuda_tools.verify()
+                speech_backends.append("nemotron-cuda")
+            except windows_stages.cuda_tools.ToolkitError as reason:
+                print(f"Nemotron CUDA backend not built: {reason}. To build it: python scripts/desktop/fetch-cuda-toolkit.py --accept-nvidia-eula", file=sys.stderr)
+    else:
+        speech_backends = [value.strip() for value in args.speech_backends.split(",") if value.strip()]
+    allowed = ("transcribepsy", "nemotron", "nemotron-cuda") if windows else ("transcribepsy", "nemotron")
+    if any(value not in allowed for value in speech_backends):
+        parser.error("--speech-backends accepts " + ", ".join(allowed) + " on this host")
+    if args.nemotron_cuda_native:
+        if "nemotron-cuda" not in speech_backends: parser.error("--nemotron-cuda-native needs the nemotron-cuda backend")
+        try: windows_stages.nemotron_cuda_architectures(args.nemotron_cuda_native)
+        except ValueError as reason: parser.error(str(reason))
     if "backend" in stages and not speech_backends:
         parser.error("--speech-backends must name at least one backend")
     if args.metal is None: args.metal = system == "macos"
@@ -808,11 +826,17 @@ def main():
         ct2_sources = (windows_stages.ct2(output, args.jobs, {"ct2": CT2_PIN, "sentencepiece": SENTENCEPIECE_PIN}) if windows
                        else ct2_install(args.build_dir.resolve() / target / "ct2", output, args.jobs))
     backend_revisions = None
+    nemotron_cuda = None
     vosk_upstreams = None
     if "backend" in stages:
-        backend_revisions = (windows_stages.speech_backends(speech_backends, output, args.jobs,
-                                 {"transcribepsy": TRANSCRIBEPSY_PIN, "nemotron": NEMO_PIN, "sentencepiece": SENTENCEPIECE_PIN})
-                             if windows else speech_backend_install(speech_backends, output, args.jobs))
+        if windows:
+            backend_revisions, nemotron_cuda = windows_stages.speech_backends(speech_backends, output, args.jobs,
+                {"transcribepsy": TRANSCRIBEPSY_PIN, "nemotron": NEMO_PIN, "sentencepiece": SENTENCEPIECE_PIN}, args.nemotron_cuda_native)
+            if nemotron_cuda is None:
+                # A CUDA backend from an earlier build must not outlive the build that leaves it out.
+                for name in windows_stages.NEMOTRON_CUDA.values(): (output / name).unlink(missing_ok=True)
+        else:
+            backend_revisions = speech_backend_install(speech_backends, output, args.jobs)
     ming_revisions = None
     if "ming" in stages:
         ming_revisions = ming_install(output, windows)
@@ -891,13 +915,13 @@ def main():
             installed_backend = output / "hearth_desktop_backend_speech.dll"
             if not installed_backend.is_file():
                 raise RuntimeError("The desktop speech backend bridge was not staged")
-            windows_stages.require_exports(installed_backend, "Java_com_sal7one_common_1jni_desktop_DesktopBackendSpeechNative_", 7)
+            windows_stages.require_exports(installed_backend, "Java_com_sal7one_common_1jni_desktop_DesktopBackendSpeechNative_", 9)
             windows_stages.require_system_imports(installed_backend)
         elif stage == "backend":
             installed_backend = output / "libhearth_desktop_backend_speech.dylib"
             if not installed_backend.is_file():
                 raise RuntimeError("The desktop speech backend bridge was not staged")
-            require_exports(installed_backend, "_Java_com_sal7one_common_1jni_desktop_DesktopBackendSpeechNative_", 7)
+            require_exports(installed_backend, "_Java_com_sal7one_common_1jni_desktop_DesktopBackendSpeechNative_", 9)
         if stage == "vosk" and windows:
             installed_vosk = output / "hearth_vosk.dll"
             if not installed_vosk.is_file():
@@ -1113,6 +1137,14 @@ def main():
         if any(files.get(name) != digest for name, digest in cuda_receipt.get("sha256", {}).items()):
             raise RuntimeError("CUDA runtime receipt no longer matches its bundled files; restage with --cuda")
         manifest["cudaRuntime"] = cuda_receipt
+    # The Nemotron CUDA backend: recorded when built now, kept when an unrelated stage was rebuilt and its files are unchanged.
+    recorded = nemotron_cuda or (previous_manifest.get("nemotronCuda") if "backend" not in stages else None)
+    if recorded:
+        members = [recorded[key] for key in ("backend", "blas", "notices")]
+        if nemotron_cuda:
+            recorded = {**nemotron_cuda, "sha256": {name: files[name] for name in members}, "nemoRevision": NEMO_PIN}
+        if all(files.get(name) == recorded["sha256"].get(name) for name in members):
+            manifest["nemotronCuda"] = recorded
     crt = previous_manifest.get("microsoftCrt")
     if crt and all(files.get(name) == previous_manifest.get("files", {}).get(name) for name in crt.get("dlls", [])):
         manifest["microsoftCrt"] = crt

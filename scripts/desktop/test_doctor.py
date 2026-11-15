@@ -30,6 +30,7 @@ class FakeHost(doctor.Host):
         self.gpus = ["NVIDIA GeForce RTX 5070, 621.14, 12227 MiB"]
         self.toolkit = (None, None, "Install an official Windows x64 CUDA 12/13 toolkit before packaging CUDA")
         self.runtime_folders = []
+        self.build_tools = (None, None, "The CUDA build tools are not fetched at build/desktop-dependencies/cuda-toolkit/12.9.1")
         self.interpreter = (3, 12, 4)
         vars(self).update(overrides)
 
@@ -42,6 +43,7 @@ class FakeHost(doctor.Host):
     def windows_sdk(self): return self.sdk
     def nvidia_gpus(self): return self.gpus
     def cuda_toolkit(self): return self.toolkit
+    def cuda_build_tools(self): return self.build_tools
     def cuda_runtime_folders(self): return self.runtime_folders
 
 
@@ -112,6 +114,14 @@ class DoctorTest(unittest.TestCase):
         stray = next(finding for finding in findings if finding.name == "CUDA runtime copy")
         self.assertIn("C:/llama/cuda", stray.detail)
         self.assertIn("never bundles", stray.detail)
+        tools = next(finding for finding in findings if finding.name == "CUDA build tools for Nemotron")
+        self.assertEqual(doctor.ABSENT, tools.state)
+        self.assertIn("fetch-cuda-toolkit.py --accept-nvidia-eula", tools.fix)
+        self.assertIn("no administrator rights", tools.fix)
+        fetched = FakeHost(self.root, build_tools=("12.9.1", "build/cuda", None))
+        tools = next(finding for finding in doctor.gpu(fetched) if finding.name == "CUDA build tools for Nemotron")
+        self.assertEqual(doctor.OK, tools.state)
+        self.assertIn("12.9.1", tools.detail)
         installed = FakeHost(self.root, toolkit=("C:/CUDA/v12.8", "12.8.1", None))
         toolkit = next(finding for finding in doctor.gpu(installed) if finding.name == "NVIDIA CUDA Toolkit")
         self.assertEqual(doctor.OK, toolkit.state)

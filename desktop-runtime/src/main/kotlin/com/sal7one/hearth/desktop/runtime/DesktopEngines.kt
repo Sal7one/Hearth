@@ -99,6 +99,18 @@ class DesktopEngines(
     private var ct2Key: Pair<Int, ComponentModelStamp>? = null
     init { DesktopNativeLibraries.configure(nativeRuntimeDirectory) }
 
+    /**
+     * The NVIDIA devices the Nemotron CUDA backend can run on, asked once: loading that library
+     * needs the NVIDIA driver, so on most computers this is a failure whose reason
+     * [gpuDevices] reports when someone asks for CUDA.
+     */
+    private val nemotronCudaDevices: Result<List<DesktopGpuDevice>> by lazy {
+        runCatching {
+            DesktopNativeLibraries.readiness(NEMOTRON_CUDA_LIBRARY)?.let { error(it) }
+            DesktopBackendSpeechEngine.gpuDevices(NEMOTRON_CUDA_LIBRARY, "cuda")
+        }
+    }
+
     override fun capabilities(): List<EngineDescriptor> {
         fun local(id: String, name: String, stage: PipelineStage, library: String, languages: Set<String> = emptySet(), streaming: Boolean = false): EngineDescriptor {
             var error = DesktopNativeLibraries.readiness(library)
@@ -134,6 +146,8 @@ class DesktopEngines(
                         }
                         "transcribepsy-local", "nemotron-asr-local", "moonshine-local", "omnilingual-local", "phonon-local", "vosk-local" -> {
                             check(DesktopBackendSpeechNative.protocolVersion() == DesktopBackendSpeechEngine.PROTOCOL_VERSION) { "Desktop speech backend protocol mismatch; rebuild the native bundle" }
+                            // The CPU backend stays available whatever the GPU library says; CUDA is offered only where a device can run it.
+                            cuda = id == "nemotron-asr-local" && nemotronCudaDevices.getOrNull()?.isNotEmpty() == true
                             false
                         }
                         else -> false
@@ -180,7 +194,9 @@ class DesktopEngines(
     override suspend fun recognize(input: PipelineInput, selection: EngineSelection, sourceLanguage: String, emit: suspend (SpeechSegment) -> Unit) {
         check(!closed.get()) { "Desktop engines are closed" }
         require(selection.engineId in setOf("whisper-local", QwenSpeechModel.ENGINE_ID, "transcribepsy-local", "nemotron-asr-local", "moonshine-local", "vosk-local", "omnilingual-local", "phonon-local", "openai-stt")) { "Unknown speech engine: ${selection.engineId}" }
-        if (selection.engineId !in setOf("whisper-local", "openai-stt")) requireCpuAcceleration(selection)
+        // Nemotron also has an NVIDIA CUDA backend on Windows; the other engines here run on the CPU only.
+        val nemotronCuda = selection.engineId == "nemotron-asr-local" && desktopCompute(selection).backend == DesktopCompute.CUDA
+        if (selection.engineId !in setOf("whisper-local", "openai-stt") && !nemotronCuda) requireCpuAcceleration(selection)
         var decoded: Path? = null
         val frames: Flow<PcmFrame> = when (input) {
             is PipelineInput.AudioStream -> input.frames
@@ -291,9 +307,11 @@ class DesktopEngines(
                     val opened = withSupportedSpeechLanguage(sourceLanguage,
                         if (transcribepsy) TRANSCRIBEPSY_LANGUAGES else NEMOTRON_LANGUAGES,
                         if (transcribepsy) "TranscribePsy" else "Nemotron ASR") { language -> DesktopBackendSpeechEngine.open(
-                        if (transcribepsy) "hearth_transcribepsy" else "hearth_nemotron",
+                        if (transcribepsy) "hearth_transcribepsy" else if (nemotronCuda) NEMOTRON_CUDA_LIBRARY else "hearth_nemotron",
                         if (transcribepsy) "transcribepsy" else "nemotron_3_5",
                         path, language, threads(selection),
+                        // The CUDA library runs on exactly this device or fails; it has no CPU path to fall back to.
+                        acceleration = if (nemotronCuda) "cuda:${desktopCompute(selection).gpuDevice}" else "cpu",
                     ) }
                     if (!backendEngine.compareAndSet(null, opened)) {
                         opened.close()
@@ -586,6 +604,10 @@ private suspend fun verifiedModel(selection: EngineSelection): Path = withContex
     fun gpuDevices(engineId: String, acceleration: String): List<DesktopGpuDevice> {
         val compute = desktopCompute(EngineSelection(engineId, options = mapOf("acceleration" to acceleration)))
         if (compute.backend == DesktopCompute.CPU) return emptyList()
+        if (engineId == "nemotron-asr-local") {
+            require(compute.backend == DesktopCompute.CUDA) { "Nemotron ASR runs on the CPU or NVIDIA CUDA" }
+            return nemotronCudaDevices.getOrThrow()
+        }
         val bytes = when (engineId) {
             "whisper-local" -> {
                 check(DesktopWhisperNative.protocolVersion() == DesktopWhisperNative.PROTOCOL_VERSION) { "Desktop Whisper protocol mismatch" }

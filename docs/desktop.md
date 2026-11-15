@@ -11,7 +11,7 @@ conditions through the Android application.
 | Area | Desktop implementation |
 | --- | --- |
 | Inputs | Mac system audio through ScreenCaptureKit, Windows PC audio through WASAPI loopback, typed text, a chosen microphone/virtual audio device, PCM WAV and native-system-supported audio/video files. |
-| Local recognition | Pinned whisper.cpp with CPU/Metal and an opt-in Windows CUDA build; Qwen3-ASR, Moonshine/Omnilingual/Phonon (sherpa-onnx), Vosk (Kaldi), TranscribePsy (parakeet/ggml) and Nemotron 3.5 (NeMo ggml) use CPU on macOS arm64 and Windows x64. Live recognition uses utterance windows; it is not a token-streaming decoder. |
+| Local recognition | Pinned whisper.cpp with CPU/Metal and an opt-in Windows CUDA build; Qwen3-ASR, Moonshine/Omnilingual/Phonon (sherpa-onnx), Vosk (Kaldi), TranscribePsy (parakeet/ggml) and Nemotron 3.5 (NeMo ggml) use CPU on macOS arm64 and Windows x64; Nemotron also has an NVIDIA CUDA backend on Windows, run on an RTX 5070. Live recognition uses utterance windows; it is not a token-streaming decoder. |
 | Local translation | Hearth's existing llama.cpp translation model/prompt protocol plus pinned CTranslate2 QuickMT/SMaLL-100 packages, with pinned EuroLLM/Riva catalog entries and explicit verified custom model paths. |
 | Local voice | Supertonic 3 (F1–F5/M1–M5), MOSS-TTS Nano, Ming-3.0 local (experimental, English/Chinese), OmniVoice (24 kHz), Magpie (22.05 kHz) and Chatterbox V3 (24 kHz, experimental). |
 | Cloud stages | Independently configured OpenAI-compatible STT, chat translation and WAV TTS endpoints; local compatible servers may omit credentials. Provider keys never enter the model downloader. |
@@ -92,8 +92,9 @@ claim that the selected model has already passed device inference.
 
 An opt-in [Windows NVIDIA CUDA build and validation path](desktop-cuda.md) now
 covers these same two adapters, explicit device indices and verified app-local
-CUDA redistributables. **NVIDIA hardware execution is pending the owner's local
-Windows run.** Mac results and mocked Windows loader tests do not establish it.
+CUDA redistributables. **NVIDIA hardware execution of these two is pending the owner's
+local Windows run.** Nemotron's separate CUDA backend, which bundles no NVIDIA library,
+has been run on an RTX 5070 ([details](desktop-cuda.md#nemotron-on-nvidia-gpus)). Mac results and mocked Windows loader tests do not establish it.
 An explicit GPU request fails if initialization, model placement or inference
 fails; it cannot silently become CPU success. Bundle metadata records the actual
 compiled native export per binary and checksum, including across partial builds.
@@ -203,8 +204,11 @@ bash scripts/desktop/build-media.sh
 ```
 
 An NVIDIA GPU and CUDA are never required: every engine runs on the CPU. The check
-reports a CUDA Toolkit only when it is one the [CUDA build](desktop-cuda.md) accepts,
-an installed official toolkit with its compiler. CUDA runtime files that came with
+reports the build tools for Nemotron's GPU backend, which
+`python scripts/desktop/fetch-cuda-toolkit.py --accept-nvidia-eula` fetches without
+administrator rights, and a CUDA Toolkit only when it is one the
+[Whisper and GGUF translation CUDA build](desktop-cuda.md) accepts, an installed official
+toolkit with its compiler. CUDA runtime files that came with
 another program are listed as such; Hearth cannot compile with them and never bundles
 them.
 

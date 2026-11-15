@@ -9,6 +9,7 @@ import com.sal7one.hearth.desktop.data.DesktopModelCard
 internal fun desktopModelGpuPaths(card: DesktopModelCard): Set<String> = when {
     card.engineId == "whisper-local" && card.stage == PipelineStage.STT -> setOf("metal", "cuda")
     card.engineId == "llama-translation-local" && card.stage == PipelineStage.TRANSLATION -> setOf("metal", "cuda")
+    card.engineId == "nemotron-asr-local" && card.stage == PipelineStage.STT -> setOf("cuda")
     else -> emptySet()
 }
 
@@ -20,9 +21,9 @@ internal fun availableModelGpuPaths(card: DesktopModelCard, engines: List<Engine
 internal enum class ModelHardwareFilter(val key: String, val label: String, val detail: String) {
     ALL("all", "All hardware", "GPU labels describe Hearth's current adapters. Filtering does not change compute settings."),
     AVAILABLE("available-gpu", "GPU available here", "Only models whose engine reports a usable GPU on this computer. Inference still verifies model placement."),
-    GPU("gpu", "All GPU paths", "Whisper and GGUF translation have Metal and Windows CUDA paths. NVIDIA hardware validation is pending."),
+    GPU("gpu", "All GPU paths", "Whisper and GGUF translation have Metal and Windows CUDA paths; Nemotron has a Windows CUDA path. Only Nemotron is validated on NVIDIA hardware so far."),
     METAL("metal", "Apple Metal", "Models with a macOS Metal path. Availability on this computer is shown on each card."),
-    CUDA("cuda", "NVIDIA CUDA", "Models with a Windows CUDA build path. Actual NVIDIA hardware validation is pending."),
+    CUDA("cuda", "NVIDIA CUDA", "Models with a Windows CUDA path. Nemotron is validated on NVIDIA hardware; Whisper and GGUF translation are not yet."),
     CPU_ONLY("cpu-only", "CPU only", "Models whose current desktop adapter has no GPU path. GPU-capable models can also run on CPU.");
 
     fun matches(paths: Set<String>, available: Set<String>): Boolean = when (this) {

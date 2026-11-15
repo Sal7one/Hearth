@@ -64,6 +64,8 @@ internal object DesktopNativeLibraries {
             // Notices/provenance and all code dependencies must match before loading the first DLL.
             verifiedNativeDependencies(folder, cudaFiles, files)
         }
+        // The licence text that must accompany NVIDIA's statically linked runtime is verified like the code.
+        if (name == NEMOTRON_CUDA_LIBRARY) verifiedNativeDependencies(folder, listOf(NEMOTRON_CUDA_NOTICES), files)
         verifiedNativeDependencies(folder, dependencies, files).forEach { dependency -> System.load(dependency.toAbsolutePath().toString()) }
         System.load(folder.resolve(filename).toAbsolutePath().toString())
         locations[name] = folder.resolve(filename).toAbsolutePath()
@@ -100,6 +102,7 @@ internal fun nativeExtractionFiles(library: String, platform: String, files: Set
             // in addition to the ordered DLLs, before loading any native code.
             addAll(manifest.getValue("cudaRuntime").jsonObject.getValue("sha256").jsonObject.keys)
         }
+        if (library == NEMOTRON_CUDA_LIBRARY) add(NEMOTRON_CUDA_NOTICES)
     }
 }
 
@@ -131,6 +134,8 @@ internal fun verifiedNativeDependencies(directory: Path, orderedFiles: List<Stri
 internal fun nativeDependencyOrder(library: String, platform: String, files: Set<String>, manifest: JsonObject? = null): List<String> {
     if (manifest != null && library in setOf("hearth_desktop_whisper", "transiber_translation"))
         return nativeCudaDependencyOrder(library, platform, files, manifest)
+    if (library == NEMOTRON_CUDA_LIBRARY)
+        return nemotronCudaDependencyOrder(platform, files, manifest ?: error("The Nemotron CUDA backend is loaded only against its manifest receipt"))
     // The Vosk adapter dlopens its sibling at create() time. Verify and load the pinned
     // runtime first so the path the adapter resolves is the file this manifest approved,
     // never a post-extraction swap or a DYLD fallback.
@@ -155,6 +160,37 @@ internal fun nativeDependencyOrder(library: String, platform: String, files: Set
     }
     val candidates = if (platform.startsWith("macos-")) listOf("libonnxruntime.1.20.1.dylib", "libonnxruntime.dylib") else listOf("libonnxruntime.so")
     return listOf(candidates.firstOrNull { it in files } ?: error("$library bundle is missing its host ONNX Runtime"))
+}
+
+internal const val NEMOTRON_CUDA_LIBRARY = "hearth_nemotron_cuda"
+internal const val NEMOTRON_CUDA_NOTICES = "Nemotron-CUDA-NOTICES.txt"
+
+/**
+ * The Nemotron CUDA backend and its matrix kernels are built by Hearth and link NVIDIA's runtime
+ * statically. The receipt must say that no NVIDIA library rides along and that the driver comes
+ * from Windows; the kernels are then the one dependency, loaded first by its verified path.
+ */
+internal fun nemotronCudaDependencyOrder(platform: String, files: Set<String>, manifest: JsonObject): List<String> {
+    check(platform == "windows-x64") { "The Nemotron CUDA backend is built for Windows x64 only" }
+    val receipt = manifest["nemotronCuda"]?.jsonObject ?: error("This desktop bundle has no Nemotron CUDA backend")
+    fun text(name: String) = receipt.getValue(name).jsonPrimitive.content
+    val backend = "$NEMOTRON_CUDA_LIBRARY.dll"
+    val kernels = "hearth_nemotron_cublas.dll"
+    check(receipt.getValue("schemaVersion").jsonPrimitive.int == 1 && text("backend") == backend &&
+        text("blas") == kernels && text("notices") == NEMOTRON_CUDA_NOTICES) { "Invalid Nemotron CUDA receipt" }
+    check(receipt.getValue("requiresSystemDriver").jsonPrimitive.boolean && text("driver") == "nvcuda.dll" &&
+        !receipt.getValue("nvidiaLibrariesBundled").jsonPrimitive.boolean) { "Invalid Nemotron CUDA driver policy" }
+    check(files.none { it.equals("nvcuda.dll", true) }) { "The NVIDIA driver must come from Windows, never the app-local bundle" }
+    check(text("toolkitVersion").matches(Regex("(?:12|13)\\.[0-9]+(?:\\.[0-9]+)?")) &&
+        text("minimumComputeCapability").matches(Regex("[0-9]{1,2}\\.[0-9]"))) { "Invalid Nemotron CUDA build record" }
+    val members = listOf(backend, kernels, NEMOTRON_CUDA_NOTICES)
+    val recorded = receipt.getValue("sha256").jsonObject.mapValues { it.value.jsonPrimitive.content }
+    check(recorded.keys == members.toSet()) { "Nemotron CUDA receipt does not cover exactly its own files" }
+    val hashes = nativeBundleFiles(manifest)
+    for (file in members) check(file in files && recorded.getValue(file).matches(Regex("[0-9a-f]{64}")) && hashes[file] == recorded[file]) {
+        "Nemotron CUDA file has no matching bundle checksum: $file"
+    }
+    return listOf(kernels)
 }
 
 /** Cross-check the binary's recorded native export probe, not a requested build flag. */

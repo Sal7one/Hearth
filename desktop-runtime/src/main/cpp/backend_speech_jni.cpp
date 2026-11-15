@@ -44,6 +44,16 @@ void closeLibrary(void* library) { dlclose(library); }
 #endif
 
 using HearthEntry = const HearthSpeechBackend* (*)();
+// A backend library that can run on GPUs lists them here: 0 with a JSON array in the buffer,
+// 1 with the reason there instead, 2 when the buffer is too small. It loads no model.
+using HearthGpuInventory = int (*)(char*, size_t);
+constexpr size_t kInventoryBytes = 64 * 1024;
+
+bool validAcceleration(const std::string& value) {
+    if (value == "cpu" || value == "cuda") return true;
+    return value.rfind("cuda:", 0) == 0 && value.size() > 5 && value.size() <= 8 &&
+        value.find_first_not_of("0123456789", 5) == std::string::npos;
+}
 
 constexpr size_t kSliceSamples = 16000;
 constexpr size_t kMaximumSamples = 30 * 16000;
@@ -59,9 +69,11 @@ struct Backend {
 
     Backend(const std::string& libraryPath, const std::string& expectedId, const std::string& entrySymbol,
             const std::string& model, const std::string& encoder, const std::string& decoder, const std::string& tokenizer,
-            const std::string& convFrontend, const std::string& language, int threads, int rightContext, int maximumMs, int silenceMs, float thresholdDb) {
+            const std::string& convFrontend, const std::string& language, int threads, int rightContext, int maximumMs, int silenceMs, float thresholdDb,
+            const std::string& acceleration) {
         try {
         if (threads < 1 || threads > 32) throw std::invalid_argument("Speech threads must be 1–32");
+        if (!validAcceleration(acceleration)) throw std::invalid_argument("Speech acceleration must be cpu, cuda or cuda:<device>");
         if (language.size() > 32) throw std::invalid_argument("Speech language is too long");
         if (entrySymbol.empty() || entrySymbol.size() > 128) throw std::invalid_argument("Speech backend entry symbol is invalid");
         std::string loadError;
@@ -92,7 +104,8 @@ struct Backend {
         config.max_utterance_ms = maximumMs;
         config.silence_ms = silenceMs;
         config.silence_threshold_db = thresholdDb;
-        config.acceleration = "cpu";
+        // The backend runs on exactly this or fails; a library built for another device refuses it.
+        config.acceleration = acceleration.c_str();
         config.gpu_cache_directory = "";
         if (api->create(&config, &session) != 0 || !session) {
             throw std::runtime_error(api->last_error() ? api->last_error() : "Speech backend creation failed");
@@ -170,20 +183,62 @@ stt::concurrency::LeaseRegistry<Backend> backends;
 
 extern "C" JNIEXPORT jint JNICALL Java_com_sal7one_common_1jni_desktop_DesktopBackendSpeechNative_protocolVersion(JNIEnv*, jobject) { return 1; }
 
-extern "C" JNIEXPORT jlong JNICALL Java_com_sal7one_common_1jni_desktop_DesktopBackendSpeechNative_create(
-    JNIEnv* env, jobject, jbyteArray library, jbyteArray backendId, jbyteArray entrySymbol, jbyteArray model,
+namespace {
+// `acceleration` is null for the CPU entry point, which older callers and every CPU backend use.
+jlong createBackend(JNIEnv* env, jbyteArray library, jbyteArray backendId, jbyteArray entrySymbol, jbyteArray model,
     jbyteArray encoder, jbyteArray decoder, jbyteArray tokenizer, jbyteArray convFrontend, jbyteArray language,
-    jint threads, jint rightContext, jint maximumMs, jint silenceMs, jfloat thresholdDb) {
+    jint threads, jint rightContext, jint maximumMs, jint silenceMs, jfloat thresholdDb, jbyteArray acceleration) {
     try {
         const auto handle = backends.insert(std::make_unique<Backend>(
             desktopUtf8(env, library, 4096), desktopUtf8(env, backendId, 64), desktopUtf8(env, entrySymbol, 128),
             desktopUtf8(env, model, 4096), desktopUtf8(env, encoder, 4096), desktopUtf8(env, decoder, 4096),
             desktopUtf8(env, tokenizer, 4096), desktopUtf8(env, convFrontend, 4096), desktopUtf8(env, language, 32),
-            threads, rightContext, maximumMs, silenceMs, thresholdDb));
+            threads, rightContext, maximumMs, silenceMs, thresholdDb,
+            acceleration ? desktopUtf8(env, acceleration, 16) : std::string("cpu")));
         if (!handle) throw std::runtime_error("Speech backend handle registry exhausted");
         return handle;
     } catch (const std::exception& e) { desktopFail(env, e.what()); return 0; }
     catch (...) { desktopFail(env, "Unknown speech backend initialization failure"); return 0; }
+}
+}
+
+extern "C" JNIEXPORT jlong JNICALL Java_com_sal7one_common_1jni_desktop_DesktopBackendSpeechNative_create(
+    JNIEnv* env, jobject, jbyteArray library, jbyteArray backendId, jbyteArray entrySymbol, jbyteArray model,
+    jbyteArray encoder, jbyteArray decoder, jbyteArray tokenizer, jbyteArray convFrontend, jbyteArray language,
+    jint threads, jint rightContext, jint maximumMs, jint silenceMs, jfloat thresholdDb) {
+    return createBackend(env, library, backendId, entrySymbol, model, encoder, decoder, tokenizer, convFrontend, language,
+        threads, rightContext, maximumMs, silenceMs, thresholdDb, nullptr);
+}
+
+// Protocol 1 addition: the same session on a named device. Bundles built before it lack this
+// symbol and are never asked for it, because they carry no GPU backend library either.
+extern "C" JNIEXPORT jlong JNICALL Java_com_sal7one_common_1jni_desktop_DesktopBackendSpeechNative_createAccelerated(
+    JNIEnv* env, jobject, jbyteArray library, jbyteArray backendId, jbyteArray entrySymbol, jbyteArray model,
+    jbyteArray encoder, jbyteArray decoder, jbyteArray tokenizer, jbyteArray convFrontend, jbyteArray language,
+    jint threads, jint rightContext, jint maximumMs, jint silenceMs, jfloat thresholdDb, jbyteArray acceleration) {
+    if (!acceleration) { desktopFail(env, "Speech acceleration is required"); return 0; }
+    return createBackend(env, library, backendId, entrySymbol, model, encoder, decoder, tokenizer, convFrontend, language,
+        threads, rightContext, maximumMs, silenceMs, thresholdDb, acceleration);
+}
+
+extern "C" JNIEXPORT jbyteArray JNICALL Java_com_sal7one_common_1jni_desktop_DesktopBackendSpeechNative_gpuDevices(
+    JNIEnv* env, jobject, jbyteArray library) {
+    try {
+        const std::string path = desktopUtf8(env, library, 4096);
+        std::string loadError;
+        void* handle = openLibrary(path, loadError);
+        if (!handle) throw std::runtime_error("Could not load speech backend " + path + ": " + loadError);
+        struct Closer { void* library; ~Closer() { closeLibrary(library); } } closer{handle};
+        const auto inventory = reinterpret_cast<HearthGpuInventory>(findSymbol(handle, "hearth_speech_gpu_devices_v1"));
+        if (!inventory) throw std::runtime_error("Speech backend lists no GPU devices: " + path);
+        std::vector<char> buffer(kInventoryBytes);
+        const int status = inventory(buffer.data(), buffer.size());
+        buffer.back() = '\0';
+        if (status == 2) throw std::runtime_error("Speech backend GPU inventory exceeds its limit");
+        if (status != 0) throw std::runtime_error(buffer.data());
+        return desktopBytes(env, std::string(buffer.data()));
+    } catch (const std::exception& e) { desktopFail(env, e.what()); return nullptr; }
+    catch (...) { desktopFail(env, "Unknown speech GPU inventory failure"); return nullptr; }
 }
 
 extern "C" JNIEXPORT jbyteArray JNICALL Java_com_sal7one_common_1jni_desktop_DesktopBackendSpeechNative_transcribe(

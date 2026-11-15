@@ -331,6 +331,7 @@ speech row also covers that capture path.
 | Phonon 2 | same test | exact transcript, 197 ms |
 | TranscribePsy 250M EU | `DesktopTranscribePsyRealSmokeTest` | exact transcript, 225 ms |
 | Nemotron 3.5 ASR | `DesktopNemotronRealSmokeTest` | exact lower-case transcript, 1,955 ms |
+| Nemotron 3.5 ASR on NVIDIA CUDA | same test with `HEARTH_NEMOTRON_CUDA_SMOKE=1` | RTX 5070: the CPU transcript, 172 ms for 10 s of audio, 986 MB of video memory ([details](desktop-cuda.md#nemotron-on-nvidia-gpus)) |
 | Vosk English | `DesktopVoskRealSmokeTest` | exact lower-case transcript, tree-verified, 792 ms |
 | CTranslate2 QuickMT EN→AR | `DesktopCt2RealSmokeTest` | `يفتح المتحف في الساعة التاسعة صباحًا.` (190 ms native) |
 | Supertonic 3 | `DesktopSupertonicRealSmokeTest` | passed |
@@ -377,7 +378,8 @@ includes Hearth's own voice output.
 
 - Not exercised on Windows: live captions through the app window (microphone or PC
   audio), the overlay and hotkeys, DPAPI secrets, system voices, installing either
-  installer, and any GPU path. `--cuda` needs an installed NVIDIA CUDA Toolkit.
+  installer, and the Whisper and GGUF translation GPU path (`--cuda` needs an installed
+  NVIDIA CUDA Toolkit). Nemotron's GPU backend was run with a real model, not through the app window.
 - Model folders with non-ASCII characters in their path were not tested. Whisper, GGUF
   translation, Supertonic, MOSS and ONNX sessions take UTF-8 paths; Vosk/Kaldi,
   CTranslate2 and some sherpa-onnx text files open narrow paths in the ANSI code page.
