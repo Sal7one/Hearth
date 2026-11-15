@@ -12,3 +12,5 @@ if (!providers.gradleProperty("hearthDesktopOnly").map(String::toBoolean).getOrE
 // Desktop shares contracts and pipeline policy; Android keeps its existing platform adapters.
 include(":hearth-core", ":desktop-runtime", ":desktop-data", ":desktop-integration", ":desktopApp")
 include(":desktop-media")
+// Headless loopback service for other local programs (docs/service-api.md).
+include(":desktop-service")

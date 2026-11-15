@@ -29,6 +29,9 @@ import com.sal7one.hearth.desktop.data.DesktopCredentialStore
 import com.sal7one.hearth.desktop.data.DesktopModelLibrary
 import com.sal7one.hearth.desktop.data.DesktopSettingsStore
 import com.sal7one.hearth.desktop.runtime.DesktopEngines
+import com.sal7one.hearth.desktop.service.DesktopServiceHost
+import com.sal7one.hearth.desktop.service.SelfWorkerLauncher
+import com.sal7one.hearth.desktop.service.ServiceWorker
 import com.sal7one.hearth.desktop.ui.HearthDesktopRoot
 import com.sal7one.hearth.desktop.ui.components.HearthButton
 import com.sal7one.hearth.desktop.ui.components.ButtonTone
@@ -73,6 +76,22 @@ fun main(args: Array<String>) {
     if (args.firstOrNull() == "--gpu-check") {
         require(args.size == 6) { "Usage: Hearth --gpu-check <metal|cuda> <whisper-model> <EuroLLM-model> <wav> <receipt-json>" }
         com.sal7one.hearth.desktop.runtime.DesktopGpuValidation.run(args[1], Path.of(args[2]), Path.of(args[3]), Path.of(args[4]), Path.of(args[5]))
+        return
+    }
+    // Headless service for other local programs (docs/service-api.md). The worker form is internal:
+    // the host starts it to own every engine and model in a process it can end.
+    if (args.firstOrNull() == "--serve") {
+        require(args.size == 1) { "Usage: Hearth --serve" }
+        kotlin.system.exitProcess(DesktopServiceHost.serve(desktopDataDirectory(), SelfWorkerLauncher("com.sal7one.hearth.desktop.MainKt")))
+    }
+    if (args.firstOrNull() == SelfWorkerLauncher.WORKER_ARGUMENT) {
+        require(args.size == 2) { "The engine worker takes the host's socket path" }
+        ServiceWorker.run(Path.of(args[1]), desktopDataDirectory())
+        kotlin.system.exitProcess(0)
+    }
+    if (args.firstOrNull() == "--service-approve" || args.firstOrNull() == "--service-revoke") {
+        require(args.size == 2) { "Usage: Hearth --service-approve <client> | --service-revoke <client>" }
+        if (args[0] == "--service-approve") DesktopServiceHost.approveClient(desktopDataDirectory(), args[1]) else DesktopServiceHost.revokeClient(desktopDataDirectory(), args[1])
         return
     }
     if (args.firstOrNull() == "--self-check") {

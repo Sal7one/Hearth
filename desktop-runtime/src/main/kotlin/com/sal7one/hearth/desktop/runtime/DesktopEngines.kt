@@ -40,6 +40,8 @@ import java.util.concurrent.atomic.AtomicReference
 class DesktopEngines(
     credentials: CredentialResolver,
     val appDataDirectory: Path = defaultDataDirectory(),
+    /** Where verified native libraries are extracted. A service worker shares the app's copy while keeping its own outputs private. */
+    nativeRuntimeDirectory: Path = appDataDirectory,
 ) : PipelineEngines, AutoCloseable {
     private val cloud = DesktopCloud(credentials, appDataDirectory)
     private val voices = DesktopVoiceCache(appDataDirectory)
@@ -95,7 +97,7 @@ class DesktopEngines(
     private var translationKey = ""
     private var ct2Engine: DesktopCt2TranslationEngine? = null
     private var ct2Key: Pair<Int, ComponentModelStamp>? = null
-    init { DesktopNativeLibraries.configure(appDataDirectory) }
+    init { DesktopNativeLibraries.configure(nativeRuntimeDirectory) }
 
     override fun capabilities(): List<EngineDescriptor> {
         fun local(id: String, name: String, stage: PipelineStage, library: String, languages: Set<String> = emptySet(), streaming: Boolean = false): EngineDescriptor {

@@ -16,13 +16,17 @@ object DesktopMediaDecoder {
     private fun external(): Path? = (System.getProperty("hearth.native.dir") ?: System.getenv("HEARTH_DESKTOP_NATIVE_DIR"))
         ?.let { Path.of(it).resolve(filename) }?.takeIf { Files.isRegularFile(it) }
     val available: Boolean get() = external() != null || DesktopMediaDecoder::class.java.getResource(resource) != null
-    suspend fun decode(input: Path, outputDirectory: Path): Path {
+    /**
+     * [helperDirectory] is where the bundled decoder is unpacked once and reused. A caller whose
+     * output folder is short-lived or deep, such as one folder per job, passes a stable one.
+     */
+    suspend fun decode(input: Path, outputDirectory: Path, helperDirectory: Path = outputDirectory): Path {
         val delivered = java.util.concurrent.atomic.AtomicReference<Path?>()
         try {
             return withContext(Dispatchers.IO) {
                 require(Files.isRegularFile(input) && Files.size(input) in 1..MAX_INPUT_BYTES) { "Media file is missing, empty or larger than 8 GiB" }
                 Files.createDirectories(outputDirectory)
-                val executable = external() ?: extract(outputDirectory)
+                val executable = external() ?: extract(helperDirectory)
                 val output = Files.createTempFile(outputDirectory, "hearth-decoded-", ".wav").also(delivered::set)
                 var success = false
                 try {
@@ -62,8 +66,11 @@ object DesktopMediaDecoder {
             ?: error("Native $platform media decoder is not installed. Build/package the desktop media helper; PCM WAV remains supported without it.")
         val hash = java.security.MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it) }
         val parent = directory.resolve("helpers/$platform-$arch/$hash")
-        Files.createDirectories(parent)
         val executable = parent.resolve(filename)
+        // Windows cannot start a program beyond MAX_PATH and reports it as a missing file; say what is actually wrong.
+        val length = executable.toAbsolutePath().toString().length
+        check(platform != "windows" || length < WINDOWS_MAX_PATH) { "Windows cannot start the media decoder from a $length-character path; move Hearth's data folder somewhere shorter" }
+        Files.createDirectories(parent)
         if (platform != "windows") Files.setPosixFilePermissions(parent, PosixFilePermissions.fromString("rwx------"))
         if (!Files.isRegularFile(executable) || !java.security.MessageDigest.isEqual(Files.readAllBytes(executable), bytes)) {
             val temporary = Files.createTempFile(parent, ".helper-", ".tmp")
@@ -77,4 +84,5 @@ object DesktopMediaDecoder {
     }
     const val MAX_INPUT_BYTES: Long = 8L * 1024 * 1024 * 1024
     const val MAX_OUTPUT_BYTES: Long = 44L + 16_000 * 2 * 60 * 60
+    private const val WINDOWS_MAX_PATH = 260
 }

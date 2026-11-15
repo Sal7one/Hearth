@@ -20,6 +20,7 @@ kotlin {
                 implementation(project(":desktop-media"))
                 implementation(project(":desktop-data"))
                 implementation(project(":desktop-integration"))
+                implementation(project(":desktop-service"))
                 implementation(compose.desktop.currentOs)
                 implementation("net.java.dev.jna:jna:5.17.0")
                 implementation("net.java.dev.jna:jna-platform:5.17.0")
