@@ -130,6 +130,18 @@ internal class ServiceLog(private val file: Path, private val maximumBytes: Long
         }
     }
 
+    /**
+     * A failure of the service itself, with its reason. Unlike [event] fields the reason keeps its
+     * words: it describes the host or a file on this computer, never a caller's audio or text.
+     */
+    @Synchronized fun failure(name: String, failure: Throwable) {
+        val reason = (failure.message ?: "").take(400).map { if (it in ' '..'~') it else '_' }.joinToString("")
+        event(name, "kind" to failure.javaClass.simpleName)
+        if (reason.isNotBlank()) runCatching {
+            Files.write(file, ("  reason: $reason" + '\n').toByteArray(Charsets.US_ASCII), java.nio.file.StandardOpenOption.CREATE, java.nio.file.StandardOpenOption.APPEND)
+        }
+    }
+
     private fun clean(value: String): String = value.take(96).map { if (it in 'a'..'z' || it in 'A'..'Z' || it in '0'..'9' || it in "_.:-") it else '_' }.joinToString("")
 }
 

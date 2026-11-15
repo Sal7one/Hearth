@@ -84,21 +84,18 @@ fun main(args: Array<String>) {
         require(args.size == 1) { "Usage: Hearth --serve" }
         kotlin.system.exitProcess(DesktopServiceHost.serve(desktopDataDirectory(), SelfWorkerLauncher("com.sal7one.hearth.desktop.MainKt")))
     }
-    if (args.firstOrNull() == SelfWorkerLauncher.WORKER_ARGUMENT) {
+    if (args.firstOrNull() == SelfWorkerLauncher.WORKER_ARGUMENT) serviceCommand {
         require(args.size == 2) { "The engine worker takes the host's socket path" }
         ServiceWorker.run(Path.of(args[1]), desktopDataDirectory())
-        kotlin.system.exitProcess(0)
     }
-    if (args.firstOrNull() == "--service-approve" || args.firstOrNull() == "--service-revoke") {
+    if (args.firstOrNull() == "--service-approve" || args.firstOrNull() == "--service-revoke") serviceCommand {
         require(args.size == 2) { "Usage: Hearth --service-approve <client> | --service-revoke <client>" }
         if (args[0] == "--service-approve") DesktopServiceHost.approveClient(desktopDataDirectory(), args[1]) else DesktopServiceHost.revokeClient(desktopDataDirectory(), args[1])
-        return
     }
-    if (args.firstOrNull() == "--service-setup-save" || args.firstOrNull() == "--service-setup-remove") {
+    if (args.firstOrNull() == "--service-setup-save" || args.firstOrNull() == "--service-setup-remove") serviceCommand {
         require(args.size == 2) { "Usage: Hearth --service-setup-save <name> | --service-setup-remove <name>" }
         if (args[0] == "--service-setup-save") kotlinx.coroutines.runBlocking { DesktopServiceHost.saveSetup(desktopDataDirectory(), args[1]) }
         else DesktopServiceHost.removeSetup(desktopDataDirectory(), args[1])
-        return
     }
     if (args.firstOrNull() == "--self-check") {
         require(args.size == 2) { "Usage: Hearth --self-check <report-path>" }
@@ -227,4 +224,17 @@ private fun StartupScreen(error: String?, onRetry: () -> Unit) {
             }
         }
     }
+}
+
+/**
+ * Runs a headless service command and ends the process with its result. A failure is printed
+ * and becomes exit code 1: the packaged launcher has no console, and an exception left to
+ * escape would sit behind an error dialog nobody is there to close.
+ */
+private fun serviceCommand(command: () -> Unit): Nothing {
+    val code = try { command(); 0 } catch (failure: Throwable) {
+        System.err.println("Hearth: ${failure.message ?: failure.javaClass.simpleName}")
+        1
+    }
+    kotlin.system.exitProcess(code)
 }

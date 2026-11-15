@@ -93,7 +93,7 @@ class DesktopServiceHost(
             log.event("host-started", "port" to server.port, "routes" to routes.values.count { it.ready })
             return server.port
         } catch (failure: Throwable) {
-            log.event("host-start-failed", "kind" to failure.javaClass.simpleName)
+            log.failure("host-start-failed", failure)
             close()
             throw failure
         }

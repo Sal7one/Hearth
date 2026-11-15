@@ -264,6 +264,35 @@ class DesktopServiceHostTest {
         assertFailsWith<IllegalArgumentException> { clients.approve("../escape") }
     }
 
+    @Test fun aFolderThatRefusesSocketsFallsBackToTheTemporaryFolderAndSaysSoWhenNothingWorks() {
+        val service = ServiceDirectory(Files.createTempDirectory("hearth-svc-socket-")).also { it.create() }
+        val log = ServiceLog(service.log)
+        try {
+            // A real connection proves a folder; a path too long for a socket address is refused before any is made.
+            assertEquals(null, LocalSockets.refusal(service.root.resolve("probe.sock")))
+            assertFalse(Files.exists(service.root.resolve("probe.sock")), "The probe leaves nothing behind")
+            assertNotNull(LocalSockets.refusal(service.root.resolve("p".repeat(120) + ".sock")))
+
+            // The service folder refuses connections, as %LOCALAPPDATA% does on some Windows computers: the worker still starts.
+            val asked = mutableListOf<Path>()
+            val refusing = EngineWorker(service, launcher, log, socketRefusal = { path ->
+                asked.add(path.parent)
+                if (path.parent == service.root) "Invalid argument: connect" else LocalSockets.refusal(path)
+            })
+            try {
+                assertEquals(fakeEngines.map { it.id }, refusing.capabilities().map { it.id })
+            } finally { refusing.close() }
+            assertEquals(listOf(service.root, Path.of(System.getProperty("java.io.tmpdir"))), asked.take(2), "The owner-only folder is tried first")
+            assertTrue(Files.readString(service.log).contains("worker-socket-folder folder=temporary"))
+            assertTrue(Files.newDirectoryStream(service.root, "*.sock").use { it.none() }, "No socket is made in a folder that refused one")
+
+            // Nowhere works: the failure names every folder and its reason instead of timing out.
+            val nowhere = EngineWorker(service, launcher, log, socketRefusal = { "refused here" })
+            val failure = assertFailsWith<com.sal7one.hearth.core.service.ServiceException> { nowhere.capabilities() }
+            assertTrue(failure.message.orEmpty().contains("refused a local socket") && failure.message.orEmpty().contains("refused here"), failure.message)
+        } finally { deleteTree(service.data) }
+    }
+
     @Test fun namedSetupsServeTheirOwnRoutesAndAnUnreadableOneDoesNotHideTheOthers() {
         host.close()
         val setups = directory.resolve("service/setups")

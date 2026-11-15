@@ -77,7 +77,14 @@ variable or in a message between sessions.
 
 The host is a small supervisor that loads no engine library itself. Models are loaded in
 one child process, the engine worker, which the host starts on demand and talks to over
-a local socket inside the service folder.
+a local socket. The socket is made in the service folder, which only the owner can reach,
+when the computer accepts connections there, and otherwise in the user's temporary
+folder: on the first Windows profile it ran in, socket files under `%LOCALAPPDATA%`
+refused every connection. The host proves a folder with a real connection before using
+it, and when it falls back the service log says `worker-socket-folder folder=temporary`.
+If the host cannot start, `logs/service.log` gives the reason in words on the line after
+`host-start-failed`, and a failed command exits with code 1 instead of leaving an error
+dialog.
 
 This is what makes three guarantees possible. A native library that unloads a model
 returns memory to its own process, not to the operating system, and a CUDA context stays

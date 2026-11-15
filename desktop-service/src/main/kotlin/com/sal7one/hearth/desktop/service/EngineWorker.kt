@@ -41,6 +41,37 @@ class SelfWorkerLauncher(private val mainClass: String) : WorkerLauncher {
 
 internal data class Released(val worker: Boolean, val ramBytes: Long?)
 
+/** Local (Unix-domain) sockets between the host and its worker. */
+internal object LocalSockets {
+    /** A socket address holds about 100 bytes of path on every platform. */
+    const val MAX_PATH_BYTES = 96
+
+    /**
+     * Null when a socket at [path] accepts a connection, otherwise why it does not. A folder can
+     * take the socket file and still refuse every connection to it (seen on Windows under
+     * `%LOCALAPPDATA%`), so only a real connection proves a folder.
+     */
+    fun refusal(path: Path): String? {
+        if (path.toString().toByteArray(Charsets.UTF_8).size > MAX_PATH_BYTES) return "the path is longer than a socket address allows"
+        return try {
+            runCatching { Files.deleteIfExists(path) }
+            ServerSocketChannel.open(StandardProtocolFamily.UNIX).use { server ->
+                server.bind(UnixDomainSocketAddress.of(path))
+                SocketChannel.open(StandardProtocolFamily.UNIX).use { client ->
+                    client.connect(UnixDomainSocketAddress.of(path))
+                    server.accept().close()
+                }
+            }
+            null
+        } catch (failure: Exception) {
+            failure.message ?: failure.javaClass.simpleName
+        } finally {
+            // Where connections are refused the file often cannot be removed either; one fixed name bounds what is left.
+            runCatching { Files.deleteIfExists(path) }
+        }
+    }
+}
+
 /**
  * The host's handle on the one engine worker process. Models live there, so [release] and a
  * timed-out [cancel] end that process: the only way memory returns to the computer at once
@@ -51,6 +82,7 @@ internal class EngineWorker(
     private val launcher: WorkerLauncher,
     private val log: ServiceLog,
     private val startTimeoutMillis: Long = 30_000,
+    private val socketRefusal: (Path) -> String? = LocalSockets::refusal,
 ) : AutoCloseable {
     private class Live(val process: Process, val channel: WorkerChannel)
     private class Active(val key: String) { val finished = CountDownLatch(1); @Volatile var cancelRequested = false }
@@ -152,8 +184,7 @@ internal class EngineWorker(
     }
 
     private fun start(): Live {
-        val socket = socketPath()
-        Files.deleteIfExists(socket)
+        val socket = socketFolder.resolve(socketName())
         ServerSocketChannel.open(StandardProtocolFamily.UNIX).use { server ->
             server.bind(UnixDomainSocketAddress.of(socket))
             server.configureBlocking(false)
@@ -176,7 +207,7 @@ internal class EngineWorker(
             } catch (failure: Throwable) {
                 destroyTree(process)
                 throw failure
-            } finally { Files.deleteIfExists(socket) }
+            } finally { runCatching { Files.deleteIfExists(socket) } } // never let the cleanup replace the real failure
         }
     }
 
@@ -194,11 +225,24 @@ internal class EngineWorker(
         runCatching { process.waitFor(5, TimeUnit.SECONDS) }
     }
 
-    /** Socket paths are short by rule of the platform; a long data folder falls back to the user's temporary folder. */
-    private fun socketPath(): Path {
-        val name = "w-" + ByteArray(6).also(SecureRandom()::nextBytes).joinToString("") { "%02x".format(it) } + ".sock"
-        val preferred = service.root.resolve(name)
-        return if (preferred.toString().toByteArray(Charsets.UTF_8).size <= 96) preferred else Path.of(System.getProperty("java.io.tmpdir")).resolve("hearth-$name")
+    private fun socketName() = "hearth-w-" + ByteArray(6).also(SecureRandom()::nextBytes).joinToString("") { "%02x".format(it) } + ".sock"
+
+    /**
+     * Where worker sockets are made: the service folder, which only the owner can reach, when this
+     * computer accepts connections there, otherwise the user's temporary folder. Each is proved once
+     * with a real connection; if neither works the worker cannot start, and the reasons say why.
+     */
+    private val socketFolder: Path by lazy {
+        val refusals = mutableListOf<String>()
+        for (folder in listOf(service.root, Path.of(System.getProperty("java.io.tmpdir")))) {
+            val refusal = socketRefusal(folder.resolve("hearth-w-probe.sock"))
+            if (refusal == null) {
+                if (folder != service.root) log.event("worker-socket-folder", "folder" to "temporary")
+                return@lazy folder
+            }
+            refusals += "$folder: $refusal"
+        }
+        throw ServiceException(ServiceErrorCode.ENGINE_FAILED, "This computer refused a local socket for the engine worker (${refusals.joinToString("; ")})")
     }
 
     private fun merge(base: PipelineConfig, used: PipelineConfig) = base.copy(
