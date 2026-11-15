@@ -325,8 +325,11 @@ Errors answer `{"error": {"code": "...", "message": "..."}}`.
 ## What LocalHut adds
 
 - Four fixed recipes, `speech.transcribe`, `text.translate`, `speech.speak` and
-  `speech.pipeline`, each naming the Hearth route of the same operation. A recipe is
-  offered only while Hearth is healthy and lists that route.
+  `speech.pipeline`. Each takes every ready Hearth route of its operation, the unnamed
+  setup first and then named setups by route id, and runs a job on the first route that
+  lists every language and voice the job names; a job that names none runs on the first.
+  A recipe is offered only while Hearth is healthy and lists at least one such route, and
+  it shows its callers one language pair per route.
 - Audio as an asset type, with a header check per container in the table above, and
   `audio/wav`, `application/json`, `text/vtt` and `text/plain` as output assets.
 - When the job starts: LocalHut cannot know an upload's duration, so Hearth reports
