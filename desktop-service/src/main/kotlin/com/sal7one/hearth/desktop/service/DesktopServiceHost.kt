@@ -59,6 +59,7 @@ class DesktopServiceHost(
     private lateinit var measurements: ServiceMeasurements
     @Volatile private var engines: List<EngineDescriptor> = emptyList()
     @Volatile private var routes: Map<String, RouteView> = emptyMap()
+    private var unreadableSetups: Map<String, String> = emptyMap()
 
     val port: Int get() = checkNotNull(http) { "The service host is not started" }.port
 
@@ -118,7 +119,17 @@ class DesktopServiceHost(
     private fun requestStop() { Thread({ Thread.sleep(100); close() }, "hearth-service-stop").start() }
 
     private suspend fun refreshRoutes() {
-        routes = SavedRoutes.from(savedConfiguration(), engines).associateBy { it.route.id }
+        val views = SavedRoutes.from(savedConfiguration(), engines).toMutableList()
+        val unreadable = mutableMapOf<String, String>()
+        for ((name, setup) in ServiceSetups.load(service.setups)) {
+            setup.onSuccess { views += SavedRoutes.from(it, engines, name) }.onFailure { unreadable[name] = it.javaClass.simpleName }
+        }
+        // Said once when it changes, not on every refresh.
+        if (unreadable != unreadableSetups) {
+            unreadable.forEach { (name, kind) -> log.event("setup-unreadable", "setup" to name, "kind" to kind) }
+            unreadableSetups = unreadable
+        }
+        routes = views.associateBy { it.route.id }
     }
 
     /** Built from memory only: the engine list read at start, the last route refresh and the measurements. */
@@ -136,6 +147,7 @@ class DesktopServiceHost(
                     val cpuOnly = selections.all { (it.second.options["acceleration"] ?: "cpu") == "cpu" }
                     add(buildJsonObject {
                         put("id", route.id); put("operation", route.operation.wire)
+                        put("setup", view.setup?.let(::JsonPrimitive) ?: JsonNull)
                         putJsonArray("stages") {
                             for ((stage, selection) in selections) add(buildJsonObject {
                                 put("stage", stage); put("engine", selection.engineId); put("model", selection.modelId); put("acceleration", selection.options["acceleration"] ?: "cpu")
@@ -189,5 +201,16 @@ class DesktopServiceHost(
         }
 
         fun revokeClient(dataDirectory: Path, name: String): Boolean = ServiceClients(ServiceDirectory(dataDirectory).clients).revoke(name)
+
+        /**
+         * Keeps what the app is showing now as a named setup for callers, so the owner can serve
+         * more than one language pair. A running host offers its routes at the next refresh. Returns the file.
+         */
+        suspend fun saveSetup(dataDirectory: Path, name: String): Path {
+            val service = ServiceDirectory(dataDirectory).also { it.create() }
+            return ServiceSetups.save(service.setups, name, readSavedConfiguration(dataDirectory))
+        }
+
+        fun removeSetup(dataDirectory: Path, name: String): Boolean = ServiceSetups.remove(ServiceDirectory(dataDirectory).setups, name)
     }
 }

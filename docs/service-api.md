@@ -6,10 +6,10 @@ GoodChat over the LAN.
 
 **Status (15 November 2026).** The desktop service is built and proven on Windows with
 real models: the contract in `hearth-core`, the headless host, client tokens, routes from
-the owner's saved setup, jobs, outputs, forget, the engine worker process, runtime,
-release, idle unload and the measurements. Not built yet: an app screen for approving
-clients and defining extra routes, video-memory measurement for GPU routes, LocalHut's
-recipes, and the Android service. macOS runs the same code but has not been exercised.
+the owner's saved setup and from setups saved under a name, jobs, outputs, forget, the
+engine worker process, runtime, release, idle unload and the measurements. Not built
+yet: an app screen for approving clients and naming setups (both are commands today),
+video-memory measurement for GPU routes, and the Android service. macOS runs the same code but has not been exercised.
 
 ## Rules
 
@@ -101,8 +101,23 @@ chosen in the desktop app become up to four routes:
 A caller may ask only for the languages and the voice the owner saved. A stage that
 uses a cloud provider is never offered, so a caller cannot spend the owner's provider
 account. The host re-reads the saved setup every ten seconds, so changing a model in the
-app changes what the route runs. Routes with their own names and bounds, for example a
-large model kept only for batch transcription, are not built yet.
+app changes what the route runs.
+
+### More than one setup
+
+One setup serves one language pair and one voice, so English to Arabic and Arabic to
+English are two setups. The owner keeps a setup for callers under a name: arrange it in
+the app, then run `Hearth --service-setup-save ar-en`. Hearth writes what the app is
+showing to `service/setups/ar-en.json`, in the app's own setup format and readable by the
+current user only, and offers it as `ar-en-transcribe`, `ar-en-translate`, `ar-en-speak`
+and `ar-en-pipeline` beside the unnamed routes. `Hearth --service-setup-remove ar-en`
+withdraws them. A running host picks either change up at its next refresh. A name is 1
+to 40 lower-case letters, digits and hyphens, and at most 16 are kept.
+
+A named setup is a copy taken when it was saved: changing the app afterwards changes
+the unnamed routes, not the named ones. A setup file that cannot be read is reported
+once in the service log and offers nothing; the other setups are unaffected. A caller
+finds the route it needs by `operation` and languages, or by the `setup` name.
 
 `GET /v1/capabilities` lists **only routes that are ready now**: the engine library
 loaded when the host started and the model is on disk. It answers from memory, loads
@@ -111,6 +126,7 @@ nothing, and was measured at 54 ms at worst. Each route carries:
 | Field | Meaning |
 | --- | --- |
 | `id`, `operation` | The route and `transcribe`, `translate`, `speak` or `pipeline`. |
+| `setup` | The name of the saved setup the route comes from, or `null` for the setup the app is showing. |
 | `stages` | For each stage: `stage`, `engine`, `model` and `acceleration` (`cpu`, `cuda` or `metal`). Informational. |
 | `sourceLanguages`, `targetLanguages`, `voices` | What a request may ask for. |
 | `limits.maxAudioSeconds`, `limits.maxTextCharacters` | Hard bounds for one job. |
@@ -344,8 +360,8 @@ capabilities, a second instance exiting with code 3, and a clean stop.
 
 ## Later, and separate
 
-- **An app screen** for approving clients and defining named routes with their own
-  bounds.
+- **An app screen** for approving clients and naming setups, and per-route bounds such
+  as a large model kept only for batch transcription.
 - **Video-memory measurement** for GPU routes, after the CUDA build is validated here.
 - **Android.** An exported bound service with a typed interface, audio through pipes
   rather than binder transactions, and trust by the calling app's signature plus a

@@ -263,4 +263,42 @@ class DesktopServiceHostTest {
         assertTrue(clients.revoke("goodchat")); assertEquals(null, clients.authenticate("Bearer $other"))
         assertFailsWith<IllegalArgumentException> { clients.approve("../escape") }
     }
+
+    @Test fun namedSetupsServeTheirOwnRoutesAndAnUnreadableOneDoesNotHideTheOthers() {
+        host.close()
+        val setups = directory.resolve("service/setups")
+        ServiceSetups.save(setups, "ar-en", saved.copy(sourceLanguage = "ar", targetLanguage = "en", voiceId = "M1"))
+        Files.writeString(setups.resolve("broken.json"), "not a setup")
+        assertFailsWith<IllegalArgumentException> { ServiceSetups.save(setups, "Not A Name", saved) }
+        assertFailsWith<IllegalArgumentException> { ServiceSetups.save(setups, "../escape", saved) }
+        assertFailsWith<IllegalArgumentException>("A setup with nothing to offer is not kept") { ServiceSetups.save(setups, "empty", PipelineConfig()) }
+        host = DesktopServiceHost(directory, launcher, savedConfiguration = { saved }, decode = { _, target -> target.resolve("decoded.wav") },
+            idleUnloadSeconds = 3_600, routeRefreshMillis = 100)
+        host.start()
+        fun routes() = json(call("GET", "/v1/capabilities")).getValue("routes").jsonArray.map { it.jsonObject }
+        fun JsonObject.texts(name: String) = getValue(name).jsonArray.map { it.jsonPrimitive.content }
+        val listed = routes().associateBy { it.getValue("id").jsonPrimitive.content }
+        assertEquals(listOf("transcribe", "translate", "speak", "pipeline", "ar-en-transcribe", "ar-en-translate", "ar-en-speak", "ar-en-pipeline"), listed.keys.toList())
+        assertEquals(JsonNull, listed.getValue("translate").getValue("setup"), "The setup the app shows has no name")
+        val named = listed.getValue("ar-en-translate")
+        assertEquals("ar-en", named.getValue("setup").jsonPrimitive.content)
+        assertEquals(listOf("ar"), named.texts("sourceLanguages")); assertEquals(listOf("en"), named.texts("targetLanguages"))
+        assertEquals(listOf("en"), listed.getValue("ar-en-speak").texts("sourceLanguages"), "The voice speaks the setup's translation")
+        assertEquals(listOf("M1"), listed.getValue("ar-en-speak").texts("voices"))
+        assertFalse(routes().toString().contains("modelPath"), "No path may leave Hearth")
+
+        // A named route runs, and takes only the pair its setup saved.
+        assertEquals(201, create(40, """{"route":"ar-en-translate","text":"marhaba"}""").statusCode())
+        await(40, "completed")
+        assertEquals("invalid_request", errorCode(create(41, """{"route":"ar-en-translate","text":"hello","targetLanguage":"ar"}""")))
+        assertTrue(Files.readString(directory.resolve("logs/service.log")).contains("setup-unreadable"), "The unreadable setup is reported")
+
+        // Removing a setup withdraws its routes at the next refresh.
+        assertTrue(DesktopServiceHost.removeSetup(directory, "ar-en"))
+        var waits = 100
+        while (routes().size != 4 && waits-- > 0) Thread.sleep(50)
+        assertEquals(listOf("transcribe", "translate", "speak", "pipeline"), routes().map { it.getValue("id").jsonPrimitive.content })
+        assertEquals("unknown_route", errorCode(create(42, """{"route":"ar-en-translate","text":"x"}""")))
+        assertFalse(DesktopServiceHost.removeSetup(directory, "ar-en"), "Removing it again changes nothing")
+    }
 }

@@ -94,6 +94,12 @@ fun main(args: Array<String>) {
         if (args[0] == "--service-approve") DesktopServiceHost.approveClient(desktopDataDirectory(), args[1]) else DesktopServiceHost.revokeClient(desktopDataDirectory(), args[1])
         return
     }
+    if (args.firstOrNull() == "--service-setup-save" || args.firstOrNull() == "--service-setup-remove") {
+        require(args.size == 2) { "Usage: Hearth --service-setup-save <name> | --service-setup-remove <name>" }
+        if (args[0] == "--service-setup-save") kotlinx.coroutines.runBlocking { DesktopServiceHost.saveSetup(desktopDataDirectory(), args[1]) }
+        else DesktopServiceHost.removeSetup(desktopDataDirectory(), args[1])
+        return
+    }
     if (args.firstOrNull() == "--self-check") {
         require(args.size == 2) { "Usage: Hearth --self-check <report-path>" }
         DesktopSelfCheck.run(Path.of(args[1]))

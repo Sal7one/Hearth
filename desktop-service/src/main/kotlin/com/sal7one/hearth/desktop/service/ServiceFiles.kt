@@ -21,6 +21,7 @@ internal class ServiceDirectory(val data: Path) {
     val root: Path = data.resolve("service")
     val clients: Path = root.resolve("clients")
     val jobs: Path = root.resolve("jobs")
+    val setups: Path = root.resolve("setups")
     val descriptor: Path = root.resolve("host.json")
     val lock: Path = root.resolve("host.lock")
     val measurements: Path = root.resolve("measurements.json")
@@ -28,7 +29,7 @@ internal class ServiceDirectory(val data: Path) {
 
     fun create() {
         Files.createDirectories(data)
-        listOf(root, clients, jobs, log.parent).forEach(PrivateFiles::directory)
+        listOf(root, clients, jobs, setups, log.parent).forEach(PrivateFiles::directory)
     }
 }
 
