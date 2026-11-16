@@ -312,7 +312,7 @@ every result below is CPU. Compose fetched WiX 3 itself.
 | Media helpers | `scripts/desktop/build-media.ps1` | `hearth-media-decode.exe`, `hearth-system-audio.exe`; three native tests pass |
 | Desktop suites | the six Gradle test tasks from `docs/desktop.md` with `-PhearthRequireMedia=true` | 367 tests, 0 failures, 43 skipped (opt-in model smokes; two symlink tests need Developer Mode or elevation) |
 | Packaged self-check | `python scripts/desktop/check-packaged.py` | PASS: 15 local engines available, manga OCR adapters, native media decode, PC audio helper probe |
-| Installers | `./gradlew -PhearthDesktopOnly=true :desktopApp:packageMsi :desktopApp:packageExe` | `Hearth-1.0.4.msi`, `Hearth-1.0.4.exe` (about 104 MB each); neither was installed |
+| Installer | `./gradlew -PhearthDesktopOnly=true :desktopApp:packageMsi` | `Hearth-1.0.8.msi` (131 MB). Not installed: its contents were unpacked with `msiexec /a` and matched the tested app image, and `Hearth.exe --self-check` passed from the unpacked copy on an empty data folder |
 | Launch | packaged `Hearth.exe` with an isolated `HEARTH_DATA_DIRECTORY` | main window within 2 s, responsive for 40 s, clean exit on window close |
 
 ### Real models on Windows
@@ -377,8 +377,8 @@ includes Hearth's own voice output.
 ### Not verified, and limits
 
 - Not exercised on Windows: live captions through the app window (microphone or PC
-  audio), the overlay and hotkeys, DPAPI secrets, system voices, installing either
-  installer, and the Whisper and GGUF translation GPU path (`--cuda` needs an installed
+  audio), the overlay and hotkeys, DPAPI secrets, system voices, running the
+  installer itself (shortcuts, upgrade and uninstall), and the Whisper and GGUF translation GPU path (`--cuda` needs an installed
   NVIDIA CUDA Toolkit). Nemotron's GPU backend was run with a real model, not through the app window.
 - Model folders with non-ASCII characters in their path were not tested. Whisper, GGUF
   translation, Supertonic, MOSS and ONNX sessions take UTF-8 paths; Vosk/Kaldi,

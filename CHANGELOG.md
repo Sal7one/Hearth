@@ -1,5 +1,12 @@
 # Changelog
 
+## Desktop 1.0.8 — 2026-11-16 · First Windows build
+
+- Publish the first Windows x64 installer. It captions what the PC plays through WASAPI process loopback, leaving Hearth's own voice out, or a microphone, and offers 76 of the 77 catalogue models: every local engine except Chatterbox, whose English output is wrong on Windows. [Release](https://github.com/Sal7one/Hearth/releases/tag/desktop-v1.0.8).
+- Run Nemotron 3.5 on NVIDIA GPUs on Windows: 172 ms for 10 s of audio on an RTX 5070 against 2,018 ms on the CPU, with the same transcript. It needs an RTX 30-series or newer card and the NVIDIA driver; no NVIDIA library is bundled. The driver compiles the GPU code once on first use. [Details](docs/desktop-cuda.md#nemotron-on-nvidia-gpus).
+- Add `Hearth --serve`, a service on this computer that other local apps can ask to transcribe, translate and speak with the setups saved in Hearth. Clients are approved by name, and several saved setups can be served at once. [Contract](docs/service-api.md).
+- Add `scripts/desktop/doctor.py`, which checks a computer for the desktop build, names what is missing and can run the remaining build steps.
+
 ## 0.30.4 draft — 2026-11-10
 
 - Open Android presets directly from Home and Captions. Choose a task and languages, see exact models and missing download size, then apply the verified setup.

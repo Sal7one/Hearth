@@ -13,10 +13,11 @@ models with your own cloud or self-hosted connections; configure each stage inde
 
 | Edition | Download |
 | --- | --- |
-| **Android · most phones** | **[Play ARM64 · 0.30.1](https://github.com/Sal7one/Hearth/releases/download/v0.30.1/hearth-0.30.1-play-arm64-v8a-qa.apk)** |
-| Android · offline | [FOSS ARM64 QA · no network permission](https://github.com/Sal7one/Hearth/releases/download/v0.30.1/hearth-0.30.1-foss-arm64-v8a-qa.apk) |
-| Android · other CPUs / TV | [All individual APKs and checksums](https://github.com/Sal7one/Hearth/releases/tag/v0.30.1) |
-| **Mac · Apple silicon** | **[Desktop 1.0.4 DMG](https://github.com/Sal7one/Hearth/releases/download/v0.30.1/hearth-1.0.4-macos-arm64.dmg)** |
+| **Android · most phones** | **[Play ARM64 · 0.30.4](https://github.com/Sal7one/Hearth/releases/download/v0.30.4/hearth-0.30.4-play-arm64-v8a-qa.apk)** |
+| Android · offline | [FOSS ARM64 QA · no network permission](https://github.com/Sal7one/Hearth/releases/download/v0.30.4/hearth-0.30.4-foss-arm64-v8a-qa.apk) |
+| Android · other CPUs / TV | [All individual APKs and checksums](https://github.com/Sal7one/Hearth/releases/tag/v0.30.4) |
+| **Mac · Apple silicon** | **[Desktop 1.0.7 DMG](https://github.com/Sal7one/Hearth/releases/download/v0.30.4/hearth-1.0.7-macos-arm64.dmg)** |
+| **Windows · x64 · first build** | **[Desktop 1.0.8 installer](https://github.com/Sal7one/Hearth/releases/download/desktop-v1.0.8/hearth-1.0.8-windows-x64.msi)** · [notes and checksum](https://github.com/Sal7one/Hearth/releases/tag/desktop-v1.0.8) |
 | Browser companion | [Website text extension](https://github.com/Sal7one/Hearth/releases/download/v0.30.0-rc.8/hearth-browser-extension-0.1.0.zip) · [setup](integrations/browser-extension/README.md) |
 
 Android 9+; device audio requires Android 10+. These APKs are QA builds for
@@ -25,8 +26,12 @@ sideloading. Play and FOSS share `com.sal7one.transiber.qa` and replace each oth
 [APK selection, installation and checksum guide](docs/installing-qa.md).
 
 The Mac installer supports Apple silicon on macOS 13.3+ and is ad hoc signed,
-not notarized. Windows builds and NVIDIA execution still need hardware
-validation; see the [desktop guide](docs/desktop.md). **TVs use cloud speech and
+not notarized. The Windows installer is the first Windows build, for Windows 10 and 11
+on x64. It is not code-signed, so Windows asks before running it. It captions what the
+PC plays or a microphone, runs every local engine except Chatterbox, and can run
+Nemotron on an NVIDIA RTX 30-series or newer GPU with nothing but the driver installed.
+[What was and was not verified on Windows](docs/desktop-native-verification.md#windows-x64-built-packaged-and-proven-with-real-models-2026-11-15).
+**TVs use cloud speech and
 translation, with installed system voices; local models are blocked.** FOSS stays offline on TVs.
 
 ## Screenshots
@@ -81,7 +86,7 @@ feature. Translation and read-aloud are optional. Advanced settings keep engine 
 | Websites, apps, images and manga | [Screen translation](docs/screen-reading.md) · [Camera OCR](docs/camera-ocr.md) |
 | Local models and cloud / self-hosted services | [Models and sources](docs/model-sources.md) · [Translation choices](docs/translation-choices.md) · [Voices](docs/voices.md) |
 | Find the best models for your device | [Benchmark lab](docs/local-benchmark.md) |
-| Desktop, OBS and external apps | [Desktop](docs/desktop.md) · [OBS setup](docs/obs-setup.md) · [NVIDIA validation](docs/desktop-cuda.md) |
+| Desktop, OBS and external apps | [Desktop](docs/desktop.md) · [OBS setup](docs/obs-setup.md) · [NVIDIA GPUs](docs/desktop-cuda.md) · [Service for other apps](docs/service-api.md) |
 | Android TV | [TV setup and controls](docs/android-abi-support.md) |
 
 ## Build

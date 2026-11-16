@@ -253,7 +253,7 @@ is missing, pass `-PhearthDesktopJavaHome=/path/to/full/jdk-21` to the packaging
 The `--self-check <report-file>` entry opens no window/microphone/model; it checks
 packaged native adapters, audio/crypto services and authenticated loopback HTTP.
 
-The current desktop installer version is `1.0.4`, independent of Android's version;
+The current desktop installer version is `1.0.8`, independent of Android's version;
 macOS installer versions require a nonzero major. Use
 `-PhearthDesktopVersion=MAJOR.MINOR.PATCH` to change it. Builds target Windows x64,
 macOS Apple Silicon and macOS Intel, but this branch's native artifacts and real
